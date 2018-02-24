@@ -1,4 +1,6 @@
-# CelesteTAS-EverestInterop - Everest interop for DevilSquirrel's CelesteTAS
+# CelesteTAS-EverestInterop
+
+## Everest interop for DevilSquirrel's CelesteTAS
 
 ### License: MIT
 
