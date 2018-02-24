@@ -51,6 +51,7 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CelesteTASProxies.cs" />
     <Compile Include="CelesteTASModuleSettings.cs" />
     <Compile Include="CelesteTASModule.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

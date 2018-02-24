@@ -1,4 +1,5 @@
-﻿using Celeste.Mod;
+﻿using Celeste;
+using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -66,6 +67,16 @@ namespace TAS.EverestInterop {
                         
                         modder.MethodRewriter += PatchAddonsMethod;
 
+                        // Normal brain: Hardcoded relinker map.
+                        // 0x0ade brain: Helper attribute, dynamically generated map.
+                        Type proxies = typeof(CelesteTASProxies);
+                        foreach (MethodInfo proxy in proxies.GetMethods()) {
+                            CelesteTASProxyAttribute attrib = proxy.GetCustomAttribute<CelesteTASProxyAttribute>();
+                            if (attrib == null)
+                                continue;
+                            modder.RelinkMap[attrib.FindableID] = new RelinkMapEntry(proxies.FullName, proxy.GetFindableID(withType: false));
+                        }
+
                         CelesteAddons = Everest.Relinker.GetRelinkedAssembly(new EverestModuleMetadata {
                             PathDirectory = Everest.PathGame,
                             Name = Metadata.Name,
@@ -73,6 +84,21 @@ namespace TAS.EverestInterop {
                         }, stream,
                         checksumsExtra: new string[] {
                             Everest.Relinker.GetChecksum(Metadata)
+                        }, prePatch: _ => {
+                            // Make Celeste-Addons.dll depend on this runtime mod.
+                            Assembly interop = Assembly.GetExecutingAssembly();
+                            // Add the assembly name reference to the list of the dependencies.
+                            AssemblyName interopName = interop.GetName();
+                            AssemblyNameReference interopRef = new AssemblyNameReference(interopName.Name, interopName.Version);
+                            modder.Module.AssemblyReferences.Add(interopRef);
+                            // Preload the new dependency.
+                            // We shouldn't rely on interop.Location... but on the other hand, this relies on the mod never shipping precached.
+                            string interopPath = Everest.Relinker.GetCachedPath(Metadata);
+                            modder.DependencyCache[interopRef.Name] =
+                            modder.DependencyCache[interopRef.FullName] =
+                                MonoModExt.ReadModule(interopPath, modder.GenReaderParameters(false, interopPath));
+                            // Map it.
+                            modder.MapDependency(modder.Module, interopRef);
                         });
 
                         // Prevent MonoMod from clearing the shared caches.
