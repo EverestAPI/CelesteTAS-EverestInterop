@@ -5,6 +5,7 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using MonoMod;
 using MonoMod.Detour;
+using MonoMod.InlineRT;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -20,10 +21,16 @@ namespace TAS.EverestInterop {
     public static class CelesteTASProxies {
 
         public readonly static Type t_Player = typeof(Player);
+
         public readonly static FieldInfo f_Player_dashCooldownTimer = t_Player.GetField("dashCooldownTimer", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         [CelesteTASProxy("System.Single Celeste.Player::dashCooldownTimer")]
         public static float Player_get_dashCooldownTimer(Player self)
             => (float) f_Player_dashCooldownTimer.GetValue(self);
+
+        public readonly static MethodInfo m_Player_WallJumpCheck = t_Player.GetMethod("WallJumpCheck", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        [CelesteTASProxy("System.Boolean Celeste.Player::WallJumpCheck(System.Int32)")]
+        public static bool Player_WallJumpCheck(Player self, int dir)
+            => (bool) m_Player_WallJumpCheck.GetDelegate().Invoke(self, dir);
 
     }
     public class CelesteTASProxyAttribute : Attribute {
