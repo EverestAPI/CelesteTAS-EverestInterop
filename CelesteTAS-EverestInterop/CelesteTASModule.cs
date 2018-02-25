@@ -30,7 +30,7 @@ namespace TAS.EverestInterop {
 
         // The fields we want to access from the Celeste-Addons.dll
         private static FieldInfo f_FrameLoops;
-        private static int FrameLoops {
+        public static int FrameLoops {
             get {
                 return ((int?) f_FrameLoops?.GetValue(null)) ?? 1;
             }
@@ -40,7 +40,7 @@ namespace TAS.EverestInterop {
         }
 
         private static FieldInfo f_Running;
-        private static bool Running {
+        public static bool Running {
             get {
                 return ((bool?) f_Running?.GetValue(null)) ?? false;
             }
@@ -50,7 +50,7 @@ namespace TAS.EverestInterop {
         }
 
         private static FieldInfo f_Recording;
-        private static bool Recording {
+        public static bool Recording {
             get {
                 return ((bool?) f_Recording?.GetValue(null)) ?? false;
             }
@@ -60,7 +60,7 @@ namespace TAS.EverestInterop {
         }
 
         private static FieldInfo f_state;
-        private static State state {
+        public static State state {
             get {
                 if (f_state == null)
                     return State.None;
@@ -71,12 +71,16 @@ namespace TAS.EverestInterop {
             }
         }
 
+        private static bool SkipBaseUpdate;
+
         // The methods we want to hook.
 
         // The original mod adds a few lines of code into Monocle.Engine::Update.
         private readonly static MethodInfo m_Engine_Update = typeof(Engine).GetMethod("Update", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        // The original mod wraps the input 
+        // The original mod makes the MInput.Update call conditional and invokes UpdateInputs afterwards.
         private readonly static MethodInfo m_MInput_Update = typeof(MInput).GetMethod("Update", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+        // The original mod makes the base.Update call conditional.
+        private readonly static MethodInfo m_Game_Update = typeof(Game).GetMethod("Update", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
         public CelesteTASModule() {
             Instance = this;
@@ -166,6 +170,7 @@ namespace TAS.EverestInterop {
 
             orig_Engine_Update = m_Engine_Update.Detour<d_Engine_Update>(t_CelesteTASModule.GetMethod("Engine_Update"));
             orig_MInput_Update = m_MInput_Update.Detour<d_MInput_Update>(t_CelesteTASModule.GetMethod("MInput_Update"));
+            orig_Game_Update = m_Game_Update.Detour<d_Game_Update>(t_CelesteTASModule.GetMethod("Game_Update"));
 
         }
 
@@ -223,13 +228,30 @@ namespace TAS.EverestInterop {
 
         public delegate void d_Engine_Update(Engine self, GameTime gameTime);
         public static d_Engine_Update orig_Engine_Update;
-        public static void Engine_Update(Celeste.Celeste self, GameTime gameTime) {
+        public static void Engine_Update(Engine self, GameTime gameTime) {
+            SkipBaseUpdate = false;
+
             if (!Settings.Enabled) {
                 orig_Engine_Update(self, gameTime);
                 return;
             }
 
             int loops = FrameLoops;
+
+            if (Settings.FastForwardMode == FastForwardMode.Max && loops > 10) {
+                // Loop without base.Update(), then call base.Update() once.
+                SkipBaseUpdate = true;
+                for (int i = 0; i < loops; i++) {
+                    orig_Engine_Update(self, gameTime);
+                }
+                SkipBaseUpdate = false;
+                // This _should_ work...
+                orig_Game_Update(self, gameTime);
+
+                return;
+            }
+
+            loops = Math.Min(10, loops);
             for (int i = 0; i < loops; i++) {
                 orig_Engine_Update(self, gameTime);
             }
@@ -254,6 +276,16 @@ namespace TAS.EverestInterop {
                 PreviousGameLoop = Engine.OverloadGameLoop;
                 Engine.OverloadGameLoop = FrameStepGameLoop;
             }
+        }
+
+        public delegate void d_Game_Update(Game self, GameTime gameTime);
+        public static d_Game_Update orig_Game_Update;
+        public static void Game_Update(Game self, GameTime gameTime) {
+            if (Settings.Enabled && SkipBaseUpdate) {
+                return;
+            }
+
+            orig_Game_Update(self, gameTime);
         }
 
         public static Action PreviousGameLoop;

@@ -12,8 +12,12 @@ using System.Threading.Tasks;
 namespace TAS.EverestInterop {
     public class CelesteTASModuleSettings : EverestModuleSettings {
 
-        [SettingInGame(false)]
         public bool Enabled { get; set; } = true;
+        public FastForwardMode FastForwardMode { get; set; } = FastForwardMode.Locked;
 
+    }
+    public enum FastForwardMode {
+        Locked,
+        Max
     }
 }
