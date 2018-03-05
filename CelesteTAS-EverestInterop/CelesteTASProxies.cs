@@ -6,6 +6,7 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod;
 using MonoMod.Detour;
+using MonoMod.Helpers;
 using MonoMod.InlineRT;
 using System;
 using System.Collections.Generic;
