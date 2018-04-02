@@ -24,11 +24,11 @@ namespace TAS.EverestInterop {
         public override Type SettingsType => typeof(CelesteTASModuleSettings);
         public static CelesteTASModuleSettings Settings => (CelesteTASModuleSettings) Instance._Settings;
 
-        public static string CelesteAddonsPath => Path.Combine(Everest.PathGame, "Celeste-Addons.dll");
+        public static string CelesteAddonsPath { get; protected set; }
         public Assembly CelesteAddons;
         public Type Manager;
 
-        // The fields we want to access from the Celeste-Addons.dll
+        // The fields we want to access from Celeste-Addons
         private static FieldInfo f_FrameLoops;
         public static int FrameLoops {
             get {
@@ -87,12 +87,21 @@ namespace TAS.EverestInterop {
         }
 
         public override void Load() {
+            if (typeof(Game).Assembly.GetName().Name.Contains("FNA")) {
+                CelesteAddonsPath = Path.Combine(Everest.PathGame, "Celeste-Addons-OpenGL.dll");
+            } else {
+                CelesteAddonsPath = Path.Combine(Everest.PathGame, "Celeste-Addons-XNA.dll");
+            }
+
+            if (!File.Exists(CelesteAddonsPath))
+                CelesteAddonsPath = Path.Combine(Everest.PathGame, "Celeste-Addons.dll");
+
             if (!File.Exists(CelesteAddonsPath)) {
-                Logger.Log("tas-interop", "Celeste-Addons.dll not found - CelesteTAS-EverestInterop not loading.");
+                Logger.Log("tas-interop", "Celeste-Addons not found - CelesteTAS-EverestInterop not loading.");
                 return;
             }
 
-            Logger.Log("tas-interop", "Loading Celeste-Addons.dll");
+            Logger.Log("tas-interop", "Loading Celeste-Addons");
             try {
                 // Relink from XNA to FNA if required and replace some private accesses with public replacements.
                 using (Stream stream = File.OpenRead(CelesteAddonsPath)) {
@@ -121,7 +130,7 @@ namespace TAS.EverestInterop {
                         checksumsExtra: new string[] {
                             Everest.Relinker.GetChecksum(Metadata)
                         }, prePatch: _ => {
-                            // Make Celeste-Addons.dll depend on this runtime mod.
+                            // Make Celeste-Addons depend on this runtime mod.
                             Assembly interop = Assembly.GetExecutingAssembly();
                             // Add the assembly name reference to the list of the dependencies.
                             AssemblyName interopName = interop.GetName();
@@ -145,7 +154,7 @@ namespace TAS.EverestInterop {
                     Everest.Relinker.Modder = modderOld;
                 }
             } catch (Exception e) {
-                Logger.Log("tas-interop", "Failed loading Celeste-Addons.dll");
+                Logger.Log("tas-interop", "Failed loading Celeste-Addons");
                 e.LogDetailed();
             }
             if (CelesteAddons == null)
