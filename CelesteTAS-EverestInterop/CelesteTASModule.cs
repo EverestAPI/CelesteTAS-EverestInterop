@@ -236,6 +236,7 @@ namespace TAS.EverestInterop {
                 return;
             }
 
+            // The original patch doesn't store FrameLoops in a local variable, but it's only updated in UpdateInputs anyway.
             int loops = FrameLoops;
 
             if (Settings.FastForwardMode == FastForwardMode.Max && loops > 10) {

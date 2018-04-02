@@ -22,6 +22,14 @@ namespace TAS.EverestInterop {
     // Proxies for any non-public fields that are set to public by DevilSquirrel's modified .exe
     public static class CelesteTASProxies {
 
+        public readonly static Type t_IntroVignette = typeof(IntroVignette);
+
+        public readonly static FieldInfo f_IntroVignette_timer = t_IntroVignette.GetField("timer", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        [CelesteTASProxy("System.Single Celeste.IntroVignette::timer")]
+        public static float IntroVignette_get_timer(IntroVignette self)
+            => (float) f_IntroVignette_timer.GetValue(self);
+
+
         public readonly static Type t_Player = typeof(Player);
 
         public readonly static FieldInfo f_Player_dashCooldownTimer = t_Player.GetField("dashCooldownTimer", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -41,6 +49,14 @@ namespace TAS.EverestInterop {
         [CelesteTASProxy("System.Void Monocle.MInput::UpdateVirtualInputs()")]
         public static void MInput_UpdateVirtualInputs()
             => m_UpdateVirualInputs.GetDelegate().Invoke(null);
+
+
+        public readonly static Type t_SummitVignette = typeof(SummitVignette);
+
+        public readonly static FieldInfo f_SummitVignette_ready = t_SummitVignette.GetField("ready", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        [CelesteTASProxy("System.Boolean Celeste.SummitVignette::ready")]
+        public static bool SummitVignette_get_ready(SummitVignette self)
+            => (bool) f_SummitVignette_ready.GetValue(self);
 
     }
     public class CelesteTASProxyAttribute : Attribute {
