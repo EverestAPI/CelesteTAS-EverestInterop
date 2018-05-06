@@ -6,8 +6,8 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod;
 using MonoMod.Detour;
-using MonoMod.Helpers;
 using MonoMod.InlineRT;
+using MonoMod.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -40,7 +40,7 @@ namespace TAS.EverestInterop {
         public readonly static MethodInfo m_Player_WallJumpCheck = t_Player.GetMethod("WallJumpCheck", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         [CelesteTASProxy("System.Boolean Celeste.Player::WallJumpCheck(System.Int32)")]
         public static bool Player_WallJumpCheck(Player self, int dir)
-            => (bool) m_Player_WallJumpCheck.GetDelegate().Invoke(self, dir);
+            => (bool) m_Player_WallJumpCheck.GetFastDelegate().Invoke(self, dir);
 
 
         public readonly static Type t_MInput = typeof(MInput);
@@ -48,7 +48,7 @@ namespace TAS.EverestInterop {
         public readonly static MethodInfo m_UpdateVirualInputs = t_MInput.GetMethod("UpdateVirtualInputs", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
         [CelesteTASProxy("System.Void Monocle.MInput::UpdateVirtualInputs()")]
         public static void MInput_UpdateVirtualInputs()
-            => m_UpdateVirualInputs.GetDelegate().Invoke(null);
+            => m_UpdateVirualInputs.GetFastDelegate().Invoke(null);
 
 
         public readonly static Type t_SummitVignette = typeof(SummitVignette);

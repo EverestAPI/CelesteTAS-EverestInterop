@@ -5,7 +5,8 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod;
-using MonoMod.Detour;
+using MonoMod.RuntimeDetour;
+using MonoMod.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -72,15 +73,6 @@ namespace TAS.EverestInterop {
         }
 
         private static bool SkipBaseUpdate;
-
-        // The methods we want to hook.
-
-        // The original mod adds a few lines of code into Monocle.Engine::Update.
-        private readonly static MethodInfo m_Engine_Update = typeof(Engine).GetMethod("Update", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        // The original mod makes the MInput.Update call conditional and invokes UpdateInputs afterwards.
-        private readonly static MethodInfo m_MInput_Update = typeof(MInput).GetMethod("Update", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-        // The original mod makes the base.Update call conditional.
-        private readonly static MethodInfo m_Game_Update = typeof(Game).GetMethod("Update", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
         public CelesteTASModule() {
             Instance = this;
@@ -155,7 +147,7 @@ namespace TAS.EverestInterop {
                 }
             } catch (Exception e) {
                 Logger.Log("tas-interop", "Failed loading Celeste-Addons");
-                e.LogDetailed();
+                Logger.LogDetailed(e);
             }
             if (CelesteAddons == null)
                 return;
@@ -171,27 +163,37 @@ namespace TAS.EverestInterop {
             Type t_CelesteTASModule = GetType();
 
             // Relink UpdateInputs to TAS.Manager.UpdateInputs because reflection invoke is slow.
-            if (t_CelesteTASModule.GetMethod("UpdateInputs").GetDetourLevel() == 0) {
-                t_CelesteTASModule.GetMethod("UpdateInputs").Detour(
-                    Manager.GetMethod("UpdateInputs")
-                );
-            }
+            h_UpdateInputs = new Detour(
+                typeof(CelesteTASModule).GetMethod("UpdateInputs"),
+                Manager.GetMethod("UpdateInputs")
+            );
 
-            orig_Engine_Update = m_Engine_Update.Detour<d_Engine_Update>(t_CelesteTASModule.GetMethod("Engine_Update"));
-            orig_MInput_Update = m_MInput_Update.Detour<d_MInput_Update>(t_CelesteTASModule.GetMethod("MInput_Update"));
-            orig_Game_Update = m_Game_Update.Detour<d_Game_Update>(t_CelesteTASModule.GetMethod("Game_Update"));
+            // The original mod adds a few lines of code into Monocle.Engine::Update.
+            On.Monocle.Engine.Update += Engine_Update;
 
+            // The original mod makes the MInput.Update call conditional and invokes UpdateInputs afterwards.
+            On.Monocle.MInput.Update += MInput_Update;
+
+            // The original mod makes the base.Update call conditional.
+            // We need to use Detour for two reasons:
+            // 1. Expose the trampoline to be used for the base.Update call in MInput_Update
+            // 2. XNA Framework methods would require a separate MMHOOK .dll
+            orig_Game_Update = (h_Game_Update = new Detour(
+                typeof(Game).GetMethod("Update", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic),
+                typeof(CelesteTASModule).GetMethod("Game_Update")
+            )).GenerateTrampoline<d_Game_Update>();
         }
 
         public override void Unload() {
             if (CelesteAddons == null)
                 return;
 
-            // Undetouring UpdateInputs isn't required.
-
-            // Let's just hope that nothing else detoured this, as this is depth-based...
-            RuntimeDetour.Undetour(m_Engine_Update);
-            RuntimeDetour.Undetour(m_MInput_Update);
+            h_Game_Update.Undo();
+            h_Game_Update.Free();
+            On.Monocle.Engine.Update -= Engine_Update;
+            On.Monocle.MInput.Update -= MInput_Update;
+            h_Game_Update.Undo();
+            h_Game_Update.Free();
         }
 
         private TypeDefinition td_Engine;
@@ -229,19 +231,18 @@ namespace TAS.EverestInterop {
             }
         }
 
+        public static Detour h_UpdateInputs;
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void UpdateInputs() {
             // This gets relinked to TAS.Manager.UpdateInputs
-            throw new Exception("UpdateInputs not relinked!");
+            throw new Exception("Failed relinking UpdateInputs!");
         }
 
-        public delegate void d_Engine_Update(Engine self, GameTime gameTime);
-        public static d_Engine_Update orig_Engine_Update;
-        public static void Engine_Update(Engine self, GameTime gameTime) {
+        public static void Engine_Update(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
             SkipBaseUpdate = false;
 
             if (!Settings.Enabled) {
-                orig_Engine_Update(self, gameTime);
+                orig(self, gameTime);
                 return;
             }
 
@@ -252,31 +253,29 @@ namespace TAS.EverestInterop {
                 // Loop without base.Update(), then call base.Update() once.
                 SkipBaseUpdate = true;
                 for (int i = 0; i < loops; i++) {
-                    orig_Engine_Update(self, gameTime);
+                    orig(self, gameTime);
                 }
                 SkipBaseUpdate = false;
                 // This _should_ work...
-                orig_Game_Update(self, gameTime);
+                orig(self, gameTime);
 
                 return;
             }
 
             loops = Math.Min(10, loops);
             for (int i = 0; i < loops; i++) {
-                orig_Engine_Update(self, gameTime);
+                orig(self, gameTime);
             }
         }
 
-        public delegate void d_MInput_Update();
-        public static d_MInput_Update orig_MInput_Update;
-        public static void MInput_Update() {
+        public static void MInput_Update(On.Monocle.MInput.orig_Update orig) {
             if (!Settings.Enabled) {
-                orig_MInput_Update();
+                orig();
                 return;
             }
 
             if (!Running || Recording) {
-                orig_MInput_Update();
+                orig();
             }
             UpdateInputs();
 
@@ -288,6 +287,7 @@ namespace TAS.EverestInterop {
             }
         }
 
+        public static Detour h_Game_Update;
         public delegate void d_Game_Update(Game self, GameTime gameTime);
         public static d_Game_Update orig_Game_Update;
         public static void Game_Update(Game self, GameTime gameTime) {
