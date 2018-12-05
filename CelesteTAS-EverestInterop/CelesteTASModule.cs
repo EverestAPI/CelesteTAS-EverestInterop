@@ -196,40 +196,6 @@ namespace TAS.EverestInterop {
             // Optional: Disable achievements, stats and terminal.
             On.Celeste.Achievements.Register += Achievements_Register;
             On.Celeste.Stats.Increment += Stats_Increment;
-            On.Monocle.Commands.Render += Commands_Render;
-            On.Monocle.Commands.HandleKey += Commands_HandleKey;
-        }
-
-        public static void Achievements_Register(On.Celeste.Achievements.orig_Register orig, Achievement achievement) {
-            if (Settings.DisableAchievements && Running)
-                return;
-            orig(achievement);
-        }
-
-        public static void Stats_Increment(On.Celeste.Stats.orig_Increment orig, Stat stat, int increment) {
-            if (Settings.DisableStats && Running)
-                return;
-            orig(stat, increment);
-        }
-
-        public static void Commands_Render(On.Monocle.Commands.orig_Render orig, Monocle.Commands self) {
-            if (Settings.DisableTerminal && Running)
-                return;
-            orig(self);
-        }
-
-        public static void Commands_HandleKey(On.Monocle.Commands.orig_HandleKey orig, Monocle.Commands self, Keys key) {
-            if (Settings.DisableTerminal && Running) {
-                switch (key) {
-                    case Keys.OemTilde:
-                    case Keys.Oem8:
-                    case Keys.OemPeriod:
-                        self.Open = false;
-                        break;
-                }
-                return;
-            }
-            orig(self, key);
         }
 
         public override void Unload() {
@@ -244,8 +210,6 @@ namespace TAS.EverestInterop {
             h_Game_Update.Dispose();
             On.Celeste.Achievements.Register -= Achievements_Register;
             On.Celeste.Stats.Increment -= Stats_Increment;
-            On.Monocle.Commands.Render -= Commands_Render;
-            On.Monocle.Commands.HandleKey -= Commands_HandleKey;
         }
 
         private TypeDefinition td_Engine;
@@ -269,7 +233,7 @@ namespace TAS.EverestInterop {
             for (int instri = 0; instri < instrs.Count; instri++) {
                 Instruction instr = instrs[instri];
 
-                // Replace ldfld Engine::scene with ldsfld Engine::Scene.
+                // Replace ldfld Engine::scene with call Engine::get_Scene.
                 if (instr.OpCode == OpCodes.Ldfld && (instr.Operand as FieldReference)?.FullName == "Monocle.Scene Monocle.Engine::scene") {
 
                     // Pop the loaded instance.
@@ -374,6 +338,18 @@ namespace TAS.EverestInterop {
             }
 
             orig(method, name, highPriority);
+        }
+
+        public static void Achievements_Register(On.Celeste.Achievements.orig_Register orig, Achievement achievement) {
+            if (Settings.DisableAchievements)
+                return;
+            orig(achievement);
+        }
+
+        public static void Stats_Increment(On.Celeste.Stats.orig_Increment orig, Stat stat, int increment) {
+            if (Settings.DisableAchievements)
+                return;
+            orig(stat, increment);
         }
 
     }

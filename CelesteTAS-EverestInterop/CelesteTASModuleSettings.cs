@@ -1,4 +1,5 @@
-﻿using Celeste.Mod;
+﻿using Celeste;
+using Celeste.Mod;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,8 +14,10 @@ namespace TAS.EverestInterop {
 
         public bool Enabled { get; set; } = true;
         public bool DisableAchievements { get; set; } = false;
-        public bool DisableStats { get; set; } = false;
-        public bool DisableTerminal { get; set; } = false;
+        public bool ShowHitboxes {
+            get => GameplayRendererExt.RenderDebug;
+            set => GameplayRendererExt.RenderDebug = value;
+        }
 
     }
 }

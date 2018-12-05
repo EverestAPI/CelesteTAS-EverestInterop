@@ -6,7 +6,7 @@
 
 ----
 
-This mod acts as a helper loading [DevilSquirrel's CelesteTAS](https://github.com/ShootMe/CelesteTAS) `Celeste-Addons.dll` using [Everest](https://github.com/EverestAPI/Everest).
+This mod allows you to easily use [DevilSquirrel's CelesteTAS](https://github.com/ShootMe/CelesteTAS) `Celeste-Addons.dll` without patching `Celeste.exe` by hand, using [Everest](https://github.com/EverestAPI/Everest).
 
 1. Place the [mod .zip](https://github.com/EverestAPI/CelesteTAS-EverestInterop/releases) into the `Mods` directory.
 2. Place the correct `Celeste-Addons.dll` into the Celeste installation directory, next to `Celeste.exe`.
