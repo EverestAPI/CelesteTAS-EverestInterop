@@ -1,5 +1,4 @@
 ﻿using Celeste.Mod;
-using MonoMod.Detour;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,11 +12,9 @@ namespace TAS.EverestInterop {
     public class CelesteTASModuleSettings : EverestModuleSettings {
 
         public bool Enabled { get; set; } = true;
-        public FastForwardMode FastForwardMode { get; set; } = FastForwardMode.Locked;
+        public bool DisableAchievements { get; set; } = false;
+        public bool DisableStats { get; set; } = false;
+        public bool DisableTerminal { get; set; } = false;
 
-    }
-    public enum FastForwardMode {
-        Locked,
-        Max
     }
 }

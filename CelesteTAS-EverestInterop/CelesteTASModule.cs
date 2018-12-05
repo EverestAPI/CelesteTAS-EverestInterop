@@ -1,6 +1,7 @@
 ﻿using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Monocle;
@@ -102,7 +103,7 @@ namespace TAS.EverestInterop {
                     Everest.Relinker.Modder = null;
                     using (MonoModder modder = Everest.Relinker.Modder) {
                         
-                        modder.MethodRewriter += PatchAddonsMethod;
+                        modder.MethodRewriter += PatchAddons;
 
                         // Normal brain: Hardcoded relinker map.
                         // 0x0ade brain: Helper attribute, dynamically generated map.
@@ -168,11 +169,20 @@ namespace TAS.EverestInterop {
                 Manager.GetMethod("UpdateInputs")
             );
 
+            // Relink RunThreadWithLogging to Celeste.RunThread.RunThreadWithLogging because reflection invoke is slow.
+            h_RunThreadWithLogging = new Detour(
+                typeof(CelesteTASModule).GetMethod("RunThreadWithLogging"),
+                typeof(RunThread).GetMethod("RunThreadWithLogging", BindingFlags.NonPublic | BindingFlags.Static)
+            );
+
             // The original mod adds a few lines of code into Monocle.Engine::Update.
             On.Monocle.Engine.Update += Engine_Update;
 
             // The original mod makes the MInput.Update call conditional and invokes UpdateInputs afterwards.
             On.Monocle.MInput.Update += MInput_Update;
+
+            // The original mod makes RunThread.Start run synchronously.
+            On.Celeste.RunThread.Start += RunThread_Start;
 
             // The original mod makes the base.Update call conditional.
             // We need to use Detour for two reasons:
@@ -182,23 +192,65 @@ namespace TAS.EverestInterop {
                 typeof(Game).GetMethod("Update", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic),
                 typeof(CelesteTASModule).GetMethod("Game_Update")
             )).GenerateTrampoline<d_Game_Update>();
+
+            // Optional: Disable achievements, stats and terminal.
+            On.Celeste.Achievements.Register += Achievements_Register;
+            On.Celeste.Stats.Increment += Stats_Increment;
+            On.Monocle.Commands.Render += Commands_Render;
+            On.Monocle.Commands.HandleKey += Commands_HandleKey;
+        }
+
+        public static void Achievements_Register(On.Celeste.Achievements.orig_Register orig, Achievement achievement) {
+            if (Settings.DisableAchievements && Running)
+                return;
+            orig(achievement);
+        }
+
+        public static void Stats_Increment(On.Celeste.Stats.orig_Increment orig, Stat stat, int increment) {
+            if (Settings.DisableStats && Running)
+                return;
+            orig(stat, increment);
+        }
+
+        public static void Commands_Render(On.Monocle.Commands.orig_Render orig, Monocle.Commands self) {
+            if (Settings.DisableTerminal && Running)
+                return;
+            orig(self);
+        }
+
+        public static void Commands_HandleKey(On.Monocle.Commands.orig_HandleKey orig, Monocle.Commands self, Keys key) {
+            if (Settings.DisableTerminal && Running) {
+                switch (key) {
+                    case Keys.OemTilde:
+                    case Keys.Oem8:
+                    case Keys.OemPeriod:
+                        self.Open = false;
+                        break;
+                }
+                return;
+            }
+            orig(self, key);
         }
 
         public override void Unload() {
             if (CelesteAddons == null)
                 return;
 
-            h_Game_Update.Undo();
-            h_Game_Update.Free();
+            h_UpdateInputs.Dispose();
+            h_RunThreadWithLogging.Dispose();
             On.Monocle.Engine.Update -= Engine_Update;
             On.Monocle.MInput.Update -= MInput_Update;
-            h_Game_Update.Undo();
-            h_Game_Update.Free();
+            On.Celeste.RunThread.Start -= RunThread_Start;
+            h_Game_Update.Dispose();
+            On.Celeste.Achievements.Register -= Achievements_Register;
+            On.Celeste.Stats.Increment -= Stats_Increment;
+            On.Monocle.Commands.Render -= Commands_Render;
+            On.Monocle.Commands.HandleKey -= Commands_HandleKey;
         }
 
         private TypeDefinition td_Engine;
         private MethodDefinition md_Engine_get_Scene;
-        public void PatchAddonsMethod(MonoModder modder, MethodDefinition method) {
+        public void PatchAddons(MonoModder modder, MethodDefinition method) {
             if (!method.HasBody)
                 return;
 
@@ -238,6 +290,13 @@ namespace TAS.EverestInterop {
             throw new Exception("Failed relinking UpdateInputs!");
         }
 
+        public static Detour h_RunThreadWithLogging;
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void RunThreadWithLogging(Action method) {
+            // This gets relinked to Celeste.RunThread.RunThreadWithLogging
+            throw new Exception("Failed relinking RunThreadWithLogging!");
+        }
+
         public static void Engine_Update(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
             SkipBaseUpdate = false;
 
@@ -249,23 +308,20 @@ namespace TAS.EverestInterop {
             // The original patch doesn't store FrameLoops in a local variable, but it's only updated in UpdateInputs anyway.
             int loops = FrameLoops;
 
-            if (Settings.FastForwardMode == FastForwardMode.Max && loops > 10) {
-                // Loop without base.Update(), then call base.Update() once.
-                SkipBaseUpdate = true;
-                for (int i = 0; i < loops; i++) {
-                    orig(self, gameTime);
-                }
-                SkipBaseUpdate = false;
-                // This _should_ work...
-                orig(self, gameTime);
+            SkipBaseUpdate = loops >= 10;
 
-                return;
-            }
-
-            loops = Math.Min(10, loops);
             for (int i = 0; i < loops; i++) {
+                // Anything happening early on runs in the MInput.Update hook.
                 orig(self, gameTime);
+
+                if (i >= 8 && Engine.Scene?.Tracker.GetEntity<FinalBoss>() != null) {
+                    break;
+                }
             }
+
+            SkipBaseUpdate = false;
+            if (loops >= 10)
+                orig_Game_Update(self, gameTime);
         }
 
         public static void MInput_Update(On.Monocle.MInput.orig_Update orig) {
@@ -309,6 +365,15 @@ namespace TAS.EverestInterop {
             Enable = 1,
             Record = 2,
             FrameStep = 4
+        }
+
+        public static void RunThread_Start(On.Celeste.RunThread.orig_Start orig, Action method, string name, bool highPriority) {
+            if (Running) {
+                RunThreadWithLogging(method);
+                return;
+            }
+
+            orig(method, name, highPriority);
         }
 
     }

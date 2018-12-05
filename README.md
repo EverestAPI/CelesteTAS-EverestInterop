@@ -1,15 +1,17 @@
 # CelesteTAS-EverestInterop
 
-## Everest interop for DevilSquirrel's CelesteTAS
+## Everest mod for DevilSquirrel's CelesteTAS
 
 ### License: MIT
 
 ----
 
-This mod loads [DevilSquirrel's CelesteTAS](https://github.com/ShootMe/CelesteTAS) `Celeste-Addons.dll` and makes it work with [Everest](https://github.com/EverestAPI/Everest).
+This mod acts as a helper loading [DevilSquirrel's CelesteTAS](https://github.com/ShootMe/CelesteTAS) `Celeste-Addons.dll` using [Everest](https://github.com/EverestAPI/Everest).
 
-Note that this mod is useless on its own - you need to place the [mod .zip](https://github.com/EverestAPI/CelesteTAS-EverestInterop/releases) into the `Mods` directory and the `Celeste-Addons.dll` into the Celeste installation directory, next to `Celeste.exe`.
+1. Place the [mod .zip](https://github.com/EverestAPI/CelesteTAS-EverestInterop/releases) into the `Mods` directory.
+2. Place the correct `Celeste-Addons.dll` into the Celeste installation directory, next to `Celeste.exe`.
+3. Enable the mod in the in-game mod options.
 
-Check the README of [DevilSquirrel's CelesteTAS](https://github.com/ShootMe/CelesteTAS) for how to set up CelesteTAS.
+**For full CelesteTAS instructions, check README of [DevilSquirrel's CelesteTAS](https://github.com/ShootMe/CelesteTAS). Skip all dnSpy / patching steps.**
 
-**This isn't officially supported and compatibility with CelesteTAS and / or "Celeste Studio" can break at any time in the future.**
+This isn't officially supported and compatibility with CelesteTAS and / or "Celeste Studio" can break at any time in the future.
