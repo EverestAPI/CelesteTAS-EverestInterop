@@ -7,6 +7,7 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod;
 using MonoMod.RuntimeDetour;
+using MonoMod.RuntimeDetour.HookGen;
 using MonoMod.Utils;
 using System;
 using System.Collections.Generic;
@@ -196,6 +197,9 @@ namespace TAS.EverestInterop {
             // Optional: Disable achievements, stats and terminal.
             On.Celeste.Achievements.Register += Achievements_Register;
             On.Celeste.Stats.Increment += Stats_Increment;
+
+            // Forced: Add more positions to top-left positioning helper.
+            IL.Monocle.Commands.Render += Commands_Render;
         }
 
         public override void Unload() {
@@ -350,6 +354,23 @@ namespace TAS.EverestInterop {
             if (Settings.DisableAchievements)
                 return;
             orig(stat, increment);
+        }
+
+        public static void Commands_Render(HookIL il) {
+            il.At(0).FindNext(out HookILCursor[] found,
+                i => i.MatchLdstr("\n level:       {0}, {1}"),
+                i => i.MatchCall(typeof(string), "Format")
+            );
+            HookILCursor format = found[1];
+            format.Remove();
+            format.EmitDelegate<Func<string, object, object, string>>((text, xObj, yObj) => {
+                int x = (int) xObj;
+                int y = (int) yObj;
+                Level level = Engine.Scene as Level;
+                return
+                    $"\n world:       {(int) Math.Round(x + level.LevelOffset.X)}, {(int) Math.Round(y + level.LevelOffset.Y)}" +
+                    $"\n level:       {x}, {y}";
+            });
         }
 
     }
