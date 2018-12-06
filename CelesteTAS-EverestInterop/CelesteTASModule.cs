@@ -381,19 +381,21 @@ namespace TAS.EverestInterop {
 
         public static void GameplayRenderer_Render(HookIL il) {
             HookILCursor c;
-            il.At(0).FindNext(out HookILCursor[] found,
-                i => i.MatchCall(typeof(GameplayRenderer), "Begin"),
-                i => i.MatchCallvirt(typeof(EntityList), "RenderExcept")
-            );
 
             // Mark the instr after RenderExcept.
             HookILLabel lblAfterEntities = il.DefineLabel();
-            c = found[1];
+            c = il.At(0);
+            c.GotoNext(
+                i => i.MatchCallvirt(typeof(EntityList), "RenderExcept")
+            );
             c.Index++;
             c.MarkLabel(lblAfterEntities);
 
             // Branch after calling Begin.
-            c = found[0];
+            c = il.At(0);
+            // GotoNext skips c.Next
+            if (!c.Next.MatchCall(typeof(GameplayRenderer), "Begin"))
+                c.GotoNext(i => i.MatchCall(typeof(GameplayRenderer), "Begin"));
             c.Index++;
             c.Emit(OpCodes.Call, typeof(CelesteTASModule).GetMethod("get_Settings"));
             c.Emit(OpCodes.Callvirt, typeof(CelesteTASModuleSettings).GetMethod("get_HideGameplay"));
