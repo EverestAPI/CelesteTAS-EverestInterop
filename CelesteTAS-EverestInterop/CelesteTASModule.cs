@@ -1,6 +1,7 @@
 ﻿using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -200,6 +201,10 @@ namespace TAS.EverestInterop {
 
             // Forced: Add more positions to top-left positioning helper.
             IL.Monocle.Commands.Render += Commands_Render;
+
+            // Optional: Disable gameplay rendering and show the pathfinder.
+            IL.Celeste.GameplayRenderer.Render += GameplayRenderer_Render;
+            IL.Celeste.Level.Render += Level_Render;
         }
 
         public override void Unload() {
@@ -357,13 +362,14 @@ namespace TAS.EverestInterop {
         }
 
         public static void Commands_Render(HookIL il) {
+            // Hijack string.Format("\n level:       {0}, {1}", xObj, yObj)
             il.At(0).FindNext(out HookILCursor[] found,
                 i => i.MatchLdstr("\n level:       {0}, {1}"),
                 i => i.MatchCall(typeof(string), "Format")
             );
-            HookILCursor format = found[1];
-            format.Remove();
-            format.EmitDelegate<Func<string, object, object, string>>((text, xObj, yObj) => {
+            HookILCursor c = found[1];
+            c.Remove();
+            c.EmitDelegate<Func<string, object, object, string>>((text, xObj, yObj) => {
                 int x = (int) xObj;
                 int y = (int) yObj;
                 Level level = Engine.Scene as Level;
@@ -371,6 +377,66 @@ namespace TAS.EverestInterop {
                     $"\n world:       {(int) Math.Round(x + level.LevelOffset.X)}, {(int) Math.Round(y + level.LevelOffset.Y)}" +
                     $"\n level:       {x}, {y}";
             });
+        }
+
+        public static void GameplayRenderer_Render(HookIL il) {
+            HookILCursor c;
+            il.At(0).FindNext(out HookILCursor[] found,
+                i => i.MatchCall(typeof(GameplayRenderer), "Begin"),
+                i => i.MatchCallvirt(typeof(EntityList), "RenderExcept")
+            );
+
+            // Mark the instr after RenderExcept.
+            HookILLabel lblAfterEntities = il.DefineLabel();
+            c = found[1];
+            c.Index++;
+            c.MarkLabel(lblAfterEntities);
+
+            // Branch after calling Begin.
+            c = found[0];
+            c.Index++;
+            c.Emit(OpCodes.Call, typeof(CelesteTASModule).GetMethod("get_Settings"));
+            c.Emit(OpCodes.Callvirt, typeof(CelesteTASModuleSettings).GetMethod("get_HideGameplay"));
+            c.Emit(OpCodes.Brtrue, lblAfterEntities);
+        }
+
+        public static void Level_Render(HookIL il) {
+            HookILCursor c;
+            il.At(0).FindNext(out HookILCursor[] found,
+                i => i.MatchLdsfld(typeof(GameplayBuffers), "Level"),
+                i => i.MatchCallvirt(typeof(GraphicsDevice), "SetRenderTarget"),
+                i => i.MatchCallvirt(typeof(GraphicsDevice), "Clear"),
+                i => i.MatchCallvirt(typeof(GraphicsDevice), "SetRenderTarget"),
+                i => i.MatchLdfld(typeof(Pathfinder), "DebugRenderEnabled")
+            );
+
+            // Mark the instr before SetRenderTarget.
+            HookILLabel lblSetRenderTarget = il.DefineLabel();
+            c = found[3];
+            // Go back before Engine::get_Instance, Game::get_GraphicsDevice and ldnull
+            c.Index--;
+            c.Index--;
+            c.Index--;
+            c.MarkLabel(lblSetRenderTarget);
+
+            // Branch after calling Clear.
+            c = found[2];
+            c.Index++;
+            c.EmitDelegate(() => {
+                // Also make sure to render Gameplay into Level.
+                if (Settings.HideGameplay)
+                    Distort.Render(GameplayBuffers.Gameplay, GameplayBuffers.Displacement, false);
+            });
+            c.Emit(OpCodes.Call, typeof(CelesteTASModule).GetMethod("get_Settings"));
+            c.Emit(OpCodes.Callvirt, typeof(CelesteTASModuleSettings).GetMethod("get_HideGameplay"));
+            c.Emit(OpCodes.Brtrue, lblSetRenderTarget);
+
+            // || the value of DebugRenderEnabled with our own value.
+            c = found[4];
+            c.Index++;
+            c.Emit(OpCodes.Call, typeof(CelesteTASModule).GetMethod("get_Settings"));
+            c.Emit(OpCodes.Callvirt, typeof(CelesteTASModuleSettings).GetMethod("get_ShowPathfinding"));
+            c.Emit(OpCodes.Or);
         }
 
     }

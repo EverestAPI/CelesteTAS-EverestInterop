@@ -18,6 +18,8 @@ namespace TAS.EverestInterop {
             get => GameplayRendererExt.RenderDebug;
             set => GameplayRendererExt.RenderDebug = value;
         }
+        public bool HideGameplay { get; set; } = false;
+        public bool ShowPathfinding { get; set; } = false;
 
     }
 }
