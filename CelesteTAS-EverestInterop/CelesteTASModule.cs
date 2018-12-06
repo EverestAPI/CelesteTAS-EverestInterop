@@ -1,5 +1,6 @@
 ﻿using Celeste;
 using Celeste.Mod;
+using FMOD.Studio;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -27,6 +28,10 @@ namespace TAS.EverestInterop {
 
         public override Type SettingsType => typeof(CelesteTASModuleSettings);
         public static CelesteTASModuleSettings Settings => (CelesteTASModuleSettings) Instance._Settings;
+
+        public VirtualButton ButtonHitboxes;
+        public VirtualButton ButtonPathfinding;
+        public VirtualButton ButtonGameplay;
 
         public static string CelesteAddonsPath { get; protected set; }
         public Assembly CelesteAddons;
@@ -205,6 +210,10 @@ namespace TAS.EverestInterop {
             // Optional: Disable gameplay rendering and show the pathfinder.
             IL.Celeste.GameplayRenderer.Render += GameplayRenderer_Render;
             IL.Celeste.Level.Render += Level_Render;
+
+            // Any additional hooks.
+            Everest.Events.Input.OnInitialize += OnInputInitialize;
+            Everest.Events.Input.OnDeregister += OnInputDeregister;
         }
 
         public override void Unload() {
@@ -219,6 +228,61 @@ namespace TAS.EverestInterop {
             h_Game_Update.Dispose();
             On.Celeste.Achievements.Register -= Achievements_Register;
             On.Celeste.Stats.Increment -= Stats_Increment;
+
+            Everest.Events.Input.OnInitialize -= OnInputInitialize;
+            Everest.Events.Input.OnDeregister -= OnInputDeregister;
+        }
+
+        public void OnInputInitialize() {
+            ButtonHitboxes = new VirtualButton();
+            AddButtonsTo(ButtonHitboxes, Settings.ButtonHitboxes);
+            AddKeysTo(ButtonHitboxes, Settings.KeyHitboxes);
+
+            ButtonPathfinding = new VirtualButton();
+            AddButtonsTo(ButtonPathfinding, Settings.ButtonPathfinding);
+            AddKeysTo(ButtonPathfinding, Settings.KeyPathfinding);
+
+            ButtonGameplay = new VirtualButton();
+            AddButtonsTo(ButtonGameplay, Settings.ButtonGameplay);
+            AddKeysTo(ButtonGameplay, Settings.KeyGameplay);
+        }
+
+        public void OnInputDeregister() {
+            ButtonHitboxes?.Deregister();
+            ButtonPathfinding?.Deregister();
+            ButtonGameplay?.Deregister();
+        }
+
+        private static void AddButtonsTo(VirtualButton vbtn, List<Buttons> buttons) {
+            if (buttons == null)
+                return;
+            foreach (Buttons button in buttons) {
+                if (button == Buttons.LeftTrigger) {
+                    vbtn.Nodes.Add(new VirtualButton.PadLeftTrigger(Input.Gamepad, 0.25f));
+                } else if (button == Buttons.RightTrigger) {
+                    vbtn.Nodes.Add(new VirtualButton.PadRightTrigger(Input.Gamepad, 0.25f));
+                } else {
+                    vbtn.Nodes.Add(new VirtualButton.PadButton(Input.Gamepad, button));
+                }
+            }
+        }
+
+        private static void AddKeysTo(VirtualButton vbtn, List<Keys> keys) {
+            if (keys == null)
+                return;
+            foreach (Keys key in keys) {
+                vbtn.Nodes.Add(new VirtualButton.KeyboardKey(key));
+            }
+        }
+
+        public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance snapshot) {
+            base.CreateModMenuSection(menu, inGame, snapshot);
+
+            menu.Add(new TextMenu.Button("modoptions_celestetas_reload".DialogCleanOrNull() ?? "Reload Settings").Pressed(() => {
+                LoadSettings();
+                OnInputDeregister();
+                OnInputInitialize();
+            }));
         }
 
         private TypeDefinition td_Engine;
@@ -325,6 +389,14 @@ namespace TAS.EverestInterop {
             }
 
             orig_Game_Update(self, gameTime);
+
+            // Check for our own keybindings here.
+            if (Instance.ButtonHitboxes.Pressed)
+                Settings.ShowHitboxes = !Settings.ShowHitboxes;
+            if (Instance.ButtonPathfinding.Pressed)
+                Settings.ShowPathfinding = !Settings.ShowPathfinding;
+            if (Instance.ButtonGameplay.Pressed)
+                Settings.HideGameplay = !Settings.HideGameplay;
         }
 
         public static Action PreviousGameLoop;
