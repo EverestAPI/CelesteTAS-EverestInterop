@@ -27,7 +27,7 @@ namespace TAS.EverestInterop {
         public static CelesteTASModule Instance;
 
         public override Type SettingsType => typeof(CelesteTASModuleSettings);
-        public static CelesteTASModuleSettings Settings => (CelesteTASModuleSettings) Instance._Settings;
+        public static CelesteTASModuleSettings Settings => (CelesteTASModuleSettings) Instance?._Settings;
 
         public VirtualButton ButtonHitboxes;
         public VirtualButton ButtonPathfinding;
@@ -203,6 +203,11 @@ namespace TAS.EverestInterop {
             // Optional: Disable achievements, stats and terminal.
             On.Celeste.Achievements.Register += Achievements_Register;
             On.Celeste.Stats.Increment += Stats_Increment;
+
+            // Note: This is only required because something's going wrong for DemoJameson.
+            Assembly asmMod = typeof(CelesteTASModule).Assembly;
+            ReflectionHelper.AssemblyCache[asmMod.GetName().FullName] = asmMod;
+            ReflectionHelper.AssemblyCache[asmMod.GetName().Name] = asmMod;
 
             // Forced: Add more positions to top-left positioning helper.
             IL.Monocle.Commands.Render += Commands_Render;
