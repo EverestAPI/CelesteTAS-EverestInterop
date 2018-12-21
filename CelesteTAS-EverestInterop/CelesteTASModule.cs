@@ -80,7 +80,8 @@ namespace TAS.EverestInterop {
             }
         }
 
-        private static bool SkipBaseUpdate;
+        public static bool SkipBaseUpdate;
+        public static bool InUpdate;
 
         public CelesteTASModule() {
             Instance = this;
@@ -216,6 +217,9 @@ namespace TAS.EverestInterop {
             IL.Celeste.GameplayRenderer.Render += GameplayRenderer_Render;
             IL.Celeste.Level.Render += Level_Render;
 
+            // Forced: Allow "rendering" entities without actually rendering them.
+            On.Monocle.Entity.Render += Entity_Render;
+
             // Any additional hooks.
             Everest.Events.Input.OnInitialize += OnInputInitialize;
             Everest.Events.Input.OnDeregister += OnInputDeregister;
@@ -233,6 +237,7 @@ namespace TAS.EverestInterop {
             h_Game_Update.Dispose();
             On.Celeste.Achievements.Register -= Achievements_Register;
             On.Celeste.Stats.Increment -= Stats_Increment;
+            On.Monocle.Entity.Render -= Entity_Render;
 
             Everest.Events.Input.OnInitialize -= OnInputInitialize;
             Everest.Events.Input.OnDeregister -= OnInputDeregister;
@@ -341,6 +346,7 @@ namespace TAS.EverestInterop {
 
         public static void Engine_Update(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
             SkipBaseUpdate = false;
+            InUpdate = false;
 
             if (!Settings.Enabled) {
                 orig(self, gameTime);
@@ -349,20 +355,24 @@ namespace TAS.EverestInterop {
 
             // The original patch doesn't store FrameLoops in a local variable, but it's only updated in UpdateInputs anyway.
             int loops = FrameLoops;
+            bool skipBaseUpdate = !Settings.FastForwardCallBase && loops >= Settings.FastForwardTreshold;
 
-            SkipBaseUpdate = loops >= 10;
+            SkipBaseUpdate = skipBaseUpdate;
+            InUpdate = true;
 
             for (int i = 0; i < loops; i++) {
                 // Anything happening early on runs in the MInput.Update hook.
                 orig(self, gameTime);
 
-                if (i >= 8 && Engine.Scene?.Tracker.GetEntity<FinalBoss>() != null) {
-                    break;
-                }
+                // Badeline does some dirty stuff in Render.
+                if (i < loops - 1 || Settings.HideGameplay)
+                    Engine.Scene?.Tracker.GetEntity<FinalBoss>()?.Render();
             }
 
             SkipBaseUpdate = false;
-            if (loops >= 10)
+            InUpdate = false;
+
+            if (skipBaseUpdate)
                 orig_Game_Update(self, gameTime);
         }
 
@@ -516,6 +526,12 @@ namespace TAS.EverestInterop {
             c.Emit(OpCodes.Call, typeof(CelesteTASModule).GetMethod("get_Settings"));
             c.Emit(OpCodes.Callvirt, typeof(CelesteTASModuleSettings).GetMethod("get_ShowPathfinding"));
             c.Emit(OpCodes.Or);
+        }
+
+        private void Entity_Render(On.Monocle.Entity.orig_Render orig, Entity self) {
+            if (InUpdate)
+                return;
+            orig(self);
         }
 
     }

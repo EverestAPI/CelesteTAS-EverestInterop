@@ -31,5 +31,10 @@ namespace TAS.EverestInterop {
         public List<Buttons> ButtonGameplay { get; set; } = new List<Buttons>();
         public List<Keys> KeyGameplay { get; set; } = new List<Keys>();
 
+        [SettingIgnore]
+        public bool FastForwardCallBase { get; set; } = false;
+        [SettingIgnore]
+        public int FastForwardTreshold { get; set; } = 10;
+
     }
 }
