@@ -14,12 +14,8 @@ using MonoMod.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using Logger = Celeste.Mod.Logger;
 
 namespace TAS.EverestInterop {
     public class CelesteTASModule : EverestModule {
@@ -223,6 +219,12 @@ namespace TAS.EverestInterop {
             // Any additional hooks.
             Everest.Events.Input.OnInitialize += OnInputInitialize;
             Everest.Events.Input.OnDeregister += OnInputDeregister;
+            
+            // Hide burst effect when showing hitboxes.
+            On.Celeste.DisplacementRenderer.AddBurst += DisplacementRenderer_AddBurst;
+            
+            // Stop updating tentacles texture when fast forward
+            On.Celeste.ReflectionTentacles.UpdateVertices += ReflectionTentaclesOnUpdateVertices;
         }
 
         public override void Unload() {
@@ -241,6 +243,9 @@ namespace TAS.EverestInterop {
 
             Everest.Events.Input.OnInitialize -= OnInputInitialize;
             Everest.Events.Input.OnDeregister -= OnInputDeregister;
+            
+            On.Celeste.DisplacementRenderer.AddBurst -= DisplacementRenderer_AddBurst;
+            On.Celeste.ReflectionTentacles.UpdateVertices -= ReflectionTentaclesOnUpdateVertices;
         }
 
         public void OnInputInitialize() {
@@ -533,6 +538,24 @@ namespace TAS.EverestInterop {
                 return;
             orig(self);
         }
+        
+        private DisplacementRenderer.Burst DisplacementRenderer_AddBurst(
+            On.Celeste.DisplacementRenderer.orig_AddBurst orig, DisplacementRenderer self, Vector2 position,
+            float duration, float radiusFrom, float radiusTo, float alpha, Ease.Easer alphaEaser, Ease.Easer radiusEaser) {
+            
+            if (Settings.ShowHitboxes && Engine.Scene is Level level
+                                      && level.Tracker.GetEntity<Player>() is Player player 
+                                      && position == player.Center)
+                alpha = 0;
 
+            return orig(self, position, duration, radiusFrom, radiusTo, alpha, alphaEaser, radiusEaser);
+        }
+        
+        private void ReflectionTentaclesOnUpdateVertices(On.Celeste.ReflectionTentacles.orig_UpdateVertices orig, ReflectionTentacles self) {
+            if (state == State.Enable && FrameLoops > 1)
+                return;
+
+            orig(self);
+        }
     }
 }
