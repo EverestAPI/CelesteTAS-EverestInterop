@@ -243,6 +243,9 @@ namespace TAS.EverestInterop {
 
             Everest.Events.Input.OnInitialize -= OnInputInitialize;
             Everest.Events.Input.OnDeregister -= OnInputDeregister;
+            
+            On.Celeste.DisplacementRenderer.AddBurst -= DisplacementRenderer_AddBurst;
+            On.Celeste.ReflectionTentacles.UpdateVertices -= ReflectionTentaclesOnUpdateVertices;
         }
 
         public void OnInputInitialize() {
