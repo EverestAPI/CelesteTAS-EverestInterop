@@ -223,6 +223,9 @@ namespace TAS.EverestInterop {
             // Any additional hooks.
             Everest.Events.Input.OnInitialize += OnInputInitialize;
             Everest.Events.Input.OnDeregister += OnInputDeregister;
+            
+            // Hide burst effect when showing hitboxes.
+            On.Celeste.DisplacementRenderer.AddBurst += DisplacementRenderer_AddBurst;
         }
 
         public override void Unload() {
@@ -533,6 +536,17 @@ namespace TAS.EverestInterop {
                 return;
             orig(self);
         }
+        
+        private DisplacementRenderer.Burst DisplacementRenderer_AddBurst(
+            On.Celeste.DisplacementRenderer.orig_AddBurst orig, DisplacementRenderer self, Vector2 position,
+            float duration, float radiusFrom, float radiusTo, float alpha, Ease.Easer alphaEaser, Ease.Easer radiusEaser) {
+            
+            if (Settings.ShowHitboxes && Engine.Scene is Level level
+                                      && level.Tracker.GetEntity<Player>() is Player player 
+                                      && position == player.Center)
+                alpha = 0;
 
+            return orig(self, position, duration, radiusFrom, radiusTo, alpha, alphaEaser, radiusEaser);
+        }
     }
 }
