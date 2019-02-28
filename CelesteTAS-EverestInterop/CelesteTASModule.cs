@@ -14,12 +14,8 @@ using MonoMod.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using Logger = Celeste.Mod.Logger;
 
 namespace TAS.EverestInterop {
     public class CelesteTASModule : EverestModule {
@@ -226,6 +222,9 @@ namespace TAS.EverestInterop {
             
             // Hide burst effect when showing hitboxes.
             On.Celeste.DisplacementRenderer.AddBurst += DisplacementRenderer_AddBurst;
+            
+            // Stop updating tentacles texture when fast forward
+            On.Celeste.ReflectionTentacles.UpdateVertices += ReflectionTentaclesOnUpdateVertices;
         }
 
         public override void Unload() {
@@ -547,6 +546,13 @@ namespace TAS.EverestInterop {
                 alpha = 0;
 
             return orig(self, position, duration, radiusFrom, radiusTo, alpha, alphaEaser, radiusEaser);
+        }
+        
+        private void ReflectionTentaclesOnUpdateVertices(On.Celeste.ReflectionTentacles.orig_UpdateVertices orig, ReflectionTentacles self) {
+            if (state == State.Enable && FrameLoops > 1)
+                return;
+
+            orig(self);
         }
     }
 }
