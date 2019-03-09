@@ -35,6 +35,11 @@ namespace TAS.EverestInterop {
         [CelesteTASProxy("System.Single Celeste.Player::dashCooldownTimer")]
         public static float Player_get_dashCooldownTimer(Player self)
             => (float) f_Player_dashCooldownTimer.GetValue(self);
+        
+        public readonly static FieldInfo f_Player_jumpGraceTimer = t_Player.GetField("jumpGraceTimer", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        [CelesteTASProxy("System.Single Celeste.Player::jumpGraceTimer")]
+        public static float Player_get_jumpGraceTimer(Player self)
+            => (float) f_Player_jumpGraceTimer.GetValue(self);
 
         public readonly static MethodInfo m_Player_WallJumpCheck = t_Player.GetMethod("WallJumpCheck", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         [CelesteTASProxy("System.Boolean Celeste.Player::WallJumpCheck(System.Int32)")]
@@ -56,6 +61,14 @@ namespace TAS.EverestInterop {
         [CelesteTASProxy("System.Boolean Celeste.SummitVignette::ready")]
         public static bool SummitVignette_get_ready(SummitVignette self)
             => (bool) f_SummitVignette_ready.GetValue(self);
+        
+        
+        public readonly static Type t_Strawberry = typeof(Strawberry);
+        
+        public readonly static FieldInfo f_Strawberry_collectTimer = t_Strawberry.GetField("collectTimer", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        [CelesteTASProxy("System.Single Celeste.Strawberry::collectTimer")]
+        public static float Strawberry_get_collectTimer(Strawberry self)
+            => (float) f_Strawberry_collectTimer.GetValue(self);
 
     }
     public class CelesteTASProxyAttribute : Attribute {
