@@ -62,12 +62,8 @@ namespace TAS.EverestInterop {
         public static bool SummitVignette_get_ready(SummitVignette self)
             => (bool) f_SummitVignette_ready.GetValue(self);
         
-        public readonly static Type t_Strawberry = typeof(Strawberry);
         
-        public readonly static MethodInfo m_Strawberry_get_IsFirstStrawberry = t_Strawberry.GetMethod("get_IsFirstStrawberry", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        [CelesteTASProxy("System.Boolean Celeste.Strawberry::get_IsFirstStrawberry()")]
-        public static bool Strawberry_get_IsFirstStrawberry(Player self)
-            => (bool) m_Strawberry_get_IsFirstStrawberry.GetFastDelegate().Invoke(self);
+        public readonly static Type t_Strawberry = typeof(Strawberry);
         
         public readonly static FieldInfo f_Strawberry_collectTimer = t_Strawberry.GetField("collectTimer", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         [CelesteTASProxy("System.Single Celeste.Strawberry::collectTimer")]
