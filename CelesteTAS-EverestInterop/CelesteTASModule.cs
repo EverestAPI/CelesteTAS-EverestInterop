@@ -220,14 +220,14 @@ namespace TAS.EverestInterop {
             Everest.Events.Input.OnInitialize += OnInputInitialize;
             Everest.Events.Input.OnDeregister += OnInputDeregister;
             
-            // Hide burst effect when showing hitboxes.
-            On.Celeste.DisplacementRenderer.AddBurst += DisplacementRenderer_AddBurst;
+            // Hide distortion when showing hitboxes.
+            On.Celeste.Distort.Render += Distort_Render;
             
             // Stop updating tentacles texture when fast forward
             On.Celeste.ReflectionTentacles.UpdateVertices += ReflectionTentaclesOnUpdateVertices;
         }
 
-        public override void Unload() {
+		public override void Unload() {
             if (CelesteAddons == null)
                 return;
 
@@ -244,7 +244,7 @@ namespace TAS.EverestInterop {
             Everest.Events.Input.OnInitialize -= OnInputInitialize;
             Everest.Events.Input.OnDeregister -= OnInputDeregister;
             
-            On.Celeste.DisplacementRenderer.AddBurst -= DisplacementRenderer_AddBurst;
+            On.Celeste.Distort.Render -= Distort_Render;
             On.Celeste.ReflectionTentacles.UpdateVertices -= ReflectionTentaclesOnUpdateVertices;
         }
 
@@ -538,20 +538,19 @@ namespace TAS.EverestInterop {
                 return;
             orig(self);
         }
-        
-        private DisplacementRenderer.Burst DisplacementRenderer_AddBurst(
-            On.Celeste.DisplacementRenderer.orig_AddBurst orig, DisplacementRenderer self, Vector2 position,
-            float duration, float radiusFrom, float radiusTo, float alpha, Ease.Easer alphaEaser, Ease.Easer radiusEaser) {
-            
-            if (Settings.ShowHitboxes && Engine.Scene is Level level
-                                      && level.Tracker.GetEntity<Player>() is Player player 
-                                      && position == player.Center)
-                alpha = 0;
 
-            return orig(self, position, duration, radiusFrom, radiusTo, alpha, alphaEaser, radiusEaser);
-        }
-        
-        private void ReflectionTentaclesOnUpdateVertices(On.Celeste.ReflectionTentacles.orig_UpdateVertices orig, ReflectionTentacles self) {
+		private static void Distort_Render(On.Celeste.Distort.orig_Render orig, Texture2D source, Texture2D map, bool hasDistortion)
+		{
+			if (Settings.ShowHitboxes)
+			{
+				Distort.Anxiety = 0f;
+				Distort.GameRate = 1f;
+				hasDistortion = false;
+			}
+			orig(source, map, hasDistortion);
+		}
+
+		private void ReflectionTentaclesOnUpdateVertices(On.Celeste.ReflectionTentacles.orig_UpdateVertices orig, ReflectionTentacles self) {
             if (state == State.Enable && FrameLoops > 1)
                 return;
 
