@@ -27,7 +27,7 @@ namespace TAS.EverestInterop {
 
         public VirtualButton ButtonHitboxes;
         public VirtualButton ButtonPathfinding;
-        public VirtualButton ButtonGameplay;
+        public VirtualButton ButtonGraphics;
 
         public static string CelesteAddonsPath { get; protected set; }
         public Assembly CelesteAddons;
@@ -209,25 +209,33 @@ namespace TAS.EverestInterop {
             // Forced: Add more positions to top-left positioning helper.
             IL.Monocle.Commands.Render += Commands_Render;
 
-            // Optional: Disable gameplay rendering and show the pathfinder.
-            IL.Celeste.GameplayRenderer.Render += GameplayRenderer_Render;
-            IL.Celeste.Level.Render += Level_Render;
+			// Optional: Show the pathfinder.
+			IL.Celeste.Level.Render += Level_Render;
 
-            // Forced: Allow "rendering" entities without actually rendering them.
-            On.Monocle.Entity.Render += Entity_Render;
+			// Forced: Allow "rendering" entities without actually rendering them.
+			On.Monocle.Entity.Render += Entity_Render;
 
             // Any additional hooks.
             Everest.Events.Input.OnInitialize += OnInputInitialize;
             Everest.Events.Input.OnDeregister += OnInputDeregister;
-            
-            // Hide burst effect when showing hitboxes.
-            On.Celeste.DisplacementRenderer.AddBurst += DisplacementRenderer_AddBurst;
+
+			// Optional: Various graphical simplifications to cut down on visual noise.
+			On.Celeste.LightingRenderer.Render += LightingRenderer_Render;
+			On.Monocle.Particle.Render += Particle_Render;
+			On.Celeste.BackdropRenderer.Render += BackdropRenderer_Render;
+			On.Celeste.CrystalStaticSpinner.ctor_Vector2_bool_CrystalColor += CrystalStaticSpinner_ctor;
+			On.Celeste.DustStyles.Get_Session += DustStyles_Get_Session;
+			On.Celeste.LavaRect.Wave += LavaRect_Wave;
+			On.Celeste.DreamBlock.Lerp += DreamBlock_Lerp;
+
+			// Hide distortion when showing hitboxes.
+			On.Celeste.Distort.Render += Distort_Render;
             
             // Stop updating tentacles texture when fast forward
             On.Celeste.ReflectionTentacles.UpdateVertices += ReflectionTentaclesOnUpdateVertices;
         }
 
-        public override void Unload() {
+		public override void Unload() {
             if (CelesteAddons == null)
                 return;
 
@@ -243,8 +251,15 @@ namespace TAS.EverestInterop {
 
             Everest.Events.Input.OnInitialize -= OnInputInitialize;
             Everest.Events.Input.OnDeregister -= OnInputDeregister;
-            
-            On.Celeste.DisplacementRenderer.AddBurst -= DisplacementRenderer_AddBurst;
+
+			On.Celeste.LightingRenderer.Render -= LightingRenderer_Render;
+			On.Monocle.Particle.Render -= Particle_Render;
+			On.Celeste.BackdropRenderer.Render -= BackdropRenderer_Render;
+			On.Celeste.CrystalStaticSpinner.ctor_Vector2_bool_CrystalColor -= CrystalStaticSpinner_ctor;
+			On.Celeste.DustStyles.Get_Session -= DustStyles_Get_Session;
+			On.Celeste.LavaRect.Wave -= LavaRect_Wave;
+			On.Celeste.DreamBlock.Lerp -= DreamBlock_Lerp;
+			On.Celeste.Distort.Render -= Distort_Render;
             On.Celeste.ReflectionTentacles.UpdateVertices -= ReflectionTentaclesOnUpdateVertices;
         }
 
@@ -257,15 +272,15 @@ namespace TAS.EverestInterop {
             AddButtonsTo(ButtonPathfinding, Settings.ButtonPathfinding);
             AddKeysTo(ButtonPathfinding, Settings.KeyPathfinding);
 
-            ButtonGameplay = new VirtualButton();
-            AddButtonsTo(ButtonGameplay, Settings.ButtonGameplay);
-            AddKeysTo(ButtonGameplay, Settings.KeyGameplay);
+            ButtonGraphics = new VirtualButton();
+            AddButtonsTo(ButtonGraphics, Settings.ButtonGraphics);
+            AddKeysTo(ButtonGraphics, Settings.KeyGraphics);
         }
 
         public void OnInputDeregister() {
             ButtonHitboxes?.Deregister();
             ButtonPathfinding?.Deregister();
-            ButtonGameplay?.Deregister();
+            ButtonGraphics?.Deregister();
         }
 
         private static void AddButtonsTo(VirtualButton vbtn, List<Buttons> buttons) {
@@ -349,7 +364,7 @@ namespace TAS.EverestInterop {
             throw new Exception("Failed relinking RunThreadWithLogging!");
         }
 
-        public static void Engine_Update(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
+		public static void Engine_Update(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
             SkipBaseUpdate = false;
             InUpdate = false;
 
@@ -360,7 +375,7 @@ namespace TAS.EverestInterop {
 
             // The original patch doesn't store FrameLoops in a local variable, but it's only updated in UpdateInputs anyway.
             int loops = FrameLoops;
-            bool skipBaseUpdate = !Settings.FastForwardCallBase && loops >= Settings.FastForwardTreshold;
+            bool skipBaseUpdate = !Settings.FastForwardCallBase && loops >= Settings.FastForwardThreshold;
 
             SkipBaseUpdate = skipBaseUpdate;
             InUpdate = true;
@@ -369,10 +384,10 @@ namespace TAS.EverestInterop {
                 // Anything happening early on runs in the MInput.Update hook.
                 orig(self, gameTime);
 
-                // Badeline does some dirty stuff in Render.
-                if (i < loops - 1 || Settings.HideGameplay)
-                    Engine.Scene?.Tracker.GetEntity<FinalBoss>()?.Render();
-            }
+				// Badeline does some dirty stuff in Render.
+				if (i < loops - 1)
+					Engine.Scene?.Tracker.GetEntity<FinalBoss>()?.Render();
+			}
 
             SkipBaseUpdate = false;
             InUpdate = false;
@@ -415,8 +430,8 @@ namespace TAS.EverestInterop {
                 Settings.ShowHitboxes = !Settings.ShowHitboxes;
             if (Instance.ButtonPathfinding.Pressed)
                 Settings.ShowPathfinding = !Settings.ShowPathfinding;
-            if (Instance.ButtonGameplay.Pressed)
-                Settings.HideGameplay = !Settings.HideGameplay;
+            if (Instance.ButtonGraphics.Pressed)
+                Settings.SimplifiedGraphics = !Settings.SimplifiedGraphics;
         }
 
         public static Action PreviousGameLoop;
@@ -471,88 +486,101 @@ namespace TAS.EverestInterop {
             });
         }
 
-        public static void GameplayRenderer_Render(HookIL il) {
-            HookILCursor c;
+		public static void Level_Render(HookIL il) {
+			HookILCursor c;
+			il.At(0).FindNext(out HookILCursor[] found,
+				i => i.MatchLdsfld(typeof(GameplayBuffers), "Level"),
+				i => i.MatchCallvirt(typeof(GraphicsDevice), "SetRenderTarget"),
+				i => i.MatchCallvirt(typeof(GraphicsDevice), "Clear"),
+				i => i.MatchCallvirt(typeof(GraphicsDevice), "SetRenderTarget"),
+				i => i.MatchLdfld(typeof(Pathfinder), "DebugRenderEnabled")
+			);
 
-            // Mark the instr after RenderExcept.
-            HookILLabel lblAfterEntities = il.DefineLabel();
-            c = il.At(0);
-            c.GotoNext(
-                i => i.MatchCallvirt(typeof(EntityList), "RenderExcept")
-            );
-            c.Index++;
-            c.MarkLabel(lblAfterEntities);
+			// Mark the instr before SetRenderTarget.
+			HookILLabel lblSetRenderTarget = il.DefineLabel();
+			c = found[3];
+			// Go back before Engine::get_Instance, Game::get_GraphicsDevice and ldnull
+			c.Index--;
+			c.Index--;
+			c.Index--;
+			c.MarkLabel(lblSetRenderTarget);
 
-            // Branch after calling Begin.
-            c = il.At(0);
-            // GotoNext skips c.Next
-            if (!c.Next.MatchCall(typeof(GameplayRenderer), "Begin"))
-                c.GotoNext(i => i.MatchCall(typeof(GameplayRenderer), "Begin"));
-            c.Index++;
-            c.Emit(OpCodes.Call, typeof(CelesteTASModule).GetMethod("get_Settings"));
-            c.Emit(OpCodes.Callvirt, typeof(CelesteTASModuleSettings).GetMethod("get_HideGameplay"));
-            c.Emit(OpCodes.Brtrue, lblAfterEntities);
-        }
+			// || the value of DebugRenderEnabled with our own value.
+			c = found[4];
+			c.Index++;
+			c.Emit(OpCodes.Call, typeof(CelesteTASModule).GetMethod("get_Settings"));
+			c.Emit(OpCodes.Callvirt, typeof(CelesteTASModuleSettings).GetMethod("get_ShowPathfinding"));
+			c.Emit(OpCodes.Or);
+		}
 
-        public static void Level_Render(HookIL il) {
-            HookILCursor c;
-            il.At(0).FindNext(out HookILCursor[] found,
-                i => i.MatchLdsfld(typeof(GameplayBuffers), "Level"),
-                i => i.MatchCallvirt(typeof(GraphicsDevice), "SetRenderTarget"),
-                i => i.MatchCallvirt(typeof(GraphicsDevice), "Clear"),
-                i => i.MatchCallvirt(typeof(GraphicsDevice), "SetRenderTarget"),
-                i => i.MatchLdfld(typeof(Pathfinder), "DebugRenderEnabled")
-            );
-
-            // Mark the instr before SetRenderTarget.
-            HookILLabel lblSetRenderTarget = il.DefineLabel();
-            c = found[3];
-            // Go back before Engine::get_Instance, Game::get_GraphicsDevice and ldnull
-            c.Index--;
-            c.Index--;
-            c.Index--;
-            c.MarkLabel(lblSetRenderTarget);
-
-            // Branch after calling Clear.
-            c = found[2];
-            c.Index++;
-            c.EmitDelegate(() => {
-                // Also make sure to render Gameplay into Level.
-                if (Settings.HideGameplay)
-                    Distort.Render(GameplayBuffers.Gameplay, GameplayBuffers.Displacement, false);
-            });
-            c.Emit(OpCodes.Call, typeof(CelesteTASModule).GetMethod("get_Settings"));
-            c.Emit(OpCodes.Callvirt, typeof(CelesteTASModuleSettings).GetMethod("get_HideGameplay"));
-            c.Emit(OpCodes.Brtrue, lblSetRenderTarget);
-
-            // || the value of DebugRenderEnabled with our own value.
-            c = found[4];
-            c.Index++;
-            c.Emit(OpCodes.Call, typeof(CelesteTASModule).GetMethod("get_Settings"));
-            c.Emit(OpCodes.Callvirt, typeof(CelesteTASModuleSettings).GetMethod("get_ShowPathfinding"));
-            c.Emit(OpCodes.Or);
-        }
-
-        private void Entity_Render(On.Monocle.Entity.orig_Render orig, Entity self) {
+		private void Entity_Render(On.Monocle.Entity.orig_Render orig, Entity self) {
             if (InUpdate)
                 return;
             orig(self);
-        }
-        
-        private DisplacementRenderer.Burst DisplacementRenderer_AddBurst(
-            On.Celeste.DisplacementRenderer.orig_AddBurst orig, DisplacementRenderer self, Vector2 position,
-            float duration, float radiusFrom, float radiusTo, float alpha, Ease.Easer alphaEaser, Ease.Easer radiusEaser) {
-            
-            if (Settings.ShowHitboxes && Engine.Scene is Level level
-                                      && level.Tracker.GetEntity<Player>() is Player player 
-                                      && position == player.Center)
-                alpha = 0;
+		}
 
-            return orig(self, position, duration, radiusFrom, radiusTo, alpha, alphaEaser, radiusEaser);
-        }
-        
-        private void ReflectionTentaclesOnUpdateVertices(On.Celeste.ReflectionTentacles.orig_UpdateVertices orig, ReflectionTentacles self) {
-            if (state == State.Enable && FrameLoops > 1)
+		private void LightingRenderer_Render(On.Celeste.LightingRenderer.orig_Render orig, LightingRenderer self, Scene scene) {
+			if (Settings.SimplifiedGraphics)
+				return;
+			orig(self, scene);
+		}
+
+		private void Particle_Render(On.Monocle.Particle.orig_Render orig, ref Particle self) {
+			if (Settings.SimplifiedGraphics)
+				return;
+			orig(ref self);
+		}
+
+		private void BackdropRenderer_Render(On.Celeste.BackdropRenderer.orig_Render orig, BackdropRenderer self, Scene scene) {
+			if (Settings.SimplifiedGraphics)
+				return;
+			orig(self, scene);
+		}
+
+		private void CrystalStaticSpinner_ctor(On.Celeste.CrystalStaticSpinner.orig_ctor_Vector2_bool_CrystalColor orig, CrystalStaticSpinner self, Vector2 position, bool attachToSolid, CrystalColor color) {
+			if (Settings.SimplifiedGraphics)
+				color = CrystalColor.Blue;
+			orig(self, position, attachToSolid, color);
+		}
+
+		private DustStyles.DustStyle DustStyles_Get_Session(On.Celeste.DustStyles.orig_Get_Session orig, Session session) {
+			if (Settings.SimplifiedGraphics) {
+				return new DustStyles.DustStyle {
+					EdgeColors = new Vector3[] {
+						Color.Orange.ToVector3(),
+						Color.Orange.ToVector3(),
+						Color.Orange.ToVector3()
+					},
+					EyeColor = Color.Orange,
+					EyeTextures = "danger/dustcreature/eyes"
+				};
+			}
+			return orig(session);
+		}
+
+		private float LavaRect_Wave(On.Celeste.LavaRect.orig_Wave orig, LavaRect self, int step, float length) {
+			if (Settings.SimplifiedGraphics)
+				return 0f;
+			return orig(self, step, length);
+		}
+
+		private float DreamBlock_Lerp(On.Celeste.DreamBlock.orig_Lerp orig, DreamBlock self, float a, float b, float percent) {
+			if (Settings.SimplifiedGraphics)
+				return 0f;
+			return orig(self, a, b, percent);
+		}
+
+		private static void Distort_Render(On.Celeste.Distort.orig_Render orig, Texture2D source, Texture2D map, bool hasDistortion) {
+			if (Settings.ShowHitboxes || Settings.SimplifiedGraphics) {
+				Distort.Anxiety = 0f;
+				Distort.GameRate = 1f;
+				hasDistortion = false;
+			}
+			orig(source, map, hasDistortion);
+		}
+
+		private void ReflectionTentaclesOnUpdateVertices(On.Celeste.ReflectionTentacles.orig_UpdateVertices orig, ReflectionTentacles self) {
+            if ((state == State.Enable && FrameLoops > 1) || Settings.SimplifiedGraphics)
                 return;
 
             orig(self);
