@@ -377,7 +377,7 @@ namespace TAS.EverestInterop {
             int loops = FrameLoops;
             bool skipBaseUpdate = !Settings.FastForwardCallBase && loops >= Settings.FastForwardThreshold;
 
-            SkipBaseUpdate = skipBaseUpdate;
+			SkipBaseUpdate = skipBaseUpdate;
             InUpdate = true;
 
             for (int i = 0; i < loops; i++) {
@@ -387,6 +387,16 @@ namespace TAS.EverestInterop {
 				// Badeline does some dirty stuff in Render.
 				if (i < loops - 1)
 					Engine.Scene?.Tracker.GetEntity<FinalBoss>()?.Render();
+
+				// NPCs do weird things on first playthroughs. No clue what. Definitely something though.
+				if (Engine.Scene is Level level && !SaveData.Instance.Areas[level.Session.Area.ID].Modes[0].Completed) {
+					CutsceneEntity cutsceneEntity = Engine.Scene.Entities.FindFirst<CutsceneEntity>();
+					// Terrible hardcoded workaround but there are separate desyncs in 5A b-00, d-00, and e-00 and 6A boss-00 which this fixes.
+					if (cutsceneEntity != null || level.Session.Level.EndsWith("-00")) {
+						skipBaseUpdate = false;
+						loops = Math.Min(loops, 15);
+					}
+				}
 			}
 
             SkipBaseUpdate = false;
