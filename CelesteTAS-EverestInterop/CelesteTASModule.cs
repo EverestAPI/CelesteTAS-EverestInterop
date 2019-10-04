@@ -8,6 +8,7 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod;
+using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using MonoMod.RuntimeDetour.HookGen;
 using MonoMod.Utils;
@@ -125,7 +126,7 @@ namespace TAS.EverestInterop {
                             DLL = CelesteAddonsPath
                         }, stream,
                         checksumsExtra: new string[] {
-                            Everest.Relinker.GetChecksum(Metadata)
+                            Celeste.Mod.Extensions.ToHexadecimalString(Everest.GetChecksum(Metadata))
                         }, prePatch: _ => {
                             // Make Celeste-Addons depend on this runtime mod.
                             Assembly interop = Assembly.GetExecutingAssembly();
@@ -200,11 +201,6 @@ namespace TAS.EverestInterop {
             // Optional: Disable achievements, stats and terminal.
             On.Celeste.Achievements.Register += Achievements_Register;
             On.Celeste.Stats.Increment += Stats_Increment;
-
-            // Note: This is only required because something's going wrong for DemoJameson.
-            Assembly asmMod = typeof(CelesteTASModule).Assembly;
-            ReflectionHelper.AssemblyCache[asmMod.GetName().FullName] = asmMod;
-            ReflectionHelper.AssemblyCache[asmMod.GetName().Name] = asmMod;
 
             // Forced: Add more positions to top-left positioning helper.
             IL.Monocle.Commands.Render += Commands_Render;
@@ -478,13 +474,13 @@ namespace TAS.EverestInterop {
             orig(stat, increment);
         }
 
-        public static void Commands_Render(HookIL il) {
+        public static void Commands_Render(ILContext il) {
             // Hijack string.Format("\n level:       {0}, {1}", xObj, yObj)
-            il.At(0).FindNext(out HookILCursor[] found,
+            new ILCursor(il).FindNext(out ILCursor[] found,
                 i => i.MatchLdstr("\n level:       {0}, {1}"),
                 i => i.MatchCall(typeof(string), "Format")
             );
-            HookILCursor c = found[1];
+            ILCursor c = found[1];
             c.Remove();
             c.EmitDelegate<Func<string, object, object, string>>((text, xObj, yObj) => {
                 int x = (int) xObj;
@@ -496,9 +492,9 @@ namespace TAS.EverestInterop {
             });
         }
 
-		public static void Level_Render(HookIL il) {
-			HookILCursor c;
-			il.At(0).FindNext(out HookILCursor[] found,
+		public static void Level_Render(ILContext il) {
+			ILCursor c;
+			new ILCursor(il).FindNext(out ILCursor[] found,
 				i => i.MatchLdsfld(typeof(GameplayBuffers), "Level"),
 				i => i.MatchCallvirt(typeof(GraphicsDevice), "SetRenderTarget"),
 				i => i.MatchCallvirt(typeof(GraphicsDevice), "Clear"),
@@ -507,7 +503,7 @@ namespace TAS.EverestInterop {
 			);
 
 			// Mark the instr before SetRenderTarget.
-			HookILLabel lblSetRenderTarget = il.DefineLabel();
+			ILLabel lblSetRenderTarget = il.DefineLabel();
 			c = found[3];
 			// Go back before Engine::get_Instance, Game::get_GraphicsDevice and ldnull
 			c.Index--;
