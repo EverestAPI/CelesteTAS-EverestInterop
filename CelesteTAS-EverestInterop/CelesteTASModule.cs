@@ -27,7 +27,6 @@ namespace TAS.EverestInterop {
         public static CelesteTASModuleSettings Settings => (CelesteTASModuleSettings) Instance?._Settings;
 
         public VirtualButton ButtonHitboxes;
-        public VirtualButton ButtonPathfinding;
         public VirtualButton ButtonGraphics;
 
         public static string CelesteAddonsPath { get; protected set; }
@@ -207,6 +206,7 @@ namespace TAS.EverestInterop {
 
 			// Optional: Show the pathfinder.
 			IL.Celeste.Level.Render += Level_Render;
+			IL.Celeste.Pathfinder.Render += Pathfinder_Render;
 
 			// Forced: Allow "rendering" entities without actually rendering them.
 			On.Monocle.Entity.Render += Entity_Render;
@@ -268,10 +268,6 @@ namespace TAS.EverestInterop {
             AddButtonsTo(ButtonHitboxes, Settings.ButtonHitboxes);
             AddKeysTo(ButtonHitboxes, Settings.KeyHitboxes);
 
-            ButtonPathfinding = new VirtualButton();
-            AddButtonsTo(ButtonPathfinding, Settings.ButtonPathfinding);
-            AddKeysTo(ButtonPathfinding, Settings.KeyPathfinding);
-
             ButtonGraphics = new VirtualButton();
             AddButtonsTo(ButtonGraphics, Settings.ButtonGraphics);
             AddKeysTo(ButtonGraphics, Settings.KeyGraphics);
@@ -279,7 +275,6 @@ namespace TAS.EverestInterop {
 
         public void OnInputDeregister() {
             ButtonHitboxes?.Deregister();
-            ButtonPathfinding?.Deregister();
             ButtonGraphics?.Deregister();
         }
 
@@ -438,8 +433,6 @@ namespace TAS.EverestInterop {
             // Check for our own keybindings here.
             if (Instance.ButtonHitboxes.Pressed)
                 Settings.ShowHitboxes = !Settings.ShowHitboxes;
-            if (Instance.ButtonPathfinding.Pressed)
-                Settings.ShowPathfinding = !Settings.ShowPathfinding;
             if (Instance.ButtonGraphics.Pressed)
                 Settings.SimplifiedGraphics = !Settings.SimplifiedGraphics;
         }
@@ -515,12 +508,20 @@ namespace TAS.EverestInterop {
 			c.Index--;
 			c.MarkLabel(lblSetRenderTarget);
 
-			// || the value of DebugRenderEnabled with our own value.
+			// || the value of DebugRenderEnabled with Debug rendering being enabled.
 			c = found[4];
 			c.Index++;
-			c.Emit(OpCodes.Call, typeof(CelesteTASModule).GetMethod("get_Settings"));
-			c.Emit(OpCodes.Callvirt, typeof(CelesteTASModuleSettings).GetMethod("get_ShowPathfinding"));
+			c.Emit(OpCodes.Call, typeof(GameplayRendererExt).GetMethod("get_RenderDebug"));
 			c.Emit(OpCodes.Or);
+		}
+
+		private void Pathfinder_Render(ILContext il) {
+			// Remove the for loop which draws pathfinder tiles
+			ILCursor c = new ILCursor(il);
+			c.FindNext(out ILCursor[] found,
+				i => i.Match(OpCodes.Blt)
+			);
+			c.RemoveRange(found[0].Index + 1);
 		}
 
 		private void Entity_Render(On.Monocle.Entity.orig_Render orig, Entity self) {

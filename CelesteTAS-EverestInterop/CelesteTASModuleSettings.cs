@@ -26,10 +26,6 @@ namespace TAS.EverestInterop {
 		public List<Buttons> ButtonHitboxes { get; set; } = new List<Buttons>();
         public List<Keys> KeyHitboxes { get; set; } = new List<Keys>();
 
-        public bool ShowPathfinding { get; set; } = false;
-        public List<Buttons> ButtonPathfinding { get; set; } = new List<Buttons>();
-        public List<Keys> KeyPathfinding { get; set; } = new List<Keys>();
-
 		public bool DisableAchievements { get; set; } = false;
 
 		[SettingIgnore]
