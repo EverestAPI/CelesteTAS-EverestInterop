@@ -226,6 +226,9 @@ namespace TAS.EverestInterop {
 
 			// Hide distortion when showing hitboxes.
 			On.Celeste.Distort.Render += Distort_Render;
+
+			// Show pufferfish explosion radius
+			On.Celeste.Puffer.Render += Puffer_Render;
             
             // Stop updating tentacles texture when fast forward
             On.Celeste.ReflectionTentacles.UpdateVertices += ReflectionTentaclesOnUpdateVertices;
@@ -256,6 +259,7 @@ namespace TAS.EverestInterop {
 			On.Celeste.LavaRect.Wave -= LavaRect_Wave;
 			On.Celeste.DreamBlock.Lerp -= DreamBlock_Lerp;
 			On.Celeste.Distort.Render -= Distort_Render;
+			On.Celeste.Puffer.Render -= Puffer_Render;
             On.Celeste.ReflectionTentacles.UpdateVertices -= ReflectionTentaclesOnUpdateVertices;
         }
 
@@ -384,13 +388,13 @@ namespace TAS.EverestInterop {
 				if (i < loops - 1)
 					Engine.Scene?.Tracker.GetEntity<FinalBoss>()?.Render();
 
-				// NPCs do weird things on first playthroughs. No clue what. Definitely something though.
-				if (Engine.Scene is Level level && !SaveData.Instance.Areas[level.Session.Area.ID].Modes[0].Completed) {
-					CutsceneEntity cutsceneEntity = Engine.Scene.Entities.FindFirst<CutsceneEntity>();
-					// Terrible hardcoded workaround but there are separate desyncs in 5A b-00, d-00, and e-00 and 6A boss-00 which this fixes.
-					if (cutsceneEntity != null || level.Session.Level.EndsWith("-00")) {
+				// Autosaving prevents opening the menu to skip cutscenes during fast forward.
+				if (Engine.Scene is Level level && UserIO.Saving && !SaveData.Instance.Areas[level.Session.Area.ID].Modes[0].Completed) {
+					if (Engine.Scene.Entities.FindFirst<EventTrigger>() != null
+						|| Engine.Scene.Entities.FindFirst<NPC>() != null
+						|| Engine.Scene.Entities.FindFirst<FlingBirdIntro>() != null) {
 						skipBaseUpdate = false;
-						loops = Math.Min(loops, 15);
+						loops = 1;
 					}
 				}
 			}
@@ -577,12 +581,18 @@ namespace TAS.EverestInterop {
 		}
 
 		private static void Distort_Render(On.Celeste.Distort.orig_Render orig, Texture2D source, Texture2D map, bool hasDistortion) {
-			if (Settings.ShowHitboxes || Settings.SimplifiedGraphics) {
+			if (GameplayRendererExt.RenderDebug || Settings.SimplifiedGraphics) {
 				Distort.Anxiety = 0f;
 				Distort.GameRate = 1f;
 				hasDistortion = false;
 			}
 			orig(source, map, hasDistortion);
+		}
+		
+		private void Puffer_Render(On.Celeste.Puffer.orig_Render orig, Puffer self) {
+			if (GameplayRendererExt.RenderDebug)
+				Draw.Circle(self.Position, 32f, Color.Red, 32);
+			orig(self);
 		}
 
 		private void ReflectionTentaclesOnUpdateVertices(On.Celeste.ReflectionTentacles.orig_UpdateVertices orig, ReflectionTentacles self) {
