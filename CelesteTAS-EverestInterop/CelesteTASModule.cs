@@ -492,27 +492,31 @@ namespace TAS.EverestInterop {
 		public static void Level_Render(ILContext il) {
 			ILCursor c;
 			new ILCursor(il).FindNext(out ILCursor[] found,
-				i => i.MatchLdsfld(typeof(GameplayBuffers), "Level"),
-				i => i.MatchCallvirt(typeof(GraphicsDevice), "SetRenderTarget"),
-				i => i.MatchCallvirt(typeof(GraphicsDevice), "Clear"),
-				i => i.MatchCallvirt(typeof(GraphicsDevice), "SetRenderTarget"),
-				i => i.MatchLdfld(typeof(Pathfinder), "DebugRenderEnabled")
+				i => i.MatchLdfld(typeof(Pathfinder), "DebugRenderEnabled"),
+				i => i.MatchCall(typeof(Draw), "get_SpriteBatch"),
+				i => i.MatchLdarg(0),
+				i => i.MatchLdarg(0),
+				i => i.MatchLdarg(0)
 			);
 
-			// Mark the instr before SetRenderTarget.
-			ILLabel lblSetRenderTarget = il.DefineLabel();
-			c = found[3];
-			// Go back before Engine::get_Instance, Game::get_GraphicsDevice and ldnull
-			c.Index--;
-			c.Index--;
-			c.Index--;
-			c.MarkLabel(lblSetRenderTarget);
-
-			// || the value of DebugRenderEnabled with Debug rendering being enabled.
+			// Place labels at and after pathfinder rendering code
+			ILLabel render = il.DefineLabel();
+			ILLabel skipRender = il.DefineLabel();
+			c = found[1];
+			c.MarkLabel(render);
 			c = found[4];
+			c.MarkLabel(skipRender);
+
+			// || the value of DebugRenderEnabled with Debug rendering being enabled, && with seekers being present.
+			c = found[0];
 			c.Index++;
+			c.Emit(OpCodes.Brtrue_S, render.Target);
 			c.Emit(OpCodes.Call, typeof(GameplayRendererExt).GetMethod("get_RenderDebug"));
-			c.Emit(OpCodes.Or);
+			c.Emit(OpCodes.Brfalse_S, skipRender.Target);
+			c.Emit(OpCodes.Ldarg_0);
+			c.Emit(OpCodes.Callvirt, typeof(Scene).GetMethod("get_Tracker"));
+			MethodInfo GetEntity = typeof(Tracker).GetMethod("GetEntity");
+			c.Emit(OpCodes.Callvirt, GetEntity.MakeGenericMethod(new Type[] { typeof(Seeker) }));
 		}
 
 		private void Pathfinder_Render(ILContext il) {
