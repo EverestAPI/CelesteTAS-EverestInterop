@@ -75,9 +75,12 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CelesteTASProxies.cs" />
     <Compile Include="CelesteTASModuleSettings.cs" />
     <Compile Include="CelesteTASModule.cs" />
+    <Compile Include="Extensions.cs" />
+    <Compile Include="InputController.cs" />
+    <Compile Include="InputRecord.cs" />
+    <Compile Include="Manager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

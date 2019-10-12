@@ -15,6 +15,11 @@ namespace TAS.EverestInterop {
 
         public bool Enabled { get; set; } = true;
 
+		public List<Keys> KeyStart { get; set; } = new List<Keys>();
+		public List<Keys> KeyFastForward { get; set; } = new List<Keys>();
+		public List<Keys> KeyFrameAdvance { get; set; } = new List<Keys>();
+		public List<Keys> KeyPause { get; set; } = new List<Keys>();
+
 		public bool SimplifiedGraphics { get; set; } = false;
 		public List<Buttons> ButtonGraphics { get; set; } = new List<Buttons>();
 		public List<Keys> KeyGraphics { get; set; } = new List<Keys>();

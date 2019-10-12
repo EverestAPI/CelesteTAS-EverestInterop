@@ -29,54 +29,8 @@ namespace TAS.EverestInterop {
         public VirtualButton ButtonHitboxes;
         public VirtualButton ButtonGraphics;
 
-        public static string CelesteAddonsPath { get; protected set; }
-        public Assembly CelesteAddons;
-        public Type Manager;
-
-        // The fields we want to access from Celeste-Addons
-        private static FieldInfo f_FrameLoops;
-        public static int FrameLoops {
-            get {
-                return ((int?) f_FrameLoops?.GetValue(null)) ?? 1;
-            }
-            set {
-                f_FrameLoops?.SetValue(null, value);
-            }
-        }
-
-        private static FieldInfo f_Running;
-        public static bool Running {
-            get {
-                return ((bool?) f_Running?.GetValue(null)) ?? false;
-            }
-            set {
-                f_Running?.SetValue(null, value);
-            }
-        }
-
-        private static FieldInfo f_Recording;
-        public static bool Recording {
-            get {
-                return ((bool?) f_Recording?.GetValue(null)) ?? false;
-            }
-            set {
-                f_Recording?.SetValue(null, value);
-            }
-        }
-
-        private static FieldInfo f_state;
-        public static State state {
-            get {
-                if (f_state == null)
-                    return State.None;
-                return (State) (int) f_state.GetValue(null);
-            }
-            set {
-                f_state?.SetValue(null, value);
-            }
-        }
-
-        public static bool SkipBaseUpdate;
+		// The fields we want to access from Celeste-Addons
+		public static bool SkipBaseUpdate;
         public static bool InUpdate;
 
         public CelesteTASModule() {
@@ -84,93 +38,11 @@ namespace TAS.EverestInterop {
         }
 
         public override void Load() {
-            if (typeof(Game).Assembly.GetName().Name.Contains("FNA")) {
-                CelesteAddonsPath = Path.Combine(Everest.PathGame, "Celeste-Addons-OpenGL.dll");
-            } else {
-                CelesteAddonsPath = Path.Combine(Everest.PathGame, "Celeste-Addons-XNA.dll");
-            }
-
-            if (!File.Exists(CelesteAddonsPath))
-                CelesteAddonsPath = Path.Combine(Everest.PathGame, "Celeste-Addons.dll");
-
-            if (!File.Exists(CelesteAddonsPath)) {
-                Logger.Log("tas-interop", "Celeste-Addons not found - CelesteTAS-EverestInterop not loading.");
-                return;
-            }
-
-            Logger.Log("tas-interop", "Loading Celeste-Addons");
-            try {
-                // Relink from XNA to FNA if required and replace some private accesses with public replacements.
-                using (Stream stream = File.OpenRead(CelesteAddonsPath)) {
-                    // Backup the old modder and request a new one.
-                    MonoModder modderOld = Everest.Relinker.Modder;
-                    Everest.Relinker.Modder = null;
-                    using (MonoModder modder = Everest.Relinker.Modder) {
-                        
-                        modder.MethodRewriter += PatchAddons;
-
-                        // Normal brain: Hardcoded relinker map.
-                        // 0x0ade brain: Helper attribute, dynamically generated map.
-                        Type proxies = typeof(CelesteTASProxies);
-                        foreach (MethodInfo proxy in proxies.GetMethods()) {
-                            CelesteTASProxyAttribute attrib = proxy.GetCustomAttribute<CelesteTASProxyAttribute>();
-                            if (attrib == null)
-                                continue;
-                            modder.RelinkMap[attrib.FindableID] = new RelinkMapEntry(proxies.FullName, proxy.GetFindableID(withType: false));
-                        }
-
-                        CelesteAddons = Everest.Relinker.GetRelinkedAssembly(new EverestModuleMetadata {
-                            PathDirectory = Everest.PathGame,
-                            Name = Metadata.Name,
-                            DLL = CelesteAddonsPath
-                        }, stream,
-                        checksumsExtra: new string[] {
-                            Celeste.Mod.Extensions.ToHexadecimalString(Everest.GetChecksum(Metadata))
-                        }, prePatch: _ => {
-                            // Make Celeste-Addons depend on this runtime mod.
-                            Assembly interop = Assembly.GetExecutingAssembly();
-                            // Add the assembly name reference to the list of the dependencies.
-                            AssemblyName interopName = interop.GetName();
-                            AssemblyNameReference interopRef = new AssemblyNameReference(interopName.Name, interopName.Version);
-                            modder.Module.AssemblyReferences.Add(interopRef);
-                            // Preload the new dependency.
-                            // We shouldn't rely on interop.Location... but on the other hand, this relies on the mod never shipping precached.
-                            string interopPath = Everest.Relinker.GetCachedPath(Metadata);
-                            modder.DependencyCache[interopRef.Name] =
-                            modder.DependencyCache[interopRef.FullName] =
-                                MonoModExt.ReadModule(interopPath, modder.GenReaderParameters(false, interopPath));
-                            // Map it.
-                            modder.MapDependency(modder.Module, interopRef);
-                        });
-
-                        // Prevent MonoMod from clearing the shared caches.
-                        modder.RelinkModuleMap = new Dictionary<string, ModuleDefinition>();
-                        modder.RelinkMap = new Dictionary<string, object>();
-                    }
-                    // Restore the old modder.
-                    Everest.Relinker.Modder = modderOld;
-                }
-            } catch (Exception e) {
-                Logger.Log("tas-interop", "Failed loading Celeste-Addons");
-                Logger.LogDetailed(e);
-            }
-            if (CelesteAddons == null)
-                return;
-
-            // Get everything reflection-related.
-            Manager = CelesteAddons.GetType("TAS.Manager");
-            f_FrameLoops = Manager.GetField("FrameLoops");
-            f_Running = Manager.GetField("Running");
-            f_Recording = Manager.GetField("Recording");
-            f_state = Manager.GetField("state");
-
-            // Runtime hooks are quite different from static patches.
-            Type t_CelesteTASModule = GetType();
 
             // Relink UpdateInputs to TAS.Manager.UpdateInputs because reflection invoke is slow.
             h_UpdateInputs = new Detour(
                 typeof(CelesteTASModule).GetMethod("UpdateInputs"),
-                Manager.GetMethod("UpdateInputs")
+                typeof(Manager).GetMethod("UpdateInputs")
             );
 
             // Relink RunThreadWithLogging to Celeste.RunThread.RunThreadWithLogging because reflection invoke is slow.
@@ -235,9 +107,6 @@ namespace TAS.EverestInterop {
         }
 
 		public override void Unload() {
-            if (CelesteAddons == null)
-                return;
-
             h_UpdateInputs.Dispose();
             h_RunThreadWithLogging.Dispose();
             On.Monocle.Engine.Update -= Engine_Update;
@@ -270,15 +139,22 @@ namespace TAS.EverestInterop {
 
             ButtonGraphics = new VirtualButton();
             AddButtonsTo(ButtonGraphics, Settings.ButtonGraphics);
-            AddKeysTo(ButtonGraphics, Settings.KeyGraphics);
-        }
+			AddKeysTo(ButtonGraphics, Settings.KeyGraphics);
+
+			if (Settings.KeyStart.Count == 0) {
+				Settings.KeyStart = new List<Keys> { Keys.RightControl, Keys.OemOpenBrackets };
+				Settings.KeyFastForward = new List<Keys> { Keys.RightControl, Keys.RightShift };
+				Settings.KeyFrameAdvance = new List<Keys> { Keys.OemOpenBrackets };
+				Settings.KeyPause = new List<Keys> { Keys.OemCloseBrackets };
+			}
+		}
 
         public void OnInputDeregister() {
             ButtonHitboxes?.Deregister();
             ButtonGraphics?.Deregister();
         }
 
-        private static void AddButtonsTo(VirtualButton vbtn, List<Buttons> buttons) {
+        public static void AddButtonsTo(VirtualButton vbtn, List<Buttons> buttons) {
             if (buttons == null)
                 return;
             foreach (Buttons button in buttons) {
@@ -292,7 +168,7 @@ namespace TAS.EverestInterop {
             }
         }
 
-        private static void AddKeysTo(VirtualButton vbtn, List<Keys> keys) {
+        public static void AddKeysTo(VirtualButton vbtn, List<Keys> keys) {
             if (keys == null)
                 return;
             foreach (Keys key in keys) {
@@ -308,41 +184,6 @@ namespace TAS.EverestInterop {
                 OnInputDeregister();
                 OnInputInitialize();
             }));
-        }
-
-        private TypeDefinition td_Engine;
-        private MethodDefinition md_Engine_get_Scene;
-        public void PatchAddons(MonoModder modder, MethodDefinition method) {
-            if (!method.HasBody)
-                return;
-
-            if (td_Engine == null)
-                td_Engine = modder.FindType("Monocle.Engine")?.Resolve();
-            if (td_Engine == null)
-                return;
-
-            if (md_Engine_get_Scene == null)
-                md_Engine_get_Scene = td_Engine.FindMethod("Monocle.Scene get_Scene()");
-            if (md_Engine_get_Scene == null)
-                return;
-
-            Mono.Collections.Generic.Collection<Instruction> instrs = method.Body.Instructions;
-            ILProcessor il = method.Body.GetILProcessor();
-            for (int instri = 0; instri < instrs.Count; instri++) {
-                Instruction instr = instrs[instri];
-
-                // Replace ldfld Engine::scene with call Engine::get_Scene.
-                if (instr.OpCode == OpCodes.Ldfld && (instr.Operand as FieldReference)?.FullName == "Monocle.Scene Monocle.Engine::scene") {
-
-                    // Pop the loaded instance.
-                    instrs.Insert(instri, il.Create(OpCodes.Pop));
-                    instri++;
-
-                    // Replace the field load with a property getter call.
-                    instr.OpCode = OpCodes.Call;
-                    instr.Operand = md_Engine_get_Scene;
-                }
-            }
         }
 
         public static Detour h_UpdateInputs;
@@ -369,7 +210,7 @@ namespace TAS.EverestInterop {
             }
 
             // The original patch doesn't store FrameLoops in a local variable, but it's only updated in UpdateInputs anyway.
-            int loops = FrameLoops;
+            int loops = Manager.FrameLoops;
             bool skipBaseUpdate = !Settings.FastForwardCallBase && loops >= Settings.FastForwardThreshold;
 
 			SkipBaseUpdate = skipBaseUpdate;
@@ -407,14 +248,14 @@ namespace TAS.EverestInterop {
                 return;
             }
 
-            if (!Running || Recording) {
+            if (!Manager.Running || Manager.Recording) {
                 orig();
             }
             UpdateInputs();
 
             // Hacky, but this works just good enough.
             // The original code executes base.Update(); return; instead.
-            if ((state & State.FrameStep) == State.FrameStep) {
+            if ((Manager.state & State.FrameStep) == State.FrameStep) {
                 PreviousGameLoop = Engine.OverloadGameLoop;
                 Engine.OverloadGameLoop = FrameStepGameLoop;
             }
@@ -442,16 +283,8 @@ namespace TAS.EverestInterop {
             Engine.OverloadGameLoop = PreviousGameLoop;
         }
 
-        [Flags]
-        public enum State {
-            None = 0,
-            Enable = 1,
-            Record = 2,
-            FrameStep = 4
-        }
-
         public static void RunThread_Start(On.Celeste.RunThread.orig_Start orig, Action method, string name, bool highPriority) {
-            if (Running) {
+            if (Manager.Running) {
                 RunThreadWithLogging(method);
                 return;
             }
@@ -601,7 +434,7 @@ namespace TAS.EverestInterop {
 		}
 
 		private void ReflectionTentaclesOnUpdateVertices(On.Celeste.ReflectionTentacles.orig_UpdateVertices orig, ReflectionTentacles self) {
-            if ((state == State.Enable && FrameLoops > 1) || Settings.SimplifiedGraphics)
+            if ((Manager.state == State.Enable && Manager.FrameLoops > 1) || Settings.SimplifiedGraphics)
                 return;
 
             orig(self);
