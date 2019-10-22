@@ -10,8 +10,6 @@ using Monocle;
 using MonoMod;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
-using MonoMod.RuntimeDetour.HookGen;
-using MonoMod.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -356,9 +354,9 @@ namespace TAS.EverestInterop {
 			// Remove the for loop which draws pathfinder tiles
 			ILCursor c = new ILCursor(il);
 			c.FindNext(out ILCursor[] found,
-				i => i.Match(OpCodes.Blt)
+				i => i.MatchLdfld(typeof(Pathfinder), "lastPath")
 			);
-			c.RemoveRange(found[0].Index + 1);
+			c.RemoveRange(found[0].Index - 1);
 		}
 
 		private void Entity_Render(On.Monocle.Entity.orig_Render orig, Entity self) {
