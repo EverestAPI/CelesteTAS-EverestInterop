@@ -15,6 +15,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using FloatingDebris = On.Celeste.FloatingDebris;
+using MoonCreature = On.Celeste.MoonCreature;
+using SoundSource = On.Celeste.SoundSource;
 
 namespace TAS.EverestInterop {
     public class CelesteTASModule : EverestModule {
@@ -93,9 +96,14 @@ namespace TAS.EverestInterop {
 			On.Celeste.DustStyles.Get_Session += DustStyles_Get_Session;
 			On.Celeste.LavaRect.Wave += LavaRect_Wave;
 			On.Celeste.DreamBlock.Lerp += DreamBlock_Lerp;
+			On.Celeste.FloatingDebris.ctor_Vector2 += FloatingDebris_ctor;
+			On.Celeste.MoonCreature.ctor_Vector2 += MoonCreature_ctor;
 
-			// Hide distortion when showing hitboxes.
+			// Hide distortion when showing hitboxes
 			On.Celeste.Distort.Render += Distort_Render;
+			
+			// Hide SoundSource when showing hitboxes
+			On.Celeste.SoundSource.DebugRender += SoundSource_DebugRender;
 
 			// Show pufferfish explosion radius
 			On.Celeste.Puffer.Render += Puffer_Render;
@@ -104,7 +112,7 @@ namespace TAS.EverestInterop {
             On.Celeste.ReflectionTentacles.UpdateVertices += ReflectionTentaclesOnUpdateVertices;
         }
 
-		public override void Unload() {
+        public override void Unload() {
             h_UpdateInputs.Dispose();
             h_RunThreadWithLogging.Dispose();
             On.Monocle.Engine.Update -= Engine_Update;
@@ -125,7 +133,10 @@ namespace TAS.EverestInterop {
 			On.Celeste.DustStyles.Get_Session -= DustStyles_Get_Session;
 			On.Celeste.LavaRect.Wave -= LavaRect_Wave;
 			On.Celeste.DreamBlock.Lerp -= DreamBlock_Lerp;
+			On.Celeste.FloatingDebris.ctor_Vector2 -= FloatingDebris_ctor;
+			On.Celeste.MoonCreature.ctor_Vector2 -= MoonCreature_ctor;
 			On.Celeste.Distort.Render -= Distort_Render;
+			On.Celeste.SoundSource.DebugRender -= SoundSource_DebugRender;
 			On.Celeste.Puffer.Render -= Puffer_Render;
             On.Celeste.ReflectionTentacles.UpdateVertices -= ReflectionTentaclesOnUpdateVertices;
         }
@@ -416,6 +427,18 @@ namespace TAS.EverestInterop {
 			return orig(self, a, b, percent);
 		}
 
+		private static void FloatingDebris_ctor(FloatingDebris.orig_ctor_Vector2 orig, Celeste.FloatingDebris self, Vector2 position) {
+			orig(self, position);
+			if (Settings.SimplifiedGraphics)
+				self.Add(new RemoveSelfComponent());
+		}
+		
+		private static void MoonCreature_ctor(MoonCreature.orig_ctor_Vector2 orig, Celeste.MoonCreature self, Vector2 position) {
+			orig(self, position);
+			if (Settings.SimplifiedGraphics)
+				self.Add(new RemoveSelfComponent());
+		}
+
 		private static void Distort_Render(On.Celeste.Distort.orig_Render orig, Texture2D source, Texture2D map, bool hasDistortion) {
 			if (GameplayRendererExt.RenderDebug || Settings.SimplifiedGraphics) {
 				Distort.Anxiety = 0f;
@@ -423,6 +446,11 @@ namespace TAS.EverestInterop {
 				hasDistortion = false;
 			}
 			orig(source, map, hasDistortion);
+		}
+		
+		private static void SoundSource_DebugRender(SoundSource.orig_DebugRender orig, Celeste.SoundSource self, Camera camera) {
+			if (!Settings.ShowHitboxes)
+				orig(self, camera);
 		}
 		
 		private void Puffer_Render(On.Celeste.Puffer.orig_Render orig, Puffer self) {
