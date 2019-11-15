@@ -15,7 +15,8 @@ namespace TAS {
 		Enable = 1,
 		Record = 2,
 		FrameStep = 4,
-		Disable = 8
+		Disable = 8,
+		Delay = 16
 	}
 	public class Manager {
 		public static bool Running, Recording;
@@ -28,7 +29,7 @@ namespace TAS {
 		private static long lastTimer;
 		private static KeyboardState kbState;
 		private static List<VirtualButton.Node>[] playerBindings;
-		private static CelesteTASModuleSettings settings => CelesteTASModule.Settings;
+		public static CelesteTASModuleSettings settings => CelesteTASModule.Settings;
 		private static MethodInfo UpdateVirtualInputs = typeof(MInput).GetMethod("UpdateVirtualInputs", BindingFlags.Static | BindingFlags.NonPublic);
 
 		public static void UpdateInputs() {
@@ -65,6 +66,11 @@ namespace TAS {
 				}
 				string status = controller.Current.Line + "[" + controller.ToString() + "]";
 				CurrentStatus = status;
+			}
+			else if (HasFlag(state, State.Delay)) {
+				Level level = Engine.Scene as Level;
+				if (level.CanPause)
+					EnableRun();
 			}
 			else {
 				Running = false;
@@ -257,16 +263,21 @@ namespace TAS {
 			bool rightStick = padState.Buttons.RightStick == ButtonState.Pressed || openBracket;
 
 			if (rightStick) {
-				if (!HasFlag(state, State.Enable)) {
+				if (!HasFlag(state, State.Enable))
 					nextState |= State.Enable;
-				} else {
+				else
 					nextState |= State.Disable;
-				}
-			} else if (HasFlag(nextState, State.Enable)) {
-				EnableRun();
-			} else if (HasFlag(nextState, State.Disable)) {
-				DisableRun();
 			}
+			else if (HasFlag(nextState, State.Enable)) {
+				if (Engine.Scene is Level level && !level.CanPause) {
+					nextState |= State.Delay;
+					FrameLoops = 400;
+					return;
+				}
+				EnableRun();
+			}
+			else if (HasFlag(nextState, State.Disable))
+				DisableRun();
 		}
 		private static void DisableRun() {
 			Running = false;
