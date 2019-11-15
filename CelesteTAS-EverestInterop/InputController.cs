@@ -201,11 +201,25 @@ namespace TAS {
 		private void ReadFile(string extraFile, int lines) {
 			int index = extraFile.IndexOf(',');
 			string filePath = index > 0 ? extraFile.Substring(0, index) : extraFile;
+			string origFilePath = Manager.settings.DefaultPath;
+			// Check for full and shortened Read versions for absolute path
+			if (origFilePath != null) {
+				string altFilePath = origFilePath + Path.DirectorySeparatorChar + filePath;
+				if (File.Exists(altFilePath))
+					filePath = altFilePath;
+				else {
+					string[] files = Directory.GetFiles(origFilePath, $"{filePath}*.tas");
+					if (files.Length != 0)
+						filePath = files[0].ToString();
+				}
+			}
+			// Check for full and shortened Read versions for relative path
 			if (!File.Exists(filePath)) {
 				string[] files = Directory.GetFiles(Directory.GetCurrentDirectory(), $"{filePath}*.tas");
-				filePath = (files.GetValue(0)).ToString();
+				filePath = files[0].ToString();
 				if (!File.Exists(filePath)) { return; }
 			}
+			// Find starting and ending lines
 			int skipLines = 0;
 			int lineLen = int.MaxValue;
 			if (index > 0) {

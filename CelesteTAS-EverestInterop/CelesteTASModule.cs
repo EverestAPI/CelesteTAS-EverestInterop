@@ -29,9 +29,12 @@ namespace TAS.EverestInterop {
 
         public VirtualButton ButtonHitboxes;
         public VirtualButton ButtonGraphics;
+        public VirtualButton ButtonCamera;
 
-		// The fields we want to access from Celeste-Addons
-		public static bool SkipBaseUpdate;
+        private Vector2? SavedCamera;
+
+        // The fields we want to access from Celeste-Addons
+        public static bool SkipBaseUpdate;
         public static bool InUpdate;
 
         public CelesteTASModule() {
@@ -77,39 +80,63 @@ namespace TAS.EverestInterop {
             // Forced: Add more positions to top-left positioning helper.
             IL.Monocle.Commands.Render += Commands_Render;
 
-			// Optional: Show the pathfinder.
-			IL.Celeste.Level.Render += Level_Render;
-			IL.Celeste.Pathfinder.Render += Pathfinder_Render;
+            // Optional: Show the pathfinder.
+            IL.Celeste.Level.Render += Level_Render;
+            IL.Celeste.Pathfinder.Render += Pathfinder_Render;
 
-			// Forced: Allow "rendering" entities without actually rendering them.
-			On.Monocle.Entity.Render += Entity_Render;
+            // Forced: Allow "rendering" entities without actually rendering them.
+            On.Monocle.Entity.Render += Entity_Render;
 
             // Any additional hooks.
             Everest.Events.Input.OnInitialize += OnInputInitialize;
             Everest.Events.Input.OnDeregister += OnInputDeregister;
 
-			// Optional: Various graphical simplifications to cut down on visual noise.
-			On.Celeste.LightingRenderer.Render += LightingRenderer_Render;
-			On.Monocle.Particle.Render += Particle_Render;
-			On.Celeste.BackdropRenderer.Render += BackdropRenderer_Render;
-			On.Celeste.CrystalStaticSpinner.ctor_Vector2_bool_CrystalColor += CrystalStaticSpinner_ctor;
-			On.Celeste.DustStyles.Get_Session += DustStyles_Get_Session;
-			On.Celeste.LavaRect.Wave += LavaRect_Wave;
-			On.Celeste.DreamBlock.Lerp += DreamBlock_Lerp;
-			On.Celeste.FloatingDebris.ctor_Vector2 += FloatingDebris_ctor;
-			On.Celeste.MoonCreature.ctor_Vector2 += MoonCreature_ctor;
+            // Optional: Various graphical simplifications to cut down on visual noise.
+            On.Celeste.LightingRenderer.Render += LightingRenderer_Render;
+            On.Monocle.Particle.Render += Particle_Render;
+            On.Celeste.BackdropRenderer.Render += BackdropRenderer_Render;
+            On.Celeste.CrystalStaticSpinner.ctor_Vector2_bool_CrystalColor += CrystalStaticSpinner_ctor;
+            On.Celeste.DustStyles.Get_Session += DustStyles_Get_Session;
+            On.Celeste.LavaRect.Wave += LavaRect_Wave;
+            On.Celeste.DreamBlock.Lerp += DreamBlock_Lerp;
+            On.Celeste.FloatingDebris.ctor_Vector2 += FloatingDebris_ctor;
+            On.Celeste.MoonCreature.ctor_Vector2 += MoonCreature_ctor;
 
-			// Hide distortion when showing hitboxes
-			On.Celeste.Distort.Render += Distort_Render;
-			
-			// Hide SoundSource when showing hitboxes
-			On.Celeste.SoundSource.DebugRender += SoundSource_DebugRender;
+            // Hide distortion when showing hitboxes
+            On.Celeste.Distort.Render += Distort_Render;
+            
+            // Hide SoundSource when showing hitboxes
+            On.Celeste.SoundSource.DebugRender += SoundSource_DebugRender;
 
-			// Show pufferfish explosion radius
-			On.Celeste.Puffer.Render += Puffer_Render;
+            // Show pufferfish explosion radius
+            On.Celeste.Puffer.Render += Puffer_Render;
             
             // Stop updating tentacles texture when fast forward
             On.Celeste.ReflectionTentacles.UpdateVertices += ReflectionTentaclesOnUpdateVertices;
+
+            // Optional: Center the camera
+            On.Celeste.Level.BeforeRender += Level_BeforeRender;
+            On.Celeste.Level.AfterRender += Level_AfterRender;
+        }
+
+        private void Level_BeforeRender(On.Celeste.Level.orig_BeforeRender orig, Level self) {
+            orig.Invoke(self);
+            if (Settings.CenterCameraMayCauseSoftlocks) {
+                Player player = self.Tracker.GetEntity<Player>();
+                if (player != null) {
+                    SavedCamera = self.Camera.Position;
+                    self.Camera.Position = player.Position;
+                    self.Camera.CenterOrigin();
+                }
+                else
+                    SavedCamera = null;
+            }
+        }
+
+        private void Level_AfterRender(On.Celeste.Level.orig_AfterRender orig, Level self) {
+            if (SavedCamera != null)
+                self.Camera.Position = (Vector2)SavedCamera;
+            orig.Invoke(self);
         }
 
         public override void Unload() {
@@ -126,19 +153,21 @@ namespace TAS.EverestInterop {
             Everest.Events.Input.OnInitialize -= OnInputInitialize;
             Everest.Events.Input.OnDeregister -= OnInputDeregister;
 
-			On.Celeste.LightingRenderer.Render -= LightingRenderer_Render;
-			On.Monocle.Particle.Render -= Particle_Render;
-			On.Celeste.BackdropRenderer.Render -= BackdropRenderer_Render;
-			On.Celeste.CrystalStaticSpinner.ctor_Vector2_bool_CrystalColor -= CrystalStaticSpinner_ctor;
-			On.Celeste.DustStyles.Get_Session -= DustStyles_Get_Session;
-			On.Celeste.LavaRect.Wave -= LavaRect_Wave;
-			On.Celeste.DreamBlock.Lerp -= DreamBlock_Lerp;
-			On.Celeste.FloatingDebris.ctor_Vector2 -= FloatingDebris_ctor;
-			On.Celeste.MoonCreature.ctor_Vector2 -= MoonCreature_ctor;
-			On.Celeste.Distort.Render -= Distort_Render;
-			On.Celeste.SoundSource.DebugRender -= SoundSource_DebugRender;
-			On.Celeste.Puffer.Render -= Puffer_Render;
+            On.Celeste.LightingRenderer.Render -= LightingRenderer_Render;
+            On.Monocle.Particle.Render -= Particle_Render;
+            On.Celeste.BackdropRenderer.Render -= BackdropRenderer_Render;
+            On.Celeste.CrystalStaticSpinner.ctor_Vector2_bool_CrystalColor -= CrystalStaticSpinner_ctor;
+            On.Celeste.DustStyles.Get_Session -= DustStyles_Get_Session;
+            On.Celeste.LavaRect.Wave -= LavaRect_Wave;
+            On.Celeste.DreamBlock.Lerp -= DreamBlock_Lerp;
+            On.Celeste.FloatingDebris.ctor_Vector2 -= FloatingDebris_ctor;
+            On.Celeste.MoonCreature.ctor_Vector2 -= MoonCreature_ctor;
+            On.Celeste.Distort.Render -= Distort_Render;
+            On.Celeste.SoundSource.DebugRender -= SoundSource_DebugRender;
+            On.Celeste.Puffer.Render -= Puffer_Render;
             On.Celeste.ReflectionTentacles.UpdateVertices -= ReflectionTentaclesOnUpdateVertices;
+            On.Celeste.Level.BeforeRender -= Level_BeforeRender;
+            On.Celeste.Level.AfterRender -= Level_AfterRender;
         }
 
         public void OnInputInitialize() {
@@ -148,15 +177,19 @@ namespace TAS.EverestInterop {
 
             ButtonGraphics = new VirtualButton();
             AddButtonsTo(ButtonGraphics, Settings.ButtonGraphics);
-			AddKeysTo(ButtonGraphics, Settings.KeyGraphics);
+            AddKeysTo(ButtonGraphics, Settings.KeyGraphics);
 
-			if (Settings.KeyStart.Count == 0) {
-				Settings.KeyStart = new List<Keys> { Keys.RightControl, Keys.OemOpenBrackets };
-				Settings.KeyFastForward = new List<Keys> { Keys.RightControl, Keys.RightShift };
-				Settings.KeyFrameAdvance = new List<Keys> { Keys.OemOpenBrackets };
-				Settings.KeyPause = new List<Keys> { Keys.OemCloseBrackets };
-			}
-		}
+            ButtonCamera = new VirtualButton();
+            AddButtonsTo(ButtonCamera, Settings.ButtonCamera);
+            AddKeysTo(ButtonCamera, Settings.KeyCamera);
+
+            if (Settings.KeyStart.Count == 0) {
+                Settings.KeyStart = new List<Keys> { Keys.RightControl, Keys.OemOpenBrackets };
+                Settings.KeyFastForward = new List<Keys> { Keys.RightControl, Keys.RightShift };
+                Settings.KeyFrameAdvance = new List<Keys> { Keys.OemOpenBrackets };
+                Settings.KeyPause = new List<Keys> { Keys.OemCloseBrackets };
+            }
+        }
 
         public void OnInputDeregister() {
             ButtonHitboxes?.Deregister();
@@ -209,7 +242,7 @@ namespace TAS.EverestInterop {
             throw new Exception("Failed relinking RunThreadWithLogging!");
         }
 
-		public static void Engine_Update(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
+        public static void Engine_Update(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
             SkipBaseUpdate = false;
             InUpdate = false;
 
@@ -222,27 +255,27 @@ namespace TAS.EverestInterop {
             int loops = Manager.FrameLoops;
             bool skipBaseUpdate = !Settings.FastForwardCallBase && loops >= Settings.FastForwardThreshold;
 
-			SkipBaseUpdate = skipBaseUpdate;
+            SkipBaseUpdate = skipBaseUpdate;
             InUpdate = true;
 
             for (int i = 0; i < loops; i++) {
                 // Anything happening early on runs in the MInput.Update hook.
                 orig(self, gameTime);
 
-				// Badeline does some dirty stuff in Render.
-				if (i < loops - 1)
-					Engine.Scene?.Tracker.GetEntity<FinalBoss>()?.Render();
+                // Badeline does some dirty stuff in Render.
+                if (i < loops - 1)
+                    Engine.Scene?.Tracker.GetEntity<FinalBoss>()?.Render();
 
-				// Autosaving prevents opening the menu to skip cutscenes during fast forward.
-				if (Engine.Scene is Level level && UserIO.Saving && !SaveData.Instance.Areas[level.Session.Area.ID].Modes[0].Completed) {
-					if (Engine.Scene.Entities.FindFirst<EventTrigger>() != null
-						|| Engine.Scene.Entities.FindFirst<NPC>() != null
-						|| Engine.Scene.Entities.FindFirst<FlingBirdIntro>() != null) {
-						skipBaseUpdate = false;
-						loops = 1;
-					}
-				}
-			}
+                // Autosaving prevents opening the menu to skip cutscenes during fast forward.
+                if (Engine.Scene is Level level && UserIO.Saving && !SaveData.Instance.Areas[level.Session.Area.ID].Modes[0].Completed) {
+                    if (Engine.Scene.Entities.FindFirst<EventTrigger>() != null
+                        || Engine.Scene.Entities.FindFirst<NPC>() != null
+                        || Engine.Scene.Entities.FindFirst<FlingBirdIntro>() != null) {
+                        skipBaseUpdate = false;
+                        loops = 1;
+                    }
+                }
+            }
 
             SkipBaseUpdate = false;
             InUpdate = false;
@@ -285,6 +318,8 @@ namespace TAS.EverestInterop {
                 Settings.ShowHitboxes = !Settings.ShowHitboxes;
             if (Instance.ButtonGraphics.Pressed)
                 Settings.SimplifiedGraphics = !Settings.SimplifiedGraphics;
+            if (Instance.ButtonCamera.Pressed)
+                Settings.CenterCameraMayCauseSoftlocks = !Settings.CenterCameraMayCauseSoftlocks;
         }
 
         public static Action PreviousGameLoop;
@@ -331,135 +366,133 @@ namespace TAS.EverestInterop {
             });
         }
 
-		public static void Level_Render(ILContext il) {
-			ILCursor c;
-			new ILCursor(il).FindNext(out ILCursor[] found,
-				i => i.MatchLdfld(typeof(Pathfinder), "DebugRenderEnabled"),
-				i => i.MatchCall(typeof(Draw), "get_SpriteBatch"),
-				i => i.MatchLdarg(0),
-				i => i.MatchLdarg(0),
-				i => i.MatchLdarg(0)
-			);
+        public static void Level_Render(ILContext il) {
+            ILCursor c;
+            new ILCursor(il).FindNext(out ILCursor[] found,
+                i => i.MatchLdfld(typeof(Pathfinder), "DebugRenderEnabled"),
+                i => i.MatchCall(typeof(Draw), "get_SpriteBatch"),
+                i => i.MatchLdarg(0),
+                i => i.MatchLdarg(0),
+                i => i.MatchLdarg(0)
+            );
 
-			// Place labels at and after pathfinder rendering code
-			ILLabel render = il.DefineLabel();
-			ILLabel skipRender = il.DefineLabel();
-			c = found[1];
-			c.MarkLabel(render);
-			c = found[4];
-			c.MarkLabel(skipRender);
+            // Place labels at and after pathfinder rendering code
+            ILLabel render = il.DefineLabel();
+            ILLabel skipRender = il.DefineLabel();
+            c = found[1];
+            c.MarkLabel(render);
+            c = found[4];
+            c.MarkLabel(skipRender);
 
-			// || the value of DebugRenderEnabled with Debug rendering being enabled, && with seekers being present.
-			c = found[0];
-			c.Index++;
-			c.Emit(OpCodes.Brtrue_S, render.Target);
-			c.Emit(OpCodes.Call, typeof(GameplayRendererExt).GetMethod("get_RenderDebug"));
-			c.Emit(OpCodes.Brfalse_S, skipRender.Target);
-			c.Emit(OpCodes.Ldarg_0);
-			c.Emit(OpCodes.Callvirt, typeof(Scene).GetMethod("get_Tracker"));
-			MethodInfo GetEntity = typeof(Tracker).GetMethod("GetEntity");
-			c.Emit(OpCodes.Callvirt, GetEntity.MakeGenericMethod(new Type[] { typeof(Seeker) }));
-		}
+            // || the value of DebugRenderEnabled with Debug rendering being enabled, && with seekers being present.
+            c = found[0];
+            c.Index++;
+            c.Emit(OpCodes.Brtrue_S, render.Target);
+            c.Emit(OpCodes.Call, typeof(GameplayRendererExt).GetMethod("get_RenderDebug"));
+            c.Emit(OpCodes.Brfalse_S, skipRender.Target);
+            c.Emit(OpCodes.Ldarg_0);
+            c.Emit(OpCodes.Callvirt, typeof(Scene).GetMethod("get_Tracker"));
+            MethodInfo GetEntity = typeof(Tracker).GetMethod("GetEntity");
+            c.Emit(OpCodes.Callvirt, GetEntity.MakeGenericMethod(new Type[] { typeof(Seeker) }));
+        }
 
-		private void Pathfinder_Render(ILContext il) {
-			// Remove the for loop which draws pathfinder tiles
-			ILCursor c = new ILCursor(il);
-			c.FindNext(out ILCursor[] found,
-				i => i.MatchLdfld(typeof(Pathfinder), "lastPath")
-			);
-			c.RemoveRange(found[0].Index - 1);
-		}
+        private void Pathfinder_Render(ILContext il) {
+            // Remove the for loop which draws pathfinder tiles
+            ILCursor c = new ILCursor(il);
+            c.FindNext(out ILCursor[] found, i => i.MatchLdfld(typeof(Pathfinder), "lastPath"));
+            c.RemoveRange(found[0].Index - 1);
+        }
 
-		private void Entity_Render(On.Monocle.Entity.orig_Render orig, Entity self) {
+        private void Entity_Render(On.Monocle.Entity.orig_Render orig, Entity self) {
             if (InUpdate)
                 return;
             orig(self);
-		}
+        }
 
-		private void LightingRenderer_Render(On.Celeste.LightingRenderer.orig_Render orig, LightingRenderer self, Scene scene) {
-			if (Settings.SimplifiedGraphics)
-				return;
-			orig(self, scene);
-		}
+        private void LightingRenderer_Render(On.Celeste.LightingRenderer.orig_Render orig, LightingRenderer self, Scene scene) {
+            if (Settings.SimplifiedGraphics)
+                return;
+            orig(self, scene);
+        }
 
-		private void Particle_Render(On.Monocle.Particle.orig_Render orig, ref Particle self) {
-			if (Settings.SimplifiedGraphics)
-				return;
-			orig(ref self);
-		}
+        private void Particle_Render(On.Monocle.Particle.orig_Render orig, ref Particle self) {
+            if (Settings.SimplifiedGraphics)
+                return;
+            orig(ref self);
+        }
 
-		private void BackdropRenderer_Render(On.Celeste.BackdropRenderer.orig_Render orig, BackdropRenderer self, Scene scene) {
-			if (Settings.SimplifiedGraphics)
-				return;
-			orig(self, scene);
-		}
+        private void BackdropRenderer_Render(On.Celeste.BackdropRenderer.orig_Render orig, BackdropRenderer self, Scene scene) {
+            if (Settings.SimplifiedGraphics)
+                return;
+            orig(self, scene);
+        }
 
-		private void CrystalStaticSpinner_ctor(On.Celeste.CrystalStaticSpinner.orig_ctor_Vector2_bool_CrystalColor orig, CrystalStaticSpinner self, Vector2 position, bool attachToSolid, CrystalColor color) {
-			if (Settings.SimplifiedGraphics)
-				color = CrystalColor.Blue;
-			orig(self, position, attachToSolid, color);
-		}
+        private void CrystalStaticSpinner_ctor(On.Celeste.CrystalStaticSpinner.orig_ctor_Vector2_bool_CrystalColor orig, CrystalStaticSpinner self, Vector2 position, bool attachToSolid, CrystalColor color) {
+            if (Settings.SimplifiedGraphics)
+                color = CrystalColor.Blue;
+            orig(self, position, attachToSolid, color);
+        }
 
-		private DustStyles.DustStyle DustStyles_Get_Session(On.Celeste.DustStyles.orig_Get_Session orig, Session session) {
-			if (Settings.SimplifiedGraphics) {
-				return new DustStyles.DustStyle {
-					EdgeColors = new Vector3[] {
-						Color.Orange.ToVector3(),
-						Color.Orange.ToVector3(),
-						Color.Orange.ToVector3()
-					},
-					EyeColor = Color.Orange,
-					EyeTextures = "danger/dustcreature/eyes"
-				};
-			}
-			return orig(session);
-		}
+        private DustStyles.DustStyle DustStyles_Get_Session(On.Celeste.DustStyles.orig_Get_Session orig, Session session) {
+            if (Settings.SimplifiedGraphics) {
+                return new DustStyles.DustStyle {
+                    EdgeColors = new Vector3[] {
+                        Color.Orange.ToVector3(),
+                        Color.Orange.ToVector3(),
+                        Color.Orange.ToVector3()
+                    },
+                    EyeColor = Color.Orange,
+                    EyeTextures = "danger/dustcreature/eyes"
+                };
+            }
+            return orig(session);
+        }
 
-		private float LavaRect_Wave(On.Celeste.LavaRect.orig_Wave orig, LavaRect self, int step, float length) {
-			if (Settings.SimplifiedGraphics)
-				return 0f;
-			return orig(self, step, length);
-		}
+        private float LavaRect_Wave(On.Celeste.LavaRect.orig_Wave orig, LavaRect self, int step, float length) {
+            if (Settings.SimplifiedGraphics)
+                return 0f;
+            return orig(self, step, length);
+        }
 
-		private float DreamBlock_Lerp(On.Celeste.DreamBlock.orig_Lerp orig, DreamBlock self, float a, float b, float percent) {
-			if (Settings.SimplifiedGraphics)
-				return 0f;
-			return orig(self, a, b, percent);
-		}
+        private float DreamBlock_Lerp(On.Celeste.DreamBlock.orig_Lerp orig, DreamBlock self, float a, float b, float percent) {
+            if (Settings.SimplifiedGraphics)
+                return 0f;
+            return orig(self, a, b, percent);
+        }
 
-		private static void FloatingDebris_ctor(FloatingDebris.orig_ctor_Vector2 orig, Celeste.FloatingDebris self, Vector2 position) {
-			orig(self, position);
-			if (Settings.SimplifiedGraphics)
-				self.Add(new RemoveSelfComponent());
-		}
-		
-		private static void MoonCreature_ctor(MoonCreature.orig_ctor_Vector2 orig, Celeste.MoonCreature self, Vector2 position) {
-			orig(self, position);
-			if (Settings.SimplifiedGraphics)
-				self.Add(new RemoveSelfComponent());
-		}
+        private static void FloatingDebris_ctor(FloatingDebris.orig_ctor_Vector2 orig, Celeste.FloatingDebris self, Vector2 position) {
+            orig(self, position);
+            if (Settings.SimplifiedGraphics)
+                self.Add(new RemoveSelfComponent());
+        }
+        
+        private static void MoonCreature_ctor(MoonCreature.orig_ctor_Vector2 orig, Celeste.MoonCreature self, Vector2 position) {
+            orig(self, position);
+            if (Settings.SimplifiedGraphics)
+                self.Add(new RemoveSelfComponent());
+        }
 
-		private static void Distort_Render(On.Celeste.Distort.orig_Render orig, Texture2D source, Texture2D map, bool hasDistortion) {
-			if (GameplayRendererExt.RenderDebug || Settings.SimplifiedGraphics) {
-				Distort.Anxiety = 0f;
-				Distort.GameRate = 1f;
-				hasDistortion = false;
-			}
-			orig(source, map, hasDistortion);
-		}
-		
-		private static void SoundSource_DebugRender(SoundSource.orig_DebugRender orig, Celeste.SoundSource self, Camera camera) {
-			if (!Settings.ShowHitboxes)
-				orig(self, camera);
-		}
-		
-		private void Puffer_Render(On.Celeste.Puffer.orig_Render orig, Puffer self) {
-			if (GameplayRendererExt.RenderDebug)
-				Draw.Circle(self.Position, 32f, Color.Red, 32);
-			orig(self);
-		}
+        private static void Distort_Render(On.Celeste.Distort.orig_Render orig, Texture2D source, Texture2D map, bool hasDistortion) {
+            if (GameplayRendererExt.RenderDebug || Settings.SimplifiedGraphics) {
+                Distort.Anxiety = 0f;
+                Distort.GameRate = 1f;
+                hasDistortion = false;
+            }
+            orig(source, map, hasDistortion);
+        }
+        
+        private static void SoundSource_DebugRender(SoundSource.orig_DebugRender orig, Celeste.SoundSource self, Camera camera) {
+            if (!Settings.ShowHitboxes)
+                orig(self, camera);
+        }
+        
+        private void Puffer_Render(On.Celeste.Puffer.orig_Render orig, Puffer self) {
+            if (GameplayRendererExt.RenderDebug)
+                Draw.Circle(self.Position, 32f, Color.Red, 32);
+            orig(self);
+        }
 
-		private void ReflectionTentaclesOnUpdateVertices(On.Celeste.ReflectionTentacles.orig_UpdateVertices orig, ReflectionTentacles self) {
+        private void ReflectionTentaclesOnUpdateVertices(On.Celeste.ReflectionTentacles.orig_UpdateVertices orig, ReflectionTentacles self) {
             if ((Manager.state == State.Enable && Manager.FrameLoops > 1) || Settings.SimplifiedGraphics)
                 return;
 
