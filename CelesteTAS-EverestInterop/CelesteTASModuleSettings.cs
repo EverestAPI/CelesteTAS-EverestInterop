@@ -31,8 +31,7 @@ namespace TAS.EverestInterop {
         public List<Buttons> ButtonHitboxes { get; set; } = new List<Buttons>();
         public List<Keys> KeyHitboxes { get; set; } = new List<Keys>();
 
-        [SettingIgnore]
-        public bool CenterCameraMayCauseSoftlocks { get; set; } = false;
+        public bool CenterCamera { get; set; } = false;
         public List<Buttons> ButtonCamera { get; set; } = new List<Buttons>();
         public List<Keys> KeyCamera { get; set; } = new List<Keys>();
 

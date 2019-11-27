@@ -31,7 +31,7 @@ namespace TAS.EverestInterop {
         public VirtualButton ButtonGraphics;
         public VirtualButton ButtonCamera;
 
-        private Vector2? SavedCamera;
+        private Camera SavedCamera;
 
         // The fields we want to access from Celeste-Addons
         public static bool SkipBaseUpdate;
@@ -101,6 +101,8 @@ namespace TAS.EverestInterop {
             On.Celeste.DreamBlock.Lerp += DreamBlock_Lerp;
             On.Celeste.FloatingDebris.ctor_Vector2 += FloatingDebris_ctor;
             On.Celeste.MoonCreature.ctor_Vector2 += MoonCreature_ctor;
+            On.Celeste.LightningRenderer.Render += LightningRenderer_Render;
+            On.Celeste.LightningRenderer.Bolt.Render += Bolt_Render;
 
             // Hide distortion when showing hitboxes
             On.Celeste.Distort.Render += Distort_Render;
@@ -117,26 +119,6 @@ namespace TAS.EverestInterop {
             // Optional: Center the camera
             On.Celeste.Level.BeforeRender += Level_BeforeRender;
             On.Celeste.Level.AfterRender += Level_AfterRender;
-        }
-
-        private void Level_BeforeRender(On.Celeste.Level.orig_BeforeRender orig, Level self) {
-            orig.Invoke(self);
-            if (Settings.CenterCameraMayCauseSoftlocks) {
-                Player player = self.Tracker.GetEntity<Player>();
-                if (player != null) {
-                    SavedCamera = self.Camera.Position;
-                    self.Camera.Position = player.Position;
-                    self.Camera.CenterOrigin();
-                }
-                else
-                    SavedCamera = null;
-            }
-        }
-
-        private void Level_AfterRender(On.Celeste.Level.orig_AfterRender orig, Level self) {
-            if (SavedCamera != null)
-                self.Camera.Position = (Vector2)SavedCamera;
-            orig.Invoke(self);
         }
 
         public override void Unload() {
@@ -162,6 +144,7 @@ namespace TAS.EverestInterop {
             On.Celeste.DreamBlock.Lerp -= DreamBlock_Lerp;
             On.Celeste.FloatingDebris.ctor_Vector2 -= FloatingDebris_ctor;
             On.Celeste.MoonCreature.ctor_Vector2 -= MoonCreature_ctor;
+            On.Celeste.LightningRenderer.Bolt.Render -= Bolt_Render;
             On.Celeste.Distort.Render -= Distort_Render;
             On.Celeste.SoundSource.DebugRender -= SoundSource_DebugRender;
             On.Celeste.Puffer.Render -= Puffer_Render;
@@ -319,7 +302,7 @@ namespace TAS.EverestInterop {
             if (Instance.ButtonGraphics.Pressed)
                 Settings.SimplifiedGraphics = !Settings.SimplifiedGraphics;
             if (Instance.ButtonCamera.Pressed)
-                Settings.CenterCameraMayCauseSoftlocks = !Settings.CenterCameraMayCauseSoftlocks;
+                Settings.CenterCamera = !Settings.CenterCamera;
         }
 
         public static Action PreviousGameLoop;
@@ -471,6 +454,17 @@ namespace TAS.EverestInterop {
             if (Settings.SimplifiedGraphics)
                 self.Add(new RemoveSelfComponent());
         }
+		private void LightningRenderer_Render(On.Celeste.LightningRenderer.orig_Render orig, LightningRenderer self) {
+			if (Settings.SimplifiedGraphics)
+				self.DrawEdges = false;
+			orig.Invoke(self);
+		}
+
+		private void Bolt_Render(On.Celeste.LightningRenderer.Bolt.orig_Render orig, object self) {
+            if (Settings.SimplifiedGraphics)
+                return;
+            orig.Invoke(self);
+        }
 
         private static void Distort_Render(On.Celeste.Distort.orig_Render orig, Texture2D source, Texture2D map, bool hasDistortion) {
             if (GameplayRendererExt.RenderDebug || Settings.SimplifiedGraphics) {
@@ -497,6 +491,26 @@ namespace TAS.EverestInterop {
                 return;
 
             orig(self);
+        }
+
+        private void Level_BeforeRender(On.Celeste.Level.orig_BeforeRender orig, Level self) {
+            orig.Invoke(self);
+            if (Settings.CenterCamera) {
+                Player player = self.Tracker.GetEntity<Player>();
+                if (player != null) {
+                    SavedCamera = self.Camera;
+                    Vector2 cameraPosition = player.Position - new Vector2(SavedCamera.Viewport.Width / 2, SavedCamera.Viewport.Height / 2);
+                    self.Camera.Position = cameraPosition;
+                }
+                else
+                    SavedCamera = null;
+            }
+        }
+
+        private void Level_AfterRender(On.Celeste.Level.orig_AfterRender orig, Level self) {
+            if (SavedCamera != null)
+                self.Camera.CopyFrom(SavedCamera);
+            orig.Invoke(self);
         }
     }
 }
