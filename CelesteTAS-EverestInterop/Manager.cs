@@ -183,20 +183,18 @@ namespace TAS {
 			GamePadState padState = MInput.GamePads[0].CurrentState;
 			for (int i = 0; i < 4; i++) {
 				padState = GamePad.GetState((PlayerIndex)i);
-				if (padState.IsConnected) {
+				if (padState.IsConnected)
 					break;
-				}
 			}
 			return padState;
 		}
 
 		public static float GetAngle(Vector2 vector) {
 			float angle = 360f / 6.283186f * Calc.Angle(vector);
-			if (angle < -90.01f) {
+			if (angle < -90.01f)
 				return 450f + angle;
-			} else {
+			else
 				return 90f + angle;
-			}
 		}
 		private static void HandleFrameRates(GamePadState padState) {
 			if (HasFlag(state, State.Enable) && !HasFlag(state, State.FrameStep) && !HasFlag(nextState, State.FrameStep) && !HasFlag(state, State.Record)) {
