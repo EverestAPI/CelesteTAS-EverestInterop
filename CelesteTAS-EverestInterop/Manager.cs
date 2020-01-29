@@ -19,6 +19,8 @@ namespace TAS {
 		Delay = 16
 	}
 	public class Manager {
+		private static FieldInfo strawberryCollectTimer = typeof(Strawberry).GetField("collectTimer", BindingFlags.Instance | BindingFlags.NonPublic);
+
 		public static bool Running, Recording;
 		private static InputController controller = new InputController("Celeste.tas");
 		public static State state, nextState;
@@ -124,7 +126,15 @@ namespace TAS {
 						int berryTimer = -10;
 						Follower firstRedBerryFollower = player.Leader.Followers.Find(follower => follower.Entity is Strawberry berry && !berry.Golden);
 						if (firstRedBerryFollower?.Entity is Strawberry firstRedBerry) {
-							berryTimer = (int)Math.Round(60f * (float)firstRedBerry.GetPrivateField("collectTimer"));
+							object collectTimer;
+							if (firstRedBerry.GetType() == typeof(Strawberry)
+								|| (collectTimer = firstRedBerry.GetPrivateField("collectTimer")) == null) {
+
+								// if this is a vanilla berry or a mod berry having no collectTimer, use the cached FieldInfo for Strawberry.collectTimer.
+								collectTimer = strawberryCollectTimer.GetValue(firstRedBerry);
+							}
+
+							berryTimer = (int)Math.Round(60f * (float)collectTimer);
 						}
 						string timers = (berryTimer != -10 ? $"BerryTimer: {berryTimer.ToString()} " : string.Empty)
 							+ (dashCooldown != 0 ? $"DashTimer: {(dashCooldown - 1).ToString()} " : string.Empty);
