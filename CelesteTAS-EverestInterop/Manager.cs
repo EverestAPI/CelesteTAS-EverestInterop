@@ -69,7 +69,7 @@ namespace TAS {
 			}
 			else if (HasFlag(state, State.Delay)) {
 				Level level = Engine.Scene as Level;
-				if (level.CanPause)
+				if (level.CanPause && Engine.FreezeTimer == 0f)
 					EnableRun();
 			}
 			else {
@@ -267,7 +267,7 @@ namespace TAS {
 					nextState |= State.Disable;
 			}
 			else if (HasFlag(nextState, State.Enable)) {
-				if (Engine.Scene is Level level && !level.CanPause) {
+				if (Engine.Scene is Level level && !level.CanPause || Engine.FreezeTimer > 0) {
 					nextState |= State.Delay;
 					FrameLoops = 400;
 					return;
