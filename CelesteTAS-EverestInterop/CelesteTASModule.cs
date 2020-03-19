@@ -455,8 +455,7 @@ namespace TAS.EverestInterop {
                 self.Add(new RemoveSelfComponent());
         }
 		private void LightningRenderer_Render(On.Celeste.LightningRenderer.orig_Render orig, LightningRenderer self) {
-			if (Settings.SimplifiedGraphics)
-				self.DrawEdges = false;
+            self.DrawEdges = !Settings.SimplifiedGraphics;
 			orig.Invoke(self);
 		}
 
