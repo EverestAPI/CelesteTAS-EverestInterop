@@ -20,9 +20,8 @@ namespace TAS {
 	}
 	public class Manager {
 		private static FieldInfo strawberryCollectTimer = typeof(Strawberry).GetField("collectTimer", BindingFlags.Instance | BindingFlags.NonPublic);
-
 		public static bool Running, Recording;
-		private static InputController controller = new InputController("Celeste.tas");
+		public static InputController controller = new InputController("Celeste.tas");
 		public static State state, nextState;
 		public static string CurrentStatus, PlayerStatus;
 		public static int FrameStepCooldown, FrameLoops = 1;
@@ -296,6 +295,7 @@ namespace TAS {
 			state = State.None;
 			nextState = State.None;
 			RestorePlayerBindings();
+			controller.resetSpawn = null;
 		}
 		private static void EnableRun() {
 			nextState &= ~State.Enable;

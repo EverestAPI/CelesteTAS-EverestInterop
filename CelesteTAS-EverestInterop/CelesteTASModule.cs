@@ -80,6 +80,9 @@ namespace TAS.EverestInterop {
             // Forced: Add more positions to top-left positioning helper.
             IL.Monocle.Commands.Render += Commands_Render;
 
+            // Optional: Approximate savestates
+            On.Celeste.LevelLoader.LoadingThread += LevelLoader_LoadingThread;
+
             // Optional: Show the pathfinder.
             IL.Celeste.Level.Render += Level_Render;
             IL.Celeste.Pathfinder.Render += Pathfinder_Render;
@@ -130,6 +133,7 @@ namespace TAS.EverestInterop {
             h_Game_Update.Dispose();
             On.Celeste.Achievements.Register -= Achievements_Register;
             On.Celeste.Stats.Increment -= Stats_Increment;
+            On.Celeste.LevelLoader.LoadingThread -= LevelLoader_LoadingThread;
             On.Monocle.Entity.Render -= Entity_Render;
 
             Everest.Events.Input.OnInitialize -= OnInputInitialize;
@@ -348,6 +352,16 @@ namespace TAS.EverestInterop {
                     $"\n level:       {x}, {y}";
             });
         }
+        private void LevelLoader_LoadingThread(On.Celeste.LevelLoader.orig_LoadingThread orig, LevelLoader self) {
+            orig.Invoke(self);
+            Session session = self.Level.Session;
+            Vector2? spawn = Manager.controller.resetSpawn;
+            session.RespawnPoint = spawn;
+            if (Manager.controller.resetSpawn != null) {
+                session.Level = session.MapData.GetAt((Vector2)spawn).Name;
+                session.FirstLevel = false;
+            }
+        }
 
         public static void Level_Render(ILContext il) {
             ILCursor c;
@@ -454,13 +468,13 @@ namespace TAS.EverestInterop {
             if (Settings.SimplifiedGraphics)
                 self.Add(new RemoveSelfComponent());
         }
-		private void LightningRenderer_Render(On.Celeste.LightningRenderer.orig_Render orig, LightningRenderer self) {
-			if (Settings.SimplifiedGraphics)
-				self.DrawEdges = false;
-			orig.Invoke(self);
-		}
+        private void LightningRenderer_Render(On.Celeste.LightningRenderer.orig_Render orig, LightningRenderer self) {
+            if (Settings.SimplifiedGraphics)
+                self.DrawEdges = false;
+            orig.Invoke(self);
+        }
 
-		private void Bolt_Render(On.Celeste.LightningRenderer.Bolt.orig_Render orig, object self) {
+        private void Bolt_Render(On.Celeste.LightningRenderer.Bolt.orig_Render orig, object self) {
             if (Settings.SimplifiedGraphics)
                 return;
             orig.Invoke(self);

@@ -1,4 +1,6 @@
 using Celeste;
+using Monocle;
+using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -8,6 +10,7 @@ namespace TAS {
 		private int currentFrame, inputIndex, frameToNext;
 		private string filePath;
 		private List<InputRecord> fastForwards = new List<InputRecord>();
+		public Vector2? resetSpawn;
 		public InputController(string filePath) {
 			this.filePath = filePath;
 		}
@@ -180,6 +183,12 @@ namespace TAS {
 							lines--;
 						}
 
+						if (line.ToLower().StartsWith("console") && line.Length > 8)
+							ConsoleCommand(line.Substring(8));
+
+						if (line.ToLower().StartsWith("reset") && line.Length > 6)
+							ResetCommand(line.Substring(6));
+
 						InputRecord input = new InputRecord(++lines, line);
 						if (input.FastForward) {
 							fastForwards.Add(input);
@@ -263,7 +272,7 @@ namespace TAS {
 			}
 		}
 		private void GetLine(string labelOrLineNumber, string path, out int lineNumber) {
-                	if (!int.TryParse(labelOrLineNumber, out lineNumber)) {
+            if (!int.TryParse(labelOrLineNumber, out lineNumber)) {
 				int curLine = 0;
 				using (StreamReader sr = new StreamReader(path)) {
 					while (!sr.EndOfStream) {
@@ -276,6 +285,20 @@ namespace TAS {
 					}
 					lineNumber = int.MaxValue;
 				}
+			}
+		}
+		private void ConsoleCommand(string command) {
+			string[] commands = command.ToLower().Split();
+			string[] args = new string[commands.Length - 1];
+			for (int i = 1; i < commands.Length; i++) {
+				args[i - 1] = commands[i];
+			}
+			Engine.Commands.ExecuteCommand(commands[0], args);
+		}
+		private void ResetCommand(string position) {
+			string[] coords = position.Split(',');
+			if (coords.Length == 2 && int.TryParse(coords[0], out int x) && int.TryParse(coords[1], out int y)) {
+				resetSpawn = new Vector2(x, y);
 			}
 		}
 	}
