@@ -111,6 +111,10 @@ namespace TAS {
 			fastForwards.Clear();
 		}
 		public void PlaybackPlayer() {
+			if (Current.Command != null) {
+				CommandHandler.ExecuteCommand(Current.Command);
+			}
+
 			if (inputIndex < inputs.Count && !Manager.IsLoading()) {
 				if (currentFrame >= frameToNext) {
 					if (inputIndex + 1 >= inputs.Count) {
@@ -185,9 +189,6 @@ namespace TAS {
 
 						if (line.ToLower().StartsWith("console") && line.Length > 8)
 							ConsoleCommand(line.Substring(8));
-
-						if (line.ToLower().StartsWith("reset") && line.Length > 6)
-							ResetCommand(line.Substring(6));
 
 						InputRecord input = new InputRecord(++lines, line);
 						if (input.FastForward) {
@@ -288,18 +289,7 @@ namespace TAS {
 			}
 		}
 		private void ConsoleCommand(string command) {
-			string[] commands = command.ToLower().Split();
-			string[] args = new string[commands.Length - 1];
-			for (int i = 1; i < commands.Length; i++) {
-				args[i - 1] = commands[i];
-			}
-			Engine.Commands.ExecuteCommand(commands[0], args);
-		}
-		private void ResetCommand(string position) {
-			string[] coords = position.Split(',');
-			if (coords.Length == 2 && int.TryParse(coords[0], out int x) && int.TryParse(coords[1], out int y)) {
-				resetSpawn = new Vector2(x, y);
-			}
+			inputs.Add(new InputRecord(command));
 		}
 	}
 }

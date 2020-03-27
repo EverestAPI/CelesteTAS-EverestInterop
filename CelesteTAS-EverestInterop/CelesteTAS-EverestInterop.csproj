@@ -73,6 +73,7 @@
     <Compile Include="Extensions.cs" />
     <Compile Include="InputController.cs" />
     <Compile Include="InputRecord.cs" />
+    <Compile Include="LoadCommand.cs" />
     <Compile Include="Manager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RemoveSelfComponent.cs" />
