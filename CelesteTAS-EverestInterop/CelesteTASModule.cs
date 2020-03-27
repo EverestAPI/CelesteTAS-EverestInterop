@@ -357,9 +357,10 @@ namespace TAS.EverestInterop {
             Session session = self.Level.Session;
             Vector2? spawn = Manager.controller.resetSpawn;
             session.RespawnPoint = spawn;
-            if (Manager.controller.resetSpawn != null) {
-                session.Level = session.MapData.GetAt((Vector2)spawn).Name;
+            if (spawn != null) {
+                session.Level = session.MapData.GetAt((Vector2)spawn)?.Name;
                 session.FirstLevel = false;
+                Manager.controller.resetSpawn = null;
             }
         }
 
