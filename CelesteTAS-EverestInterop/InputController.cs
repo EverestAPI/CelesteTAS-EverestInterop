@@ -1,5 +1,4 @@
 using Celeste;
-using Monocle;
 using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using System.IO;
@@ -170,27 +169,35 @@ namespace TAS {
 				fs.Close();
 			}
 		}
-		private bool ReadFile() {
+		private bool ReadFile(int startLine = 0) {
 			try {
-				inputs.Clear();
-				fastForwards.Clear();
-				if (!File.Exists(filePath)) { return false; }
-
+				if (startLine == 0) {
+					inputs.Clear();
+					fastForwards.Clear();
+					if (!File.Exists(filePath))
+						return false;
+				}
 				int lines = 0;
 				using (StreamReader sr = new StreamReader(filePath)) {
 					while (!sr.EndOfStream) {
 						string line = sr.ReadLine();
 
-						if (line.IndexOf("Read", System.StringComparison.OrdinalIgnoreCase) == 0 && line.Length > 5) {
-							lines++;
-							ReadFile(line.Substring(5), lines);
-							lines--;
-						}
+						lines++;
+						if (lines < startLine) 
+							continue;
+
+						if (line.ToLower().StartsWith("read") && line.Length > 5)
+							ReadCommand(line.Substring(5), lines);
 
 						if (line.ToLower().StartsWith("console") && line.Length > 8)
 							ConsoleCommand(line.Substring(8));
 
-						InputRecord input = new InputRecord(++lines, line);
+						if (line.ToLower().StartsWith("play") && line.Length > 5) {
+							PlayCommand(filePath, line.Substring(5), lines);
+							return true;
+						}
+
+						InputRecord input = new InputRecord(lines, line);
 						if (input.FastForward) {
 							fastForwards.Add(input);
 
@@ -204,61 +211,25 @@ namespace TAS {
 					}
 				}
 				return true;
-			} catch {
-				return false;
 			}
+			catch { return false; }
 		}
-		private void ReadFile(string extraFile, int lines) {
-			int index = extraFile.IndexOf(',');
-			string filePath = index > 0 ? extraFile.Substring(0, index) : extraFile;
-			string origFilePath = Manager.settings.DefaultPath;
-			// Check for full and shortened Read versions for absolute path
-			if (origFilePath != null) {
-				string altFilePath = origFilePath + Path.DirectorySeparatorChar + filePath;
-				if (File.Exists(altFilePath))
-					filePath = altFilePath;
-				else {
-					string[] files = Directory.GetFiles(origFilePath, $"{filePath}*.tas");
-					if (files.Length != 0)
-						filePath = files[0].ToString();
-				}
-			}
-			// Check for full and shortened Read versions for relative path
-			if (!File.Exists(filePath)) {
-				string[] files = Directory.GetFiles(Directory.GetCurrentDirectory(), $"{filePath}*.tas");
-				filePath = files[0].ToString();
-				if (!File.Exists(filePath)) { return; }
-			}
-			// Find starting and ending lines
-			int skipLines = 0;
-			int lineLen = int.MaxValue;
-			if (index > 0) {
-				int indexLen = extraFile.IndexOf(',', index + 1);
-				if (indexLen > 0) {
-					string startLine = extraFile.Substring(index + 1, indexLen - index - 1);
-					string endLine = extraFile.Substring(indexLen + 1);
-					GetLine(startLine, filePath, out skipLines);
-					GetLine(endLine, filePath, out lineLen);
-				} else {
-					string startLine = extraFile.Substring(index + 1);
-					GetLine(startLine, filePath, out skipLines);
-				}
-			}
-
+		private void ReadFile(string filePath, int startLine, int endLine, int studioLine) {
 			int subLine = 0;
 			using (StreamReader sr = new StreamReader(filePath)) {
 				while (!sr.EndOfStream) {
 					string line = sr.ReadLine();
 
 					subLine++;
-					if (subLine <= skipLines) { continue; }
-					if (subLine > lineLen) { break; }
+					if (subLine <= startLine) 
+						continue;
+					if (subLine > endLine) 
+						break;
 
-					if (line.IndexOf("Read", System.StringComparison.OrdinalIgnoreCase) == 0 && line.Length > 5) {
-						ReadFile(line.Substring(5), lines);
-					}
+					if (line.ToLower().StartsWith("read") && line.Length > 5)
+						ReadCommand(line.Substring(5), studioLine);
 
-					InputRecord input = new InputRecord(lines, line);
+					InputRecord input = new InputRecord(studioLine, line);
 					if (input.FastForward) {
 						fastForwards.Add(input);
 
@@ -288,8 +259,49 @@ namespace TAS {
 				}
 			}
 		}
+		private void ReadCommand(string command, int studioLine) {
+			string[] args = command.Trim().Split(',');
+			string filePath = args[0];
+			string origFilePath = Manager.settings.DefaultPath;
+			// Check for full and shortened Read versions for absolute path
+			if (origFilePath != null) {
+				string altFilePath = origFilePath + Path.DirectorySeparatorChar + filePath;
+				if (File.Exists(altFilePath))
+					filePath = altFilePath;
+				else {
+					string[] files = Directory.GetFiles(origFilePath, $"{filePath}*.tas");
+					if (files.Length != 0)
+						filePath = files[0].ToString();
+				}
+			}
+			// Check for full and shortened Read versions for relative path
+			if (!File.Exists(filePath)) {
+				string[] files = Directory.GetFiles(Directory.GetCurrentDirectory(), $"{filePath}*.tas");
+				filePath = files[0].ToString();
+				if (!File.Exists(filePath)) { return; }
+			}
+			// Find starting and ending lines
+			int skipLines = 0;
+			int lineLen = int.MaxValue;
+			if (args.Length > 1) {
+				string startLine = args[1];
+				GetLine(startLine, filePath, out skipLines);
+				if (args.Length > 2) {
+					string endLine = args[2];
+					GetLine(endLine, filePath, out lineLen);
+				}
+			}
+			ReadFile(filePath, skipLines, lineLen, studioLine);
+		}
 		private void ConsoleCommand(string command) {
 			inputs.Add(new InputRecord(command));
+		}
+		private void PlayCommand(string path, string command, int studioLine) {
+			string[] args = command.Split(',');
+			GetLine(args[0], path, out int startLine);
+			if (args.Length > 1 && int.TryParse(args[1], out _))
+				inputs.Add(new InputRecord(studioLine, args[1]));
+			ReadFile(startLine);
 		}
 	}
 }
