@@ -110,11 +110,13 @@ namespace TAS {
 			fastForwards.Clear();
 		}
 		public void PlaybackPlayer() {
+			if (Manager.IsLoading())
+				return;
 			do {
 				if (Current.Command != null) {
 					CommandHandler.ExecuteCommand(Current.Command);
 				}
-				if (inputIndex < inputs.Count && !Manager.IsLoading()) {
+				if (inputIndex < inputs.Count) {
 					if (currentFrame >= frameToNext) {
 						if (inputIndex + 1 >= inputs.Count) {
 							inputIndex++;
