@@ -110,25 +110,26 @@ namespace TAS {
 			fastForwards.Clear();
 		}
 		public void PlaybackPlayer() {
-			if (Current.Command != null) {
-				CommandHandler.ExecuteCommand(Current.Command);
-			}
-
-			if (inputIndex < inputs.Count && !Manager.IsLoading()) {
-				if (currentFrame >= frameToNext) {
-					if (inputIndex + 1 >= inputs.Count) {
-						inputIndex++;
-						return;
-					}
-					if (Current.FastForward) {
-						fastForwards.RemoveAt(0);
-					}
-					Current = inputs[++inputIndex];
-					frameToNext += Current.Frames;
+			do {
+				if (Current.Command != null) {
+					CommandHandler.ExecuteCommand(Current.Command);
 				}
+				if (inputIndex < inputs.Count && !Manager.IsLoading()) {
+					if (currentFrame >= frameToNext) {
+						if (inputIndex + 1 >= inputs.Count) {
+							inputIndex++;
+							return;
+						}
+						if (Current.FastForward) {
+							fastForwards.RemoveAt(0);
+						}
+						Current = inputs[++inputIndex];
+						frameToNext += Current.Frames;
+					}
+				}
+			} while (Current.Command != null);
 
-				currentFrame++;
-			}
+			currentFrame++;
 			Manager.SetInputs(Current);
 		}
 		public void RecordPlayer() {
