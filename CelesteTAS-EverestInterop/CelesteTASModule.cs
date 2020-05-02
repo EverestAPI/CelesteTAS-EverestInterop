@@ -75,7 +75,6 @@ namespace TAS.EverestInterop {
             )).GenerateTrampoline<d_Game_Update>();
 
             // Optional: Disable achievements, stats and terminal.
-            On.Celeste.Achievements.Register += Achievements_Register;
 
             // Before hooking Stats.Increment, check if the method is empty.
             // Hooking empty methods causes issues on Linux versions notably, and Stats.Increment is empty in non-Steam versions of the game.
@@ -86,6 +85,16 @@ namespace TAS.EverestInterop {
                     On.Celeste.Stats.Increment += Stats_Increment;
                 }
             }
+
+            // Before hooking Achievements.Register, check the size of the method.
+            // If it is 4 instructions long, hooking it is unnecessary and even causes issues.
+            using (DynamicMethodDefinition statsDMD = new DynamicMethodDefinition(typeof(Achievements).GetMethod("Register"))) {
+                int instructionCount = statsDMD.Definition.Body.Instructions.Count;
+                if (instructionCount > 4) {
+                    On.Celeste.Achievements.Register += Achievements_Register;
+                }
+            }
+
 
             // Forced: Add more positions to top-left positioning helper.
             IL.Monocle.Commands.Render += Commands_Render;
