@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using MonoMod.Utils;
 using FloatingDebris = On.Celeste.FloatingDebris;
 using MoonCreature = On.Celeste.MoonCreature;
 using SoundSource = On.Celeste.SoundSource;
@@ -75,7 +76,16 @@ namespace TAS.EverestInterop {
 
             // Optional: Disable achievements, stats and terminal.
             On.Celeste.Achievements.Register += Achievements_Register;
-            On.Celeste.Stats.Increment += Stats_Increment;
+
+            // Before hooking Stats.Increment, check if the method is empty.
+            // Hooking empty methods causes issues on Linux versions notably, and Stats.Increment is empty in non-Steam versions of the game.
+            using (DynamicMethodDefinition statsDMD = new DynamicMethodDefinition(typeof(Stats).GetMethod("Increment"))) {
+                int instructionCount = statsDMD.Definition.Body.Instructions.Count;
+                if (instructionCount > 1) {
+                    // the method has more than a lonely "ret", so hook it.
+                    On.Celeste.Stats.Increment += Stats_Increment;
+                }
+            }
 
             // Forced: Add more positions to top-left positioning helper.
             IL.Monocle.Commands.Render += Commands_Render;
@@ -109,13 +119,13 @@ namespace TAS.EverestInterop {
 
             // Hide distortion when showing hitboxes
             On.Celeste.Distort.Render += Distort_Render;
-            
+
             // Hide SoundSource when showing hitboxes
             On.Celeste.SoundSource.DebugRender += SoundSource_DebugRender;
 
             // Show pufferfish explosion radius
             On.Celeste.Puffer.Render += Puffer_Render;
-            
+
             // Stop updating tentacles texture when fast forward
             On.Celeste.ReflectionTentacles.UpdateVertices += ReflectionTentaclesOnUpdateVertices;
 
@@ -358,7 +368,7 @@ namespace TAS.EverestInterop {
             Vector2? spawn = Manager.controller.resetSpawn;
             if (spawn != null) {
                 session.RespawnPoint = spawn;
-                session.Level = session.MapData.GetAt((Vector2)spawn)?.Name;
+                session.Level = session.MapData.GetAt((Vector2) spawn)?.Name;
                 session.FirstLevel = false;
                 Manager.controller.resetSpawn = null;
             }
@@ -463,16 +473,16 @@ namespace TAS.EverestInterop {
             if (Settings.SimplifiedGraphics)
                 self.Add(new RemoveSelfComponent());
         }
-        
+
         private static void MoonCreature_ctor(MoonCreature.orig_ctor_Vector2 orig, Celeste.MoonCreature self, Vector2 position) {
             orig(self, position);
             if (Settings.SimplifiedGraphics)
                 self.Add(new RemoveSelfComponent());
         }
-		private void LightningRenderer_Render(On.Celeste.LightningRenderer.orig_Render orig, LightningRenderer self) {
+        private void LightningRenderer_Render(On.Celeste.LightningRenderer.orig_Render orig, LightningRenderer self) {
             self.DrawEdges = !Settings.SimplifiedGraphics;
-			orig.Invoke(self);
-		}
+            orig.Invoke(self);
+        }
 
         private void Bolt_Render(On.Celeste.LightningRenderer.Bolt.orig_Render orig, object self) {
             if (Settings.SimplifiedGraphics)
@@ -488,12 +498,12 @@ namespace TAS.EverestInterop {
             }
             orig(source, map, hasDistortion);
         }
-        
+
         private static void SoundSource_DebugRender(SoundSource.orig_DebugRender orig, Celeste.SoundSource self, Camera camera) {
             if (!Settings.ShowHitboxes)
                 orig(self, camera);
         }
-        
+
         private void Puffer_Render(On.Celeste.Puffer.orig_Render orig, Puffer self) {
             if (GameplayRendererExt.RenderDebug)
                 Draw.Circle(self.Position, 32f, Color.Red, 32);
@@ -515,8 +525,7 @@ namespace TAS.EverestInterop {
                     SavedCamera = self.Camera;
                     Vector2 cameraPosition = player.Position - new Vector2(SavedCamera.Viewport.Width / 2, SavedCamera.Viewport.Height / 2);
                     self.Camera.Position = cameraPosition;
-                }
-                else
+                } else
                     SavedCamera = null;
             }
         }
