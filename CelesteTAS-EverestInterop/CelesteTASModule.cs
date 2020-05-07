@@ -4,7 +4,6 @@ using FMOD.Studio;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod;
@@ -13,24 +12,38 @@ using MonoMod.RuntimeDetour;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Pipes;
+using System.Text;
+using System.Threading;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using MonoMod.Utils;
 using FloatingDebris = On.Celeste.FloatingDebris;
 using MoonCreature = On.Celeste.MoonCreature;
 using SoundSource = On.Celeste.SoundSource;
+using System.Net.Sockets;
+using System.Net;
+using Mono.Unix;
 
-namespace TAS.EverestInterop {
-    public class CelesteTASModule : EverestModule {
+namespace TAS.EverestInterop
+{
+    public class CelesteTASModule : EverestModule
+    {
 
         public static CelesteTASModule Instance;
 
         public override Type SettingsType => typeof(CelesteTASModuleSettings);
-        public static CelesteTASModuleSettings Settings => (CelesteTASModuleSettings) Instance?._Settings;
+        public static CelesteTASModuleSettings Settings => (CelesteTASModuleSettings)Instance?._Settings;
 
         public VirtualButton ButtonHitboxes;
         public VirtualButton ButtonGraphics;
         public VirtualButton ButtonCamera;
+
+        public static bool UnixRTCEnabled => (Environment.OSVersion.Platform == PlatformID.Unix) && Settings.UnixRTC;
+
+        public NamedPipeServerStream UnixRTC;
+        public StreamWriter UnixRTCStreamOut;
+        public StreamReader UnixRTCStreamIn;
 
         private Camera SavedCamera;
 
@@ -38,11 +51,24 @@ namespace TAS.EverestInterop {
         public static bool SkipBaseUpdate;
         public static bool InUpdate;
 
-        public CelesteTASModule() {
+        public CelesteTASModule()
+        {
             Instance = this;
         }
 
-        public override void Load() {
+        public override void Load()
+        {
+
+            // Open unix IO pipe for interfacing with Linux / Mac Celseste Studio
+            if (UnixRTCEnabled)
+            {
+                File.Delete("/tmp/celestetas");
+                UnixRTC = new NamedPipeServerStream("/tmp/celestetas", PipeDirection.InOut);
+                UnixRTC.WaitForConnection();
+                UnixRTCStreamOut = new StreamWriter(UnixRTC);
+                UnixRTCStreamIn = new StreamReader(UnixRTC);
+                Logger.Log("CelesteTAS", "Unix socket is active on /tmp/celestetas");
+            }
 
             // Relink UpdateInputs to TAS.Manager.UpdateInputs because reflection invoke is slow.
             h_UpdateInputs = new Detour(
@@ -143,9 +169,11 @@ namespace TAS.EverestInterop {
             On.Celeste.Level.AfterRender += Level_AfterRender;
         }
 
-        public override void Unload() {
+        public override void Unload()
+        {
             h_UpdateInputs.Dispose();
             h_RunThreadWithLogging.Dispose();
+            UnixRTC.Dispose();
             On.Monocle.Engine.Update -= Engine_Update;
             On.Monocle.MInput.Update -= MInput_Update;
             On.Celeste.RunThread.Start -= RunThread_Start;
@@ -176,7 +204,8 @@ namespace TAS.EverestInterop {
             On.Celeste.Level.AfterRender -= Level_AfterRender;
         }
 
-        public void OnInputInitialize() {
+        public void OnInputInitialize()
+        {
             ButtonHitboxes = new VirtualButton();
             AddButtonsTo(ButtonHitboxes, Settings.ButtonHitboxes);
             AddKeysTo(ButtonHitboxes, Settings.KeyHitboxes);
@@ -189,7 +218,8 @@ namespace TAS.EverestInterop {
             AddButtonsTo(ButtonCamera, Settings.ButtonCamera);
             AddKeysTo(ButtonCamera, Settings.KeyCamera);
 
-            if (Settings.KeyStart.Count == 0) {
+            if (Settings.KeyStart.Count == 0)
+            {
                 Settings.KeyStart = new List<Keys> { Keys.RightControl, Keys.OemOpenBrackets };
                 Settings.KeyFastForward = new List<Keys> { Keys.RightControl, Keys.RightShift };
                 Settings.KeyFrameAdvance = new List<Keys> { Keys.OemOpenBrackets };
@@ -197,37 +227,49 @@ namespace TAS.EverestInterop {
             }
         }
 
-        public void OnInputDeregister() {
+        public void OnInputDeregister()
+        {
             ButtonHitboxes?.Deregister();
             ButtonGraphics?.Deregister();
         }
 
-        public static void AddButtonsTo(VirtualButton vbtn, List<Buttons> buttons) {
+        public static void AddButtonsTo(VirtualButton vbtn, List<Buttons> buttons)
+        {
             if (buttons == null)
                 return;
-            foreach (Buttons button in buttons) {
-                if (button == Buttons.LeftTrigger) {
+            foreach (Buttons button in buttons)
+            {
+                if (button == Buttons.LeftTrigger)
+                {
                     vbtn.Nodes.Add(new VirtualButton.PadLeftTrigger(Input.Gamepad, 0.25f));
-                } else if (button == Buttons.RightTrigger) {
+                }
+                else if (button == Buttons.RightTrigger)
+                {
                     vbtn.Nodes.Add(new VirtualButton.PadRightTrigger(Input.Gamepad, 0.25f));
-                } else {
+                }
+                else
+                {
                     vbtn.Nodes.Add(new VirtualButton.PadButton(Input.Gamepad, button));
                 }
             }
         }
 
-        public static void AddKeysTo(VirtualButton vbtn, List<Keys> keys) {
+        public static void AddKeysTo(VirtualButton vbtn, List<Keys> keys)
+        {
             if (keys == null)
                 return;
-            foreach (Keys key in keys) {
+            foreach (Keys key in keys)
+            {
                 vbtn.Nodes.Add(new VirtualButton.KeyboardKey(key));
             }
         }
 
-        public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance snapshot) {
+        public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance snapshot)
+        {
             base.CreateModMenuSection(menu, inGame, snapshot);
 
-            menu.Add(new TextMenu.Button("modoptions_celestetas_reload".DialogCleanOrNull() ?? "Reload Settings").Pressed(() => {
+            menu.Add(new TextMenu.Button("modoptions_celestetas_reload".DialogCleanOrNull() ?? "Reload Settings").Pressed(() =>
+            {
                 LoadSettings();
                 OnInputDeregister();
                 OnInputInitialize();
@@ -236,23 +278,27 @@ namespace TAS.EverestInterop {
 
         public static Detour h_UpdateInputs;
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void UpdateInputs() {
+        public static void UpdateInputs()
+        {
             // This gets relinked to TAS.Manager.UpdateInputs
             throw new Exception("Failed relinking UpdateInputs!");
         }
 
         public static Detour h_RunThreadWithLogging;
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void RunThreadWithLogging(Action method) {
+        public static void RunThreadWithLogging(Action method)
+        {
             // This gets relinked to Celeste.RunThread.RunThreadWithLogging
             throw new Exception("Failed relinking RunThreadWithLogging!");
         }
 
-        public static void Engine_Update(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
+        public static void Engine_Update(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime)
+        {
             SkipBaseUpdate = false;
             InUpdate = false;
 
-            if (!Settings.Enabled) {
+            if (!Settings.Enabled)
+            {
                 orig(self, gameTime);
                 return;
             }
@@ -264,7 +310,8 @@ namespace TAS.EverestInterop {
             SkipBaseUpdate = skipBaseUpdate;
             InUpdate = true;
 
-            for (int i = 0; i < loops; i++) {
+            for (int i = 0; i < loops; i++)
+            {
                 // Anything happening early on runs in the MInput.Update hook.
                 orig(self, gameTime);
 
@@ -273,10 +320,12 @@ namespace TAS.EverestInterop {
                     Engine.Scene?.Tracker.GetEntity<FinalBoss>()?.Render();
 
                 // Autosaving prevents opening the menu to skip cutscenes during fast forward.
-                if (Engine.Scene is Level level && UserIO.Saving && !SaveData.Instance.Areas[level.Session.Area.ID].Modes[0].Completed) {
+                if (Engine.Scene is Level level && UserIO.Saving && !SaveData.Instance.Areas[level.Session.Area.ID].Modes[0].Completed)
+                {
                     if (Engine.Scene.Entities.FindFirst<EventTrigger>() != null
                         || Engine.Scene.Entities.FindFirst<NPC>() != null
-                        || Engine.Scene.Entities.FindFirst<FlingBirdIntro>() != null) {
+                        || Engine.Scene.Entities.FindFirst<FlingBirdIntro>() != null)
+                    {
                         skipBaseUpdate = false;
                         loops = 1;
                     }
@@ -286,24 +335,47 @@ namespace TAS.EverestInterop {
             SkipBaseUpdate = false;
             InUpdate = false;
 
+            if (UnixRTCEnabled && Manager.CurrentStatus != null)
+            {
+                StreamWriter writer = Instance.UnixRTCStreamOut;
+                try
+                {
+                    writer.Write(Manager.PlayerStatus.Replace('\n', '~'));
+                    writer.Write('%');
+                    writer.Write(Manager.CurrentStatus.Replace('\n', '~'));
+                    writer.Write('%');
+                    if (Engine.Scene is Level level)
+                    {
+                        writer.Write(level.Session.LevelData.Name);
+                    }
+                    writer.WriteLine();
+                    writer.FlushAsync();
+                }
+                catch { }
+            }
+
             if (skipBaseUpdate)
                 orig_Game_Update(self, gameTime);
         }
 
-        public static void MInput_Update(On.Monocle.MInput.orig_Update orig) {
-            if (!Settings.Enabled) {
+        public static void MInput_Update(On.Monocle.MInput.orig_Update orig)
+        {
+            if (!Settings.Enabled)
+            {
                 orig();
                 return;
             }
 
-            if (!Manager.Running || Manager.Recording) {
+            if (!Manager.Running || Manager.Recording)
+            {
                 orig();
             }
             UpdateInputs();
 
             // Hacky, but this works just good enough.
             // The original code executes base.Update(); return; instead.
-            if ((Manager.state & State.FrameStep) == State.FrameStep) {
+            if ((Manager.state & State.FrameStep) == State.FrameStep)
+            {
                 PreviousGameLoop = Engine.OverloadGameLoop;
                 Engine.OverloadGameLoop = FrameStepGameLoop;
             }
@@ -312,8 +384,10 @@ namespace TAS.EverestInterop {
         public static Detour h_Game_Update;
         public delegate void d_Game_Update(Game self, GameTime gameTime);
         public static d_Game_Update orig_Game_Update;
-        public static void Game_Update(Game self, GameTime gameTime) {
-            if (Settings.Enabled && SkipBaseUpdate) {
+        public static void Game_Update(Game self, GameTime gameTime)
+        {
+            if (Settings.Enabled && SkipBaseUpdate)
+            {
                 return;
             }
 
@@ -329,12 +403,15 @@ namespace TAS.EverestInterop {
         }
 
         public static Action PreviousGameLoop;
-        public static void FrameStepGameLoop() {
+        public static void FrameStepGameLoop()
+        {
             Engine.OverloadGameLoop = PreviousGameLoop;
         }
 
-        public static void RunThread_Start(On.Celeste.RunThread.orig_Start orig, Action method, string name, bool highPriority) {
-            if (Manager.Running) {
+        public static void RunThread_Start(On.Celeste.RunThread.orig_Start orig, Action method, string name, bool highPriority)
+        {
+            if (Manager.Running)
+            {
                 RunThreadWithLogging(method);
                 return;
             }
@@ -342,19 +419,22 @@ namespace TAS.EverestInterop {
             orig(method, name, highPriority);
         }
 
-        public static void Achievements_Register(On.Celeste.Achievements.orig_Register orig, Achievement achievement) {
+        public static void Achievements_Register(On.Celeste.Achievements.orig_Register orig, Achievement achievement)
+        {
             if (Settings.DisableAchievements)
                 return;
             orig(achievement);
         }
 
-        public static void Stats_Increment(On.Celeste.Stats.orig_Increment orig, Stat stat, int increment) {
+        public static void Stats_Increment(On.Celeste.Stats.orig_Increment orig, Stat stat, int increment)
+        {
             if (Settings.DisableAchievements)
                 return;
             orig(stat, increment);
         }
 
-        public static void Commands_Render(ILContext il) {
+        public static void Commands_Render(ILContext il)
+        {
             // Hijack string.Format("\n level:       {0}, {1}", xObj, yObj)
             new ILCursor(il).FindNext(out ILCursor[] found,
                 i => i.MatchLdstr("\n level:       {0}, {1}"),
@@ -362,20 +442,23 @@ namespace TAS.EverestInterop {
             );
             ILCursor c = found[1];
             c.Remove();
-            c.EmitDelegate<Func<string, object, object, string>>((text, xObj, yObj) => {
-                int x = (int) xObj;
-                int y = (int) yObj;
+            c.EmitDelegate<Func<string, object, object, string>>((text, xObj, yObj) =>
+            {
+                int x = (int)xObj;
+                int y = (int)yObj;
                 Level level = Engine.Scene as Level;
                 return
-                    $"\n world:       {(int) Math.Round(x + level.LevelOffset.X)}, {(int) Math.Round(y + level.LevelOffset.Y)}" +
+                    $"\n world:       {(int)Math.Round(x + level.LevelOffset.X)}, {(int)Math.Round(y + level.LevelOffset.Y)}" +
                     $"\n level:       {x}, {y}";
             });
         }
-        private void LevelLoader_LoadingThread(On.Celeste.LevelLoader.orig_LoadingThread orig, LevelLoader self) {
+        private void LevelLoader_LoadingThread(On.Celeste.LevelLoader.orig_LoadingThread orig, LevelLoader self)
+        {
             orig.Invoke(self);
             Session session = self.Level.Session;
             Vector2? spawn = Manager.controller.resetSpawn;
-            if (spawn != null) {
+            if (spawn != null)
+            {
                 session.RespawnPoint = spawn;
                 session.Level = session.MapData.GetAt((Vector2) spawn)?.Name;
                 session.FirstLevel = false;
@@ -383,7 +466,8 @@ namespace TAS.EverestInterop {
             }
         }
 
-        public static void Level_Render(ILContext il) {
+        public static void Level_Render(ILContext il)
+        {
             ILCursor c;
             new ILCursor(il).FindNext(out ILCursor[] found,
                 i => i.MatchLdfld(typeof(Pathfinder), "DebugRenderEnabled"),
@@ -413,51 +497,60 @@ namespace TAS.EverestInterop {
             c.Emit(OpCodes.Callvirt, GetEntity.MakeGenericMethod(new Type[] { typeof(Seeker) }));
         }
 
-        private void Pathfinder_Render(ILContext il) {
+        private void Pathfinder_Render(ILContext il)
+        {
             // Remove the for loop which draws pathfinder tiles
             ILCursor c = new ILCursor(il);
             c.FindNext(out ILCursor[] found, i => i.MatchLdfld(typeof(Pathfinder), "lastPath"));
             c.RemoveRange(found[0].Index - 1);
         }
 
-        private void Entity_Render(On.Monocle.Entity.orig_Render orig, Entity self) {
+        private void Entity_Render(On.Monocle.Entity.orig_Render orig, Entity self)
+        {
             if (InUpdate)
                 return;
             orig(self);
         }
 
-        private void LightingRenderer_Render(On.Celeste.LightingRenderer.orig_Render orig, LightingRenderer self, Scene scene) {
+        private void LightingRenderer_Render(On.Celeste.LightingRenderer.orig_Render orig, LightingRenderer self, Scene scene)
+        {
             if (Settings.SimplifiedGraphics)
                 return;
             orig(self, scene);
         }
 
-        private void Particle_Render(On.Monocle.Particle.orig_Render orig, ref Particle self) {
+        private void Particle_Render(On.Monocle.Particle.orig_Render orig, ref Particle self)
+        {
             if (Settings.SimplifiedGraphics)
                 return;
             orig(ref self);
         }
 
-        private void BackdropRenderer_Render(On.Celeste.BackdropRenderer.orig_Render orig, BackdropRenderer self, Scene scene) {
+        private void BackdropRenderer_Render(On.Celeste.BackdropRenderer.orig_Render orig, BackdropRenderer self, Scene scene)
+        {
             if (Settings.SimplifiedGraphics)
                 return;
             orig(self, scene);
         }
 
-        private void CrystalStaticSpinner_ctor(On.Celeste.CrystalStaticSpinner.orig_ctor_Vector2_bool_CrystalColor orig, CrystalStaticSpinner self, Vector2 position, bool attachToSolid, CrystalColor color) {
+        private void CrystalStaticSpinner_ctor(On.Celeste.CrystalStaticSpinner.orig_ctor_Vector2_bool_CrystalColor orig, CrystalStaticSpinner self, Vector2 position, bool attachToSolid, CrystalColor color)
+        {
             if (Settings.SimplifiedGraphics)
                 color = CrystalColor.Blue;
             orig(self, position, attachToSolid, color);
         }
 
-        private DustStyles.DustStyle DustStyles_Get_Session(On.Celeste.DustStyles.orig_Get_Session orig, Session session) {
-            if (Settings.SimplifiedGraphics) {
-                return new DustStyles.DustStyle {
+        private DustStyles.DustStyle DustStyles_Get_Session(On.Celeste.DustStyles.orig_Get_Session orig, Session session)
+        {
+            if (Settings.SimplifiedGraphics)
+            {
+                return new DustStyles.DustStyle
+                {
                     EdgeColors = new Vector3[] {
-                        Color.Orange.ToVector3(),
-                        Color.Orange.ToVector3(),
-                        Color.Orange.ToVector3()
-                    },
+                    Color.Orange.ToVector3(),
+                    Color.Orange.ToVector3(),
+                    Color.Orange.ToVector3()
+                },
                     EyeColor = Color.Orange,
                     EyeTextures = "danger/dustcreature/eyes"
                 };
@@ -465,19 +558,22 @@ namespace TAS.EverestInterop {
             return orig(session);
         }
 
-        private float LavaRect_Wave(On.Celeste.LavaRect.orig_Wave orig, LavaRect self, int step, float length) {
+        private float LavaRect_Wave(On.Celeste.LavaRect.orig_Wave orig, LavaRect self, int step, float length)
+        {
             if (Settings.SimplifiedGraphics)
                 return 0f;
             return orig(self, step, length);
         }
 
-        private float DreamBlock_Lerp(On.Celeste.DreamBlock.orig_Lerp orig, DreamBlock self, float a, float b, float percent) {
+        private float DreamBlock_Lerp(On.Celeste.DreamBlock.orig_Lerp orig, DreamBlock self, float a, float b, float percent)
+        {
             if (Settings.SimplifiedGraphics)
                 return 0f;
             return orig(self, a, b, percent);
         }
 
-        private static void FloatingDebris_ctor(FloatingDebris.orig_ctor_Vector2 orig, Celeste.FloatingDebris self, Vector2 position) {
+        private static void FloatingDebris_ctor(FloatingDebris.orig_ctor_Vector2 orig, Celeste.FloatingDebris self, Vector2 position)
+        {
             orig(self, position);
             if (Settings.SimplifiedGraphics)
                 self.Add(new RemoveSelfComponent());
@@ -493,14 +589,17 @@ namespace TAS.EverestInterop {
             orig.Invoke(self);
         }
 
-        private void Bolt_Render(On.Celeste.LightningRenderer.Bolt.orig_Render orig, object self) {
+        private void Bolt_Render(On.Celeste.LightningRenderer.Bolt.orig_Render orig, object self)
+        {
             if (Settings.SimplifiedGraphics)
                 return;
             orig.Invoke(self);
         }
 
-        private static void Distort_Render(On.Celeste.Distort.orig_Render orig, Texture2D source, Texture2D map, bool hasDistortion) {
-            if (GameplayRendererExt.RenderDebug || Settings.SimplifiedGraphics) {
+        private static void Distort_Render(On.Celeste.Distort.orig_Render orig, Texture2D source, Texture2D map, bool hasDistortion)
+        {
+            if (GameplayRendererExt.RenderDebug || Settings.SimplifiedGraphics)
+            {
                 Distort.Anxiety = 0f;
                 Distort.GameRate = 1f;
                 hasDistortion = false;
@@ -519,18 +618,22 @@ namespace TAS.EverestInterop {
             orig(self);
         }
 
-        private void ReflectionTentaclesOnUpdateVertices(On.Celeste.ReflectionTentacles.orig_UpdateVertices orig, ReflectionTentacles self) {
+        private void ReflectionTentaclesOnUpdateVertices(On.Celeste.ReflectionTentacles.orig_UpdateVertices orig, ReflectionTentacles self)
+        {
             if ((Manager.state == State.Enable && Manager.FrameLoops > 1) || Settings.SimplifiedGraphics)
                 return;
 
             orig(self);
         }
 
-        private void Level_BeforeRender(On.Celeste.Level.orig_BeforeRender orig, Level self) {
+        private void Level_BeforeRender(On.Celeste.Level.orig_BeforeRender orig, Level self)
+        {
             orig.Invoke(self);
-            if (Settings.CenterCamera) {
+            if (Settings.CenterCamera)
+            {
                 Player player = self.Tracker.GetEntity<Player>();
-                if (player != null) {
+                if (player != null)
+                {
                     SavedCamera = self.Camera;
                     Vector2 cameraPosition = player.Position - new Vector2(SavedCamera.Viewport.Width / 2, SavedCamera.Viewport.Height / 2);
                     self.Camera.Position = cameraPosition;
@@ -539,7 +642,8 @@ namespace TAS.EverestInterop {
             }
         }
 
-        private void Level_AfterRender(On.Celeste.Level.orig_AfterRender orig, Level self) {
+        private void Level_AfterRender(On.Celeste.Level.orig_AfterRender orig, Level self)
+        {
             if (SavedCamera != null)
                 self.Camera.CopyFrom(SavedCamera);
             orig.Invoke(self);
