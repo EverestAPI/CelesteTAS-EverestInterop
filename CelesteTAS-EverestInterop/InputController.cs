@@ -6,9 +6,9 @@ using System.IO;
 using System.Text;
 namespace TAS {
 	public class InputController {
-		private List<InputRecord> inputs = new List<InputRecord>();
+		public List<InputRecord> inputs = new List<InputRecord>();
 		private int currentFrame, inputIndex, frameToNext;
-		private string filePath;
+		public string filePath;
 		private List<InputRecord> fastForwards = new List<InputRecord>();
 		public Vector2? resetSpawn;
 		public InputController(string filePath) {
@@ -111,15 +111,23 @@ namespace TAS {
 			fastForwards.Clear();
 		}
 		public void PlaybackPlayer() {
-			if (Current.Command != null) {
-				CommandHandler.ExecuteCommand(Current.Command);
-			}
-
-			if (inputIndex < inputs.Count && !Manager.IsLoading()) {
-				if (currentFrame >= frameToNext) {
-					if (inputIndex + 1 >= inputs.Count) {
-						inputIndex++;
-						return;
+			if (Manager.IsLoading())
+				return;
+			do {
+				if (Current.Command != null) {
+					ConsoleHandler.ExecuteCommand(Current.Command);
+				}
+				if (inputIndex < inputs.Count) {
+					if (currentFrame >= frameToNext) {
+						if (inputIndex + 1 >= inputs.Count) {
+							inputIndex++;
+							return;
+						}
+						if (Current.FastForward) {
+							fastForwards.RemoveAt(0);
+						}
+						Current = inputs[++inputIndex];
+						frameToNext += Current.Frames;
 					}
 					if (Current.FastForward) {
 						fastForwards.RemoveAt(0);
@@ -132,6 +140,7 @@ namespace TAS {
 			}
 			Manager.SetInputs(Current);
 		}
+		/*
 		public void RecordPlayer() {
 			InputRecord input = new InputRecord() { Line = inputIndex + 1, Frames = currentFrame };
 			GetCurrentInputs(input);
@@ -148,6 +157,7 @@ namespace TAS {
 			}
 			currentFrame++;
 		}
+		*/
 		private static void GetCurrentInputs(InputRecord record) {
 			if (Input.Jump.Check || Input.MenuConfirm.Check) { record.Actions |= Actions.Jump; }
 			if (Input.Dash.Check || Input.MenuCancel.Check || Input.Talk.Check) { record.Actions |= Actions.Dash; }
@@ -160,6 +170,7 @@ namespace TAS {
 			if (Input.MenuUp.Check || Input.MoveY.Value < 0) { record.Actions |= Actions.Up; }
 			if (Input.MenuDown.Check || Input.MoveY.Value > 0) { record.Actions |= Actions.Down; }
 		}
+		/*
 		public void WriteInputs() {
 			using (FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)) {
 				for (int i = 0; i < inputs.Count; i++) {
@@ -170,27 +181,33 @@ namespace TAS {
 				fs.Close();
 			}
 		}
-		private bool ReadFile() {
+		*/
+		public bool ReadFile(string filePath = "Celeste.tas", int startLine = 0, int endLine = int.MaxValue, int studioLine = 0) {
 			try {
-				inputs.Clear();
-				fastForwards.Clear();
-				if (!File.Exists(filePath)) { return false; }
-
-				int lines = 0;
+				if (filePath == "Celeste.tas" && startLine == 0) {
+					inputs.Clear();
+					fastForwards.Clear();
+					if (!File.Exists(filePath))
+						return false;
+				}
+				int subLine = 0;
 				using (StreamReader sr = new StreamReader(filePath)) {
 					while (!sr.EndOfStream) {
 						string line = sr.ReadLine();
 
-						if (line.IndexOf("Read", System.StringComparison.OrdinalIgnoreCase) == 0 && line.Length > 5) {
-							lines++;
-							ReadFile(line.Substring(5), lines);
-							lines--;
-						}
+						if (filePath == "Celeste.tas")
+							studioLine++;
+						subLine++;
+						if (subLine < startLine)
+							continue;
+						if (subLine > endLine)
+							break;
 
-						if (line.ToLower().StartsWith("console") && line.Length > 8)
-							ConsoleCommand(line.Substring(8));
+						if (InputCommands.TryExecuteCommand(this, line, studioLine))
+							return true;
 
-						InputRecord input = new InputRecord(++lines, line);
+						InputRecord input = new InputRecord(studioLine, line);
+						
 						if (input.FastForward) {
 							fastForwards.Add(input);
 
@@ -198,7 +215,8 @@ namespace TAS {
 								inputs[inputs.Count - 1].ForceBreak = input.ForceBreak;
 								inputs[inputs.Count - 1].FastForward = true;
 							}
-						} else if (input.Frames != 0) {
+						}
+						else if (input.Frames != 0) {
 							inputs.Add(input);
 						}
 					}
@@ -208,88 +226,6 @@ namespace TAS {
 				return false;
 			}
 		}
-		private void ReadFile(string extraFile, int lines) {
-			int index = extraFile.IndexOf(',');
-			string filePath = index > 0 ? extraFile.Substring(0, index) : extraFile;
-			string origFilePath = Manager.settings.DefaultPath;
-			// Check for full and shortened Read versions for absolute path
-			if (origFilePath != null) {
-				string altFilePath = origFilePath + Path.DirectorySeparatorChar + filePath;
-				if (File.Exists(altFilePath))
-					filePath = altFilePath;
-				else {
-					string[] files = Directory.GetFiles(origFilePath, $"{filePath}*.tas");
-					if (files.Length != 0)
-						filePath = files[0].ToString();
-				}
-			}
-			// Check for full and shortened Read versions for relative path
-			if (!File.Exists(filePath)) {
-				string[] files = Directory.GetFiles(Directory.GetCurrentDirectory(), $"{filePath}*.tas");
-				filePath = files[0].ToString();
-				if (!File.Exists(filePath)) { return; }
-			}
-			// Find starting and ending lines
-			int skipLines = 0;
-			int lineLen = int.MaxValue;
-			if (index > 0) {
-				int indexLen = extraFile.IndexOf(',', index + 1);
-				if (indexLen > 0) {
-					string startLine = extraFile.Substring(index + 1, indexLen - index - 1);
-					string endLine = extraFile.Substring(indexLen + 1);
-					GetLine(startLine, filePath, out skipLines);
-					GetLine(endLine, filePath, out lineLen);
-				} else {
-					string startLine = extraFile.Substring(index + 1);
-					GetLine(startLine, filePath, out skipLines);
-				}
-			}
 
-			int subLine = 0;
-			using (StreamReader sr = new StreamReader(filePath)) {
-				while (!sr.EndOfStream) {
-					string line = sr.ReadLine();
-
-					subLine++;
-					if (subLine <= skipLines) { continue; }
-					if (subLine > lineLen) { break; }
-
-					if (line.IndexOf("Read", System.StringComparison.OrdinalIgnoreCase) == 0 && line.Length > 5) {
-						ReadFile(line.Substring(5), lines);
-					}
-
-					InputRecord input = new InputRecord(lines, line);
-					if (input.FastForward) {
-						fastForwards.Add(input);
-
-						if (inputs.Count > 0) {
-							inputs[inputs.Count - 1].ForceBreak = input.ForceBreak;
-							inputs[inputs.Count - 1].FastForward = true;
-						}
-					} else if (input.Frames != 0) {
-						inputs.Add(input);
-					}
-				}
-			}
-		}
-		private void GetLine(string labelOrLineNumber, string path, out int lineNumber) {
-            if (!int.TryParse(labelOrLineNumber, out lineNumber)) {
-				int curLine = 0;
-				using (StreamReader sr = new StreamReader(path)) {
-					while (!sr.EndOfStream) {
-						curLine++;
-						string line = sr.ReadLine();
-						if (line == ("#" + labelOrLineNumber)) {
-							lineNumber = curLine;
-							return;
-						}
-					}
-					lineNumber = int.MaxValue;
-				}
-			}
-		}
-		private void ConsoleCommand(string command) {
-			inputs.Add(new InputRecord(command));
-		}
 	}
 }

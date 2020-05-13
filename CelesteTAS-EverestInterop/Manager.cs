@@ -47,10 +47,11 @@ namespace TAS {
 				if (HasFlag(state, State.FrameStep)) {
 					return;
 				}
-
+				/*
 				if (HasFlag(state, State.Record)) {
 					controller.RecordPlayer();
 				}
+				*/
 				else {
 					bool fastForward = controller.HasFastForward;
 					controller.PlaybackPlayer();
@@ -278,9 +279,11 @@ namespace TAS {
 		}
 		private static void DisableRun() {
 			Running = false;
+			/*
 			if (Recording) {
 				controller.WriteInputs();
 			}
+			*/
 			Recording = false;
 			state = State.None;
 			nextState = State.None;
