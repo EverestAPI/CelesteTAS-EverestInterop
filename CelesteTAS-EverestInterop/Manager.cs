@@ -18,7 +18,7 @@ namespace TAS {
 		Disable = 8,
 		Delay = 16
 	}
-	public class Manager {
+	public partial class Manager {
 		private static FieldInfo strawberryCollectTimer = typeof(Strawberry).GetField("collectTimer", BindingFlags.Instance | BindingFlags.NonPublic);
 		public static bool Running, Recording;
 		public static InputController controller = new InputController("Celeste.tas");
@@ -82,88 +82,7 @@ namespace TAS {
 				}
 			}
 		}
-		private static void UpdatePlayerInfo() {
-			Player player = null;
-			long chapterTime = 0;
-			if (Engine.Scene is Level level) {
-				player = level.Tracker.GetEntity<Player>();
-				if (player != null) {
-					chapterTime = level.Session.Time;
-					if (chapterTime != lastTimer || lastPos != player.ExactPosition) {
-						string pos = $"Pos: {player.ExactPosition.X.ToString("0.00")},{player.ExactPosition.Y.ToString("0.00")}";
-						string speed = $"Speed: {player.Speed.X.ToString("0.00")},{player.Speed.Y.ToString("0.00")}";
-						Vector2 diff = (player.ExactPosition - lastPos) * 60;
-						string vel = $"Vel: {diff.X.ToString("0.00")},{diff.Y.ToString("0.00")}";
-						string polarvel = $"     {diff.Length().ToString("0.00")},{GetAngle(diff).ToString("0.00")}°";
-						string miscstats = $"Stamina: {player.Stamina.ToString("0")} Timer: {(chapterTime / 10000000D).ToString("0.000")}";
 
-						int dashCooldown = (int)((float)player.GetPrivateField("dashCooldownTimer") * 60f);
-						string statuses = (dashCooldown < 1 && player.Dashes > 0 ? "Dash " : string.Empty)
-							+ (player.LoseShards ? "Ground " : string.Empty)
-							+ ((bool)player.InvokePrivateMethod("WallJumpCheck", 1) ? "Wall-R " : string.Empty)
-							+ ((bool)player.InvokePrivateMethod("WallJumpCheck", -1) ? "Wall-L " : string.Empty)
-							+ (!player.LoseShards && (float)player.GetPrivateField("jumpGraceTimer") > 0 ? "Coyote " : string.Empty);
-						statuses = (player.InControl && !level.Transitioning ? statuses : "NoControl ")
-							+ (player.TimePaused ? "Paused " : string.Empty)
-							+ (level.InCutscene ? "Cutscene " : string.Empty);
-
-						if (player.Holding == null) {
-							foreach (Component component in level.Tracker.GetComponents<Holdable>()) {
-								Holdable holdable = (Holdable)component;
-								if (holdable.Check(player)) {
-									statuses += "Grab ";
-									break;
-								}
-							}
-						}
-
-						int berryTimer = -10;
-						Follower firstRedBerryFollower = player.Leader.Followers.Find(follower => follower.Entity is Strawberry berry && !berry.Golden);
-						if (firstRedBerryFollower?.Entity is Strawberry firstRedBerry) {
-							object collectTimer;
-							if (firstRedBerry.GetType() == typeof(Strawberry)
-								|| (collectTimer = firstRedBerry.GetPrivateField("collectTimer")) == null) {
-
-								// if this is a vanilla berry or a mod berry having no collectTimer, use the cached FieldInfo for Strawberry.collectTimer.
-								collectTimer = strawberryCollectTimer.GetValue(firstRedBerry);
-							}
-
-							berryTimer = (int)Math.Round(60f * (float)collectTimer);
-						}
-						string timers = (berryTimer != -10 ? $"BerryTimer: {berryTimer.ToString()} " : string.Empty)
-							+ (dashCooldown != 0 ? $"DashTimer: {(dashCooldown - 1).ToString()} " : string.Empty);
-
-						StringBuilder sb = new StringBuilder();
-						sb.AppendLine(pos);
-						sb.AppendLine(speed);
-						sb.AppendLine(vel);
-						if (player.StateMachine.State == 19 || SaveData.Instance.Assists.ThreeSixtyDashing || SaveData.Instance.Assists.SuperDashing) {
-							sb.AppendLine(polarvel);
-						}
-						sb.AppendLine(miscstats);
-						if (!string.IsNullOrEmpty(statuses)) {
-							sb.AppendLine(statuses);
-						}
-						sb.Append(timers);
-						PlayerStatus = sb.ToString().TrimEnd();
-						lastPos = player.ExactPosition;
-						lastTimer = chapterTime;
-					}
-				}
-				else {
-					PlayerStatus = level.InCutscene ? "Cutscene" : null;
-				}
-			}
-			else if (Engine.Scene is SummitVignette summit) {
-				PlayerStatus = string.Concat("SummitVignette ", summit.GetPrivateField("ready"));
-			}
-			else if (Engine.Scene is Overworld overworld) {
-				PlayerStatus = string.Concat("Overworld ", overworld.ShowInputUI);
-			}
-			else if (Engine.Scene != null) {
-				PlayerStatus = Engine.Scene.GetType().Name;
-			}
-		}
 		private static bool IsKeyDown(List<Keys> keys) {
 			foreach (Keys key in keys) {
 				if (!kbState.IsKeyDown(key))
@@ -237,6 +156,8 @@ namespace TAS {
 						state &= ~State.FrameStep;
 						nextState |= State.FrameStep;
 						controller.ReloadPlayback();
+						if (settings.ExportSyncData)
+							ExportPlayerInfo(new string[] { "FlingBird" });
 					}
 					FrameStepCooldown = 60;
 				} else if (!dpadDown && frameStepWasDpadDown) {
@@ -286,11 +207,15 @@ namespace TAS {
 			nextState = State.None;
 			RestorePlayerBindings();
 			controller.resetSpawn = null;
+			if (settings.ExportSyncData)
+				EndExport();
 		}
 		private static void EnableRun() {
 			nextState &= ~State.Enable;
 			UpdateVariables(false);
 			BackupPlayerBindings();
+			if (settings.ExportSyncData)
+				BeginExport("dump.txt");
 		}
 		private static void BackupPlayerBindings() {
 			playerBindings = new List<VirtualButton.Node>[5] { Input.Jump.Nodes, Input.Dash.Nodes, Input.Grab.Nodes, Input.Talk.Nodes, Input.QuickRestart.Nodes};
