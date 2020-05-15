@@ -37,6 +37,9 @@ namespace TAS.EverestInterop {
 
         public bool DisableAchievements { get; set; } = false;
 
+        [SettingNeedsRelaunch]
+        public bool UnixRTC { get; set; } = false;
+
         [SettingIgnore]
         public string DefaultPath { get; set; } = null;
 

@@ -4,6 +4,9 @@ using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System;
+using TAS.EverestInterop;
+
 namespace TAS {
 	public class InputController {
 		public List<InputRecord> inputs = new List<InputRecord>();
@@ -15,7 +18,7 @@ namespace TAS {
 			this.filePath = filePath;
 		}
 
-		public bool CanPlayback { get { return inputIndex < inputs.Count; } }
+        public bool CanPlayback { get { return inputIndex < inputs.Count; } }
 		public bool HasFastForward { get { return fastForwards.Count > 0; } }
 		public int FastForwardSpeed { get { return fastForwards.Count == 0 ? 1 : fastForwards[0].Frames == 0 ? 400 : fastForwards[0].Frames; } }
 		public int CurrentFrame { get { return currentFrame; } }
@@ -135,7 +138,6 @@ namespace TAS {
 			if (Manager.ExportSyncData)
 				Manager.ExportPlayerInfo();
 			Manager.SetInputs(Current);
-
 		}
 		/*
 		public void RecordPlayer() {
