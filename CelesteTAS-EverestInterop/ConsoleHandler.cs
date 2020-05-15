@@ -6,14 +6,13 @@ using Monocle;
 using System.Threading;
 
 namespace TAS {
-	public class CommandHandler {
-		public static void ExecuteCommand(string command) {
-			string[] commands = command.Trim().Split();
-			string[] args = new string[commands.Length - 1];
-			for (int i = 1; i < commands.Length; i++) {
-				args[i - 1] = commands[i];
+	public class ConsoleHandler {
+		public static void ExecuteCommand(string[] command) {
+			string[] args = new string[command.Length - 2];
+			for (int i = 2; i < command.Length; i++) {
+				args[i - 2] = command[i];
 			}
-			string commandID = commands[0].ToLower();
+			string commandID = command[1].ToLower();
 			if (commandID == "load" || commandID == "hard" || commandID == "rmx2")
 				LoadCommand(commandID, args);
 			else
@@ -52,7 +51,7 @@ namespace TAS {
 					Load(mode, levelID);
 				}
 			}
-			catch (Exception) { }
+			catch { }
 		}
 		private static int GetLevelID(string ID) {
 			if (int.TryParse(ID, out int num))

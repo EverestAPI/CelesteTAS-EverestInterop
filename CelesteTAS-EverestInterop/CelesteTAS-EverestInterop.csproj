@@ -70,10 +70,11 @@
   <ItemGroup>
     <Compile Include="CelesteTASModuleSettings.cs" />
     <Compile Include="CelesteTASModule.cs" />
+    <Compile Include="Commands.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="InputController.cs" />
     <Compile Include="InputRecord.cs" />
-    <Compile Include="LoadCommand.cs" />
+    <Compile Include="ConsoleHandler.cs" />
     <Compile Include="Manager.cs" />
     <Compile Include="Manager-PlayerInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
