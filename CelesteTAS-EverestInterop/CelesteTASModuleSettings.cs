@@ -37,8 +37,6 @@ namespace TAS.EverestInterop {
 
         public bool DisableAchievements { get; set; } = false;
 
-		public bool ExportSyncData { get; set; } = false;
-
         [SettingIgnore]
         public string DefaultPath { get; set; } = null;
 

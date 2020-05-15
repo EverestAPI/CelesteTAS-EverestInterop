@@ -13,6 +13,7 @@ namespace TAS
 	public partial class Manager
 	{
 		private static StreamWriter sw;
+		public static bool ExportSyncData { get; set; }
 
 		private static void UpdatePlayerInfo() {
 			Player player = null;
@@ -100,15 +101,15 @@ namespace TAS
 				PlayerStatus = Engine.Scene.GetType().Name;
 		}
 
-		private static void BeginExport(string path) {
+		public static void BeginExport(string path) {
 			sw = new StreamWriter(path);
 		}
 
-		private static void EndExport() {
+		public static void EndExport() {
 			sw.Dispose();
 		}
 
-		private static void ExportPlayerInfo(string[] tracked = null) {
+		public static void ExportPlayerInfo(string[] tracked = null) {
 			Player player = null;
 			if (Engine.Scene is Level level) {
 				player = level.Tracker.GetEntity<Player>();

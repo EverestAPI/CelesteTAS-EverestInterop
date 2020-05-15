@@ -115,7 +115,7 @@ namespace TAS {
 				return;
 			do {
 				if (Current.Command != null) {
-					ConsoleHandler.ExecuteCommand(Current.Command);
+					Current.Command.Invoke();
 				}
 				if (inputIndex < inputs.Count) {
 					if (currentFrame >= frameToNext) {
@@ -129,16 +129,13 @@ namespace TAS {
 						Current = inputs[++inputIndex];
 						frameToNext += Current.Frames;
 					}
-					if (Current.FastForward) {
-						fastForwards.RemoveAt(0);
-					}
-					Current = inputs[++inputIndex];
-					frameToNext += Current.Frames;
 				}
-
+			} while (Current.Command != null);
 				currentFrame++;
-			}
+			if (Manager.ExportSyncData)
+				Manager.ExportPlayerInfo();
 			Manager.SetInputs(Current);
+
 		}
 		/*
 		public void RecordPlayer() {

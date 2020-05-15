@@ -8,11 +8,11 @@ using System.Threading;
 namespace TAS {
 	public class ConsoleHandler {
 		public static void ExecuteCommand(string[] command) {
-			string[] args = new string[command.Length - 2];
-			for (int i = 2; i < command.Length; i++) {
-				args[i - 2] = command[i];
+			string[] args = new string[command.Length - 1];
+			for (int i = 1; i < command.Length; i++) {
+				args[i - 1] = command[i];
 			}
-			string commandID = command[1].ToLower();
+			string commandID = command[0].ToLower();
 			if (commandID == "load" || commandID == "hard" || commandID == "rmx2")
 				LoadCommand(commandID, args);
 			else

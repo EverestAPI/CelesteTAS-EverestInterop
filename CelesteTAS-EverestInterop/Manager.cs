@@ -25,6 +25,7 @@ namespace TAS {
 		public static State state, nextState;
 		public static string CurrentStatus, PlayerStatus;
 		public static int FrameStepCooldown, FrameLoops = 1;
+		public static bool enforceLegal;
 		private static bool frameStepWasDpadUp, frameStepWasDpadDown;
 		private static Vector2 lastPos;
 		private static long lastTimer;
@@ -57,7 +58,8 @@ namespace TAS {
 					controller.PlaybackPlayer();
 					if (fastForward
 						&& (!controller.HasFastForward
-							|| controller.Current.ForceBreak && controller.CurrentInputFrame == controller.Current.Frames)) {
+						|| controller.Current.ForceBreak
+						&& controller.CurrentInputFrame == controller.Current.Frames)) {
 						nextState |= State.FrameStep;
 						FrameLoops = 1;
 					}
@@ -157,8 +159,8 @@ namespace TAS {
 						state &= ~State.FrameStep;
 						nextState |= State.FrameStep;
 						controller.ReloadPlayback();
-						if (settings.ExportSyncData)
-							ExportPlayerInfo(new string[] { "FlingBird" });
+						if (ExportSyncData)
+							ExportPlayerInfo();
 					}
 					FrameStepCooldown = 60;
 				} else if (!dpadDown && frameStepWasDpadDown) {
@@ -210,15 +212,14 @@ namespace TAS {
 			nextState = State.None;
 			RestorePlayerBindings();
 			controller.resetSpawn = null;
-			if (settings.ExportSyncData)
+			if (ExportSyncData)
 				EndExport();
+			enforceLegal = false;
 		}
 		private static void EnableRun() {
 			nextState &= ~State.Enable;
 			UpdateVariables(false);
 			BackupPlayerBindings();
-			if (settings.ExportSyncData)
-				BeginExport("dump.txt");
 		}
 		private static void BackupPlayerBindings() {
 			playerBindings = new List<VirtualButton.Node>[5] { Input.Jump.Nodes, Input.Dash.Nodes, Input.Grab.Nodes, Input.Talk.Nodes, Input.QuickRestart.Nodes};

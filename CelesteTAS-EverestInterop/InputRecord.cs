@@ -26,10 +26,10 @@ namespace TAS {
 		public float Angle { get; set; }
 		public bool FastForward { get; set; }
 		public bool ForceBreak { get; set; }
-		public string[] Command { get; set; }
+		public Action Command { get; }
 		public InputRecord() { }
-		public InputRecord(string[] command) {
-			Command = command;
+		public InputRecord(Action commandCall) {
+			Command = commandCall;
 		}
 		public InputRecord(int number, string line) {
 			Line = number;
