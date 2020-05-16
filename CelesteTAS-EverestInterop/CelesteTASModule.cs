@@ -4,23 +4,43 @@ using FMOD.Studio;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Mono.Cecil.Cil;
 using Monocle;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Pipes;
+using System.Text;
+using System.Threading;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using MonoMod.Utils;
+using System.Net;
+using Mono.Unix;
 
-namespace TAS.EverestInterop {
-    public class CelesteTASModule : EverestModule {
-
+namespace TAS.EverestInterop
+{
+    public class CelesteTASModule : EverestModule
+    {
         public static CelesteTASModule Instance;
 
         public override Type SettingsType => typeof(CelesteTASModuleSettings);
-        public static CelesteTASModuleSettings Settings => (CelesteTASModuleSettings) Instance?._Settings;
+        public static CelesteTASModuleSettings Settings => (CelesteTASModuleSettings)Instance?._Settings;
 
         public VirtualButton ButtonHitboxes;
         public VirtualButton ButtonGraphics;
         public VirtualButton ButtonCamera;
+        public static bool UnixRTCEnabled => (Environment.OSVersion.Platform == PlatformID.Unix) && Settings.UnixRTC;
+
+        public NamedPipeServerStream UnixRTC;
+        public StreamWriter UnixRTCStreamOut;
+        public StreamReader UnixRTCStreamIn;
+
+        private Camera SavedCamera;
+
+        // The fields we want to access from Celeste-Addons
+        public static bool SkipBaseUpdate;
+        public static bool InUpdate;
 
         public CelesteTASModule() {
             Instance = this;
@@ -49,6 +69,16 @@ namespace TAS.EverestInterop {
             // Any additional hooks.
             Everest.Events.Input.OnInitialize += OnInputInitialize;
             Everest.Events.Input.OnDeregister += OnInputDeregister;
+
+            // Open unix IO pipe for interfacing with Linux / Mac Celeste Studio
+            if (UnixRTCEnabled) {
+                File.Delete("/tmp/celestetas");
+                UnixRTC = new NamedPipeServerStream("/tmp/celestetas", PipeDirection.InOut);
+                UnixRTC.WaitForConnection();
+                UnixRTCStreamOut = new StreamWriter(UnixRTC);
+                UnixRTCStreamIn = new StreamReader(UnixRTC);
+                Logger.Log("CelesteTAS", "Unix socket is active on /tmp/celestetas");
+            }
         }
 
         public override void Unload() {
@@ -57,11 +87,12 @@ namespace TAS.EverestInterop {
             GraphicsCore.instance.Unload();
             SimplifiedGraphics.instance.Unload();
             CenterCamera.instance.Unload();
-
             On.Celeste.LevelLoader.LoadingThread -= LevelLoader_LoadingThread;
 
             Everest.Events.Input.OnInitialize -= OnInputInitialize;
             Everest.Events.Input.OnDeregister -= OnInputDeregister;
+
+            UnixRTC.Dispose();
         }
 
         public void OnInputInitialize() {
@@ -95,20 +126,19 @@ namespace TAS.EverestInterop {
             if (buttons == null)
                 return;
             foreach (Buttons button in buttons) {
-                if (button == Buttons.LeftTrigger) {
+                if (button == Buttons.LeftTrigger)
                     vbtn.Nodes.Add(new VirtualButton.PadLeftTrigger(Input.Gamepad, 0.25f));
-                } else if (button == Buttons.RightTrigger) {
+                else if (button == Buttons.RightTrigger)
                     vbtn.Nodes.Add(new VirtualButton.PadRightTrigger(Input.Gamepad, 0.25f));
-                } else {
+                else
                     vbtn.Nodes.Add(new VirtualButton.PadButton(Input.Gamepad, button));
-                }
             }
         }
 
         public static void AddKeysTo(VirtualButton vbtn, List<Keys> keys) {
             if (keys == null)
                 return;
-            foreach (Keys key in keys) {
+            foreach (Keys key in keys)  {
                 vbtn.Nodes.Add(new VirtualButton.KeyboardKey(key));
             }
         }

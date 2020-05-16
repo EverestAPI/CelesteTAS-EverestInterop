@@ -4,6 +4,9 @@ using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System;
+using TAS.EverestInterop;
+
 namespace TAS {
 	public class InputController {
 		public List<InputRecord> inputs = new List<InputRecord>();
@@ -20,6 +23,7 @@ namespace TAS {
 		public int FastForwardSpeed => fastForwards.Count == 0 ? 1 : fastForwards[0].Frames == 0 ? 400 : fastForwards[0].Frames;
 		public int CurrentFrame => currentFrame;
 		public int CurrentInputFrame => currentFrame - frameToNext + Current.Frames;
+		
 		public InputRecord Current { get; set; }
 		public InputRecord Previous {
 			get {
@@ -125,7 +129,6 @@ namespace TAS {
 			if (Manager.ExportSyncData)
 				Manager.ExportPlayerInfo();
 			Manager.SetInputs(Current);
-
 		}
 
 		public void InitializeRecording() {
