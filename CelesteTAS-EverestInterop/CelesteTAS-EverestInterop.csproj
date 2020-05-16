@@ -70,8 +70,12 @@
   <ItemGroup>
     <Compile Include="CelesteTASModuleSettings.cs" />
     <Compile Include="CelesteTASModule.cs" />
+    <Compile Include="CenterCamera.cs" />
     <Compile Include="Commands.cs" />
+    <Compile Include="Core.cs" />
+    <Compile Include="DisableAchievements.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="GraphicsCore.cs" />
     <Compile Include="InputController.cs" />
     <Compile Include="InputRecord.cs" />
     <Compile Include="ConsoleHandler.cs" />
@@ -79,6 +83,7 @@
     <Compile Include="Manager-PlayerInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RemoveSelfComponent.cs" />
+    <Compile Include="SimplifiedGraphics.cs" />
     <Compile Include="TASCommandAttribute.cs" />
   </ItemGroup>
   <ItemGroup>

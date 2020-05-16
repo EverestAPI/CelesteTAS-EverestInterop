@@ -114,7 +114,7 @@ namespace TAS
 			if (Engine.Scene is Level level) {
 				player = level.Tracker.GetEntity<Player>();
 				if (player != null) {
-					string inputs = controller.Current.ActionsToString();
+					string inputs = controller.Current.ActionsToString().Substring(1);
 					string time = (level.Session.Time / 10000000D).ToString("0.000");
 					double x = (double)player.X + player.PositionRemainder.X;
 					double y = (double)player.Y + player.PositionRemainder.Y;

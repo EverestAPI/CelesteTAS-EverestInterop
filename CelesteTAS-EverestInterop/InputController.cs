@@ -15,43 +15,43 @@ namespace TAS {
 			this.filePath = filePath;
 		}
 
-		public bool CanPlayback { get { return inputIndex < inputs.Count; } }
-		public bool HasFastForward { get { return fastForwards.Count > 0; } }
-		public int FastForwardSpeed { get { return fastForwards.Count == 0 ? 1 : fastForwards[0].Frames == 0 ? 400 : fastForwards[0].Frames; } }
-		public int CurrentFrame { get { return currentFrame; } }
-		public int CurrentInputFrame { get { return currentFrame - frameToNext + Current.Frames; } }
+		public bool CanPlayback => inputIndex < inputs.Count;
+		public bool HasFastForward => fastForwards.Count > 0;
+		public int FastForwardSpeed => fastForwards.Count == 0 ? 1 : fastForwards[0].Frames == 0 ? 400 : fastForwards[0].Frames;
+		public int CurrentFrame => currentFrame;
+		public int CurrentInputFrame => currentFrame - frameToNext + Current.Frames;
 		public InputRecord Current { get; set; }
 		public InputRecord Previous {
 			get {
-				if (frameToNext != 0 && inputIndex - 1 >= 0 && inputs.Count > 0) {
+				if (frameToNext != 0 && inputIndex - 1 >= 0 && inputs.Count > 0)
 					return inputs[inputIndex - 1];
-				}
 				return null;
 			}
 		}
 		public InputRecord Next {
 			get {
-				if (frameToNext != 0 && inputIndex + 1 < inputs.Count) {
+				if (frameToNext != 0 && inputIndex + 1 < inputs.Count)
 					return inputs[inputIndex + 1];
-				}
 				return null;
 			}
 		}
+
 		public bool HasInput(Actions action) {
 			InputRecord input = Current;
 			return input.HasActions(action);
 		}
+
 		public bool HasInputPressed(Actions action) {
 			InputRecord input = Current;
-
 			return input.HasActions(action) && CurrentInputFrame == 1;
 		}
+
 		public bool HasInputReleased(Actions action) {
 			InputRecord current = Current;
 			InputRecord previous = Previous;
-
 			return !current.HasActions(action) && previous != null && previous.HasActions(action) && CurrentInputFrame == 1;
 		}
+
 		public override string ToString() {
 			if (frameToNext == 0 && Current != null) {
 				return Current.ToString() + "(" + currentFrame.ToString() + ")";
@@ -62,12 +62,13 @@ namespace TAS {
 			}
 			return string.Empty;
 		}
+
 		public string NextInput() {
-			if (frameToNext != 0 && inputIndex + 1 < inputs.Count) {
+			if (frameToNext != 0 && inputIndex + 1 < inputs.Count)
 				return inputs[inputIndex + 1].ToString();
-			}
 			return string.Empty;
 		}
+
 		public void InitializePlayback() {
 			int trycount = 5;
 			while (!ReadFile() && trycount >= 0) {
@@ -85,32 +86,21 @@ namespace TAS {
 				frameToNext = 1;
 			}
 		}
-		public void ReloadPlayback() {
-			int playedBackFrames = currentFrame;
-			InitializePlayback();
-			currentFrame = playedBackFrames;
 
-			while (currentFrame >= frameToNext) {
-				if (inputIndex + 1 >= inputs.Count) {
-					inputIndex++;
-					return;
-				}
-				if (Current.FastForward) {
+		public void AdvanceFrame(bool reload) {
+			if (reload) {
+				int _currentFrame = currentFrame;
+				int _inputIndex = inputIndex;
+				int _frameToNext = frameToNext;
+				InitializePlayback();
+				currentFrame = _currentFrame;
+				inputIndex = _inputIndex;
+				frameToNext = _frameToNext + 1;
+				Current = inputs[inputIndex];
+				while (fastForwards.Count > 0 && fastForwards[0].Line < Current.Line) {
 					fastForwards.RemoveAt(0);
 				}
-				Current = inputs[++inputIndex];
-				frameToNext += Current.Frames;
 			}
-		}
-		public void InitializeRecording() {
-			currentFrame = 0;
-			inputIndex = 0;
-			Current = new InputRecord();
-			frameToNext = 0;
-			inputs.Clear();
-			fastForwards.Clear();
-		}
-		public void PlaybackPlayer() {
 			if (Manager.IsLoading())
 				return;
 			do {
@@ -131,12 +121,22 @@ namespace TAS {
 					}
 				}
 			} while (Current.Command != null);
-				currentFrame++;
+			currentFrame++;
 			if (Manager.ExportSyncData)
 				Manager.ExportPlayerInfo();
 			Manager.SetInputs(Current);
 
 		}
+
+		public void InitializeRecording() {
+			currentFrame = 0;
+			inputIndex = 0;
+			Current = new InputRecord();
+			frameToNext = 0;
+			inputs.Clear();
+			fastForwards.Clear();
+		}
+
 		/*
 		public void RecordPlayer() {
 			InputRecord input = new InputRecord() { Line = inputIndex + 1, Frames = currentFrame };
@@ -155,6 +155,7 @@ namespace TAS {
 			currentFrame++;
 		}
 		*/
+
 		private static void GetCurrentInputs(InputRecord record) {
 			if (Input.Jump.Check || Input.MenuConfirm.Check) { record.Actions |= Actions.Jump; }
 			if (Input.Dash.Check || Input.MenuCancel.Check || Input.Talk.Check) { record.Actions |= Actions.Dash; }
@@ -167,6 +168,7 @@ namespace TAS {
 			if (Input.MenuUp.Check || Input.MoveY.Value < 0) { record.Actions |= Actions.Up; }
 			if (Input.MenuDown.Check || Input.MoveY.Value > 0) { record.Actions |= Actions.Down; }
 		}
+
 		/*
 		public void WriteInputs() {
 			using (FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)) {
@@ -179,6 +181,7 @@ namespace TAS {
 			}
 		}
 		*/
+
 		public bool ReadFile(string filePath = "Celeste.tas", int startLine = 0, int endLine = int.MaxValue, int studioLine = 0) {
 			try {
 				if (filePath == "Celeste.tas" && startLine == 0) {

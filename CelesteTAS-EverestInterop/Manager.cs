@@ -55,7 +55,7 @@ namespace TAS {
 				*/
 				else {
 					bool fastForward = controller.HasFastForward;
-					controller.PlaybackPlayer();
+					controller.AdvanceFrame(false);
 					if (fastForward
 						&& (!controller.HasFastForward
 						|| controller.Current.ForceBreak
@@ -158,7 +158,7 @@ namespace TAS {
 					} else {
 						state &= ~State.FrameStep;
 						nextState |= State.FrameStep;
-						controller.ReloadPlayback();
+						controller.AdvanceFrame(true);
 						if (ExportSyncData)
 							ExportPlayerInfo();
 					}
@@ -176,7 +176,7 @@ namespace TAS {
 						FrameStepCooldown = 60;
 						state &= ~State.FrameStep;
 						nextState |= State.FrameStep;
-						controller.ReloadPlayback();
+						controller.AdvanceFrame(true);
 					}
 				}
 			}

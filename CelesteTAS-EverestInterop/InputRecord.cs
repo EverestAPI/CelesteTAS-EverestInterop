@@ -35,7 +35,7 @@ namespace TAS {
 			Line = number;
 
 			int index = 0;
-			Frames = ReadFrames(line, ref index);
+			Frames = ReadFrames(line);
 			if (Frames == 0) {
 
 				// allow whitespace before the breakpoint
@@ -49,7 +49,7 @@ namespace TAS {
 						index = 4;
 					}
 
-					Frames = ReadFrames(line, ref index);
+					Frames = ReadFrames(line.Substring(index));
 				}
 				return;
 			}
@@ -74,7 +74,7 @@ namespace TAS {
 					case 'F':
 						Actions ^= Actions.Feather;
 						index++;
-						Angle = ReadAngle(line, ref index);
+						Angle = ReadAngle(line.Substring(index));
 						continue;
 				}
 
@@ -87,72 +87,46 @@ namespace TAS {
 				Angle = 0;
 			}
 		}
-		private int ReadFrames(string line, ref int start) {
+		private int ReadFrames(string line) {
+
+			line = line.Trim();
+			if (line.Contains(","))
+				line = line.Substring(0, line.IndexOf(","));
+			if (int.TryParse(line, out int frames)) {
+				return Math.Min(frames, 9999);
+			}
+			return 0;
+			/*i'm commenting this out because y'all need to know exactly how awful this code used to be
 			bool foundFrames = false;
 			int frames = 0;
 
 			while (start < line.Length) {
 				char c = line[start];
-
 				if (!foundFrames) {
 					if (char.IsDigit(c)) {
 						foundFrames = true;
+						//EXCUSE ME WHAT THE FUCK
+						//WHY WOULD YOU DO THIS
+						//I AM IN PHYSICAL PAIN RIGHT NOW
+						//TryParse IS A THING
 						frames = c ^ 0x30;
-					} else if (c != ' ') {
+					} else if (c != ' ')
 						return frames;
-					}
+
 				} else if (char.IsDigit(c)) {
-					if (frames < 9999) {
+					if (frames < 9999)
 						frames = frames * 10 + (c ^ 0x30);
-					} else {
+					else
 						frames = 9999;
-					}
-				} else if (c != ' ') {
+				} else if (c != ' ')
 					return frames;
-				}
-
 				start++;
 			}
-
 			return frames;
+			*/
 		}
-		private float ReadAngle(string line, ref int start) {
-			bool foundAngle = false;
-			bool foundDecimal = false;
-			int decimalPlaces = 1;
-			int angle = 0;
-			bool negative = false;
-
-			while (start < line.Length) {
-				char c = line[start];
-
-				if (!foundAngle) {
-					if (char.IsDigit(c)) {
-						foundAngle = true;
-						angle = c ^ 0x30;
-					} else if (c == ',') {
-						foundAngle = true;
-					} else if (c == '.') {
-						foundAngle = true;
-						foundDecimal = true;
-					} else if (c == '-') {
-						negative = true;
-					}
-				} else if (char.IsDigit(c)) {
-					angle = angle * 10 + (c ^ 0x30);
-					if (foundDecimal) {
-						decimalPlaces *= 10;
-					}
-				} else if (c == '.') {
-					foundDecimal = true;
-				} else if (c != ' ') {
-					return (negative ? (float)-angle : (float)angle) / (float)decimalPlaces;
-				}
-
-				start++;
-			}
-
-			return (negative ? (float)-angle : (float)angle) / (float)decimalPlaces;
+		private float ReadAngle(string line) {
+			return float.Parse(line.Trim());
 		}
 		public float GetX() {
 			if (HasActions(Actions.Right)) {
@@ -226,3 +200,4 @@ namespace TAS {
 		}
 	}
 }
+ 

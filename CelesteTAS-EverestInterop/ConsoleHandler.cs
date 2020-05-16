@@ -18,6 +18,7 @@ namespace TAS {
 			else
 				Engine.Commands.ExecuteCommand(commandID, args);
 		}
+
 		private static void LoadCommand(string command, string[] args) {
 			try {
 				AreaMode mode = AreaMode.Normal;
@@ -45,20 +46,21 @@ namespace TAS {
 						int y = int.Parse(args[2]);
 						Load(mode, levelID, new Vector2(x, y));
 					}
-				}
-
+				} 
 				else {
 					Load(mode, levelID);
 				}
 			}
 			catch { }
 		}
+
 		private static int GetLevelID(string ID) {
 			if (int.TryParse(ID, out int num))
 				return num;
 			else
 				return AreaDataExt.Get(ID).ID;
 		}
+
 		private static void Load(AreaMode mode, int levelID, string screen = null, int checkpoint = 0) {
 			Session session = new Session(new AreaKey(levelID, mode));
 			if (screen != null) {
@@ -71,6 +73,7 @@ namespace TAS {
 			}
 			Engine.Scene = new LevelLoader(session);
 		}
+
 		private static void Load(AreaMode mode, int levelID, Vector2 spawnPoint) {
 			Session session = new Session(new AreaKey(levelID, mode));
 			session.Level = session.MapData.GetAt(spawnPoint)?.Name;
