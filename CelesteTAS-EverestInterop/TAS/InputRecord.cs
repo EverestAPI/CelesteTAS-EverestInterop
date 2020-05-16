@@ -74,7 +74,7 @@ namespace TAS {
 					case 'F':
 						Actions ^= Actions.Feather;
 						index++;
-						Angle = ReadAngle(line.Substring(index));
+						Angle = ReadAngle(line.Substring(index + 1));
 						continue;
 				}
 

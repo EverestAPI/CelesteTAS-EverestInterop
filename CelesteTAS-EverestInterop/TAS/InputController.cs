@@ -93,16 +93,21 @@ namespace TAS {
 
 		public void AdvanceFrame(bool reload) {
 			if (reload) {
-				int _currentFrame = currentFrame;
-				int _inputIndex = inputIndex;
-				int _frameToNext = frameToNext;
+				//Reinitialize the file and simulate a replay of the TAS file up to the current point.
+				int previousFrame = currentFrame - 1;
 				InitializePlayback();
-				currentFrame = _currentFrame;
-				inputIndex = _inputIndex;
-				frameToNext = _frameToNext + 1;
-				Current = inputs[inputIndex];
-				while (fastForwards.Count > 0 && fastForwards[0].Line < Current.Line) {
-					fastForwards.RemoveAt(0);
+				currentFrame = previousFrame;
+
+				while (currentFrame > frameToNext) {
+					if (inputIndex + 1 >= inputs.Count) {
+						inputIndex++;
+						return;
+					}
+					if (Current.FastForward) {
+						fastForwards.RemoveAt(0);
+					}
+					Current = inputs[++inputIndex];
+					frameToNext += Current.Frames;
 				}
 			}
 			if (Manager.IsLoading())
