@@ -117,6 +117,22 @@ namespace TAS.EverestInterop {
             SkipBaseUpdate = false;
             InUpdate = false;
 
+            if (CelesteTASModule.UnixRTCEnabled && Manager.CurrentStatus != null) {
+                StreamWriter writer = CelesteTASModule.Instance.UnixRTCStreamOut;
+                try {
+                    writer.Write(Manager.PlayerStatus.Replace('\n', '~'));
+                    writer.Write('%');
+                    writer.Write(Manager.CurrentStatus.Replace('\n', '~'));
+                    writer.Write('%');
+                    if (Engine.Scene is Level level) {
+                        writer.Write(level.Session.LevelData.Name);
+                    }
+                    writer.WriteLine();
+                    writer.FlushAsync();
+                }
+                catch { }
+            }
+
             if (skipBaseUpdate)
                 orig_Game_Update(self, gameTime);
         }
@@ -173,7 +189,7 @@ namespace TAS.EverestInterop {
             orig(method, name, highPriority);
         }
 
-                private void Entity_Render(On.Monocle.Entity.orig_Render orig, Entity self) {
+        private void Entity_Render(On.Monocle.Entity.orig_Render orig, Entity self) {
             if (InUpdate)
                 return;
             orig(self);
