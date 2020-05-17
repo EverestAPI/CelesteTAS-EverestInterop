@@ -6,6 +6,7 @@ using System.IO;
 using System.Text;
 using System;
 using TAS.EverestInterop;
+using Input = Celeste.Input;
 
 namespace TAS {
 	public class InputController {

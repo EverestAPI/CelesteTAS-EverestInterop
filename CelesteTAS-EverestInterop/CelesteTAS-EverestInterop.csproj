@@ -72,6 +72,7 @@
     <Compile Include="TAS.EverestInterop\CelesteTASModuleSettings.cs" />
     <Compile Include="TAS.EverestInterop\CelesteTASModule.cs" />
     <Compile Include="TAS.EverestInterop\CenterCamera.cs" />
+    <Compile Include="TAS.EverestInterop\Input.cs" />
     <Compile Include="TAS\Commands.cs" />
     <Compile Include="TAS.EverestInterop\Core.cs" />
     <Compile Include="TAS.EverestInterop\DisableAchievements.cs" />

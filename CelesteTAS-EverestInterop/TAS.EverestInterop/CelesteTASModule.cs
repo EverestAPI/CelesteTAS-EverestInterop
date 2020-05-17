@@ -26,21 +26,11 @@ namespace TAS.EverestInterop
 
         public override Type SettingsType => typeof(CelesteTASModuleSettings);
         public static CelesteTASModuleSettings Settings => (CelesteTASModuleSettings)Instance?._Settings;
-
-        public VirtualButton ButtonHitboxes;
-        public VirtualButton ButtonGraphics;
-        public VirtualButton ButtonCamera;
         public static bool UnixRTCEnabled => (Environment.OSVersion.Platform == PlatformID.Unix) && Settings.UnixRTC;
 
         public NamedPipeServerStream UnixRTC;
         public StreamWriter UnixRTCStreamOut;
         public StreamReader UnixRTCStreamIn;
-
-        private Camera SavedCamera;
-
-        // The fields we want to access from Celeste-Addons
-        public static bool SkipBaseUpdate;
-        public static bool InUpdate;
 
         public CelesteTASModule() {
             Instance = this;
@@ -63,12 +53,11 @@ namespace TAS.EverestInterop
             CenterCamera.instance = new CenterCamera();
             CenterCamera.instance.Load();
 
+            Hotkeys.instance = new Hotkeys();
+            Hotkeys.instance.Load();
+
             // Optional: Approximate savestates
             On.Celeste.LevelLoader.LoadingThread += LevelLoader_LoadingThread;
-            
-            // Any additional hooks.
-            Everest.Events.Input.OnInitialize += OnInputInitialize;
-            Everest.Events.Input.OnDeregister += OnInputDeregister;
 
             // Open unix IO pipe for interfacing with Linux / Mac Celeste Studio
             if (UnixRTCEnabled) {
@@ -87,60 +76,10 @@ namespace TAS.EverestInterop
             GraphicsCore.instance.Unload();
             SimplifiedGraphics.instance.Unload();
             CenterCamera.instance.Unload();
+            Hotkeys.instance.Unload();
             On.Celeste.LevelLoader.LoadingThread -= LevelLoader_LoadingThread;
 
-            Everest.Events.Input.OnInitialize -= OnInputInitialize;
-            Everest.Events.Input.OnDeregister -= OnInputDeregister;
-
             UnixRTC.Dispose();
-        }
-
-        public void OnInputInitialize() {
-            ButtonHitboxes = new VirtualButton();
-            AddButtonsTo(ButtonHitboxes, Settings.ButtonHitboxes);
-            AddKeysTo(ButtonHitboxes, Settings.KeyHitboxes);
-
-            ButtonGraphics = new VirtualButton();
-            AddButtonsTo(ButtonGraphics, Settings.ButtonGraphics);
-            AddKeysTo(ButtonGraphics, Settings.KeyGraphics);
-
-            ButtonCamera = new VirtualButton();
-            AddButtonsTo(ButtonCamera, Settings.ButtonCamera);
-            AddKeysTo(ButtonCamera, Settings.KeyCamera);
-
-            if (Settings.KeyStart.Count == 0) {
-                Settings.KeyStart = new List<Keys> { Keys.RightControl, Keys.OemOpenBrackets };
-                Settings.KeyFastForward = new List<Keys> { Keys.RightControl, Keys.RightShift };
-                Settings.KeyFrameAdvance = new List<Keys> { Keys.OemOpenBrackets };
-                Settings.KeyPause = new List<Keys> { Keys.OemCloseBrackets };
-            }
-        }
-
-        public void OnInputDeregister() {
-            ButtonHitboxes?.Deregister();
-            ButtonGraphics?.Deregister();
-            ButtonCamera?.Deregister();
-        }
-
-        public static void AddButtonsTo(VirtualButton vbtn, List<Buttons> buttons) {
-            if (buttons == null)
-                return;
-            foreach (Buttons button in buttons) {
-                if (button == Buttons.LeftTrigger)
-                    vbtn.Nodes.Add(new VirtualButton.PadLeftTrigger(Input.Gamepad, 0.25f));
-                else if (button == Buttons.RightTrigger)
-                    vbtn.Nodes.Add(new VirtualButton.PadRightTrigger(Input.Gamepad, 0.25f));
-                else
-                    vbtn.Nodes.Add(new VirtualButton.PadButton(Input.Gamepad, button));
-            }
-        }
-
-        public static void AddKeysTo(VirtualButton vbtn, List<Keys> keys) {
-            if (keys == null)
-                return;
-            foreach (Keys key in keys)  {
-                vbtn.Nodes.Add(new VirtualButton.KeyboardKey(key));
-            }
         }
 
         public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance snapshot) {
@@ -148,8 +87,7 @@ namespace TAS.EverestInterop
 
             menu.Add(new TextMenu.Button("modoptions_celestetas_reload".DialogCleanOrNull() ?? "Reload Settings").Pressed(() => {
                 LoadSettings();
-                OnInputDeregister();
-                OnInputInitialize();
+                Hotkeys.instance.OnInputInitialize();
             }));
         }
 

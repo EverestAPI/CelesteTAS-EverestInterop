@@ -26,21 +26,18 @@ namespace TAS {
 		public static string CurrentStatus, PlayerStatus;
 		public static int FrameStepCooldown, FrameLoops = 1;
 		public static bool enforceLegal;
-		private static bool frameStepWasDpadUp, frameStepWasDpadDown;
 		private static Vector2 lastPos;
 		private static long lastTimer;
-		private static KeyboardState kbState;
 		private static List<VirtualButton.Node>[] playerBindings;
 		public static CelesteTASModuleSettings settings => CelesteTASModule.Settings;
 		private static MethodInfo UpdateVirtualInputs = typeof(MInput).GetMethod("UpdateVirtualInputs", BindingFlags.Static | BindingFlags.NonPublic);
 
 		public static void UpdateInputs() {
 			UpdatePlayerInfo();
-			kbState = Keyboard.GetState();
-			GamePadState padState = GetGamePadState();
-			HandleFrameRates(padState);
-			CheckControls(padState);
-			FrameStepping(padState);
+			Hotkeys.instance?.Update();
+			HandleFrameRates();
+			CheckToEnable();
+			FrameStepping();
 
 			if (HasFlag(state, State.Enable)) {
 				Running = true;
@@ -74,25 +71,11 @@ namespace TAS {
 			else {
 				Running = false;
 				CurrentStatus = null;
-
-				if (!Engine.Instance.IsActive) {
-					for (int i = 0; i < 4; i++) {
-						if (MInput.GamePads[i].Attached) {
-							MInput.GamePads[i].CurrentState = padState;
-						}
-					}
-					UpdateVirtualInputs.Invoke(null, null);
-				}
+				UpdateVirtualInputs.Invoke(null, null);
 			}
 		}
 
-		private static bool IsKeyDown(List<Keys> keys) {
-			foreach (Keys key in keys) {
-				if (!kbState.IsKeyDown(key))
-					return false;
-			}
-			return true;
-		}
+
 		public static bool IsLoading() {
 			if (Engine.Scene is Level level) {
 				if (!level.IsAutoSaving())
@@ -105,15 +88,6 @@ namespace TAS {
 				return overworld.Current is OuiFileSelect slot && slot.SlotIndex >= 0 && slot.Slots[slot.SlotIndex].StartingGame;
 			return (Engine.Scene is LevelExit) || (Engine.Scene is LevelLoader) || (Engine.Scene is GameLoader);
 		}
-		private static GamePadState GetGamePadState() {
-			GamePadState padState = MInput.GamePads[0].CurrentState;
-			for (int i = 0; i < 4; i++) {
-				padState = GamePad.GetState((PlayerIndex)i);
-				if (padState.IsConnected)
-					break;
-			}
-			return padState;
-		}
 
 		public static float GetAngle(Vector2 vector) {
 			float angle = 360f / 6.283186f * Calc.Angle(vector);
@@ -122,36 +96,30 @@ namespace TAS {
 			else
 				return 90f + angle;
 		}
-		private static void HandleFrameRates(GamePadState padState) {
+		private static void HandleFrameRates() {
 			if (HasFlag(state, State.Enable) && !HasFlag(state, State.FrameStep) && !HasFlag(nextState, State.FrameStep) && !HasFlag(state, State.Record)) {
 				if (controller.HasFastForward) {
 					FrameLoops = controller.FastForwardSpeed;
 					return;
 				}
-
-				float rightStickX = padState.ThumbSticks.Right.X;
-				if (IsKeyDown(settings.KeyFastForward))
-					rightStickX = 1f;
-				if (rightStickX <= 0.2)
-					FrameLoops = 1;
-				else
-					FrameLoops = (int)(10 * rightStickX);
+				if (Hotkeys.hotkeyFastForward.pressed)
+					FrameLoops = 10;
 			} else {
 				FrameLoops = 1;
 			}
 		}
-		private static void FrameStepping(GamePadState padState) {
-			bool rightTrigger = padState.Triggers.Right > 0.5f;
-			bool dpadUp = padState.DPad.Up == ButtonState.Pressed || (IsKeyDown(settings.KeyFrameAdvance) && !IsKeyDown(settings.KeyStart));
-			bool dpadDown = padState.DPad.Down == ButtonState.Pressed || (IsKeyDown(settings.KeyPause) && !IsKeyDown(settings.KeyStart));
-
-			if (HasFlag(state, State.Enable) && !HasFlag(state, State.Record) && !rightTrigger) {
+		
+		private static void FrameStepping() {
+			bool frameAdvance = Hotkeys.hotkeyFrameAdvance.pressed && !Hotkeys.hotkeyStart.pressed;
+			bool pause = Hotkeys.hotkeyPause.pressed && !Hotkeys.hotkeyStart.pressed;
+			
+			if (HasFlag(state, State.Enable) && !HasFlag(state, State.Record)) {
 				if (HasFlag(nextState, State.FrameStep)) {
 					state |= State.FrameStep;
 					nextState &= ~State.FrameStep;
 				}
 
-				if (!dpadUp && frameStepWasDpadUp) {
+				if (frameAdvance && !Hotkeys.hotkeyFrameAdvance.wasPressed) {
 					if (!HasFlag(state, State.FrameStep)) {
 						state |= State.FrameStep;
 						nextState &= ~State.FrameStep;
@@ -163,32 +131,22 @@ namespace TAS {
 							ExportPlayerInfo();
 					}
 					FrameStepCooldown = 60;
-				} else if (!dpadDown && frameStepWasDpadDown) {
+				}
+				else if (pause && !Hotkeys.hotkeyPause.wasPressed) {
 					state &= ~State.FrameStep;
 					nextState &= ~State.FrameStep;
-				} else if (HasFlag(state, State.FrameStep) && (padState.ThumbSticks.Right.X > 0.1 || IsKeyDown(settings.KeyFastForward))) {
-					float rStick = padState.ThumbSticks.Right.X;
-					if (rStick < 0.1f) {
-						rStick = 0.5f;
-					}
-					FrameStepCooldown -= (int)((rStick - 0.1) * 80f);
-					if (FrameStepCooldown <= 0) {
-						FrameStepCooldown = 60;
-						state &= ~State.FrameStep;
-						nextState |= State.FrameStep;
-						controller.AdvanceFrame(true);
-					}
+
+				}
+				else if (HasFlag(state, State.FrameStep) && Hotkeys.hotkeyFastForward.pressed) {
+					state &= ~State.FrameStep;
+					nextState |= State.FrameStep;
+					controller.AdvanceFrame(true);
 				}
 			}
-
-			frameStepWasDpadUp = dpadUp;
-			frameStepWasDpadDown = dpadDown;
 		}
-		private static void CheckControls(GamePadState padState) {
-			bool openBracket = IsKeyDown(settings.KeyStart);
-			bool rightStick = padState.Buttons.RightStick == ButtonState.Pressed || openBracket;
-
-			if (rightStick) {
+		
+		private static void CheckToEnable() {
+			if (Hotkeys.hotkeyStart.pressed) {
 				if (!HasFlag(state, State.Enable))
 					nextState |= State.Enable;
 				else

@@ -166,13 +166,7 @@ namespace TAS.EverestInterop {
 
             orig_Game_Update(self, gameTime);
 
-            // Check for our own keybindings here.
-            if (CelesteTASModule.Instance.ButtonHitboxes.Pressed)
-                Settings.ShowHitboxes = !Settings.ShowHitboxes;
-            if (CelesteTASModule.Instance.ButtonGraphics.Pressed)
-                Settings.SimplifiedGraphics = !Settings.SimplifiedGraphics;
-            if (CelesteTASModule.Instance.ButtonCamera.Pressed)
-                Settings.CenterCamera = !Settings.CenterCamera;
+            //CelesteTASModule.Instance.UpdateInputs();
         }
 
         public static Action PreviousGameLoop;
