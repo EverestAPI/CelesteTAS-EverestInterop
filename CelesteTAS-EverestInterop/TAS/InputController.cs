@@ -216,7 +216,7 @@ namespace TAS {
 							return true;
 
 						InputRecord input = new InputRecord(studioLine, line);
-						
+
 						if (input.FastForward) {
 							fastForwards.Add(input);
 

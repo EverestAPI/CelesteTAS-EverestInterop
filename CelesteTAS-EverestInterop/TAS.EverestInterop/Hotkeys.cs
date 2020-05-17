@@ -64,10 +64,10 @@ namespace TAS.EverestInterop {
             hotkeyHitboxes = new Hotkey(Settings.KeyHitboxes, Settings.ButtonHitboxes, false);
             hotkeyGraphics = new Hotkey(Settings.KeyGraphics, Settings.ButtonGraphics, false);
             hotkeyCamera = new Hotkey(Settings.KeyCamera, Settings.ButtonCamera, false);
-            hotkeyStart = new Hotkey(Settings.KeyStart, Settings.ButtonStart, true);
-            hotkeyFastForward = new Hotkey(Settings.KeyFastForward, Settings.ButtonFastForward, true);
-            hotkeyFrameAdvance = new Hotkey(Settings.KeyFrameAdvance, Settings.ButtonFrameAdvance, true);
-            hotkeyPause = new Hotkey(Settings.KeyPause, Settings.ButtonPause, true);
+            hotkeyStart = new Hotkey(Settings.KeyStart, null, true);
+            hotkeyFastForward = new Hotkey(Settings.KeyFastForward, null, true);
+            hotkeyFrameAdvance = new Hotkey(Settings.KeyFrameAdvance, null, true);
+            hotkeyPause = new Hotkey(Settings.KeyPause, null, true);
             hotkeys = new Hotkey[] { hotkeyHitboxes, hotkeyGraphics, hotkeyCamera, hotkeyStart, hotkeyFastForward, hotkeyFrameAdvance, hotkeyPause };
         }
 

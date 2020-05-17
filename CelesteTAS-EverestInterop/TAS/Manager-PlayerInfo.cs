@@ -23,16 +23,8 @@ namespace TAS
 				if (player != null) {
 					chapterTime = level.Session.Time;
 					if (chapterTime != lastTimer || lastPos != player.ExactPosition) {
-						double x, y;
-						x = (player.PositionRemainder.X % 0.25) < 0.01 
-							? Math.Floor(player.PositionRemainder.X * 100) / 100 
-							: player.PositionRemainder.X;
-						y = (player.PositionRemainder.Y % 0.25) < 0.01
-							? Math.Floor(player.PositionRemainder.Y * 100) / 100
-							: player.PositionRemainder.Y;
-						x += player.X;
-						y += player.Y;
-						string pos = $"Pos: {x.ToString("0.00")},{y.ToString("0.00")}";
+
+						string pos = GetAdjustedPos(player.Position, player.PositionRemainder);
 						string speed = $"Speed: {player.Speed.X.ToString("0.00")},{player.Speed.Y.ToString("0.00")}";
 						Vector2 diff = (player.ExactPosition - lastPos) * 60;
 						string vel = $"Vel: {diff.X.ToString("0.00")},{diff.Y.ToString("0.00")}";
@@ -80,7 +72,7 @@ namespace TAS
 						sb.AppendLine(speed);
 						sb.AppendLine(vel);
 
-						if (player.StateMachine.State == 19
+						if (player.StateMachine.State == Player.StStarFly
 							|| SaveData.Instance.Assists.ThreeSixtyDashing
 							|| SaveData.Instance.Assists.SuperDashing)
 							sb.AppendLine(polarvel);
@@ -106,6 +98,31 @@ namespace TAS
 
 			else if (Engine.Scene != null)
 				PlayerStatus = Engine.Scene.GetType().Name;
+		}
+
+		private static string GetAdjustedPos(Vector2 intPos, Vector2 subpixelPos) {
+			double x = intPos.X;
+			double y = intPos.Y;
+			double subX = subpixelPos.X;
+			double subY = subpixelPos.Y;
+			if (Math.Abs(subX) % 0.25 < 0.01 || Math.Abs(subX) % 0.25 > 0.24) {
+				if (x > 0 || (x == 0 && subX > 0))
+					x += Math.Floor(subX * 100) / 100;
+				else
+					x += Math.Ceiling(subX * 100) / 100;
+			}
+			else
+				x += subX;
+			if (Math.Abs(subY) % 0.25 < 0.01 || Math.Abs(subY) % 0.25 > 0.24) {
+				if (y > 0 || (y == 0 && subY > 0))
+					y += Math.Floor(subY * 100) / 100;
+				else
+					y += Math.Ceiling(subY * 100) / 100;
+			}
+			else
+				y += subY;
+			string pos = $"Pos: {x.ToString("0.00")},{y.ToString("0.00")}";
+			return pos;
 		}
 
 		public static void BeginExport(string path) {
