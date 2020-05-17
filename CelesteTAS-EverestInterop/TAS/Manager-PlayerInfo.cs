@@ -23,8 +23,15 @@ namespace TAS
 				if (player != null) {
 					chapterTime = level.Session.Time;
 					if (chapterTime != lastTimer || lastPos != player.ExactPosition) {
-						double x = (double)player.X + player.PositionRemainder.X;
-						double y = (double)player.Y + player.PositionRemainder.Y;
+						double x, y;
+						x = (player.PositionRemainder.X % 0.25) < 0.01 
+							? Math.Floor(player.PositionRemainder.X * 100) / 100 
+							: player.PositionRemainder.X;
+						y = (player.PositionRemainder.Y % 0.25) < 0.01
+							? Math.Floor(player.PositionRemainder.Y * 100) / 100
+							: player.PositionRemainder.Y;
+						x += player.X;
+						y += player.Y;
 						string pos = $"Pos: {x.ToString("0.00")},{y.ToString("0.00")}";
 						string speed = $"Speed: {player.Speed.X.ToString("0.00")},{player.Speed.Y.ToString("0.00")}";
 						Vector2 diff = (player.ExactPosition - lastPos) * 60;

@@ -68,7 +68,7 @@ namespace TAS.EverestInterop {
             hotkeyFastForward = new Hotkey(Settings.KeyFastForward, Settings.ButtonFastForward, true);
             hotkeyFrameAdvance = new Hotkey(Settings.KeyFrameAdvance, Settings.ButtonFrameAdvance, true);
             hotkeyPause = new Hotkey(Settings.KeyPause, Settings.ButtonPause, true);
-            hotkeys = new Hotkey[7] { hotkeyHitboxes, hotkeyGraphics, hotkeyCamera, hotkeyStart, hotkeyFastForward, hotkeyFrameAdvance, hotkeyPause };
+            hotkeys = new Hotkey[] { hotkeyHitboxes, hotkeyGraphics, hotkeyCamera, hotkeyStart, hotkeyFastForward, hotkeyFrameAdvance, hotkeyPause };
         }
 
         public static bool IsKeyDown(List<Keys> keys, bool keyCombo = true) {
