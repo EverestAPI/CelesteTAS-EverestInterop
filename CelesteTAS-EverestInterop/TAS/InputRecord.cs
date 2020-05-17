@@ -126,6 +126,8 @@ namespace TAS {
 			*/
 		}
 		private float ReadAngle(string line) {
+			if (line == "")
+				return 0f;
 			return float.Parse(line.Trim());
 		}
 		public float GetX() {

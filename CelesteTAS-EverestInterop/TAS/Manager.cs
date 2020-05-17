@@ -22,7 +22,7 @@ namespace TAS {
 		private static FieldInfo strawberryCollectTimer = typeof(Strawberry).GetField("collectTimer", BindingFlags.Instance | BindingFlags.NonPublic);
 		public static bool Running, Recording;
 		public static InputController controller = new InputController("Celeste.tas");
-		public static State state, nextState;
+		public static State lastState, state, nextState;
 		public static string CurrentStatus, PlayerStatus;
 		public static int FrameStepCooldown, FrameLoops = 1;
 		public static bool enforceLegal;
@@ -33,6 +33,7 @@ namespace TAS {
 		private static MethodInfo UpdateVirtualInputs = typeof(MInput).GetMethod("UpdateVirtualInputs", BindingFlags.Static | BindingFlags.NonPublic);
 
 		public static void UpdateInputs() {
+			lastState = state;
 			UpdatePlayerInfo();
 			Hotkeys.instance?.Update();
 			HandleFrameRates();
@@ -102,11 +103,14 @@ namespace TAS {
 					FrameLoops = controller.FastForwardSpeed;
 					return;
 				}
-				if (Hotkeys.hotkeyFastForward.pressed)
+				//q: but euni, why not just use the hotkey system you implemented?
+				//a: i have no fucking idea
+				if (Hotkeys.IsKeyDown(settings.KeyFastForward)) {
 					FrameLoops = 10;
-			} else {
-				FrameLoops = 1;
+					return;
+				}
 			}
+			FrameLoops = 1;
 		}
 		
 		private static void FrameStepping() {
@@ -123,7 +127,8 @@ namespace TAS {
 					if (!HasFlag(state, State.FrameStep)) {
 						state |= State.FrameStep;
 						nextState &= ~State.FrameStep;
-					} else {
+					}
+					else {
 						state &= ~State.FrameStep;
 						nextState |= State.FrameStep;
 						controller.AdvanceFrame(true);
@@ -137,7 +142,7 @@ namespace TAS {
 					nextState &= ~State.FrameStep;
 
 				}
-				else if (HasFlag(state, State.FrameStep) && Hotkeys.hotkeyFastForward.pressed) {
+				else if (HasFlag(lastState, State.FrameStep) && HasFlag(state, State.FrameStep) && Hotkeys.hotkeyFastForward.pressed) {
 					state &= ~State.FrameStep;
 					nextState |= State.FrameStep;
 					controller.AdvanceFrame(true);

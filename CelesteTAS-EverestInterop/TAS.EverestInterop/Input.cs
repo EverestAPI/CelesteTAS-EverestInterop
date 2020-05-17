@@ -7,7 +7,7 @@ using System;
 using System.Collections.Generic;
 
 namespace TAS.EverestInterop {
-    class Hotkeys {
+    public class Hotkeys {
 
         public class Hotkey {
             private List<Keys> keys;
@@ -43,6 +43,7 @@ namespace TAS.EverestInterop {
 
         public static Hotkey[] hotkeys;
 
+
         public void Load() {
             Everest.Events.Input.OnInitialize += OnInputInitialize;
         }
@@ -70,23 +71,41 @@ namespace TAS.EverestInterop {
             hotkeys = new Hotkey[7] { hotkeyHitboxes, hotkeyGraphics, hotkeyCamera, hotkeyStart, hotkeyFastForward, hotkeyFrameAdvance, hotkeyPause };
         }
 
-        private static bool IsKeyDown(List<Keys> keys, bool keyCombo = true) {
+        public static bool IsKeyDown(List<Keys> keys, bool keyCombo = true) {
             if (keys == null || keys.Count == 0)
                 return false;
-            foreach (Keys key in keys) {
-                if (!kbState.IsKeyDown(key))
-                    return false;
+            if (keyCombo) {
+                foreach (Keys key in keys) {
+                    if (!kbState.IsKeyDown(key))
+                        return false;
+                }
+                return true;
             }
-            return true;
+            else {
+                foreach (Keys key in keys) {
+                    if (kbState.IsKeyDown(key))
+                        return true;
+                }
+                return false;
+            }
         }
-        private static bool IsButtonDown(List<Buttons> buttons, bool keyCombo = true) {
+        public static bool IsButtonDown(List<Buttons> buttons, bool keyCombo = true) {
             if (buttons == null || buttons.Count == 0)
                 return false;
-            foreach (Buttons button in buttons) {
-                if (!padState.IsButtonDown(button))
-                    return false;
+            if (keyCombo) {
+                foreach (Buttons button in buttons) {
+                    if (!padState.IsButtonDown(button))
+                        return false;
+                }
+                return true;
             }
-            return true;
+            else {
+                foreach (Buttons button in buttons) {
+                    if (padState.IsButtonDown(button))
+                        return true;
+                }
+                return false;
+            }
         }
 
         public static GamePadState GetGamePadState() {
