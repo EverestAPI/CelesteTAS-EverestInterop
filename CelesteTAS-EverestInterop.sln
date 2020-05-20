@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29521.150
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CelesteTAS-EverestInterop", "CelesteTAS-EverestInterop\CelesteTAS-EverestInterop.csproj", "{12CEFB4D-5E61-4F7E-93A6-637D96AB0139}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Celeste.Mod.mm", "Everest\Celeste.Mod.mm\Celeste.Mod.mm.csproj", "{D5D0239D-FF95-4897-9484-1898AB7E82F5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommunicationTesting", "CommuncationTesting\CommunicationTesting.csproj", "{3F5069AF-F1C2-432D-B446-EC82347F713D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,8 +23,15 @@ Global
 		{D5D0239D-FF95-4897-9484-1898AB7E82F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D5D0239D-FF95-4897-9484-1898AB7E82F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D5D0239D-FF95-4897-9484-1898AB7E82F5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F5069AF-F1C2-432D-B446-EC82347F713D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F5069AF-F1C2-432D-B446-EC82347F713D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F5069AF-F1C2-432D-B446-EC82347F713D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F5069AF-F1C2-432D-B446-EC82347F713D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {01A2B8AE-3E45-4A9E-8C01-379AB3FAED1E}
 	EndGlobalSection
 EndGlobal

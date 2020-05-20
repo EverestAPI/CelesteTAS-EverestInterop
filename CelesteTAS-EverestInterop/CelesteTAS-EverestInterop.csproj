@@ -73,6 +73,10 @@
     <Compile Include="EverestInterop\CelesteTASModule.cs" />
     <Compile Include="EverestInterop\CenterCamera.cs" />
     <Compile Include="EverestInterop\Hotkeys.cs" />
+    <Compile Include="StudioCommunication\HotkeyIDs.cs" />
+    <Compile Include="StudioCommunication\StudioCommunicationBase.cs" />
+    <Compile Include="StudioCommunication\StudioCommunicationClient.cs" />
+    <Compile Include="StudioCommunication\StudioCommunicationServer.cs" Condition=" '$(Configuration)' == 'Debug' " />
     <Compile Include="TAS\Commands.cs" />
     <Compile Include="EverestInterop\Core.cs" />
     <Compile Include="EverestInterop\DisableAchievements.cs" />
@@ -86,7 +90,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="EverestInterop\RemoveSelfComponent.cs" />
     <Compile Include="EverestInterop\SimplifiedGraphics.cs" />
-    <Compile Include="TAS\RPCSpecs.cs" />
+    <Compile Include="StudioCommunication\MessageIDs.cs" />
     <Compile Include="TAS\TASCommandAttribute.cs" />
   </ItemGroup>
   <ItemGroup>

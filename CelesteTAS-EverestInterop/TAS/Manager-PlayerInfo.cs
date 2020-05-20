@@ -66,6 +66,7 @@ namespace TAS
 						}
 						string timers = (berryTimer != -10 ? $"BerryTimer: {berryTimer.ToString()} " : string.Empty)
 							+ (dashCooldown != 0 ? $"DashTimer: {(dashCooldown).ToString()} " : string.Empty);
+						string map = $"[{level.Session.Level}]";
 
 						StringBuilder sb = new StringBuilder();
 						sb.AppendLine(pos);
@@ -81,6 +82,7 @@ namespace TAS
 						if (!string.IsNullOrEmpty(statuses))
 							sb.AppendLine(statuses);
 						sb.Append(timers);
+						sb.Append(map);
 						lastPos = player.ExactPosition;
 						lastTimer = chapterTime;
 						PlayerStatus = sb.ToString().TrimEnd();
