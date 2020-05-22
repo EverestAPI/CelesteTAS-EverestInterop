@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
+using System.Runtime.Remoting.Messaging;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
@@ -17,6 +18,7 @@ namespace TAS.StudioCommunication {
 
 		private StudioCommunicationClient() {
 			pipe = new NamedPipeClientStream("CelesteTAS");
+			waitingForResponse = true;
 		}
 
 		public static bool Run() {
@@ -24,50 +26,62 @@ namespace TAS.StudioCommunication {
 				return false;
 			instance = new StudioCommunicationClient();
 
+#if DEBUG
+			SetupDebugVariables();
+#endif
+
 			ThreadStart mainLoop = new ThreadStart(instance.UpdateLoop);
 			Thread updateThread = new Thread(mainLoop);
+			updateThread.Name = "StudioCom Client";
 			updateThread.Start();
 			return true;
 		}
+
+
 
 		protected override void WaitForConnection() {
 			for (; ; ) {
 				try {
 					(pipe as NamedPipeClientStream).Connect(1000);
 					ThreadStart establishConnection = new ThreadStart(EstablishConnection);
-					new Thread(establishConnection).Start();
+					Thread thread = new Thread(establishConnection);
+					thread.Name = "Client Initialization";
+					thread.Start();
 					break;
 				}
 				catch (TimeoutException) { }
 			}
 		}
 
+		private static void SetupDebugVariables() {
+			Hotkeys.instance = new Hotkeys();
+			Hotkeys.listHotkeyKeys = new List<Keys>[] {
+				new List<Keys> { Keys.RightControl, Keys.OemOpenBrackets },
+				new List<Keys> { Keys.RightControl, Keys.RightShift },
+				new List<Keys> { Keys.OemOpenBrackets },
+				new List<Keys> { Keys.OemCloseBrackets },
+				new List<Keys> { Keys.V },
+				new List<Keys> { Keys.B },
+				new List<Keys> { Keys.N }
+			};
+		}
+
 		#region Read
-		protected override void ReadData(IAsyncResult result) {
-			if (readBuffer[0] == 0) {
-				readBuffer = (byte[])result.AsyncState;
-				if (readBuffer[0] == 0)
-					return;
-			}
 
-			int size = LengthOfMessage(readBuffer);
-			byte[] data = new byte[size];
-			Buffer.BlockCopy(readBuffer, HEADER_LENGTH, data, 0, size);
-			int fullSize = HEADER_LENGTH + size;
-			Buffer.BlockCopy(readBuffer, fullSize, readBuffer, 0, readBuffer.Length - fullSize);
 
-			switch (data[0]) {
-				case (byte)MessageIDs.SendPath:
-					ProcessSendPath(data);
+		protected override void ReadSwitch(Message message) {
+			switch (message.ID) {
+				case MessageIDs.SendPath:
+					ProcessSendPath(message.Data);
 					break;
-				case (byte)MessageIDs.SendHotkeyPressed:
-					ProcessHotkeyPressed(data);
+				case MessageIDs.SendHotkeyPressed:
+					ProcessHotkeyPressed(message.Data);
 					break;
-				case (byte)MessageIDs.SendNewBindings:
-					ProcessNewBindings(data);
+				case MessageIDs.SendNewBindings:
+					ProcessNewBindings(message.Data);
 					break;
-				case (byte)MessageIDs.ReloadBindings:
-					ProcessReloadBindings(data);
+				case MessageIDs.ReloadBindings:
+					ProcessReloadBindings(message.Data);
 					break;
 				default:
 					throw new InvalidOperationException();
@@ -99,36 +113,39 @@ namespace TAS.StudioCommunication {
 
 		protected override void EstablishConnection() {
 			//Studio side
-			//AddToBuffer(MessageIDs.EstablishConnection, new byte[0]);
+			//writeQueue.Enqueue(new Message(MessageIDs.EstablishConnection, new byte[0]));
 			//WaitForConfirm(MessageIDs.EstablishConnection);
 
 			//Celeste side
-			Confirm(MessageIDs.EstablishConnection, true);
+			WaitForResponse();
+			Confirm(MessageIDs.EstablishConnection);
+			WaitForResponse();
 
 			//Studio side
 			//SendPath(Studio.path);
 
 			//Celeste side
 			SendCurrentBindings(Hotkeys.listHotkeyKeys);
+
 			Initialized = true;
 		}
 
 		public void SendState(string state) {
 			byte[] stateBytes = Encoding.Default.GetBytes(state);
-			AddToBuffer(MessageIDs.SendState, stateBytes);
+			writeQueue.Enqueue(new Message(MessageIDs.SendState, stateBytes));
 		}
 
 		public void SendPlayerData(string data) {
 			byte[] dataBytes = Encoding.Default.GetBytes(data);
-			AddToBuffer(MessageIDs.SendPlayerData, dataBytes);
+			writeQueue.Enqueue(new Message(MessageIDs.SendPlayerData, dataBytes));
 		}
 
 		public void SendCurrentBindings(List<Keys>[] bindings) {
 			byte[] data = ToByteArray(bindings);
-			AddToBuffer(MessageIDs.SendNewBindings, data);
+			writeQueue.Enqueue(new Message(MessageIDs.SendCurrentBindings, data));
 			WaitForConfirm(MessageIDs.SendCurrentBindings);
 		}
-		#endregion
+#endregion
 
 	}
 }

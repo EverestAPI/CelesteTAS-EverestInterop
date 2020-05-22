@@ -62,10 +62,12 @@ namespace TAS {
 		}
 
 		private static void Load(AreaMode mode, int levelID, string screen = null, int checkpoint = 0) {
+			/*
 			if (SaveData.Instance == null) {
 				SaveData data = UserIO.Load<SaveData>(SaveData.GetFilename(0));
 				SaveData.Start(data, 0);
 			}
+			*/
 			Session session = new Session(new AreaKey(levelID, mode));
 			if (screen != null) {
 				session.Level = screen;
@@ -79,10 +81,12 @@ namespace TAS {
 		}
 
 		private static void Load(AreaMode mode, int levelID, Vector2 spawnPoint) {
+			/*
 			if (SaveData.Instance == null) {
 				SaveData data = UserIO.Load<SaveData>(SaveData.GetFilename(0));
 				SaveData.Start(data, 0);
 			}
+			*/
 			Session session = new Session(new AreaKey(levelID, mode));
 			session.Level = session.MapData.GetAt(spawnPoint)?.Name;
 			session.FirstLevel = false;

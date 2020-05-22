@@ -36,45 +36,35 @@ namespace TASALT.StudioCommunication {
 
 			ThreadStart mainLoop = new ThreadStart(instance.UpdateLoop);
 			Thread updateThread = new Thread(mainLoop);
+			updateThread.Name = "StudioCom Server";
 			updateThread.Start();
-		}
-
-		#region Read
-		protected override void ReadData(IAsyncResult result) {
-			if (result != null) {
-				readBuffer = (byte[])result.AsyncState;
-				if (readBuffer[0] == 0)
-					return;
-			}
-			int size = LengthOfMessage(readBuffer);
-			if (size > 0) {
-
-				byte[] data = new byte[size];
-				Buffer.BlockCopy(readBuffer, HEADER_LENGTH, data, 0, size);
-				int fullSize = HEADER_LENGTH + size;
-				Buffer.BlockCopy(readBuffer, fullSize, readBuffer, 0, readBuffer.Length - fullSize);
-
-				switch (data[0]) {
-					case (byte)MessageIDs.SendState:
-						ProcessSendState(data);
-						break;
-					case (byte)MessageIDs.SendPlayerData:
-						ProcessSendPlayerData(data);
-						break;
-					case (byte)MessageIDs.SendCurrentBindings:
-						ProcessSendCurrentBindings(data);
-						break;
-					default:
-						throw new InvalidOperationException();
-				}
-			}
 		}
 
 		protected override void WaitForConnection() {
 			(pipe as NamedPipeServerStream).WaitForConnection();
 			ThreadStart establishConnection = new ThreadStart(EstablishConnection);
-			new Thread(establishConnection).Start();
+			Thread thread = new Thread(establishConnection);
+			thread.Name = "Server Initialization";
+			thread.Start();
 		}
+
+		#region Read
+		protected override void ReadSwitch(Message message) {
+			switch (message.ID) {
+				case MessageIDs.SendState:
+					ProcessSendState(message.Data);
+					break;
+				case MessageIDs.SendPlayerData:
+					ProcessSendPlayerData(message.Data);
+					break;
+				case MessageIDs.SendCurrentBindings:
+					ProcessSendCurrentBindings(message.Data);
+					break;
+				default:
+					throw new InvalidOperationException();
+			}
+		}
+
 
 		private void ProcessSendState(byte[] data) {
 			string state = Encoding.Default.GetString(data, 1, data.Length - 1);
@@ -99,39 +89,42 @@ namespace TASALT.StudioCommunication {
 
 		protected override void EstablishConnection() {
 			//Studio side
-			AddToBuffer(MessageIDs.EstablishConnection, new byte[0]);
+			writeQueue.Enqueue(new Message(MessageIDs.EstablishConnection, new byte[0]));
 			WaitForConfirm(MessageIDs.EstablishConnection);
 
 			//Celeste side
+			//WaitForResponse();
 			//Confirm(MessageIDs.EstablishConnection);
+			//WaitForResponse();
 
 			//Studio side
 			SendPath(Studio.path);
 
 			//Celeste side
 			//SendCurrentBindings(Hotkeys.listHotkeyKeys);
+
 			Initialized = true;
 		}
 
 		public void SendPath(string path) {
 			byte[] pathBytes = Encoding.Default.GetBytes(path);
-			AddToBuffer(MessageIDs.SendPath, pathBytes);
+			writeQueue.Enqueue(new Message(MessageIDs.SendPath, pathBytes));
 			WaitForConfirm(MessageIDs.SendPath);
 		}
 
 		public void SendHotkeyPressed(HotkeyIDs hotkey) {
 			byte[] hotkeyByte = new byte[] { (byte)hotkey };
-			AddToBuffer(MessageIDs.SendHotkeyPressed, hotkeyByte);
+			writeQueue.Enqueue(new Message(MessageIDs.SendHotkeyPressed, hotkeyByte));
 		}
 
 		public void SendNewBindings(List<Keys> keys) {
 			byte[] data = ToByteArray(keys);
-			AddToBuffer(MessageIDs.SendNewBindings, data);
+			writeQueue.Enqueue(new Message(MessageIDs.SendNewBindings, data));
 			WaitForConfirm(MessageIDs.SendNewBindings);
 		}
 
 		public void SendReloadBindings(byte[] data) {
-			AddToBuffer(MessageIDs.ReloadBindings, new byte[0]);
+			writeQueue.Enqueue(new Message(MessageIDs.ReloadBindings, new byte[0]));
 			WaitForConfirm(MessageIDs.ReloadBindings);
 		}
 
