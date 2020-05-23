@@ -8,6 +8,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using IL.MonoMod;
 using Microsoft.Xna.Framework.Input;
 using TAS.EverestInterop;
 
@@ -17,10 +18,6 @@ namespace TAS.StudioCommunication {
 		public static StudioCommunicationClient instance;
 
 		private StudioCommunicationClient() {
-			pipe = new NamedPipeClientStream("CelesteTAS");
-			//pipe.ReadMode = PipeTransmissionMode.Message;
-			waitingForResponse = true;
-			
 		}
 
 		public static bool Run() {
@@ -40,21 +37,6 @@ namespace TAS.StudioCommunication {
 		}
 
 
-
-		protected override void WaitForConnection() {
-			for (; ; ) {
-				try {
-					(pipe as NamedPipeClientStream).Connect(1000);
-					ThreadStart establishConnection = new ThreadStart(EstablishConnection);
-					Thread thread = new Thread(establishConnection);
-					thread.Name = "Client Initialization";
-					thread.Start();
-					break;
-				}
-				catch (TimeoutException) { }
-			}
-		}
-
 		private static void SetupDebugVariables() {
 			Hotkeys.instance = new Hotkeys();
 			Hotkeys.listHotkeyKeys = new List<Keys>[] {
@@ -71,7 +53,7 @@ namespace TAS.StudioCommunication {
 		#region Read
 
 
-		protected override void ReadSwitch(Message message) {
+		protected override void ReadData(Message message) {
 			switch (message.ID) {
 				case MessageIDs.SendPath:
 					ProcessSendPath(message.Data);
@@ -91,44 +73,46 @@ namespace TAS.StudioCommunication {
 		}
 
 		private void ProcessSendPath(byte[] data) {
-			string path = Encoding.Default.GetString(data, 1, data.Length - 1);
-			Manager.settings.DefaultPath = path;
-			Confirm(MessageIDs.SendPath);
+			string path = Encoding.Default.GetString(data);
+			Log(path);
+			//Manager.settings.DefaultPath = path;
 		}
 		private void ProcessHotkeyPressed(byte[] data) {
-			Hotkeys.hotkeys[data[1]].overridePressed = true;
+			Log($"{((HotkeyIDs)data[0]).ToString()} pressed");
+			Hotkeys.hotkeys[data[0]].overridePressed = true;
 		}
 		private void ProcessNewBindings(byte[] data) {
-			byte ID = data[1];
-			List<Keys> keys = FromByteArray<List<Keys>>(data, 2);
+			byte ID = data[0];
+			List<Keys> keys = FromByteArray<List<Keys>>(data, 1);
+			Log($"{((HotkeyIDs)ID).ToString()} set to {keys}");
 			Hotkeys.listHotkeyKeys[ID] = keys;
-			Confirm(MessageIDs.SendNewBindings);
 		}
 		private void ProcessReloadBindings(byte[] data) {
+			Log("Reloading bindings");
 			Hotkeys.instance.OnInputInitialize();
-			Confirm(MessageIDs.ReloadBindings);
 		}
 
 		#endregion
 
 		#region Write
 
-		protected override async void EstablishConnection() {
-			//Studio side
-			//WriteMessage(new Message(MessageIDs.EstablishConnection, new byte[0]));
-			//WaitForConfirm(MessageIDs.EstablishConnection);
+		protected override void EstablishConnection() {
+			var studio = this;
+			var celeste = this;
+			studio = null;
 
-			//Celeste side
-			await ReadMessage();
-			await ReadMessage();
-			Confirm(MessageIDs.EstablishConnection);
-			ProcessSendPath(ReadMessage().Result.Data);
+			Message? lastMessage;
 
-			//Studio side
-			//SendPath(Studio.path);
+			studio?.WriteMessageGuaranteed(new Message(MessageIDs.EstablishConnection, new byte[0]));
+			celeste?.ReadMessageGuaranteed();
 
-			//Celeste side
-			SendCurrentBindings(Hotkeys.listHotkeyKeys);
+			//studio?.SendPath(Studio.path);
+			lastMessage = celeste?.ReadMessageGuaranteed();
+			celeste?.ProcessSendPath(lastMessage?.Data);
+
+			celeste?.SendCurrentBindings(Hotkeys.listHotkeyKeys);
+			lastMessage = studio?.ReadMessageGuaranteed();
+			//studio?.ProcessSendCurrentBindings(lastMessage?.Data);
 
 			Initialized = true;
 		}
@@ -145,8 +129,7 @@ namespace TAS.StudioCommunication {
 
 		public void SendCurrentBindings(List<Keys>[] bindings) {
 			byte[] data = ToByteArray(bindings);
-			WriteMessage(new Message(MessageIDs.SendCurrentBindings, data));
-			WaitForConfirm(MessageIDs.SendCurrentBindings);
+			WriteMessageGuaranteed(new Message(MessageIDs.SendCurrentBindings, data));
 		}
 #endregion
 

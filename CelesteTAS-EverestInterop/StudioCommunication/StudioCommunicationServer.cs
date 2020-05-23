@@ -28,7 +28,7 @@ namespace TASALT.StudioCommunication {
 		public static StudioCommunicationServer instance;
 
 		private StudioCommunicationServer() {
-			pipe = new NamedPipeServerStream("CelesteTAS");
+			//pipe = new NamedPipeServerStream("CelesteTAS");
 			//pipe.ReadMode = PipeTransmissionMode.Message;
 		}
 
@@ -41,16 +41,9 @@ namespace TASALT.StudioCommunication {
 			updateThread.Start();
 		}
 
-		protected override void WaitForConnection() {
-			(pipe as NamedPipeServerStream).WaitForConnection();
-			ThreadStart establishConnection = new ThreadStart(EstablishConnection);
-			Thread thread = new Thread(establishConnection);
-			thread.Name = "Server Initialization";
-			thread.Start();
-		}
 
 		#region Read
-		protected override void ReadSwitch(Message message) {
+		protected override void ReadData(Message message) {
 			switch (message.ID) {
 				case MessageIDs.SendState:
 					ProcessSendState(message.Data);
@@ -68,19 +61,22 @@ namespace TASALT.StudioCommunication {
 
 
 		private void ProcessSendState(byte[] data) {
-			string state = Encoding.Default.GetString(data, 1, data.Length - 1);
+			string state = Encoding.Default.GetString(data);
+			Log(state);
 			Studio.state = state;
 		}
 
 		private void ProcessSendPlayerData(byte[] data) {
-			string playerData = Encoding.Default.GetString(data, 1, data.Length - 1);
+			string playerData = Encoding.Default.GetString(data);
+			Log(playerData);
 			Studio.playerData = playerData;
 		}
 
 		private void ProcessSendCurrentBindings(byte[] data) {
-			List<Keys>[] keys = FromByteArray<List<Keys>[]>(data, 2);
+			List<Keys>[] keys = FromByteArray<List<Keys>[]>(data);
+			foreach (List<Keys> key in keys)
+				Log(key.ToString());
 			Studio.bindings = keys;
-			Confirm(MessageIDs.SendCurrentBindings);
 		}
 
 		#endregion
@@ -89,45 +85,43 @@ namespace TASALT.StudioCommunication {
 
 
 		protected override void EstablishConnection() {
-			//Studio side
-			WriteMessage(new Message(MessageIDs.EstablishConnection, new byte[0]));
-			pipe.WaitForPipeDrain();
-			WaitForConfirm(MessageIDs.EstablishConnection);
+			var studio = this;
+			var celeste = this;
+			celeste = null;
 
-			//Celeste side
-			//WaitForResponse();
-			//Confirm(MessageIDs.EstablishConnection);
-			//WaitForResponse();
+			Message? lastMessage;
 
-			//Studio side
-			SendPath(Studio.path);
+			studio?.WriteMessageGuaranteed(new Message(MessageIDs.EstablishConnection, new byte[0]));
+			celeste?.ReadMessageGuaranteed();
 
-			//Celeste side
-			//SendCurrentBindings(Hotkeys.listHotkeyKeys);
+			studio?.SendPath(Studio.path);
+			lastMessage = celeste?.ReadMessageGuaranteed();
+			//celeste?.ProcessSendPath(lastMessage?.Data);
+
+			//celeste?.SendCurrentBindings(Hotkeys.listHotkeyKeys);
+			lastMessage = studio?.ReadMessageGuaranteed();
+			studio?.ProcessSendCurrentBindings(lastMessage?.Data);
 
 			Initialized = true;
 		}
 
 		public void SendPath(string path) {
 			byte[] pathBytes = Encoding.Default.GetBytes(path);
-			WriteMessage(new Message(MessageIDs.SendPath, pathBytes));
-			WaitForConfirm(MessageIDs.SendPath);
+			WriteMessageGuaranteed(new Message(MessageIDs.SendPath, pathBytes));
 		}
 
 		public void SendHotkeyPressed(HotkeyIDs hotkey) {
 			byte[] hotkeyByte = new byte[] { (byte)hotkey };
-			WriteMessage(new Message(MessageIDs.SendHotkeyPressed, hotkeyByte));
+			WriteMessageGuaranteed(new Message(MessageIDs.SendHotkeyPressed, hotkeyByte));
 		}
 
 		public void SendNewBindings(List<Keys> keys) {
 			byte[] data = ToByteArray(keys);
-			WriteMessage(new Message(MessageIDs.SendNewBindings, data));
-			WaitForConfirm(MessageIDs.SendNewBindings);
+			WriteMessageGuaranteed(new Message(MessageIDs.SendNewBindings, data));
 		}
 
 		public void SendReloadBindings(byte[] data) {
-			WriteMessage(new Message(MessageIDs.ReloadBindings, new byte[0]));
-			WaitForConfirm(MessageIDs.ReloadBindings);
+			WriteMessageGuaranteed(new Message(MessageIDs.ReloadBindings, new byte[0]));
 		}
 
 		#endregion

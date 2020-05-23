@@ -1,8 +1,9 @@
-﻿using System;
+﻿using IL.MonoMod;
+using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
-using System.IO.Pipes;
+using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Net.Security;
 using System.Runtime.CompilerServices;
@@ -21,6 +22,8 @@ namespace TAS.StudioCommunication {
 			public int Length { get; private set; }
 			public byte[] Data { get; private set; }
 
+			public int Signature { get => (byte)ID * 100 + Length; }
+
 			public Message(MessageIDs id, byte[] data) {
 				ID = id;
 				Data = data;
@@ -30,113 +33,136 @@ namespace TAS.StudioCommunication {
 			public byte[] GetBytes() {
 				byte[] bytes = new byte[Length + HEADER_LENGTH];
 				bytes[0] = (byte)ID;
-				Buffer.BlockCopy(BitConverter.GetBytes(Length), 0, bytes, 1, 4);
+				Buffer.BlockCopy(BitConverter.GetBytes(Signature), 0, bytes, 1, 4);
+				Buffer.BlockCopy(BitConverter.GetBytes(Length), 0, bytes, 5, 4);
 				Buffer.BlockCopy(Data, 0, bytes, HEADER_LENGTH, Length);
 				return bytes;
 			}
 		}
 
-		protected PipeStream pipe;
-		//protected Queue<Message> writeQueue = new Queue<Message>();
-		protected byte[] readBuffer = new byte[BUFFER_SIZE];
+		//I gave up on using pipes.
+		//Don't know whether i was doing something horribly wrong or if .net pipes are just *that* bad.
+		//Almost certainly the former.
+		private MemoryMappedFile sharedMemory;
+		private Mutex mutex;
+		private int lastSignature;
+		private int timeout = 16;
+
 		protected const int BUFFER_SIZE = 0x1000;
-		protected const int HEADER_LENGTH = 5;
-		protected bool waitingForResponse;
-		protected CancellationTokenSource pendingRead;
-		protected CancellationTokenSource pendingWrite;
+		protected const int HEADER_LENGTH = 9;
 		public static bool Initialized { get; protected set; }
 
 		protected StudioCommunicationBase() {
-			//callback = new AsyncCallback(ReadData);
+			sharedMemory = MemoryMappedFile.CreateOrOpen("CelesteTAS", BUFFER_SIZE);
+			mutex = new Mutex(false, "CelesteTASCOM", out bool created);
+			if (!created)
+				mutex = Mutex.OpenExisting("CelesteTASCOM");
+		}
+
+		~StudioCommunicationBase() {
+			sharedMemory.Dispose();
+			mutex.Dispose();
 		}
 
 		protected void UpdateLoop() {
+			EstablishConnection();
 			for (; ; ) {
-				if (pipe.IsConnected) {
-					if (false && !waitingForResponse) {
-						//ReadSwitch(await ReadMessage());
-					}
-					//if (false && writeQueue.Count > 0 && !waitingForResponse) {
-					//	WriteMessage();
-					//}
-					Thread.Sleep(5);
+				Message? message = ReadMessage();
+
+				if (message != null) {
+					ReadData((Message)message);
 				}
-				else {
-					Initialized = false;
-					WaitForConnection();
-				}
+				Thread.Sleep(timeout);
 			}
 		}
 
-		protected async Task<Message> ReadMessage() {
-			Log($"{this} attempting read");
+		protected Message? ReadMessage() {
 
 			MessageIDs id = default;
-			while (id == default) {
-				pendingRead = new CancellationTokenSource();
+			int signature;
+			int size;
+			byte[] data;
 
-				await Task.Run(() => pipe.ReadAsync(readBuffer, 0, BUFFER_SIZE), pendingRead.Token);
-				id = (MessageIDs)readBuffer[0];
+			using (MemoryMappedViewStream stream = sharedMemory.CreateViewStream()) {
+				mutex.WaitOne();
+				//Log($"{this} acquired mutex for read");
+
+				BinaryReader reader = new BinaryReader(stream);
+				BinaryWriter writer = new BinaryWriter(stream);
+
+				id = (MessageIDs)reader.ReadByte();
+				if (id == MessageIDs.Default) {
+					mutex.ReleaseMutex();
+					return null;
+				}
+				//Make sure the message came from the other side
+				signature = reader.ReadInt32();
+				if (signature == lastSignature) {
+					mutex.ReleaseMutex();
+					return null;
+				}
+				size = reader.ReadInt32();
+				data = reader.ReadBytes(size);
+
+				//Overwriting the first byte ensures that the data will only be read once
+				stream.Position = 0;
+				writer.Write((byte)0);
+
+				mutex.ReleaseMutex();
 			}
 
-			byte[] sizeBytes = new byte[4];
-			Buffer.BlockCopy(readBuffer, 1, sizeBytes, 0, 4);
-			int size = BitConverter.ToInt32(sizeBytes, 0);
 
-			byte[] dataBytes = new byte[size];
-			Buffer.BlockCopy(readBuffer, HEADER_LENGTH, dataBytes, 0, size);
-
-			Message message = new Message(id, dataBytes);
+			Message message = new Message(id, data);
 			Log($"{this} received {message.ID} with length {message.Length}");
 
-			readBuffer[0] = 0;
 			return message;
 		}
 
-		protected async void WriteMessage(Message message) {
+		protected Message ReadMessageGuaranteed() {
+			Log($"{this} forcing read");
+			for (; ; ) {
+				Message? message = ReadMessage();
+				if (message != null)
+					return (Message)message;
+				Thread.Sleep(timeout);
+			}
+		}
 
-			if (pendingRead != null) {
-				Log($"{this} cancelling read");
-				pendingRead?.Cancel();
-				pendingRead?.Dispose();
+		protected bool WriteMessage(Message message) {
+
+			using (MemoryMappedViewStream stream = sharedMemory.CreateViewStream()) {
+				mutex.WaitOne();
+
+				//Log($"{this} acquired mutex for write");
+				BinaryReader reader = new BinaryReader(stream);
+				BinaryWriter writer = new BinaryWriter(stream);
+
+				//Check that there isn't a message waiting to be read
+				if (reader.ReadByte() != 0) {
+					mutex.ReleaseMutex();
+					return false;
+				}
+				Log($"{this} writing {message.ID} with length {message.Length}");
+
+				stream.Position = 0;
+				writer.Write(message.GetBytes());
+
+				mutex.ReleaseMutex();
 			}
 
-			Log($"{this} attempting to write {message.ID} with length {message.Length}");
-
-			pendingWrite = new CancellationTokenSource();
-
-			await Task.Run(() => pipe.WriteAsync(readBuffer, 0, message.Length + HEADER_LENGTH), pendingWrite.Token);
-			
-			Log($"{this} wrote {message.ID} with length {message.Length}");
-			//pipe.BeginWrite(message.GetBytes(), 0, message.Length + HEADER_LENGTH, default, default);
-			await pipe.FlushAsync();
-			//pipe.WaitForPipeDrain();
+			lastSignature = message.Signature;
+			return true;
 		}
 
-		protected void ReadData(IAsyncResult result) {
-			ReadSwitch(ReadMessage().Result);
+		protected void WriteMessageGuaranteed(Message message) {
+			Log($"{this} forcing write of {message.ID} with length {message.Length}");
+			while (!WriteMessage(message))
+				Thread.Sleep(timeout);
 		}
 
-		protected virtual void ReadSwitch(Message message) { }
-
-		protected virtual void WaitForConnection() { }
+		protected virtual void ReadData(Message message) { }
 
 		protected virtual void EstablishConnection() { }
-
-		protected void Confirm(MessageIDs messageID) {
-			WriteMessage(new Message(MessageIDs.Confirm, new byte[] { (byte)messageID }));
-		}
-
-		protected void WaitForConfirm(MessageIDs messageID) {
-			while (pendingWrite != null)
-				Thread.Sleep(1);
-			Message message = ReadMessage().Result;
-			if (message.ID == MessageIDs.Confirm) {
-				if (message.Data[0] == (byte)messageID)
-					return;
-				throw new Exception();
-			}
-		}
 
 		//ty stackoverflow
 		protected T FromByteArray<T>(byte[] data, int offset = 0, int length = 0) {
@@ -162,16 +188,14 @@ namespace TAS.StudioCommunication {
 		}
 
 		public override string ToString() {
-			string pipeType = (pipe is NamedPipeClientStream) ? "Client" : "Server";
+			string pipeType = (this is StudioCommunicationClient) ? "Client" : "Server";
 			string location = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
 			return $"{pipeType} @ {location}";
 		}
 
 		protected void Log(string s) {
 #if DEBUG
-			//Console.ForegroundColor = (pipe is NamedPipeClientStream) ? ConsoleColor.Green : ConsoleColor.Cyan;
 			Console.WriteLine(s);
-			Console.ResetColor();
 #endif
 		}
 	}
