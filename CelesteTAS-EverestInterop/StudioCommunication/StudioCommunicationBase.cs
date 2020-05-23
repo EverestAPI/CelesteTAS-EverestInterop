@@ -37,28 +37,28 @@ namespace TAS.StudioCommunication {
 		}
 
 		protected PipeStream pipe;
-		protected Queue<Message> readQueue = new Queue<Message>();
-		protected Queue<Message> writeQueue = new Queue<Message>();
+		//protected Queue<Message> writeQueue = new Queue<Message>();
 		protected byte[] readBuffer = new byte[BUFFER_SIZE];
 		protected const int BUFFER_SIZE = 0x1000;
 		protected const int HEADER_LENGTH = 5;
 		protected bool waitingForResponse;
-		protected AsyncCallback callback;
+		protected CancellationTokenSource pendingRead;
+		protected CancellationTokenSource pendingWrite;
 		public static bool Initialized { get; protected set; }
 
 		protected StudioCommunicationBase() {
-			callback = new AsyncCallback(ReadData);
+			//callback = new AsyncCallback(ReadData);
 		}
 
 		protected void UpdateLoop() {
 			for (; ; ) {
 				if (pipe.IsConnected) {
-					if (false && readQueue.Count == 0 && !waitingForResponse) {
-						ReadMessage();
+					if (false && !waitingForResponse) {
+						//ReadSwitch(await ReadMessage());
 					}
-					if (false && writeQueue.Count > 0 && !waitingForResponse) {
-						WriteMessage();
-					}
+					//if (false && writeQueue.Count > 0 && !waitingForResponse) {
+					//	WriteMessage();
+					//}
 					Thread.Sleep(5);
 				}
 				else {
@@ -68,44 +68,77 @@ namespace TAS.StudioCommunication {
 			}
 		}
 
-		protected void FillQueue(byte[] buffer) {
-			int index = 0;
-			while (buffer[index] != 0) {
-				MessageIDs id = (MessageIDs)buffer[index];
-				byte[] sizeBytes = new byte[4];
-				Buffer.BlockCopy(buffer, index + 1, sizeBytes, 0, 4);
-				int size = BitConverter.ToInt32(sizeBytes, 0);
-				index += HEADER_LENGTH;
+		protected async Task<Message> ReadMessage() {
+			Log($"{this} attempting read");
 
-				byte[] dataBytes = new byte[size];
-				Buffer.BlockCopy(buffer, index, dataBytes, 0, size);
+			MessageIDs id = default;
+			while (id == default) {
+				pendingRead = new CancellationTokenSource();
 
-				Message message = new Message(id, dataBytes);
-				readQueue.Enqueue(message);
-#if DEBUG
-				Console.WriteLine($"{this} received {message.ID} with length {message.Length}");
-#endif
-				index += size;
+				await Task.Run(() => pipe.ReadAsync(readBuffer, 0, BUFFER_SIZE), pendingRead.Token);
+				id = (MessageIDs)readBuffer[0];
 			}
+
+			byte[] sizeBytes = new byte[4];
+			Buffer.BlockCopy(readBuffer, 1, sizeBytes, 0, 4);
+			int size = BitConverter.ToInt32(sizeBytes, 0);
+
+			byte[] dataBytes = new byte[size];
+			Buffer.BlockCopy(readBuffer, HEADER_LENGTH, dataBytes, 0, size);
+
+			Message message = new Message(id, dataBytes);
+			Log($"{this} received {message.ID} with length {message.Length}");
+
+			readBuffer[0] = 0;
+			return message;
 		}
 
-		protected void ReadMessage() {
-			pipe.BeginRead(readBuffer, 0, BUFFER_SIZE, callback, default);
+		protected async void WriteMessage(Message message) {
+
+			if (pendingRead != null) {
+				Log($"{this} cancelling read");
+				pendingRead?.Cancel();
+				pendingRead?.Dispose();
+			}
+
+			Log($"{this} attempting to write {message.ID} with length {message.Length}");
+
+			pendingWrite = new CancellationTokenSource();
+
+			await Task.Run(() => pipe.WriteAsync(readBuffer, 0, message.Length + HEADER_LENGTH), pendingWrite.Token);
+			
+			Log($"{this} wrote {message.ID} with length {message.Length}");
+			//pipe.BeginWrite(message.GetBytes(), 0, message.Length + HEADER_LENGTH, default, default);
+			await pipe.FlushAsync();
+			//pipe.WaitForPipeDrain();
 		}
 
 		protected void ReadData(IAsyncResult result) {
-			if (result == null)
-				return;
-			FillQueue(readBuffer);
-			readBuffer = new byte[BUFFER_SIZE];
-			Message message = readQueue.Dequeue();
-			ReadSwitch(message);
+			ReadSwitch(ReadMessage().Result);
 		}
 
 		protected virtual void ReadSwitch(Message message) { }
 
 		protected virtual void WaitForConnection() { }
 
+		protected virtual void EstablishConnection() { }
+
+		protected void Confirm(MessageIDs messageID) {
+			WriteMessage(new Message(MessageIDs.Confirm, new byte[] { (byte)messageID }));
+		}
+
+		protected void WaitForConfirm(MessageIDs messageID) {
+			while (pendingWrite != null)
+				Thread.Sleep(1);
+			Message message = ReadMessage().Result;
+			if (message.ID == MessageIDs.Confirm) {
+				if (message.Data[0] == (byte)messageID)
+					return;
+				throw new Exception();
+			}
+		}
+
+		//ty stackoverflow
 		protected T FromByteArray<T>(byte[] data, int offset = 0, int length = 0) {
 			if (data == null)
 				return default(T);
@@ -118,59 +151,6 @@ namespace TAS.StudioCommunication {
 			}
 		}
 
-		protected void WriteMessage() {
-			Message message = writeQueue.Dequeue();
-#if DEBUG
-			Console.WriteLine($"{this} writing {message.ID} with length {message.Length}");
-#endif
-			pipe.BeginWrite(message.GetBytes(), 0, message.Length + HEADER_LENGTH, default, default);
-			pipe.WaitForPipeDrain();
-		}
-
-		protected virtual void EstablishConnection() { }
-
-		protected void Confirm(MessageIDs messageID) {
-			writeQueue.Enqueue(new Message(MessageIDs.Confirm, new byte[] { (byte)messageID }));
-#if DEBUG
-			Console.WriteLine($"{this} confirming {messageID}");
-#endif
-		}
-
-		protected void WaitForConfirm(MessageIDs messageID) {
-			if (writeQueue.Count > 0)
-				WriteMessage();
-			for (; ; ) {
-				pipe.BeginRead(readBuffer, 0, HEADER_LENGTH + 1, default, default);
-				FillQueue(readBuffer);
-				readBuffer[0] = 0;
-				if (readQueue.Count > 0 && readQueue.Peek().ID == MessageIDs.Confirm) {
-					if (readQueue.Dequeue().Data[0] == (byte)messageID)
-						return;
-					throw new Exception();
-				}
-				else
-					readQueue.Clear();
-				Thread.Sleep(1);
-			}
-		}
-
-		protected void WaitForResponse() {
-			waitingForResponse = true;
-			for (; ; ) {
-				pipe.BeginRead(readBuffer, 0, 0x200, default, default);
-				FillQueue(readBuffer);
-				readBuffer[0] = 0;
-				if (readQueue.Count > 0) {
-					break;
-				}
-				Thread.Sleep(1);
-			}
-
-			waitingForResponse = false;
-			
-		}
-
-		//ty stackoverflow
 		protected byte[] ToByteArray<T>(T obj) {
 			if (obj == null)
 				return new byte[0];
@@ -185,6 +165,14 @@ namespace TAS.StudioCommunication {
 			string pipeType = (pipe is NamedPipeClientStream) ? "Client" : "Server";
 			string location = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
 			return $"{pipeType} @ {location}";
+		}
+
+		protected void Log(string s) {
+#if DEBUG
+			//Console.ForegroundColor = (pipe is NamedPipeClientStream) ? ConsoleColor.Green : ConsoleColor.Cyan;
+			Console.WriteLine(s);
+			Console.ResetColor();
+#endif
 		}
 	}
 }

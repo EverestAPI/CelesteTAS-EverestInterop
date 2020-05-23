@@ -29,6 +29,7 @@ namespace TASALT.StudioCommunication {
 
 		private StudioCommunicationServer() {
 			pipe = new NamedPipeServerStream("CelesteTAS");
+			//pipe.ReadMode = PipeTransmissionMode.Message;
 		}
 
 		public static void Run() {
@@ -89,7 +90,8 @@ namespace TASALT.StudioCommunication {
 
 		protected override void EstablishConnection() {
 			//Studio side
-			writeQueue.Enqueue(new Message(MessageIDs.EstablishConnection, new byte[0]));
+			WriteMessage(new Message(MessageIDs.EstablishConnection, new byte[0]));
+			pipe.WaitForPipeDrain();
 			WaitForConfirm(MessageIDs.EstablishConnection);
 
 			//Celeste side
@@ -108,23 +110,23 @@ namespace TASALT.StudioCommunication {
 
 		public void SendPath(string path) {
 			byte[] pathBytes = Encoding.Default.GetBytes(path);
-			writeQueue.Enqueue(new Message(MessageIDs.SendPath, pathBytes));
+			WriteMessage(new Message(MessageIDs.SendPath, pathBytes));
 			WaitForConfirm(MessageIDs.SendPath);
 		}
 
 		public void SendHotkeyPressed(HotkeyIDs hotkey) {
 			byte[] hotkeyByte = new byte[] { (byte)hotkey };
-			writeQueue.Enqueue(new Message(MessageIDs.SendHotkeyPressed, hotkeyByte));
+			WriteMessage(new Message(MessageIDs.SendHotkeyPressed, hotkeyByte));
 		}
 
 		public void SendNewBindings(List<Keys> keys) {
 			byte[] data = ToByteArray(keys);
-			writeQueue.Enqueue(new Message(MessageIDs.SendNewBindings, data));
+			WriteMessage(new Message(MessageIDs.SendNewBindings, data));
 			WaitForConfirm(MessageIDs.SendNewBindings);
 		}
 
 		public void SendReloadBindings(byte[] data) {
-			writeQueue.Enqueue(new Message(MessageIDs.ReloadBindings, new byte[0]));
+			WriteMessage(new Message(MessageIDs.ReloadBindings, new byte[0]));
 			WaitForConfirm(MessageIDs.ReloadBindings);
 		}
 

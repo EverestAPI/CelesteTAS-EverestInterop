@@ -18,7 +18,9 @@ namespace TAS.StudioCommunication {
 
 		private StudioCommunicationClient() {
 			pipe = new NamedPipeClientStream("CelesteTAS");
+			//pipe.ReadMode = PipeTransmissionMode.Message;
 			waitingForResponse = true;
+			
 		}
 
 		public static bool Run() {
@@ -111,15 +113,16 @@ namespace TAS.StudioCommunication {
 
 		#region Write
 
-		protected override void EstablishConnection() {
+		protected override async void EstablishConnection() {
 			//Studio side
-			//writeQueue.Enqueue(new Message(MessageIDs.EstablishConnection, new byte[0]));
+			//WriteMessage(new Message(MessageIDs.EstablishConnection, new byte[0]));
 			//WaitForConfirm(MessageIDs.EstablishConnection);
 
 			//Celeste side
-			WaitForResponse();
+			await ReadMessage();
+			await ReadMessage();
 			Confirm(MessageIDs.EstablishConnection);
-			WaitForResponse();
+			ProcessSendPath(ReadMessage().Result.Data);
 
 			//Studio side
 			//SendPath(Studio.path);
@@ -132,17 +135,17 @@ namespace TAS.StudioCommunication {
 
 		public void SendState(string state) {
 			byte[] stateBytes = Encoding.Default.GetBytes(state);
-			writeQueue.Enqueue(new Message(MessageIDs.SendState, stateBytes));
+			WriteMessage(new Message(MessageIDs.SendState, stateBytes));
 		}
 
 		public void SendPlayerData(string data) {
 			byte[] dataBytes = Encoding.Default.GetBytes(data);
-			writeQueue.Enqueue(new Message(MessageIDs.SendPlayerData, dataBytes));
+			WriteMessage(new Message(MessageIDs.SendPlayerData, dataBytes));
 		}
 
 		public void SendCurrentBindings(List<Keys>[] bindings) {
 			byte[] data = ToByteArray(bindings);
-			writeQueue.Enqueue(new Message(MessageIDs.SendCurrentBindings, data));
+			WriteMessage(new Message(MessageIDs.SendCurrentBindings, data));
 			WaitForConfirm(MessageIDs.SendCurrentBindings);
 		}
 #endregion
