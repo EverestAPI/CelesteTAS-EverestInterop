@@ -54,8 +54,8 @@ namespace TAS.StudioCommunication {
 
 		protected override void ReadData(Message message) {
 			switch (message.ID) {
-				case MessageIDs.EstablishConnection:
-					
+				case MessageIDs.Wait:
+					ProcessWait();
 					break;
 				case MessageIDs.SendPath:
 					ProcessSendPath(message.Data);
@@ -82,8 +82,13 @@ namespace TAS.StudioCommunication {
 		}
 
 		private void ProcessHotkeyPressed(byte[] data) {
-			Log($"{((HotkeyIDs)data[0]).ToString()} pressed");
-			Hotkeys.hotkeys[data[0]].overridePressed = true;
+			HotkeyIDs hotkey = (HotkeyIDs)data[0];
+			Log($"{hotkey.ToString()} pressed");
+
+			if (hotkey == HotkeyIDs.FastForward)
+				Hotkeys.hotkeys[data[0]].overridePressed = !Hotkeys.hotkeys[data[0]].overridePressed;
+			else
+				Hotkeys.hotkeys[data[0]].overridePressed = true;
 		}
 
 		private void ProcessNewBindings(byte[] data) {

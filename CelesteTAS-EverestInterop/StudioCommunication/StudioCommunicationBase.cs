@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Net.Security;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
@@ -20,7 +21,7 @@ namespace TAS.StudioCommunication {
 			public int Length { get; private set; }
 			public byte[] Data { get; private set; }
 
-			public static readonly int Signature = "Celeste".GetHashCode();
+			public static readonly int Signature = Assembly.GetExecutingAssembly().GetHashCode();
 
 			public Message(MessageIDs id, byte[] data) {
 				ID = id;
@@ -36,6 +37,7 @@ namespace TAS.StudioCommunication {
 				Buffer.BlockCopy(Data, 0, bytes, HEADER_LENGTH, Length);
 				return bytes;
 			}
+
 		}
 
 		//I gave up on using pipes.
@@ -46,6 +48,7 @@ namespace TAS.StudioCommunication {
 		private int lastSignature;
 		private int timeout = 16;
 		private int failedWrites = 0;
+		private bool waiting;
 
 		protected Action pendingWrite;
 
@@ -73,11 +76,14 @@ namespace TAS.StudioCommunication {
 
 					if (message != null) {
 						ReadData((Message)message);
+						waiting = false;
 					}
 					Thread.Sleep(timeout);
 
-					pendingWrite?.Invoke();
-					pendingWrite = null;
+					if (!waiting) {
+						pendingWrite?.Invoke();
+						pendingWrite = null;
+					}
 				}
 				//For this to work all writes must occur in this thread
 				catch (TimeoutException e) {
@@ -89,6 +95,9 @@ namespace TAS.StudioCommunication {
 				}
 			}
 		}
+
+		private bool IsHighPriority(MessageIDs ID) =>
+			Attribute.IsDefined(typeof(MessageIDs).GetField(Enum.GetName(typeof(MessageIDs), ID)), typeof(HighPriorityAttribute));
 
 		protected Message? ReadMessage() {
 
@@ -155,7 +164,9 @@ namespace TAS.StudioCommunication {
 				BinaryWriter writer = new BinaryWriter(stream);
 
 				//Check that there isn't a message waiting to be read
-				if (reader.ReadByte() != 0) {
+				byte firstByte = reader.ReadByte();
+				if (firstByte != 0 && (!IsHighPriority(message.ID) || IsHighPriority((MessageIDs)firstByte))) {
+
 					mutex.ReleaseMutex();
 					if (Initialized && ++failedWrites > 100)
 						throw new TimeoutException();
@@ -177,11 +188,19 @@ namespace TAS.StudioCommunication {
 		protected void WriteMessageGuaranteed(Message message) {
 			Log($"{this} forcing write of {message.ID} with length {message.Length}");
 
-			for (; ;) {
+			for (; ; ) {
 				if (WriteMessage(message))
 					break;
 				Thread.Sleep(timeout);
 			}
+		}
+
+		public void WriteWait() {
+			pendingWrite = () => WriteMessageGuaranteed(new Message(MessageIDs.Wait, new byte[0]));
+		}
+
+		protected void ProcessWait() {
+			waiting = true;
 		}
 
 		protected virtual void ReadData(Message message) { }
@@ -212,9 +231,9 @@ namespace TAS.StudioCommunication {
 		}
 
 		public override string ToString() {
-			string pipeType = (this is StudioCommunicationClient) ? "Client" : "Server";
+			//string pipeType = (this is StudioCommunicationServer) ? "Server" : "Client";
 			string location = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
-			return $"{pipeType} @ {location}";
+			return $"Client @ {location}";
 		}
 
 		protected void Log(string s) {
