@@ -1,14 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Pipes;
-using System.Runtime.InteropServices;
-using System.Runtime.Remoting.Messaging;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using IL.MonoMod;
+using Celeste;
 using Microsoft.Xna.Framework.Input;
 using TAS.EverestInterop;
 
@@ -29,10 +25,13 @@ namespace TAS.StudioCommunication {
 			SetupDebugVariables();
 #endif
 
-			ThreadStart mainLoop = new ThreadStart(instance.UpdateLoop);
-			Thread updateThread = new Thread(mainLoop);
-			updateThread.Name = "StudioCom Client";
-			updateThread.Start();
+			//ThreadStart mainLoop = new ThreadStart(instance.UpdateLoop);
+			//Thread updateThread = new Thread(mainLoop);
+			//updateThread.Name = "StudioCom Client";
+			//updateThread.Start();
+
+			RunThread.Start((Action)instance.UpdateLoop, "StudioCom Client");
+
 			return true;
 		}
 
@@ -55,6 +54,9 @@ namespace TAS.StudioCommunication {
 
 		protected override void ReadData(Message message) {
 			switch (message.ID) {
+				case MessageIDs.EstablishConnection:
+					
+					break;
 				case MessageIDs.SendPath:
 					ProcessSendPath(message.Data);
 					break;
@@ -68,25 +70,29 @@ namespace TAS.StudioCommunication {
 					ProcessReloadBindings(message.Data);
 					break;
 				default:
-					throw new InvalidOperationException();
+					throw new InvalidOperationException($"{message.ID}");
 			}
 		}
 
 		private void ProcessSendPath(byte[] data) {
 			string path = Encoding.Default.GetString(data);
 			Log(path);
-			//Manager.settings.DefaultPath = path;
+			if (path != null)
+				Manager.settings.DefaultPath = path;
 		}
+
 		private void ProcessHotkeyPressed(byte[] data) {
 			Log($"{((HotkeyIDs)data[0]).ToString()} pressed");
 			Hotkeys.hotkeys[data[0]].overridePressed = true;
 		}
+
 		private void ProcessNewBindings(byte[] data) {
 			byte ID = data[0];
 			List<Keys> keys = FromByteArray<List<Keys>>(data, 1);
 			Log($"{((HotkeyIDs)ID).ToString()} set to {keys}");
 			Hotkeys.listHotkeyKeys[ID] = keys;
 		}
+
 		private void ProcessReloadBindings(byte[] data) {
 			Log("Reloading bindings");
 			Hotkeys.instance.OnInputInitialize();
@@ -106,7 +112,11 @@ namespace TAS.StudioCommunication {
 			studio?.WriteMessageGuaranteed(new Message(MessageIDs.EstablishConnection, new byte[0]));
 			celeste?.ReadMessageGuaranteed();
 
-			//studio?.SendPath(Studio.path);
+			celeste?.SendPath(Directory.GetCurrentDirectory());
+			lastMessage = studio?.ReadMessageGuaranteed();
+			studio?.ProcessSendPath(lastMessage?.Data);
+
+			studio?.SendPath(null);
 			lastMessage = celeste?.ReadMessageGuaranteed();
 			celeste?.ProcessSendPath(lastMessage?.Data);
 
@@ -117,17 +127,28 @@ namespace TAS.StudioCommunication {
 			Initialized = true;
 		}
 
-		public void SendState(string state) {
-			byte[] stateBytes = Encoding.Default.GetBytes(state);
-			WriteMessage(new Message(MessageIDs.SendState, stateBytes));
+		private void SendPath(string path) {
+			byte[] pathBytes = Encoding.Default.GetBytes(path);
+			WriteMessageGuaranteed(new Message(MessageIDs.SendPath, pathBytes));
 		}
 
-		public void SendPlayerData(string data) {
-			byte[] dataBytes = Encoding.Default.GetBytes(data);
-			WriteMessage(new Message(MessageIDs.SendPlayerData, dataBytes));
+		private void SendStateAndPlayerDataNow(string state, string playerData, bool canFail) {
+			if (Initialized) {
+				string[] data = new string[] { state, playerData };
+				byte[] dataBytes = ToByteArray(data);
+				Message message = new Message(MessageIDs.SendState, dataBytes);
+				if (canFail)
+					WriteMessage(message);
+				else
+					WriteMessageGuaranteed(message);
+			}
 		}
 
-		public void SendCurrentBindings(List<Keys>[] bindings) {
+		public void SendStateAndPlayerData(string state, string playerData, bool canFail) {
+			pendingWrite = () => SendStateAndPlayerDataNow(state, playerData, canFail);
+		}
+
+		private void SendCurrentBindings(List<Keys>[] bindings) {
 			byte[] data = ToByteArray(bindings);
 			WriteMessageGuaranteed(new Message(MessageIDs.SendCurrentBindings, data));
 		}

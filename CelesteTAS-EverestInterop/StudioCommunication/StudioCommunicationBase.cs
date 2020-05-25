@@ -1,7 +1,5 @@
-﻿using IL.MonoMod;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
@@ -22,7 +20,7 @@ namespace TAS.StudioCommunication {
 			public int Length { get; private set; }
 			public byte[] Data { get; private set; }
 
-			public int Signature { get => (byte)ID * 100 + Length; }
+			public static readonly int Signature = "Celeste".GetHashCode();
 
 			public Message(MessageIDs id, byte[] data) {
 				ID = id;
@@ -47,6 +45,9 @@ namespace TAS.StudioCommunication {
 		private Mutex mutex;
 		private int lastSignature;
 		private int timeout = 16;
+		private int failedWrites = 0;
+
+		protected Action pendingWrite;
 
 		protected const int BUFFER_SIZE = 0x1000;
 		protected const int HEADER_LENGTH = 9;
@@ -67,12 +68,25 @@ namespace TAS.StudioCommunication {
 		protected void UpdateLoop() {
 			EstablishConnection();
 			for (; ; ) {
-				Message? message = ReadMessage();
+				try {
+					Message? message = ReadMessage();
 
-				if (message != null) {
-					ReadData((Message)message);
+					if (message != null) {
+						ReadData((Message)message);
+					}
+					Thread.Sleep(timeout);
+
+					pendingWrite?.Invoke();
+					pendingWrite = null;
 				}
-				Thread.Sleep(timeout);
+				//For this to work all writes must occur in this thread
+				catch (TimeoutException e) {
+					Initialized = false;
+					Log(e.ToString());
+					//Ensure the first byte of the mmf is reset
+					ReadMessage();
+					EstablishConnection();
+				}
 			}
 		}
 
@@ -120,10 +134,13 @@ namespace TAS.StudioCommunication {
 
 		protected Message ReadMessageGuaranteed() {
 			Log($"{this} forcing read");
+			int failedReads = 0;
 			for (; ; ) {
 				Message? message = ReadMessage();
 				if (message != null)
 					return (Message)message;
+				if (Initialized && ++failedReads > 100)
+					throw new TimeoutException();
 				Thread.Sleep(timeout);
 			}
 		}
@@ -140,6 +157,8 @@ namespace TAS.StudioCommunication {
 				//Check that there isn't a message waiting to be read
 				if (reader.ReadByte() != 0) {
 					mutex.ReleaseMutex();
+					if (Initialized && ++failedWrites > 100)
+						throw new TimeoutException();
 					return false;
 				}
 				Log($"{this} writing {message.ID} with length {message.Length}");
@@ -150,14 +169,19 @@ namespace TAS.StudioCommunication {
 				mutex.ReleaseMutex();
 			}
 
-			lastSignature = message.Signature;
+			lastSignature = Message.Signature;
+			failedWrites = 0;
 			return true;
 		}
 
 		protected void WriteMessageGuaranteed(Message message) {
 			Log($"{this} forcing write of {message.ID} with length {message.Length}");
-			while (!WriteMessage(message))
+
+			for (; ;) {
+				if (WriteMessage(message))
+					break;
 				Thread.Sleep(timeout);
+			}
 		}
 
 		protected virtual void ReadData(Message message) { }

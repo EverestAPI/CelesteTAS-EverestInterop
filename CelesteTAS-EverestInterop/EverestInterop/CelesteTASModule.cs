@@ -17,6 +17,7 @@ using System.Runtime.CompilerServices;
 using MonoMod.Utils;
 using System.Net;
 using Mono.Unix;
+using TAS.StudioCommunication;
 
 namespace TAS.EverestInterop
 {
@@ -68,6 +69,9 @@ namespace TAS.EverestInterop
                 UnixRTCStreamIn = new StreamReader(UnixRTC);
                 Logger.Log("CelesteTAS", "Unix socket is active on /tmp/celestetas");
             }
+
+            // Open memory mapped file for interfacing with Windows Celeste Studio
+            StudioCommunicationClient.Run();
         }
 
         public override void Unload() {

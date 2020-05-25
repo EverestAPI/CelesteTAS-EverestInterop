@@ -3,10 +3,11 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
 using System;
-using System.Text;
 using System.Collections.Generic;
-using TAS.EverestInterop;
+using System.Text;
 using System.Reflection;
+using TAS.EverestInterop;
+using TAS.StudioCommunication;
 
 namespace TAS {
 	[Flags]
@@ -23,7 +24,7 @@ namespace TAS {
 		public static bool Running, Recording;
 		public static InputController controller = new InputController("Celeste.tas");
 		public static State lastState, state, nextState;
-		public static string CurrentStatus, PlayerStatus;
+		public static string CurrentStatus, PlayerStatus = "";
 		public static int FrameStepCooldown, FrameLoops = 1;
 		public static bool enforceLegal;
 		private static Vector2 lastPos;
@@ -79,6 +80,7 @@ namespace TAS {
 				CurrentStatus = null;
 				UpdateVirtualInputs.Invoke(null, null);
 			}
+			StudioCommunicationClient.instance.SendStateAndPlayerData(CurrentStatus, PlayerStatus, !HasFlag(nextState, State.FrameStep));
 		}
 
 

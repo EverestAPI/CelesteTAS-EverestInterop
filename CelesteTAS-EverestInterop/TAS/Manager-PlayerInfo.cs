@@ -7,6 +7,7 @@ using Monocle;
 using Microsoft.Xna.Framework;
 using TAS.EverestInterop;
 using System.Reflection;
+using TAS.StudioCommunication;
 
 namespace TAS
 {
@@ -89,7 +90,7 @@ namespace TAS
 					}
 				}
 				else
-					PlayerStatus = level.InCutscene ? "Cutscene" : null;
+					PlayerStatus = level.InCutscene ? "Cutscene" : string.Empty;
 			}
 
 			else if (Engine.Scene is SummitVignette summit)
