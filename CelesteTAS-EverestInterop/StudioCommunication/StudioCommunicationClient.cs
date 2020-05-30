@@ -4,7 +4,9 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using WinForms = System.Windows.Forms;
 using Celeste;
+using Celeste.Mod;
 using Microsoft.Xna.Framework.Input;
 using TAS.EverestInterop;
 
@@ -30,7 +32,7 @@ namespace TAS.StudioCommunication {
 			//updateThread.Name = "StudioCom Client";
 			//updateThread.Start();
 
-			RunThread.Start((Action)instance.UpdateLoop, "StudioCom Client");
+			RunThread.Start(instance.UpdateLoop, "StudioCom Client");
 
 			return true;
 		}
@@ -54,6 +56,8 @@ namespace TAS.StudioCommunication {
 
 		protected override void ReadData(Message message) {
 			switch (message.ID) {
+				case MessageIDs.EstablishConnection:
+					throw new NeedsResetException("Initialization data recieved in main loop");
 				case MessageIDs.Wait:
 					ProcessWait();
 					break;
@@ -114,19 +118,31 @@ namespace TAS.StudioCommunication {
 
 			Message? lastMessage;
 
+			//Stall until input initialized to avoid sending invalid hotkey data
+			while (Hotkeys.listHotkeyKeys == null)
+				Thread.Sleep(timeout);
+
 			studio?.WriteMessageGuaranteed(new Message(MessageIDs.EstablishConnection, new byte[0]));
-			celeste?.ReadMessageGuaranteed();
+			lastMessage = celeste?.ReadMessageGuaranteed();
+			if (lastMessage?.ID != MessageIDs.EstablishConnection)
+				throw new NeedsResetException("Invalid data recieved while establishing connection");
 
 			celeste?.SendPath(Directory.GetCurrentDirectory());
 			lastMessage = studio?.ReadMessageGuaranteed();
+			//if (lastMessage?.ID != MessageIDs.SendPath)
+			//	throw new NeedsResetException();
 			studio?.ProcessSendPath(lastMessage?.Data);
 
 			studio?.SendPath(null);
 			lastMessage = celeste?.ReadMessageGuaranteed();
+			if (lastMessage?.ID != MessageIDs.SendPath)
+				throw new NeedsResetException("Invalid data recieved while establishing connection");
 			celeste?.ProcessSendPath(lastMessage?.Data);
 
 			celeste?.SendCurrentBindings(Hotkeys.listHotkeyKeys);
 			lastMessage = studio?.ReadMessageGuaranteed();
+			//if (lastMessage?.ID != MessageIDs.SendCurrentBindings)
+			//	throw new NeedsResetException();
 			//studio?.ProcessSendCurrentBindings(lastMessage?.Data);
 
 			Initialized = true;
@@ -154,7 +170,17 @@ namespace TAS.StudioCommunication {
 		}
 
 		private void SendCurrentBindings(List<Keys>[] bindings) {
-			byte[] data = ToByteArray(bindings);
+			List<WinForms.Keys>[] nativeBindings = new List<WinForms.Keys>[bindings.Length];
+			int i = 0;
+			foreach (List<Keys> keys in bindings) {
+				nativeBindings[i] = new List<WinForms.Keys>();
+				foreach (Keys key in keys) {
+					nativeBindings[i].Add((WinForms.Keys)key);
+				}
+				i++;
+			}
+
+			byte[] data = ToByteArray(nativeBindings);
 			WriteMessageGuaranteed(new Message(MessageIDs.SendCurrentBindings, data));
 		}
 #endregion

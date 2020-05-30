@@ -20,9 +20,9 @@ namespace TAS.StudioCommunication {
 		/// </summary>
 		Wait = 0x0E,
 		/// <summary>
-		/// Unused
+		/// Structure:
 		/// </summary>
-		Respond = 0x0F,
+		Reset = 0x0F,
 
 		//Pure data transfer
 		/// <summary>

@@ -61,10 +61,13 @@ namespace TAS.EverestInterop {
 
         public void OnInputInitialize() {
             if (Settings.KeyStart.Count == 0) {
-                Settings.KeyStart = new List<Keys> { Keys.RightControl, Keys.OemOpenBrackets };
-                Settings.KeyFastForward = new List<Keys> { Keys.RightControl, Keys.RightShift };
+                Settings.KeyStart = new List<Keys> { Keys.RightControl };
+                Settings.KeyFastForward = new List<Keys> { Keys.RightControl };
                 Settings.KeyFrameAdvance = new List<Keys> { Keys.OemOpenBrackets };
                 Settings.KeyPause = new List<Keys> { Keys.OemCloseBrackets };
+                Settings.KeyHitboxes = new List<Keys> { Keys.B };
+                Settings.KeyGraphics = new List<Keys> { Keys.N };
+                Settings.KeyCamera = new List<Keys> { Keys.M };
             }
 
             listHotkeyKeys = new List<Keys>[] {

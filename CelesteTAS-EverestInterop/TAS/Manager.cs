@@ -45,6 +45,7 @@ namespace TAS {
 				Running = true;
 
 				if (HasFlag(state, State.FrameStep)) {
+					StudioCommunicationClient.instance.SendStateAndPlayerData(CurrentStatus, PlayerStatus, !HasFlag(nextState, State.FrameStep));
 					return;
 				}
 				/*
@@ -69,12 +70,13 @@ namespace TAS {
 				}
 				string status = controller.Current.Line + "[" + controller.ToString() + "]";
 				CurrentStatus = status;
-			}
+			}/*
 			else if (HasFlag(state, State.Delay)) {
 				Level level = Engine.Scene as Level;
 				if (level.CanPause && Engine.FreezeTimer == 0f)
 					EnableRun();
-			}
+				
+			}*/
 			else {
 				Running = false;
 				CurrentStatus = null;
@@ -166,12 +168,16 @@ namespace TAS {
 			}
 			else if (HasFlag(nextState, State.Enable)) {
 				if (Engine.Scene is Level level && (!level.CanPause || Engine.FreezeTimer > 0)) {
+					
+					//this code tries to prevent desyncs when not using console load - however the initialize playback interferes w/ input buffering
 					controller.InitializePlayback();
 					if (controller.Current.HasActions(Actions.Restart) || controller.Current.HasActions(Actions.Start)) {
+						
 						nextState |= State.Delay;
 						FrameLoops = 400;
 						return;
 					}
+					
 				}
 				EnableRun();
 			}
