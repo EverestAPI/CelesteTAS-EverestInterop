@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Text;
-namespace TAS {
+namespace CelesteStudio.Entities {
 	[Flags]
 	public enum Actions {
 		None,
@@ -17,39 +17,31 @@ namespace TAS {
 		Journal = 1024,
 		Jump2 = 2048,
 		Dash2 = 4096,
-		Confirm = 8192
+        Confirm = 8192
 	}
 	public class InputRecord {
-		public int Line { get; set; }
+		public static char Delimiter = ',';
 		public int Frames { get; set; }
 		public Actions Actions { get; set; }
 		public float Angle { get; set; }
+		public string Notes { get; set; }
+		public int ZeroPadding { get; set; }
 		public bool FastForward { get; set; }
-		public bool ForceBreak { get; set; }
-		public Action Command { get; }
-		public InputRecord() { }
-		public InputRecord(Action commandCall) {
-			Command = commandCall;
+		public InputRecord(int frameCount, Actions actions, string notes = null) {
+			Frames = frameCount;
+			Actions = actions;
+			Notes = notes;
+			FastForward = false;
 		}
-		public InputRecord(int number, string line) {
-			Line = number;
+		public InputRecord(string line) {
+			Notes = string.Empty;
 
 			int index = 0;
 			Frames = ReadFrames(line, ref index);
 			if (Frames == 0) {
-
-				// allow whitespace before the breakpoint
-				line = line.Trim();
-				if (line.StartsWith("***")) {
+				Notes = line;
+				if (Notes.StartsWith("***")) {
 					FastForward = true;
-					index = 3;
-
-					if (line.Length >= 4 && line[3] == '!') {
-						ForceBreak = true;
-						index = 4;
-					}
-
-					Frames = ReadFrames(line, ref index);
 				}
 				return;
 			}
@@ -70,8 +62,8 @@ namespace TAS {
 					case 'N': Actions ^= Actions.Journal; break;
 					case 'K': Actions ^= Actions.Jump2; break;
 					case 'C': Actions ^= Actions.Dash2; break;
-					case 'O': Actions ^= Actions.Confirm; break;
-					case 'F':
+                    case 'O': Actions ^= Actions.Confirm; break;
+                    case 'F':
 						Actions ^= Actions.Feather;
 						index++;
 						Angle = ReadAngle(line, ref index);
@@ -98,12 +90,14 @@ namespace TAS {
 					if (char.IsDigit(c)) {
 						foundFrames = true;
 						frames = c ^ 0x30;
+						if (c == '0') { ZeroPadding = 1; }
 					} else if (c != ' ') {
 						return frames;
 					}
 				} else if (char.IsDigit(c)) {
 					if (frames < 9999) {
 						frames = frames * 10 + (c ^ 0x30);
+						if (c == '0' && frames == 0) { ZeroPadding++; }
 					} else {
 						frames = 9999;
 					}
@@ -178,24 +172,24 @@ namespace TAS {
 			return (Actions & actions) != 0;
 		}
 		public override string ToString() {
-			return Frames == 0 ? string.Empty : Frames.ToString().PadLeft(4, ' ') + ActionsToString();
+			return Frames == 0 ? Notes : Frames.ToString().PadLeft(ZeroPadding, '0').PadLeft(4, ' ') + ActionsToString();
 		}
 		public string ActionsToString() {
 			StringBuilder sb = new StringBuilder();
-			if (HasActions(Actions.Left)) { sb.Append(",L"); }
-			if (HasActions(Actions.Right)) { sb.Append(",R"); }
-			if (HasActions(Actions.Up)) { sb.Append(",U"); }
-			if (HasActions(Actions.Down)) { sb.Append(",D"); }
-			if (HasActions(Actions.Jump)) { sb.Append(",J"); }
-			if (HasActions(Actions.Jump2)) { sb.Append(",K"); }
-			if (HasActions(Actions.Dash)) { sb.Append(",X"); }
-			if (HasActions(Actions.Dash2)) { sb.Append(",C"); }
-			if (HasActions(Actions.Grab)) { sb.Append(",G"); }
-			if (HasActions(Actions.Start)) { sb.Append(",S"); }
-			if (HasActions(Actions.Restart)) { sb.Append(",Q"); }
-			if (HasActions(Actions.Journal)) { sb.Append(",N"); }
-			if (HasActions(Actions.Confirm)) { sb.Append(",O"); }
-			if (HasActions(Actions.Feather)) { sb.Append(",F,").Append(Angle == 0 ? string.Empty : Angle.ToString("0")); }
+			if (HasActions(Actions.Left)) { sb.Append(Delimiter).Append('L'); }
+			if (HasActions(Actions.Right)) { sb.Append(Delimiter).Append('R'); }
+			if (HasActions(Actions.Up)) { sb.Append(Delimiter).Append('U'); }
+			if (HasActions(Actions.Down)) { sb.Append(Delimiter).Append('D'); }
+			if (HasActions(Actions.Jump)) { sb.Append(Delimiter).Append('J'); }
+			if (HasActions(Actions.Jump2)) { sb.Append(Delimiter).Append('K'); }
+			if (HasActions(Actions.Dash)) { sb.Append(Delimiter).Append('X'); }
+			if (HasActions(Actions.Dash2)) { sb.Append(Delimiter).Append('C'); }
+			if (HasActions(Actions.Grab)) { sb.Append(Delimiter).Append('G'); }
+			if (HasActions(Actions.Start)) { sb.Append(Delimiter).Append('S'); }
+			if (HasActions(Actions.Restart)) { sb.Append(Delimiter).Append('Q'); }
+			if (HasActions(Actions.Journal)) { sb.Append(Delimiter).Append('N'); }
+            if (HasActions(Actions.Confirm)) { sb.Append(Delimiter).Append('O'); }
+            if (HasActions(Actions.Feather)) { sb.Append(",F,").Append(Angle == 0 ? string.Empty : Angle.ToString()); }
 			return sb.ToString();
 		}
 		public override bool Equals(object obj) {
@@ -223,6 +217,9 @@ namespace TAS {
 				return false;
 			}
 			return one.Actions != two.Actions || one.Angle != two.Angle;
+		}
+        public int ActionPosition() {
+            return Frames == 0 ? -1 : Math.Max(4, Frames.ToString().Length);
 		}
 	}
 }

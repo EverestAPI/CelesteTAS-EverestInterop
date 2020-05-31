@@ -5,7 +5,12 @@ using TAS.EverestInterop;
 
 namespace TAS {
 	public class InputCommands {
-
+		/* Additional commands can be added by giving them the TASCommand attribute and naming them (CommandName)Command.
+		 * The execute at start field indicates whether a command should be executed while building the input list (read, play)
+		 * or when playing the file (console).
+		 * Commands that execute at start must be void Command(InputController, string[], int).
+		 * Commands that execute during playback must be void Command(string[])
+		 */
 		public static string[] Split(string line) {
 			if (line.Contains(","))
 				return line.Trim().Split(',');
@@ -26,13 +31,13 @@ namespace TAS {
 					}
 					TASCommandAttribute attribute = (TASCommandAttribute)method.GetCustomAttribute(typeof(TASCommandAttribute));
 					if (!(Manager.enforceLegal && attribute.illegalInMaingame)) {
-						if (attribute.executeAtStart)
-							return (bool)method.Invoke(null, new object[] { state, commandArgs, studioLine });
-						else {
-
-							Action commandCall = () => method.Invoke(null, new object[] { commandArgs });
-							state.inputs.Add(new InputRecord(commandCall));
+						if (attribute.executeAtStart) {
+							method.Invoke(null, new object[] { state, commandArgs, studioLine });
+							return commandType.ToLower() == "playcommand";
 						}
+
+						Action commandCall = () => method.Invoke(null, new object[] { commandArgs });
+						state.inputs.Add(new InputRecord(commandCall));
 					}
 				}
 				return false;
@@ -41,7 +46,7 @@ namespace TAS {
 		}
 
 		[TASCommand(executeAtStart = true)]
-		private static bool ReadCommand(InputController state, string[] args, int studioLine) {
+		private static void ReadCommand(InputController state, string[] args, int studioLine) {
 			string filePath = args[0];
 			string origFilePath = Manager.settings.DefaultPath;
 			// Check for full and shortened Read versions for absolute path
@@ -59,7 +64,7 @@ namespace TAS {
 			if (!File.Exists(filePath)) {
 				string[] files = Directory.GetFiles(Directory.GetCurrentDirectory(), $"{filePath}*.tas");
 				filePath = files[0].ToString();
-				if (!File.Exists(filePath)) { return false; }
+				if (!File.Exists(filePath)) { return; }
 			}
 			// Find starting and ending lines
 			int skipLines = 0;
@@ -73,7 +78,6 @@ namespace TAS {
 				}
 			}
 			state.ReadFile(filePath, skipLines, lineLen, studioLine);
-			return false;
 		}
 
 		[TASCommand(illegalInMaingame = true)]
@@ -82,15 +86,13 @@ namespace TAS {
 		}
 
 		[TASCommand(executeAtStart = true)]
-		private static bool PlayCommand(InputController state, string[] args, int studioLine) {
+		private static void PlayCommand(InputController state, string[] args, int studioLine) {
 			GetLine(args[0], state.filePath, out int startLine);
 			if (args.Length > 1 && int.TryParse(args[1], out _))
 				state.inputs.Add(new InputRecord(studioLine, args[1]));
 			state.ReadFile(state.filePath, startLine);
-			return true;
 		}
 
-		//The capitalization 
 		[TASCommand]
 		private static void StartExportCommand(string[] args) {
 			string path = "dump.txt";
