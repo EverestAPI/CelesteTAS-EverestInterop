@@ -1,5 +1,4 @@
-﻿//using Xna = Microsoft.Xna.Framework.Input;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -30,8 +29,12 @@ namespace CelesteStudio.Communication {
 			bindings = newBindings;
 		}
 
-		public static bool CheckControls() {
-			if (!updatingHotkeys || Environment.OSVersion.Platform == PlatformID.Unix || bindings == null)
+		public static bool CheckControls(ref Message msg) {
+			if (!updatingHotkeys
+				|| Environment.OSVersion.Platform == PlatformID.Unix
+				|| bindings == null
+				// check if key is repeated
+				|| ((int)msg.LParam & 0x40000000) == 0x40000000)
 				return false;
 			
 			bool anyPressed = false;

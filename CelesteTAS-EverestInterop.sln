@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CelesteTAS-EverestInterop",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Celeste.Mod.mm", "Everest\Celeste.Mod.mm\Celeste.Mod.mm.csproj", "{D5D0239D-FF95-4897-9484-1898AB7E82F5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommunicationTesting", "CommuncationTesting\CommunicationTesting.csproj", "{3F5069AF-F1C2-432D-B446-EC82347F713D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommunicationTesting", "CommunicationTesting\CommunicationTesting.csproj", "{3F5069AF-F1C2-432D-B446-EC82347F713D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CelesteStudio", "Studio\CelesteStudio.csproj", "{51388820-C0EE-420A-BB43-94C7F75145FC}"
 EndProject

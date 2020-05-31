@@ -26,7 +26,8 @@ namespace TAS.EverestInterop {
                 wasPressed = pressed;
                 if (overridePressed) {
                     pressed = true;
-                    overridePressed = false;
+                    if (this != hotkeyFastForward)
+                        overridePressed = false;
                     return;
                 }
                 pressed = IsKeyDown(keys, keyCombo) || IsButtonDown(buttons, keyCombo);

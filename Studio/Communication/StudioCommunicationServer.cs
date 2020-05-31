@@ -67,27 +67,27 @@ namespace CelesteStudio.Communication {
 		private void ProcessSendPath(byte[] data) {
 			string path = Encoding.Default.GetString(data);
 			Log(path);
-			Wrapper.gamePath = path;
+			CommunicationWrapper.gamePath = path;
 		}
 
 		private void ProcessSendState(byte[] data) {
 			string[] stateAndData = FromByteArray<string[]>(data);
 			//Log(stateAndData[0]);
-			Wrapper.state = stateAndData[0];
-			Wrapper.playerData = stateAndData[1];
+			CommunicationWrapper.state = stateAndData[0];
+			CommunicationWrapper.playerData = stateAndData[1];
 		}
 
 		private void ProcessSendPlayerData(byte[] data) {
 			string playerData = Encoding.Default.GetString(data);
 			//Log(playerData);
-			Wrapper.playerData = playerData;
+			CommunicationWrapper.playerData = playerData;
 		}
 
 		private void ProcessSendCurrentBindings(byte[] data) {
 			List<Keys>[] keys = FromByteArray<List<Keys>[]>(data);
 			foreach (List<Keys> key in keys)
 				Log(key.ToString());
-			Wrapper.SetBindings(keys);
+			CommunicationWrapper.SetBindings(keys);
 		}
 
 		#endregion

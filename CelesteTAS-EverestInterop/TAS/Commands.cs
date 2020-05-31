@@ -113,6 +113,11 @@ namespace TAS {
 			Manager.enforceLegal = true;
 		}
 
+		[TASCommand(executeAtStart = true)]
+		private static void UnsafeCommand(InputController state, string[] args, int studioLine) {
+			Manager.allowUnsafeInput = true;
+		}
+
 		private static void GetLine(string labelOrLineNumber, string path, out int lineNumber) {
 			if (!int.TryParse(labelOrLineNumber, out lineNumber)) {
 				int curLine = 0;

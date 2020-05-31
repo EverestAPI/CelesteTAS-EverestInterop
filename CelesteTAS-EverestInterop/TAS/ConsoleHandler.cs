@@ -62,12 +62,12 @@ namespace TAS {
 		}
 
 		private static void Load(AreaMode mode, int levelID, string screen = null, int checkpoint = 0) {
-			/*
-			if (SaveData.Instance == null) {
-				SaveData data = UserIO.Load<SaveData>(SaveData.GetFilename(0));
-				SaveData.Start(data, 0);
+			
+			if (SaveData.Instance == null || (!Manager.allowUnsafeInput && SaveData.Instance.FileSlot != -1)) {
+				SaveData data = UserIO.Load<SaveData>(SaveData.GetFilename(-1));
+				SaveData.Start(data, -1);
 			}
-			*/
+			
 			Session session = new Session(new AreaKey(levelID, mode));
 			if (screen != null) {
 				session.Level = screen;

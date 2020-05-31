@@ -21,26 +21,27 @@ namespace TAS {
 	}
 	public partial class Manager {
 		private static FieldInfo strawberryCollectTimer = typeof(Strawberry).GetField("collectTimer", BindingFlags.Instance | BindingFlags.NonPublic);
+		private static MethodInfo UpdateVirtualInputs = typeof(MInput).GetMethod("UpdateVirtualInputs", BindingFlags.Static | BindingFlags.NonPublic);
 		public static bool Running, Recording;
 		public static InputController controller = new InputController("Celeste.tas");
 		public static State lastState, state, nextState;
 		public static string CurrentStatus, PlayerStatus = "";
 		public static int FrameStepCooldown, FrameLoops = 1;
-		public static bool enforceLegal;
+		public static bool enforceLegal, allowUnsafeInput;
 		private static Vector2 lastPos;
 		private static long lastTimer;
 		private static List<VirtualButton.Node>[] playerBindings;
 		public static CelesteTASModuleSettings settings => CelesteTASModule.Settings;
-		private static MethodInfo UpdateVirtualInputs = typeof(MInput).GetMethod("UpdateVirtualInputs", BindingFlags.Static | BindingFlags.NonPublic);
 
 		public static void UpdateInputs() {
+			
 			lastState = state;
 			UpdatePlayerInfo();
 			Hotkeys.instance?.Update();
 			HandleFrameRates();
 			CheckToEnable();
 			FrameStepping();
-
+			
 			if (HasFlag(state, State.Enable)) {
 				Running = true;
 
@@ -63,10 +64,8 @@ namespace TAS {
 						nextState |= State.FrameStep;
 						FrameLoops = 1;
 					}
-
-					if (!controller.CanPlayback) {
+					if (!controller.CanPlayback || (!allowUnsafeInput && !(Engine.Scene is Level || Engine.Scene is LevelLoader || controller.CurrentFrame <= 1)))
 						DisableRun();
-					}
 				}
 				string status = controller.Current.Line + "[" + controller.ToString() + "]";
 				CurrentStatus = status;
@@ -80,7 +79,8 @@ namespace TAS {
 			else {
 				Running = false;
 				CurrentStatus = null;
-				UpdateVirtualInputs.Invoke(null, null);
+				if (!Engine.Instance.IsActive)
+					UpdateVirtualInputs.Invoke(null, null);
 			}
 			StudioCommunicationClient.instance.SendStateAndPlayerData(CurrentStatus, PlayerStatus, !HasFlag(nextState, State.FrameStep));
 		}
@@ -199,6 +199,7 @@ namespace TAS {
 			if (ExportSyncData)
 				EndExport();
 			enforceLegal = false;
+			allowUnsafeInput = false;
 		}
 		private static void EnableRun() {
 			nextState &= ~State.Enable;
