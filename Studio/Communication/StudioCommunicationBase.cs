@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace TAS.StudioCommunication {
+namespace CelesteStudio.Communication {
 	public class StudioCommunicationBase {
 		// This is literally the first thing I have ever written with threading
 		// Apologies in advance to anyone else working on this
@@ -51,9 +51,8 @@ namespace TAS.StudioCommunication {
 		private MemoryMappedFile sharedMemory;
 		private Mutex mutex;
 		private int lastSignature;
-		protected int timeout = 16;
+		private int timeout = 16;
 		private int failedWrites = 0;
-		private int timeoutCount = 0;
 		private bool waiting;
 
 		protected Action pendingWrite;
@@ -173,9 +172,8 @@ namespace TAS.StudioCommunication {
 				if (firstByte != 0 && (!IsHighPriority(message.ID) || IsHighPriority((MessageIDs)firstByte))) {
 
 					mutex.ReleaseMutex();
-					if (/*Initialized &&*/ ++failedWrites > 100) {
+					if (/*Initialized &&*/ ++failedWrites > 100)
 						throw new NeedsResetException("Write timed out");
-					}
 					return false;
 				}
 
@@ -210,7 +208,6 @@ namespace TAS.StudioCommunication {
 			waiting = false;
 			failedWrites = 0;
 			pendingWrite = null;
-			timeoutCount++;
 			Log($"Exception thrown - {e.Message}");
 			//Ensure the first byte of the mmf is reset
 			using (MemoryMappedViewStream stream = sharedMemory.CreateViewStream()) {
@@ -219,11 +216,10 @@ namespace TAS.StudioCommunication {
 				writer.Write((byte)0);
 				mutex.ReleaseMutex();
 			}
-			//Only for Celeste
-			WriteReset();
 			Thread.Sleep(timeout * 2);
 		}
-		
+
+		//Only needs to be used on the Celeste end, as Celeste will detect disconnects much faster
 		protected void WriteReset() {
 			using (MemoryMappedViewStream stream = sharedMemory.CreateViewStream()) {
 				mutex.WaitOne();
@@ -245,10 +241,9 @@ namespace TAS.StudioCommunication {
 		protected virtual void ReadData(Message message) { }
 
 		private void EstablishConnectionLoop() {
-			for (; ;) {
+			for (; ; ) {
 				try {
 					EstablishConnection();
-					timeoutCount = 0;
 					break;
 				}
 				catch (NeedsResetException e) {
@@ -285,13 +280,12 @@ namespace TAS.StudioCommunication {
 		public override string ToString() {
 			//string pipeType = (this is StudioCommunicationServer) ? "Server" : "Client";
 			string location = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
-			return $"Client @ {location}";
+			return $"Server @ {location}";
 		}
 
 		protected void Log(string s) {
 //#if DEBUG
-			if (timeoutCount <= 5)
-				Console.WriteLine(s);
+			Console.WriteLine(s);
 //#endif
 		}
 	}

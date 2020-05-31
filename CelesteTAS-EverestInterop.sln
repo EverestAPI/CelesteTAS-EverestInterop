@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Celeste.Mod.mm", "Everest\C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommunicationTesting", "CommuncationTesting\CommunicationTesting.csproj", "{3F5069AF-F1C2-432D-B446-EC82347F713D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CelesteStudio", "Studio\CelesteStudio.csproj", "{51388820-C0EE-420A-BB43-94C7F75145FC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{3F5069AF-F1C2-432D-B446-EC82347F713D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3F5069AF-F1C2-432D-B446-EC82347F713D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3F5069AF-F1C2-432D-B446-EC82347F713D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{51388820-C0EE-420A-BB43-94C7F75145FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{51388820-C0EE-420A-BB43-94C7F75145FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{51388820-C0EE-420A-BB43-94C7F75145FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{51388820-C0EE-420A-BB43-94C7F75145FC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -6,7 +6,9 @@ using System.Text;
 using System.Threading.Tasks;
 using TAS.EverestInterop;
 using TAS.StudioCommunication;
+#if DEBUG
 using TASALT.StudioCommunication;
+#endif
 
 namespace CommunicationTesting {
 	class Program {
@@ -16,8 +18,10 @@ namespace CommunicationTesting {
 
 
 		static void Main(string[] args) {
+#if DEBUG
 			StudioCommunicationServer.Run();
 			StudioCommunicationClient.Run();
+#endif
 		}
 	}
 }
