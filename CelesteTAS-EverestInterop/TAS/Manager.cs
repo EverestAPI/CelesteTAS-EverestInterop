@@ -32,6 +32,7 @@ namespace TAS {
 		private static long lastTimer;
 		private static List<VirtualButton.Node>[] playerBindings;
 		public static CelesteTASModuleSettings settings => CelesteTASModule.Settings;
+		private static bool ShouldForceState => HasFlag(nextState, State.FrameStep) && !Hotkeys.hotkeyFastForward.overridePressed;
 
 		public static void UpdateInputs() {
 			
@@ -41,12 +42,12 @@ namespace TAS {
 			HandleFrameRates();
 			CheckToEnable();
 			FrameStepping();
-			
+
 			if (HasFlag(state, State.Enable)) {
 				Running = true;
 
 				if (HasFlag(state, State.FrameStep)) {
-					StudioCommunicationClient.instance.SendStateAndPlayerData(CurrentStatus, PlayerStatus, !HasFlag(nextState, State.FrameStep));
+					StudioCommunicationClient.instance.SendStateAndPlayerData(CurrentStatus, PlayerStatus, !ShouldForceState);
 					return;
 				}
 				/*
@@ -64,7 +65,7 @@ namespace TAS {
 						nextState |= State.FrameStep;
 						FrameLoops = 1;
 					}
-					if (!controller.CanPlayback || (!allowUnsafeInput && !(Engine.Scene is Level || Engine.Scene is LevelLoader || controller.CurrentFrame <= 1)))
+					if (!controller.CanPlayback || (!allowUnsafeInput && !(Engine.Scene is Level || Engine.Scene is LevelLoader || Engine.Scene is LevelExit || controller.CurrentFrame <= 1)))
 						DisableRun();
 				}
 				string status = controller.Current.Line + "[" + controller.ToString() + "]";
@@ -82,7 +83,7 @@ namespace TAS {
 				if (!Engine.Instance.IsActive)
 					UpdateVirtualInputs.Invoke(null, null);
 			}
-			StudioCommunicationClient.instance.SendStateAndPlayerData(CurrentStatus, PlayerStatus, !HasFlag(nextState, State.FrameStep));
+			StudioCommunicationClient.instance?.SendStateAndPlayerData(CurrentStatus, PlayerStatus, !ShouldForceState);
 		}
 
 
@@ -114,7 +115,7 @@ namespace TAS {
 				}
 				//q: but euni, why not just use the hotkey system you implemented?
 				//a: i have no fucking idea
-				if (Hotkeys.IsKeyDown(settings.KeyFastForward)) {
+				if (Hotkeys.IsKeyDown(settings.KeyFastForward) || Hotkeys.hotkeyFastForward.overridePressed) {
 					FrameLoops = 10;
 					return;
 				}
@@ -141,8 +142,6 @@ namespace TAS {
 						state &= ~State.FrameStep;
 						nextState |= State.FrameStep;
 						controller.AdvanceFrame(true);
-						if (ExportSyncData)
-							ExportPlayerInfo();
 					}
 					FrameStepCooldown = 60;
 				}
@@ -196,8 +195,10 @@ namespace TAS {
 			nextState = State.None;
 			RestorePlayerBindings();
 			controller.resetSpawn = null;
-			if (ExportSyncData)
+			if (ExportSyncData) {
 				EndExport();
+				ExportSyncData = false;
+			}
 			enforceLegal = false;
 			allowUnsafeInput = false;
 		}

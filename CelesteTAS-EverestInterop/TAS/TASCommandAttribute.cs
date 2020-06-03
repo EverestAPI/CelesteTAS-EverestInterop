@@ -5,10 +5,12 @@ using System.Runtime;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TAS.EverestInterop {
+namespace TAS {
 	[AttributeUsage(AttributeTargets.Method)]
 	public class TASCommandAttribute : Attribute {
 		public bool executeAtStart;
 		public bool illegalInMaingame;
+
+		public string[] args;
 	}
 }

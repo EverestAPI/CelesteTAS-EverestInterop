@@ -16,27 +16,26 @@ namespace CelesteStudio
 {
     public partial class Studio : Form
     {
+        public static Studio instance;
+        private List<InputRecord> Lines = new List<InputRecord>();
+        private int totalFrames = 0, currentFrame = 0;
+        private bool updating = false;
+        //private GameMemory memory = new GameMemory();
+        private DateTime lastChanged = DateTime.MinValue;
+        private const string RegKey = "HKEY_CURRENT_USER\\SOFTWARE\\CeletseStudio\\Form";
         private string titleBarText {
             get =>
                 (string.IsNullOrEmpty(tasText.LastFileName) ? "Celeste.tas" : Path.GetFileName(tasText.LastFileName))
                 + " - Studio v"
                 + Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
         }
-        private const string RegKey = "HKEY_CURRENT_USER\\SOFTWARE\\CeletseStudio\\Form";
+
         [STAThread]
-        public static void Main()
-        {
+        public static void Main() {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new Studio());
         }
-
-        private List<InputRecord> Lines = new List<InputRecord>();
-        //private GameMemory memory = new GameMemory();
-        private int totalFrames = 0, currentFrame = 0;
-        private bool updating = false;
-        private DateTime lastChanged = DateTime.MinValue;
-        public static Studio instance;
         public Studio()
         {
             InitializeComponent();
@@ -79,9 +78,9 @@ namespace CelesteStudio
             {
                 if (e.Modifiers == (Keys.Shift | Keys.Control) && e.KeyCode == Keys.S)
                 {
-                    StudioCommunicationServer.instance.WriteWait();
+                    StudioCommunicationServer.instance?.WriteWait();
                     tasText.SaveNewFile();
-                    StudioCommunicationServer.instance.SendPath(Path.GetDirectoryName(tasText.LastFileName), true);
+                    StudioCommunicationServer.instance?.SendPath(Path.GetDirectoryName(tasText.LastFileName), true);
                     Text = titleBarText;
                 }
                 else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.S)
@@ -90,9 +89,9 @@ namespace CelesteStudio
                 }
                 else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.O)
                 {
-                    StudioCommunicationServer.instance.WriteWait();
+                    StudioCommunicationServer.instance?.WriteWait();
                     tasText.OpenFile();
-                    StudioCommunicationServer.instance.SendPath(Path.GetDirectoryName(tasText.LastFileName), true);
+                    StudioCommunicationServer.instance?.SendPath(Path.GetDirectoryName(tasText.LastFileName), true);
                     Text = titleBarText;
                 }
                 else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.K)
@@ -211,6 +210,8 @@ namespace CelesteStudio
                     if (hooked)
                     {
                         UpdateValues();
+                        if (CommunicationWrapper.fastForwarding)
+                            CommunicationWrapper.CheckFastForward();
                     }
 
                     Thread.Sleep(14);

@@ -27,11 +27,6 @@ namespace TAS.StudioCommunication {
 			SetupDebugVariables();
 #endif
 
-			//ThreadStart mainLoop = new ThreadStart(instance.UpdateLoop);
-			//Thread updateThread = new Thread(mainLoop);
-			//updateThread.Name = "StudioCom Client";
-			//updateThread.Start();
-
 			RunThread.Start(instance.UpdateLoop, "StudioCom Client");
 
 			return true;
@@ -52,7 +47,6 @@ namespace TAS.StudioCommunication {
 		}
 
 		#region Read
-
 
 		protected override void ReadData(Message message) {
 			switch (message.ID) {
@@ -87,12 +81,13 @@ namespace TAS.StudioCommunication {
 
 		private void ProcessHotkeyPressed(byte[] data) {
 			HotkeyIDs hotkey = (HotkeyIDs)data[0];
-			Log($"{hotkey.ToString()} pressed");
-
-			if (hotkey == HotkeyIDs.FastForward)
-				Hotkeys.hotkeys[data[0]].overridePressed = !Hotkeys.hotkeys[data[0]].overridePressed;
+			bool released = Convert.ToBoolean(data[1]);
+			if (released)
+				Log($"{hotkey.ToString()} released");
 			else
-				Hotkeys.hotkeys[data[0]].overridePressed = true;
+				Log($"{hotkey.ToString()} pressed");
+
+			Hotkeys.hotkeys[data[0]].overridePressed = !released;
 		}
 
 		private void ProcessNewBindings(byte[] data) {

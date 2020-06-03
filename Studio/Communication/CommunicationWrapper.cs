@@ -15,6 +15,7 @@ namespace CelesteStudio.Communication {
 		public static List<Keys>[] bindings;
 
 		public static bool updatingHotkeys = true;
+		public static bool fastForwarding = false;
 
 		[DllImport("User32.dll")]
 		public static extern short GetAsyncKeyState(Keys key);
@@ -29,6 +30,7 @@ namespace CelesteStudio.Communication {
 			bindings = newBindings;
 		}
 
+		//"wrapper"
 		public static bool CheckControls(ref Message msg) {
 			if (!updatingHotkeys
 				|| Environment.OSVersion.Platform == PlatformID.Unix
@@ -39,9 +41,6 @@ namespace CelesteStudio.Communication {
 			
 			bool anyPressed = false;
 			for (int i = 0; i < bindings.Length; i++) {
-
-				if (i == (int)HotkeyIDs.FastForward)
-					continue;
 				
 				List<Keys> keys = bindings[i];
 				bool pressed = true;
@@ -54,16 +53,18 @@ namespace CelesteStudio.Communication {
 					}
 				}
 				if (pressed) {
-					StudioCommunicationServer.instance.SendHotkeyPressed((HotkeyIDs)i);
+					if (i == (int)HotkeyIDs.FastForward)
+						fastForwarding = true;
+					StudioCommunicationServer.instance?.SendHotkeyPressed((HotkeyIDs)i);
 					anyPressed = true;
 				}
 			}
 			return anyPressed;
 		}
 
-		public static void CheckFastForward() {
+		public static bool CheckFastForward() {
 			if (Environment.OSVersion.Platform == PlatformID.Unix || bindings == null)
-				return;
+				throw new InvalidOperationException();
 
 			List<Keys> keys = bindings[(int)HotkeyIDs.FastForward];
 			bool pressed = true;
@@ -76,8 +77,10 @@ namespace CelesteStudio.Communication {
 				}
 			}
 			if (!pressed) {
-				StudioCommunicationServer.instance.SendHotkeyPressed(HotkeyIDs.FastForward);
+				StudioCommunicationServer.instance.SendHotkeyPressed(HotkeyIDs.FastForward, true);
+				fastForwarding = false;
 			}
+			return pressed;
 		}
 	}
 }

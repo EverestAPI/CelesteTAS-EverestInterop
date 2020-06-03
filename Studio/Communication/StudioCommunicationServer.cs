@@ -30,6 +30,10 @@ namespace CelesteStudio.Communication {
 			updateThread.Start();
 		}
 
+		protected override bool NeedsToWait() {
+			return base.NeedsToWait() || Studio.instance.tasText.IsChanged;
+		}
+
 
 		#region Read
 		protected override void ReadData(Message message) {
@@ -140,15 +144,15 @@ namespace CelesteStudio.Communication {
 			}
 		}
 
-		public void SendHotkeyPressed(HotkeyIDs hotkey) {
-			pendingWrite = () => SendHotkeyPressedNow(hotkey);
+		public void SendHotkeyPressed(HotkeyIDs hotkey, bool released = false) {
+			pendingWrite = () => SendHotkeyPressedNow(hotkey, released);
 		}
 
-		private void SendHotkeyPressedNow(HotkeyIDs hotkey) {
+		private void SendHotkeyPressedNow(HotkeyIDs hotkey, bool released) {
 			if (!Initialized)
 				return;
-			byte[] hotkeyByte = new byte[] { (byte)hotkey };
-			WriteMessageGuaranteed(new Message(MessageIDs.SendHotkeyPressed, hotkeyByte));
+			byte[] hotkeyBytes = new byte[] { (byte)hotkey, Convert.ToByte(released) };
+			WriteMessageGuaranteed(new Message(MessageIDs.SendHotkeyPressed, hotkeyBytes));
 		}
 
 		private void SendNewBindings(List<Keys> keys) {
