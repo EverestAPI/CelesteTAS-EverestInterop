@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
+using System.Threading;
+
 namespace CelesteStudio.Controls {
 	/// <summary>
 	/// This class contains the source text (chars and styles).
@@ -249,8 +251,18 @@ namespace CelesteStudio.Controls {
 				if (base.lines[i] != null) {
 					return lines[i];
 				} else {
-					LoadLineFromSourceFile(i);
-					CloseFile();
+					for (int j = 0; ; j++) {
+						try {
+							LoadLineFromSourceFile(i);
+							CloseFile();
+							break;
+						}
+						catch (IOException) {
+							if (j > 5)
+								throw;
+							Thread.Sleep(5);
+						}
+					}
 				}
 
 				return lines[i];

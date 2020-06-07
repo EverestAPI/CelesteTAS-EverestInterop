@@ -1,6 +1,16 @@
-﻿using System;
+﻿using Celeste;
+using Celeste.Mod;
+using Monocle;
+using System;
 using System.IO;
 using System.Reflection;
+using Mono.Cecil;
+using Mono.Cecil.Rocks;
+using Mono.Cecil.Cil;
+using MonoMod.Utils;
+using System.Reflection.Emit;
+using MonoMod.Cil;
+using System.Runtime.InteropServices;
 
 namespace TAS {
 	public class InputCommands {
@@ -150,6 +160,97 @@ namespace TAS {
 			Manager.allowUnsafeInput = true;
 		}
 
+		[TASCommand(illegalInMaingame = true, args = new string[] {
+			"Set,Setting,Value",
+			"Set,Mod.Setting,Value"
+		})]
+		private static void SetCommand(string[] args) {
+			Type settings;
+			object settingsObj;
+			string setting;
+			Type settingType;
+			int index = args[0].IndexOf(".");
+			if (index != -1) {
+				string moduleName = args[0].Substring(0, index);
+				setting = args[0].Substring(index + 1);
+				foreach (EverestModule module in Everest.Modules) {
+					if (module.Metadata.Name == moduleName) {
+						settings = module.SettingsType;
+						settingsObj = module._Settings;
+						PropertyInfo property = settings.GetProperty(setting);
+						if (property != null) {
+							settingType = property.PropertyType;
+							property.SetValue(settingsObj, Convert.ChangeType(args[1], settingType));
+						}
+						return;
+					}
+				}
+			}
+			else {
+				setting = args[0];
+
+
+				settings = typeof(Settings);
+				FieldInfo field = settings.GetField(setting);
+				if (field != null) {
+					settingsObj = Settings.Instance;
+					settingType = field.FieldType;
+				}
+				else {
+					settings = typeof(Assists);
+					field = settings.GetField(setting);
+					if (field == null)
+						return;
+					settingsObj = SaveData.Instance.Assists;
+					settingType = field.FieldType;
+				}
+
+				object value = Convert.ChangeType(args[1], settingType);
+
+				if (SettingsSpecialCases(setting, settingsObj, value))
+					return;
+
+				field.SetValue(settingsObj, value);
+			}
+
+		}
+
+		private static bool SettingsSpecialCases(string setting, object obj, object value) {
+			Player player;
+			switch (setting) {
+				case "GameSpeed":
+					SaveData.Instance.Assists.GameSpeed = (int)value;
+					Engine.TimeRateB = SaveData.Instance.Assists.GameSpeed / 10f;
+					break;
+				case "MirrorMode":
+					SaveData.Instance.Assists.MirrorMode = (bool)value;
+					Input.MoveX.Inverted = Input.Aim.InvertedX = (bool)value;
+					break;
+				case "PlayAsBadeline":
+					SaveData.Instance.Assists.PlayAsBadeline = (bool)value;
+					player = (Engine.Scene as Level)?.Tracker.GetEntity<Player>();
+					if (player != null) {
+						PlayerSpriteMode mode = SaveData.Instance.Assists.PlayAsBadeline ? PlayerSpriteMode.MadelineAsBadeline : player.DefaultSpriteMode;
+						if (player.Active)
+							player.ResetSpriteNextFrame(mode);
+						else 
+							player.ResetSprite(mode);
+					}
+					break;
+				case "DashMode":
+					SaveData.Instance.Assists.DashMode = (Assists.DashModes)value;
+					player = (Engine.Scene as Level)?.Tracker.GetEntity<Player>();
+					if (player != null)
+						player.Dashes = Math.Min(player.Dashes, player.MaxDashes);
+					break;
+				case "DashAssist":
+					break;
+				default:
+					return false;
+			}
+			return true;
+		}
+
 		private static void GetLine(string labelOrLineNumber, string path, out int lineNumber) {
 			if (!int.TryParse(labelOrLineNumber, out lineNumber)) {
 				int curLine = 0;
@@ -166,5 +267,6 @@ namespace TAS {
 				}
 			}
 		}
+
 	}
 }
