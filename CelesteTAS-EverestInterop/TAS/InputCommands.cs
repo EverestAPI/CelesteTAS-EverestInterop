@@ -169,6 +169,7 @@ namespace TAS {
 			object settingsObj;
 			string setting;
 			Type settingType;
+			object value;
 			int index = args[0].IndexOf(".");
 			if (index != -1) {
 				string moduleName = args[0].Substring(0, index);
@@ -204,8 +205,12 @@ namespace TAS {
 					settingsObj = SaveData.Instance.Assists;
 					settingType = field.FieldType;
 				}
-
-				object value = Convert.ChangeType(args[1], settingType);
+				try {
+					value = Convert.ChangeType(args[1], settingType);
+				}
+				catch {
+					value = args[1];
+				}
 
 				if (SettingsSpecialCases(setting, settingsObj, value))
 					return;
@@ -244,6 +249,9 @@ namespace TAS {
 						player.Dashes = Math.Min(player.Dashes, player.MaxDashes);
 					break;
 				case "DashAssist":
+					break;
+				case "SpeedrunClock":
+					Settings.Instance.SpeedrunClock = (SpeedrunType)Convert.ToInt32((string)value);
 					break;
 				default:
 					return false;
