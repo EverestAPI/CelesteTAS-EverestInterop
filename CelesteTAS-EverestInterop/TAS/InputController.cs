@@ -97,7 +97,7 @@ namespace TAS {
 				//Reinitialize the file and simulate a replay of the TAS file up to the current point.
 				int previousFrame = currentFrame - 1;
 				InitializePlayback();
-				currentFrame = previousFrame;
+				currentFrame = Manager.IsLoading() ? previousFrame + 1 : previousFrame;
 
 				while (currentFrame > frameToNext) {
 					if (inputIndex + 1 >= inputs.Count) {

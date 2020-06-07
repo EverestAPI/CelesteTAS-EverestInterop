@@ -80,8 +80,14 @@ namespace TAS {
 			else {
 				Running = false;
 				CurrentStatus = null;
-				if (!Engine.Instance.IsActive)
+				if (!Engine.Instance.IsActive) {
 					UpdateVirtualInputs.Invoke(null, null);
+					for (int i = 0; i < 4; i++) {
+						if (MInput.GamePads[i].Attached) {
+							MInput.GamePads[i].CurrentState = GamePad.GetState((PlayerIndex)i);
+						}
+					}
+				}
 			}
 			StudioCommunicationClient.instance?.SendStateAndPlayerData(CurrentStatus, PlayerStatus, !ShouldForceState);
 		}
@@ -168,7 +174,6 @@ namespace TAS {
 			else if (HasFlag(nextState, State.Enable)) {
 				if (Engine.Scene is Level level && (!level.CanPause || Engine.FreezeTimer > 0)) {
 					
-					//this code tries to prevent desyncs when not using console load - however the initialize playback interferes w/ input buffering
 					controller.InitializePlayback();
 					if (controller.Current.HasActions(Actions.Restart) || controller.Current.HasActions(Actions.Start)) {
 						

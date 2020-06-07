@@ -40,6 +40,9 @@ namespace TAS.EverestInterop {
         [SettingNeedsRelaunch]
         public bool UnixRTC { get; set; } = false;
 
+        [SettingNeedsRelaunch]
+        public bool LaunchStudioAtBoot { get; set; } = false;
+
         [SettingIgnore]
         public string DefaultPath { get; set; } = null;
 

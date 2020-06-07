@@ -165,59 +165,61 @@ namespace TAS {
 			"Set,Mod.Setting,Value"
 		})]
 		private static void SetCommand(string[] args) {
-			Type settings;
-			object settingsObj;
-			string setting;
-			Type settingType;
-			object value;
-			int index = args[0].IndexOf(".");
-			if (index != -1) {
-				string moduleName = args[0].Substring(0, index);
-				setting = args[0].Substring(index + 1);
-				foreach (EverestModule module in Everest.Modules) {
-					if (module.Metadata.Name == moduleName) {
-						settings = module.SettingsType;
-						settingsObj = module._Settings;
-						PropertyInfo property = settings.GetProperty(setting);
-						if (property != null) {
-							settingType = property.PropertyType;
-							property.SetValue(settingsObj, Convert.ChangeType(args[1], settingType));
+			try {
+				Type settings;
+				object settingsObj;
+				string setting;
+				Type settingType;
+				object value;
+				int index = args[0].IndexOf(".");
+				if (index != -1) {
+					string moduleName = args[0].Substring(0, index);
+					setting = args[0].Substring(index + 1);
+					foreach (EverestModule module in Everest.Modules) {
+						if (module.Metadata.Name == moduleName) {
+							settings = module.SettingsType;
+							settingsObj = module._Settings;
+							PropertyInfo property = settings.GetProperty(setting);
+							if (property != null) {
+								settingType = property.PropertyType;
+								property.SetValue(settingsObj, Convert.ChangeType(args[1], settingType));
+							}
+							return;
 						}
-						return;
 					}
 				}
-			}
-			else {
-				setting = args[0];
-
-
-				settings = typeof(Settings);
-				FieldInfo field = settings.GetField(setting);
-				if (field != null) {
-					settingsObj = Settings.Instance;
-					settingType = field.FieldType;
-				}
 				else {
-					settings = typeof(Assists);
-					field = settings.GetField(setting);
-					if (field == null)
+					setting = args[0];
+
+
+					settings = typeof(Settings);
+					FieldInfo field = settings.GetField(setting);
+					if (field != null) {
+						settingsObj = Settings.Instance;
+						settingType = field.FieldType;
+					}
+					else {
+						settings = typeof(Assists);
+						field = settings.GetField(setting);
+						if (field == null)
+							return;
+						settingsObj = SaveData.Instance.Assists;
+						settingType = field.FieldType;
+					}
+					try {
+						value = Convert.ChangeType(args[1], settingType);
+					}
+					catch {
+						value = args[1];
+					}
+
+					if (SettingsSpecialCases(setting, settingsObj, value))
 						return;
-					settingsObj = SaveData.Instance.Assists;
-					settingType = field.FieldType;
-				}
-				try {
-					value = Convert.ChangeType(args[1], settingType);
-				}
-				catch {
-					value = args[1];
-				}
 
-				if (SettingsSpecialCases(setting, settingsObj, value))
-					return;
-
-				field.SetValue(settingsObj, value);
+					field.SetValue(settingsObj, value);
+				}
 			}
-
+			catch { }
 		}
 
 		private static bool SettingsSpecialCases(string setting, object obj, object value) {
