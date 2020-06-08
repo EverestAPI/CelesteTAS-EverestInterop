@@ -1,17 +1,18 @@
-﻿using System;
+﻿#define STUDIO
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
-using System.Linq;
-using System.Net.Security;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+#if STUDIO
 namespace CelesteStudio.Communication {
+#elif CELESTETAS
+namespace TAS.StudioCommunication {
+#endif
 	public class StudioCommunicationBase {
 		// This is literally the first thing I have ever written with threading
 		// Apologies in advance to anyone else working on this
@@ -51,8 +52,9 @@ namespace CelesteStudio.Communication {
 		private MemoryMappedFile sharedMemory;
 		private Mutex mutex;
 		private int lastSignature;
-		private int timeout = 16;
+		protected int timeout = 16;
 		private int failedWrites = 0;
+		private int timeoutCount = 0;
 		private bool waiting;
 
 		protected Action pendingWrite;
@@ -86,7 +88,7 @@ namespace CelesteStudio.Communication {
 						}
 						Thread.Sleep(timeout);
 
-						if (!waiting) {
+						if (!NeedsToWait()) {
 							pendingWrite?.Invoke();
 							pendingWrite = null;
 						}
@@ -98,6 +100,8 @@ namespace CelesteStudio.Communication {
 				}
 			}
 		}
+
+		protected virtual bool NeedsToWait() => waiting;
 
 		private bool IsHighPriority(MessageIDs ID) =>
 			Attribute.IsDefined(typeof(MessageIDs).GetField(Enum.GetName(typeof(MessageIDs), ID)), typeof(HighPriorityAttribute));
@@ -111,7 +115,6 @@ namespace CelesteStudio.Communication {
 
 			using (MemoryMappedViewStream stream = sharedMemory.CreateViewStream()) {
 				mutex.WaitOne();
-				//Log($"{this} acquired mutex for read");
 
 				BinaryReader reader = new BinaryReader(stream);
 				BinaryWriter writer = new BinaryWriter(stream);
@@ -152,7 +155,7 @@ namespace CelesteStudio.Communication {
 				Message? message = ReadMessage();
 				if (message != null)
 					return (Message)message;
-				if (/*Initialized &&*/ ++failedReads > 100)
+				if (++failedReads > 100)
 					throw new NeedsResetException("Read timed out");
 				Thread.Sleep(timeout);
 			}
@@ -163,7 +166,6 @@ namespace CelesteStudio.Communication {
 			using (MemoryMappedViewStream stream = sharedMemory.CreateViewStream()) {
 				mutex.WaitOne();
 
-				//Log($"{this} acquired mutex for write");
 				BinaryReader reader = new BinaryReader(stream);
 				BinaryWriter writer = new BinaryWriter(stream);
 
@@ -172,7 +174,7 @@ namespace CelesteStudio.Communication {
 				if (firstByte != 0 && (!IsHighPriority(message.ID) || IsHighPriority((MessageIDs)firstByte))) {
 
 					mutex.ReleaseMutex();
-					if (/*Initialized &&*/ ++failedWrites > 100)
+					if (++failedWrites > 100)
 						throw new NeedsResetException("Write timed out");
 					return false;
 				}
@@ -208,6 +210,7 @@ namespace CelesteStudio.Communication {
 			waiting = false;
 			failedWrites = 0;
 			pendingWrite = null;
+			timeoutCount++;
 			Log($"Exception thrown - {e.Message}");
 			//Ensure the first byte of the mmf is reset
 			using (MemoryMappedViewStream stream = sharedMemory.CreateViewStream()) {
@@ -216,6 +219,9 @@ namespace CelesteStudio.Communication {
 				writer.Write((byte)0);
 				mutex.ReleaseMutex();
 			}
+#if CELESTETAS
+			WriteReset();
+#endif
 			Thread.Sleep(timeout * 2);
 		}
 
@@ -244,6 +250,7 @@ namespace CelesteStudio.Communication {
 			for (; ; ) {
 				try {
 					EstablishConnection();
+					timeoutCount = 0;
 					break;
 				}
 				catch (NeedsResetException e) {
@@ -278,15 +285,17 @@ namespace CelesteStudio.Communication {
 		}
 
 		public override string ToString() {
-			//string pipeType = (this is StudioCommunicationServer) ? "Server" : "Client";
-			string location = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+			string location = Assembly.GetExecutingAssembly().GetName().Name;
+#if STUDIO
 			return $"Server @ {location}";
+#elif CELESTETAS
+			return $"Client @ {location}";
+#endif
 		}
 
 		protected void Log(string s) {
-//#if DEBUG
-			Console.WriteLine(s);
-//#endif
+			if (timeoutCount <= 5)
+				Console.WriteLine(s);
 		}
 	}
 }

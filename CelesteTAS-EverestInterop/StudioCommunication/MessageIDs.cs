@@ -1,7 +1,12 @@
-﻿using System;
+﻿#define CELESTETAS
+using System;
 
+#if STUDIO
+namespace CelesteStudio.Communication {
+#elif CELESTETAS
 namespace TAS.StudioCommunication {
-	public class HighPriorityAttribute : Attribute { }
+#endif
+public class HighPriorityAttribute : Attribute { }
 
 	public enum MessageIDs : byte {
 		//Connection
@@ -9,15 +14,15 @@ namespace TAS.StudioCommunication {
 		/// Unused
 		/// </summary>
 		Default = 0x00,
-		[HighPriority]
 		/// <summary>
 		/// Structure:
 		/// </summary>
+		[HighPriority]
 		EstablishConnection = 0x0D,
-		[HighPriority]
 		/// <summary>
 		/// Structure:
 		/// </summary>
+		[HighPriority]
 		Wait = 0x0E,
 		/// <summary>
 		/// Structure:
@@ -35,32 +40,32 @@ namespace TAS.StudioCommunication {
 		SendPlayerData = 0x11,
 
 		//Data transfer from Studio
-		[HighPriority]
 		/// <summary>
 		/// Structure: string
 		/// </summary>
+		[HighPriority]
 		SendPath = 0x20,
-		[HighPriority]
 		/// <summary>
-		/// Structure: HotkeyIDs
+		/// Structure: HotkeyIDs, bool released
 		/// </summary>
-		SendHotkeyPressed = 0x21,
 		[HighPriority]
+		SendHotkeyPressed = 0x21,
 		/// <summary>
 		/// Structure: HotkeyIDs List&lt;Keys&gt;
 		/// </summary>
-		SendNewBindings = 0x22,
 		[HighPriority]
+		SendNewBindings = 0x22,
 		/// <summary>
 		/// Structure: 
 		/// </summary>
+		[HighPriority]
 		ReloadBindings = 0x23,
 
 		//Data transfer from CelesteTAS
-		[HighPriority]
 		/// <summary>
 		/// Structure: List&lt;Keys&gt;[];
 		/// </summary>
+		[HighPriority]
 		SendCurrentBindings = 0x30,
 
 	}

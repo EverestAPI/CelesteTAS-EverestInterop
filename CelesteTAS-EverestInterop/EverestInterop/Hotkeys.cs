@@ -13,20 +13,23 @@ namespace TAS.EverestInterop {
             private List<Keys> keys;
             private List<Buttons> buttons;
             private bool keyCombo;
+            private bool held;
             public bool pressed;
             public bool wasPressed;
             public bool overridePressed;
-            public Hotkey(List<Keys> keys, List<Buttons> buttons, bool keyCombo) {
+            public Hotkey(List<Keys> keys, List<Buttons> buttons, bool keyCombo, bool held) {
                 this.keys = keys;
                 this.buttons = buttons;
                 this.keyCombo = keyCombo;
+                this.held = held;
             }
 
             public void Update() {
                 wasPressed = pressed;
                 if (overridePressed) {
                     pressed = true;
-                    overridePressed = false;
+                    if (!held)
+                        overridePressed = false;
                     return;
                 }
                 pressed = IsKeyDown(keys, keyCombo) || IsButtonDown(buttons, keyCombo);
@@ -62,7 +65,7 @@ namespace TAS.EverestInterop {
         public void OnInputInitialize() {
             if (Settings.KeyStart.Count == 0) {
                 Settings.KeyStart = new List<Keys> { Keys.RightControl };
-                Settings.KeyFastForward = new List<Keys> { Keys.RightControl };
+                Settings.KeyFastForward = new List<Keys> { Keys.RightShift };
                 Settings.KeyFrameAdvance = new List<Keys> { Keys.OemOpenBrackets };
                 Settings.KeyPause = new List<Keys> { Keys.OemCloseBrackets };
                 Settings.KeyHitboxes = new List<Keys> { Keys.B };
@@ -75,13 +78,13 @@ namespace TAS.EverestInterop {
                 Settings.KeyHitboxes, Settings.KeyGraphics, Settings.KeyCamera
             };
 
-            hotkeyStart = new Hotkey(Settings.KeyStart, null, true);
-            hotkeyFastForward = new Hotkey(Settings.KeyFastForward, null, true);
-            hotkeyFrameAdvance = new Hotkey(Settings.KeyFrameAdvance, null, true);
-            hotkeyPause = new Hotkey(Settings.KeyPause, null, true);
-            hotkeyHitboxes = new Hotkey(Settings.KeyHitboxes, Settings.ButtonHitboxes, false);
-            hotkeyGraphics = new Hotkey(Settings.KeyGraphics, Settings.ButtonGraphics, false);
-            hotkeyCamera = new Hotkey(Settings.KeyCamera, Settings.ButtonCamera, false);
+            hotkeyStart = new Hotkey(Settings.KeyStart, null, true, false);
+            hotkeyFastForward = new Hotkey(Settings.KeyFastForward, null, true, true);
+            hotkeyFrameAdvance = new Hotkey(Settings.KeyFrameAdvance, null, true, false);
+            hotkeyPause = new Hotkey(Settings.KeyPause, null, true, false);
+            hotkeyHitboxes = new Hotkey(Settings.KeyHitboxes, Settings.ButtonHitboxes, false, false);
+            hotkeyGraphics = new Hotkey(Settings.KeyGraphics, Settings.ButtonGraphics, false, false);
+            hotkeyCamera = new Hotkey(Settings.KeyCamera, Settings.ButtonCamera, false, false);
             hotkeys = new Hotkey[] { 
                 hotkeyStart, hotkeyFastForward, hotkeyFrameAdvance, hotkeyPause, 
                 hotkeyHitboxes, hotkeyGraphics, hotkeyCamera 

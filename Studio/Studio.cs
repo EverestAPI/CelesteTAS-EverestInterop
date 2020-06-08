@@ -16,22 +16,26 @@ namespace CelesteStudio
 {
     public partial class Studio : Form
     {
-        private static string titleBarText = "Celeste.tas - Studio v" + Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
+        public static Studio instance;
+        private List<InputRecord> Lines = new List<InputRecord>();
+        private int totalFrames = 0, currentFrame = 0;
+        private bool updating = false;
+        //private GameMemory memory = new GameMemory();
+        private DateTime lastChanged = DateTime.MinValue;
         private const string RegKey = "HKEY_CURRENT_USER\\SOFTWARE\\CeletseStudio\\Form";
+        private string titleBarText {
+            get =>
+                (string.IsNullOrEmpty(tasText.LastFileName) ? "Celeste.tas" : Path.GetFileName(tasText.LastFileName))
+                + " - Studio v"
+                + Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
+        }
+
         [STAThread]
-        public static void Main()
-        {
+        public static void Main() {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new Studio());
         }
-
-        private List<InputRecord> Lines = new List<InputRecord>();
-        //private GameMemory memory = new GameMemory();
-        private int totalFrames = 0, currentFrame = 0;
-        private bool updating = false;
-        private DateTime lastChanged = DateTime.MinValue;
-        public static Studio instance;
         public Studio()
         {
             InitializeComponent();
@@ -60,12 +64,11 @@ namespace CelesteStudio
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData) {
+            // if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN)
             if ((msg.Msg == 0x100) || (msg.Msg == 0x104)) {
-                if (Wrapper.CheckControls())
+                if (CommunicationWrapper.CheckControls(ref msg))
                     return true;
             }
-            //else if (msg.Msg == 0x101)
-            //    Wrapper.CheckFastForward();
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
@@ -75,12 +78,10 @@ namespace CelesteStudio
             {
                 if (e.Modifiers == (Keys.Shift | Keys.Control) && e.KeyCode == Keys.S)
                 {
-                    StudioCommunicationServer.instance.WriteWait();
+                    StudioCommunicationServer.instance?.WriteWait();
                     tasText.SaveNewFile();
-                    StudioCommunicationServer.instance.SendPath(Path.GetDirectoryName(tasText.LastFileName), true);
-                    Text = Path.GetFileName(tasText.LastFileName)
-                        + " - Studio v" 
-                        + Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
+                    StudioCommunicationServer.instance?.SendPath(Path.GetDirectoryName(tasText.LastFileName), true);
+                    Text = titleBarText;
                 }
                 else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.S)
                 {
@@ -88,12 +89,10 @@ namespace CelesteStudio
                 }
                 else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.O)
                 {
-                    StudioCommunicationServer.instance.WriteWait();
+                    StudioCommunicationServer.instance?.WriteWait();
                     tasText.OpenFile();
-                    StudioCommunicationServer.instance.SendPath(Path.GetDirectoryName(tasText.LastFileName), true);
-                    Text = Path.GetFileName(tasText.LastFileName)
-                        + " - Studio v"
-                        + Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
+                    StudioCommunicationServer.instance?.SendPath(Path.GetDirectoryName(tasText.LastFileName), true);
+                    Text = titleBarText;
                 }
                 else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.K)
                 {
@@ -109,7 +108,7 @@ namespace CelesteStudio
                 }
                 else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.D)
                 {
-                    Wrapper.updatingHotkeys = !Wrapper.updatingHotkeys;
+                    CommunicationWrapper.updatingHotkeys = !CommunicationWrapper.updatingHotkeys;
                 }
             }
             catch (Exception ex)
@@ -134,7 +133,7 @@ namespace CelesteStudio
             tasText.Selection = new Range(tasText, 0, start, 0, start);
             string text = tasText.SelectedText;
 
-            tasText.SelectedText = "#lvl_" + Wrapper.LevelName() + '\n';
+            tasText.SelectedText = "#lvl_" + CommunicationWrapper.LevelName() + '\n';
             tasText.Selection = new Range(tasText, 0, start, 0, start);
         }
 
@@ -211,6 +210,8 @@ namespace CelesteStudio
                     if (hooked)
                     {
                         UpdateValues();
+                        if (CommunicationWrapper.fastForwarding)
+                            CommunicationWrapper.CheckFastForward();
                     }
 
                     Thread.Sleep(14);
@@ -235,7 +236,7 @@ namespace CelesteStudio
                     }
                     else
                     {
-                        fileName = Path.Combine(Wrapper.gamePath, "Celeste.tas");
+                        fileName = Path.Combine(CommunicationWrapper.gamePath, "Celeste.tas");
                     }
                     if (!File.Exists(fileName)) { File.WriteAllText(fileName, string.Empty); }
 
@@ -274,7 +275,7 @@ namespace CelesteStudio
             }
             else
             {
-                string tas = Wrapper.state;
+                string tas = CommunicationWrapper.state;
                 if (!string.IsNullOrEmpty(tas))
                 {
                     int index = tas.IndexOf('[');
@@ -352,7 +353,7 @@ namespace CelesteStudio
         {
             if (StudioCommunicationServer.Initialized)
             {
-                string playeroutput = Wrapper.playerData;
+                string playeroutput = CommunicationWrapper.playerData;
                 lblStatus.Text = "(" + (currentFrame > 0 ? currentFrame + "/" : "") 
                     + totalFrames + ") \n" + playeroutput 
                     + new string('\n', 7 - playeroutput.Split('\n').Length);

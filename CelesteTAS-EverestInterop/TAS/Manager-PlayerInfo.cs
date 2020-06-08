@@ -14,6 +14,7 @@ namespace TAS
 	public partial class Manager
 	{
 		private static StreamWriter sw;
+		private static MethodInfo[] trackedEntities;
 		public static bool ExportSyncData { get; set; }
 
 		private static void UpdatePlayerInfo() {
@@ -128,20 +129,34 @@ namespace TAS
 			return pos;
 		}
 
-		public static void BeginExport(string path) {
-			sw = new StreamWriter(path);
+		public static void BeginExport(string path, string[] tracked) {
+			if (sw == null || sw.BaseStream == null) {
+				sw = new StreamWriter(path);
+
+				trackedEntities = new MethodInfo[tracked.Length];
+				Assembly asm = typeof(Celeste.Celeste).Assembly;
+				for (int i = 0; i < tracked.Length; i++) {
+					Type t = asm.GetType("Celeste." + tracked[i]);
+					if (t != null) {
+						MethodInfo method = typeof(Tracker).GetMethod("GetEntities");
+						trackedEntities[i] = method.MakeGenericMethod(t);
+					}
+				}
+			}
 		}
 
 		public static void EndExport() {
 			sw.Dispose();
 		}
 
-		public static void ExportPlayerInfo(string[] tracked = null) {
+		public static void ExportPlayerInfo() {
 			Player player = null;
 			if (Engine.Scene is Level level) {
 				player = level.Tracker.GetEntity<Player>();
 				if (player != null) {
-					string inputs = controller.Current.ActionsToString().Substring(1);
+					string inputs = controller.Current.ActionsToString();
+					if (inputs.Length > 1)
+						inputs = inputs.Substring(1);
 					string time = (level.Session.Time / 10000000D).ToString("0.000");
 					double x = (double)player.X + player.PositionRemainder.X;
 					double y = (double)player.Y + player.PositionRemainder.Y;
@@ -168,12 +183,11 @@ namespace TAS
 						}
 					}
 					string output = string.Join(" ", inputs, controller.CurrentFrame, time, pos, speed, player.StateMachine.State, statuses);
-					/*
-					foreach (string s in tracked) {
-						Type t = Type.GetType("Celeste." + s);
-						MethodInfo method = typeof(Tracker).GetMethod("GetEntities");
-						method.MakeGenericMethod(t);
-						Entity[] entities = (Entity[])method.Invoke(level.Tracker, null);
+					
+					foreach (MethodInfo method in trackedEntities) {
+						if (method == null)
+							continue;
+						List<Entity> entities = (List<Entity>)method.Invoke(level.Tracker, null);
 						foreach (Entity entity in entities) {
 							Actor actor = entity as Actor;
 							if (actor != null) {
@@ -184,11 +198,11 @@ namespace TAS
 							else {
 								pos = entity.X.ToString() + "," + entity.Y.ToString();
 							}
-							output += $" {s}: {pos}";
+							output += $" {method.GetGenericArguments()[0].Name}: {pos}";
 						}
 
 					}
-					*/
+					
 					sw.WriteLine(output);
 				}
 			}

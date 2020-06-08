@@ -30,6 +30,10 @@ namespace CelesteStudio.Communication {
 			updateThread.Start();
 		}
 
+		protected override bool NeedsToWait() {
+			return base.NeedsToWait() || Studio.instance.tasText.IsChanged;
+		}
+
 
 		#region Read
 		protected override void ReadData(Message message) {
@@ -67,27 +71,27 @@ namespace CelesteStudio.Communication {
 		private void ProcessSendPath(byte[] data) {
 			string path = Encoding.Default.GetString(data);
 			Log(path);
-			Wrapper.gamePath = path;
+			CommunicationWrapper.gamePath = path;
 		}
 
 		private void ProcessSendState(byte[] data) {
 			string[] stateAndData = FromByteArray<string[]>(data);
 			//Log(stateAndData[0]);
-			Wrapper.state = stateAndData[0];
-			Wrapper.playerData = stateAndData[1];
+			CommunicationWrapper.state = stateAndData[0];
+			CommunicationWrapper.playerData = stateAndData[1];
 		}
 
 		private void ProcessSendPlayerData(byte[] data) {
 			string playerData = Encoding.Default.GetString(data);
 			//Log(playerData);
-			Wrapper.playerData = playerData;
+			CommunicationWrapper.playerData = playerData;
 		}
 
 		private void ProcessSendCurrentBindings(byte[] data) {
 			List<Keys>[] keys = FromByteArray<List<Keys>[]>(data);
 			foreach (List<Keys> key in keys)
 				Log(key.ToString());
-			Wrapper.SetBindings(keys);
+			CommunicationWrapper.SetBindings(keys);
 		}
 
 		#endregion
@@ -140,15 +144,15 @@ namespace CelesteStudio.Communication {
 			}
 		}
 
-		public void SendHotkeyPressed(HotkeyIDs hotkey) {
-			pendingWrite = () => SendHotkeyPressedNow(hotkey);
+		public void SendHotkeyPressed(HotkeyIDs hotkey, bool released = false) {
+			pendingWrite = () => SendHotkeyPressedNow(hotkey, released);
 		}
 
-		private void SendHotkeyPressedNow(HotkeyIDs hotkey) {
+		private void SendHotkeyPressedNow(HotkeyIDs hotkey, bool released) {
 			if (!Initialized)
 				return;
-			byte[] hotkeyByte = new byte[] { (byte)hotkey };
-			WriteMessageGuaranteed(new Message(MessageIDs.SendHotkeyPressed, hotkeyByte));
+			byte[] hotkeyBytes = new byte[] { (byte)hotkey, Convert.ToByte(released) };
+			WriteMessageGuaranteed(new Message(MessageIDs.SendHotkeyPressed, hotkeyBytes));
 		}
 
 		private void SendNewBindings(List<Keys> keys) {

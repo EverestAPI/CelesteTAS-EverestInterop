@@ -18,6 +18,7 @@ using MonoMod.Utils;
 using System.Net;
 using Mono.Unix;
 using TAS.StudioCommunication;
+using System.Diagnostics;
 
 namespace TAS.EverestInterop
 {
@@ -35,6 +36,23 @@ namespace TAS.EverestInterop
 
         public CelesteTASModule() {
             Instance = this;
+        }
+
+        public override void Initialize() {
+            if (Settings.Enabled && Settings.LaunchStudioAtBoot) {
+                Process[] processes = Process.GetProcesses();
+                foreach (Process process in processes) {
+                    if (process.ProcessName.StartsWith("Celeste") && process.ProcessName.Contains("Studio"))
+                        return;
+                }
+
+                string path = Directory.GetCurrentDirectory();
+                string[] files = Directory.GetFiles(path, "Celeste*Studio*.exe");
+
+                if (files.Length > 0) {
+                    Process.Start(files[0]);
+                }
+            }
         }
 
         public override void Load() {
@@ -72,6 +90,7 @@ namespace TAS.EverestInterop
 
             // Open memory mapped file for interfacing with Windows Celeste Studio
             StudioCommunicationClient.Run();
+
         }
 
         public override void Unload() {
@@ -86,7 +105,7 @@ namespace TAS.EverestInterop
             UnixRTC.Dispose();
         }
 
-        public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance snapshot) {
+        public override void CreateModMenuSection(TextMenu menu, bool inGame, FMOD.Studio.EventInstance snapshot) {
             base.CreateModMenuSection(menu, inGame, snapshot);
 
             menu.Add(new TextMenu.Button("modoptions_celestetas_reload".DialogCleanOrNull() ?? "Reload Settings").Pressed(() => {

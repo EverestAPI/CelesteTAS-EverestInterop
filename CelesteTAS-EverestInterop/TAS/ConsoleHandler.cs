@@ -8,10 +8,7 @@ using System.Threading;
 namespace TAS {
 	public class ConsoleHandler {
 		public static void ExecuteCommand(string[] command) {
-			string[] args = new string[command.Length - 1];
-			for (int i = 1; i < command.Length; i++) {
-				args[i - 1] = command[i];
-			}
+			string[] args = InputCommands.TrimArray(command, 1);
 			string commandID = command[0].ToLower();
 			if (commandID == "load" || commandID == "hard" || commandID == "rmx2")
 				LoadCommand(commandID, args);
@@ -21,6 +18,12 @@ namespace TAS {
 
 		private static void LoadCommand(string command, string[] args) {
 			try {
+				if (SaveData.Instance == null || (!Manager.allowUnsafeInput && SaveData.Instance.FileSlot != -1)) {
+					int slot = SaveData.Instance == null ? -1 : SaveData.Instance.FileSlot;
+					SaveData data = UserIO.Load<SaveData>(SaveData.GetFilename(slot));
+					SaveData.Start(data, -1);
+				}
+
 				AreaMode mode = AreaMode.Normal;
 				if (command == "hard")
 					mode = AreaMode.BSide;
@@ -62,12 +65,6 @@ namespace TAS {
 		}
 
 		private static void Load(AreaMode mode, int levelID, string screen = null, int checkpoint = 0) {
-			/*
-			if (SaveData.Instance == null) {
-				SaveData data = UserIO.Load<SaveData>(SaveData.GetFilename(0));
-				SaveData.Start(data, 0);
-			}
-			*/
 			Session session = new Session(new AreaKey(levelID, mode));
 			if (screen != null) {
 				session.Level = screen;
@@ -81,12 +78,6 @@ namespace TAS {
 		}
 
 		private static void Load(AreaMode mode, int levelID, Vector2 spawnPoint) {
-			/*
-			if (SaveData.Instance == null) {
-				SaveData data = UserIO.Load<SaveData>(SaveData.GetFilename(0));
-				SaveData.Start(data, 0);
-			}
-			*/
 			Session session = new Session(new AreaKey(levelID, mode));
 			session.Level = session.MapData.GetAt(spawnPoint)?.Name;
 			session.FirstLevel = false;

@@ -21,19 +21,21 @@ namespace TAS {
 	}
 	public partial class Manager {
 		private static FieldInfo strawberryCollectTimer = typeof(Strawberry).GetField("collectTimer", BindingFlags.Instance | BindingFlags.NonPublic);
+		private static MethodInfo UpdateVirtualInputs = typeof(MInput).GetMethod("UpdateVirtualInputs", BindingFlags.Static | BindingFlags.NonPublic);
 		public static bool Running, Recording;
 		public static InputController controller = new InputController("Celeste.tas");
 		public static State lastState, state, nextState;
 		public static string CurrentStatus, PlayerStatus = "";
 		public static int FrameStepCooldown, FrameLoops = 1;
-		public static bool enforceLegal;
+		public static bool enforceLegal, allowUnsafeInput;
 		private static Vector2 lastPos;
 		private static long lastTimer;
 		private static List<VirtualButton.Node>[] playerBindings;
 		public static CelesteTASModuleSettings settings => CelesteTASModule.Settings;
-		private static MethodInfo UpdateVirtualInputs = typeof(MInput).GetMethod("UpdateVirtualInputs", BindingFlags.Static | BindingFlags.NonPublic);
+		private static bool ShouldForceState => HasFlag(nextState, State.FrameStep) && !Hotkeys.hotkeyFastForward.overridePressed;
 
 		public static void UpdateInputs() {
+			
 			lastState = state;
 			UpdatePlayerInfo();
 			Hotkeys.instance?.Update();
@@ -45,7 +47,7 @@ namespace TAS {
 				Running = true;
 
 				if (HasFlag(state, State.FrameStep)) {
-					StudioCommunicationClient.instance.SendStateAndPlayerData(CurrentStatus, PlayerStatus, !HasFlag(nextState, State.FrameStep));
+					StudioCommunicationClient.instance.SendStateAndPlayerData(CurrentStatus, PlayerStatus, !ShouldForceState);
 					return;
 				}
 				/*
@@ -63,10 +65,8 @@ namespace TAS {
 						nextState |= State.FrameStep;
 						FrameLoops = 1;
 					}
-
-					if (!controller.CanPlayback) {
+					if (!controller.CanPlayback || (!allowUnsafeInput && !(Engine.Scene is Level || Engine.Scene is LevelLoader || Engine.Scene is LevelExit || controller.CurrentFrame <= 1)))
 						DisableRun();
-					}
 				}
 				string status = controller.Current.Line + "[" + controller.ToString() + "]";
 				CurrentStatus = status;
@@ -80,9 +80,16 @@ namespace TAS {
 			else {
 				Running = false;
 				CurrentStatus = null;
-				UpdateVirtualInputs.Invoke(null, null);
+				if (!Engine.Instance.IsActive) {
+					UpdateVirtualInputs.Invoke(null, null);
+					for (int i = 0; i < 4; i++) {
+						if (MInput.GamePads[i].Attached) {
+							MInput.GamePads[i].CurrentState = GamePad.GetState((PlayerIndex)i);
+						}
+					}
+				}
 			}
-			StudioCommunicationClient.instance.SendStateAndPlayerData(CurrentStatus, PlayerStatus, !HasFlag(nextState, State.FrameStep));
+			StudioCommunicationClient.instance?.SendStateAndPlayerData(CurrentStatus, PlayerStatus, !ShouldForceState);
 		}
 
 
@@ -114,7 +121,7 @@ namespace TAS {
 				}
 				//q: but euni, why not just use the hotkey system you implemented?
 				//a: i have no fucking idea
-				if (Hotkeys.IsKeyDown(settings.KeyFastForward)) {
+				if (Hotkeys.IsKeyDown(settings.KeyFastForward) || Hotkeys.hotkeyFastForward.overridePressed) {
 					FrameLoops = 10;
 					return;
 				}
@@ -141,8 +148,6 @@ namespace TAS {
 						state &= ~State.FrameStep;
 						nextState |= State.FrameStep;
 						controller.AdvanceFrame(true);
-						if (ExportSyncData)
-							ExportPlayerInfo();
 					}
 					FrameStepCooldown = 60;
 				}
@@ -169,7 +174,6 @@ namespace TAS {
 			else if (HasFlag(nextState, State.Enable)) {
 				if (Engine.Scene is Level level && (!level.CanPause || Engine.FreezeTimer > 0)) {
 					
-					//this code tries to prevent desyncs when not using console load - however the initialize playback interferes w/ input buffering
 					controller.InitializePlayback();
 					if (controller.Current.HasActions(Actions.Restart) || controller.Current.HasActions(Actions.Start)) {
 						
@@ -196,9 +200,12 @@ namespace TAS {
 			nextState = State.None;
 			RestorePlayerBindings();
 			controller.resetSpawn = null;
-			if (ExportSyncData)
+			if (ExportSyncData) {
 				EndExport();
+				ExportSyncData = false;
+			}
 			enforceLegal = false;
+			allowUnsafeInput = false;
 		}
 		private static void EnableRun() {
 			nextState &= ~State.Enable;
