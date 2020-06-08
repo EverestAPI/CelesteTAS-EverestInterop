@@ -110,6 +110,10 @@ namespace TAS {
 					Current = inputs[++inputIndex];
 					frameToNext += Current.Frames;
 				}
+				//prevents duplicating commands while Manager.IsLoading()
+				if (Current.Command != null) {
+					Current = inputs[++inputIndex];
+				}
 			}
 			if (Manager.IsLoading())
 				return;

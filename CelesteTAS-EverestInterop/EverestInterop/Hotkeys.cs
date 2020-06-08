@@ -65,7 +65,7 @@ namespace TAS.EverestInterop {
         public void OnInputInitialize() {
             if (Settings.KeyStart.Count == 0) {
                 Settings.KeyStart = new List<Keys> { Keys.RightControl };
-                Settings.KeyFastForward = new List<Keys> { Keys.RightControl };
+                Settings.KeyFastForward = new List<Keys> { Keys.RightShift };
                 Settings.KeyFrameAdvance = new List<Keys> { Keys.OemOpenBrackets };
                 Settings.KeyPause = new List<Keys> { Keys.OemCloseBrackets };
                 Settings.KeyHitboxes = new List<Keys> { Keys.B };
