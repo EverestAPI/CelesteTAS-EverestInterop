@@ -15,28 +15,27 @@ namespace TAS.EverestInterop {
 
         public bool Enabled { get; set; } = true;
 
-        public List<Keys> KeyStart { get; set; } = new List<Keys>();
-        public List<Keys> KeyFastForward { get; set; } = new List<Keys>();
-        public List<Keys> KeyFrameAdvance { get; set; } = new List<Keys>();
-        public List<Keys> KeyPause { get; set; } = new List<Keys>();
+        public ButtonBinding KeyStart { get; set; } = new ButtonBinding();
+        public ButtonBinding KeyFastForward { get; set; } = new ButtonBinding();
+        public ButtonBinding KeyFrameAdvance { get; set; } = new ButtonBinding();
+        public ButtonBinding KeyPause { get; set; } = new ButtonBinding();
 
         public bool SimplifiedGraphics { get; set; } = false;
-        public List<Buttons> ButtonGraphics { get; set; } = new List<Buttons>();
-        public List<Keys> KeyGraphics { get; set; } = new List<Keys>();
+        public ButtonBinding KeyGraphics { get; set; } = new ButtonBinding();
 
         public bool ShowHitboxes {
             get => GameplayRendererExt.RenderDebug;
             set => GameplayRendererExt.RenderDebug = value;
         }
-        public List<Buttons> ButtonHitboxes { get; set; } = new List<Buttons>();
-        public List<Keys> KeyHitboxes { get; set; } = new List<Keys>();
+        public ButtonBinding KeyHitboxes { get; set; } = new ButtonBinding();
 
         public bool CenterCamera { get; set; } = false;
-        public List<Buttons> ButtonCamera { get; set; } = new List<Buttons>();
-        public List<Keys> KeyCamera { get; set; } = new List<Keys>();
+        public ButtonBinding KeyCamera { get; set; } = new ButtonBinding();
 
-		public List<Keys> KeySaveState { get; set; } = new List<Keys>();
-		public List<Keys> KeyLoadState { get; set; } = new List<Keys>();
+		[SettingIgnore]
+		public ButtonBinding KeySaveState { get; set; } = new ButtonBinding();
+		[SettingIgnore]
+		public ButtonBinding KeyLoadState { get; set; } = new ButtonBinding();
 
 		public bool DisableAchievements { get; set; } = false;
 

@@ -122,6 +122,8 @@ namespace TAS {
 		}
 
 		private static void HandleSaveStates() {
+			if (Hotkeys.hotkeyLoadState == null || Hotkeys.hotkeySaveState == null)
+				return;
 			if (Hotkeys.hotkeySaveState.pressed && !Hotkeys.hotkeySaveState.wasPressed) {
 				Engine.Scene.OnEndOfFrame += StateManager.Instance.ExternalSave;
 				savedController = controller.Clone();
@@ -155,7 +157,7 @@ namespace TAS {
 				}
 				//q: but euni, why not just use the hotkey system you implemented?
 				//a: i have no fucking idea
-				if (Hotkeys.IsKeyDown(settings.KeyFastForward) || Hotkeys.hotkeyFastForward.overridePressed) {
+				if (Hotkeys.IsKeyDown(settings.KeyFastForward.Keys) || Hotkeys.hotkeyFastForward.overridePressed) {
 					FrameLoops = 10;
 					return;
 				}

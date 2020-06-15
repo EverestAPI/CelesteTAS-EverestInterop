@@ -65,39 +65,43 @@ namespace TAS.EverestInterop {
         }
 
         public void OnInputInitialize() {
-            if (Settings.KeyStart.Count == 0) {
-                Settings.KeyStart = new List<Keys> { Keys.RightControl };
-                Settings.KeyFastForward = new List<Keys> { Keys.RightShift };
-                Settings.KeyFrameAdvance = new List<Keys> { Keys.OemOpenBrackets };
-                Settings.KeyPause = new List<Keys> { Keys.OemCloseBrackets };
-                Settings.KeyHitboxes = new List<Keys> { Keys.B };
-                Settings.KeyGraphics = new List<Keys> { Keys.N };
-                Settings.KeyCamera = new List<Keys> { Keys.M };
-				Settings.KeySaveState = new List<Keys> { Keys.LeftShift, Keys.F1 };
-				Settings.KeyLoadState = new List<Keys> { Keys.F1 };
+            if (Settings.KeyStart.Keys.Count == 0) {
+                Settings.KeyStart.Keys = new List<Keys> { Keys.RightControl };
+                Settings.KeyFastForward.Keys = new List<Keys> { Keys.RightShift };
+                Settings.KeyFrameAdvance.Keys = new List<Keys> { Keys.OemOpenBrackets };
+                Settings.KeyPause.Keys = new List<Keys> { Keys.OemCloseBrackets };
+                Settings.KeyHitboxes.Keys = new List<Keys> { Keys.B };
+                Settings.KeyGraphics.Keys = new List<Keys> { Keys.N };
+                Settings.KeyCamera.Keys = new List<Keys> { Keys.M };
+				//Settings.KeySaveState.Keys = new List<Keys> { Keys.LeftShift, Keys.F1 };
+				//Settings.KeyLoadState.Keys = new List<Keys> { Keys.F1 };
 			}
 
             listHotkeyKeys = new List<Keys>[] {
-                Settings.KeyStart, Settings.KeyFastForward, Settings.KeyFrameAdvance, Settings.KeyPause,
-                Settings.KeyHitboxes, Settings.KeyGraphics, Settings.KeyCamera,
-				Settings.KeySaveState, Settings.KeyLoadState,
+                Settings.KeyStart.Keys, Settings.KeyFastForward.Keys, Settings.KeyFrameAdvance.Keys, Settings.KeyPause.Keys,
+                Settings.KeyHitboxes.Keys, Settings.KeyGraphics.Keys, Settings.KeyCamera.Keys,
+				Settings.KeySaveState.Keys, Settings.KeyLoadState.Keys,
             };
 
-            hotkeyStart = new Hotkey(Settings.KeyStart, null, true, false);
-            hotkeyFastForward = new Hotkey(Settings.KeyFastForward, null, true, true);
-            hotkeyFrameAdvance = new Hotkey(Settings.KeyFrameAdvance, null, true, false);
-            hotkeyPause = new Hotkey(Settings.KeyPause, null, true, false);
-            hotkeyHitboxes = new Hotkey(Settings.KeyHitboxes, Settings.ButtonHitboxes, true, false);
-            hotkeyGraphics = new Hotkey(Settings.KeyGraphics, Settings.ButtonGraphics, true, false);
-            hotkeyCamera = new Hotkey(Settings.KeyCamera, Settings.ButtonCamera, true, false);
-			hotkeySaveState = new Hotkey(Settings.KeySaveState, null, true, false);
-			hotkeyLoadState = new Hotkey(Settings.KeyLoadState, null, true, false);
+            hotkeyStart = BindingToHotkey(Settings.KeyStart);
+            hotkeyFastForward = BindingToHotkey(Settings.KeyFastForward);
+            hotkeyFrameAdvance = BindingToHotkey(Settings.KeyFrameAdvance);
+            hotkeyPause = BindingToHotkey(Settings.KeyPause);
+            hotkeyHitboxes = BindingToHotkey(Settings.KeyHitboxes);
+            hotkeyGraphics = BindingToHotkey(Settings.KeyGraphics);
+            hotkeyCamera = BindingToHotkey(Settings.KeyCamera);
+			hotkeySaveState = BindingToHotkey(Settings.KeySaveState);
+			hotkeyLoadState = BindingToHotkey(Settings.KeyLoadState);
 			hotkeys = new Hotkey[] { 
                 hotkeyStart, hotkeyFastForward, hotkeyFrameAdvance, hotkeyPause, 
                 hotkeyHitboxes, hotkeyGraphics, hotkeyCamera,
 				hotkeySaveState, hotkeyLoadState,
             };
         }
+
+		public static Hotkey BindingToHotkey(ButtonBinding binding) {
+			return new Hotkey(binding.Keys, null, true, ReferenceEquals(binding, Settings.KeyFastForward));
+		} 
 
         public static bool IsKeyDown(List<Keys> keys, bool keyCombo = true) {
             if (keys == null || keys.Count == 0)

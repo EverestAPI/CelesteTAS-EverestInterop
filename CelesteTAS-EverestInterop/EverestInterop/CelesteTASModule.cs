@@ -1,24 +1,15 @@
 ﻿using Celeste;
 using Celeste.Mod;
-using FMOD.Studio;
+using Ionic.Zip;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using Mono.Cecil.Cil;
 using Monocle;
+using TAS.StudioCommunication;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
-using System.Text;
-using System.Threading;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using MonoMod.Utils;
-using System.Net;
-using Mono.Unix;
-using TAS.StudioCommunication;
-using System.Diagnostics;
 
 namespace TAS.EverestInterop
 {
@@ -36,22 +27,29 @@ namespace TAS.EverestInterop
 
         public CelesteTASModule() {
             Instance = this;
-        }
-
+        } 
+		  
         public override void Initialize() {
-            if (Settings.Enabled && Settings.LaunchStudioAtBoot) {
+			string path = Directory.GetCurrentDirectory();
+			if (!File.Exists(path + @"\Celeste Studio.exe")) {
+				ZipFile zip = ZipFile.Read(path + @"\Mods\CelesteTAS.zip");
+				if (zip.EntryFileNames.Contains("Celeste Studio.exe")) {
+					foreach (ZipEntry entry in zip.Entries) {
+						if (entry.FileName.StartsWith("Celeste Studio"))
+							entry.Extract(path, ExtractExistingFileAction.OverwriteSilently);
+					}
+				}
+				zip.Dispose();
+			}
+			if (Settings.Enabled && Settings.LaunchStudioAtBoot) {
                 Process[] processes = Process.GetProcesses();
                 foreach (Process process in processes) {
                     if (process.ProcessName.StartsWith("Celeste") && process.ProcessName.Contains("Studio"))
                         return;
                 }
 
-                string path = Directory.GetCurrentDirectory();
-                string[] files = Directory.GetFiles(path, "Celeste*Studio*.exe");
-
-                if (files.Length > 0) {
-                    Process.Start(files[0]);
-                }
+                if (File.Exists(path + "Celeste Studio.exe"))
+                    Process.Start(path + "Celeste Studio.exe");
             }
         }
 
@@ -113,6 +111,7 @@ namespace TAS.EverestInterop
                 LoadSettings();
                 Hotkeys.instance.OnInputInitialize();
             }));
+
         }
 
         private void LevelLoader_LoadingThread(On.Celeste.LevelLoader.orig_LoadingThread orig, LevelLoader self) {
