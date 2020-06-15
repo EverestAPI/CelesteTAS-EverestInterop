@@ -3,7 +3,7 @@ Can be used instead of notepad or similar for easier editing of the TAS file. It
 
 If Celeste.exe is running it will automatically open Celeste.tas.
 
-#Controls
+# Controls
 - Ctrl + O: Open file (Updates Celeste.tas as well)
 - Ctrl + Shift + S: Save as (Updates Celeste.tas as well)
 - Ctrl + D: Toggle sending inputs to Celeste
