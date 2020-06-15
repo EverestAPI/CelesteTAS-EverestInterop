@@ -11,7 +11,7 @@ using Input = Celeste.Input;
 namespace TAS {
 	public class InputController {
 		public List<InputRecord> inputs = new List<InputRecord>();
-		private int currentFrame, inputIndex, frameToNext;
+		private int inputIndex, frameToNext;
 		public string filePath;
 		private List<InputRecord> fastForwards = new List<InputRecord>();
 		public Vector2? resetSpawn;
@@ -22,9 +22,12 @@ namespace TAS {
 		public bool CanPlayback => inputIndex < inputs.Count;
 		public bool HasFastForward => fastForwards.Count > 0;
 		public int FastForwardSpeed => fastForwards.Count == 0 ? 1 : fastForwards[0].Frames == 0 ? 400 : fastForwards[0].Frames;
-		public int CurrentFrame => currentFrame;
-		public int CurrentInputFrame => currentFrame - frameToNext + Current.Frames;
-		
+		public int CurrentFrame { get; private set; }
+		public int CurrentInputFrame => CurrentFrame - frameToNext + Current.Frames;
+
+		public bool NeedsToWait => Manager.IsLoading() || Manager.forceDelayTimer > 0;
+
+
 		public InputRecord Current { get; set; }
 		public InputRecord Previous {
 			get {
@@ -59,11 +62,11 @@ namespace TAS {
 
 		public override string ToString() {
 			if (frameToNext == 0 && Current != null) {
-				return Current.ToString() + "(" + currentFrame.ToString() + ")";
+				return Current.ToString() + "(" + CurrentFrame.ToString() + ")";
 			} else if (inputIndex < inputs.Count && Current != null) {
 				int inputFrames = Current.Frames;
 				int startFrame = frameToNext - inputFrames;
-				return Current.ToString() + "(" + (currentFrame - startFrame).ToString() + " / " + inputFrames + " : " + currentFrame + ")";
+				return Current.ToString() + "(" + (CurrentFrame - startFrame).ToString() + " / " + inputFrames + " : " + CurrentFrame + ")";
 			}
 			return string.Empty;
 		}
@@ -81,7 +84,7 @@ namespace TAS {
 				trycount--;
 			}
 
-			currentFrame = 0;
+			CurrentFrame = 0;
 			inputIndex = 0;
 			if (inputs.Count > 0) {
 				Current = inputs[0];
@@ -95,11 +98,12 @@ namespace TAS {
 		public void AdvanceFrame(bool reload) {
 			if (reload) {
 				//Reinitialize the file and simulate a replay of the TAS file up to the current point.
-				int previousFrame = currentFrame - 1;
+				int previousFrame = CurrentFrame - 1;
 				InitializePlayback();
-				currentFrame = Manager.IsLoading() ? previousFrame + 1 : previousFrame;
+				//Prevents time travel.
+				CurrentFrame = NeedsToWait ? previousFrame + 1 : previousFrame;
 
-				while (currentFrame > frameToNext) {
+				while (CurrentFrame > frameToNext) {
 					if (inputIndex + 1 >= inputs.Count) {
 						inputIndex++;
 						return;
@@ -110,19 +114,42 @@ namespace TAS {
 					Current = inputs[++inputIndex];
 					frameToNext += Current.Frames;
 				}
-				//prevents duplicating commands while Manager.IsLoading()
+				//prevents duplicating commands
 				if (Current.Command != null) {
 					Current = inputs[++inputIndex];
 				}
+				//Previous.Command = null;
 			}
-			if (Manager.IsLoading())
+			// quite frankly the whole system for input playback is absolute garbage
+			// you can't trust that this method will be called once per frame
+			// despite the fact that it is *literally called AdvanceFrame*
+			// and i'm not about to rewrite the whole thing
+			if (NeedsToWait) {
+				if (!reload && Manager.forceDelayTimer > 0) {
+					Manager.forceDelayTimer--;
+					if (Manager.forceDelayTimer == 0) {
+						if (CurrentFrame >= frameToNext) {
+							if (inputIndex + 1 >= inputs.Count) {
+								inputIndex++;
+								return;
+							}
+							if (Current.FastForward) {
+								fastForwards.RemoveAt(0);
+							}
+							Current = inputs[++inputIndex];
+							frameToNext += Current.Frames;
+						}
+						CurrentFrame++;
+					}
+				}
 				return;
+			}
 			do {
 				if (Current.Command != null) {
 					Current.Command.Invoke();
 				}
 				if (inputIndex < inputs.Count) {
-					if (currentFrame >= frameToNext) {
+					if (CurrentFrame >= frameToNext) {
 						if (inputIndex + 1 >= inputs.Count) {
 							inputIndex++;
 							return;
@@ -135,14 +162,14 @@ namespace TAS {
 					}
 				}
 			} while (Current.Command != null);
-			currentFrame++;
+			CurrentFrame++;
 			if (Manager.ExportSyncData)
 				Manager.ExportPlayerInfo();
 			Manager.SetInputs(Current);
 		}
 
 		public void InitializeRecording() {
-			currentFrame = 0;
+			CurrentFrame = 0;
 			inputIndex = 0;
 			Current = new InputRecord();
 			frameToNext = 0;
@@ -240,5 +267,22 @@ namespace TAS {
 			}
 		}
 
+		public InputController Clone() {
+			InputController clone = new InputController(filePath);
+			clone.inputs = new List<InputRecord>();
+			foreach (InputRecord record in inputs) {
+				clone.inputs.Add(record.Clone());
+			}
+
+			clone.fastForwards = new List<InputRecord>();
+			foreach (InputRecord record in fastForwards) {
+				clone.fastForwards.Add(record.Clone());
+			}
+			clone.CurrentFrame = CurrentFrame;
+			clone.frameToNext = frameToNext;
+			clone.inputIndex = inputIndex;
+			clone.Current = clone.inputs[clone.inputIndex];
+			return clone;
+		}
 	}
 }

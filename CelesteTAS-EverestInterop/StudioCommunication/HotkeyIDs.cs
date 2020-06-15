@@ -7,5 +7,7 @@
 		Hitboxes,
 		Graphics,
 		Camera,
+		SaveState,
+		LoadState,
 	}
 }

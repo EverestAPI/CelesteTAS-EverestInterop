@@ -35,7 +35,10 @@ namespace TAS.EverestInterop {
         public List<Buttons> ButtonCamera { get; set; } = new List<Buttons>();
         public List<Keys> KeyCamera { get; set; } = new List<Keys>();
 
-        public bool DisableAchievements { get; set; } = false;
+		public List<Keys> KeySaveState { get; set; } = new List<Keys>();
+		public List<Keys> KeyLoadState { get; set; } = new List<Keys>();
+
+		public bool DisableAchievements { get; set; } = false;
 
         [SettingNeedsRelaunch]
         public bool UnixRTC { get; set; } = false;

@@ -8,6 +8,8 @@ using System.Text;
 using System.Reflection;
 using TAS.EverestInterop;
 using TAS.StudioCommunication;
+using Celeste.Mod.SpeedrunTool.SaveLoad;
+using System.Collections;
 
 namespace TAS {
 	[Flags]
@@ -24,13 +26,16 @@ namespace TAS {
 		private static MethodInfo UpdateVirtualInputs = typeof(MInput).GetMethod("UpdateVirtualInputs", BindingFlags.Static | BindingFlags.NonPublic);
 		public static bool Running, Recording;
 		public static InputController controller = new InputController("Celeste.tas");
+		private static InputController savedController;
 		public static State lastState, state, nextState;
 		public static string CurrentStatus, PlayerStatus = "";
 		public static int FrameStepCooldown, FrameLoops = 1;
 		public static bool enforceLegal, allowUnsafeInput;
+		public static int forceDelayTimer = 0;
 		private static Vector2 lastPos;
 		private static long lastTimer;
 		private static List<VirtualButton.Node>[] playerBindings;
+		private static Coroutine routine;
 		public static CelesteTASModuleSettings settings => CelesteTASModule.Settings;
 		private static bool ShouldForceState => HasFlag(nextState, State.FrameStep) && !Hotkeys.hotkeyFastForward.overridePressed;
 
@@ -39,6 +44,8 @@ namespace TAS {
 			lastState = state;
 			UpdatePlayerInfo();
 			Hotkeys.instance?.Update();
+			HandleSaveStates();
+			routine?.Update();
 			HandleFrameRates();
 			CheckToEnable();
 			FrameStepping();
@@ -47,7 +54,7 @@ namespace TAS {
 				Running = true;
 
 				if (HasFlag(state, State.FrameStep)) {
-					StudioCommunicationClient.instance.SendStateAndPlayerData(CurrentStatus, PlayerStatus, !ShouldForceState);
+					StudioCommunicationClient.instance?.SendStateAndPlayerData(CurrentStatus, PlayerStatus, !ShouldForceState);
 					return;
 				}
 				/*
@@ -97,7 +104,7 @@ namespace TAS {
 			if (Engine.Scene is Level level) {
 				if (!level.IsAutoSaving())
 					return false;
-				return (level.Session.Level == "end-cinematic");
+				return level.Session.Level == "end-cinematic";
 			}
 			if (Engine.Scene is SummitVignette summit)
 				return !(bool)summit.GetPrivateField("ready");
@@ -113,6 +120,33 @@ namespace TAS {
 			else
 				return 90f + angle;
 		}
+
+		private static void HandleSaveStates() {
+			if (Hotkeys.hotkeySaveState.pressed && !Hotkeys.hotkeySaveState.wasPressed) {
+				Engine.Scene.OnEndOfFrame += StateManager.Instance.ExternalSave;
+				savedController = controller.Clone();
+			}
+			else if (Hotkeys.hotkeyLoadState.pressed && !Hotkeys.hotkeyLoadState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
+				Engine.Scene.OnEndOfFrame += StateManager.Instance.ExternalLoad;
+				controller = savedController.Clone();
+			}
+			else
+				return;
+			routine = new Coroutine(LoadStateRoutine());
+		}
+
+		private static IEnumerator LoadStateRoutine() {
+			//1f before respawn + 36f respawn
+			forceDelayTimer = 37;
+			while (forceDelayTimer > 35)
+				yield return null;
+			controller.AdvanceFrame(true);
+			while (forceDelayTimer > 0)
+				yield return null;
+
+			yield break;
+		}
+
 		private static void HandleFrameRates() {
 			if (HasFlag(state, State.Enable) && !HasFlag(state, State.FrameStep) && !HasFlag(nextState, State.FrameStep) && !HasFlag(state, State.Record)) {
 				if (controller.HasFastForward) {

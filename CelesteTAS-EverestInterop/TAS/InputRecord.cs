@@ -26,7 +26,7 @@ namespace TAS {
 		public float Angle { get; set; }
 		public bool FastForward { get; set; }
 		public bool ForceBreak { get; set; }
-		public Action Command { get; }
+		public Action Command { get; set; }
 		public InputRecord() { }
 		public InputRecord(Action commandCall) {
 			Command = commandCall;
@@ -173,6 +173,11 @@ namespace TAS {
 			if (HasActions(Actions.Confirm)) { sb.Append(",O"); }
 			if (HasActions(Actions.Feather)) { sb.Append(",F,").Append(Angle == 0 ? string.Empty : Angle.ToString("0")); }
 			return sb.ToString();
+		}
+		public InputRecord Clone() {
+			InputRecord clone = new InputRecord(Line, ActionsToString());
+			clone.Command = Command;
+			return clone;
 		}
 		public override bool Equals(object obj) {
 			return obj is InputRecord && ((InputRecord)obj) == this;

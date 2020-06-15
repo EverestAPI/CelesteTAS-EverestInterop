@@ -75,7 +75,7 @@ namespace TAS.EverestInterop
             Hotkeys.instance = new Hotkeys();
             Hotkeys.instance.Load();
 
-            // Optional: Approximate savestates
+            // Optional: Allow spawning at specified location
             On.Celeste.LevelLoader.LoadingThread += LevelLoader_LoadingThread;
 
             // Open unix IO pipe for interfacing with Linux / Mac Celeste Studio
@@ -94,6 +94,7 @@ namespace TAS.EverestInterop
         }
 
         public override void Unload() {
+
             Core.instance.Unload();
             DisableAchievements.instance.Unload();
             GraphicsCore.instance.Unload();

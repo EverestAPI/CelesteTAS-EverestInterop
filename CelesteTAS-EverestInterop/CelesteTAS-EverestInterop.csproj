@@ -28,7 +28,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;CELESTETAS</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>
@@ -71,6 +71,10 @@
     </Reference>
     <Reference Include="MonoMod.Utils, Version=20.5.21.5, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\MonoMod.Utils.20.5.21.5\lib\net40\MonoMod.Utils.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="SpeedrunTool">
+      <HintPath>..\..\..\..\Saved Games\Celestemain\Mods\bin\SpeedrunTool\SpeedrunTool.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="Mono.Posix">

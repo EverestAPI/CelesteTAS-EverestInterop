@@ -49,8 +49,10 @@ namespace TAS.EverestInterop {
         public static Hotkey hotkeyHitboxes;
         public static Hotkey hotkeyGraphics;
         public static Hotkey hotkeyCamera;
+		public static Hotkey hotkeySaveState;
+		public static Hotkey hotkeyLoadState;
 
-        public static Hotkey[] hotkeys;
+		public static Hotkey[] hotkeys;
         public static List<Keys>[] listHotkeyKeys;
 
 
@@ -71,23 +73,29 @@ namespace TAS.EverestInterop {
                 Settings.KeyHitboxes = new List<Keys> { Keys.B };
                 Settings.KeyGraphics = new List<Keys> { Keys.N };
                 Settings.KeyCamera = new List<Keys> { Keys.M };
-            }
+				Settings.KeySaveState = new List<Keys> { Keys.LeftShift, Keys.F1 };
+				Settings.KeyLoadState = new List<Keys> { Keys.F1 };
+			}
 
             listHotkeyKeys = new List<Keys>[] {
                 Settings.KeyStart, Settings.KeyFastForward, Settings.KeyFrameAdvance, Settings.KeyPause,
-                Settings.KeyHitboxes, Settings.KeyGraphics, Settings.KeyCamera
+                Settings.KeyHitboxes, Settings.KeyGraphics, Settings.KeyCamera,
+				Settings.KeySaveState, Settings.KeyLoadState,
             };
 
             hotkeyStart = new Hotkey(Settings.KeyStart, null, true, false);
             hotkeyFastForward = new Hotkey(Settings.KeyFastForward, null, true, true);
             hotkeyFrameAdvance = new Hotkey(Settings.KeyFrameAdvance, null, true, false);
             hotkeyPause = new Hotkey(Settings.KeyPause, null, true, false);
-            hotkeyHitboxes = new Hotkey(Settings.KeyHitboxes, Settings.ButtonHitboxes, false, false);
-            hotkeyGraphics = new Hotkey(Settings.KeyGraphics, Settings.ButtonGraphics, false, false);
-            hotkeyCamera = new Hotkey(Settings.KeyCamera, Settings.ButtonCamera, false, false);
-            hotkeys = new Hotkey[] { 
+            hotkeyHitboxes = new Hotkey(Settings.KeyHitboxes, Settings.ButtonHitboxes, true, false);
+            hotkeyGraphics = new Hotkey(Settings.KeyGraphics, Settings.ButtonGraphics, true, false);
+            hotkeyCamera = new Hotkey(Settings.KeyCamera, Settings.ButtonCamera, true, false);
+			hotkeySaveState = new Hotkey(Settings.KeySaveState, null, true, false);
+			hotkeyLoadState = new Hotkey(Settings.KeyLoadState, null, true, false);
+			hotkeys = new Hotkey[] { 
                 hotkeyStart, hotkeyFastForward, hotkeyFrameAdvance, hotkeyPause, 
-                hotkeyHitboxes, hotkeyGraphics, hotkeyCamera 
+                hotkeyHitboxes, hotkeyGraphics, hotkeyCamera,
+				hotkeySaveState, hotkeyLoadState,
             };
         }
 
