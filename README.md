@@ -7,12 +7,12 @@
 ----
 - Install [Everest](https://everestapi.github.io/) if you haven't already.
 - Use the 1-click installer [here.](https://gamebanana.com/tools/6715)
-- Download Celeste Studio, our input editor, further down on the same page. (Note that Studio is not supported for Mac, and old versions only run on Windows)
 - Enable the mod in the in-game mod options.
 - Enable `Unix RTC` in the mod settings and restart if on linux.
+- Open Celeste Studio, our input editor. It should be in your main Celeste directory. (Note that Studio is not supported on Mac and may not work on Linux.)
 
 ## Input File
-Input file is called Celeste.tas and needs to be in the main Celeste directory (usually C:\Program Files (x86)\Steam\steamapps\common\Celeste\Celeste.tas) Celeste Studio will automatically create this file for you.
+Input file is called Celeste.tas and needs to be in the main Celeste directory (usually C:\Program Files (x86)\Steam\steamapps\common\Celeste\Celeste.tas) Celeste Studio will automatically create this file for you. The tools will not work if there are no inputs in this file.
 
 Format for the input file is (Frames),(Actions)
 
@@ -46,11 +46,9 @@ While in game or in Studio:
 - Save State: LeftShift + F1 (Experimental)
 - Load State: F1 (Experimental)
 
-- These can be rebound in (Main Celeste Directory)\Saves\modsettings-CelesteTAS.celeste
+- These can be rebound in Mod Options (Note that controller is not supported.)
   - You will have to rebind some of these if you are on a non-US keyboard layout.
-  - Note that you may have to reload Mod Settings in Celeste for this file to appear.
-  - You can also set hotkeys for modifying TAS options (e.g. showing hitboxes) in this file.
-  - You can also set a default path for TAS files to be read from. (We recommend setting this to the LevelFiles folder in this repo.)
+  - You can manually rebind inputs (e.g. if you want a keycombo instead of just one key) at (Main Celeste Directory)\Saves\modsettings-CelesteTAS.celeste
   
 ## Special Input
 ### Breakpoints
@@ -63,7 +61,7 @@ While in game or in Studio:
 - Various commands exist to facilitate TAS playback. Documentation can be found [here.](https://github.com/ShootMe/CelesteTAS/blob/master/Game/Commands.md)
   
 ## Celeste Studio
-Can be used instead of notepad or similar for easier editing of the TAS file. Is located in [Releases](https://github.com/ShootMe/CelesteTAS/releases) as well.
+Can be used instead of notepad or similar for easier editing of the TAS file. It is bundled with the TAS tools, and should automatically appear in the main Celeste directory.
 
 If Celeste.exe is running it will automatically open Celeste.tas if it exists. You can hit Ctrl+O to open a different file, which will automatically save it to Celeste.tas as well. Ctrl+Shift+S will open a Save As dialog as well.
 
