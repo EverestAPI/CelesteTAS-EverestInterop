@@ -9,10 +9,10 @@
 - Use the 1-click installer [here.](https://gamebanana.com/tools/6715)
 - Enable the mod in the in-game mod options.
 - Enable `Unix RTC` in the mod settings and restart if on linux.
-- Open Celeste Studio, our input editor. It should be in your main Celeste directory. (Note that Studio is not supported on Mac and may not work on Linux.)
+- Open Celeste Studio, our input editor. It should be in your main Celeste directory. (Note that Studio is not supported on Mac and may not work on Linux.) [Studio documentation can be found here.](https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/master/Docs/Studio.md)
 
 ## Input File
-Input file is called Celeste.tas and needs to be in the main Celeste directory (usually C:\Program Files (x86)\Steam\steamapps\common\Celeste\Celeste.tas) Celeste Studio will automatically create this file for you. The tools will not work if there are no inputs in this file.
+The input file should be called Celeste.tas and needs to be in the main Celeste directory. Celeste Studio will automatically create this file for you. The tools will not work if there are no inputs in this file.
 
 Format for the input file is (Frames),(Actions)
 
@@ -58,10 +58,4 @@ While in game or in Studio:
 - ***! will force the TAS to pause even if there are breakpoints afterward in the file
 
 ### Commands
-- Various commands exist to facilitate TAS playback. Documentation can be found [here.](https://github.com/ShootMe/CelesteTAS/blob/master/Game/Commands.md)
-  
-## Celeste Studio
-Can be used instead of notepad or similar for easier editing of the TAS file. It is bundled with the TAS tools, and should automatically appear in the main Celeste directory.
-
-If Celeste.exe is running it will automatically open Celeste.tas if it exists. You can hit Ctrl+O to open a different file, which will automatically save it to Celeste.tas as well. Ctrl+Shift+S will open a Save As dialog as well.
-
+- Various commands exist to facilitate TAS playback. Documentation can be found [here.](https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/master/Docs/Commands.md)
