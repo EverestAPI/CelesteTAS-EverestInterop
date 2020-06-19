@@ -57,7 +57,8 @@
 
 ### Unsafe
 - The TAS will normally only run inside levels.
-- Unsafe allows the TAS to run anywhere.
+- Console load normally forces the TAS to load the debug save.
+- Unsafe allows the TAS to run anywhere, on any save.
 
 ### EnforceLegal
 - This is used at the start of fullgame files.
