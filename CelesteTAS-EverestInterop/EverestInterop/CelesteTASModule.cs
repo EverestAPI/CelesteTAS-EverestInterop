@@ -31,8 +31,8 @@ namespace TAS.EverestInterop
 		  
         public override void Initialize() {
 			string path = Directory.GetCurrentDirectory();
-			if (!File.Exists(path + @"\Celeste Studio.exe")) {
-				ZipFile zip = ZipFile.Read(path + @"\Mods\CelesteTAS.zip");
+			if (!File.Exists(path + @"/Celeste Studio.exe")) {
+				ZipFile zip = ZipFile.Read(path + "/Mods/CelesteTAS.zip");
 				if (zip.EntryFileNames.Contains("Celeste Studio.exe")) {
 					foreach (ZipEntry entry in zip.Entries) {
 						if (entry.FileName.StartsWith("Celeste Studio"))

@@ -24,7 +24,7 @@ namespace TAS.StudioCommunication {
 			instance = new StudioCommunicationClient();
 
 #if DEBUG
-			SetupDebugVariables();
+			//SetupDebugVariables();
 #endif
 
 			RunThread.Start(instance.UpdateLoop, "StudioCom Client");

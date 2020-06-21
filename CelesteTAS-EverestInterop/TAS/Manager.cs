@@ -125,12 +125,22 @@ namespace TAS {
 			if (Hotkeys.hotkeyLoadState == null || Hotkeys.hotkeySaveState == null)
 				return;
 			if (Hotkeys.hotkeySaveState.pressed && !Hotkeys.hotkeySaveState.wasPressed) {
-				Engine.Scene.OnEndOfFrame += StateManager.Instance.ExternalSave;
-				savedController = controller.Clone();
+				Engine.Scene.OnEndOfFrame += () => {
+					if (StateManager.Instance.ExternalSave())
+						savedController = controller.Clone();
+				};
 			}
 			else if (Hotkeys.hotkeyLoadState.pressed && !Hotkeys.hotkeyLoadState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
-				Engine.Scene.OnEndOfFrame += StateManager.Instance.ExternalLoad;
-				controller = savedController.Clone();
+				if (StateManager.Instance.SavedPlayer != null) {
+					Engine.Scene.OnEndOfFrame += () => {
+						if (!StateManager.Instance.ExternalLoad())
+							return;
+						if (!Manager.Running)
+							Manager.EnableRun();
+						savedController.inputs = controller.inputs;
+						controller = savedController.Clone();
+					};
+				}
 			}
 			else
 				return;

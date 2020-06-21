@@ -23,7 +23,7 @@ namespace CelesteStudio.Communication {
 		public static string LevelName() {
 			int nameStart = playerData.IndexOf('[') + 1;
 			int nameEnd = playerData.IndexOf(']');
-			return playerData.Substring(nameStart, nameEnd);
+			return playerData.Substring(nameStart, nameEnd - nameStart);
 		}
 
 		public static void SetBindings(List<Keys>[] newBindings) {
@@ -31,6 +31,7 @@ namespace CelesteStudio.Communication {
 		}
 
 		//"wrapper"
+		//This doesn't work in release build and i don't particularly care to figure out why.
 		public static bool CheckControls(ref Message msg) {
 			if (!updatingHotkeys
 				|| Environment.OSVersion.Platform == PlatformID.Unix

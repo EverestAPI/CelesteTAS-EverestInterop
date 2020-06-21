@@ -32,9 +32,7 @@ namespace TAS.EverestInterop {
         public bool CenterCamera { get; set; } = false;
         public ButtonBinding KeyCamera { get; set; } = new ButtonBinding();
 
-		[SettingIgnore]
 		public ButtonBinding KeySaveState { get; set; } = new ButtonBinding();
-		[SettingIgnore]
 		public ButtonBinding KeyLoadState { get; set; } = new ButtonBinding();
 
 		public bool DisableAchievements { get; set; } = false;
