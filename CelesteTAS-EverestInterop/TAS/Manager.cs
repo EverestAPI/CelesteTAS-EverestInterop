@@ -26,12 +26,12 @@ namespace TAS {
 		private static MethodInfo UpdateVirtualInputs = typeof(MInput).GetMethod("UpdateVirtualInputs", BindingFlags.Static | BindingFlags.NonPublic);
 		public static bool Running, Recording;
 		public static InputController controller = new InputController("Celeste.tas");
-		private static InputController savedController;
 		public static State lastState, state, nextState;
 		public static string CurrentStatus, PlayerStatus = "";
 		public static int FrameStepCooldown, FrameLoops = 1;
 		public static bool enforceLegal, allowUnsafeInput;
 		public static int forceDelayTimer = 0;
+		public static bool forceDelay;
 		private static Vector2 lastPos;
 		private static long lastTimer;
 		private static List<VirtualButton.Node>[] playerBindings;
@@ -44,8 +44,8 @@ namespace TAS {
 			lastState = state;
 			UpdatePlayerInfo();
 			Hotkeys.instance?.Update();
-			HandleSaveStates();
-			routine?.Update();
+			Savestates.HandleSaveStates();
+			Savestates.routine?.Update();
 			HandleFrameRates();
 			CheckToEnable();
 			FrameStepping();
@@ -119,44 +119,6 @@ namespace TAS {
 				return 450f + angle;
 			else
 				return 90f + angle;
-		}
-
-		private static void HandleSaveStates() {
-			if (Hotkeys.hotkeyLoadState == null || Hotkeys.hotkeySaveState == null)
-				return;
-			if (Hotkeys.hotkeySaveState.pressed && !Hotkeys.hotkeySaveState.wasPressed) {
-				Engine.Scene.OnEndOfFrame += () => {
-					if (StateManager.Instance.ExternalSave())
-						savedController = controller.Clone();
-				};
-			}
-			else if (Hotkeys.hotkeyLoadState.pressed && !Hotkeys.hotkeyLoadState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
-				if (StateManager.Instance.SavedPlayer != null) {
-					Engine.Scene.OnEndOfFrame += () => {
-						if (!StateManager.Instance.ExternalLoad())
-							return;
-						if (!Manager.Running)
-							Manager.EnableRun();
-						savedController.inputs = controller.inputs;
-						controller = savedController.Clone();
-					};
-				}
-			}
-			else
-				return;
-			routine = new Coroutine(LoadStateRoutine());
-		}
-
-		private static IEnumerator LoadStateRoutine() {
-			//1f before respawn + 36f respawn
-			forceDelayTimer = 37;
-			while (forceDelayTimer > 35)
-				yield return null;
-			controller.AdvanceFrame(true);
-			while (forceDelayTimer > 0)
-				yield return null;
-
-			yield break;
 		}
 
 		private static void HandleFrameRates() {
@@ -258,6 +220,7 @@ namespace TAS {
 			UpdateVariables(false);
 			BackupPlayerBindings();
 		}
+		public static void EnableExternal() => EnableRun();
 		private static void BackupPlayerBindings() {
 			playerBindings = new List<VirtualButton.Node>[5] { Input.Jump.Nodes, Input.Dash.Nodes, Input.Grab.Nodes, Input.Talk.Nodes, Input.QuickRestart.Nodes};
 			Input.Jump.Nodes = new List<VirtualButton.Node> { new VirtualButton.PadButton(Input.Gamepad, Buttons.A), new VirtualButton.PadButton(Input.Gamepad, Buttons.Y) };

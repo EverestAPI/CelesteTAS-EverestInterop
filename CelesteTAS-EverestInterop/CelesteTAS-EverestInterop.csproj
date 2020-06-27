@@ -85,6 +85,7 @@
     </Reference>
     <Reference Include="SpeedrunTool">
       <HintPath>..\..\..\..\Saved Games\Celestemain\Mods\bin\SpeedrunTool\SpeedrunTool.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="Mono.Posix">
@@ -98,6 +99,7 @@
     <Compile Include="EverestInterop\CelesteTASModule.cs" />
     <Compile Include="EverestInterop\CenterCamera.cs" />
     <Compile Include="EverestInterop\Hotkeys.cs" />
+    <Compile Include="TAS\Savestates.cs" />
     <Compile Include="StudioCommunication\HotkeyIDs.cs" />
     <Compile Include="StudioCommunication\StudioCommunicationBase.cs" />
     <Compile Include="StudioCommunication\StudioCommunicationClient.cs" />

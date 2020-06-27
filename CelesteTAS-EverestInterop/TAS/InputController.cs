@@ -25,7 +25,7 @@ namespace TAS {
 		public int CurrentFrame { get; private set; }
 		public int CurrentInputFrame => CurrentFrame - frameToNext + Current.Frames;
 
-		public bool NeedsToWait => Manager.IsLoading() || Manager.forceDelayTimer > 0;
+		public bool NeedsToWait => Manager.IsLoading() || Manager.forceDelayTimer > 0 || Manager.forceDelay;
 
 
 		public InputRecord Current { get; set; }
@@ -118,32 +118,14 @@ namespace TAS {
 				if (Current.Command != null) {
 					Current = inputs[++inputIndex];
 				}
-				//Previous.Command = null;
 			}
-			// quite frankly the whole system for input playback is absolute garbage
-			// you can't trust that this method will be called once per frame
-			// despite the fact that it is *literally called AdvanceFrame*
-			// and i'm not about to rewrite the whole thing
+
 			if (NeedsToWait) {
-				if (!reload && Manager.forceDelayTimer > 0) {
+				if (!reload && Manager.forceDelayTimer > 0)
 					Manager.forceDelayTimer--;
-					if (Manager.forceDelayTimer == 0) {
-						if (CurrentFrame >= frameToNext) {
-							if (inputIndex + 1 >= inputs.Count) {
-								inputIndex++;
-								return;
-							}
-							if (Current.FastForward) {
-								fastForwards.RemoveAt(0);
-							}
-							Current = inputs[++inputIndex];
-							frameToNext += Current.Frames;
-						}
-						CurrentFrame++;
-					}
-				}
 				return;
 			}
+
 			do {
 				if (Current.Command != null) {
 					Current.Command.Invoke();

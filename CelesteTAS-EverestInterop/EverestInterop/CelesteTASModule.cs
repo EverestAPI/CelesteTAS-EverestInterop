@@ -70,11 +70,11 @@ namespace TAS.EverestInterop
             CenterCamera.instance = new CenterCamera();
             CenterCamera.instance.Load();
 
-            Hotkeys.instance = new Hotkeys();
-            Hotkeys.instance.Load();
+			Hotkeys.instance = new Hotkeys();
+			Hotkeys.instance.Load();
 
-            // Optional: Allow spawning at specified location
-            On.Celeste.LevelLoader.LoadingThread += LevelLoader_LoadingThread;
+			// Optional: Allow spawning at specified location
+			On.Celeste.LevelLoader.LoadingThread += LevelLoader_LoadingThread;
 
             // Open unix IO pipe for interfacing with Linux / Mac Celeste Studio
             if (UnixRTCEnabled) {
@@ -87,7 +87,8 @@ namespace TAS.EverestInterop
             }
 
             // Open memory mapped file for interfacing with Windows Celeste Studio
-            StudioCommunicationClient.Run();
+			if (StudioCommunicationClient.instance == null)
+	            StudioCommunicationClient.Run();
 
         }
 
@@ -99,7 +100,7 @@ namespace TAS.EverestInterop
             SimplifiedGraphics.instance.Unload();
             CenterCamera.instance.Unload();
             Hotkeys.instance.Unload();
-            On.Celeste.LevelLoader.LoadingThread -= LevelLoader_LoadingThread;
+			On.Celeste.LevelLoader.LoadingThread -= LevelLoader_LoadingThread;
 
             UnixRTC.Dispose();
         }

@@ -21,12 +21,6 @@ namespace TAS.EverestInterop {
 
         public static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
         public void Load() {
-            // Relink UpdateInputs to TAS.Manager.UpdateInputs because reflection invoke is slow.
-            h_UpdateInputs = new Detour(
-                typeof(Core).GetMethod("UpdateInputs"),
-                typeof(Manager).GetMethod("UpdateInputs")
-            );
-
             // Relink RunThreadWithLogging to Celeste.RunThread.RunThreadWithLogging because reflection invoke is slow.
             h_RunThreadWithLogging = new Detour(
                 typeof(Core).GetMethod("RunThreadWithLogging"),
@@ -56,20 +50,12 @@ namespace TAS.EverestInterop {
         }
 
         public void Unload() {
-            h_UpdateInputs.Dispose();
             h_RunThreadWithLogging.Dispose();
             On.Monocle.Engine.Update -= Engine_Update;
             On.Monocle.MInput.Update -= MInput_Update;
-            On.Celeste.RunThread.Start -= RunThread_Start;
+			On.Celeste.RunThread.Start -= RunThread_Start;
             h_Game_Update.Dispose();
             On.Monocle.Entity.Render -= Entity_Render;
-        }
-
-        public static Detour h_UpdateInputs;
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void UpdateInputs() {
-            // This gets relinked to TAS.Manager.UpdateInputs
-            throw new Exception("Failed relinking UpdateInputs!");
         }
 
         public static Detour h_RunThreadWithLogging;
@@ -146,7 +132,7 @@ namespace TAS.EverestInterop {
             if (!Manager.Running || Manager.Recording) {
                 orig();
             }
-            UpdateInputs();
+            Manager.UpdateInputs();
 
             // Hacky, but this works just good enough.
             // The original code executes base.Update(); return; instead.
@@ -165,8 +151,6 @@ namespace TAS.EverestInterop {
             }
 
             orig_Game_Update(self, gameTime);
-
-            //CelesteTASModule.Instance.UpdateInputs();
         }
 
         public static Action PreviousGameLoop;
