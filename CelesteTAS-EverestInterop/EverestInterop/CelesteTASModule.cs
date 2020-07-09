@@ -31,7 +31,7 @@ namespace TAS.EverestInterop
 		  
         public override void Initialize() {
 			string path = Directory.GetCurrentDirectory();
-			if (Settings.Version == null || Metadata.Version > Settings.Version || Settings.OverrideVersionCheck || !File.Exists(path + @"/Celeste Studio.exe")) {
+			if (Settings.Version == null || Metadata.VersionString != Settings.Version || Settings.OverrideVersionCheck || !File.Exists(path + "/Celeste Studio.exe")) {
 				ZipFile zip = ZipFile.Read(path + "/Mods/CelesteTAS.zip");
 				if (zip.EntryFileNames.Contains("Celeste Studio.exe")) {
 					foreach (ZipEntry entry in zip.Entries) {
@@ -40,7 +40,7 @@ namespace TAS.EverestInterop
 					}
 				}
 				zip.Dispose();
-				Settings.Version = Metadata.Version;
+				Settings.Version = Metadata.VersionString;
 			}
 			if (Settings.Enabled && Settings.LaunchStudioAtBoot) {
                 Process[] processes = Process.GetProcesses();
@@ -90,6 +90,7 @@ namespace TAS.EverestInterop
             // Open memory mapped file for interfacing with Windows Celeste Studio
 			if (StudioCommunicationClient.instance == null)
 	            StudioCommunicationClient.Run();
+
 
         }
 

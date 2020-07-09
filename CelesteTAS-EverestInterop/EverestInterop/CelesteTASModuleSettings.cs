@@ -54,7 +54,7 @@ namespace TAS.EverestInterop {
 		[SettingIgnore]
 		public int FastForwardThreshold { get; set; } = 10;
 		[SettingIgnore]
-		public Version Version { get; set; } = null;
+		public string Version { get; set; } = null;
 		[SettingIgnore]
 		public bool OverrideVersionCheck { get; set; } = false;
 

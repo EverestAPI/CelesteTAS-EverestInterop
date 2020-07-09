@@ -150,7 +150,8 @@ namespace TAS {
 			CurrentFrame++;
 			if (Manager.ExportSyncData)
 				Manager.ExportPlayerInfo();
-			Manager.SetInputs(Current);
+			if (!reload)
+				Manager.SetInputs(Current);
 		}
 
 		public void InitializeRecording() {
@@ -274,7 +275,9 @@ namespace TAS {
 
 		public long Checksum(int toFrame) {
 			try {
-				//toFrame += 37;
+				// the checksum behaves very weirdly if you don't subtract a few frames
+				toFrame -= 10;
+
 				long output = 0;
 				int inputIndex = 0;
 				int frames = 0;

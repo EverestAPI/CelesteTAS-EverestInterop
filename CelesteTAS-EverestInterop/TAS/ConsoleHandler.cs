@@ -111,5 +111,23 @@ namespace TAS {
 			return $"console {mode} {ID} {location}";
 
 		}
+
+		[Command("giveberry", "Gives player a red berry")]
+		private static void CmdGiveBerry() {
+			Level level = Engine.Scene as Level;
+			if (level != null) {
+				Player entity = level.Tracker.GetEntity<Player>();
+				if (entity != null) {
+					EntityData entityData = new EntityData();
+					entityData.Position = entity.Position + new Vector2(0f, -16f);
+					entityData.ID = Calc.Random.Next();
+					entityData.Name = "strawberry";
+					EntityID gid = new EntityID(level.Session.Level, entityData.ID);
+					Strawberry entity2 = new Strawberry(entityData, Vector2.Zero, gid);
+					level.Add(entity2);
+				}
+			}
+		}
+
 	}
 }
