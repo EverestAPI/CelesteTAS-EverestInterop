@@ -10,3 +10,4 @@ If Celeste.exe is running it will automatically open Celeste.tas.
 - Ctrl + K: Block comment/uncomment
 - Ctrl + P: Remove all breakpoints
 - Ctrl + R: Insert room name
+- Ctrl + Shift + R: Insert console load command at current location
