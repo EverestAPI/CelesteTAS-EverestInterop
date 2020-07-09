@@ -54,15 +54,11 @@ namespace CelesteStudio.Communication {
 				case MessageIDs.SendCurrentBindings:
 					ProcessSendCurrentBindings(message.Data);
 					break;
-				//Spaghetti af, there's no good way of handling this.
-				//The only way a send path can possibly end up here is if you restart Celeste then send a message through Studio.
-				//The celeste side is already partially through initialization so we have to go to midway through initialization code.
-				//EstablishConnection() takes care of the resyncing.
-				//Can it potentially go through here twice in a row? Oh you bet it can go through here twice in a row.
-				//But it works and frankly I'm terrified of fixing it.
 				case MessageIDs.SendPath:
-					//EstablishConnection();
 					throw new NeedsResetException("Recieved initialization message (SendPath) from main loop");
+				case MessageIDs.ReturnConsoleCommand:
+					ProcessReturnConsoleCommand(message.Data);
+					break;
 				default:
 					throw new InvalidOperationException($"{message.ID}");
 			}
@@ -92,6 +88,10 @@ namespace CelesteStudio.Communication {
 			foreach (List<Keys> key in keys)
 				Log(key.ToString());
 			CommunicationWrapper.SetBindings(keys);
+		}
+
+		private void ProcessReturnConsoleCommand(byte[] data) {
+			CommunicationWrapper.command = Encoding.Default.GetString(data);
 		}
 
 		#endregion
@@ -129,9 +129,10 @@ namespace CelesteStudio.Communication {
 			Initialized = true;
 		}
 
-		public void SendPath(string path, bool canFail) {
-			pendingWrite = () => SendPathNow(path, canFail);
-		}
+	
+		public void SendPath(string path, bool canFail) => pendingWrite = () => SendPathNow(path, canFail);
+		public void SendHotkeyPressed(HotkeyIDs hotkey, bool released = false) => pendingWrite = () => SendHotkeyPressedNow(hotkey, released);
+		public void GetConsoleCommand() => pendingWrite = () => GetConsoleCommandNow();
 
 		private void SendPathNow(string path, bool canFail) {
 			if (Initialized || !canFail) {
@@ -144,15 +145,17 @@ namespace CelesteStudio.Communication {
 			}
 		}
 
-		public void SendHotkeyPressed(HotkeyIDs hotkey, bool released = false) {
-			pendingWrite = () => SendHotkeyPressedNow(hotkey, released);
-		}
-
 		private void SendHotkeyPressedNow(HotkeyIDs hotkey, bool released) {
 			if (!Initialized)
 				return;
 			byte[] hotkeyBytes = new byte[] { (byte)hotkey, Convert.ToByte(released) };
 			WriteMessageGuaranteed(new Message(MessageIDs.SendHotkeyPressed, hotkeyBytes));
+		}
+
+		private void GetConsoleCommandNow() {
+			if (!Initialized)
+				return;
+			WriteMessageGuaranteed(new Message(MessageIDs.GetConsoleCommand, new byte[0]));
 		}
 
 		private void SendNewBindings(List<Keys> keys) {

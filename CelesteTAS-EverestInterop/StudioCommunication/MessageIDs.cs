@@ -1,12 +1,11 @@
-﻿#define CELESTETAS
-using System;
+﻿using System;
 
 #if STUDIO
 namespace CelesteStudio.Communication {
 #elif CELESTETAS
 namespace TAS.StudioCommunication {
 #endif
-public class HighPriorityAttribute : Attribute { }
+	public class HighPriorityAttribute : Attribute { }
 
 	public enum MessageIDs : byte {
 		//Connection
@@ -14,6 +13,11 @@ public class HighPriorityAttribute : Attribute { }
 		/// Unused
 		/// </summary>
 		Default = 0x00,
+		/// <summary>
+		/// Structure:
+		/// </summary>
+		[HighPriority]
+		GetConsoleCommand = 0x08,
 		/// <summary>
 		/// Structure:
 		/// </summary>
@@ -67,6 +71,11 @@ public class HighPriorityAttribute : Attribute { }
 		/// </summary>
 		[HighPriority]
 		SendCurrentBindings = 0x30,
+		/// <summary>
+		/// Structure: string
+		/// </summary>
+		[HighPriority]
+		ReturnConsoleCommand = 0x31,
 
 	}
 }

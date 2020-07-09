@@ -175,10 +175,12 @@ namespace TAS {
 			return sb.ToString();
 		}
 		public InputRecord Clone() {
-			InputRecord clone = new InputRecord(Line, ActionsToString());
+			InputRecord clone = new InputRecord(Line, Frames.ToString() + ActionsToString());
 			clone.Command = Command;
 			return clone;
 		}
+		//none of these are used
+		/*
 		public override bool Equals(object obj) {
 			return obj is InputRecord && ((InputRecord)obj) == this;
 		}
@@ -205,6 +207,7 @@ namespace TAS {
 			}
 			return one.Actions != two.Actions || one.Angle != two.Angle;
 		}
+		*/
 	}
 }
  

@@ -221,6 +221,7 @@ namespace TAS {
 			BackupPlayerBindings();
 		}
 		public static void EnableExternal() => EnableRun();
+		public static void DisableExternal() => DisableRun();
 		private static void BackupPlayerBindings() {
 			playerBindings = new List<VirtualButton.Node>[5] { Input.Jump.Nodes, Input.Dash.Nodes, Input.Grab.Nodes, Input.Talk.Nodes, Input.QuickRestart.Nodes};
 			Input.Jump.Nodes = new List<VirtualButton.Node> { new VirtualButton.PadButton(Input.Gamepad, Buttons.A), new VirtualButton.PadButton(Input.Gamepad, Buttons.Y) };
@@ -230,6 +231,9 @@ namespace TAS {
 			Input.QuickRestart.Nodes = new List<VirtualButton.Node> { new VirtualButton.PadButton(Input.Gamepad, Buttons.LeftShoulder) };
 		}
 		private static void RestorePlayerBindings() {
+			//This can happen if DisableExternal is called before any TAS has been run
+			if (playerBindings == null)
+				return;
 			Input.Jump.Nodes = playerBindings[0];
 			Input.Dash.Nodes = playerBindings[1];
 			Input.Grab.Nodes = playerBindings[2];

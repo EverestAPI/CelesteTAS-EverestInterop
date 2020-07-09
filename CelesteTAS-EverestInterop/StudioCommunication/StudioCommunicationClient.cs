@@ -55,6 +55,9 @@ namespace TAS.StudioCommunication {
 				case MessageIDs.Wait:
 					ProcessWait();
 					break;
+				case MessageIDs.GetConsoleCommand:
+					ProcessGetConsoleCommand();
+					break;
 				case MessageIDs.SendPath:
 					ProcessSendPath(message.Data);
 					break;
@@ -69,6 +72,14 @@ namespace TAS.StudioCommunication {
 					break;
 				default:
 					throw new InvalidOperationException($"{message.ID}");
+			}
+		}
+
+		private void ProcessGetConsoleCommand() {
+			string command = TAS.ConsoleHandler.CreateConsoleCommand();
+			if (command != null) {
+				byte[] commandBytes = Encoding.Default.GetBytes(command);
+				WriteMessageGuaranteed(new Message(MessageIDs.ReturnConsoleCommand, commandBytes));
 			}
 		}
 

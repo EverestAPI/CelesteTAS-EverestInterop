@@ -1,5 +1,4 @@
-﻿#define STUDIO
-using System;
+﻿using System;
 
 #if STUDIO
 namespace CelesteStudio.Communication {
@@ -14,6 +13,11 @@ namespace TAS.StudioCommunication {
 		/// Unused
 		/// </summary>
 		Default = 0x00,
+		/// <summary>
+		/// Structure:
+		/// </summary>
+		[HighPriority]
+		GetConsoleCommand = 0x08,
 		/// <summary>
 		/// Structure:
 		/// </summary>
@@ -67,6 +71,11 @@ namespace TAS.StudioCommunication {
 		/// </summary>
 		[HighPriority]
 		SendCurrentBindings = 0x30,
+		/// <summary>
+		/// Structure: string
+		/// </summary>
+		[HighPriority]
+		ReturnConsoleCommand = 0x31,
 
 	}
 }

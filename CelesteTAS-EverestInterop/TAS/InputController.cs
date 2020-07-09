@@ -13,7 +13,7 @@ namespace TAS {
 		public List<InputRecord> inputs = new List<InputRecord>();
 		private int inputIndex, frameToNext;
 		public string filePath;
-		private List<InputRecord> fastForwards = new List<InputRecord>();
+		public List<InputRecord> fastForwards = new List<InputRecord>();
 		public Vector2? resetSpawn;
 		public InputController(string filePath) {
 			this.filePath = filePath;
@@ -24,9 +24,12 @@ namespace TAS {
 		public int FastForwardSpeed => fastForwards.Count == 0 ? 1 : fastForwards[0].Frames == 0 ? 400 : fastForwards[0].Frames;
 		public int CurrentFrame { get; private set; }
 		public int CurrentInputFrame => CurrentFrame - frameToNext + Current.Frames;
-
+		private long _checksum;
+		public long SavedChecksum {
+			get => _checksum == 0 ? Checksum() : _checksum;
+			private set => _checksum = value;
+		}
 		public bool NeedsToWait => Manager.IsLoading() || Manager.forceDelayTimer > 0 || Manager.forceDelay;
-
 
 		public InputRecord Current { get; set; }
 		public InputRecord Previous {
@@ -254,6 +257,7 @@ namespace TAS {
 			clone.inputs = new List<InputRecord>();
 			foreach (InputRecord record in inputs) {
 				clone.inputs.Add(record.Clone());
+
 			}
 
 			clone.fastForwards = new List<InputRecord>();
@@ -262,9 +266,32 @@ namespace TAS {
 			}
 			clone.CurrentFrame = CurrentFrame;
 			clone.frameToNext = frameToNext;
-			clone.inputIndex = inputIndex;
+			if (clone.inputIndex <= clone.inputs.Count)
+				clone.inputIndex = inputIndex;
 			clone.Current = clone.inputs[clone.inputIndex];
 			return clone;
 		}
+
+		public long Checksum(int toFrame) {
+			try {
+				//toFrame += 37;
+				long output = 0;
+				int inputIndex = 0;
+				int frames = 0;
+				InputRecord current = inputs[inputIndex];
+				while (frames < toFrame) {
+					//if (!(current.FastForward || current.Command != null)) {
+						for (int i = 0; i < current.Frames && frames < toFrame; i++, frames++) {
+							output += (long)current.Actions * frames;
+						}
+					//}
+					current = inputs[inputIndex++];
+				}
+				return output;
+			}
+			catch { return 0; }
+		}
+
+		public long Checksum() => Checksum(CurrentFrame);
 	}
 }

@@ -84,5 +84,32 @@ namespace TAS {
 			Manager.controller.resetSpawn = spawnPoint;
 			Engine.Scene = new LevelLoader(session);
 		}
+
+		public static string CreateConsoleCommand() {
+			if (!(Engine.Scene is Level level))
+				return null;
+			AreaKey area = level.Session.Area;
+			string mode = null;
+			switch (area.Mode) {
+				case AreaMode.Normal:
+					mode = "load";
+					break;
+				case AreaMode.BSide:
+					mode = "hard";
+					break;
+				case AreaMode.CSide:
+					mode = "rmx2";
+					break;
+			}
+			string ID = area.ID <= 10 ? area.ID.ToString() : area.GetSID();
+			string location = null;
+			Player player = level.Entities.FindFirst<Player>();
+			if (player == null)
+				location = level.Session.Level;
+			else
+				location = player.X.ToString() + " " + player.Y.ToString();
+			return $"console {mode} {ID} {location}";
+
+		}
 	}
 }

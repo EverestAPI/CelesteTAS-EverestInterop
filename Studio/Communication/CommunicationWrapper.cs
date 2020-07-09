@@ -12,6 +12,7 @@ namespace CelesteStudio.Communication {
 		public static string gamePath;
 		public static string state;
 		public static string playerData = "";
+		public static string command;
 		public static List<Keys>[] bindings;
 
 		public static bool updatingHotkeys = true;

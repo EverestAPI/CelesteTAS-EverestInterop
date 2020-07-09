@@ -28,7 +28,21 @@ namespace TAS {
 				};
 			}
 			else if (Hotkeys.hotkeyLoadState.pressed && !Hotkeys.hotkeyLoadState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
-				if (StateManager.Instance.SavedPlayer != null) {
+				Manager.controller.ReadFile();
+				if (StateManager.Instance.SavedPlayer != null 
+					&& savedController?.SavedChecksum == Manager.controller.Checksum(savedController.CurrentFrame)) {
+
+					//Fastforward to breakpoint if one exists
+					var fastForwards = Manager.controller.fastForwards;
+					if (fastForwards.Count > 0 && fastForwards[fastForwards.Count - 1].Line > savedController.Current.Line) {
+						Manager.state &= ~State.FrameStep;
+						Manager.nextState &= ~State.FrameStep;
+					}
+					else {
+						//InputRecord ff = new InputRecord(0, "***");
+						//savedController.fastForwards.Insert(0, ff);
+						//savedController.inputs.Insert(savedController.inputs.IndexOf(savedController.Current) + 1, ff);
+					}
 					Engine.Scene.OnEndOfFrame += () => {
 						if (!StateManager.Instance.ExternalLoad())
 							return;
@@ -39,6 +53,9 @@ namespace TAS {
 						routine = new Coroutine(LoadStateRoutine());
 					};
 				}
+				//If savestate load failed just playback normally
+				Manager.DisableExternal();
+				Manager.EnableExternal();
 			}
 			else
 				return;

@@ -31,7 +31,7 @@ namespace TAS.EverestInterop
 		  
         public override void Initialize() {
 			string path = Directory.GetCurrentDirectory();
-			if (!File.Exists(path + @"/Celeste Studio.exe")) {
+			if (Metadata.Version != Settings.Version || Settings.OverrideVersionCheck) {
 				ZipFile zip = ZipFile.Read(path + "/Mods/CelesteTAS.zip");
 				if (zip.EntryFileNames.Contains("Celeste Studio.exe")) {
 					foreach (ZipEntry entry in zip.Entries) {
@@ -40,6 +40,7 @@ namespace TAS.EverestInterop
 					}
 				}
 				zip.Dispose();
+				Settings.Version = Metadata.Version;
 			}
 			if (Settings.Enabled && Settings.LaunchStudioAtBoot) {
                 Process[] processes = Process.GetProcesses();

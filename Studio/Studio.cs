@@ -103,12 +103,16 @@ namespace CelesteStudio
                 else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.P)
                 {
                     ClearBreakpoints();
-                }
-                else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.R)
-                {
-                    AddRoom();
-                }
-                else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.D)
+				}
+				else if (e.Modifiers == (Keys.Control | Keys.Shift) && e.KeyCode == Keys.R)
+				{
+					AddConsoleCommand();
+				}
+				else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.R) 
+				{
+					AddRoom();
+				}
+				else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.D)
                 {
                     CommunicationWrapper.updatingHotkeys = !CommunicationWrapper.updatingHotkeys;
                 }
@@ -138,6 +142,27 @@ namespace CelesteStudio
             tasText.SelectedText = "#lvl_" + CommunicationWrapper.LevelName() + '\n';
             tasText.Selection = new Range(tasText, 0, start, 0, start);
         }
+
+		private void AddConsoleCommand()
+		{
+			CommunicationWrapper.command = null;
+			StudioCommunicationServer.instance.GetConsoleCommand();
+			Thread.Sleep(100);
+
+
+			if (CommunicationWrapper.command == null)
+				return;
+
+			Range range = tasText.Selection;
+
+			int start = range.Start.iLine;
+
+			tasText.Selection = new Range(tasText, 0, start, 0, start);
+			string text = tasText.SelectedText;
+
+			tasText.SelectedText = CommunicationWrapper.command + '\n';
+			tasText.Selection = new Range(tasText, 0, start, 0, start);
+		}
 
         private DialogResult ShowInputDialog(string title, ref string input)
         {

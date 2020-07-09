@@ -146,7 +146,7 @@ namespace TAS
 		}
 
 		public static void EndExport() {
-			sw.Dispose();
+			sw?.Dispose();
 		}
 
 		public static void ExportPlayerInfo() {
