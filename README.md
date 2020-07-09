@@ -43,8 +43,8 @@ While in game or in Studio:
 - Toggle Hitboxes: B
 - Toggle Simplified Graphics: N
 - Toggle Center Camera: M
-- Save State: LeftShift + F1 (Experimental)
-- Load State: F1 (Experimental)
+- Save State: RightAlt + Minus (Experimental)
+- Load State: Equals (Experimental)
 
 - These can be rebound in Mod Options (Note that controller is not supported.)
   - You will have to rebind some of these if you are on a non-US keyboard layout.
