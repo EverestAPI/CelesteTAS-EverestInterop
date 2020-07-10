@@ -82,7 +82,7 @@ namespace CelesteStudio
                 {
                     StudioCommunicationServer.instance?.WriteWait();
                     tasText.SaveNewFile();
-                    StudioCommunicationServer.instance?.SendPath(Path.GetDirectoryName(tasText.LastFileName), true);
+                    StudioCommunicationServer.instance?.SendPath(Path.GetDirectoryName(tasText.LastFileName));
                     Text = titleBarText;
                 }
                 else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.S)
@@ -93,7 +93,7 @@ namespace CelesteStudio
                 {
                     StudioCommunicationServer.instance?.WriteWait();
                     tasText.OpenFile();
-                    StudioCommunicationServer.instance?.SendPath(Path.GetDirectoryName(tasText.LastFileName), true);
+                    StudioCommunicationServer.instance?.SendPath(Path.GetDirectoryName(tasText.LastFileName));
                     Text = titleBarText;
                 }
                 else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.K)
@@ -112,10 +112,21 @@ namespace CelesteStudio
 				{
 					AddRoom();
 				}
+				else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.T)
+				{
+					AddTime();
+				}
+				else if (e.Modifiers == (Keys.Control | Keys.Shift) && e.KeyCode == Keys.C)
+				{
+					CopyPlayerData();
+				}
 				else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.D)
                 {
                     CommunicationWrapper.updatingHotkeys = !CommunicationWrapper.updatingHotkeys;
                 }
+				else if (e.Modifiers == (Keys.Shift | Keys.Control) && e.KeyCode == Keys.D) {
+					StudioCommunicationServer.instance?.ExternalReset();
+				}
             }
             catch (Exception ex)
             {
@@ -130,18 +141,9 @@ namespace CelesteStudio
             tasText.RemoveLines(breakpoints);
         }
 
-        private void AddRoom()
-        {
-            Range range = tasText.Selection;
+        private void AddRoom() => AddNewLine("#lvl_" + CommunicationWrapper.LevelName());
 
-            int start = range.Start.iLine;
-
-            tasText.Selection = new Range(tasText, 0, start, 0, start);
-            string text = tasText.SelectedText;
-
-            tasText.SelectedText = "#lvl_" + CommunicationWrapper.LevelName() + '\n';
-            tasText.Selection = new Range(tasText, 0, start, 0, start);
-        }
+		private void AddTime() => AddNewLine('#' + CommunicationWrapper.Timer());
 
 		private void AddConsoleCommand()
 		{
@@ -149,10 +151,13 @@ namespace CelesteStudio
 			StudioCommunicationServer.instance.GetConsoleCommand();
 			Thread.Sleep(100);
 
-
 			if (CommunicationWrapper.command == null)
 				return;
 
+			AddNewLine(CommunicationWrapper.command);
+		}
+
+		private void AddNewLine(string s) {
 			Range range = tasText.Selection;
 
 			int start = range.Start.iLine;
@@ -160,8 +165,12 @@ namespace CelesteStudio
 			tasText.Selection = new Range(tasText, 0, start, 0, start);
 			string text = tasText.SelectedText;
 
-			tasText.SelectedText = CommunicationWrapper.command + '\n';
+			tasText.SelectedText = '\n' + s;
 			tasText.Selection = new Range(tasText, 0, start, 0, start);
+		}
+
+		private void CopyPlayerData() {
+			Clipboard.SetText(CommunicationWrapper.playerData);
 		}
 
         private DialogResult ShowInputDialog(string title, ref string input)

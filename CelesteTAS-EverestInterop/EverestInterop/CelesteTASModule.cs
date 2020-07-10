@@ -32,15 +32,22 @@ namespace TAS.EverestInterop
         public override void Initialize() {
 			string path = Directory.GetCurrentDirectory();
 			if (Settings.Version == null || Metadata.VersionString != Settings.Version || Settings.OverrideVersionCheck || !File.Exists(path + "/Celeste Studio.exe")) {
-				ZipFile zip = ZipFile.Read(path + "/Mods/CelesteTAS.zip");
-				if (zip.EntryFileNames.Contains("Celeste Studio.exe")) {
-					foreach (ZipEntry entry in zip.Entries) {
-						if (entry.FileName.StartsWith("Celeste Studio"))
-							entry.Extract(path, ExtractExistingFileAction.OverwriteSilently);
+				try {
+					using (ZipFile zip = ZipFile.Read(path + "/Mods/CelesteTAS.zip")) {
+						if (zip.EntryFileNames.Contains("Celeste Studio.exe")) {
+							foreach (ZipEntry entry in zip.Entries) {
+								if (entry.FileName.StartsWith("Celeste Studio"))
+									entry.Extract(path, ExtractExistingFileAction.OverwriteSilently);
+							}
+						}
 					}
+					Settings.Version = Metadata.VersionString;
 				}
-				zip.Dispose();
-				Settings.Version = Metadata.VersionString;
+				catch (UnauthorizedAccessException) { }
+			}
+			else {
+				foreach (string file in Directory.GetFiles(path, "*.PendingOverwrite"))
+					File.Delete(file);
 			}
 			if (Settings.Enabled && Settings.LaunchStudioAtBoot) {
                 Process[] processes = Process.GetProcesses();
@@ -53,6 +60,7 @@ namespace TAS.EverestInterop
                     Process.Start(path + "Celeste Studio.exe");
             }
         }
+
 
         public override void Load() {
 

@@ -34,6 +34,8 @@ namespace CelesteStudio.Communication {
 			return base.NeedsToWait() || Studio.instance.tasText.IsChanged;
 		}
 
+		public void ExternalReset() => pendingWrite = () => throw new NeedsResetException();
+
 
 		#region Read
 		protected override void ReadData(Message message) {
@@ -110,13 +112,13 @@ namespace CelesteStudio.Communication {
 			studio?.WriteMessageGuaranteed(new Message(MessageIDs.EstablishConnection, new byte[0]));
 			celeste?.ReadMessageGuaranteed();
 
-			celeste?.SendPath(null, true);
+			celeste?.SendPath(null);
 			lastMessage = studio?.ReadMessageGuaranteed();
 			if (lastMessage?.ID != MessageIDs.SendPath)
 				throw new NeedsResetException("Invalid data recieved while establishing connection");
 			studio?.ProcessSendPath(lastMessage?.Data);
 
-			studio?.SendPathNow(Studio.instance.tasText.LastFileName, false);
+			studio?.SendPathNow(Path.GetDirectoryName(Studio.instance.tasText.LastFileName), false);
 			lastMessage = celeste?.ReadMessageGuaranteed();
 			celeste?.ProcessSendPath(lastMessage?.Data);
 
@@ -130,9 +132,10 @@ namespace CelesteStudio.Communication {
 		}
 
 	
-		public void SendPath(string path, bool canFail) => pendingWrite = () => SendPathNow(path, canFail);
+		public void SendPath(string path) => pendingWrite = () => SendPathNow(path, true);
 		public void SendHotkeyPressed(HotkeyIDs hotkey, bool released = false) => pendingWrite = () => SendHotkeyPressedNow(hotkey, released);
 		public void GetConsoleCommand() => pendingWrite = () => GetConsoleCommandNow();
+	
 
 		private void SendPathNow(string path, bool canFail) {
 			if (Initialized || !canFail) {

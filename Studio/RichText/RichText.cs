@@ -2092,8 +2092,8 @@ namespace CelesteStudio.Controls {
 				case Keys.C:
 					if (e.Modifiers == Keys.Control)
 						Copy();
-					if (e.Modifiers == (Keys.Control | Keys.Shift))
-						CommentSelected();
+				//	if (e.Modifiers == (Keys.Control | Keys.Shift))
+				//		CommentSelected();
 					break;
 				case Keys.X:
 					if (e.Modifiers == Keys.Control && !ReadOnly)
@@ -2123,10 +2123,10 @@ namespace CelesteStudio.Controls {
 					if (e.Modifiers == Keys.Control && !ReadOnly)
 						Undo();
 					break;
-				case Keys.R:
-					if (e.Modifiers == Keys.Control && !ReadOnly)
-						Redo();
-					break;
+				//case Keys.R:
+				//	if (e.Modifiers == Keys.Control && !ReadOnly)
+				//		Redo();
+				//	break;
 				case Keys.U:
 					if (e.Modifiers == (Keys.Control | Keys.Shift))
 						LowerCase();
