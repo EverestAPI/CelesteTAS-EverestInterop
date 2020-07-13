@@ -132,7 +132,11 @@ namespace TAS.EverestInterop {
             if (!Manager.Running || Manager.Recording) {
                 orig();
             }
-            Manager.UpdateInputs();
+
+            if (Engine.Scene?.Entities.FindFirst<ModuleSettingsButtonConfigUI>() == null &&
+                Engine.Scene?.Entities.FindFirst<ModuleSettingsKeyboardConfigUI>() == null) {
+                Manager.UpdateInputs();
+            }
 
             // Hacky, but this works just good enough.
             // The original code executes base.Update(); return; instead.
