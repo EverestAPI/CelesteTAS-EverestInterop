@@ -134,7 +134,8 @@ namespace TAS.EverestInterop {
             }
 
             if (Engine.Scene?.Entities.FindFirst<ModuleSettingsButtonConfigUI>() == null &&
-                Engine.Scene?.Entities.FindFirst<ModuleSettingsKeyboardConfigUI>() == null) {
+                Engine.Scene?.Entities.FindFirst<ModuleSettingsKeyboardConfigUI>() == null ||
+                Manager.Running) {
                 Manager.UpdateInputs();
             }
 
