@@ -2,68 +2,81 @@
 using Celeste.Mod;
 using Ionic.Zip;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Input;
-using Monocle;
 using TAS.StudioCommunication;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
+using System.Linq;
 
-namespace TAS.EverestInterop
-{
-    public class CelesteTASModule : EverestModule
-    {
+namespace TAS.EverestInterop {
+    public class CelesteTASModule : EverestModule {
         public static CelesteTASModule Instance;
 
         public override Type SettingsType => typeof(CelesteTASModuleSettings);
-        public static CelesteTASModuleSettings Settings => (CelesteTASModuleSettings)Instance?._Settings;
+        public static CelesteTASModuleSettings Settings => (CelesteTASModuleSettings) Instance?._Settings;
         public static bool UnixRTCEnabled => (Environment.OSVersion.Platform == PlatformID.Unix) && Settings.UnixRTC;
 
         public NamedPipeServerStream UnixRTC;
         public StreamWriter UnixRTCStreamOut;
         public StreamReader UnixRTCStreamIn;
 
+        private const string studioName = "Celeste Studio";
+        private string studioNameWithExe => studioName + ".exe";
+        private string copiedStudioExePath => Path.Combine(Everest.PathGame, studioNameWithExe);
+
         public CelesteTASModule() {
             Instance = this;
-        } 
-		  
+        }
+
         public override void Initialize() {
-			string path = Directory.GetCurrentDirectory();
-			if (Settings.Version == null || Metadata.VersionString != Settings.Version || Settings.OverrideVersionCheck || !File.Exists(path + "/Celeste Studio.exe")) {
-				try {
-					using (ZipFile zip = ZipFile.Read(path + "/Mods/CelesteTAS.zip")) {
-						if (zip.EntryFileNames.Contains("Celeste Studio.exe")) {
-							foreach (ZipEntry entry in zip.Entries) {
-								if (entry.FileName.StartsWith("Celeste Studio"))
-									entry.Extract(path, ExtractExistingFileAction.OverwriteSilently);
-							}
-						}
-					}
-					Settings.Version = Metadata.VersionString;
-				}
-				catch (UnauthorizedAccessException) { }
-			}
-			else {
-				foreach (string file in Directory.GetFiles(path, "*.PendingOverwrite"))
-					File.Delete(file);
-			}
-			if (Settings.Enabled && Settings.LaunchStudioAtBoot) {
+            if (Settings.Version == null || Metadata.VersionString != Settings.Version ||
+                Settings.OverrideVersionCheck || !File.Exists(copiedStudioExePath)) {
+                try {
+                    if (!string.IsNullOrEmpty(Metadata.PathArchive)) {
+                        using (ZipFile zip = ZipFile.Read(Metadata.PathArchive)) {
+                            if (zip.EntryFileNames.Contains(studioNameWithExe)) {
+                                foreach (ZipEntry entry in zip.Entries) {
+                                    if (entry.FileName.StartsWith(studioName))
+                                        entry.Extract(Everest.PathGame, ExtractExistingFileAction.OverwriteSilently);
+                                }
+                            }
+                        }
+                    } else if (!string.IsNullOrEmpty(Metadata.PathDirectory)) {
+                        string[] files = Directory.GetFiles(Metadata.PathDirectory);
+
+                        if (files.Any(filePath => filePath.EndsWith(studioNameWithExe))) {
+                            foreach (string sourceFile in files) {
+                                string fileName = Path.GetFileName(sourceFile);
+                                if (fileName.StartsWith(studioName)) {
+                                    string destFile = Path.Combine(Everest.PathGame, fileName);
+                                    File.Copy(sourceFile, destFile, true);
+                                }
+                            }
+                        }
+                    }
+
+                    Settings.Version = Metadata.VersionString;
+                } catch (UnauthorizedAccessException) { }
+            } else {
+                foreach (string file in Directory.GetFiles(Everest.PathGame, "*.PendingOverwrite"))
+                    File.Delete(file);
+            }
+
+            if (Settings.Enabled && Settings.LaunchStudioAtBoot) {
                 Process[] processes = Process.GetProcesses();
                 foreach (Process process in processes) {
                     if (process.ProcessName.StartsWith("Celeste") && process.ProcessName.Contains("Studio"))
                         return;
                 }
 
-                if (File.Exists(path + "Celeste Studio.exe"))
-                    Process.Start(path + "Celeste Studio.exe");
+                if (File.Exists(copiedStudioExePath))
+                    Process.Start(copiedStudioExePath);
             }
         }
 
 
         public override void Load() {
-
             Core.instance = new Core();
             Core.instance.Load();
 
@@ -79,11 +92,11 @@ namespace TAS.EverestInterop
             CenterCamera.instance = new CenterCamera();
             CenterCamera.instance.Load();
 
-			Hotkeys.instance = new Hotkeys();
-			Hotkeys.instance.Load();
+            Hotkeys.instance = new Hotkeys();
+            Hotkeys.instance.Load();
 
-			// Optional: Allow spawning at specified location
-			On.Celeste.LevelLoader.LoadingThread += LevelLoader_LoadingThread;
+            // Optional: Allow spawning at specified location
+            On.Celeste.LevelLoader.LoadingThread += LevelLoader_LoadingThread;
 
             // Open unix IO pipe for interfacing with Linux / Mac Celeste Studio
             if (UnixRTCEnabled) {
@@ -96,21 +109,18 @@ namespace TAS.EverestInterop
             }
 
             // Open memory mapped file for interfacing with Windows Celeste Studio
-			if (StudioCommunicationClient.instance == null)
-	            StudioCommunicationClient.Run();
-
-
+            if (StudioCommunicationClient.instance == null)
+                StudioCommunicationClient.Run();
         }
 
         public override void Unload() {
-
             Core.instance.Unload();
             DisableAchievements.instance.Unload();
             GraphicsCore.instance.Unload();
             SimplifiedGraphics.instance.Unload();
             CenterCamera.instance.Unload();
             Hotkeys.instance.Unload();
-			On.Celeste.LevelLoader.LoadingThread -= LevelLoader_LoadingThread;
+            On.Celeste.LevelLoader.LoadingThread -= LevelLoader_LoadingThread;
 
             UnixRTC.Dispose();
         }
@@ -118,11 +128,11 @@ namespace TAS.EverestInterop
         public override void CreateModMenuSection(TextMenu menu, bool inGame, FMOD.Studio.EventInstance snapshot) {
             base.CreateModMenuSection(menu, inGame, snapshot);
 
-            menu.Add(new TextMenu.Button("modoptions_celestetas_reload".DialogCleanOrNull() ?? "Reload Settings").Pressed(() => {
-                LoadSettings();
-                Hotkeys.instance.OnInputInitialize();
-            }));
-
+            menu.Add(new TextMenu.Button("modoptions_celestetas_reload".DialogCleanOrNull() ?? "Reload Settings")
+                .Pressed(() => {
+                    LoadSettings();
+                    Hotkeys.instance.OnInputInitialize();
+                }));
         }
 
         private void LevelLoader_LoadingThread(On.Celeste.LevelLoader.orig_LoadingThread orig, LevelLoader self) {
