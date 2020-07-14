@@ -91,6 +91,9 @@ namespace TAS.EverestInterop {
 
             CenterCamera.instance = new CenterCamera();
             CenterCamera.instance.Load();
+            
+            AutoMute.instance = new AutoMute();
+            AutoMute.instance.Load();
 
             Hotkeys.instance = new Hotkeys();
             Hotkeys.instance.Load();
@@ -119,6 +122,7 @@ namespace TAS.EverestInterop {
             GraphicsCore.instance.Unload();
             SimplifiedGraphics.instance.Unload();
             CenterCamera.instance.Unload();
+            AutoMute.instance.Unload();
             Hotkeys.instance.Unload();
             On.Celeste.LevelLoader.LoadingThread -= LevelLoader_LoadingThread;
 
