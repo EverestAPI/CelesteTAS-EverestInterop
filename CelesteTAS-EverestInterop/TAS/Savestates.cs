@@ -67,12 +67,11 @@ namespace TAS {
 				yield return null;
 			while (Engine.Scene.Entities.FindFirst<Player>() == null)
 				yield return null;
-			Manager.forceDelayTimer = 35;
+			Manager.forceDelayTimer = 33;
 			yield return Engine.DeltaTime;
 			Manager.controller.AdvanceFrame(true);
 			while (Manager.forceDelayTimer > 1)
 				yield return null;
-			yield break;
 		}
 	}
 }
