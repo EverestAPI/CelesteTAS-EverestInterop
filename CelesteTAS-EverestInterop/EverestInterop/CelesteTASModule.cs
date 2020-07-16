@@ -30,9 +30,25 @@ namespace TAS.EverestInterop {
         }
 
         public override void Initialize() {
+            ExtractStudio();
+            LaunchStudioAtBoot();
+        }
+
+        private void ExtractStudio() {
             if (Settings.Version == null || Metadata.VersionString != Settings.Version ||
                 Settings.OverrideVersionCheck || !File.Exists(copiedStudioExePath)) {
                 try {
+                    Process studioProcess = Process.GetProcesses().FirstOrDefault(process =>
+                        process.ProcessName.StartsWith("Celeste") &&
+                        process.ProcessName.Contains("Studio"));
+
+                    if (studioProcess != null) {
+                        studioProcess.Kill();
+                        studioProcess.WaitForExit(50000);
+                    }
+
+                    if (studioProcess?.HasExited == false) return;
+
                     if (!string.IsNullOrEmpty(Metadata.PathArchive)) {
                         using (ZipFile zip = ZipFile.Read(Metadata.PathArchive)) {
                             if (zip.EntryFileNames.Contains(studioNameWithExe)) {
@@ -57,12 +73,15 @@ namespace TAS.EverestInterop {
                     }
 
                     Settings.Version = Metadata.VersionString;
+                    Instance.SaveSettings();
                 } catch (UnauthorizedAccessException) { }
             } else {
                 foreach (string file in Directory.GetFiles(Everest.PathGame, "*.PendingOverwrite"))
                     File.Delete(file);
             }
+        }
 
+        private void LaunchStudioAtBoot() {
             if (Settings.Enabled && Settings.LaunchStudioAtBoot) {
                 Process[] processes = Process.GetProcesses();
                 foreach (Process process in processes) {
@@ -91,7 +110,7 @@ namespace TAS.EverestInterop {
 
             CenterCamera.instance = new CenterCamera();
             CenterCamera.instance.Load();
-            
+
             AutoMute.instance = new AutoMute();
             AutoMute.instance.Load();
 
