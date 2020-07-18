@@ -46,6 +46,9 @@ namespace CelesteStudio
             EnableStudio(false);
 
             DesktopLocation = new Point(RegRead("x", DesktopLocation.X), RegRead("y", DesktopLocation.Y));
+			if (DesktopLocation.X == -32000)
+				DesktopLocation = new Point(0, 0);
+
             Size size = new Size(RegRead("w", Size.Width), RegRead("h", Size.Height));
 			if (size != Size.Empty)
 				Size = size;

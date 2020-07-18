@@ -98,6 +98,9 @@ namespace TAS {
 			}
 		}
 
+		//honestly i don't know what this method does anymore
+		//it should be two separate ones but i don't want to separate the logic
+		//if there's weirdness with inputs being skipped or repeating this is why
 		public void AdvanceFrame(bool reload) {
 			if (reload) {
 				//Reinitialize the file and simulate a replay of the TAS file up to the current point.
@@ -152,6 +155,37 @@ namespace TAS {
 				Manager.ExportPlayerInfo();
 			if (!reload)
 				Manager.SetInputs(Current);
+		}
+
+
+		public void DryAdvanceFrames(int frames) {
+			for (int i = 0; i < frames; i++) {
+				do {
+					if (inputIndex < inputs.Count) {
+						if (CurrentFrame >= frameToNext) {
+							if (inputIndex + 1 >= inputs.Count) {
+								inputIndex++;
+								return;
+							}
+							Current = inputs[++inputIndex];
+							frameToNext += Current.Frames;
+						}
+					}
+				} while (Current.Command != null);
+				CurrentFrame++;
+			}
+		}
+
+		public void ReverseFrames(int frames) {
+			if (frames > CurrentFrame)
+				return;
+			for (int i = 0; i < frames; i++) {
+				if (CurrentInputFrame == 1) {
+					Current = inputs[--inputIndex];
+					frameToNext -= Current.Frames;
+				}
+				CurrentFrame--;
+			}
 		}
 
 		public void InitializeRecording() {
