@@ -47,7 +47,17 @@ namespace TAS.EverestInterop {
 		public string DefaultPath { get; set; } = null;
 
 		[SettingIgnore]
+		[SettingNeedsRelaunch]
 		public bool Mod9DLighting { get; set; } = false;
+
+		[SettingIgnore]
+		public bool DisableGrabDesyncFix {
+			get => Manager.grabButton != Buttons.Back;
+			set => Manager.grabButton = value ? Buttons.LeftShoulder : Buttons.Back;
+		}
+
+		[SettingIgnore]
+		public bool RoundPosition { get; set; } = true;
 
 		[SettingIgnore]
 		public bool FastForwardCallBase { get; set; } = false;

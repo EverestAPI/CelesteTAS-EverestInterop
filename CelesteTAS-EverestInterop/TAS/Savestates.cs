@@ -21,18 +21,33 @@ namespace TAS {
 		public const int LOAD_TIME = 36;
 
 		public static void HandleSaveStates() {
-			if (Engine.FreezeTimer > 0)
-				return;
 			if (Hotkeys.hotkeyLoadState == null || Hotkeys.hotkeySaveState == null)
 				return;
 			if (Manager.Running && Hotkeys.hotkeySaveState.pressed && !Hotkeys.hotkeySaveState.wasPressed) {
+				if (Engine.FreezeTimer > 0) {
+					routine = new Coroutine(DelaySaveStatesRoutine(Save));
+					return;
+				}
 				Save();
 			}
 			else if (Hotkeys.hotkeyLoadState.pressed && !Hotkeys.hotkeyLoadState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
+				if (Engine.FreezeTimer > 0) {
+					routine = new Coroutine(DelaySaveStatesRoutine(Load));
+					return;
+				}
 				Load();
 			}
 			else
 				return;
+		}
+
+		private static IEnumerator DelaySaveStatesRoutine(Action onComplete) {
+			Manager.state &= ~State.FrameStep;
+			Manager.nextState &= ~State.FrameStep;
+			while (Engine.FreezeTimer > 0)
+				yield return null;
+			onComplete();
+			yield break;
 		}
 
 		private static void Save() {
@@ -60,8 +75,8 @@ namespace TAS {
 
 		private static void Load() {
 			Manager.controller.ReadFile();
-			if (StateManager.Instance.SavedPlayer != null
-				&& savedController?.SavedChecksum == Manager.controller.Checksum(savedController.CurrentFrame)) {
+			if (StateManager.Instance.SavedPlayer != null && savedController != null
+				&& savedController.SavedChecksum == Manager.controller.Checksum(savedController.CurrentFrame)) {
 
 				//Fastforward to breakpoint if one exists
 				var fastForwards = Manager.controller.fastForwards;

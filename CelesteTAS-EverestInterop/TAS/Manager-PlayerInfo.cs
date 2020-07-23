@@ -109,6 +109,11 @@ namespace TAS
 			double y = intPos.Y;
 			double subX = subpixelPos.X;
 			double subY = subpixelPos.Y;
+
+			if (!settings.RoundPosition) {
+				return $"Pos: {(x + subX).ToString()},{(y + subY).ToString()}";
+			}
+
 			if (Math.Abs(subX) % 0.25 < 0.01 || Math.Abs(subX) % 0.25 > 0.24) {
 				if (x > 0 || (x == 0 && subX > 0))
 					x += Math.Floor(subX * 100) / 100;

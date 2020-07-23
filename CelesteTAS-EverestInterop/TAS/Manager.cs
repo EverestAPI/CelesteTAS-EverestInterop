@@ -36,6 +36,7 @@ namespace TAS {
 		private static long lastTimer;
 		private static List<VirtualButton.Node>[] playerBindings;
 		private static Coroutine routine;
+		public static Buttons grabButton = Buttons.Back;
 		public static CelesteTASModuleSettings settings => CelesteTASModule.Settings;
 		private static bool ShouldForceState => HasFlag(nextState, State.FrameStep) && !Hotkeys.hotkeyFastForward.overridePressed;
 
@@ -226,7 +227,7 @@ namespace TAS {
 			playerBindings = new List<VirtualButton.Node>[5] { Input.Jump.Nodes, Input.Dash.Nodes, Input.Grab.Nodes, Input.Talk.Nodes, Input.QuickRestart.Nodes};
 			Input.Jump.Nodes = new List<VirtualButton.Node> { new VirtualButton.PadButton(Input.Gamepad, Buttons.A), new VirtualButton.PadButton(Input.Gamepad, Buttons.Y) };
 			Input.Dash.Nodes = new List<VirtualButton.Node> { new VirtualButton.PadButton(Input.Gamepad, Buttons.B), new VirtualButton.PadButton(Input.Gamepad, Buttons.X) };
-			Input.Grab.Nodes = new List<VirtualButton.Node> { new VirtualButton.PadButton(Input.Gamepad, Buttons.Back) };
+			Input.Grab.Nodes = new List<VirtualButton.Node> { new VirtualButton.PadButton(Input.Gamepad, grabButton) };
 			Input.Talk.Nodes = new List<VirtualButton.Node> { new VirtualButton.PadButton(Input.Gamepad, Buttons.B) };
 			Input.QuickRestart.Nodes = new List<VirtualButton.Node> { new VirtualButton.PadButton(Input.Gamepad, Buttons.LeftShoulder) };
 		}
@@ -279,7 +280,7 @@ namespace TAS {
 					| (input.HasActions(Actions.Jump2) ? Buttons.Y : 0)
 					| (input.HasActions(Actions.Dash) ? Buttons.B : 0)
 					| (input.HasActions(Actions.Dash2) ? Buttons.X : 0)
-					| (input.HasActions(Actions.Grab) ? Buttons.Back : 0)
+					| (input.HasActions(Actions.Grab) ? grabButton : 0)
 					| (input.HasActions(Actions.Start) ? Buttons.Start : 0)
 					| (input.HasActions(Actions.Restart) ? Buttons.LeftShoulder : 0)
 				),

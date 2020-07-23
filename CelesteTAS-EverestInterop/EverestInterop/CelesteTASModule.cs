@@ -105,6 +105,9 @@ namespace TAS.EverestInterop {
             GraphicsCore.instance = new GraphicsCore();
             GraphicsCore.instance.Load();
 
+			HitboxFixer.instance = new HitboxFixer();
+			HitboxFixer.instance.Load();
+
             SimplifiedGraphics.instance = new SimplifiedGraphics();
             SimplifiedGraphics.instance.Load();
 
@@ -139,6 +142,7 @@ namespace TAS.EverestInterop {
             Core.instance.Unload();
             DisableAchievements.instance.Unload();
             GraphicsCore.instance.Unload();
+			HitboxFixer.instance.Unload();
             SimplifiedGraphics.instance.Unload();
             CenterCamera.instance.Unload();
             AutoMute.instance.Unload();
@@ -156,6 +160,7 @@ namespace TAS.EverestInterop {
                     LoadSettings();
                     Hotkeys.instance.OnInputInitialize();
                 }));
+
         }
 
         private void LevelLoader_LoadingThread(On.Celeste.LevelLoader.orig_LoadingThread orig, LevelLoader self) {

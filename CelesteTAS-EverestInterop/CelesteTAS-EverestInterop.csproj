@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -99,6 +99,7 @@
     <Compile Include="EverestInterop\CelesteTASModuleSettings.cs" />
     <Compile Include="EverestInterop\CelesteTASModule.cs" />
     <Compile Include="EverestInterop\CenterCamera.cs" />
+    <Compile Include="EverestInterop\HitboxFixer.cs" />
     <Compile Include="EverestInterop\Hotkeys.cs" />
     <Compile Include="TAS\Savestates.cs" />
     <Compile Include="StudioCommunication\HotkeyIDs.cs" />
