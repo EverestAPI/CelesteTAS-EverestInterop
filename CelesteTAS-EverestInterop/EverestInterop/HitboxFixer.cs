@@ -21,7 +21,7 @@ namespace TAS.EverestInterop {
 		}
 
 		private void modDrawHollowRect(On.Monocle.Draw.orig_HollowRect_float_float_float_float_Color orig, float x, float y, float width, float height, Color color) {
-			if (!Settings.Enabled) {
+			if (!Settings.Enabled || !Settings.ShowHitboxes) {
 				orig(x, y, width, height, color);
 				return;
 			}
@@ -41,7 +41,7 @@ namespace TAS.EverestInterop {
 			// For similar reasons, we can't just assume the circle has 8-fold symmetry.
 			// Modified so that instead of minimizing error, we include exactly those pixels which intersect the circle.
 
-			if (!Settings.Enabled) {
+			if (!Settings.Enabled || !Settings.ShowHitboxes) {
 				orig(center, radius, color, resolution);
 				return;
 			}
