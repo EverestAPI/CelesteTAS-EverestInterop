@@ -11,6 +11,8 @@ using MonoMod.Utils;
 using System.Reflection.Emit;
 using MonoMod.Cil;
 using System.Runtime.InteropServices;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 
 namespace TAS {
 	public class InputCommands {
@@ -259,6 +261,24 @@ namespace TAS {
 					return false;
 			}
 			return true;
+		}
+
+		[TASCommand(illegalInMaingame = true, args = new string[] {
+			"Gun,x,y"
+		})]
+		private static void GunCommand(string[] args) {
+			int x = int.Parse(args[0]);
+			int y = int.Parse(args[1]);
+			Player player = Engine.Scene.Tracker.GetEntity<Player>();
+			Vector2 pos = new Vector2(x, y);
+			foreach (EverestModule module in Everest.Modules) {
+				if (module.Metadata.Name == "Guneline") {
+					module.GetType().Assembly.GetType("Guneline.GunInput").GetProperty("CursorPosition").SetValue(null, pos);
+					//typeof(MouseState).GetProperty("LeftButton").SetValue(MInput.Mouse.CurrentState, ButtonState.Pressed);
+					module.GetType().Assembly.GetType("Guneline.Guneline").GetMethod("Gunshot")
+						.Invoke(null, new object[] { player, pos, false, null });
+				}
+			}
 		}
 
 		private static void GetLine(string labelOrLineNumber, string path, out int lineNumber) {
