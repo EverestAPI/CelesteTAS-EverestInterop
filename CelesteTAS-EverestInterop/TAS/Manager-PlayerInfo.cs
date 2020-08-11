@@ -11,7 +11,7 @@ using TAS.StudioCommunication;
 
 namespace TAS
 {
-	public partial class Manager
+	public static partial class Manager
 	{
 		private static StreamWriter sw;
 		private static MethodInfo[] trackedEntities;
@@ -32,13 +32,12 @@ namespace TAS
 						string vel = $"Vel: {diff.X.ToString("0.00")},{diff.Y.ToString("0.00")}";
 						string polarvel = $"     {diff.Length().ToString("0.00")},{GetAngle(diff).ToString("0.00")}°";
 						string miscstats = $"Stamina: {player.Stamina.ToString("0")} Timer: {(chapterTime / 10000000D).ToString("0.000")}";
-
-						int dashCooldown = (int)((float)player.GetPrivateField("dashCooldownTimer") * 60f);
+						int dashCooldown = (int)(DashCooldownTimer(player) * 60f);
 						string statuses = (dashCooldown < 1 && player.Dashes > 0 ? "Dash " : string.Empty)
 							+ (player.LoseShards ? "Ground " : string.Empty)
-							+ ((bool)player.InvokePrivateMethod("WallJumpCheck", 1) ? "Wall-R " : string.Empty)
-							+ ((bool)player.InvokePrivateMethod("WallJumpCheck", -1) ? "Wall-L " : string.Empty)
-							+ (!player.LoseShards && (float)player.GetPrivateField("jumpGraceTimer") > 0 ? "Coyote " : string.Empty);
+							+ (WallJumpCheck(player, 1) ? "Wall-R " : string.Empty)
+							+ (WallJumpCheck(player, -1) ? "Wall-L " : string.Empty)
+							+ (!player.LoseShards && JumpGraceTimer(player) > 0 ? "Coyote " : string.Empty);
 						statuses = (player.InControl && !level.Transitioning ? statuses : "NoControl ")
 							+ (player.TimePaused ? "Paused " : string.Empty)
 							+ (level.InCutscene ? "Cutscene " : string.Empty);
@@ -58,7 +57,7 @@ namespace TAS
 						if (firstRedBerryFollower?.Entity is Strawberry firstRedBerry) {
 							object collectTimer;
 							if (firstRedBerry.GetType() == typeof(Strawberry)
-								|| (collectTimer = firstRedBerry.GetPrivateField("collectTimer")) == null) {
+								|| (collectTimer = StrawberryCollectTimer(firstRedBerry)) == null) {
 
 								// if this is a vanilla berry or a mod berry having no collectTimer, use the cached FieldInfo for Strawberry.collectTimer.
 								collectTimer = strawberryCollectTimer.GetValue(firstRedBerry);
@@ -168,12 +167,12 @@ namespace TAS
 					string pos = x.ToString() + "," + y.ToString();
 					string speed = player.Speed.X.ToString() + "," + player.Speed.Y.ToString();
 
-					int dashCooldown = (int)((float)player.GetPrivateField("dashCooldownTimer") * 60f);
+					int dashCooldown = (int)(DashCooldownTimer(player) * 60f);
 					string statuses = (dashCooldown < 1 && player.Dashes > 0 ? "Dash " : string.Empty)
 						+ (player.LoseShards ? "Ground " : string.Empty)
-						+ ((bool)player.InvokePrivateMethod("WallJumpCheck", 1) ? "Wall-R " : string.Empty)
-						+ ((bool)player.InvokePrivateMethod("WallJumpCheck", -1) ? "Wall-L " : string.Empty)
-						+ (!player.LoseShards && (float)player.GetPrivateField("jumpGraceTimer") > 0 ? "Coyote " : string.Empty);
+						+ (WallJumpCheck(player, 1) ? "Wall-R " : string.Empty)
+						+ (WallJumpCheck(player, -1) ? "Wall-L " : string.Empty)
+						+ (!player.LoseShards && JumpGraceTimer(player) > 0 ? "Coyote " : string.Empty);
 					statuses = (player.InControl && !level.Transitioning ? statuses : "NoControl ")
 						+ (player.TimePaused ? "Paused " : string.Empty)
 						+ (level.InCutscene ? "Cutscene " : string.Empty);

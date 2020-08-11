@@ -21,9 +21,36 @@ namespace TAS {
 		Disable = 8,
 		Delay = 16
 	}
-	public partial class Manager {
+	public static partial class Manager {
+
+		static Manager() {
+			FieldInfo strawberryCollectTimer = typeof(Strawberry).GetField("collectTimer", BindingFlags.Instance | BindingFlags.NonPublic);
+			FieldInfo dashCooldownTimer = typeof(Player).GetField("dashCooldownTimer", BindingFlags.Instance | BindingFlags.NonPublic);
+			FieldInfo jumpGraceTimer = typeof(Player).GetField("jumpGraceTimer", BindingFlags.Instance | BindingFlags.NonPublic);
+			MethodInfo WallJumpCheck = typeof(Player).GetMethod("WallJumpCheck", BindingFlags.Instance | BindingFlags.NonPublic);
+			MethodInfo UpdateVirtualInputs = typeof(MInput).GetMethod("UpdateVirtualInputs", BindingFlags.Static | BindingFlags.NonPublic);
+
+			Manager.UpdateVirtualInputs = (d_UpdateVirtualInputs)UpdateVirtualInputs.CreateDelegate(typeof(d_UpdateVirtualInputs));
+			Manager.WallJumpCheck = (d_WallJumpCheck)WallJumpCheck.CreateDelegate(typeof(d_WallJumpCheck));
+			StrawberryCollectTimer = strawberryCollectTimer.CreateDelegate_Get<GetBerryFloat>();
+			DashCooldownTimer = dashCooldownTimer.CreateDelegate_Get<GetFloat>();
+			JumpGraceTimer = jumpGraceTimer.CreateDelegate_Get<GetFloat>();
+
+		}
+		
 		private static FieldInfo strawberryCollectTimer = typeof(Strawberry).GetField("collectTimer", BindingFlags.Instance | BindingFlags.NonPublic);
-		private static MethodInfo UpdateVirtualInputs = typeof(MInput).GetMethod("UpdateVirtualInputs", BindingFlags.Static | BindingFlags.NonPublic);
+
+		//The things we do for faster replay times
+		private delegate void d_UpdateVirtualInputs();
+		private static d_UpdateVirtualInputs UpdateVirtualInputs;
+		private delegate bool d_WallJumpCheck(Player player, int dir);
+		private static d_WallJumpCheck WallJumpCheck;
+		private delegate float GetBerryFloat(Strawberry berry);
+		private static GetBerryFloat StrawberryCollectTimer;
+		private delegate float GetFloat(Player player);
+		private static GetFloat DashCooldownTimer;
+		private static GetFloat JumpGraceTimer;
+		
 		public static bool Running, Recording;
 		public static InputController controller = new InputController("Celeste.tas");
 		public static State lastState, state, nextState;
@@ -89,7 +116,7 @@ namespace TAS {
 				Running = false;
 				CurrentStatus = null;
 				if (!Engine.Instance.IsActive) {
-					UpdateVirtualInputs.Invoke(null, null);
+					UpdateVirtualInputs();
 					for (int i = 0; i < 4; i++) {
 						if (MInput.GamePads[i].Attached) {
 							MInput.GamePads[i].CurrentState = GamePad.GetState((PlayerIndex)i);
@@ -307,7 +334,7 @@ namespace TAS {
 				MInput.Keyboard.CurrentState = new KeyboardState();
 			}
 
-			UpdateVirtualInputs.Invoke(null, null);
+			UpdateVirtualInputs();
 		}
 	}
 }
