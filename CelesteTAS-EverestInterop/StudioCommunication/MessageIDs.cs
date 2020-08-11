@@ -77,5 +77,12 @@ namespace TAS.StudioCommunication {
 		[HighPriority]
 		ReturnConsoleCommand = 0x31,
 
+		//External data transfer
+		ExternLow1 = 0x40,
+		ExternLow2 = 0x41,
+		[HighPriority]
+		ExternHigh1 = 0x42,
+		[HighPriority]
+		ExternHigh2 = 0x43,
 	}
 }

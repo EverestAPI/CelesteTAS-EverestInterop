@@ -15,8 +15,8 @@ namespace TAS.StudioCommunication {
 
 		public static StudioCommunicationClient instance;
 
-		private StudioCommunicationClient() {
-		}
+		private StudioCommunicationClient() { }
+		private StudioCommunicationClient(string target) : base(target) { }
 
 		public static bool Run() {
 			if (Environment.OSVersion.Platform != PlatformID.Win32NT)
@@ -30,6 +30,21 @@ namespace TAS.StudioCommunication {
 			RunThread.Start(instance.UpdateLoop, "StudioCom Client");
 
 			return true;
+		}
+
+		/// <summary>
+		/// Do not use outside of multiplayer mods. Allows more than 2 processes to communicate.
+		/// </summary>
+		/// <param name="target"></param>
+		/// <returns></returns>
+		public static StudioCommunicationClient RunExternal(string target) {
+			if (Environment.OSVersion.Platform != PlatformID.Win32NT)
+				return null;
+			var client = new StudioCommunicationClient(target);
+
+			RunThread.Start(instance.UpdateLoop, "StudioCom Client_" + target);
+
+			return client;
 		}
 
 
@@ -71,7 +86,9 @@ namespace TAS.StudioCommunication {
 					ProcessReloadBindings(message.Data);
 					break;
 				default:
-					throw new InvalidOperationException($"{message.ID}");
+					if (externalReadHandler?.Invoke(message.Data) != true)
+						throw new InvalidOperationException($"{message.ID}");
+					break;
 			}
 		}
 

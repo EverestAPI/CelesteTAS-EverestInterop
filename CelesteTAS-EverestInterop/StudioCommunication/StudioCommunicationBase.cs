@@ -20,13 +20,12 @@ namespace TAS.StudioCommunication {
 		// This is literally the first thing I have ever written with threading
 		// Apologies in advance to anyone else working on this
 
-		protected struct Message {
+		public struct Message {
 			public MessageIDs ID { get; private set; }
 			public int Length { get; private set; }
 			public byte[] Data { get; private set; }
 
-			public static readonly int Signature = Assembly.GetExecutingAssembly().GetHashCode();
-
+			public static readonly int Signature = Thread.CurrentThread.GetHashCode();
 			public Message(MessageIDs id, byte[] data) {
 				ID = id;
 				Data = data;
@@ -60,7 +59,10 @@ namespace TAS.StudioCommunication {
 		private int timeoutCount = 0;
 		private bool waiting;
 
-		protected Action pendingWrite;
+		private static List<StudioCommunicationBase> attachedCom = new List<StudioCommunicationBase>();
+		public Func<byte[], bool> externalReadHandler;
+
+		public Action pendingWrite;
 
 		protected const int BUFFER_SIZE = 0x1000;
 		protected const int HEADER_LENGTH = 9;
@@ -71,6 +73,15 @@ namespace TAS.StudioCommunication {
 			mutex = new Mutex(false, "CelesteTASCOM", out bool created);
 			if (!created)
 				mutex = Mutex.OpenExisting("CelesteTASCOM");
+			attachedCom.Add(this);
+		}
+
+		protected StudioCommunicationBase(string target) {
+			sharedMemory = MemoryMappedFile.CreateOrOpen(target, BUFFER_SIZE);
+			mutex = new Mutex(false, target, out bool created);
+			if (!created)
+				mutex = Mutex.OpenExisting(target);
+			attachedCom.Add(this);
 		}
 
 		~StudioCommunicationBase() {
@@ -165,7 +176,13 @@ namespace TAS.StudioCommunication {
 			}
 		}
 
-		protected bool WriteMessage(Message message) {
+		protected bool WriteMessage(Message message, bool local = true) {
+			if (!local) {
+				foreach (var com in attachedCom) {
+					if (com != this)
+						com.pendingWrite = com.pendingWrite ?? (() => WriteMessage(message));
+				}
+			}
 
 			using (MemoryMappedViewStream stream = sharedMemory.CreateViewStream()) {
 				mutex.WaitOne();
@@ -198,7 +215,13 @@ namespace TAS.StudioCommunication {
 			return true;
 		}
 
-		protected void WriteMessageGuaranteed(Message message) {
+		protected void WriteMessageGuaranteed(Message message, bool local = true) {
+			if (!local) {
+				foreach (var com in attachedCom) {
+					if (com != this)
+						com.pendingWrite = () => WriteMessageGuaranteed(message);
+				}
+			}
 
 			if (message.ID != MessageIDs.SendState)
 				Log($"{this} forcing write of {message.ID} with length {message.Length}");
