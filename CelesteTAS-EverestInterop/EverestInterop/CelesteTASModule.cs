@@ -153,14 +153,8 @@ namespace TAS.EverestInterop {
         }
 
         public override void CreateModMenuSection(TextMenu menu, bool inGame, FMOD.Studio.EventInstance snapshot) {
-            base.CreateModMenuSection(menu, inGame, snapshot);
-
-            menu.Add(new TextMenu.Button("modoptions_celestetas_reload".DialogCleanOrNull() ?? "Reload Settings")
-                .Pressed(() => {
-                    LoadSettings();
-                    Hotkeys.instance.OnInputInitialize();
-                }));
-
+			CreateModMenuSectionHeader(menu, inGame, snapshot);
+			Menu.CreateMenu(this, menu, inGame, snapshot);
         }
 
         private void LevelLoader_LoadingThread(On.Celeste.LevelLoader.orig_LoadingThread orig, LevelLoader self) {

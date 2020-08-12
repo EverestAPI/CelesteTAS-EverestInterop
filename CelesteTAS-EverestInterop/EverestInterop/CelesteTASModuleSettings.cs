@@ -20,16 +20,24 @@ namespace TAS.EverestInterop {
 		public ButtonBinding KeyFrameAdvance { get; set; } = new ButtonBinding();
 		public ButtonBinding KeyPause { get; set; } = new ButtonBinding();
 
-		public bool SimplifiedGraphics { get; set; } = false;
+		private bool _simplifiedGraphics = false;
+		public bool SimplifiedGraphics {
+			get => Enabled && _simplifiedGraphics;
+			set => _simplifiedGraphics = value;
+		}
 		public ButtonBinding KeyGraphics { get; set; } = new ButtonBinding();
 
 		public bool ShowHitboxes {
-			get => GameplayRendererExt.RenderDebug;
+			get => Enabled && GameplayRendererExt.RenderDebug;
 			set => GameplayRendererExt.RenderDebug = value;
 		}
 		public ButtonBinding KeyHitboxes { get; set; } = new ButtonBinding();
 
-		public bool CenterCamera { get; set; } = false;
+		private bool _centerCamera = false;
+		public bool CenterCamera {
+			get => Enabled && _centerCamera;
+			set => _centerCamera = value;
+		}
 		public ButtonBinding KeyCamera { get; set; } = new ButtonBinding();
 
 		public ButtonBinding KeySaveState { get; set; } = new ButtonBinding();
