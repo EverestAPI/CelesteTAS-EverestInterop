@@ -168,7 +168,7 @@ namespace CelesteStudio
 			tasText.Selection = new Range(tasText, 0, start, 0, start);
 			string text = tasText.SelectedText;
 
-			tasText.SelectedText = '\n' + s;
+			tasText.SelectedText = s;
 			tasText.Selection = new Range(tasText, 0, start, 0, start);
 		}
 
