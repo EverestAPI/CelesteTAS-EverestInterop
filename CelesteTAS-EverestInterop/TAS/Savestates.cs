@@ -75,7 +75,7 @@ namespace TAS {
 
 		private static void Load() {
 			Manager.controller.ReadFile();
-			if (StateManager.Instance.SavedPlayer != null && savedController != null
+			if (savedController != null
 				&& savedController.SavedChecksum == Manager.controller.Checksum(savedController.CurrentFrame)) {
 
 				//Fastforward to breakpoint if one exists
@@ -107,17 +107,18 @@ namespace TAS {
 		}
 
 		private static IEnumerator LoadStateRoutine() {
-			Manager.forceDelayTimer = 100;
-			while (Engine.Scene.Entities.FindFirst<Player>() != null)
-				yield return null;
-			while (Engine.Scene.Entities.FindFirst<Player>() == null)
-				yield return null;
-			//5 for buffered inputs, 3 for speedrun tool
-			Manager.forceDelayTimer = LOAD_TIME - 8;
+			Manager.forceDelay = true;
 			yield return Engine.DeltaTime;
-			Manager.controller.AdvanceFrame(true);
-			while (Manager.forceDelayTimer > 1)
+			yield return Engine.DeltaTime;
+			while (!(Engine.Scene is Level))
 				yield return null;
+			while ((Engine.Scene as Level).Frozen)
+				yield return null;
+			Manager.forceDelay = false;
+			Manager.controller.AdvanceFrame(true);
+
+			for (int i = 0; i < 5; i++)
+				Manager.controller.AdvanceFrame(false);
 
 			yield break;
 		}

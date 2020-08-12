@@ -324,9 +324,10 @@ namespace TAS {
 					//}
 					current = inputs[inputIndex++];
 				}
+				SavedChecksum = output;
 				return output;
 			}
-			catch { return 0; }
+			catch { SavedChecksum = 0; return 0; }
 		}
 
 		public long Checksum() => Checksum(CurrentFrame);
