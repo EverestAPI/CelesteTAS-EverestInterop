@@ -101,6 +101,7 @@
     <Compile Include="EverestInterop\CenterCamera.cs" />
     <Compile Include="EverestInterop\HitboxFixer.cs" />
     <Compile Include="EverestInterop\Hotkeys.cs" />
+    <Compile Include="EverestInterop\Menu.cs" />
     <Compile Include="TAS\Savestates.cs" />
     <Compile Include="StudioCommunication\HotkeyIDs.cs" />
     <Compile Include="StudioCommunication\StudioCommunicationBase.cs" />
