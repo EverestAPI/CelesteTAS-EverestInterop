@@ -173,6 +173,7 @@ namespace TAS {
 					}
 				} while (Current.Command != null);
 				CurrentFrame++;
+				Manager.SetInputs(Current);
 			}
 		}
 

@@ -35,8 +35,9 @@ namespace TAS.EverestInterop {
         }
 
         private void ExtractStudio() {
-            if (Settings.Version == null || Metadata.VersionString != Settings.Version ||
-                Settings.OverrideVersionCheck || !File.Exists(copiedStudioExePath)) {
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT &&
+                (Settings.Version == null || Metadata.VersionString != Settings.Version ||
+                Settings.OverrideVersionCheck || !File.Exists(copiedStudioExePath))) {
                 try {
                     Process studioProcess = Process.GetProcesses().FirstOrDefault(process =>
                         process.ProcessName.StartsWith("Celeste") &&
@@ -47,7 +48,8 @@ namespace TAS.EverestInterop {
                         studioProcess.WaitForExit(50000);
                     }
 
-                    if (studioProcess?.HasExited == false) return;
+                    if (studioProcess?.HasExited == false)
+                        return;
 
                     if (!string.IsNullOrEmpty(Metadata.PathArchive)) {
                         using (ZipFile zip = ZipFile.Read(Metadata.PathArchive)) {
@@ -58,7 +60,8 @@ namespace TAS.EverestInterop {
                                 }
                             }
                         }
-                    } else if (!string.IsNullOrEmpty(Metadata.PathDirectory)) {
+                    }
+                    else if (!string.IsNullOrEmpty(Metadata.PathDirectory)) {
                         string[] files = Directory.GetFiles(Metadata.PathDirectory);
 
                         if (files.Any(filePath => filePath.EndsWith(studioNameWithExe))) {
@@ -74,8 +77,10 @@ namespace TAS.EverestInterop {
 
                     Settings.Version = Metadata.VersionString;
                     Instance.SaveSettings();
-                } catch (UnauthorizedAccessException) { }
-            } else {
+                }
+                catch (UnauthorizedAccessException) { }
+            }
+            else {
                 foreach (string file in Directory.GetFiles(Everest.PathGame, "*.PendingOverwrite"))
                     File.Delete(file);
             }
@@ -105,8 +110,8 @@ namespace TAS.EverestInterop {
             GraphicsCore.instance = new GraphicsCore();
             GraphicsCore.instance.Load();
 
-			HitboxFixer.instance = new HitboxFixer();
-			HitboxFixer.instance.Load();
+            HitboxFixer.instance = new HitboxFixer();
+            HitboxFixer.instance.Load();
 
             SimplifiedGraphics.instance = new SimplifiedGraphics();
             SimplifiedGraphics.instance.Load();
@@ -142,7 +147,7 @@ namespace TAS.EverestInterop {
             Core.instance.Unload();
             DisableAchievements.instance.Unload();
             GraphicsCore.instance.Unload();
-			HitboxFixer.instance.Unload();
+            HitboxFixer.instance.Unload();
             SimplifiedGraphics.instance.Unload();
             CenterCamera.instance.Unload();
             AutoMute.instance.Unload();
@@ -153,12 +158,12 @@ namespace TAS.EverestInterop {
         }
 
         public override void CreateModMenuSection(TextMenu menu, bool inGame, FMOD.Studio.EventInstance snapshot) {
-			CreateModMenuSectionHeader(menu, inGame, snapshot);
-			Menu.CreateMenu(this, menu, inGame, snapshot);
+            CreateModMenuSectionHeader(menu, inGame, snapshot);
+            Menu.CreateMenu(this, menu, inGame, snapshot);
         }
 
         private void LevelLoader_LoadingThread(On.Celeste.LevelLoader.orig_LoadingThread orig, LevelLoader self) {
-            orig.Invoke(self);
+            orig(self);
             Session session = self.Level.Session;
             Vector2? spawn = Manager.controller.resetSpawn;
             if (spawn != null) {

@@ -74,7 +74,7 @@ namespace TAS {
 		}
 
 		private static void Load() {
-			Manager.controller.ReadFile();
+			Manager.controller.AdvanceFrame(true);
 			if (savedController != null
 				&& savedController.SavedChecksum == Manager.controller.Checksum(savedController.CurrentFrame)) {
 
@@ -99,7 +99,7 @@ namespace TAS {
 					Manager.controller = savedController.Clone();
 					routine = new Coroutine(LoadStateRoutine());
 				};
-
+				return;
 			}
 			//If savestate load failed just playback normally
 			Manager.DisableExternal();
@@ -117,8 +117,7 @@ namespace TAS {
 			Manager.forceDelay = false;
 			Manager.controller.AdvanceFrame(true);
 
-			for (int i = 0; i < 5; i++)
-				Manager.controller.AdvanceFrame(false);
+			Manager.controller.DryAdvanceFrames(5);
 
 			yield break;
 		}
