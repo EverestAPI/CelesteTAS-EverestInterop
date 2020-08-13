@@ -55,7 +55,7 @@ namespace TAS {
 			//+1 speedrun tool, -5 buffered inputs
 			temp.ReverseFrames(4);
 			Engine.Scene.OnEndOfFrame += () => {
-				if (StateManager.Instance.ExternalSave()) {
+				if (StateManager.Instance.SaveState()) {
 					savedController = temp;
 					Manager.controller = savedController.Clone();
 
@@ -91,7 +91,7 @@ namespace TAS {
 				}
 
 				Engine.Scene.OnEndOfFrame += () => {
-					if (!StateManager.Instance.ExternalLoad())
+					if (!StateManager.Instance.LoadState())
 						return;
 					if (!Manager.Running)
 						Manager.EnableExternal();
