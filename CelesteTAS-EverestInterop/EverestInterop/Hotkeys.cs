@@ -157,12 +157,15 @@ namespace TAS.EverestInterop {
             foreach (Hotkey hotkey in hotkeys) {
                 hotkey?.Update();
             }
-            if (hotkeyHitboxes.pressed && !hotkeyHitboxes.wasPressed)
-                Settings.ShowHitboxes = !Settings.ShowHitboxes;
-            if (hotkeyGraphics.pressed && !hotkeyGraphics.wasPressed)
-                Settings.SimplifiedGraphics = !Settings.SimplifiedGraphics;
-            if (hotkeyCamera.pressed && !hotkeyCamera.wasPressed)
-                Settings.CenterCamera = !Settings.CenterCamera;
+
+            if (Engine.Scene is Level level && !level.Paused && !Engine.Commands.Open) {
+                if (hotkeyHitboxes.pressed && !hotkeyHitboxes.wasPressed)
+                    Settings.ShowHitboxes = !Settings.ShowHitboxes;
+                if (hotkeyGraphics.pressed && !hotkeyGraphics.wasPressed)
+                    Settings.SimplifiedGraphics = !Settings.SimplifiedGraphics;
+                if (hotkeyCamera.pressed && !hotkeyCamera.wasPressed)
+                    Settings.CenterCamera = !Settings.CenterCamera;
+            }
         }
     }
 }
