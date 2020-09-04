@@ -87,7 +87,7 @@ namespace TAS.EverestInterop {
         }
 
         private void LaunchStudioAtBoot() {
-            if (Settings.Enabled && Settings.LaunchStudioAtBoot) {
+            if (Settings.Enabled && Settings.LaunchStudioAtBoot && Environment.OSVersion.Platform == PlatformID.Win32NT) {
                 Process[] processes = Process.GetProcesses();
                 foreach (Process process in processes) {
                     if (process.ProcessName.StartsWith("Celeste") && process.ProcessName.Contains("Studio"))
