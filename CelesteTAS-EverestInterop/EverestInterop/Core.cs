@@ -86,7 +86,7 @@ namespace TAS.EverestInterop {
                 orig(self, gameTime);
 
                 // Badeline does some dirty stuff in Render.
-                if (i < loops - 1 || Settings.HideGameplay)
+                if (i < loops - 1)
                     Engine.Scene?.Tracker.GetEntity<FinalBoss>()?.Render();
 
                 // Autosaving prevents opening the menu to skip cutscenes during fast forward.
