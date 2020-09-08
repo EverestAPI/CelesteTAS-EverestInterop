@@ -75,6 +75,7 @@ namespace TAS.EverestInterop {
 		public string Version { get; set; } = null;
 		[SettingIgnore]
 		public bool OverrideVersionCheck { get; set; } = false;
-
+		[SettingIgnore]
+		public bool HideGameplay { get; set; } = false;
     }
 }

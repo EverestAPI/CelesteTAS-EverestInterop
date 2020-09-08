@@ -35,6 +35,10 @@ namespace TAS.EverestInterop {
 				new TextMenu.OnOff("Round Position",Settings.RoundPosition).Change(b => Settings.RoundPosition = b),
 				new TextMenu.OnOff("Mod 9D Lighting",Settings.Mod9DLighting).Change(b => Settings.Mod9DLighting = b),
 				new TextMenu.OnOff("Override Version Check", Settings.OverrideVersionCheck).Change(b => Settings.OverrideVersionCheck = b),
+				new TextMenu.OnOff("Hide Gameplay", Settings.HideGameplay).Change(b => {
+					Settings.HideGameplay = b;
+					Settings.ShowHitboxes = b;
+				}),
 			};
 	}
 

@@ -125,6 +125,9 @@ namespace TAS.EverestInterop {
             Hotkeys.instance = new Hotkeys();
             Hotkeys.instance.Load();
 
+            HideGameplay.instance = new HideGameplay();
+            HideGameplay.instance.Load();
+
             // Optional: Allow spawning at specified location
             On.Celeste.LevelLoader.LoadingThread += LevelLoader_LoadingThread;
 
@@ -152,6 +155,7 @@ namespace TAS.EverestInterop {
             CenterCamera.instance.Unload();
             AutoMute.instance.Unload();
             Hotkeys.instance.Unload();
+            HideGameplay.instance.Unload();
             On.Celeste.LevelLoader.LoadingThread -= LevelLoader_LoadingThread;
 
             UnixRTC.Dispose();
