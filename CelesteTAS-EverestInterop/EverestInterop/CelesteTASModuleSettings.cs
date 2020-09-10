@@ -70,5 +70,9 @@ namespace TAS.EverestInterop {
 		public bool OverrideVersionCheck { get; set; } = false;
 		[SettingIgnore]
 		public bool HideGameplay { get; set; } = false;
+		[SettingIgnore]
+		public Color EntityHitboxColor { get; set; } = Color.Red;
+		[SettingIgnore]
+		public Color TriggerHitboxColor { get; set; } = Color.Red;
     }
 }

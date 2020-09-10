@@ -1,12 +1,8 @@
 ﻿using Celeste;
 using Celeste.Mod;
 using Monocle;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TAS.EverestInterop {
 	class Menu {
@@ -16,21 +12,25 @@ namespace TAS.EverestInterop {
 
 		private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
 
-		private static TextMenu.Item[] normalOptions;
-		private static TextMenu.Item[] hiddenOptions;
+		private static List<TextMenu.Item> normalOptions;
+		private static List<TextMenu.Item> hiddenOptions;
 
 		private static void CreateNormalOptions(TextMenu menu, bool inGame) {
-			normalOptions = new TextMenu.Item[] {
+			normalOptions = new List<TextMenu.Item> {
 				new TextMenu.OnOff("Show Hitboxes", Settings.ShowHitboxes).Change(b => Settings.ShowHitboxes = b),
 				new TextMenu.OnOff("Simplified Graphics", Settings.SimplifiedGraphics).Change(b => Settings.SimplifiedGraphics = b),
 				new TextMenu.OnOff("Center Camera", Settings.CenterCamera).Change(b => Settings.CenterCamera = b),
 				new TextMenu.OnOff("Launch Studio At Boot", Settings.LaunchStudioAtBoot).Change(b => Settings.LaunchStudioAtBoot = b),
 				new TextMenu.OnOff("Disable Achievements", Settings.DisableAchievements).Change(b => Settings.DisableAchievements = b),
 			};
+			if (!inGame) {
+				normalOptions.Add(HitboxColor.CreateEntityHitboxColorButton(menu, inGame));
+				normalOptions.Add(HitboxColor.CreateTriggerHitboxColorButton(menu, inGame));
+			}
 		}
 
 		private static void CreateHiddenOptions(TextMenu menu, bool inGame) {
-			hiddenOptions = new TextMenu.Item[] {
+			hiddenOptions = new List<TextMenu.Item> {
 				new TextMenu.OnOff("Unix RTC",Settings.UnixRTC).Change(b => Settings.UnixRTC = b),
 				new TextMenu.OnOff("Disable Grab Desync Fix", Settings.DisableGrabDesyncFix).Change(b => Settings.DisableGrabDesyncFix = b),
 				new TextMenu.OnOff("Round Position",Settings.RoundPosition).Change(b => Settings.RoundPosition = b),
@@ -38,7 +38,11 @@ namespace TAS.EverestInterop {
 				new TextMenu.OnOff("Override Version Check", Settings.OverrideVersionCheck).Change(b => Settings.OverrideVersionCheck = b),
 				new TextMenu.OnOff("Hide Gameplay", Settings.HideGameplay).Change(b => {
 					Settings.HideGameplay = b;
-					Settings.ShowHitboxes = b;
+					if (b) {
+						((TextMenu.OnOff) normalOptions.First()).RightPressed();
+					} else {
+						((TextMenu.OnOff) normalOptions.First()).LeftPressed();
+					}
 				}),
 			};
 		}

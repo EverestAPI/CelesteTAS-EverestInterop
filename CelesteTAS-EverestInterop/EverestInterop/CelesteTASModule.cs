@@ -128,6 +128,9 @@ namespace TAS.EverestInterop {
             HideGameplay.instance = new HideGameplay();
             HideGameplay.instance.Load();
 
+            HitboxColor.instance = new HitboxColor();
+            HitboxColor.instance.Load();
+
             // Optional: Allow spawning at specified location
             On.Celeste.LevelLoader.LoadingThread += LevelLoader_LoadingThread;
 
@@ -156,6 +159,7 @@ namespace TAS.EverestInterop {
             AutoMute.instance.Unload();
             Hotkeys.instance.Unload();
             HideGameplay.instance.Unload();
+            HitboxColor.instance.Unload();
             On.Celeste.LevelLoader.LoadingThread -= LevelLoader_LoadingThread;
 
             UnixRTC.Dispose();
