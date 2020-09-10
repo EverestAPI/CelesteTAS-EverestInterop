@@ -1,14 +1,7 @@
 ﻿using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework.Input;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.Xna.Framework;
 
 namespace TAS.EverestInterop {
 	public class CelesteTASModuleSettings : EverestModuleSettings {
@@ -28,7 +21,7 @@ namespace TAS.EverestInterop {
 		public ButtonBinding KeyGraphics { get; set; } = new ButtonBinding();
 
 		public bool ShowHitboxes {
-			get => Enabled && GameplayRendererExt.RenderDebug;
+			get => GameplayRendererExt.RenderDebug;
 			set => GameplayRendererExt.RenderDebug = value;
 		}
 		public ButtonBinding KeyHitboxes { get; set; } = new ButtonBinding();

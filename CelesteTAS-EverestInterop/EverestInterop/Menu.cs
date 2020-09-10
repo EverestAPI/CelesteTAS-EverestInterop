@@ -16,11 +16,10 @@ namespace TAS.EverestInterop {
 
 		private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
 
-		private static readonly TextMenu.Item[] normalOptions;
-		private static readonly TextMenu.Item[] hiddenOptions;
+		private static TextMenu.Item[] normalOptions;
+		private static TextMenu.Item[] hiddenOptions;
 
-		static Menu() {
-
+		private static void CreateNormalOptions(TextMenu menu, bool inGame) {
 			normalOptions = new TextMenu.Item[] {
 				new TextMenu.OnOff("Show Hitboxes", Settings.ShowHitboxes).Change(b => Settings.ShowHitboxes = b),
 				new TextMenu.OnOff("Simplified Graphics", Settings.SimplifiedGraphics).Change(b => Settings.SimplifiedGraphics = b),
@@ -28,7 +27,9 @@ namespace TAS.EverestInterop {
 				new TextMenu.OnOff("Launch Studio At Boot", Settings.LaunchStudioAtBoot).Change(b => Settings.LaunchStudioAtBoot = b),
 				new TextMenu.OnOff("Disable Achievements", Settings.DisableAchievements).Change(b => Settings.DisableAchievements = b),
 			};
+		}
 
+		private static void CreateHiddenOptions(TextMenu menu, bool inGame) {
 			hiddenOptions = new TextMenu.Item[] {
 				new TextMenu.OnOff("Unix RTC",Settings.UnixRTC).Change(b => Settings.UnixRTC = b),
 				new TextMenu.OnOff("Disable Grab Desync Fix", Settings.DisableGrabDesyncFix).Change(b => Settings.DisableGrabDesyncFix = b),
@@ -40,7 +41,7 @@ namespace TAS.EverestInterop {
 					Settings.ShowHitboxes = b;
 				}),
 			};
-	}
+		}
 
 		public static void CreateMenu(EverestModule self, TextMenu menu, bool inGame, FMOD.Studio.EventInstance snapshot) {
 			menu.Add(new TextMenu.OnOff("Enabled", Settings.Enabled).Change((b) => {
@@ -53,10 +54,13 @@ namespace TAS.EverestInterop {
 				foreach (TextMenu.Item item in hiddenOptions) {
 					item.Visible = false;
 				}
-				if (!b)
-					Settings.ShowHitboxes = false;
+
+				if (!b && Settings.ShowHitboxes) {
+					((TextMenu.OnOff) normalOptions.First()).LeftPressed();
+				}
 			}));
 
+			CreateNormalOptions(menu, inGame);
 			foreach (TextMenu.Item item in normalOptions) {
 				menu.Add(item);
 				item.Visible = Settings.Enabled;
@@ -81,6 +85,7 @@ namespace TAS.EverestInterop {
 			keyConfigMenu.Visible = Settings.Enabled;
 			moreOptionsTextMenu.Visible = Settings.Enabled;
 
+			CreateHiddenOptions(menu, inGame);
 			foreach (TextMenu.Item item in hiddenOptions) {
 				menu.Add(item);
 				item.Visible = false;
@@ -96,7 +101,7 @@ namespace TAS.EverestInterop {
 
 		private static void ToggleMoreOptionsMenuItem(TextMenu textMenu, bool visible) {
 			foreach (TextMenu.Item item in hiddenOptions)
-				item.Visible = true;
+				item.Visible = visible;
 		}
 
 	}
