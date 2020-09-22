@@ -87,7 +87,7 @@ namespace TAS.EverestInterop {
         }
 
         private void LaunchStudioAtBoot() {
-            if (Settings.Enabled && Settings.LaunchStudioAtBoot) {
+            if (Settings.Enabled && Settings.LaunchStudioAtBoot && Environment.OSVersion.Platform == PlatformID.Win32NT) {
                 Process[] processes = Process.GetProcesses();
                 foreach (Process process in processes) {
                     if (process.ProcessName.StartsWith("Celeste") && process.ProcessName.Contains("Studio"))
@@ -125,6 +125,12 @@ namespace TAS.EverestInterop {
             Hotkeys.instance = new Hotkeys();
             Hotkeys.instance.Load();
 
+            HideGameplay.instance = new HideGameplay();
+            HideGameplay.instance.Load();
+
+            HitboxColor.instance = new HitboxColor();
+            HitboxColor.instance.Load();
+
             // Optional: Allow spawning at specified location
             On.Celeste.LevelLoader.LoadingThread += LevelLoader_LoadingThread;
 
@@ -152,6 +158,8 @@ namespace TAS.EverestInterop {
             CenterCamera.instance.Unload();
             AutoMute.instance.Unload();
             Hotkeys.instance.Unload();
+            HideGameplay.instance.Unload();
+            HitboxColor.instance.Unload();
             On.Celeste.LevelLoader.LoadingThread -= LevelLoader_LoadingThread;
 
             UnixRTC.Dispose();
