@@ -129,5 +129,14 @@ namespace TAS {
 			}
 		}
 
+		[Command("clrsav", "clears save data on debug file")]
+		private static void CmdClearSave() {
+			SaveData.TryDelete(-1);
+			SaveData.Start(new SaveData { Name = "debug" }, -1);
+			// Pretend that we've beaten Prologue.
+			LevelSetStats stats = SaveData.Instance.GetLevelSetStatsFor("Celeste");
+			stats.UnlockedAreas = 1;
+			stats.AreasIncludingCeleste[0].Modes[0].Completed = true;
+		}
 	}
 }

@@ -65,6 +65,7 @@ namespace TAS {
 		private static Coroutine routine;
 		public static Buttons grabButton = Buttons.Back;
 		public static CelesteTASModuleSettings settings => CelesteTASModule.Settings;
+		public static bool kbTextInput;
 		private static bool ShouldForceState => HasFlag(nextState, State.FrameStep) && !Hotkeys.hotkeyFastForward.overridePressed;
 
 		public static void UpdateInputs() {
@@ -138,7 +139,12 @@ namespace TAS {
 				return !(bool)summit.GetPrivateField("ready");
 			else if (Engine.Scene is Overworld overworld)
 				return overworld.Current is OuiFileSelect slot && slot.SlotIndex >= 0 && slot.Slots[slot.SlotIndex].StartingGame;
-			return (Engine.Scene is LevelExit) || (Engine.Scene is LevelLoader) || (Engine.Scene is GameLoader);
+			bool isLoading = (Engine.Scene is LevelExit) || (Engine.Scene is LevelLoader) || (Engine.Scene is GameLoader);
+			bool flag = true;
+			if (!flag)
+				return isLoading;
+			else
+				return isLoading || Engine.Scene.GetType().Name == "LevelExitToLobby";
 		}
 
 		public static float GetAngle(Vector2 vector) {
@@ -235,6 +241,7 @@ namespace TAS {
 			state = State.None;
 			nextState = State.None;
 			RestorePlayerBindings();
+			Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = kbTextInput;
 			controller.resetSpawn = null;
 			if (ExportSyncData) {
 				EndExport();
@@ -247,6 +254,8 @@ namespace TAS {
 			nextState &= ~State.Enable;
 			UpdateVariables(false);
 			BackupPlayerBindings();
+			kbTextInput = Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput;
+			Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = false;
 		}
 		public static void EnableExternal() => EnableRun();
 		public static void DisableExternal() => DisableRun();
