@@ -287,7 +287,7 @@ namespace TAS {
 				using (StreamReader sr = new StreamReader(path)) {
 					while (!sr.EndOfStream) {
 						curLine++;
-						string line = sr.ReadLine();
+						string line = sr.ReadLine().TrimEnd();
 						if (line == ("#" + labelOrLineNumber)) {
 							lineNumber = curLine;
 							return;
