@@ -1,13 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using System.Reflection;
 using Celeste;
 using Monocle;
 using Microsoft.Xna.Framework;
-using FloatingDebris = On.Celeste.FloatingDebris;
-using MoonCreature = On.Celeste.MoonCreature;
 using MonoMod.Cil;
 using Mono.Cecil.Cil;
 using MonoMod.RuntimeDetour;
@@ -121,13 +115,13 @@ namespace TAS.EverestInterop {
             return orig(self, a, b, percent);
         }
 
-        private static void FloatingDebris_ctor(FloatingDebris.orig_ctor_Vector2 orig, Celeste.FloatingDebris self, Vector2 position) {
+        private static void FloatingDebris_ctor(On.Celeste.FloatingDebris.orig_ctor_Vector2 orig, FloatingDebris self, Vector2 position) {
             orig(self, position);
             if (Settings.SimplifiedGraphics)
                 self.Add(new RemoveSelfComponent());
         }
 
-        private static void MoonCreature_ctor(MoonCreature.orig_ctor_Vector2 orig, Celeste.MoonCreature self, Vector2 position) {
+        private static void MoonCreature_ctor(On.Celeste.MoonCreature.orig_ctor_Vector2 orig, MoonCreature self, Vector2 position) {
             orig(self, position);
             if (Settings.SimplifiedGraphics)
                 self.Add(new RemoveSelfComponent());
