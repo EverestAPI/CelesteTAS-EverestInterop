@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using Celeste;
 using Celeste.Mod;
 using Monocle;
@@ -9,12 +10,15 @@ using MonoMod.RuntimeDetour;
 
 namespace TAS.EverestInterop {
 	class SimplifiedGraphics {
+        private const string simpleSpinnerColor = "#639BFF";
+
         public static SimplifiedGraphics instance;
 
         private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
 
         private ILHook LightningRNGHook;
         private ILHook customSpinnerHook;
+        private ILHook rainbowSpinnerColorControllerHook;
 
         public void Load() {
             // Optional: Various graphical simplifications to cut down on visual noise.
@@ -34,6 +38,10 @@ namespace TAS.EverestInterop {
             if (Type.GetType("FrostHelper.CustomSpinner, FrostTempleHelper") is Type customSpinnerType) {
                 customSpinnerHook = new ILHook(customSpinnerType.GetConstructors()[0], modCustomSpinnerColor);
             }
+
+            if (Type.GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController, MaxHelpingHand") is Type rainbowSpinnerType) {
+                rainbowSpinnerColorControllerHook = new ILHook(rainbowSpinnerType.GetConstructors()[0], modRainbowSpinnerColor);
+            }
         }
 
 		public void Unload() {
@@ -50,7 +58,9 @@ namespace TAS.EverestInterop {
             IL.Celeste.LightningRenderer.Render -= LightningRenderer_RenderIL;
             On.Celeste.LightningRenderer.Bolt.Render -= Bolt_Render;
             customSpinnerHook?.Dispose();
+            rainbowSpinnerColorControllerHook?.Dispose();
             customSpinnerHook = null;
+            rainbowSpinnerColorControllerHook = null;
             instance = null;
         }
 
@@ -63,9 +73,26 @@ namespace TAS.EverestInterop {
                 i => i.OpCode == OpCodes.Stfld && i.Operand.ToString() == "Microsoft.Xna.Framework.Color FrostHelper.CustomSpinner::Tint"
             )) {
                 ilCursor.Index += 2;
-                ilCursor.EmitDelegate<Func<string, string>>(color => Settings.SimplifiedGraphics ? "#639BFF" : color );
+                ilCursor.EmitDelegate<Func<string, string>>(color => Settings.SimplifiedGraphics ? simpleSpinnerColor : color );
             }
         }
+
+        private void modRainbowSpinnerColor(ILContext il) {
+            ILCursor ilCursor = new ILCursor(il);
+            if (Type.GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController, MaxHelpingHand") is Type rainbowSpinnerType && ilCursor.TryGotoNext(
+                i => i.MatchLdstr("gradientSize")
+            )) {
+                ilCursor.Emit(OpCodes.Ldarg_0).Emit(OpCodes.Ldfld, rainbowSpinnerType.GetField("colors", BindingFlags.Instance | BindingFlags.NonPublic));
+                ilCursor.EmitDelegate<Action<Color[]>>(colors => {
+                    if (!Settings.SimplifiedGraphics) return;
+                    Color simpleColor = Calc.HexToColor(simpleSpinnerColor);
+                    for (var i = 0; i < colors.Length; i++) {
+                        colors[i] = simpleColor;
+                    }
+                });
+            }
+        }
+
 
         private void LightingRenderer_Render(On.Celeste.LightingRenderer.orig_Render orig, LightingRenderer self, Scene scene) {
             if (Settings.SimplifiedGraphics)
