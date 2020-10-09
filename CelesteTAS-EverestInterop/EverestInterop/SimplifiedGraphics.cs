@@ -1,24 +1,24 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 using System.Reflection;
 using Celeste;
+using Celeste.Mod;
 using Monocle;
 using Microsoft.Xna.Framework;
-using FloatingDebris = On.Celeste.FloatingDebris;
-using MoonCreature = On.Celeste.MoonCreature;
 using MonoMod.Cil;
 using Mono.Cecil.Cil;
 using MonoMod.RuntimeDetour;
 
 namespace TAS.EverestInterop {
 	class SimplifiedGraphics {
+        private const string simpleSpinnerColor = "#639BFF";
+
         public static SimplifiedGraphics instance;
 
-        public static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
+        private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
 
-		private ILHook LightningRNGHook;
+        private ILHook LightningRNGHook;
+        private ILHook customSpinnerHook;
+        private ILHook rainbowSpinnerColorControllerHook;
 
         public void Load() {
             // Optional: Various graphical simplifications to cut down on visual noise.
@@ -34,6 +34,14 @@ namespace TAS.EverestInterop {
 			On.Celeste.LightningRenderer.Render += LightningRenderer_Render;
 			IL.Celeste.LightningRenderer.Render += LightningRenderer_RenderIL;
             On.Celeste.LightningRenderer.Bolt.Render += Bolt_Render;
+
+            if (Type.GetType("FrostHelper.CustomSpinner, FrostTempleHelper") is Type customSpinnerType) {
+                customSpinnerHook = new ILHook(customSpinnerType.GetConstructors()[0], modCustomSpinnerColor);
+            }
+
+            if (Type.GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController, MaxHelpingHand") is Type rainbowSpinnerType) {
+                rainbowSpinnerColorControllerHook = new ILHook(rainbowSpinnerType.GetConstructors()[0], modRainbowSpinnerColor);
+            }
         }
 
 		public void Unload() {
@@ -46,11 +54,45 @@ namespace TAS.EverestInterop {
             On.Celeste.DreamBlock.Lerp -= DreamBlock_Lerp;
             On.Celeste.FloatingDebris.ctor_Vector2 -= FloatingDebris_ctor;
             On.Celeste.MoonCreature.ctor_Vector2 -= MoonCreature_ctor;
-			On.Celeste.LightningRenderer.Render -= LightningRenderer_Render;
-			IL.Celeste.LightningRenderer.Render -= LightningRenderer_RenderIL;
-			On.Celeste.LightningRenderer.Bolt.Render -= Bolt_Render;
+            On.Celeste.LightningRenderer.Render -= LightningRenderer_Render;
+            IL.Celeste.LightningRenderer.Render -= LightningRenderer_RenderIL;
+            On.Celeste.LightningRenderer.Bolt.Render -= Bolt_Render;
+            customSpinnerHook?.Dispose();
+            rainbowSpinnerColorControllerHook?.Dispose();
+            customSpinnerHook = null;
+            rainbowSpinnerColorControllerHook = null;
             instance = null;
         }
+
+        private void modCustomSpinnerColor(ILContext il) {
+            ILCursor ilCursor = new ILCursor(il);
+            if (ilCursor.TryGotoNext(
+                i => i.OpCode == OpCodes.Ldarg_0,
+                i => i.OpCode == OpCodes.Ldarg_S && i.Operand.ToString() == "tint",
+                i => i.OpCode == OpCodes.Call && i.Operand.ToString() == "Microsoft.Xna.Framework.Color Monocle.Calc::HexToColor(System.String)",
+                i => i.OpCode == OpCodes.Stfld && i.Operand.ToString() == "Microsoft.Xna.Framework.Color FrostHelper.CustomSpinner::Tint"
+            )) {
+                ilCursor.Index += 2;
+                ilCursor.EmitDelegate<Func<string, string>>(color => Settings.SimplifiedGraphics ? simpleSpinnerColor : color );
+            }
+        }
+
+        private void modRainbowSpinnerColor(ILContext il) {
+            ILCursor ilCursor = new ILCursor(il);
+            if (Type.GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController, MaxHelpingHand") is Type rainbowSpinnerType && ilCursor.TryGotoNext(
+                i => i.MatchLdstr("gradientSize")
+            )) {
+                ilCursor.Emit(OpCodes.Ldarg_0).Emit(OpCodes.Ldfld, rainbowSpinnerType.GetField("colors", BindingFlags.Instance | BindingFlags.NonPublic));
+                ilCursor.EmitDelegate<Action<Color[]>>(colors => {
+                    if (!Settings.SimplifiedGraphics) return;
+                    Color simpleColor = Calc.HexToColor(simpleSpinnerColor);
+                    for (var i = 0; i < colors.Length; i++) {
+                        colors[i] = simpleColor;
+                    }
+                });
+            }
+        }
+
 
         private void LightingRenderer_Render(On.Celeste.LightingRenderer.orig_Render orig, LightingRenderer self, Scene scene) {
             if (Settings.SimplifiedGraphics)
@@ -121,17 +163,18 @@ namespace TAS.EverestInterop {
             return orig(self, a, b, percent);
         }
 
-        private static void FloatingDebris_ctor(FloatingDebris.orig_ctor_Vector2 orig, Celeste.FloatingDebris self, Vector2 position) {
+        private static void FloatingDebris_ctor(On.Celeste.FloatingDebris.orig_ctor_Vector2 orig, FloatingDebris self, Vector2 position) {
             orig(self, position);
             if (Settings.SimplifiedGraphics)
                 self.Add(new RemoveSelfComponent());
         }
 
-        private static void MoonCreature_ctor(MoonCreature.orig_ctor_Vector2 orig, Celeste.MoonCreature self, Vector2 position) {
+        private static void MoonCreature_ctor(On.Celeste.MoonCreature.orig_ctor_Vector2 orig, MoonCreature self, Vector2 position) {
             orig(self, position);
             if (Settings.SimplifiedGraphics)
                 self.Add(new RemoveSelfComponent());
         }
+
         private void LightningRenderer_Render(On.Celeste.LightningRenderer.orig_Render orig, LightningRenderer self) {
             self.DrawEdges = !Settings.SimplifiedGraphics;
             orig.Invoke(self);
@@ -144,7 +187,7 @@ namespace TAS.EverestInterop {
 				c.GotoNext(i => i.MatchNewobj(out _));
 			c.GotoNext();
 			Instruction cont = c.Next;
-			
+
 			c.EmitDelegate<Func<bool>>(() => Settings.SimplifiedGraphics);
 			c.Emit(OpCodes.Brfalse, cont);
 			c.Emit(OpCodes.Dup);
@@ -157,6 +200,5 @@ namespace TAS.EverestInterop {
                 return;
             orig.Invoke(self);
         }
-
     }
 }

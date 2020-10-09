@@ -1,19 +1,11 @@
 ﻿using Celeste;
-using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
-using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Monocle;
-using MonoMod;
 using MonoMod.Cil;
-using MonoMod.RuntimeDetour;
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
-using SoundSource = On.Celeste.SoundSource;
 
 namespace TAS.EverestInterop {
     class GraphicsCore {
@@ -44,6 +36,9 @@ namespace TAS.EverestInterop {
         }
 
         public void Unload() {
+            IL.Monocle.Commands.Render -= Commands_Render;
+            IL.Celeste.Level.Render -= Level_Render;
+            IL.Celeste.Pathfinder.Render -= Pathfinder_Render;
             On.Celeste.Distort.Render -= Distort_Render;
             On.Celeste.SoundSource.DebugRender -= SoundSource_DebugRender;
             On.Celeste.Puffer.Render -= Puffer_Render;
@@ -77,7 +72,7 @@ namespace TAS.EverestInterop {
             orig(source, map, hasDistortion);
         }
 
-        private static void SoundSource_DebugRender(SoundSource.orig_DebugRender orig, Celeste.SoundSource self, Camera camera) {
+        private static void SoundSource_DebugRender(On.Celeste.SoundSource.orig_DebugRender orig, SoundSource self, Camera camera) {
             if (!Settings.ShowHitboxes)
                 orig(self, camera);
         }

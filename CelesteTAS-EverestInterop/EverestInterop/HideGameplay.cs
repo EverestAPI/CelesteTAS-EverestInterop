@@ -13,6 +13,7 @@ namespace TAS.EverestInterop {
 
         public void Unload() {
             IL.Celeste.GameplayRenderer.Render -= GameplayRenderer_Render;
+
         }
 
         private static void GameplayRenderer_Render(ILContext il) {
