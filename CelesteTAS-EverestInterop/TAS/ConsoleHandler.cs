@@ -19,6 +19,12 @@ namespace TAS {
 		private static void LoadCommand(string command, string[] args) {
 			try {
 				if (SaveData.Instance == null || (!Manager.allowUnsafeInput && SaveData.Instance.FileSlot != -1)) {
+					// Complete Prologue if incomplete
+					LevelSetStats stats = SaveData.Instance.GetLevelSetStatsFor("Celeste");
+					if (stats.UnlockedAreas == 0) {
+						stats.UnlockedAreas = 1;
+						stats.AreasIncludingCeleste[0].Modes[0].Completed = true;
+					}
 					int slot = SaveData.Instance == null ? -1 : SaveData.Instance.FileSlot;
 					SaveData data = UserIO.Load<SaveData>(SaveData.GetFilename(slot));
 					SaveData.Start(data, -1);

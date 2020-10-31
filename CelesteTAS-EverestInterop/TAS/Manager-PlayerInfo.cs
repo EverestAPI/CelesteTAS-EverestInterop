@@ -210,6 +210,13 @@ namespace TAS
 					sw.WriteLine(output);
 				}
 			}
+			else {
+				string inputs = controller.Current.ActionsToString();
+				if (inputs.Length > 1)
+					inputs = inputs.Substring(1);
+				string output = string.Join(" ", inputs, controller.CurrentFrame, Engine.Scene.GetType().Name);
+				sw.WriteLine(output);
+			}
 		}
 	}
 }

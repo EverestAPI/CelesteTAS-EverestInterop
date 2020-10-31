@@ -139,12 +139,8 @@ namespace TAS {
 				return !(bool)summit.GetPrivateField("ready");
 			else if (Engine.Scene is Overworld overworld)
 				return overworld.Current is OuiFileSelect slot && slot.SlotIndex >= 0 && slot.Slots[slot.SlotIndex].StartingGame;
-			bool isLoading = (Engine.Scene is LevelExit) || (Engine.Scene is LevelLoader) || (Engine.Scene is GameLoader);
-			bool flag = true;
-			if (!flag)
-				return isLoading;
-			else
-				return isLoading || Engine.Scene.GetType().Name == "LevelExitToLobby";
+			bool isLoading = (Engine.Scene is LevelExit) || (Engine.Scene is LevelLoader) || (Engine.Scene is GameLoader) || Engine.Scene.GetType().Name == "LevelExitToLobby";
+			return isLoading;
 		}
 
 		public static float GetAngle(Vector2 vector) {
