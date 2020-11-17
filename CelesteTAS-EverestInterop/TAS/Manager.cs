@@ -4,12 +4,9 @@ using Microsoft.Xna.Framework.Input;
 using Monocle;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Reflection;
 using TAS.EverestInterop;
 using TAS.StudioCommunication;
-using Celeste.Mod.SpeedrunTool.SaveLoad;
-using System.Collections;
 
 namespace TAS {
 	[Flags]

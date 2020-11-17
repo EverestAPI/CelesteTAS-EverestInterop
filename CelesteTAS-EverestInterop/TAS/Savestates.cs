@@ -1,10 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Reflection;
 using Celeste;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Monocle;
@@ -12,15 +7,17 @@ using TAS.EverestInterop;
 
 namespace TAS {
 	static class Savestates {
-		public static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
-
 		private static InputController savedController;
-		private static List<float> savedBuffers = new List<float>();
 		public static Coroutine routine;
 
-		public const int LOAD_TIME = 36;
+		private static readonly Lazy<bool> SpeedrunToolInstalled = new Lazy<bool>(() =>
+				Type.GetType("Celeste.Mod.SpeedrunTool.SaveLoad.StateManager, SpeedrunTool") != null
+		);
 
 		public static void HandleSaveStates() {
+			if (!SpeedrunToolInstalled.Value)
+				return;
+
 			if (Hotkeys.hotkeyLoadState == null || Hotkeys.hotkeySaveState == null)
 				return;
 			if (Manager.Running && Hotkeys.hotkeySaveState.pressed && !Hotkeys.hotkeySaveState.wasPressed) {
@@ -37,8 +34,6 @@ namespace TAS {
 				}
 				Load();
 			}
-			else
-				return;
 		}
 
 		private static IEnumerator DelaySaveStatesRoutine(Action onComplete) {
@@ -47,7 +42,6 @@ namespace TAS {
 			while (Engine.FreezeTimer > 0)
 				yield return null;
 			onComplete();
-			yield break;
 		}
 
 		private static void Save() {
@@ -118,8 +112,6 @@ namespace TAS {
 			Manager.controller.AdvanceFrame(true);
 
 			Manager.controller.DryAdvanceFrames(5);
-
-			yield break;
 		}
 	}
 }
