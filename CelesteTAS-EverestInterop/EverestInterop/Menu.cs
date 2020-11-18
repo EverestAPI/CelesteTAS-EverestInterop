@@ -44,6 +44,7 @@ namespace TAS.EverestInterop {
 						((TextMenu.OnOff) normalOptions.First()).LeftPressed();
 					}
 				}),
+				new TextMenu.OnOff("Auto Mute on Fast Forward", Settings.AutoMute).Change(b => Settings.AutoMute = b),
 			};
 		}
 
