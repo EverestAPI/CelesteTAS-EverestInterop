@@ -37,6 +37,12 @@ namespace TAS.EverestInterop {
         }
 
         private static Color HexToColor(string hex) {
+			if (hex.Length == 6)
+				hex = "#FF" + hex;
+			if (hex.Length == 7)
+				hex = "#FF" + hex.Substring(1);
+			if (hex.Length == 8)
+				hex = "#" + hex;
             if (hex.Length != 9) {
                 return Color.Red;
             }
