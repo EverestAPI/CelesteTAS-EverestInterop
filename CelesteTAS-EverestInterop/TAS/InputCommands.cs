@@ -281,6 +281,19 @@ namespace TAS {
 			}
 		}
 
+		[TASCommand(args = new string[] {
+			"AnalogMode,Mode"
+		})]
+		private static void AnalogModeCommand(string[] args) => AnalogueModeCommand(args);
+
+		[TASCommand(args = new string[] {
+			"AnalogueMode,Mode"
+		})]
+		private static void AnalogueModeCommand(string[] args) {
+			if (Enum.TryParse<Manager.AnalogueMode>(args[0], true, out var mode))
+				Manager.analogueMode = mode;
+		}
+
 		private static void GetLine(string labelOrLineNumber, string path, out int lineNumber) {
 			if (!int.TryParse(labelOrLineNumber, out lineNumber)) {
 				int curLine = 0;

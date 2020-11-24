@@ -15,6 +15,9 @@ namespace TAS
 	{
 		private static StreamWriter sw;
 		private static MethodInfo[] trackedEntities;
+
+		//for debugging
+		public static string additionalStatusInfo;
 		public static bool ExportSyncData { get; set; }
 
 		private static void UpdatePlayerInfo() {
@@ -40,7 +43,8 @@ namespace TAS
 							+ (!player.LoseShards && JumpGraceTimer(player) > 0 ? "Coyote " : string.Empty);
 						statuses = (player.InControl && !level.Transitioning ? statuses : "NoControl ")
 							+ (player.TimePaused ? "Paused " : string.Empty)
-							+ (level.InCutscene ? "Cutscene " : string.Empty);
+							+ (level.InCutscene ? "Cutscene " : string.Empty)
+							+ (additionalStatusInfo != null ? additionalStatusInfo : string.Empty);
 
 						if (player.Holding == null) {
 							foreach (Component component in level.Tracker.GetComponents<Holdable>()) {
@@ -175,7 +179,8 @@ namespace TAS
 						+ (!player.LoseShards && JumpGraceTimer(player) > 0 ? "Coyote " : string.Empty);
 					statuses = (player.InControl && !level.Transitioning ? statuses : "NoControl ")
 						+ (player.TimePaused ? "Paused " : string.Empty)
-						+ (level.InCutscene ? "Cutscene " : string.Empty);
+						+ (level.InCutscene ? "Cutscene " : string.Empty)
+						+ (additionalStatusInfo != null ? additionalStatusInfo : string.Empty);
 
 					if (player.Holding == null) {
 						foreach (Component component in level.Tracker.GetComponents<Holdable>()) {

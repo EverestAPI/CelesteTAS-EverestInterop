@@ -87,6 +87,7 @@ namespace TAS {
 				Angle = 0;
 			}
 		}
+
 		private int ReadFrames(string line) {
 
 			line = line.Trim();
@@ -125,37 +126,28 @@ namespace TAS {
 			return frames;
 			*/
 		}
+
 		private float ReadAngle(string line) {
 			if (line == "")
 				return 0f;
 			return float.Parse(line.Trim());
 		}
+
 		public float GetX() {
-			if (HasActions(Actions.Right)) {
-				return 1f;
-			} else if (HasActions(Actions.Left)) {
-				return -1f;
-			} else if (!HasActions(Actions.Feather)) {
-				return 0f;
-			}
 			return (float)Math.Sin(Angle * Math.PI / 180.0);
 		}
+
 		public float GetY() {
-			if (HasActions(Actions.Up)) {
-				return 1f;
-			} else if (HasActions(Actions.Down)) {
-				return -1f;
-			} else if (!HasActions(Actions.Feather)) {
-				return 0f;
-			}
 			return (float)Math.Cos(Angle * Math.PI / 180.0);
 		}
-		public bool HasActions(Actions actions) {
-			return (Actions & actions) != 0;
-		}
+
+		public bool HasActions(Actions actions) =>
+			(Actions & actions) != 0;
+
 		public override string ToString() {
 			return Frames == 0 ? string.Empty : Frames.ToString().PadLeft(4, ' ') + ActionsToString();
 		}
+
 		public string ActionsToString() {
 			StringBuilder sb = new StringBuilder();
 			if (HasActions(Actions.Left)) { sb.Append(",L"); }
@@ -174,11 +166,13 @@ namespace TAS {
 			if (HasActions(Actions.Feather)) { sb.Append(",F,").Append(Angle == 0 ? string.Empty : Angle.ToString("0")); }
 			return sb.ToString();
 		}
+
 		public InputRecord Clone() {
 			InputRecord clone = new InputRecord(Line, Frames.ToString() + ActionsToString());
 			clone.Command = Command;
 			return clone;
 		}
+
 		//none of these are used
 		/*
 		public override bool Equals(object obj) {
