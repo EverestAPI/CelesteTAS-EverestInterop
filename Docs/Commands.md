@@ -71,7 +71,13 @@
 - Dumps data to a file, which can be used to analyze desyncs.
 - Default filepath is dump.txt
 - Keeps track of any additional entities specified - e.g. StartExport,holdables.txt,TheoCrystal,Glider will keep track of Theo and Jellyfish
-  
+
+### AnalogueMode
+- AnalogueMode,(Type)
+- AnalogMode,(Type) also works
+- Types are ignore (no check), circle, square and precise.
+- Circle, Square and Precise are make sure the analogue inputs sent to the game are actually possible, locking it to a circular or square deadzone, or calculating the closest position possible on a controller. Odds are you don't need to worry about this.
+
 ### Add and Skip
 - These commands appear in overworld menuing and do not do anything in-game.
 - Rather, they serve as instructions to the libTAS converter.
