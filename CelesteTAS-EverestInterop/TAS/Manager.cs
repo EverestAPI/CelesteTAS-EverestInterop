@@ -62,7 +62,7 @@ namespace TAS {
 		private static List<VirtualButton.Node>[] playerBindings;
 		private static Coroutine routine;
 		public static Buttons grabButton = Buttons.Back;
-		public static AnalogueMode analogueMode = AnalogueMode.Circle;
+		public static AnalogueMode analogueMode = AnalogueMode.Ignore;//Circle; //Needs to be tested with the libTAS converter
 		public static CelesteTASModuleSettings settings => CelesteTASModule.Settings;
 		public static bool kbTextInput;
 		private static bool ShouldForceState => HasFlag(nextState, State.FrameStep) && !Hotkeys.hotkeyFastForward.overridePressed;
@@ -243,7 +243,7 @@ namespace TAS {
 			}
 			enforceLegal = false;
 			allowUnsafeInput = false;
-			analogueMode = AnalogueMode.Circle;
+			analogueMode = AnalogueMode.Ignore;//Circle;
 		}
 
 		private static void EnableRun() {
