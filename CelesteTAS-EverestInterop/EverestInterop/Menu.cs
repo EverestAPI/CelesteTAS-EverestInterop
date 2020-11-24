@@ -95,13 +95,6 @@ namespace TAS.EverestInterop {
 				menu.Add(item);
 				item.Visible = false;
 			}
-
-			menu.Add(new TextMenu.Button("modoptions_celestetas_reload".DialogCleanOrNull() ?? "Reload Settings")
-			.Pressed(() => {
-				CelesteTASModule.Instance.LoadSettings();
-				Hotkeys.instance.OnInputInitialize();
-			}));
-
 		}
 
 		private static void ToggleMoreOptionsMenuItem(TextMenu textMenu, bool visible) {
