@@ -101,6 +101,8 @@ namespace TAS.EverestInterop {
 
 
         public override void Load() {
+            Hotkeys.InputInitialize();
+
             Core.instance = new Core();
             Core.instance.Load();
 
@@ -121,9 +123,6 @@ namespace TAS.EverestInterop {
 
             AutoMute.instance = new AutoMute();
             AutoMute.instance.Load();
-
-            Hotkeys.instance = new Hotkeys();
-            Hotkeys.instance.Load();
 
             HideGameplay.instance = new HideGameplay();
             HideGameplay.instance.Load();
@@ -157,12 +156,11 @@ namespace TAS.EverestInterop {
             SimplifiedGraphics.instance.Unload();
             CenterCamera.instance.Unload();
             AutoMute.instance.Unload();
-            Hotkeys.instance.Unload();
             HideGameplay.instance.Unload();
             HitboxColor.instance.Unload();
             On.Celeste.LevelLoader.LoadingThread -= LevelLoader_LoadingThread;
 
-            UnixRTC.Dispose();
+            UnixRTC?.Dispose();
         }
 
         public override void CreateModMenuSection(TextMenu menu, bool inGame, FMOD.Studio.EventInstance snapshot) {

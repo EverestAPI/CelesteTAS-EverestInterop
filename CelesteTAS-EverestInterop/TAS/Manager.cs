@@ -71,7 +71,7 @@ namespace TAS {
 			
 			lastState = state;
 			UpdatePlayerInfo();
-			Hotkeys.instance?.Update();
+			Hotkeys.Update();
 			Savestates.HandleSaveStates();
 			Savestates.routine?.Update();
 			HandleFrameRates();

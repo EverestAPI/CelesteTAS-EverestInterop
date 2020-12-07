@@ -49,7 +49,6 @@ namespace TAS.StudioCommunication {
 
 
 		private static void SetupDebugVariables() {
-			Hotkeys.instance = new Hotkeys();
 			Hotkeys.listHotkeyKeys = new List<Keys>[] {
 				new List<Keys> { Keys.RightControl, Keys.OemOpenBrackets },
 				new List<Keys> { Keys.RightControl, Keys.RightShift },
@@ -127,7 +126,7 @@ namespace TAS.StudioCommunication {
 
 		private void ProcessReloadBindings(byte[] data) {
 			Log("Reloading bindings");
-			Hotkeys.instance.OnInputInitialize();
+			Hotkeys.InputInitialize();
 		}
 
 		#endregion

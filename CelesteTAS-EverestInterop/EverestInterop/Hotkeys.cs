@@ -36,7 +36,6 @@ namespace TAS.EverestInterop {
             } 
         }
 
-        public static Hotkeys instance;
         public static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
 
         private static KeyboardState kbState;
@@ -55,16 +54,7 @@ namespace TAS.EverestInterop {
 		public static Hotkey[] hotkeys;
         public static List<Keys>[] listHotkeyKeys;
 
-
-        public void Load() {
-            Everest.Events.Input.OnInitialize += OnInputInitialize;
-        }
-
-        public void Unload() {
-            Everest.Events.Input.OnInitialize -= OnInputInitialize;
-        }
-
-        public void OnInputInitialize() {
+        public static void InputInitialize() {
             if (Settings.KeyStart.Keys.Count == 0) {
                 Settings.KeyStart.Keys = new List<Keys> { Keys.RightControl };
                 Settings.KeyFastForward.Keys = new List<Keys> { Keys.RightShift };
@@ -150,7 +140,7 @@ namespace TAS.EverestInterop {
             return padState;
         }
 
-        public void Update() {
+        public static void Update() {
             kbState = Keyboard.GetState();
             padState = GetGamePadState();
 
