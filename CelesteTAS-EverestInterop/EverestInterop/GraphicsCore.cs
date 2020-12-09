@@ -14,12 +14,10 @@ namespace TAS.EverestInterop {
 
         public static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
 
-
         private static readonly FieldInfo TriggerSpikesDirection = typeof(TriggerSpikes).GetField("direction", BindingFlags.Instance | BindingFlags.NonPublic);
         private static readonly FieldInfo TriggerSpikesSpikes = typeof(TriggerSpikes).GetField("spikes", BindingFlags.Instance | BindingFlags.NonPublic);
         private static  FieldInfo TriggerSpikesTriggered;
         private static  FieldInfo TriggerSpikesLerp;
-        private static  FieldInfo TriggerSpikesWorldPosition;
 
         private static readonly FieldInfo TriggerSpikesOriginalDirection = typeof(TriggerSpikesOriginal).GetField("direction", BindingFlags.Instance | BindingFlags.NonPublic);
         private static readonly FieldInfo TriggerSpikesOriginalSpikes = typeof(TriggerSpikesOriginal).GetField("spikes", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -105,42 +103,45 @@ namespace TAS.EverestInterop {
 
             if (self is TriggerSpikes) {
                 float offsetX, offsetY;
+                Vector2 value;
                 switch (TriggerSpikesDirection.GetValue(self)) {
                     case TriggerSpikes.Directions.Up:
                         offsetX = -2f;
                         offsetY = -4f;
+                        value = new Vector2(1f, 0f);
                         break;
                     case TriggerSpikes.Directions.Down:
                         self.Collider.Render(camera, Color.Aqua);
                         offsetX = -2f;
                         offsetY = 0f;
+                        value = new Vector2(1f, 0f);
                         break;
                     case TriggerSpikes.Directions.Left:
                         offsetX = -4f;
                         offsetY = -2f;
+                        value = new Vector2(0f, 1f);
                         break;
                     case TriggerSpikes.Directions.Right:
                         offsetX = 0f;
                         offsetY = -2f;
+                        value = new Vector2(0f, 1f);
                         break;
                     default:
                         return;
                 }
 
                 Array spikes = TriggerSpikesSpikes.GetValue(self) as Array;
-                foreach (object spikeInfo in spikes) {
+                for (var i = 0; i < spikes.Length; i++) {
+                    object spikeInfo = spikes.GetValue(i);
                     if (TriggerSpikesTriggered == null) {
                         TriggerSpikesTriggered = spikeInfo.GetType().GetField("Triggered", BindingFlags.Instance | BindingFlags.Public);
                     }
                     if (TriggerSpikesLerp == null) {
                         TriggerSpikesLerp = spikeInfo.GetType().GetField("Lerp", BindingFlags.Instance | BindingFlags.Public);
                     }
-                    if (TriggerSpikesWorldPosition == null) {
-                        TriggerSpikesWorldPosition = spikeInfo.GetType().GetField("WorldPosition", BindingFlags.Instance | BindingFlags.Public);
-                    }
                     if ((bool) TriggerSpikesTriggered.GetValue(spikeInfo) && (float) TriggerSpikesLerp.GetValue(spikeInfo) >= 1f) {
-                        Vector2 worldPosition = (Vector2) TriggerSpikesWorldPosition.GetValue(spikeInfo);
-                        Draw.HollowRect(worldPosition.X + offsetX, worldPosition.Y + offsetY, 4f, 4f,
+                        Vector2 realWorldPosition = self.Position + value * (2 + i * 4);
+                        Draw.HollowRect(realWorldPosition.X + offsetX, realWorldPosition.Y + offsetY, 4f, 4f,
                             HitboxColor.GetCustomColor(Color.Red, self));
                     }
                 }
