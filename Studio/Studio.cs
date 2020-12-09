@@ -46,21 +46,36 @@ namespace CelesteStudio
             EnableStudio(false);
 
             DesktopLocation = new Point(RegRead("x", DesktopLocation.X), RegRead("y", DesktopLocation.Y));
-			if (DesktopLocation.X == -32000)
-				DesktopLocation = new Point(0, 0);
 
             Size size = new Size(RegRead("w", Size.Width), RegRead("h", Size.Height));
 			if (size != Size.Empty)
 				Size = size;
 
+			if (!IsTitleBarVisible())
+				DesktopLocation = new Point(0, 0);
+
             instance = this;
         }
+
+        private bool IsTitleBarVisible()
+        {
+            int titleBarHeight = RectangleToScreen(ClientRectangle).Top - Top;
+            Rectangle titleBar = new Rectangle(Left, Top, Width, titleBarHeight);
+            foreach (Screen screen in Screen.AllScreens)
+            {
+                if (screen.Bounds.IntersectsWith(titleBar))
+                    return true;
+            }
+            return false;
+        }
+
         private void TASStudio_FormClosed(object sender, FormClosedEventArgs e)
         {
             RegWrite("delim", (int)InputRecord.Delimiter);
             RegWrite("x", DesktopLocation.X); RegWrite("y", DesktopLocation.Y);
             RegWrite("w", Size.Width); RegWrite("h", Size.Height);
         }
+
         private void Studio_Shown(object sender, EventArgs e)
         {
             Thread updateThread = new Thread(UpdateLoop);
