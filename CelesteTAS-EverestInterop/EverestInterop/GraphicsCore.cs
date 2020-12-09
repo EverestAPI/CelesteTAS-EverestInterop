@@ -6,12 +6,26 @@ using Monocle;
 using MonoMod.Cil;
 using System;
 using System.Reflection;
+using Celeste.Mod.Entities;
 
 namespace TAS.EverestInterop {
     class GraphicsCore {
         public static GraphicsCore instance;
 
         public static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
+
+
+        private static readonly FieldInfo TriggerSpikesDirection = typeof(TriggerSpikes).GetField("direction", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly FieldInfo TriggerSpikesSpikes = typeof(TriggerSpikes).GetField("spikes", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static  FieldInfo TriggerSpikesTriggered;
+        private static  FieldInfo TriggerSpikesLerp;
+        private static  FieldInfo TriggerSpikesWorldPosition;
+
+        private static readonly FieldInfo TriggerSpikesOriginalDirection = typeof(TriggerSpikesOriginal).GetField("direction", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly FieldInfo TriggerSpikesOriginalSpikes = typeof(TriggerSpikesOriginal).GetField("spikes", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static  FieldInfo TriggerSpikesOriginalTriggered;
+        private static  FieldInfo TriggerSpikesOriginalLerp;
+        private static  FieldInfo TriggerSpikesOriginalPosition;
 
         public void Load() {
             // Forced: Add more positions to top-left positioning helper.
@@ -30,9 +44,11 @@ namespace TAS.EverestInterop {
             // Show pufferfish explosion radius
             On.Celeste.Puffer.Render += Puffer_Render;
 
+            // Show the hitbox of the triggered TriggerSpikes.
+            On.Monocle.Entity.DebugRender += Entity_DebugRender;
+
             // Stop updating tentacles texture when fast forward
             On.Celeste.ReflectionTentacles.UpdateVertices += ReflectionTentaclesOnUpdateVertices;
-
         }
 
         public void Unload() {
@@ -42,6 +58,7 @@ namespace TAS.EverestInterop {
             On.Celeste.Distort.Render -= Distort_Render;
             On.Celeste.SoundSource.DebugRender -= SoundSource_DebugRender;
             On.Celeste.Puffer.Render -= Puffer_Render;
+            On.Monocle.Entity.DebugRender -= Entity_DebugRender;
             On.Celeste.ReflectionTentacles.UpdateVertices -= ReflectionTentaclesOnUpdateVertices;
         }
 
@@ -81,6 +98,102 @@ namespace TAS.EverestInterop {
             if (GameplayRendererExt.RenderDebug)
                 Draw.Circle(self.Position, 32f, Color.Red, 32);
             orig(self);
+        }
+
+        private void Entity_DebugRender(On.Monocle.Entity.orig_DebugRender orig, Monocle.Entity self, Camera camera) {
+            orig(self, camera);
+
+            if (self is TriggerSpikes) {
+                float offsetX, offsetY;
+                switch (TriggerSpikesDirection.GetValue(self)) {
+                    case TriggerSpikes.Directions.Up:
+                        offsetX = -2f;
+                        offsetY = -4f;
+                        break;
+                    case TriggerSpikes.Directions.Down:
+                        self.Collider.Render(camera, Color.Aqua);
+                        offsetX = -2f;
+                        offsetY = 0f;
+                        break;
+                    case TriggerSpikes.Directions.Left:
+                        offsetX = -4f;
+                        offsetY = -2f;
+                        break;
+                    case TriggerSpikes.Directions.Right:
+                        offsetX = 0f;
+                        offsetY = -2f;
+                        break;
+                    default:
+                        return;
+                }
+
+                Array spikes = TriggerSpikesSpikes.GetValue(self) as Array;
+                foreach (object spikeInfo in spikes) {
+                    if (TriggerSpikesTriggered == null) {
+                        TriggerSpikesTriggered = spikeInfo.GetType().GetField("Triggered", BindingFlags.Instance | BindingFlags.Public);
+                    }
+                    if (TriggerSpikesLerp == null) {
+                        TriggerSpikesLerp = spikeInfo.GetType().GetField("Lerp", BindingFlags.Instance | BindingFlags.Public);
+                    }
+                    if (TriggerSpikesWorldPosition == null) {
+                        TriggerSpikesWorldPosition = spikeInfo.GetType().GetField("WorldPosition", BindingFlags.Instance | BindingFlags.Public);
+                    }
+                    if ((bool) TriggerSpikesTriggered.GetValue(spikeInfo) && (float) TriggerSpikesLerp.GetValue(spikeInfo) >= 1f) {
+                        Vector2 worldPosition = (Vector2) TriggerSpikesWorldPosition.GetValue(spikeInfo);
+                        Draw.HollowRect(worldPosition.X + offsetX, worldPosition.Y + offsetY, 4f, 4f,
+                            HitboxColor.GetCustomColor(Color.Red, self));
+                    }
+                }
+            } else if (self is TriggerSpikesOriginal) {
+                float width, height, offsetX, offsetY;
+                switch (TriggerSpikesOriginalDirection.GetValue(self)) {
+                    case TriggerSpikesOriginal.Directions.Up:
+                        width = 8f;
+                        height = 3f;
+                        offsetX = -4f;
+                        offsetY = -4f;
+                        break;
+                    case TriggerSpikesOriginal.Directions.Down:
+                        self.Collider.Render(camera, Color.Aqua);
+                        width = 8f;
+                        height = 3f;
+                        offsetX = -4f;
+                        offsetY = 1f;
+                        break;
+                    case TriggerSpikesOriginal.Directions.Left:
+                        width = 3f;
+                        height = 8f;
+                        offsetX = -4f;
+                        offsetY = -4f;
+                        break;
+                    case TriggerSpikesOriginal.Directions.Right:
+                        width = 3f;
+                        height = 8f;
+                        offsetX = 1f;
+                        offsetY = -4f;
+                        break;
+                    default:
+                        return;
+                }
+
+                Array spikes = TriggerSpikesOriginalSpikes.GetValue(self) as Array;
+                foreach (object spikeInfo in spikes) {
+                    if (TriggerSpikesOriginalTriggered == null) {
+                        TriggerSpikesOriginalTriggered = spikeInfo.GetType().GetField("Triggered", BindingFlags.Instance | BindingFlags.Public);
+                    }
+                    if (TriggerSpikesOriginalLerp == null) {
+                        TriggerSpikesOriginalLerp = spikeInfo.GetType().GetField("Lerp", BindingFlags.Instance | BindingFlags.Public);
+                    }
+                    if (TriggerSpikesOriginalPosition == null) {
+                        TriggerSpikesOriginalPosition = spikeInfo.GetType().GetField("Position", BindingFlags.Instance | BindingFlags.Public);
+                    }
+                    if ((bool) TriggerSpikesOriginalTriggered.GetValue(spikeInfo) && (float) TriggerSpikesOriginalLerp.GetValue(spikeInfo) >= 1) {
+                        Vector2 spikeInfoPosition = (Vector2) TriggerSpikesOriginalPosition.GetValue(spikeInfo);
+                        Draw.HollowRect(self.Position.X + spikeInfoPosition.X + offsetX, self.Position.Y + spikeInfoPosition.Y + offsetY, width, height,
+                            HitboxColor.GetCustomColor(Color.Red, self));
+                    }
+                }
+            }
         }
 
         private void ReflectionTentaclesOnUpdateVertices(On.Celeste.ReflectionTentacles.orig_UpdateVertices orig, ReflectionTentacles self) {
@@ -128,4 +241,3 @@ namespace TAS.EverestInterop {
         }
     }
 }
- 

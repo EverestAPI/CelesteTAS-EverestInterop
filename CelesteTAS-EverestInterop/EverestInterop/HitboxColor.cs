@@ -81,7 +81,7 @@ namespace TAS.EverestInterop {
             }
         }
 
-        private Color GetCustomColor(Color color, Entity entity) {
+        public static Color GetCustomColor(Color color, Entity entity) {
             if (entity is Player) return color;
 
             Color customColor = Settings.EntityHitboxColor;

@@ -6,6 +6,9 @@ namespace TAS.EverestInterop {
 	public delegate object GetField(object o);
 	public delegate object GetStaticField();
 	public static class Extensions {
+		public static object GetPublicField(this object obj, string name) {
+			return obj.GetType().GetField(name, BindingFlags.Instance | BindingFlags.Public)?.GetValue(obj);
+		}
 		public static object GetPrivateField(this object obj, string name) {
 			return obj.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(obj);
 		}

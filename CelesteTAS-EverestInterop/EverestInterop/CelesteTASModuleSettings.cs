@@ -40,7 +40,7 @@ namespace TAS.EverestInterop {
 		[DefaultButtonBinding(0, Keys.M)]
 		public ButtonBinding KeyCamera { get; set; } = new ButtonBinding();
 
-		// Multiple keys are not supported, so we only set Keys.OemPlus
+		// Multiple keys are not supported, so we only set Keys.OemMinus
 		[DefaultButtonBinding(0, Keys.OemMinus)]
 		public ButtonBinding KeySaveState { get; set; } = new ButtonBinding();
 		[DefaultButtonBinding(0, Keys.OemPlus)]
