@@ -27,7 +27,13 @@ namespace TAS.StudioCommunication {
 			//SetupDebugVariables();
 #endif
 
-			RunThread.Start(instance.UpdateLoop, "StudioCom Client");
+			RunThread.Start(Setup, "StudioCom Client");
+
+			void Setup() {
+				Thread current = Thread.CurrentThread;
+				Celeste.Celeste.Instance.Exiting += (o, e) => current.Abort();
+				instance.UpdateLoop();
+			}
 
 			return true;
 		}
