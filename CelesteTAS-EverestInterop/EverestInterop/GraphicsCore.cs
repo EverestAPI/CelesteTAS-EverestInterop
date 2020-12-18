@@ -138,6 +138,8 @@ namespace TAS.EverestInterop {
                         TriggerSpikesLerp = spikeInfo.GetType().GetField("Lerp", BindingFlags.Instance | BindingFlags.Public);
                     }
                     if ((bool) TriggerSpikesTriggered.GetValue(spikeInfo) && (float) TriggerSpikesLerp.GetValue(spikeInfo) >= 1f) {
+                        Vector2 position = self.Position + value * (2 + i * 4) + offset;
+
                         int num = 1;
                         for (var j = i + 1; j < spikes.Length; j++) {
                            object nextSpikeInfo = spikes.GetValue(j);
@@ -149,7 +151,6 @@ namespace TAS.EverestInterop {
                            }
                         }
 
-                        Vector2 position = self.Position + value * (2 + i * 4) + offset;
                         Draw.HollowRect(position, 4f * (vertical ? 1 : num), 4f * (vertical ? num : 1),
                             HitboxColor.GetCustomColor(Color.Red, self));
                     }
