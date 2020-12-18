@@ -88,5 +88,7 @@ namespace TAS.EverestInterop {
 		public Color TriggerHitboxColor { get; set; } = Color.Red;
 		[SettingIgnore]
 		public bool HideTriggerHitbox { get; set; } = false;
+		[SettingIgnore]
+		public bool HideUselessHitbox { get; set; } = true;
     }
 }
