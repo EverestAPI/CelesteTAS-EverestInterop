@@ -102,6 +102,7 @@
     <Compile Include="EverestInterop\HideGameplay.cs" />
     <Compile Include="EverestInterop\HitboxColor.cs" />
     <Compile Include="EverestInterop\HitboxFixer.cs" />
+    <Compile Include="EverestInterop\HitboxTweak.cs" />
     <Compile Include="EverestInterop\Hotkeys.cs" />
     <Compile Include="EverestInterop\Menu.cs" />
     <Compile Include="TAS\Savestates.cs" />
