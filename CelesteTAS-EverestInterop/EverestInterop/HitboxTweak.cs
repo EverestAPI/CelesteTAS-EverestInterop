@@ -23,7 +23,7 @@ namespace TAS.EverestInterop {
 
         public void Unload() {
             On.Monocle.Entity.DebugRender -= HideHitbox;
-            On.Monocle.Grid.Render += CombineHitbox;
+            On.Monocle.Grid.Render -= CombineHitbox;
         }
 
         private static void HideHitbox(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {
