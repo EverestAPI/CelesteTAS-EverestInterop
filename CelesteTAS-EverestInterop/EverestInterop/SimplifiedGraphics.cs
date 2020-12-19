@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Reflection;
 using Celeste;
-using Celeste.Mod;
 using Monocle;
 using Microsoft.Xna.Framework;
 using MonoMod.Cil;
@@ -34,6 +33,9 @@ namespace TAS.EverestInterop {
 			On.Celeste.LightningRenderer.Render += LightningRenderer_Render;
 			IL.Celeste.LightningRenderer.Render += LightningRenderer_RenderIL;
             On.Celeste.LightningRenderer.Bolt.Render += Bolt_Render;
+            On.Celeste.Decal.Render += Decal_Render;
+            On.Celeste.SummitCloud.Render += SummitCloudOnRender;
+
 
             if (Type.GetType("FrostHelper.CustomSpinner, FrostTempleHelper") is Type customSpinnerType) {
                 customSpinnerHook = new ILHook(customSpinnerType.GetConstructors()[0], modCustomSpinnerColor);
@@ -44,7 +46,7 @@ namespace TAS.EverestInterop {
             }
         }
 
-		public void Unload() {
+        public void Unload() {
             On.Celeste.LightingRenderer.Render -= LightingRenderer_Render;
             On.Monocle.Particle.Render -= Particle_Render;
 			IL.Celeste.BackdropRenderer.Render -= BackdropRenderer_Render;
@@ -57,6 +59,8 @@ namespace TAS.EverestInterop {
             On.Celeste.LightningRenderer.Render -= LightningRenderer_Render;
             IL.Celeste.LightningRenderer.Render -= LightningRenderer_RenderIL;
             On.Celeste.LightningRenderer.Bolt.Render -= Bolt_Render;
+            On.Celeste.Decal.Render -= Decal_Render;
+            On.Celeste.SummitCloud.Render -= SummitCloudOnRender;
             customSpinnerHook?.Dispose();
             rainbowSpinnerColorControllerHook?.Dispose();
             customSpinnerHook = null;
@@ -199,6 +203,21 @@ namespace TAS.EverestInterop {
             if (Settings.SimplifiedGraphics)
                 return;
             orig.Invoke(self);
+        }
+
+        private void Decal_Render(On.Celeste.Decal.orig_Render orig, Decal self) {
+            string text = self.Name.ToLower().Replace("decals/", "");
+            if (Settings.SimplifiedGraphics && text.StartsWith("7-summit/cloud_"))
+                return;
+
+            orig(self);
+        }
+
+        private void SummitCloudOnRender(On.Celeste.SummitCloud.orig_Render orig, SummitCloud self) {
+            if (Settings.SimplifiedGraphics)
+                return;
+
+            orig(self);
         }
     }
 }
