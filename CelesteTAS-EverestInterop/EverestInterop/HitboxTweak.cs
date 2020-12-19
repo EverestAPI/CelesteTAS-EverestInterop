@@ -132,7 +132,7 @@ namespace TAS.EverestInterop {
 
         private void ModWallBoosterHitbox(On.Monocle.Hitbox.orig_Render orig, Hitbox hitbox, Camera camera, Color color) {
             if (hitbox.Entity is WallBooster) {
-                Draw.Rect(hitbox.AbsolutePosition, hitbox.Width, hitbox.Height, Color.Aqua * 0.6f);
+                Draw.Rect(hitbox.AbsolutePosition, hitbox.Width, hitbox.Height, color.Invert() * 0.5f);
                 return;
             }
             orig(hitbox, camera, color);
