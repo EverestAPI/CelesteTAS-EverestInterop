@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
@@ -10,20 +11,28 @@ namespace TAS.EverestInterop {
         private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
 
         private static readonly List<Type> UselessTypes = new List<Type> {
+            typeof(CrystalDebris),
+            typeof(Debris),
+            typeof(Door),
             typeof(FloatingDebris),
+            typeof(HangingLamp),
             typeof(MoonCreature),
+            typeof(MoveBlock).GetNestedType("Debris", BindingFlags.NonPublic),
             typeof(PlaybackBillboard),
-            typeof(Torch)
+            typeof(ResortLantern),
+            typeof(Torch),
         };
 
         public void Load() {
             On.Monocle.Entity.DebugRender += HideHitbox;
             On.Monocle.Grid.Render += CombineHitbox;
+            On.Monocle.Hitbox.Render += ModWallBoosterHitbox;
         }
 
         public void Unload() {
             On.Monocle.Entity.DebugRender -= HideHitbox;
             On.Monocle.Grid.Render -= CombineHitbox;
+            On.Monocle.Hitbox.Render -= ModWallBoosterHitbox;
         }
 
         private static void HideHitbox(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {
@@ -119,6 +128,14 @@ namespace TAS.EverestInterop {
                     Draw.Point(bottomRight, color);
                 }
             }
+        }
+
+        private void ModWallBoosterHitbox(On.Monocle.Hitbox.orig_Render orig, Hitbox hitbox, Camera camera, Color color) {
+            if (hitbox.Entity is WallBooster) {
+                Draw.Rect(hitbox.AbsolutePosition, hitbox.Width, hitbox.Height, Color.Aqua * 0.6f);
+                return;
+            }
+            orig(hitbox, camera, color);
         }
     }
 }
