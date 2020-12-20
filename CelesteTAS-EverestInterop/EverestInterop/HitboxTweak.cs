@@ -26,13 +26,13 @@ namespace TAS.EverestInterop {
         public void Load() {
             On.Monocle.Entity.DebugRender += HideHitbox;
             On.Monocle.Grid.Render += CombineHitbox;
-            On.Monocle.Hitbox.Render += ModWallBoosterHitbox;
+            On.Monocle.Hitbox.Render += ModHitbox;
         }
 
         public void Unload() {
             On.Monocle.Entity.DebugRender -= HideHitbox;
             On.Monocle.Grid.Render -= CombineHitbox;
-            On.Monocle.Hitbox.Render -= ModWallBoosterHitbox;
+            On.Monocle.Hitbox.Render -= ModHitbox;
         }
 
         private static void HideHitbox(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {
@@ -130,11 +130,17 @@ namespace TAS.EverestInterop {
             }
         }
 
-        private void ModWallBoosterHitbox(On.Monocle.Hitbox.orig_Render orig, Hitbox hitbox, Camera camera, Color color) {
-            if (hitbox.Entity is WallBooster) {
+        private static void ModHitbox(On.Monocle.Hitbox.orig_Render orig, Hitbox hitbox, Camera camera, Color color) {
+            Entity entity = hitbox.Entity;
+            if (entity is WallBooster) {
                 Draw.Rect(hitbox.AbsolutePosition, hitbox.Width, hitbox.Height, color.Invert() * 0.5f);
                 return;
             }
+
+            if (entity is ClutterBlock clutterBlock && !clutterBlock.Visible) {
+                return;
+            }
+
             orig(hitbox, camera, color);
         }
     }

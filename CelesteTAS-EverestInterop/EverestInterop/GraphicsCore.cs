@@ -47,9 +47,6 @@ namespace TAS.EverestInterop {
 
             // Stop updating tentacles texture when fast forward
             On.Celeste.ReflectionTentacles.UpdateVertices += ReflectionTentaclesOnUpdateVertices;
-
-            // Hide screen wipe when beginning level if simple graphic is enabled
-            On.Celeste.Level.Begin += Level_Begin;
         }
 
         public void Unload() {
@@ -61,7 +58,6 @@ namespace TAS.EverestInterop {
             On.Celeste.Puffer.Render -= Puffer_Render;
             On.Monocle.Entity.DebugRender -= Entity_DebugRender;
             On.Celeste.ReflectionTentacles.UpdateVertices -= ReflectionTentaclesOnUpdateVertices;
-            On.Celeste.Level.Begin -= Level_Begin;
         }
 
         public static void Commands_Render(ILContext il) {
@@ -265,15 +261,6 @@ namespace TAS.EverestInterop {
             ILCursor c = new ILCursor(il);
             c.FindNext(out ILCursor[] found, i => i.MatchLdfld(typeof(Pathfinder), "lastPath"));
             c.RemoveRange(found[0].Index - 1);
-        }
-
-        private void Level_Begin(On.Celeste.Level.orig_Begin orig, Level self) {
-            orig(self);
-            if (Settings.SimplifiedGraphics && Manager.Running && self.Wipe != null) {
-                Color wipeColor = ScreenWipe.WipeColor;
-                ScreenWipe.WipeColor = Color.Transparent;
-                self.Wipe.OnComplete += () => ScreenWipe.WipeColor = wipeColor;
-            }
         }
     }
 }

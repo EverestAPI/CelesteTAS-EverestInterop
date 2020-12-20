@@ -36,6 +36,9 @@ namespace TAS.EverestInterop {
             On.Celeste.Decal.Render += Decal_Render;
             On.Celeste.SummitCloud.Render += SummitCloudOnRender;
 
+            // Hide screen wipe when beginning level if simple graphic is enabled
+            On.Celeste.Level.Begin += Level_Begin;
+
 
             if (Type.GetType("FrostHelper.CustomSpinner, FrostTempleHelper") is Type customSpinnerType) {
                 customSpinnerHook = new ILHook(customSpinnerType.GetConstructors()[0], modCustomSpinnerColor);
@@ -61,6 +64,7 @@ namespace TAS.EverestInterop {
             On.Celeste.LightningRenderer.Bolt.Render -= Bolt_Render;
             On.Celeste.Decal.Render -= Decal_Render;
             On.Celeste.SummitCloud.Render -= SummitCloudOnRender;
+            On.Celeste.Level.Begin -= Level_Begin;
             customSpinnerHook?.Dispose();
             rainbowSpinnerColorControllerHook?.Dispose();
             customSpinnerHook = null;
@@ -218,6 +222,15 @@ namespace TAS.EverestInterop {
                 return;
 
             orig(self);
+        }
+
+        private void Level_Begin(On.Celeste.Level.orig_Begin orig, Level self) {
+            orig(self);
+            if (Settings.SimplifiedGraphics && self.Wipe != null) {
+                Color wipeColor = ScreenWipe.WipeColor;
+                ScreenWipe.WipeColor = Color.Transparent;
+                self.Wipe.OnComplete += () => ScreenWipe.WipeColor = wipeColor;
+            }
         }
     }
 }
