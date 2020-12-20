@@ -137,7 +137,7 @@ namespace TAS.EverestInterop {
                 return;
             }
 
-            if (entity is ClutterBlock clutterBlock && !clutterBlock.Visible) {
+            if (entity is ClutterBlockBase clutterBlockBase && !clutterBlockBase.Collidable) {
                 return;
             }
 
