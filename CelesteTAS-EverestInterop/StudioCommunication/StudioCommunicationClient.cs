@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using WinForms = System.Windows.Forms;
 using Celeste;
-using Celeste.Mod;
 using Microsoft.Xna.Framework.Input;
 using TAS.EverestInterop;
 
@@ -33,7 +31,7 @@ namespace TAS.StudioCommunication {
 
 			void Setup() {
 				instance.thread = Thread.CurrentThread;
-				Celeste.Celeste.Instance.Exiting += (o, e) => instance.thread.Abort();
+				Celeste.Celeste.Instance.Exiting += (o, e) => Destroy();
 				instance.UpdateLoop();
 			}
 
