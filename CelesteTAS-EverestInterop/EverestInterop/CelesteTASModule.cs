@@ -163,6 +163,7 @@ namespace TAS.EverestInterop {
             HitboxColor.instance.Unload();
             HitboxTweak.instance.Unload();
             On.Celeste.LevelLoader.LoadingThread -= LevelLoader_LoadingThread;
+            StudioCommunicationClient.Destroy();
 
             UnixRTC?.Dispose();
         }
