@@ -15,7 +15,6 @@ namespace TAS.EverestInterop {
 
         private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
 
-        private ILHook LightningRNGHook;
         private ILHook customSpinnerHook;
         private ILHook rainbowSpinnerColorControllerHook;
 

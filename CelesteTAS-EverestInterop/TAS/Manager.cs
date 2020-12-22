@@ -60,7 +60,6 @@ namespace TAS {
 		private static Vector2 lastPos;
 		private static long lastTimer;
 		private static List<VirtualButton.Node>[] playerBindings;
-		private static Coroutine routine;
 		public static Buttons grabButton = Buttons.Back;
 		public static AnalogueMode analogueMode = AnalogueMode.Ignore;//Circle; //Needs to be tested with the libTAS converter
 		public static CelesteTASModuleSettings settings => CelesteTASModule.Settings;
