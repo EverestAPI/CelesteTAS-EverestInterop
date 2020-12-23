@@ -24,6 +24,7 @@ namespace TAS.EverestInterop {
             On.Monocle.Particle.Render += Particle_Render;
 			IL.Celeste.BackdropRenderer.Render += BackdropRenderer_Render;
 			On.Celeste.CrystalStaticSpinner.ctor_Vector2_bool_CrystalColor += CrystalStaticSpinner_ctor;
+            On.Celeste.CrystalStaticSpinner.CoreModeListener.Update += CoreModeListener_Update;
             On.Celeste.DustStyles.Get_Session += DustStyles_Get_Session;
             On.Celeste.LavaRect.Wave += LavaRect_Wave;
             On.Celeste.DreamBlock.Lerp += DreamBlock_Lerp;
@@ -53,6 +54,7 @@ namespace TAS.EverestInterop {
             On.Monocle.Particle.Render -= Particle_Render;
 			IL.Celeste.BackdropRenderer.Render -= BackdropRenderer_Render;
 			On.Celeste.CrystalStaticSpinner.ctor_Vector2_bool_CrystalColor -= CrystalStaticSpinner_ctor;
+            On.Celeste.CrystalStaticSpinner.CoreModeListener.Update -= CoreModeListener_Update;
             On.Celeste.DustStyles.Get_Session -= DustStyles_Get_Session;
             On.Celeste.LavaRect.Wave -= LavaRect_Wave;
             On.Celeste.DreamBlock.Lerp -= DreamBlock_Lerp;
@@ -141,6 +143,13 @@ namespace TAS.EverestInterop {
             if (Settings.SimplifiedGraphics)
                 color = CrystalColor.Blue;
             orig(self, position, attachToSolid, color);
+        }
+
+        private void CoreModeListener_Update(On.Celeste.CrystalStaticSpinner.CoreModeListener.orig_Update orig, Component self) {
+            if (Settings.SimplifiedGraphics)
+                return;
+
+            orig(self);
         }
 
         private DustStyles.DustStyle DustStyles_Get_Session(On.Celeste.DustStyles.orig_Get_Session orig, Session session) {
