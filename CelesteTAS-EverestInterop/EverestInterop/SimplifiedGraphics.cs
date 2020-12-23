@@ -225,7 +225,7 @@ namespace TAS.EverestInterop {
 
         private void Level_Begin(On.Celeste.Level.orig_Begin orig, Level self) {
             orig(self);
-            if (Settings.SimplifiedGraphics && self.Wipe != null) {
+            if (Settings.SimplifiedGraphics && self.Wipe != null && self.Session.StartedFromBeginning) {
                 Color wipeColor = ScreenWipe.WipeColor;
                 ScreenWipe.WipeColor = Color.Transparent;
                 self.Wipe.OnComplete += () => ScreenWipe.WipeColor = wipeColor;
