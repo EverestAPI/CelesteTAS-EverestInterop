@@ -61,9 +61,9 @@
 - Make sure the value entered matches the data type of the setting (if it is a boolean in the settings file, make sure you're inputting a boolean into the Set command).
 - Most vanilla variants (except for mirror mode, and gamespeed) are not currently functional.
 
-Examples:
-Set,ExtendedVariantMode.Dashcount,3
-Set,CelesteTAS.CenterCamera,true    
+-Examples:
+-Set,ExtendedVariantMode.Dashcount,3
+-Set,CelesteTAS.CenterCamera,true    
 
 ### Unsafe
 - The TAS will normally only run inside levels.
