@@ -11,6 +11,9 @@ namespace TAS.EverestInterop {
 	class SimplifiedGraphics {
         private const string simpleSpinnerColor = "#639BFF";
 
+        private static readonly FieldInfo SpinnerColor =
+            typeof(CrystalStaticSpinner).GetField("color", BindingFlags.NonPublic | BindingFlags.Instance);
+
         public static SimplifiedGraphics instance;
 
         private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
@@ -23,8 +26,7 @@ namespace TAS.EverestInterop {
             On.Celeste.LightingRenderer.Render += LightingRenderer_Render;
             On.Monocle.Particle.Render += Particle_Render;
 			IL.Celeste.BackdropRenderer.Render += BackdropRenderer_Render;
-			On.Celeste.CrystalStaticSpinner.ctor_Vector2_bool_CrystalColor += CrystalStaticSpinner_ctor;
-            On.Celeste.CrystalStaticSpinner.CoreModeListener.Update += CoreModeListener_Update;
+            On.Celeste.CrystalStaticSpinner.CreateSprites += CrystalStaticSpinner_CreateSprites;
             On.Celeste.DustStyles.Get_Session += DustStyles_Get_Session;
             On.Celeste.LavaRect.Wave += LavaRect_Wave;
             On.Celeste.DreamBlock.Lerp += DreamBlock_Lerp;
@@ -39,7 +41,6 @@ namespace TAS.EverestInterop {
             // Hide screen wipe when beginning level if simple graphic is enabled
             On.Celeste.Level.Begin += Level_Begin;
 
-
             if (Type.GetType("FrostHelper.CustomSpinner, FrostTempleHelper") is Type customSpinnerType) {
                 customSpinnerHook = new ILHook(customSpinnerType.GetConstructors()[0], modCustomSpinnerColor);
             }
@@ -53,8 +54,7 @@ namespace TAS.EverestInterop {
             On.Celeste.LightingRenderer.Render -= LightingRenderer_Render;
             On.Monocle.Particle.Render -= Particle_Render;
 			IL.Celeste.BackdropRenderer.Render -= BackdropRenderer_Render;
-			On.Celeste.CrystalStaticSpinner.ctor_Vector2_bool_CrystalColor -= CrystalStaticSpinner_ctor;
-            On.Celeste.CrystalStaticSpinner.CoreModeListener.Update -= CoreModeListener_Update;
+            On.Celeste.CrystalStaticSpinner.CreateSprites -= CrystalStaticSpinner_CreateSprites;
             On.Celeste.DustStyles.Get_Session -= DustStyles_Get_Session;
             On.Celeste.LavaRect.Wave -= LavaRect_Wave;
             On.Celeste.DreamBlock.Lerp -= DreamBlock_Lerp;
@@ -139,15 +139,9 @@ namespace TAS.EverestInterop {
 			}));
 		}
 
-		private void CrystalStaticSpinner_ctor(On.Celeste.CrystalStaticSpinner.orig_ctor_Vector2_bool_CrystalColor orig, CrystalStaticSpinner self, Vector2 position, bool attachToSolid, CrystalColor color) {
-            if (Settings.SimplifiedGraphics)
-                color = CrystalColor.Blue;
-            orig(self, position, attachToSolid, color);
-        }
-
-        private void CoreModeListener_Update(On.Celeste.CrystalStaticSpinner.CoreModeListener.orig_Update orig, Component self) {
-            if (Settings.SimplifiedGraphics)
-                return;
+        private void CrystalStaticSpinner_CreateSprites(On.Celeste.CrystalStaticSpinner.orig_CreateSprites orig, CrystalStaticSpinner self) {
+            if(Settings.SimplifiedGraphics)
+                SpinnerColor.SetValue(self, CrystalColor.Blue);
 
             orig(self);
         }
