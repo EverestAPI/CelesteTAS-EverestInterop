@@ -9,6 +9,8 @@ using MonoMod.Cil;
 namespace TAS.EverestInterop.Hitboxes {
     public class HitboxColor {
         public static HitboxColor instance;
+        public static Color EntityColorInversely => Settings.EntityHitboxColor.Invert();
+        public static Color EntityColorInverselyLessAlpha => EntityColorInversely * 0.7f;
 
         public static TextMenu.Item CreateEntityHitboxColorButton(TextMenu textMenu, bool inGame) {
             return new TextMenu.Button($"Entity Hitbox Color ARGB: {ColorToHex(Settings.EntityHitboxColor)}").Pressed(() => {

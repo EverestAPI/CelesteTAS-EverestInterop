@@ -36,7 +36,12 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void Entity_DebugRender(On.Monocle.Entity.orig_DebugRender orig, Monocle.Entity self, Camera camera) {
-            orig(self, camera);
+            if (!CelesteTASModule.Settings.ShowHitboxes || !(self is TriggerSpikes) && !(self is TriggerSpikesOriginal)) {
+                orig(self, camera);
+                return;
+            }
+
+            self.Collider?.Render(camera, HitboxColor.EntityColorInverselyLessAlpha);
 
             if (self is TriggerSpikes) {
                 Vector2 offset, value;
@@ -47,7 +52,6 @@ namespace TAS.EverestInterop.Hitboxes {
                         value = new Vector2(1f, 0f);
                         break;
                     case TriggerSpikes.Directions.Down:
-                        self.Collider.Render(camera, Color.Aqua);
                         offset = new Vector2(-2f, 0f);
                         value = new Vector2(1f, 0f);
                         break;
@@ -105,7 +109,6 @@ namespace TAS.EverestInterop.Hitboxes {
                         offset = new Vector2(-4f, -4f);
                         break;
                     case TriggerSpikesOriginal.Directions.Down:
-                        self.Collider.Render(camera, Color.Aqua);
                         width = 8f;
                         height = 3f;
                         offset = new Vector2(-4f, 1f);

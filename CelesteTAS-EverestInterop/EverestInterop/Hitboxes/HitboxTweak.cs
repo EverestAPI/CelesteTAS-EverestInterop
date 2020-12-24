@@ -135,7 +135,7 @@ namespace TAS.EverestInterop.Hitboxes {
         private static void ModHitbox(On.Monocle.Hitbox.orig_Render orig, Hitbox hitbox, Camera camera, Color color) {
             Entity entity = hitbox.Entity;
             if (entity is WallBooster) {
-                Draw.Rect(hitbox.AbsolutePosition, hitbox.Width, hitbox.Height, color.Invert() * 0.5f);
+                Draw.Rect(hitbox.AbsolutePosition, hitbox.Width, hitbox.Height, HitboxColor.EntityColorInverselyLessAlpha);
                 return;
             }
 
