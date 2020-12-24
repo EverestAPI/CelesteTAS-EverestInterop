@@ -5,7 +5,7 @@ using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 
-namespace TAS.EverestInterop {
+namespace TAS.EverestInterop.Hitboxes {
     public class HitboxTweak {
         public static HitboxTweak instance;
         private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
@@ -27,12 +27,14 @@ namespace TAS.EverestInterop {
             On.Monocle.Entity.DebugRender += HideHitbox;
             On.Monocle.Grid.Render += CombineHitbox;
             On.Monocle.Hitbox.Render += ModHitbox;
+            HitboxTriggerSpikes.Load();
         }
 
         public void Unload() {
             On.Monocle.Entity.DebugRender -= HideHitbox;
             On.Monocle.Grid.Render -= CombineHitbox;
             On.Monocle.Hitbox.Render -= ModHitbox;
+            HitboxTriggerSpikes.Unload();
         }
 
         private static void HideHitbox(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {

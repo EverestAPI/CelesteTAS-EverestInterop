@@ -1,8 +1,8 @@
-﻿using Microsoft.Xna.Framework;
-using System;
+﻿using System;
+using Microsoft.Xna.Framework;
 using Draw = Monocle.Draw;
 
-namespace TAS.EverestInterop {
+namespace TAS.EverestInterop.Hitboxes {
 
 	public class HitboxFixer {
 		public static HitboxFixer instance;

@@ -6,7 +6,7 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 
-namespace TAS.EverestInterop {
+namespace TAS.EverestInterop.Hitboxes {
     public class HitboxColor {
         public static HitboxColor instance;
 

@@ -3,6 +3,7 @@ using Celeste.Mod;
 using Monocle;
 using System.Collections.Generic;
 using System.Linq;
+using TAS.EverestInterop.Hitboxes;
 
 namespace TAS.EverestInterop {
 	class Menu {
