@@ -5,6 +5,7 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: windows-latest
+    if: "!contains(toJSON(github.event.commits.*.message), '[skip-ci]')"
 
     env:
       Solution_Name: CelesteTAS-EverestInterop.sln
