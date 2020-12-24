@@ -1,0 +1,31 @@
+name: NetFramework.Legacy.CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    env:
+      Solution_Name: CelesteTAS-EverestInterop.sln
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Nuget.exe
+        uses: nuget/setup-nuget@v1
+
+      - name: Restore packages
+        run: nuget restore $env:Solution_Name
+
+      - name: Setup MSBuild.exe
+        uses: microsoft/setup-msbuild@v1
+
+      - name: Build with MSBuild
+        run: msbuild $env:Solution_Name -p:Configuration=Release
+        
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: CelesteTAS
+          path: CelesteTAS-EverestInterop/bin
