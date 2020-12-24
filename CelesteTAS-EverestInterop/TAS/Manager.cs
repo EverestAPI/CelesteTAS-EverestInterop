@@ -383,7 +383,7 @@ namespace TAS {
 				case AnalogueMode.Square:
 					float x = input.GetX();
 					float y = input.GetY();
-					float mult = 1 / Math.Max(x, y);
+					float mult = 1 / Math.Max(Math.Abs(x), Math.Abs(y));
 					x *= mult;
 					y *= mult;
 					X = (short)(x * maxShort);
