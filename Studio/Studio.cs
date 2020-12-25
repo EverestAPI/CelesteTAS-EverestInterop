@@ -169,7 +169,9 @@ Ctrl + T: Insert current in-game time";
                     {
                         DialogResult result = MessageBox.Show("Celeste.tas progress will be lost If you open another file, do you want to continue?",
                             "Warning",
-                            MessageBoxButtons.YesNo);
+                            MessageBoxButtons.YesNo,
+                            MessageBoxIcon.Warning
+                            );
                         if (result == DialogResult.No) return;
                     }
                     StudioCommunicationServer.instance?.WriteWait();
