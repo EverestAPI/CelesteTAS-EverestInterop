@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace CelesteStudio
+namespace CelesteStudio.RichText
 {
     internal class NativeMethods
     {

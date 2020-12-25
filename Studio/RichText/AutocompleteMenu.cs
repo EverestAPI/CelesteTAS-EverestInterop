@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
-using System.Drawing;
 using System.ComponentModel;
+using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Text.RegularExpressions;
-namespace CelesteStudio.Controls {
+using System.Windows.Forms;
+
+namespace CelesteStudio.RichText {
 	/// <summary>
 	/// Popup menu for autocomplete
 	/// </summary>

@@ -1,4 +1,4 @@
-﻿namespace CelesteStudio.Controls {
+﻿namespace CelesteStudio.RichText {
 	public struct Place {
 		public int iChar;
 		public int iLine;

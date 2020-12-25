@@ -1,5 +1,6 @@
 ﻿using System;
-namespace CelesteStudio.Controls {
+
+namespace CelesteStudio.RichText {
 	public class LimitedStack<T> {
 		T[] items;
 		int count;

@@ -4,13 +4,13 @@ using System.Drawing;
 using System.IO;
 using System.Reflection;
 using System.Text;
-using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
-using CelesteStudio.Controls;
 using CelesteStudio.Entities;
 using Microsoft.Win32;
 using CelesteStudio.Communication;
+using CelesteStudio.RichText;
+using CelesteStudio.TtilebarButton;
 
 namespace CelesteStudio
 {
@@ -55,6 +55,8 @@ namespace CelesteStudio
 				DesktopLocation = new Point(0, 0);
 
             instance = this;
+
+            AddTitleBarButton();
         }
 
         private bool IsTitleBarVisible()
@@ -67,6 +69,46 @@ namespace CelesteStudio
                     return true;
             }
             return false;
+        }
+
+        // TitlebarButton modified from https://github.com/tomaszmalik/ActiveButtons.Net
+        private void AddTitleBarButton()
+        {
+            var menu = ActiveMenu.GetInstance(this);
+            var button = menu.Items.CreateItem("", (sender, args) => {
+                System.Diagnostics.Process.Start("https://github.com/EverestAPI/CelesteTAS-EverestInterop");
+            });
+            button.ToolTipTitle = "Fact: Birds are hard to catch";
+            button.ToolTipText = @"
+Ctrl + O: Open file (Updates Celeste.tas as well)
+
+Ctrl + Shift + S: Save as (Updates Celeste.tas as well)
+
+Ctrl + D: Toggle sending inputs to Celeste
+
+Ctrl + Shift + D: Refresh connection between Studio and Celeste
+
+Ctrl + Shift + C: Copy player data to clipboard
+
+Ctrl + K: Block comment/uncomment
+
+Ctrl + P: Remove all breakpoints
+
+Ctrl + R: Insert room name
+
+Ctrl + Shift + R: Insert console load command at current location
+
+Ctrl + T: Insert current in-game time";
+            button.BackColor = Color.Transparent;
+            button.ForeColor = Color.Empty;
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Studio));
+            button.Image = (Image)resources.GetObject("bird");
+            menu.Items.Add(button);
+            Button myButton = button as Button;
+            myButton.Cursor = Cursors.Hand;
+            myButton.TabStop = false;
+            myButton.FlatStyle = FlatStyle.Flat;
+            myButton.FlatAppearance.BorderSize = 0;
         }
 
         private void TASStudio_FormClosed(object sender, FormClosedEventArgs e)
@@ -392,7 +434,7 @@ namespace CelesteStudio
         }
         private void tasText_LineInserted(object sender, LineInsertedEventArgs e)
         {
-            RichText tas = (RichText)sender;
+            RichText.RichText tas = (RichText.RichText)sender;
             int count = e.Count;
             while (count-- > 0)
             {
@@ -438,7 +480,7 @@ namespace CelesteStudio
         private void tasText_TextChanged(object sender, TextChangedEventArgs e)
         {
             lastChanged = DateTime.Now;
-            UpdateLines((RichText)sender, e.ChangedRange);
+            UpdateLines((RichText.RichText)sender, e.ChangedRange);
         }
         private void CommentText()
         {
@@ -484,7 +526,7 @@ namespace CelesteStudio
             tasText.SelectedText = sb.ToString();
             tasText.Selection = new Range(tasText, 0, start, tasText[end].Count, end);
         }
-        private void UpdateLines(RichText tas, Range range)
+        private void UpdateLines(RichText.RichText tas, Range range)
         {
             if (updating) { return; }
             updating = true;

@@ -1,5 +1,6 @@
 ﻿using System;
-namespace CelesteStudio.Controls {
+
+namespace CelesteStudio.RichText {
 	public struct Char {
 		public char c;
 		public StyleIndex style;

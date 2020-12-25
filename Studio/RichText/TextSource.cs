@@ -1,10 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Collections;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
-namespace CelesteStudio.Controls {
+using System.Text;
+
+namespace CelesteStudio.RichText {
 	/// <summary>
 	/// This class contains the source text (chars and styles).
 	/// It stores a text lines, the manager of commands, undo/redo stack, styles.

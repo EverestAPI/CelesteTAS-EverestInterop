@@ -1,7 +1,8 @@
-﻿using System.Text;
+﻿using System.Collections.Generic;
 using System.Drawing;
-using System.Collections.Generic;
-namespace CelesteStudio.Controls {
+using System.Text;
+
+namespace CelesteStudio.RichText {
 	/// <summary>
 	/// Exports colored text as HTML
 	/// </summary>

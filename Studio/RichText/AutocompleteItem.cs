@@ -1,5 +1,6 @@
 ﻿using System;
-namespace CelesteStudio.Controls {
+
+namespace CelesteStudio.RichText {
 	public class AutocompleteItem {
 		public string Text;
 		public int ImageIndex = -1;

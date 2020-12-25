@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-namespace CelesteStudio.Controls {
+
+namespace CelesteStudio.RichText {
 	/// <summary>
 	/// Insert single char
 	/// </summary>

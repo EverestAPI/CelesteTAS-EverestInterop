@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Runtime.InteropServices;
-namespace CelesteStudio.Controls {
+
+namespace CelesteStudio.RichText {
 	public static class PlatformType {
 		const ushort PROCESSOR_ARCHITECTURE_INTEL = 0;
 		const ushort PROCESSOR_ARCHITECTURE_IA64 = 6;
