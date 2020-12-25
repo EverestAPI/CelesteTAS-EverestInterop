@@ -32,11 +32,11 @@ namespace CelesteStudio
 
         private string defaultFileName {
             get {
-                string fileName;
+                string fileName = "";
                 if (Environment.OSVersion.Platform == PlatformID.Unix) {
                     if (null == (fileName = Environment.GetEnvironmentVariable("CELESTE_TAS_FILE")))
                         fileName = Environment.GetEnvironmentVariable("HOME") + "/.steam/steam/steamapps/common/Celeste/Celeste.tas";
-                } else {
+                } else if (CommunicationWrapper.gamePath != null) {
                     fileName = Path.Combine(CommunicationWrapper.gamePath, "Celeste.tas");
                 }
 
