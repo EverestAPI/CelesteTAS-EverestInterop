@@ -30,6 +30,20 @@ namespace CelesteStudio
                 + Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
         }
 
+        private string defaultFileName {
+            get {
+                string fileName;
+                if (Environment.OSVersion.Platform == PlatformID.Unix) {
+                    if (null == (fileName = Environment.GetEnvironmentVariable("CELESTE_TAS_FILE")))
+                        fileName = Environment.GetEnvironmentVariable("HOME") + "/.steam/steam/steamapps/common/Celeste/Celeste.tas";
+                } else {
+                    fileName = Path.Combine(CommunicationWrapper.gamePath, "Celeste.tas");
+                }
+
+                return fileName;
+            }
+        }
+
         [STAThread]
         public static void Main() {
             Application.EnableVisualStyles();
@@ -151,6 +165,13 @@ Ctrl + T: Insert current in-game time";
                 }
                 else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.O)
                 {
+                    if (tasText.TextSource.Manager.UndoEnabled && (string.IsNullOrEmpty(tasText.LastFileName) || tasText.LastFileName == defaultFileName))
+                    {
+                        DialogResult result = MessageBox.Show("Celeste.tas progress will be lost If you open another file, do you want to continue?",
+                            "Warning",
+                            MessageBoxButtons.YesNo);
+                        if (result == DialogResult.No) return;
+                    }
                     StudioCommunicationServer.instance?.WriteWait();
                     tasText.OpenFile();
                     StudioCommunicationServer.instance?.SendPath(Path.GetDirectoryName(tasText.LastFileName));
@@ -318,22 +339,14 @@ Ctrl + T: Insert current in-game time";
                 }
             }
         }
+
         public void EnableStudio(bool hooked)
         {
             if (hooked)
             {
                 try
                 {
-                    string fileName;
-                    if (Environment.OSVersion.Platform == PlatformID.Unix)
-                    {
-                        if (null == (fileName = Environment.GetEnvironmentVariable("CELESTE_TAS_FILE")))
-                            fileName = Environment.GetEnvironmentVariable("HOME") + "/.steam/steam/steamapps/common/Celeste/Celeste.tas";
-                    }
-                    else
-                    {
-                        fileName = Path.Combine(CommunicationWrapper.gamePath, "Celeste.tas");
-                    }
+                    string fileName = defaultFileName;
                     if (!File.Exists(fileName)) { File.WriteAllText(fileName, string.Empty); }
 
                     if (string.IsNullOrEmpty(tasText.LastFileName))
