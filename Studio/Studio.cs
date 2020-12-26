@@ -40,9 +40,9 @@ namespace CelesteStudio
         {
             InitializeComponent();
             Text = titleBarText;
+			Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.CreateSpecificCulture("en-US");
 
-            InputRecord.Delimiter = (char)RegRead("delim", (int)',');
-            Lines.Add(new InputRecord(""));
+			Lines.Add(new InputRecord(""));
             EnableStudio(false);
 
             DesktopLocation = new Point(RegRead("x", DesktopLocation.X), RegRead("y", DesktopLocation.Y));
@@ -71,7 +71,6 @@ namespace CelesteStudio
 
         private void TASStudio_FormClosed(object sender, FormClosedEventArgs e)
         {
-            RegWrite("delim", (int)InputRecord.Delimiter);
             RegWrite("x", DesktopLocation.X); RegWrite("y", DesktopLocation.Y);
             RegWrite("w", Size.Width); RegWrite("h", Size.Height);
         }

@@ -172,24 +172,25 @@ namespace CelesteStudio.Entities {
 			return (Actions & actions) != 0;
 		}
 		public override string ToString() {
-			return Frames == 0 ? Notes : Frames.ToString().PadLeft(ZeroPadding, '0').PadLeft(4, ' ') + ActionsToString();
+			return Frames == 0 ? Notes : Frames.ToString().PadLeft(ZeroPadding, '0').PadLeft(4, ' ')
+				+ ActionsToString();
 		}
 		public string ActionsToString() {
 			StringBuilder sb = new StringBuilder();
-			if (HasActions(Actions.Left)) { sb.Append(Delimiter).Append('L'); }
-			if (HasActions(Actions.Right)) { sb.Append(Delimiter).Append('R'); }
-			if (HasActions(Actions.Up)) { sb.Append(Delimiter).Append('U'); }
-			if (HasActions(Actions.Down)) { sb.Append(Delimiter).Append('D'); }
-			if (HasActions(Actions.Jump)) { sb.Append(Delimiter).Append('J'); }
-			if (HasActions(Actions.Jump2)) { sb.Append(Delimiter).Append('K'); }
-			if (HasActions(Actions.Dash)) { sb.Append(Delimiter).Append('X'); }
-			if (HasActions(Actions.Dash2)) { sb.Append(Delimiter).Append('C'); }
-			if (HasActions(Actions.Grab)) { sb.Append(Delimiter).Append('G'); }
-			if (HasActions(Actions.Start)) { sb.Append(Delimiter).Append('S'); }
-			if (HasActions(Actions.Restart)) { sb.Append(Delimiter).Append('Q'); }
-			if (HasActions(Actions.Journal)) { sb.Append(Delimiter).Append('N'); }
-            if (HasActions(Actions.Confirm)) { sb.Append(Delimiter).Append('O'); }
-            if (HasActions(Actions.Feather)) { sb.Append(",F,").Append(Angle == 0 ? string.Empty : Angle.ToString()); }
+			if (HasActions(Actions.Left)) sb.Append(",L");
+			if (HasActions(Actions.Right)) sb.Append(",R");
+			if (HasActions(Actions.Up)) sb.Append(",U");
+			if (HasActions(Actions.Down)) sb.Append(",D");
+			if (HasActions(Actions.Jump)) sb.Append(",J");
+			if (HasActions(Actions.Jump2)) sb.Append(",K");
+			if (HasActions(Actions.Dash)) sb.Append(",X");
+			if (HasActions(Actions.Dash2)) sb.Append(",C");
+			if (HasActions(Actions.Grab)) sb.Append(",G");
+			if (HasActions(Actions.Start)) sb.Append(",S");
+			if (HasActions(Actions.Restart)) sb.Append(",Q");
+			if (HasActions(Actions.Journal)) sb.Append(",N");
+            if (HasActions(Actions.Confirm)) sb.Append(",O");
+            if (HasActions(Actions.Feather)) sb.Append(",F,").Append(Angle == 0 ? string.Empty : Angle.ToString());
 			return sb.ToString();
 		}
 		public override bool Equals(object obj) {
