@@ -1,4 +1,6 @@
-﻿namespace CelesteStudio {
+﻿using CelesteStudio.RichText;
+
+namespace CelesteStudio {
 	partial class Studio {
 		/// <summary>
 		/// Required designer variable.
@@ -26,7 +28,7 @@
 			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Studio));
 			this.statusBar = new System.Windows.Forms.StatusStrip();
 			this.lblStatus = new System.Windows.Forms.ToolStripStatusLabel();
-			this.tasText = new CelesteStudio.Controls.RichText();
+			this.tasText = new RichText.RichText();
 			this.statusBar.SuspendLayout();
 			this.SuspendLayout();
 			// 
@@ -70,7 +72,7 @@
 			this.tasText.DisabledColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
 			this.tasText.Font = new System.Drawing.Font("Courier New", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
 			this.tasText.ForeColor = System.Drawing.Color.Black;
-			this.tasText.Language = CelesteStudio.Controls.Language.TAS;
+			this.tasText.Language = Language.TAS;
 			this.tasText.LastFileName = null;
 			this.tasText.LineNumberColor = System.Drawing.Color.Black;
 			this.tasText.Location = new System.Drawing.Point(0, 0);
@@ -81,13 +83,13 @@
 			this.tasText.Size = new System.Drawing.Size(308, 640);
 			this.tasText.TabIndex = 0;
 			this.tasText.TabLength = 0;
-			this.tasText.TextChanged += new System.EventHandler<CelesteStudio.Controls.TextChangedEventArgs>(this.tasText_TextChanged);
+			this.tasText.TextChanged += new System.EventHandler<TextChangedEventArgs>(this.tasText_TextChanged);
 			this.tasText.NoChanges += new System.EventHandler(this.tasText_NoChanges);
 			this.tasText.FileOpening += new System.EventHandler(this.tasText_FileOpening);
 			this.tasText.FileOpened += new System.EventHandler(this.tasText_FileOpened);
-			this.tasText.LineInserted += new System.EventHandler<CelesteStudio.Controls.LineInsertedEventArgs>(this.tasText_LineInserted);
-			this.tasText.LineNeeded += new System.EventHandler<CelesteStudio.Controls.LineNeededEventArgs>(this.tasText_LineNeeded);
-			this.tasText.LineRemoved += new System.EventHandler<CelesteStudio.Controls.LineRemovedEventArgs>(this.tasText_LineRemoved);
+			this.tasText.LineInserted += new System.EventHandler<LineInsertedEventArgs>(this.tasText_LineInserted);
+			this.tasText.LineNeeded += new System.EventHandler<LineNeededEventArgs>(this.tasText_LineNeeded);
+			this.tasText.LineRemoved += new System.EventHandler<LineRemovedEventArgs>(this.tasText_LineRemoved);
 			// 
 			// Studio
 			// 
@@ -114,7 +116,7 @@
 		#endregion
 		private System.Windows.Forms.StatusStrip statusBar;
 		private System.Windows.Forms.ToolStripStatusLabel lblStatus;
-		public Controls.RichText tasText;
+		public RichText.RichText tasText;
 	}
 }
 

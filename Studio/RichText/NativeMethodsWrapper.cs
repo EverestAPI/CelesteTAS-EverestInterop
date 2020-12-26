@@ -1,5 +1,6 @@
 ﻿using System;
-namespace CelesteStudio
+
+namespace CelesteStudio.RichText
 {
     internal class NativeMethodsWrapper : NativeMethods
     {

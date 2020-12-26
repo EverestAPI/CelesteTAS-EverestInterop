@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Drawing;
+﻿using System.Drawing;
 using System.Windows.Forms;
-namespace CelesteStudio.Controls {
+
+namespace CelesteStudio.RichText {
 	public class VisualMarker {
 		public readonly Rectangle rectangle;
 

@@ -1,8 +1,9 @@
-﻿using System.Collections.Generic;
-using System;
-using System.Text;
+﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
-namespace CelesteStudio.Controls {
+using System.Text;
+
+namespace CelesteStudio.RichText {
 	public class Line : IList<Char> {
 		protected List<Char> chars;
 		public string FoldingStartMarker { get; set; }
@@ -119,7 +120,7 @@ namespace CelesteStudio.Controls {
 		public VisibleState VisibleState;
 		public LineInfo(int startY) {
 			cutOffPositions = null;
-			VisibleState = CelesteStudio.Controls.VisibleState.Visible;
+			VisibleState = VisibleState.Visible;
 			this.startY = startY;
 		}
 		public List<int> CutOffPositions {

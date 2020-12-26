@@ -1,6 +1,7 @@
-﻿using System.Collections.Generic;
-using System;
-namespace CelesteStudio.Controls {
+﻿using System;
+using System.Collections.Generic;
+
+namespace CelesteStudio.RichText {
 	internal class CommandManager {
 		readonly int maxHistoryLength = 200;
 		LimitedStack<UndoableCommand> history;

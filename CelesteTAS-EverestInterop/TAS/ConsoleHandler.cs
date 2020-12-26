@@ -115,8 +115,11 @@ namespace TAS {
 				location = level.Session.Level;
 			else
 				location = player.X.ToString() + " " + player.Y.ToString();
-			return $"console {mode} {ID} {location}";
 
+			if (ID.Contains(" "))
+				return $"console,{mode},{ID},{location.Replace(" ", ",")}";
+			else
+				return $"console {mode} {ID} {location}";
 		}
 
 		[Command("giveberry", "Gives player a red berry")]

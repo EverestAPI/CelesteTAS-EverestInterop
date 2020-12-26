@@ -1,4 +1,4 @@
-﻿namespace CelesteStudio.Controls
+﻿namespace CelesteStudio.RichText
 {
     partial class GoToForm
     {

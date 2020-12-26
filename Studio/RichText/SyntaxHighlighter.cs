@@ -1,11 +1,12 @@
-﻿using System.Drawing;
-using System.Text.RegularExpressions;
+﻿using System;
 using System.Collections.Generic;
-using System.Xml;
+using System.Drawing;
 using System.IO;
-using System;
+using System.Text.RegularExpressions;
+using System.Xml;
 using CelesteStudio.Entities;
-namespace CelesteStudio.Controls {
+
+namespace CelesteStudio.RichText {
 	public class SyntaxHighlighter : IDisposable {
 		//styles
 		public readonly Style BlueStyle = new TextStyle(Brushes.Blue, null, FontStyle.Regular);

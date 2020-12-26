@@ -1,17 +1,16 @@
-﻿using CelesteStudio.Communication;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Design;
 using System.Drawing.Drawing2D;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
-namespace CelesteStudio.Controls {
+
+namespace CelesteStudio.RichText {
 	public class RichText : UserControl {
 		private const int minLeftIndent = 8;
 		private const int maxBracketSearchIterations = 1000;

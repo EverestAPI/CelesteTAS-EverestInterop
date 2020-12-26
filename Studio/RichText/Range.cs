@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Text;
-using System.Drawing;
-using System.Text.RegularExpressions;
 using System.Collections.Generic;
-namespace CelesteStudio.Controls {
+using System.Text;
+using System.Text.RegularExpressions;
+
+namespace CelesteStudio.RichText {
 	/// <summary>
 	/// Diapason of text chars
 	/// </summary>

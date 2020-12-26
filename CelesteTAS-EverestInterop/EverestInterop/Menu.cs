@@ -1,8 +1,10 @@
-﻿using Celeste;
+﻿using System;
+using Celeste;
 using Celeste.Mod;
 using Monocle;
 using System.Collections.Generic;
 using System.Linq;
+using TAS.EverestInterop.Hitboxes;
 
 namespace TAS.EverestInterop {
 	class Menu {
@@ -14,6 +16,18 @@ namespace TAS.EverestInterop {
 
 		private static List<TextMenu.Item> normalOptions;
 		private static List<TextMenu.Item> hiddenOptions;
+
+		private static readonly List<String> needRelaunchItemLabels = new List<string> {
+			"Launch Studio At Boot",
+			"Unix RTC",
+			"Mod 9D Lighting"
+		};
+
+		private static void TrySetNeedRelaunch(TextMenu textMenu, TextMenu.Item item) {
+			if (item is TextMenu.OnOff onOffItem && needRelaunchItemLabels.Contains(onOffItem.Label)) {
+				item.NeedsRelaunch(textMenu);
+			}
+		}
 
 		private static void CreateNormalOptions(TextMenu menu, bool inGame) {
 			normalOptions = new List<TextMenu.Item> {
@@ -71,6 +85,7 @@ namespace TAS.EverestInterop {
 			foreach (TextMenu.Item item in normalOptions) {
 				menu.Add(item);
 				item.Visible = Settings.Enabled;
+				TrySetNeedRelaunch(menu, item);
 			}
 
 			keyConfigMenu = new TextMenu.Button(Dialog.Clean("options_keyconfig")).Pressed(() => {
@@ -96,6 +111,7 @@ namespace TAS.EverestInterop {
 			foreach (TextMenu.Item item in hiddenOptions) {
 				menu.Add(item);
 				item.Visible = false;
+				TrySetNeedRelaunch(menu, item);
 			}
 		}
 

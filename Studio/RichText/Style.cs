@@ -1,8 +1,9 @@
-﻿using System.Drawing;
-using System;
-using System.Drawing.Drawing2D;
+﻿using System;
 using System.Collections.Generic;
-namespace CelesteStudio.Controls {
+using System.Drawing;
+using System.Drawing.Drawing2D;
+
+namespace CelesteStudio.RichText {
 	/// <summary>
 	/// Style of chars
 	/// </summary>

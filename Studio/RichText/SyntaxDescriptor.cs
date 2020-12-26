@@ -1,7 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using System;
-namespace CelesteStudio.Controls {
+
+namespace CelesteStudio.RichText {
 	public class SyntaxDescriptor : IDisposable {
 		public char leftBracket = '(';
 		public char rightBracket = ')';

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows.Forms;
-namespace CelesteStudio.Controls {
+
+namespace CelesteStudio.RichText {
 	public sealed partial class GoToForm : Form {
 		public int SelectedLineNumber { get; set; }
 		public int TotalLineCount { get; set; }

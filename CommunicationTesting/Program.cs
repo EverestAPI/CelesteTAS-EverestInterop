@@ -1,11 +1,4 @@
-﻿using Microsoft.Xna.Framework.Input;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TAS.EverestInterop;
-using TAS.StudioCommunication;
+﻿using TAS.StudioCommunication;
 #if DEBUG
 using TASALT.StudioCommunication;
 #endif

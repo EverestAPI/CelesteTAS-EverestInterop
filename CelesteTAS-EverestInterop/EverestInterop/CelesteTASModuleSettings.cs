@@ -57,17 +57,14 @@ namespace TAS.EverestInterop {
 		[SettingIgnore]
 		public string DefaultPath { get; set; } = null;
 
-		[SettingIgnore]
 		[SettingNeedsRelaunch]
 		public bool Mod9DLighting { get; set; } = false;
 
-		[SettingIgnore]
 		public bool DisableGrabDesyncFix {
 			get => Manager.grabButton != Buttons.Back;
 			set => Manager.grabButton = value ? Buttons.LeftShoulder : Buttons.Back;
 		}
 
-		[SettingIgnore]
 		public bool RoundPosition { get; set; } = true;
 
 		[SettingIgnore]
@@ -76,19 +73,14 @@ namespace TAS.EverestInterop {
 		public int FastForwardThreshold { get; set; } = 10;
 		[SettingIgnore]
 		public string Version { get; set; } = null;
-		[SettingIgnore]
 		public bool OverrideVersionCheck { get; set; } = false;
-		[SettingIgnore]
 		public bool HideGameplay { get; set; } = false;
-		[SettingIgnore]
 		public bool AutoMute { get; set; } = true;
 		[SettingIgnore]
 		public Color EntityHitboxColor { get; set; } = Color.Red;
 		[SettingIgnore]
 		public Color TriggerHitboxColor { get; set; } = Color.Red;
-		[SettingIgnore]
 		public bool HideTriggerHitbox { get; set; } = false;
-		[SettingIgnore]
 		public bool HideUselessHitbox { get; set; } = true;
     }
 }
