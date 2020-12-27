@@ -107,6 +107,7 @@
     <Compile Include="EverestInterop\Hitboxes\HitboxTriggerSpikes.cs" />
     <Compile Include="EverestInterop\Hitboxes\HitboxTweak.cs" />
     <Compile Include="EverestInterop\Hotkeys.cs" />
+    <Compile Include="EverestInterop\InfoHUD.cs" />
     <Compile Include="EverestInterop\Menu.cs" />
     <Compile Include="TAS\Savestates.cs" />
     <Compile Include="StudioCommunication\HotkeyIDs.cs" />

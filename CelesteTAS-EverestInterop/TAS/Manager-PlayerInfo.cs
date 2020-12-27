@@ -20,7 +20,7 @@ namespace TAS
 		public static string additionalStatusInfo;
 		public static bool ExportSyncData { get; set; }
 
-		private static void UpdatePlayerInfo() {
+		public static void UpdatePlayerInfo() {
 			Player player = null;
 			long chapterTime = 0;
 			if (Engine.Scene is Level level) {
