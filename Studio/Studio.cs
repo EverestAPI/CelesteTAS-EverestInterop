@@ -433,11 +433,13 @@ Ctrl + T: Insert current in-game time";
                 lblStatus.Text = "Searching...";
                 tasText.Height += statusBar.Height - 22;
                 statusBar.Height = 22;
-                StudioCommunicationServer.Run();
+
                 if (Settings.Default.RememberLastFileName && File.Exists(Settings.Default.LastFileName) && Settings.Default.LastFileName != defaultFileName) {
                     tasText.LastFileName = Settings.Default.LastFileName;
                     tasText.ReloadFile();
                 }
+
+                StudioCommunicationServer.Run();
             }
         }
         public void UpdateValues()
