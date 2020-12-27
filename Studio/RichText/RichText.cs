@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
+using CelesteStudio.Properties;
 
 namespace CelesteStudio.RichText {
 	public class RichText : UserControl {
@@ -2016,26 +2017,39 @@ namespace CelesteStudio.RichText {
 			if (e.KeyCode == Keys.ControlKey)
 				lastModifiers &= ~Keys.Control;
 		}
-		public void OpenFile() {
+		public bool OpenFile(string fileName) {
 			lastModifiers = Keys.None;
-			using (OpenFileDialog diag = new OpenFileDialog()) {
-				diag.Filter = "TAS|*.tas";
-				diag.FilterIndex = 0;
-				if (!string.IsNullOrEmpty(LastFileName)) {
-					diag.InitialDirectory = Path.GetDirectoryName(LastFileName);
-				} else if (Environment.OSVersion.Platform == PlatformID.Unix
-                && Directory.Exists("~/.steam/steam/steamapps/common/Celeste"))
-                {
-                    diag.InitialDirectory = Path.GetFullPath("~/.steam/steam/steamapps/common/Celeste");
-                }
-                if (diag.ShowDialog() == DialogResult.OK) {
-					LastFileName = diag.FileName;
-					OpenBindingFile(diag.FileName, Encoding.ASCII);
+			if (string.IsNullOrEmpty(fileName) || !File.Exists(fileName))
+			{
+				using (OpenFileDialog diag = new OpenFileDialog()) {
+					diag.Filter = "TAS|*.tas";
+					diag.FilterIndex = 0;
+					if (!string.IsNullOrEmpty(LastFileName)) {
+						diag.InitialDirectory = Path.GetDirectoryName(LastFileName);
+					} else if (Environment.OSVersion.Platform == PlatformID.Unix
+            	    && Directory.Exists("~/.steam/steam/steamapps/common/Celeste"))
+            	    {
+            	        diag.InitialDirectory = Path.GetFullPath("~/.steam/steam/steamapps/common/Celeste");
+            	    }
+            	    if (diag.ShowDialog() == DialogResult.OK)
+                    {
+						LastFileName = diag.FileName;
+						OpenBindingFile(diag.FileName, Encoding.ASCII);
+						return true;
+            	    }
 				}
 			}
+			else
+			{
+				LastFileName = fileName;
+				OpenBindingFile(fileName, Encoding.ASCII);
+				return true;
+			}
+
+			return false;
 		}
 		public void ReloadFile() {
-			if (!string.IsNullOrEmpty(LastFileName)) {
+			if (!string.IsNullOrEmpty(LastFileName) && File.Exists(LastFileName)) {
 				OpenBindingFile(LastFileName, Encoding.ASCII);
 			}
 		}

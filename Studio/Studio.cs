@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
@@ -9,6 +10,7 @@ using System.Windows.Forms;
 using CelesteStudio.Entities;
 using Microsoft.Win32;
 using CelesteStudio.Communication;
+using CelesteStudio.Properties;
 using CelesteStudio.RichText;
 using CelesteStudio.TtilebarButton;
 
@@ -53,6 +55,8 @@ namespace CelesteStudio
         public Studio()
         {
             InitializeComponent();
+            InitMenu();
+
             Text = titleBarText;
 			Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.CreateSpecificCulture("en-US");
 
@@ -69,8 +73,49 @@ namespace CelesteStudio
 				DesktopLocation = new Point(0, 0);
 
             instance = this;
+        }
 
+        private void InitMenu() {
             AddTitleBarButton();
+
+            rememberCurrentFileToolStripMenuItem.Checked = Settings.Default.RememberLastFileName;
+            openRencentStripMenuItem.DropDownItemClicked += (sender, args) => {
+                ToolStripItem clickedItem = args.ClickedItem;
+                if (clickedItem.Text == "Clear") {
+                    Settings.Default.RecentFiles.Clear();
+                    return;
+                }
+
+                if (!File.Exists(clickedItem.Text)) {
+                    contextMenuStrip.Close();
+                }
+                OpenFile(clickedItem.Text);
+            };
+        }
+
+        private void CreateRecentFilesMenu() {
+            openRencentStripMenuItem.DropDownItems.Clear();
+            if (Settings.Default.RecentFiles == null) {
+                Settings.Default.RecentFiles = new FileList();
+            }
+            if (Settings.Default.RecentFiles.Count == 0) {
+                openRencentStripMenuItem.DropDownItems.Add(new ToolStripMenuItem("Nothing") {
+                    Enabled = false
+                });
+            } else {
+                for (var i = Settings.Default.RecentFiles.Count - 1; i >= 10; i--) {
+                    Settings.Default.RecentFiles.Remove(Settings.Default.RecentFiles[i]);
+                }
+                foreach (var lastFileName in Settings.Default.RecentFiles) {
+                    openRencentStripMenuItem.DropDownItems.Add(new ToolStripMenuItem(lastFileName) {
+                        Checked = lastFileName == Settings.Default.LastFileName
+                    });
+                }
+
+                openRencentStripMenuItem.DropDownItems.Add(new ToolStripSeparator());
+
+                openRencentStripMenuItem.DropDownItems.Add(new ToolStripMenuItem("Clear"));
+            }
         }
 
         private bool IsTitleBarVisible()
@@ -89,9 +134,7 @@ namespace CelesteStudio
         private void AddTitleBarButton()
         {
             var menu = ActiveMenu.GetInstance(this);
-            var button = menu.Items.CreateItem("", (sender, args) => {
-                System.Diagnostics.Process.Start("https://github.com/EverestAPI/CelesteTAS-EverestInterop");
-            });
+            var button = menu.Items.CreateItem("", null);
             button.ToolTipTitle = "Fact: Birds are hard to catch";
             button.ToolTipText = @"
 Ctrl + O: Open file (Updates Celeste.tas as well)
@@ -115,20 +158,24 @@ Ctrl + Shift + R: Insert console load command at current location
 Ctrl + T: Insert current in-game time";
             button.BackColor = Color.Transparent;
             button.ForeColor = Color.Empty;
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Studio));
-            button.Image = (Image)resources.GetObject("bird");
+            button.Image = Properties.Resources.bird;
             menu.Items.Add(button);
             Button myButton = button as Button;
             myButton.Cursor = Cursors.Hand;
             myButton.TabStop = false;
             myButton.FlatStyle = FlatStyle.Flat;
             myButton.FlatAppearance.BorderSize = 0;
+            button.Click += (sender, args) => {
+                contextMenuStrip.Show(myButton, 0, myButton.Height);
+            };
         }
 
         private void TASStudio_FormClosed(object sender, FormClosedEventArgs e)
         {
-            RegWrite("x", DesktopLocation.X); RegWrite("y", DesktopLocation.Y);
+            RegWrite("x", DesktopLocation.X);
+            RegWrite("y", DesktopLocation.Y);
             RegWrite("w", Size.Width); RegWrite("h", Size.Height);
+            Settings.Default.Save();
         }
 
         private void Studio_Shown(object sender, EventArgs e)
@@ -162,21 +209,8 @@ Ctrl + T: Insert current in-game time";
                 {
                     tasText.SaveFile();
                 }
-                else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.O)
-                {
-                    if (tasText.TextSource.Manager.UndoEnabled && (string.IsNullOrEmpty(tasText.LastFileName) || tasText.LastFileName == defaultFileName))
-                    {
-                        DialogResult result = MessageBox.Show("Celeste.tas progress will be lost If you open another file, do you want to continue?",
-                            "Warning",
-                            MessageBoxButtons.YesNo,
-                            MessageBoxIcon.Warning
-                            );
-                        if (result == DialogResult.No) return;
-                    }
-                    StudioCommunicationServer.instance?.WriteWait();
-                    tasText.OpenFile();
-                    StudioCommunicationServer.instance?.SendPath(Path.GetDirectoryName(tasText.LastFileName));
-                    Text = titleBarText;
+                else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.O) {
+                    OpenFile();
                 }
                 else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.K)
                 {
@@ -215,6 +249,29 @@ Ctrl + T: Insert current in-game time";
                 MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Console.Write(ex);
             }
+        }
+
+        private void OpenFile(string fileName = null) {
+            if (tasText.TextSource.Manager.UndoEnabled && (string.IsNullOrEmpty(tasText.LastFileName) || tasText.LastFileName == defaultFileName)) {
+                DialogResult result = MessageBox.Show("Celeste.tas progress will be lost If you open another file, do you want to continue?",
+                    "Warning",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning
+                );
+                if (result == DialogResult.No) return;
+            }
+
+            StudioCommunicationServer.instance?.WriteWait();
+            if (tasText.OpenFile(fileName)) {
+                if (!Settings.Default.RecentFiles.Contains(tasText.LastFileName)) {
+                    Settings.Default.RecentFiles.Insert(0, tasText.LastFileName);
+                }
+
+                Settings.Default.LastFileName = tasText.LastFileName;
+            }
+
+            StudioCommunicationServer.instance?.SendPath(Path.GetDirectoryName(tasText.LastFileName));
+            Text = titleBarText;
         }
 
         private void ClearBreakpoints()
@@ -375,6 +432,11 @@ Ctrl + T: Insert current in-game time";
                 tasText.Height += statusBar.Height - 22;
                 statusBar.Height = 22;
                 StudioCommunicationServer.Run();
+                if (Settings.Default.RememberLastFileName)
+                {
+                    tasText.LastFileName = Settings.Default.LastFileName;
+                }
+                tasText.ReloadFile();
             }
         }
         public void UpdateValues()
@@ -646,7 +708,7 @@ Ctrl + T: Insert current in-game time";
             }
             catch { }
         }
-        private int RegRead(string name, int def)
+        private T RegRead<T>(string name, T def)
         {
             object o = null;
             try
@@ -655,20 +717,33 @@ Ctrl + T: Insert current in-game time";
             }
             catch { }
 
-            if (o is int)
+            if (o is T)
             {
-                return (int)o;
+                return (T)o;
             }
 
             return def;
         }
-        private void RegWrite(string name, int val)
+        private void RegWrite<T>(string name, T val)
         {
             try
             {
                 Registry.SetValue(RegKey, name, val);
             }
             catch { }
+        }
+
+        private void rememberCurrentFileToolStripMenuItem_Click(object sender, EventArgs e) {
+            Settings.Default.RememberLastFileName = !Settings.Default.RememberLastFileName;
+            ((ToolStripMenuItem) sender).Checked = Settings.Default.RememberLastFileName;
+        }
+
+        private void homeToolStripMenuItem_Click(object sender, EventArgs e) {
+            System.Diagnostics.Process.Start("https://github.com/EverestAPI/CelesteTAS-EverestInterop");
+        }
+
+        private void contextMenuStrip_Opened(object sender, EventArgs e) {
+            CreateRecentFilesMenu();
         }
     }
 }

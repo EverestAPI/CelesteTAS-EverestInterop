@@ -60,6 +60,7 @@
     <Compile Include="Entities\MemoryReader.cs" />
     <Compile Include="Entities\InputRecord.cs" />
     <Compile Include="Entities\ProgramPointer.cs" />
+    <Compile Include="Properties\FileList.cs" />
     <Compile Include="RichText\AutocompleteItem.cs" />
     <Compile Include="RichText\AutocompleteMenu.cs">
       <SubType>Component</SubType>
@@ -161,6 +162,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Celeste.ico" />
+    <None Include="Resources\bird.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
