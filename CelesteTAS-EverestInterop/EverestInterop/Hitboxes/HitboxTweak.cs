@@ -42,7 +42,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 return;
             }
 
-            if (Settings.HideUselessHitbox && UselessTypes.Contains(self.GetType())) {
+            if (Settings.SimplifiedHitbox && UselessTypes.Contains(self.GetType())) {
                 return;
             }
 
@@ -50,7 +50,7 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void CombineHitbox(On.Monocle.Grid.orig_Render orig, Grid self, Camera camera, Color color) {
-            if (!Settings.HideUselessHitbox) {
+            if (!Settings.SimplifiedHitbox) {
                 orig(self, camera, color);
                 return;
             }

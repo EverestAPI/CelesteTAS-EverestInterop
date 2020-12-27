@@ -60,7 +60,7 @@ namespace TAS.EverestInterop {
 				}),
 				new TextMenu.OnOff("Auto Mute on Fast Forward", Settings.AutoMute).Change(b => Settings.AutoMute = b),
 				new TextMenu.OnOff("Hide Trigger Hitbox", Settings.HideTriggerHitbox).Change(b => Settings.HideTriggerHitbox = b),
-				new TextMenu.OnOff("Hide Useless Hitbox", Settings.HideUselessHitbox).Change(b => Settings.HideUselessHitbox = b),
+				new TextMenu.OnOff("SimplifiedHitbox Hitbox", Settings.SimplifiedHitbox).Change(b => Settings.SimplifiedHitbox = b),
 			};
 		}
 
