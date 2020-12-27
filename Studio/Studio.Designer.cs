@@ -30,9 +30,10 @@ namespace CelesteStudio {
 			this.statusBar = new System.Windows.Forms.StatusStrip();
 			this.lblStatus = new System.Windows.Forms.ToolStripStatusLabel();
 			this.contextMenuStrip = new System.Windows.Forms.ContextMenuStrip(this.components);
+			this.openCelesteTasToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.openRencentStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
 			this.rememberCurrentFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
 			this.homeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.tasText = new CelesteStudio.RichText.RichText();
 			this.statusBar.SuspendLayout();
@@ -61,10 +62,17 @@ namespace CelesteStudio {
 			//
 			// contextMenuStrip
 			//
-			this.contextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.openRencentStripMenuItem, this.rememberCurrentFileToolStripMenuItem, this.toolStripSeparator1, this.homeToolStripMenuItem});
+			this.contextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.openCelesteTasToolStripMenuItem, this.openRencentStripMenuItem, this.rememberCurrentFileToolStripMenuItem, this.toolStripSeparator1, this.homeToolStripMenuItem});
 			this.contextMenuStrip.Name = "contextMenuStrip1";
 			this.contextMenuStrip.Size = new System.Drawing.Size(329, 98);
 			this.contextMenuStrip.Opened += new System.EventHandler(this.contextMenuStrip_Opened);
+			//
+			// openCelesteTasToolStripMenuItem
+			//
+			this.openCelesteTasToolStripMenuItem.Name = "openCelesteTasToolStripMenuItem";
+			this.openCelesteTasToolStripMenuItem.Size = new System.Drawing.Size(328, 22);
+			this.openCelesteTasToolStripMenuItem.Text = "Open Celeste.tas";
+			this.openCelesteTasToolStripMenuItem.Click += new System.EventHandler(this.openCelesteTasToolStripMenuItem_Click);
 			//
 			// openRencentStripMenuItem
 			//
@@ -72,17 +80,17 @@ namespace CelesteStudio {
 			this.openRencentStripMenuItem.Size = new System.Drawing.Size(328, 22);
 			this.openRencentStripMenuItem.Text = "Open Rencent";
 			//
-			// toolStripSeparator1
-			//
-			this.toolStripSeparator1.Name = "toolStripSeparator1";
-			this.toolStripSeparator1.Size = new System.Drawing.Size(325, 6);
-			//
 			// rememberCurrentFileToolStripMenuItem
 			//
 			this.rememberCurrentFileToolStripMenuItem.Name = "rememberCurrentFileToolStripMenuItem";
 			this.rememberCurrentFileToolStripMenuItem.Size = new System.Drawing.Size(328, 22);
 			this.rememberCurrentFileToolStripMenuItem.Text = "Remember the Current File for Next Launch";
 			this.rememberCurrentFileToolStripMenuItem.Click += new System.EventHandler(this.rememberCurrentFileToolStripMenuItem_Click);
+			//
+			// toolStripSeparator1
+			//
+			this.toolStripSeparator1.Name = "toolStripSeparator1";
+			this.toolStripSeparator1.Size = new System.Drawing.Size(325, 6);
 			//
 			// homeToolStripMenuItem
 			//
@@ -148,6 +156,8 @@ namespace CelesteStudio {
 			this.contextMenuStrip.ResumeLayout(false);
 			this.ResumeLayout(false);
 		}
+
+		private System.Windows.Forms.ToolStripMenuItem openCelesteTasToolStripMenuItem;
 
 		private System.Windows.Forms.ToolStripMenuItem homeToolStripMenuItem;
 

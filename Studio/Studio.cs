@@ -262,12 +262,14 @@ Ctrl + T: Insert current in-game time";
             }
 
             StudioCommunicationServer.instance?.WriteWait();
-            if (tasText.OpenFile(fileName)) {
+            if (tasText.OpenFile(fileName) && fileName != defaultFileName) {
                 if (!Settings.Default.RecentFiles.Contains(tasText.LastFileName)) {
                     Settings.Default.RecentFiles.Insert(0, tasText.LastFileName);
                 }
 
-                Settings.Default.LastFileName = tasText.LastFileName;
+                if (tasText.LastFileName != defaultFileName) {
+                    Settings.Default.LastFileName = tasText.LastFileName;
+                }
             }
 
             StudioCommunicationServer.instance?.SendPath(Path.GetDirectoryName(tasText.LastFileName));
@@ -432,11 +434,10 @@ Ctrl + T: Insert current in-game time";
                 tasText.Height += statusBar.Height - 22;
                 statusBar.Height = 22;
                 StudioCommunicationServer.Run();
-                if (Settings.Default.RememberLastFileName)
-                {
+                if (Settings.Default.RememberLastFileName && File.Exists(Settings.Default.LastFileName) && Settings.Default.LastFileName != defaultFileName) {
                     tasText.LastFileName = Settings.Default.LastFileName;
+                    tasText.ReloadFile();
                 }
-                tasText.ReloadFile();
             }
         }
         public void UpdateValues()
@@ -744,6 +745,13 @@ Ctrl + T: Insert current in-game time";
 
         private void contextMenuStrip_Opened(object sender, EventArgs e) {
             CreateRecentFilesMenu();
+        }
+
+        private void openCelesteTasToolStripMenuItem_Click(object sender, EventArgs e) {
+            string fileName = defaultFileName;
+            if (string.IsNullOrEmpty(fileName)) return;
+            if (!File.Exists(fileName)) { File.WriteAllText(fileName, string.Empty); }
+            OpenFile(fileName);
         }
     }
 }
