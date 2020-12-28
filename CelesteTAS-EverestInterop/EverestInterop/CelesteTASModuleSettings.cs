@@ -1,4 +1,6 @@
-﻿using Celeste;
+﻿using System;
+using System.Diagnostics;
+using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework;
@@ -72,8 +74,8 @@ namespace TAS.EverestInterop {
 		[SettingIgnore]
 		public int FastForwardThreshold { get; set; } = 10;
 		[SettingIgnore]
-		public string Version { get; set; } = null;
-		public bool OverrideVersionCheck { get; set; } = false;
+		public DateTime StudioLastModifiedTime { get; set; } = new DateTime();
+		public bool AutoExtractNewStudio { get; set; } = true;
 		public bool HideGameplay { get; set; } = false;
 		public bool AutoMute { get; set; } = true;
 		[SettingIgnore]

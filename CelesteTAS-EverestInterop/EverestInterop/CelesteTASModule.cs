@@ -31,14 +31,14 @@ namespace TAS.EverestInterop {
         }
 
         public override void Initialize() {
-            ExtractStudio();
-            LaunchStudioAtBoot();
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
+                ExtractStudio();
+                LaunchStudioAtBoot();
+            }
         }
 
         private void ExtractStudio() {
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT &&
-                (Settings.Version == null || Metadata.VersionString != Settings.Version ||
-                Settings.OverrideVersionCheck || !File.Exists(copiedStudioExePath))) {
+            if (!File.Exists(copiedStudioExePath) || CheckNewerStudio()) {
                 try {
                     Process studioProcess = Process.GetProcesses().FirstOrDefault(process =>
                         process.ProcessName.StartsWith("Celeste") &&
@@ -76,7 +76,7 @@ namespace TAS.EverestInterop {
                         }
                     }
 
-                    Settings.Version = Metadata.VersionString;
+                    Settings.StudioLastModifiedTime = File.GetLastWriteTime(copiedStudioExePath);
                     Instance.SaveSettings();
                 }
                 catch (UnauthorizedAccessException) { }
@@ -87,8 +87,29 @@ namespace TAS.EverestInterop {
             }
         }
 
+        private bool CheckNewerStudio() {
+            if(!Settings.AutoExtractNewStudio) return false;
+
+            DateTime modifiedTime = new DateTime();
+
+            if (!string.IsNullOrEmpty(Metadata.PathArchive)) {
+                using (ZipFile zip = ZipFile.Read(Metadata.PathArchive)) {
+                    if (zip.Entries.FirstOrDefault(zipEntry => zipEntry.FileName == studioNameWithExe) is ZipEntry studioZipEntry) {
+                        modifiedTime = studioZipEntry.LastModified;
+                    }
+                }
+            } else if (!string.IsNullOrEmpty(Metadata.PathDirectory)) {
+                string[] files = Directory.GetFiles(Metadata.PathDirectory);
+
+                if (files.FirstOrDefault(filePath => filePath.EndsWith(studioNameWithExe)) is string studioFilePath) {
+                    modifiedTime = File.GetLastWriteTime(studioFilePath);
+                }
+            }
+            return modifiedTime.CompareTo(Settings.StudioLastModifiedTime) > 0;
+        }
+
         private void LaunchStudioAtBoot() {
-            if (Settings.Enabled && Settings.LaunchStudioAtBoot && Environment.OSVersion.Platform == PlatformID.Win32NT) {
+            if (Settings.Enabled && Settings.LaunchStudioAtBoot) {
                 Process[] processes = Process.GetProcesses();
                 foreach (Process process in processes) {
                     if (process.ProcessName.StartsWith("Celeste") && process.ProcessName.Contains("Studio"))
