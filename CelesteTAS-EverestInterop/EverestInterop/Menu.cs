@@ -8,7 +8,6 @@ using TAS.EverestInterop.Hitboxes;
 
 namespace TAS.EverestInterop {
 	class Menu {
-
 		private static TextMenu.Item moreOptionsTextMenu;
 		private static TextMenu.Item keyConfigMenu;
 
@@ -44,6 +43,7 @@ namespace TAS.EverestInterop {
 		}
 
 		private static void CreateHiddenOptions(TextMenu menu, bool inGame) {
+			var itemInfoHUD = new TextMenu.Option<InfoPositions>("Info HUD");
 			hiddenOptions = new List<TextMenu.Item> {
 				new TextMenu.OnOff("Unix RTC",Settings.UnixRTC).Change(b => Settings.UnixRTC = b),
 				new TextMenu.OnOff("Disable Grab Desync Fix", Settings.DisableGrabDesyncFix).Change(b => Settings.DisableGrabDesyncFix = b),
@@ -59,10 +59,15 @@ namespace TAS.EverestInterop {
 					}
 				}),
 				new TextMenu.OnOff("Auto Mute on Fast Forward", Settings.AutoMute).Change(b => Settings.AutoMute = b),
-				new TextMenu.OnOff("Hide Trigger Hitbox", Settings.HideTriggerHitbox).Change(b => Settings.HideTriggerHitbox = b),
-				new TextMenu.OnOff("SimplifiedHitbox Hitbox", Settings.SimplifiedHitbox).Change(b => Settings.SimplifiedHitbox = b),
-				new TextMenu.OnOff("Info HUD", Settings.InfoHUD).Change(b => Settings.InfoHUD = b),
-				new TextMenuExt.EnumSlider<InfoPositions>("Info Position").Change(b => Settings.InfoPosition = b),
+				new TextMenu.OnOff("Hide Trigger Hitboxes", Settings.HideTriggerHitboxes).Change(b => Settings.HideTriggerHitboxes = b),
+				new TextMenu.OnOff("Simplified Hitboxes", Settings.SimplifiedHitboxes).Change(b => Settings.SimplifiedHitboxes = b),
+				new TextMenu.Option<InfoPositions>("Info HUD").Apply(option => {
+					Array enumValues = Enum.GetValues(typeof(InfoPositions));
+					foreach (InfoPositions value in enumValues) {
+						option.Add(value.ToString().SpacedPascalCase(), value, value.Equals(Settings.InfoHUD));
+					}
+					option.Change(b => Settings.InfoHUD = b);
+				})
 			};
 		}
 
@@ -122,5 +127,12 @@ namespace TAS.EverestInterop {
 				item.Visible = visible;
 		}
 
+	}
+
+	internal static class CommonExtensions {
+		public static T Apply<T>(this T obj, Action<T> action) {
+			action(obj);
+			return obj;
+		}
 	}
 }

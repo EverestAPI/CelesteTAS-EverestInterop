@@ -80,9 +80,8 @@ namespace TAS.EverestInterop {
 		public Color EntityHitboxColor { get; set; } = Color.Red;
 		[SettingIgnore]
 		public Color TriggerHitboxColor { get; set; } = Color.Red;
-		public bool HideTriggerHitbox { get; set; } = false;
-		public bool SimplifiedHitbox { get; set; } = true;
-		public bool InfoHUD { get; set; } = false;
-		public InfoPositions InfoPosition { get; set; } = InfoPositions.TopRight;
+		public bool HideTriggerHitboxes { get; set; } = false;
+		public bool SimplifiedHitboxes { get; set; } = true;
+		public InfoPositions InfoHUD { get; set; } = InfoPositions.OFF;
 	}
 }

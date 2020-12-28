@@ -1,5 +1,6 @@
 using System;
 using Celeste;
+using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
 
@@ -18,7 +19,7 @@ public static class InfoHUD {
         private static void LevelOnRender(On.Celeste.Level.orig_Render orig, Level self) {
             orig(self);
 
-            if (!ModSettings.Enabled || !ModSettings.InfoHUD) {
+            if (!ModSettings.Enabled || ModSettings.InfoHUD == InfoPositions.OFF) {
                 return;
             }
 
@@ -27,39 +28,42 @@ public static class InfoHUD {
             int viewWidth = Engine.ViewWidth;
             int viewHeight = Engine.ViewHeight;
 
-            int margin = 20;
-            int padding = 20;
+            float windowScale = viewHeight / 1920f;
+            float margin = 30 * windowScale;
+            float padding = 30 * windowScale;
+            float fontSize = 0.7f * windowScale;
 
             string text = Manager.PlayerStatus;
-            float fontSize = 0.5f;
             Vector2 size = ActiveFont.Measure(text) * fontSize;
 
             float x;
             float y;
-            switch (ModSettings.InfoPosition) {
-            case InfoPositions.TopLeft:
-                    x = margin;
-                    y = margin;
-                    if (Settings.Instance.SpeedrunClock == SpeedrunType.Chapter) {
-                        y += 130;
-                    } else if (Settings.Instance.SpeedrunClock == SpeedrunType.File) {
-                        y += 160;
-                    }
-                    break;
-                case InfoPositions.TopRight:
-                    x = viewWidth - size.X - margin - padding * 2;
-                    y = margin;
-                    break;
-                case InfoPositions.BottomLeft:
-                    x = margin;
-                    y = viewHeight - size.Y - margin - padding * 2;
-                    break;
-                case InfoPositions.BottomRight:
-                    x = viewWidth - size.X - margin - padding * 2;
-                    y = viewHeight - size.Y - margin - padding * 2;
-                    break;
+            switch (ModSettings.InfoHUD) {
+                case InfoPositions.TopLeft:
+                        x = margin;
+                        y = margin;
+                        if (Settings.Instance.SpeedrunClock == SpeedrunType.Chapter) {
+                            y += 170 * windowScale;
+                        } else if (Settings.Instance.SpeedrunClock == SpeedrunType.File) {
+                            y += 210 * windowScale;
+                        }
+                        break;
+                    case InfoPositions.TopRight:
+                        x = viewWidth - size.X - margin - padding * 2;
+                        y = margin;
+                        break;
+                    case InfoPositions.BottomLeft:
+                        x = margin;
+                        y = viewHeight - size.Y - margin - padding * 2;
+                        break;
+                    case InfoPositions.BottomRight:
+                        x = viewWidth - size.X - margin - padding * 2;
+                        y = viewHeight - size.Y - margin - padding * 2;
+                        break;
+                case InfoPositions.OFF:
+                    throw new ArgumentException();
                 default:
-                    throw new ArgumentOutOfRangeException();
+                        throw new ArgumentOutOfRangeException();
             }
 
             Vector2 rectPosition = new Vector2(x, y);
@@ -67,13 +71,16 @@ public static class InfoHUD {
 
             Vector2 textPosition = new Vector2(x + padding, y + padding);
             Vector2 scale = new Vector2(fontSize);
-            ActiveFont.Draw(text, textPosition, Vector2.Zero, scale, Color.White);
+
+            // TODO It's better to use mono font
+            ActiveFont.Draw(text, textPosition, Vector2.Zero, scale, Color.White * 0.8f);
 
             Draw.SpriteBatch.End();
         }
     }
 
     public enum InfoPositions {
+        OFF,
         TopLeft,
         TopRight,
         BottomLeft,

@@ -38,11 +38,11 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void HideHitbox(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {
-            if (Settings.HideTriggerHitbox && self is Trigger) {
+            if (Settings.HideTriggerHitboxes && self is Trigger) {
                 return;
             }
 
-            if (Settings.SimplifiedHitbox && UselessTypes.Contains(self.GetType())) {
+            if (Settings.SimplifiedHitboxes && UselessTypes.Contains(self.GetType())) {
                 return;
             }
 
@@ -50,7 +50,7 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void CombineHitbox(On.Monocle.Grid.orig_Render orig, Grid self, Camera camera, Color color) {
-            if (!Settings.SimplifiedHitbox) {
+            if (!Settings.SimplifiedHitboxes) {
                 orig(self, camera, color);
                 return;
             }
