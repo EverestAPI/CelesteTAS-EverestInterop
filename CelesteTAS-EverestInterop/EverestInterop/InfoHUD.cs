@@ -16,6 +16,7 @@ public static class InfoHUD {
             On.Celeste.Level.Render -= LevelOnRender;
         }
 
+        // TODO Move the HUD if the player is obscured by the HUD
         private static void LevelOnRender(On.Celeste.Level.orig_Render orig, Level self) {
             orig(self);
 
@@ -33,6 +34,9 @@ public static class InfoHUD {
             float padding = 30 * windowScale;
             float fontSize = 3f * windowScale;
 
+            if (!Manager.Running || (Manager.state | State.FrameStep) != State.FrameStep) {
+                Manager.UpdatePlayerInfo();
+            }
             string text = Manager.PlayerStatus;
             Vector2 size = Draw.DefaultFont.MeasureString(text) * fontSize;
 
@@ -67,12 +71,12 @@ public static class InfoHUD {
             }
 
             Vector2 rectPosition = new Vector2(x, y);
-            Draw.Rect(rectPosition, size.X + padding * 2, size.Y + padding * 2 , Color.Black * 0.6f);
+            Draw.Rect(rectPosition, size.X + padding * 2, size.Y + padding * 2 , Color.Black * 0.8f);
 
             Vector2 textPosition = new Vector2(x + padding, y + padding);
             Vector2 scale = new Vector2(fontSize);
 
-            Draw.SpriteBatch.DrawString(Draw.DefaultFont, text, textPosition, Color.White * 0.9f, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+            Draw.SpriteBatch.DrawString(Draw.DefaultFont, text, textPosition, Color.White, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
 
             Draw.SpriteBatch.End();
         }
