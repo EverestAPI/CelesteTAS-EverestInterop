@@ -1,7 +1,7 @@
 using System;
 using Celeste;
-using Celeste.Mod;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Monocle;
 
 namespace TAS.EverestInterop {
@@ -31,10 +31,10 @@ public static class InfoHUD {
             float windowScale = viewHeight / 1920f;
             float margin = 30 * windowScale;
             float padding = 30 * windowScale;
-            float fontSize = 0.7f * windowScale;
+            float fontSize = 3f * windowScale;
 
             string text = Manager.PlayerStatus;
-            Vector2 size = ActiveFont.Measure(text) * fontSize;
+            Vector2 size = Draw.DefaultFont.MeasureString(text) * fontSize;
 
             float x;
             float y;
@@ -67,13 +67,12 @@ public static class InfoHUD {
             }
 
             Vector2 rectPosition = new Vector2(x, y);
-            Draw.Rect(rectPosition, size.X + padding * 2, size.Y + padding * 2 , Color.Black * 0.7f);
+            Draw.Rect(rectPosition, size.X + padding * 2, size.Y + padding * 2 , Color.Black * 0.6f);
 
             Vector2 textPosition = new Vector2(x + padding, y + padding);
             Vector2 scale = new Vector2(fontSize);
 
-            // TODO It's better to use mono font
-            ActiveFont.Draw(text, textPosition, Vector2.Zero, scale, Color.White * 0.8f);
+            Draw.SpriteBatch.DrawString(Draw.DefaultFont, text, textPosition, Color.White * 0.9f, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
 
             Draw.SpriteBatch.End();
         }
