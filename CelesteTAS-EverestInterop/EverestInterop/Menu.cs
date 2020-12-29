@@ -19,7 +19,8 @@ namespace TAS.EverestInterop {
 		private static readonly List<String> needRelaunchItemLabels = new List<string> {
 			"Launch Studio At Boot",
 			"Unix RTC",
-			"Mod 9D Lighting"
+			"Mod 9D Lighting",
+			"Auto Extract New Studio",
 		};
 
 		private static void TrySetNeedRelaunch(TextMenu textMenu, TextMenu.Item item) {
