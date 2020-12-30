@@ -82,7 +82,6 @@ namespace TAS.EverestInterop {
                 Rectangle mirrorBgRect = bgRect;
                 if (SaveData.Instance?.Assists.MirrorMode == true) {
                     mirrorBgRect.X = (int) Math.Abs(x - viewWidth + size.X + padding * 2);
-                    Draw.Rect(mirrorBgRect, Color.Black * 0.8f * alpha);
                 }
                 if (self.Paused || playerRect.Intersects(mirrorBgRect)) {
                     alpha = 0.5f;
