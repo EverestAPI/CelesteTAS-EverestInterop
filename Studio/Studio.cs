@@ -85,7 +85,6 @@ namespace CelesteStudio
                     Settings.Default.RecentFiles.Clear();
                     return;
                 }
-
                 if (!File.Exists(clickedItem.Text)) {
                     contextMenuStrip.Close();
                 }
@@ -108,7 +107,7 @@ namespace CelesteStudio
                 }
                 foreach (var lastFileName in Settings.Default.RecentFiles) {
                     openRencentStripMenuItem.DropDownItems.Add(new ToolStripMenuItem(lastFileName) {
-                        Checked = lastFileName == Settings.Default.LastFileName
+                        Checked = lastFileName == tasText.LastFileName
                     });
                 }
 
@@ -262,7 +261,7 @@ Ctrl + T: Insert current in-game time";
             }
 
             StudioCommunicationServer.instance?.WriteWait();
-            if (tasText.OpenFile(fileName) && fileName != defaultFileName) {
+            if (tasText.OpenFile(fileName) && fileName != defaultFileName && tasText.LastFileName != defaultFileName) {
                 if (!Settings.Default.RecentFiles.Contains(tasText.LastFileName)) {
                     Settings.Default.RecentFiles.Insert(0, tasText.LastFileName);
                 }
