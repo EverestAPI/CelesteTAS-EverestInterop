@@ -77,7 +77,12 @@ namespace TAS.EverestInterop {
             if (self.Entities.FindFirst<Player>() is Player player) {
                 Vector2 playerPosition = self.Camera.CameraToScreen(player.TopLeft) * pixelScale;
                 Rectangle playerRect = new Rectangle((int) playerPosition.X, (int) playerPosition.Y, (int) (8 * pixelScale), (int) (11 * pixelScale));
-                if (self.Paused || playerRect.Intersects(bgRect)) {
+                Rectangle mirrorBgRect = bgRect;
+                if (SaveData.Instance?.Assists.MirrorMode == true) {
+                    mirrorBgRect.X = (int) Math.Abs(x - viewWidth + size.X + padding * 2);
+                    Draw.Rect(mirrorBgRect, Color.Black * 0.8f * alpha);
+                }
+                if (self.Paused || playerRect.Intersects(mirrorBgRect)) {
                     alpha = 0.5f;
                 }
             }
