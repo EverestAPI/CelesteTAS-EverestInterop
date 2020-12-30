@@ -5,7 +5,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Monocle;
 
 namespace TAS.EverestInterop {
-public static class InfoHUD {
+    public static class InfoHUD {
         private static CelesteTASModuleSettings ModSettings => CelesteTASModule.Settings;
 
         public static void Load() {
@@ -16,7 +16,6 @@ public static class InfoHUD {
             On.Celeste.Level.Render -= LevelOnRender;
         }
 
-        // TODO Move the HUD if the player is obscured by the HUD
         private static void LevelOnRender(On.Celeste.Level.orig_Render orig, Level self) {
             orig(self);
 
@@ -29,14 +28,16 @@ public static class InfoHUD {
             int viewWidth = Engine.ViewWidth;
             int viewHeight = Engine.ViewHeight;
 
-            float windowScale = viewHeight / 1920f;
-            float margin = 30 * windowScale;
-            float padding = 30 * windowScale;
-            float fontSize = 3f * windowScale;
+            float pixelScale = viewWidth / 320f;
+            float margin = 2 * pixelScale;
+            float padding = 2 * pixelScale;
+            float fontSize = 0.25f * pixelScale;
+            float alpha = 1f;
 
             if (!Manager.Running || (Manager.state | State.FrameStep) != State.FrameStep) {
                 Manager.UpdatePlayerInfo();
             }
+
             string text = Manager.PlayerStatus;
             Vector2 size = Draw.DefaultFont.MeasureString(text) * fontSize;
 
@@ -44,39 +45,49 @@ public static class InfoHUD {
             float y;
             switch (ModSettings.InfoHUD) {
                 case InfoPositions.TopLeft:
-                        x = margin;
-                        y = margin;
-                        if (Settings.Instance.SpeedrunClock == SpeedrunType.Chapter) {
-                            y += 170 * windowScale;
-                        } else if (Settings.Instance.SpeedrunClock == SpeedrunType.File) {
-                            y += 210 * windowScale;
-                        }
-                        break;
-                    case InfoPositions.TopRight:
-                        x = viewWidth - size.X - margin - padding * 2;
-                        y = margin;
-                        break;
-                    case InfoPositions.BottomLeft:
-                        x = margin;
-                        y = viewHeight - size.Y - margin - padding * 2;
-                        break;
-                    case InfoPositions.BottomRight:
-                        x = viewWidth - size.X - margin - padding * 2;
-                        y = viewHeight - size.Y - margin - padding * 2;
-                        break;
+                    x = margin;
+                    y = margin;
+                    if (Settings.Instance.SpeedrunClock == SpeedrunType.Chapter) {
+                        y += 15 * pixelScale;
+                    } else if (Settings.Instance.SpeedrunClock == SpeedrunType.File) {
+                        y += 19 * pixelScale;
+                    }
+
+                    break;
+                case InfoPositions.TopRight:
+                    x = viewWidth - size.X - margin - padding * 2;
+                    y = margin;
+                    break;
+                case InfoPositions.BottomLeft:
+                    x = margin;
+                    y = viewHeight - size.Y - margin - padding * 2;
+                    break;
+                case InfoPositions.BottomRight:
+                    x = viewWidth - size.X - margin - padding * 2;
+                    y = viewHeight - size.Y - margin - padding * 2;
+                    break;
                 case InfoPositions.OFF:
                     throw new ArgumentException();
                 default:
-                        throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException();
             }
 
-            Vector2 rectPosition = new Vector2(x, y);
-            Draw.Rect(rectPosition, size.X + padding * 2, size.Y + padding * 2 , Color.Black * 0.8f);
+            Rectangle bgRect = new Rectangle((int) x, (int) y, (int) (size.X + padding * 2), (int) (size.Y + padding * 2));
+
+            if (self.Entities.FindFirst<Player>() is Player player) {
+                Vector2 playerPosition = self.Camera.CameraToScreen(player.TopLeft) * pixelScale;
+                Rectangle playerRect = new Rectangle((int) playerPosition.X, (int) playerPosition.Y, (int) (8 * pixelScale), (int) (11 * pixelScale));
+                if (playerRect.Intersects(bgRect)) {
+                    alpha = 0.5f;
+                }
+            }
+
+            Draw.Rect(bgRect, Color.Black * 0.8f * alpha);
 
             Vector2 textPosition = new Vector2(x + padding, y + padding);
             Vector2 scale = new Vector2(fontSize);
 
-            Draw.SpriteBatch.DrawString(Draw.DefaultFont, text, textPosition, Color.White, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+            Draw.SpriteBatch.DrawString(Draw.DefaultFont, text, textPosition, Color.White * alpha, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
 
             Draw.SpriteBatch.End();
         }

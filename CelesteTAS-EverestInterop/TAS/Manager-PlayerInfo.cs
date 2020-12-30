@@ -7,7 +7,6 @@ using Monocle;
 using Microsoft.Xna.Framework;
 using TAS.EverestInterop;
 using System.Reflection;
-using TAS.StudioCommunication;
 
 namespace TAS
 {
@@ -30,10 +29,10 @@ namespace TAS
 					if (chapterTime != lastTimer || lastPos != player.ExactPosition) {
 
 						string pos = GetAdjustedPos(player.Position, player.PositionRemainder);
-						string speed = $"Speed: {player.Speed.X.ToString("0.00")},{player.Speed.Y.ToString("0.00")}";
+						string speed = $"Speed: {player.Speed.X.ToString("0.00")}, {player.Speed.Y.ToString("0.00")}";
 						Vector2 diff = (player.ExactPosition - lastPos) * 60;
-						string vel = $"Vel: {diff.X.ToString("0.00")},{diff.Y.ToString("0.00")}";
-						string polarvel = $"     {diff.Length().ToString("0.00")},{GetAngle(diff).ToString("0.00")}°";
+						string vel = $"Vel: {diff.X.ToString("0.00")}, {diff.Y.ToString("0.00")}";
+						string polarvel = $"     {diff.Length().ToString("0.00")}, {GetAngle(diff).ToString("0.00")}°";
 						string miscstats = $"Stamina: {player.Stamina.ToString("0")} Timer: {(chapterTime / 10000000D).ToString("0.000")}";
 						int dashCooldown = (int)(DashCooldownTimer(player) * 60f);
 						string statuses = (dashCooldown < 1 && player.Dashes > 0 ? "Dash " : string.Empty)
@@ -114,7 +113,7 @@ namespace TAS
 			double subY = subpixelPos.Y;
 
 			if (!settings.RoundPosition) {
-				return $"Pos: {(x + subX).ToString()},{(y + subY).ToString()}";
+				return $"Pos: {(x + subX).ToString("0.000000000000")}, {(y + subY).ToString("0.000000000000")}";
 			}
 
 			if (Math.Abs(subX) % 0.25 < 0.01 || Math.Abs(subX) % 0.25 > 0.24) {
@@ -133,7 +132,7 @@ namespace TAS
 			}
 			else
 				y += subY;
-			string pos = $"Pos: {x.ToString("0.00")},{y.ToString("0.00")}";
+			string pos = $"Pos: {x.ToString("0.00")}, {y.ToString("0.00")}";
 			return pos;
 		}
 
