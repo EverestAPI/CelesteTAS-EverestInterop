@@ -23,8 +23,6 @@ namespace TAS.EverestInterop {
                 return;
             }
 
-            Draw.SpriteBatch.Begin();
-
             int viewWidth = Engine.ViewWidth;
             int viewHeight = Engine.ViewHeight;
 
@@ -36,6 +34,10 @@ namespace TAS.EverestInterop {
 
             if (!Manager.Running || (Manager.state | State.FrameStep) != State.FrameStep) {
                 Manager.UpdatePlayerInfo();
+            }
+
+            if (string.IsNullOrEmpty(Manager.PlayerStatus)) {
+                return;
             }
 
             string text = Manager.PlayerStatus;
@@ -86,6 +88,8 @@ namespace TAS.EverestInterop {
                     alpha = 0.5f;
                 }
             }
+
+            Draw.SpriteBatch.Begin();
 
             Draw.Rect(bgRect, Color.Black * 0.8f * alpha);
 

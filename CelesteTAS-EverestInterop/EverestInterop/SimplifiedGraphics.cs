@@ -52,13 +52,6 @@ namespace TAS.EverestInterop {
             }
         }
 
-        private void DustGraphic_Render(On.Celeste.DustGraphic.orig_Render orig, DustGraphic self) {
-            if (Settings.SimplifiedGraphics && DustGraphicEyes.GetValue(self) is Entity eyes) {
-                eyes.Visible = false;
-            }
-            orig(self);
-        }
-
         public void Unload() {
             On.Celeste.LightingRenderer.Render -= LightingRenderer_Render;
             On.Monocle.Particle.Render -= Particle_Render;
@@ -153,6 +146,13 @@ namespace TAS.EverestInterop {
             if(Settings.SimplifiedGraphics)
                 SpinnerColor.SetValue(self, CrystalColor.Blue);
 
+            orig(self);
+        }
+
+        private void DustGraphic_Render(On.Celeste.DustGraphic.orig_Render orig, DustGraphic self) {
+            if (Settings.SimplifiedGraphics && DustGraphicEyes.GetValue(self) is Entity eyes) {
+                eyes.Visible = false;
+            }
             orig(self);
         }
 
