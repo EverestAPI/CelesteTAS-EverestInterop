@@ -77,7 +77,7 @@ namespace TAS.EverestInterop {
             if (self.Entities.FindFirst<Player>() is Player player) {
                 Vector2 playerPosition = self.Camera.CameraToScreen(player.TopLeft) * pixelScale;
                 Rectangle playerRect = new Rectangle((int) playerPosition.X, (int) playerPosition.Y, (int) (8 * pixelScale), (int) (11 * pixelScale));
-                if (playerRect.Intersects(bgRect)) {
+                if (self.Paused || playerRect.Intersects(bgRect)) {
                     alpha = 0.5f;
                 }
             }
