@@ -11,6 +11,7 @@ namespace TAS.EverestInterop.Hitboxes {
         private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
 
         private static readonly List<Type> UselessTypes = new List<Type> {
+            typeof(ClutterBlockBase),
             typeof(CrystalDebris),
             typeof(Debris),
             typeof(Door),
@@ -136,10 +137,6 @@ namespace TAS.EverestInterop.Hitboxes {
             Entity entity = hitbox.Entity;
             if (entity is WallBooster) {
                 Draw.Rect(hitbox.AbsolutePosition, hitbox.Width, hitbox.Height, HitboxColor.EntityColorInverselyLessAlpha);
-                return;
-            }
-
-            if (entity is ClutterBlockBase clutterBlockBase && !clutterBlockBase.Collidable) {
                 return;
             }
 

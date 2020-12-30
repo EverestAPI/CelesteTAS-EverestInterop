@@ -13,6 +13,7 @@ namespace TAS.EverestInterop {
 
         private static readonly FieldInfo SpinnerColor =
             typeof(CrystalStaticSpinner).GetField("color", BindingFlags.NonPublic | BindingFlags.Instance);
+        private static readonly FieldInfo DustGraphicEyes = typeof(DustGraphic).GetField("eyes", BindingFlags.NonPublic | BindingFlags.Instance);
 
         public static SimplifiedGraphics instance;
 
@@ -27,6 +28,7 @@ namespace TAS.EverestInterop {
             On.Monocle.Particle.Render += Particle_Render;
 			IL.Celeste.BackdropRenderer.Render += BackdropRenderer_Render;
             On.Celeste.CrystalStaticSpinner.CreateSprites += CrystalStaticSpinner_CreateSprites;
+            On.Celeste.DustGraphic.Render += DustGraphic_Render;
             On.Celeste.DustStyles.Get_Session += DustStyles_Get_Session;
             On.Celeste.LavaRect.Wave += LavaRect_Wave;
             On.Celeste.DreamBlock.Lerp += DreamBlock_Lerp;
@@ -50,11 +52,19 @@ namespace TAS.EverestInterop {
             }
         }
 
+        private void DustGraphic_Render(On.Celeste.DustGraphic.orig_Render orig, DustGraphic self) {
+            if (Settings.SimplifiedGraphics && DustGraphicEyes.GetValue(self) is Entity eyes) {
+                eyes.Visible = false;
+            }
+            orig(self);
+        }
+
         public void Unload() {
             On.Celeste.LightingRenderer.Render -= LightingRenderer_Render;
             On.Monocle.Particle.Render -= Particle_Render;
 			IL.Celeste.BackdropRenderer.Render -= BackdropRenderer_Render;
             On.Celeste.CrystalStaticSpinner.CreateSprites -= CrystalStaticSpinner_CreateSprites;
+            On.Celeste.DustGraphic.Render -= DustGraphic_Render;
             On.Celeste.DustStyles.Get_Session -= DustStyles_Get_Session;
             On.Celeste.LavaRect.Wave -= LavaRect_Wave;
             On.Celeste.DreamBlock.Lerp -= DreamBlock_Lerp;
