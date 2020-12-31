@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -36,11 +37,13 @@ namespace TAS.EverestInterop {
                 Manager.UpdatePlayerInfo();
             }
 
-            if (string.IsNullOrEmpty(Manager.PlayerStatus)) {
+            // TODO Use custom fonts to display the desired characters
+            string text = GetDrawSafeText(Manager.PlayerStatus);
+
+            if (string.IsNullOrEmpty(text)) {
                 return;
             }
 
-            string text = Manager.PlayerStatus;
             Vector2 size = Draw.DefaultFont.MeasureString(text) * fontSize;
 
             float x;
@@ -98,6 +101,20 @@ namespace TAS.EverestInterop {
             Draw.SpriteBatch.DrawString(Draw.DefaultFont, text, textPosition, Color.White * alpha, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
 
             Draw.SpriteBatch.End();
+        }
+
+        private static string GetDrawSafeText(string text) {
+            StringBuilder safeText = new StringBuilder();
+
+            foreach (char c in text) {
+                if (Draw.DefaultFont.Characters.Contains(c) || c == '\r' || c == '\n' || c == '\t') {
+                    safeText.Append(c);
+                } else {
+                    safeText.Append("?");
+                }
+            }
+
+            return safeText.ToString();
         }
     }
 
