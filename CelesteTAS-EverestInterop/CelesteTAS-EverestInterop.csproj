@@ -131,6 +131,12 @@
     <Compile Include="TAS\TASCommandAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Dialog\Fonts\JetBrainsMono-Regular.fnt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Dialog\Fonts\JetBrainsMono-Regular_*.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="everest.yaml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

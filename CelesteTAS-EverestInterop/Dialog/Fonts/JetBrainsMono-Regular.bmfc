@@ -1,0 +1,66 @@
+# AngelCode Bitmap Font Generator configuration file
+fileVersion=1
+
+# font settings
+fontName=JetBrains Mono
+fontFile=JetBrainsMono-Regular.ttf
+charSet=0
+fontSize=32
+aa=4
+scaleH=100
+useSmoothing=1
+isBold=0
+isItalic=0
+useUnicode=1
+disableBoxChars=1
+outputInvalidCharGlyph=0
+dontIncludeKerningPairs=0
+useHinting=1
+renderFromOutline=0
+useClearType=1
+autoFitNumPages=0
+autoFitFontSizeMin=0
+autoFitFontSizeMax=0
+
+# character alignment
+paddingDown=0
+paddingUp=0
+paddingRight=0
+paddingLeft=0
+spacingHoriz=1
+spacingVert=1
+useFixedHeight=0
+forceZero=0
+widthPaddingFactor=0.00
+
+# output file
+outWidth=1024
+outHeight=1024
+outBitDepth=32
+fontDescFormat=1
+fourChnlPacked=0
+textureFormat=png
+textureCompression=0
+alphaChnl=0
+redChnl=4
+greenChnl=4
+blueChnl=4
+invA=0
+invR=0
+invG=0
+invB=0
+
+# outline
+outlineThickness=0
+
+# selected chars
+chars=0-0,10,13,32-126,160-383,399,402,416-417,431-432,486-487,490-491,500-501,508-511,536-539,567,601
+chars=697-698,700,710-711,713,728-733,755,759,777,795,803,805-806,822,824,884,916,937,955-956,960,1025
+chars=1026-1036,1038-1103,1105-1116,1118-1119,1168-1169,1198-1199,1256-1257,7808-7813,7838,7840-7929,8208
+chars=8211-8212,8216-8218,8220-8222,8224-8226,8228,8230,8240,8242-8243,8249-8250,8260,8304,8308-8314,8320
+chars=8321-8329,8363-8364,8366,8381,8467,8469-8470,8482,8494,8592-8601,8704,8706-8707,8712-8713,8715-8716
+chars=8719-8722,8725,8729-8730,8734,8739,8741,8743-8744,8747,8759,8764,8776-8777,8800-8801,8804-8805,8834
+chars=8835-8839,9076,9211-9214,9472-9632,9650,9654,9660,9664,9670,9674,9679,10216-10217,11096,57344,57504
+chars=57505-57506,57520-57523,65279
+
+# imported icon images

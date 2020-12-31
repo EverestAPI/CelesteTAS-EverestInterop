@@ -1,8 +1,6 @@
 using System;
-using System.Text;
 using Celeste;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using Monocle;
 
 namespace TAS.EverestInterop {
@@ -11,10 +9,17 @@ namespace TAS.EverestInterop {
 
         public static void Load() {
             On.Celeste.Level.Render += LevelOnRender;
+            On.Celeste.Fonts.Prepare += FontsOnPrepare;
         }
 
         public static void Unload() {
             On.Celeste.Level.Render -= LevelOnRender;
+            On.Celeste.Fonts.Prepare -= FontsOnPrepare;
+        }
+
+        private static void FontsOnPrepare(On.Celeste.Fonts.orig_Prepare orig) {
+            orig();
+            JetBrainsMono.LoadFont();
         }
 
         private static void LevelOnRender(On.Celeste.Level.orig_Render orig, Level self) {
@@ -30,21 +35,20 @@ namespace TAS.EverestInterop {
             float pixelScale = viewWidth / 320f;
             float margin = 2 * pixelScale;
             float padding = 2 * pixelScale;
-            float fontSize = 0.25f * pixelScale;
+            float fontSize = 0.15f * pixelScale;
             float alpha = 1f;
 
             if (!Manager.Running || (Manager.state | State.FrameStep) != State.FrameStep) {
                 Manager.UpdatePlayerInfo();
             }
 
-            // TODO Use custom fonts to display the desired characters
-            string text = GetDrawSafeText(Manager.PlayerStatus);
+            string text = Manager.PlayerStatus;
 
             if (string.IsNullOrEmpty(text)) {
                 return;
             }
 
-            Vector2 size = Draw.DefaultFont.MeasureString(text) * fontSize;
+            Vector2 size = JetBrainsMono.Measure(text) * fontSize;
 
             float x;
             float y;
@@ -98,23 +102,9 @@ namespace TAS.EverestInterop {
             Vector2 textPosition = new Vector2(x + padding, y + padding);
             Vector2 scale = new Vector2(fontSize);
 
-            Draw.SpriteBatch.DrawString(Draw.DefaultFont, text, textPosition, Color.White * alpha, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+            JetBrainsMono.Draw(text, textPosition, Vector2.Zero, scale, Color.White * alpha);
 
             Draw.SpriteBatch.End();
-        }
-
-        private static string GetDrawSafeText(string text) {
-            StringBuilder safeText = new StringBuilder();
-
-            foreach (char c in text) {
-                if (Draw.DefaultFont.Characters.Contains(c) || c == '\r' || c == '\n' || c == '\t') {
-                    safeText.Append(c);
-                } else {
-                    safeText.Append("?");
-                }
-            }
-
-            return safeText.ToString();
         }
     }
 
@@ -124,5 +114,51 @@ namespace TAS.EverestInterop {
         TopRight,
         BottomLeft,
         BottomRight,
+    }
+
+    // Copy of ActiveFont that always uses the JetBrains Mono font.
+    public static class JetBrainsMono {
+        private const string FontFace = "JetBrains Mono";
+        public static PixelFont Font => Fonts.Get(FontFace) ?? LoadFont();
+
+        public static PixelFontSize FontSize => Font.Get(BaseSize);
+
+        public static float BaseSize => 32;
+
+        public static float LineHeight => FontSize.LineHeight;
+
+        public static PixelFont LoadFont() {
+            return Fonts.Load(FontFace);
+        }
+
+        public static Vector2 Measure(char text)
+            => FontSize.Measure(text);
+
+        public static Vector2 Measure(string text)
+            => FontSize.Measure(text);
+
+        public static float WidthToNextLine(string text, int start)
+            => FontSize.WidthToNextLine(text, start);
+
+        public static float HeightOf(string text)
+            => FontSize.HeightOf(text);
+
+        public static void Draw(char character, Vector2 position, Vector2 justify, Vector2 scale, Color color)
+            => Font.Draw(BaseSize, character, position, justify, scale, color);
+
+        private static void Draw(string text, Vector2 position, Vector2 justify, Vector2 scale, Color color, float edgeDepth, Color edgeColor, float stroke, Color strokeColor)
+            => Font.Draw(BaseSize, text, position, justify, scale, color, edgeDepth, edgeColor, stroke, strokeColor);
+
+        public static void Draw(string text, Vector2 position, Color color)
+            => Draw(text, position, Vector2.Zero, Vector2.One, color, 0f, Color.Transparent, 0f, Color.Transparent);
+
+        public static void Draw(string text, Vector2 position, Vector2 justify, Vector2 scale, Color color)
+            => Draw(text, position, justify, scale, color, 0f, Color.Transparent, 0f, Color.Transparent);
+
+        public static void DrawOutline(string text, Vector2 position, Vector2 justify, Vector2 scale, Color color, float stroke, Color strokeColor)
+            => Draw(text, position, justify, scale, color, 0f, Color.Transparent, stroke, strokeColor);
+
+        public static void DrawEdgeOutline(string text, Vector2 position, Vector2 justify, Vector2 scale, Color color, float edgeDepth, Color edgeColor, float stroke = 0f, Color strokeColor = default)
+            => Draw(text, position, justify, scale, color, edgeDepth, edgeColor, stroke, strokeColor);
     }
 }
