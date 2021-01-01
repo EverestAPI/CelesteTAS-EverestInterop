@@ -57,9 +57,9 @@ namespace TAS.EverestInterop {
                     x = margin;
                     y = margin;
                     if (Settings.Instance.SpeedrunClock == SpeedrunType.Chapter) {
-                        y += 15 * pixelScale;
+                        y += 16 * pixelScale;
                     } else if (Settings.Instance.SpeedrunClock == SpeedrunType.File) {
-                        y += 19 * pixelScale;
+                        y += 20 * pixelScale;
                     }
 
                     break;
