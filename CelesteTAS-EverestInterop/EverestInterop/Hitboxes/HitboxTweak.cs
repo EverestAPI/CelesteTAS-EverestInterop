@@ -82,7 +82,7 @@ namespace TAS.EverestInterop.Hitboxes {
 
         private static void AvoidRedrawCorners(On.Monocle.Draw.orig_HollowRect_float_float_float_float_Color orig, float x,
             float y, float width, float height, Color color) {
-            if (!CelesteTASModule.Settings.SimplifiedHitboxes) {
+            if (!CelesteTASModule.Settings.ShowHitboxes) {
                 orig(x, y, width, height, color);
                 return;
             }
