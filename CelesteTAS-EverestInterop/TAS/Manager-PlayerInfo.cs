@@ -31,15 +31,15 @@ namespace TAS
 						string pos = GetAdjustedPos(player.Position, player.PositionRemainder);
 						string speed = $"Speed: {player.Speed.X.ToString("0.00")}, {player.Speed.Y.ToString("0.00")}";
 						Vector2 diff = (player.ExactPosition - lastPos) * 60;
-						string vel = $"Vel: {diff.X.ToString("0.00")}, {diff.Y.ToString("0.00")}";
-						string polarvel = $"     {diff.Length().ToString("0.00")}, {GetAngle(diff).ToString("0.00")}°";
+						string vel = $"Vel:   {diff.X.ToString("0.00")}, {diff.Y.ToString("0.00")}";
+						string polarvel = $"Fly:   {diff.Length().ToString("0.00")}, {GetAngle(diff).ToString("0.00")}°";
 						string miscstats = $"Stamina: {player.Stamina.ToString("0")} Timer: {(chapterTime / 10000000D).ToString("0.000")}";
 						int dashCooldown = (int)(DashCooldownTimer(player) * 60f);
 						string statuses = (dashCooldown < 1 && player.Dashes > 0 ? "Dash " : string.Empty)
 							+ (player.LoseShards ? "Ground " : string.Empty)
 							+ (WallJumpCheck(player, 1) ? "Wall-R " : string.Empty)
 							+ (WallJumpCheck(player, -1) ? "Wall-L " : string.Empty)
-							+ (!player.LoseShards && JumpGraceTimer(player) > 0 ? "Coyote " : string.Empty);
+							+ (!player.LoseShards && JumpGraceTimer(player) > 0 ? $"Coyote({(int)(JumpGraceTimer(player) * 60f)})" : string.Empty);
 						statuses = (player.InControl && !level.Transitioning ? statuses : "NoControl ")
 							+ (player.TimePaused ? "Paused " : string.Empty)
 							+ (level.InCutscene ? "Cutscene " : string.Empty)
@@ -66,9 +66,9 @@ namespace TAS
 								collectTimer = strawberryCollectTimer.GetValue(firstRedBerry);
 							}
 
-							berryTimer = (int)Math.Round(60f * (float)collectTimer);
+							berryTimer = 9 - (int)Math.Round(60f * (float)collectTimer);
 						}
-						string timers = (berryTimer != -10 ? $"BerryTimer: {berryTimer.ToString()} " : string.Empty)
+						string timers = (berryTimer != -10 ? berryTimer <= 9 ? $"BerryTimer: {berryTimer} " : $"BerryTimer: 9+{berryTimer-9} " : string.Empty)
 							+ (dashCooldown != 0 ? $"DashTimer: {(dashCooldown).ToString()} " : string.Empty);
 						string map = $"[{level.Session.Level}]";
 
@@ -85,7 +85,8 @@ namespace TAS
 						sb.AppendLine(miscstats);
 						if (!string.IsNullOrEmpty(statuses))
 							sb.AppendLine(statuses);
-						sb.Append(timers);
+						if(!string.IsNullOrEmpty(timers))
+							sb.AppendLine(timers);
 						sb.Append(map);
 						lastPos = player.ExactPosition;
 						lastTimer = chapterTime;
@@ -113,7 +114,7 @@ namespace TAS
 			double subY = subpixelPos.Y;
 
 			if (!settings.RoundPosition) {
-				return $"Pos: {(x + subX).ToString("0.000000000000")}, {(y + subY).ToString("0.000000000000")}";
+				return $"Pos:   {(x + subX).ToString("0.000000000000")}, {(y + subY).ToString("0.000000000000")}";
 			}
 
 			if (Math.Abs(subX) % 0.25 < 0.01 || Math.Abs(subX) % 0.25 > 0.24) {
@@ -132,7 +133,7 @@ namespace TAS
 			}
 			else
 				y += subY;
-			string pos = $"Pos: {x.ToString("0.00")}, {y.ToString("0.00")}";
+			string pos = $"Pos:   {x.ToString("0.00")}, {y.ToString("0.00")}";
 			return pos;
 		}
 
