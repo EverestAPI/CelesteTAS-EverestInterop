@@ -24,7 +24,7 @@ namespace CelesteStudio
         private bool updating = false;
         //private GameMemory memory = new GameMemory();
         private DateTime lastChanged = DateTime.MinValue;
-        private const string RegKey = "HKEY_CURRENT_USER\\SOFTWARE\\CeletseStudio\\Form";
+        private const string RegKey = @"HKEY_CURRENT_USER\SOFTWARE\CeletseStudio\Form";
         private string titleBarText {
             get =>
                 (string.IsNullOrEmpty(tasText.LastFileName) ? "Celeste.tas" : Path.GetFileName(tasText.LastFileName))
@@ -38,7 +38,8 @@ namespace CelesteStudio
                 if (Environment.OSVersion.Platform == PlatformID.Unix) {
                     if (null == (fileName = Environment.GetEnvironmentVariable("CELESTE_TAS_FILE")))
                         fileName = Environment.GetEnvironmentVariable("HOME") + "/.steam/steam/steamapps/common/Celeste/Celeste.tas";
-                } else if (CommunicationWrapper.gamePath != null) {
+                }
+				else if (CommunicationWrapper.gamePath != null) {
                     fileName = Path.Combine(CommunicationWrapper.gamePath, "Celeste.tas");
                 }
 
@@ -79,7 +80,7 @@ namespace CelesteStudio
             AddTitleBarButton();
 
             rememberCurrentFileToolStripMenuItem.Checked = Settings.Default.RememberLastFileName;
-            openRencentStripMenuItem.DropDownItemClicked += (sender, args) => {
+            openRecentStripMenuItem.DropDownItemClicked += (sender, args) => {
                 ToolStripItem clickedItem = args.ClickedItem;
                 if (clickedItem.Text == "Clear") {
                     Settings.Default.RecentFiles.Clear();
@@ -93,12 +94,12 @@ namespace CelesteStudio
         }
 
         private void CreateRecentFilesMenu() {
-            openRencentStripMenuItem.DropDownItems.Clear();
+            openRecentStripMenuItem.DropDownItems.Clear();
             if (Settings.Default.RecentFiles == null) {
                 Settings.Default.RecentFiles = new FileList();
             }
             if (Settings.Default.RecentFiles.Count == 0) {
-                openRencentStripMenuItem.DropDownItems.Add(new ToolStripMenuItem("Nothing") {
+                openRecentStripMenuItem.DropDownItems.Add(new ToolStripMenuItem("Nothing") {
                     Enabled = false
                 });
             } else {
@@ -106,14 +107,14 @@ namespace CelesteStudio
                     Settings.Default.RecentFiles.Remove(Settings.Default.RecentFiles[i]);
                 }
                 foreach (var lastFileName in Settings.Default.RecentFiles) {
-                    openRencentStripMenuItem.DropDownItems.Add(new ToolStripMenuItem(lastFileName) {
+                    openRecentStripMenuItem.DropDownItems.Add(new ToolStripMenuItem(lastFileName) {
                         Checked = lastFileName == tasText.LastFileName
                     });
                 }
 
-                openRencentStripMenuItem.DropDownItems.Add(new ToolStripSeparator());
+                openRecentStripMenuItem.DropDownItems.Add(new ToolStripSeparator());
 
-                openRencentStripMenuItem.DropDownItems.Add(new ToolStripMenuItem("Clear"));
+                openRecentStripMenuItem.DropDownItems.Add(new ToolStripMenuItem("Clear"));
             }
         }
 
@@ -277,7 +278,7 @@ Ctrl + T: Insert current in-game time";
 
         private void ClearBreakpoints()
         {
-            List<int> breakpoints = tasText.FindLines("\\*\\*\\*", System.Text.RegularExpressions.RegexOptions.None);
+            List<int> breakpoints = tasText.FindLines(@"\*\*\*", System.Text.RegularExpressions.RegexOptions.None);
             tasText.RemoveLines(breakpoints);
         }
 
@@ -748,7 +749,11 @@ Ctrl + T: Insert current in-game time";
             CreateRecentFilesMenu();
         }
 
-        private void openCelesteTasToolStripMenuItem_Click(object sender, EventArgs e) {
+		private void Studio_Load(object sender, EventArgs e) {
+
+		}
+
+		private void openCelesteTasToolStripMenuItem_Click(object sender, EventArgs e) {
             string fileName = defaultFileName;
             if (string.IsNullOrEmpty(fileName)) return;
             if (!File.Exists(fileName)) { File.WriteAllText(fileName, string.Empty); }
