@@ -23,6 +23,7 @@ namespace TAS.EverestInterop.Hitboxes {
             typeof(PlaybackBillboard),
             typeof(ResortLantern),
             typeof(Torch),
+            typeof(Trapdoor)
         };
 
         public void Load() {
