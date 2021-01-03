@@ -24,6 +24,7 @@ namespace TAS.EverestInterop {
 
         public void Load() {
             // Optional: Various graphical simplifications to cut down on visual noise.
+            On.Celeste.Level.Render += Level_Render;
             On.Celeste.LightingRenderer.Render += LightingRenderer_Render;
             On.Monocle.Particle.Render += Particle_Render;
 			IL.Celeste.BackdropRenderer.Render += BackdropRenderer_Render;
@@ -53,6 +54,7 @@ namespace TAS.EverestInterop {
         }
 
         public void Unload() {
+            On.Celeste.Level.Render -= Level_Render;
             On.Celeste.LightingRenderer.Render -= LightingRenderer_Render;
             On.Monocle.Particle.Render -= Particle_Render;
 			IL.Celeste.BackdropRenderer.Render -= BackdropRenderer_Render;
@@ -105,6 +107,14 @@ namespace TAS.EverestInterop {
             }
         }
 
+        private void Level_Render(On.Celeste.Level.orig_Render orig, Level self) {
+            orig(self);
+
+            if (Settings.SimplifiedGraphics) {
+                self.Bloom.Base = 0f;
+                self.Bloom.Strength = 1f;
+            }
+        }
 
         private void LightingRenderer_Render(On.Celeste.LightingRenderer.orig_Render orig, LightingRenderer self, Scene scene) {
             if (Settings.SimplifiedGraphics)
