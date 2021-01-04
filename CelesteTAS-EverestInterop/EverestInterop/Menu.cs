@@ -16,18 +16,13 @@ namespace TAS.EverestInterop {
 		private static List<TextMenu.Item> normalOptions;
 		private static List<TextMenu.Item> hiddenOptions;
 
-		private static void TrySetNeedRelaunch(TextMenu textMenu, TextMenu.Item item) {
-			if (item.IsNeedRelaunch()) {
-				item.NeedsRelaunch(textMenu);
-			}
-		}
 
 		private static void CreateNormalOptions(TextMenu menu, bool inGame) {
 			normalOptions = new List<TextMenu.Item> {
 				new TextMenu.OnOff("Show Hitboxes", Settings.ShowHitboxes).Change(b => Settings.ShowHitboxes = b),
 				new TextMenu.OnOff("Simplified Graphics", Settings.SimplifiedGraphics).Change(b => Settings.SimplifiedGraphics = b),
 				new TextMenu.OnOff("Center Camera", Settings.CenterCamera).Change(b => Settings.CenterCamera = b),
-				new TextMenu.OnOff("Launch Studio At Boot", Settings.LaunchStudioAtBoot).Change(b => Settings.LaunchStudioAtBoot = b).Apply(item => item.SetNeedRelaunch()),
+				new TextMenu.OnOff("Launch Studio At Boot", Settings.LaunchStudioAtBoot).Change(b => Settings.LaunchStudioAtBoot = b).Apply(item => item.SetAction( () => { item.NeedsRelaunch(menu); })),
 				new TextMenu.OnOff("Disable Achievements", Settings.DisableAchievements).Change(b => Settings.DisableAchievements = b),
 			};
 			if (!inGame) {
@@ -39,11 +34,11 @@ namespace TAS.EverestInterop {
 		private static void CreateHiddenOptions(TextMenu menu, bool inGame) {
 			var itemInfoHUD = new TextMenu.Option<InfoPositions>("Info HUD");
 			hiddenOptions = new List<TextMenu.Item> {
-				new TextMenu.OnOff("Unix RTC",Settings.UnixRTC).Change(b => Settings.UnixRTC = b).Apply(item => item.SetNeedRelaunch()),
+				new TextMenu.OnOff("Unix RTC",Settings.UnixRTC).Change(b => Settings.UnixRTC = b).Apply(item => item.SetAction( () => { item.NeedsRelaunch(menu); })),
 				new TextMenu.OnOff("Disable Grab Desync Fix", Settings.DisableGrabDesyncFix).Change(b => Settings.DisableGrabDesyncFix = b),
 				new TextMenu.OnOff("Round Position",Settings.RoundPosition).Change(b => Settings.RoundPosition = b),
-				new TextMenu.OnOff("Mod 9D Lighting",Settings.Mod9DLighting).Change(b => Settings.Mod9DLighting = b).Apply(item => item.SetNeedRelaunch()),
-				new TextMenu.OnOff("Auto Extract New Studio", Settings.AutoExtractNewStudio).Change(b => Settings.AutoExtractNewStudio = b).Apply(item => item.SetNeedRelaunch()),
+				new TextMenu.OnOff("Mod 9D Lighting",Settings.Mod9DLighting).Change(b => Settings.Mod9DLighting = b).Apply(item => item.SetAction( () => { item.NeedsRelaunch(menu); })),
+				new TextMenu.OnOff("Auto Extract New Studio", Settings.AutoExtractNewStudio).Change(b => Settings.AutoExtractNewStudio = b).Apply(item => item.SetAction( () => { item.NeedsRelaunch(menu); })),
 				new TextMenu.OnOff("Hide Gameplay", Settings.HideGameplay).Change(b => {
 					Settings.HideGameplay = b;
 					if (b) {
@@ -55,6 +50,18 @@ namespace TAS.EverestInterop {
 				new TextMenu.OnOff("Auto Mute on Fast Forward", Settings.AutoMute).Change(b => Settings.AutoMute = b),
 				new TextMenu.OnOff("Hide Trigger Hitboxes", Settings.HideTriggerHitboxes).Change(b => Settings.HideTriggerHitboxes = b),
 				new TextMenu.OnOff("Simplified Hitboxes", Settings.SimplifiedHitboxes).Change(b => Settings.SimplifiedHitboxes = b),
+				new TextMenu.Option<LastFrameHitboxesTypes>("Show Last Frame Hitboxes (Experiment)").Apply(option => {
+						Array enumValues = Enum.GetValues(typeof(LastFrameHitboxesTypes));
+						foreach (LastFrameHitboxesTypes value in enumValues) {
+							option.Add(value.ToString().SpacedPascalCase(), value, value.Equals(Settings.ShowLastFrameHitboxes));
+						}
+						option.Change(b => Settings.ShowLastFrameHitboxes = b);
+						option.SetAction(() => {
+							option.AddDescription(menu, "so the hitbox from the last frame is actually used.");
+							option.AddDescription(menu, "since they all perform collision detection before moving,");
+							option.AddDescription(menu, "Apply to entities that use PlayerCollider for collision detection,");
+						});
+					}),
 				new TextMenu.Option<InfoPositions>("Info HUD").Apply(option => {
 					Array enumValues = Enum.GetValues(typeof(InfoPositions));
 					foreach (InfoPositions value in enumValues) {
@@ -86,7 +93,7 @@ namespace TAS.EverestInterop {
 			foreach (TextMenu.Item item in normalOptions) {
 				menu.Add(item);
 				item.Visible = Settings.Enabled;
-				TrySetNeedRelaunch(menu, item);
+				item.InvokeAction();
 			}
 
 			keyConfigMenu = new TextMenu.Button(Dialog.Clean("options_keyconfig")).Pressed(() => {
@@ -112,7 +119,7 @@ namespace TAS.EverestInterop {
 			foreach (TextMenu.Item item in hiddenOptions) {
 				menu.Add(item);
 				item.Visible = false;
-				TrySetNeedRelaunch(menu, item);
+				item.InvokeAction();
 			}
 		}
 

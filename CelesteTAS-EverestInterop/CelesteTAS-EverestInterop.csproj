@@ -104,6 +104,7 @@
     <Compile Include="EverestInterop\HideGameplay.cs" />
     <Compile Include="EverestInterop\Hitboxes\HitboxColor.cs" />
     <Compile Include="EverestInterop\Hitboxes\HitboxFixer.cs" />
+    <Compile Include="EverestInterop\Hitboxes\HitboxLastFrame.cs" />
     <Compile Include="EverestInterop\Hitboxes\HitboxTriggerSpikes.cs" />
     <Compile Include="EverestInterop\Hitboxes\HitboxTweak.cs" />
     <Compile Include="EverestInterop\Hotkeys.cs" />
