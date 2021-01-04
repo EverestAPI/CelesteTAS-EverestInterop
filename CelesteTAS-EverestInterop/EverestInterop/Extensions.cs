@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Reflection;
 using System.Reflection.Emit;
+using Celeste;
+using MonoMod.Utils;
 
 namespace TAS.EverestInterop {
-	public delegate object GetField(object o);
-	public delegate object GetStaticField();
-	public static class Extensions {
+	internal static class ReflectionExtensions {
+		public delegate object GetField(object o);
+		public delegate object GetStaticField();
 		public static object GetPublicField(this object obj, string name) {
 			return obj.GetType().GetField(name, BindingFlags.Instance | BindingFlags.Public)?.GetValue(obj);
 		}
@@ -50,6 +52,37 @@ namespace TAS.EverestInterop {
 			ilGen.Emit(OpCodes.Ldfld, field);
 			ilGen.Emit(OpCodes.Ret);
 			return dyn.CreateDelegate(typeof(GetStaticField)) as GetStaticField;
+		}
+	}
+
+	internal static class CommonExtensions {
+		public static T Apply<T>(this T obj, Action<T> action) {
+			action(obj);
+			return obj;
+		}
+	}
+
+	internal static class DynDataExtensions {
+		public static void SaveValue<T>(this T target, string name, object value) where T : class {
+			DynData<T> dynData = new DynData<T>(target);
+			dynData.Set(name, value);
+		}
+
+		public static R LoadValue<T, R>(this T target, string name, R defaultValue = default) where T : class {
+			DynData<T> dynData = new DynData<T>(target);
+			object value = dynData[name];
+			return value == null ? defaultValue : (R) value;
+		}
+	}
+
+	internal static class MenuExtensions {
+		private const string NeedRelaunchKey = "NeedRelaunchKey";
+		public static void SetNeedRelaunch(this TextMenu.Item item) {
+			item.SaveValue(NeedRelaunchKey, true);
+		}
+
+		public static bool IsNeedRelaunch(this TextMenu.Item item) {
+			return item.LoadValue(NeedRelaunchKey, false);
 		}
 	}
 }
