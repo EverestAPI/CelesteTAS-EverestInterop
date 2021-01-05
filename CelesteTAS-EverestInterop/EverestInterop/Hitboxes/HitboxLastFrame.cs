@@ -64,7 +64,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 return;
             }
 
-            if (entity.Get<StaticMover>() is StaticMover staticMover && staticMover.Platform is Platform platform && platform.Scene != null) {
+            if (Settings.ShowLastFrameHitboxes == LastFrameHitboxesTypes.Override && entity.Get<StaticMover>() is StaticMover staticMover && staticMover.Platform is Platform platform && platform.Scene != null) {
                     if (platform is JumpThru jumpThru && jumpThru.HasPlayerRider()
                         || platform is Solid solid && solid.HasPlayerRider()) {
                         invokeOrig(color);
