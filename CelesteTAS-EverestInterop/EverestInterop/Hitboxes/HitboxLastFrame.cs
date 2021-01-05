@@ -6,21 +6,37 @@ using Monocle;
 namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxLastFrame {
         private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
+        private static bool PlayerUpdated;
 
         public static void Load() {
+            On.Celeste.Level.Update += LevelOnUpdate;
+            On.Celeste.Player.Update += PlayerOnUpdate;
             On.Monocle.Entity.Update += EntityOnUpdate;
             On.Monocle.Hitbox.Render += HitboxOnRender;
             On.Monocle.Circle.Render += CircleOnRender;
         }
 
         public static void Unload() {
+            On.Celeste.Level.Update -= LevelOnUpdate;
+            On.Celeste.Player.Update -= PlayerOnUpdate;
             On.Monocle.Entity.Update -= EntityOnUpdate;
             On.Monocle.Hitbox.Render -= HitboxOnRender;
             On.Monocle.Circle.Render -= CircleOnRender;
         }
 
+        private static void LevelOnUpdate(On.Celeste.Level.orig_Update orig, Level self) {
+            PlayerUpdated = false;
+            orig(self);
+        }
+
+        private static void PlayerOnUpdate(On.Celeste.Player.orig_Update orig, Player self) {
+            orig(self);
+            PlayerUpdated = true;
+        }
+
         private static void EntityOnUpdate(On.Monocle.Entity.orig_Update orig, Entity self) {
             if (!(self is Player) && self.Get<PlayerCollider>() != null) {
+                self.SavePlayerUpdated(PlayerUpdated);
                 self.SaveLastPosition();
             }
 
@@ -42,7 +58,8 @@ namespace TAS.EverestInterop.Hitboxes {
                 || entity.Get<PlayerCollider>() == null
                 || !Settings.ShowHitboxes
                 || Settings.ShowLastFrameHitboxes == LastFrameHitboxesTypes.OFF
-                || entity.LoadLastPosition() == entity.Position) {
+                || entity.LoadLastPosition() == entity.Position
+                || !entity.UpdateLaterThanPlayer()) {
                 invokeOrig(color);
                 return;
             }

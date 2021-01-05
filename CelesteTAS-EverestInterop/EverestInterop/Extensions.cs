@@ -92,6 +92,7 @@ namespace TAS.EverestInterop {
 
 	internal static class EntityExtensions {
 		private const string LastPositionKey = nameof(LastPositionKey);
+		private const string PlayerUpdatedKey = nameof(PlayerUpdatedKey);
 
 		public static void SaveLastPosition(this Entity entity) {
 			entity.SaveValue(LastPositionKey, entity.Position);
@@ -99,6 +100,14 @@ namespace TAS.EverestInterop {
 
 		public static Vector2 LoadLastPosition(this Entity entity) {
 			return entity.LoadValue(LastPositionKey, entity.Position);
+		}
+
+		public static void SavePlayerUpdated(this Entity entity, bool playerUpdated) {
+			entity.SaveValue(PlayerUpdatedKey, playerUpdated);
+		}
+
+		public static bool UpdateLaterThanPlayer(this Entity entity) {
+			return entity.LoadValue(PlayerUpdatedKey, false);
 		}
 	}
 }
