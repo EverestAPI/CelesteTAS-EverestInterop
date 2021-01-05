@@ -47,19 +47,12 @@ namespace TAS.EverestInterop.Hitboxes {
                 return;
             }
 
-            if (entity.Get<StaticMover>() is StaticMover staticMover && staticMover.Platform != null) {
-                try {
-                    if (staticMover.Platform is JumpThru jumpThru && jumpThru.HasPlayerRider()
-                        || staticMover.Platform is Solid solid && solid.HasPlayerRider()) {
+            if (entity.Get<StaticMover>() is StaticMover staticMover && staticMover.Platform is Platform platform && platform.Scene != null) {
+                    if (platform is JumpThru jumpThru && jumpThru.HasPlayerRider()
+                        || platform is Solid solid && solid.HasPlayerRider()) {
                         invokeOrig(color);
                         return;
                     }
-                } catch (NullReferenceException e) {
-                    // Game crashes when FallingBlock is out of room
-                    // System.NullReferenceException at Celeste.Solid.GetPlayerRider()
-                    invokeOrig(color);
-                    return;
-                }
             }
 
             Vector2 lastPosition = entity.LoadLastPosition();
