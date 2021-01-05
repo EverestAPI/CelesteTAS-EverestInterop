@@ -2,14 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Celeste;
+using Celeste.Mod;
 using Microsoft.Xna.Framework;
+using Mono.Cecil.Cil;
 using Monocle;
+using MonoMod.Cil;
 
 namespace TAS.EverestInterop.Hitboxes {
     public class HitboxTweak {
         public static HitboxTweak instance;
         private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
-        private static readonly FieldInfo RectFieldInfo = typeof(Draw).GetField("rect", BindingFlags.Static | BindingFlags.NonPublic);
+        private static readonly FieldInfo FireBallIceMode = typeof(FireBall).GetField("iceMode", BindingFlags.NonPublic | BindingFlags.Instance);
 
         private static readonly List<Type> UselessTypes = new List<Type> {
             typeof(ClutterBlockBase),
@@ -28,18 +31,20 @@ namespace TAS.EverestInterop.Hitboxes {
 
         public void Load() {
             On.Monocle.Entity.DebugRender += HideHitbox;
-            On.Monocle.Grid.Render += CombineHitbox;
             On.Monocle.Hitbox.Render += ModHitbox;
-            On.Monocle.Draw.HollowRect_float_float_float_float_Color += AvoidRedrawCorners;
+            On.Monocle.Grid.Render += CombineHitbox;
+            IL.Monocle.Draw.HollowRect_float_float_float_float_Color += AvoidRedrawCorners;
             HitboxTriggerSpikes.Load();
+            HitboxLastFrame.Load();
         }
 
         public void Unload() {
             On.Monocle.Entity.DebugRender -= HideHitbox;
-            On.Monocle.Grid.Render -= CombineHitbox;
             On.Monocle.Hitbox.Render -= ModHitbox;
-            On.Monocle.Draw.HollowRect_float_float_float_float_Color -= AvoidRedrawCorners;
+            On.Monocle.Grid.Render -= CombineHitbox;
+            IL.Monocle.Draw.HollowRect_float_float_float_float_Color -= AvoidRedrawCorners;
             HitboxTriggerSpikes.Unload();
+            HitboxLastFrame.Unload();
         }
 
         private static void HideHitbox(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {
@@ -52,6 +57,20 @@ namespace TAS.EverestInterop.Hitboxes {
             }
 
             orig(self, camera);
+        }
+
+        private static void ModHitbox(On.Monocle.Hitbox.orig_Render orig, Hitbox hitbox, Camera camera, Color color) {
+            Entity entity = hitbox.Entity;
+            if (entity is WallBooster) {
+                Draw.Rect(hitbox.AbsolutePosition, hitbox.Width, hitbox.Height, HitboxColor.EntityColorInverselyLessAlpha);
+                return;
+            }
+
+            if (entity is FireBall fireBall && (bool) FireBallIceMode.GetValue(fireBall) == false) {
+                return;
+            }
+
+            orig(hitbox, camera, color);
         }
 
         private static void CombineHitbox(On.Monocle.Grid.orig_Render orig, Grid self, Camera camera, Color color) {
@@ -81,30 +100,50 @@ namespace TAS.EverestInterop.Hitboxes {
             }
         }
 
-        private static void AvoidRedrawCorners(On.Monocle.Draw.orig_HollowRect_float_float_float_float_Color orig, float x,
-            float y, float width, float height, Color color) {
-            if (!CelesteTASModule.Settings.ShowHitboxes) {
-                orig(x, y, width, height, color);
-                return;
+        private void AvoidRedrawCorners(ILContext il) {
+            ILCursor ilCursor = new ILCursor(il);
+            if (ilCursor.TryGotoNext(
+                ins => ins.OpCode == OpCodes.Ldc_I4_1,
+                ins => ins.OpCode == OpCodes.Sub,
+                ins => ins.OpCode == OpCodes.Sub,
+                ins => ins.OpCode == OpCodes.Stind_I4
+            ) && ilCursor.TryGotoNext(
+                MoveType.After,
+                ins => ins.MatchLdsflda(typeof(Draw), "rect"),
+                ins => ins.OpCode == OpCodes.Ldarg_3,
+                ins => ins.OpCode == OpCodes.Conv_I4,
+                ins => ins.MatchStfld<Rectangle>("Height")
+            )) {
+                Logger.Log("CelesteTAS", $"Injecting code to avoid redrawing hitbox corners in IL for {ilCursor.Method.FullName}");
+
+                ilCursor.Goto(0);
+
+                // Draw.rect.Y -= (int) height - 1;
+                // to
+                // Draw.rect.Y -= (int) height - 2;
+                ilCursor.GotoNext(
+                    ins => ins.OpCode == OpCodes.Ldc_I4_1,
+                    ins => ins.OpCode == OpCodes.Sub,
+                    ins => ins.OpCode == OpCodes.Sub,
+                    ins => ins.OpCode == OpCodes.Stind_I4
+                );
+                ilCursor.Remove().Emit(OpCodes.Ldc_I4_2);
+
+                // Draw.rect.Height = (int) height;
+                // to
+                // Draw.rect.Height = (int) height - 2;
+                ilCursor.GotoNext(
+                    MoveType.After,
+                    ins => ins.MatchLdsflda(typeof(Draw), "rect"),
+                    ins => ins.OpCode == OpCodes.Ldarg_3,
+                    ins => ins.OpCode == OpCodes.Conv_I4,
+                    ins => ins.MatchStfld<Rectangle>("Height")
+                );
+                ilCursor.Index--;
+                ilCursor.Emit(OpCodes.Ldc_I4_2).Emit(OpCodes.Sub);
+            } else {
+                Logger.Log("CelesteTAS", $"Injecting code failed: {ilCursor.Method.FullName}");
             }
-
-            var rect = (Rectangle) RectFieldInfo.GetValue(null);
-            rect.X = (int) x;
-            rect.Y = (int) y;
-            rect.Width = (int) width;
-            rect.Height = 1;
-            Draw.SpriteBatch.Draw(Draw.Pixel.Texture.Texture_Safe, rect, Draw.Pixel.ClipRect, color);
-
-            rect.Y += (int) height - 1;
-            Draw.SpriteBatch.Draw(Draw.Pixel.Texture.Texture_Safe, rect, Draw.Pixel.ClipRect, color);
-
-            rect.Y -= (int) height - 2;
-            rect.Width = 1;
-            rect.Height = (int) height - 2;
-            Draw.SpriteBatch.Draw(Draw.Pixel.Texture.Texture_Safe, rect, Draw.Pixel.ClipRect, color);
-
-            rect.X += (int) width - 1;
-            Draw.SpriteBatch.Draw(Draw.Pixel.Texture.Texture_Safe, rect, Draw.Pixel.ClipRect, color);
         }
 
         private static void DrawCombineHollowRect(Grid grid, Color color, int x, int y, int left, int right, int top, int bottom) {
@@ -187,16 +226,6 @@ namespace TAS.EverestInterop.Hitboxes {
                     Draw.Point(bottomRight, color);
                 }
             }
-        }
-
-        private static void ModHitbox(On.Monocle.Hitbox.orig_Render orig, Hitbox hitbox, Camera camera, Color color) {
-            Entity entity = hitbox.Entity;
-            if (entity is WallBooster) {
-                Draw.Rect(hitbox.AbsolutePosition, hitbox.Width, hitbox.Height, HitboxColor.EntityColorInverselyLessAlpha);
-                return;
-            }
-
-            orig(hitbox, camera, color);
         }
     }
 }

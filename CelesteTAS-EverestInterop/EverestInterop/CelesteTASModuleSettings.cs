@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Diagnostics;
 using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework;
+using TAS.EverestInterop.Hitboxes;
 
 namespace TAS.EverestInterop {
 	public class CelesteTASModuleSettings : EverestModuleSettings {
@@ -84,6 +84,7 @@ namespace TAS.EverestInterop {
 		public Color TriggerHitboxColor { get; set; } = Color.Red;
 		public bool HideTriggerHitboxes { get; set; } = false;
 		public bool SimplifiedHitboxes { get; set; } = true;
+		public LastFrameHitboxesTypes ShowLastFrameHitboxes { get; set; } = LastFrameHitboxesTypes.OFF;
 		public InfoPositions InfoHUD { get; set; } = InfoPositions.OFF;
 	}
 }

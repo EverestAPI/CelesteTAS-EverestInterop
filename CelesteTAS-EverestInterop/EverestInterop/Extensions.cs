@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Reflection;
 using System.Reflection.Emit;
+using Celeste;
+using Microsoft.Xna.Framework;
+using Monocle;
+using MonoMod.Utils;
 
 namespace TAS.EverestInterop {
-	public delegate object GetField(object o);
-	public delegate object GetStaticField();
-	public static class Extensions {
+	internal static class ReflectionExtensions {
+		public delegate object GetField(object o);
+		public delegate object GetStaticField();
 		public static object GetPublicField(this object obj, string name) {
 			return obj.GetType().GetField(name, BindingFlags.Instance | BindingFlags.Public)?.GetValue(obj);
 		}
@@ -50,6 +54,60 @@ namespace TAS.EverestInterop {
 			ilGen.Emit(OpCodes.Ldfld, field);
 			ilGen.Emit(OpCodes.Ret);
 			return dyn.CreateDelegate(typeof(GetStaticField)) as GetStaticField;
+		}
+	}
+
+	internal static class CommonExtensions {
+		public static T Apply<T>(this T obj, Action<T> action) {
+			action(obj);
+			return obj;
+		}
+	}
+
+	internal static class DynDataExtensions {
+		private const string KeyPrefix = "CelesteTAS_";
+		public static void SaveValue<T>(this T target, string name, object value) where T : class {
+			DynData<T> dynData = new DynData<T>(target);
+			dynData.Set(KeyPrefix + name, value);
+		}
+
+		public static R LoadValue<T, R>(this T target, string name, R defaultValue = default) where T : class {
+			DynData<T> dynData = new DynData<T>(target);
+			object value = dynData[KeyPrefix + name];
+			return value == null ? defaultValue : (R) value;
+		}
+	}
+
+	internal static class MenuExtensions {
+		private const string SetActionKey = nameof(SetActionKey);
+
+		public static void SetAction(this TextMenu.Item item, Action action) {
+			item.SaveValue(SetActionKey, action);
+		}
+
+		public static void InvokeAction(this TextMenu.Item item) {
+			item.LoadValue<TextMenu.Item, Action>(SetActionKey)?.Invoke();
+		}
+	}
+
+	internal static class EntityExtensions {
+		private const string LastPositionKey = nameof(LastPositionKey);
+		private const string PlayerUpdatedKey = nameof(PlayerUpdatedKey);
+
+		public static void SaveLastPosition(this Entity entity) {
+			entity.SaveValue(LastPositionKey, entity.Position);
+		}
+
+		public static Vector2 LoadLastPosition(this Entity entity) {
+			return entity.LoadValue(LastPositionKey, entity.Position);
+		}
+
+		public static void SavePlayerUpdated(this Entity entity, bool playerUpdated) {
+			entity.SaveValue(PlayerUpdatedKey, playerUpdated);
+		}
+
+		public static bool UpdateLaterThanPlayer(this Entity entity) {
+			return entity.LoadValue(PlayerUpdatedKey, false);
 		}
 	}
 }

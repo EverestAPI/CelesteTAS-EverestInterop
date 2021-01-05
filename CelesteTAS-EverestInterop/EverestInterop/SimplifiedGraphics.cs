@@ -24,7 +24,7 @@ namespace TAS.EverestInterop {
 
         public void Load() {
             // Optional: Various graphical simplifications to cut down on visual noise.
-            On.Celeste.Level.Render += Level_Render;
+            On.Celeste.BloomRenderer.Apply += BloomRenderer_Apply;
             On.Celeste.LightingRenderer.Render += LightingRenderer_Render;
             On.Monocle.Particle.Render += Particle_Render;
 			IL.Celeste.BackdropRenderer.Render += BackdropRenderer_Render;
@@ -40,8 +40,6 @@ namespace TAS.EverestInterop {
             On.Celeste.LightningRenderer.Bolt.Render += Bolt_Render;
             On.Celeste.Decal.Render += Decal_Render;
             On.Celeste.SummitCloud.Render += SummitCloudOnRender;
-
-            // Hide screen wipe when beginning level if simple graphic is enabled
             On.Celeste.Level.Begin += Level_Begin;
 
             if (Type.GetType("FrostHelper.CustomSpinner, FrostTempleHelper") is Type customSpinnerType) {
@@ -54,7 +52,7 @@ namespace TAS.EverestInterop {
         }
 
         public void Unload() {
-            On.Celeste.Level.Render -= Level_Render;
+            On.Celeste.BloomRenderer.Apply += BloomRenderer_Apply;
             On.Celeste.LightingRenderer.Render -= LightingRenderer_Render;
             On.Monocle.Particle.Render -= Particle_Render;
 			IL.Celeste.BackdropRenderer.Render -= BackdropRenderer_Render;
@@ -78,42 +76,12 @@ namespace TAS.EverestInterop {
             instance = null;
         }
 
-        private void modCustomSpinnerColor(ILContext il) {
-            ILCursor ilCursor = new ILCursor(il);
-            if (ilCursor.TryGotoNext(
-                i => i.OpCode == OpCodes.Ldarg_0,
-                i => i.OpCode == OpCodes.Ldarg_S && i.Operand.ToString() == "tint",
-                i => i.OpCode == OpCodes.Call && i.Operand.ToString() == "Microsoft.Xna.Framework.Color Monocle.Calc::HexToColor(System.String)",
-                i => i.OpCode == OpCodes.Stfld && i.Operand.ToString() == "Microsoft.Xna.Framework.Color FrostHelper.CustomSpinner::Tint"
-            )) {
-                ilCursor.Index += 2;
-                ilCursor.EmitDelegate<Func<string, string>>(color => Settings.SimplifiedGraphics ? simpleSpinnerColor : color );
+        private void BloomRenderer_Apply(On.Celeste.BloomRenderer.orig_Apply orig, BloomRenderer self, VirtualRenderTarget target, Scene scene) {
+            if (Settings.SimplifiedGraphics && scene is Level level) {
+                level.Bloom.Base = 0f;
+                level.Bloom.Strength = 1f;
             }
-        }
-
-        private void modRainbowSpinnerColor(ILContext il) {
-            ILCursor ilCursor = new ILCursor(il);
-            if (Type.GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController, MaxHelpingHand") is Type rainbowSpinnerType && ilCursor.TryGotoNext(
-                i => i.MatchLdstr("gradientSize")
-            )) {
-                ilCursor.Emit(OpCodes.Ldarg_0).Emit(OpCodes.Ldfld, rainbowSpinnerType.GetField("colors", BindingFlags.Instance | BindingFlags.NonPublic));
-                ilCursor.EmitDelegate<Action<Color[]>>(colors => {
-                    if (!Settings.SimplifiedGraphics) return;
-                    Color simpleColor = Calc.HexToColor(simpleSpinnerColor);
-                    for (var i = 0; i < colors.Length; i++) {
-                        colors[i] = simpleColor;
-                    }
-                });
-            }
-        }
-
-        private void Level_Render(On.Celeste.Level.orig_Render orig, Level self) {
-            orig(self);
-
-            if (Settings.SimplifiedGraphics) {
-                self.Bloom.Base = 0f;
-                self.Bloom.Strength = 1f;
-            }
+            orig(self, target, scene);
         }
 
         private void LightingRenderer_Render(On.Celeste.LightingRenderer.orig_Render orig, LightingRenderer self, Scene scene) {
@@ -246,12 +214,42 @@ namespace TAS.EverestInterop {
             orig(self);
         }
 
+        // Hide screen wipe when beginning level if simple graphic is enabled
         private void Level_Begin(On.Celeste.Level.orig_Begin orig, Level self) {
             orig(self);
             if (Settings.SimplifiedGraphics && self.Wipe != null && self.Session.StartedFromBeginning) {
                 Color wipeColor = ScreenWipe.WipeColor;
                 ScreenWipe.WipeColor = Color.Transparent;
                 self.Wipe.OnComplete += () => ScreenWipe.WipeColor = wipeColor;
+            }
+        }
+
+        private void modCustomSpinnerColor(ILContext il) {
+            ILCursor ilCursor = new ILCursor(il);
+            if (ilCursor.TryGotoNext(
+                i => i.OpCode == OpCodes.Ldarg_0,
+                i => i.OpCode == OpCodes.Ldarg_S && i.Operand.ToString() == "tint",
+                i => i.OpCode == OpCodes.Call && i.Operand.ToString() == "Microsoft.Xna.Framework.Color Monocle.Calc::HexToColor(System.String)",
+                i => i.OpCode == OpCodes.Stfld && i.Operand.ToString() == "Microsoft.Xna.Framework.Color FrostHelper.CustomSpinner::Tint"
+            )) {
+                ilCursor.Index += 2;
+                ilCursor.EmitDelegate<Func<string, string>>(color => Settings.SimplifiedGraphics ? simpleSpinnerColor : color );
+            }
+        }
+
+        private void modRainbowSpinnerColor(ILContext il) {
+            ILCursor ilCursor = new ILCursor(il);
+            if (Type.GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController, MaxHelpingHand") is Type rainbowSpinnerType && ilCursor.TryGotoNext(
+                i => i.MatchLdstr("gradientSize")
+            )) {
+                ilCursor.Emit(OpCodes.Ldarg_0).Emit(OpCodes.Ldfld, rainbowSpinnerType.GetField("colors", BindingFlags.Instance | BindingFlags.NonPublic));
+                ilCursor.EmitDelegate<Action<Color[]>>(colors => {
+                    if (!Settings.SimplifiedGraphics) return;
+                    Color simpleColor = Calc.HexToColor(simpleSpinnerColor);
+                    for (var i = 0; i < colors.Length; i++) {
+                        colors[i] = simpleColor;
+                    }
+                });
             }
         }
     }
