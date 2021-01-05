@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
@@ -64,30 +66,42 @@ namespace TAS.EverestInterop.Hitboxes {
                 return;
             }
 
-            if (Settings.ShowLastFrameHitboxes == LastFrameHitboxesTypes.Override && entity.Get<StaticMover>() is StaticMover staticMover && staticMover.Platform is Platform platform && platform.Scene != null) {
-                    if (platform is JumpThru jumpThru && jumpThru.HasPlayerRider()
-                        || platform is Solid solid && solid.HasPlayerRider()) {
-                        invokeOrig(color);
-                        return;
-                    }
+            if (Settings.ShowLastFrameHitboxes == LastFrameHitboxesTypes.Override && entity.Get<StaticMover>() is StaticMover staticMover &&
+                staticMover.Platform is Platform platform && platform.Scene != null) {
+                if (platform is JumpThru jumpThru && jumpThru.HasPlayerRider()
+                    || platform is Solid solid && solid.HasPlayerRider()) {
+                    invokeOrig(color);
+                    return;
+                }
+            }
+
+            if (Settings.ShowLastFrameHitboxes == LastFrameHitboxesTypes.Append) {
+                invokeOrig(color);
             }
 
             Vector2 lastPosition = entity.LoadLastPosition();
             Vector2 currentPosition = entity.Position;
 
-            entity.Position = lastPosition;
-            invokeOrig(lastFrameColor);
-            entity.Position = currentPosition;
-
-            if (Settings.ShowLastFrameHitboxes == LastFrameHitboxesTypes.Append) {
-                invokeOrig(color);
+            IEnumerable<PlayerCollider> playerColliders = entity.Components.GetAll<PlayerCollider>().ToArray();
+            if (playerColliders.All(playerCollider => playerCollider.Collider != null)) {
+                if (playerColliders.Any(playerCollider => playerCollider.Collider == self)) {
+                    entity.Position = lastPosition;
+                    invokeOrig(lastFrameColor);
+                    entity.Position = currentPosition;
+                } else {
+                    invokeOrig(color);
+                }
+            } else {
+                entity.Position = lastPosition;
+                invokeOrig(lastFrameColor);
+                entity.Position = currentPosition;
             }
         }
     }
+}
 
-    public enum LastFrameHitboxesTypes {
-        OFF,
-        Override,
-        Append
-    }
+public enum LastFrameHitboxesTypes {
+    OFF,
+    Override,
+    Append
 }

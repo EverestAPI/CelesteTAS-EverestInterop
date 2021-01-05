@@ -67,7 +67,6 @@ namespace TAS.EverestInterop.Hitboxes {
             }
 
             if (entity is FireBall fireBall && (bool) FireBallIceMode.GetValue(fireBall) == false) {
-
                 return;
             }
 
