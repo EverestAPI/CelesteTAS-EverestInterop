@@ -12,6 +12,7 @@ namespace TAS.EverestInterop.Hitboxes {
     public class HitboxTweak {
         public static HitboxTweak instance;
         private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
+        private static readonly FieldInfo FireBallIceMode = typeof(FireBall).GetField("iceMode", BindingFlags.NonPublic | BindingFlags.Instance);
 
         private static readonly List<Type> UselessTypes = new List<Type> {
             typeof(ClutterBlockBase),
@@ -62,6 +63,11 @@ namespace TAS.EverestInterop.Hitboxes {
             Entity entity = hitbox.Entity;
             if (entity is WallBooster) {
                 Draw.Rect(hitbox.AbsolutePosition, hitbox.Width, hitbox.Height, HitboxColor.EntityColorInverselyLessAlpha);
+                return;
+            }
+
+            if (entity is FireBall fireBall && (bool) FireBallIceMode.GetValue(fireBall) == false) {
+
                 return;
             }
 
