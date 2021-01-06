@@ -11,7 +11,7 @@ namespace TAS.EverestInterop.Hitboxes {
         private static bool PlayerUpdated;
 
         public static void Load() {
-            On.Celeste.Level.Update += LevelOnUpdate;
+            On.Monocle.EntityList.Update += EntityListOnUpdate;
             On.Celeste.Player.Update += PlayerOnUpdate;
             On.Monocle.Entity.Update += EntityOnUpdate;
             On.Monocle.Hitbox.Render += HitboxOnRender;
@@ -19,19 +19,20 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         public static void Unload() {
-            On.Celeste.Level.Update -= LevelOnUpdate;
+            On.Monocle.EntityList.Update -= EntityListOnUpdate;
             On.Celeste.Player.Update -= PlayerOnUpdate;
             On.Monocle.Entity.Update -= EntityOnUpdate;
             On.Monocle.Hitbox.Render -= HitboxOnRender;
             On.Monocle.Circle.Render -= CircleOnRender;
         }
 
-        private static void LevelOnUpdate(On.Celeste.Level.orig_Update orig, Level self) {
-            PlayerUpdated = false;
-
-            foreach (Entity entity in self.Entities) {
-                entity.SaveLastPosition();
-                entity.SaveLastPositionRelativeToPlatform();
+        private static void EntityListOnUpdate(On.Monocle.EntityList.orig_Update orig, EntityList self) {
+            if (self.Scene is Level level && !level.Paused) {
+                PlayerUpdated = false;
+                foreach (Entity entity in self) {
+                    entity.SaveLastPosition();
+                    entity.SaveLastPositionRelativeToPlatform();
+                }
             }
 
             orig(self);
@@ -70,7 +71,8 @@ namespace TAS.EverestInterop.Hitboxes {
             // When entity is moved only by staticMover.Platform and player ride on the platform, should show current frame hitbox
             if (Settings.ShowLastFrameHitboxes == LastFrameHitboxesTypes.Override && entity.Get<StaticMover>() is StaticMover staticMover &&
                 staticMover.Platform is Platform platform && platform.Scene != null &&
-                platform.Position != platform.LoadLastPosition() && entity.GetPositionRelativeToPlatform() == entity.LoadLastPositionRelativeToPlatform()) {
+                platform.Position != platform.LoadLastPosition() &&
+                entity.GetPositionRelativeToPlatform() == entity.LoadLastPositionRelativeToPlatform()) {
                 if (platform is JumpThru jumpThru && jumpThru.HasPlayerRider()
                     || platform is Solid solid && solid.HasPlayerRider()) {
                     invokeOrig(color);
