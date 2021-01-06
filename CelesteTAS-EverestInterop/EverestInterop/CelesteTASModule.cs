@@ -32,12 +32,13 @@ namespace TAS.EverestInterop {
 
         public override void Initialize() {
             if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
-                ExtractStudio();
-                LaunchStudioAtBoot();
+                ExtractStudio(out bool studioProcessWasKilled);
+                LaunchStudioAtBoot(studioProcessWasKilled);
             }
         }
 
-        private void ExtractStudio() {
+        private void ExtractStudio(out bool studioProcessWasKilled) {
+            studioProcessWasKilled = false;
             if (!File.Exists(copiedStudioExePath) || CheckNewerStudio()) {
                 try {
                     Process studioProcess = Process.GetProcesses().FirstOrDefault(process =>
@@ -51,6 +52,9 @@ namespace TAS.EverestInterop {
 
                     if (studioProcess?.HasExited == false)
                         return;
+
+                    if (studioProcess?.HasExited == true)
+                        studioProcessWasKilled = true;
 
                     if (!string.IsNullOrEmpty(Metadata.PathArchive)) {
                         using (ZipFile zip = ZipFile.Read(Metadata.PathArchive)) {
@@ -108,8 +112,8 @@ namespace TAS.EverestInterop {
             return modifiedTime.CompareTo(Settings.StudioLastModifiedTime) > 0;
         }
 
-        private void LaunchStudioAtBoot() {
-            if (Settings.Enabled && Settings.LaunchStudioAtBoot) {
+        private void LaunchStudioAtBoot(bool studioProcessWasKilled) {
+            if (Settings.Enabled && Settings.LaunchStudioAtBoot || studioProcessWasKilled) {
                 Process[] processes = Process.GetProcesses();
                 foreach (Process process in processes) {
                     if (process.ProcessName.StartsWith("Celeste") && process.ProcessName.Contains("Studio"))
