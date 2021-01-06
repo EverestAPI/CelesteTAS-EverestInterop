@@ -59,7 +59,8 @@ namespace TAS.EverestInterop {
 						option.SetAction(() => {
 							option.AddDescription(menu, "so the hitbox from the last frame is actually used.");
 							option.AddDescription(menu, "since they all perform collision detection before moving,");
-							option.AddDescription(menu, "Apply to entities that use PlayerCollider for collision detection,");
+							option.AddDescription(menu, "and update later than the player,");
+							option.AddDescription(menu, "Apply to entities that use PlayerCollider for collision detection");
 						});
 					}),
 				new TextMenu.Option<InfoPositions>("Info HUD").Apply(option => {
