@@ -142,7 +142,6 @@ namespace TAS.EverestInterop {
 
 	internal static class EntityExtensions {
 		private const string LastPositionKey = nameof(LastPositionKey);
-		private const string LastPositionRelativeToPlatformKey = nameof(LastPositionRelativeToPlatformKey);
 		private const string PlayerUpdatedKey = nameof(PlayerUpdatedKey);
 
 		public static void SaveLastPosition(this Entity entity) {
@@ -151,22 +150,6 @@ namespace TAS.EverestInterop {
 
 		public static Vector2 LoadLastPosition(this Entity entity) {
 			return entity.GetExtendedDataValue<Vector2>(LastPositionKey);
-		}
-
-		public static Vector2? GetPositionRelativeToPlatform(this Entity entity) {
-			if (entity.Get<StaticMover>() is StaticMover staticMover && staticMover.Platform is Platform platform && platform.Scene != null) {
-				return entity.Position - platform.Position;
-			}
-
-			return null;
-		}
-
-		public static void SaveLastPositionRelativeToPlatform(this Entity entity) {
-			entity.SetExtendedDataValue(LastPositionRelativeToPlatformKey, entity.GetPositionRelativeToPlatform());
-		}
-
-		public static Vector2? LoadLastPositionRelativeToPlatform(this Entity entity) {
-			return entity.GetExtendedDataValue<Vector2?>(LastPositionRelativeToPlatformKey) ?? entity.GetPositionRelativeToPlatform();
 		}
 
 		public static void SavePlayerUpdated(this Entity entity, bool playerUpdated) {

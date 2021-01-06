@@ -32,15 +32,12 @@ namespace TAS.EverestInterop.Hitboxes {
 
             if (Settings.ShowHitboxes && Settings.ShowLastFrameHitboxes != LastFrameHitboxesTypes.OFF && !self.Paused) {
                 foreach (Entity entity in self) {
-                    if (entity.Get<PlayerCollider>() != null) {
+                    if (entity.Get<PlayerCollider>() != null || entity is Platform) {
                         entity.SaveLastPosition();
-                        if (entity.Get<StaticMover>() is StaticMover staticMover && staticMover.Platform is Platform platform &&
-                            platform.Scene != null) {
-                            entity.SaveLastPositionRelativeToPlatform();
-                        }
                     }
                 }
             }
+
             orig(self);
         }
 
@@ -76,17 +73,14 @@ namespace TAS.EverestInterop.Hitboxes {
                 return;
             }
 
-            // When entity is moved only by staticMover.Platform and player ride on the platform, should show current frame hitbox
-            if (Settings.ShowLastFrameHitboxes == LastFrameHitboxesTypes.Override && entity.Get<StaticMover>() is StaticMover staticMover &&
-                staticMover.Platform is Platform platform && platform.Scene != null
+            // It's a bit complicated on moving platform, so display two frames of hitboxes at the same time.
+            if (Settings.ShowLastFrameHitboxes == LastFrameHitboxesTypes.Override
+                && entity.Get<StaticMover>() is StaticMover staticMover
+                && staticMover.Platform is Platform platform && platform.Scene != null
                 && platform.Position != platform.LoadLastPosition()
-                && entity.GetPositionRelativeToPlatform() == entity.LoadLastPositionRelativeToPlatform()
-                ) {
-                if (platform is JumpThru jumpThru && jumpThru.HasPlayerRider()
-                    || platform is Solid solid && solid.HasPlayerRider()) {
-                    invokeOrig(color);
-                    return;
-                }
+            ) {
+                invokeOrig(color);
+                lastFrameColor *= 0.7f;
             }
 
             if (Settings.ShowLastFrameHitboxes == LastFrameHitboxesTypes.Append) {
