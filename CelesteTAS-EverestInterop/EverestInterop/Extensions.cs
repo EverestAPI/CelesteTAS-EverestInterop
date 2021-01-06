@@ -150,7 +150,7 @@ namespace TAS.EverestInterop {
 		}
 
 		public static Vector2 LoadLastPosition(this Entity entity) {
-			return entity.GetExtendedDataValue<Vector2?>(LastPositionKey) ?? entity.Position;
+			return entity.GetExtendedDataValue<Vector2>(LastPositionKey);
 		}
 
 		public static Vector2? GetPositionRelativeToPlatform(this Entity entity) {

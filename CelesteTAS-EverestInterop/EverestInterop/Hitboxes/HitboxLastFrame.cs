@@ -11,7 +11,7 @@ namespace TAS.EverestInterop.Hitboxes {
         private static bool PlayerUpdated;
 
         public static void Load() {
-            On.Monocle.EntityList.Update += EntityListOnUpdate;
+            On.Celeste.Level.Update += LevelOnUpdate;
             On.Celeste.Player.Update += PlayerOnUpdate;
             On.Monocle.Entity.Update += EntityOnUpdate;
             On.Monocle.Hitbox.Render += HitboxOnRender;
@@ -19,16 +19,18 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         public static void Unload() {
-            On.Monocle.EntityList.Update -= EntityListOnUpdate;
+            On.Celeste.Level.Update -= LevelOnUpdate;
             On.Celeste.Player.Update -= PlayerOnUpdate;
             On.Monocle.Entity.Update -= EntityOnUpdate;
             On.Monocle.Hitbox.Render -= HitboxOnRender;
             On.Monocle.Circle.Render -= CircleOnRender;
         }
 
-        private static void EntityListOnUpdate(On.Monocle.EntityList.orig_Update orig, EntityList self) {
-            if (Settings.ShowHitboxes && Settings.ShowLastFrameHitboxes != LastFrameHitboxesTypes.OFF && self.Scene is Level level && !level.Paused) {
-                PlayerUpdated = false;
+        // TODO Can't display the last frame hitbox when the game is paused.
+        private static void LevelOnUpdate(On.Celeste.Level.orig_Update orig, Level self) {
+            PlayerUpdated = false;
+
+            if (Settings.ShowHitboxes && Settings.ShowLastFrameHitboxes != LastFrameHitboxesTypes.OFF && !self.Paused) {
                 foreach (Entity entity in self) {
                     if (entity.Get<PlayerCollider>() != null) {
                         entity.SaveLastPosition();
@@ -39,7 +41,6 @@ namespace TAS.EverestInterop.Hitboxes {
                     }
                 }
             }
-
             orig(self);
         }
 
@@ -49,7 +50,7 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void EntityOnUpdate(On.Monocle.Entity.orig_Update orig, Entity self) {
-            if (Settings.ShowHitboxes && Settings.ShowLastFrameHitboxes != LastFrameHitboxesTypes.OFF) {
+            if (Settings.ShowHitboxes && Settings.ShowLastFrameHitboxes != LastFrameHitboxesTypes.OFF && self.Scene is Level level && !level.Paused) {
                 self.SavePlayerUpdated(PlayerUpdated);
             }
 
@@ -77,9 +78,10 @@ namespace TAS.EverestInterop.Hitboxes {
 
             // When entity is moved only by staticMover.Platform and player ride on the platform, should show current frame hitbox
             if (Settings.ShowLastFrameHitboxes == LastFrameHitboxesTypes.Override && entity.Get<StaticMover>() is StaticMover staticMover &&
-                staticMover.Platform is Platform platform && platform.Scene != null &&
-                platform.Position != platform.LoadLastPosition() &&
-                entity.GetPositionRelativeToPlatform() == entity.LoadLastPositionRelativeToPlatform()) {
+                staticMover.Platform is Platform platform && platform.Scene != null
+                && platform.Position != platform.LoadLastPosition()
+                && entity.GetPositionRelativeToPlatform() == entity.LoadLastPositionRelativeToPlatform()
+                ) {
                 if (platform is JumpThru jumpThru && jumpThru.HasPlayerRider()
                     || platform is Solid solid && solid.HasPlayerRider()) {
                     invokeOrig(color);
