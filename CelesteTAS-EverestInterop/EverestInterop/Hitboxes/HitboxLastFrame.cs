@@ -28,6 +28,13 @@ namespace TAS.EverestInterop.Hitboxes {
 
         private static void LevelOnUpdate(On.Celeste.Level.orig_Update orig, Level self) {
             PlayerUpdated = false;
+
+            foreach (Entity entity in self.Entities) {
+                if (entity.IsNotType<Player>() && entity.Get<PlayerCollider>() != null) {
+                    entity.SaveLastPosition();
+                }
+            }
+
             orig(self);
         }
 
@@ -37,46 +44,46 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void EntityOnUpdate(On.Monocle.Entity.orig_Update orig, Entity self) {
-            if (!(self is Player) && self.Get<PlayerCollider>() != null) {
+            if (self.IsNotType<Player>() && self.Get<PlayerCollider>() != null) {
                 self.SavePlayerUpdated(PlayerUpdated);
-                self.SaveLastPosition();
             }
 
             orig(self);
         }
 
         private static void CircleOnRender(On.Monocle.Circle.orig_Render orig, Circle self, Camera camera, Color color) {
-            DrawLastFrameHitbox(self, color, HitboxColor.EntityColorInverselyLessAlpha, hitboxColor => orig(self, camera, hitboxColor));
+            DrawLastFrameHitbox(self, color, HitboxColor.EntityColorInversely, hitboxColor => orig(self, camera, hitboxColor));
         }
 
         private static void HitboxOnRender(On.Monocle.Hitbox.orig_Render orig, Hitbox self, Camera camera, Color color) {
-            DrawLastFrameHitbox(self, color, HitboxColor.EntityColorInverselyLessAlpha, hitboxColor => orig(self, camera, hitboxColor));
+            DrawLastFrameHitbox(self, color, HitboxColor.EntityColorInversely, hitboxColor => orig(self, camera, hitboxColor));
         }
 
         private static void DrawLastFrameHitbox(Collider self, Color color, Color lastFrameColor, Action<Color> invokeOrig) {
             Entity entity = self.Entity;
-            if (entity == null
-                || entity is Player
-                || entity.Get<PlayerCollider>() == null
+            if (entity?.Get<PlayerCollider>() == null
                 || !Settings.ShowHitboxes
                 || Settings.ShowLastFrameHitboxes == LastFrameHitboxesTypes.OFF
-                || entity.LoadLastPosition() == entity.Position
+                || (entity.LoadLastPosition() == entity.Position && Settings.ShowLastFrameHitboxes == LastFrameHitboxesTypes.Append)
                 || !entity.UpdateLaterThanPlayer()) {
                 invokeOrig(color);
                 return;
             }
 
-            if (Settings.ShowLastFrameHitboxes == LastFrameHitboxesTypes.Override && entity.Get<StaticMover>() is StaticMover staticMover &&
-                staticMover.Platform is Platform platform && platform.Scene != null) {
-                if (platform is JumpThru jumpThru && jumpThru.HasPlayerRider()
-                    || platform is Solid solid && solid.HasPlayerRider()) {
-                    invokeOrig(color);
-                    return;
-                }
-            }
+            // When entity is only moved by staticMover.Platform and player ride on the platform, should show current frame hitbox
+            // This does not apply if the entity itself moves
+            // if (Settings.ShowLastFrameHitboxes == LastFrameHitboxesTypes.Override && entity.Get<StaticMover>() is StaticMover staticMover &&
+            //     staticMover.Platform is Platform platform && platform.Scene != null) {
+            //     if (platform is JumpThru jumpThru && jumpThru.HasPlayerRider()
+            //         || platform is Solid solid && solid.HasPlayerRider()) {
+            //         invokeOrig(color);
+            //         return;
+            //     }
+            // }
 
             if (Settings.ShowLastFrameHitboxes == LastFrameHitboxesTypes.Append) {
                 invokeOrig(color);
+                lastFrameColor *= 0.7f;
             }
 
             Vector2 lastPosition = entity.LoadLastPosition();
