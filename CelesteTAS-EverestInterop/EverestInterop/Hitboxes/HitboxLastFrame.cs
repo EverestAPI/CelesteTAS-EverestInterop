@@ -27,11 +27,16 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void EntityListOnUpdate(On.Monocle.EntityList.orig_Update orig, EntityList self) {
-            if (self.Scene is Level level && !level.Paused) {
+            if (Settings.ShowHitboxes && Settings.ShowLastFrameHitboxes != LastFrameHitboxesTypes.OFF && self.Scene is Level level && !level.Paused) {
                 PlayerUpdated = false;
                 foreach (Entity entity in self) {
-                    entity.SaveLastPosition();
-                    entity.SaveLastPositionRelativeToPlatform();
+                    if (entity.Get<PlayerCollider>() != null) {
+                        entity.SaveLastPosition();
+                        if (entity.Get<StaticMover>() is StaticMover staticMover && staticMover.Platform is Platform platform &&
+                            platform.Scene != null) {
+                            entity.SaveLastPositionRelativeToPlatform();
+                        }
+                    }
                 }
             }
 
@@ -44,7 +49,9 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void EntityOnUpdate(On.Monocle.Entity.orig_Update orig, Entity self) {
-            self.SavePlayerUpdated(PlayerUpdated);
+            if (Settings.ShowHitboxes && Settings.ShowLastFrameHitboxes != LastFrameHitboxesTypes.OFF) {
+                self.SavePlayerUpdated(PlayerUpdated);
+            }
 
             orig(self);
         }
@@ -84,6 +91,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 invokeOrig(color);
                 lastFrameColor *= 0.7f;
             }
+
 
             Vector2 lastPosition = entity.LoadLastPosition();
             Vector2 currentPosition = entity.Position;

@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
@@ -81,17 +83,48 @@ namespace TAS.EverestInterop {
 		}
 	}
 
-	internal static class DynDataExtensions {
-		private const string KeyPrefix = "CelesteTAS_";
-		public static void SaveValue<T>(this T target, string name, object value) where T : class {
-			DynData<T> dynData = new DynData<T>(target);
-			dynData.Set(KeyPrefix + name, value);
+	// source from: https://stackoverflow.com/a/17264480
+	internal static class ExtendedDataExtensions {
+		private const string NamePrefix = "CelesteTAS_";
+		private static readonly ConditionalWeakTable<object, object> ExtendedData =
+			new ConditionalWeakTable<object, object>();
+
+		private static IDictionary<string, object> CreateDictionary(object o) {
+			return new Dictionary<string, object>();
 		}
 
-		public static R LoadValue<T, R>(this T target, string name, R defaultValue = default) where T : class {
-			DynData<T> dynData = new DynData<T>(target);
-			object value = dynData[KeyPrefix + name];
-			return value == null ? defaultValue : (R) value;
+		public static void SetExtendedDataValue(this object o, string name, object value) {
+			if (string.IsNullOrWhiteSpace(name)) {
+				throw new ArgumentException("Invalid name");
+			}
+
+			name = name.Trim() + NamePrefix;
+
+			IDictionary<string, object> values =
+				(IDictionary<string, object>) ExtendedData.GetValue(o, CreateDictionary);
+
+			if (value != null) {
+				values[name] = value;
+			} else {
+				values.Remove(name);
+			}
+		}
+
+		public static T GetExtendedDataValue<T>(this object o, string name){
+			if (string.IsNullOrWhiteSpace(name)) {
+				throw new ArgumentException("Invalid name");
+			}
+
+			name = name.Trim() + NamePrefix;
+
+			IDictionary<string, object> values =
+				(IDictionary<string, object>) ExtendedData.GetValue(o, CreateDictionary);
+
+			if (values.ContainsKey(name)) {
+				return (T) values[name];
+			}
+
+			return default;
 		}
 	}
 
@@ -99,11 +132,11 @@ namespace TAS.EverestInterop {
 		private const string SetActionKey = nameof(SetActionKey);
 
 		public static void SetAction(this TextMenu.Item item, Action action) {
-			item.SaveValue(SetActionKey, action);
+			item.SetExtendedDataValue(SetActionKey, action);
 		}
 
 		public static void InvokeAction(this TextMenu.Item item) {
-			item.LoadValue<TextMenu.Item, Action>(SetActionKey)?.Invoke();
+			item.GetExtendedDataValue<Action>(SetActionKey)?.Invoke();
 		}
 	}
 
@@ -113,11 +146,11 @@ namespace TAS.EverestInterop {
 		private const string PlayerUpdatedKey = nameof(PlayerUpdatedKey);
 
 		public static void SaveLastPosition(this Entity entity) {
-			entity.SaveValue(LastPositionKey, entity.Position);
+			entity.SetExtendedDataValue(LastPositionKey, entity.Position);
 		}
 
 		public static Vector2 LoadLastPosition(this Entity entity) {
-			return entity.LoadValue(LastPositionKey, entity.Position);
+			return entity.GetExtendedDataValue<Vector2?>(LastPositionKey) ?? entity.Position;
 		}
 
 		public static Vector2? GetPositionRelativeToPlatform(this Entity entity) {
@@ -129,19 +162,19 @@ namespace TAS.EverestInterop {
 		}
 
 		public static void SaveLastPositionRelativeToPlatform(this Entity entity) {
-			entity.SaveValue(LastPositionRelativeToPlatformKey, entity.GetPositionRelativeToPlatform());
+			entity.SetExtendedDataValue(LastPositionRelativeToPlatformKey, entity.GetPositionRelativeToPlatform());
 		}
 
 		public static Vector2? LoadLastPositionRelativeToPlatform(this Entity entity) {
-			return entity.LoadValue(LastPositionRelativeToPlatformKey, entity.GetPositionRelativeToPlatform());
+			return entity.GetExtendedDataValue<Vector2?>(LastPositionRelativeToPlatformKey) ?? entity.GetPositionRelativeToPlatform();
 		}
 
 		public static void SavePlayerUpdated(this Entity entity, bool playerUpdated) {
-			entity.SaveValue(PlayerUpdatedKey, playerUpdated);
+			entity.SetExtendedDataValue(PlayerUpdatedKey, playerUpdated);
 		}
 
 		public static bool UpdateLaterThanPlayer(this Entity entity) {
-			return entity.LoadValue(PlayerUpdatedKey, false);
+			return entity.GetExtendedDataValue<bool>(PlayerUpdatedKey);
 		}
 	}
 }
