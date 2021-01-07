@@ -36,12 +36,8 @@ namespace TAS.EverestInterop.Hitboxes {
                     if (!Settings.ShowHitboxes || Settings.ShowLastFrameHitboxes == LastFrameHitboxesTypes.OFF) {
                         return;
                     }
-
                     entity.SaveLastPosition();
                     entity.SaveLastCollidable();
-                    if (entity.Get<StaticMover>() is StaticMover staticMover && staticMover.Platform is Platform platform) {
-                        platform.SaveLastPosition();
-                    }
                 });
             }
         }
@@ -78,16 +74,6 @@ namespace TAS.EverestInterop.Hitboxes {
                 lastFrameColor *= 0.5f;
             } else if (!entity.Collidable && entity.LoadLastCollidable()) {
                 lastFrameColor *= 2f;
-            }
-
-            // It's a bit complicated on moving platform, so display two frames of hitboxes at the same time.
-            if (Settings.ShowLastFrameHitboxes == LastFrameHitboxesTypes.Override
-                && entity.Get<StaticMover>() is StaticMover staticMover
-                && staticMover.Platform is Platform platform && platform.Scene != null
-                && platform.Position != platform.LoadLastPosition()
-            ) {
-                invokeOrig(color);
-                lastFrameColor = lastFrameColor.Invert();
             }
 
             if (Settings.ShowLastFrameHitboxes == LastFrameHitboxesTypes.Append) {
