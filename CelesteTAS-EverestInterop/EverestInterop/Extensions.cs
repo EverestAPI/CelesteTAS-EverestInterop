@@ -90,8 +90,6 @@ namespace TAS.EverestInterop {
 
     // source from: https://stackoverflow.com/a/17264480
     internal static class ExtendedDataExtensions {
-        private const string NamePrefix = "CelesteTAS_";
-
         private static readonly ConditionalWeakTable<object, object> ExtendedData =
             new ConditionalWeakTable<object, object>();
 
@@ -104,7 +102,7 @@ namespace TAS.EverestInterop {
                 throw new ArgumentException("Invalid name");
             }
 
-            name = name.Trim() + NamePrefix;
+            name = name.Trim();
 
             IDictionary<string, object> values =
                 (IDictionary<string, object>) ExtendedData.GetValue(o, CreateDictionary);
@@ -121,7 +119,7 @@ namespace TAS.EverestInterop {
                 throw new ArgumentException("Invalid name");
             }
 
-            name = name.Trim() + NamePrefix;
+            name = name.Trim();
 
             IDictionary<string, object> values =
                 (IDictionary<string, object>) ExtendedData.GetValue(o, CreateDictionary);

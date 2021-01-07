@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Celeste;
 using Celeste.Mod;
@@ -48,13 +49,22 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void HideHitbox(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {
-            if (Settings.HideTriggerHitboxes && self is Trigger) {
-                return;
+            if (Settings.ShowHitboxes) {
+                if (Settings.HideTriggerHitboxes && self is Trigger) {
+                    return;
+                }
+
+                if (Settings.SimplifiedHitboxes && UselessTypes.Contains(self.GetType())) {
+                    return;
+                }
+
+                if (Settings.SimplifiedHitboxes
+                    && self.Scene?.Tracker.GetEntity<Player>()?.Leader is Leader leader
+                    && leader.Followers.Any(follower => follower.Entity == self)) {
+                    return;
+                }
             }
 
-            if (Settings.SimplifiedHitboxes && UselessTypes.Contains(self.GetType())) {
-                return;
-            }
 
             orig(self, camera);
         }
@@ -74,7 +84,7 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void CombineHitbox(On.Monocle.Grid.orig_Render orig, Grid self, Camera camera, Color color) {
-            if (!Settings.SimplifiedHitboxes) {
+            if (!Settings.ShowHitboxes || !Settings.SimplifiedHitboxes) {
                 orig(self, camera, color);
                 return;
             }
@@ -97,52 +107,6 @@ namespace TAS.EverestInterop.Hitboxes {
                         DrawCombineHollowRect(self, color, x, y, left, right, top, bottom);
                     }
                 }
-            }
-        }
-
-        private void AvoidRedrawCorners(ILContext il) {
-            ILCursor ilCursor = new ILCursor(il);
-            if (ilCursor.TryGotoNext(
-                ins => ins.OpCode == OpCodes.Ldc_I4_1,
-                ins => ins.OpCode == OpCodes.Sub,
-                ins => ins.OpCode == OpCodes.Sub,
-                ins => ins.OpCode == OpCodes.Stind_I4
-            ) && ilCursor.TryGotoNext(
-                MoveType.After,
-                ins => ins.MatchLdsflda(typeof(Draw), "rect"),
-                ins => ins.OpCode == OpCodes.Ldarg_3,
-                ins => ins.OpCode == OpCodes.Conv_I4,
-                ins => ins.MatchStfld<Rectangle>("Height")
-            )) {
-                Logger.Log("CelesteTAS", $"Injecting code to avoid redrawing hitbox corners in IL for {ilCursor.Method.FullName}");
-
-                ilCursor.Goto(0);
-
-                // Draw.rect.Y -= (int) height - 1;
-                // to
-                // Draw.rect.Y -= (int) height - 2;
-                ilCursor.GotoNext(
-                    ins => ins.OpCode == OpCodes.Ldc_I4_1,
-                    ins => ins.OpCode == OpCodes.Sub,
-                    ins => ins.OpCode == OpCodes.Sub,
-                    ins => ins.OpCode == OpCodes.Stind_I4
-                );
-                ilCursor.Remove().Emit(OpCodes.Ldc_I4_2);
-
-                // Draw.rect.Height = (int) height;
-                // to
-                // Draw.rect.Height = (int) height - 2;
-                ilCursor.GotoNext(
-                    MoveType.After,
-                    ins => ins.MatchLdsflda(typeof(Draw), "rect"),
-                    ins => ins.OpCode == OpCodes.Ldarg_3,
-                    ins => ins.OpCode == OpCodes.Conv_I4,
-                    ins => ins.MatchStfld<Rectangle>("Height")
-                );
-                ilCursor.Index--;
-                ilCursor.Emit(OpCodes.Ldc_I4_2).Emit(OpCodes.Sub);
-            } else {
-                Logger.Log("CelesteTAS", $"Injecting code failed: {ilCursor.Method.FullName}");
             }
         }
 
@@ -225,6 +189,52 @@ namespace TAS.EverestInterop.Hitboxes {
                 if (x + 1 <= right && y + 1 >= top && data[x + 1, y + 1] && data[x + 1, y] && data[x, y + 1]) {
                     Draw.Point(bottomRight, color);
                 }
+            }
+        }
+
+        private void AvoidRedrawCorners(ILContext il) {
+            ILCursor ilCursor = new ILCursor(il);
+            if (ilCursor.TryGotoNext(
+                ins => ins.OpCode == OpCodes.Ldc_I4_1,
+                ins => ins.OpCode == OpCodes.Sub,
+                ins => ins.OpCode == OpCodes.Sub,
+                ins => ins.OpCode == OpCodes.Stind_I4
+            ) && ilCursor.TryGotoNext(
+                MoveType.After,
+                ins => ins.MatchLdsflda(typeof(Draw), "rect"),
+                ins => ins.OpCode == OpCodes.Ldarg_3,
+                ins => ins.OpCode == OpCodes.Conv_I4,
+                ins => ins.MatchStfld<Rectangle>("Height")
+            )) {
+                Logger.Log("CelesteTAS", $"Injecting code to avoid redrawing hitbox corners in IL for {ilCursor.Method.FullName}");
+
+                ilCursor.Goto(0);
+
+                // Draw.rect.Y -= (int) height - 1;
+                // to
+                // Draw.rect.Y -= (int) height - 2;
+                ilCursor.GotoNext(
+                    ins => ins.OpCode == OpCodes.Ldc_I4_1,
+                    ins => ins.OpCode == OpCodes.Sub,
+                    ins => ins.OpCode == OpCodes.Sub,
+                    ins => ins.OpCode == OpCodes.Stind_I4
+                );
+                ilCursor.Remove().Emit(OpCodes.Ldc_I4_2);
+
+                // Draw.rect.Height = (int) height;
+                // to
+                // Draw.rect.Height = (int) height - 2;
+                ilCursor.GotoNext(
+                    MoveType.After,
+                    ins => ins.MatchLdsflda(typeof(Draw), "rect"),
+                    ins => ins.OpCode == OpCodes.Ldarg_3,
+                    ins => ins.OpCode == OpCodes.Conv_I4,
+                    ins => ins.MatchStfld<Rectangle>("Height")
+                );
+                ilCursor.Index--;
+                ilCursor.Emit(OpCodes.Ldc_I4_2).Emit(OpCodes.Sub);
+            } else {
+                Logger.Log("CelesteTAS", $"Injecting code failed: {ilCursor.Method.FullName}");
             }
         }
     }
