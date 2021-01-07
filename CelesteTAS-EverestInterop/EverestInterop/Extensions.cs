@@ -10,154 +10,160 @@ using MonoMod.Utils;
 using Platform = Celeste.Platform;
 
 namespace TAS.EverestInterop {
-	internal static class ReflectionExtensions {
-		public delegate object GetField(object o);
-		public delegate object GetStaticField();
-		public static object GetPublicField(this object obj, string name) {
-			return obj.GetType().GetField(name, BindingFlags.Instance | BindingFlags.Public)?.GetValue(obj);
-		}
-		public static object GetPrivateField(this object obj, string name) {
-			return obj.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(obj);
-		}
-		public static object InvokePrivateMethod(this object obj, string methodName, params object[] parameters) {
-			return obj.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic)
-				?.Invoke(obj, parameters);
-		}
-		public static T CreateDelegate_Get<T>(this FieldInfo field) where T : Delegate {
-			bool isStatic = field.IsStatic;
-			Type[] param;
-			if (!isStatic)
-				param = new Type[] { field.DeclaringType };
-			else
-				param = new Type[0];
-			DynamicMethod dyn = new DynamicMethod(field.Name + "_FastAccess", field.FieldType, param, field.DeclaringType);
-			ILGenerator ilGen = dyn.GetILGenerator();
-			if (!isStatic) {
-				ilGen.Emit(OpCodes.Ldarg_0);
-			}
-			ilGen.Emit(OpCodes.Ldfld, field);
-			ilGen.Emit(OpCodes.Ret);
-			return dyn.CreateDelegate(typeof(T)) as T;
-		}
+    internal static class ReflectionExtensions {
+        public delegate object GetField(object o);
 
-		public static GetField CreateDelegate_GetInstance(this FieldInfo field) {
+        public delegate object GetStaticField();
 
-			DynamicMethod dyn = new DynamicMethod(field.Name + "_FastAccess", typeof(object), new Type[] { typeof(object) }, field.DeclaringType);
-			ILGenerator ilGen = dyn.GetILGenerator();
-			ilGen.Emit(OpCodes.Ldarg_0);
-			ilGen.Emit(OpCodes.Castclass, field.DeclaringType);
-			ilGen.Emit(OpCodes.Ldfld, field);
-			ilGen.Emit(OpCodes.Ret);
-			return dyn.CreateDelegate(typeof(GetField)) as GetField;
-		}
+        public static object GetPublicField(this object obj, string name) {
+            return obj.GetType().GetField(name, BindingFlags.Instance | BindingFlags.Public)?.GetValue(obj);
+        }
 
-		public static GetStaticField CreateDelegate_GetStatic(this FieldInfo field) {
-			DynamicMethod dyn = new DynamicMethod(field.Name + "_FastAccess", typeof(object), new Type[0]);
-			ILGenerator ilGen = dyn.GetILGenerator();
-			ilGen.Emit(OpCodes.Ldfld, field);
-			ilGen.Emit(OpCodes.Ret);
-			return dyn.CreateDelegate(typeof(GetStaticField)) as GetStaticField;
-		}
-	}
+        public static object GetPrivateField(this object obj, string name) {
+            return obj.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(obj);
+        }
 
-	internal static class CommonExtensions {
-		public static T Apply<T>(this T obj, Action<T> action) {
-			action(obj);
-			return obj;
-		}
+        public static object InvokePrivateMethod(this object obj, string methodName, params object[] parameters) {
+            return obj.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic)
+                ?.Invoke(obj, parameters);
+        }
 
-		public static bool IsType<T>(this object obj) {
-			return obj?.GetType() == typeof(T);
-		}
+        public static T CreateDelegate_Get<T>(this FieldInfo field) where T : Delegate {
+            bool isStatic = field.IsStatic;
+            Type[] param;
+            if (!isStatic)
+                param = new Type[] {field.DeclaringType};
+            else
+                param = new Type[0];
+            DynamicMethod dyn = new DynamicMethod(field.Name + "_FastAccess", field.FieldType, param, field.DeclaringType);
+            ILGenerator ilGen = dyn.GetILGenerator();
+            if (!isStatic) {
+                ilGen.Emit(OpCodes.Ldarg_0);
+            }
 
-		public static bool IsType<T>(this Type type) {
-			return type == typeof(T);
-		}
+            ilGen.Emit(OpCodes.Ldfld, field);
+            ilGen.Emit(OpCodes.Ret);
+            return dyn.CreateDelegate(typeof(T)) as T;
+        }
 
-		public static bool IsNotType<T>(this object obj) {
-			return !obj.IsType<T>();
-		}
+        public static GetField CreateDelegate_GetInstance(this FieldInfo field) {
+            DynamicMethod dyn = new DynamicMethod(field.Name + "_FastAccess", typeof(object), new Type[] {typeof(object)}, field.DeclaringType);
+            ILGenerator ilGen = dyn.GetILGenerator();
+            ilGen.Emit(OpCodes.Ldarg_0);
+            ilGen.Emit(OpCodes.Castclass, field.DeclaringType);
+            ilGen.Emit(OpCodes.Ldfld, field);
+            ilGen.Emit(OpCodes.Ret);
+            return dyn.CreateDelegate(typeof(GetField)) as GetField;
+        }
 
-		public static bool IsNotType<T>(this Type type) {
-			return !type.IsType<T>();
-		}
-	}
+        public static GetStaticField CreateDelegate_GetStatic(this FieldInfo field) {
+            DynamicMethod dyn = new DynamicMethod(field.Name + "_FastAccess", typeof(object), new Type[0]);
+            ILGenerator ilGen = dyn.GetILGenerator();
+            ilGen.Emit(OpCodes.Ldfld, field);
+            ilGen.Emit(OpCodes.Ret);
+            return dyn.CreateDelegate(typeof(GetStaticField)) as GetStaticField;
+        }
+    }
 
-	// source from: https://stackoverflow.com/a/17264480
-	internal static class ExtendedDataExtensions {
-		private const string NamePrefix = "CelesteTAS_";
-		private static readonly ConditionalWeakTable<object, object> ExtendedData =
-			new ConditionalWeakTable<object, object>();
+    internal static class CommonExtensions {
+        public static T Apply<T>(this T obj, Action<T> action) {
+            action(obj);
+            return obj;
+        }
 
-		private static IDictionary<string, object> CreateDictionary(object o) {
-			return new Dictionary<string, object>();
-		}
+        public static bool IsType<T>(this object obj) {
+            return obj?.GetType() == typeof(T);
+        }
 
-		public static void SetExtendedDataValue(this object o, string name, object value) {
-			if (string.IsNullOrWhiteSpace(name)) {
-				throw new ArgumentException("Invalid name");
-			}
+        public static bool IsType<T>(this Type type) {
+            return type == typeof(T);
+        }
 
-			name = name.Trim() + NamePrefix;
+        public static bool IsNotType<T>(this object obj) {
+            return !obj.IsType<T>();
+        }
 
-			IDictionary<string, object> values =
-				(IDictionary<string, object>) ExtendedData.GetValue(o, CreateDictionary);
+        public static bool IsNotType<T>(this Type type) {
+            return !type.IsType<T>();
+        }
+    }
 
-			if (value != null) {
-				values[name] = value;
-			} else {
-				values.Remove(name);
-			}
-		}
+    // source from: https://stackoverflow.com/a/17264480
+    internal static class ExtendedDataExtensions {
+        private const string NamePrefix = "CelesteTAS_";
 
-		public static T GetExtendedDataValue<T>(this object o, string name){
-			if (string.IsNullOrWhiteSpace(name)) {
-				throw new ArgumentException("Invalid name");
-			}
+        private static readonly ConditionalWeakTable<object, object> ExtendedData =
+            new ConditionalWeakTable<object, object>();
 
-			name = name.Trim() + NamePrefix;
+        private static IDictionary<string, object> CreateDictionary(object o) {
+            return new Dictionary<string, object>();
+        }
 
-			IDictionary<string, object> values =
-				(IDictionary<string, object>) ExtendedData.GetValue(o, CreateDictionary);
+        public static void SetExtendedDataValue(this object o, string name, object value) {
+            if (string.IsNullOrWhiteSpace(name)) {
+                throw new ArgumentException("Invalid name");
+            }
 
-			if (values.ContainsKey(name)) {
-				return (T) values[name];
-			}
+            name = name.Trim() + NamePrefix;
 
-			return default;
-		}
-	}
+            IDictionary<string, object> values =
+                (IDictionary<string, object>) ExtendedData.GetValue(o, CreateDictionary);
 
-	internal static class MenuExtensions {
-		private const string SetActionKey = nameof(SetActionKey);
+            if (value != null) {
+                values[name] = value;
+            } else {
+                values.Remove(name);
+            }
+        }
 
-		public static void SetAction(this TextMenu.Item item, Action action) {
-			item.SetExtendedDataValue(SetActionKey, action);
-		}
+        public static T GetExtendedDataValue<T>(this object o, string name) {
+            if (string.IsNullOrWhiteSpace(name)) {
+                throw new ArgumentException("Invalid name");
+            }
 
-		public static void InvokeAction(this TextMenu.Item item) {
-			item.GetExtendedDataValue<Action>(SetActionKey)?.Invoke();
-		}
-	}
+            name = name.Trim() + NamePrefix;
 
-	internal static class EntityExtensions {
-		private const string LastPositionKey = nameof(LastPositionKey);
-		private const string PlayerUpdatedKey = nameof(PlayerUpdatedKey);
+            IDictionary<string, object> values =
+                (IDictionary<string, object>) ExtendedData.GetValue(o, CreateDictionary);
 
-		public static void SaveLastPosition(this Entity entity) {
-			entity.SetExtendedDataValue(LastPositionKey, entity.Position);
-		}
+            if (values.ContainsKey(name)) {
+                return (T) values[name];
+            }
 
-		public static Vector2 LoadLastPosition(this Entity entity) {
-			return entity.GetExtendedDataValue<Vector2>(LastPositionKey);
-		}
+            return default;
+        }
+    }
 
-		public static void SavePlayerUpdated(this Entity entity, bool playerUpdated) {
-			entity.SetExtendedDataValue(PlayerUpdatedKey, playerUpdated);
-		}
+    internal static class MenuExtensions {
+        private const string SetActionKey = nameof(SetActionKey);
 
-		public static bool UpdateLaterThanPlayer(this Entity entity) {
-			return entity.GetExtendedDataValue<bool>(PlayerUpdatedKey);
-		}
-	}
+        public static void SetAction(this TextMenu.Item item, Action action) {
+            item.SetExtendedDataValue(SetActionKey, action);
+        }
+
+        public static void InvokeAction(this TextMenu.Item item) {
+            item.GetExtendedDataValue<Action>(SetActionKey)?.Invoke();
+        }
+    }
+
+    internal static class EntityExtensions {
+        private const string LastPositionKey = nameof(LastPositionKey);
+        private const string LastCollidableKey = nameof(LastCollidableKey);
+
+        public static void SaveLastPosition(this Entity entity) {
+            entity.SetExtendedDataValue(LastPositionKey, entity.Position);
+        }
+
+        public static Vector2? LoadLastPosition(this Entity entity) {
+            return entity.GetExtendedDataValue<Vector2?>(LastPositionKey);
+        }
+
+        public static void SaveLastCollidable(this Entity entity) {
+            entity.SetExtendedDataValue(LastCollidableKey, entity.Collidable);
+        }
+
+        public static bool LoadLastCollidable(this Entity entity) {
+            return entity.GetExtendedDataValue<bool>(LastCollidableKey);
+        }
+    }
 }
