@@ -99,10 +99,10 @@ namespace TAS.EverestInterop.Hitboxes {
             }
         }
     }
-}
 
-public enum LastFrameHitboxesTypes {
-    OFF,
-    Override,
-    Append
+    public enum LastFrameHitboxesTypes {
+        OFF,
+        Override,
+        Append
+    }
 }

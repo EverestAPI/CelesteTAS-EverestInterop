@@ -31,14 +31,15 @@ namespace TAS.StudioCommunication {
 
 			void Setup() {
 				instance.thread = Thread.CurrentThread;
-				Celeste.Celeste.Instance.Exiting += (o, e) => Destroy();
+				Celeste.Celeste.Instance.Exiting -= Destroy;
+				Celeste.Celeste.Instance.Exiting += Destroy;
 				instance.UpdateLoop();
 			}
 
 			return true;
 		}
 
-		public static void Destroy() {
+		public static void Destroy(object sender = null, EventArgs e = null) {
 			if (instance != null) {
 				instance.thread.Abort();
 				instance = null;

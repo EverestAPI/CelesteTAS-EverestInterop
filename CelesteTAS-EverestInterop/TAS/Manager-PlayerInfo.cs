@@ -8,10 +8,8 @@ using Microsoft.Xna.Framework;
 using TAS.EverestInterop;
 using System.Reflection;
 
-namespace TAS
-{
-	public static partial class Manager
-	{
+namespace TAS {
+	public static partial class Manager {
 		private static StreamWriter sw;
 		private static MethodInfo[] trackedEntities;
 
@@ -30,20 +28,20 @@ namespace TAS
 
 						string pos = GetAdjustedPos(player.Position, player.PositionRemainder);
 						string speed = $"Speed: {player.Speed.X.ToString("0.00")}, {player.Speed.Y.ToString("0.00")}";
-						Vector2 diff = (player.ExactPosition - lastPos) * 60;
+						Vector2 diff = (player.ExactPosition - lastPos) / Engine.DeltaTime;
 						string vel = $"Vel:   {diff.X.ToString("0.00")}, {diff.Y.ToString("0.00")}";
 						string polarvel = $"Fly:   {diff.Length().ToString("0.00")}, {GetAngle(diff).ToString("0.00")}°";
 						string miscstats = $"Stamina: {player.Stamina.ToString("0")} Timer: {(chapterTime / 10000000D).ToString("0.000")}";
-						int dashCooldown = (int)(DashCooldownTimer(player) * 60f);
+						int dashCooldown = (int)(DashCooldownTimer(player) / Engine.DeltaTime);
 						string statuses = (dashCooldown < 1 && player.Dashes > 0 ? "Dash " : string.Empty)
 							+ (player.LoseShards ? "Ground " : string.Empty)
 							+ (WallJumpCheck(player, 1) ? "Wall-R " : string.Empty)
 							+ (WallJumpCheck(player, -1) ? "Wall-L " : string.Empty)
-							+ (!player.LoseShards && JumpGraceTimer(player) > 0 ? $"Coyote({(int)(JumpGraceTimer(player) * 60f)})" : string.Empty);
+							+ (!player.LoseShards && JumpGraceTimer(player) > 0 ? $"Coyote({(int)(JumpGraceTimer(player) / Engine.DeltaTime)})" : string.Empty);
 						statuses = (player.InControl && !level.Transitioning ? statuses : "NoControl ")
 							+ (player.TimePaused ? "Paused " : string.Empty)
 							+ (level.InCutscene ? "Cutscene " : string.Empty)
-							+ (additionalStatusInfo != null ? additionalStatusInfo : string.Empty);
+							+ (additionalStatusInfo ?? string.Empty);
 
 						if (player.Holding == null) {
 							foreach (Component component in level.Tracker.GetComponents<Holdable>()) {
@@ -66,7 +64,7 @@ namespace TAS
 								collectTimer = strawberryCollectTimer.GetValue(firstRedBerry);
 							}
 
-							berryTimer = 9 - (int)Math.Round(60f * (float)collectTimer);
+							berryTimer = 9 - (int)Math.Round((float)collectTimer / Engine.DeltaTime);
 						}
 						string timers = (berryTimer != -10 ? berryTimer <= 9 ? $"BerryTimer: {berryTimer} " : $"BerryTimer: 9+{berryTimer-9} " : string.Empty)
 							+ (dashCooldown != 0 ? $"DashTimer: {(dashCooldown).ToString()} " : string.Empty);
@@ -171,7 +169,7 @@ namespace TAS
 					string pos = x.ToString() + "," + y.ToString();
 					string speed = player.Speed.X.ToString() + "," + player.Speed.Y.ToString();
 
-					int dashCooldown = (int)(DashCooldownTimer(player) * 60f);
+					int dashCooldown = (int)(DashCooldownTimer(player) / Engine.DeltaTime);
 					string statuses = (dashCooldown < 1 && player.Dashes > 0 ? "Dash " : string.Empty)
 						+ (player.LoseShards ? "Ground " : string.Empty)
 						+ (WallJumpCheck(player, 1) ? "Wall-R " : string.Empty)
