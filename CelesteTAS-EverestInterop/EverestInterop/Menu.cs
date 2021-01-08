@@ -50,23 +50,21 @@ namespace TAS.EverestInterop {
 				new TextMenu.OnOff("Auto Mute on Fast Forward", Settings.AutoMute).Change(b => Settings.AutoMute = b),
 				new TextMenu.OnOff("Hide Trigger Hitboxes", Settings.HideTriggerHitboxes).Change(b => Settings.HideTriggerHitboxes = b),
 				new TextMenu.OnOff("Simplified Hitboxes", Settings.SimplifiedHitboxes).Change(b => Settings.SimplifiedHitboxes = b),
-				new TextMenu.Option<LastFrameHitboxesTypes>("Show Last Frame Hitboxes (Experiment)").Apply(option => {
+				new TextMenu.Option<LastFrameHitboxesTypes>("Show Actual Entity Collide Hitbox").Apply(option => {
 						Array enumValues = Enum.GetValues(typeof(LastFrameHitboxesTypes));
 						foreach (LastFrameHitboxesTypes value in enumValues) {
-							option.Add(value.ToString().SpacedPascalCase(), value, value.Equals(Settings.ShowLastFrameHitboxes));
+							option.Add(value.ToString().SpacedPascalCase(), value, value.Equals(Settings.ShowActualEntityCollideHitbox));
 						}
-						option.Change(b => Settings.ShowLastFrameHitboxes = b);
+						option.Change(b => Settings.ShowActualEntityCollideHitbox = b);
 						option.SetAction(() => {
-							option.AddDescription(menu, "so the hitbox from the last frame is actually used.");
-							option.AddDescription(menu, "since they all perform collision detection before moving,");
-							option.AddDescription(menu, "and update later than the player,");
-							option.AddDescription(menu, "Apply to entities that use PlayerCollider for collision detection");
+							option.AddDescription(menu, "when checking for collisions with player");
+							option.AddDescription(menu, "Show the actual hitbox of the entity");
 						});
 					}),
-				new TextMenu.OnOff("Show Unmoved Player Hitbox", Settings.ShowUnmovedPlayerHitbox).Change(b => Settings.ShowUnmovedPlayerHitbox = b).Apply(option => {
+				new TextMenu.OnOff("Show Actual Player Collide Hitbox", Settings.ShowActualPlayerCollideHitbox).Change(b => Settings.ShowActualPlayerCollideHitbox = b).Apply(option => {
 					option.SetAction(() => {
-						option.AddDescription(menu, "such as wind or moving block");
-						option.AddDescription(menu, "Assume that the player is not moved by external forces,");
+						option.AddDescription(menu, "when checking for collisions with entities");
+						option.AddDescription(menu, "Show the actual hitbox of the player");
 					});
 				}),
 				new TextMenu.Option<InfoPositions>("Info HUD").Apply(option => {

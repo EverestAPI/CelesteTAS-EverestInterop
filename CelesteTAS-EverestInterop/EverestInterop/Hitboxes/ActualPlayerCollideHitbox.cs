@@ -1,34 +1,55 @@
+using System;
+using System.Collections;
 using System.Reflection;
 using Celeste;
 using Microsoft.Xna.Framework;
+using Mono.Cecil.Cil;
 using Monocle;
+using MonoMod.Cil;
+using MonoMod.RuntimeDetour;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxUnmovedPlayer {
         private static readonly FieldInfo PlayerHurtbox = typeof(Player).GetPrivateField("hurtbox");
         private static readonly Color hitboxColor = Color.Red.Invert() * 0.7f;
         private static readonly Color hurtboxColor = Color.Lime.Invert() * 0.7f;
+        private static ILHook IlHookPlayerOrigUpdate;
         private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
 
         public static void Load() {
-            On.Celeste.Player.Update += PlayerOnUpdate;
             On.Monocle.Hitbox.Render += HitboxOnRender;
+            On.Celeste.Level.TransitionRoutine += LevelOnTransitionRoutine;
+            IlHookPlayerOrigUpdate = new ILHook(typeof(Player).GetMethod("orig_Update"), ModPlayerOrigUpdate);
         }
 
         public static void Unload() {
-            On.Celeste.Player.Update -= PlayerOnUpdate;
             On.Monocle.Hitbox.Render -= HitboxOnRender;
+            On.Celeste.Level.TransitionRoutine -= LevelOnTransitionRoutine;
+            IlHookPlayerOrigUpdate?.Dispose();
         }
 
-        private static void PlayerOnUpdate(On.Celeste.Player.orig_Update orig, Player self) {
-            orig(self);
-            self.SaveLastPosition();
+        private static void ModPlayerOrigUpdate(ILContext il) {
+            ILCursor ilCursor = new ILCursor(il);
+            if (ilCursor.TryGotoNext(MoveType.After, ins => ins.OpCode == OpCodes.Callvirt && ins.Operand.ToString().Contains("Monocle.Tracker::GetComponents<Celeste.PlayerCollider>()"))) {
+                ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Action<Player>>(player => player.SaveActualCollidePosition());
+            }
+        }
+
+        private static IEnumerator LevelOnTransitionRoutine(On.Celeste.Level.orig_TransitionRoutine orig, Level self, LevelData next, Vector2 direction) {
+            IEnumerator enumerator = orig(self, next, direction);
+            while (enumerator.MoveNext()) {
+                yield return enumerator.Current;
+            }
+
+            if (self.GetPlayer() is Player player) {
+                player.ClearActualCollidePosition();
+            }
         }
 
         private static void HitboxOnRender(On.Monocle.Hitbox.orig_Render orig, Hitbox self, Camera camera, Color color) {
-            if (!(self.Entity is Player player) || !Settings.ShowHitboxes || !Settings.ShowUnmovedPlayerHitbox
-                || player.LoadLastPosition() == null
-                || player.LoadLastPosition().Value == player.Position
+            if (!(self.Entity is Player player) || !Settings.ShowHitboxes || !Settings.ShowActualPlayerCollideHitbox
+                || player.LoadActualCollidePosition() == null
+                || player.LoadActualCollidePosition().Value == player.Position
                 || player.Scene is Level level && level.Transitioning
             ) {
                 orig(self, camera, color);
@@ -36,7 +57,7 @@ namespace TAS.EverestInterop.Hitboxes {
             }
 
             // unmoved hitbox
-            DrawAssistedHitbox(orig, self, camera, player, player.LoadLastPosition().Value);
+            DrawAssistedHitbox(orig, self, camera, player, player.LoadActualCollidePosition().Value);
 
             orig(self, camera, color);
         }

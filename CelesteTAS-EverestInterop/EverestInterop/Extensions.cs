@@ -145,23 +145,31 @@ namespace TAS.EverestInterop {
     }
 
     internal static class EntityExtensions {
-        private const string LastPositionKey = nameof(LastPositionKey);
-        private const string LastCollidableKey = nameof(LastCollidableKey);
+        private const string ActualCollidePositionKey = nameof(ActualCollidePositionKey);
+        private const string ActualCollidableKey = nameof(ActualCollidableKey);
 
-        public static void SaveLastPosition(this Entity entity) {
-            entity.SetExtendedDataValue(LastPositionKey, entity.Position);
+        public static void SaveActualCollidePosition(this Entity entity) {
+            entity.SetExtendedDataValue(ActualCollidePositionKey, entity.Position);
         }
 
-        public static Vector2? LoadLastPosition(this Entity entity) {
-            return entity.GetExtendedDataValue<Vector2?>(LastPositionKey);
+        public static Vector2? LoadActualCollidePosition(this Entity entity) {
+            return entity.GetExtendedDataValue<Vector2?>(ActualCollidePositionKey);
         }
 
-        public static void SaveLastCollidable(this Entity entity) {
-            entity.SetExtendedDataValue(LastCollidableKey, entity.Collidable);
+        public static void ClearActualCollidePosition(this Entity entity) {
+            entity.SetExtendedDataValue(ActualCollidePositionKey, null);
         }
 
-        public static bool LoadLastCollidable(this Entity entity) {
-            return entity.GetExtendedDataValue<bool>(LastCollidableKey);
+        public static void SaveActualCollidable(this Entity entity) {
+            entity.SetExtendedDataValue(ActualCollidableKey, entity.Collidable);
         }
+
+        public static bool LoadActualCollidable(this Entity entity) {
+            return entity.GetExtendedDataValue<bool>(ActualCollidableKey);
+        }
+    }
+
+    internal static class SceneExtensions {
+        public static Player GetPlayer(this Scene scene) => scene.Tracker.GetEntity<Player>();
     }
 }
