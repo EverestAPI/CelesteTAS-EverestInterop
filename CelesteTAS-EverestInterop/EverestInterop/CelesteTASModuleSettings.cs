@@ -85,6 +85,7 @@ namespace TAS.EverestInterop {
 		public bool HideTriggerHitboxes { get; set; } = false;
 		public bool SimplifiedHitboxes { get; set; } = true;
 		public LastFrameHitboxesTypes ShowLastFrameHitboxes { get; set; } = LastFrameHitboxesTypes.OFF;
+		public bool ShowUnmovedPlayerHitbox { get; set; } = false;
 		public InfoPositions InfoHUD { get; set; } = InfoPositions.OFF;
 	}
 }

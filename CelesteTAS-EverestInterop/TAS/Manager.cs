@@ -133,7 +133,7 @@ namespace TAS {
 				return level.Session.Level == "end-cinematic";
 			}
 			if (Engine.Scene is SummitVignette summit)
-				return !(bool)summit.GetPrivateField("ready");
+				return !(bool)summit.GetPrivateFieldValue("ready");
 			else if (Engine.Scene is Overworld overworld)
 				return overworld.Current is OuiFileSelect slot && slot.SlotIndex >= 0 && slot.Slots[slot.SlotIndex].StartingGame;
 			bool isLoading = (Engine.Scene is LevelExit) || (Engine.Scene is LevelLoader) || (Engine.Scene is GameLoader) || Engine.Scene.GetType().Name == "LevelExitToLobby";

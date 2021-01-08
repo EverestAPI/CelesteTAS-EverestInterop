@@ -37,6 +37,7 @@ namespace TAS.EverestInterop.Hitboxes {
             IL.Monocle.Draw.HollowRect_float_float_float_float_Color += AvoidRedrawCorners;
             HitboxTriggerSpikes.Load();
             HitboxLastFrame.Load();
+            HitboxUnmovedPlayer.Load();
         }
 
         public void Unload() {
@@ -46,6 +47,7 @@ namespace TAS.EverestInterop.Hitboxes {
             IL.Monocle.Draw.HollowRect_float_float_float_float_Color -= AvoidRedrawCorners;
             HitboxTriggerSpikes.Unload();
             HitboxLastFrame.Unload();
+            HitboxUnmovedPlayer.Unload();
         }
 
         private static void HideHitbox(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {

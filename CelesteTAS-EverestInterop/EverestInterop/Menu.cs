@@ -63,6 +63,12 @@ namespace TAS.EverestInterop {
 							option.AddDescription(menu, "Apply to entities that use PlayerCollider for collision detection");
 						});
 					}),
+				new TextMenu.OnOff("Show Unmoved Player Hitbox", Settings.ShowUnmovedPlayerHitbox).Change(b => Settings.ShowUnmovedPlayerHitbox = b).Apply(option => {
+					option.SetAction(() => {
+						option.AddDescription(menu, "such as wind or moving block");
+						option.AddDescription(menu, "Assume that the player is not moved by external forces,");
+					});
+				}),
 				new TextMenu.Option<InfoPositions>("Info HUD").Apply(option => {
 					Array enumValues = Enum.GetValues(typeof(InfoPositions));
 					foreach (InfoPositions value in enumValues) {

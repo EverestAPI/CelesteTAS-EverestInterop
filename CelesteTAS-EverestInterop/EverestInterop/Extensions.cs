@@ -15,12 +15,12 @@ namespace TAS.EverestInterop {
 
         public delegate object GetStaticField();
 
-        public static object GetPublicField(this object obj, string name) {
-            return obj.GetType().GetField(name, BindingFlags.Instance | BindingFlags.Public)?.GetValue(obj);
+        public static FieldInfo GetPrivateField(this Type type, string name) {
+            return type.GetField(name, BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
-        public static object GetPrivateField(this object obj, string name) {
-            return obj.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(obj);
+        public static object GetPrivateFieldValue(this object obj, string name) {
+            return obj.GetType().GetPrivateField(name)?.GetValue(obj);
         }
 
         public static object InvokePrivateMethod(this object obj, string methodName, params object[] parameters) {
