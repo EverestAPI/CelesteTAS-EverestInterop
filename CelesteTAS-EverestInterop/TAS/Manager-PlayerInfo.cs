@@ -137,13 +137,6 @@ namespace TAS {
 			return pos;
 		}
 
-		private static string GetPlayerState(Player player) {
-			StateMachine stateMachine = player.StateMachine;
-			string result = $"State: {(PlayerState) stateMachine.State}";
-			if (stateMachine.ChangedStates) result += $" <- {(PlayerState) stateMachine.PreviousState}";
-			return result;
-		}
-
 		public static void BeginExport(string path, string[] tracked) {
 			if (sw == null || sw.BaseStream == null) {
 				sw = new StreamWriter(path);
@@ -230,34 +223,5 @@ namespace TAS {
 				sw.WriteLine(output);
 			}
 		}
-	}
-
-	enum PlayerState {
-		Normal = Player.StNormal,
-		Climb = Player.StClimb,
-		Dash = Player.StDash,
-		Swim = Player.StSwim,
-		Boost = Player.StBoost,
-		RedDash = Player.StRedDash,
-		HitSquash = Player.StHitSquash,
-		Launch = Player.StLaunch,
-		Pickup = Player.StPickup,
-		DreamDash = Player.StDreamDash,
-		SummitLaunch = Player.StSummitLaunch,
-		Dummy = Player.StDummy,
-		IntroWalk = Player.StIntroWalk,
-		IntroJump = Player.StIntroJump,
-		IntroRespawn = Player.StIntroRespawn,
-		IntroWakeUp = Player.StIntroWakeUp,
-		BirdDashTutorial = Player.StBirdDashTutorial,
-		Frozen = Player.StFrozen,
-		ReflectionFall = Player.StReflectionFall,
-		StarFly = Player.StStarFly,
-		TempleFall = Player.StTempleFall,
-		CassetteFly = Player.StCassetteFly,
-		Attract = Player.StAttract,
-		IntroMoonJump = Player.StIntroMoonJump,
-		FlingBird = Player.StFlingBird,
-		IntroThinkForABit = Player.StIntroThinkForABit
 	}
 }

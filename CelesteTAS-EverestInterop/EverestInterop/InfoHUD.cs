@@ -38,10 +38,6 @@ namespace TAS.EverestInterop {
             float fontSize = 0.15f * pixelScale;
             float alpha = 1f;
 
-            if (!Manager.Running || (Manager.state | State.FrameStep) != State.FrameStep) {
-                Manager.UpdatePlayerInfo();
-            }
-
             string text = Manager.PlayerStatus;
 
             if (string.IsNullOrEmpty(text)) {

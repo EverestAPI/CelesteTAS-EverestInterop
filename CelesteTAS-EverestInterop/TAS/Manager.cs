@@ -19,8 +19,6 @@ namespace TAS {
 		Delay = 16
 	}
 	public static partial class Manager {
-
-
 		static Manager() {
 			FieldInfo strawberryCollectTimer = typeof(Strawberry).GetField("collectTimer", BindingFlags.Instance | BindingFlags.NonPublic);
 			FieldInfo dashCooldownTimer = typeof(Player).GetField("dashCooldownTimer", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -33,7 +31,6 @@ namespace TAS {
 			StrawberryCollectTimer = strawberryCollectTimer.CreateDelegate_Get<GetBerryFloat>();
 			DashCooldownTimer = dashCooldownTimer.CreateDelegate_Get<GetFloat>();
 			JumpGraceTimer = jumpGraceTimer.CreateDelegate_Get<GetFloat>();
-
 		}
 		
 		private static FieldInfo strawberryCollectTimer = typeof(Strawberry).GetField("collectTimer", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -67,9 +64,7 @@ namespace TAS {
 		private static bool ShouldForceState => HasFlag(nextState, State.FrameStep) && !Hotkeys.hotkeyFastForward.overridePressed;
 
 		public static void UpdateInputs() {
-			
 			lastState = state;
-			UpdatePlayerInfo();
 			Hotkeys.Update();
 			Savestates.HandleSaveStates();
 			Savestates.routine?.Update();
