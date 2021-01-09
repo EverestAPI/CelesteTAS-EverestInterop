@@ -35,7 +35,7 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>Celeste.ico</ApplicationIcon>
+    <ApplicationIcon>GoldBerry.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Mono.Posix, Version=4.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756">
@@ -161,7 +161,7 @@
     <Compile Include="RichText\NativeMethodsWrapper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Celeste.ico" />
+    <Content Include="GoldBerry.ico" />
     <None Include="Resources\bird.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
