@@ -37,7 +37,6 @@ namespace TAS {
 						                   + (WallJumpCheck(player, 1) ? "Wall-R " : string.Empty)
 						                   + (WallJumpCheck(player, -1) ? "Wall-L " : string.Empty);
 						int dashCooldown = (int)(DashCooldownTimer(player) * framesPerSecond);
-						string playerState = $"State: {(PlayerState)player.StateMachine.State}";
 						string statuses = (dashCooldown < 1 && player.Dashes > 0 ? "Dash " : string.Empty)
 							+ (player.LoseShards ? "Ground " : string.Empty)
 							+ (!player.LoseShards && JumpGraceTimer(player) > 0 ? $"Coyote({(int)(JumpGraceTimer(player) * framesPerSecond)})" : string.Empty);
@@ -71,13 +70,12 @@ namespace TAS {
 						}
 						string timers = (berryTimer != -10 ? berryTimer <= 9 ? $"BerryTimer: {berryTimer} " : $"BerryTimer: 9+{berryTimer-9} " : string.Empty)
 							+ (dashCooldown != 0 ? $"DashTimer: {(dashCooldown).ToString()} " : string.Empty);
-						string roomNameAndTime = $"[{level.Session.Level}] Timer: {(chapterTime / 10000000D).ToString("0.000")}({chapterTime / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks})";
+						string roomNameAndTime = $"[{level.Session.Level}] Timer: {(chapterTime / 10000000D).ToString("0.000")} {chapterTime / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks}f";
 
 						StringBuilder sb = new StringBuilder();
 						sb.AppendLine(pos);
 						sb.AppendLine(speed);
 						sb.AppendLine(vel);
-						sb.AppendLine(playerState);
 
 						if (player.StateMachine.State == Player.StStarFly
 							|| SaveData.Instance.Assists.ThreeSixtyDashing
@@ -137,6 +135,13 @@ namespace TAS {
 				y += subY;
 			string pos = $"Pos:   {x.ToString("0.00")}, {y.ToString("0.00")}";
 			return pos;
+		}
+
+		private static string GetPlayerState(Player player) {
+			StateMachine stateMachine = player.StateMachine;
+			string result = $"State: {(PlayerState) stateMachine.State}";
+			if (stateMachine.ChangedStates) result += $" <- {(PlayerState) stateMachine.PreviousState}";
+			return result;
 		}
 
 		public static void BeginExport(string path, string[] tracked) {
