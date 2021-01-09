@@ -50,23 +50,13 @@ namespace TAS.EverestInterop {
 				new TextMenu.OnOff("Auto Mute on Fast Forward", Settings.AutoMute).Change(b => Settings.AutoMute = b),
 				new TextMenu.OnOff("Hide Trigger Hitboxes", Settings.HideTriggerHitboxes).Change(b => Settings.HideTriggerHitboxes = b),
 				new TextMenu.OnOff("Simplified Hitboxes", Settings.SimplifiedHitboxes).Change(b => Settings.SimplifiedHitboxes = b),
-				new TextMenu.Option<LastFrameHitboxesTypes>("Show Actual Entity Collide Hitbox").Apply(option => {
-						Array enumValues = Enum.GetValues(typeof(LastFrameHitboxesTypes));
-						foreach (LastFrameHitboxesTypes value in enumValues) {
-							option.Add(value.ToString().SpacedPascalCase(), value, value.Equals(Settings.ShowActualEntityCollideHitbox));
+				new TextMenu.Option<ActualCollideHitboxTypes>("Show Actual Collide Hitboxes").Apply(option => {
+						Array enumValues = Enum.GetValues(typeof(ActualCollideHitboxTypes));
+						foreach (ActualCollideHitboxTypes value in enumValues) {
+							option.Add(value.ToString().SpacedPascalCase(), value, value.Equals(Settings.ShowActualCollideHitboxes));
 						}
-						option.Change(b => Settings.ShowActualEntityCollideHitbox = b);
-						option.SetAction(() => {
-							option.AddDescription(menu, "when checking for collisions with player");
-							option.AddDescription(menu, "Show the actual hitbox of the entity");
-						});
+						option.Change(b => Settings.ShowActualCollideHitboxes = b);
 					}),
-				new TextMenu.OnOff("Show Actual Player Collide Hitbox", Settings.ShowActualPlayerCollideHitbox).Change(b => Settings.ShowActualPlayerCollideHitbox = b).Apply(option => {
-					option.SetAction(() => {
-						option.AddDescription(menu, "when checking for collisions with entities");
-						option.AddDescription(menu, "Show the actual hitbox of the player");
-					});
-				}),
 				new TextMenu.Option<InfoPositions>("Info HUD").Apply(option => {
 					Array enumValues = Enum.GetValues(typeof(InfoPositions));
 					foreach (InfoPositions value in enumValues) {

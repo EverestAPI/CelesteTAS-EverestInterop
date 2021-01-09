@@ -9,7 +9,7 @@ using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 
 namespace TAS.EverestInterop.Hitboxes {
-    public static class HitboxUnmovedPlayer {
+    public static class ActualPlayerCollideHitbox {
         private static readonly FieldInfo PlayerHurtbox = typeof(Player).GetPrivateField("hurtbox");
         private static readonly Color hitboxColor = Color.Red.Invert() * 0.7f;
         private static readonly Color hurtboxColor = Color.Lime.Invert() * 0.7f;
@@ -47,7 +47,7 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void HitboxOnRender(On.Monocle.Hitbox.orig_Render orig, Hitbox self, Camera camera, Color color) {
-            if (!(self.Entity is Player player) || !Settings.ShowHitboxes || !Settings.ShowActualPlayerCollideHitbox
+            if (!(self.Entity is Player player) || !Settings.ShowHitboxes || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.OFF
                 || player.LoadActualCollidePosition() == null
                 || player.LoadActualCollidePosition().Value == player.Position
                 || player.Scene is Level level && level.Transitioning

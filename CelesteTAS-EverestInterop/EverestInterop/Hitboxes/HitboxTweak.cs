@@ -36,8 +36,8 @@ namespace TAS.EverestInterop.Hitboxes {
             On.Monocle.Grid.Render += CombineHitbox;
             IL.Monocle.Draw.HollowRect_float_float_float_float_Color += AvoidRedrawCorners;
             HitboxTriggerSpikes.Load();
-            HitboxLastFrame.Load();
-            HitboxUnmovedPlayer.Load();
+            ActualEntityCollideHitbox.Load();
+            ActualPlayerCollideHitbox.Load();
         }
 
         public void Unload() {
@@ -46,8 +46,8 @@ namespace TAS.EverestInterop.Hitboxes {
             On.Monocle.Grid.Render -= CombineHitbox;
             IL.Monocle.Draw.HollowRect_float_float_float_float_Color -= AvoidRedrawCorners;
             HitboxTriggerSpikes.Unload();
-            HitboxLastFrame.Unload();
-            HitboxUnmovedPlayer.Unload();
+            ActualEntityCollideHitbox.Unload();
+            ActualPlayerCollideHitbox.Unload();
         }
 
         private static void HideHitbox(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {

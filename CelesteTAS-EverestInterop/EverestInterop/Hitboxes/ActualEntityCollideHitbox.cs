@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Celeste;
-using Celeste.Mod;
-using Celeste.Pico8;
 using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
@@ -11,7 +9,7 @@ using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 
 namespace TAS.EverestInterop.Hitboxes {
-    public static class HitboxLastFrame {
+    public static class ActualEntityCollideHitbox {
         private static ILHook IlHookPlayerOrigUpdate;
         private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
 
@@ -34,7 +32,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 ilCursor.Emit(OpCodes.Dup).EmitDelegate<Action<PlayerCollider>>(playerCollider => {
                     Entity entity = playerCollider.Entity;
 
-                    if (entity == null ||  !Settings.ShowHitboxes || Settings.ShowActualEntityCollideHitbox == LastFrameHitboxesTypes.OFF) {
+                    if (entity == null ||  !Settings.ShowHitboxes || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.OFF) {
                         return;
                     }
 
@@ -56,21 +54,17 @@ namespace TAS.EverestInterop.Hitboxes {
             Entity entity = self.Entity;
 
             if (!Settings.ShowHitboxes
-                || Settings.ShowActualEntityCollideHitbox == LastFrameHitboxesTypes.OFF
+                || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.OFF
                 || entity.Get<PlayerCollider>() == null
                 || entity.Scene?.Tracker.GetEntity<Player>() == null
                 || entity.LoadActualCollidePosition() == null
-                || entity.LoadActualCollidePosition() == entity.Position && Settings.ShowActualEntityCollideHitbox == LastFrameHitboxesTypes.Append
+                || entity.LoadActualCollidePosition() == entity.Position && Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Append
             ) {
                 invokeOrig(color);
                 return;
             }
 
-            Color lastFrameColor = color;
-
-            if (Settings.ShowActualEntityCollideHitbox == LastFrameHitboxesTypes.Append) {
-                lastFrameColor = color.Invert();
-            }
+            Color lastFrameColor = Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Override ? color : color.Invert();
 
             if (entity.Collidable && !entity.LoadActualCollidable()) {
                 lastFrameColor *= 0.5f;
@@ -78,7 +72,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 lastFrameColor *= 2f;
             }
 
-            if (Settings.ShowActualEntityCollideHitbox == LastFrameHitboxesTypes.Append) {
+            if (Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Append) {
                 invokeOrig(color);
             }
 
@@ -102,7 +96,7 @@ namespace TAS.EverestInterop.Hitboxes {
         }
     }
 
-    public enum LastFrameHitboxesTypes {
+    public enum ActualCollideHitboxTypes {
         OFF,
         Override,
         Append
