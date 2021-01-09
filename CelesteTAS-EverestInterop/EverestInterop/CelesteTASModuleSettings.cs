@@ -79,9 +79,9 @@ namespace TAS.EverestInterop {
 		public bool HideGameplay { get; set; } = false;
 		public bool AutoMute { get; set; } = true;
 		[SettingIgnore]
-		public Color EntityHitboxColor { get; set; } = Color.Red;
+		public Color EntityHitboxColor { get; set; } = HitboxColor.DefaultEntityColor;
 		[SettingIgnore]
-		public Color TriggerHitboxColor { get; set; } = Color.Red;
+		public Color TriggerHitboxColor { get; set; } = HitboxColor.DefaultTriggerColor;
 		public bool HideTriggerHitboxes { get; set; } = false;
 		public bool SimplifiedHitboxes { get; set; } = true;
 		public ActualCollideHitboxTypes ShowActualCollideHitboxes { get; set; } = ActualCollideHitboxTypes.OFF;
