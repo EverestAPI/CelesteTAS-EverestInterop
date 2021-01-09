@@ -46,6 +46,8 @@ namespace CelesteStudio
                 return fileName;
             }
         }
+        
+        private FileList recentFiles => Settings.Default.RecentFiles ?? (Settings.Default.RecentFiles = new FileList());
 
         [STAThread]
         public static void Main() {
@@ -83,7 +85,7 @@ namespace CelesteStudio
             openRecentStripMenuItem.DropDownItemClicked += (sender, args) => {
                 ToolStripItem clickedItem = args.ClickedItem;
                 if (clickedItem.Text == "Clear") {
-                    Settings.Default.RecentFiles.Clear();
+                    recentFiles.Clear();
                     return;
                 }
                 if (!File.Exists(clickedItem.Text)) {
@@ -95,18 +97,15 @@ namespace CelesteStudio
 
         private void CreateRecentFilesMenu() {
             openRecentStripMenuItem.DropDownItems.Clear();
-            if (Settings.Default.RecentFiles == null) {
-                Settings.Default.RecentFiles = new FileList();
-            }
-            if (Settings.Default.RecentFiles.Count == 0) {
+            if (recentFiles.Count == 0) {
                 openRecentStripMenuItem.DropDownItems.Add(new ToolStripMenuItem("Nothing") {
                     Enabled = false
                 });
             } else {
-                for (var i = Settings.Default.RecentFiles.Count - 1; i >= 10; i--) {
-                    Settings.Default.RecentFiles.Remove(Settings.Default.RecentFiles[i]);
+                for (var i = recentFiles.Count - 1; i >= 10; i--) {
+                    recentFiles.Remove(recentFiles[i]);
                 }
-                foreach (var lastFileName in Settings.Default.RecentFiles) {
+                foreach (var lastFileName in recentFiles) {
                     openRecentStripMenuItem.DropDownItems.Add(new ToolStripMenuItem(lastFileName) {
                         Checked = lastFileName == tasText.LastFileName
                     });
@@ -263,8 +262,8 @@ Ctrl + T: Insert current in-game time";
 
             StudioCommunicationServer.instance?.WriteWait();
             if (tasText.OpenFile(fileName) && fileName != defaultFileName && tasText.LastFileName != defaultFileName) {
-                if (!Settings.Default.RecentFiles.Contains(tasText.LastFileName)) {
-                    Settings.Default.RecentFiles.Insert(0, tasText.LastFileName);
+                if (!recentFiles.Contains(tasText.LastFileName)) {
+                    recentFiles.Insert(0, tasText.LastFileName);
                 }
 
                 if (tasText.LastFileName != defaultFileName) {
