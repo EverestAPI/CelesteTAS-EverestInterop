@@ -37,6 +37,7 @@ namespace TAS {
 						                   + (WallJumpCheck(player, 1) ? "Wall-R " : string.Empty)
 						                   + (WallJumpCheck(player, -1) ? "Wall-L " : string.Empty);
 						int dashCooldown = (int)(DashCooldownTimer(player) * framesPerSecond);
+						string playerState = $"State: {(PlayerState)player.StateMachine.State}";
 						string statuses = (dashCooldown < 1 && player.Dashes > 0 ? "Dash " : string.Empty)
 							+ (player.LoseShards ? "Ground " : string.Empty)
 							+ (!player.LoseShards && JumpGraceTimer(player) > 0 ? $"Coyote({(int)(JumpGraceTimer(player) * framesPerSecond)})" : string.Empty);
@@ -76,6 +77,7 @@ namespace TAS {
 						sb.AppendLine(pos);
 						sb.AppendLine(speed);
 						sb.AppendLine(vel);
+						sb.AppendLine(playerState);
 
 						if (player.StateMachine.State == Player.StStarFly
 							|| SaveData.Instance.Assists.ThreeSixtyDashing
@@ -223,5 +225,34 @@ namespace TAS {
 				sw.WriteLine(output);
 			}
 		}
+	}
+
+	enum PlayerState {
+		Normal = Player.StNormal,
+		Climb = Player.StClimb,
+		Dash = Player.StDash,
+		Swim = Player.StSwim,
+		Boost = Player.StBoost,
+		RedDash = Player.StRedDash,
+		HitSquash = Player.StHitSquash,
+		Launch = Player.StLaunch,
+		Pickup = Player.StPickup,
+		DreamDash = Player.StDreamDash,
+		SummitLaunch = Player.StSummitLaunch,
+		Dummy = Player.StDummy,
+		IntroWalk = Player.StIntroWalk,
+		IntroJump = Player.StIntroJump,
+		IntroRespawn = Player.StIntroRespawn,
+		IntroWakeUp = Player.StIntroWakeUp,
+		BirdDashTutorial = Player.StBirdDashTutorial,
+		Frozen = Player.StFrozen,
+		ReflectionFall = Player.StReflectionFall,
+		StarFly = Player.StStarFly,
+		TempleFall = Player.StTempleFall,
+		CassetteFly = Player.StCassetteFly,
+		Attract = Player.StAttract,
+		IntroMoonJump = Player.StIntroMoonJump,
+		FlingBird = Player.StFlingBird,
+		IntroThinkForABit = Player.StIntroThinkForABit
 	}
 }
