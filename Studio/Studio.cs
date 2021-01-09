@@ -157,7 +157,7 @@ Ctrl + Shift + R: Insert console load command at current location
 Ctrl + T: Insert current in-game time";
             button.BackColor = Color.Transparent;
             button.ForeColor = Color.Empty;
-            button.Image = Properties.Resources.bird;
+            button.Image = Resources.bird;
             menu.Items.Add(button);
             Button myButton = button as Button;
             myButton.Cursor = Cursors.Hand;
