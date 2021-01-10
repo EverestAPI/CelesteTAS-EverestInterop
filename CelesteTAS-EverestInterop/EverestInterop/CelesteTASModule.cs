@@ -161,6 +161,8 @@ namespace TAS.EverestInterop {
 
             InfoHUD.Load();
 
+            PlayerInfo.Load();
+
             // Optional: Allow spawning at specified location
             On.Celeste.LevelLoader.LoadingThread += LevelLoader_LoadingThread;
 
@@ -191,6 +193,7 @@ namespace TAS.EverestInterop {
             HitboxColor.instance.Unload();
             HitboxTweak.instance.Unload();
             InfoHUD.Unload();
+            PlayerInfo.Unload();
             On.Celeste.LevelLoader.LoadingThread -= LevelLoader_LoadingThread;
             StudioCommunicationClient.Destroy();
 

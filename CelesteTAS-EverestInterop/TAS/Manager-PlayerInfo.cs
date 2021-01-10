@@ -40,10 +40,12 @@ namespace TAS {
 						string statuses = (dashCooldown < 1 && player.Dashes > 0 ? "Dash " : string.Empty)
 							+ (player.LoseShards ? "Ground " : string.Empty)
 							+ (!player.LoseShards && JumpGraceTimer(player) > 0 ? $"Coyote({(int)(JumpGraceTimer(player) * framesPerSecond)})" : string.Empty);
-						statuses = (player.InControl && !level.Transitioning ? statuses : "NoControl ")
+						string transitionFrames = PlayerInfo.TransitionFrames > 0 ? $"({PlayerInfo.TransitionFrames})" : string.Empty;
+						statuses = (player.InControl && !level.Transitioning ? statuses : $"NoControl{transitionFrames} ")
 							+ (player.TimePaused ? "Paused " : string.Empty)
 							+ (level.InCutscene ? "Cutscene " : string.Empty)
 							+ (additionalStatusInfo ?? string.Empty);
+
 
 						if (player.Holding == null) {
 							foreach (Component component in level.Tracker.GetComponents<Holdable>()) {
