@@ -56,7 +56,7 @@ namespace TAS.EverestInterop {
 
         public void Unload() {
             On.Celeste.Level.Update -= Level_Update;
-            On.Celeste.BloomRenderer.Apply += BloomRenderer_Apply;
+            On.Celeste.BloomRenderer.Apply -= BloomRenderer_Apply;
             On.Celeste.LightingRenderer.Render -= LightingRenderer_Render;
             On.Monocle.Particle.Render -= Particle_Render;
 			IL.Celeste.BackdropRenderer.Render -= BackdropRenderer_Render;
@@ -95,10 +95,18 @@ namespace TAS.EverestInterop {
         }
 
         private void OnSimplifiedGraphicsChanged(bool simplifiedGraphics) {
-            if (Engine.Scene is Level level) {
-                if (simplifiedGraphics) {
-                    level.SnapColorGrade("none");
-                }
+            if (!(Engine.Scene is Level level)) return;
+            if (!(AreaData.Get(level) is AreaData areaData)) return;
+
+            if (simplifiedGraphics) {
+                level.Entities.FindAll<FloatingDebris>().ForEach(debris => debris.Visible = false);
+                level.Entities.FindAll<MoonCreature>().ForEach(creature =>  creature.Visible = false);
+            } else {
+                level.Entities.FindAll<FloatingDebris>().ForEach(debris => debris.Visible = true);
+                level.Entities.FindAll<MoonCreature>().ForEach(creature =>  creature.Visible = true);
+
+                level.Bloom.Base = areaData.BloomBase;
+                level.Bloom.Strength = areaData.BloomStrength;
             }
         }
 

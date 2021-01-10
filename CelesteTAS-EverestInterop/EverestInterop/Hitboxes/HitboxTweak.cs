@@ -50,6 +50,7 @@ namespace TAS.EverestInterop.Hitboxes {
             ActualPlayerCollideHitbox.Unload();
         }
 
+        // TODO Don't ignore orig
         private static void HideHitbox(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {
             if (Settings.ShowHitboxes) {
                 if (Settings.HideTriggerHitboxes && self is Trigger) {
@@ -75,11 +76,11 @@ namespace TAS.EverestInterop.Hitboxes {
             Entity entity = hitbox.Entity;
             if (entity is WallBooster) {
                 Draw.Rect(hitbox.AbsolutePosition, hitbox.Width, hitbox.Height, HitboxColor.EntityColorInverselyLessAlpha);
-                return;
+                color = Color.Transparent;
             }
 
             if (entity is FireBall fireBall && (bool) FireBallIceMode.GetValue(fireBall) == false) {
-                return;
+                color = Color.Transparent;;
             }
 
             orig(hitbox, camera, color);
