@@ -9,13 +9,15 @@ using MonoMod.RuntimeDetour;
 
 namespace TAS.EverestInterop {
 	class SimplifiedGraphics {
+        public static SimplifiedGraphics instance;
+
         private const string simpleSpinnerColor = "#639BFF";
 
-        private static readonly FieldInfo SpinnerColor =
-            typeof(CrystalStaticSpinner).GetField("color", BindingFlags.NonPublic | BindingFlags.Instance);
-        private static readonly FieldInfo DustGraphicEyes = typeof(DustGraphic).GetField("eyes", BindingFlags.NonPublic | BindingFlags.Instance);
+        private static readonly FieldInfo SpinnerColor = typeof(CrystalStaticSpinner).GetPrivateField("color");
+        private static readonly FieldInfo DustGraphicEyes = typeof(DustGraphic).GetPrivateField("eyes");
+        private static readonly FieldInfo LevelLastColorGrade = typeof(Level).GetPrivateField("lastColorGrade");
 
-        public static SimplifiedGraphics instance;
+        private static bool lastSimplifiedGraphics = Settings.SimplifiedGraphics;
 
         private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
 
@@ -24,6 +26,7 @@ namespace TAS.EverestInterop {
 
         public void Load() {
             // Optional: Various graphical simplifications to cut down on visual noise.
+            On.Celeste.Level.Update += Level_Update;
             On.Celeste.BloomRenderer.Apply += BloomRenderer_Apply;
             On.Celeste.LightingRenderer.Render += LightingRenderer_Render;
             On.Monocle.Particle.Render += Particle_Render;
@@ -52,6 +55,7 @@ namespace TAS.EverestInterop {
         }
 
         public void Unload() {
+            On.Celeste.Level.Update -= Level_Update;
             On.Celeste.BloomRenderer.Apply += BloomRenderer_Apply;
             On.Celeste.LightingRenderer.Render -= LightingRenderer_Render;
             On.Monocle.Particle.Render -= Particle_Render;
@@ -74,6 +78,28 @@ namespace TAS.EverestInterop {
             customSpinnerHook = null;
             rainbowSpinnerColorControllerHook = null;
             instance = null;
+        }
+
+        private void Level_Update(On.Celeste.Level.orig_Update orig, Level self) {
+            orig(self);
+
+            // Seems modified the Settings.SimplifiedGraphics property will mess key config.
+            if (lastSimplifiedGraphics != Settings.SimplifiedGraphics) {
+                OnSimplifiedGraphicsChanged(Settings.SimplifiedGraphics);
+                lastSimplifiedGraphics = Settings.SimplifiedGraphics;
+            }
+
+            if (Settings.SimplifiedGraphics && LevelLastColorGrade.GetValue(self) as string != "none") {
+                self.SnapColorGrade("none");
+            }
+        }
+
+        private void OnSimplifiedGraphicsChanged(bool simplifiedGraphics) {
+            if (Engine.Scene is Level level) {
+                if (simplifiedGraphics) {
+                    level.SnapColorGrade("none");
+                }
+            }
         }
 
         private void BloomRenderer_Apply(On.Celeste.BloomRenderer.orig_Apply orig, BloomRenderer self, VirtualRenderTarget target, Scene scene) {

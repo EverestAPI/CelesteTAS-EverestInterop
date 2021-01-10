@@ -64,7 +64,7 @@ namespace CelesteStudio
             string appGuid =
                 ((GuidAttribute) Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(GuidAttribute), false).GetValue(0)).Value;
 
-            string mutexId = string.Format("Global\\{{{0}}}", appGuid);
+            string mutexId = $"Global\\{{{appGuid}}}";
 
             var allowEveryoneRule =
                 new MutexAccessRule(new SecurityIdentifier(WellKnownSidType.WorldSid
