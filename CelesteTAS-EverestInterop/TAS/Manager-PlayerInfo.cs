@@ -72,7 +72,7 @@ namespace TAS {
 						}
 						string timers = (berryTimer != -10 ? berryTimer <= 9 ? $"BerryTimer: {berryTimer} " : $"BerryTimer: 9+{berryTimer-9} " : string.Empty)
 							+ (dashCooldown != 0 ? $"DashTimer: {(dashCooldown).ToString()} " : string.Empty);
-						string roomNameAndTime = $"[{level.Session.Level}] Timer: {(chapterTime / 10000000D).ToString("0.000")} {chapterTime / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks}f";
+						string roomNameAndTime = $"[{level.Session.Level}] Timer: {(chapterTime / 10000000D).ToString("0.000")}({chapterTime / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks})";
 
 						StringBuilder sb = new StringBuilder();
 						sb.AppendLine(pos);
