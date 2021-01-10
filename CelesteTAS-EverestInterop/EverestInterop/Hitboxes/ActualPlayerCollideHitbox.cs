@@ -11,8 +11,8 @@ using MonoMod.RuntimeDetour;
 namespace TAS.EverestInterop.Hitboxes {
     public static class ActualPlayerCollideHitbox {
         private static readonly FieldInfo PlayerHurtbox = typeof(Player).GetPrivateField("hurtbox");
-        private static readonly Color hitboxColor = Color.Red.Invert() * 0.7f;
-        private static readonly Color hurtboxColor = Color.Lime.Invert() * 0.7f;
+        private static readonly Color hitboxColor = Color.Red.Invert();
+        private static readonly Color hurtboxColor = Color.Lime.Invert();
         private static ILHook IlHookPlayerOrigUpdate;
         private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
 

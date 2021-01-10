@@ -38,6 +38,10 @@ namespace TAS.EverestInterop.Hitboxes {
 
                     entity.SaveActualCollidePosition();
                     entity.SaveActualCollidable();
+
+                    if (entity.Get<StaticMover>() is StaticMover staticMover && staticMover.Platform is Platform platform) {
+                        platform.SaveActualCollidePosition();
+                    }
                 });
             }
         }
@@ -64,7 +68,10 @@ namespace TAS.EverestInterop.Hitboxes {
                 return;
             }
 
-            Color lastFrameColor = Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Override ? color : color.Invert();
+            bool movedByPlatform = entity.Get<StaticMover>() is StaticMover staticMover && staticMover.Platform is Platform platform &&
+                                   platform.Position != platform.LoadActualCollidePosition().Value;
+
+            Color lastFrameColor = Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Append || movedByPlatform ? color.Invert() : color;
 
             if (entity.Collidable && !entity.LoadActualCollidable()) {
                 lastFrameColor *= 0.5f;
@@ -72,7 +79,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 lastFrameColor *= 2f;
             }
 
-            if (Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Append) {
+            if (Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Append || movedByPlatform) {
                 invokeOrig(color);
             }
 
@@ -98,6 +105,7 @@ namespace TAS.EverestInterop.Hitboxes {
 
     public enum ActualCollideHitboxTypes {
         OFF,
+        // ReSharper disable once UnusedMember.Global
         Override,
         Append
     }
