@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
@@ -175,6 +174,7 @@ Ctrl + T: Insert current in-game time";
             RegWrite("y", DesktopLocation.Y);
             RegWrite("w", Size.Width); RegWrite("h", Size.Height);
             Settings.Default.Save();
+            BackupCelesteTas();
         }
 
         private void Studio_Shown(object sender, EventArgs e)
@@ -182,6 +182,15 @@ Ctrl + T: Insert current in-game time";
             Thread updateThread = new Thread(UpdateLoop);
             updateThread.IsBackground = true;
             updateThread.Start();
+        }
+
+        private void BackupCelesteTas() {
+            if (string.IsNullOrEmpty(defaultFileName) || !File.Exists(defaultFileName)) return;
+            try {
+                File.Copy(defaultFileName, "Celeste_bak.tas", true);
+            } catch (Exception) {
+                // ignore
+            }
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData) {
