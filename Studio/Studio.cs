@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -50,10 +53,50 @@ namespace CelesteStudio
 
         [STAThread]
         public static void Main() {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Studio());
+            RunSingleton(() => {
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+                Application.Run(new Studio());
+            });
         }
+
+        private static void RunSingleton(Action action) {
+            string appGuid =
+                ((GuidAttribute) Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(GuidAttribute), false).GetValue(0)).Value;
+
+            string mutexId = string.Format("Global\\{{{0}}}", appGuid);
+
+            var allowEveryoneRule =
+                new MutexAccessRule(new SecurityIdentifier(WellKnownSidType.WorldSid
+                        , null)
+                    , MutexRights.FullControl
+                    , AccessControlType.Allow
+                );
+            var securitySettings = new MutexSecurity();
+            securitySettings.AddAccessRule(allowEveryoneRule);
+
+            using (var mutex = new Mutex(false, mutexId, out _, securitySettings)) {
+                var hasHandle = false;
+                try {
+                    try {
+                        hasHandle = mutex.WaitOne(TimeSpan.Zero, false);
+                        if (hasHandle == false) {
+                            MessageBox.Show("Studio already running", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return;
+                        }
+                    } catch (AbandonedMutexException) {
+                        hasHandle = true;
+                    }
+
+                    // Perform your work here.
+                    action();
+                } finally {
+                    if (hasHandle)
+                        mutex.ReleaseMutex();
+                }
+            }
+        }
+
         public Studio()
         {
             InitializeComponent();
