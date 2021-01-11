@@ -6,26 +6,24 @@ using System.Runtime.CompilerServices;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
-using MonoMod.Utils;
-using Platform = Celeste.Platform;
 
 namespace TAS.EverestInterop {
     internal static class ReflectionExtensions {
         public delegate object GetField(object o);
-
         public delegate object GetStaticField();
 
-        public static FieldInfo GetPrivateField(this Type type, string name) {
-            return type.GetField(name, BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic);
+        private const BindingFlags StaticInstanceAnyVisibility = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+
+        public static FieldInfo GetFieldInfo(this Type type, string name) {
+            return type.GetField(name, StaticInstanceAnyVisibility);
         }
 
-        public static object GetPrivateFieldValue(this object obj, string name) {
-            return obj.GetType().GetPrivateField(name)?.GetValue(obj);
+        public static PropertyInfo GetPropertyInfo(this Type type, string name) {
+            return type.GetProperty(name, StaticInstanceAnyVisibility);
         }
 
-        public static object InvokePrivateMethod(this object obj, string methodName, params object[] parameters) {
-            return obj.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic)
-                ?.Invoke(obj, parameters);
+        public static MethodInfo GetMethodInfo(this Type type, string name) {
+            return type.GetMethod(name, StaticInstanceAnyVisibility);
         }
 
         public static T CreateDelegate_Get<T>(this FieldInfo field) where T : Delegate {

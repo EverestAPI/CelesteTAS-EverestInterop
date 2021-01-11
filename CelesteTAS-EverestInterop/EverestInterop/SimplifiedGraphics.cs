@@ -13,9 +13,9 @@ namespace TAS.EverestInterop {
 
         private const string simpleSpinnerColor = "#639BFF";
 
-        private static readonly FieldInfo SpinnerColor = typeof(CrystalStaticSpinner).GetPrivateField("color");
-        private static readonly FieldInfo DustGraphicEyes = typeof(DustGraphic).GetPrivateField("eyes");
-        private static readonly FieldInfo LevelLastColorGrade = typeof(Level).GetPrivateField("lastColorGrade");
+        private static readonly FieldInfo SpinnerColor = typeof(CrystalStaticSpinner).GetFieldInfo("color");
+        private static readonly FieldInfo DustGraphicEyes = typeof(DustGraphic).GetFieldInfo("eyes");
+        private static readonly FieldInfo LevelLastColorGrade = typeof(Level).GetFieldInfo("lastColorGrade");
 
         private static bool lastSimplifiedGraphics = Settings.SimplifiedGraphics;
 

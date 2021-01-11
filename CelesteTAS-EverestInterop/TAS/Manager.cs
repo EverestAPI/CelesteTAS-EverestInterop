@@ -20,11 +20,11 @@ namespace TAS {
 	}
 	public static partial class Manager {
 		static Manager() {
-			FieldInfo strawberryCollectTimer = typeof(Strawberry).GetField("collectTimer", BindingFlags.Instance | BindingFlags.NonPublic);
-			FieldInfo dashCooldownTimer = typeof(Player).GetField("dashCooldownTimer", BindingFlags.Instance | BindingFlags.NonPublic);
-			FieldInfo jumpGraceTimer = typeof(Player).GetField("jumpGraceTimer", BindingFlags.Instance | BindingFlags.NonPublic);
-			MethodInfo WallJumpCheck = typeof(Player).GetMethod("WallJumpCheck", BindingFlags.Instance | BindingFlags.NonPublic);
-			MethodInfo UpdateVirtualInputs = typeof(MInput).GetMethod("UpdateVirtualInputs", BindingFlags.Static | BindingFlags.NonPublic);
+			FieldInfo strawberryCollectTimer = typeof(Strawberry).GetFieldInfo("collectTimer");
+			FieldInfo dashCooldownTimer = typeof(Player).GetFieldInfo("dashCooldownTimer");
+			FieldInfo jumpGraceTimer = typeof(Player).GetFieldInfo("jumpGraceTimer");
+			MethodInfo WallJumpCheck = typeof(Player).GetMethodInfo("WallJumpCheck");
+			MethodInfo UpdateVirtualInputs = typeof(MInput).GetMethodInfo("UpdateVirtualInputs");
 
 			Manager.UpdateVirtualInputs = (d_UpdateVirtualInputs)UpdateVirtualInputs.CreateDelegate(typeof(d_UpdateVirtualInputs));
 			Manager.WallJumpCheck = (d_WallJumpCheck)WallJumpCheck.CreateDelegate(typeof(d_WallJumpCheck));
@@ -32,8 +32,9 @@ namespace TAS {
 			DashCooldownTimer = dashCooldownTimer.CreateDelegate_Get<GetFloat>();
 			JumpGraceTimer = jumpGraceTimer.CreateDelegate_Get<GetFloat>();
 		}
-		
-		private static FieldInfo strawberryCollectTimer = typeof(Strawberry).GetField("collectTimer", BindingFlags.Instance | BindingFlags.NonPublic);
+
+		private static readonly FieldInfo summitVignetteReady = typeof(SummitVignette).GetFieldInfo("ready");
+		private static readonly FieldInfo strawberryCollectTimer = typeof(Strawberry).GetFieldInfo("collectTimer");
 
 		//The things we do for faster replay times
 		private delegate void d_UpdateVirtualInputs();
@@ -128,7 +129,7 @@ namespace TAS {
 				return level.Session.Level == "end-cinematic";
 			}
 			if (Engine.Scene is SummitVignette summit)
-				return !(bool)summit.GetPrivateFieldValue("ready");
+				return !(bool)summitVignetteReady.GetValue(summit);
 			else if (Engine.Scene is Overworld overworld)
 				return overworld.Current is OuiFileSelect slot && slot.SlotIndex >= 0 && slot.Slots[slot.SlotIndex].StartingGame;
 			bool isLoading = (Engine.Scene is LevelExit) || (Engine.Scene is LevelLoader) || (Engine.Scene is GameLoader) || Engine.Scene.GetType().Name == "LevelExitToLobby";

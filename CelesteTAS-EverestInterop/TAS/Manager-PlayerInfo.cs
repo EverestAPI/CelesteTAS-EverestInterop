@@ -100,7 +100,7 @@ namespace TAS {
 			}
 
 			else if (Engine.Scene is SummitVignette summit)
-				PlayerStatus = "SummitVignette " + summit.GetPrivateFieldValue("ready");
+				PlayerStatus = "SummitVignette " + summitVignetteReady.GetValue(summit);
 
 			else if (Engine.Scene is Overworld overworld)
 				PlayerStatus = "Overworld " + overworld.ShowInputUI;
