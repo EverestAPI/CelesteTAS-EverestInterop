@@ -32,7 +32,8 @@ namespace TAS.EverestInterop.Hitboxes {
                 ilCursor.Emit(OpCodes.Dup).EmitDelegate<Action<PlayerCollider>>(playerCollider => {
                     Entity entity = playerCollider.Entity;
 
-                    if (entity == null ||  !Settings.ShowHitboxes || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.OFF) {
+                    if (entity == null ||  !Settings.ShowHitboxes || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.OFF
+                        || Manager.FrameLoops > 1) {
                         return;
                     }
 

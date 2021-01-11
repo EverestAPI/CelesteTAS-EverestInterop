@@ -181,7 +181,7 @@ namespace TAS.EverestInterop {
         private void Scene_AfterUpdate(On.Monocle.Scene.orig_AfterUpdate orig, Scene self) {
             orig(self);
 
-            if (Manager.FrameLoops < 2) {
+            if (Manager.FrameLoops == 1) {
                 Manager.UpdatePlayerInfo();
             }
         }
