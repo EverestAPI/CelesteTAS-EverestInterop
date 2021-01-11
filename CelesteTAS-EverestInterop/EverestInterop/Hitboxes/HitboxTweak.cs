@@ -31,7 +31,7 @@ namespace TAS.EverestInterop.Hitboxes {
         };
 
         public void Load() {
-            On.Monocle.Entity.DebugRender += HideHitbox;
+            IL.Monocle.Entity.DebugRender += HideHitbox;
             On.Monocle.Hitbox.Render += ModHitbox;
             On.Monocle.Grid.Render += CombineHitbox;
             IL.Monocle.Draw.HollowRect_float_float_float_float_Color += AvoidRedrawCorners;
@@ -41,7 +41,7 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         public void Unload() {
-            On.Monocle.Entity.DebugRender -= HideHitbox;
+            IL.Monocle.Entity.DebugRender -= HideHitbox;
             On.Monocle.Hitbox.Render -= ModHitbox;
             On.Monocle.Grid.Render -= CombineHitbox;
             IL.Monocle.Draw.HollowRect_float_float_float_float_Color -= AvoidRedrawCorners;
@@ -50,29 +50,39 @@ namespace TAS.EverestInterop.Hitboxes {
             ActualPlayerCollideHitbox.Unload();
         }
 
-        // TODO Don't ignore orig
-        private static void HideHitbox(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {
-            if (Settings.ShowHitboxes) {
-                if (Settings.HideTriggerHitboxes && self is Trigger) {
-                    return;
+        private void HideHitbox(ILContext il) {
+            ILCursor ilCursor = new ILCursor(il);
+            ILLabel origLabel = il.DefineLabel();
+            ilCursor.MarkLabel(origLabel);
+            ilCursor.Goto(0);
+            ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Func<Entity, bool>>(entity => {
+                if (Settings.ShowHitboxes) {
+                    if (Settings.HideTriggerHitboxes && entity is Trigger) {
+                        return true;
+                    }
+
+                    if (Settings.SimplifiedHitboxes && UselessTypes.Contains(entity.GetType())) {
+                        return true;
+                    }
+
+                    if (Settings.SimplifiedHitboxes
+                        && entity.Scene?.Tracker.GetEntity<Player>()?.Leader is Leader leader
+                        && leader.Followers.Any(follower => follower.Entity == entity)) {
+                        return true;
+                    }
                 }
 
-                if (Settings.SimplifiedHitboxes && UselessTypes.Contains(self.GetType())) {
-                    return;
-                }
-
-                if (Settings.SimplifiedHitboxes
-                    && self.Scene?.Tracker.GetEntity<Player>()?.Leader is Leader leader
-                    && leader.Followers.Any(follower => follower.Entity == self)) {
-                    return;
-                }
-            }
-
-
-            orig(self, camera);
+                return false;
+            });
+            ilCursor.Emit(OpCodes.Brfalse_S, origLabel).Emit(OpCodes.Ret);
         }
 
         private static void ModHitbox(On.Monocle.Hitbox.orig_Render orig, Hitbox hitbox, Camera camera, Color color) {
+            if (!Settings.ShowHitboxes || !Settings.SimplifiedHitboxes) {
+                orig(hitbox, camera, color);
+                return;
+            }
+
             Entity entity = hitbox.Entity;
             if (entity is WallBooster || entity.GetType().FullName == "Celeste.Mod.ShroomHelper.Entities.SlippyWall") {
                 Draw.Rect(hitbox.AbsolutePosition, hitbox.Width, hitbox.Height, HitboxColor.EntityColorInverselyLessAlpha);
