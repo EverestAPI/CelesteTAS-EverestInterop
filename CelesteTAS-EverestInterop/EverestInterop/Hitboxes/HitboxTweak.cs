@@ -74,7 +74,7 @@ namespace TAS.EverestInterop.Hitboxes {
 
         private static void ModHitbox(On.Monocle.Hitbox.orig_Render orig, Hitbox hitbox, Camera camera, Color color) {
             Entity entity = hitbox.Entity;
-            if (entity is WallBooster) {
+            if (entity is WallBooster || entity.GetType().FullName == "Celeste.Mod.ShroomHelper.Entities.SlippyWall") {
                 Draw.Rect(hitbox.AbsolutePosition, hitbox.Width, hitbox.Height, HitboxColor.EntityColorInverselyLessAlpha);
                 color = Color.Transparent;
             }
