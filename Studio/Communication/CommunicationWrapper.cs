@@ -22,6 +22,7 @@ namespace CelesteStudio.Communication {
 		public static extern short GetAsyncKeyState(Keys key);
 
 		public static string LevelName() {
+			if (string.IsNullOrEmpty(playerData)) return string.Empty;
 			int nameStart = playerData.IndexOf('[') + 1;
 			int nameEnd = playerData.IndexOf(']');
 			return playerData.Substring(nameStart, nameEnd - nameStart);

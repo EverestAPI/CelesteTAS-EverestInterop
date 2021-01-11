@@ -356,6 +356,7 @@ Ctrl + T: Insert current in-game time";
 		}
 
 		private void CopyPlayerData() {
+            if (string.IsNullOrEmpty(CommunicationWrapper.playerData)) return;
 			Clipboard.SetText(CommunicationWrapper.playerData);
 		}
 
