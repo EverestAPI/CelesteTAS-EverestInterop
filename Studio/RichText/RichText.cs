@@ -1507,6 +1507,8 @@ namespace CelesteStudio.RichText {
 		/// Cut selected text into Clipboard
 		/// </summary>
 		public void Cut() {
+			if (Selection.IsEmpty)
+				Selection.Expand();
 			if (!Selection.IsEmpty) {
 				Copy();
 				ClearSelected();
@@ -2134,6 +2136,8 @@ namespace CelesteStudio.RichText {
 				case Keys.Z:
 					if (e.Modifiers == Keys.Control && !ReadOnly)
 						Undo();
+					if (e.Modifiers == (Keys.Control| Keys.Shift) && !ReadOnly)
+						Redo();
 					break;
 				//case Keys.R:
 				//	if (e.Modifiers == Keys.Control && !ReadOnly)
