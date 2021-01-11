@@ -349,16 +349,10 @@ Ctrl + T: Insert current in-game time";
 			AddNewLine(CommunicationWrapper.command);
 		}
 
-		private void AddNewLine(string s) {
-			Range range = tasText.Selection;
-
-			int start = range.Start.iLine;
-
-			tasText.Selection = new Range(tasText, 0, start, 0, start);
-			string text = tasText.SelectedText;
-
-			tasText.SelectedText = s;
-			tasText.Selection = new Range(tasText, 0, start, 0, start);
+		private void AddNewLine(string text) {
+			int startLine = tasText.Selection.Start.iLine;
+			tasText.Selection = new Range(tasText, 0, startLine, 0, startLine);
+            tasText.InsertText(text.Trim());
 		}
 
 		private void CopyPlayerData() {

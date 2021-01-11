@@ -32,8 +32,8 @@ namespace CelesteStudio.Communication {
 			if (timerIndex == -1)
 				return null;
 			timerIndex += 7;
-			int timerEnd = playerData.IndexOf('\r', timerIndex);
-			return playerData.Substring(timerIndex, timerEnd - timerIndex);
+			int timerEnd = playerData.IndexOf(')', timerIndex);
+			return playerData.Substring(timerIndex, timerEnd - timerIndex + 1);
 		}
 
 		public static void SetBindings(List<Keys>[] newBindings) {
