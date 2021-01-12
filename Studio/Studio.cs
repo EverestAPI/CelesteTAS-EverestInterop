@@ -124,8 +124,6 @@ namespace CelesteStudio
         private void InitMenu() {
             AddTitleBarButton();
 
-            rememberCurrentFileToolStripMenuItem.Checked = Settings.Default.RememberLastFileName;
-            sendInputsToCelesteMenuItem.Checked = Settings.Default.UpdatingHotkeys;
             openRecentStripMenuItem.DropDownItemClicked += (sender, args) => {
                 ToolStripItem clickedItem = args.ClickedItem;
                 if (clickedItem.Text == "Clear") {
@@ -312,7 +310,7 @@ Ctrl + Down/Up: Go to comment or breakpoint";
             }
         }
 
-        private static void ToggleUpdatingHotkeys() {
+        private void ToggleUpdatingHotkeys() {
             CommunicationWrapper.updatingHotkeys = !CommunicationWrapper.updatingHotkeys;
             Settings.Default.UpdatingHotkeys = CommunicationWrapper.updatingHotkeys;
         }
@@ -836,6 +834,8 @@ Ctrl + Down/Up: Go to comment or breakpoint";
         }
 
         private void contextMenuStrip_Opened(object sender, EventArgs e) {
+            rememberCurrentFileToolStripMenuItem.Checked = Settings.Default.RememberLastFileName;
+            sendInputsToCelesteMenuItem.Checked = Settings.Default.UpdatingHotkeys;
             CreateRecentFilesMenu();
         }
 
@@ -852,7 +852,6 @@ Ctrl + Down/Up: Go to comment or breakpoint";
 
         private void sendInputsToCelesteMenuItem_Click(object sender, EventArgs e) {
             ToggleUpdatingHotkeys();
-            ((ToolStripMenuItem) sender).Checked = Settings.Default.UpdatingHotkeys;
         }
     }
 }
