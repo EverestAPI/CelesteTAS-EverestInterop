@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
 using CelesteStudio.Entities;
@@ -271,6 +272,10 @@ Ctrl + T: Insert current in-game time";
                 {
                     ClearBreakpoints();
 				}
+                else if (e.Modifiers == Keys.Alt && e.KeyCode == Keys.P)
+                {
+                    InsertOrRemoveBreakpoint();
+                }
 				else if (e.Modifiers == (Keys.Control | Keys.Shift) && e.KeyCode == Keys.R)
 				{
 					AddConsoleCommand();
@@ -333,6 +338,28 @@ Ctrl + T: Insert current in-game time";
             tasText.RemoveLines(breakpoints);
         }
 
+        private void InsertOrRemoveBreakpoint() {
+            Regex breakpoint = new Regex("^\\s*\\*\\*\\*.*");
+            int currentLine = tasText.Selection.Start.iLine;
+            if (breakpoint.IsMatch(tasText.Lines[currentLine])) {
+                tasText.RemoveLines(new List<int>{currentLine});
+                if (currentLine == tasText.LinesCount) {
+                    currentLine--;
+                }
+                string text = tasText.Lines[currentLine];
+                tasText.Selection = new Range(tasText, text.Length, currentLine, text.Length, currentLine);
+            } else if (currentLine >= 1 && breakpoint.IsMatch(tasText.Lines[currentLine - 1])) {
+                tasText.RemoveLines(new List<int>{currentLine - 1});
+                string text = tasText.Lines[currentLine - 1];
+                tasText.Selection = new Range(tasText, text.Length, currentLine - 1, text.Length, currentLine - 1);
+            }else {
+                AddNewLine("***");
+                currentLine++;
+                string textLine = tasText.Lines[currentLine];
+                tasText.Selection = new Range(tasText, textLine.Length, currentLine, textLine.Length, currentLine);
+            }
+        }
+
         private void AddRoom() => AddNewLine("#lvl_" + CommunicationWrapper.LevelName());
 
 		private void AddTime() => AddNewLine('#' + CommunicationWrapper.Timer());
@@ -350,9 +377,11 @@ Ctrl + T: Insert current in-game time";
 		}
 
 		private void AddNewLine(string text) {
+            text = text.Trim();
 			int startLine = tasText.Selection.Start.iLine;
 			tasText.Selection = new Range(tasText, 0, startLine, 0, startLine);
-            tasText.InsertText(text.Trim());
+            tasText.InsertText(text + "\n");
+			tasText.Selection = new Range(tasText, text.Length, startLine, text.Length, startLine);
 		}
 
 		private void CopyPlayerData() {

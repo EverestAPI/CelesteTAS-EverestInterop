@@ -15,6 +15,7 @@ namespace CelesteStudio.RichText {
 		public readonly Style GrayStyle = new TextStyle(Brushes.Gray, null, FontStyle.Regular);
 		public readonly Style MagentaStyle = new TextStyle(Brushes.Magenta, null, FontStyle.Regular);
 		public readonly Style GreenStyle = new TextStyle(Brushes.Green, null, FontStyle.Regular);
+		public readonly Style RedBackgroundStyle = new TextStyle(Brushes.White, new SolidBrush(Color.FromArgb(224, 64, 64)), FontStyle.Regular);
 		public readonly Style PeruStyle = new TextStyle(Brushes.Peru,  null, FontStyle.Regular);
 		public readonly Style BrownStyle = new TextStyle(Brushes.Brown,  null, FontStyle.Regular);
 		public readonly Style RedStyle = new TextStyle(Brushes.Red, null, FontStyle.Regular);
@@ -211,7 +212,7 @@ namespace CelesteStudio.RichText {
 				InputRecord input = new InputRecord(line.Text);
 				if (input.Frames == 0 && input.Actions == Actions.None) {
 					line.SetStyle(GreenStyle, "^\\s*#.*");
-					line.SetStyle(GreenStyle, "\\s*\\*\\*\\*");
+					line.SetStyle(RedBackgroundStyle, "^\\s*\\*\\*\\*");
 					line.SetStyle(PeruStyle);
 				} else {
 					Range sub = new Range(tb, 0, start, 4, start);
