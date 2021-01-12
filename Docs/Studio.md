@@ -11,7 +11,7 @@ If Celeste.exe is running it will automatically open Celeste.tas.
 - Ctrl + Shift + C: Copy player data to clipboard
 - Ctrl + K: Block comment/uncomment
 - Ctrl + P: Remove all breakpoints
-- Alt + P: Insert/Remove breakpoint
+- Ctrl + B: Insert/Remove breakpoint
 - Ctrl + R: Insert room name
 - Ctrl + Shift + R: Insert console load command at current location
 - Ctrl + T: Insert current in-game time

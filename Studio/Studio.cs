@@ -193,7 +193,7 @@ Ctrl + K: Block comment/uncomment
 
 Ctrl + P: Remove all breakpoints
 
-Alt + P: Insert/Remove breakpoint
+Ctrl + B: Insert/Remove breakpoint
 
 Ctrl + R: Insert room name
 
@@ -277,7 +277,7 @@ Ctrl + Down/Up: Go to comment or breakpoint";
                 {
                     ClearBreakpoints();
 				}
-                else if (e.Modifiers == Keys.Alt && e.KeyCode == Keys.P)
+                else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.B)
                 {
                     InsertOrRemoveBreakpoint();
                 }
