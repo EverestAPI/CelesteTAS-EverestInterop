@@ -13,6 +13,9 @@
     <Setting Name="RecentFiles" Type="CelesteStudio.Properties.FileList" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
+    <Setting Name="UpdatingHotkeys" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
 

@@ -125,6 +125,7 @@ namespace CelesteStudio
             AddTitleBarButton();
 
             rememberCurrentFileToolStripMenuItem.Checked = Settings.Default.RememberLastFileName;
+            sendInputsToCelesteMenuItem.Checked = Settings.Default.UpdatingHotkeys;
             openRecentStripMenuItem.DropDownItemClicked += (sender, args) => {
                 ToolStripItem clickedItem = args.ClickedItem;
                 if (clickedItem.Text == "Clear") {
@@ -297,9 +298,8 @@ Ctrl + Down/Up: Go to comment or breakpoint";
 				{
 					CopyPlayerData();
 				}
-				else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.D)
-                {
-                    CommunicationWrapper.updatingHotkeys = !CommunicationWrapper.updatingHotkeys;
+				else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.D) {
+                    ToggleUpdatingHotkeys();
                 }
 				else if (e.Modifiers == (Keys.Shift | Keys.Control) && e.KeyCode == Keys.D) {
 					StudioCommunicationServer.instance?.ExternalReset();
@@ -310,6 +310,11 @@ Ctrl + Down/Up: Go to comment or breakpoint";
                 MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Console.Write(ex);
             }
+        }
+
+        private static void ToggleUpdatingHotkeys() {
+            CommunicationWrapper.updatingHotkeys = !CommunicationWrapper.updatingHotkeys;
+            Settings.Default.UpdatingHotkeys = CommunicationWrapper.updatingHotkeys;
         }
 
         private void OpenFile(string fileName = null) {
@@ -843,6 +848,11 @@ Ctrl + Down/Up: Go to comment or breakpoint";
             if (string.IsNullOrEmpty(fileName)) return;
             if (!File.Exists(fileName)) { File.WriteAllText(fileName, string.Empty); }
             OpenFile(fileName);
+        }
+
+        private void sendInputsToCelesteMenuItem_Click(object sender, EventArgs e) {
+            ToggleUpdatingHotkeys();
+            ((ToolStripMenuItem) sender).Checked = Settings.Default.UpdatingHotkeys;
         }
     }
 }

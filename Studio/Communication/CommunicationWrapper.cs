@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
+using CelesteStudio.Properties;
 
 namespace CelesteStudio.Communication {
 
@@ -15,7 +16,7 @@ namespace CelesteStudio.Communication {
 		public static string command;
 		public static List<Keys>[] bindings;
 
-		public static bool updatingHotkeys = true;
+		public static bool updatingHotkeys = Settings.Default.UpdatingHotkeys;
 		public static bool fastForwarding = false;
 
 		[DllImport("User32.dll")]
