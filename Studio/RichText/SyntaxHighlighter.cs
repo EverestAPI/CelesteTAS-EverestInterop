@@ -211,8 +211,8 @@ namespace CelesteStudio.RichText {
 
 				InputRecord input = new InputRecord(line.Text);
 				if (input.Frames == 0 && input.Actions == Actions.None) {
-					line.SetStyle(GreenStyle, "^\\s*#.*");
-					line.SetStyle(RedBackgroundStyle, "^\\s*\\*\\*\\*");
+					line.SetStyle(GreenStyle, @"^\s*#.*");
+					line.SetStyle(RedBackgroundStyle, @"^\s*\*\*\*");
 					line.SetStyle(PeruStyle);
 				} else {
 					Range sub = new Range(tb, 0, start, 4, start);

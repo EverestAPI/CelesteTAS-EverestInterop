@@ -199,7 +199,10 @@ Ctrl + R: Insert room name
 
 Ctrl + Shift + R: Insert console load command at current location
 
-Ctrl + T: Insert current in-game time";
+Ctrl + T: Insert current in-game time
+
+Ctrl + Down/Up: Go to comment or breakpoint";
+
             button.BackColor = Color.Transparent;
             button.ForeColor = Color.Empty;
             button.Image = Resources.bird;
@@ -336,30 +339,32 @@ Ctrl + T: Insert current in-game time";
 
         private void ClearBreakpoints()
         {
-            List<int> breakpoints = tasText.FindLines(@"\*\*\*", System.Text.RegularExpressions.RegexOptions.None);
+            List<int> breakpoints = tasText.FindLines(@"\*\*\*", RegexOptions.None);
             tasText.RemoveLines(breakpoints);
         }
 
         private void InsertOrRemoveBreakpoint() {
-            Regex breakpoint = new Regex("^\\s*\\*\\*\\*.*");
+            Regex breakpoint = new Regex(@"^\s*\*\*\*.*");
             int currentLine = tasText.Selection.Start.iLine;
             if (breakpoint.IsMatch(tasText.Lines[currentLine])) {
                 tasText.RemoveLines(new List<int>{currentLine});
                 if (currentLine == tasText.LinesCount) {
                     currentLine--;
                 }
-                string text = tasText.Lines[currentLine];
-                tasText.Selection = new Range(tasText, text.Length, currentLine, text.Length, currentLine);
             } else if (currentLine >= 1 && breakpoint.IsMatch(tasText.Lines[currentLine - 1])) {
-                tasText.RemoveLines(new List<int>{currentLine - 1});
-                string text = tasText.Lines[currentLine - 1];
-                tasText.Selection = new Range(tasText, text.Length, currentLine - 1, text.Length, currentLine - 1);
+                currentLine--;
+                tasText.RemoveLines(new List<int>{currentLine});
             }else {
                 AddNewLine("***");
                 currentLine++;
-                string textLine = tasText.Lines[currentLine];
-                tasText.Selection = new Range(tasText, textLine.Length, currentLine, textLine.Length, currentLine);
             }
+            string text = tasText.Lines[currentLine];
+            InputRecord input = new InputRecord(text);
+            int cursor = 4;
+            if (input.Frames == 0 && input.Actions == Actions.None) {
+                cursor = text.Length;
+            }
+            tasText.Selection = new Range(tasText, cursor, currentLine, cursor, currentLine);
         }
 
         private void AddRoom() => AddNewLine("#lvl_" + CommunicationWrapper.LevelName());
