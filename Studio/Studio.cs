@@ -30,7 +30,7 @@ namespace CelesteStudio
         private const string RegKey = @"HKEY_CURRENT_USER\SOFTWARE\CeletseStudio\Form";
         private string titleBarText {
             get =>
-                (string.IsNullOrEmpty(tasText.LastFileName) ? "Celeste.tas" : Path.GetFileName(tasText.LastFileName))
+                (string.IsNullOrEmpty(lastFileName) ? "Celeste.tas" : Path.GetFileName(lastFileName))
                 + " - Studio v"
                 + Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
         }
@@ -49,7 +49,12 @@ namespace CelesteStudio
                 return fileName;
             }
         }
-        
+
+        private string lastFileName {
+            get => tasText.LastFileName;
+            set => tasText.LastFileName = value;
+        }
+
         private FileList recentFiles => Settings.Default.RecentFiles ?? (Settings.Default.RecentFiles = new FileList());
 
         [STAThread]
@@ -147,9 +152,9 @@ namespace CelesteStudio
                 for (var i = recentFiles.Count - 1; i >= 10; i--) {
                     recentFiles.Remove(recentFiles[i]);
                 }
-                foreach (var lastFileName in recentFiles) {
-                    openRecentStripMenuItem.DropDownItems.Add(new ToolStripMenuItem(lastFileName) {
-                        Checked = lastFileName == tasText.LastFileName
+                foreach (var fileName in recentFiles) {
+                    openRecentStripMenuItem.DropDownItems.Add(new ToolStripMenuItem(fileName) {
+                        Checked = lastFileName == fileName
                     });
                 }
 
@@ -258,8 +263,9 @@ Ctrl + Down/Up: Go to comment or breakpoint";
                 {
                     StudioCommunicationServer.instance?.WriteWait();
                     tasText.SaveNewFile();
-                    StudioCommunicationServer.instance?.SendPath(Path.GetDirectoryName(tasText.LastFileName));
+                    StudioCommunicationServer.instance?.SendPath(Path.GetDirectoryName(lastFileName));
                     Text = titleBarText;
+                    UpdateRecentFiles();
                 }
                 else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.S)
                 {
@@ -316,7 +322,7 @@ Ctrl + Down/Up: Go to comment or breakpoint";
         }
 
         private void OpenFile(string fileName = null) {
-            if (tasText.TextSource.Manager.UndoEnabled && (string.IsNullOrEmpty(tasText.LastFileName) || tasText.LastFileName == defaultFileName)) {
+            if (tasText.TextSource.Manager.UndoEnabled && (string.IsNullOrEmpty(lastFileName) || lastFileName == defaultFileName)) {
                 DialogResult result = MessageBox.Show("Celeste.tas progress will be lost If you open another file, do you want to continue?",
                     "Warning",
                     MessageBoxButtons.YesNo,
@@ -326,18 +332,24 @@ Ctrl + Down/Up: Go to comment or breakpoint";
             }
 
             StudioCommunicationServer.instance?.WriteWait();
-            if (tasText.OpenFile(fileName) && fileName != defaultFileName && tasText.LastFileName != defaultFileName) {
-                if (!recentFiles.Contains(tasText.LastFileName)) {
-                    recentFiles.Insert(0, tasText.LastFileName);
-                }
-
-                if (tasText.LastFileName != defaultFileName) {
-                    Settings.Default.LastFileName = tasText.LastFileName;
-                }
+            if (tasText.OpenFile(fileName)) {
+                UpdateRecentFiles();
             }
 
-            StudioCommunicationServer.instance?.SendPath(Path.GetDirectoryName(tasText.LastFileName));
+            StudioCommunicationServer.instance?.SendPath(Path.GetDirectoryName(lastFileName));
             Text = titleBarText;
+        }
+
+        private void UpdateRecentFiles() {
+            if (lastFileName != defaultFileName) {
+                if (!recentFiles.Contains(lastFileName)) {
+                    recentFiles.Insert(0, lastFileName);
+                }
+
+                if (lastFileName != defaultFileName) {
+                    Settings.Default.LastFileName = lastFileName;
+                }
+            }
         }
 
         private void ClearBreakpoints()
@@ -463,7 +475,7 @@ Ctrl + Down/Up: Go to comment or breakpoint";
                         lastChanged = DateTime.Now;
                         this.Invoke((Action)delegate ()
                         {
-                            if ((!string.IsNullOrEmpty(tasText.LastFileName) || !string.IsNullOrEmpty(tasText.SaveToFileName)) && tasText.IsChanged)
+                            if ((!string.IsNullOrEmpty(lastFileName) || !string.IsNullOrEmpty(tasText.SaveToFileName)) && tasText.IsChanged)
                             {
                                 tasText.SaveFile();
                             }
@@ -494,16 +506,16 @@ Ctrl + Down/Up: Go to comment or breakpoint";
                     string fileName = defaultFileName;
                     if (!File.Exists(fileName)) { File.WriteAllText(fileName, string.Empty); }
 
-                    if (string.IsNullOrEmpty(tasText.LastFileName))
+                    if (string.IsNullOrEmpty(lastFileName))
                     {
                         if (string.IsNullOrEmpty(tasText.SaveToFileName))
                         {
                             tasText.OpenBindingFile(fileName, Encoding.ASCII);
                         }
-                        tasText.LastFileName = fileName;
+                        lastFileName = fileName;
                     }
                     tasText.SaveToFileName = fileName;
-                    if (tasText.LastFileName != tasText.SaveToFileName)
+                    if (lastFileName != tasText.SaveToFileName)
                     {
                         tasText.SaveFile(true);
                     }
@@ -522,8 +534,8 @@ Ctrl + Down/Up: Go to comment or breakpoint";
                 if (Settings.Default.RememberLastFileName
                     && File.Exists(Settings.Default.LastFileName)
                     && Settings.Default.LastFileName != defaultFileName
-                    && string.IsNullOrEmpty(tasText.LastFileName)) {
-                    tasText.LastFileName = Settings.Default.LastFileName;
+                    && string.IsNullOrEmpty(lastFileName)) {
+                    lastFileName = Settings.Default.LastFileName;
                     tasText.ReloadFile();
                 }
 
