@@ -347,13 +347,13 @@ Ctrl + Down/Up: Go to comment or breakpoint";
             Regex breakpoint = new Regex(@"^\s*\*\*\*.*");
             int currentLine = tasText.Selection.Start.iLine;
             if (breakpoint.IsMatch(tasText.Lines[currentLine])) {
-                tasText.RemoveLines(new List<int>{currentLine});
+                tasText.RemoveLine(currentLine);
                 if (currentLine == tasText.LinesCount) {
                     currentLine--;
                 }
             } else if (currentLine >= 1 && breakpoint.IsMatch(tasText.Lines[currentLine - 1])) {
                 currentLine--;
-                tasText.RemoveLines(new List<int>{currentLine});
+                tasText.RemoveLine(currentLine);
             }else {
                 AddNewLine("***");
                 currentLine++;

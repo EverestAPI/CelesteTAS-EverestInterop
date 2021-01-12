@@ -31,7 +31,12 @@ namespace TAS.EverestInterop.Hitboxes {
         private static void ModPlayerOrigUpdate(ILContext il) {
             ILCursor ilCursor = new ILCursor(il);
             if (ilCursor.TryGotoNext(MoveType.After, ins => ins.OpCode == OpCodes.Callvirt && ins.Operand.ToString().Contains("Monocle.Tracker::GetComponents<Celeste.PlayerCollider>()"))) {
-                ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Action<Player>>(player => player.SaveActualCollidePosition());
+                ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Action<Player>>(player => {
+                    if (!Settings.ShowHitboxes || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.OFF || Manager.FrameLoops > 1) {
+                        return;
+                    }
+                    player.SaveActualCollidePosition();
+                });
             }
         }
 
@@ -56,7 +61,6 @@ namespace TAS.EverestInterop.Hitboxes {
                 return;
             }
 
-            // unmoved hitbox
             DrawAssistedHitbox(orig, self, camera, player, player.LoadActualCollidePosition().Value);
 
             orig(self, camera, color);

@@ -2156,6 +2156,15 @@ namespace CelesteStudio.RichText {
 					if (e.Modifiers == (Keys.Control | Keys.Shift))
 						NavigateForward();
 					break;
+				case Keys.Y:
+					if (ReadOnly) break;
+					if (e.Modifiers == Keys.Control) {
+						ClearCurrentLine();
+						int line = FindNextVisibleLine(Selection.Start.iLine);
+						Selection = new Range(this, 0, line, 0, line);
+						Selection.GoEnd(false);
+					}
+					break;
 
 				case Keys.Back:
 					if (ReadOnly) break;
@@ -2204,8 +2213,7 @@ namespace CelesteStudio.RichText {
 							}
 						}
 						OnKeyPressed((char)0xff);
-					} else
-						if (e.Modifiers == Keys.Control) {
+					} else if (e.Modifiers == Keys.Control) {
 						if (OnKeyPressing((char)0xff)) //KeyPress event processed key
 							break;
 						if (!Selection.IsEmpty)
@@ -2215,8 +2223,7 @@ namespace CelesteStudio.RichText {
 							ClearSelected();
 						}
 						OnKeyPressed((char)0xff);
-					} else
-							if (e.Modifiers == Keys.Shift) {
+					} else if (e.Modifiers == Keys.Shift) {
 						if (OnKeyPressing((char)0xff)) //KeyPress event processed key
 							break;
 						if (!Selection.IsEmpty)
@@ -2306,8 +2313,7 @@ namespace CelesteStudio.RichText {
 					if (e.Modifiers == Keys.None || e.Modifiers == Keys.Shift) {
 						Selection.GoDown(e.Shift);
 						ScrollLeft();
-					} else
-					if (e.Modifiers == AltShift) {
+					} else if (e.Modifiers == AltShift) {
 						CheckAndChangeSelectionType();
 						if (Selection.ColumnSelectionMode)
 							Selection.GoDown_ColumnSelectionMode();
@@ -4373,6 +4379,14 @@ window.status = ""#print"";
 				Text = "";
 			NeedRecalc();
 			Invalidate();
+		}
+
+		/// <summary>
+		/// Removes given line
+		/// </summary>
+		public void RemoveLine(int line) {
+			Selection = new Range(this, 0, line, 0, line);
+			ClearCurrentLine();
 		}
 
 		#region Drag and drop
