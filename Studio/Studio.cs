@@ -193,6 +193,8 @@ Ctrl + K: Block comment/uncomment
 
 Ctrl + P: Remove all breakpoints
 
+Alt + P: Insert/Remove breakpoint
+
 Ctrl + R: Insert room name
 
 Ctrl + Shift + R: Insert console load command at current location
