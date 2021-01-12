@@ -516,7 +516,10 @@ Ctrl + Down/Up: Go to comment or breakpoint";
                 tasText.Height += statusBar.Height - 22;
                 statusBar.Height = 22;
 
-                if (Settings.Default.RememberLastFileName && File.Exists(Settings.Default.LastFileName) && Settings.Default.LastFileName != defaultFileName) {
+                if (Settings.Default.RememberLastFileName
+                    && File.Exists(Settings.Default.LastFileName)
+                    && Settings.Default.LastFileName != defaultFileName
+                    && string.IsNullOrEmpty(tasText.LastFileName)) {
                     tasText.LastFileName = Settings.Default.LastFileName;
                     tasText.ReloadFile();
                 }
