@@ -2160,7 +2160,10 @@ namespace CelesteStudio.RichText {
 					if (ReadOnly) break;
 					if (e.Modifiers == Keys.Control) {
 						ClearCurrentLine();
-						int line = FindNextVisibleLine(Selection.Start.iLine);
+						int line = Selection.Start.iLine;
+						if (line > 0 && line < LinesCount - 1) {
+							line++;
+						}
 						Selection = new Range(this, 0, line, 0, line);
 						Selection.GoEnd(false);
 					}
