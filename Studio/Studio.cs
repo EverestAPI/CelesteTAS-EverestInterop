@@ -716,6 +716,7 @@ Ctrl + Down/Up: Go to comment or breakpoint";
             {
                 tasText.Selection = new Range(tasText, 0, start, tasText[end].Count, end);
             }
+            tasText.ScrollLeft();
         }
         private void UpdateLines(RichText.RichText tas, Range range)
         {
