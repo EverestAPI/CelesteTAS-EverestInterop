@@ -663,7 +663,7 @@ Ctrl + Down/Up: Go to comment or breakpoint";
         }
         private void CommentText()
         {
-            Range range = tasText.Selection;
+            Range range = tasText.Selection.Clone();
 
             int start = range.Start.iLine;
             int end = range.End.iLine;
@@ -673,7 +673,6 @@ Ctrl + Down/Up: Go to comment or breakpoint";
                 start = end;
                 end = temp;
             }
-
             tasText.Selection = new Range(tasText, 0, start, tasText[end].Count, end);
             string text = tasText.SelectedText;
 
@@ -687,7 +686,9 @@ Ctrl + Down/Up: Go to comment or breakpoint";
                 {
                     if (c != '#')
                     {
-                        sb.Append('#').Append(c);
+                        if (c != '\r')
+                            sb.Append('#');
+                        sb.Append(c);
                     }
                     startLine = false;
                 }
@@ -703,7 +704,18 @@ Ctrl + Down/Up: Go to comment or breakpoint";
             }
 
             tasText.SelectedText = sb.ToString();
-            tasText.Selection = new Range(tasText, 0, start, tasText[end].Count, end);
+            if (range.IsEmpty)
+            {
+                if (start < tasText.LinesCount - 1)
+                {
+                    start++;
+                }
+                tasText.Selection = new Range(tasText, 0, start, 0, start);
+            }
+            else
+            {
+                tasText.Selection = new Range(tasText, 0, start, tasText[end].Count, end);
+            }
         }
         private void UpdateLines(RichText.RichText tas, Range range)
         {
