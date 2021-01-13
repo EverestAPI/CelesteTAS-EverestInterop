@@ -27,6 +27,7 @@ namespace TAS.EverestInterop {
         public void Load() {
             // Optional: Various graphical simplifications to cut down on visual noise.
             On.Celeste.Level.Update += Level_Update;
+            On.Celeste.ColorGrade.Set_MTexture_MTexture_float += ColorGradeOnSet_MTexture_MTexture_float;
             On.Celeste.BloomRenderer.Apply += BloomRenderer_Apply;
             On.Celeste.LightingRenderer.Render += LightingRenderer_Render;
             On.Monocle.Particle.Render += Particle_Render;
@@ -56,6 +57,7 @@ namespace TAS.EverestInterop {
 
         public void Unload() {
             On.Celeste.Level.Update -= Level_Update;
+            On.Celeste.ColorGrade.Set_MTexture_MTexture_float -= ColorGradeOnSet_MTexture_MTexture_float;
             On.Celeste.BloomRenderer.Apply -= BloomRenderer_Apply;
             On.Celeste.LightingRenderer.Render -= LightingRenderer_Render;
             On.Monocle.Particle.Render -= Particle_Render;
@@ -80,20 +82,6 @@ namespace TAS.EverestInterop {
             instance = null;
         }
 
-        private void Level_Update(On.Celeste.Level.orig_Update orig, Level self) {
-            orig(self);
-
-            // Seems modified the Settings.SimplifiedGraphics property will mess key config.
-            if (lastSimplifiedGraphics != Settings.SimplifiedGraphics) {
-                OnSimplifiedGraphicsChanged(Settings.SimplifiedGraphics);
-                lastSimplifiedGraphics = Settings.SimplifiedGraphics;
-            }
-
-            if (Settings.SimplifiedGraphics && LevelLastColorGrade.GetValue(self) as string != "none") {
-                self.SnapColorGrade("none");
-            }
-        }
-
         private void OnSimplifiedGraphicsChanged(bool simplifiedGraphics) {
             if (!(Engine.Scene is Level level)) return;
             if (!(AreaData.Get(level) is AreaData areaData)) return;
@@ -107,6 +95,28 @@ namespace TAS.EverestInterop {
 
                 level.Bloom.Base = areaData.BloomBase;
                 level.Bloom.Strength = areaData.BloomStrength;
+            }
+        }
+
+        private void Level_Update(On.Celeste.Level.orig_Update orig, Level self) {
+            orig(self);
+
+            // Seems modified the Settings.SimplifiedGraphics property will mess key config.
+            if (lastSimplifiedGraphics != Settings.SimplifiedGraphics) {
+                OnSimplifiedGraphicsChanged(Settings.SimplifiedGraphics);
+                lastSimplifiedGraphics = Settings.SimplifiedGraphics;
+            }
+        }
+
+        private void ColorGradeOnSet_MTexture_MTexture_float(On.Celeste.ColorGrade.orig_Set_MTexture_MTexture_float orig, MTexture fromTex, MTexture toTex, float p) {
+            bool? origEnabled = null;
+            if (Settings.SimplifiedGraphics) {
+                origEnabled = ColorGrade.Enabled;
+                ColorGrade.Enabled = false;
+            }
+            orig(fromTex, toTex, p);
+            if (origEnabled.HasValue) {
+                ColorGrade.Enabled = origEnabled.Value;
             }
         }
 
