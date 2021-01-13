@@ -2084,6 +2084,8 @@ namespace CelesteStudio.RichText {
 				savedLastFile = true;
 			}
 
+			if(string.IsNullOrEmpty(SaveToFileName)) return;
+
 			// Avoid stuttering due to repeated UpdateHighlighting().
 			if (savedLastFile) {
 				File.Copy(LastFileName, SaveToFileName, true);
