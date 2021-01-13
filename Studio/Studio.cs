@@ -470,7 +470,7 @@ Ctrl + Down/Up: Go to comment or breakpoint";
                         lastHooked = hooked;
                         this.Invoke((Action)delegate () { EnableStudio(hooked); });
                     }
-                    if (lastChanged.AddSeconds(0.6) < DateTime.Now)
+                    if (lastChanged.AddSeconds(0.3f) < DateTime.Now)
                     {
                         lastChanged = DateTime.Now;
                         this.Invoke((Action)delegate ()
