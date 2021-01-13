@@ -782,8 +782,13 @@ Ctrl + Down/Up: Go to comment or breakpoint";
                 tas.Selection = new Range(tas, 0, originalStart, tas[end].Count, end);
                 tas.SelectedText = sb.ToString();
                 tas.Selection = new Range(tas, place.iChar, end, place.iChar, end);
+            }
+
+            if (tas.IsChanged)
+            {
                 Text = titleBarText + " ***";
             }
+
             UpdateStatusBar();
 
             updating = false;

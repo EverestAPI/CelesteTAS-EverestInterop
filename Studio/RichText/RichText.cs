@@ -2077,10 +2077,18 @@ namespace CelesteStudio.RichText {
 		}
 		public void SaveFile(bool mainSaveOnly = false) {
 			FileSaving?.Invoke(this, new EventArgs());
-			SaveToFile(SaveToFileName, Encoding.ASCII);
 
+			bool savedLastFile = false;
 			if (!mainSaveOnly && SaveToFileName != LastFileName) {
 				SaveToFile(LastFileName, Encoding.ASCII);
+				savedLastFile = true;
+			}
+
+			// Avoid stuttering due to repeated UpdateHighlighting().
+			if (savedLastFile) {
+				File.Copy(LastFileName, SaveToFileName, true);
+			} else {
+				SaveToFile(SaveToFileName, Encoding.ASCII);
 			}
 		}
 

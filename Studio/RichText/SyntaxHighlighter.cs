@@ -35,6 +35,9 @@ namespace CelesteStudio.RichText {
 			}
 		}
 
+		private static readonly Regex commentRegex = new Regex(@"^\s*#.*");
+		private static readonly Regex breakPointRegex = new Regex(@"^\s*\*\*\*");
+
 		/// <summary>
 		/// Highlights syntax for given language
 		/// </summary>
@@ -195,7 +198,7 @@ namespace CelesteStudio.RichText {
 			tb.LeftBracket2 = '\x0';
 			tb.RightBracket2 = '\x0';
 			//clear style of changed range
-			range.ClearStyle(GrayStyle, GreenStyle, RedStyle, BlueStyle, PinkStyle);
+			range.ClearStyle(GrayStyle, GreenStyle, RedStyle, BlueStyle, PinkStyle, RedBackgroundStyle, PeruStyle);
 
 			int start = range.Start.iLine;
 			int end = range.End.iLine;
@@ -211,8 +214,8 @@ namespace CelesteStudio.RichText {
 
 				InputRecord input = new InputRecord(line.Text);
 				if (input.Frames == 0 && input.Actions == Actions.None) {
-					line.SetStyle(GreenStyle, @"^\s*#.*");
-					line.SetStyle(RedBackgroundStyle, @"^\s*\*\*\*");
+					line.SetStyle(GreenStyle, commentRegex);
+					line.SetStyle(RedBackgroundStyle, breakPointRegex);
 					line.SetStyle(PeruStyle);
 				} else {
 					Range sub = new Range(tb, 0, start, 4, start);
