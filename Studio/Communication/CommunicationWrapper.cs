@@ -46,7 +46,6 @@ namespace CelesteStudio.Communication {
 		//This doesn't work in release build and i don't particularly care to figure out why.
 		public static bool CheckControls(ref Message msg) {
 			if (!updatingHotkeys
-			    || Studio.instance.tasText.IsChanged
 				|| Environment.OSVersion.Platform == PlatformID.Unix
 				|| bindings == null
 				// check if key is repeated

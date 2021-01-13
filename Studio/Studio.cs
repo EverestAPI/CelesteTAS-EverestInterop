@@ -249,7 +249,7 @@ Ctrl + Down/Up: Go to comment or breakpoint";
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData) {
             // if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN)
             if ((msg.Msg == 0x100) || (msg.Msg == 0x104)) {
-                if (CommunicationWrapper.CheckControls(ref msg))
+                if (!tasText.IsChanged && CommunicationWrapper.CheckControls(ref msg))
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
