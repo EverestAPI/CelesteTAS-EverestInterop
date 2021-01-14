@@ -29,10 +29,10 @@ namespace CelesteStudio.RichText {
 		/// </summary>
 		public event EventHandler<LineNeededEventArgs> LineNeeded;
 
-		/// <summary>
-		/// Occurs when need to save line in the file
-		/// </summary>
-		public event EventHandler<LinePushedEventArgs> LinePushed;
+		// /// <summary>
+		// /// Occurs when need to save line in the file
+		// /// </summary>
+		// public event EventHandler<LinePushedEventArgs> LinePushed;
 
 		public FileTextSource(RichText currentTB)
 			: base(currentTB) {

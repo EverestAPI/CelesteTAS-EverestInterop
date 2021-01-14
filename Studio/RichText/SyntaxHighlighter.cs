@@ -35,8 +35,9 @@ namespace CelesteStudio.RichText {
 			}
 		}
 
-		private static readonly Regex commentRegex = new Regex(@"^\s*#.*");
-		private static readonly Regex breakPointRegex = new Regex(@"^\s*\*\*\*");
+		public static readonly Regex CommentRegex = new Regex(@"^\s*#.*");
+		public static readonly Regex BreakPointRegex = new Regex(@"^\s*\*\*\*");
+		public static readonly Regex InputRecordRegex = new Regex(@"^( {3}\d| {2}\d{2}| \d{3}|\d{4})");
 
 		/// <summary>
 		/// Highlights syntax for given language
@@ -212,10 +213,9 @@ namespace CelesteStudio.RichText {
 				int charEnd = tb[start].Count;
 				Range line = new Range(tb, 0, start, charEnd, start);
 
-				InputRecord input = new InputRecord(line.Text);
-				if (input.Frames == 0 && input.Actions == Actions.None) {
-					line.SetStyle(GreenStyle, commentRegex);
-					line.SetStyle(RedBackgroundStyle, breakPointRegex);
+				if (!InputRecordRegex.IsMatch(line.Text)) {
+					line.SetStyle(GreenStyle, CommentRegex);
+					line.SetStyle(RedBackgroundStyle, BreakPointRegex);
 					line.SetStyle(PeruStyle);
 				} else {
 					Range sub = new Range(tb, 0, start, 4, start);
