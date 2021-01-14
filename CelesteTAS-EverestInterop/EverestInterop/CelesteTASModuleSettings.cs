@@ -19,11 +19,25 @@ namespace TAS.EverestInterop {
 		[DefaultButtonBinding(0, Keys.OemCloseBrackets)]
 		public ButtonBinding KeyPause { get; set; } = new ButtonBinding();
 
+		#region SimplifiedGraphics
+
 		private bool _simplifiedGraphics = false;
 		public bool SimplifiedGraphics {
 			get => Enabled && _simplifiedGraphics;
 			set => _simplifiedGraphics = value;
 		}
+
+		public int SimplifiedLighting { get; set; } = 0;
+		public int SimplifiedBloomBase { get; set; } = 0;
+		public int SimplifiedBloomStrength { get; set; } = 1;
+		public bool SimplifiedColorGrade { get; set; } = true;
+		public bool SimplifiedBackdrop { get; set; } = true;
+		public bool SimplifiedParticle { get; set; } = true;
+		public bool SimplifiedDistort { get; set; } = true;
+		public bool HideGameplay { get; set; } = false;
+
+		#endregion
+
 		[DefaultButtonBinding(0, Keys.N)]
 		public ButtonBinding KeyGraphics { get; set; } = new ButtonBinding();
 
@@ -59,7 +73,6 @@ namespace TAS.EverestInterop {
 		[SettingIgnore]
 		public string DefaultPath { get; set; } = null;
 
-		[SettingNeedsRelaunch]
 		public bool Mod9DLighting { get; set; } = false;
 
 		public bool DisableGrabDesyncFix {
@@ -76,7 +89,6 @@ namespace TAS.EverestInterop {
 		[SettingIgnore]
 		public DateTime StudioLastModifiedTime { get; set; } = new DateTime();
 		public bool AutoExtractNewStudio { get; set; } = true;
-		public bool HideGameplay { get; set; } = false;
 		public bool AutoMute { get; set; } = true;
 		[SettingIgnore]
 		public Color EntityHitboxColor { get; set; } = HitboxColor.DefaultEntityColor;

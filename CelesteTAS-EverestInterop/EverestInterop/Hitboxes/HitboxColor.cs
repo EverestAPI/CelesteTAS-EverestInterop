@@ -16,19 +16,23 @@ namespace TAS.EverestInterop.Hitboxes {
         public static Color EntityColorInverselyLessAlpha => EntityColorInversely * 0.7f;
 
         public static TextMenu.Item CreateEntityHitboxColorButton(TextMenu textMenu, bool inGame) {
-            return new TextMenu.Button($"Entity Hitbox Color ARGB: {ColorToHex(Settings.EntityHitboxColor)}").Pressed(() => {
+            TextMenu.Item item = new TextMenu.Button($"Entity Hitbox Color: {ColorToHex(Settings.EntityHitboxColor)}").Pressed(() => {
                 Audio.Play("event:/ui/main/savefile_rename_start");
                 textMenu.SceneAs<Overworld>().Goto<OuiModOptionString>()
                     .Init<OuiModOptions>(ColorToHex(Settings.EntityHitboxColor), value => Settings.EntityHitboxColor = HexToColor(value, DefaultEntityColor), 9);
             });
+            item.Disabled = inGame;
+            return item;
         }
 
         public static TextMenu.Item CreateTriggerHitboxColorButton(TextMenu textMenu, bool inGame) {
-            return new TextMenu.Button($"Trigger Hitbox Color ARGB: {ColorToHex(Settings.TriggerHitboxColor)}").Pressed(() => {
+            TextMenu.Item item =  new TextMenu.Button($"Trigger Hitbox Color: {ColorToHex(Settings.TriggerHitboxColor)}").Pressed(() => {
                 Audio.Play("event:/ui/main/savefile_rename_start");
                 textMenu.SceneAs<Overworld>().Goto<OuiModOptionString>()
                     .Init<OuiModOptions>(ColorToHex(Settings.TriggerHitboxColor), value => Settings.TriggerHitboxColor = HexToColor(value, DefaultTriggerColor), 9);
             });
+            item.Disabled = inGame;
+            return item;
         }
 
         private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;

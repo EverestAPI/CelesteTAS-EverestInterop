@@ -130,18 +130,6 @@ namespace TAS.EverestInterop {
         }
     }
 
-    internal static class MenuExtensions {
-        private const string SetActionKey = nameof(SetActionKey);
-
-        public static void SetAction(this TextMenu.Item item, Action action) {
-            item.SetExtendedDataValue(SetActionKey, action);
-        }
-
-        public static void InvokeAction(this TextMenu.Item item) {
-            item.GetExtendedDataValue<Action>(SetActionKey)?.Invoke();
-        }
-    }
-
     internal static class EntityExtensions {
         private const string ActualCollidePositionKey = nameof(ActualCollidePositionKey);
         private const string ActualCollidableKey = nameof(ActualCollidableKey);

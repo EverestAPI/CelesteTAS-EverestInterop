@@ -202,7 +202,7 @@ namespace TAS.EverestInterop {
 
         public override void CreateModMenuSection(TextMenu menu, bool inGame, FMOD.Studio.EventInstance snapshot) {
             CreateModMenuSectionHeader(menu, inGame, snapshot);
-            Menu.CreateMenu(this, menu, inGame, snapshot);
+            Menu.CreateMenu(this, menu, inGame);
         }
 
         private void LevelLoader_LoadingThread(On.Celeste.LevelLoader.orig_LoadingThread orig, LevelLoader self) {
