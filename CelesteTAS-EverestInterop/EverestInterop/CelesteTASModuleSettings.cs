@@ -12,12 +12,31 @@ namespace TAS.EverestInterop {
 
 		[DefaultButtonBinding(0, Keys.RightControl)]
 		public ButtonBinding KeyStart { get; set; } = new ButtonBinding();
+
 		[DefaultButtonBinding(0, Keys.RightShift)]
 		public ButtonBinding KeyFastForward { get; set; } = new ButtonBinding();
+
 		[DefaultButtonBinding(0, Keys.OemOpenBrackets)]
 		public ButtonBinding KeyFrameAdvance { get; set; } = new ButtonBinding();
+
 		[DefaultButtonBinding(0, Keys.OemCloseBrackets)]
 		public ButtonBinding KeyPause { get; set; } = new ButtonBinding();
+
+		[DefaultButtonBinding(0, Keys.B)]
+		public ButtonBinding KeyHitboxes { get; set; } = new ButtonBinding();
+
+		[DefaultButtonBinding(0, Keys.N)]
+		public ButtonBinding KeyGraphics { get; set; } = new ButtonBinding();
+
+		[DefaultButtonBinding(0, Keys.M)]
+		public ButtonBinding KeyCamera { get; set; } = new ButtonBinding();
+
+		// Multiple keys are not supported, so we only set Keys.OemMinus
+		[DefaultButtonBinding(0, Keys.OemMinus)]
+		public ButtonBinding KeySaveState { get; set; } = new ButtonBinding();
+
+		[DefaultButtonBinding(0, Keys.OemPlus)]
+		public ButtonBinding KeyLoadState { get; set; } = new ButtonBinding();
 
 		#region SimplifiedGraphics
 
@@ -27,40 +46,30 @@ namespace TAS.EverestInterop {
 			set => _simplifiedGraphics = value;
 		}
 
-		public int SimplifiedLighting { get; set; } = 10;
-		public int SimplifiedBloomBase { get; set; } = 0;
-		public int SimplifiedBloomStrength { get; set; } = 1;
+		public int? SimplifiedLighting { get; set; } = 10;
+		public int? SimplifiedBloomBase { get; set; } = 0;
+		public int? SimplifiedBloomStrength { get; set; } = 1;
+		public SimplifiedGraphicsFeature.SpinnerColor SimplifiedSpinnerColor { get; set; } = SimplifiedGraphicsFeature.SpinnerColor.All[1];
+		public Color? SimplifiedDustSpriteColor { get; set; } = Color.Transparent;
 		public bool SimplifiedColorGrade { get; set; } = true;
 		public bool SimplifiedBackdrop { get; set; } = true;
+		public bool SimplifiedDecal { get; set; } = true;
 		public bool SimplifiedParticle { get; set; } = true;
 		public bool SimplifiedDistort { get; set; } = true;
 		public bool HideGameplay { get; set; } = false;
 
 		#endregion
 
-		[DefaultButtonBinding(0, Keys.N)]
-		public ButtonBinding KeyGraphics { get; set; } = new ButtonBinding();
-
 		public bool ShowHitboxes {
 			get => GameplayRendererExt.RenderDebug;
 			set => GameplayRendererExt.RenderDebug = value;
 		}
-		[DefaultButtonBinding(0, Keys.B)]
-		public ButtonBinding KeyHitboxes { get; set; } = new ButtonBinding();
 
 		private bool _centerCamera = false;
 		public bool CenterCamera {
 			get => Enabled && _centerCamera;
 			set => _centerCamera = value;
 		}
-		[DefaultButtonBinding(0, Keys.M)]
-		public ButtonBinding KeyCamera { get; set; } = new ButtonBinding();
-
-		// Multiple keys are not supported, so we only set Keys.OemMinus
-		[DefaultButtonBinding(0, Keys.OemMinus)]
-		public ButtonBinding KeySaveState { get; set; } = new ButtonBinding();
-		[DefaultButtonBinding(0, Keys.OemPlus)]
-		public ButtonBinding KeyLoadState { get; set; } = new ButtonBinding();
 
 		public bool DisableAchievements { get; set; } = false;
 

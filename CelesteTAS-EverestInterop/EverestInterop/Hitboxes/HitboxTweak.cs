@@ -52,9 +52,7 @@ namespace TAS.EverestInterop.Hitboxes {
 
         private void HideHitbox(ILContext il) {
             ILCursor ilCursor = new ILCursor(il);
-            ILLabel origLabel = il.DefineLabel();
-            ilCursor.MarkLabel(origLabel);
-            ilCursor.Goto(0);
+            Instruction start = ilCursor.Next;
             ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Func<Entity, bool>>(entity => {
                 if (Settings.ShowHitboxes) {
                     if (Settings.HideTriggerHitboxes && entity is Trigger) {
@@ -74,7 +72,7 @@ namespace TAS.EverestInterop.Hitboxes {
 
                 return false;
             });
-            ilCursor.Emit(OpCodes.Brfalse_S, origLabel).Emit(OpCodes.Ret);
+            ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ret);
         }
 
         private static void ModHitbox(On.Monocle.Hitbox.orig_Render orig, Hitbox hitbox, Camera camera, Color color) {

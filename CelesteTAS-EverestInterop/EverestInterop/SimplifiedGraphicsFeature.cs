@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Reflection;
 using Celeste;
 using Celeste.Mod;
@@ -9,32 +11,91 @@ using Mono.Cecil.Cil;
 using MonoMod.RuntimeDetour;
 
 namespace TAS.EverestInterop {
-    class SimplifiedGraphics {
-        public static SimplifiedGraphics instance;
+    public class SimplifiedGraphicsFeature {
+        public class SpinnerColor {
+            public static readonly List<SpinnerColor> All = new List<SpinnerColor> {
+                new SpinnerColor(null, null),
+                new SpinnerColor(CrystalColor.Blue, "#639BFF"),
+                new SpinnerColor(CrystalColor.Red, "#FF4F4F"),
+                new SpinnerColor(CrystalColor.Purple, "#FF4FEF"),
+            };
 
-        private const string simpleSpinnerColor = "#639BFF";
+            public readonly CrystalColor? name;
+            public readonly string value;
 
-        private static readonly FieldInfo SpinnerColor = typeof(CrystalStaticSpinner).GetFieldInfo("color");
-        private static readonly FieldInfo DustGraphicEyes = typeof(DustGraphic).GetFieldInfo("eyes");
+            private SpinnerColor(CrystalColor? name, string value) {
+                this.name = name;
+                this.value = value;
+            }
+
+            public override string ToString() {
+                return name == null ? "Default" : name.ToString();
+            }
+        }
+
+        private static readonly List<string> solidDecals = new List<string> {
+            "3-resort/bridgecolumn",
+            "3-resort/bridgecolumntop",
+            "3-resort/brokenelevator",
+            "3-resort/roofcenter",
+            "3-resort/roofcenter_b",
+            "3-resort/roofcenter_c",
+            "3-resort/roofcenter_d",
+            "3-resort/roofedge",
+            "3-resort/roofedge_b",
+            "3-resort/roofedge_c",
+            "3-resort/roofedge_d",
+            "4-cliffside/bridge_a",
+        };
+
+        public static SimplifiedGraphicsFeature instance;
+
+        private static readonly FieldInfo SpinnerColorField = typeof(CrystalStaticSpinner).GetFieldInfo("color");
 
         private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
         private static bool lastSimplifiedGraphics = Settings.SimplifiedGraphics;
 
-        private ILHook customSpinnerHook;
-        private ILHook rainbowSpinnerColorControllerHook;
+        private readonly List<ILHook> ilHooks = new List<ILHook>();
 
         public static TextMenu.Item CreateSimplifiedGraphicsOption() {
             return new TextMenuExt.SubMenu("Simplified Graphics", false).Apply(subMenu => {
-                subMenu.Add(new TextMenu.OnOff("Enabled", Settings.SimplifiedGraphics).Change(b => Settings.SimplifiedGraphics = b));
-                subMenu.Add(new TextMenuExt.IntSlider("Lighting", 0, 10, Settings.SimplifiedLighting).Change(b => Settings.SimplifiedLighting = b));
+                subMenu.Add(new TextMenu.OnOff("Enabled", Settings.SimplifiedGraphics).Change(value => Settings.SimplifiedGraphics = value));
                 subMenu.Add(
-                    new TextMenuExt.IntSlider("Bloom Base", 0, 10, Settings.SimplifiedBloomBase).Change(b => Settings.SimplifiedBloomBase = b));
-                subMenu.Add(new TextMenuExt.IntSlider("Bloom Strength", 1, 10, Settings.SimplifiedBloomStrength).Change(b =>
-                    Settings.SimplifiedBloomStrength = b));
-                subMenu.Add(new TextMenu.OnOff("Backdrop", Settings.SimplifiedBackdrop).Change(b => Settings.SimplifiedBackdrop = b));
-                subMenu.Add(new TextMenu.OnOff("Particle", Settings.SimplifiedParticle).Change(b => Settings.SimplifiedParticle = b));
-                subMenu.Add(new TextMenu.OnOff("Distort", Settings.SimplifiedDistort).Change(b => Settings.SimplifiedDistort = b));
-                subMenu.Add(new TextMenu.OnOff("Gameplay", Settings.HideGameplay).Change(b => Settings.HideGameplay = b));
+                    new TextMenuExt.EnumerableSlider<int?>("Lighting", Menu.CreateSliderOptions(10, 0, i => $"{i * 10}%"),
+                        Settings.SimplifiedLighting).Change(value =>
+                        Settings.SimplifiedLighting = value));
+                subMenu.Add(
+                    new TextMenuExt.EnumerableSlider<int?>("Bloom Base",
+                        Menu.CreateSliderOptions(0, 10, i => (i / 10f).ToString(CultureInfo.InvariantCulture)), Settings.SimplifiedBloomBase).Change(
+                        value =>
+                            Settings.SimplifiedBloomBase = value));
+                subMenu.Add(
+                    new TextMenuExt.EnumerableSlider<int?>("Bloom Strength", Menu.CreateSliderOptions(1, 10), Settings.SimplifiedBloomStrength)
+                        .Change(
+                            value => Settings.SimplifiedBloomStrength = value));
+                subMenu.Add(
+                    new TextMenuExt.EnumerableSlider<SpinnerColor>("Spinner Color", SpinnerColor.All,
+                        Settings.SimplifiedSpinnerColor).Change(value =>
+                        Settings.SimplifiedSpinnerColor = value));
+                subMenu.Add(
+                    new TextMenuExt.EnumerableSlider<Color?>("Dust Sprite Color", Menu.CreateNaturalColorOptions(),
+                        Settings.SimplifiedDustSpriteColor).Change(value =>
+                        Settings.SimplifiedDustSpriteColor = value));
+                subMenu.Add(
+                    new TextMenuExt.EnumerableSlider<bool>("Backdrop", Menu.CreateShowHideOptions(), Settings.SimplifiedBackdrop).Change(value =>
+                        Settings.SimplifiedBackdrop = value));
+                subMenu.Add(
+                    new TextMenuExt.EnumerableSlider<bool>("Decal", Menu.CreateShowHideOptions(), Settings.SimplifiedDecal).Change(value =>
+                        Settings.SimplifiedDecal = value));
+                subMenu.Add(
+                    new TextMenuExt.EnumerableSlider<bool>("Particle", Menu.CreateShowHideOptions(), Settings.SimplifiedParticle).Change(value =>
+                        Settings.SimplifiedParticle = value));
+                subMenu.Add(
+                    new TextMenuExt.EnumerableSlider<bool>("Distort", Menu.CreateShowHideOptions(), Settings.SimplifiedDistort).Change(value =>
+                        Settings.SimplifiedDistort = value));
+                subMenu.Add(
+                    new TextMenuExt.EnumerableSlider<bool>("Gameplay", Menu.CreateShowHideOptions(), Settings.HideGameplay).Change(value =>
+                        Settings.HideGameplay = value));
             });
         }
 
@@ -43,11 +104,12 @@ namespace TAS.EverestInterop {
             On.Celeste.Level.Update += Level_Update;
             IL.Celeste.LightingRenderer.Render += LightingRenderer_Render;
             On.Celeste.ColorGrade.Set_MTexture_MTexture_float += ColorGradeOnSet_MTexture_MTexture_float;
-            On.Celeste.BloomRenderer.Apply += BloomRenderer_Apply;
+            IL.Celeste.BloomRenderer.Apply += BloomRendererOnApply;
             On.Monocle.Particle.Render += Particle_Render;
             IL.Celeste.BackdropRenderer.Render += BackdropRenderer_Render;
+            On.Celeste.Decal.Render += Decal_Render;
             On.Celeste.CrystalStaticSpinner.CreateSprites += CrystalStaticSpinner_CreateSprites;
-            On.Celeste.DustGraphic.Render += DustGraphic_Render;
+            ilHooks.Add(new ILHook(typeof(DustGraphic).GetNestedType("Eyeballs", BindingFlags.NonPublic).GetMethod("Render"), ModDustEyes));
             On.Celeste.DustStyles.Get_Session += DustStyles_Get_Session;
             On.Celeste.LavaRect.Wave += LavaRect_Wave;
             On.Celeste.DreamBlock.Lerp += DreamBlock_Lerp;
@@ -56,16 +118,15 @@ namespace TAS.EverestInterop {
             On.Celeste.LightningRenderer.Render += LightningRenderer_Render;
             IL.Celeste.LightningRenderer.Render += LightningRenderer_RenderIL;
             On.Celeste.LightningRenderer.Bolt.Render += Bolt_Render;
-            On.Celeste.Decal.Render += Decal_Render;
             On.Celeste.SummitCloud.Render += SummitCloudOnRender;
             On.Celeste.Level.Begin += Level_Begin;
 
             if (Type.GetType("FrostHelper.CustomSpinner, FrostTempleHelper") is Type customSpinnerType) {
-                customSpinnerHook = new ILHook(customSpinnerType.GetConstructors()[0], modCustomSpinnerColor);
+                ilHooks.Add(new ILHook(customSpinnerType.GetConstructors()[0], modCustomSpinnerColor));
             }
 
             if (Type.GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController, MaxHelpingHand") is Type rainbowSpinnerType) {
-                rainbowSpinnerColorControllerHook = new ILHook(rainbowSpinnerType.GetConstructors()[0], modRainbowSpinnerColor);
+                ilHooks.Add(new ILHook(rainbowSpinnerType.GetConstructors()[0], modRainbowSpinnerColor));
             }
         }
 
@@ -73,11 +134,11 @@ namespace TAS.EverestInterop {
             On.Celeste.Level.Update -= Level_Update;
             IL.Celeste.LightingRenderer.Render -= LightingRenderer_Render;
             On.Celeste.ColorGrade.Set_MTexture_MTexture_float -= ColorGradeOnSet_MTexture_MTexture_float;
-            On.Celeste.BloomRenderer.Apply -= BloomRenderer_Apply;
+            IL.Celeste.BloomRenderer.Apply -= BloomRendererOnApply;
+            On.Celeste.Decal.Render -= Decal_Render;
             On.Monocle.Particle.Render -= Particle_Render;
             IL.Celeste.BackdropRenderer.Render -= BackdropRenderer_Render;
             On.Celeste.CrystalStaticSpinner.CreateSprites -= CrystalStaticSpinner_CreateSprites;
-            On.Celeste.DustGraphic.Render -= DustGraphic_Render;
             On.Celeste.DustStyles.Get_Session -= DustStyles_Get_Session;
             On.Celeste.LavaRect.Wave -= LavaRect_Wave;
             On.Celeste.DreamBlock.Lerp -= DreamBlock_Lerp;
@@ -86,13 +147,9 @@ namespace TAS.EverestInterop {
             On.Celeste.LightningRenderer.Render -= LightningRenderer_Render;
             IL.Celeste.LightningRenderer.Render -= LightningRenderer_RenderIL;
             On.Celeste.LightningRenderer.Bolt.Render -= Bolt_Render;
-            On.Celeste.Decal.Render -= Decal_Render;
             On.Celeste.SummitCloud.Render -= SummitCloudOnRender;
             On.Celeste.Level.Begin -= Level_Begin;
-            customSpinnerHook?.Dispose();
-            rainbowSpinnerColorControllerHook?.Dispose();
-            customSpinnerHook = null;
-            rainbowSpinnerColorControllerHook = null;
+            ilHooks.ForEach(hook => hook.Dispose());
             instance = null;
         }
 
@@ -128,7 +185,8 @@ namespace TAS.EverestInterop {
                 MoveType.After,
                 ins => ins.MatchCall(typeof(MathHelper), "Clamp")
             )) {
-                ilCursor.EmitDelegate<Func<float, float>>(alpha => Settings.SimplifiedGraphics ? (10 - Settings.SimplifiedLighting) / 10f : alpha);
+                ilCursor.EmitDelegate<Func<float, float>>(alpha =>
+                    Settings.SimplifiedGraphics && Settings.SimplifiedLighting != null ? (10 - Settings.SimplifiedLighting.Value) / 10f : alpha);
             }
         }
 
@@ -146,13 +204,39 @@ namespace TAS.EverestInterop {
             }
         }
 
-        private void BloomRenderer_Apply(On.Celeste.BloomRenderer.orig_Apply orig, BloomRenderer self, VirtualRenderTarget target, Scene scene) {
-            if (Settings.SimplifiedGraphics && scene is Level level) {
-                level.Bloom.Base = Settings.SimplifiedBloomBase / 10f;
-                level.Bloom.Strength = Settings.SimplifiedBloomStrength / 10f;
+        private void BloomRendererOnApply(ILContext il) {
+            ILCursor ilCursor = new ILCursor(il);
+            while (ilCursor.TryGotoNext(
+                MoveType.After,
+                ins => ins.OpCode == OpCodes.Ldarg_0,
+                ins => ins.MatchLdfld<BloomRenderer>("Base")
+            )) {
+                ilCursor.EmitDelegate<Func<float, float>>(bloomValue =>
+                    Settings.SimplifiedGraphics && Settings.SimplifiedBloomBase.HasValue ? Settings.SimplifiedBloomBase.Value / 10f : bloomValue);
             }
 
-            orig(self, target, scene);
+            while (ilCursor.TryGotoNext(
+                MoveType.After,
+                ins => ins.OpCode == OpCodes.Ldarg_0,
+                ins => ins.MatchLdfld<BloomRenderer>("Strength")
+            )) {
+                ilCursor.EmitDelegate<Func<float, float>>(bloomValue =>
+                    Settings.SimplifiedGraphics && Settings.SimplifiedBloomStrength.HasValue
+                        ? Settings.SimplifiedBloomStrength.Value / 10f
+                        : bloomValue);
+            }
+        }
+
+        private void Decal_Render(On.Celeste.Decal.orig_Render orig, Decal self) {
+            if (Settings.SimplifiedGraphics && Settings.SimplifiedDecal) {
+                string decalName = self.Name.ToLower().Replace("decals/", "");
+                if (!solidDecals.Contains(decalName) && (!DecalRegistry.RegisteredDecals.ContainsKey(decalName) ||
+                                                         !DecalRegistry.RegisteredDecals[decalName].CustomProperties.ContainsKey("solid"))) {
+                    return;
+                }
+            }
+
+            orig(self);
         }
 
         private void Particle_Render(On.Monocle.Particle.orig_Render orig, ref Particle self) {
@@ -182,29 +266,30 @@ namespace TAS.EverestInterop {
         }
 
         private void CrystalStaticSpinner_CreateSprites(On.Celeste.CrystalStaticSpinner.orig_CreateSprites orig, CrystalStaticSpinner self) {
-            if (Settings.SimplifiedGraphics)
-                SpinnerColor.SetValue(self, CrystalColor.Blue);
+            if (Settings.SimplifiedGraphics && Settings.SimplifiedSpinnerColor.name != null)
+                SpinnerColorField.SetValue(self, Settings.SimplifiedSpinnerColor.name);
 
             orig(self);
         }
 
-        private void DustGraphic_Render(On.Celeste.DustGraphic.orig_Render orig, DustGraphic self) {
-            if (Settings.SimplifiedGraphics && DustGraphicEyes.GetValue(self) is Entity eyes) {
-                eyes.Visible = false;
-            }
-
-            orig(self);
+        private void ModDustEyes(ILContext il) {
+            ILCursor ilCursor = new ILCursor(il);
+            Instruction start = ilCursor.Next;
+            ilCursor.EmitDelegate<Func<bool>>(() => Settings.SimplifiedGraphics);
+            ilCursor.Emit(OpCodes.Brfalse, start);
+            ilCursor.Emit(OpCodes.Ret);
         }
 
         private DustStyles.DustStyle DustStyles_Get_Session(On.Celeste.DustStyles.orig_Get_Session orig, Session session) {
-            if (Settings.SimplifiedGraphics) {
+            if (Settings.SimplifiedGraphics && Settings.SimplifiedDustSpriteColor.HasValue) {
+                Color color = Settings.SimplifiedDustSpriteColor.Value;
                 return new DustStyles.DustStyle {
-                    EdgeColors = new Vector3[] {
-                        Color.Orange.ToVector3(),
-                        Color.Orange.ToVector3(),
-                        Color.Orange.ToVector3()
+                    EdgeColors = new[] {
+                        color.ToVector3(),
+                        color.ToVector3(),
+                        color.ToVector3()
                     },
-                    EyeColor = Color.Orange,
+                    EyeColor = color,
                     EyeTextures = "danger/dustcreature/eyes"
                 };
             }
@@ -262,14 +347,6 @@ namespace TAS.EverestInterop {
             orig.Invoke(self);
         }
 
-        private void Decal_Render(On.Celeste.Decal.orig_Render orig, Decal self) {
-            string text = self.Name.ToLower().Replace("decals/", "");
-            if (Settings.SimplifiedGraphics && text.StartsWith("7-summit/cloud_"))
-                return;
-
-            orig(self);
-        }
-
         private void SummitCloudOnRender(On.Celeste.SummitCloud.orig_Render orig, SummitCloud self) {
             if (Settings.SimplifiedGraphics)
                 return;
@@ -296,7 +373,8 @@ namespace TAS.EverestInterop {
                 i => i.OpCode == OpCodes.Stfld && i.Operand.ToString() == "Microsoft.Xna.Framework.Color FrostHelper.CustomSpinner::Tint"
             )) {
                 ilCursor.Index += 2;
-                ilCursor.EmitDelegate<Func<string, string>>(color => Settings.SimplifiedGraphics ? simpleSpinnerColor : color);
+                ilCursor.EmitDelegate<Func<string, string>>(color =>
+                    Settings.SimplifiedGraphics && Settings.SimplifiedSpinnerColor.value != null ? Settings.SimplifiedSpinnerColor.value : color);
             }
         }
 
@@ -309,8 +387,8 @@ namespace TAS.EverestInterop {
                 ilCursor.Emit(OpCodes.Ldarg_0)
                     .Emit(OpCodes.Ldfld, rainbowSpinnerType.GetField("colors", BindingFlags.Instance | BindingFlags.NonPublic));
                 ilCursor.EmitDelegate<Action<Color[]>>(colors => {
-                    if (!Settings.SimplifiedGraphics) return;
-                    Color simpleColor = Calc.HexToColor(simpleSpinnerColor);
+                    if (!Settings.SimplifiedGraphics || Settings.SimplifiedSpinnerColor.value == null) return;
+                    Color simpleColor = Calc.HexToColor(Settings.SimplifiedSpinnerColor.value);
                     for (var i = 0; i < colors.Length; i++) {
                         colors[i] = simpleColor;
                     }
