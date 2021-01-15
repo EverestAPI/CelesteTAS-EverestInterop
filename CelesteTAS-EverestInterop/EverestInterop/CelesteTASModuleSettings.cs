@@ -27,7 +27,7 @@ namespace TAS.EverestInterop {
 			set => _simplifiedGraphics = value;
 		}
 
-		public int SimplifiedLighting { get; set; } = 0;
+		public int SimplifiedLighting { get; set; } = 10;
 		public int SimplifiedBloomBase { get; set; } = 0;
 		public int SimplifiedBloomStrength { get; set; } = 1;
 		public bool SimplifiedColorGrade { get; set; } = true;

@@ -2169,13 +2169,14 @@ namespace CelesteStudio.RichText {
 				case Keys.Y:
 					if (ReadOnly) break;
 					if (e.Modifiers == Keys.Control) {
-						ClearCurrentLine();
-						int line = Selection.Start.iLine;
-						if (line > 0 && line < LinesCount - 1) {
+						Selection.Expand();
+						int line = Selection.End.iLine;
+						if (line < LinesCount - 1) {
 							line++;
 						}
-						Selection = new Range(this, 0, line, 0, line);
-						Selection.GoEnd(false);
+						Selection.End = new Place(0, line);
+						ClearSelected();
+						TryMoveCursorBehindFrame();
 					}
 					break;
 
@@ -2299,7 +2300,7 @@ namespace CelesteStudio.RichText {
 						Selection.GoUp(e.Shift);
 						ScrollLeft();
 						if (e.Modifiers == Keys.None) {
-							TrySetCursorAfterFrames();
+							TryMoveCursorBehindFrame();
 						}
 					}
 					if (e.Modifiers == AltShift) {
@@ -2330,7 +2331,7 @@ namespace CelesteStudio.RichText {
 						Selection.GoDown(e.Shift);
 						ScrollLeft();
 						if (e.Modifiers == Keys.None) {
-							TrySetCursorAfterFrames();
+							TryMoveCursorBehindFrame();
 						}
 					} else if (e.Modifiers == AltShift) {
 						CheckAndChangeSelectionType();
@@ -3041,7 +3042,7 @@ namespace CelesteStudio.RichText {
 			}
 		}
 
-		private void TrySetCursorAfterFrames() {
+		private void TryMoveCursorBehindFrame() {
 			Place start = Selection.Start;
 			if (Selection.IsEmpty && SyntaxHighlighter.InputRecordRegex.IsMatch(Lines[start.iLine])) {
 				Selection.Start = new Place(4, start.iLine);
@@ -3149,12 +3150,18 @@ namespace CelesteStudio.RichText {
 
 				if ((lastModifiers & Keys.Shift) != 0) {
 					Selection.End = oldEnd;
-				} else {
-					TrySetCursorAfterFrames();
 				}
+
 				Selection.EndUpdate();
 				Invalidate();
 			}
+		}
+
+		protected override void OnMouseUp(MouseEventArgs e) {
+			base.OnMouseUp(e);
+
+			TryMoveCursorBehindFrame();
+			Invalidate();
 		}
 
 		private void CheckAndChangeSelectionType() {
