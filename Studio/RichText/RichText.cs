@@ -3042,9 +3042,9 @@ namespace CelesteStudio.RichText {
 			}
 		}
 
-		private void TryMoveCursorBehindFrame() {
+		private void TryMoveCursorBehindFrame(bool onlyLeadingSpaces = false) {
 			Place start = Selection.Start;
-			if (Selection.IsEmpty && SyntaxHighlighter.InputRecordRegex.IsMatch(Lines[start.iLine])) {
+			if (Selection.IsEmpty && SyntaxHighlighter.InputRecordRegex.IsMatch(Lines[start.iLine]) && (!onlyLeadingSpaces || start.iChar < 4)) {
 				Selection.Start = new Place(4, start.iLine);
 			}
 		}
@@ -3160,7 +3160,7 @@ namespace CelesteStudio.RichText {
 		protected override void OnMouseUp(MouseEventArgs e) {
 			base.OnMouseUp(e);
 
-			TryMoveCursorBehindFrame();
+			TryMoveCursorBehindFrame(true);
 			Invalidate();
 		}
 
