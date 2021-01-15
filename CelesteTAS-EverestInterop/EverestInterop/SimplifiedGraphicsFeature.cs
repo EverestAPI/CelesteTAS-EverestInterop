@@ -12,7 +12,7 @@ using MonoMod.RuntimeDetour;
 
 namespace TAS.EverestInterop {
     public class SimplifiedGraphicsFeature {
-        public class SpinnerColor {
+        public readonly struct SpinnerColor {
             public static readonly List<SpinnerColor> All = new List<SpinnerColor> {
                 new SpinnerColor(null, null),
                 new SpinnerColor(CrystalColor.Blue, "#639BFF"),
