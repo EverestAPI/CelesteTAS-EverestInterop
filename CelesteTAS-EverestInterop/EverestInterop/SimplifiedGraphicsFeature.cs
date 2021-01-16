@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
+using System.Xml;
 using Celeste;
 using Celeste.Mod;
 using Monocle;
@@ -51,6 +53,7 @@ namespace TAS.EverestInterop {
         public static SimplifiedGraphicsFeature instance;
 
         private static readonly FieldInfo SpinnerColorField = typeof(CrystalStaticSpinner).GetFieldInfo("color");
+        private static readonly FieldInfo DecalInfoCustomProperties = typeof(DecalRegistry.DecalInfo).GetFieldInfo("CustomProperties");
 
         private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
         private static bool lastSimplifiedGraphics = Settings.SimplifiedGraphics;
@@ -239,9 +242,18 @@ namespace TAS.EverestInterop {
         private void Decal_Render(On.Celeste.Decal.orig_Render orig, Decal self) {
             if (Settings.SimplifiedGraphics && Settings.SimplifiedDecal) {
                 string decalName = self.Name.ToLower().Replace("decals/", "");
-                if (!solidDecals.Contains(decalName) && (!DecalRegistry.RegisteredDecals.ContainsKey(decalName) ||
-                                                         !DecalRegistry.RegisteredDecals[decalName].CustomProperties.ContainsKey("solid"))) {
-                    return;
+                if (!solidDecals.Contains(decalName)) {
+                    if (!DecalRegistry.RegisteredDecals.ContainsKey(decalName)) {
+                        return;
+                    }
+
+                    object customProperties = DecalInfoCustomProperties.GetValue(DecalRegistry.RegisteredDecals[decalName]);
+
+                    switch (customProperties) {
+                        case Dictionary<string, XmlAttributeCollection> dictionary when !dictionary.ContainsKey("solid"):
+                        case List<KeyValuePair<string, XmlAttributeCollection>> list when list.All(pair => pair.Key != "solid"):
+                            return;
+                    }
                 }
             }
 
