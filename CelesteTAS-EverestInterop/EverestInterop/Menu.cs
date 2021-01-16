@@ -109,8 +109,8 @@ namespace TAS.EverestInterop {
 
         public static IEnumerable<KeyValuePair<bool, string>> CreateShowHideOptions() {
             return new List<KeyValuePair<bool, string>> {
+                new KeyValuePair<bool, string>(false, "Default"),
                 new KeyValuePair<bool, string>(true, "Hide"),
-                new KeyValuePair<bool, string>(false, "Show"),
             };
         }
 

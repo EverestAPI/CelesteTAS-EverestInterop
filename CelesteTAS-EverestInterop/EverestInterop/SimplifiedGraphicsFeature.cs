@@ -155,7 +155,6 @@ namespace TAS.EverestInterop {
 
         private void OnSimplifiedGraphicsChanged(bool simplifiedGraphics) {
             if (!(Engine.Scene is Level level)) return;
-            if (!(AreaData.Get(level) is AreaData areaData)) return;
 
             if (simplifiedGraphics) {
                 level.Entities.FindAll<FloatingDebris>().ForEach(debris => debris.Visible = false);
@@ -163,9 +162,6 @@ namespace TAS.EverestInterop {
             } else {
                 level.Entities.FindAll<FloatingDebris>().ForEach(debris => debris.Visible = true);
                 level.Entities.FindAll<MoonCreature>().ForEach(creature => creature.Visible = true);
-
-                level.Bloom.Base = areaData.BloomBase;
-                level.Bloom.Strength = areaData.BloomStrength;
             }
         }
 
