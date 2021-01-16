@@ -43,22 +43,26 @@ namespace TAS.EverestInterop {
             set => _simplifiedGraphics = value;
         }
 
-        public int? SimplifiedLighting { get; set; } = 10;
-        public int? SimplifiedBloomBase { get; set; } = 0;
-        public int? SimplifiedBloomStrength { get; set; } = 1;
-        public SimplifiedGraphicsFeature.SpinnerColor SimplifiedSpinnerColor { get; set; } = SimplifiedGraphicsFeature.SpinnerColor.All[1];
-        public Color? SimplifiedDustSpriteColor { get; set; } = Color.Transparent;
-        public bool SimplifiedColorGrade { get; set; } = true;
-        public bool SimplifiedBackdrop { get; set; } = true;
-        public bool SimplifiedDecal { get; set; } = true;
-        public bool SimplifiedParticle { get; set; } = true;
-        public bool SimplifiedDistort { get; set; } = true;
-
         private bool _hideGamePlayer;
         public bool HideGameplay {
             get => _hideGamePlayer;
             set => _hideGamePlayer = ShowHitboxes = value;
         }
+
+        public int? SimplifiedLighting { get; set; } = 10;
+        public int? SimplifiedBloomBase { get; set; } = 0;
+        public int? SimplifiedBloomStrength { get; set; } = 1;
+        public SimplifiedGraphicsFeature.SpinnerColor SimplifiedSpinnerColor { get; set; } = SimplifiedGraphicsFeature.SpinnerColor.All[1];
+        public Color? SimplifiedDustSpriteColor { get; set; } = Color.Transparent;
+        public bool SimplifiedSpotlightWipe { get; set; } = true;
+        public bool SimplifiedColorGrade { get; set; } = true;
+        public bool SimplifiedBackdrop { get; set; } = true;
+        public bool SimplifiedDecal { get; set; } = true;
+        public bool SimplifiedParticle { get; set; } = true;
+        public bool SimplifiedDistort { get; set; } = true;
+        public bool SimplifiedDreamBlock { get; set; } = true;
+        public bool SimplifiedLava { get; set; } = true;
+        public bool SimplifiedLightning { get; set; } = true;
 
         #endregion
 

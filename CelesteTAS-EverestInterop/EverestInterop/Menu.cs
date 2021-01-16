@@ -114,6 +114,13 @@ namespace TAS.EverestInterop {
             };
         }
 
+        public static IEnumerable<KeyValuePair<bool, string>> CreateSimplifyOptions() {
+            return new List<KeyValuePair<bool, string>> {
+                new KeyValuePair<bool, string>(false, "Default"),
+                new KeyValuePair<bool, string>(true, "Simplify"),
+            };
+        }
+
         public static IEnumerable<KeyValuePair<Color?, string>> CreateNaturalColorOptions() {
             return new List<KeyValuePair<Color?, string>> {
                 new KeyValuePair<Color?, string>(null, "Default"),
