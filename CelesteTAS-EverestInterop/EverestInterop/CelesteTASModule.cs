@@ -65,8 +65,7 @@ namespace TAS.EverestInterop {
                                 }
                             }
                         }
-                    }
-                    else if (!string.IsNullOrEmpty(Metadata.PathDirectory)) {
+                    } else if (!string.IsNullOrEmpty(Metadata.PathDirectory)) {
                         string[] files = Directory.GetFiles(Metadata.PathDirectory);
 
                         if (files.Any(filePath => filePath.EndsWith(studioNameWithExe))) {
@@ -82,8 +81,11 @@ namespace TAS.EverestInterop {
 
                     Settings.StudioLastModifiedTime = File.GetLastWriteTime(copiedStudioExePath);
                     Instance.SaveSettings();
+                } catch (UnauthorizedAccessException e) {
+                    Logger.Log("CelesteTASModule", "Failed to extract studio.");
+                    Logger.LogDetailed(e);
                 }
-                catch (UnauthorizedAccessException) { }
+
             }
             else {
                 foreach (string file in Directory.GetFiles(Everest.PathGame, "*.PendingOverwrite"))
@@ -114,14 +116,20 @@ namespace TAS.EverestInterop {
 
         private void LaunchStudioAtBoot(bool studioProcessWasKilled) {
             if (Settings.Enabled && Settings.LaunchStudioAtBoot || studioProcessWasKilled) {
-                Process[] processes = Process.GetProcesses();
-                foreach (Process process in processes) {
-                    if (process.ProcessName.StartsWith("Celeste") && process.ProcessName.Contains("Studio"))
-                        return;
-                }
+                try {
+                    Process[] processes = Process.GetProcesses();
+                    foreach (Process process in processes) {
+                        if (process.ProcessName.StartsWith("Celeste") && process.ProcessName.Contains("Studio"))
+                            return;
+                    }
 
-                if (File.Exists(copiedStudioExePath))
-                    Process.Start(copiedStudioExePath);
+                    if (File.Exists(copiedStudioExePath))
+                        Process.Start(copiedStudioExePath);
+
+                } catch (Exception e) {
+                    Logger.Log("CelesteTASModule", "Failed to launch studio at boot.");
+                    Logger.LogDetailed(e);
+                }
             }
         }
 
