@@ -1,10 +1,10 @@
 - Name: CelesteTAS
-  Version: 3.1.18
+  Version: 3.1.19
   DLL: CelesteTAS-EverestInterop.dll
   SupportsCodeReload: true
   Dependencies:
     - Name: Everest
-      Version: 1.2138.0
+      Version: 1.2374.0
   OptionalDependencies:
     - Name: SpeedrunTool
-      Version: 3.0.4
+      Version: 3.4.10
