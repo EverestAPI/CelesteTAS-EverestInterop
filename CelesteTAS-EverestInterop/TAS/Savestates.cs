@@ -27,7 +27,7 @@ namespace TAS {
 				}
 				Save();
 			}
-			else if (Hotkeys.hotkeyLoadState.pressed && !Hotkeys.hotkeyLoadState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
+			else if (savedController != null && Hotkeys.hotkeyLoadState.pressed && !Hotkeys.hotkeyLoadState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
 				if (Engine.FreezeTimer > 0) {
 					routine = new Coroutine(DelaySaveStatesRoutine(Load));
 					return;
