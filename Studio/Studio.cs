@@ -22,6 +22,8 @@ namespace CelesteStudio
     public partial class Studio : Form
     {
         public static Studio instance;
+        private FormWindowState lastWindowState = FormWindowState.Normal;
+
         private List<InputRecord> Lines = new List<InputRecord>();
         private int totalFrames = 0, currentFrame = 0;
         private bool updating = false;
@@ -484,6 +486,7 @@ Ctrl + Down/Up: Go to comment or breakpoint";
                     if (hooked)
                     {
                         UpdateValues();
+                        ScrollLeftWhenOutOfMinimized();
                         if (CommunicationWrapper.fastForwarding)
                             CommunicationWrapper.CheckFastForward();
                     }
@@ -599,6 +602,16 @@ Ctrl + Down/Up: Go to comment or breakpoint";
                 UpdateStatusBar();
             }
         }
+
+        private void ScrollLeftWhenOutOfMinimized() {
+            if (lastWindowState == FormWindowState.Minimized && WindowState == FormWindowState.Normal) {
+                tasText.ScrollLeft();
+                tasText.Invalidate();
+            }
+
+            lastWindowState = WindowState;
+        }
+
         private void tasText_LineRemoved(object sender, LineRemovedEventArgs e)
         {
             int count = e.Count;
@@ -650,12 +663,10 @@ Ctrl + Down/Up: Go to comment or breakpoint";
             }
             totalLines = totalLines * (Environment.OSVersion.Platform == PlatformID.Unix ? 15 : 18);
             totalLines = totalLines < 22 ? 22 : totalLines;
-            if (statusBar.Height - totalLines != 0)
-            {
-                tasText.Height += statusBar.Height - totalLines;
-                statusBar.Height = totalLines;
-            }
+            statusBar.Height = totalLines;
+            tasText.Height = ClientSize.Height - totalLines;
         }
+
         private void tasText_TextChanged(object sender, TextChangedEventArgs e)
         {
             lastChanged = DateTime.Now;
