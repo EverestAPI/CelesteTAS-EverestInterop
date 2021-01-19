@@ -6,9 +6,9 @@
 
 ----
 - Install [Everest](https://everestapi.github.io/) if you haven't already.
-- Use the 1-click installer [here](https://gamebanana.com/tools/6715) or [download the latest autobuild](https://nightly.link/EverestAPI/CelesteTAS-EverestInterop/workflows/NetFramework.Legacy.CI/master/CelesteTAS.zip) and put it in the game_path/mods folder.
+- (Recommended) Use the 1-click installer [here](https://gamebanana.com/tools/6715). (Alternatively) [Download the latest autobuild](https://nightly.link/EverestAPI/CelesteTAS-EverestInterop/workflows/NetFramework.Legacy.CI/master/CelesteTAS.zip) and put it in the game_path/mods folder.
 - Enable the mod in the in-game mod options.
-- Enable `Unix RTC` in the mod settings and restart if on linux.
+- If on Linux, enable `Unix RTC` in the mod options and restart Celeste.
 - Open Celeste Studio, our input editor. It should be in your main Celeste directory. (Note that Studio is not supported on Mac and may not work on Linux.) [Studio documentation can be found here.](https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/master/Docs/Studio.md)
 
 ## Input File
@@ -48,7 +48,7 @@ While in game or in Studio:
 
 - These can be rebound in Mod Options (Note that controller is not supported.)
   - You will have to rebind some of these if you are on a non-US keyboard layout.
-  - You can manually rebind inputs (e.g. if you want a keycombo instead of just one key) at (Main Celeste Directory)\Saves\modsettings-CelesteTAS.celeste
+  - Binding multiple keys to a control will cause those keys to act as a keycombo.
   
 ## Special Input
 ### Breakpoints
