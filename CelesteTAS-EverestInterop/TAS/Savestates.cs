@@ -77,8 +77,8 @@ namespace TAS {
 					}
 					*/
 					routine = new Coroutine(LoadStateRoutine());
-					Saving = false;
 				}
+				Saving = false;
 			};
 		}
 
