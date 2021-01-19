@@ -22,6 +22,7 @@ namespace CelesteStudio
         private List<InputRecord> Lines = new List<InputRecord>();
         private int totalFrames = 0, currentFrame = 0;
         private bool updating = false;
+        //private GameMemory memory = new GameMemory();
         private DateTime lastChanged = DateTime.MinValue;
         private const string RegKey = @"HKEY_CURRENT_USER\SOFTWARE\CeletseStudio\Form";
         private string titleBarText {
