@@ -131,7 +131,7 @@ namespace CelesteStudio
         }
 
         private void InitMenu() {
-            openRecentStripMenuItem.DropDownItemClicked += (sender, args) => {
+            openRecentMenuItem.DropDownItemClicked += (sender, args) => {
                 ToolStripItem clickedItem = args.ClickedItem;
                 if (clickedItem.Text == "Clear") {
                     recentFiles.Clear();
@@ -150,9 +150,9 @@ namespace CelesteStudio
         }
 
         private void CreateRecentFilesMenu() {
-            openRecentStripMenuItem.DropDownItems.Clear();
+            openRecentMenuItem.DropDownItems.Clear();
             if (recentFiles.Count == 0) {
-                openRecentStripMenuItem.DropDownItems.Add(new ToolStripMenuItem("Nothing") {
+                openRecentMenuItem.DropDownItems.Add(new ToolStripMenuItem("Nothing") {
                     Enabled = false
                 });
             } else {
@@ -160,14 +160,14 @@ namespace CelesteStudio
                     recentFiles.Remove(recentFiles[i]);
                 }
                 foreach (var fileName in recentFiles) {
-                    openRecentStripMenuItem.DropDownItems.Add(new ToolStripMenuItem(fileName) {
+                    openRecentMenuItem.DropDownItems.Add(new ToolStripMenuItem(fileName) {
                         Checked = lastFileName == fileName
                     });
                 }
 
-                openRecentStripMenuItem.DropDownItems.Add(new ToolStripSeparator());
+                openRecentMenuItem.DropDownItems.Add(new ToolStripSeparator());
 
-                openRecentStripMenuItem.DropDownItems.Add(new ToolStripMenuItem("Clear"));
+                openRecentMenuItem.DropDownItems.Add(new ToolStripMenuItem("Clear"));
             }
         }
 
@@ -810,17 +810,17 @@ namespace CelesteStudio
             catch { }
         }
 
-        private void rememberCurrentFileToolStripMenuItem_Click(object sender, EventArgs e) {
+        private void rememberCurrentFileMenuItem_Click(object sender, EventArgs e) {
             Settings.Default.RememberLastFileName = !Settings.Default.RememberLastFileName;
             ((ToolStripMenuItem) sender).Checked = Settings.Default.RememberLastFileName;
         }
 
-        private void homeToolStripMenuItem_Click(object sender, EventArgs e) {
+        private void homeMenuItem_Click(object sender, EventArgs e) {
             System.Diagnostics.Process.Start("https://github.com/EverestAPI/CelesteTAS-EverestInterop");
         }
 
         private void contextMenuStrip_Opened(object sender, EventArgs e) {
-            rememberCurrentFileToolStripMenuItem.Checked = Settings.Default.RememberLastFileName;
+            rememberCurrentFileMenuItem.Checked = Settings.Default.RememberLastFileName;
             sendInputsToCelesteMenuItem.Checked = Settings.Default.UpdatingHotkeys;
             CreateRecentFilesMenu();
         }
@@ -829,7 +829,7 @@ namespace CelesteStudio
 
 		}
 
-		private void openCelesteTasToolStripMenuItem_Click(object sender, EventArgs e) {
+		private void openCelesteTasMenuItem_Click(object sender, EventArgs e) {
             string fileName = defaultFileName;
             if (string.IsNullOrEmpty(fileName)) return;
             if (!File.Exists(fileName)) { File.WriteAllText(fileName, string.Empty); }
@@ -838,12 +838,15 @@ namespace CelesteStudio
 
         private void birdButton_Click(object sender, EventArgs e)
         {
-            Button birdButton = (Button)sender;
             contextMenuStrip.Show(birdButton, 0, birdButton.Height);
         }
 
         private void sendInputsToCelesteMenuItem_Click(object sender, EventArgs e) {
             ToggleUpdatingHotkeys();
+        }
+
+        private void openFileMenuItem_Click(object sender, EventArgs e) {
+            OpenFile();
         }
     }
 }

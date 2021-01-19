@@ -30,12 +30,14 @@ namespace CelesteStudio {
 			this.statusBar = new System.Windows.Forms.StatusStrip();
 			this.lblStatus = new System.Windows.Forms.ToolStripStatusLabel();
 			this.contextMenuStrip = new System.Windows.Forms.ContextMenuStrip(this.components);
-			this.openCelesteTasToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.openRecentStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.rememberCurrentFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.openFileMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.openCelesteTasMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.openRecentMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
+			this.rememberCurrentFileMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.sendInputsToCelesteMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-			this.homeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.homeMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.hotkeyToolTip = new System.Windows.Forms.ToolTip(this.components);
 			this.birdButton = new System.Windows.Forms.Button();
 			this.tasText = new CelesteStudio.RichText.RichText();
@@ -67,30 +69,43 @@ namespace CelesteStudio {
 			// contextMenuStrip
 			//
 			this.contextMenuStrip.ImageScalingSize = new System.Drawing.Size(20, 20);
-			this.contextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.openCelesteTasToolStripMenuItem, this.openRecentStripMenuItem, this.rememberCurrentFileToolStripMenuItem, this.sendInputsToCelesteMenuItem, this.toolStripSeparator1, this.homeToolStripMenuItem});
+			this.contextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.openFileMenuItem, this.openCelesteTasMenuItem, this.openRecentMenuItem, this.toolStripSeparator2, this.rememberCurrentFileMenuItem, this.sendInputsToCelesteMenuItem, this.toolStripSeparator1, this.homeMenuItem});
 			this.contextMenuStrip.Name = "contextMenuStrip1";
-			this.contextMenuStrip.Size = new System.Drawing.Size(329, 120);
+			this.contextMenuStrip.Size = new System.Drawing.Size(329, 148);
 			this.contextMenuStrip.Opened += new System.EventHandler(this.contextMenuStrip_Opened);
 			//
-			// openCelesteTasToolStripMenuItem
+			// openFileMenuItem
 			//
-			this.openCelesteTasToolStripMenuItem.Name = "openCelesteTasToolStripMenuItem";
-			this.openCelesteTasToolStripMenuItem.Size = new System.Drawing.Size(328, 22);
-			this.openCelesteTasToolStripMenuItem.Text = "Open Celeste.tas";
-			this.openCelesteTasToolStripMenuItem.Click += new System.EventHandler(this.openCelesteTasToolStripMenuItem_Click);
+			this.openFileMenuItem.Name = "openFileMenuItem";
+			this.openFileMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys) ((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.O)));
+			this.openFileMenuItem.Size = new System.Drawing.Size(328, 22);
+			this.openFileMenuItem.Text = "Open File...";
+			this.openFileMenuItem.Click += new System.EventHandler(this.openFileMenuItem_Click);
 			//
-			// openRecentStripMenuItem
+			// openCelesteTasMenuItem
 			//
-			this.openRecentStripMenuItem.Name = "openRecentStripMenuItem";
-			this.openRecentStripMenuItem.Size = new System.Drawing.Size(328, 22);
-			this.openRecentStripMenuItem.Text = "Open Recent";
+			this.openCelesteTasMenuItem.Name = "openCelesteTasMenuItem";
+			this.openCelesteTasMenuItem.Size = new System.Drawing.Size(328, 22);
+			this.openCelesteTasMenuItem.Text = "Open Celeste.tas";
+			this.openCelesteTasMenuItem.Click += new System.EventHandler(this.openCelesteTasMenuItem_Click);
 			//
-			// rememberCurrentFileToolStripMenuItem
+			// openRecentMenuItem
 			//
-			this.rememberCurrentFileToolStripMenuItem.Name = "rememberCurrentFileToolStripMenuItem";
-			this.rememberCurrentFileToolStripMenuItem.Size = new System.Drawing.Size(328, 22);
-			this.rememberCurrentFileToolStripMenuItem.Text = "Remember the Current File for Next Launch";
-			this.rememberCurrentFileToolStripMenuItem.Click += new System.EventHandler(this.rememberCurrentFileToolStripMenuItem_Click);
+			this.openRecentMenuItem.Name = "openRecentMenuItem";
+			this.openRecentMenuItem.Size = new System.Drawing.Size(328, 22);
+			this.openRecentMenuItem.Text = "Open Recent";
+			//
+			// toolStripSeparator2
+			//
+			this.toolStripSeparator2.Name = "toolStripSeparator2";
+			this.toolStripSeparator2.Size = new System.Drawing.Size(325, 6);
+			//
+			// rememberCurrentFileMenuItem
+			//
+			this.rememberCurrentFileMenuItem.Name = "rememberCurrentFileMenuItem";
+			this.rememberCurrentFileMenuItem.Size = new System.Drawing.Size(328, 22);
+			this.rememberCurrentFileMenuItem.Text = "Remember the Current File for Next Launch";
+			this.rememberCurrentFileMenuItem.Click += new System.EventHandler(this.rememberCurrentFileMenuItem_Click);
 			//
 			// sendInputsToCelesteMenuItem
 			//
@@ -104,12 +119,12 @@ namespace CelesteStudio {
 			this.toolStripSeparator1.Name = "toolStripSeparator1";
 			this.toolStripSeparator1.Size = new System.Drawing.Size(325, 6);
 			//
-			// homeToolStripMenuItem
+			// homeMenuItem
 			//
-			this.homeToolStripMenuItem.Name = "homeToolStripMenuItem";
-			this.homeToolStripMenuItem.Size = new System.Drawing.Size(328, 22);
-			this.homeToolStripMenuItem.Text = "Home";
-			this.homeToolStripMenuItem.Click += new System.EventHandler(this.homeToolStripMenuItem_Click);
+			this.homeMenuItem.Name = "homeMenuItem";
+			this.homeMenuItem.Size = new System.Drawing.Size(328, 22);
+			this.homeMenuItem.Text = "Home";
+			this.homeMenuItem.Click += new System.EventHandler(this.homeMenuItem_Click);
 			//
 			// hotkeyToolTip
 			//
@@ -124,6 +139,8 @@ namespace CelesteStudio {
 			// birdButton
 			//
 			this.birdButton.Anchor = ((System.Windows.Forms.AnchorStyles) ((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+			this.birdButton.BackColor = System.Drawing.Color.Transparent;
+			this.birdButton.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int) (((byte) (240)))), ((int) (((byte) (240)))), ((int) (((byte) (240)))));
 			this.birdButton.FlatAppearance.BorderSize = 0;
 			this.birdButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
 			this.birdButton.Image = global::CelesteStudio.Properties.Resources.bird;
@@ -131,8 +148,9 @@ namespace CelesteStudio {
 			this.birdButton.Name = "birdButton";
 			this.birdButton.Size = new System.Drawing.Size(30, 25);
 			this.birdButton.TabIndex = 2;
+			this.birdButton.TabStop = false;
 			this.hotkeyToolTip.SetToolTip(this.birdButton, resources.GetString("birdButton.ToolTip"));
-			this.birdButton.UseVisualStyleBackColor = true;
+			this.birdButton.UseVisualStyleBackColor = false;
 			this.birdButton.Click += new System.EventHandler(this.birdButton_Click);
 			//
 			// tasText
@@ -195,13 +213,16 @@ namespace CelesteStudio {
 			this.ResumeLayout(false);
 		}
 
+		private System.Windows.Forms.ToolStripMenuItem openFileMenuItem;
+		private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
+
 		private System.Windows.Forms.ToolStripMenuItem sendInputsToCelesteMenuItem;
 
-		private System.Windows.Forms.ToolStripMenuItem openCelesteTasToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem openCelesteTasMenuItem;
 
-		private System.Windows.Forms.ToolStripMenuItem homeToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem homeMenuItem;
 
-		private System.Windows.Forms.ToolStripMenuItem openRecentStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem openRecentMenuItem;
 
 		private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
 
@@ -209,7 +230,7 @@ namespace CelesteStudio {
 		private System.Windows.Forms.StatusStrip statusBar;
 		public RichText.RichText tasText;
         private System.Windows.Forms.ContextMenuStrip contextMenuStrip;
-        private System.Windows.Forms.ToolStripMenuItem rememberCurrentFileToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem rememberCurrentFileMenuItem;
         private System.Windows.Forms.ToolTip hotkeyToolTip;
         private System.Windows.Forms.Button birdButton;
         private System.Windows.Forms.ToolStripStatusLabel lblStatus;
