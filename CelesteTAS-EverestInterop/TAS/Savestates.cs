@@ -45,6 +45,9 @@ namespace TAS {
 		}
 
 		private static void Save() {
+			Manager.state &= ~State.FrameStep;
+			Manager.nextState &= ~State.FrameStep;
+
 			InputController temp = Manager.controller.Clone();
 			//+1 speedrun tool, -5 buffered inputs
 			temp.ReverseFrames(4);
@@ -68,21 +71,23 @@ namespace TAS {
 		}
 
 		private static void Load() {
+			Manager.state &= ~State.FrameStep;
+			Manager.nextState &= ~State.FrameStep;
 			Manager.controller.AdvanceFrame(true);
 			if (savedController != null
 				&& savedController.SavedChecksum == Manager.controller.Checksum(savedController.CurrentFrame)) {
 
 				//Fastforward to breakpoint if one exists
-				var fastForwards = Manager.controller.fastForwards;
-				if (fastForwards.Count > 0 && fastForwards[fastForwards.Count - 1].Line > savedController.Current.Line) {
-					Manager.state &= ~State.FrameStep;
-					Manager.nextState &= ~State.FrameStep;
-				}
-				else {
+				// var fastForwards = Manager.controller.fastForwards;
+				// if (fastForwards.Count > 0 && fastForwards.Last().Line > savedController.Current.Line) {
+				// 	Manager.state &= ~State.FrameStep;
+				// 	Manager.nextState &= ~State.FrameStep;
+				// }
+				// else {
 					//InputRecord ff = new InputRecord(0, "***");
 					//savedController.fastForwards.Insert(0, ff);
 					//savedController.inputs.Insert(savedController.inputs.IndexOf(savedController.Current) + 1, ff);
-				}
+				// }
 
 				Engine.Scene.OnEndOfFrame += () => {
 					if (!StateManager.Instance.LoadState())

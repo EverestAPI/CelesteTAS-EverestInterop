@@ -1,11 +1,6 @@
-using Celeste;
-using Monocle;
 using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using System;
-using TAS.EverestInterop;
 using Input = Celeste.Input;
 
 namespace TAS {
@@ -174,6 +169,11 @@ namespace TAS {
 				} while (Current.Command != null);
 				CurrentFrame++;
 				Manager.SetInputs(Current);
+			}
+
+			for (var i = fastForwards.Count - 1; i >= 0; i--) {
+				if (fastForwards[i].Line < Current.Line)
+					fastForwards.RemoveAt(i);
 			}
 		}
 
