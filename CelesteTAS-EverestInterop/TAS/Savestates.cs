@@ -31,7 +31,6 @@ namespace TAS {
 			}
 		}
 
-		private static List<InputRecord> lastFastForwards;
 		public static void SaveAfterFreeze() {
 			Saving = true;
 			if (Engine.FreezeTimer > 0) {
