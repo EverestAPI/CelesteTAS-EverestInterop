@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using Celeste;
+using Celeste.Mod;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Monocle;
 using TAS.EverestInterop;
@@ -9,6 +11,7 @@ namespace TAS {
 	static class Savestates {
 		private static InputController savedController;
 		public static Coroutine routine;
+		public static bool Saving;
 
 		private static readonly Lazy<bool> SpeedrunToolInstalled = new Lazy<bool>(() =>
 				Type.GetType("Celeste.Mod.SpeedrunTool.SaveLoad.StateManager, SpeedrunTool") != null
@@ -21,19 +24,28 @@ namespace TAS {
 			if (Hotkeys.hotkeyLoadState == null || Hotkeys.hotkeySaveState == null)
 				return;
 			if (Manager.Running && Hotkeys.hotkeySaveState.pressed && !Hotkeys.hotkeySaveState.wasPressed) {
-				if (Engine.FreezeTimer > 0) {
-					routine = new Coroutine(DelaySaveStatesRoutine(Save));
-					return;
-				}
-				Save();
+				SaveAfterFreeze();
 			}
-			else if (Hotkeys.hotkeyLoadState.pressed && !Hotkeys.hotkeyLoadState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
-				if (Engine.FreezeTimer > 0) {
-					routine = new Coroutine(DelaySaveStatesRoutine(Load));
-					return;
-				}
-				Load();
+			else if (savedController != null && Hotkeys.hotkeyLoadState.pressed && !Hotkeys.hotkeyLoadState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
+				LoadAfterFreeze();
 			}
+		}
+
+		public static void SaveAfterFreeze() {
+			Saving = true;
+			if (Engine.FreezeTimer > 0) {
+				routine = new Coroutine(DelaySaveStatesRoutine(Save));
+				return;
+			}
+			Save();
+		}
+
+		private static void LoadAfterFreeze() {
+			if (Engine.FreezeTimer > 0) {
+				routine = new Coroutine(DelaySaveStatesRoutine(Load));
+				return;
+			}
+			Load();
 		}
 
 		private static IEnumerator DelaySaveStatesRoutine(Action onComplete) {
@@ -45,6 +57,9 @@ namespace TAS {
 		}
 
 		private static void Save() {
+			Manager.state &= ~State.FrameStep;
+			Manager.nextState &= ~State.FrameStep;
+
 			InputController temp = Manager.controller.Clone();
 			//+1 speedrun tool, -5 buffered inputs
 			temp.ReverseFrames(4);
@@ -62,27 +77,29 @@ namespace TAS {
 					}
 					*/
 					routine = new Coroutine(LoadStateRoutine());
-
 				}
+				Saving = false;
 			};
 		}
 
 		private static void Load() {
+			Manager.state &= ~State.FrameStep;
+			Manager.nextState &= ~State.FrameStep;
 			Manager.controller.AdvanceFrame(true);
 			if (savedController != null
 				&& savedController.SavedChecksum == Manager.controller.Checksum(savedController.CurrentFrame)) {
 
 				//Fastforward to breakpoint if one exists
-				var fastForwards = Manager.controller.fastForwards;
-				if (fastForwards.Count > 0 && fastForwards[fastForwards.Count - 1].Line > savedController.Current.Line) {
-					Manager.state &= ~State.FrameStep;
-					Manager.nextState &= ~State.FrameStep;
-				}
-				else {
+				// var fastForwards = Manager.controller.fastForwards;
+				// if (fastForwards.Count > 0 && fastForwards.Last().Line > savedController.Current.Line) {
+				// 	Manager.state &= ~State.FrameStep;
+				// 	Manager.nextState &= ~State.FrameStep;
+				// }
+				// else {
 					//InputRecord ff = new InputRecord(0, "***");
 					//savedController.fastForwards.Insert(0, ff);
 					//savedController.inputs.Insert(savedController.inputs.IndexOf(savedController.Current) + 1, ff);
-				}
+				// }
 
 				Engine.Scene.OnEndOfFrame += () => {
 					if (!StateManager.Instance.LoadState())

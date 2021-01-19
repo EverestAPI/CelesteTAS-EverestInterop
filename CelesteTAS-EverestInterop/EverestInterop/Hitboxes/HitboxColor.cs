@@ -9,23 +9,30 @@ using MonoMod.Cil;
 namespace TAS.EverestInterop.Hitboxes {
     public class HitboxColor {
         public static HitboxColor instance;
+        public static readonly Color DefaultEntityColor = Color.Red;
+        public static readonly Color DefaultTriggerColor = Color.Peru;
+
         public static Color EntityColorInversely => Settings.EntityHitboxColor.Invert();
         public static Color EntityColorInverselyLessAlpha => EntityColorInversely * 0.7f;
 
         public static TextMenu.Item CreateEntityHitboxColorButton(TextMenu textMenu, bool inGame) {
-            return new TextMenu.Button($"Entity Hitbox Color ARGB: {ColorToHex(Settings.EntityHitboxColor)}").Pressed(() => {
+            TextMenu.Item item = new TextMenu.Button($"Entity Hitbox Color: {ColorToHex(Settings.EntityHitboxColor)}").Pressed(() => {
                 Audio.Play("event:/ui/main/savefile_rename_start");
                 textMenu.SceneAs<Overworld>().Goto<OuiModOptionString>()
-                    .Init<OuiModOptions>(ColorToHex(Settings.EntityHitboxColor), value => Settings.EntityHitboxColor = HexToColor(value), 9);
+                    .Init<OuiModOptions>(ColorToHex(Settings.EntityHitboxColor), value => Settings.EntityHitboxColor = HexToColor(value, DefaultEntityColor), 9);
             });
+            item.Disabled = inGame;
+            return item;
         }
 
         public static TextMenu.Item CreateTriggerHitboxColorButton(TextMenu textMenu, bool inGame) {
-            return new TextMenu.Button($"Trigger Hitbox Color ARGB: {ColorToHex(Settings.TriggerHitboxColor)}").Pressed(() => {
+            TextMenu.Item item =  new TextMenu.Button($"Trigger Hitbox Color: {ColorToHex(Settings.TriggerHitboxColor)}").Pressed(() => {
                 Audio.Play("event:/ui/main/savefile_rename_start");
                 textMenu.SceneAs<Overworld>().Goto<OuiModOptionString>()
-                    .Init<OuiModOptions>(ColorToHex(Settings.TriggerHitboxColor), value => Settings.TriggerHitboxColor = HexToColor(value), 9);
+                    .Init<OuiModOptions>(ColorToHex(Settings.TriggerHitboxColor), value => Settings.TriggerHitboxColor = HexToColor(value, DefaultTriggerColor), 9);
             });
+            item.Disabled = inGame;
+            return item;
         }
 
         private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
@@ -38,7 +45,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 $"{color.B.ToString("X").PadLeft(2, '0')}";
         }
 
-        private static Color HexToColor(string hex) {
+        private static Color HexToColor(string hex, Color defaultColor) {
 			if (hex.Length == 6)
 				hex = "#FF" + hex;
 			if (hex.Length == 7)
@@ -46,7 +53,7 @@ namespace TAS.EverestInterop.Hitboxes {
 			if (hex.Length == 8)
 				hex = "#" + hex;
             if (hex.Length != 9) {
-                return Color.Red;
+                return defaultColor;
             }
 
             try {
@@ -58,7 +65,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 color.B = (byte) number;
                 return color;
             } catch (FormatException) {
-                return Color.Red;
+                return defaultColor;
             }
         }
 
@@ -84,7 +91,7 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         public static Color GetCustomColor(Color color, Entity entity) {
-            if (entity is Player) return color;
+            if (!Settings.ShowHitboxes || entity is Player) return color;
 
             Color customColor = Settings.EntityHitboxColor;
             if (entity is Trigger) {

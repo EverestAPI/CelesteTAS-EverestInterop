@@ -311,5 +311,12 @@ namespace TAS {
 			}
 		}
 
+		[TASCommand(args = new[] {
+			"Savestate"
+		})]
+		private static void SaveStateCommand(string[] args) {
+			Savestates.SaveAfterFreeze();
+		}
+
 	}
 }

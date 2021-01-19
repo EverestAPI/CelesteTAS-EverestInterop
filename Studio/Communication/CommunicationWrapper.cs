@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
+using CelesteStudio.Properties;
 
 namespace CelesteStudio.Communication {
 
@@ -15,13 +16,14 @@ namespace CelesteStudio.Communication {
 		public static string command;
 		public static List<Keys>[] bindings;
 
-		public static bool updatingHotkeys = true;
+		public static bool updatingHotkeys = Settings.Default.UpdatingHotkeys;
 		public static bool fastForwarding = false;
 
 		[DllImport("User32.dll")]
 		public static extern short GetAsyncKeyState(Keys key);
 
 		public static string LevelName() {
+			if (string.IsNullOrEmpty(playerData)) return string.Empty;
 			int nameStart = playerData.IndexOf('[') + 1;
 			int nameEnd = playerData.IndexOf(']');
 			return playerData.Substring(nameStart, nameEnd - nameStart);
@@ -32,8 +34,8 @@ namespace CelesteStudio.Communication {
 			if (timerIndex == -1)
 				return null;
 			timerIndex += 7;
-			int timerEnd = playerData.IndexOf('\r', timerIndex);
-			return playerData.Substring(timerIndex, timerEnd - timerIndex);
+			int timerEnd = playerData.IndexOf(')', timerIndex);
+			return playerData.Substring(timerIndex, timerEnd - timerIndex + 1);
 		}
 
 		public static void SetBindings(List<Keys>[] newBindings) {

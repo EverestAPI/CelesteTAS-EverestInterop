@@ -65,7 +65,7 @@ namespace TAS.EverestInterop {
         }
 
         private static void Distort_Render(On.Celeste.Distort.orig_Render orig, Texture2D source, Texture2D map, bool hasDistortion) {
-            if (GameplayRendererExt.RenderDebug || Settings.SimplifiedGraphics) {
+            if (GameplayRendererExt.RenderDebug || Settings.SimplifiedGraphics && Settings.SimplifiedDistort) {
                 Distort.Anxiety = 0f;
                 Distort.GameRate = 1f;
                 hasDistortion = false;

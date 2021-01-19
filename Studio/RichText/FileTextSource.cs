@@ -29,10 +29,10 @@ namespace CelesteStudio.RichText {
 		/// </summary>
 		public event EventHandler<LineNeededEventArgs> LineNeeded;
 
-		/// <summary>
-		/// Occurs when need to save line in the file
-		/// </summary>
-		public event EventHandler<LinePushedEventArgs> LinePushed;
+		// /// <summary>
+		// /// Occurs when need to save line in the file
+		// /// </summary>
+		// public event EventHandler<LinePushedEventArgs> LinePushed;
 
 		public FileTextSource(RichText currentTB)
 			: base(currentTB) {
@@ -168,78 +168,6 @@ namespace CelesteStudio.RichText {
 			_fs = null;
 		}
 
-		public override void SaveToFile(string fileName, Encoding enc) {
-			var newLinePos = new List<int>(Count);
-			//create temp file
-			var dir = Path.GetDirectoryName(fileName);
-			var tempFileName = Path.Combine(dir, Path.GetFileNameWithoutExtension(fileName) + ".tmp");
-
-			StreamReader sr = new StreamReader(fs, fileEncoding);
-			using (FileStream tempFs = new FileStream(tempFileName, FileMode.Create))
-			using (StreamWriter sw = new StreamWriter(tempFs, enc)) {
-				sw.Flush();
-
-				for (int i = 0; i < Count; i++) {
-					newLinePos.Add((int)tempFs.Length);
-
-					var sourceLine = ReadLine(sr, i);//read line from source file
-					string line;
-
-					bool lineIsChanged = lines[i] != null && lines[i].IsChanged;
-
-					if (lineIsChanged)
-						line = lines[i].Text;
-					else
-						line = sourceLine;
-
-					//call event handler
-					if (LinePushed != null) {
-						var args = new LinePushedEventArgs(sourceLine, i, lineIsChanged ? line : null);
-						LinePushed(this, args);
-
-						if (args.SavedText != null)
-							line = args.SavedText;
-					}
-
-					//save line to file
-					if (i == Count - 1)
-						sw.Write(line);
-					else
-						sw.WriteLine(line);
-
-					sw.Flush();
-				}
-			}
-
-			//clear lines buffer
-			for (int i = 0; i < Count; i++)
-				lines[i] = null;
-			//deattach from source file
-			sr.Dispose();
-			CloseFile();
-			//delete target file
-			if (File.Exists(fileName))
-				File.Delete(fileName);
-			//rename temp file
-			File.Move(tempFileName, fileName);
-
-			//binding to new file
-			sourceFileLinePositions = newLinePos;
-			path = fileName;
-			this.fileEncoding = enc;
-		}
-
-		private string ReadLine(StreamReader sr, int i) {
-			string line;
-			var filePos = sourceFileLinePositions[i];
-			if (filePos < 0)
-				return "";
-			fs.Seek(filePos, SeekOrigin.Begin);
-			sr.DiscardBufferedData();
-			line = sr.ReadLine();
-			return line;
-		}
-
 		public override void ClearIsChanged() {
 			foreach (var line in lines)
 				if (line != null)
@@ -305,10 +233,6 @@ namespace CelesteStudio.RichText {
 		public override void RemoveLine(int index, int count) {
 			sourceFileLinePositions.RemoveRange(index, count);
 			base.RemoveLine(index, count);
-		}
-
-		public override void Clear() {
-			base.Clear();
 		}
 
 		public override int GetLineLength(int i) {

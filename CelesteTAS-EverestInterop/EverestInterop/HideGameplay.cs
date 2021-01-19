@@ -1,3 +1,4 @@
+using System;
 using Celeste;
 using Mono.Cecil.Cil;
 using Monocle;
@@ -6,6 +7,7 @@ using MonoMod.Cil;
 namespace TAS.EverestInterop {
     public class HideGameplay {
         public static HideGameplay instance;
+        private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
 
         public void Load() {
             IL.Celeste.GameplayRenderer.Render += GameplayRenderer_Render;
@@ -34,8 +36,9 @@ namespace TAS.EverestInterop {
             if (!c.Next.MatchCall(typeof(GameplayRenderer), "Begin"))
                 c.GotoNext(i => i.MatchCall(typeof(GameplayRenderer), "Begin"));
             c.Index++;
-            c.Emit(OpCodes.Call, typeof(CelesteTASModule).GetMethod("get_Settings"));
-            c.Emit(OpCodes.Callvirt, typeof(CelesteTASModuleSettings).GetMethod("get_HideGameplay"));
+            c.EmitDelegate<Func<bool>>(() => Settings.SimplifiedGraphics && Settings.HideGameplay);
+            // c.Emit(OpCodes.Call, typeof(CelesteTASModule).GetMethod("get_Settings"));
+            // c.Emit(OpCodes.Callvirt, typeof(CelesteTASModuleSettings).GetMethod("get_HideGameplay"));
             c.Emit(OpCodes.Brtrue, lblAfterEntities);
         }
     }

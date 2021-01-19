@@ -3,130 +3,135 @@ using Celeste;
 using Celeste.Mod;
 using Monocle;
 using System.Collections.Generic;
-using System.Linq;
+using Microsoft.Xna.Framework;
 using TAS.EverestInterop.Hitboxes;
 
 namespace TAS.EverestInterop {
-	class Menu {
-		private static TextMenu.Item moreOptionsTextMenu;
-		private static TextMenu.Item keyConfigMenu;
+    internal static class Menu {
+        private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
 
-		private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
+        private static List<TextMenu.Item> options;
 
-		private static List<TextMenu.Item> normalOptions;
-		private static List<TextMenu.Item> hiddenOptions;
+        private static void CreateOptions(EverestModule everestModule, TextMenu menu, bool inGame) {
+            options = new List<TextMenu.Item> {
+                new TextMenuExt.SubMenu("Show Hitboxes", false).Apply(subMenu => {
+                    subMenu.Add(new TextMenu.OnOff("Enabled", Settings.ShowHitboxes).Change(value => Settings.ShowHitboxes = value));
+                    subMenu.Add(new TextMenu.Option<ActualCollideHitboxTypes>("Actual Collide Hitboxes").Apply(option => {
+                        Array enumValues = Enum.GetValues(typeof(ActualCollideHitboxTypes));
+                        foreach (ActualCollideHitboxTypes value in enumValues) {
+                            option.Add(value.ToString().SpacedPascalCase(), value, value.Equals(Settings.ShowActualCollideHitboxes));
+                        }
 
+                        option.Change(value => Settings.ShowActualCollideHitboxes = value);
+                    }));
+                    subMenu.Add(new TextMenuExt.EnumerableSlider<bool>("Trigger Hitboxes", Menu.CreateShowHideOptions(), Settings.HideTriggerHitboxes)
+                        .Change(
+                            value => Settings.HideTriggerHitboxes = value));
+                    subMenu.Add(new TextMenu.OnOff("Simplified Hitboxes", Settings.SimplifiedHitboxes).Change(value =>
+                        Settings.SimplifiedHitboxes = value));
+                    subMenu.Add(HitboxColor.CreateEntityHitboxColorButton(menu, inGame));
+                    subMenu.Add(HitboxColor.CreateTriggerHitboxColorButton(menu, inGame));
+                }),
+                SimplifiedGraphicsFeature.CreateSimplifiedGraphicsOption(),
+                new TextMenuExt.SubMenu("Relaunch Required", false).Apply(subMenu => {
+                    subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot", Settings.LaunchStudioAtBoot).Change(value =>
+                        Settings.LaunchStudioAtBoot = value));
+                    subMenu.Add(new TextMenu.OnOff("Auto Extract New Studio", Settings.AutoExtractNewStudio).Change(value =>
+                        Settings.AutoExtractNewStudio = value));
+                    subMenu.Add(new TextMenu.OnOff("Unix RTC", Settings.UnixRTC).Change(value => Settings.UnixRTC = value));
+                }),
+                new TextMenuExt.SubMenu("More Options", false).Apply(subMenu => {
+                    subMenu.Add(new TextMenu.OnOff("Center Camera", Settings.CenterCamera).Change(value => Settings.CenterCamera = value));
+                    subMenu.Add(new TextMenu.Option<InfoPositions>("Info HUD").Apply(option => {
+                        Array enumValues = Enum.GetValues(typeof(InfoPositions));
+                        foreach (InfoPositions value in enumValues) {
+                            option.Add(value.ToString().SpacedPascalCase(), value, value.Equals(Settings.InfoHUD));
+                        }
 
-		private static void CreateNormalOptions(TextMenu menu, bool inGame) {
-			normalOptions = new List<TextMenu.Item> {
-				new TextMenu.OnOff("Show Hitboxes", Settings.ShowHitboxes).Change(b => Settings.ShowHitboxes = b),
-				new TextMenu.OnOff("Simplified Graphics", Settings.SimplifiedGraphics).Change(b => Settings.SimplifiedGraphics = b),
-				new TextMenu.OnOff("Center Camera", Settings.CenterCamera).Change(b => Settings.CenterCamera = b),
-				new TextMenu.OnOff("Launch Studio At Boot", Settings.LaunchStudioAtBoot).Change(b => Settings.LaunchStudioAtBoot = b).Apply(item => item.SetAction( () => { item.NeedsRelaunch(menu); })),
-				new TextMenu.OnOff("Disable Achievements", Settings.DisableAchievements).Change(b => Settings.DisableAchievements = b),
-			};
-			if (!inGame) {
-				normalOptions.Add(HitboxColor.CreateEntityHitboxColorButton(menu, inGame));
-				normalOptions.Add(HitboxColor.CreateTriggerHitboxColorButton(menu, inGame));
-			}
-		}
+                        option.Change(value => Settings.InfoHUD = value);
+                    }));
+                    subMenu.Add(
+                        new TextMenu.OnOff("Disable Achievements", Settings.DisableAchievements).Change(value =>
+                            Settings.DisableAchievements = value));
+                    subMenu.Add(new TextMenu.OnOff("Disable Grab Desync Fix", Settings.DisableGrabDesyncFix).Change(value =>
+                        Settings.DisableGrabDesyncFix = value));
+                    subMenu.Add(new TextMenu.OnOff("Round Position", Settings.RoundPosition).Change(value => Settings.RoundPosition = value));
+                    subMenu.Add(new TextMenu.OnOff("Auto Mute on Fast Forward", Settings.AutoMute).Change(value => Settings.AutoMute = value));
+                    subMenu.Add(new TextMenu.OnOff("Mod 9D Lighting", Settings.Mod9DLighting).Change(value => Settings.Mod9DLighting = value));
+                }),
+                new TextMenu.Button(Dialog.Clean("options_keyconfig")).Pressed(() => {
+                    menu.Focused = false;
+                    Engine.Scene.Add(new ModuleSettingsKeyboardConfigUI(everestModule) {
+                        OnClose = () => menu.Focused = true
+                    });
+                    Engine.Scene.OnEndOfFrame += () => Engine.Scene.Entities.UpdateLists();
+                })
+            };
+        }
 
-		private static void CreateHiddenOptions(TextMenu menu, bool inGame) {
-			var itemInfoHUD = new TextMenu.Option<InfoPositions>("Info HUD");
-			hiddenOptions = new List<TextMenu.Item> {
-				new TextMenu.OnOff("Unix RTC",Settings.UnixRTC).Change(b => Settings.UnixRTC = b).Apply(item => item.SetAction( () => { item.NeedsRelaunch(menu); })),
-				new TextMenu.OnOff("Disable Grab Desync Fix", Settings.DisableGrabDesyncFix).Change(b => Settings.DisableGrabDesyncFix = b),
-				new TextMenu.OnOff("Round Position",Settings.RoundPosition).Change(b => Settings.RoundPosition = b),
-				new TextMenu.OnOff("Mod 9D Lighting",Settings.Mod9DLighting).Change(b => Settings.Mod9DLighting = b).Apply(item => item.SetAction( () => { item.NeedsRelaunch(menu); })),
-				new TextMenu.OnOff("Auto Extract New Studio", Settings.AutoExtractNewStudio).Change(b => Settings.AutoExtractNewStudio = b).Apply(item => item.SetAction( () => { item.NeedsRelaunch(menu); })),
-				new TextMenu.OnOff("Hide Gameplay", Settings.HideGameplay).Change(b => {
-					Settings.HideGameplay = b;
-					if (b) {
-						((TextMenu.OnOff) normalOptions.First()).RightPressed();
-					} else {
-						((TextMenu.OnOff) normalOptions.First()).LeftPressed();
-					}
-				}),
-				new TextMenu.OnOff("Auto Mute on Fast Forward", Settings.AutoMute).Change(b => Settings.AutoMute = b),
-				new TextMenu.OnOff("Hide Trigger Hitboxes", Settings.HideTriggerHitboxes).Change(b => Settings.HideTriggerHitboxes = b),
-				new TextMenu.OnOff("Simplified Hitboxes", Settings.SimplifiedHitboxes).Change(b => Settings.SimplifiedHitboxes = b),
-				new TextMenu.Option<LastFrameHitboxesTypes>("Show Last Frame Hitboxes (Experiment)").Apply(option => {
-						Array enumValues = Enum.GetValues(typeof(LastFrameHitboxesTypes));
-						foreach (LastFrameHitboxesTypes value in enumValues) {
-							option.Add(value.ToString().SpacedPascalCase(), value, value.Equals(Settings.ShowLastFrameHitboxes));
-						}
-						option.Change(b => Settings.ShowLastFrameHitboxes = b);
-						option.SetAction(() => {
-							option.AddDescription(menu, "so the hitbox from the last frame is actually used.");
-							option.AddDescription(menu, "since they all perform collision detection before moving,");
-							option.AddDescription(menu, "and update later than the player,");
-							option.AddDescription(menu, "Apply to entities that use PlayerCollider for collision detection");
-						});
-					}),
-				new TextMenu.Option<InfoPositions>("Info HUD").Apply(option => {
-					Array enumValues = Enum.GetValues(typeof(InfoPositions));
-					foreach (InfoPositions value in enumValues) {
-						option.Add(value.ToString().SpacedPascalCase(), value, value.Equals(Settings.InfoHUD));
-					}
-					option.Change(b => Settings.InfoHUD = b);
-				})
-			};
-		}
+        public static void CreateMenu(EverestModule everestModule, TextMenu menu, bool inGame) {
+            menu.Add(new TextMenu.OnOff("Enabled", Settings.Enabled).Change((value) => {
+                Settings.Enabled = value;
+                foreach (TextMenu.Item item in options) {
+                    item.Visible = value;
+                }
+            }));
+            CreateOptions(everestModule, menu, inGame);
+            foreach (TextMenu.Item item in options) {
+                menu.Add(item);
+                item.Visible = Settings.Enabled;
+            }
+        }
 
-		public static void CreateMenu(EverestModule self, TextMenu menu, bool inGame, FMOD.Studio.EventInstance snapshot) {
-			menu.Add(new TextMenu.OnOff("Enabled", Settings.Enabled).Change((b) => {
-				Settings.Enabled = b;
-				foreach (TextMenu.Item item in normalOptions) {
-					item.Visible = b;
-				}
-				keyConfigMenu.Visible = b;
-				moreOptionsTextMenu.Visible = b;
-				foreach (TextMenu.Item item in hiddenOptions) {
-					item.Visible = false;
-				}
+        public static IEnumerable<KeyValuePair<int?, string>> CreateSliderOptions(int start, int end, Func<int, string> formatter = null) {
+            if (formatter == null) {
+                formatter = i => i.ToString();
+            }
 
-				if (!b && Settings.ShowHitboxes) {
-					((TextMenu.OnOff) normalOptions.First()).LeftPressed();
-				}
-			}));
+            List<KeyValuePair<int?, string>> result = new List<KeyValuePair<int?, string>>();
 
-			CreateNormalOptions(menu, inGame);
-			foreach (TextMenu.Item item in normalOptions) {
-				menu.Add(item);
-				item.Visible = Settings.Enabled;
-				item.InvokeAction();
-			}
+            if (start <= end) {
+                for (int current = start; current <= end; current++) {
+                    result.Add(new KeyValuePair<int?, string>(current, formatter(current)));
+                }
 
-			keyConfigMenu = new TextMenu.Button(Dialog.Clean("options_keyconfig")).Pressed(() => {
-				menu.Focused = false;
-				Engine.Scene.Add(new ModuleSettingsKeyboardConfigUI(self) {
-					OnClose = () => menu.Focused = true
-				});
-				Engine.Scene.OnEndOfFrame += () => Engine.Scene.Entities.UpdateLists();
-			});
+                result.Insert(0, new KeyValuePair<int?, string>(null, "Default"));
+            } else {
+                for (int current = start; current >= end; current--) {
+                    result.Add(new KeyValuePair<int?, string>(current, formatter(current)));
+                }
 
-			moreOptionsTextMenu = new TextMenu.Button("modoptions_celestetas_moreoptions".DialogCleanOrNull() ?? "More Options").Pressed(() => {
-				ToggleMoreOptionsMenuItem(menu, true);
-				moreOptionsTextMenu.Visible = false;
-				menu.Selection += 1;
-			});
+                result.Insert(0, new KeyValuePair<int?, string>(null, "Default"));
+            }
 
-			menu.Add(keyConfigMenu);
-			menu.Add(moreOptionsTextMenu);
-			keyConfigMenu.Visible = Settings.Enabled;
-			moreOptionsTextMenu.Visible = Settings.Enabled;
+            return result;
+        }
 
-			CreateHiddenOptions(menu, inGame);
-			foreach (TextMenu.Item item in hiddenOptions) {
-				menu.Add(item);
-				item.Visible = false;
-				item.InvokeAction();
-			}
-		}
+        public static IEnumerable<KeyValuePair<bool, string>> CreateShowHideOptions() {
+            return new List<KeyValuePair<bool, string>> {
+                new KeyValuePair<bool, string>(false, "Default"),
+                new KeyValuePair<bool, string>(true, "Hide"),
+            };
+        }
 
-		private static void ToggleMoreOptionsMenuItem(TextMenu textMenu, bool visible) {
-			foreach (TextMenu.Item item in hiddenOptions)
-				item.Visible = visible;
-		}
-	}
+        public static IEnumerable<KeyValuePair<bool, string>> CreateSimplifyOptions() {
+            return new List<KeyValuePair<bool, string>> {
+                new KeyValuePair<bool, string>(false, "Default"),
+                new KeyValuePair<bool, string>(true, "Simplify"),
+            };
+        }
+
+        public static IEnumerable<KeyValuePair<Color?, string>> CreateNaturalColorOptions() {
+            return new List<KeyValuePair<Color?, string>> {
+                new KeyValuePair<Color?, string>(null, "Default"),
+                new KeyValuePair<Color?, string>(new Color(196, 2, 51), "Red"),
+                new KeyValuePair<Color?, string>(new Color(0, 159, 107), "Green"),
+                new KeyValuePair<Color?, string>(new Color(0, 135, 189), "Blue"),
+                new KeyValuePair<Color?, string>(new Color(255, 211, 0), "Yellow"),
+                new KeyValuePair<Color?, string>(Color.White, "White"),
+                new KeyValuePair<Color?, string>(Color.Black, "Black"),
+                new KeyValuePair<Color?, string>(Color.Transparent, "Transparent"),
+            };
+        }
+    }
 }

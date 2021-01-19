@@ -5,11 +5,11 @@ using System.Drawing;
 using System.Drawing.Design;
 using System.Drawing.Drawing2D;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
-using CelesteStudio.Properties;
 
 namespace CelesteStudio.RichText {
 	public class RichText : UserControl {
@@ -1508,6 +1508,8 @@ namespace CelesteStudio.RichText {
 		/// Cut selected text into Clipboard
 		/// </summary>
 		public void Cut() {
+			if (Selection.IsEmpty)
+				Selection.Expand();
 			if (!Selection.IsEmpty) {
 				Copy();
 				ClearSelected();
@@ -1807,7 +1809,7 @@ namespace CelesteStudio.RichText {
 						minWidth = LeftIndent + PreferredLineWidth * CharWidth + 2 + Paddings.Left + Paddings.Right;
 						break;
 				}
-			AutoScrollMinSize = new Size(minWidth, wordWrapLinesCount * CharHeight + Paddings.Top + Paddings.Bottom);
+			AutoScrollMinSize = new Size(minWidth, (wordWrapLinesCount + 3) * CharHeight + Paddings.Top + Paddings.Bottom);
 		}
 
 		private void RecalcScrollByOneLine(int iLine) {
@@ -2075,10 +2077,20 @@ namespace CelesteStudio.RichText {
 		}
 		public void SaveFile(bool mainSaveOnly = false) {
 			FileSaving?.Invoke(this, new EventArgs());
-			SaveToFile(SaveToFileName, Encoding.ASCII);
 
+			bool savedLastFile = false;
 			if (!mainSaveOnly && SaveToFileName != LastFileName) {
 				SaveToFile(LastFileName, Encoding.ASCII);
+				savedLastFile = true;
+			}
+
+			if(string.IsNullOrEmpty(SaveToFileName)) return;
+
+			// Avoid stuttering due to repeated UpdateHighlighting().
+			if (savedLastFile) {
+				File.Copy(LastFileName, SaveToFileName, true);
+			} else {
+				SaveToFile(SaveToFileName, Encoding.ASCII);
 			}
 		}
 
@@ -2135,6 +2147,8 @@ namespace CelesteStudio.RichText {
 				case Keys.Z:
 					if (e.Modifiers == Keys.Control && !ReadOnly)
 						Undo();
+					if (e.Modifiers == (Keys.Control| Keys.Shift) && !ReadOnly)
+						Redo();
 					break;
 				//case Keys.R:
 				//	if (e.Modifiers == Keys.Control && !ReadOnly)
@@ -2151,6 +2165,19 @@ namespace CelesteStudio.RichText {
 						NavigateBackward();
 					if (e.Modifiers == (Keys.Control | Keys.Shift))
 						NavigateForward();
+					break;
+				case Keys.Y:
+					if (ReadOnly) break;
+					if (e.Modifiers == Keys.Control) {
+						Selection.Expand();
+						int line = Selection.End.iLine;
+						if (line < LinesCount - 1) {
+							line++;
+						}
+						Selection.End = new Place(0, line);
+						ClearSelected();
+						TryMoveCursorBehindFrame();
+					}
 					break;
 
 				case Keys.Back:
@@ -2200,8 +2227,7 @@ namespace CelesteStudio.RichText {
 							}
 						}
 						OnKeyPressed((char)0xff);
-					} else
-						if (e.Modifiers == Keys.Control) {
+					} else if (e.Modifiers == Keys.Control) {
 						if (OnKeyPressing((char)0xff)) //KeyPress event processed key
 							break;
 						if (!Selection.IsEmpty)
@@ -2211,8 +2237,7 @@ namespace CelesteStudio.RichText {
 							ClearSelected();
 						}
 						OnKeyPressed((char)0xff);
-					} else
-							if (e.Modifiers == Keys.Shift) {
+					} else if (e.Modifiers == Keys.Shift) {
 						if (OnKeyPressing((char)0xff)) //KeyPress event processed key
 							break;
 						if (!Selection.IsEmpty)
@@ -2274,6 +2299,9 @@ namespace CelesteStudio.RichText {
 					if (e.Modifiers == Keys.None || e.Modifiers == Keys.Shift) {
 						Selection.GoUp(e.Shift);
 						ScrollLeft();
+						if (e.Modifiers == Keys.None) {
+							TryMoveCursorBehindFrame();
+						}
 					}
 					if (e.Modifiers == AltShift) {
 						CheckAndChangeSelectionType();
@@ -2284,13 +2312,28 @@ namespace CelesteStudio.RichText {
 						if (!ReadOnly && !Selection.ColumnSelectionMode)
 							MoveSelectedLinesUp();
 					}
+					if (e.Modifiers == Keys.Control || e.Modifiers == (Keys.Control | Keys.Shift)) {
+						List<int> commentLine = FindLines(@"^\s*#|^\*\*\*", RegexOptions.None);
+						if (commentLine.Count > 0) {
+							int line = commentLine.FindLast(i => i < selection.Start.iLine);
+							while (selection.Start.iLine > line) {
+								Selection.GoUp(e.Shift);
+							}
+							ScrollLeft();
+						} else {
+							Selection.GoUp(e.Shift);
+							ScrollLeft();
+						}
+					}
 					break;
 				case Keys.Down:
 					if (e.Modifiers == Keys.None || e.Modifiers == Keys.Shift) {
 						Selection.GoDown(e.Shift);
 						ScrollLeft();
-					} else
-						if (e.Modifiers == AltShift) {
+						if (e.Modifiers == Keys.None) {
+							TryMoveCursorBehindFrame();
+						}
+					} else if (e.Modifiers == AltShift) {
 						CheckAndChangeSelectionType();
 						if (Selection.ColumnSelectionMode)
 							Selection.GoDown_ColumnSelectionMode();
@@ -2298,6 +2341,20 @@ namespace CelesteStudio.RichText {
 					if (e.Modifiers == Keys.Alt) {
 						if (!ReadOnly && !Selection.ColumnSelectionMode)
 							MoveSelectedLinesDown();
+					}
+					if (e.Modifiers == Keys.Control || e.Modifiers == (Keys.Control | Keys.Shift))  {
+						List<int> commentLine = FindLines(@"^\s*#|^\*\*\*", RegexOptions.None);
+						if (commentLine.Count > 0) {
+							int line = commentLine.FirstOrDefault(i => i > Selection.Start.iLine);
+							if (line == 0) line = LinesCount - 1;
+							while (Selection.Start.iLine < line) {
+								Selection.GoDown(e.Shift);
+							}
+							ScrollLeft();
+						} else {
+							Selection.GoDown(e.Shift);
+							ScrollLeft();
+						}
 					}
 					break;
 				case Keys.PageUp:
@@ -2985,6 +3042,13 @@ namespace CelesteStudio.RichText {
 			}
 		}
 
+		private void TryMoveCursorBehindFrame(bool onlyLeadingSpaces = false) {
+			Place start = Selection.Start;
+			if (Selection.IsEmpty && SyntaxHighlighter.InputRecordRegex.IsMatch(Lines[start.iLine]) && (!onlyLeadingSpaces || start.iChar < 4)) {
+				Selection.Start = new Place(4, start.iLine);
+			}
+		}
+
 		private void DrawLineChars(PaintEventArgs e, int firstChar, int lastChar, int iLine, int iWordWrapLine, int x, int y) {
 			Line line = lines[iLine];
 			LineInfo lineInfo = lineInfos[iLine];
@@ -3083,12 +3147,21 @@ namespace CelesteStudio.RichText {
 					Selection.ColumnSelectionMode = true;
 				} else
 					Selection.Start = PointToPlace(e.Location);
-				if ((lastModifiers & Keys.Shift) != 0)
+
+				if ((lastModifiers & Keys.Shift) != 0) {
 					Selection.End = oldEnd;
+				}
+
 				Selection.EndUpdate();
 				Invalidate();
-				return;
 			}
+		}
+
+		protected override void OnMouseUp(MouseEventArgs e) {
+			base.OnMouseUp(e);
+
+			TryMoveCursorBehindFrame(true);
+			Invalidate();
 		}
 
 		private void CheckAndChangeSelectionType() {
@@ -4342,6 +4415,14 @@ window.status = ""#print"";
 				Text = "";
 			NeedRecalc();
 			Invalidate();
+		}
+
+		/// <summary>
+		/// Removes given line
+		/// </summary>
+		public void RemoveLine(int line) {
+			Selection = new Range(this, 0, line, 0, line);
+			ClearCurrentLine();
 		}
 
 		#region Drag and drop

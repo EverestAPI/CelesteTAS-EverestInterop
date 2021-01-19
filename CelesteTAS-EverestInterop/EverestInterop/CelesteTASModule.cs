@@ -32,12 +32,13 @@ namespace TAS.EverestInterop {
 
         public override void Initialize() {
             if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
-                ExtractStudio();
-                LaunchStudioAtBoot();
+                ExtractStudio(out bool studioProcessWasKilled);
+                LaunchStudioAtBoot(studioProcessWasKilled);
             }
         }
 
-        private void ExtractStudio() {
+        private void ExtractStudio(out bool studioProcessWasKilled) {
+            studioProcessWasKilled = false;
             if (!File.Exists(copiedStudioExePath) || CheckNewerStudio()) {
                 try {
                     Process studioProcess = Process.GetProcesses().FirstOrDefault(process =>
@@ -52,6 +53,9 @@ namespace TAS.EverestInterop {
                     if (studioProcess?.HasExited == false)
                         return;
 
+                    if (studioProcess?.HasExited == true)
+                        studioProcessWasKilled = true;
+
                     if (!string.IsNullOrEmpty(Metadata.PathArchive)) {
                         using (ZipFile zip = ZipFile.Read(Metadata.PathArchive)) {
                             if (zip.EntryFileNames.Contains(studioNameWithExe)) {
@@ -61,8 +65,7 @@ namespace TAS.EverestInterop {
                                 }
                             }
                         }
-                    }
-                    else if (!string.IsNullOrEmpty(Metadata.PathDirectory)) {
+                    } else if (!string.IsNullOrEmpty(Metadata.PathDirectory)) {
                         string[] files = Directory.GetFiles(Metadata.PathDirectory);
 
                         if (files.Any(filePath => filePath.EndsWith(studioNameWithExe))) {
@@ -78,8 +81,11 @@ namespace TAS.EverestInterop {
 
                     Settings.StudioLastModifiedTime = File.GetLastWriteTime(copiedStudioExePath);
                     Instance.SaveSettings();
+                } catch (UnauthorizedAccessException e) {
+                    Logger.Log("CelesteTASModule", "Failed to extract studio.");
+                    Logger.LogDetailed(e);
                 }
-                catch (UnauthorizedAccessException) { }
+
             }
             else {
                 foreach (string file in Directory.GetFiles(Everest.PathGame, "*.PendingOverwrite"))
@@ -108,16 +114,22 @@ namespace TAS.EverestInterop {
             return modifiedTime.CompareTo(Settings.StudioLastModifiedTime) > 0;
         }
 
-        private void LaunchStudioAtBoot() {
-            if (Settings.Enabled && Settings.LaunchStudioAtBoot) {
-                Process[] processes = Process.GetProcesses();
-                foreach (Process process in processes) {
-                    if (process.ProcessName.StartsWith("Celeste") && process.ProcessName.Contains("Studio"))
-                        return;
-                }
+        private void LaunchStudioAtBoot(bool studioProcessWasKilled) {
+            if (Settings.Enabled && Settings.LaunchStudioAtBoot || studioProcessWasKilled) {
+                try {
+                    Process[] processes = Process.GetProcesses();
+                    foreach (Process process in processes) {
+                        if (process.ProcessName.StartsWith("Celeste") && process.ProcessName.Contains("Studio"))
+                            return;
+                    }
 
-                if (File.Exists(copiedStudioExePath))
-                    Process.Start(copiedStudioExePath);
+                    if (File.Exists(copiedStudioExePath))
+                        Process.Start(copiedStudioExePath);
+
+                } catch (Exception e) {
+                    Logger.Log("CelesteTASModule", "Failed to launch studio at boot.");
+                    Logger.LogDetailed(e);
+                }
             }
         }
 
@@ -137,8 +149,8 @@ namespace TAS.EverestInterop {
             HitboxFixer.instance = new HitboxFixer();
             HitboxFixer.instance.Load();
 
-            SimplifiedGraphics.instance = new SimplifiedGraphics();
-            SimplifiedGraphics.instance.Load();
+            SimplifiedGraphicsFeature.instance = new SimplifiedGraphicsFeature();
+            SimplifiedGraphicsFeature.instance.Load();
 
             CenterCamera.instance = new CenterCamera();
             CenterCamera.instance.Load();
@@ -156,6 +168,8 @@ namespace TAS.EverestInterop {
             HitboxTweak.instance.Load();
 
             InfoHUD.Load();
+
+            PlayerInfo.Load();
 
             // Optional: Allow spawning at specified location
             On.Celeste.LevelLoader.LoadingThread += LevelLoader_LoadingThread;
@@ -180,13 +194,14 @@ namespace TAS.EverestInterop {
             DisableAchievements.instance.Unload();
             GraphicsCore.instance.Unload();
             HitboxFixer.instance.Unload();
-            SimplifiedGraphics.instance.Unload();
+            SimplifiedGraphicsFeature.instance.Unload();
             CenterCamera.instance.Unload();
             AutoMute.instance.Unload();
             HideGameplay.instance.Unload();
             HitboxColor.instance.Unload();
             HitboxTweak.instance.Unload();
             InfoHUD.Unload();
+            PlayerInfo.Unload();
             On.Celeste.LevelLoader.LoadingThread -= LevelLoader_LoadingThread;
             StudioCommunicationClient.Destroy();
 
@@ -195,7 +210,7 @@ namespace TAS.EverestInterop {
 
         public override void CreateModMenuSection(TextMenu menu, bool inGame, FMOD.Studio.EventInstance snapshot) {
             CreateModMenuSectionHeader(menu, inGame, snapshot);
-            Menu.CreateMenu(this, menu, inGame, snapshot);
+            Menu.CreateMenu(this, menu, inGame);
         }
 
         private void LevelLoader_LoadingThread(On.Celeste.LevelLoader.orig_LoadingThread orig, LevelLoader self) {

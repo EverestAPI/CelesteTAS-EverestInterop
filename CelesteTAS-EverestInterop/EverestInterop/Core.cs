@@ -1,15 +1,12 @@
 ﻿using Celeste;
 using Celeste.Mod;
-using FMOD.Studio;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.RuntimeDetour;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using MonoMod.Utils;
 
 namespace TAS.EverestInterop {
     class Core {
@@ -47,6 +44,8 @@ namespace TAS.EverestInterop {
 
             // Forced: Allow "rendering" entities without actually rendering them.
             On.Monocle.Entity.Render += Entity_Render;
+            
+            On.Monocle.Scene.AfterUpdate += Scene_AfterUpdate;
         }
 
         public void Unload() {
@@ -56,6 +55,7 @@ namespace TAS.EverestInterop {
 			On.Celeste.RunThread.Start -= RunThread_Start;
             h_Game_Update.Dispose();
             On.Monocle.Entity.Render -= Entity_Render;
+            On.Monocle.Scene.AfterUpdate -= Scene_AfterUpdate;
         }
 
         public static Detour h_RunThreadWithLogging;
@@ -176,6 +176,11 @@ namespace TAS.EverestInterop {
             if (InUpdate)
                 return;
             orig(self);
+        }
+
+        private void Scene_AfterUpdate(On.Monocle.Scene.orig_AfterUpdate orig, Scene self) {
+            orig(self);
+            Manager.UpdatePlayerInfo();
         }
     }
 }
