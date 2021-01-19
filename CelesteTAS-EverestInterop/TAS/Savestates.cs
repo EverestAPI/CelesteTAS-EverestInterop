@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using Celeste;
+using Celeste.Mod;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Monocle;
 using TAS.EverestInterop;
@@ -9,6 +11,7 @@ namespace TAS {
 	static class Savestates {
 		private static InputController savedController;
 		public static Coroutine routine;
+		public static bool Saving;
 
 		private static readonly Lazy<bool> SpeedrunToolInstalled = new Lazy<bool>(() =>
 				Type.GetType("Celeste.Mod.SpeedrunTool.SaveLoad.StateManager, SpeedrunTool") != null
@@ -21,19 +24,29 @@ namespace TAS {
 			if (Hotkeys.hotkeyLoadState == null || Hotkeys.hotkeySaveState == null)
 				return;
 			if (Manager.Running && Hotkeys.hotkeySaveState.pressed && !Hotkeys.hotkeySaveState.wasPressed) {
-				if (Engine.FreezeTimer > 0) {
-					routine = new Coroutine(DelaySaveStatesRoutine(Save));
-					return;
-				}
-				Save();
+				SaveAfterFreeze();
 			}
 			else if (savedController != null && Hotkeys.hotkeyLoadState.pressed && !Hotkeys.hotkeyLoadState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
-				if (Engine.FreezeTimer > 0) {
-					routine = new Coroutine(DelaySaveStatesRoutine(Load));
-					return;
-				}
-				Load();
+				LoadAfterFreeze();
 			}
+		}
+
+		private static List<InputRecord> lastFastForwards;
+		public static void SaveAfterFreeze() {
+			Saving = true;
+			if (Engine.FreezeTimer > 0) {
+				routine = new Coroutine(DelaySaveStatesRoutine(Save));
+				return;
+			}
+			Save();
+		}
+
+		private static void LoadAfterFreeze() {
+			if (Engine.FreezeTimer > 0) {
+				routine = new Coroutine(DelaySaveStatesRoutine(Load));
+				return;
+			}
+			Load();
 		}
 
 		private static IEnumerator DelaySaveStatesRoutine(Action onComplete) {
@@ -65,7 +78,7 @@ namespace TAS {
 					}
 					*/
 					routine = new Coroutine(LoadStateRoutine());
-
+					Saving = false;
 				}
 			};
 		}

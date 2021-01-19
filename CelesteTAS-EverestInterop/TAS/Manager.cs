@@ -146,6 +146,11 @@ namespace TAS {
 
 		private static void HandleFrameRates() {
 			if (HasFlag(state, State.Enable) && !HasFlag(state, State.FrameStep) && !HasFlag(nextState, State.FrameStep) && !HasFlag(state, State.Record)) {
+				if (Savestates.Saving) {
+					FrameLoops = 1;
+					return;
+				}
+
 				if (controller.HasFastForward) {
 					FrameLoops = controller.FastForwardSpeed;
 					return;
