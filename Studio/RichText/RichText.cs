@@ -1809,7 +1809,7 @@ namespace CelesteStudio.RichText {
 						minWidth = LeftIndent + PreferredLineWidth * CharWidth + 2 + Paddings.Left + Paddings.Right;
 						break;
 				}
-			AutoScrollMinSize = new Size(minWidth, wordWrapLinesCount * CharHeight + Paddings.Top + Paddings.Bottom);
+			AutoScrollMinSize = new Size(minWidth, (wordWrapLinesCount + 3) * CharHeight + Paddings.Top + Paddings.Bottom);
 		}
 
 		private void RecalcScrollByOneLine(int iLine) {
