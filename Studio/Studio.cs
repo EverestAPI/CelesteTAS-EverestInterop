@@ -15,7 +15,6 @@ using Microsoft.Win32;
 using CelesteStudio.Communication;
 using CelesteStudio.Properties;
 using CelesteStudio.RichText;
-using CelesteStudio.TtilebarButton;
 
 namespace CelesteStudio
 {
@@ -56,6 +55,8 @@ namespace CelesteStudio
             get => tasText.LastFileName;
             set => tasText.LastFileName = value;
         }
+
+        float scaleFactor => DeviceDpi / 96f;
 
         private FileList recentFiles => Settings.Default.RecentFiles ?? (Settings.Default.RecentFiles = new FileList());
 
@@ -109,6 +110,7 @@ namespace CelesteStudio
         {
             InitializeComponent();
             InitMenu();
+            InitBirdButton();
 
             Text = titleBarText;
 			Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.CreateSpecificCulture("en-US");
@@ -129,8 +131,6 @@ namespace CelesteStudio
         }
 
         private void InitMenu() {
-            AddTitleBarButton();
-
             openRecentStripMenuItem.DropDownItemClicked += (sender, args) => {
                 ToolStripItem clickedItem = args.ClickedItem;
                 if (clickedItem.Text == "Clear") {
@@ -142,6 +142,11 @@ namespace CelesteStudio
                 }
                 OpenFile(clickedItem.Text);
             };
+        }
+
+        private void InitBirdButton() {
+            Size origSize = birdButton.Image.Size;
+            birdButton.Image = new Bitmap(birdButton.Image, new Size((int)(origSize.Width * scaleFactor), (int)(origSize.Height * scaleFactor)));
         }
 
         private void CreateRecentFilesMenu() {
@@ -176,51 +181,6 @@ namespace CelesteStudio
                     return true;
             }
             return false;
-        }
-
-        // TitlebarButton modified from https://github.com/tomaszmalik/ActiveButtons.Net
-        private void AddTitleBarButton()
-        {
-            var menu = ActiveMenu.GetInstance(this);
-            var button = menu.Items.CreateItem("", null);
-            button.ToolTipTitle = "Fact: Birds are hard to catch";
-            button.ToolTipText = @"
-Ctrl + O: Open file (Updates Celeste.tas as well)
-
-Ctrl + Shift + S: Save as (Updates Celeste.tas as well)
-
-Ctrl + D: Toggle sending inputs to Celeste
-
-Ctrl + Shift + D: Refresh connection between Studio and Celeste
-
-Ctrl + Shift + C: Copy player data to clipboard
-
-Ctrl + K: Block comment/uncomment
-
-Ctrl + P: Remove all breakpoints
-
-Ctrl + .: Insert/Remove breakpoint
-
-Ctrl + R: Insert room name
-
-Ctrl + Shift + R: Insert console load command at current location
-
-Ctrl + T: Insert current in-game time
-
-Ctrl + Down/Up: Go to comment or breakpoint";
-
-            button.BackColor = Color.Transparent;
-            button.ForeColor = Color.Empty;
-            button.Image = Resources.bird;
-            menu.Items.Add(button);
-            Button myButton = button as Button;
-            myButton.Cursor = Cursors.Hand;
-            myButton.TabStop = false;
-            myButton.FlatStyle = FlatStyle.Flat;
-            myButton.FlatAppearance.BorderSize = 0;
-            button.Click += (sender, args) => {
-                contextMenuStrip.Show(myButton, 0, myButton.Height);
-            };
         }
 
         private void TASStudio_FormClosed(object sender, FormClosedEventArgs e)
@@ -528,11 +488,8 @@ Ctrl + Down/Up: Go to comment or breakpoint";
                     Console.WriteLine(e);
                 }
             }
-            else
-            {
-                lblStatus.Text = "Searching...";
-                tasText.Height += statusBar.Height - 22;
-                statusBar.Height = 22;
+            else {
+                UpdateStatusBar();
 
                 if (Settings.Default.RememberLastFileName
                     && File.Exists(Settings.Default.LastFileName)
@@ -547,9 +504,9 @@ Ctrl + Down/Up: Go to comment or breakpoint";
         }
         public void UpdateValues()
         {
-            if (this.InvokeRequired)
+            if (InvokeRequired)
             {
-                this.Invoke((Action)UpdateValues);
+                Invoke((Action)UpdateValues);
             }
             else
             {
@@ -650,21 +607,9 @@ Ctrl + Down/Up: Go to comment or breakpoint";
             {
                 lblStatus.Text = "(" + totalFrames + ")\r\nSearching...";
             }
-            string text = lblStatus.Text;
-            int totalLines = 0;
-            int index = 0;
-            while ((index = text.IndexOf('\n', index) + 1) > 0)
-            {
-                totalLines++;
-            }
-            if (text.LastIndexOf('\n') + 1 < text.Length)
-            {
-                totalLines++;
-            }
-            totalLines = totalLines * (Environment.OSVersion.Platform == PlatformID.Unix ? 15 : 18);
-            totalLines = totalLines < 22 ? 22 : totalLines;
-            statusBar.Height = totalLines;
-            tasText.Height = ClientSize.Height - totalLines;
+            int bottomExtraSpace = TextRenderer.MeasureText("\n", lblStatus.Font).Height / 5;
+            statusBar.Height = TextRenderer.MeasureText(lblStatus.Text.Trim(), lblStatus.Font).Height + bottomExtraSpace;
+            tasText.Height = ClientSize.Height - statusBar.Height;
         }
 
         private void tasText_TextChanged(object sender, TextChangedEventArgs e)
@@ -889,6 +834,12 @@ Ctrl + Down/Up: Go to comment or breakpoint";
             if (string.IsNullOrEmpty(fileName)) return;
             if (!File.Exists(fileName)) { File.WriteAllText(fileName, string.Empty); }
             OpenFile(fileName);
+        }
+
+        private void birdButton_Click(object sender, EventArgs e)
+        {
+            Button birdButton = (Button)sender;
+            contextMenuStrip.Show(birdButton, 0, birdButton.Height);
         }
 
         private void sendInputsToCelesteMenuItem_Click(object sender, EventArgs e) {
