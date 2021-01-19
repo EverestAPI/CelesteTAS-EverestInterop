@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Input = Celeste.Input;
@@ -25,6 +26,17 @@ namespace TAS {
 			private set => _checksum = value;
 		}
 		public bool NeedsToWait => Manager.IsLoading() || Manager.forceDelayTimer > 0 || Manager.forceDelay;
+
+		private Dictionary<string, DateTime> usedFiles = new Dictionary<string, DateTime>();
+		private bool NeedsReload {
+			get {
+				foreach (var file in usedFiles) {
+					if (File.GetLastWriteTime(file.Key) != file.Value)
+						return true;
+				}
+				return false;
+			}
+		}
 
 		public InputRecord Current { get; set; }
 		public InputRecord Previous {
@@ -97,12 +109,16 @@ namespace TAS {
 		//it should be two separate ones but i don't want to separate the logic
 		//if there's weirdness with inputs being skipped or repeating this is why
 		public void AdvanceFrame(bool reload) {
-			if (reload) {
+			//there's a reason i'm rewriting how inputs work. this line is the reason.
+			//there are 20 million checks to prevent inputs being skipped and i'm sick of it
+			if (reload && !NeedsToWait)
+				CurrentFrame--;
+			if (NeedsReload) {
 				//Reinitialize the file and simulate a replay of the TAS file up to the current point.
 				int previousFrame = CurrentFrame - 1;
 				InitializePlayback();
 				//Prevents time travel.
-				CurrentFrame = NeedsToWait ? previousFrame + 1 : previousFrame;
+				CurrentFrame = previousFrame + 1;
 
 				while (CurrentFrame > frameToNext) {
 					if (inputIndex + 1 >= inputs.Count) {
@@ -196,6 +212,7 @@ namespace TAS {
 			frameToNext = 0;
 			inputs.Clear();
 			fastForwards.Clear();
+			usedFiles.Clear();
 		}
 
 		/*
@@ -248,8 +265,12 @@ namespace TAS {
 				if (filePath == "Celeste.tas" && startLine == 0) {
 					inputs.Clear();
 					fastForwards.Clear();
+					usedFiles.Clear();
 					if (!File.Exists(filePath))
 						return false;
+				}
+				if (!usedFiles.ContainsKey(filePath)) {
+					usedFiles.Add(filePath, File.GetLastWriteTime(filePath));
 				}
 				int subLine = 0;
 				using (StreamReader sr = new StreamReader(filePath)) {
