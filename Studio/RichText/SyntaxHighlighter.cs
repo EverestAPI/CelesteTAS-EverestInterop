@@ -11,12 +11,13 @@ namespace CelesteStudio.RichText {
 		//styles
 		public readonly Style BlueStyle = new TextStyle(Brushes.Blue, null, FontStyle.Regular);
 		public readonly Style BlueBoldStyle = new TextStyle(Brushes.Blue, null, FontStyle.Bold);
+		public readonly Style SteelBlueBgStyle = new TextStyle(Brushes.White, Brushes.SteelBlue, FontStyle.Regular);
 		public readonly Style BoldStyle = new TextStyle(null, null, FontStyle.Bold);
 		public readonly Style GrayStyle = new TextStyle(Brushes.Gray, null, FontStyle.Regular);
 		public readonly Style MagentaStyle = new TextStyle(Brushes.Magenta, null, FontStyle.Regular);
 		public readonly Style GreenStyle = new TextStyle(Brushes.Green, null, FontStyle.Regular);
-		public readonly Style RedBackgroundStyle = new TextStyle(Brushes.White, new SolidBrush(Color.FromArgb(224, 64, 64)), FontStyle.Regular);
-		public readonly Style PeruStyle = new TextStyle(Brushes.Peru,  null, FontStyle.Regular);
+		public readonly Style RedBgStyle = new TextStyle(Brushes.White, new SolidBrush(Color.FromArgb(224, 64, 64)), FontStyle.Regular);
+		public readonly Style ChocolateStyle = new TextStyle(Brushes.Chocolate,  null, FontStyle.Regular);
 		public readonly Style BrownStyle = new TextStyle(Brushes.Brown,  null, FontStyle.Regular);
 		public readonly Style RedStyle = new TextStyle(Brushes.Red, null, FontStyle.Regular);
 		public readonly Style MaroonStyle = new TextStyle(Brushes.Maroon, null, FontStyle.Regular);
@@ -36,7 +37,8 @@ namespace CelesteStudio.RichText {
 		}
 
 		public static readonly Regex CommentRegex = new Regex(@"^\s*#.*");
-		public static readonly Regex BreakPointRegex = new Regex(@"^\s*\*\*\*|^\s*SaveState\s*$", RegexOptions.IgnoreCase);
+		public static readonly Regex BreakPointRegex = new Regex(@"^\s*\*\*\*$", RegexOptions.IgnoreCase);
+		public static readonly Regex SaveStateCommandRegex = new Regex(@"^\s*SaveState\s*$", RegexOptions.IgnoreCase);
 		public static readonly Regex InputRecordRegex = new Regex(@"^( {3}\d| {2}\d{2}| \d{3}|\d{4})");
 
 		/// <summary>
@@ -199,7 +201,7 @@ namespace CelesteStudio.RichText {
 			tb.LeftBracket2 = '\x0';
 			tb.RightBracket2 = '\x0';
 			//clear style of changed range
-			range.ClearStyle(GrayStyle, GreenStyle, RedStyle, BlueStyle, PinkStyle, RedBackgroundStyle, PeruStyle);
+			range.ClearStyle(GrayStyle, GreenStyle, RedStyle, BlueStyle, PinkStyle, RedBgStyle, ChocolateStyle, SteelBlueBgStyle);
 
 			int start = range.Start.iLine;
 			int end = range.End.iLine;
@@ -215,8 +217,9 @@ namespace CelesteStudio.RichText {
 
 				if (!InputRecordRegex.IsMatch(line.Text)) {
 					line.SetStyle(GreenStyle, CommentRegex);
-					line.SetStyle(RedBackgroundStyle, BreakPointRegex);
-					line.SetStyle(PeruStyle);
+					line.SetStyle(RedBgStyle, BreakPointRegex);
+					line.SetStyle(SteelBlueBgStyle, SaveStateCommandRegex);
+					line.SetStyle(ChocolateStyle);
 				} else {
 					Range sub = new Range(tb, 0, start, 4, start);
 					sub.SetStyle(RedStyle);
