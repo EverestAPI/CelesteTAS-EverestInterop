@@ -12,6 +12,7 @@ If Celeste.exe is running it will automatically open Celeste.tas.
 - Ctrl + K: Block comment/uncomment
 - Ctrl + P: Remove all breakpoints and savestate commands
 - Ctrl + .: Insert/Remove breakpoint
+- Ctrl + Shift + .: Insert/Remove savestate command
 - Ctrl + R: Insert room name
 - Ctrl + Shift + R: Insert console load command at current location
 - Ctrl + T: Insert current in-game time

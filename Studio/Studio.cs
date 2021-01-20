@@ -169,6 +169,8 @@ Ctrl + P: Remove all breakpoints and savestate commands
 
 Ctrl + .: Insert/Remove breakpoint
 
+Ctrl + Shift + .: Insert/Remove savestate command
+
 Ctrl + R: Insert room name
 
 Ctrl + Shift + R: Insert console load command at current location
@@ -275,7 +277,10 @@ Ctrl + Down/Up: Go to comment or breakpoint");
 				}
                 else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.OemPeriod)
                 {
-                    InsertOrRemoveBreakpoint();
+                    InsertOrRemoveText(SyntaxHighlighter.BreakPointRegex, "***");
+                }
+                else if (e.Modifiers == (Keys.Control | Keys.Shift) && e.KeyCode == Keys.OemPeriod) {
+                    InsertOrRemoveText(SyntaxHighlighter.SaveStateCommandRegex, "SaveState");
                 }
 				else if (e.Modifiers == (Keys.Control | Keys.Shift) && e.KeyCode == Keys.R)
 				{
@@ -350,19 +355,18 @@ Ctrl + Down/Up: Go to comment or breakpoint");
             tasText.RemoveLines(breakpoints.Union(saveStates).ToList());
         }
 
-        private void InsertOrRemoveBreakpoint() {
-            Regex breakpoint = new Regex(@"^\s*\*\*\*.*");
+        private void InsertOrRemoveText(Regex regex, string insertText) {
             int currentLine = tasText.Selection.Start.iLine;
-            if (breakpoint.IsMatch(tasText.Lines[currentLine])) {
+            if (regex.IsMatch(tasText.Lines[currentLine])) {
                 tasText.RemoveLine(currentLine);
                 if (currentLine == tasText.LinesCount) {
                     currentLine--;
                 }
-            } else if (currentLine >= 1 && breakpoint.IsMatch(tasText.Lines[currentLine - 1])) {
+            } else if (currentLine >= 1 && regex.IsMatch(tasText.Lines[currentLine - 1])) {
                 currentLine--;
                 tasText.RemoveLine(currentLine);
             }else {
-                AddNewLine("***");
+                AddNewLine(insertText);
                 currentLine++;
             }
             string text = tasText.Lines[currentLine];
