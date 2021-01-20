@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Linq;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Monocle;
 using TAS.EverestInterop;
@@ -9,6 +10,7 @@ namespace TAS {
 		private static InputController savedController;
 		public static Coroutine routine;
 		public static bool Saving;
+		private static bool InFrameStepWhenSaved;
 		public static bool StartedByLoadState;
 
 		private static readonly Lazy<bool> SpeedrunToolInstalled = new Lazy<bool>(() =>
@@ -24,12 +26,13 @@ namespace TAS {
 			if (Manager.Running && Hotkeys.hotkeySaveState.pressed && !Hotkeys.hotkeySaveState.wasPressed) {
 				SaveAfterFreeze();
 			} else if (Hotkeys.hotkeyLoadState.pressed && !Hotkeys.hotkeyLoadState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
-				LoadAfterFreeze();
+				LoadOrPlayTAS();
 			}
 		}
 
-		public static void SaveAfterFreeze() {
+		public static void SaveAfterFreeze(int? studioLine = null) {
 			Saving = true;
+			InFrameStepWhenSaved = studioLine.HasValue && Manager.controller.fastForwards.Any(record => record.Line == studioLine.Value + 1);
 
 			Manager.state &= ~State.FrameStep;
 			Manager.nextState &= ~State.FrameStep;
@@ -41,12 +44,14 @@ namespace TAS {
 			Save();
 		}
 
-		private static void LoadAfterFreeze() {
+		private static void LoadOrPlayTAS() {
 			if (StateManager.Instance.IsSaved && savedController != null) {
 				Manager.state &= ~State.FrameStep;
 				Manager.nextState &= ~State.FrameStep;
-				if (Engine.FreezeTimer > 0) {
-					routine = new Coroutine(DelaySaveStatesRoutine(Load));
+
+				// Don't repeat load state
+				if (savedController.CurrentFrame + 5 == Manager.controller.CurrentFrame &&
+				    savedController.CurrentInputFrame + 5 == Manager.controller.CurrentInputFrame) {
 					return;
 				}
 				Load();
@@ -126,6 +131,10 @@ namespace TAS {
 		private static void LoadStateRoutine() {
 			Manager.controller.AdvanceFrame(true, true);
 			Manager.controller.DryAdvanceFrames(5);
+			if (InFrameStepWhenSaved) {
+				Manager.state |= State.FrameStep;
+				Manager.nextState &= ~State.FrameStep;
+			}
 		}
 	}
 }

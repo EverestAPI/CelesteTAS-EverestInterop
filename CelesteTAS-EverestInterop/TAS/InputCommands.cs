@@ -56,8 +56,13 @@ namespace TAS {
 							return commandType.ToLower() == "playcommand";
 						}
 
-						Action commandCall = () => method.Invoke(null, new object[] { commandArgs });
-						state.inputs.Add(new InputRecord(commandCall));
+
+						object[] parameters = { commandArgs };
+						if (method.GetParameters().Length == 2) {
+							parameters = new object[] { commandArgs, studioLine };
+						}
+
+						state.inputs.Add(new InputRecord(() => method.Invoke(null, parameters)));
 					}
 				}
 				return false;
@@ -311,12 +316,10 @@ namespace TAS {
 			}
 		}
 
-		[TASCommand(args = new[] {
-			"Savestate"
-		})]
-		private static void SaveStateCommand(string[] args) {
+		[TASCommand(args = new[] { "SaveState" })]
+		private static void SaveStateCommand(string[] args, int studioLine) {
 			if (Savestates.StartedByLoadState) {
-				Savestates.SaveAfterFreeze();
+				Savestates.SaveAfterFreeze(studioLine);
 			}
 		}
 
