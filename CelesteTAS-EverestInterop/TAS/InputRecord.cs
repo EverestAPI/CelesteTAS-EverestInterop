@@ -27,9 +27,12 @@ namespace TAS {
 		public bool FastForward { get; set; }
 		public bool ForceBreak { get; set; }
 		public Action Command { get; set; }
+		public string CommandType { get; set; }
 		public InputRecord() { }
-		public InputRecord(Action commandCall) {
+		public InputRecord(Action commandCall, string commandType, int line) {
 			Command = commandCall;
+			CommandType = commandType;
+			Line = line;
 		}
 		public InputRecord(int number, string line) {
 			Line = number;

@@ -3,16 +3,9 @@ using Celeste.Mod;
 using Monocle;
 using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
-using Mono.Cecil;
-using Mono.Cecil.Rocks;
-using Mono.Cecil.Cil;
-using MonoMod.Utils;
-using System.Reflection.Emit;
-using MonoMod.Cil;
-using System.Runtime.InteropServices;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Input;
 
 namespace TAS {
 	public class InputCommands {
@@ -62,7 +55,7 @@ namespace TAS {
 							parameters = new object[] { commandArgs, studioLine };
 						}
 
-						state.inputs.Add(new InputRecord(() => method.Invoke(null, parameters)));
+						state.inputs.Add(new InputRecord(() => method.Invoke(null, parameters), commandType.ToLower(), studioLine));
 					}
 				}
 				return false;
@@ -319,6 +312,9 @@ namespace TAS {
 		[TASCommand(args = new[] { "SaveState" })]
 		private static void SaveStateCommand(string[] args, int studioLine) {
 			if (Savestates.StartedByLoadState) {
+				if (Manager.controller.inputs.Any(record => record.CommandType == "savestatecommand" && record.Line > studioLine)) {
+					return;
+				}
 				Savestates.SaveAfterFreeze(studioLine);
 			}
 		}
