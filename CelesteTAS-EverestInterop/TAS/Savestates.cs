@@ -32,6 +32,8 @@ namespace TAS {
 		}
 
 		public static void SaveAfterFreeze() {
+			Manager.state &= ~State.FrameStep;
+			Manager.nextState &= ~State.FrameStep;
 			Saving = true;
 			if (Engine.FreezeTimer > 0) {
 				routine = new Coroutine(DelaySaveStatesRoutine(Save));
@@ -41,6 +43,8 @@ namespace TAS {
 		}
 
 		private static void LoadAfterFreeze() {
+			Manager.state &= ~State.FrameStep;
+			Manager.nextState &= ~State.FrameStep;
 			if (Engine.FreezeTimer > 0) {
 				routine = new Coroutine(DelaySaveStatesRoutine(Load));
 				return;
@@ -49,17 +53,12 @@ namespace TAS {
 		}
 
 		private static IEnumerator DelaySaveStatesRoutine(Action onComplete) {
-			Manager.state &= ~State.FrameStep;
-			Manager.nextState &= ~State.FrameStep;
 			while (Engine.FreezeTimer > 0)
 				yield return null;
 			onComplete();
 		}
 
 		private static void Save() {
-			Manager.state &= ~State.FrameStep;
-			Manager.nextState &= ~State.FrameStep;
-
 			InputController temp = Manager.controller.Clone();
 			//+1 speedrun tool, -5 buffered inputs
 			temp.ReverseFrames(4);
@@ -83,8 +82,6 @@ namespace TAS {
 		}
 
 		private static void Load() {
-			Manager.state &= ~State.FrameStep;
-			Manager.nextState &= ~State.FrameStep;
 			Manager.controller.AdvanceFrame(true);
 			if (savedController != null
 				&& savedController.SavedChecksum == Manager.controller.Checksum(savedController.CurrentFrame)) {
@@ -126,8 +123,7 @@ namespace TAS {
 			while ((Engine.Scene as Level).Frozen)
 				yield return null;
 			Manager.forceDelay = false;
-			Manager.controller.AdvanceFrame(true);
-
+			Manager.controller.AdvanceFrame(true, true);
 			Manager.controller.DryAdvanceFrames(5);
 		}
 	}
