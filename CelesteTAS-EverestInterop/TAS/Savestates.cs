@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
 using Celeste;
-using Celeste.Mod;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Monocle;
 using TAS.EverestInterop;
@@ -12,6 +10,7 @@ namespace TAS {
 		private static InputController savedController;
 		public static Coroutine routine;
 		public static bool Saving;
+		public static bool StartedByLoadState;
 
 		private static readonly Lazy<bool> SpeedrunToolInstalled = new Lazy<bool>(() =>
 				Type.GetType("Celeste.Mod.SpeedrunTool.SaveLoad.StateManager, SpeedrunTool") != null
@@ -26,7 +25,7 @@ namespace TAS {
 			if (Manager.Running && Hotkeys.hotkeySaveState.pressed && !Hotkeys.hotkeySaveState.wasPressed) {
 				SaveAfterFreeze();
 			}
-			else if (savedController != null && Hotkeys.hotkeyLoadState.pressed && !Hotkeys.hotkeyLoadState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
+			else if (Hotkeys.hotkeyLoadState.pressed && !Hotkeys.hotkeyLoadState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
 				LoadAfterFreeze();
 			}
 		}
@@ -82,7 +81,7 @@ namespace TAS {
 		}
 
 		private static void Load() {
-			Manager.controller.AdvanceFrame(true);
+			Manager.controller.AdvanceFrame(true, true);
 			if (savedController != null
 				&& savedController.SavedChecksum == Manager.controller.Checksum(savedController.CurrentFrame)) {
 
@@ -112,6 +111,7 @@ namespace TAS {
 			//If savestate load failed just playback normally
 			Manager.DisableExternal();
 			Manager.EnableExternal();
+			StartedByLoadState = true;
 		}
 
 		private static IEnumerator LoadStateRoutine() {

@@ -202,10 +202,12 @@ namespace TAS {
 		
 		private static void CheckToEnable() {
 			if (Hotkeys.hotkeyStart.pressed) {
-				if (!HasFlag(state, State.Enable))
+				if (!HasFlag(state, State.Enable)) {
+					Savestates.StartedByLoadState = false;
 					nextState |= State.Enable;
-				else
+				} else {
 					nextState |= State.Disable;
+				}
 			}
 			else if (HasFlag(nextState, State.Enable)) {
 				if (Engine.Scene is Level level && (!level.CanPause || Engine.FreezeTimer > 0)) {

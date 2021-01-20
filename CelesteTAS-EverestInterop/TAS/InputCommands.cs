@@ -315,7 +315,9 @@ namespace TAS {
 			"Savestate"
 		})]
 		private static void SaveStateCommand(string[] args) {
-			Savestates.SaveAfterFreeze();
+			if (Savestates.StartedByLoadState) {
+				Savestates.SaveAfterFreeze();
+			}
 		}
 
 	}
