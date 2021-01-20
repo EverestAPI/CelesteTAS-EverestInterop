@@ -5,7 +5,6 @@ using System.Drawing;
 using System.Drawing.Design;
 using System.Drawing.Drawing2D;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -2313,19 +2312,6 @@ namespace CelesteStudio.RichText {
 						if (!ReadOnly && !Selection.ColumnSelectionMode)
 							MoveSelectedLinesUp();
 					}
-					if (e.Modifiers == Keys.Control || e.Modifiers == (Keys.Control | Keys.Shift)) {
-						List<int> commentLine = FindLines(@"^\s*#|^\*\*\*", RegexOptions.None);
-						if (commentLine.Count > 0) {
-							int line = commentLine.FindLast(i => i < selection.Start.iLine);
-							while (selection.Start.iLine > line) {
-								Selection.GoUp(e.Shift);
-							}
-							ScrollLeft();
-						} else {
-							Selection.GoUp(e.Shift);
-							ScrollLeft();
-						}
-					}
 					break;
 				case Keys.Down:
 					if (e.Modifiers == Keys.None || e.Modifiers == Keys.Shift) {
@@ -2342,20 +2328,6 @@ namespace CelesteStudio.RichText {
 					if (e.Modifiers == Keys.Alt) {
 						if (!ReadOnly && !Selection.ColumnSelectionMode)
 							MoveSelectedLinesDown();
-					}
-					if (e.Modifiers == Keys.Control || e.Modifiers == (Keys.Control | Keys.Shift))  {
-						List<int> commentLine = FindLines(@"^\s*#|^\*\*\*", RegexOptions.None);
-						if (commentLine.Count > 0) {
-							int line = commentLine.FirstOrDefault(i => i > Selection.Start.iLine);
-							if (line == 0) line = LinesCount - 1;
-							while (Selection.Start.iLine < line) {
-								Selection.GoDown(e.Shift);
-							}
-							ScrollLeft();
-						} else {
-							Selection.GoDown(e.Shift);
-							ScrollLeft();
-						}
 					}
 					break;
 				case Keys.PageUp:

@@ -304,11 +304,47 @@ Ctrl + Down/Up: Go to comment or breakpoint");
 				else if (e.Modifiers == (Keys.Shift | Keys.Control) && e.KeyCode == Keys.D) {
 					StudioCommunicationServer.instance?.ExternalReset();
 				}
+                else if (e.KeyCode == Keys.Down && (e.Modifiers == Keys.Control || e.Modifiers == (Keys.Control | Keys.Shift))) {
+                    GoDownCommentAndBreakpoint(e);
+                } else if (e.KeyCode == Keys.Up && (e.Modifiers == Keys.Control || e.Modifiers == (Keys.Control | Keys.Shift))) {
+                    GoUpCommentAndBreakpoint(e);
+                }
             }
             catch (Exception ex)
             {
                 MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Console.Write(ex);
+            }
+        }
+
+        private void GoDownCommentAndBreakpoint(KeyEventArgs e) {
+            List<int> commentLine = tasText.FindLines(@"^\s*#|^\*\*\*|^\s*savestate\s*$", RegexOptions.IgnoreCase);
+            if (commentLine.Count > 0) {
+                int line = commentLine.FirstOrDefault(i => i > tasText.Selection.Start.iLine);
+                if (line == 0) line = tasText.LinesCount - 1;
+                while (tasText.Selection.Start.iLine < line) {
+                    tasText.Selection.GoDown(e.Shift);
+                }
+
+                tasText.ScrollLeft();
+            } else {
+                tasText.Selection.GoDown(e.Shift);
+                tasText.ScrollLeft();
+            }
+        }
+
+        private void GoUpCommentAndBreakpoint(KeyEventArgs e) {
+            List<int> commentLine = tasText.FindLines(@"^\s*#|^\*\*\*|^\s*savestate\s*$", RegexOptions.IgnoreCase);
+            if (commentLine.Count > 0) {
+                int line = commentLine.FindLast(i => i < tasText.Selection.Start.iLine);
+                while (tasText.Selection.Start.iLine > line) {
+                    tasText.Selection.GoUp(e.Shift);
+                }
+
+                tasText.ScrollLeft();
+            } else {
+                tasText.Selection.GoUp(e.Shift);
+                tasText.ScrollLeft();
             }
         }
 
