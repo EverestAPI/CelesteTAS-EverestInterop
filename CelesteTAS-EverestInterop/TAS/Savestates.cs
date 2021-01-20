@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections;
-using Celeste;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Monocle;
 using TAS.EverestInterop;
@@ -26,14 +25,20 @@ namespace TAS {
 				SaveAfterFreeze();
 			}
 			else if (Hotkeys.hotkeyLoadState.pressed && !Hotkeys.hotkeyLoadState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
-				LoadAfterFreeze();
+				if (StateManager.Instance.IsSaved && savedController != null) {
+					LoadAfterFreeze();
+				} else {
+					PlayTAS();
+				}
 			}
 		}
 
 		public static void SaveAfterFreeze() {
+			Saving = true;
+
 			Manager.state &= ~State.FrameStep;
 			Manager.nextState &= ~State.FrameStep;
-			Saving = true;
+
 			if (Engine.FreezeTimer > 0) {
 				routine = new Coroutine(DelaySaveStatesRoutine(Save));
 				return;
@@ -74,7 +79,8 @@ namespace TAS {
 							savedBuffers.Add((float)input.GetPrivateField("bufferCounter"));
 					}
 					*/
-					routine = new Coroutine(LoadStateRoutine());
+
+					LoadStateRoutine();
 				}
 				Saving = false;
 			};
@@ -104,25 +110,21 @@ namespace TAS {
 						Manager.EnableExternal();
 					savedController.inputs = Manager.controller.inputs;
 					Manager.controller = savedController.Clone();
-					routine = new Coroutine(LoadStateRoutine());
+					LoadStateRoutine();
 				};
 				return;
 			}
 			//If savestate load failed just playback normally
+			PlayTAS();
+		}
+
+		private static void PlayTAS() {
 			Manager.DisableExternal();
 			Manager.EnableExternal();
 			StartedByLoadState = true;
 		}
 
-		private static IEnumerator LoadStateRoutine() {
-			Manager.forceDelay = true;
-			yield return Engine.DeltaTime;
-			yield return Engine.DeltaTime;
-			while (!(Engine.Scene is Level))
-				yield return null;
-			while ((Engine.Scene as Level).Frozen)
-				yield return null;
-			Manager.forceDelay = false;
+		private static void LoadStateRoutine() {
 			Manager.controller.AdvanceFrame(true, true);
 			Manager.controller.DryAdvanceFrames(5);
 		}
