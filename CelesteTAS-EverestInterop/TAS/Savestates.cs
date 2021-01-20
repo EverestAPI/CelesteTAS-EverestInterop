@@ -19,17 +19,12 @@ namespace TAS {
 			if (!SpeedrunToolInstalled.Value)
 				return;
 
-			if (Hotkeys.hotkeyLoadState == null || Hotkeys.hotkeySaveState == null)
-				return;
+			if (Hotkeys.hotkeyLoadState == null || Hotkeys.hotkeySaveState == null) return;
+
 			if (Manager.Running && Hotkeys.hotkeySaveState.pressed && !Hotkeys.hotkeySaveState.wasPressed) {
 				SaveAfterFreeze();
-			}
-			else if (Hotkeys.hotkeyLoadState.pressed && !Hotkeys.hotkeyLoadState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
-				if (StateManager.Instance.IsSaved && savedController != null) {
-					LoadAfterFreeze();
-				} else {
-					PlayTAS();
-				}
+			} else if (Hotkeys.hotkeyLoadState.pressed && !Hotkeys.hotkeyLoadState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
+				LoadAfterFreeze();
 			}
 		}
 
@@ -47,13 +42,17 @@ namespace TAS {
 		}
 
 		private static void LoadAfterFreeze() {
-			Manager.state &= ~State.FrameStep;
-			Manager.nextState &= ~State.FrameStep;
-			if (Engine.FreezeTimer > 0) {
-				routine = new Coroutine(DelaySaveStatesRoutine(Load));
-				return;
+			if (StateManager.Instance.IsSaved && savedController != null) {
+				Manager.state &= ~State.FrameStep;
+				Manager.nextState &= ~State.FrameStep;
+				if (Engine.FreezeTimer > 0) {
+					routine = new Coroutine(DelaySaveStatesRoutine(Load));
+					return;
+				}
+				Load();
+			} else {
+				PlayTAS();
 			}
-			Load();
 		}
 
 		private static IEnumerator DelaySaveStatesRoutine(Action onComplete) {
