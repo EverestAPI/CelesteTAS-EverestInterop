@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
@@ -164,7 +165,7 @@ Ctrl + Shift + C: Copy player data to clipboard
 
 Ctrl + K: Block comment/uncomment
 
-Ctrl + P: Remove all breakpoints
+Ctrl + P: Remove all breakpoints and savestate commands
 
 Ctrl + .: Insert/Remove breakpoint
 
@@ -270,7 +271,7 @@ Ctrl + Down/Up: Go to comment or breakpoint");
                 }
                 else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.P)
                 {
-                    ClearBreakpoints();
+                    ClearBreakpointsAndSaveState();
 				}
                 else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.OemPeriod)
                 {
@@ -342,10 +343,11 @@ Ctrl + Down/Up: Go to comment or breakpoint");
             }
         }
 
-        private void ClearBreakpoints()
+        private void ClearBreakpointsAndSaveState()
         {
             List<int> breakpoints = tasText.FindLines(@"\*\*\*", RegexOptions.None);
-            tasText.RemoveLines(breakpoints);
+            List<int> saveStates = tasText.FindLines(@"^\s*SaveState\s*$", RegexOptions.IgnoreCase);
+            tasText.RemoveLines(breakpoints.Union(saveStates).ToList());
         }
 
         private void InsertOrRemoveBreakpoint() {
