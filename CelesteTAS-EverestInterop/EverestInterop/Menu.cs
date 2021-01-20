@@ -11,10 +11,12 @@ namespace TAS.EverestInterop {
         private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
 
         private static List<TextMenu.Item> options;
+        private static TextMenu.Item showHitboxesSubmenu;
 
         private static void CreateOptions(EverestModule everestModule, TextMenu menu, bool inGame) {
             options = new List<TextMenu.Item> {
                 new TextMenuExt.SubMenu("Show Hitboxes", false).Apply(subMenu => {
+                    showHitboxesSubmenu = subMenu;
                     subMenu.Add(new TextMenu.OnOff("Enabled", Settings.ShowHitboxes).Change(value => Settings.ShowHitboxes = value));
                     subMenu.Add(new TextMenu.Option<ActualCollideHitboxTypes>("Actual Collide Hitboxes").Apply(option => {
                         Array enumValues = Enum.GetValues(typeof(ActualCollideHitboxTypes));
@@ -80,6 +82,9 @@ namespace TAS.EverestInterop {
             foreach (TextMenu.Item item in options) {
                 menu.Add(item);
                 item.Visible = Settings.Enabled;
+            }
+            if (inGame) {
+                showHitboxesSubmenu.AddDescription(menu, "Hitbox color can only be edited in the menu of the title screen");
             }
         }
 
