@@ -580,6 +580,10 @@ Ctrl + Down/Up: Go to comment or breakpoint");
                             tasText.CurrentLineText = Environment.OSVersion.Platform == PlatformID.Unix ? num + "     ." : num;
                         }
                     }
+                    index = tas.IndexOf(']');
+                    if (index >= 0 && int.TryParse(tas.Substring(index + 1), out temp)) {
+                        tasText.SaveStateLine = temp;
+                    }
                 }
                 else
                 {
@@ -588,6 +592,7 @@ Ctrl + Down/Up: Go to comment or breakpoint");
                     {
                         tasText.CurrentLine = -1;
                     }
+                    tasText.SaveStateLine = -1;
                 }
 
                 UpdateStatusBar();

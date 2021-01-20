@@ -43,6 +43,7 @@ namespace CelesteStudio.RichText {
         public bool InsertLocked = false;
 		public string SaveToFileName { get; set; }
 		public string LastFileName { get; set; }
+		public int SaveStateLine = -1;
 		internal bool allowInsertRemoveLines = true;
 
 		public RichText() : this(null) { }
@@ -2820,6 +2821,7 @@ namespace CelesteStudio.RichText {
 			var servicePen = new Pen(ServiceLinesColor);
 			Brush changedLineBrush = new SolidBrush(ChangedLineColor);
 			Brush activeLineBrush = new SolidBrush(ActiveLineColor);
+			Brush saveStateLineBrush = new SolidBrush(Color.SteelBlue);
 			Brush indentBrush = new SolidBrush(IndentBackColor);
 			Brush paddingBrush = new SolidBrush(PaddingBackColor);
 			Brush currentLineBrush = new SolidBrush(Color.FromArgb(CurrentLineColor.A == 255 ? 50 : CurrentLineColor.A, CurrentLineColor));
@@ -2879,6 +2881,10 @@ namespace CelesteStudio.RichText {
 				//draw changed line marker
 				if (ChangedLineColor != Color.Transparent && line.IsChanged)
 					e.Graphics.FillRectangle(changedLineBrush, new RectangleF(-10, y, LeftIndent - minLeftIndent - 2 + 10, CharHeight + 1));
+
+				//draw savestate line background
+				if (iLine == SaveStateLine)
+					e.Graphics.FillRectangle(saveStateLineBrush, new RectangleF(-10, y, LeftIndent - minLeftIndent - 2 + 10, CharHeight + 1));
 
 				if (CurrentLineColor != Color.Transparent && iLine == CurrentLine)
 					e.Graphics.FillRectangle(activeLineBrush, new RectangleF(-10, y, LeftIndent - minLeftIndent - 2 + 10, CharHeight + 1));

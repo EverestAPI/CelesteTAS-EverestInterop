@@ -12,10 +12,16 @@ namespace TAS {
 		public static bool Saving;
 		private static bool InFrameStepWhenSaved;
 		public static bool StartedByLoadState;
+		private static int? savedLine;
+		public static int SavedLine =>  SpeedrunToolInstalled.Value && IsSaved() ? savedLine ?? -1 : -1;
 
 		private static readonly Lazy<bool> SpeedrunToolInstalled = new Lazy<bool>(() =>
 				Type.GetType("Celeste.Mod.SpeedrunTool.SaveLoad.StateManager, SpeedrunTool") != null
 		);
+
+		private static bool IsSaved() {
+			return StateManager.Instance.IsSaved;
+		}
 
 		public static void HandleSaveStates() {
 			if (!SpeedrunToolInstalled.Value)
@@ -33,6 +39,7 @@ namespace TAS {
 		public static void SaveAfterFreeze(int? studioLine = null) {
 			Saving = true;
 			InFrameStepWhenSaved = studioLine.HasValue && Manager.controller.fastForwards.Any(record => record.Line == studioLine.Value + 1);
+			savedLine = studioLine.HasValue ? studioLine - 1 : Manager.controller.Current.Line;
 
 			Manager.state &= ~State.FrameStep;
 			Manager.nextState &= ~State.FrameStep;
