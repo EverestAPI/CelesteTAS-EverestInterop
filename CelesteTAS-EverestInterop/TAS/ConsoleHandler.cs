@@ -39,7 +39,7 @@ namespace TAS {
 				int levelID = GetLevelID(args[0]);
 
 				if (args.Length > 1) {
-					if (!int.TryParse(args[1], out int x)) {
+					if (!int.TryParse(args[1], out int x) || args.Length == 2) {
 						string screen = args[1];
 						if (screen.StartsWith("lvl_"))
 							screen = screen.Substring(4);
@@ -75,12 +75,13 @@ namespace TAS {
 			Session session = new Session(new AreaKey(levelID, mode));
 			if (screen != null) {
 				session.Level = screen;
-				session.FirstLevel = false;
+				session.FirstLevel = session.LevelData == session.MapData.StartLevel();
 			}
 			if (checkpoint != 0) {
 				LevelData levelData = session.MapData.Get(screen);
 				Manager.controller.resetSpawn = levelData.Spawns[checkpoint];
 			}
+			session.StartedFromBeginning = checkpoint == 0 && session.FirstLevel;
 			Engine.Scene = new LevelLoader(session);
 		}
 
@@ -88,6 +89,7 @@ namespace TAS {
 			Session session = new Session(new AreaKey(levelID, mode));
 			session.Level = session.MapData.GetAt(spawnPoint)?.Name;
 			session.FirstLevel = false;
+			session.StartedFromBeginning = false;
 			Manager.controller.resetSpawn = spawnPoint;
 			Engine.Scene = new LevelLoader(session);
 		}
