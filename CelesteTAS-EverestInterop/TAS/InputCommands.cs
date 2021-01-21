@@ -309,13 +309,13 @@ namespace TAS {
 			}
 		}
 
-		[TASCommand(args = new[] { "SaveState" })]
-		private static void SaveStateCommand(string[] args, int studioLine) {
-			if (Savestates.StartedByLoadState) {
-				if (Manager.controller.inputs.Any(record => record.CommandType == "savestatecommand" && record.Line > studioLine)) {
+		[TASCommand(args = new[] { "Savestate" })]
+		private static void SaveStateCommand(string[] args, int commandLine) {
+			if (Savestates.AllowExecuteSaveStateCommand) {
+				if (Manager.controller.inputs.Any(record => record.CommandType == "savestatecommand" && record.Line > commandLine)) {
 					return;
 				}
-				Savestates.SaveAfterFreeze(studioLine);
+				Savestates.SaveState(commandLine);
 			}
 		}
 

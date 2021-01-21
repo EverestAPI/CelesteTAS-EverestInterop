@@ -168,7 +168,6 @@ namespace TAS {
 				Manager.SetInputs(Current);
 		}
 
-
 		public void DryAdvanceFrames(int frames) {
 			for (int i = 0; i < frames; i++) {
 				do {
@@ -314,7 +313,6 @@ namespace TAS {
 			clone.inputs = new List<InputRecord>();
 			foreach (InputRecord record in inputs) {
 				clone.inputs.Add(record.Clone());
-
 			}
 
 			clone.fastForwards = new List<InputRecord>();
@@ -323,7 +321,7 @@ namespace TAS {
 			}
 			clone.CurrentFrame = CurrentFrame;
 			clone.frameToNext = frameToNext;
-			if (clone.inputIndex <= clone.inputs.Count)
+			if (inputIndex <= clone.inputs.Count)
 				clone.inputIndex = inputIndex;
 			clone.Current = clone.inputs[clone.inputIndex];
 			return clone;

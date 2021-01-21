@@ -173,6 +173,9 @@ namespace TAS {
 		public InputRecord Clone() {
 			InputRecord clone = new InputRecord(Line, Frames.ToString() + ActionsToString());
 			clone.Command = Command;
+			clone.CommandType = CommandType;
+			clone.FastForward = FastForward;
+			clone.ForceBreak = ForceBreak;
 			return clone;
 		}
 
