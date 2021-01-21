@@ -135,7 +135,7 @@ namespace TAS.EverestInterop {
 
 
         public override void Load() {
-            Hotkeys.InputInitialize();
+            Hotkeys.Load();
 
             Core.instance = new Core();
             Core.instance.Load();
@@ -190,6 +190,7 @@ namespace TAS.EverestInterop {
         }
 
         public override void Unload() {
+            Hotkeys.Unload();
             Core.instance.Unload();
             DisableAchievements.instance.Unload();
             GraphicsCore.instance.Unload();

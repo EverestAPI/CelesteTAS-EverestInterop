@@ -5,9 +5,15 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using Mono.Cecil.Cil;
+using MonoMod.Cil;
+using MonoMod.RuntimeDetour;
 
 namespace TAS.EverestInterop {
     public class Hotkeys {
+        private static ILHook ilHook;
+        private static FieldInfo bindingFieldInfo;
 
         public class Hotkey {
             private List<Keys> keys;
@@ -155,6 +161,35 @@ namespace TAS.EverestInterop {
                     Settings.SimplifiedGraphics = !Settings.SimplifiedGraphics;
                 if (hotkeyCamera.pressed && !hotkeyCamera.wasPressed)
                     Settings.CenterCamera = !Settings.CenterCamera;
+            }
+        }
+
+        public static void Load() {
+            InputInitialize();
+            if (typeof(ModuleSettingsKeyboardConfigUI).GetMethodInfo("<Reload>b__6_0") is MethodInfo methodInfo) {
+                ilHook = new ILHook(methodInfo, ModReload);
+            }
+        }
+
+        public static void Unload() {
+            ilHook?.Dispose();
+            ilHook = null;
+        }
+
+        private static void ModReload(ILContext il) {
+            ILCursor ilCursor = new ILCursor(il);
+            if (ilCursor.TryGotoNext(
+                MoveType.After,
+                ins => ins.OpCode == OpCodes.Callvirt && ins.Operand.ToString().Contains("<Microsoft.Xna.Framework.Input.Keys>::Add(T)")
+            )) {
+                ilCursor.Emit(OpCodes.Ldloc_1).EmitDelegate<Action<object>>(bindingEntry => {
+                    if (bindingFieldInfo == null) {
+                        bindingFieldInfo = bindingEntry.GetType().GetFieldInfo("Binding");
+                    }
+                    if (bindingFieldInfo?.GetValue(bindingEntry) is ButtonBinding binding && binding == Settings.KeySaveState) {
+                        binding.Keys.Insert(0, Keys.RightAlt);
+                    }
+                });
             }
         }
     }
