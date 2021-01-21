@@ -55,7 +55,7 @@ namespace TAS {
 		public static bool enforceLegal, allowUnsafeInput;
 		public static int forceDelayTimer = 0;
 		public static bool forceDelay;
-		private static Vector2 lastPos;
+		public static Vector2 LastPos;
 		private static long lastTimer;
 		private static List<VirtualButton.Node>[] playerBindings;
 		public static Buttons grabButton = Buttons.Back;
@@ -202,8 +202,8 @@ namespace TAS {
 		
 		private static void CheckToEnable() {
 			if (Hotkeys.hotkeyStart.pressed) {
+				Savestates.StartedByLoadState = false;
 				if (!HasFlag(state, State.Enable)) {
-					Savestates.StartedByLoadState = false;
 					nextState |= State.Enable;
 				} else {
 					nextState |= State.Disable;

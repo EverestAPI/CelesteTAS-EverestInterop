@@ -26,11 +26,11 @@ namespace TAS {
 				player = level.Tracker.GetEntity<Player>();
 				if (player != null) {
 					chapterTime = level.Session.Time;
-					if (chapterTime != lastTimer || lastPos != player.ExactPosition) {
+					if (chapterTime != lastTimer || LastPos != player.ExactPosition) {
 						framesPerSecond = 60f / Engine.TimeRateB;
 						string pos = GetAdjustedPos(player.Position, player.PositionRemainder);
 						string speed = $"Speed: {player.Speed.X.ToString("0.00")}, {player.Speed.Y.ToString("0.00")}";
-						Vector2 diff = (player.ExactPosition - lastPos) * 60f;
+						Vector2 diff = (player.ExactPosition - LastPos) * 60f;
 						string vel = $"Vel:   {diff.X.ToString("0.00")}, {diff.Y.ToString("0.00")}";
 						string polarvel = $"Fly:   {diff.Length().ToString("0.00")}, {GetAngle(diff).ToString("0.00")}°";
 						string miscstats = $"Stamina: {player.Stamina.ToString("0")}  "
@@ -90,7 +90,7 @@ namespace TAS {
 						if(!string.IsNullOrEmpty(timers))
 							sb.AppendLine(timers);
 						sb.Append(roomNameAndTime);
-						lastPos = player.ExactPosition;
+						LastPos = player.ExactPosition;
 						lastTimer = chapterTime;
 						PlayerStatus = sb.ToString().TrimEnd();
 					}
