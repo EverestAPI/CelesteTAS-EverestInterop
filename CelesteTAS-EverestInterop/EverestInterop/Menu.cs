@@ -44,6 +44,7 @@ namespace TAS.EverestInterop {
                 }),
                 new TextMenuExt.SubMenu("More Options", false).Apply(subMenu => {
                     subMenu.Add(new TextMenu.OnOff("Center Camera", Settings.CenterCamera).Change(value => Settings.CenterCamera = value));
+                    subMenu.Add(new TextMenu.OnOff("Round Position", Settings.RoundPosition).Change(value => Settings.RoundPosition = value));
                     subMenu.Add(new TextMenu.Option<InfoPositions>("Info HUD").Apply(option => {
                         Array enumValues = Enum.GetValues(typeof(InfoPositions));
                         foreach (InfoPositions value in enumValues) {
@@ -52,12 +53,12 @@ namespace TAS.EverestInterop {
 
                         option.Change(value => Settings.InfoHUD = value);
                     }));
+                    subMenu.Add(new TextMenu.OnOff("Pause After Load State", Settings.PauseAfterLoadState).Change(value => Settings.PauseAfterLoadState = value));
                     subMenu.Add(
                         new TextMenu.OnOff("Disable Achievements", Settings.DisableAchievements).Change(value =>
                             Settings.DisableAchievements = value));
                     subMenu.Add(new TextMenu.OnOff("Disable Grab Desync Fix", Settings.DisableGrabDesyncFix).Change(value =>
                         Settings.DisableGrabDesyncFix = value));
-                    subMenu.Add(new TextMenu.OnOff("Round Position", Settings.RoundPosition).Change(value => Settings.RoundPosition = value));
                     subMenu.Add(new TextMenu.OnOff("Auto Mute on Fast Forward", Settings.AutoMute).Change(value => Settings.AutoMute = value));
                     subMenu.Add(new TextMenu.OnOff("Mod 9D Lighting", Settings.Mod9DLighting).Change(value => Settings.Mod9DLighting = value));
                 }),

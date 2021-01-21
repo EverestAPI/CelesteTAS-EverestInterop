@@ -46,7 +46,8 @@ namespace TAS {
 		public static void SaveAfterFreeze(int? studioLine = null) {
 			Saving = true;
 			InFrameStepWhenSaved = studioLine.HasValue && controller.HasFastForward && controller.fastForwards.Last().Line == studioLine.Value + 1;
-			savedLine = studioLine.HasValue ? studioLine - 1 : controller.Current.Line;
+			savedLine = studioLine ?? controller.Current.Line;
+			savedLine--;
 
 			state &= ~State.FrameStep;
 			nextState &= ~State.FrameStep;
@@ -60,14 +61,13 @@ namespace TAS {
 
 		private static void LoadOrPlayTAS() {
 			if (StateManager.Instance.IsSaved && savedController != null) {
-				state &= ~State.FrameStep;
-				nextState &= ~State.FrameStep;
-
 				// Don't repeat load state
-				if (Running && savedController.CurrentFrame + 5 == controller.CurrentFrame &&
-				    savedController.CurrentInputFrame + 5 == controller.CurrentInputFrame) {
+				if (Running && savedController.CurrentFrame + 5 == controller.CurrentFrame) {
 					return;
 				}
+
+				state &= ~State.FrameStep;
+				nextState &= ~State.FrameStep;
 				Load();
 			} else {
 				PlayTAS();
@@ -154,9 +154,9 @@ namespace TAS {
 		private static void LoadStateRoutine() {
 			controller.AdvanceFrame(true, true);
 			controller.DryAdvanceFrames(5);
-			if (InFrameStepWhenSaved) {
+			if (InFrameStepWhenSaved || CelesteTASModule.Settings.PauseAfterLoadState && !controller.HasFastForward) {
 				state |= State.FrameStep;
-				nextState |= State.FrameStep;
+				nextState &= ~State.FrameStep;
 
 				// PlayerStatus will auto update, we just need restore lastPos
 				if (savedLastPos.HasValue) {

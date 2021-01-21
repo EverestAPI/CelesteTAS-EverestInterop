@@ -109,5 +109,6 @@ namespace TAS.EverestInterop {
         public bool SimplifiedHitboxes { get; set; } = true;
         public ActualCollideHitboxTypes ShowActualCollideHitboxes { get; set; } = ActualCollideHitboxTypes.OFF;
         public InfoPositions InfoHUD { get; set; } = InfoPositions.OFF;
+        public bool PauseAfterLoadState { get; set; } = true;
     }
 }
