@@ -517,6 +517,7 @@ Ctrl + Down/Up: Go to comment or breakpoint");
                     {
                         UpdateValues();
                         ScrollLeftWhenOutOfMinimized();
+                        tasText.Invalidate();
                         if (CommunicationWrapper.fastForwarding)
                             CommunicationWrapper.CheckFastForward();
                     }
@@ -638,7 +639,6 @@ Ctrl + Down/Up: Go to comment or breakpoint");
         private void ScrollLeftWhenOutOfMinimized() {
             if (lastWindowState == FormWindowState.Minimized && WindowState == FormWindowState.Normal) {
                 tasText.ScrollLeft();
-                tasText.Invalidate();
             }
 
             lastWindowState = WindowState;

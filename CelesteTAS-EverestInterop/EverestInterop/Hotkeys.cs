@@ -56,6 +56,7 @@ namespace TAS.EverestInterop {
         public static Hotkey hotkeyCamera;
 		public static Hotkey hotkeySaveState;
 		public static Hotkey hotkeyLoadState;
+		public static Hotkey hotkeyClearState;
 
 		public static Hotkey[] hotkeys;
         public static List<Keys>[] listHotkeyKeys;
@@ -71,12 +72,13 @@ namespace TAS.EverestInterop {
                 Settings.KeyCamera.Keys = new List<Keys> { Keys.M };
 				Settings.KeySaveState.Keys = new List<Keys> { Keys.RightAlt, Keys.OemMinus };
 				Settings.KeyLoadState.Keys = new List<Keys> { Keys.OemPlus };
+				Settings.KeyClearState.Keys = new List<Keys>();
 			}
 
             listHotkeyKeys = new List<Keys>[] {
                 Settings.KeyStart.Keys, Settings.KeyFastForward.Keys, Settings.KeyFrameAdvance.Keys, Settings.KeyPause.Keys,
                 Settings.KeyHitboxes.Keys, Settings.KeyGraphics.Keys, Settings.KeyCamera.Keys,
-				Settings.KeySaveState.Keys, Settings.KeyLoadState.Keys,
+				Settings.KeySaveState.Keys, Settings.KeyLoadState.Keys, Settings.KeyClearState.Keys
             };
 
             hotkeyStart = BindingToHotkey(Settings.KeyStart);
@@ -88,10 +90,11 @@ namespace TAS.EverestInterop {
             hotkeyCamera = BindingToHotkey(Settings.KeyCamera);
 			hotkeySaveState = BindingToHotkey(Settings.KeySaveState);
 			hotkeyLoadState = BindingToHotkey(Settings.KeyLoadState);
-			hotkeys = new Hotkey[] { 
+			hotkeyClearState = BindingToHotkey(Settings.KeyClearState);
+			hotkeys = new Hotkey[] {
                 hotkeyStart, hotkeyFastForward, hotkeyFrameAdvance, hotkeyPause, 
                 hotkeyHitboxes, hotkeyGraphics, hotkeyCamera,
-				hotkeySaveState, hotkeyLoadState,
+				hotkeySaveState, hotkeyLoadState, hotkeyClearState
             };
         }
 

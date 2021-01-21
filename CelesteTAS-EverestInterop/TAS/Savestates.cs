@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Linq;
+using Celeste.Mod;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Microsoft.Xna.Framework;
 using Monocle;
@@ -17,7 +18,7 @@ namespace TAS {
 		public static bool StartedByLoadState;
 		private static int? savedLine;
 		public static int SavedLine =>  SpeedrunToolInstalled.Value && IsSaved() ? savedLine ?? -1 : -1;
-		private static Vector2 savedLastPos;
+		private static Vector2? savedLastPos;
 
 		private static readonly Lazy<bool> SpeedrunToolInstalled = new Lazy<bool>(() =>
 				Type.GetType("Celeste.Mod.SpeedrunTool.SaveLoad.StateManager, SpeedrunTool") != null
@@ -37,6 +38,8 @@ namespace TAS {
 				SaveAfterFreeze();
 			} else if (Hotkeys.hotkeyLoadState.pressed && !Hotkeys.hotkeyLoadState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
 				LoadOrPlayTAS();
+			} else if (Hotkeys.hotkeyClearState.pressed && !Hotkeys.hotkeyClearState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
+				ClearState();
 			}
 		}
 
@@ -68,6 +71,16 @@ namespace TAS {
 				Load();
 			} else {
 				PlayTAS();
+			}
+		}
+
+		private static void ClearState() {
+			StateManager.Instance.ClearState();
+			savedController = null;
+			savedLine = null;
+			savedLastPos = null;
+			if (Running) {
+				SendDataToStudio();
 			}
 		}
 
@@ -146,10 +159,16 @@ namespace TAS {
 				nextState |= State.FrameStep;
 
 				// PlayerStatus will auto update, we just need restore lastPos
-				LastPos = savedLastPos;
-				CurrentStatus = controller.Current.Line + "[" + controller + "]" + SavedLine;
-				StudioCommunicationClient.instance?.SendStateAndPlayerData(CurrentStatus, PlayerStatus, false);
+				if (savedLastPos.HasValue) {
+					LastPos = savedLastPos.Value;
+				}
+				SendDataToStudio();
 			}
+		}
+
+		private static void SendDataToStudio() {
+			CurrentStatus = controller.Current.Line + "[" + controller + "]" + SavedLine;
+			StudioCommunicationClient.instance?.SendStateAndPlayerData(CurrentStatus, PlayerStatus, false);
 		}
 	}
 }

@@ -34,6 +34,9 @@ namespace TAS.EverestInterop {
         [DefaultButtonBinding(0, Keys.OemPlus)]
         public ButtonBinding KeyLoadState { get; set; } = new ButtonBinding();
 
+        [DefaultButtonBinding(0, Keys.None)]
+        public ButtonBinding KeyClearState { get; set; } = new ButtonBinding();
+
         #region SimplifiedGraphics
 
         private bool _simplifiedGraphics = false;
