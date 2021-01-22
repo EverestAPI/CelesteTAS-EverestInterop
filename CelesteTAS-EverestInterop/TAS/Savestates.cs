@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections;
-using Celeste.Mod;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Monocle;
 using TAS.EverestInterop;
@@ -11,7 +10,6 @@ namespace TAS {
     static class Savestates {
         private static InputController savedController;
         public static Coroutine routine;
-        public static bool AllowExecuteSaveStateCommand;
         private static int? savedLine;
         public static int SavedLine => SpeedrunToolInstalled.Value && IsSaved() ? savedLine ?? -1 : -1;
         private static string savedPlayerStatus;
@@ -25,43 +23,54 @@ namespace TAS {
         }
 
         public static void HandleSaveStates() {
-            if (!SpeedrunToolInstalled.Value)
-                return;
-
-            if (Hotkeys.hotkeyLoadState == null || Hotkeys.hotkeySaveState == null) return;
+            if (!SpeedrunToolInstalled.Value) return;
 
             if (Running && Hotkeys.hotkeySaveState.pressed && !Hotkeys.hotkeySaveState.wasPressed) {
-                SaveState();
+                Save(null);
+            } else if (IsSaved() && !Running && !Hotkeys.hotkeyStart.pressed && Hotkeys.hotkeyStart.wasPressed) {
+                // check the start key just released
+                Load();
             } else if (Hotkeys.hotkeyLoadState.pressed && !Hotkeys.hotkeyLoadState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
-                LoadState();
+                Load();
             } else if (Hotkeys.hotkeyClearState.pressed && !Hotkeys.hotkeyClearState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
-                ClearState();
+                Clear();
             }
         }
 
-        public static void SaveState(int? commandLine = null) {
-            if (IsSaved() && savedController.CurrentFrame == controller.CurrentFrame && savedController.SavedChecksum == controller.Checksum(savedController.CurrentFrame)) {
-                // Don't repeat save state, just play
-                state &= ~State.FrameStep;
-                nextState &= ~State.FrameStep;
-                return;
+        private static IEnumerator WaitForSavingState(Action onComplete) {
+            yield return null;
+            onComplete();
+        }
+
+        public static void SaveSafe(InputRecord breakpoint) {
+            if (SpeedrunToolInstalled.Value) {
+                Save(breakpoint);
+            }
+        }
+        private static void Save(InputRecord breakpoint) {
+            if (IsSaved()) {
+                if (savedController.CurrentFrame == controller.CurrentFrame && savedController.SavedChecksum == controller.Checksum(savedController)) {
+                    // Don't repeat save state, just play
+                    state &= ~State.FrameStep;
+                    nextState &= ~State.FrameStep;
+                    return;
+                }
             }
             if (StateManager.Instance.SaveState()) {
-                Logger.Log("RepeatSaveState", "RepeatSaveState");
-                AllowExecuteSaveStateCommand = false;
-
                 state |= State.FrameStep;
                 nextState &= ~State.FrameStep;
 
                 savedController = controller.Clone();
                 LoadStateRoutine();
 
-                savedLine = commandLine ?? controller.Current.Line;
-                savedLine--;
+                savedLine =  controller.Current.Line;
+                if (breakpoint == null) {
+                    savedLine--;
+                }
 
                 savedPlayerStatus = PlayerStatus;
 
-                routine = new Coroutine(DelayRoutine(() => {
+                routine = new Coroutine(WaitForSavingState(() => {
                     if (CelesteTASModule.Settings.PauseAfterLoadState && !controller.HasFastForward) return;
                     state &= ~State.FrameStep;
                     nextState &= ~State.FrameStep;
@@ -69,19 +78,14 @@ namespace TAS {
             }
         }
 
-        private static IEnumerator DelayRoutine(Action onComplete) {
-            yield return null;
-            onComplete();
-        }
-
-        private static void LoadState() {
+        private static void Load() {
             state &= ~State.FrameStep;
             nextState &= ~State.FrameStep;
 
             if (IsSaved()) {
-                controller.AdvanceFrame(true);
-                if (savedController.SavedChecksum == controller.Checksum(savedController.CurrentFrame)) {
-                    if (Running && savedController.CurrentFrame == controller.CurrentFrame) {
+                controller.AdvanceFrame(true, true);
+                if (savedController.SavedChecksum == controller.Checksum(savedController)) {
+                    if (Running && savedController.CurrentFrame + 1 == controller.CurrentFrame) {
                         // Don't repeat load state, just play
                         return;
                     }
@@ -97,8 +101,9 @@ namespace TAS {
             PlayTAS();
         }
 
-        private static void ClearState() {
+        private static void Clear() {
             StateManager.Instance.ClearState();
+            routine = null;
             savedController = null;
             savedLine = null;
             savedPlayerStatus = null;
@@ -110,7 +115,6 @@ namespace TAS {
         private static void PlayTAS() {
             DisableExternal();
             EnableExternal();
-            AllowExecuteSaveStateCommand = true;
         }
 
         private static void LoadStateRoutine() {

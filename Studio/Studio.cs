@@ -165,11 +165,11 @@ Ctrl + Shift + C: Copy player data to clipboard
 
 Ctrl + K: Block comment/uncomment
 
-Ctrl + P: Remove all breakpoints and savestate commands
+Ctrl + P: Remove all breakpoints
 
 Ctrl + .: Insert/Remove breakpoint
 
-Ctrl + Shift + .: Insert/Remove savestate command
+Ctrl + Shift + .: Insert/Remove savestate breakpoints
 
 Ctrl + R: Insert room name
 
@@ -280,7 +280,7 @@ Ctrl + Down/Up: Go to comment or breakpoint");
                     InsertOrRemoveText(SyntaxHighlighter.BreakPointRegex, "***");
                 }
                 else if (e.Modifiers == (Keys.Control | Keys.Shift) && e.KeyCode == Keys.OemPeriod) {
-                    InsertOrRemoveText(SyntaxHighlighter.SaveStateCommandRegex, "savestate");
+                    InsertOrRemoveText(SyntaxHighlighter.BreakPointRegex, "***S");
                 }
 				else if (e.Modifiers == (Keys.Control | Keys.Shift) && e.KeyCode == Keys.R)
 				{
@@ -318,7 +318,7 @@ Ctrl + Down/Up: Go to comment or breakpoint");
         }
 
         private void GoDownCommentAndBreakpoint(KeyEventArgs e) {
-            List<int> commentLine = tasText.FindLines(@"^\s*#|^\*\*\*|^\s*savestate\s*$", RegexOptions.IgnoreCase);
+            List<int> commentLine = tasText.FindLines(@"^\s*#|^\*\*\*");
             if (commentLine.Count > 0) {
                 int line = commentLine.FirstOrDefault(i => i > tasText.Selection.Start.iLine);
                 if (line == 0) line = tasText.LinesCount - 1;
@@ -334,7 +334,7 @@ Ctrl + Down/Up: Go to comment or breakpoint");
         }
 
         private void GoUpCommentAndBreakpoint(KeyEventArgs e) {
-            List<int> commentLine = tasText.FindLines(@"^\s*#|^\*\*\*|^\s*savestate\s*$", RegexOptions.IgnoreCase);
+            List<int> commentLine = tasText.FindLines(@"^\s*#|^\*\*\*");
             if (commentLine.Count > 0) {
                 int line = commentLine.FindLast(i => i < tasText.Selection.Start.iLine);
                 while (tasText.Selection.Start.iLine > line) {

@@ -197,7 +197,6 @@ namespace TAS {
 		
 		private static void CheckToEnable() {
 			if (Hotkeys.hotkeyStart.pressed) {
-				Savestates.AllowExecuteSaveStateCommand = false;
 				if (!HasFlag(state, State.Enable)) {
 					nextState |= State.Enable;
 				} else {
@@ -206,15 +205,12 @@ namespace TAS {
 			}
 			else if (HasFlag(nextState, State.Enable)) {
 				if (Engine.Scene is Level level && (!level.CanPause || Engine.FreezeTimer > 0)) {
-					
 					controller.InitializePlayback();
 					if (controller.Current.HasActions(Actions.Restart) || controller.Current.HasActions(Actions.Start)) {
-						
 						nextState |= State.Delay;
 						FrameLoops = 400;
 						return;
 					}
-					
 				}
 				EnableRun();
 			}
@@ -289,8 +285,7 @@ namespace TAS {
 			Running = true;
 		}
 
-		private static bool HasFlag(State state, State flag) =>
-			(state & flag) == flag;
+		public static bool HasFlag(State state, State flag) => (state & flag) == flag;
 
 		public static void SetInputs(InputRecord input) {
 			GamePadDPad pad = default;

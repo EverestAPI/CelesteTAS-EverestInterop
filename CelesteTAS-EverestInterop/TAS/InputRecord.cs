@@ -1,23 +1,24 @@
 ﻿using System;
 using System.Text;
+
 namespace TAS {
 	[Flags]
 	public enum Actions {
-		None,
-		Left = 1,
-		Right = 2,
-		Up = 4,
-		Down = 8,
-		Jump = 16,
-		Dash = 32,
-		Grab = 64,
-		Start = 128,
-		Restart = 256,
-		Feather = 512,
-		Journal = 1024,
-		Jump2 = 2048,
-		Dash2 = 4096,
-		Confirm = 8192
+		None = 1 << 0,
+		Left = 1 << 1,
+		Right = 1 << 2,
+		Up = 1 << 3,
+		Down = 1 << 4,
+		Jump = 1 << 5,
+		Dash = 1 << 6,
+		Grab = 1 << 7,
+		Start = 1 << 8,
+		Restart = 1 << 9 ,
+		Feather = 1 << 10,
+		Journal = 1 << 11,
+		Jump2 = 1 << 12,
+		Dash2 = 1 << 13,
+		Confirm = 1 << 14
 	}
 	public class InputRecord {
 		public int Line { get; set; }
@@ -25,6 +26,7 @@ namespace TAS {
 		public Actions Actions { get; set; }
 		public float Angle { get; set; }
 		public bool FastForward { get; set; }
+		public bool SaveState { get; set; }
 		public bool ForceBreak { get; set; }
 		public Action Command { get; set; }
 		public string CommandType { get; set; }
@@ -34,31 +36,36 @@ namespace TAS {
 			CommandType = commandType;
 			Line = line;
 		}
-		public InputRecord(int number, string line) {
-			Line = number;
+		public InputRecord(int line, string lineText) {
+			Line = line;
 
 			int index = 0;
-			Frames = ReadFrames(line);
+			Frames = ReadFrames(lineText);
 			if (Frames == 0) {
 
 				// allow whitespace before the breakpoint
-				line = line.Trim();
-				if (line.StartsWith("***")) {
+				lineText = lineText.Trim();
+				if (lineText.StartsWith("***")) {
 					FastForward = true;
 					index = 3;
 
-					if (line.Length >= 4 && line[3] == '!') {
-						ForceBreak = true;
-						index = 4;
+					if (lineText.Length >= 4) {
+						if (lineText[3] == '!') {
+							ForceBreak = true;
+							index = 4;
+						} else if (lineText[3].ToString().ToLower() == "s") {
+							SaveState = true;
+							index = 4;
+						}
 					}
 
-					Frames = ReadFrames(line.Substring(index));
+					Frames = ReadFrames(lineText.Substring(index));
 				}
 				return;
 			}
 
-			while (index < line.Length) {
-				char c = line[index];
+			while (index < lineText.Length) {
+				char c = lineText[index];
 
 				switch (char.ToUpper(c)) {
 					case 'L': Actions ^= Actions.Left; break;
@@ -77,7 +84,7 @@ namespace TAS {
 					case 'F':
 						Actions ^= Actions.Feather;
 						index++;
-						Angle = ReadAngle(line.Substring(index + 1));
+						Angle = ReadAngle(lineText.Substring(index + 1));
 						continue;
 				}
 
@@ -176,6 +183,7 @@ namespace TAS {
 			clone.CommandType = CommandType;
 			clone.FastForward = FastForward;
 			clone.ForceBreak = ForceBreak;
+			clone.SaveState = SaveState;
 			return clone;
 		}
 

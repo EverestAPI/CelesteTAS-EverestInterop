@@ -4,7 +4,6 @@ using System.Drawing;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Xml;
-using CelesteStudio.Entities;
 
 namespace CelesteStudio.RichText {
 	public class SyntaxHighlighter : IDisposable {
@@ -16,8 +15,10 @@ namespace CelesteStudio.RichText {
 		public readonly Style GrayStyle = new TextStyle(Brushes.Gray, null, FontStyle.Regular);
 		public readonly Style MagentaStyle = new TextStyle(Brushes.Magenta, null, FontStyle.Regular);
 		public readonly Style GreenStyle = new TextStyle(Brushes.Green, null, FontStyle.Regular);
+		public readonly Style GoldenrodBgStyle = new TextStyle(Brushes.White, Brushes.Goldenrod, FontStyle.Regular);
 		public readonly Style RedBgStyle = new TextStyle(Brushes.White, new SolidBrush(Color.FromArgb(224, 64, 64)), FontStyle.Regular);
 		public readonly Style ChocolateStyle = new TextStyle(Brushes.Chocolate,  null, FontStyle.Regular);
+		public readonly Style ChocolateBgStyle = new TextStyle(Brushes.White,  Brushes.Chocolate, FontStyle.Regular);
 		public readonly Style BrownStyle = new TextStyle(Brushes.Brown,  null, FontStyle.Regular);
 		public readonly Style RedStyle = new TextStyle(Brushes.Red, null, FontStyle.Regular);
 		public readonly Style MaroonStyle = new TextStyle(Brushes.Maroon, null, FontStyle.Regular);
@@ -37,8 +38,7 @@ namespace CelesteStudio.RichText {
 		}
 
 		public static readonly Regex CommentRegex = new Regex(@"^\s*#.*");
-		public static readonly Regex BreakPointRegex = new Regex(@"^\s*\*\*\*", RegexOptions.IgnoreCase);
-		public static readonly Regex SaveStateCommandRegex = new Regex(@"^\s*savestate\s*$", RegexOptions.IgnoreCase);
+		public static readonly Regex BreakPointRegex = new Regex(@"^\s*\*\*\*");
 		public static readonly Regex InputRecordRegex = new Regex(@"^( {3}\d| {2}\d{2}| \d{3}|\d{4})");
 
 		/// <summary>
@@ -201,7 +201,8 @@ namespace CelesteStudio.RichText {
 			tb.LeftBracket2 = '\x0';
 			tb.RightBracket2 = '\x0';
 			//clear style of changed range
-			range.ClearStyle(GrayStyle, GreenStyle, RedStyle, BlueStyle, PinkStyle, RedBgStyle, ChocolateStyle, SteelBlueBgStyle);
+			range.ClearStyle(GrayStyle, GreenStyle, RedStyle, BlueStyle, PinkStyle,
+				RedBgStyle, ChocolateStyle, ChocolateBgStyle, SteelBlueBgStyle, GoldenrodBgStyle);
 
 			int start = range.Start.iLine;
 			int end = range.End.iLine;
@@ -215,12 +216,7 @@ namespace CelesteStudio.RichText {
 				int charEnd = tb[start].Count;
 				Range line = new Range(tb, 0, start, charEnd, start);
 
-				if (!InputRecordRegex.IsMatch(line.Text)) {
-					line.SetStyle(GreenStyle, CommentRegex);
-					line.SetStyle(RedBgStyle, BreakPointRegex);
-					line.SetStyle(SteelBlueBgStyle, SaveStateCommandRegex);
-					line.SetStyle(ChocolateStyle);
-				} else {
+				if (InputRecordRegex.IsMatch(line.Text)) {
 					Range sub = new Range(tb, 0, start, 4, start);
 					sub.SetStyle(RedStyle);
 
@@ -238,6 +234,28 @@ namespace CelesteStudio.RichText {
 
 						charStart++;
 					}
+				} else if (BreakPointRegex.IsMatch(line.Text)) {
+					Range sub = new Range(tb, 0, start, 3, start);
+					sub.SetStyle(RedBgStyle);
+
+					if (tb[start].Count >= 4) {
+						int charStart = 3;
+						if (tb[start][charStart].c.ToString().ToLower() == "s") {
+							sub = new Range(tb, charStart, start, 4, start);
+							sub.SetStyle(SteelBlueBgStyle);
+							charStart++;
+						} else	if (tb[start][charStart].c == '!') {
+							sub = new Range(tb, charStart, start, 4, start);
+							sub.SetStyle(GoldenrodBgStyle);
+							charStart++;
+						}
+
+						sub = new Range(tb, charStart, start, charEnd, start);
+						sub.SetStyle(ChocolateBgStyle);
+					}
+				} else {
+					line.SetStyle(GreenStyle, CommentRegex);
+					line.SetStyle(ChocolateStyle);
 				}
 
 				start++;

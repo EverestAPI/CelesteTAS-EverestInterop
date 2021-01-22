@@ -308,16 +308,5 @@ namespace TAS {
 				}
 			}
 		}
-
-		[TASCommand(args = new[] { "savestate" })]
-		private static void SaveStateCommand(string[] args, int commandLine) {
-			if (Savestates.AllowExecuteSaveStateCommand) {
-				if (Manager.controller.inputs.Any(record => record.CommandType == "savestatecommand" && record.Line > commandLine)) {
-					return;
-				}
-				Savestates.SaveState(commandLine);
-			}
-		}
-
 	}
 }

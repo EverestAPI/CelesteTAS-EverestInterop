@@ -2,20 +2,22 @@ using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using Celeste.Mod;
 using Input = Celeste.Input;
 
 namespace TAS {
 	public class InputController {
 		public List<InputRecord> inputs = new List<InputRecord>();
-		private int inputIndex, frameToNext;
+		private int frameToNext;
 		public string filePath;
 		public List<InputRecord> fastForwards = new List<InputRecord>();
 		public Vector2? resetSpawn;
 		public InputController(string filePath) {
 			this.filePath = filePath;
 		}
-
-		public bool CanPlayback => inputIndex < inputs.Count;
+		public int InputIndex { get; private set; }
+		public bool CanPlayback => InputIndex < inputs.Count;
 		public bool HasFastForward => fastForwards.Count > 0;
 		public int FastForwardSpeed => fastForwards.Count == 0 ? 1 : fastForwards[0].Frames == 0 ? 400 : fastForwards[0].Frames;
 		public int CurrentFrame { get; private set; }
@@ -41,15 +43,15 @@ namespace TAS {
 		public InputRecord Current { get; set; }
 		public InputRecord Previous {
 			get {
-				if (frameToNext != 0 && inputIndex - 1 >= 0 && inputs.Count > 0)
-					return inputs[inputIndex - 1];
+				if (frameToNext != 0 && InputIndex - 1 >= 0 && inputs.Count > 0)
+					return inputs[InputIndex - 1];
 				return null;
 			}
 		}
 		public InputRecord Next {
 			get {
-				if (frameToNext != 0 && inputIndex + 1 < inputs.Count)
-					return inputs[inputIndex + 1];
+				if (frameToNext != 0 && InputIndex + 1 < inputs.Count)
+					return inputs[InputIndex + 1];
 				return null;
 			}
 		}
@@ -73,7 +75,7 @@ namespace TAS {
 		public override string ToString() {
 			if (frameToNext == 0 && Current != null) {
 				return Current.ToString() + "(" + CurrentFrame.ToString() + ")";
-			} else if (inputIndex < inputs.Count && Current != null) {
+			} else if (InputIndex < inputs.Count && Current != null) {
 				int inputFrames = Current.Frames;
 				int startFrame = frameToNext - inputFrames;
 				return Current.ToString() + "(" + (CurrentFrame - startFrame).ToString() + " / " + inputFrames + " : " + CurrentFrame + ")";
@@ -82,8 +84,8 @@ namespace TAS {
 		}
 
 		public string NextInput() {
-			if (frameToNext != 0 && inputIndex + 1 < inputs.Count)
-				return inputs[inputIndex + 1].ToString();
+			if (frameToNext != 0 && InputIndex + 1 < inputs.Count)
+				return inputs[InputIndex + 1].ToString();
 			return string.Empty;
 		}
 
@@ -95,7 +97,7 @@ namespace TAS {
 			}
 
 			CurrentFrame = 0;
-			inputIndex = 0;
+			InputIndex = 0;
 			if (inputs.Count > 0) {
 				Current = inputs[0];
 				frameToNext = Current.Frames;
@@ -121,19 +123,19 @@ namespace TAS {
 				CurrentFrame = previousFrame + 1;
 
 				while (CurrentFrame > frameToNext) {
-					if (inputIndex + 1 >= inputs.Count) {
-						inputIndex++;
+					if (InputIndex + 1 >= inputs.Count) {
+						InputIndex++;
 						return;
 					}
 					if (Current.FastForward) {
 						fastForwards.RemoveAt(0);
 					}
-					Current = inputs[++inputIndex];
+					Current = inputs[++InputIndex];
 					frameToNext += Current.Frames;
 				}
 				//prevents duplicating commands
 				if (Current.Command != null) {
-					Current = inputs[++inputIndex];
+					Current = inputs[++InputIndex];
 				}
 			}
 
@@ -147,17 +149,22 @@ namespace TAS {
 				if (Current.Command != null) {
 					Current.Command.Invoke();
 				}
-				if (inputIndex < inputs.Count) {
+				if (InputIndex < inputs.Count) {
 					if (CurrentFrame >= frameToNext) {
-						if (inputIndex + 1 >= inputs.Count) {
-							inputIndex++;
+						if (InputIndex + 1 >= inputs.Count) {
+							InputIndex++;
 							return;
 						}
 						if (Current.FastForward) {
 							fastForwards.RemoveAt(0);
 						}
-						Current = inputs[++inputIndex];
+						Current = inputs[++InputIndex];
 						frameToNext += Current.Frames;
+
+						InputRecord lastInputRecord = inputs[InputIndex - 1];
+						if (lastInputRecord.SaveState && inputs.Where(record => record.SaveState).All(record => lastInputRecord.Line >= record.Line)) {
+							Savestates.SaveSafe(lastInputRecord);
+						}
 					}
 				}
 			} while (Current.Command != null);
@@ -171,13 +178,13 @@ namespace TAS {
 		public void DryAdvanceFrames(int frames) {
 			for (int i = 0; i < frames; i++) {
 				do {
-					if (inputIndex < inputs.Count) {
+					if (InputIndex < inputs.Count) {
 						if (CurrentFrame >= frameToNext) {
-							if (inputIndex + 1 >= inputs.Count) {
-								inputIndex++;
+							if (InputIndex + 1 >= inputs.Count) {
+								InputIndex++;
 								return;
 							}
-							Current = inputs[++inputIndex];
+							Current = inputs[++InputIndex];
 							frameToNext += Current.Frames;
 						}
 					}
@@ -197,7 +204,7 @@ namespace TAS {
 				return;
 			for (int i = 0; i < frames; i++) {
 				if (CurrentInputFrame == 1) {
-					Current = inputs[--inputIndex];
+					Current = inputs[--InputIndex];
 					frameToNext -= Current.Frames;
 				}
 				CurrentFrame--;
@@ -206,7 +213,7 @@ namespace TAS {
 
 		public void InitializeRecording() {
 			CurrentFrame = 0;
-			inputIndex = 0;
+			InputIndex = 0;
 			Current = new InputRecord();
 			frameToNext = 0;
 			inputs.Clear();
@@ -294,6 +301,7 @@ namespace TAS {
 
 							if (inputs.Count > 0) {
 								inputs[inputs.Count - 1].ForceBreak = input.ForceBreak;
+								inputs[inputs.Count - 1].SaveState = input.SaveState;
 								inputs[inputs.Count - 1].FastForward = true;
 							}
 						}
@@ -323,37 +331,50 @@ namespace TAS {
 
 			clone.CurrentFrame = CurrentFrame;
 			clone.frameToNext = frameToNext;
-			if (inputIndex <= clone.inputs.Count)
-				clone.inputIndex = inputIndex;
-			clone.Current = clone.inputs[clone.inputIndex];
+			if (InputIndex <= clone.inputs.Count)
+				clone.InputIndex = InputIndex;
+			clone.Current = clone.inputs[clone.InputIndex];
 			clone.usedFiles = new Dictionary<string, DateTime>(usedFiles);
 
 			return clone;
 		}
 
-		public long Checksum(int toFrame) {
+		public long Checksum(int toFrame, int toInputIndex) {
 			try {
-				// the checksum behaves very weirdly if you don't subtract a few frames
-				toFrame -= 10;
-
 				long output = 0;
-				int inputIndex = 0;
+				int checkInputIndex = 0;
 				int frames = 0;
-				InputRecord current = inputs[inputIndex];
-				while (frames < toFrame) {
-					//if (!(current.FastForward || current.Command != null)) {
-						for (int i = 0; i < current.Frames && frames < toFrame; i++, frames++) {
-							output += (long)current.Actions * frames;
-						}
-					//}
-					current = inputs[inputIndex++];
+
+				// calc all action frames
+				while (frames < toFrame && checkInputIndex < inputs.Count) {
+					InputRecord current = inputs[checkInputIndex];
+
+					for (int i = 0; i < current.Frames && frames < toFrame; i++, frames++) {
+						output += (long)current.Actions * frames;
+					}
+
+					checkInputIndex++;
 				}
+
+				// calc total frames
+				long totalFrames = 0;
+				checkInputIndex = 0;
+				while (checkInputIndex < toInputIndex) {
+					InputRecord current = inputs[checkInputIndex];
+
+					output += current.Frames;
+					totalFrames += current.Frames;
+
+					checkInputIndex++;
+				}
+
 				SavedChecksum = output;
 				return output;
 			}
 			catch { SavedChecksum = 0; return 0; }
 		}
 
-		public long Checksum() => Checksum(CurrentFrame);
+		public long Checksum(InputController controller) => Checksum(controller.CurrentFrame, controller.InputIndex);
+		public long Checksum() => Checksum(CurrentFrame, InputIndex);
 	}
 }

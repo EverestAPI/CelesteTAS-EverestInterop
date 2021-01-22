@@ -4379,7 +4379,7 @@ window.status = ""#print"";
 		/// <summary>
 		/// Search lines by regex pattern
 		/// </summary>
-		public List<int> FindLines(string searchPattern, RegexOptions options) {
+		public List<int> FindLines(string searchPattern, RegexOptions options = RegexOptions.None) {
 			List<int> iLines = new List<int>();
 			foreach (var r in Range.GetRangesByLines(searchPattern, options))
 				iLines.Add(r.Start.iLine);
