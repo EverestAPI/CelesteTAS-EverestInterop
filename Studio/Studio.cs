@@ -280,7 +280,7 @@ Ctrl + Down/Up: Go to comment or breakpoint");
                     InsertOrRemoveText(SyntaxHighlighter.BreakPointRegex, "***");
                 }
                 else if (e.Modifiers == (Keys.Control | Keys.Shift) && e.KeyCode == Keys.OemPeriod) {
-                    InsertOrRemoveText(SyntaxHighlighter.SaveStateCommandRegex, "Savestate");
+                    InsertOrRemoveText(SyntaxHighlighter.SaveStateCommandRegex, "savestate");
                 }
 				else if (e.Modifiers == (Keys.Control | Keys.Shift) && e.KeyCode == Keys.R)
 				{
@@ -387,7 +387,7 @@ Ctrl + Down/Up: Go to comment or breakpoint");
         private void ClearBreakpointsAndSaveState()
         {
             List<int> breakpoints = tasText.FindLines(@"\*\*\*", RegexOptions.None);
-            List<int> saveStates = tasText.FindLines(@"^\s*Savestate\s*$", RegexOptions.IgnoreCase);
+            List<int> saveStates = tasText.FindLines(@"^\s*savestate\s*$", RegexOptions.IgnoreCase);
             tasText.RemoveLines(breakpoints.Union(saveStates).ToList());
         }
 

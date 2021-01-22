@@ -38,7 +38,7 @@ namespace CelesteStudio.RichText {
 
 		public static readonly Regex CommentRegex = new Regex(@"^\s*#.*");
 		public static readonly Regex BreakPointRegex = new Regex(@"^\s*\*\*\*", RegexOptions.IgnoreCase);
-		public static readonly Regex SaveStateCommandRegex = new Regex(@"^\s*Savestate\s*$", RegexOptions.IgnoreCase);
+		public static readonly Regex SaveStateCommandRegex = new Regex(@"^\s*savestate\s*$", RegexOptions.IgnoreCase);
 		public static readonly Regex InputRecordRegex = new Regex(@"^( {3}\d| {2}\d{2}| \d{3}|\d{4})");
 
 		/// <summary>

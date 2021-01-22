@@ -310,6 +310,7 @@ namespace TAS {
 
 		public InputController Clone() {
 			InputController clone = new InputController(filePath);
+
 			clone.inputs = new List<InputRecord>();
 			foreach (InputRecord record in inputs) {
 				clone.inputs.Add(record.Clone());
@@ -319,11 +320,14 @@ namespace TAS {
 			foreach (InputRecord record in fastForwards) {
 				clone.fastForwards.Add(record.Clone());
 			}
+
 			clone.CurrentFrame = CurrentFrame;
 			clone.frameToNext = frameToNext;
 			if (inputIndex <= clone.inputs.Count)
 				clone.inputIndex = inputIndex;
 			clone.Current = clone.inputs[clone.inputIndex];
+			clone.usedFiles = new Dictionary<string, DateTime>(usedFiles);
+
 			return clone;
 		}
 

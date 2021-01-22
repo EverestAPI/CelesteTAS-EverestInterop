@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections;
+using Celeste.Mod;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
-using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.EverestInterop;
 using TAS.StudioCommunication;
@@ -14,14 +14,14 @@ namespace TAS {
         public static bool AllowExecuteSaveStateCommand;
         private static int? savedLine;
         public static int SavedLine => SpeedrunToolInstalled.Value && IsSaved() ? savedLine ?? -1 : -1;
-        private static Vector2? savedLastPos;
+        private static string savedPlayerStatus;
 
         private static readonly Lazy<bool> SpeedrunToolInstalled = new Lazy<bool>(() =>
             Type.GetType("Celeste.Mod.SpeedrunTool.SaveLoad.StateManager, SpeedrunTool") != null
         );
 
         private static bool IsSaved() {
-            return StateManager.Instance.IsSaved;
+            return StateManager.Instance.IsSaved && savedController != null;
         }
 
         public static void HandleSaveStates() {
@@ -33,34 +33,38 @@ namespace TAS {
             if (Running && Hotkeys.hotkeySaveState.pressed && !Hotkeys.hotkeySaveState.wasPressed) {
                 SaveState();
             } else if (Hotkeys.hotkeyLoadState.pressed && !Hotkeys.hotkeyLoadState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
-                LoadStateOrPlayTAS();
+                LoadState();
             } else if (Hotkeys.hotkeyClearState.pressed && !Hotkeys.hotkeyClearState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
                 ClearState();
             }
         }
 
         public static void SaveState(int? commandLine = null) {
+            if (IsSaved() && savedController.CurrentFrame == controller.CurrentFrame && savedController.SavedChecksum == controller.Checksum(savedController.CurrentFrame)) {
+                // Don't repeat save state, just play
+                state &= ~State.FrameStep;
+                nextState &= ~State.FrameStep;
+                return;
+            }
             if (StateManager.Instance.SaveState()) {
-                savedController = controller.Clone();
-                LoadStateRoutine();
-
-                if (AllowExecuteSaveStateCommand && commandLine.HasValue) {
-                    AllowExecuteSaveStateCommand = false;
-                }
-
-                savedLine = commandLine ?? controller.Current.Line;
-                savedLine--;
+                Logger.Log("RepeatSaveState", "RepeatSaveState");
+                AllowExecuteSaveStateCommand = false;
 
                 state |= State.FrameStep;
                 nextState &= ~State.FrameStep;
 
-                savedLastPos = LastPos;
+                savedController = controller.Clone();
+                LoadStateRoutine();
+
+                savedLine = commandLine ?? controller.Current.Line;
+                savedLine--;
+
+                savedPlayerStatus = PlayerStatus;
 
                 routine = new Coroutine(DelayRoutine(() => {
-                    if (!CelesteTASModule.Settings.PauseAfterLoadState || controller.HasFastForward) {
-                        state &= ~State.FrameStep;
-                        nextState &= ~State.FrameStep;
-                    }
+                    if (CelesteTASModule.Settings.PauseAfterLoadState && !controller.HasFastForward) return;
+                    state &= ~State.FrameStep;
+                    nextState &= ~State.FrameStep;
                 }));
             }
         }
@@ -70,46 +74,37 @@ namespace TAS {
             onComplete();
         }
 
-        private static void LoadStateOrPlayTAS() {
-            if (StateManager.Instance.IsSaved && savedController != null) {
-                // Don't repeat load state
-                if (Running && savedController.CurrentFrame == controller.CurrentFrame) {
-                    return;
-                }
+        private static void LoadState() {
+            state &= ~State.FrameStep;
+            nextState &= ~State.FrameStep;
 
-                Load();
-            } else {
-                PlayTAS();
+            if (IsSaved()) {
+                controller.AdvanceFrame(true);
+                if (savedController.SavedChecksum == controller.Checksum(savedController.CurrentFrame)) {
+                    if (savedController.CurrentFrame == controller.CurrentFrame) {
+                        // Don't repeat load state, just play
+                        return;
+                    }
+                    if (StateManager.Instance.LoadState()) {
+                        if (!Running) EnableExternal();
+                        LoadStateRoutine();
+                        return;
+                    }
+                }
             }
+
+            //If load state failed just playback normally
+            PlayTAS();
         }
 
         private static void ClearState() {
             StateManager.Instance.ClearState();
             savedController = null;
             savedLine = null;
-            savedLastPos = null;
+            savedPlayerStatus = null;
             if (Running) {
-                SendDataToStudio();
+                UpdateStudio();
             }
-        }
-
-        private static void Load() {
-            state &= ~State.FrameStep;
-            nextState &= ~State.FrameStep;
-
-            controller.AdvanceFrame(true);
-            if (savedController != null
-                && savedController.SavedChecksum == controller.Checksum(savedController.CurrentFrame)) {
-                if (!StateManager.Instance.LoadState()) return;
-                if (!Running) EnableExternal();
-                savedController.inputs = controller.inputs;
-                savedController.AdvanceFrame(true, true);
-                LoadStateRoutine();
-                return;
-            }
-
-            //If savestate load failed just playback normally
-            PlayTAS();
         }
 
         private static void PlayTAS() {
@@ -120,24 +115,20 @@ namespace TAS {
 
         private static void LoadStateRoutine() {
             controller = savedController.Clone();
-            if (controller.Current.CommandType == "savestatecommand") {
-                controller.Current.Command = null;
-            }
+            controller.AdvanceFrame(true, true);
 
             if (CelesteTASModule.Settings.PauseAfterLoadState && !controller.HasFastForward) {
                 state |= State.FrameStep;
                 nextState &= ~State.FrameStep;
-
-                // PlayerStatus will auto update, we just need restore lastPos
-                if (savedLastPos.HasValue) {
-                    LastPos = savedLastPos.Value;
-                }
-
-                SendDataToStudio();
             }
+
+            if (!string.IsNullOrEmpty(savedPlayerStatus)) {
+                PlayerStatus = savedPlayerStatus;
+            }
+            UpdateStudio();
         }
 
-        private static void SendDataToStudio() {
+        private static void UpdateStudio() {
             CurrentStatus = controller.Current.Line + "[" + controller + "]" + SavedLine;
             StudioCommunicationClient.instance?.SendStateAndPlayerData(CurrentStatus, PlayerStatus, false);
         }

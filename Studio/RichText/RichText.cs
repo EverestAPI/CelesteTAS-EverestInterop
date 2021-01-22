@@ -2854,12 +2854,17 @@ namespace CelesteStudio.RichText {
 				if (ChangedLineColor != Color.Transparent && line.IsChanged)
 					e.Graphics.FillRectangle(changedLineBrush, new RectangleF(-10, y, LeftIndent - minLeftIndent - 2 + 10, CharHeight + 1));
 
-				//draw savestate line background
-				if (iLine == SaveStateLine)
-					e.Graphics.FillRectangle(saveStateLineBrush, new RectangleF(-10, y, LeftIndent - minLeftIndent - 2 + 10, CharHeight + 1));
-
 				if (CurrentLineColor != Color.Transparent && iLine == CurrentLine)
 					e.Graphics.FillRectangle(activeLineBrush, new RectangleF(-10, y, LeftIndent - minLeftIndent - 2 + 10, CharHeight + 1));
+
+				//draw savestate line background
+				if (iLine == SaveStateLine) {
+					if (SaveStateLine == CurrentLine) {
+						e.Graphics.FillRectangle(saveStateLineBrush, new RectangleF(-10, y, 15, CharHeight + 1));
+					} else {
+						e.Graphics.FillRectangle(saveStateLineBrush, new RectangleF(-10, y, LeftIndent - minLeftIndent - 2 + 10, CharHeight + 1));
+					}
+				}
 
 				if (!string.IsNullOrEmpty(currentLineText) && iLine == CurrentLine) {
 					using (var lineNumberBrush = new SolidBrush(currentTextColor)) {
