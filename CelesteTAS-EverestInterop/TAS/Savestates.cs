@@ -81,7 +81,7 @@ namespace TAS {
             if (IsSaved()) {
                 controller.AdvanceFrame(true);
                 if (savedController.SavedChecksum == controller.Checksum(savedController.CurrentFrame)) {
-                    if (savedController.CurrentFrame == controller.CurrentFrame) {
+                    if (Running && savedController.CurrentFrame == controller.CurrentFrame) {
                         // Don't repeat load state, just play
                         return;
                     }
