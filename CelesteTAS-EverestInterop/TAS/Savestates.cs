@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections;
+using System.Linq;
+using Celeste;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Monocle;
 using TAS.EverestInterop;
@@ -8,11 +10,15 @@ using static TAS.Manager;
 
 namespace TAS {
     static class Savestates {
-        private static InputController savedController;
-        public static Coroutine routine;
-        private static int? savedLine;
         public static int SavedLine => SpeedrunToolInstalled.Value && IsSaved() ? savedLine ?? -1 : -1;
+        public static Coroutine routine;
+        private static InputController savedController;
+        private static int? savedLine;
         private static string savedPlayerStatus;
+        private static bool savedByBreakpoint;
+
+        private static bool BreakpointHasBeenDeleted => IsSaved() && savedByBreakpoint && savedController.InputIndex < controller.inputs.Count &&
+                   controller.inputs[savedController.InputIndex].SaveState == false;
 
         private static readonly Lazy<bool> SpeedrunToolInstalled = new Lazy<bool>(() =>
             Type.GetType("Celeste.Mod.SpeedrunTool.SaveLoad.StateManager, SpeedrunTool") != null
@@ -26,14 +32,38 @@ namespace TAS {
             if (!SpeedrunToolInstalled.Value) return;
 
             if (Running && Hotkeys.hotkeySaveState.pressed && !Hotkeys.hotkeySaveState.wasPressed) {
-                Save(null);
-            } else if (IsSaved() && !Running && !Hotkeys.hotkeyStart.pressed && Hotkeys.hotkeyStart.wasPressed) {
+                Save(false);
+                return;
+            }
+
+            if (IsSaved() && !Running && !Hotkeys.hotkeyStart.pressed && Hotkeys.hotkeyStart.wasPressed) {
                 // check the start key just released
                 Load();
-            } else if (Hotkeys.hotkeyLoadState.pressed && !Hotkeys.hotkeyLoadState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
-                Load();
-            } else if (Hotkeys.hotkeyClearState.pressed && !Hotkeys.hotkeyClearState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
+                return;
+            }
+
+            if (Hotkeys.hotkeyLoadState.pressed && !Hotkeys.hotkeyLoadState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
+                if (Engine.Scene is Level) {
+                    Load();
+                } else {
+                    PlayTAS();
+                }
+
+                return;
+            }
+
+            if (Hotkeys.hotkeyClearState.pressed && !Hotkeys.hotkeyClearState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
                 Clear();
+                return;
+            }
+
+            if (BreakpointHasBeenDeleted) {
+                Clear();
+            }
+
+            // save state when tas run to ***s breakpoint
+            if (Running && controller.Current.SaveState && controller.inputs.Where(record => record.SaveState).All(record => controller.Current.Line >= record.Line)) {
+                SaveSafe(true);
             }
         }
 
@@ -42,38 +72,40 @@ namespace TAS {
             onComplete();
         }
 
-        public static void SaveSafe(InputRecord breakpoint) {
+        public static void SaveSafe(bool breakpoint) {
             if (SpeedrunToolInstalled.Value) {
                 Save(breakpoint);
             }
         }
-        private static void Save(InputRecord breakpoint) {
+        private static void Save(bool breakpoint) {
             if (IsSaved()) {
-                if (savedController.CurrentFrame == controller.CurrentFrame && savedController.SavedChecksum == controller.Checksum(savedController)) {
-                    // Don't repeat save state, just play
+                // TODO don't response save state hotkey at ***s
+                if (controller.CurrentFrame == savedController.CurrentFrame && savedController.SavedChecksum == controller.Checksum(savedController)) {
                     state &= ~State.FrameStep;
                     nextState &= ~State.FrameStep;
                     return;
                 }
             }
             if (StateManager.Instance.SaveState()) {
+                savedLine =  controller.Current.Line;
+                if (!breakpoint) {
+                    savedLine--;
+                }
+
+                savedByBreakpoint = breakpoint;
+                savedPlayerStatus = PlayerStatus;
+
                 state |= State.FrameStep;
                 nextState &= ~State.FrameStep;
 
                 savedController = controller.Clone();
                 LoadStateRoutine();
 
-                savedLine =  controller.Current.Line;
-                if (breakpoint == null) {
-                    savedLine--;
-                }
-
-                savedPlayerStatus = PlayerStatus;
-
                 routine = new Coroutine(WaitForSavingState(() => {
-                    if (CelesteTASModule.Settings.PauseAfterLoadState && !controller.HasFastForward) return;
-                    state &= ~State.FrameStep;
-                    nextState &= ~State.FrameStep;
+                    if (!CelesteTASModule.Settings.PauseAfterLoadState || controller.HasFastForward) {
+                        state &= ~State.FrameStep;
+                        nextState &= ~State.FrameStep;
+                    }
                 }));
             }
         }
@@ -83,9 +115,9 @@ namespace TAS {
             nextState &= ~State.FrameStep;
 
             if (IsSaved()) {
-                controller.AdvanceFrame(true, true);
-                if (savedController.SavedChecksum == controller.Checksum(savedController)) {
-                    if (Running && savedController.CurrentFrame + 1 == controller.CurrentFrame) {
+                controller.AdvanceFrame(true);
+                if (!BreakpointHasBeenDeleted && savedController.SavedChecksum == controller.Checksum(savedController)) {
+                    if (Running &&  controller.CurrentFrame - savedController.CurrentFrame <= 1) {
                         // Don't repeat load state, just play
                         return;
                     }
@@ -94,6 +126,8 @@ namespace TAS {
                         LoadStateRoutine();
                         return;
                     }
+                } else {
+                    Clear();
                 }
             }
 
@@ -107,6 +141,7 @@ namespace TAS {
             savedController = null;
             savedLine = null;
             savedPlayerStatus = null;
+            savedByBreakpoint = false;
             if (Running) {
                 UpdateStudio();
             }

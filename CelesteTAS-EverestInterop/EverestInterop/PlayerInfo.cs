@@ -7,7 +7,7 @@ using Monocle;
 namespace TAS.EverestInterop {
     public static class PlayerInfo {
         public static int TransitionFrames;
-        private static float framesPerSecond => Engine.DeltaTime > 0 ? 1 / Engine.DeltaTime : 60f / Engine.TimeRateB;
+        private static float framesPerSecond => 60f / Engine.TimeRateB;
 
         public static void Load() {
             Everest.Events.Level.OnTransitionTo += LevelOnOnTransitionTo;

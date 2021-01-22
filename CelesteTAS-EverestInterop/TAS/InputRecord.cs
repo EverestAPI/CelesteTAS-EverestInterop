@@ -4,21 +4,21 @@ using System.Text;
 namespace TAS {
 	[Flags]
 	public enum Actions {
-		None = 1 << 0,
-		Left = 1 << 1,
-		Right = 1 << 2,
-		Up = 1 << 3,
-		Down = 1 << 4,
-		Jump = 1 << 5,
-		Dash = 1 << 6,
-		Grab = 1 << 7,
-		Start = 1 << 8,
-		Restart = 1 << 9 ,
-		Feather = 1 << 10,
-		Journal = 1 << 11,
-		Jump2 = 1 << 12,
-		Dash2 = 1 << 13,
-		Confirm = 1 << 14
+		None = 0,
+		Left = 1 << 0,
+		Right = 1 << 1,
+		Up = 1 << 2,
+		Down = 1 << 3,
+		Jump = 1 << 4,
+		Dash = 1 << 5,
+		Grab = 1 << 6,
+		Start = 1 << 7,
+		Restart = 1 << 8 ,
+		Feather = 1 << 9,
+		Journal = 1 << 10,
+		Jump2 = 1 << 11,
+		Dash2 = 1 << 12,
+		Confirm = 1 << 13
 	}
 	public class InputRecord {
 		public int Line { get; set; }

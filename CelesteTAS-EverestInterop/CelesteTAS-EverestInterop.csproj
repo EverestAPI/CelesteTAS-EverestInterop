@@ -133,6 +133,8 @@
     <Compile Include="EverestInterop\SimplifiedGraphicsFeature.cs" />
     <Compile Include="StudioCommunication\MessageIDs.cs" />
     <Compile Include="TAS\TASCommandAttribute.cs" />
+    <Compile Include="Utils\LogUtil.cs" />
+    <Compile Include="Utils\MD5Helper.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Dialog\Fonts\JetBrainsMono-Regular.fnt">

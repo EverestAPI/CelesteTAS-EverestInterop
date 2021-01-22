@@ -2,8 +2,7 @@ using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using Celeste.Mod;
+using System.Text;
 using Input = Celeste.Input;
 
 namespace TAS {
@@ -22,9 +21,9 @@ namespace TAS {
 		public int FastForwardSpeed => fastForwards.Count == 0 ? 1 : fastForwards[0].Frames == 0 ? 400 : fastForwards[0].Frames;
 		public int CurrentFrame { get; private set; }
 		public int CurrentInputFrame => CurrentFrame - frameToNext + Current.Frames;
-		private long _checksum;
-		public long SavedChecksum {
-			get => _checksum == 0 ? Checksum() : _checksum;
+		private string _checksum;
+		public string SavedChecksum {
+			get => string.IsNullOrEmpty(_checksum) ? Checksum() : _checksum;
 			private set => _checksum = value;
 		}
 		public bool NeedsToWait => Manager.IsLoading() || Manager.forceDelayTimer > 0 || Manager.forceDelay;
@@ -160,11 +159,6 @@ namespace TAS {
 						}
 						Current = inputs[++InputIndex];
 						frameToNext += Current.Frames;
-
-						InputRecord lastInputRecord = inputs[InputIndex - 1];
-						if (lastInputRecord.SaveState && inputs.Where(record => record.SaveState).All(record => lastInputRecord.Line >= record.Line)) {
-							Savestates.SaveSafe(lastInputRecord);
-						}
 					}
 				}
 			} while (Current.Command != null);
@@ -339,42 +333,25 @@ namespace TAS {
 			return clone;
 		}
 
-		public long Checksum(int toFrame, int toInputIndex) {
+		public string Checksum(int toInputIndex) {
+			StringBuilder result = new StringBuilder(filePath);
+
 			try {
-				long output = 0;
 				int checkInputIndex = 0;
-				int frames = 0;
 
-				// calc all action frames
-				while (frames < toFrame && checkInputIndex < inputs.Count) {
+				while (checkInputIndex <= toInputIndex) {
 					InputRecord current = inputs[checkInputIndex];
-
-					for (int i = 0; i < current.Frames && frames < toFrame; i++, frames++) {
-						output += (long)current.Actions * frames;
-					}
-
+					result.AppendLine(current.ToString());
 					checkInputIndex++;
 				}
 
-				// calc total frames
-				long totalFrames = 0;
-				checkInputIndex = 0;
-				while (checkInputIndex < toInputIndex) {
-					InputRecord current = inputs[checkInputIndex];
-
-					output += current.Frames;
-					totalFrames += current.Frames;
-
-					checkInputIndex++;
-				}
-
-				SavedChecksum = output;
-				return output;
+				return SavedChecksum = MD5Helper.ComputeHash(result.ToString());
+			} catch {
+				return SavedChecksum = MD5Helper.ComputeHash(result.ToString());
 			}
-			catch { SavedChecksum = 0; return 0; }
 		}
 
-		public long Checksum(InputController controller) => Checksum(controller.CurrentFrame, controller.InputIndex);
-		public long Checksum() => Checksum(CurrentFrame, InputIndex);
+		public string Checksum(InputController controller) => Checksum(controller.InputIndex);
+		public string Checksum() => Checksum(InputIndex);
 	}
 }
