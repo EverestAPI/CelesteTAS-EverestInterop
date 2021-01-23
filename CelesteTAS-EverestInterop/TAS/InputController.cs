@@ -294,12 +294,18 @@ namespace TAS {
 							fastForwards.Add(input);
 
 							if (inputs.Count > 0) {
-								inputs[inputs.Count - 1].ForceBreak = input.ForceBreak;
-								inputs[inputs.Count - 1].SaveState = input.SaveState;
-								inputs[inputs.Count - 1].FastForward = true;
+								InputRecord previous = inputs[inputs.Count - 1];
+
+								// Only the last one of the consecutive breakpoints takes effect
+								if (previous.FastForward && fastForwards.Count >= 2) {
+									fastForwards.RemoveAt(fastForwards.Count - 2);
+								}
+
+								previous.ForceBreak = input.ForceBreak;
+								previous.SaveState = input.SaveState;
+								previous.FastForward = true;
 							}
-						}
-						else if (input.Frames != 0) {
+						} else if (input.Frames != 0) {
 							inputs.Add(input);
 						}
 					}

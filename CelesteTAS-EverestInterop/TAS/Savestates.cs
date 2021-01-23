@@ -43,12 +43,7 @@ namespace TAS {
             }
 
             if (Hotkeys.hotkeyLoadState.pressed && !Hotkeys.hotkeyLoadState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
-                if (Engine.Scene is Level) {
-                    Load();
-                } else {
-                    PlayTAS();
-                }
-
+                Load();
                 return;
             }
 
@@ -63,7 +58,7 @@ namespace TAS {
 
             // save state when tas run to ***s breakpoint
             if (Running && controller.Current.SaveState && controller.inputs.Where(record => record.SaveState).All(record => controller.Current.Line >= record.Line)) {
-                SaveSafe(true);
+                Save(true);
             }
         }
 
@@ -72,11 +67,6 @@ namespace TAS {
             onComplete();
         }
 
-        public static void SaveSafe(bool breakpoint) {
-            if (SpeedrunToolInstalled.Value) {
-                Save(breakpoint);
-            }
-        }
         private static void Save(bool breakpoint) {
             if (IsSaved()) {
                 // TODO don't response save state hotkey at ***s
@@ -131,7 +121,7 @@ namespace TAS {
                 }
             }
 
-            //If load state failed just playback normally
+            // If load state failed just playback normally
             PlayTAS();
         }
 
