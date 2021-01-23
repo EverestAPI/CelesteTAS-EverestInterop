@@ -235,23 +235,24 @@ namespace CelesteStudio.RichText {
 						charStart++;
 					}
 				} else if (BreakPointRegex.IsMatch(line.Text)) {
-					Range sub = new Range(tb, 0, start, 3, start);
+					int index = line.Text.IndexOf("***", StringComparison.Ordinal);
+					Range sub = new Range(tb, index, start, index + 3, start);
 					sub.SetStyle(RedBgStyle);
 
-					if (tb[start].Count >= 4) {
-						int charStart = 3;
+					if (tb[start].Count >= index + 4) {
+						int charStart = index + 3;
 						if (tb[start][charStart].c.ToString().ToLower() == "s") {
-							sub = new Range(tb, charStart, start, 4, start);
+							sub = new Range(tb, charStart, start, charStart + 1, start);
 							sub.SetStyle(SteelBlueBgStyle);
 							charStart++;
 						} else	if (tb[start][charStart].c == '!') {
-							sub = new Range(tb, charStart, start, 4, start);
+							sub = new Range(tb, charStart, start, charStart + 1, start);
 							sub.SetStyle(GoldenrodBgStyle);
 							charStart++;
 						}
 
 						sub = new Range(tb, charStart, start, charEnd, start);
-						sub.SetStyle(ChocolateBgStyle);
+						sub.SetStyle(RedBgStyle);
 					}
 				} else {
 					line.SetStyle(GreenStyle, CommentRegex);
