@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections;
 using System.Linq;
-using Celeste;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
+using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.EverestInterop;
 using TAS.StudioCommunication;
@@ -15,6 +15,7 @@ namespace TAS {
         private static InputController savedController;
         private static int? savedLine;
         private static string savedPlayerStatus;
+        private static Vector2 savedLastPos;
         private static bool savedByBreakpoint;
 
         private static bool BreakpointHasBeenDeleted => IsSaved() && savedByBreakpoint && savedController.InputIndex < controller.inputs.Count &&
@@ -132,9 +133,7 @@ namespace TAS {
             savedLine = null;
             savedPlayerStatus = null;
             savedByBreakpoint = false;
-            if (Running) {
-                UpdateStudio();
-            }
+            UpdateStudio();
         }
 
         private static void PlayTAS() {
@@ -144,16 +143,14 @@ namespace TAS {
 
         private static void LoadStateRoutine() {
             controller = savedController.Clone();
-            controller.AdvanceFrame(true, true);
+            controller.AdvanceFrame(true);
 
             if (CelesteTASModule.Settings.PauseAfterLoadState && !controller.HasFastForward) {
                 state |= State.FrameStep;
                 nextState &= ~State.FrameStep;
             }
-
-            if (!string.IsNullOrEmpty(savedPlayerStatus)) {
-                PlayerStatus = savedPlayerStatus;
-            }
+            PlayerStatus = savedPlayerStatus;
+            LastPos = savedLastPos;
             UpdateStudio();
         }
 

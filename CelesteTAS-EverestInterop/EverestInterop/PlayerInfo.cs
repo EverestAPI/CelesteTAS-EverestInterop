@@ -6,7 +6,7 @@ using Monocle;
 
 namespace TAS.EverestInterop {
     public static class PlayerInfo {
-        public static int TransitionFrames;
+        public static int TransitionFrames { get; private set; }
         private static float framesPerSecond => 60f / Engine.TimeRateB;
 
         public static void Load() {

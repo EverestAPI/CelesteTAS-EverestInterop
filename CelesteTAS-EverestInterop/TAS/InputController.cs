@@ -109,12 +109,12 @@ namespace TAS {
 		//honestly i don't know what this method does anymore
 		//it should be two separate ones but i don't want to separate the logic
 		//if there's weirdness with inputs being skipped or repeating this is why
-		public void AdvanceFrame(bool reload, bool forceReload = false) {
+		public void AdvanceFrame(bool reload) {
 			//there's a reason i'm rewriting how inputs work. this line is the reason.
 			//there are 20 million checks to prevent inputs being skipped and i'm sick of it
 			if (reload && !NeedsToWait)
 				CurrentFrame--;
-			if (NeedsReload || forceReload) {
+			if (NeedsReload) {
 				//Reinitialize the file and simulate a replay of the TAS file up to the current point.
 				int previousFrame = CurrentFrame - 1;
 				InitializePlayback();
