@@ -21,11 +21,14 @@ namespace TAS {
 		Confirm = 1 << 13
 	}
 	public class InputRecord {
+		public const int DefaultFastForwardSpeed = 400;
+
 		public int Line { get; set; }
 		public int Frames { get; set; }
 		public Actions Actions { get; set; }
 		public float Angle { get; set; }
 		public bool FastForward { get; set; }
+		public int FastForwardSpeed { get; set; }
 		public bool SaveState { get; set; }
 		public bool ForceBreak { get; set; }
 		public Action Command { get; set; }
@@ -42,7 +45,6 @@ namespace TAS {
 			int index = 0;
 			Frames = ReadFrames(lineText);
 			if (Frames == 0) {
-
 				// allow whitespace before the breakpoint
 				lineText = lineText.Trim();
 				if (lineText.StartsWith("***")) {
@@ -59,7 +61,11 @@ namespace TAS {
 						}
 					}
 
-					Frames = ReadFrames(lineText.Substring(index));
+					if (int.TryParse(lineText.Substring(index), out int speed)) {
+						FastForwardSpeed = speed;
+					} else {
+						FastForwardSpeed = DefaultFastForwardSpeed;
+					}
 				}
 				return;
 			}
@@ -99,7 +105,6 @@ namespace TAS {
 		}
 
 		private int ReadFrames(string line) {
-
 			line = line.Trim();
 			if (line.Contains(","))
 				line = line.Substring(0, line.IndexOf(","));
@@ -179,9 +184,14 @@ namespace TAS {
 
 		public InputRecord Clone() {
 			InputRecord clone = new InputRecord(Line, Frames.ToString() + ActionsToString());
+			clone.Actions = Actions;
+			clone.Angle = Angle;
+			clone.Frames = Frames;
+			clone.Line = Line;
 			clone.Command = Command;
 			clone.CommandType = CommandType;
 			clone.FastForward = FastForward;
+			clone.FastForwardSpeed = FastForwardSpeed;
 			clone.ForceBreak = ForceBreak;
 			clone.SaveState = SaveState;
 			return clone;

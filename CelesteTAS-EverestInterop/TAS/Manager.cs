@@ -208,7 +208,7 @@ namespace TAS {
 					controller.InitializePlayback();
 					if (controller.Current.HasActions(Actions.Restart) || controller.Current.HasActions(Actions.Start)) {
 						nextState |= State.Delay;
-						FrameLoops = 400;
+						FrameLoops = InputRecord.DefaultFastForwardSpeed;
 						return;
 					}
 				}

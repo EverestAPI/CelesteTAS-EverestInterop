@@ -18,7 +18,7 @@ namespace TAS {
 		public int InputIndex { get; private set; }
 		public bool CanPlayback => InputIndex < inputs.Count;
 		public bool HasFastForward => fastForwards.Count > 0;
-		public int FastForwardSpeed => fastForwards.Count == 0 ? 1 : fastForwards[0].Frames == 0 ? 400 : fastForwards[0].Frames;
+		public int FastForwardSpeed => fastForwards.Count == 0 ? 1 : fastForwards[0].FastForwardSpeed;
 		public int CurrentFrame { get; private set; }
 		public int CurrentInputFrame => CurrentFrame - frameToNext + Current.Frames;
 		private string _checksum;
