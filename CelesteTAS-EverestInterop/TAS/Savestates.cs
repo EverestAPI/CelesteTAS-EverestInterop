@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Linq;
+using Celeste;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Microsoft.Xna.Framework;
 using Monocle;
@@ -37,12 +38,6 @@ namespace TAS {
                 return;
             }
 
-            if (IsSaved() && !Running && !Hotkeys.hotkeyStart.pressed && Hotkeys.hotkeyStart.wasPressed) {
-                // check the start key just released
-                Load();
-                return;
-            }
-
             if (Hotkeys.hotkeyLoadState.pressed && !Hotkeys.hotkeyLoadState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
                 Load();
                 return;
@@ -58,8 +53,15 @@ namespace TAS {
             }
 
             // save state when tas run to ***s breakpoint
-            if (Running && controller.Current.SaveState && controller.inputs.Where(record => record.SaveState).All(record => controller.Current.Line >= record.Line)) {
+            if (Running && controller.Current.SaveState && controller.inputs.Where(record => record.SaveState).All(record => controller.Current.Line >= record.Line)
+                && controller.CurrentInputFrame == controller.Current.Frames)  {
                 Save(true);
+                return;
+            }
+
+            // auto load state after starting tas
+            if (Running && IsSaved() && Engine.Scene is Level && SavedLine > controller.Current.Line) {
+                Load();
             }
         }
 
@@ -102,13 +104,17 @@ namespace TAS {
         }
 
         private static void Load() {
-            state &= ~State.FrameStep;
+            if (controller.fastForwards.Any(record => record.Line > SavedLine)) {
+                state &= ~State.FrameStep;
+            } else {
+                state |= State.FrameStep;
+            }
             nextState &= ~State.FrameStep;
 
             if (IsSaved()) {
                 controller.AdvanceFrame(true);
                 if (!BreakpointHasBeenDeleted && savedController.SavedChecksum == controller.Checksum(savedController)) {
-                    if (Running &&  controller.CurrentFrame - savedController.CurrentFrame <= 1) {
+                    if (Running &&  (controller.CurrentFrame - savedController.CurrentFrame == 0 || controller.CurrentFrame - savedController.CurrentFrame == 1)) {
                         // Don't repeat load state, just play
                         return;
                     }
