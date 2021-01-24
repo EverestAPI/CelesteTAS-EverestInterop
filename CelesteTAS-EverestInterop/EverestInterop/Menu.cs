@@ -3,13 +3,14 @@ using Celeste;
 using Celeste.Mod;
 using Monocle;
 using System.Collections.Generic;
+using System.Reflection;
 using Microsoft.Xna.Framework;
 using TAS.EverestInterop.Hitboxes;
 
 namespace TAS.EverestInterop {
     internal static class Menu {
+        private static readonly MethodInfo createKeyboardConfigUI = typeof(EverestModule).GetMethodInfo("CreateKeyboardConfigUI");
         private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
-
         private static List<TextMenu.Item> options;
         private static TextMenu.Item showHitboxesSubmenu;
 
@@ -64,9 +65,8 @@ namespace TAS.EverestInterop {
                 }),
                 new TextMenu.Button(Dialog.Clean("options_keyconfig")).Pressed(() => {
                     menu.Focused = false;
-                    Engine.Scene.Add(new ModuleSettingsKeyboardConfigUI(everestModule) {
-                        OnClose = () => menu.Focused = true
-                    });
+                    Entity keyboardConfig = createKeyboardConfigUI.Invoke(everestModule, new object[]{menu}) as Entity;
+                    Engine.Scene.Add(keyboardConfig);
                     Engine.Scene.OnEndOfFrame += () => Engine.Scene.Entities.UpdateLists();
                 })
             };
