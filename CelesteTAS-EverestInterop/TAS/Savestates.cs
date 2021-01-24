@@ -72,11 +72,12 @@ namespace TAS {
 
         private static void Save(bool breakpoint) {
             if (IsSaved()) {
-                // TODO don't response save state hotkey at ***s
-                if (controller.CurrentFrame == savedController.CurrentFrame && savedController.SavedChecksum == controller.Checksum(savedController)) {
-                    state &= ~State.FrameStep;
-                    nextState &= ~State.FrameStep;
-                    return;
+                if (controller.CurrentFrame  == savedController.CurrentFrame + (!breakpoint && savedByBreakpoint ? 1 : 0)) {
+                    if (savedController.SavedChecksum == controller.Checksum(savedController)) {
+                        state &= ~State.FrameStep;
+                        nextState &= ~State.FrameStep;
+                        return;
+                    }
                 }
             }
             if (StateManager.Instance.SaveState()) {
@@ -116,6 +117,7 @@ namespace TAS {
                 if (!BreakpointHasBeenDeleted && savedController.SavedChecksum == controller.Checksum(savedController)) {
                     if (Running &&  (controller.CurrentFrame - savedController.CurrentFrame == 0 || controller.CurrentFrame - savedController.CurrentFrame == 1)) {
                         // Don't repeat load state, just play
+                        state &= ~State.FrameStep;
                         return;
                     }
                     if (StateManager.Instance.LoadState()) {
@@ -161,7 +163,9 @@ namespace TAS {
         }
 
         private static void UpdateStudio() {
-            CurrentStatus = controller.Current.Line + "[" + controller + "]" + SavedLine;
+            if (controller.Current != null) {
+                CurrentStatus = controller.Current.Line + "[" + controller + "]" + SavedLine;
+            }
             StudioCommunicationClient.instance?.SendStateAndPlayerData(CurrentStatus, PlayerStatus, false);
         }
     }
