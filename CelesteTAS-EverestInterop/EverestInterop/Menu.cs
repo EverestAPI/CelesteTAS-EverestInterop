@@ -65,7 +65,14 @@ namespace TAS.EverestInterop {
                 }),
                 new TextMenu.Button(Dialog.Clean("options_keyconfig")).Pressed(() => {
                     menu.Focused = false;
-                    Entity keyboardConfig = createKeyboardConfigUI.Invoke(everestModule, new object[]{menu}) as Entity;
+                    Entity keyboardConfig;
+                    if (createKeyboardConfigUI != null) {
+                        keyboardConfig = createKeyboardConfigUI.Invoke(everestModule, new object[]{menu}) as Entity;
+                    } else {
+                        keyboardConfig = new ModuleSettingsKeyboardConfigUI(everestModule) {
+                            OnClose = () => menu.Focused = true
+                        };
+                    }
                     Engine.Scene.Add(keyboardConfig);
                     Engine.Scene.OnEndOfFrame += () => Engine.Scene.Entities.UpdateLists();
                 })
