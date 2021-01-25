@@ -20,7 +20,7 @@ namespace TAS {
         private static bool savedByBreakpoint;
 
         private static bool BreakpointHasBeenDeleted => IsSaved() && savedByBreakpoint && savedController.InputIndex < controller.inputs.Count &&
-                   controller.inputs[savedController.InputIndex].SaveState == false;
+                   controller.inputs[savedController.InputIndex - 1].SaveState == false;
 
         private static readonly Lazy<bool> SpeedrunToolInstalled = new Lazy<bool>(() =>
             Type.GetType("Celeste.Mod.SpeedrunTool.SaveLoad.StateManager, SpeedrunTool") != null
@@ -53,8 +53,8 @@ namespace TAS {
             }
 
             // save state when tas run to ***s breakpoint
-            if (Running && controller.Current.SaveState && controller.inputs.Where(record => record.SaveState).All(record => controller.Current.Line >= record.Line)
-                && controller.CurrentInputFrame == controller.Current.Frames)  {
+            if (Running && controller.Previous != null && controller.Previous.SaveState && !controller.Previous.HasSavedState && controller.inputs.Where(record => record.SaveState).All(record => controller.Previous.Line >= record.Line)
+                && controller.CurrentInputFrame == 1)  {
                 Save(true);
                 return;
             }
@@ -72,7 +72,7 @@ namespace TAS {
 
         private static void Save(bool breakpoint) {
             if (IsSaved()) {
-                if (controller.CurrentFrame  == savedController.CurrentFrame + (!breakpoint && savedByBreakpoint ? 1 : 0)) {
+                if (controller.CurrentFrame  == savedController.CurrentFrame) {
                     if (savedController.SavedChecksum == controller.Checksum(savedController)) {
                         state &= ~State.FrameStep;
                         nextState &= ~State.FrameStep;
@@ -83,9 +83,13 @@ namespace TAS {
 
             if (!StateManager.Instance.SaveState()) return;
 
-            savedLine =  controller.Current.Line;
-            if (!breakpoint) {
-                savedLine--;
+            if (breakpoint && controller.Previous?.SaveState == true) {
+                controller.Previous.HasSavedState = true;
+            }
+
+            savedLine = controller.Current.Line - 1;
+            if (breakpoint) {
+                savedLine = controller.Previous.Line;
             }
 
             savedByBreakpoint = breakpoint;
@@ -105,12 +109,12 @@ namespace TAS {
 
                 // SpeedrunTool v3.4.15 no longer save and then automatically load,
                 // although tas can also continue to run without loading
-                // but it is better to load it in order to find desync
-                Load();
+                // but it is better to load state, if savestate desync occurs can be found faster
+                Load(true);
             }));
         }
 
-        private static void Load() {
+        private static void Load(bool forceLoad = false) {
             if (controller.fastForwards.Any(record => record.Line > SavedLine)) {
                 state &= ~State.FrameStep;
             } else {
@@ -120,8 +124,8 @@ namespace TAS {
 
             if (IsSaved()) {
                 controller.AdvanceFrame(true);
-                if (!BreakpointHasBeenDeleted && savedController.SavedChecksum == controller.Checksum(savedController)) {
-                    if (Running &&  controller.CurrentFrame - savedController.CurrentFrame == (savedByBreakpoint ? 1 : 0)) {
+                if (forceLoad || !BreakpointHasBeenDeleted && savedController.SavedChecksum == controller.Checksum(savedController)) {
+                    if (!forceLoad && Running &&  controller.CurrentFrame == savedController.CurrentFrame) {
                         // Don't repeat load state, just play
                         state &= ~State.FrameStep;
                         return;

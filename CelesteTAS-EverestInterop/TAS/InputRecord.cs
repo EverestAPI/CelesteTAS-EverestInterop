@@ -30,6 +30,7 @@ namespace TAS {
 		public bool FastForward { get; set; }
 		public int FastForwardSpeed { get; set; }
 		public bool SaveState { get; set; }
+		public bool HasSavedState { get; set; }
 		public bool ForceBreak { get; set; }
 		public Action Command { get; set; }
 		public string CommandType { get; set; }
@@ -194,6 +195,7 @@ namespace TAS {
 			clone.FastForwardSpeed = FastForwardSpeed;
 			clone.ForceBreak = ForceBreak;
 			clone.SaveState = SaveState;
+			clone.HasSavedState = HasSavedState;
 			return clone;
 		}
 
