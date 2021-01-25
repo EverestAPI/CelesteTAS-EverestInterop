@@ -217,6 +217,9 @@ namespace TAS {
 						return;
 
 					field.SetValue(settingsObj, value);
+
+					if (settingsObj is Assists assists)
+						SaveData.Instance.Assists = assists;
 				}
 			}
 			catch { }
