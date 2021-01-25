@@ -80,28 +80,34 @@ namespace TAS {
                     }
                 }
             }
-            if (StateManager.Instance.SaveState()) {
-                savedLine =  controller.Current.Line;
-                if (!breakpoint) {
-                    savedLine--;
+
+            if (!StateManager.Instance.SaveState()) return;
+
+            savedLine =  controller.Current.Line;
+            if (!breakpoint) {
+                savedLine--;
+            }
+
+            savedByBreakpoint = breakpoint;
+            savedPlayerStatus = PlayerStatus;
+            savedLastPos = LastPos;
+
+            state |= State.FrameStep;
+            nextState &= ~State.FrameStep;
+
+            savedController = controller.Clone();
+
+            routine = new Coroutine(WaitForSavingState(() => {
+                if (!CelesteTASModule.Settings.PauseAfterLoadState || controller.HasFastForward) {
+                    state &= ~State.FrameStep;
+                    nextState &= ~State.FrameStep;
                 }
 
-                savedByBreakpoint = breakpoint;
-                savedPlayerStatus = PlayerStatus;
-
-                state |= State.FrameStep;
-                nextState &= ~State.FrameStep;
-
-                savedController = controller.Clone();
-                LoadStateRoutine();
-
-                routine = new Coroutine(WaitForSavingState(() => {
-                    if (!CelesteTASModule.Settings.PauseAfterLoadState || controller.HasFastForward) {
-                        state &= ~State.FrameStep;
-                        nextState &= ~State.FrameStep;
-                    }
-                }));
-            }
+                // SpeedrunTool v3.4.15 no longer save and then automatically load,
+                // although tas can also continue to run without loading
+                // but it is better to load it in order to find desync
+                Load();
+            }));
         }
 
         private static void Load() {
@@ -115,7 +121,7 @@ namespace TAS {
             if (IsSaved()) {
                 controller.AdvanceFrame(true);
                 if (!BreakpointHasBeenDeleted && savedController.SavedChecksum == controller.Checksum(savedController)) {
-                    if (Running &&  (controller.CurrentFrame - savedController.CurrentFrame == 0 || controller.CurrentFrame - savedController.CurrentFrame == 1)) {
+                    if (Running &&  controller.CurrentFrame - savedController.CurrentFrame == (savedByBreakpoint ? 1 : 0)) {
                         // Don't repeat load state, just play
                         state &= ~State.FrameStep;
                         return;
@@ -140,6 +146,7 @@ namespace TAS {
             savedController = null;
             savedLine = null;
             savedPlayerStatus = null;
+            savedLastPos = default;
             savedByBreakpoint = false;
             UpdateStudio();
         }
