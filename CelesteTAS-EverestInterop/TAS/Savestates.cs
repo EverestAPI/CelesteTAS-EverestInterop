@@ -162,7 +162,7 @@ namespace TAS {
             controller.AdvanceFrame(true);
 
             state &= ~State.FrameStep;
-            if (CelesteTASModule.Settings.PauseAfterLoadState && !controller.HasFastForward || savedByBreakpoint) {
+            if ((CelesteTASModule.Settings.PauseAfterLoadState || savedByBreakpoint) && !controller.HasFastForward) {
                 state |= State.FrameStep;
             }
             nextState &= ~State.FrameStep;
