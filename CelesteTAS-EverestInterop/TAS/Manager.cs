@@ -84,12 +84,9 @@ namespace TAS {
 				}
 				*/
 				else {
-					bool fastForward = controller.HasFastForward;
+					bool lastOneFastForward = controller.fastForwards.Count  == 1 && controller.Next != null;
 					controller.AdvanceFrame(false);
-					if (fastForward
-						&& (!controller.HasFastForward
-						|| controller.Current.ForceBreak
-						&& controller.CurrentInputFrame == controller.Current.Frames)) {
+					if ((lastOneFastForward || controller.Current.ForceBreak) && controller.Current.FastForward && controller.CurrentInputFrame == controller.Current.Frames) {
 						nextState |= State.FrameStep;
 						FrameLoops = 1;
 					}

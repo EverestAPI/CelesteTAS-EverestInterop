@@ -252,7 +252,7 @@ namespace TAS {
 
 						InputRecord input = new InputRecord(studioLine, line);
 
-						if (input.FastForward) {
+						if (input.FastForward && inputs.Count > 0) {
 							fastForwards.Add(input);
 
 							if (inputs.Count > 0) {
