@@ -93,7 +93,7 @@ namespace TAS {
 					if (!controller.CanPlayback || (!allowUnsafeInput && !(Engine.Scene is Level || Engine.Scene is LevelLoader || Engine.Scene is LevelExit || controller.CurrentFrame <= 1)))
 						DisableRun();
 				}
-				string status = controller.Current.Line + "[" + controller.ToString() + "]" + Savestates.SavedLine;
+				string status = controller.Current.Line + "[" + controller.ToString() + "]" + Savestates.StudioHighlightLine;
 				CurrentStatus = status;
 			}/*
 			else if (HasFlag(state, State.Delay)) {

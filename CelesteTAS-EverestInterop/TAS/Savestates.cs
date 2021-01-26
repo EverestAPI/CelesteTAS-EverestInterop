@@ -10,8 +10,11 @@ using TAS.StudioCommunication;
 using static TAS.Manager;
 
 namespace TAS {
+    // TODO Add a command to check if savestate will cause desync
     static class Savestates {
-        public static int SavedLine => SpeedrunToolInstalled.Value && IsSaved() ? savedLine ?? -1 : -1;
+        // studio highlight line number start from 0
+        // input record line number start from 1
+        public static int StudioHighlightLine => (SpeedrunToolInstalled.Value && IsSaved() && savedLine.HasValue ? savedLine.Value  : 0) - 1;
         public static Coroutine routine;
         private static InputController savedController;
         private static int? savedLine;
@@ -20,7 +23,7 @@ namespace TAS {
         private static bool savedByBreakpoint;
 
         private static bool BreakpointHasBeenDeleted => IsSaved() && savedByBreakpoint && savedController.InputIndex < controller.inputs.Count &&
-                   controller.inputs[savedController.InputIndex - 1].SaveState == false;
+                   controller.inputs[savedController.InputIndex].SaveState == false;
 
         private static readonly Lazy<bool> SpeedrunToolInstalled = new Lazy<bool>(() =>
             Type.GetType("Celeste.Mod.SpeedrunTool.SaveLoad.StateManager, SpeedrunTool") != null
@@ -45,6 +48,7 @@ namespace TAS {
 
             if (Hotkeys.hotkeyClearState.pressed && !Hotkeys.hotkeyClearState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
                 Clear();
+                DisableExternal();
                 return;
             }
 
@@ -52,15 +56,17 @@ namespace TAS {
                 Clear();
             }
 
-            // save state when tas run to ***s breakpoint
-            if (Running && controller.Previous != null && controller.Previous.SaveState && !controller.Previous.HasSavedState && controller.inputs.Where(record => record.SaveState).All(record => controller.Previous.Line >= record.Line)
-                && controller.CurrentInputFrame == 1)  {
+            // save state when tas run to the last savestate breakpoint
+            if (Running
+                && controller.Current.SaveState && !controller.Current.HasSavedState
+                && controller.CurrentInputFrame == controller.Current.Frames
+                && controller.inputs.LastOrDefault(record => record.SaveState) == controller.Current)  {
                 Save(true);
                 return;
             }
 
             // auto load state after starting tas
-            if (Running && IsSaved() && Engine.Scene is Level && SavedLine > controller.Current.Line) {
+            if (Running && IsSaved() && Engine.Scene is Level && controller.InputIndex < savedController.InputIndex) {
                 Load();
             }
         }
@@ -83,13 +89,14 @@ namespace TAS {
 
             if (!StateManager.Instance.SaveState()) return;
 
-            if (breakpoint && controller.Previous?.SaveState == true) {
-                controller.Previous.HasSavedState = true;
+            if (breakpoint && controller.Current.SaveState) {
+                controller.Current.HasSavedState = true;
             }
 
-            savedLine = controller.Current.Line - 1;
             if (breakpoint) {
-                savedLine = controller.Previous.Line;
+                savedLine = controller.Current.Line + 1;
+            } else {
+                savedLine = controller.Current.Line;
             }
 
             savedByBreakpoint = breakpoint;
@@ -102,11 +109,6 @@ namespace TAS {
             savedController = controller.Clone();
 
             routine = new Coroutine(WaitForSavingState(() => {
-                if (!CelesteTASModule.Settings.PauseAfterLoadState || controller.HasFastForward) {
-                    state &= ~State.FrameStep;
-                    nextState &= ~State.FrameStep;
-                }
-
                 // SpeedrunTool v3.4.15 no longer save and then automatically load,
                 // although tas can also continue to run without loading
                 // but it is better to load state, if savestate desync occurs can be found faster
@@ -115,19 +117,14 @@ namespace TAS {
         }
 
         private static void Load(bool forceLoad = false) {
-            if (controller.fastForwards.Any(record => record.Line > SavedLine)) {
-                state &= ~State.FrameStep;
-            } else {
-                state |= State.FrameStep;
-            }
-            nextState &= ~State.FrameStep;
-
             if (IsSaved()) {
                 controller.AdvanceFrame(true);
+                // TODO If the checksum is successful, update the usedFiles of the savedController
                 if (forceLoad || !BreakpointHasBeenDeleted && savedController.SavedChecksum == controller.Checksum(savedController)) {
-                    if (!forceLoad && Running &&  controller.CurrentFrame == savedController.CurrentFrame) {
+                    if (!forceLoad && Running && controller.CurrentFrame == savedController.CurrentFrame) {
                         // Don't repeat load state, just play
                         state &= ~State.FrameStep;
+                        nextState &= ~State.FrameStep;
                         return;
                     }
                     if (StateManager.Instance.LoadState()) {
@@ -164,10 +161,12 @@ namespace TAS {
             controller = savedController.Clone();
             controller.AdvanceFrame(true);
 
-            if (CelesteTASModule.Settings.PauseAfterLoadState && !controller.HasFastForward) {
+            state &= ~State.FrameStep;
+            if (CelesteTASModule.Settings.PauseAfterLoadState && !controller.HasFastForward || savedByBreakpoint) {
                 state |= State.FrameStep;
-                nextState &= ~State.FrameStep;
             }
+            nextState &= ~State.FrameStep;
+
             PlayerStatus = savedPlayerStatus;
             LastPos = savedLastPos;
             UpdateStudio();
@@ -175,7 +174,7 @@ namespace TAS {
 
         private static void UpdateStudio() {
             if (controller.Current != null) {
-                CurrentStatus = controller.Current.Line + "[" + controller + "]" + SavedLine;
+                CurrentStatus = controller.Current.Line + "[" + controller + "]" + StudioHighlightLine;
             }
             StudioCommunicationClient.instance?.SendStateAndPlayerData(CurrentStatus, PlayerStatus, false);
         }
