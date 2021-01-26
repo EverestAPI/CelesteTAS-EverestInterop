@@ -51,10 +51,8 @@ namespace TAS {
 		public static InputController controller = new InputController("Celeste.tas");
 		public static State lastState, state, nextState;
 		public static string CurrentStatus, PlayerStatus = "";
-		public static int FrameStepCooldown, FrameLoops = 1;
+		public static int FrameLoops = 1;
 		public static bool enforceLegal, allowUnsafeInput;
-		public static int forceDelayTimer = 0;
-		public static bool forceDelay;
 		public static Vector2 LastPos;
 		private static long lastTimer;
 		private static List<VirtualButton.Node>[] playerBindings;
@@ -180,7 +178,6 @@ namespace TAS {
 						nextState |= State.FrameStep;
 						controller.AdvanceFrame(true);
 					}
-					FrameStepCooldown = 60;
 				}
 				else if (pause && !Hotkeys.hotkeyPause.wasPressed) {
 					state &= ~State.FrameStep;

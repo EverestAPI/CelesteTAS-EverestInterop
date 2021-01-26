@@ -26,7 +26,7 @@ namespace TAS {
 			get => string.IsNullOrEmpty(_checksum) ? Checksum() : _checksum;
 			private set => _checksum = value;
 		}
-		public bool NeedsToWait => Manager.IsLoading() || Manager.forceDelayTimer > 0 || Manager.forceDelay;
+		public bool NeedsToWait => Manager.IsLoading();
 
 		private Dictionary<string, DateTime> usedFiles = new Dictionary<string, DateTime>();
 		private bool NeedsReload {
@@ -116,10 +116,10 @@ namespace TAS {
 				CurrentFrame--;
 			if (NeedsReload) {
 				//Reinitialize the file and simulate a replay of the TAS file up to the current point.
-				int previousFrame = CurrentFrame - 1;
+				int currentFrame = CurrentFrame;
 				InitializePlayback();
 				//Prevents time travel.
-				CurrentFrame = previousFrame + 1;
+				CurrentFrame = currentFrame;
 
 				while (CurrentFrame > frameToNext) {
 					if (InputIndex + 1 >= inputs.Count) {
@@ -139,8 +139,6 @@ namespace TAS {
 			}
 
 			if (NeedsToWait) {
-				if (!reload && Manager.forceDelayTimer > 0)
-					Manager.forceDelayTimer--;
 				return;
 			}
 
@@ -167,42 +165,6 @@ namespace TAS {
 				Manager.ExportPlayerInfo();
 			if (!reload)
 				Manager.SetInputs(Current);
-		}
-
-		public void DryAdvanceFrames(int frames) {
-			for (int i = 0; i < frames; i++) {
-				do {
-					if (InputIndex < inputs.Count) {
-						if (CurrentFrame >= frameToNext) {
-							if (InputIndex + 1 >= inputs.Count) {
-								InputIndex++;
-								return;
-							}
-							Current = inputs[++InputIndex];
-							frameToNext += Current.Frames;
-						}
-					}
-				} while (Current.Command != null);
-				CurrentFrame++;
-				Manager.SetInputs(Current);
-			}
-
-			for (var i = fastForwards.Count - 1; i >= 0; i--) {
-				if (fastForwards[i].Line < Current.Line)
-					fastForwards.RemoveAt(i);
-			}
-		}
-
-		public void ReverseFrames(int frames) {
-			if (frames > CurrentFrame)
-				return;
-			for (int i = 0; i < frames; i++) {
-				if (CurrentInputFrame == 1) {
-					Current = inputs[--InputIndex];
-					frameToNext -= Current.Frames;
-				}
-				CurrentFrame--;
-			}
 		}
 
 		public void InitializeRecording() {
