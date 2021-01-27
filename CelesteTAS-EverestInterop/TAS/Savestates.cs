@@ -103,16 +103,19 @@ namespace TAS {
             savedPlayerStatus = PlayerStatus;
             savedLastPos = LastPos;
 
+            savedController = controller.Clone();
+            LoadStateRoutine();
+
             state |= State.FrameStep;
             nextState &= ~State.FrameStep;
 
-            savedController = controller.Clone();
-
             routine = new Coroutine(WaitForSavingState(() => {
-                // SpeedrunTool v3.4.15 no longer save and then automatically load,
-                // although tas can also continue to run without loading
-                // but it is better to load state, if savestate desync occurs can be found faster
-                Load(true);
+                if ((CelesteTASModule.Settings.PauseAfterLoadState || savedByBreakpoint) && !controller.HasFastForward) {
+                    state |= State.FrameStep;
+                } else {
+                    state &= ~State.FrameStep;
+                }
+                nextState &= ~State.FrameStep;
             }));
         }
 
@@ -161,9 +164,10 @@ namespace TAS {
             controller = savedController.Clone();
             controller.AdvanceFrame(true);
 
-            state &= ~State.FrameStep;
             if ((CelesteTASModule.Settings.PauseAfterLoadState || savedByBreakpoint) && !controller.HasFastForward) {
                 state |= State.FrameStep;
+            } else {
+                state &= ~State.FrameStep;
             }
             nextState &= ~State.FrameStep;
 
