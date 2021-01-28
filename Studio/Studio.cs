@@ -565,6 +565,7 @@ Ctrl + Down/Up: Go to comment or breakpoint");
                 if (Settings.Default.RememberLastFileName
                     && File.Exists(Settings.Default.LastFileName)
                     && Settings.Default.LastFileName != defaultFileName
+                    && IsFileReadable(Settings.Default.LastFileName)
                     && string.IsNullOrEmpty(lastFileName)) {
                     lastFileName = Settings.Default.LastFileName;
                     tasText.ReloadFile();
@@ -883,6 +884,24 @@ Ctrl + Down/Up: Go to comment or breakpoint");
                 Registry.SetValue(RegKey, name, val);
             }
             catch { }
+        }
+
+        private bool IsFileReadable(string fileName)
+        {
+            try
+            {
+                using(FileStream stream = File.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.None))
+                {
+                    stream.Close();
+                }
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+
+            //file is not locked
+            return true;
         }
 
         private void rememberCurrentFileMenuItem_Click(object sender, EventArgs e) {
