@@ -72,7 +72,7 @@ namespace TAS.EverestInterop {
                 Settings.KeyCamera.Keys = new List<Keys> { Keys.M };
 				Settings.KeySaveState.Keys = new List<Keys> { Keys.RightAlt, Keys.OemMinus };
 				Settings.KeyLoadState.Keys = new List<Keys> { Keys.OemPlus };
-				Settings.KeyClearState.Keys = new List<Keys>();
+				Settings.KeyClearState.Keys = new List<Keys> { Keys.RightAlt, Keys.Back };
 			}
 
             listHotkeyKeys = new List<Keys>[] {

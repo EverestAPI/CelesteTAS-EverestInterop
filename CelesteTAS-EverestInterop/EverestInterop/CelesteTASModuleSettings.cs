@@ -9,31 +9,41 @@ namespace TAS.EverestInterop {
     public class CelesteTASModuleSettings : EverestModuleSettings {
         public bool Enabled { get; set; } = true;
 
+        [SettingName("TAS_KEY_START")]
         [DefaultButtonBinding(0, Keys.RightControl)]
         public ButtonBinding KeyStart { get; set; } = new ButtonBinding();
 
+        [SettingName("TAS_KEY_FAST_FORWARD")]
         [DefaultButtonBinding(0, Keys.RightShift)]
         public ButtonBinding KeyFastForward { get; set; } = new ButtonBinding();
 
+        [SettingName("TAS_KEY_FRAME_ADVANCE")]
         [DefaultButtonBinding(0, Keys.OemOpenBrackets)]
         public ButtonBinding KeyFrameAdvance { get; set; } = new ButtonBinding();
 
+        [SettingName("TAS_KEY_PAUSE")]
         [DefaultButtonBinding(0, Keys.OemCloseBrackets)]
         public ButtonBinding KeyPause { get; set; } = new ButtonBinding();
 
+        [SettingName("TAS_KEY_HITBOXES")]
         [DefaultButtonBinding(0, Keys.B)] public ButtonBinding KeyHitboxes { get; set; } = new ButtonBinding();
 
+        [SettingName("TAS_KEY_GRAPHICS")]
         [DefaultButtonBinding(0, Keys.N)] public ButtonBinding KeyGraphics { get; set; } = new ButtonBinding();
 
+        [SettingName("TAS_KEY_CAMERA")]
         [DefaultButtonBinding(0, Keys.M)] public ButtonBinding KeyCamera { get; set; } = new ButtonBinding();
 
         // Multiple keys are not supported, so we only set Keys.OemMinus
+        [SettingName("TAS_KEY_SAVE_STATE")]
         [DefaultButtonBinding(0, Keys.OemMinus)]
         public ButtonBinding KeySaveState { get; set; } = new ButtonBinding();
 
+        [SettingName("TAS_KEY_LOAD_STATE")]
         [DefaultButtonBinding(0, Keys.OemPlus)]
         public ButtonBinding KeyLoadState { get; set; } = new ButtonBinding();
 
+        [SettingName("TAS_KEY_CLEAR_STATE")]
         [DefaultButtonBinding(0, Keys.None)]
         public ButtonBinding KeyClearState { get; set; } = new ButtonBinding();
 

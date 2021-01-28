@@ -31,7 +31,8 @@ namespace TAS.EverestInterop {
             }
 
             public override string ToString() {
-                return name == null ? "Default" : name.ToString();
+                string result = name == null ? "Default" : name.ToString();
+                return result.ToDialogText();
             }
         }
 
@@ -61,58 +62,58 @@ namespace TAS.EverestInterop {
         private readonly List<ILHook> ilHooks = new List<ILHook>();
 
         public static TextMenu.Item CreateSimplifiedGraphicsOption() {
-            return new TextMenuExt.SubMenu("Simplified Graphics", false).Apply(subMenu => {
-                subMenu.Add(new TextMenu.OnOff("Enabled", Settings.SimplifiedGraphics).Change(value => Settings.SimplifiedGraphics = value));
+            return new TextMenuExt.SubMenu("Simplified Graphics".ToDialogText(), false).Apply(subMenu => {
+                subMenu.Add(new TextMenu.OnOff("Enabled".ToDialogText(), Settings.SimplifiedGraphics).Change(value => Settings.SimplifiedGraphics = value));
                 subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<bool>("Gameplay", Menu.CreateShowHideOptions(), Settings.HideGameplay).Change(value =>
+                    new TextMenuExt.EnumerableSlider<bool>("Gameplay".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.HideGameplay).Change(value =>
                         Settings.HideGameplay = value));
                 subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<int?>("Lighting", Menu.CreateSliderOptions(10, 0, i => $"{i * 10}%"),
+                    new TextMenuExt.EnumerableSlider<int?>("Lighting".ToDialogText(), Menu.CreateSliderOptions(10, 0, i => $"{i * 10}%"),
                         Settings.SimplifiedLighting).Change(value =>
                         Settings.SimplifiedLighting = value));
                 subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<int?>("Bloom Base",
+                    new TextMenuExt.EnumerableSlider<int?>("Bloom Base".ToDialogText(),
                         Menu.CreateSliderOptions(0, 10, i => (i / 10f).ToString(CultureInfo.InvariantCulture)), Settings.SimplifiedBloomBase).Change(
                         value =>
                             Settings.SimplifiedBloomBase = value));
                 subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<int?>("Bloom Strength", Menu.CreateSliderOptions(1, 10), Settings.SimplifiedBloomStrength)
+                    new TextMenuExt.EnumerableSlider<int?>("Bloom Strength".ToDialogText(), Menu.CreateSliderOptions(1, 10), Settings.SimplifiedBloomStrength)
                         .Change(
                             value => Settings.SimplifiedBloomStrength = value));
                 subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<SpinnerColor>("Spinner Color", SpinnerColor.All,
+                    new TextMenuExt.EnumerableSlider<SpinnerColor>("Spinner Color".ToDialogText(), SpinnerColor.All,
                         Settings.SimplifiedSpinnerColor).Change(value =>
                         Settings.SimplifiedSpinnerColor = value));
                 subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<Color?>("Dust Sprite Color", Menu.CreateNaturalColorOptions(),
+                    new TextMenuExt.EnumerableSlider<Color?>("Dust Sprite Color".ToDialogText(), Menu.CreateNaturalColorOptions(),
                         Settings.SimplifiedDustSpriteColor).Change(value =>
                         Settings.SimplifiedDustSpriteColor = value));
                 subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<bool>("Spotlight Wipe", Menu.CreateShowHideOptions(), Settings.SimplifiedSpotlightWipe).Change(value =>
+                    new TextMenuExt.EnumerableSlider<bool>("Spotlight Wipe".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.SimplifiedSpotlightWipe).Change(value =>
                         Settings.SimplifiedSpotlightWipe = value));
                 subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<bool>("Color Grade", Menu.CreateShowHideOptions(), Settings.SimplifiedColorGrade).Change(value =>
+                    new TextMenuExt.EnumerableSlider<bool>("Color Grade".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.SimplifiedColorGrade).Change(value =>
                         Settings.SimplifiedColorGrade = value));
                 subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<bool>("Backdrop", Menu.CreateShowHideOptions(), Settings.SimplifiedBackdrop).Change(value =>
+                    new TextMenuExt.EnumerableSlider<bool>("Backdrop".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.SimplifiedBackdrop).Change(value =>
                         Settings.SimplifiedBackdrop = value));
                 subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<bool>("Decal", Menu.CreateShowHideOptions(), Settings.SimplifiedDecal).Change(value =>
+                    new TextMenuExt.EnumerableSlider<bool>("Decal".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.SimplifiedDecal).Change(value =>
                         Settings.SimplifiedDecal = value));
                 subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<bool>("Particle", Menu.CreateShowHideOptions(), Settings.SimplifiedParticle).Change(value =>
+                    new TextMenuExt.EnumerableSlider<bool>("Particle".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.SimplifiedParticle).Change(value =>
                         Settings.SimplifiedParticle = value));
                 subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<bool>("Distort", Menu.CreateShowHideOptions(), Settings.SimplifiedDistort).Change(value =>
+                    new TextMenuExt.EnumerableSlider<bool>("Distort".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.SimplifiedDistort).Change(value =>
                         Settings.SimplifiedDistort = value));
                 subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<bool>("Dream Block", Menu.CreateSimplifyOptions(), Settings.SimplifiedDreamBlock).Change(value =>
+                    new TextMenuExt.EnumerableSlider<bool>("Dream Block".ToDialogText(), Menu.CreateSimplifyOptions(), Settings.SimplifiedDreamBlock).Change(value =>
                         Settings.SimplifiedDreamBlock = value));
                 subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<bool>("Lava", Menu.CreateSimplifyOptions(), Settings.SimplifiedLava).Change(value =>
+                    new TextMenuExt.EnumerableSlider<bool>("Lava".ToDialogText(), Menu.CreateSimplifyOptions(), Settings.SimplifiedLava).Change(value =>
                         Settings.SimplifiedLava = value));
                 subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<bool>("Lightning", Menu.CreateSimplifyOptions(), Settings.SimplifiedLightning).Change(value =>
+                    new TextMenuExt.EnumerableSlider<bool>("Lightning".ToDialogText(), Menu.CreateSimplifyOptions(), Settings.SimplifiedLightning).Change(value =>
                         Settings.SimplifiedLightning = value));
             });
         }

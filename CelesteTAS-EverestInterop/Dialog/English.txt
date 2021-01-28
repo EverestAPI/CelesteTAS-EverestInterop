@@ -1,0 +1,85 @@
+﻿# ================================== Menu ==================================
+TAS_ENABLED=                  Enabled
+TAS_SHOW_HITBOXES=            Shwo Hitboxes
+TAS_HITBOX_COLOR_DESCRIPTION= Hitbox color can only be edited in the menu of the title screen
+TAS_SIMPLIFIED_GRAPHICS=      Simplified Graphics
+TAS_RELAUNCH_REQUIRED=        Relaunch Required
+TAS_MORE_OPTIONS=             More Options
+
+# ================================== Hitbox Submenu ==================================
+TAS_ACTUAL_COLLIDE_HITBOXES=  Actual Collide Hitboxes
+TAS_HIDE_TRIGGER_HITBOXES=    Hide Trigger Hitboxes
+TAS_SIMPLIFIED_HITBOXES=      Simplified Hitboxes
+TAS_ENTITY_HITBOX_COLOR=      Entity Hitbox Color
+TAS_TRIGGER_HITBOX_COLOR=     Trigger Hitbox Color
+
+# ================================== Simplified Graphics Submenu ==================================
+TAS_SIMPLIFIED_GRAPHICS=      Simplified Graphics
+TAS_GAMEPLAY=                 Gameplay
+TAS_LIGHTING=                 Lighting
+TAS_BLOOM_BASE=               Bloom Base
+TAS_BLOOM_STRENGTH=           Bloom Strength
+TAS_SPINNER_COLOR=            Spinner Color
+TAS_DUST_SPRITE_COLOR=        Dust Sprite Color
+TAS_SPOTLIGHT_WIPE=           Spotlight Wipe
+TAS_COLOR_GRADE=              Color Grade
+TAS_BACKDROP=                 Backdrop
+TAS_DECAL=                    Decal
+TAS_PARTICLE=                 Particle
+TAS_DISTORT=                  Distort
+TAS_DREAM_BLOCK=              Dream Block
+TAS_LAVA=                     Lava
+TAS_LIGHTNING=                Lightning
+
+# ================================== Relaunch Required Submenu ==================================
+TAS_LAUNCH_STUDIO_AT_BOOT=    Launch Studio At Boot
+TAS_AUTO_EXTRACT_NEW_STUDIO=  Auto Extract New Studio
+TAS_UNIX_RTC=                 Unix RTC
+
+# ================================== More Options Submenu ==================================
+TAS_CENTER_CAMERA=            Center Camera
+TAS_ROUND_POSITION=           Round Position
+TAS_INFO_HUD=                 Info HUD
+TAS_PAUSE_AFTER_LOAD_STATE=   Pause After Load State
+TAS_DISABLE_ACHIEVEMENTS=     Disable Achievements
+TAS_DISABLE_GRAB_DESYNC_FIX=  Disable Grab Desync Fix
+TAS_AUTO_MUTE_ON_FAST_FORWARD=Auto Mute on Fast Forward
+TAS_MOD_9D_LIGHTING=          Mod 9D Lighting
+
+# ================================== Keyboard Config ==================================
+TAS_KEY_START=                Start
+TAS_KEY_FAST_FORWARD=         Fast Forward
+TAS_KEY_FRAME_ADVANCE=        Frame Advance
+TAS_KEY_PAUSE=                Pause
+TAS_KEY_HITBOXES=             Show Hitboxes
+TAS_KEY_GRAPHICS=             Simplified Graphics
+TAS_KEY_CAMERA=               Center Camera
+TAS_KEY_SAVE_STATE=           Save State
+TAS_KEY_LOAD_STATE=           Load State
+TAS_KEY_CLEAR_STATE=          Clear State
+
+# ================================== Option Values ==================================
+TAS_DEFAULT=                  Default
+TAS_HIDE=                     Hide
+TAS_SIMPLIFY=                 Simplify
+TAS_RED=                      Red
+TAS_GREEN=                    Green
+TAS_BLUE=                     Blue
+TAS_YELLOW=                   Yellow
+TAS_PURPLE=                   Purple
+TAS_WHITE=                    White
+TAS_BLACK=                    Black
+TAS_TRANSPARENT=              Transparent
+
+
+
+
+
+
+
+
+
+
+
+
+
