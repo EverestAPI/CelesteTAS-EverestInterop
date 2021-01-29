@@ -303,13 +303,14 @@ namespace TAS {
 
 		public string Checksum(int toInputIndex) {
 			StringBuilder result = new StringBuilder(filePath);
+			result.AppendLine();
 
 			try {
 				int checkInputIndex = 0;
 
 				while (checkInputIndex <= toInputIndex) {
 					InputRecord current = inputs[checkInputIndex];
-					result.AppendLine(current.ToString());
+					result.AppendLine(current.Command != null ? current.LineText : current.ToString());
 					checkInputIndex++;
 				}
 

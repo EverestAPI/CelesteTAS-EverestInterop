@@ -31,10 +31,10 @@ namespace TAS {
 			return output;
 		}
 
-		public static bool TryExecuteCommand(InputController state, string line, int studioLine) {
+		public static bool TryExecuteCommand(InputController state, string lineText, int lineNumber) {
 			try {
-				if (char.IsLetter(line[0])) {
-					string[] args = Split(line);
+				if (char.IsLetter(lineText[0])) {
+					string[] args = Split(lineText);
 					string commandType = args[0] + "Command";
 					MethodInfo method = typeof(InputCommands).GetMethod(commandType, BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.IgnoreCase);
 					if (method == null)
@@ -44,18 +44,14 @@ namespace TAS {
 					TASCommandAttribute attribute = (TASCommandAttribute)method.GetCustomAttribute(typeof(TASCommandAttribute));
 					if (!(Manager.enforceLegal && attribute.illegalInMaingame)) {
 						if (attribute.executeAtStart) {
-							method.Invoke(null, new object[] { state, commandArgs, studioLine });
+							method.Invoke(null, new object[] { state, commandArgs, lineNumber });
 							//the play command needs to stop reading the current file when it's done to prevent recursion
 							return commandType.ToLower() == "playcommand";
 						}
 
 
 						object[] parameters = { commandArgs };
-						if (method.GetParameters().Length == 2) {
-							parameters = new object[] { commandArgs, studioLine };
-						}
-
-						state.inputs.Add(new InputRecord(() => method.Invoke(null, parameters), commandType.ToLower(), studioLine));
+						state.inputs.Add(new InputRecord(() => method.Invoke(null, parameters), lineNumber, lineText));
 					}
 				}
 				return false;

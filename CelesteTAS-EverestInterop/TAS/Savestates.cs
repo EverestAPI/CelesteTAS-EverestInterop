@@ -36,6 +36,11 @@ namespace TAS {
         public static void HandleSaveStates() {
             if (!SpeedrunToolInstalled.Value) return;
 
+            if (!Running && IsSaved() && Engine.Scene is Level && Hotkeys.hotkeyStart.wasPressed && !Hotkeys.hotkeyStart.pressed) {
+                Load();
+                return;
+            }
+
             if (Running && Hotkeys.hotkeySaveState.pressed && !Hotkeys.hotkeySaveState.wasPressed) {
                 Save(false);
                 return;
@@ -65,15 +70,15 @@ namespace TAS {
                 return;
             }
 
-            // auto load state after starting tas
+            // auto load state after entering the level if tas is started from outside the level.
             if (Running && IsSaved() && Engine.Scene is Level && controller.InputIndex < savedController.InputIndex) {
                 Load();
             }
         }
 
-        private static IEnumerator WaitForSavingState(Action onComplete) {
+        private static IEnumerator WaitForSavingState() {
             yield return null;
-            onComplete();
+            SetTasState();
         }
 
         private static void Save(bool breakpoint) {
@@ -109,22 +114,16 @@ namespace TAS {
             state |= State.FrameStep;
             nextState &= ~State.FrameStep;
 
-            routine = new Coroutine(WaitForSavingState(() => {
-                if ((CelesteTASModule.Settings.PauseAfterLoadState || savedByBreakpoint) && !controller.HasFastForward) {
-                    state |= State.FrameStep;
-                } else {
-                    state &= ~State.FrameStep;
-                }
-                nextState &= ~State.FrameStep;
-            }));
+            routine = new Coroutine(WaitForSavingState());
         }
 
-        private static void Load(bool forceLoad = false) {
+        private static void Load() {
+            if (Engine.Scene is LevelLoader) return;
+
             if (IsSaved()) {
                 controller.AdvanceFrame(true);
-                // TODO If the checksum is successful, update the usedFiles of the savedController
-                if (forceLoad || !BreakpointHasBeenDeleted && savedController.SavedChecksum == controller.Checksum(savedController)) {
-                    if (!forceLoad && Running && controller.CurrentFrame == savedController.CurrentFrame) {
+                if (!BreakpointHasBeenDeleted && savedController.SavedChecksum == controller.Checksum(savedController)) {
+                    if (Running && controller.CurrentFrame == savedController.CurrentFrame) {
                         // Don't repeat load state, just play
                         state &= ~State.FrameStep;
                         nextState &= ~State.FrameStep;
@@ -163,17 +162,24 @@ namespace TAS {
         private static void LoadStateRoutine() {
             controller = savedController.Clone();
             controller.AdvanceFrame(true);
+            if (savedByBreakpoint && controller.Current.SaveState) {
+                // HasSavedState is set to false by AdvanceFrame(true), so we need restore it.
+                controller.Current.HasSavedState = true;
+            }
+            SetTasState();
+            PlayerStatus = savedPlayerStatus;
+            LastPos = savedLastPos;
+            UpdateStudio();
+        }
 
+        private static void SetTasState() {
             if ((CelesteTASModule.Settings.PauseAfterLoadState || savedByBreakpoint) && !controller.HasFastForward) {
                 state |= State.FrameStep;
             } else {
                 state &= ~State.FrameStep;
             }
-            nextState &= ~State.FrameStep;
 
-            PlayerStatus = savedPlayerStatus;
-            LastPos = savedLastPos;
-            UpdateStudio();
+            nextState &= ~State.FrameStep;
         }
 
         private static void UpdateStudio() {

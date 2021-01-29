@@ -23,25 +23,26 @@ namespace TAS {
 	public class InputRecord {
 		public const int DefaultFastForwardSpeed = 400;
 
-		public int Line { get; set; }
-		public int Frames { get; set; }
+		public int Line { get; private set; }
+		public string LineText { get; private set; }
+		public int Frames { get; private set; }
 		public Actions Actions { get; set; }
-		public float Angle { get; set; }
+		public float Angle { get; private set; }
 		public bool FastForward { get; set; }
-		public int FastForwardSpeed { get; set; }
+		public int FastForwardSpeed { get; private set; }
 		public bool SaveState { get; set; }
 		public bool HasSavedState { get; set; }
 		public bool ForceBreak { get; set; }
-		public Action Command { get; set; }
-		public string CommandType { get; set; }
+		public Action Command { get; private set; }
 		public InputRecord() { }
-		public InputRecord(Action commandCall, string commandType, int line) {
+		public InputRecord(Action commandCall, int line, string lineText) {
 			Command = commandCall;
-			CommandType = commandType;
 			Line = line;
+			LineText = lineText;
 		}
 		public InputRecord(int line, string lineText) {
 			Line = line;
+			LineText = lineText;
 
 			int index = 0;
 			Frames = ReadFrames(lineText);
@@ -189,8 +190,8 @@ namespace TAS {
 			clone.Angle = Angle;
 			clone.Frames = Frames;
 			clone.Line = Line;
+			clone.LineText = LineText;
 			clone.Command = Command;
-			clone.CommandType = CommandType;
 			clone.FastForward = FastForward;
 			clone.FastForwardSpeed = FastForwardSpeed;
 			clone.ForceBreak = ForceBreak;

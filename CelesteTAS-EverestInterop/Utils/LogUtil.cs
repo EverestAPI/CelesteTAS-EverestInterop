@@ -1,12 +1,9 @@
-using System;
 using Celeste.Mod;
-using Microsoft.Xna.Framework;
-using Monocle;
 
 namespace TAS {
     internal static class LogUtil {
         private const string TAG = "CelesteTAS";
-        public static void Log(string text, LogLevel logLevel = LogLevel.Verbose) {
+        public static void Log(this string text, LogLevel logLevel = LogLevel.Verbose) {
             Logger.Log(logLevel, TAG, text);
 #if DEBUG
             Color color;
