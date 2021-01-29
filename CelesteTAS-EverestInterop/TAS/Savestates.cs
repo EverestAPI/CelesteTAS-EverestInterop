@@ -14,7 +14,8 @@ namespace TAS {
     static class Savestates {
         // studio highlight line number start from 0
         // input record line number start from 1
-        public static int StudioHighlightLine => (SpeedrunToolInstalled.Value && IsSaved() && savedLine.HasValue ? savedLine.Value  : 0) - 1;
+        public static int StudioHighlightLine => (speedrunToolInstalledLazy.Value && IsSaved() && savedLine.HasValue ? savedLine.Value  : 0) - 1;
+        public static bool SpeedrunToolInstalled => speedrunToolInstalledLazy.Value;
         public static Coroutine routine;
         private static InputController savedController;
         private static int? savedLine;
@@ -25,7 +26,7 @@ namespace TAS {
         private static bool BreakpointHasBeenDeleted => IsSaved() && savedByBreakpoint && savedController.InputIndex < controller.inputs.Count &&
                    controller.inputs[savedController.InputIndex].SaveState == false;
 
-        private static readonly Lazy<bool> SpeedrunToolInstalled = new Lazy<bool>(() =>
+        private static readonly Lazy<bool> speedrunToolInstalledLazy = new Lazy<bool>(() =>
             Type.GetType("Celeste.Mod.SpeedrunTool.SaveLoad.StateManager, SpeedrunTool") != null
         );
 
@@ -34,7 +35,7 @@ namespace TAS {
         }
 
         public static void HandleSaveStates() {
-            if (!SpeedrunToolInstalled.Value) return;
+            if (!SpeedrunToolInstalled) return;
 
             if (!Running && IsSaved() && Engine.Scene is Level && Hotkeys.hotkeyStart.wasPressed && !Hotkeys.hotkeyStart.pressed) {
                 Load();
@@ -46,7 +47,7 @@ namespace TAS {
                 return;
             }
 
-            if (Hotkeys.hotkeyLoadState.pressed && !Hotkeys.hotkeyLoadState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
+            if (Hotkeys.hotkeyRestart.pressed && !Hotkeys.hotkeyRestart.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
                 Load();
                 return;
             }

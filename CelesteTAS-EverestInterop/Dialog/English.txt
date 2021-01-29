@@ -48,6 +48,7 @@ TAS_MOD_9D_LIGHTING=          Mod 9D Lighting
 
 # ================================== Keyboard Config ==================================
 TAS_KEY_START=                Start
+TAS_KEY_RESTART=              Restart
 TAS_KEY_FAST_FORWARD=         Fast Forward
 TAS_KEY_FRAME_ADVANCE=        Frame Advance
 TAS_KEY_PAUSE=                Pause
@@ -55,7 +56,6 @@ TAS_KEY_HITBOXES=             Show Hitboxes
 TAS_KEY_GRAPHICS=             Simplified Graphics
 TAS_KEY_CAMERA=               Center Camera
 TAS_KEY_SAVE_STATE=           Save State
-TAS_KEY_LOAD_STATE=           Load State
 TAS_KEY_CLEAR_STATE=          Clear State
 
 # ================================== Option Values ==================================

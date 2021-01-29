@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
@@ -39,7 +40,7 @@ namespace TAS.EverestInterop {
                     return;
                 }
                 pressed = IsKeyDown(keys, keyCombo) || IsButtonDown(buttons, keyCombo);
-            } 
+            }
         }
 
         public static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
@@ -48,6 +49,7 @@ namespace TAS.EverestInterop {
         private static GamePadState padState;
 
         public static Hotkey hotkeyStart;
+		public static Hotkey hotkeyRestart;
         public static Hotkey hotkeyFastForward;
         public static Hotkey hotkeyFrameAdvance;
         public static Hotkey hotkeyPause; 
@@ -55,33 +57,37 @@ namespace TAS.EverestInterop {
         public static Hotkey hotkeyGraphics;
         public static Hotkey hotkeyCamera;
 		public static Hotkey hotkeySaveState;
-		public static Hotkey hotkeyLoadState;
 		public static Hotkey hotkeyClearState;
 
 		public static Hotkey[] hotkeys;
         public static List<Keys>[] listHotkeyKeys;
 
+        private static void InitBinding(ButtonBinding binding, params Keys[] defaultKeys) {
+            if (binding.Keys.Count == 0) {
+                binding.Keys = defaultKeys.ToList();
+            }
+        }
+
         public static void InputInitialize() {
-            if (Settings.KeyStart.Keys.Count == 0) {
-                Settings.KeyStart.Keys = new List<Keys> { Keys.RightControl };
-                Settings.KeyFastForward.Keys = new List<Keys> { Keys.RightShift };
-                Settings.KeyFrameAdvance.Keys = new List<Keys> { Keys.OemOpenBrackets };
-                Settings.KeyPause.Keys = new List<Keys> { Keys.OemCloseBrackets };
-                Settings.KeyHitboxes.Keys = new List<Keys> { Keys.B };
-                Settings.KeyGraphics.Keys = new List<Keys> { Keys.N };
-                Settings.KeyCamera.Keys = new List<Keys> { Keys.M };
-				Settings.KeySaveState.Keys = new List<Keys> { Keys.RightAlt, Keys.OemMinus };
-				Settings.KeyLoadState.Keys = new List<Keys> { Keys.OemPlus };
-				Settings.KeyClearState.Keys = new List<Keys> { Keys.RightAlt, Keys.Back };
-			}
+            InitBinding(Settings.KeyStart, Keys.RightControl);
+            InitBinding(Settings.KeyRestart, Keys.OemPlus);
+            InitBinding(Settings.KeyFastForward, Keys.RightShift);
+            InitBinding(Settings.KeyFrameAdvance, Keys.OemOpenBrackets);
+            InitBinding(Settings.KeyPause, Keys.OemCloseBrackets);
+            InitBinding(Settings.KeyHitboxes, Keys.B);
+            InitBinding(Settings.KeyGraphics, Keys.N);
+            InitBinding(Settings.KeyCamera, Keys.M);
+            InitBinding(Settings.KeySaveState, Keys.RightAlt, Keys.OemMinus);
+            InitBinding(Settings.KeyClearState, Keys.RightAlt, Keys.Back);
 
             listHotkeyKeys = new List<Keys>[] {
-                Settings.KeyStart.Keys, Settings.KeyFastForward.Keys, Settings.KeyFrameAdvance.Keys, Settings.KeyPause.Keys,
+                Settings.KeyStart.Keys, Settings.KeyRestart.Keys, Settings.KeyFastForward.Keys, Settings.KeyFrameAdvance.Keys, Settings.KeyPause.Keys,
                 Settings.KeyHitboxes.Keys, Settings.KeyGraphics.Keys, Settings.KeyCamera.Keys,
-				Settings.KeySaveState.Keys, Settings.KeyLoadState.Keys, Settings.KeyClearState.Keys
+				Settings.KeySaveState.Keys, Settings.KeyClearState.Keys
             };
 
             hotkeyStart = BindingToHotkey(Settings.KeyStart);
+			hotkeyRestart = BindingToHotkey(Settings.KeyRestart);
             hotkeyFastForward = BindingToHotkey(Settings.KeyFastForward);
             hotkeyFrameAdvance = BindingToHotkey(Settings.KeyFrameAdvance);
             hotkeyPause = BindingToHotkey(Settings.KeyPause);
@@ -89,12 +95,11 @@ namespace TAS.EverestInterop {
             hotkeyGraphics = BindingToHotkey(Settings.KeyGraphics);
             hotkeyCamera = BindingToHotkey(Settings.KeyCamera);
 			hotkeySaveState = BindingToHotkey(Settings.KeySaveState);
-			hotkeyLoadState = BindingToHotkey(Settings.KeyLoadState);
 			hotkeyClearState = BindingToHotkey(Settings.KeyClearState);
 			hotkeys = new Hotkey[] {
-                hotkeyStart, hotkeyFastForward, hotkeyFrameAdvance, hotkeyPause, 
+                hotkeyStart, hotkeyRestart, hotkeyFastForward, hotkeyFrameAdvance, hotkeyPause,
                 hotkeyHitboxes, hotkeyGraphics, hotkeyCamera,
-				hotkeySaveState, hotkeyLoadState, hotkeyClearState
+				hotkeySaveState, hotkeyClearState
             };
         }
 
@@ -189,8 +194,17 @@ namespace TAS.EverestInterop {
                     if (bindingFieldInfo == null) {
                         bindingFieldInfo = bindingEntry.GetType().GetFieldInfo("Binding");
                     }
-                    if (bindingFieldInfo?.GetValue(bindingEntry) is ButtonBinding binding && binding == Settings.KeySaveState) {
-                        binding.Keys.Insert(0, Keys.RightAlt);
+
+                    if (!(bindingFieldInfo?.GetValue(bindingEntry) is ButtonBinding binding)) return;
+
+                    if (binding == Settings.KeySaveState) {
+                        binding.Keys.Clear();
+                        binding.Keys.Add(Keys.RightAlt);
+                        binding.Keys.Add(Keys.OemMinus);
+                    } else if (binding == Settings.KeyClearState) {
+                        binding.Keys.Clear();
+                        binding.Keys.Add(Keys.RightAlt);
+                        binding.Keys.Add(Keys.Back);
                     }
                 });
             }

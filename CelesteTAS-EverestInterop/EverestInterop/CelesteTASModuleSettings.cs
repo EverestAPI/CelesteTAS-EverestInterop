@@ -13,6 +13,10 @@ namespace TAS.EverestInterop {
         [DefaultButtonBinding(0, Keys.RightControl)]
         public ButtonBinding KeyStart { get; set; } = new ButtonBinding();
 
+        [SettingName("TAS_KEY_RESTART")]
+        [DefaultButtonBinding(0, Keys.OemPlus)]
+        public ButtonBinding KeyRestart { get; set; } = new ButtonBinding();
+
         [SettingName("TAS_KEY_FAST_FORWARD")]
         [DefaultButtonBinding(0, Keys.RightShift)]
         public ButtonBinding KeyFastForward { get; set; } = new ButtonBinding();
@@ -34,17 +38,14 @@ namespace TAS.EverestInterop {
         [SettingName("TAS_KEY_CAMERA")]
         [DefaultButtonBinding(0, Keys.M)] public ButtonBinding KeyCamera { get; set; } = new ButtonBinding();
 
-        // Multiple keys are not supported, so we only set Keys.OemMinus
+        // Multiple default keys are not supported, handled by Hotkeys.ModReload()
         [SettingName("TAS_KEY_SAVE_STATE")]
         [DefaultButtonBinding(0, Keys.OemMinus)]
         public ButtonBinding KeySaveState { get; set; } = new ButtonBinding();
 
-        [SettingName("TAS_KEY_LOAD_STATE")]
-        [DefaultButtonBinding(0, Keys.OemPlus)]
-        public ButtonBinding KeyLoadState { get; set; } = new ButtonBinding();
-
+        // Multiple default keys are not supported, handled by Hotkeys.ModReload()
         [SettingName("TAS_KEY_CLEAR_STATE")]
-        [DefaultButtonBinding(0, Keys.None)]
+        [DefaultButtonBinding(0, Keys.Back)]
         public ButtonBinding KeyClearState { get; set; } = new ButtonBinding();
 
         #region SimplifiedGraphics

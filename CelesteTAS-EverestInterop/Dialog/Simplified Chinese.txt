@@ -47,7 +47,8 @@ TAS_AUTO_MUTE_ON_FAST_FORWARD=快进时自动静音
 TAS_MOD_9D_LIGHTING=          修改 9D 亮度
 
 # ================================== Keyboard Config ==================================
-TAS_KEY_START=                开始
+TAS_KEY_START=                运行
+TAS_KEY_RESTART=              重新运行
 TAS_KEY_FAST_FORWARD=         快进
 TAS_KEY_FRAME_ADVANCE=        步进
 TAS_KEY_PAUSE=                暂停
@@ -55,7 +56,6 @@ TAS_KEY_HITBOXES=             显示碰撞箱
 TAS_KEY_GRAPHICS=             简化图形
 TAS_KEY_CAMERA=               镜头居中
 TAS_KEY_SAVE_STATE=           保存状态
-TAS_KEY_LOAD_STATE=           加载状态
 TAS_KEY_CLEAR_STATE=          清除状态
 
 # ================================== Option Values ==================================

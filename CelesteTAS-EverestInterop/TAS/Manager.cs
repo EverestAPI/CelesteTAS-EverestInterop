@@ -190,6 +190,11 @@ namespace TAS {
 		}
 		
 		private static void CheckToEnable() {
+			if (!Savestates.SpeedrunToolInstalled && Hotkeys.hotkeyRestart.pressed && !Hotkeys.hotkeyRestart.wasPressed) {
+				DisableRun();
+				EnableRun();
+				return;
+			}
 			if (Hotkeys.hotkeyStart.pressed) {
 				if (!HasFlag(state, State.Enable)) {
 					nextState |= State.Enable;
