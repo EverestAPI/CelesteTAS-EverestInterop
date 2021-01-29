@@ -103,7 +103,7 @@ namespace TAS.EverestInterop {
 
         public bool DisableGrabDesyncFix {
             get => Manager.grabButton != Buttons.Back;
-            set => Manager.grabButton = value ? Buttons.LeftShoulder : Buttons.Back;
+            set => Manager.grabButton = value ? Buttons.LeftStick : Buttons.Back;
         }
 
         public bool RoundPosition { get; set; } = true;
