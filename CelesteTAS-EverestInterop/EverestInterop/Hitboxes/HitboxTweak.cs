@@ -38,6 +38,7 @@ namespace TAS.EverestInterop.Hitboxes {
             HitboxTriggerSpikes.Load();
             ActualEntityCollideHitbox.Load();
             ActualPlayerCollideHitbox.Load();
+            HitboxFixer.Load();
         }
 
         public void Unload() {
@@ -48,6 +49,7 @@ namespace TAS.EverestInterop.Hitboxes {
             HitboxTriggerSpikes.Unload();
             ActualEntityCollideHitbox.Unload();
             ActualPlayerCollideHitbox.Unload();
+            HitboxFixer.Unload();
         }
 
         private void HideHitbox(ILContext il) {
@@ -76,12 +78,27 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void ModHitbox(On.Monocle.Hitbox.orig_Render orig, Hitbox hitbox, Camera camera, Color color) {
-            if (!Settings.ShowHitboxes || !Settings.SimplifiedHitboxes) {
+            if (!Settings.ShowHitboxes) {
                 orig(hitbox, camera, color);
                 return;
             }
 
             Entity entity = hitbox.Entity;
+
+            if (entity is Puffer) {
+                Vector2 bottomCenter = entity.BottomCenter - Vector2.UnitY * 1;
+                if (entity.Scene.Tracker.GetEntity<Player>() is Player player && player.Ducking) {
+                    bottomCenter -= Vector2.UnitY * 3;
+                }
+                Draw.Circle(entity.Position, 32f, HitboxColor.EntityColor, 32);
+                Draw.Line(bottomCenter - Vector2.UnitX * 32, bottomCenter + Vector2.UnitX * 32, HitboxColor.EntityColor);
+            }
+
+            if (!Settings.SimplifiedHitboxes) {
+                orig(hitbox, camera, color);
+                return;
+            }
+
             if (entity is WallBooster || entity.GetType().FullName == "Celeste.Mod.ShroomHelper.Entities.SlippyWall") {
                 Draw.Rect(hitbox.AbsolutePosition, hitbox.Width, hitbox.Height, HitboxColor.EntityColorInverselyLessAlpha);
                 color = Color.Transparent;

@@ -29,9 +29,6 @@ namespace TAS.EverestInterop {
             // Hide SoundSource when showing hitboxes
             On.Celeste.SoundSource.DebugRender += SoundSource_DebugRender;
 
-            // Show pufferfish explosion radius
-            On.Celeste.Puffer.Render += Puffer_Render;
-
             // Stop updating tentacles texture when fast forward
             On.Celeste.ReflectionTentacles.UpdateVertices += ReflectionTentaclesOnUpdateVertices;
         }
@@ -42,7 +39,6 @@ namespace TAS.EverestInterop {
             IL.Celeste.Pathfinder.Render -= Pathfinder_Render;
             On.Celeste.Distort.Render -= Distort_Render;
             On.Celeste.SoundSource.DebugRender -= SoundSource_DebugRender;
-            On.Celeste.Puffer.Render -= Puffer_Render;
             On.Celeste.ReflectionTentacles.UpdateVertices -= ReflectionTentaclesOnUpdateVertices;
         }
 
@@ -76,12 +72,6 @@ namespace TAS.EverestInterop {
         private static void SoundSource_DebugRender(On.Celeste.SoundSource.orig_DebugRender orig, SoundSource self, Camera camera) {
             if (!Settings.ShowHitboxes)
                 orig(self, camera);
-        }
-
-        private void Puffer_Render(On.Celeste.Puffer.orig_Render orig, Puffer self) {
-            if (GameplayRendererExt.RenderDebug)
-                Draw.Circle(self.Position, 32f, Color.Red, 32);
-            orig(self);
         }
 
         private void ReflectionTentaclesOnUpdateVertices(On.Celeste.ReflectionTentacles.orig_UpdateVertices orig, ReflectionTentacles self) {

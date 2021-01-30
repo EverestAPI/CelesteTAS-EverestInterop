@@ -12,7 +12,9 @@ namespace TAS.EverestInterop.Hitboxes {
         public static readonly Color DefaultEntityColor = Color.Red;
         public static readonly Color DefaultTriggerColor = Color.Peru;
 
-        public static Color EntityColorInversely => Settings.EntityHitboxColor.Invert();
+        public static Color EntityColor => Settings.EntityHitboxColor;
+        public static Color TriggerColor => Settings.TriggerHitboxColor;
+        public static Color EntityColorInversely => EntityColor.Invert();
         public static Color EntityColorInverselyLessAlpha => EntityColorInversely * 0.7f;
 
         public static TextMenu.Item CreateEntityHitboxColorButton(TextMenu textMenu, bool inGame) {

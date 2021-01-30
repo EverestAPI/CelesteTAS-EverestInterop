@@ -1,25 +1,34 @@
 ﻿using System;
 using Microsoft.Xna.Framework;
+using Camera = Monocle.Camera;
 using Draw = Monocle.Draw;
 
 namespace TAS.EverestInterop.Hitboxes {
 
-	public class HitboxFixer {
-		public static HitboxFixer instance;
+	public static class HitboxFixer {
 		public static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
+		private static bool drawingHitboxes;
 
-		public void Load() {
+		public static void Load() {
+			On.Monocle.EntityList.DebugRender += EntityListOnDebugRender;
 			On.Monocle.Draw.HollowRect_float_float_float_float_Color += modDrawHollowRect;
 			On.Monocle.Draw.Circle_Vector2_float_Color_int += modDrawCircle;
 		}
 
-		public void Unload() {
+		public static void Unload() {
+			On.Monocle.EntityList.DebugRender -= EntityListOnDebugRender;
 			On.Monocle.Draw.HollowRect_float_float_float_float_Color -= modDrawHollowRect;
 			On.Monocle.Draw.Circle_Vector2_float_Color_int -= modDrawCircle;
 		}
 
-		private void modDrawHollowRect(On.Monocle.Draw.orig_HollowRect_float_float_float_float_Color orig, float x, float y, float width, float height, Color color) {
-			if (!Settings.ShowHitboxes) {
+		private static void EntityListOnDebugRender(On.Monocle.EntityList.orig_DebugRender orig, Monocle.EntityList self, Camera camera) {
+			drawingHitboxes = true;
+			orig(self, camera);
+			drawingHitboxes = false;
+		}
+
+		private static void modDrawHollowRect(On.Monocle.Draw.orig_HollowRect_float_float_float_float_Color orig, float x, float y, float width, float height, Color color) {
+			if (!Settings.ShowHitboxes || !drawingHitboxes) {
 				orig(x, y, width, height, color);
 				return;
 			}
@@ -31,7 +40,7 @@ namespace TAS.EverestInterop.Hitboxes {
 			orig(fx, fy, cw, cy, color);
 		}
 
-		private void modDrawCircle(On.Monocle.Draw.orig_Circle_Vector2_float_Color_int orig, Vector2 center, float radius, Color color, int resolution) {
+		private static void modDrawCircle(On.Monocle.Draw.orig_Circle_Vector2_float_Color_int orig, Vector2 center, float radius, Color color, int resolution) {
 			// Adapted from John Kennedy, "A Fast Bresenham Type Algorithm For Drawing Circles"
 			// https://web.engr.oregonstate.edu/~sllu/bcircle.pdf
 			// Not as fast though because we are forced to use floating point arithmetic anyway
@@ -39,7 +48,7 @@ namespace TAS.EverestInterop.Hitboxes {
 			// For similar reasons, we can't just assume the circle has 8-fold symmetry.
 			// Modified so that instead of minimizing error, we include exactly those pixels which intersect the circle.
 
-			if (!Settings.ShowHitboxes) {
+			if (!Settings.ShowHitboxes || !drawingHitboxes) {
 				orig(center, radius, color, resolution);
 				return;
 			}
@@ -54,7 +63,7 @@ namespace TAS.EverestInterop.Hitboxes {
 			CircleOctant(center, radius, color, -1, -1, true);
 		}
 
-		private void CircleOctant(Vector2 center, float radius, Color color, float flipX, float flipY, bool interchangeXY) {
+		private static void CircleOctant(Vector2 center, float radius, Color color, float flipX, float flipY, bool interchangeXY) {
 			// when flipX = flipY = 1 and interchangeXY = false, we are drawing the [0, pi/4] octant.
 
 			float cx, cy;
@@ -106,7 +115,7 @@ namespace TAS.EverestInterop.Hitboxes {
 			DrawLine((int)x + (flipX < 0 ? -1 : 0), (int)starty, (int)y, interchangeXY, color);
 		}
 
-		private void DrawLine(int x, int y0, int y1, bool interchangeXY, Color color) {
+		private static void DrawLine(int x, int y0, int y1, bool interchangeXY, Color color) {
 			// x, y0, and y1 must all be integers
 			int length = (int)(y1 - y0);
 			Rectangle rect;
