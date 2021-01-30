@@ -3025,9 +3025,9 @@ namespace CelesteStudio.RichText {
 			}
 		}
 
-		private void TryMoveCursorBehindFrame(bool onlyLeadingSpaces = false) {
+		private void TryMoveCursorBehindFrame() {
 			Place start = Selection.Start;
-			if (Selection.IsEmpty && SyntaxHighlighter.InputRecordRegex.IsMatch(Lines[start.iLine]) && (!onlyLeadingSpaces || start.iChar < 4)) {
+			if (Selection.IsEmpty && SyntaxHighlighter.InputRecordRegex.IsMatch(Lines[start.iLine])) {
 				Selection.Start = new Place(4, start.iLine);
 			}
 		}
@@ -3140,20 +3140,13 @@ namespace CelesteStudio.RichText {
 			}
 		}
 
-		protected override void OnMouseUp(MouseEventArgs e) {
-			base.OnMouseUp(e);
-
-			TryMoveCursorBehindFrame(true);
-			Invalidate();
-		}
-
 		private void CheckAndChangeSelectionType() {
 			//change selection type to ColumnSelectionMode
 			if ((Control.ModifierKeys & Keys.Alt) != 0 && !WordWrap) {
 				Selection.ColumnSelectionMode = true;
 			} else
-			//change selection type to Range
 			{
+				//change selection type to Range
 				Selection.ColumnSelectionMode = false;
 			}
 		}
