@@ -1,6 +1,7 @@
 ﻿namespace CelesteStudio.Communication {
 	public enum HotkeyIDs : byte {
 		Start,
+		Restart,
 		FastForward,
 		FrameAdvance,
 		Pause,
@@ -8,6 +9,6 @@
 		Graphics,
 		Camera,
 		SaveState,
-		LoadState,
+		ClearState,
 	}
 }
