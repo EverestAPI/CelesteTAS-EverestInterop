@@ -30,7 +30,7 @@ namespace CelesteStudio.Communication {
 		}
 
 		public static string Timer() {
-			int timerIndex = playerData.IndexOf("Timer");
+			int timerIndex = playerData.LastIndexOf("Timer");
 			if (timerIndex == -1)
 				return null;
 			timerIndex += 7;

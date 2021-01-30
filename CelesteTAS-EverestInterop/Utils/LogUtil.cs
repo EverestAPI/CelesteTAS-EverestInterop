@@ -1,4 +1,8 @@
+// ReSharper disable RedundantUsingDirective
+using System;
 using Celeste.Mod;
+using Microsoft.Xna.Framework;
+using Monocle;
 
 namespace TAS {
     internal static class LogUtil {
