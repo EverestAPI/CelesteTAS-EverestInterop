@@ -235,7 +235,8 @@ namespace TAS {
 			}
 			enforceLegal = false;
 			allowUnsafeInput = false;
-			analogueMode = AnalogueMode.Ignore;//Circle;
+			analogueMode = AnalogueMode.Ignore; //Circle;
+			Hotkeys.hotkeyFastForward.overridePressed = false;
 		}
 
 		private static void EnableRun() {
