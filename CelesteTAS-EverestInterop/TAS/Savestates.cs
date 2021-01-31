@@ -31,7 +31,7 @@ namespace TAS {
         );
 
         private static bool IsSaved() {
-            return StateManager.Instance.IsSaved && savedController != null;
+            return StateManager.Instance.IsSaved && StateManager.Instance.SavedByTas && savedController != null;
         }
 
         public static void HandleSaveStates() {
