@@ -158,11 +158,7 @@ namespace TAS.EverestInterop {
             HideGameplay.instance = new HideGameplay();
             HideGameplay.instance.Load();
 
-            HitboxColor.instance = new HitboxColor();
-            HitboxColor.instance.Load();
-
-            HitboxTweak.instance = new HitboxTweak();
-            HitboxTweak.instance.Load();
+            HitboxTweak.Load();
 
             InfoHUD.Load();
 
@@ -195,8 +191,7 @@ namespace TAS.EverestInterop {
             CenterCamera.instance.Unload();
             AutoMute.instance.Unload();
             HideGameplay.instance.Unload();
-            HitboxColor.instance.Unload();
-            HitboxTweak.instance.Unload();
+            HitboxTweak.Unload();
             InfoHUD.Unload();
             PlayerInfo.Unload();
             On.Celeste.LevelLoader.LoadingThread -= LevelLoader_LoadingThread;
