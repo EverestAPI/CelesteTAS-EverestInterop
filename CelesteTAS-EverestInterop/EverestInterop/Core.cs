@@ -1,10 +1,10 @@
 ﻿using Celeste;
-using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.RuntimeDetour;
 using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -133,9 +133,7 @@ namespace TAS.EverestInterop {
                 orig();
             }
 
-            if (Engine.Scene?.Entities.FindFirst<ModuleSettingsButtonConfigUI>() == null &&
-                Engine.Scene?.Entities.FindFirst<ModuleSettingsKeyboardConfigUI>() == null ||
-                Manager.Running) {
+            if (Manager.Running || Engine.Scene?.Entities.Any(entity => entity.GetType().IsSubclassOf(typeof(KeyboardConfigUI))) != true) {
                 Manager.UpdateInputs();
             }
 
