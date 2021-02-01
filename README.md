@@ -57,7 +57,7 @@ While in game or in Studio:
 - The program when played back from the start will fast forward until it reaches that line and then go into frame stepping mode
 - You can specify the speed with ***X, where X is the speedup factor. e.g. ***10 will go at 10x speed
 - ***! will force the TAS to pause even if there are breakpoints afterward in the file
-- ***S means that TAS will auto save state when it reaches this breakpoint, so that future TAS starts directly from this breakpoint instead of starting from the beginning (Experimental feature require [SpeedrunTool](https://gamebanana.com/tools/6597))
+- ***S means that TAS will auto save state when it reaches this breakpoint, so that future TAS starts directly from this breakpoint instead of starting from the beginning. Recommended to use in the last room before the transition, so that even if it causes desync will not have much impact (Experimental feature require [SpeedrunTool](https://gamebanana.com/tools/6597))
 
 ### Commands
 - Various commands exist to facilitate TAS playback. Documentation can be found [here.](https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/master/Docs/Commands.md)
