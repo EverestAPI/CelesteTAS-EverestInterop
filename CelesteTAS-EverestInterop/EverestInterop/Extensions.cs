@@ -6,13 +6,16 @@ using System.Runtime.CompilerServices;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
+using MonoMod.Utils;
 
 namespace TAS.EverestInterop {
     internal static class ReflectionExtensions {
         public delegate object GetField(object o);
+
         public delegate object GetStaticField();
 
-        private const BindingFlags StaticInstanceAnyVisibility = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+        private const BindingFlags StaticInstanceAnyVisibility =
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
         public static FieldInfo GetFieldInfo(this Type type, string name) {
             return type.GetField(name, StaticInstanceAnyVisibility);
@@ -127,6 +130,22 @@ namespace TAS.EverestInterop {
             }
 
             return default;
+        }
+    }
+
+    internal static class DynDataExtensions {
+        private const string DynDataInstanceKey = nameof(DynDataInstanceKey);
+        public static DynData<T> GetDynDataInstance<T>(this T target) where T : class {
+            object obj = target;
+            if (target == null) {
+                obj = typeof(T);
+            }
+            DynData<T> dynData = obj.GetExtendedDataValue<DynData<T>>(DynDataInstanceKey);
+            if (dynData == null) {
+               dynData = new DynData<T>(target);
+               obj.SetExtendedDataValue(DynDataInstanceKey, dynData);
+            }
+            return dynData;
         }
     }
 

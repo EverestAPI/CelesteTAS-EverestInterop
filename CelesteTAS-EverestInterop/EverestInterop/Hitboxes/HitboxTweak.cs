@@ -16,6 +16,7 @@ namespace TAS.EverestInterop.Hitboxes {
             HitboxFixer.Load();
             HitboxSimplified.Load();
             HitboxColor.Load();
+            HitboxFinalBoss.Load();
             On.Monocle.Entity.DebugRender += ModHitbox;
             IL.Celeste.PlayerCollider.DebugRender += PlayerColliderOnDebugRender;
         }
@@ -27,6 +28,7 @@ namespace TAS.EverestInterop.Hitboxes {
             HitboxFixer.Unload();
             HitboxSimplified.Unload();
             HitboxColor.Unload();
+            HitboxFinalBoss.Unload();
             On.Monocle.Entity.DebugRender -= ModHitbox;
             IL.Celeste.PlayerCollider.DebugRender -= PlayerColliderOnDebugRender;
         }
