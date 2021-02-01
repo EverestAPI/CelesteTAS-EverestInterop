@@ -169,7 +169,7 @@ Ctrl + P: Remove all breakpoints
 
 Ctrl + .: Insert/Remove breakpoint
 
-Ctrl + Shift + .: Insert/Remove savestate breakpoints
+Ctrl + Shift + .: Insert/Remove savestate breakpoint
 
 Ctrl + R: Insert room name
 

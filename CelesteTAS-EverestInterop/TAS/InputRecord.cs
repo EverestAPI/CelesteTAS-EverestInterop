@@ -185,18 +185,19 @@ namespace TAS {
 		}
 
 		public InputRecord Clone() {
-			InputRecord clone = new InputRecord(Line, Frames.ToString() + ActionsToString());
-			clone.Actions = Actions;
-			clone.Angle = Angle;
-			clone.Frames = Frames;
-			clone.Line = Line;
-			clone.LineText = LineText;
-			clone.Command = Command;
-			clone.FastForward = FastForward;
-			clone.FastForwardSpeed = FastForwardSpeed;
-			clone.ForceBreak = ForceBreak;
-			clone.SaveState = SaveState;
-			clone.HasSavedState = HasSavedState;
+			InputRecord clone = new InputRecord {
+				Actions = Actions,
+				Angle = Angle,
+				Frames = Frames,
+				Line = Line,
+				LineText = LineText,
+				Command = Command,
+				FastForward = FastForward,
+				FastForwardSpeed = FastForwardSpeed,
+				ForceBreak = ForceBreak,
+				SaveState = SaveState,
+				HasSavedState = HasSavedState
+			};
 			return clone;
 		}
 

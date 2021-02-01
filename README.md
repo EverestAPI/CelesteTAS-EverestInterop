@@ -37,14 +37,15 @@ e.g. 123,R,J (For 123 frames, hold Right and Jump)
 ## Controls
 While in game or in Studio:
 - Start/Stop Playback: RightControl
+- Restart Playback: Equals
 - Fast Forward / Frame Advance Continuously: RightShift
 - Pause / Frame Advance: [
 - Unpause: ]
 - Toggle Hitboxes: B
 - Toggle Simplified Graphics: N
 - Toggle Center Camera: M
-- Save State: RightAlt + Minus (Experimental)
-- Load State: Equals (Experimental)
+- Save State: RightAlt + Minus (Experimental feature require [SpeedrunTool](https://gamebanana.com/tools/6597))
+- Clear State: RightAlt + Back (Experimental feature require [SpeedrunTool](https://gamebanana.com/tools/6597))
 
 - These can be rebound in Mod Options (Note that controller is not supported.)
   - You will have to rebind some of these if you are on a non-US keyboard layout.
@@ -56,6 +57,7 @@ While in game or in Studio:
 - The program when played back from the start will fast forward until it reaches that line and then go into frame stepping mode
 - You can specify the speed with ***X, where X is the speedup factor. e.g. ***10 will go at 10x speed
 - ***! will force the TAS to pause even if there are breakpoints afterward in the file
+- ***S means that TAS will auto save state when it reaches this breakpoint, so that future TAS starts directly from this breakpoint instead of starting from the beginning (Experimental feature require [SpeedrunTool](https://gamebanana.com/tools/6597))
 
 ### Commands
 - Various commands exist to facilitate TAS playback. Documentation can be found [here.](https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/master/Docs/Commands.md)
