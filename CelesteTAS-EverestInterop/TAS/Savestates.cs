@@ -22,6 +22,7 @@ namespace TAS {
         private static string savedPlayerStatus;
         private static Vector2 savedLastPos;
         private static bool savedByBreakpoint;
+        private static AnalogueMode savedAnalogueMode;
 
         private static bool BreakpointHasBeenDeleted => IsSaved() && savedByBreakpoint && savedController.InputIndex < controller.inputs.Count &&
                    controller.inputs[savedController.InputIndex].SaveState == false;
@@ -108,6 +109,7 @@ namespace TAS {
             savedByBreakpoint = breakpoint;
             savedPlayerStatus = PlayerStatus;
             savedLastPos = LastPos;
+            savedAnalogueMode = analogueMode;
 
             savedController = controller.Clone();
             LoadStateRoutine();
@@ -168,6 +170,7 @@ namespace TAS {
                 controller.Current.HasSavedState = true;
             }
             SetTasState();
+            analogueMode = savedAnalogueMode;
             PlayerStatus = savedPlayerStatus;
             LastPos = savedLastPos;
             UpdateStudio();
