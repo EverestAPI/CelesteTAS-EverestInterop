@@ -20,98 +20,95 @@ namespace TAS {
 		public static bool ExportSyncData { get; set; }
 
 		public static void UpdatePlayerInfo() {
-			if (Engine.Scene == null) return;
-			Engine.Scene.OnEndOfFrame += () => {
-				if (Engine.Scene is Level level) {
-					Player player = level.Tracker.GetEntity<Player>();
-					if (player != null) {
-						var chapterTime = level.Session.Time;
-						if (chapterTime != lastTimer || LastPos != player.ExactPosition) {
-							framesPerSecond = 60f / Engine.TimeRateB;
-							string pos = GetAdjustedPos(player.Position, player.PositionRemainder);
-							string speed = $"Speed: {player.Speed.X.ToString("0.00")}, {player.Speed.Y.ToString("0.00")}";
-							Vector2 diff = (player.ExactPosition - LastPos) * 60f;
-							string vel = $"Vel:   {diff.X.ToString("0.00")}, {diff.Y.ToString("0.00")}";
-							string polarvel = $"Fly:   {diff.Length().ToString("0.00")}, {GetAngle(diff).ToString("0.00")}°";
-							string miscstats = $"Stamina: {player.Stamina.ToString("0")}  "
-							                   + (WallJumpCheck(player, 1) ? "Wall-R " : string.Empty)
-							                   + (WallJumpCheck(player, -1) ? "Wall-L " : string.Empty);
-							int dashCooldown = (int) (DashCooldownTimer(player) * framesPerSecond);
-							string statuses = (dashCooldown < 1 && player.Dashes > 0 ? "Dash " : string.Empty)
-							                  + (player.LoseShards ? "Ground " : string.Empty)
-							                  + (!player.LoseShards && JumpGraceTimer(player) > 0
-								                  ? $"Coyote({(int) (JumpGraceTimer(player) * framesPerSecond)})"
-								                  : string.Empty);
-							string transitionFrames = PlayerInfo.TransitionFrames > 0 ? $"({PlayerInfo.TransitionFrames})" : string.Empty;
-							statuses = (player.InControl && !level.Transitioning ? statuses : $"NoControl{transitionFrames} ")
-							           + (player.TimePaused ? "Paused " : string.Empty)
-							           + (level.InCutscene ? "Cutscene " : string.Empty)
-							           + (additionalStatusInfo ?? string.Empty);
+			if (Engine.Scene is Level level) {
+				Player player = level.Tracker.GetEntity<Player>();
+				if (player != null) {
+					var chapterTime = level.Session.Time;
+					if (chapterTime != lastTimer || LastPos != player.ExactPosition) {
+						framesPerSecond = 60f / Engine.TimeRateB;
+						string pos = GetAdjustedPos(player.Position, player.PositionRemainder);
+						string speed = $"Speed: {player.Speed.X.ToString("0.00")}, {player.Speed.Y.ToString("0.00")}";
+						Vector2 diff = (player.ExactPosition - LastPos) * 60f;
+						string vel = $"Vel:   {diff.X.ToString("0.00")}, {diff.Y.ToString("0.00")}";
+						string polarvel = $"Fly:   {diff.Length().ToString("0.00")}, {GetAngle(diff).ToString("0.00")}°";
+						string miscstats = $"Stamina: {player.Stamina.ToString("0")}  "
+						                   + (WallJumpCheck(player, 1) ? "Wall-R " : string.Empty)
+						                   + (WallJumpCheck(player, -1) ? "Wall-L " : string.Empty);
+						int dashCooldown = (int) (DashCooldownTimer(player) * framesPerSecond);
+						string statuses = (dashCooldown < 1 && player.Dashes > 0 ? "Dash " : string.Empty)
+						                  + (player.LoseShards ? "Ground " : string.Empty)
+						                  + (!player.LoseShards && JumpGraceTimer(player) > 0
+							                  ? $"Coyote({(int) (JumpGraceTimer(player) * framesPerSecond)})"
+							                  : string.Empty);
+						string transitionFrames = PlayerInfo.TransitionFrames > 0 ? $"({PlayerInfo.TransitionFrames})" : string.Empty;
+						statuses = (player.InControl && !level.Transitioning ? statuses : $"NoControl{transitionFrames} ")
+						           + (player.TimePaused ? "Paused " : string.Empty)
+						           + (level.InCutscene ? "Cutscene " : string.Empty)
+						           + (additionalStatusInfo ?? string.Empty);
 
 
-							if (player.Holding == null) {
-								foreach (Component component in level.Tracker.GetComponents<Holdable>()) {
-									Holdable holdable = (Holdable) component;
-									if (holdable.Check(player)) {
-										statuses += "Grab ";
-										break;
-									}
+						if (player.Holding == null) {
+							foreach (Component component in level.Tracker.GetComponents<Holdable>()) {
+								Holdable holdable = (Holdable) component;
+								if (holdable.Check(player)) {
+									statuses += "Grab ";
+									break;
 								}
 							}
-
-							int berryTimer = -10;
-							Follower firstRedBerryFollower =
-								player.Leader.Followers.Find(follower => follower.Entity is Strawberry berry && !berry.Golden);
-							if (firstRedBerryFollower?.Entity is Strawberry firstRedBerry) {
-								object collectTimer;
-								if (firstRedBerry.GetType() == typeof(Strawberry)
-								    || (collectTimer = StrawberryCollectTimer(firstRedBerry)) == null) {
-
-									// if this is a vanilla berry or a mod berry having no collectTimer, use the cached FieldInfo for Strawberry.collectTimer.
-									collectTimer = strawberryCollectTimer.GetValue(firstRedBerry);
-								}
-
-								berryTimer = 9 - (int) Math.Round((float) collectTimer * framesPerSecond);
-							}
-
-							string timers = (berryTimer != -10
-								                ? berryTimer <= 9 ? $"BerryTimer: {berryTimer} " : $"BerryTimer: 9+{berryTimer - 9} "
-								                : string.Empty)
-							                + (dashCooldown != 0 ? $"DashTimer: {(dashCooldown).ToString()} " : string.Empty);
-							string roomNameAndTime =
-								$"[{level.Session.Level}] Timer: {(chapterTime / 10000000D).ToString("0.000")}({chapterTime / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks})";
-
-							StringBuilder sb = new StringBuilder();
-							sb.AppendLine(pos);
-							sb.AppendLine(speed);
-							sb.AppendLine(vel);
-
-							if (player.StateMachine.State == Player.StStarFly
-							    || SaveData.Instance.Assists.ThreeSixtyDashing
-							    || SaveData.Instance.Assists.SuperDashing)
-								sb.AppendLine(polarvel);
-
-							sb.AppendLine(miscstats);
-							if (!string.IsNullOrEmpty(statuses))
-								sb.AppendLine(statuses);
-							if (!string.IsNullOrEmpty(timers))
-								sb.AppendLine(timers);
-							sb.Append(roomNameAndTime);
-							LastPos = player.ExactPosition;
-							lastTimer = chapterTime;
-							PlayerStatus = sb.ToString().TrimEnd();
 						}
-					} else
-						PlayerStatus = level.InCutscene ? "Cutscene" : string.Empty;
-				} else if (Engine.Scene is SummitVignette summit)
-					PlayerStatus = "SummitVignette " + summitVignetteReady.GetValue(summit);
 
-				else if (Engine.Scene is Overworld overworld)
-					PlayerStatus = "Overworld " + overworld.ShowInputUI;
+						int berryTimer = -10;
+						Follower firstRedBerryFollower =
+							player.Leader.Followers.Find(follower => follower.Entity is Strawberry berry && !berry.Golden);
+						if (firstRedBerryFollower?.Entity is Strawberry firstRedBerry) {
+							object collectTimer;
+							if (firstRedBerry.GetType() == typeof(Strawberry)
+							    || (collectTimer = StrawberryCollectTimer(firstRedBerry)) == null) {
 
-				else if (Engine.Scene != null)
-					PlayerStatus = Engine.Scene.GetType().Name;
-			};
+								// if this is a vanilla berry or a mod berry having no collectTimer, use the cached FieldInfo for Strawberry.collectTimer.
+								collectTimer = strawberryCollectTimer.GetValue(firstRedBerry);
+							}
+
+							berryTimer = 9 - (int) Math.Round((float) collectTimer * framesPerSecond);
+						}
+
+						string timers = (berryTimer != -10
+							                ? berryTimer <= 9 ? $"BerryTimer: {berryTimer} " : $"BerryTimer: 9+{berryTimer - 9} "
+							                : string.Empty)
+						                + (dashCooldown != 0 ? $"DashTimer: {(dashCooldown).ToString()} " : string.Empty);
+						string roomNameAndTime =
+							$"[{level.Session.Level}] Timer: {(chapterTime / 10000000D).ToString("0.000")}({chapterTime / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks})";
+
+						StringBuilder sb = new StringBuilder();
+						sb.AppendLine(pos);
+						sb.AppendLine(speed);
+						sb.AppendLine(vel);
+
+						if (player.StateMachine.State == Player.StStarFly
+						    || SaveData.Instance.Assists.ThreeSixtyDashing
+						    || SaveData.Instance.Assists.SuperDashing)
+							sb.AppendLine(polarvel);
+
+						sb.AppendLine(miscstats);
+						if (!string.IsNullOrEmpty(statuses))
+							sb.AppendLine(statuses);
+						if (!string.IsNullOrEmpty(timers))
+							sb.AppendLine(timers);
+						sb.Append(roomNameAndTime);
+						LastPos = player.ExactPosition;
+						lastTimer = chapterTime;
+						PlayerStatus = sb.ToString().TrimEnd();
+					}
+				} else
+					PlayerStatus = level.InCutscene ? "Cutscene" : string.Empty;
+			} else if (Engine.Scene is SummitVignette summit)
+				PlayerStatus = "SummitVignette " + summitVignetteReady.GetValue(summit);
+
+			else if (Engine.Scene is Overworld overworld)
+				PlayerStatus = "Overworld " + overworld.ShowInputUI;
+
+			else if (Engine.Scene != null)
+				PlayerStatus = Engine.Scene.GetType().Name;
 		}
 
 		private static string GetAdjustedPos(Vector2 intPos, Vector2 subpixelPos) {
@@ -160,7 +157,9 @@ namespace TAS {
 		}
 
 		public static void EndExport() {
-			sw?.Dispose();
+			Engine.Scene.OnEndOfFrame += () => {
+				sw?.Dispose();
+			};
 		}
 
 		public static void ExportPlayerInfo() {
