@@ -2,6 +2,7 @@ using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Input = Celeste.Input;
 
@@ -252,22 +253,17 @@ namespace TAS {
 
 						InputRecord input = new InputRecord(studioLine, line);
 
-						if (input.FastForward && inputs.Count > 0) {
+						if (input.FastForward && inputs.LastOrDefault(record => record.Frames > 0) is InputRecord previous) {
+							// Only the last one of the consecutive breakpoints takes effect
+							if (previous.FastForward && fastForwards.Count > 0) {
+								fastForwards.RemoveAt(fastForwards.Count - 1);
+							}
 							fastForwards.Add(input);
 
-							if (inputs.Count > 0) {
-								InputRecord previous = inputs[inputs.Count - 1];
-
-								// Only the last one of the consecutive breakpoints takes effect
-								if (previous.FastForward && fastForwards.Count >= 2) {
-									fastForwards.RemoveAt(fastForwards.Count - 2);
-								}
-
-								previous.ForceBreak = input.ForceBreak;
-								previous.SaveState = input.SaveState;
-								previous.FastForward = true;
-							}
-						} else if (input.Frames != 0) {
+							previous.ForceBreak = input.ForceBreak;
+							previous.SaveState = input.SaveState;
+							previous.FastForward = true;
+						} else if (input.Frames > 0) {
 							inputs.Add(input);
 						}
 					}
