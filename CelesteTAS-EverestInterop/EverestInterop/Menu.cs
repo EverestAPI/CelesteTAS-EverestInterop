@@ -24,7 +24,7 @@ namespace TAS.EverestInterop {
                     subMenu.Add(new TextMenu.Option<ActualCollideHitboxTypes>("Actual Collide Hitboxes".ToDialogText()).Apply(option => {
                         Array enumValues = Enum.GetValues(typeof(ActualCollideHitboxTypes));
                         foreach (ActualCollideHitboxTypes value in enumValues) {
-                            option.Add(value.ToString().SpacedPascalCase(), value, value.Equals(Settings.ShowActualCollideHitboxes));
+                            option.Add(value.ToString().SpacedPascalCase().ToDialogText(), value, value.Equals(Settings.ShowActualCollideHitboxes));
                         }
 
                         option.Change(value => Settings.ShowActualCollideHitboxes = value);

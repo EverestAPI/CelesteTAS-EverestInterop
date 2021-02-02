@@ -70,3 +70,6 @@ TAS_PURPLE=                   紫色
 TAS_WHITE=                    白色
 TAS_BLACK=                    黑色
 TAS_TRANSPARENT=              透明
+TAS_OFF=                      关
+TAS_OVERRIDE=                 覆盖
+TAS_APPEND=                   附加
