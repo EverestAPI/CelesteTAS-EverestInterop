@@ -64,6 +64,7 @@ namespace TAS {
 
 		public static void UpdateInputs() {
 			lastState = state;
+			UpdatePlayerInfo();
 			Hotkeys.Update();
 			Savestates.HandleSaveStates();
 			Savestates.routine?.Update();
