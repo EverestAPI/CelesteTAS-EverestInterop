@@ -81,7 +81,7 @@ namespace TAS.EverestInterop.Hitboxes {
             }
 
             if (entity is FireBall fireBall && (bool) FireBallIceMode.GetValue(fireBall) == false) {
-                color = Color.Transparent;;
+                return;
             }
 
             orig(hitbox, camera, color);

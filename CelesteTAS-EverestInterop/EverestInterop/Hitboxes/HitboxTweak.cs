@@ -19,6 +19,7 @@ namespace TAS.EverestInterop.Hitboxes {
             HitboxFinalBoss.Load();
             On.Monocle.Entity.DebugRender += ModHitbox;
             IL.Celeste.PlayerCollider.DebugRender += PlayerColliderOnDebugRender;
+            On.Monocle.Circle.Render += CircleOnRender;
         }
 
         public static void Unload() {
@@ -31,6 +32,7 @@ namespace TAS.EverestInterop.Hitboxes {
             HitboxFinalBoss.Unload();
             On.Monocle.Entity.DebugRender -= ModHitbox;
             IL.Celeste.PlayerCollider.DebugRender -= PlayerColliderOnDebugRender;
+            On.Monocle.Circle.Render -= CircleOnRender;
         }
 
         private static void ModHitbox(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {
@@ -68,6 +70,19 @@ namespace TAS.EverestInterop.Hitboxes {
                     .Emit(OpCodes.Ldarg_0)
                     .EmitDelegate<Func<Color, Component, Color>>((color, component) => component.Entity.Collidable ? color : color * 0.5f);
             }
+        }
+
+        private static void CircleOnRender(On.Monocle.Circle.orig_Render orig, Circle self, Camera camera, Color color) {
+            if (!Settings.ShowHitboxes) {
+                orig(self, camera, color);
+                return;
+            }
+
+            if (self.Entity is FireBall fireBall && !fireBall.GetDynDataInstance().Get<bool>("iceMode")) {
+                color = Color.Goldenrod;
+            }
+
+            orig(self, camera, color);
         }
     }
 }
