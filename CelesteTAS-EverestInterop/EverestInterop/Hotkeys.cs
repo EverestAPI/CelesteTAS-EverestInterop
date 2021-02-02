@@ -12,9 +12,21 @@ using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 
 namespace TAS.EverestInterop {
-    public class Hotkeys {
+    public static class Hotkeys {
         private static ILHook ilHook;
         private static FieldInfo bindingFieldInfo;
+        private static readonly Lazy<FieldInfo> celesteNetClientModuleInstance = new Lazy<FieldInfo>(() => Type.GetType("Celeste.Mod.CelesteNet.Client.CelesteNetClientModule, CelesteNet.Client")?.GetFieldInfo("Instance"));
+        private static readonly Lazy<FieldInfo> celesteNetClientModuleContext = new Lazy<FieldInfo>(() => Type.GetType("Celeste.Mod.CelesteNet.Client.CelesteNetClientModule, CelesteNet.Client")?.GetFieldInfo("Context"));
+        private static readonly Lazy<FieldInfo> celesteNetClientContextChat = new Lazy<FieldInfo>(() => Type.GetType("Celeste.Mod.CelesteNet.Client.CelesteNetClientContext, CelesteNet.Client")?.GetFieldInfo("Chat"));
+        private static readonly Lazy<PropertyInfo> celesteNetChatComponentActive = new Lazy<PropertyInfo>(() => Type.GetType("Celeste.Mod.CelesteNet.Client.Components.CelesteNetChatComponent, CelesteNet.Client")?.GetPropertyInfo("Active"));
+        private static bool celesteNetChatting {
+            get {
+                if (!(celesteNetClientModuleInstance.Value?.GetValue(null) is object instance)) return false;
+                if (!(celesteNetClientModuleContext.Value?.GetValue(instance) is object context)) return false;
+                if (!(celesteNetClientContextChat.Value?.GetValue(context) is object chat)) return false;
+                return celesteNetChatComponentActive.Value?.GetValue(chat) as bool? == true;
+            }
+        }
 
         public class Hotkey {
             private List<Keys> keys;
@@ -52,7 +64,7 @@ namespace TAS.EverestInterop {
 		public static Hotkey hotkeyRestart;
         public static Hotkey hotkeyFastForward;
         public static Hotkey hotkeyFrameAdvance;
-        public static Hotkey hotkeyPause; 
+        public static Hotkey hotkeyPause;
         public static Hotkey hotkeyHitboxes;
         public static Hotkey hotkeyGraphics;
         public static Hotkey hotkeyCamera;
@@ -105,7 +117,7 @@ namespace TAS.EverestInterop {
 
 		public static Hotkey BindingToHotkey(ButtonBinding binding) {
 			return new Hotkey(binding.Keys, null, true, ReferenceEquals(binding, Settings.KeyFastForward));
-		} 
+		}
 
         public static bool IsKeyDown(List<Keys> keys, bool keyCombo = true) {
             if (keys == null || keys.Count == 0)
@@ -158,11 +170,13 @@ namespace TAS.EverestInterop {
             kbState = Keyboard.GetState();
             padState = GetGamePadState();
 
+            if (!Manager.Running && (Engine.Commands.Open || celesteNetChatting)) return;
+
             foreach (Hotkey hotkey in hotkeys) {
                 hotkey?.Update();
             }
 
-            if (Engine.Scene is Level level && !level.Paused && !Engine.Commands.Open) {
+            if (Engine.Scene is Level level && !level.Paused) {
                 if (hotkeyHitboxes.pressed && !hotkeyHitboxes.wasPressed)
                     Settings.ShowHitboxes = !Settings.ShowHitboxes;
                 if (hotkeyGraphics.pressed && !hotkeyGraphics.wasPressed)
