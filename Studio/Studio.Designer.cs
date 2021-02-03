@@ -159,9 +159,8 @@ namespace CelesteStudio {
 			this.tasText.AllowDrop = true;
 			this.tasText.Anchor = ((System.Windows.Forms.AnchorStyles) ((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
 			this.tasText.AutoIndent = false;
-			this.tasText.AutoScrollMinSize = new System.Drawing.Size(33, 21);
+			this.tasText.AutoScrollMinSize = new System.Drawing.Size(33, 84);
 			this.tasText.BackBrush = null;
-			this.tasText.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
 			this.tasText.ChangedLineColor = System.Drawing.Color.DarkOrange;
 			this.tasText.CommentPrefix = "#";
 			this.tasText.CurrentLineColor = System.Drawing.Color.FromArgb(((int) (((byte) (64)))), ((int) (((byte) (64)))), ((int) (((byte) (64)))));
