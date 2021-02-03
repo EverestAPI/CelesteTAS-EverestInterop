@@ -132,6 +132,14 @@ namespace CelesteStudio
         }
 
         private void InitMenu() {
+            tasText.MouseClick += (sender, args) => {
+                if ((args.Button & MouseButtons.Right) == 0) return;
+                contextMenuStrip.Show(Cursor.Position);
+            };
+            statusBar.MouseClick += (sender, args) => {
+                if ((args.Button & MouseButtons.Right) == 0) return;
+                statusBarMenuStrip.Show(Cursor.Position);
+            };
             openRecentMenuItem.DropDownItemClicked += (sender, args) => {
                 ToolStripItem clickedItem = args.ClickedItem;
                 if (clickedItem.Text == "Clear") {
@@ -919,10 +927,6 @@ Ctrl + Down/Up: Go to comment or breakpoint");
             CreateRecentFilesMenu();
         }
 
-		private void Studio_Load(object sender, EventArgs e) {
-
-		}
-
 		private void openCelesteTasMenuItem_Click(object sender, EventArgs e) {
             string fileName = defaultFileName;
             if (string.IsNullOrEmpty(fileName)) return;
@@ -941,6 +945,10 @@ Ctrl + Down/Up: Go to comment or breakpoint");
 
         private void openFileMenuItem_Click(object sender, EventArgs e) {
             OpenFile();
+        }
+
+        private void copyPlayerDataMenuItem_Click(object sender, EventArgs e) {
+            CopyPlayerData();
         }
     }
 }
