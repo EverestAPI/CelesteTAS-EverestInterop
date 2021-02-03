@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Text;
 using System.IO;
 using Celeste;
@@ -11,7 +12,7 @@ using System.Reflection;
 namespace TAS {
 	public static partial class Manager {
 		private static StreamWriter sw;
-		private static MethodInfo[] trackedEntities;
+		private static List<MethodInfo> trackedEntities;
 
 		private static float framesPerSecond;
 
@@ -145,12 +146,12 @@ namespace TAS {
 			if (sw?.BaseStream == null) {
 				sw = new StreamWriter(path);
 				sw.WriteLine(string.Join("\t",  "Line", "Inputs", "Frames", "Time", "Position", "Speed", "State", "Statuses", "Entities"));
-				trackedEntities = new MethodInfo[tracked.Length];
-				Assembly asm = typeof(Celeste.Celeste).Assembly;
-				for (int i = 0; i < tracked.Length; i++) {
-					Type t = asm.GetType("Celeste." + tracked[i]);
+				trackedEntities = new List<MethodInfo>();
+				foreach (var typeName in tracked) {
+					var fullTypeName = typeName.Contains("@") ? typeName.Replace("@", ",") : $"Celeste.{typeName}, Celeste";
+					Type t = Type.GetType(fullTypeName);
 					if (t != null) {
-						trackedEntities[i] = typeof(EntityList).GetMethod("FindAll")?.MakeGenericMethod(t);
+						trackedEntities.Add(typeof(EntityList).GetMethod("FindAll")?.MakeGenericMethod(t));
 					}
 				}
 			}

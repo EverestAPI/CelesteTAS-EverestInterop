@@ -71,22 +71,6 @@ namespace TAS.EverestInterop {
             action(obj);
             return obj;
         }
-
-        public static bool IsType<T>(this object obj) {
-            return obj?.GetType() == typeof(T);
-        }
-
-        public static bool IsType<T>(this Type type) {
-            return type == typeof(T);
-        }
-
-        public static bool IsNotType<T>(this object obj) {
-            return !obj.IsType<T>();
-        }
-
-        public static bool IsNotType<T>(this Type type) {
-            return !type.IsType<T>();
-        }
     }
 
     // source from: https://stackoverflow.com/a/17264480

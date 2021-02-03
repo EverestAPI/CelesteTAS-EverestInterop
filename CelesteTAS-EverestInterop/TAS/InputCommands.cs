@@ -49,7 +49,6 @@ namespace TAS {
 							return commandType.ToLower() == "playcommand";
 						}
 
-
 						object[] parameters = { commandArgs };
 						state.inputs.Add(new InputRecord(() => method.Invoke(null, parameters), lineNumber, lineText));
 					}
@@ -124,9 +123,9 @@ namespace TAS {
 
 		[TASCommand(args = new string[] {
 			"StartExport",
-			"StartExport,Path",
-			"StartExport,EntitiesToTrack",
-			"StartExport,Path,EntitiesToTrack"
+			"StartExport Path",
+			"StartExport EntitiesToTrack",
+			"StartExport Path EntitiesToTrack"
 		})]
 		private static void StartExportCommand(string[] args) {
 			string path = "dump.txt";

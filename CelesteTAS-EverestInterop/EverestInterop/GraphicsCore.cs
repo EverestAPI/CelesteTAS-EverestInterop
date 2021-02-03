@@ -5,15 +5,19 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 using System;
+using System.Linq;
 using System.Reflection;
-using Celeste.Mod.Entities;
-using TAS.EverestInterop.Hitboxes;
+using Microsoft.Xna.Framework.Input;
+using ButtonState = Microsoft.Xna.Framework.Input.ButtonState;
 
 namespace TAS.EverestInterop {
     class GraphicsCore {
         public static GraphicsCore instance;
 
         public static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
+
+        private static string clickedEntityType = "";
+        private static ButtonState lastButtonState;
 
         public void Load() {
             // Forced: Add more positions to top-left positioning helper.
@@ -51,11 +55,45 @@ namespace TAS.EverestInterop {
             ILCursor c = found[1];
             c.Remove();
             c.EmitDelegate<Func<string, object, object, string>>((text, xObj, yObj) => {
+                Level level = Engine.Scene as Level;
                 int x = (int)xObj;
                 int y = (int)yObj;
-                Level level = Engine.Scene as Level;
+                int worldX = (int) Math.Round(x + level.LevelOffset.X);
+                int worldY = (int) Math.Round(y + level.LevelOffset.Y);
+
+                MouseState mouseState = Mouse.GetState();
+                if (mouseState.LeftButton == ButtonState.Pressed && lastButtonState == ButtonState.Released) {
+                    Entity tempEntity = new Entity { Position = new Vector2(worldX, worldY), Collider = new Hitbox(1, 1)};
+                    Entity clickedEntity = level.Entities.Where(entity => !(entity is Trigger)
+                                                                          && !(entity is LookoutBlocker)
+                                                                          && !(entity is Killbox)
+                                                                          && !(entity is WindController)
+                                                                          && !(entity is Water)
+                                                                          && !(entity is WaterFall)
+                                                                          && !(entity is BigWaterfall)
+                                                                          && !(entity is PlaybackBillboard)
+                                                                          && !(entity is ParticleSystem))
+                        .FirstOrDefault(entity => entity.CollideCheck(tempEntity));
+                    if (clickedEntity?.GetType() is Type type) {
+                        if (type.Assembly == typeof(Celeste.Celeste).Assembly) {
+                            clickedEntityType = type.Name;
+                        } else {
+                            // StartExport uses a comma as a separator, so we can't use comma,
+                            // use @ to place it and replace it back with a comma when looking for the type
+                            clickedEntityType = type.FullName + "@" + type.Assembly.GetName().Name;
+                        }
+                        if (!string.IsNullOrEmpty(clickedEntityType)) {
+                            ("Type of entity to be clicked: " + clickedEntityType).Log();
+                        }
+                    } else {
+                        clickedEntityType = string.Empty;
+                    }
+                }
+                lastButtonState = mouseState.LeftButton;
+
                 return
-                    $"\n world:       {(int)Math.Round(x + level.LevelOffset.X)}, {(int)Math.Round(y + level.LevelOffset.Y)}" +
+                    (string.IsNullOrEmpty(clickedEntityType) ? string.Empty : $"\n entity: {clickedEntityType}") +
+                    $"\n world:       {worldX}, {worldY}" +
                     $"\n level:       {x}, {y}";
             });
         }
