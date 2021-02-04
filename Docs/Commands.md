@@ -1,13 +1,13 @@
 ### Read
-- `Read,File Name,Starting Line,(Optional Ending Line)`
+- `Read,File Name, Starting Line, (Optional Ending Line)`
 - Will read inputs from the specified file.
 - If a custom path to read files from has been specified, it tries to find the file there. Otherwise, it will look for the file in the main Celeste directory.
-- e.g. `Read,1A - Forsaken City.tas,6` will read all inputs after line 6 from the `1A - Forsaken City.tas` file
-- This will also work if you shorten the file name, i.e. `Read,1A,6` will do the same 
-- It's recommended to use labels instead of line numbers, so `Read,1A,lvl_1` would be the preferred format for this example.
+- e.g. `Read, 1A - Forsaken City.tas, 6` will read all inputs after line 6 from the `1A - Forsaken City.tas` file
+- This will also work if you shorten the file name, i.e. `Read, 1A, 6` will do the same 
+- It's recommended to use labels instead of line numbers, so `Read, 1A, lvl_1` would be the preferred format for this example.
 
 ### Play
-- `Play,Starting Line`
+- `Play, Starting Line`
 - A simplified Read command which skips to the starting line in the current file.
 - Useful for splitting a large level into larger chunks.
 
@@ -51,7 +51,7 @@
   - `console load 2 376 -176`
   
 ### Set
-- `Set,(Optional Mod).Setting,Value`
+- `Set, (Optional Mod).Setting, Value`
 - Sets the specified setting to the specified value.
 - Defaults to Celeste if no mod specified.
 - Everest settings use the mod name Everest.
@@ -62,8 +62,8 @@
 - Make sure the value entered matches the type of the setting (if it is a boolean in the settings file, make sure you're inputting a boolean into the Set command).
 - Most vanilla variants (except for mirror mode and gamespeed) are not currently functional.
 - Examples:
-  - `Set,ExtendedVariantMode.Dashcount,3`
-  - `Set,CelesteTAS.CenterCamera,true`
+  - `Set, ExtendedVariantMode.Dashcount, 3`
+  - `Set, CelesteTAS.CenterCamera, true`
 
 ### Unsafe
 - The TAS will normally only run inside levels.
@@ -82,14 +82,14 @@
 - Keeps track of any additional entities specified - e.g. `StartExport holdables.txt TheoCrystal Glider FrostHelper.CustomSpinner@FrostTempleHelper` will keep track of Theo and Jellyfish and custom spinner. You can get the name of the entity by opening the console and clicking on it, the entity name will be displayed in the top left corner and output to log.txt.
 
 ### AnalogueMode
-- `AnalogueMode,(Type)`
-- `AnalogMode,(Type)` also works
+- `AnalogueMode, (Type)`
+- `AnalogMode, (Type)` also works
 - Types are `Ignore` (no check), `Circle`, `Square` and `Precise`.
 - `Circle`, `Square` and `Precise` are make sure the analogue inputs sent to the game are actually possible, locking it to a circular or square deadzone, or calculating the closest position possible on a controller. Odds are you don't need to worry about this.
 
 ### Add and Skip
 - These commands appear in overworld menuing and do not do anything in-game.
 - Rather, they serve as instructions to the libTAS converter.
-- `Add,(input line)` adds a line to the libTAS output.
-- `Skip,(frames)` skips the next however many frames.
+- `Add, (input line)` adds a line to the libTAS output.
+- `Skip, (frames)` skips the next however many frames.
 - Odds are you don't need to worry about this.

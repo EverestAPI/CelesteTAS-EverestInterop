@@ -1,14 +1,12 @@
-﻿using System;
+﻿using System.Linq;
 using Celeste;
-using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
-using System.Threading;
 
 namespace TAS {
 	public class ConsoleHandler {
 		public static void ExecuteCommand(string[] command) {
-			string[] args = InputCommands.TrimArray(command, 1);
+			string[] args = command.Skip(1).ToArray();
 			string commandID = command[0].ToLower();
 			if (commandID == "load" || commandID == "hard" || commandID == "rmx2")
 				LoadCommand(commandID, args);
@@ -119,7 +117,7 @@ namespace TAS {
 				location = player.X.ToString() + " " + player.Y.ToString();
 
 			if (ID.Contains(" "))
-				return $"console,{mode},{ID},{location.Replace(" ", ",")}";
+				return $"console, {mode}, {ID}, {location.Replace(" ", ", ")}";
 			else
 				return $"console {mode} {ID} {location}";
 		}

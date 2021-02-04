@@ -134,7 +134,6 @@
   <ItemGroup>
     <Content Include="app.manifest" />
     <Content Include="GoldBerry.ico" />
-    <None Include="Resources\bird.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

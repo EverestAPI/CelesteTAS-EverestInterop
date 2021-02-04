@@ -111,7 +111,6 @@ namespace CelesteStudio
         {
             InitializeComponent();
             InitMenu();
-            InitBirdButton();
 
             Text = titleBarText;
 			Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.CreateSpecificCulture("en-US");
@@ -134,11 +133,15 @@ namespace CelesteStudio
         private void InitMenu() {
             tasText.MouseClick += (sender, args) => {
                 if ((args.Button & MouseButtons.Right) == 0) return;
-                contextMenuStrip.Show(Cursor.Position);
+                if (tasText.Selection.IsEmpty) {
+                    tasText.Selection.Start = tasText.PointToPlace(args.Location);
+                    tasText.Invalidate();
+                }
+                tasTextContextMenuStrip.Show(Cursor.Position);
             };
             statusBar.MouseClick += (sender, args) => {
                 if ((args.Button & MouseButtons.Right) == 0) return;
-                statusBarMenuStrip.Show(Cursor.Position);
+                statusBarContextMenuStrip.Show(Cursor.Position);
             };
             openRecentMenuItem.DropDownItemClicked += (sender, args) => {
                 ToolStripItem clickedItem = args.ClickedItem;
@@ -147,45 +150,10 @@ namespace CelesteStudio
                     return;
                 }
                 if (!File.Exists(clickedItem.Text)) {
-                    contextMenuStrip.Close();
+                    tasTextContextMenuStrip.Close();
                 }
                 OpenFile(clickedItem.Text);
             };
-        }
-
-        private void InitBirdButton() {
-            Size origSize = birdButton.Image.Size;
-            birdButton.Image = new Bitmap(birdButton.Image, new Size((int)(origSize.Width * scaleFactor), (int)(origSize.Height * scaleFactor)));
-            hotkeyToolTip.ReshowDelay = 200;
-            hotkeyToolTip.AutoPopDelay = 20000;
-            hotkeyToolTip.InitialDelay = 200;
-            hotkeyToolTip.ToolTipTitle = "Fact: Birds are hard to catch";
-            hotkeyToolTip.SetToolTip(birdButton, @"
-Ctrl + O: Open file (Updates Celeste.tas as well)
-
-Ctrl + Shift + S: Save as (Updates Celeste.tas as well)
-
-Ctrl + D: Toggle sending inputs to Celeste
-
-Ctrl + Shift + D: Refresh connection between Studio and Celeste
-
-Ctrl + Shift + C: Copy player data to clipboard
-
-Ctrl + K: Block comment/uncomment
-
-Ctrl + P: Remove all breakpoints
-
-Ctrl + .: Insert/Remove breakpoint
-
-Ctrl + Shift + .: Insert/Remove savestate breakpoint
-
-Ctrl + R: Insert room name
-
-Ctrl + Shift + R: Insert console load command at current location
-
-Ctrl + T: Insert current in-game time
-
-Ctrl + Down/Up: Go to comment or breakpoint");
         }
 
         private void CreateRecentFilesMenu() {
@@ -260,13 +228,8 @@ Ctrl + Down/Up: Go to comment or breakpoint");
         {
             try
             {
-                if (e.Modifiers == (Keys.Shift | Keys.Control) && e.KeyCode == Keys.S)
-                {
-                    StudioCommunicationServer.instance?.WriteWait();
-                    tasText.SaveNewFile();
-                    StudioCommunicationServer.instance?.SendPath(Path.GetDirectoryName(lastFileName));
-                    Text = titleBarText;
-                    UpdateRecentFiles();
+                if (e.Modifiers == (Keys.Shift | Keys.Control) && e.KeyCode == Keys.S) {
+                    SaveAsFile();
                 }
                 else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.S)
                 {
@@ -292,15 +255,15 @@ Ctrl + Down/Up: Go to comment or breakpoint");
                 }
 				else if (e.Modifiers == (Keys.Control | Keys.Shift) && e.KeyCode == Keys.R)
 				{
-					AddConsoleCommand();
+					InsertConsoleLoadCommand();
 				}
 				else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.R) 
 				{
-					AddRoom();
+					InsertRoomName();
 				}
 				else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.T)
 				{
-					AddTime();
+					InsertTime();
 				}
 				else if (e.Modifiers == (Keys.Control | Keys.Shift) && e.KeyCode == Keys.C)
 				{
@@ -323,6 +286,14 @@ Ctrl + Down/Up: Go to comment or breakpoint");
                 MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Console.Write(ex);
             }
+        }
+
+        private void SaveAsFile() {
+            StudioCommunicationServer.instance?.WriteWait();
+            tasText.SaveNewFile();
+            StudioCommunicationServer.instance?.SendPath(Path.GetDirectoryName(lastFileName));
+            Text = titleBarText;
+            UpdateRecentFiles();
         }
 
         private void GoDownCommentAndBreakpoint(KeyEventArgs e) {
@@ -394,9 +365,11 @@ Ctrl + Down/Up: Go to comment or breakpoint");
 
         private void ClearBreakpointsAndSaveState()
         {
-            List<int> breakpoints = tasText.FindLines(@"\*\*\*", RegexOptions.None);
+            var line = Math.Min(tasText.Selection.Start.iLine, tasText.Selection.End.iLine);
+            List<int> breakpoints = tasText.FindLines(@"\*\*\*");
             List<int> saveStates = tasText.FindLines(@"^\s*savestate\s*$", RegexOptions.IgnoreCase);
             tasText.RemoveLines(breakpoints.Union(saveStates).ToList());
+            tasText.Selection.Start = new Place(0, Math.Min(line, tasText.LinesCount - 1));
         }
 
         private void InsertOrRemoveText(Regex regex, string insertText) {
@@ -410,7 +383,7 @@ Ctrl + Down/Up: Go to comment or breakpoint");
                 currentLine--;
                 tasText.RemoveLine(currentLine);
             }else {
-                AddNewLine(insertText);
+                InsertNewLine(insertText);
                 currentLine++;
             }
             string text = tasText.Lines[currentLine];
@@ -422,11 +395,11 @@ Ctrl + Down/Up: Go to comment or breakpoint");
             tasText.Selection = new Range(tasText, cursor, currentLine, cursor, currentLine);
         }
 
-        private void AddRoom() => AddNewLine("#lvl_" + CommunicationWrapper.LevelName());
+        private void InsertRoomName() => InsertNewLine("#lvl_" + CommunicationWrapper.LevelName());
 
-		private void AddTime() => AddNewLine('#' + CommunicationWrapper.Timer());
+		private void InsertTime() => InsertNewLine('#' + CommunicationWrapper.Timer());
 
-		private void AddConsoleCommand()
+		private void InsertConsoleLoadCommand()
 		{
 			CommunicationWrapper.command = null;
 			StudioCommunicationServer.instance.GetConsoleCommand();
@@ -435,10 +408,10 @@ Ctrl + Down/Up: Go to comment or breakpoint");
 			if (CommunicationWrapper.command == null)
 				return;
 
-			AddNewLine(CommunicationWrapper.command);
+			InsertNewLine(CommunicationWrapper.command);
 		}
 
-		private void AddNewLine(string text) {
+		private void InsertNewLine(string text) {
             text = text.Trim();
 			int startLine = tasText.Selection.Start.iLine;
 			tasText.Selection = new Range(tasText, 0, startLine, 0, startLine);
@@ -680,7 +653,7 @@ Ctrl + Down/Up: Go to comment or breakpoint");
         }
         private void UpdateStatusBar()
         {
-            if (StudioCommunicationServer.Initialized)
+            if (StudioCommunicationBase.Initialized)
             {
                 string playeroutput = CommunicationWrapper.playerData;
                 lblStatus.Text = "(" + (currentFrame > 0 ? currentFrame + "/" : "") 
@@ -693,7 +666,7 @@ Ctrl + Down/Up: Go to comment or breakpoint");
             }
             int bottomExtraSpace = TextRenderer.MeasureText("\n", lblStatus.Font).Height / 5;
             statusBar.Height = TextRenderer.MeasureText(lblStatus.Text.Trim(), lblStatus.Font).Height + bottomExtraSpace;
-            tasText.Height = ClientSize.Height - statusBar.Height;
+            tasText.Height = ClientSize.Height - statusBar.Height - menuStrip.Height;
         }
 
         private void tasText_TextChanged(object sender, TextChangedEventArgs e)
@@ -914,17 +887,15 @@ Ctrl + Down/Up: Go to comment or breakpoint");
 
         private void rememberCurrentFileMenuItem_Click(object sender, EventArgs e) {
             Settings.Default.RememberLastFileName = !Settings.Default.RememberLastFileName;
-            ((ToolStripMenuItem) sender).Checked = Settings.Default.RememberLastFileName;
         }
 
         private void homeMenuItem_Click(object sender, EventArgs e) {
             System.Diagnostics.Process.Start("https://github.com/EverestAPI/CelesteTAS-EverestInterop");
         }
 
-        private void contextMenuStrip_Opened(object sender, EventArgs e) {
+        private void settingsToolStripMenuItem_Opened(object sender, EventArgs e) {
             rememberCurrentFileMenuItem.Checked = Settings.Default.RememberLastFileName;
             sendInputsToCelesteMenuItem.Checked = Settings.Default.UpdatingHotkeys;
-            CreateRecentFilesMenu();
         }
 
 		private void openCelesteTasMenuItem_Click(object sender, EventArgs e) {
@@ -932,11 +903,6 @@ Ctrl + Down/Up: Go to comment or breakpoint");
             if (string.IsNullOrEmpty(fileName)) return;
             if (!File.Exists(fileName)) { File.WriteAllText(fileName, string.Empty); }
             OpenFile(fileName);
-        }
-
-        private void birdButton_Click(object sender, EventArgs e)
-        {
-            contextMenuStrip.Show(birdButton, 0, birdButton.Height);
         }
 
         private void sendInputsToCelesteMenuItem_Click(object sender, EventArgs e) {
@@ -947,8 +913,88 @@ Ctrl + Down/Up: Go to comment or breakpoint");
             OpenFile();
         }
 
+        private void fileToolStripMenuItem_DropDownOpened(object sender, EventArgs e) {
+            CreateRecentFilesMenu();
+        }
+
+        private void insertRemoveBreakPointToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertOrRemoveText(SyntaxHighlighter.BreakPointRegex, "***");
+        }
+
+        private void insertRemoveSavestateBreakPointToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertOrRemoveText(SyntaxHighlighter.BreakPointRegex, "***S");
+        }
+
+        private void saveAsToolStripMenuItem_Click(object sender, EventArgs e) {
+            SaveAsFile();
+        }
+
+        private void commentUncommentTextToolStripMenuItem_Click(object sender, EventArgs e) {
+            CommentText();
+        }
+
+        private void toolStripMenuItem1_Click(object sender, EventArgs e) {
+            ClearBreakpointsAndSaveState();
+        }
+
+        private void insertRoomNameToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertRoomName();
+        }
+
+        private void insertCurrentInGameTimeToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertTime();
+        }
+
+        private void insertConsoleLoadCommandToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertConsoleLoadCommand();
+        }
+
+        private void enforceLegalToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertNewLine("EnforceLegal");
+        }
+
+        private void unsafeToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertNewLine("Unsafe");
+        }
+
+        private void readToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertNewLine("Read, File Name, Starting Line, (Optional Ending Line)");
+        }
+
+        private void playToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertNewLine("Play, Starting Line");
+        }
+
+        private void setToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertNewLine("Set, (Optional Mod).Setting, Value");
+        }
+
+        private void analogueModeToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertNewLine("AnalogueMode, (Type)");
+        }
+
+        private void startExportToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertNewLine("StartExport (Optional File Path) (Optional Entities)");
+        }
+
+        private void finishExportToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertNewLine("FinishExport");
+        }
+
+        private void addToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertNewLine("Add, (input line)");
+        }
+
+        private void skipToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertNewLine("Skip, (frames)");
+        }
+
         private void copyPlayerDataMenuItem_Click(object sender, EventArgs e) {
             CopyPlayerData();
+        }
+
+        private void reconnectStudioAndCelesteToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.instance?.ExternalReset();
         }
     }
 }

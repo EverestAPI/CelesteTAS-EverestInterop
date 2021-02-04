@@ -18,17 +18,8 @@ namespace TAS {
 		 * Commands that execute during playback must be void Command(string[])
 		 */
 		public static string[] Split(string line) {
-			if (line.Contains(","))
-				return line.Trim().Split(',');
-			return line.Trim().Split();
-		}
-
-		public static string[] TrimArray(string[] array, int toTrim) {
-			string[] output = new string[array.Length - toTrim];
-			for (int i = toTrim; i < array.Length; i++) {
-				output[i - toTrim] = array[i];
-			}
-			return output;
+			var args = line.Contains(",") ? line.Trim().Split(',') : line.Trim().Split();
+			return args.Select(text => text.Trim()).ToArray();
 		}
 
 		public static bool TryExecuteCommand(InputController state, string lineText, int lineNumber) {
@@ -40,7 +31,7 @@ namespace TAS {
 					if (method == null)
 						return false;
 
-					string[] commandArgs = TrimArray(args, 1);
+					string[] commandArgs = args.Skip(1).ToArray();
 					TASCommandAttribute attribute = (TASCommandAttribute)method.GetCustomAttribute(typeof(TASCommandAttribute));
 					if (!(Manager.enforceLegal && attribute.illegalInMaingame)) {
 						if (attribute.executeAtStart) {
@@ -60,9 +51,9 @@ namespace TAS {
 
 
 		[TASCommand(executeAtStart = true, args = new string[] {
-			"Read,Path",
-			"Read,Path,StartLine",
-			"Read,Path,StartLine,EndLine"
+			"Read, Path",
+			"Read, Path, StartLine",
+			"Read, Path, StartLine, EndLine"
 		})]
 		private static void ReadCommand(InputController state, string[] args, int studioLine) {
 			string filePath = args[0];
@@ -111,8 +102,8 @@ namespace TAS {
 		}
 
 		[TASCommand(executeAtStart = true, args = new string[] {
-			"Play,StartLine",
-			"Play,StartLine,FramesToWait"
+			"Play, StartLine",
+			"Play, StartLine, FramesToWait"
 		})]
 		private static void PlayCommand(InputController state, string[] args, int studioLine) {
 			GetLine(args[0], state.filePath, out int startLine);
@@ -132,7 +123,7 @@ namespace TAS {
 			if (args.Length > 0) {
 				if (args[0].Contains(".")) {
 					path = args[0];
-					args = TrimArray(args, 1);
+					args = args.Skip(1).ToArray();
 				}
 			}
 			Manager.BeginExport(path, args);
@@ -156,8 +147,8 @@ namespace TAS {
 		}
 
 		[TASCommand(illegalInMaingame = true, args = new string[] {
-			"Set,Setting,Value",
-			"Set,Mod.Setting,Value"
+			"Set, Setting, Value",
+			"Set, Mod.Setting, Value"
 		})]
 		private static void SetCommand(string[] args) {
 			try {
@@ -260,7 +251,7 @@ namespace TAS {
 		}
 
 		[TASCommand(illegalInMaingame = true, args = new string[] {
-			"Gun,x,y"
+			"Gun, x, y"
 		})]
 		private static void GunCommand(string[] args) {
 			int x = int.Parse(args[0]);
@@ -278,12 +269,12 @@ namespace TAS {
 		}
 
 		[TASCommand(args = new string[] {
-			"AnalogMode,Mode"
+			"AnalogMode, Mode"
 		})]
 		private static void AnalogModeCommand(string[] args) => AnalogueModeCommand(args);
 
 		[TASCommand(args = new string[] {
-			"AnalogueMode,Mode"
+			"AnalogueMode, Mode"
 		})]
 		private static void AnalogueModeCommand(string[] args) {
 			if (Enum.TryParse<Manager.AnalogueMode>(args[0], true, out var mode))
