@@ -6,6 +6,7 @@
 		FrameAdvance,
 		Pause,
 		Hitboxes,
+		TriggerHitboxes,
 		Graphics,
 		Camera,
 		SaveState,

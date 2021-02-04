@@ -66,6 +66,7 @@ namespace TAS.EverestInterop {
         public static Hotkey hotkeyFrameAdvance;
         public static Hotkey hotkeyPause;
         public static Hotkey hotkeyHitboxes;
+        public static Hotkey hotkeyTriggerHitboxes;
         public static Hotkey hotkeyGraphics;
         public static Hotkey hotkeyCamera;
 		public static Hotkey hotkeySaveState;
@@ -87,6 +88,7 @@ namespace TAS.EverestInterop {
             InitBinding(Settings.KeyFrameAdvance, Keys.OemOpenBrackets);
             InitBinding(Settings.KeyPause, Keys.OemCloseBrackets);
             InitBinding(Settings.KeyHitboxes, Keys.B);
+            InitBinding(Settings.KeyTriggerHitboxes, Keys.LeftAlt, Keys.T);
             InitBinding(Settings.KeyGraphics, Keys.N);
             InitBinding(Settings.KeyCamera, Keys.M);
             InitBinding(Settings.KeySaveState, Keys.RightAlt, Keys.OemMinus);
@@ -94,7 +96,7 @@ namespace TAS.EverestInterop {
 
             listHotkeyKeys = new List<Keys>[] {
                 Settings.KeyStart.Keys, Settings.KeyRestart.Keys, Settings.KeyFastForward.Keys, Settings.KeyFrameAdvance.Keys, Settings.KeyPause.Keys,
-                Settings.KeyHitboxes.Keys, Settings.KeyGraphics.Keys, Settings.KeyCamera.Keys,
+                Settings.KeyHitboxes.Keys, Settings.KeyTriggerHitboxes.Keys, Settings.KeyGraphics.Keys, Settings.KeyCamera.Keys,
 				Settings.KeySaveState.Keys, Settings.KeyClearState.Keys
             };
 
@@ -104,13 +106,14 @@ namespace TAS.EverestInterop {
             hotkeyFrameAdvance = BindingToHotkey(Settings.KeyFrameAdvance);
             hotkeyPause = BindingToHotkey(Settings.KeyPause);
             hotkeyHitboxes = BindingToHotkey(Settings.KeyHitboxes);
+            hotkeyTriggerHitboxes = BindingToHotkey(Settings.KeyTriggerHitboxes);
             hotkeyGraphics = BindingToHotkey(Settings.KeyGraphics);
             hotkeyCamera = BindingToHotkey(Settings.KeyCamera);
 			hotkeySaveState = BindingToHotkey(Settings.KeySaveState);
 			hotkeyClearState = BindingToHotkey(Settings.KeyClearState);
 			hotkeys = new Hotkey[] {
                 hotkeyStart, hotkeyRestart, hotkeyFastForward, hotkeyFrameAdvance, hotkeyPause,
-                hotkeyHitboxes, hotkeyGraphics, hotkeyCamera,
+                hotkeyHitboxes, hotkeyTriggerHitboxes, hotkeyGraphics, hotkeyCamera,
 				hotkeySaveState, hotkeyClearState
             };
         }
@@ -179,6 +182,8 @@ namespace TAS.EverestInterop {
             if (Engine.Scene is Level level && !level.Paused) {
                 if (hotkeyHitboxes.pressed && !hotkeyHitboxes.wasPressed)
                     Settings.ShowHitboxes = !Settings.ShowHitboxes;
+                if (hotkeyTriggerHitboxes.pressed && !hotkeyTriggerHitboxes.wasPressed)
+                    Settings.HideTriggerHitboxes = !Settings.HideTriggerHitboxes;
                 if (hotkeyGraphics.pressed && !hotkeyGraphics.wasPressed)
                     Settings.SimplifiedGraphics = !Settings.SimplifiedGraphics;
                 if (hotkeyCamera.pressed && !hotkeyCamera.wasPressed)
@@ -219,6 +224,10 @@ namespace TAS.EverestInterop {
                         binding.Keys.Clear();
                         binding.Keys.Add(Keys.RightAlt);
                         binding.Keys.Add(Keys.Back);
+                    } else if (binding == Settings.KeyTriggerHitboxes) {
+                        binding.Keys.Clear();
+                        binding.Keys.Add(Keys.LeftAlt);
+                        binding.Keys.Add(Keys.T);
                     }
                 });
             }

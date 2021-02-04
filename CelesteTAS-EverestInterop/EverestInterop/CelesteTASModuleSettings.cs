@@ -32,6 +32,9 @@ namespace TAS.EverestInterop {
         [SettingName("TAS_KEY_HITBOXES")]
         [DefaultButtonBinding(0, Keys.B)] public ButtonBinding KeyHitboxes { get; set; } = new ButtonBinding();
 
+        [SettingName("TAS_KEY_TRIGGER_HITBOXES")]
+        [DefaultButtonBinding(0, Keys.LeftAlt)] public ButtonBinding KeyTriggerHitboxes { get; set; } = new ButtonBinding();
+
         [SettingName("TAS_KEY_GRAPHICS")]
         [DefaultButtonBinding(0, Keys.N)] public ButtonBinding KeyGraphics { get; set; } = new ButtonBinding();
 
