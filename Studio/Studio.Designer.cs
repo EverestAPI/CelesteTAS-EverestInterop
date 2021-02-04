@@ -166,21 +166,21 @@ namespace CelesteStudio {
             this.openFileMenuItem.Name = "openFileMenuItem";
             this.openFileMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.O)));
             this.openFileMenuItem.Size = new System.Drawing.Size(260, 22);
-            this.openFileMenuItem.Text = "Open File...";
+            this.openFileMenuItem.Text = "&Open File...";
             this.openFileMenuItem.Click += new System.EventHandler(this.openFileMenuItem_Click);
             // 
             // openCelesteTasMenuItem
             // 
             this.openCelesteTasMenuItem.Name = "openCelesteTasMenuItem";
             this.openCelesteTasMenuItem.Size = new System.Drawing.Size(260, 22);
-            this.openCelesteTasMenuItem.Text = "Open Celeste.tas";
+            this.openCelesteTasMenuItem.Text = "Open &Celeste.tas";
             this.openCelesteTasMenuItem.Click += new System.EventHandler(this.openCelesteTasMenuItem_Click);
             // 
             // openRecentMenuItem
             // 
             this.openRecentMenuItem.Name = "openRecentMenuItem";
             this.openRecentMenuItem.Size = new System.Drawing.Size(260, 22);
-            this.openRecentMenuItem.Text = "Open Recent";
+            this.openRecentMenuItem.Text = "Open &Recent";
             // 
             // toolStripSeparator1
             // 
@@ -193,7 +193,7 @@ namespace CelesteStudio {
             this.saveAsToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)(((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Shift) 
             | System.Windows.Forms.Keys.S)));
             this.saveAsToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
-            this.saveAsToolStripMenuItem.Text = "Save As...";
+            this.saveAsToolStripMenuItem.Text = "&Save As...";
             this.saveAsToolStripMenuItem.Click += new System.EventHandler(this.saveAsToolStripMenuItem_Click);
             // 
             // settingsToolStripMenuItem
@@ -210,7 +210,7 @@ namespace CelesteStudio {
             // 
             this.rememberCurrentFileMenuItem.Name = "rememberCurrentFileMenuItem";
             this.rememberCurrentFileMenuItem.Size = new System.Drawing.Size(404, 22);
-            this.rememberCurrentFileMenuItem.Text = "Remember the Current File for Next Launch";
+            this.rememberCurrentFileMenuItem.Text = "&Remember the Current File for Next Launch";
             this.rememberCurrentFileMenuItem.Click += new System.EventHandler(this.rememberCurrentFileMenuItem_Click);
             // 
             // sendInputsToCelesteMenuItem
@@ -218,7 +218,7 @@ namespace CelesteStudio {
             this.sendInputsToCelesteMenuItem.Name = "sendInputsToCelesteMenuItem";
             this.sendInputsToCelesteMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.D)));
             this.sendInputsToCelesteMenuItem.Size = new System.Drawing.Size(404, 22);
-            this.sendInputsToCelesteMenuItem.Text = "Send Inputs to Celeste";
+            this.sendInputsToCelesteMenuItem.Text = "&Send Inputs to Celeste";
             this.sendInputsToCelesteMenuItem.Click += new System.EventHandler(this.sendInputsToCelesteMenuItem_Click);
             // 
             // helpToolStripMenuItem
@@ -227,7 +227,7 @@ namespace CelesteStudio {
             this.homeMenuItem});
             this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
             this.helpToolStripMenuItem.Size = new System.Drawing.Size(52, 20);
-            this.helpToolStripMenuItem.Text = "Help";
+            this.helpToolStripMenuItem.Text = "&Help";
             // 
             // homeMenuItem
             // 
