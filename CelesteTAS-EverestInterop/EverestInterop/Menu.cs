@@ -92,7 +92,8 @@ namespace TAS.EverestInterop {
                 item.Visible = Settings.Enabled;
             }
             if (inGame) {
-                showHitboxesSubmenu.AddDescription(menu, "Hitbox Color Description".ToDialogText());
+                showHitboxesSubmenu.AddDescription(menu, "Hitbox Color Description 2".ToDialogText());
+                showHitboxesSubmenu.AddDescription(menu, "Hitbox Color Description 1".ToDialogText());
             }
         }
 

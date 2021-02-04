@@ -2,6 +2,8 @@
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
+using TAS.EverestInterop;
+using TAS.EverestInterop.Hitboxes;
 
 namespace TAS {
 	public class ConsoleHandler {
@@ -147,6 +149,16 @@ namespace TAS {
 			LevelSetStats stats = SaveData.Instance.GetLevelSetStatsFor("Celeste");
 			stats.UnlockedAreas = 1;
 			stats.AreasIncludingCeleste[0].Modes[0].Completed = true;
+		}
+
+		[Command("entity_hitbox_color", "change the entity hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000")]
+		private static void CmdChangeEntityHitboxColor(string color) {
+			CelesteTASModule.Settings.EntityHitboxColor = HitboxColor.HexToColor(color, HitboxColor.DefaultEntityColor);
+		}
+
+		[Command("trigger_hitbox_color", "change the trigger hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000")]
+		private static void CmdChangeTriggerHitboxColor(string color) {
+			CelesteTASModule.Settings.TriggerHitboxColor = HitboxColor.HexToColor(color, HitboxColor.DefaultTriggerColor);
 		}
 	}
 }

@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using System.Text.RegularExpressions;
 using Celeste;
 using Celeste.Mod.UI;
 using Microsoft.Xna.Framework;
@@ -15,6 +17,8 @@ namespace TAS.EverestInterop.Hitboxes {
         public static Color TriggerColor => Settings.TriggerHitboxColor;
         public static Color EntityColorInversely => EntityColor.Invert();
         public static Color EntityColorInverselyLessAlpha => EntityColorInversely * 0.6f;
+
+        private static readonly Regex hexChar = new Regex(@"^[0-9a-f]*$", RegexOptions.IgnoreCase);
 
         public static TextMenu.Item CreateEntityHitboxColorButton(TextMenu textMenu, bool inGame) {
             TextMenu.Item item = new TextMenu.Button("Entity Hitbox Color".ToDialogText() + $": {ColorToHex(Settings.EntityHitboxColor)}").Pressed(() => {
@@ -46,19 +50,32 @@ namespace TAS.EverestInterop.Hitboxes {
                 $"{color.B.ToString("X").PadLeft(2, '0')}";
         }
 
-        private static Color HexToColor(string hex, Color defaultColor) {
-			if (hex.Length == 6)
-				hex = "#FF" + hex;
-			if (hex.Length == 7)
-				hex = "#FF" + hex.Substring(1);
-			if (hex.Length == 8)
-				hex = "#" + hex;
-            if (hex.Length != 9) {
+        public static Color HexToColor(string hex, Color defaultColor) {
+            if (string.IsNullOrWhiteSpace(hex)) {
                 return defaultColor;
             }
 
+            hex = hex.Replace("#", "");
+            if (!hexChar.IsMatch(hex)) {
+                return defaultColor;
+            }
+
+            // 123456789 => 12345678
+            if (hex.Length > 8) {
+                hex = hex.Substring(0, 8);
+            }
+
+            // 123 => 112233
+            // 1234 => 11223344
+            if (hex.Length == 3 || hex.Length == 4) {
+                hex = hex.ToCharArray().Select(c => $"{c}{c}").Aggregate((s, s1) => s + s1);
+            }
+
+            // 123456 => FF123456
+            hex = hex.PadLeft(8, 'F');
+
             try {
-                long number = Convert.ToInt64(hex.Substring(1), 16);
+                long number = Convert.ToInt64(hex, 16);
                 Color color = default;
                 color.A = (byte) (number >> 24);
                 color.R = (byte) (number >> 16);
