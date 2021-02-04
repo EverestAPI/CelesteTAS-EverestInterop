@@ -65,7 +65,6 @@ While in game or in Studio:
 ## Savestate
 - Experimental feature require [SpeedrunTool](https://gamebanana.com/tools/6597)
 - According to tests savestate is very reliable for official maps
-- Savestate may not be able to restore 100% of the state in custom maps due to the presence of various helpers. Recommend testing roughly before using it to see if it will cause desync, and use it before the screen transition
+- Savestate may not be able to restore 100% of the state in custom maps due to the presence of various helpers. Recommend testing roughly before using it to check if it will cause desync, and use it before the screen transition
 - Currently cannot savestate during skipping cutscene or player death
 - SpeedrunTool has a known issue that hard to solve, the game may crash when the memory is automatically recycled due to frequent loading state, currently SpeedrunTool can only minimized memory usage to reduce the chance of this issue occurr
-- 
