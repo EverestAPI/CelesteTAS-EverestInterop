@@ -1,5 +1,5 @@
 ### Read
-- `Read,File Name, Starting Line, (Optional Ending Line)`
+- `Read, File Name, Starting Line, (Optional Ending Line)`
 - Will read inputs from the specified file.
 - If a custom path to read files from has been specified, it tries to find the file there. Otherwise, it will look for the file in the main Celeste directory.
 - e.g. `Read, 1A - Forsaken City.tas, 6` will read all inputs after line 6 from the `1A - Forsaken City.tas` file
