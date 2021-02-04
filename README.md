@@ -44,8 +44,8 @@ While in game or in Studio:
 - Toggle Hitboxes: B
 - Toggle Simplified Graphics: N
 - Toggle Center Camera: M
-- Save State: RightAlt + Minus (Experimental feature require [SpeedrunTool](https://gamebanana.com/tools/6597))
-- Clear State: RightAlt + Back (Experimental feature require [SpeedrunTool](https://gamebanana.com/tools/6597))
+- Save State: RightAlt + Minus ([Experimental](#savestate))
+- Clear State: RightAlt + Back ([Experimental](#savestate))
 
 - These can be rebound in Mod Options (Note that controller is not supported.)
   - You will have to rebind some of these if you are on a non-US keyboard layout.
@@ -57,7 +57,15 @@ While in game or in Studio:
 - The program when played back from the start will fast forward until it reaches that line and then go into frame stepping mode
 - You can specify the speed with `***X`, where `X` is the speedup factor. e.g. `***10` will go at 10x speed
 - `***!` will force the TAS to pause even if there are breakpoints afterward in the file
-- `***S` means that TAS will auto save state when it reaches this breakpoint, so that future TAS starts directly from this breakpoint instead of starting from the beginning. Recommended to use in the last room before the transition, so that even if it causes desync will not have much impact (Experimental feature require [SpeedrunTool](https://gamebanana.com/tools/6597))
+- `***S` means that TAS will auto save state when it reaches this breakpoint, so that future TAS starts directly from this breakpoint instead of starting from the beginning. ([Experimental](#savestate))
 
 ### Commands
 - Various commands exist to facilitate TAS playback. Documentation can be found [here.](https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/master/Docs/Commands.md)
+
+## Savestate
+- Experimental feature require [SpeedrunTool](https://gamebanana.com/tools/6597)
+- According to tests savestate is very reliable for official maps
+- Savestate may not be able to restore 100% of the state in custom maps due to the presence of various helpers. Recommend testing roughly before using it to see if it will cause desync, and use it before the screen transition
+- Currently cannot savestate during skipping cutscene or player death
+- SpeedrunTool has a known issue that hard to solve, the game may crash when the memory is automatically recycled due to frequent loading state, currently SpeedrunTool can only minimized memory usage to reduce the chance of this issue occurr
+- 
