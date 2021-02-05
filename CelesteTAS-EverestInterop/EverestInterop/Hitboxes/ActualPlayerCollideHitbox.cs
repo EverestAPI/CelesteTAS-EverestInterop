@@ -53,6 +53,7 @@ namespace TAS.EverestInterop.Hitboxes {
 
         private static void HitboxOnRender(On.Monocle.Hitbox.orig_Render orig, Hitbox self, Camera camera, Color color) {
             if (!(self.Entity is Player player) || !Settings.ShowHitboxes || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.OFF
+                || Manager.FrameLoops > 1
                 || player.LoadActualCollidePosition() == null
                 || player.LoadActualCollidePosition().Value == player.Position
                 || player.Scene is Level level && level.Transitioning

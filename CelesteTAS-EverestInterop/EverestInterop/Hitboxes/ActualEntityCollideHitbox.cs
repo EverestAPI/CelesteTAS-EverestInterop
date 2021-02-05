@@ -28,7 +28,6 @@ namespace TAS.EverestInterop.Hitboxes {
         private static void ModPlayerOrigUpdate(ILContext il) {
             ILCursor ilCursor = new ILCursor(il);
             if (ilCursor.TryGotoNext(MoveType.After, ins => ins.MatchCastclass<PlayerCollider>())) {
-                ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Action<Player>>(player => player.SaveActualCollidePosition());
                 ilCursor.Emit(OpCodes.Dup).EmitDelegate<Action<PlayerCollider>>(playerCollider => {
                     Entity entity = playerCollider.Entity;
 
@@ -60,6 +59,7 @@ namespace TAS.EverestInterop.Hitboxes {
 
             if (!Settings.ShowHitboxes
                 || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.OFF
+                || Manager.FrameLoops > 1
                 || entity.Get<PlayerCollider>() == null
                 || entity.Scene?.Tracker.GetEntity<Player>() == null
                 || entity.LoadActualCollidePosition() == null

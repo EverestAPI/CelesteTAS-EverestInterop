@@ -99,6 +99,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="EverestInterop\AutoMute.cs" />
+    <Compile Include="EverestInterop\Benchmark.cs" />
     <Compile Include="EverestInterop\CelesteTASModuleSettings.cs" />
     <Compile Include="EverestInterop\CelesteTASModule.cs" />
     <Compile Include="EverestInterop\CenterCamera.cs" />

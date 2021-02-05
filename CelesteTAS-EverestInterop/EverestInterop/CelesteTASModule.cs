@@ -180,6 +180,10 @@ namespace TAS.EverestInterop {
             // Open memory mapped file for interfacing with Windows Celeste Studio
             if (StudioCommunicationClient.instance == null)
                 StudioCommunicationClient.Run();
+
+#if DEBUG
+            Benchmark.Load();
+#endif
         }
 
         public override void Unload() {
@@ -198,6 +202,10 @@ namespace TAS.EverestInterop {
             StudioCommunicationClient.Destroy();
 
             UnixRTC?.Dispose();
+
+#if DEBUG
+            Benchmark.Unload();
+#endif
         }
 
         public override void CreateModMenuSection(TextMenu menu, bool inGame, FMOD.Studio.EventInstance snapshot) {
