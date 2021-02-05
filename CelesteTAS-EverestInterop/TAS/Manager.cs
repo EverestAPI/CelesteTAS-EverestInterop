@@ -30,14 +30,11 @@ public static partial class Manager {
     private static readonly FieldInfo summitVignetteReady = typeof(SummitVignette).GetFieldInfo("ready");
     private static readonly FieldInfo strawberryCollectTimer = typeof(Strawberry).GetFieldInfo("collectTimer");
 
-    private static d_UpdateVirtualInputs UpdateVirtualInputs;
-
-    private static d_WallJumpCheck WallJumpCheck;
-
-    private static GetBerryFloat StrawberryCollectTimer;
-
-    private static GetFloat DashCooldownTimer;
-    private static GetFloat JumpGraceTimer;
+    private static readonly d_UpdateVirtualInputs UpdateVirtualInputs;
+    private static readonly d_WallJumpCheck WallJumpCheck;
+    private static readonly GetBerryFloat StrawberryCollectTimer;
+    private static readonly GetFloat DashCooldownTimer;
+    private static readonly GetFloat JumpGraceTimer;
 
     public static bool Running, Recording;
     public static InputController controller = new InputController("Celeste.tas");
@@ -46,11 +43,12 @@ public static partial class Manager {
     public static int FrameLoops = 1;
     public static bool enforceLegal, allowUnsafeInput;
     public static Vector2 LastPos;
-    private static long lastTimer;
-    private static List<VirtualButton.Node>[] playerBindings;
     public static Buttons grabButton = Buttons.Back;
     public static AnalogueMode analogueMode = AnalogueMode.Ignore; //Circle; //Needs to be tested with the libTAS converter
     public static bool kbTextInput;
+
+    private static long lastTimer;
+    private static List<VirtualButton.Node>[] playerBindings;
 
     static Manager() {
         FieldInfo strawberryCollectTimer = typeof(Strawberry).GetFieldInfo("collectTimer");
