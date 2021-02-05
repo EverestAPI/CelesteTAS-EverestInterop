@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Runtime.InteropServices;
+
 [assembly: AssemblyTitle("Celeste Studio")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
