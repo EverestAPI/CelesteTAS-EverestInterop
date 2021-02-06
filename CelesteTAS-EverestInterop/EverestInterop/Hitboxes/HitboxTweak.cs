@@ -20,6 +20,7 @@ public class HitboxTweak {
         On.Monocle.Entity.DebugRender += ModHitbox;
         IL.Celeste.PlayerCollider.DebugRender += PlayerColliderOnDebugRender;
         On.Monocle.Circle.Render += CircleOnRender;
+        On.Celeste.SoundSource.DebugRender += SoundSource_DebugRender;
     }
 
     public static void Unload() {
@@ -33,6 +34,7 @@ public class HitboxTweak {
         On.Monocle.Entity.DebugRender -= ModHitbox;
         IL.Celeste.PlayerCollider.DebugRender -= PlayerColliderOnDebugRender;
         On.Monocle.Circle.Render -= CircleOnRender;
+        On.Celeste.SoundSource.DebugRender -= SoundSource_DebugRender;
     }
 
     private static void ModHitbox(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {
@@ -83,6 +85,12 @@ public class HitboxTweak {
         }
 
         orig(self, camera, color);
+    }
+
+    private static void SoundSource_DebugRender(On.Celeste.SoundSource.orig_DebugRender orig, SoundSource self, Camera camera) {
+        if (!Settings.ShowHitboxes) {
+            orig(self, camera);
+        }
     }
 }
 }

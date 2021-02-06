@@ -16,7 +16,7 @@ class GraphicsCore {
     private static string clickedEntityType = "";
     private static ButtonState lastButtonState;
 
-    public static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
+    private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
 
     public void Load() {
         // Forced: Add more positions to top-left positioning helper.
@@ -28,12 +28,6 @@ class GraphicsCore {
 
         // Hide distortion when showing hitboxes
         On.Celeste.Distort.Render += Distort_Render;
-
-        // Hide SoundSource when showing hitboxes
-        On.Celeste.SoundSource.DebugRender += SoundSource_DebugRender;
-
-        // Stop updating tentacles texture when fast forward
-        On.Celeste.ReflectionTentacles.UpdateVertices += ReflectionTentaclesOnUpdateVertices;
     }
 
     public void Unload() {
@@ -41,8 +35,6 @@ class GraphicsCore {
         IL.Celeste.Level.Render -= Level_Render;
         IL.Celeste.Pathfinder.Render -= Pathfinder_Render;
         On.Celeste.Distort.Render -= Distort_Render;
-        On.Celeste.SoundSource.DebugRender -= SoundSource_DebugRender;
-        On.Celeste.ReflectionTentacles.UpdateVertices -= ReflectionTentaclesOnUpdateVertices;
     }
 
     public static void Commands_Render(ILContext il) {
@@ -107,20 +99,6 @@ class GraphicsCore {
         }
 
         orig(source, map, hasDistortion);
-    }
-
-    private static void SoundSource_DebugRender(On.Celeste.SoundSource.orig_DebugRender orig, SoundSource self, Camera camera) {
-        if (!Settings.ShowHitboxes) {
-            orig(self, camera);
-        }
-    }
-
-    private void ReflectionTentaclesOnUpdateVertices(On.Celeste.ReflectionTentacles.orig_UpdateVertices orig, ReflectionTentacles self) {
-        if ((Manager.state == State.Enable && Manager.FrameLoops > 1) || Settings.SimplifiedGraphics) {
-            return;
-        }
-
-        orig(self);
     }
 
     public static void Level_Render(ILContext il) {

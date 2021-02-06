@@ -145,6 +145,8 @@ public class CelesteTASModule : EverestModule {
         Core.instance = new Core();
         Core.instance.Load();
 
+        FastForwardBoost.Load();
+
         DisableAchievements.instance = new DisableAchievements();
         DisableAchievements.instance.Load();
 
@@ -195,6 +197,7 @@ public class CelesteTASModule : EverestModule {
     public override void Unload() {
         Hotkeys.Unload();
         Core.instance.Unload();
+        FastForwardBoost.Unload();
         DisableAchievements.instance.Unload();
         GraphicsCore.instance.Unload();
         SimplifiedGraphicsFeature.instance.Unload();
