@@ -7,8 +7,7 @@
 ----
 
 - Install [Everest](https://everestapi.github.io/) if you haven't already.
-- (Recommended) Use the 1-click installer [here](https://gamebanana.com/tools/6715). (
-  Alternatively) [Download the latest autobuild](https://nightly.link/EverestAPI/CelesteTAS-EverestInterop/workflows/NetFramework.Legacy.CI/master/CelesteTAS.zip)
+- (Recommended) Use the 1-click installer [here](https://gamebanana.com/tools/6715). (Alternatively) [Download the latest autobuild](https://nightly.link/EverestAPI/CelesteTAS-EverestInterop/workflows/NetFramework.Legacy.CI/master/CelesteTAS.zip)
   and put it in the game_path/mods folder.
 - Enable the mod in the in-game mod options.
 - If on Linux, enable `Unix RTC` in the mod options and restart Celeste.
@@ -66,10 +65,9 @@ While in game or in Studio:
 
 - You can create a breakpoint in the input file by typing `***` by itself on a single line
 - The program when played back from the start will fast forward until it reaches that line and then go into frame stepping mode
+- `***S` will make a savestate, which can reduce TAS playback time. ([Experimental](#savestate))
 - You can specify the speed with `***X`, where `X` is the speedup factor. e.g. `***10` will go at 10x speed
 - `***!` will force the TAS to pause even if there are breakpoints afterward in the file
-- `***S` means that TAS will auto save state when it reaches this breakpoint, so that future TAS starts directly from this breakpoint instead of starting from
-  the beginning. ([Experimental](#savestate))
 
 ### Commands
 
@@ -77,10 +75,8 @@ While in game or in Studio:
 
 ## Savestate
 
-- Experimental feature require [SpeedrunTool](https://gamebanana.com/tools/6597)
-- According to tests savestate is very reliable for official maps
-- Savestate may not be able to restore 100% of the state in custom maps due to the presence of various helpers. Recommend testing roughly before using it to
-  check if it will cause desync, and use it before the screen transition
-- Currently cannot savestate during skipping cutscene or player death
-- SpeedrunTool has a known issue that hard to solve, the game may crash when the memory is automatically recycled due to frequent loading state, currently
-  SpeedrunTool can only minimized memory usage to reduce the chance of this issue occurr
+- Savestates are experimental and require the [SpeedrunTool](https://gamebanana.com/tools/6597) mod.
+- Reliable in vanilla maps.
+- Savestates may not work properly in custom maps that use code mods. Placing a savestate right before leaving a room can help with this.
+- Currently cannot savestate while skipping a cutscene or during the death animation.
+- Crashes due to running out of memory are possible, although uncommon.
