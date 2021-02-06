@@ -14,17 +14,43 @@ public static class AutoMute {
     private static readonly HashSet<string> LoopAudioPaths = new HashSet<string> {
         "event:/char/madeline/wallslide",
         "event:/char/madeline/dreamblock_travel",
+        "event:/char/madeline/water_move_shallow",
+        "event:/ui/game/memorial_dream_loop",
+        "event:/ui/game/memorial_dream_text_loop",
+        "event:/ui/game/memorial_text_loop",
+        "event:/game/general/birdbaby_tweet_loop",
+        "event:/game/general/crystalheart_blue_get",
+        "event:/game/general/crystalheart_red_get",
+        "event:/game/general/crystalheart_gold_get",
+        "event:/game/00_prologue/bridge_rumble_loop",
+        "event:/game/01_forsaken_city/birdbros_fly_loop",
+        "event:/game/01_forsaken_city/console_static_loop",
+        "event:/game/02_old_site/sequence_phone_ring_loop",
+        "event:/game/02_old_site/sequence_phone_ringtone_loop",
         "event:/game/03_resort/platform_vert_down_loop",
         "event:/game/03_resort/platform_vert_up_loop",
+        "event:/game/04_cliffside/arrowblock_move",
+        "event:/game/04_cliffside/gondola_movement_loop",
+        "event:/game/04_cliffside/gondola_halted_loop",
+        "event:/game/04_cliffside/gondola_movement_loop",
+        "event:/game/05_mirror_temple/mainmirror_torch_loop",
         "event:/game/05_mirror_temple/redbooster_move",
         "event:/game/05_mirror_temple/swapblock_return",
+        "event:/game/06_reflection/badeline_pull_rumble_loop",
         "event:/game/06_reflection/crushblock_move_loop",
         "event:/game/06_reflection/crushblock_move_loop_covert",
         "event:/game/06_reflection/crushblock_return_loop",
         "event:/game/06_reflection/feather_state_loop",
+        "event:/game/06_reflection/badeline_pull_rumble_loop",
+        "event:/game/09_core/conveyor_activate",
+        "event:/game/09_core/rising_threat",
+        "event:/new_content/game/10_farewell/glider_movement",
+        "event:/new_content/game/10_farewell/fakeheart_get",
     };
 
-    private static readonly List<WeakReference<EventInstance>> LoopAudioInstances = new List<WeakReference<EventInstance>>();
+    private const int DelayFrames = 30;
+
+    private static readonly Dictionary<WeakReference<EventInstance>, int> LoopAudioInstances = new Dictionary<WeakReference<EventInstance>, int>();
     private static bool shouldBeMute => Manager.FrameLoops >= 2 && CelesteTASModule.Settings.AutoMute;
     private static bool frameStep => Manager.Running && (Manager.state & State.FrameStep) != 0;
 
@@ -45,6 +71,7 @@ public static class AutoMute {
         On.Celeste.Audio.Play_string_Vector2 -= AudioOnPlay_string_Vector2;
         On.Celeste.Audio.Play_string_string_float -= AudioOnPlay_string_string_float;
         On.Celeste.Audio.Play_string_Vector2_string_float_string_float -= AudioOnPlay_string_Vector2_string_float_string_float;
+        On.Celeste.Audio.CreateInstance -= AudioOnCreateInstance;
         On.Monocle.Scene.Update -= SceneOnUpdate;
         On.Celeste.Level.Render -= LevelOnRender;
     }
@@ -103,8 +130,9 @@ public static class AutoMute {
         }
 
         SoundSource soundSource = orig(self, path, param, value);
-        if (path != null && LoopAudioPaths.Contains(path) && SoundSourceInstance.GetValue(soundSource) is EventInstance eventInstance) {
-            LoopAudioInstances.Add(new WeakReference<EventInstance>(eventInstance));
+        if (path != null && (LoopAudioPaths.Contains(path) || path.StartsWith("event:/env/local/")) &&
+            SoundSourceInstance.GetValue(soundSource) is EventInstance eventInstance) {
+            LoopAudioInstances.Add(new WeakReference<EventInstance>(eventInstance), DelayFrames);
         }
 
         return soundSource;
@@ -112,8 +140,8 @@ public static class AutoMute {
 
     private static EventInstance AudioOnCreateInstance(On.Celeste.Audio.orig_CreateInstance orig, string path, Vector2? position) {
         EventInstance eventInstance = orig(path, position);
-        if (path != null && LoopAudioPaths.Contains(path)) {
-            LoopAudioInstances.Add(new WeakReference<EventInstance>(eventInstance));
+        if (path != null && (LoopAudioPaths.Contains(path) || path.StartsWith("event:/env/local/"))) {
+            LoopAudioInstances.Add(new WeakReference<EventInstance>(eventInstance), DelayFrames);
         }
 
         return eventInstance;
@@ -139,13 +167,19 @@ public static class AutoMute {
         orig(self);
 
         if (frameStep) {
-            foreach (WeakReference<EventInstance> loopAudioInstance in LoopAudioInstances) {
-                if (loopAudioInstance.TryGetTarget(out EventInstance eventInstance)) {
-                    eventInstance.setVolume(0);
+            Audio.CurrentAmbienceEventInstance?.setVolume(0);
+
+            if (LoopAudioInstances.Count > 0) {
+                List<WeakReference<EventInstance>> copy = new List<WeakReference<EventInstance>>(LoopAudioInstances.Keys);
+                foreach (WeakReference<EventInstance> loopAudioInstance in copy) {
+                    if (loopAudioInstance.TryGetTarget(out EventInstance eventInstance) && LoopAudioInstances[loopAudioInstance] < 0) {
+                        eventInstance.setVolume(0);
+                        LoopAudioInstances.Remove(loopAudioInstance);
+                    } else {
+                        LoopAudioInstances[loopAudioInstance]--;
+                    }
                 }
             }
-
-            LoopAudioInstances.Clear();
         }
     }
 }
