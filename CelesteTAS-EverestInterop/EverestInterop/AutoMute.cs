@@ -130,7 +130,7 @@ public static class AutoMute {
         }
 
         SoundSource soundSource = orig(self, path, param, value);
-        if (path != null && (LoopAudioPaths.Contains(path) || path.StartsWith("event:/env/local/")) &&
+        if (path != null && (LoopAudioPaths.Contains(path) || path.StartsWith("event:/env/local/") || path.StartsWith("event:/new_content/env")) &&
             SoundSourceInstance.GetValue(soundSource) is EventInstance eventInstance) {
             LoopAudioInstances.Add(new WeakReference<EventInstance>(eventInstance), DelayFrames);
         }
@@ -140,7 +140,7 @@ public static class AutoMute {
 
     private static EventInstance AudioOnCreateInstance(On.Celeste.Audio.orig_CreateInstance orig, string path, Vector2? position) {
         EventInstance eventInstance = orig(path, position);
-        if (path != null && (LoopAudioPaths.Contains(path) || path.StartsWith("event:/env/local/"))) {
+        if (path != null && (LoopAudioPaths.Contains(path) || path.StartsWith("event:/env/local/") || path.StartsWith("event:/new_content/env"))) {
             LoopAudioInstances.Add(new WeakReference<EventInstance>(eventInstance), DelayFrames);
         }
 
