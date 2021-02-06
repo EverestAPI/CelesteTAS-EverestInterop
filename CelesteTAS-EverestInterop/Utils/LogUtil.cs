@@ -9,8 +9,9 @@ namespace TAS {
 internal static class LogUtil {
     private const string TAG = "CelesteTAS";
 
-    public static void Log(this string text, LogLevel logLevel = LogLevel.Verbose) {
-        Logger.Log(logLevel, TAG, text);
+    public static void Log(this object text, LogLevel logLevel = LogLevel.Verbose) {
+        text = text == null ? "null" : text.ToString();
+        Logger.Log(logLevel, TAG, text.ToString());
 #if DEBUG
         Color color;
         switch (logLevel) {

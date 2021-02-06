@@ -159,8 +159,7 @@ public class CelesteTASModule : EverestModule {
         CenterCamera.instance = new CenterCamera();
         CenterCamera.instance.Load();
 
-        AutoMute.instance = new AutoMute();
-        AutoMute.instance.Load();
+        AutoMute.Load();
 
         HideGameplay.instance = new HideGameplay();
         HideGameplay.instance.Load();
@@ -202,7 +201,7 @@ public class CelesteTASModule : EverestModule {
         GraphicsCore.instance.Unload();
         SimplifiedGraphicsFeature.instance.Unload();
         CenterCamera.instance.Unload();
-        AutoMute.instance.Unload();
+        AutoMute.Unload();
         HideGameplay.instance.Unload();
         HitboxTweak.Unload();
         InfoHUD.Unload();
