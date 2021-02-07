@@ -132,7 +132,6 @@
         <Compile Include="RichText\NativeMethodsWrapper.cs"/>
     </ItemGroup>
     <ItemGroup>
-        <Content Include="app.manifest"/>
         <Content Include="GoldBerry.ico"/>
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
