@@ -1,16 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
+using System.Linq;
 using Celeste;
+using FMOD;
 using FMOD.Studio;
-using Microsoft.Xna.Framework;
 
 namespace TAS.EverestInterop {
 public static class AutoMute {
-    private static WeakReference<EventInstance> dummy;
-    private static int? lastSFXVolume;
-    private static readonly FieldInfo SoundSourceInstance = typeof(SoundSource).GetFieldInfo("instance");
-
     private static readonly HashSet<string> LoopAudioPaths = new HashSet<string> {
         "event:/char/madeline/wallslide",
         "event:/char/madeline/dreamblock_travel",
@@ -48,118 +44,62 @@ public static class AutoMute {
         "event:/new_content/game/10_farewell/fakeheart_get",
     };
 
-    private const int DelayFrames = 30;
-
     private static readonly Dictionary<WeakReference<EventInstance>, int> LoopAudioInstances = new Dictionary<WeakReference<EventInstance>, int>();
+    private static CelesteTASModuleSettings tasSettings => CelesteTASModule.Settings;
     private static bool shouldBeMute => Manager.FrameLoops >= 2 && CelesteTASModule.Settings.AutoMute;
     private static bool frameStep => Manager.Running && (Manager.state & State.FrameStep) != 0;
 
     public static void Load() {
-        On.Celeste.SoundSource.Play += SoundSourceOnPlay;
-        On.Celeste.Audio.Play_string += AudioOnPlay_string;
-        On.Celeste.Audio.Play_string_Vector2 += AudioOnPlay_string_Vector2;
-        On.Celeste.Audio.Play_string_string_float += AudioOnPlay_string_string_float;
-        On.Celeste.Audio.Play_string_Vector2_string_float_string_float += AudioOnPlay_string_Vector2_string_float_string_float;
-        On.Celeste.Audio.CreateInstance += AudioOnCreateInstance;
+        On.FMOD.Studio.EventDescription.createInstance += EventDescriptionOnCreateInstance;
         On.Monocle.Scene.Update += SceneOnUpdate;
         On.Celeste.Level.Render += LevelOnRender;
     }
 
     public static void Unload() {
-        On.Celeste.SoundSource.Play -= SoundSourceOnPlay;
-        On.Celeste.Audio.Play_string -= AudioOnPlay_string;
-        On.Celeste.Audio.Play_string_Vector2 -= AudioOnPlay_string_Vector2;
-        On.Celeste.Audio.Play_string_string_float -= AudioOnPlay_string_string_float;
-        On.Celeste.Audio.Play_string_Vector2_string_float_string_float -= AudioOnPlay_string_Vector2_string_float_string_float;
-        On.Celeste.Audio.CreateInstance -= AudioOnCreateInstance;
+        On.FMOD.Studio.EventDescription.createInstance -= EventDescriptionOnCreateInstance;
         On.Monocle.Scene.Update -= SceneOnUpdate;
         On.Celeste.Level.Render -= LevelOnRender;
     }
 
-    private static EventInstance getDummyEventInstance() {
-        if (dummy == null || !dummy.TryGetTarget(out EventInstance dummyInstance)) {
-            // this sound does exist, but is silent if we don't set any audio param to it.
-            dummyInstance = Audio.CreateInstance("event:/char/madeline/footstep");
-            dummyInstance.setVolume(0);
-            dummy = new WeakReference<EventInstance>(dummyInstance);
-        }
+    private static RESULT EventDescriptionOnCreateInstance(On.FMOD.Studio.EventDescription.orig_createInstance orig, EventDescription self,
+        out EventInstance instance) {
+        RESULT result = orig(self, out instance);
 
-        return dummyInstance;
-    }
-
-    private static EventInstance AudioOnPlay_string_string_float(On.Celeste.Audio.orig_Play_string_string_float orig,
-        string path, string param, float value) {
         if (shouldBeMute) {
-            return getDummyEventInstance();
+            instance?.setVolume(0);
         }
 
-        return orig(path, param, value);
-    }
+        if (instance != null && self.getPath(out string path) == RESULT.OK && path != null) {
+            int delayFrames = -1;
+            if (LoopAudioPaths.Contains(path)) {
+                delayFrames = 10;
+            } else if (path.StartsWith("event:/env/local/") || path.StartsWith("event:/new_content/env/")) {
+                delayFrames = 0;
+            }
 
-    private static EventInstance AudioOnPlay_string_Vector2_string_float_string_float(
-        On.Celeste.Audio.orig_Play_string_Vector2_string_float_string_float orig, string path, Vector2 position,
-        string param, float value, string param2, float value2) {
-        if (shouldBeMute) {
-            return getDummyEventInstance();
+            if (delayFrames >= 0) {
+                LoopAudioInstances.Add(new WeakReference<EventInstance>(instance), delayFrames);
+            }
         }
 
-        return orig(path, position, param, value, param2, value2);
-    }
-
-    private static EventInstance AudioOnPlay_string_Vector2(On.Celeste.Audio.orig_Play_string_Vector2 orig, string path,
-        Vector2 position) {
-        if (shouldBeMute) {
-            return getDummyEventInstance();
-        }
-
-        return orig(path, position);
-    }
-
-    private static EventInstance AudioOnPlay_string(On.Celeste.Audio.orig_Play_string orig, string path) {
-        if (shouldBeMute) {
-            return getDummyEventInstance();
-        }
-
-        return orig(path);
-    }
-
-    private static SoundSource SoundSourceOnPlay(On.Celeste.SoundSource.orig_Play orig, SoundSource self, string path,
-        string param, float value) {
-        if (shouldBeMute) {
-            return self;
-        }
-
-        SoundSource soundSource = orig(self, path, param, value);
-        if (path != null && (LoopAudioPaths.Contains(path) || path.StartsWith("event:/env/local/") || path.StartsWith("event:/new_content/env")) &&
-            SoundSourceInstance.GetValue(soundSource) is EventInstance eventInstance) {
-            LoopAudioInstances.Add(new WeakReference<EventInstance>(eventInstance), DelayFrames);
-        }
-
-        return soundSource;
-    }
-
-    private static EventInstance AudioOnCreateInstance(On.Celeste.Audio.orig_CreateInstance orig, string path, Vector2? position) {
-        EventInstance eventInstance = orig(path, position);
-        if (path != null && (LoopAudioPaths.Contains(path) || path.StartsWith("event:/env/local/") || path.StartsWith("event:/new_content/env"))) {
-            LoopAudioInstances.Add(new WeakReference<EventInstance>(eventInstance), DelayFrames);
-        }
-
-        return eventInstance;
+        return result;
     }
 
     private static void SceneOnUpdate(On.Monocle.Scene.orig_Update orig, Monocle.Scene self) {
         orig(self);
 
-        if (shouldBeMute && lastSFXVolume == null) {
-            lastSFXVolume = Settings.Instance.SFXVolume;
+        if (shouldBeMute && tasSettings.LastSFXVolume < 0) {
+            tasSettings.LastSFXVolume = Settings.Instance.SFXVolume;
+            CelesteTASModule.Instance.SaveSettings();
             Settings.Instance.SFXVolume = 0;
             Settings.Instance.ApplyVolumes();
         }
 
-        if (!shouldBeMute && lastSFXVolume != null) {
-            Settings.Instance.SFXVolume = (int) lastSFXVolume;
+        if (!shouldBeMute && tasSettings.LastSFXVolume >= 0) {
+            Settings.Instance.SFXVolume = tasSettings.LastSFXVolume;
             Settings.Instance.ApplyVolumes();
-            lastSFXVolume = null;
+            tasSettings.LastSFXVolume = -1;
+            CelesteTASModule.Instance.SaveSettings();
         }
     }
 
@@ -170,13 +110,17 @@ public static class AutoMute {
             Audio.CurrentAmbienceEventInstance?.setVolume(0);
 
             if (LoopAudioInstances.Count > 0) {
-                List<WeakReference<EventInstance>> copy = new List<WeakReference<EventInstance>>(LoopAudioInstances.Keys);
+                WeakReference<EventInstance>[] copy = LoopAudioInstances.Keys.ToArray();
                 foreach (WeakReference<EventInstance> loopAudioInstance in copy) {
-                    if (loopAudioInstance.TryGetTarget(out EventInstance eventInstance) && LoopAudioInstances[loopAudioInstance] < 0) {
-                        eventInstance.setVolume(0);
-                        LoopAudioInstances.Remove(loopAudioInstance);
+                    if (loopAudioInstance.TryGetTarget(out EventInstance eventInstance)) {
+                        if (LoopAudioInstances[loopAudioInstance] <= 0) {
+                            eventInstance.setVolume(0);
+                            LoopAudioInstances.Remove(loopAudioInstance);
+                        } else {
+                            LoopAudioInstances[loopAudioInstance]--;
+                        }
                     } else {
-                        LoopAudioInstances[loopAudioInstance]--;
+                        LoopAudioInstances.Remove(loopAudioInstance);
                     }
                 }
             }

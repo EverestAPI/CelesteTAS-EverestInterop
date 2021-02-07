@@ -88,6 +88,7 @@ public class CelesteTASModuleSettings : EverestModuleSettings {
     [SettingIgnore] public DateTime StudioLastModifiedTime { get; set; } = new DateTime();
     public bool AutoExtractNewStudio { get; set; } = true;
     public bool AutoMute { get; set; } = true;
+    [SettingIgnore] public int LastSFXVolume { get; set; } = -1;
     [SettingIgnore] public Color EntityHitboxColor { get; set; } = HitboxColor.DefaultEntityColor;
     [SettingIgnore] public Color TriggerHitboxColor { get; set; } = HitboxColor.DefaultTriggerColor;
     public bool HideTriggerHitboxes { get; set; } = false;
