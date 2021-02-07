@@ -34,6 +34,7 @@ public partial class Studio : Form {
     public Studio() {
         InitializeComponent();
         InitMenu();
+        InitDragDrop();
 
         Text = titleBarText;
         Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.CreateSpecificCulture("en-US");
@@ -155,6 +156,21 @@ public partial class Studio : Form {
             }
 
             OpenFile(clickedItem.Text);
+        };
+    }
+
+    private void InitDragDrop() {
+        tasText.DragDrop += (sender, args) => {
+            string[] fileList = (string[]) args.Data.GetData(DataFormats.FileDrop, false);
+            if (fileList.Length > 0 && fileList[0].EndsWith(".tas")) {
+                OpenFile(fileList[0]);
+            }
+        };
+        tasText.DragEnter += (sender, args) => {
+            string[] fileList = (string[]) args.Data.GetData(DataFormats.FileDrop, false);
+            if (fileList.Length > 0 && fileList[0].EndsWith(".tas")) {
+                args.Effect = DragDropEffects.Copy;
+            }
         };
     }
 

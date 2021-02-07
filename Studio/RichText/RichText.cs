@@ -2204,6 +2204,12 @@ public class RichText : UserControl {
         Invalidate();
     }
 
+    protected override void OnCreateControl() {
+        base.OnCreateControl();
+        if (ParentForm != null) {
+            ParentForm.Deactivate += (sender, args) => lastModifiers = Keys.None;
+        }
+    }
 
     protected override void OnKeyUp(KeyEventArgs e) {
         base.OnKeyUp(e);
