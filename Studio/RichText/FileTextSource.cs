@@ -31,11 +31,15 @@ public class FileTextSource : TextSource, IDisposable {
 
     FileStream fs {
         get {
-            if (_fs == null) {
-                _fs = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
-            }
+            try {
+                if (_fs == null) {
+                    _fs = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+                }
 
-            return _fs;
+                return _fs;
+            } catch (Exception) {
+                return null;
+            }
         }
     }
 

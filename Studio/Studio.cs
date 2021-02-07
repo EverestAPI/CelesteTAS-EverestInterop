@@ -152,7 +152,8 @@ public partial class Studio : Form {
             }
 
             if (!File.Exists(clickedItem.Text)) {
-                tasTextContextMenuStrip.Close();
+                openRecentMenuItem.Owner.Hide();
+                recentFiles.Remove(clickedItem.Text);
             }
 
             OpenFile(clickedItem.Text);
