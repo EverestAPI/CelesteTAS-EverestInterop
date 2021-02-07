@@ -22,6 +22,7 @@ public class RichText : UserControl {
     private const int SB_ENDSCROLL = 0x8;
 
     private const Keys AltShift = Keys.Alt | Keys.Shift;
+    private static readonly Regex AllSpaceRegex = new Regex(@"^\s+$");
 
     internal readonly List<LineInfo> lineInfos = new List<LineInfo>();
 
@@ -2926,8 +2927,12 @@ public class RichText : UserControl {
             }
 
             //insert char
-            if (c == '\n' && Selection.Start.iChar != 0) {
-                Selection.GoEnd(false);
+            if (c == '\n') {
+                if (Selection.Start.iChar > 0 && AllSpaceRegex.IsMatch(Lines[Selection.Start.iLine].Substring(0, Selection.Start.iChar))) {
+                    Selection.GoHome(false);
+                } else if (Selection.Start.iChar > 0) {
+                    Selection.GoEnd(false);
+                }
             }
 
             InsertChar(c);
