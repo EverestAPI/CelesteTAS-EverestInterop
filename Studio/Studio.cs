@@ -345,15 +345,11 @@ public partial class Studio : Form {
     }
 
     private void UpdateRecentFiles() {
-        if (lastFileName != defaultFileName) {
-            if (!recentFiles.Contains(lastFileName)) {
-                recentFiles.Insert(0, lastFileName);
-            }
-
-            if (lastFileName != defaultFileName) {
-                Settings.Default.LastFileName = lastFileName;
-            }
+        if (!recentFiles.Contains(lastFileName)) {
+            recentFiles.Insert(0, lastFileName);
         }
+
+        Settings.Default.LastFileName = lastFileName;
     }
 
     private void ClearBreakpointsAndSaveState() {
@@ -528,8 +524,8 @@ public partial class Studio : Form {
 
             if (Settings.Default.RememberLastFileName
                 && File.Exists(Settings.Default.LastFileName)
-                && Settings.Default.LastFileName != defaultFileName
                 && IsFileReadable(Settings.Default.LastFileName)
+                && Settings.Default.LastFileName != defaultFileName
                 && string.IsNullOrEmpty(lastFileName)) {
                 lastFileName = Settings.Default.LastFileName;
                 tasText.ReloadFile();
