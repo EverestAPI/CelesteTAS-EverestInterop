@@ -20,7 +20,7 @@ public static class FastForwardBoost {
     }
 
     private static void BackdropRendererOnUpdate(On.Celeste.BackdropRenderer.orig_Update orig, BackdropRenderer self, Scene scene) {
-        if (SkipUpdate) {
+        if (SkipUpdate && Engine.FrameCounter % 1000 > 0) {
             return;
         }
 

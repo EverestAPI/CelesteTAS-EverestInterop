@@ -52,9 +52,9 @@ public static class AutoMute {
     private static bool frameStep => Manager.Running && (Manager.state & State.FrameStep) != 0;
 
     public static void Load() {
-        On.FMOD.Studio.EventDescription.createInstance += EventDescriptionOnCreateInstance;
         On.Celeste.Audio.SetMusic += AudioOnSetMusic;
         On.Celeste.Audio.SetAltMusic += AudioOnSetAltMusic;
+        On.FMOD.Studio.EventDescription.createInstance += EventDescriptionOnCreateInstance;
         On.Monocle.Scene.Update += SceneOnUpdate;
         On.Celeste.Level.Render += LevelOnRender;
     }
