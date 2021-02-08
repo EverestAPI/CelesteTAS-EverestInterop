@@ -45,31 +45,49 @@ public static class AutoMute {
     };
 
     private static readonly Dictionary<WeakReference<EventInstance>, int> LoopAudioInstances = new Dictionary<WeakReference<EventInstance>, int>();
+    private static bool settingMusic;
     private static CelesteTASModuleSettings tasSettings => CelesteTASModule.Settings;
-    private static bool shouldBeMute => Manager.FrameLoops >= 2 && CelesteTASModule.Settings.AutoMute;
+    private static bool shouldBeMute => Manager.FrameLoops >= 2 && CelesteTASModule.Settings.AutoMute && !settingMusic;
     private static bool frameStep => Manager.Running && (Manager.state & State.FrameStep) != 0;
 
     public static void Load() {
         On.FMOD.Studio.EventDescription.createInstance += EventDescriptionOnCreateInstance;
+        On.Celeste.Audio.SetMusic += AudioOnSetMusic;
+        On.Celeste.Audio.SetAltMusic += AudioOnSetAltMusic;
         On.Monocle.Scene.Update += SceneOnUpdate;
         On.Celeste.Level.Render += LevelOnRender;
     }
 
     public static void Unload() {
+        On.Celeste.Audio.SetMusic -= AudioOnSetMusic;
+        On.Celeste.Audio.SetAltMusic -= AudioOnSetAltMusic;
         On.FMOD.Studio.EventDescription.createInstance -= EventDescriptionOnCreateInstance;
         On.Monocle.Scene.Update -= SceneOnUpdate;
         On.Celeste.Level.Render -= LevelOnRender;
+    }
+
+    private static void AudioOnSetAltMusic(On.Celeste.Audio.orig_SetAltMusic orig, string path) {
+        settingMusic = true;
+        orig(path);
+        settingMusic = false;
+    }
+
+    private static bool AudioOnSetMusic(On.Celeste.Audio.orig_SetMusic orig, string path, bool startPlaying, bool allowFadeOut) {
+        settingMusic = true;
+        bool result = orig(path, startPlaying, allowFadeOut);
+        settingMusic = false;
+        return result;
     }
 
     private static RESULT EventDescriptionOnCreateInstance(On.FMOD.Studio.EventDescription.orig_createInstance orig, EventDescription self,
         out EventInstance instance) {
         RESULT result = orig(self, out instance);
 
-        if (shouldBeMute) {
-            instance?.setVolume(0);
-        }
-
         if (instance != null && self.getPath(out string path) == RESULT.OK && path != null) {
+            if (shouldBeMute) {
+                instance.setVolume(0);
+            }
+
             int delayFrames = -1;
             if (LoopAudioPaths.Contains(path)) {
                 delayFrames = 10;
