@@ -11,6 +11,7 @@ public static class AutoMute {
         "event:/char/madeline/wallslide",
         "event:/char/madeline/dreamblock_travel",
         "event:/char/madeline/water_move_shallow",
+        "event:/char/badeline/boss_bullet",
         "event:/ui/game/memorial_dream_loop",
         "event:/ui/game/memorial_dream_text_loop",
         "event:/ui/game/memorial_text_loop",
