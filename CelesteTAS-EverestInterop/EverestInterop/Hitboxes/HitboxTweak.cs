@@ -19,6 +19,7 @@ public class HitboxTweak {
         HitboxFinalBoss.Load();
         On.Monocle.Entity.DebugRender += ModHitbox;
         IL.Celeste.PlayerCollider.DebugRender += PlayerColliderOnDebugRender;
+        On.Celeste.PlayerCollider.DebugRender += AddFeatherHitbox;
         On.Monocle.Circle.Render += CircleOnRender;
         On.Celeste.SoundSource.DebugRender += SoundSource_DebugRender;
     }
@@ -33,8 +34,19 @@ public class HitboxTweak {
         HitboxFinalBoss.Unload();
         On.Monocle.Entity.DebugRender -= ModHitbox;
         IL.Celeste.PlayerCollider.DebugRender -= PlayerColliderOnDebugRender;
+        On.Celeste.PlayerCollider.DebugRender -= AddFeatherHitbox;
         On.Monocle.Circle.Render -= CircleOnRender;
         On.Celeste.SoundSource.DebugRender -= SoundSource_DebugRender;
+    }
+
+    private static void AddFeatherHitbox(On.Celeste.PlayerCollider.orig_DebugRender orig, PlayerCollider self, Camera camera) {
+        orig(self, camera);
+        if (Settings.ShowHitboxes && self.FeatherCollider != null && self.Scene.GetPlayer() is Player player && player.StateMachine.State == Player.StStarFly) {
+            Collider collider = self.Entity.Collider;
+            self.Entity.Collider = self.FeatherCollider;
+            self.FeatherCollider.Render(camera, Color.HotPink * (self.Entity.Collidable ? 1 : 0.5f));
+            self.Entity.Collider = collider;
+        }
     }
 
     private static void ModHitbox(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {
