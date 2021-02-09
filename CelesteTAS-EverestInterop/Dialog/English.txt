@@ -1,6 +1,6 @@
 ﻿# ================================== Menu ==================================
 TAS_ENABLED=                  Enabled
-TAS_SHOW_HITBOXES=            Shwo Hitboxes
+TAS_SHOW_HITBOXES=            Show Hitboxes
 TAS_HITBOX_COLOR_DESCRIPTION_1= Hitbox color can only be edited in the menu of the title screen
 TAS_HITBOX_COLOR_DESCRIPTION_2= Or use the entity/trigger_hitbox_color command in the console
 TAS_SIMPLIFIED_GRAPHICS=      Simplified Graphics
