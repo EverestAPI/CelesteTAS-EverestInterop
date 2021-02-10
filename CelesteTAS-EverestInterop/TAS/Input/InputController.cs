@@ -100,12 +100,12 @@ namespace TAS.Input {
             while (fastForwards.Count > ffIndex && CurrentFF.frame <= CurrentFrame) {
                 ffIndex++;
             }
-            CurrentFrame++;
             if (!CanPlayback)
                 return;
             if (Manager.ExportSyncData)
                 Manager.ExportPlayerInfo();
             Manager.SetInputs(Current);
+            CurrentFrame++;
         }
 
         public void InitializeRecording() {
