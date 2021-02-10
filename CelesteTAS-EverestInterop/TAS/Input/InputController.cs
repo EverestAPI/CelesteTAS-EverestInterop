@@ -19,6 +19,7 @@ namespace TAS.Input {
         public int CurrentFrame { get; private set; }
         private int ffIndex, commandIndex;
         private int initializationFrameCount;
+        public int studioFrameCount;
 
         public InputFrame Previous => inputs[CurrentFrame - 1];
         public InputFrame Current => inputs[CurrentFrame];
@@ -63,6 +64,7 @@ namespace TAS.Input {
         public void RefreshInputs(bool fromStart) {
             if (fromStart) {
                 initializationFrameCount = 0;
+                studioFrameCount = 0;
                 CurrentFrame = 0;
                 ffIndex = 0;
                 commandIndex = 0;
@@ -105,6 +107,10 @@ namespace TAS.Input {
             if (Manager.ExportSyncData)
                 Manager.ExportPlayerInfo();
             Manager.SetInputs(Current);
+            if (studioFrameCount == 0 || Current.Line == Previous.Line)
+                studioFrameCount++;
+            else
+                studioFrameCount = 1;
             CurrentFrame++;
         }
 
@@ -202,8 +208,6 @@ namespace TAS.Input {
                 using (StreamReader sr = new StreamReader(filePath)) {
                     while (!sr.EndOfStream) {
                         string line = sr.ReadLine().Trim();
-                        if (filePath == defaultPath)
-                            studioLine++;
 
                         subLine++;
                         if (subLine < startLine)
@@ -220,6 +224,9 @@ namespace TAS.Input {
 
                         else
                             AddFrames(line, studioLine);
+
+                        if (filePath == defaultPath)
+                            studioLine++;
                     }
                 }
                 return true;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -542,40 +542,14 @@ public partial class Studio : Form {
         } else {
             string tas = CommunicationWrapper.state;
             if (!string.IsNullOrEmpty(tas)) {
-                int index = tas.IndexOf('[');
-                string num = tas.Substring(0, index);
-                int temp = 0;
-                if (int.TryParse(num, out temp)) {
-                    temp--;
-                    if (tasText.CurrentLine != temp) {
-                        tasText.CurrentLine = temp;
-                    }
-                }
-
-                index = tas.IndexOf(':');
-                int pIndex = tas.IndexOf(')', index);
-                if (pIndex >= 0) {
-                    num = tas.Substring(index + 2, tas.IndexOf(')', index) - index - 2);
-                }
-
-                if (int.TryParse(num, out temp)) {
-                    currentFrame = temp;
-                }
-
-                index = tas.IndexOf('(');
-                int index2 = tas.IndexOf(' ', index);
-                if (index2 >= 0) {
-                    num = tas.Substring(index + 1, index2 - index - 1);
-                    if (tasText.CurrentLineText != num) {
-                        tasText.CurrentLineText = Environment.OSVersion.Platform == PlatformID.Unix ? num + "     ." : num;
-                    }
-                }
-
-                index = tas.IndexOf(']');
-                if (index >= 0 && int.TryParse(tas.Substring(index + 1), out temp)) {
-                    tasText.SaveStateLine = temp;
-                }
-            } else {
+                string[] values = tas.Split(',');
+                tasText.CurrentLine = int.Parse(values[0]);
+                tasText.CurrentLineText = values[1];
+                currentFrame = int.Parse(values[2]);
+                totalFrames = int.Parse(values[3]);
+                tasText.SaveStateLine = int.Parse(values[4]);
+            }
+            else {
                 currentFrame = 0;
                 if (tasText.CurrentLine >= 0) {
                     tasText.CurrentLine = -1;

@@ -102,8 +102,14 @@ namespace TAS {
                                                       controller.CurrentFrame <= 1)))
                         DisableRun();
                 }
-                if (controller.CanPlayback) {
-                    string status = controller.Current.Line + "[" + controller.ToString() + "]" + Savestates.StudioHighlightLine;
+                if (controller.CurrentFrame <= controller.inputs.Count) {
+                    string status = string.Join(",", new object[] {
+                        controller.Previous.Line,
+                        controller.studioFrameCount,
+                        controller.CurrentFrame,
+                        controller.inputs.Count,
+                        Savestates.StudioHighlightLine
+                    });
                     CurrentStatus = status;
                 }
             } else {
