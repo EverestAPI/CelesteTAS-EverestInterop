@@ -1,11 +1,11 @@
-﻿using System.Linq;
+using System.Linq;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 
-namespace TAS {
+namespace TAS.Input {
 public class ConsoleHandler {
     public static void ExecuteCommand(string[] command) {
         string[] args = command.Skip(1).ToArray();
@@ -132,7 +132,7 @@ public class ConsoleHandler {
         }
     }
 
-    [Command("giveberry", "Gives player a red berry")]
+    [Monocle.Command("giveberry", "Gives player a red berry")]
     private static void CmdGiveBerry() {
         Level level = Engine.Scene as Level;
         if (level != null) {
@@ -149,7 +149,7 @@ public class ConsoleHandler {
         }
     }
 
-    [Command("clrsav", "clears save data on debug file")]
+    [Monocle.Command("clrsav", "clears save data on debug file")]
     private static void CmdClearSave() {
         SaveData.TryDelete(-1);
         SaveData.Start(new SaveData {Name = "debug"}, -1);
@@ -159,12 +159,12 @@ public class ConsoleHandler {
         stats.AreasIncludingCeleste[0].Modes[0].Completed = true;
     }
 
-    [Command("entity_hitbox_color", "change the entity hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000")]
+    [Monocle.Command("entity_hitbox_color", "change the entity hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000")]
     private static void CmdChangeEntityHitboxColor(string color) {
         CelesteTASModule.Settings.EntityHitboxColor = HitboxColor.HexToColor(color, HitboxColor.DefaultEntityColor);
     }
 
-    [Command("trigger_hitbox_color", "change the trigger hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000")]
+    [Monocle.Command("trigger_hitbox_color", "change the trigger hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000")]
     private static void CmdChangeTriggerHitboxColor(string color) {
         CelesteTASModule.Settings.TriggerHitboxColor = HitboxColor.HexToColor(color, HitboxColor.DefaultTriggerColor);
     }

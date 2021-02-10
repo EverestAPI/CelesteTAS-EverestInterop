@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -177,7 +177,8 @@ public static partial class Manager {
                     return;
                 }
 
-                string inputs = $"{controller.CurrentInputFrame}/{controller.Current.Frames}{controller.Current.ActionsToString()}";
+                //string inputs = $"{controller.CurrentInputFrame}/{controller.Current.Frames}{controller.Current}";
+                string inputs = "this messes up strings reimplement later";  
                 string time = (level.Session.Time / 10000000D).ToString("0.000");
                 double x = (double) player.X + player.PositionRemainder.X;
                 double y = (double) player.Y + player.PositionRemainder.Y;
@@ -230,7 +231,7 @@ public static partial class Manager {
 
                 sw.WriteLine(output);
             } else {
-                string inputs = controller.Current.ActionsToString();
+                string inputs = controller.Current.ToString();
                 if (inputs.Length > 1) {
                     inputs = inputs.Substring(1);
                 }

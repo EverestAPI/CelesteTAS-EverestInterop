@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Monocle;
 
@@ -33,7 +33,7 @@ public static class Benchmark {
         lastFrameCounter = Engine.FrameCounter;
         watch = new Stopwatch();
         watch.Start();
-        $"Benchmark Start: {Manager.controller.filePath}".Log();
+        $"Benchmark Start: {Manager.controller.defaultPath}".Log();
     }
 
     public static void Stop() {

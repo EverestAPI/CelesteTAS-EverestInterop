@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -107,7 +107,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
     }
 
     private void ProcessGetConsoleCommand() {
-        string command = TAS.ConsoleHandler.CreateConsoleCommand();
+        string command = TAS.Input.ConsoleHandler.CreateConsoleCommand();
         if (command != null) {
             byte[] commandBytes = Encoding.Default.GetBytes(command);
             WriteMessageGuaranteed(new Message(MessageIDs.ReturnConsoleCommand, commandBytes));

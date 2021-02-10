@@ -35,11 +35,11 @@ public static class PlayerInfo {
         int result = 0;
         Session session = level.Session;
 
-        bool DrakRoom = nextLevelData.Dark && !session.GetFlag("ignore_darkness_" + nextLevelData.Name);
+        bool DarkRoom = nextLevelData.Dark && !session.GetFlag("ignore_darkness_" + nextLevelData.Name);
 
         float lightingStart = level.Lighting.Alpha;
         float lightingCurrent = lightingStart;
-        float lightingEnd = DrakRoom ? session.DarkRoomAlpha : level.BaseLightingAlpha + session.LightingAlphaAdd;
+        float lightingEnd = DarkRoom ? session.DarkRoomAlpha : level.BaseLightingAlpha + session.LightingAlphaAdd;
         bool lightingWait = lightingStart >= session.DarkRoomAlpha || lightingEnd >= session.DarkRoomAlpha;
         if (lightingWait) {
             while (Math.Abs(lightingCurrent - lightingEnd) > 0.000001f) {

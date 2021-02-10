@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Linq;
 using Celeste;
@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.EverestInterop;
 using TAS.StudioCommunication;
+using TAS.Input;
 using static TAS.Manager;
 
 namespace TAS {
@@ -29,8 +30,10 @@ static class Savestates {
     public static int StudioHighlightLine => (speedrunToolInstalledLazy.Value && IsSaved() && savedLine.HasValue ? savedLine.Value : 0) - 1;
     public static bool SpeedrunToolInstalled => speedrunToolInstalledLazy.Value;
 
-    private static bool BreakpointHasBeenDeleted => IsSaved() && savedByBreakpoint && savedController.InputIndex < controller.inputs.Count &&
-                                                    controller.inputs[savedController.InputIndex].SaveState == false;
+    private static bool BreakpointHasBeenDeleted => 
+            IsSaved() && savedByBreakpoint 
+            && savedController.CurrentFrame < controller.inputs.Count
+            && controller.CurrentFF.SaveState == false;
 
     private static bool IsSaved() {
         return StateManager.Instance.IsSaved && StateManager.Instance.SavedByTas && savedController != null;
@@ -68,15 +71,16 @@ static class Savestates {
 
         // save state when tas run to the last savestate breakpoint
         if (Running
-            && controller.Current.SaveState && !controller.Current.HasSavedState
-            && controller.CurrentInputFrame == controller.Current.Frames
-            && controller.inputs.LastOrDefault(record => record.SaveState) == controller.Current) {
+            && controller.HasFastForward
+            && controller.CurrentFF.SaveState && !controller.CurrentFF.HasSavedState
+            && controller.CurrentFF.frame == controller.CurrentFrame
+            && controller.fastForwards.LastOrDefault(record => record.SaveState) == controller.CurrentFF) {
             Save(true);
             return;
         }
 
         // auto load state after entering the level if tas is started from outside the level.
-        if (Running && IsSaved() && Engine.Scene is Level && controller.InputIndex < savedController.InputIndex) {
+        if (Running && IsSaved() && Engine.Scene is Level && controller.CurrentFrame < savedController.CurrentFrame) {
             Load();
         }
     }
@@ -101,8 +105,8 @@ static class Savestates {
             return;
         }
 
-        if (breakpoint && controller.Current.SaveState) {
-            controller.Current.HasSavedState = true;
+        if (breakpoint && controller.CurrentFF.SaveState) {
+            controller.CurrentFF.HasSavedState = true;
         }
 
         if (breakpoint) {
@@ -131,7 +135,7 @@ static class Savestates {
         }
 
         if (IsSaved()) {
-            controller.AdvanceFrame(true);
+            controller.RefreshInputs();
             if (!BreakpointHasBeenDeleted && savedController.SavedChecksum == controller.Checksum(savedController)) {
                 if (Running && controller.CurrentFrame == savedController.CurrentFrame) {
                     // Don't repeat load state, just play
@@ -175,10 +179,10 @@ static class Savestates {
 
     private static void LoadStateRoutine() {
         controller = savedController.Clone();
-        controller.AdvanceFrame(true);
-        if (savedByBreakpoint && controller.Current.SaveState) {
+        controller.RefreshInputs();
+        if (savedByBreakpoint && controller.CurrentFF.SaveState) {
             // HasSavedState is set to false by AdvanceFrame(true), so we need restore it.
-            controller.Current.HasSavedState = true;
+            controller.CurrentFF.HasSavedState = true;
         }
 
         SetTasState();
