@@ -135,7 +135,7 @@ static class Savestates {
         }
 
         if (IsSaved()) {
-            controller.RefreshInputs();
+            controller.RefreshInputs(false);
             if (!BreakpointHasBeenDeleted && savedController.SavedChecksum == controller.Checksum(savedController)) {
                 if (Running && controller.CurrentFrame == savedController.CurrentFrame) {
                     // Don't repeat load state, just play
@@ -179,7 +179,7 @@ static class Savestates {
 
     private static void LoadStateRoutine() {
         controller = savedController.Clone();
-        controller.RefreshInputs();
+        controller.RefreshInputs(false);
         if (savedByBreakpoint && controller.CurrentFF.SaveState) {
             // HasSavedState is set to false by AdvanceFrame(true), so we need restore it.
             controller.CurrentFF.HasSavedState = true;

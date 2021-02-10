@@ -29,6 +29,8 @@ namespace TAS.Input {
         private Dictionary<string, DateTime> usedFiles = new Dictionary<string, DateTime>();
         private bool NeedsReload {
             get {
+                if (usedFiles.Count == 0)
+                    return true;
                 foreach (var file in usedFiles) {
                     if (File.GetLastWriteTime(file.Key) != file.Value) {
                         return true;
@@ -58,25 +60,34 @@ namespace TAS.Input {
         }
 
 
-        public void InitializePlayback() {
-            int trycount = 5;
-            while (!ReadFile(defaultPath) && trycount >= 0) {
-                System.Threading.Thread.Sleep(50);
-                trycount--;
+        public void RefreshInputs(bool fromStart) {
+            if (fromStart) {
+                initializationFrameCount = 0;
+                CurrentFrame = 0;
+                ffIndex = 0;
+                commandIndex = 0;
             }
-        }
-
-        public void RefreshInputs() {
             if (NeedsReload) {
-                int currentFrame = CurrentFrame;
-                InitializePlayback();
-                CurrentFrame = currentFrame;
+                int trycount = 5;
+                while (trycount > 0) {
+                    initializationFrameCount = 0;
+                    ffIndex = 0;
+                    commandIndex = 0;
+                    inputs.Clear();
+                    fastForwards.Clear();
+                    commands.Clear();
+                    usedFiles.Clear();
+                    if (ReadFile(defaultPath))
+                        break;
+                    System.Threading.Thread.Sleep(50);
+                    trycount--;
+                }
             }
         }
 
         public void AdvanceFrame() {
 
-            RefreshInputs();
+            RefreshInputs(false);
 
             if (NeedsToWait)
                 return;
@@ -180,14 +191,6 @@ namespace TAS.Input {
         public bool ReadFile(string filePath, int startLine = 0, int endLine = int.MaxValue, int studioLine = 0) {
             try {
                 if (filePath == defaultPath && startLine == 0) {
-                    initializationFrameCount = 0;
-                    CurrentFrame = 0;
-                    ffIndex = 0;
-                    commandIndex = 0;
-                    inputs.Clear();
-                    fastForwards.Clear();
-                    commands.Clear();
-                    usedFiles.Clear();
                     if (!File.Exists(filePath))
                         return false;
                 }

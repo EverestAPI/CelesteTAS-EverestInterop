@@ -69,7 +69,7 @@ namespace TAS {
         public static CelesteTASModuleSettings settings => CelesteTASModule.Settings;
         private static bool ShouldForceState => HasFlag(nextState, State.FrameStep) && !Hotkeys.hotkeyFastForward.overridePressed;
 
-        public static void UpdateInputs() {
+        public static void Update() {
             lastState = state;
             Hotkeys.Update();
             Savestates.HandleSaveStates();
@@ -207,7 +207,7 @@ namespace TAS {
                 }
             } else if (HasFlag(nextState, State.Enable)) {
                 if (Engine.Scene is Level level && (!level.CanPause || Engine.FreezeTimer > 0)) {
-                    controller.InitializePlayback();
+                    controller.RefreshInputs(true);
                     if (controller.Current.HasActions(Actions.Restart) || controller.Current.HasActions(Actions.Start)) {
                         nextState |= State.Delay;
                         FrameLoops = FastForward.DefaultFastForwardSpeed;
@@ -246,7 +246,7 @@ namespace TAS {
 
         private static void EnableRun() {
             nextState &= ~State.Enable;
-            UpdateVariables(false);
+            InitializeRun(false);
             BackupPlayerBindings();
             kbTextInput = Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput;
             Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = false;
@@ -279,19 +279,19 @@ namespace TAS {
             GameInput.QuickRestart.Nodes = playerBindings[4];
         }
 
-        private static void UpdateVariables(bool recording) {
+        private static void InitializeRun(bool recording) {
             state |= State.Enable;
             state &= ~State.FrameStep;
             if (recording) {
                 Recording = recording;
                 state |= State.Record;
                 controller.InitializeRecording();
-            } else {
+            } 
+            else {
                 state &= ~State.Record;
-                controller.InitializePlayback();
+                controller.RefreshInputs(true);
+                Running = true;
             }
-
-            Running = true;
         }
 
         public static bool HasFlag(State state, State flag) => (state & flag) == flag;

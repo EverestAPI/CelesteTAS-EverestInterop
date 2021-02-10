@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 
-namespace TAS {
+namespace TAS.Input {
 [AttributeUsage(AttributeTargets.Method)]
 public class TASCommandAttribute : Attribute {
     public string[] args;

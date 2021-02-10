@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -146,7 +146,7 @@ class Core {
         }
 
         if (Manager.Running || Engine.Scene?.Entities.Any(entity => entity.GetType().IsSubclassOf(typeof(KeyboardConfigUI))) != true) {
-            Manager.UpdateInputs();
+            Manager.Update();
         }
 
         // Hacky, but this works just good enough.
