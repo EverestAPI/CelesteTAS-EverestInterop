@@ -103,7 +103,7 @@ namespace TAS {
                                                       controller.CurrentFrame <= 1)))
                         DisableRun();
                 }
-                if (canPlayback) {
+                if (canPlayback && controller.CurrentFrame != 0) {
                     string status = string.Join(",", new object[] {
                         controller.Previous.Line,
                         controller.studioFrameCount,

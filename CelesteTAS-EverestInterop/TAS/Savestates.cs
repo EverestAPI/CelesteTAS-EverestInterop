@@ -30,10 +30,10 @@ static class Savestates {
     public static int StudioHighlightLine => (speedrunToolInstalledLazy.Value && IsSaved() && savedLine.HasValue ? savedLine.Value : 0) - 1;
     public static bool SpeedrunToolInstalled => speedrunToolInstalledLazy.Value;
 
-    private static bool BreakpointHasBeenDeleted => 
-            IsSaved() && savedByBreakpoint 
-            && savedController.CurrentFrame < controller.inputs.Count
-            && controller.CurrentFF.SaveState == false;
+        private static bool BreakpointHasBeenDeleted =>
+                IsSaved() && savedByBreakpoint
+                && savedController.CurrentFrame < controller.inputs.Count
+                && !controller.fastForwards.Any(ff => ff.SaveState && ff.frame == savedController.CurrentFF.frame);
 
     private static bool IsSaved() {
         return StateManager.Instance.IsSaved && StateManager.Instance.SavedByTas && savedController != null;

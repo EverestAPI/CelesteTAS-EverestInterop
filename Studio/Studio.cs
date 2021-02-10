@@ -543,7 +543,9 @@ public partial class Studio : Form {
             string tas = CommunicationWrapper.state;
             if (!string.IsNullOrEmpty(tas)) {
                 string[] values = tas.Split(',');
-                tasText.CurrentLine = int.Parse(values[0]);
+                int currentLine = int.Parse(values[0]);
+                if (tasText.CurrentLine != currentLine)
+                    tasText.CurrentLine = currentLine;
                 tasText.CurrentLineText = values[1];
                 currentFrame = int.Parse(values[2]);
                 totalFrames = int.Parse(values[3]);

@@ -177,8 +177,6 @@ public static partial class Manager {
                     return;
                 }
 
-                //string inputs = $"{controller.CurrentInputFrame}/{controller.Current.Frames}{controller.Current}";
-                string inputs = "this messes up strings reimplement later";  
                 string time = (level.Session.Time / 10000000D).ToString("0.000");
                 double x = (double) player.X + player.PositionRemainder.X;
                 double y = (double) player.Y + player.PositionRemainder.Y;
@@ -207,7 +205,7 @@ public static partial class Manager {
                 }
 
                 string output = string.Join("\t",
-                    controller.Current.Line, inputs, controller.CurrentFrame, time, pos, speed, (PlayerState) player.StateMachine.State,
+                    controller.Current.Line, controller.Current, controller.CurrentFrame, time, pos, speed, (PlayerState) player.StateMachine.State,
                     statuses);
 
                 foreach (MethodInfo method in trackedEntities) {

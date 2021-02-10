@@ -291,8 +291,8 @@ namespace TAS.Input {
         public InputController Clone() {
             InputController clone = new InputController(defaultPath);
 
-            for (int i = 1; i < inputs.Count; i++) {
-                if (i != 0 && !object.ReferenceEquals(inputs[i], inputs[i - 1]))
+            for (int i = 0; i < inputs.Count; i++) {
+                if (i == 0 || !object.ReferenceEquals(inputs[i], inputs[i - 1]))
                     clone.inputs.Add(inputs[i].Clone());
                 else
                     clone.inputs.Add(clone.inputs[i - 1]);
