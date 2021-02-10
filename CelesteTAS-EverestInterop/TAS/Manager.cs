@@ -104,14 +104,7 @@ namespace TAS {
                         DisableRun();
                 }
                 if (canPlayback && controller.CurrentFrame != 0) {
-                    string status = string.Join(",", new object[] {
-                        controller.Previous.Line,
-                        controller.studioFrameCount,
-                        controller.CurrentFrame,
-                        controller.inputs.Count,
-                        Savestates.StudioHighlightLine
-                    });
-                    CurrentStatus = status;
+                    UpdateManagerStatus();
                 }
             } else {
                 Running = false;
@@ -127,6 +120,17 @@ namespace TAS {
             }
 
             StudioCommunicationClient.instance?.SendStateAndPlayerData(CurrentStatus, PlayerStatus, !ShouldForceState);
+        }
+
+        public static void UpdateManagerStatus() {
+            string status = string.Join(",", new object[] {
+                controller.Previous.Line,
+                controller.studioFrameCount,
+                controller.CurrentFrame,
+                controller.inputs.Count,
+                Savestates.StudioHighlightLine
+            });
+            CurrentStatus = status;
         }
 
         public static bool IsLoading() {

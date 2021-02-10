@@ -88,7 +88,6 @@ namespace TAS.Input {
         }
 
         public void AdvanceFrame() {
-
             RefreshInputs(false);
 
             if (NeedsToWait)
