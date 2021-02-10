@@ -79,6 +79,7 @@ namespace TAS {
             FrameStepping();
 
             if (HasFlag(state, State.Enable)) {
+                bool canPlayback = controller.CanPlayback;
                 Running = true;
 
                 if (HasFlag(state, State.FrameStep)) {
@@ -97,12 +98,12 @@ namespace TAS {
                         FrameLoops = 1;
                     }
 
-                    if (!controller.CanPlayback || (!allowUnsafeInput &&
+                    if (!canPlayback || (!allowUnsafeInput &&
                                                     !(Engine.Scene is Level || Engine.Scene is LevelLoader || Engine.Scene is LevelExit ||
                                                       controller.CurrentFrame <= 1)))
                         DisableRun();
                 }
-                if (controller.CurrentFrame <= controller.inputs.Count) {
+                if (canPlayback) {
                     string status = string.Join(",", new object[] {
                         controller.Previous.Line,
                         controller.studioFrameCount,
