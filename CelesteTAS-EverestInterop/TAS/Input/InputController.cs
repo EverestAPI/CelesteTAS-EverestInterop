@@ -274,7 +274,7 @@ namespace TAS.Input {
                         if (angle == "")
                             frame.Angle = 0;
                         else
-                            frame.Angle = float.Parse(line.Trim());
+                            frame.Angle = float.Parse(angle.Trim());
                         continue;
                 }
 
