@@ -194,8 +194,13 @@ namespace TAS {
                         nextState |= State.FrameStep;
                     }
                 } else if (pause && !Hotkeys.hotkeyPause.wasPressed) {
-                    state &= ~State.FrameStep;
-                    nextState &= ~State.FrameStep;
+                    if (!HasFlag(state, State.FrameStep)) {
+                        state |= State.FrameStep;
+                        nextState &= ~State.FrameStep;
+                    } else {
+                        state &= ~State.FrameStep;
+                        nextState &= ~State.FrameStep;
+                    }
                 } else if (HasFlag(lastState, State.FrameStep) && HasFlag(state, State.FrameStep) && Hotkeys.hotkeyFastForward.pressed) {
                     state &= ~State.FrameStep;
                     nextState |= State.FrameStep;
@@ -252,7 +257,7 @@ namespace TAS {
             enforceLegal = false;
             allowUnsafeInput = false;
             analogueMode = AnalogueMode.Ignore;
-            Hotkeys.hotkeyFastForward.overridePressed = false;
+            Hotkeys.ReleaseAllKeys();
         }
 
         private static void EnableRun() {

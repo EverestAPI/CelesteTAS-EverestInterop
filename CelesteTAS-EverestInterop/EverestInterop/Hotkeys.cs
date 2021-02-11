@@ -203,6 +203,12 @@ public static class Hotkeys {
         }
     }
 
+    public static void ReleaseAllKeys() {
+        foreach (Hotkey hotkey in hotkeys) {
+            hotkey.overridePressed = false;
+        }
+    }
+
     public static void Load() {
         InputInitialize();
         if (typeof(ModuleSettingsKeyboardConfigUI).GetMethodInfo("<Reload>b__6_0") is MethodInfo methodInfo) {
