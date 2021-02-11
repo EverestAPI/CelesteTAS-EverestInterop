@@ -46,7 +46,7 @@ namespace TAS {
         public static bool enforceLegal, allowUnsafeInput;
         public static Vector2 LastPos;
         public static Buttons grabButton = Buttons.Back;
-        public static AnalogueMode analogueMode = AnalogueMode.Ignore; //Circle; //Needs to be tested with the libTAS converter
+        public static AnalogueMode analogueMode = AnalogueMode.Ignore; //Needs to be tested with the libTAS converter
         public static bool kbTextInput;
 
         private static long lastTimer;
@@ -125,7 +125,7 @@ namespace TAS {
         public static void UpdateManagerStatus() {
             string status = string.Join(",", new object[] {
                 controller.Previous.Line,
-                controller.studioFrameCount,
+                controller.StudioFrameCount,
                 controller.CurrentFrame,
                 controller.inputs.Count,
                 Savestates.StudioHighlightLine
@@ -251,7 +251,7 @@ namespace TAS {
 
             enforceLegal = false;
             allowUnsafeInput = false;
-            analogueMode = AnalogueMode.Ignore; //Circle;
+            analogueMode = AnalogueMode.Ignore;
             Hotkeys.hotkeyFastForward.overridePressed = false;
         }
 

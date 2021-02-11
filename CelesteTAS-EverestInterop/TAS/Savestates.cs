@@ -25,15 +25,13 @@ static class Savestates {
         Type.GetType("Celeste.Mod.SpeedrunTool.SaveLoad.StateManager, SpeedrunTool") != null
     );
 
-    // studio highlight line number start from 0
-    // input record line number start from 1
-    public static int StudioHighlightLine => (speedrunToolInstalledLazy.Value && IsSaved() && savedLine.HasValue ? savedLine.Value : 0) - 1;
+    public static int StudioHighlightLine => (speedrunToolInstalledLazy.Value && IsSaved() && savedLine.HasValue ? savedLine.Value : -1);
     public static bool SpeedrunToolInstalled => speedrunToolInstalledLazy.Value;
 
     private static bool BreakpointHasBeenDeleted =>
             IsSaved() && savedByBreakpoint
-            && savedController.CurrentFrame < controller.inputs.Count
-            && !controller.fastForwards.Any(ff => ff.SaveState && ff.frame == savedController.CurrentFF.frame);
+            && savedController.FfIndex < controller.fastForwards.Count
+            && controller.fastForwards[savedController.FfIndex].SaveState == false;
 
     private static bool IsSaved() {
         return StateManager.Instance.IsSaved && StateManager.Instance.SavedByTas && savedController != null;
@@ -71,7 +69,7 @@ static class Savestates {
 
         // save state when tas run to the last savestate breakpoint
         if (Running
-            && controller.HasFastForward
+            && controller.fastForwards.Count > controller.FfIndex
             && controller.CurrentFF.SaveState && !controller.CurrentFF.HasSavedState
             && controller.CurrentFF.frame == controller.CurrentFrame
             && controller.fastForwards.LastOrDefault(record => record.SaveState) == controller.CurrentFF) {
@@ -110,7 +108,7 @@ static class Savestates {
         }
 
         if (breakpoint) {
-            savedLine = controller.Current.Line + 1;
+            savedLine = controller.Current.Line - 1;
         } else {
             savedLine = controller.Current.Line;
         }
@@ -169,6 +167,10 @@ static class Savestates {
         savedPlayerStatus = null;
         savedLastPos = default;
         savedByBreakpoint = false;
+        foreach (FastForward fastForward in controller.fastForwards) {
+            fastForward.HasSavedState = false;
+        }
+
         UpdateStudio();
     }
 
@@ -180,10 +182,14 @@ static class Savestates {
     private static void LoadStateRoutine() {
         controller = savedController.Clone();
         controller.RefreshInputs(false);
-        if (savedByBreakpoint && controller.CurrentFF.SaveState) {
-            // HasSavedState is set to false by AdvanceFrame(true), so we need restore it.
-            controller.CurrentFF.HasSavedState = true;
-        }
+       // Some fields were reset by RefreshInputs(false), so we need restore it.
+       controller.FfIndex = savedController.FfIndex;
+       for (int i = 0; i < savedController.fastForwards.Count; i++) {
+           if (savedController.fastForwards[i].HasSavedState && i >= controller.fastForwards.Count - 1) {
+               controller.fastForwards[i].HasSavedState = true;
+               break;
+           }
+       }
 
         SetTasState();
         analogueMode = savedAnalogueMode;
@@ -193,7 +199,7 @@ static class Savestates {
     }
 
     private static void SetTasState() {
-        if ((CelesteTASModule.Settings.PauseAfterLoadState || savedByBreakpoint) && !controller.HasFastForward) {
+        if ((CelesteTASModule.Settings.PauseAfterLoadState || savedByBreakpoint) && !(controller.HasFastForward)) {
             state |= State.FrameStep;
         } else {
             state &= ~State.FrameStep;
@@ -203,10 +209,9 @@ static class Savestates {
     }
 
     private static void UpdateStudio() {
-        if (!controller.CanPlayback || controller.Current != null) {
+        if (controller.CurrentFrame > 0) {
             UpdateManagerStatus();
         }
-
         StudioCommunicationClient.instance?.SendStateAndPlayerData(CurrentStatus, PlayerStatus, false);
     }
 }

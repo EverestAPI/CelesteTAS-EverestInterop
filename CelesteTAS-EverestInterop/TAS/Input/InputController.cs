@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
-using Celeste;
 using Microsoft.Xna.Framework;
 
 namespace TAS.Input {
@@ -17,14 +15,15 @@ namespace TAS.Input {
         public List<Command> commands = new List<Command>();
 
         public int CurrentFrame { get; private set; }
-        private int ffIndex, commandIndex;
+        public int FfIndex;
+        private int commandIndex;
         private int initializationFrameCount;
-        public int studioFrameCount;
+        public int StudioFrameCount;
 
         public InputFrame Previous => inputs[CurrentFrame - 1];
         public InputFrame Current => inputs[CurrentFrame];
         public InputFrame Next => inputs[CurrentFrame + 1];
-        public FastForward CurrentFF => fastForwards[ffIndex];
+        public FastForward CurrentFF => fastForwards[FfIndex];
         public Command CurrentCommand => commands[commandIndex];
 
         private Dictionary<string, DateTime> usedFiles = new Dictionary<string, DateTime>();
@@ -45,9 +44,9 @@ namespace TAS.Input {
         public bool CanPlayback => CurrentFrame < inputs.Count;
         public bool NeedsToWait => Manager.IsLoading();
 
-        public bool HasFastForward => fastForwards.Count > ffIndex;
+        public bool HasFastForward => fastForwards.Count > FfIndex && !Break;
         public int FastForwardSpeed => CurrentFF.speed;
-        public bool Break => ffIndex + 1 == fastForwards.Count && CurrentFF.frame == CurrentFrame;
+        public bool Break => FfIndex + 1 == fastForwards.Count && CurrentFF.frame == CurrentFrame;
 
         private string _checksum;
         public string SavedChecksum {
@@ -60,20 +59,19 @@ namespace TAS.Input {
             this.defaultPath = filePath;
         }
 
-
         public void RefreshInputs(bool fromStart) {
             if (fromStart) {
                 initializationFrameCount = 0;
-                studioFrameCount = 0;
+                StudioFrameCount = 0;
                 CurrentFrame = 0;
-                ffIndex = 0;
+                FfIndex = 0;
                 commandIndex = 0;
             }
             if (NeedsReload) {
                 int trycount = 5;
                 while (trycount > 0) {
                     initializationFrameCount = 0;
-                    ffIndex = 0;
+                    FfIndex = 0;
                     commandIndex = 0;
                     inputs.Clear();
                     fastForwards.Clear();
@@ -98,18 +96,18 @@ namespace TAS.Input {
                     CurrentCommand.Invoke();
                 commandIndex++;
             }
-            while (fastForwards.Count > ffIndex && CurrentFF.frame <= CurrentFrame) {
-                ffIndex++;
+            while (fastForwards.Count > FfIndex && CurrentFF.frame <= CurrentFrame) {
+                FfIndex++;
             }
             if (!CanPlayback)
                 return;
             if (Manager.ExportSyncData)
                 Manager.ExportPlayerInfo();
             Manager.SetInputs(Current);
-            if (studioFrameCount == 0 || Current.Line == Previous.Line)
-                studioFrameCount++;
+            if (StudioFrameCount == 0 || Current.Line == Previous.Line)
+                StudioFrameCount++;
             else
-                studioFrameCount = 1;
+                StudioFrameCount = 1;
             CurrentFrame++;
         }
 
@@ -237,7 +235,7 @@ namespace TAS.Input {
         public void AddFrames(string line, int studioLine) {
             InputFrame frame = new InputFrame();
             frame.Line = studioLine;
-            int index = line.IndexOf(",");
+            int index = line.IndexOf(",", StringComparison.Ordinal);
             int frames = 0;
             string framesStr;
             if (index == -1) {
@@ -303,8 +301,10 @@ namespace TAS.Input {
                 clone.commands.Add(command.Clone());
 
             clone.CurrentFrame = CurrentFrame;
-            clone.ffIndex = ffIndex;
+            clone.FfIndex = FfIndex;
+            clone.StudioFrameCount = StudioFrameCount;
             clone.commandIndex = commandIndex;
+            clone.usedFiles = new Dictionary<string, DateTime>(usedFiles);
 
             return clone;
         }
