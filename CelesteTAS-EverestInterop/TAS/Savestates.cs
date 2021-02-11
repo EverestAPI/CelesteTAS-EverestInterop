@@ -30,8 +30,8 @@ static class Savestates {
 
     private static bool BreakpointHasBeenDeleted =>
             IsSaved() && savedByBreakpoint
-            && savedController.FfIndex < controller.fastForwards.Count
-            && controller.fastForwards[savedController.FfIndex].SaveState == false;
+            && savedController.FfIndex < savedController.fastForwards.Count
+            && !controller.fastForwards.Any(ff => ff.SaveState && ff.frame == savedController.CurrentFF.frame);
 
     private static bool IsSaved() {
         return StateManager.Instance.IsSaved && StateManager.Instance.SavedByTas && savedController != null;
