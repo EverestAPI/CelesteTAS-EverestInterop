@@ -84,11 +84,6 @@ static class Savestates {
         }
     }
 
-    private static IEnumerator WaitForSavingState() {
-        yield return null;
-        SetTasState();
-    }
-
     private static void Save(bool breakpoint) {
         if (IsSaved()) {
             if (controller.CurrentFrame == savedController.CurrentFrame) {
@@ -121,11 +116,6 @@ static class Savestates {
 
         savedController = controller.Clone();
         LoadStateRoutine();
-
-        state |= State.FrameStep;
-        nextState &= ~State.FrameStep;
-
-        routine = new Coroutine(WaitForSavingState());
     }
 
     private static void Load() {
@@ -185,8 +175,8 @@ static class Savestates {
         controller.RefreshInputs(false);
        // Some fields were reset by RefreshInputs(false), so we need restore it.
        controller.FfIndex = savedController.FfIndex;
-       for (int i = 0; i < savedController.fastForwards.Count; i++) {
-           if (savedController.fastForwards[i].HasSavedState && i >= controller.fastForwards.Count - 1) {
+       for (int i = 0; i < savedController.fastForwards.Count && i < controller.fastForwards.Count; i++) {
+           if (savedController.fastForwards[i].HasSavedState) {
                controller.fastForwards[i].HasSavedState = true;
                break;
            }
