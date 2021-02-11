@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Microsoft.Xna.Framework;
 
@@ -309,19 +310,23 @@ namespace TAS.Input {
             return clone;
         }
 
-        public string Checksum(int toInputIndex) {
+        public string Checksum(int toInputFrame) {
             StringBuilder result = new StringBuilder(defaultPath);
             result.AppendLine();
 
             try {
-                int checkInputIndex = 0;
+                int checkInputFrame = 0;
 
-                while (checkInputIndex <= toInputIndex) {
-                    InputFrame current = inputs[checkInputIndex];
-                    result.AppendLine(current.ToString());
-                    checkInputIndex++;
+                while (checkInputFrame <= toInputFrame) {
+                    InputFrame currentInput = inputs[checkInputFrame];
+                    result.AppendLine(currentInput.ToString());
+
+                    if (commands.FirstOrDefault(command => command.frame == checkInputFrame) is Command currentCommand) {
+                        result.Append(currentCommand.lineText);
+                    }
+
+                    checkInputFrame++;
                 }
-
                 return SavedChecksum = MD5Helper.ComputeHash(result.ToString());
             } catch {
                 return SavedChecksum = MD5Helper.ComputeHash(result.ToString());

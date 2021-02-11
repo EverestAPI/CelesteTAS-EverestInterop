@@ -1,22 +1,18 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TAS.Input {
     public class Command {
-        public int frame;
-        public Action commandCall;
-        public int studioLine;
-        public Command(int frame, Action commandCall, int studioLine) {
+        public readonly int frame;
+        private readonly Action commandCall;
+        public readonly string lineText;
+        public Command(int frame, Action commandCall, string lineText) {
             this.frame = frame;
             this.commandCall = commandCall;
-            this.studioLine = studioLine;
+            this.lineText = lineText;
         }
 
         public void Invoke() => commandCall.Invoke();
 
-        public Command Clone() => new Command(frame, commandCall, studioLine);
+        public Command Clone() => new Command(frame, commandCall, lineText);
     }
 }
