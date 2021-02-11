@@ -69,6 +69,7 @@ static class Savestates {
 
         // save state when tas run to the last savestate breakpoint
         if (Running
+            && controller.inputs.Count > controller.CurrentFrame
             && controller.fastForwards.Count > controller.FfIndex
             && controller.CurrentFF.SaveState && !controller.CurrentFF.HasSavedState
             && controller.CurrentFF.frame == controller.CurrentFrame

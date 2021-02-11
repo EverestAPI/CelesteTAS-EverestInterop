@@ -93,7 +93,7 @@ namespace TAS {
                 */
                 else {
                     controller.AdvanceFrame();
-                    if (controller.Break) {
+                    if (controller.Break && controller.CurrentFrame < controller.inputs.Count - 1) {
                         nextState |= State.FrameStep;
                         FrameLoops = 1;
                     }
