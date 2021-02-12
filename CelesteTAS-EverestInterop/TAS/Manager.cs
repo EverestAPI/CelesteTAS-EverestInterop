@@ -37,6 +37,8 @@ namespace TAS {
         private static readonly GetBerryFloat StrawberryCollectTimer;
         private static readonly GetFloat DashCooldownTimer;
         private static readonly GetFloat JumpGraceTimer;
+        private static readonly GetPlayerSeekerSpeed PlayerSeekerSpeed;
+        private static readonly GetPlayerSeekerDashTimer PlayerSeekerDashTimer;
 
         public static bool Running, Recording;
         public static InputController controller = new InputController("Celeste.tas");
@@ -45,6 +47,7 @@ namespace TAS {
         public static int FrameLoops = 1;
         public static bool enforceLegal, allowUnsafeInput;
         public static Vector2 LastPos;
+        public static Vector2 LastPlayerSeekerPos;
         public static Buttons grabButton = Buttons.Back;
         public static AnalogueMode analogueMode = AnalogueMode.Ignore; //Needs to be tested with the libTAS converter
         public static bool kbTextInput;
@@ -53,17 +56,24 @@ namespace TAS {
         private static List<VirtualButton.Node>[] playerBindings;
 
         static Manager() {
-            FieldInfo strawberryCollectTimer = typeof(Strawberry).GetFieldInfo("collectTimer");
-            FieldInfo dashCooldownTimer = typeof(Player).GetFieldInfo("dashCooldownTimer");
-            FieldInfo jumpGraceTimer = typeof(Player).GetFieldInfo("jumpGraceTimer");
             MethodInfo WallJumpCheck = typeof(Player).GetMethodInfo("WallJumpCheck");
             MethodInfo UpdateVirtualInputs = typeof(MInput).GetMethodInfo("UpdateVirtualInputs");
 
+            FieldInfo strawberryCollectTimer = typeof(Strawberry).GetFieldInfo("collectTimer");
+            FieldInfo dashCooldownTimer = typeof(Player).GetFieldInfo("dashCooldownTimer");
+            FieldInfo jumpGraceTimer = typeof(Player).GetFieldInfo("jumpGraceTimer");
+            FieldInfo playerSeekerSpeed = typeof(PlayerSeeker).GetFieldInfo("speed");
+            FieldInfo playerSeekerDashTimer = typeof(PlayerSeeker).GetFieldInfo("dashTimer");
+
+
             Manager.UpdateVirtualInputs = (d_UpdateVirtualInputs)UpdateVirtualInputs.CreateDelegate(typeof(d_UpdateVirtualInputs));
             Manager.WallJumpCheck = (d_WallJumpCheck)WallJumpCheck.CreateDelegate(typeof(d_WallJumpCheck));
+
             StrawberryCollectTimer = strawberryCollectTimer.CreateDelegate_Get<GetBerryFloat>();
             DashCooldownTimer = dashCooldownTimer.CreateDelegate_Get<GetFloat>();
             JumpGraceTimer = jumpGraceTimer.CreateDelegate_Get<GetFloat>();
+            PlayerSeekerSpeed = playerSeekerSpeed.CreateDelegate_Get<GetPlayerSeekerSpeed>();
+            PlayerSeekerDashTimer = playerSeekerDashTimer.CreateDelegate_Get<GetPlayerSeekerDashTimer>();
         }
 
         public static CelesteTASModuleSettings settings => CelesteTASModule.Settings;
@@ -503,11 +513,10 @@ namespace TAS {
 
         //The things we do for faster replay times
         private delegate void d_UpdateVirtualInputs();
-
         private delegate bool d_WallJumpCheck(Player player, int dir);
-
         private delegate float GetBerryFloat(Strawberry berry);
-
         private delegate float GetFloat(Player player);
+        private delegate Vector2 GetPlayerSeekerSpeed(PlayerSeeker playerSeeker);
+        private delegate float GetPlayerSeekerDashTimer(PlayerSeeker playerSeeker);
     }
 }

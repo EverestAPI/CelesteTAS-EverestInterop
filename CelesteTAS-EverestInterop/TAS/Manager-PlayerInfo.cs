@@ -27,15 +27,27 @@ public static partial class Manager {
                 long chapterTime = level.Session.Time;
                 if (chapterTime != lastTimer || LastPos != player.ExactPosition) {
                     framesPerSecond = 60f / Engine.TimeRateB;
-                    string pos = GetAdjustedPos(player.Position, player.PositionRemainder);
+                    string pos = "Pos:   " + GetAdjustedPos(player.Position, player.PositionRemainder);
                     string speed = $"Speed: {player.Speed.X.ToString("0.00")}, {player.Speed.Y.ToString("0.00")}";
                     Vector2 diff = (player.ExactPosition - LastPos) * 60f;
                     string vel = $"Vel:   {diff.X.ToString("0.00")}, {diff.Y.ToString("0.00")}";
                     string polarvel = $"Fly:   {diff.Length().ToString("0.00")}, {GetAngle(diff).ToString("0.00")}°";
+
                     string miscstats = $"Stamina: {player.Stamina.ToString("0")}  "
                                        + (WallJumpCheck(player, 1) ? "Wall-R " : string.Empty)
                                        + (WallJumpCheck(player, -1) ? "Wall-L " : string.Empty);
                     int dashCooldown = (int) (DashCooldownTimer(player) * framesPerSecond);
+
+                    PlayerSeeker playerSeeker = level.Entities.FindFirst<PlayerSeeker>();
+                    if (playerSeeker != null) {
+                        pos = GetAdjustedPos(playerSeeker.Position, playerSeeker.PositionRemainder);
+                        speed = $"Speed: {PlayerSeekerSpeed(playerSeeker).X.ToString("0.00")}, {PlayerSeekerSpeed(playerSeeker).Y.ToString("0.00")}";
+                        diff = (playerSeeker.ExactPosition - LastPlayerSeekerPos) * 60f;
+                        vel = $"Vel:   {diff.X.ToString("0.00")}, {diff.Y.ToString("0.00")}";
+                        polarvel = $"Chase: {diff.Length().ToString("0.00")}, {GetAngle(diff).ToString("0.00")}°";
+                        dashCooldown =  (int) (PlayerSeekerDashTimer(playerSeeker) * framesPerSecond);
+                    }
+
                     string statuses = (dashCooldown < 1 && player.Dashes > 0 ? "Dash " : string.Empty)
                                       + (player.LoseShards ? "Ground " : string.Empty)
                                       + (!player.LoseShards && JumpGraceTimer(player) > 0
@@ -85,6 +97,7 @@ public static partial class Manager {
                     sb.AppendLine(vel);
 
                     if (player.StateMachine.State == Player.StStarFly
+                        || playerSeeker != null
                         || SaveData.Instance.Assists.ThreeSixtyDashing
                         || SaveData.Instance.Assists.SuperDashing) {
                         sb.AppendLine(polarvel);
@@ -101,6 +114,7 @@ public static partial class Manager {
 
                     sb.Append(roomNameAndTime);
                     LastPos = player.ExactPosition;
+                    LastPlayerSeekerPos = playerSeeker?.ExactPosition ?? default;
                     lastTimer = chapterTime;
                     PlayerStatus = sb.ToString().TrimEnd();
                 }

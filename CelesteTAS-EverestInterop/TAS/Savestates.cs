@@ -18,6 +18,7 @@ static class Savestates {
     private static int? savedLine;
     private static string savedPlayerStatus;
     private static Vector2 savedLastPos;
+    private static Vector2 savedLastPlayerSeekerPos;
     private static bool savedByBreakpoint;
     private static AnalogueMode savedAnalogueMode;
 
@@ -112,6 +113,7 @@ static class Savestates {
         savedByBreakpoint = breakpoint;
         savedPlayerStatus = PlayerStatus;
         savedLastPos = LastPos;
+        savedLastPlayerSeekerPos = LastPlayerSeekerPos;
         savedAnalogueMode = analogueMode;
 
         savedController = controller.Clone();
@@ -157,6 +159,7 @@ static class Savestates {
         savedLine = null;
         savedPlayerStatus = null;
         savedLastPos = default;
+        savedLastPlayerSeekerPos = default;
         savedByBreakpoint = false;
         foreach (FastForward fastForward in controller.fastForwards) {
             fastForward.HasSavedState = false;
@@ -186,6 +189,7 @@ static class Savestates {
         analogueMode = savedAnalogueMode;
         PlayerStatus = savedPlayerStatus;
         LastPos = savedLastPos;
+        savedLastPlayerSeekerPos = savedLastPlayerSeekerPos;
         UpdateStudio();
     }
 
