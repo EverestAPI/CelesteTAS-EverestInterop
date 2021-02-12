@@ -113,7 +113,7 @@ namespace TAS {
                                                       controller.CurrentFrame <= 1)))
                         DisableRun();
                 }
-                if (canPlayback && controller.CurrentFrame != 0) {
+                if (canPlayback && controller.CurrentFrame > 0 && controller.inputs.Count > 0) {
                     UpdateManagerStatus();
                 }
             } else {
