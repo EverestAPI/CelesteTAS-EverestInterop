@@ -27,7 +27,7 @@ public static partial class Manager {
                 long chapterTime = level.Session.Time;
                 if (chapterTime != lastTimer || LastPos != player.ExactPosition) {
                     framesPerSecond = 60f / Engine.TimeRateB;
-                    string pos = "Pos:   " + GetAdjustedPos(player.Position, player.PositionRemainder);
+                    string pos = GetAdjustedPos(player.Position, player.PositionRemainder);
                     string speed = $"Speed: {player.Speed.X.ToString("0.00")}, {player.Speed.Y.ToString("0.00")}";
                     Vector2 diff = (player.ExactPosition - LastPos) * 60f;
                     string vel = $"Vel:   {diff.X.ToString("0.00")}, {diff.Y.ToString("0.00")}";

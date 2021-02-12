@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -600,7 +601,7 @@ public partial class Studio : Form {
             string playeroutput = CommunicationWrapper.playerData;
             lblStatus.Text = "(" + (currentFrame > 0 ? currentFrame + "/" : "")
                                  + totalFrames + ") \n" + playeroutput
-                                 + new string('\n', 7 - playeroutput.Split('\n').Length);
+                                 + new string('\n', Math.Max(0, 7 - playeroutput.Split('\n').Length));
         } else {
             lblStatus.Text = "(" + totalFrames + ")\r\nSearching...";
         }
