@@ -12,11 +12,13 @@ namespace TAS.EverestInterop.Hitboxes {
 public class HitboxColor {
     public static readonly Color DefaultEntityColor = Color.Red;
     public static readonly Color DefaultTriggerColor = Color.Peru;
+    public static readonly Color DefaultSolidTilesColor = Color.Red;
 
     private static readonly Regex hexChar = new Regex(@"^[0-9a-f]*$", RegexOptions.IgnoreCase);
 
     public static Color EntityColor => Settings.EntityHitboxColor;
     public static Color TriggerColor => Settings.TriggerHitboxColor;
+    public static Color SolidTilesColor => Settings.SolidTilesHitboxColor;
     public static Color EntityColorInversely => EntityColor.Invert();
     public static Color EntityColorInverselyLessAlpha => EntityColorInversely * 0.6f;
 
@@ -28,7 +30,7 @@ public class HitboxColor {
                 Audio.Play("event:/ui/main/savefile_rename_start");
                 textMenu.SceneAs<Overworld>().Goto<OuiModOptionString>()
                     .Init<OuiModOptions>(ColorToHex(Settings.EntityHitboxColor),
-                        value => Settings.EntityHitboxColor = HexToColor(value, DefaultEntityColor), 9);
+                        value => Settings.EntityHitboxColor = HexToColor(value, Settings.EntityHitboxColor), 9);
             });
         item.Disabled = inGame;
         return item;
@@ -40,7 +42,19 @@ public class HitboxColor {
                 Audio.Play("event:/ui/main/savefile_rename_start");
                 textMenu.SceneAs<Overworld>().Goto<OuiModOptionString>()
                     .Init<OuiModOptions>(ColorToHex(Settings.TriggerHitboxColor),
-                        value => Settings.TriggerHitboxColor = HexToColor(value, DefaultTriggerColor), 9);
+                        value => Settings.TriggerHitboxColor = HexToColor(value, Settings.TriggerHitboxColor), 9);
+            });
+        item.Disabled = inGame;
+        return item;
+    }
+
+    public static TextMenu.Item CreateSolidTilesHitboxColorButton(TextMenu textMenu, bool inGame) {
+        TextMenu.Item item = new TextMenu.Button("Solid Tiles Hitbox Color".ToDialogText() + $": {ColorToHex(Settings.SolidTilesHitboxColor)}").Pressed(
+            () => {
+                Audio.Play("event:/ui/main/savefile_rename_start");
+                textMenu.SceneAs<Overworld>().Goto<OuiModOptionString>()
+                    .Init<OuiModOptions>(ColorToHex(Settings.SolidTilesHitboxColor),
+                        value => Settings.SolidTilesHitboxColor = HexToColor(value, Settings.SolidTilesHitboxColor), 9);
             });
         item.Disabled = inGame;
         return item;
@@ -120,6 +134,8 @@ public class HitboxColor {
         Color customColor = Settings.EntityHitboxColor;
         if (entity is Trigger) {
             customColor = Settings.TriggerHitboxColor;
+        } else if (entity is SolidTiles) {
+            customColor = Settings.SolidTilesHitboxColor;
         }
 
         if (!entity.Collidable) {

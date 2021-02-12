@@ -24,7 +24,7 @@
   - `p_twodashes` (enables two dashes)
   - `core (int)` (Set core mode to ice or fire)
   - `givekey` (gives a key)
-  - `giveberr`y (gives a berry)
+  - `giveberry` (gives a berry)
   - `hearts` (Gives all hearts)
   - `summitgem (string)` (gives summit gem, either 0-6 or "all")
   - `sd_clearflags` (Clears all save data flags)

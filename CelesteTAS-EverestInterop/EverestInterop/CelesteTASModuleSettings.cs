@@ -91,6 +91,7 @@ public class CelesteTASModuleSettings : EverestModuleSettings {
     [SettingIgnore] public int LastSFXVolume { get; set; } = -1;
     [SettingIgnore] public Color EntityHitboxColor { get; set; } = HitboxColor.DefaultEntityColor;
     [SettingIgnore] public Color TriggerHitboxColor { get; set; } = HitboxColor.DefaultTriggerColor;
+    [SettingIgnore] public Color SolidTilesHitboxColor { get; set; } = HitboxColor.DefaultSolidTilesColor;
     public bool HideTriggerHitboxes { get; set; } = false;
     public bool SimplifiedHitboxes { get; set; } = true;
     public ActualCollideHitboxTypes ShowActualCollideHitboxes { get; set; } = ActualCollideHitboxTypes.OFF;

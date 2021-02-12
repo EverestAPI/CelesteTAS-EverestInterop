@@ -35,6 +35,7 @@ internal static class Menu {
                     Settings.SimplifiedHitboxes = value));
                 subMenu.Add(HitboxColor.CreateEntityHitboxColorButton(menu, inGame));
                 subMenu.Add(HitboxColor.CreateTriggerHitboxColorButton(menu, inGame));
+                subMenu.Add(HitboxColor.CreateSolidTilesHitboxColorButton(menu, inGame));
             }),
             SimplifiedGraphicsFeature.CreateSimplifiedGraphicsOption(),
             new TextMenuExt.SubMenu("Relaunch Required".ToDialogText(), false).Apply(subMenu => {
