@@ -252,7 +252,7 @@ namespace TAS.Input {
 
                     break;
                 case "DashMode":
-                    SaveData.Instance.Assists.DashMode = (Assists.DashModes)value;
+                    SaveData.Instance.Assists.DashMode = (Assists.DashModes)Convert.ToInt32((string)value);
                     player = (Engine.Scene as Level)?.Tracker.GetEntity<Player>();
                     if (player != null) {
                         player.Dashes = Math.Min(player.Dashes, player.MaxDashes);
