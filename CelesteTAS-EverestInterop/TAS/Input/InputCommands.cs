@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -6,6 +7,7 @@ using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
+using TAS.EverestInterop;
 
 namespace TAS.Input {
     public class InputCommands {
@@ -186,7 +188,6 @@ namespace TAS.Input {
                 } else {
                     setting = args[0];
 
-
                     settings = typeof(Settings);
                     FieldInfo field = settings.GetField(setting);
                     if (field != null) {
@@ -309,6 +310,42 @@ namespace TAS.Input {
 
                     lineNumber = int.MaxValue;
                 }
+            }
+        }
+
+        private static Assists? origAssists;
+        private static Settings origSettings;
+        private static Dictionary<EverestModule, object> origModSettings;
+
+        [TASCommand(args = new string[] { "RestoreSettings" }, illegalInMaingame = true)]
+        private static void RestoreSettingsCommand(string[] args) {
+            origSettings  = Settings.Instance.ShallowClone();
+            origAssists = SaveData.Instance.Assists;
+            origModSettings = new Dictionary<EverestModule, object>();
+            foreach (EverestModule module in Everest.Modules) {
+                if (module._Settings != null && module.SettingsType != null) {
+                    origModSettings.Add(module, module._Settings.ShallowClone());
+                }
+            }
+        }
+
+        public static void TryRestoreSettings() {
+            if (origSettings != null) {
+                Settings.Instance.CopyAllFields(origSettings);
+                origSettings = null;
+            }
+            if (origAssists != null) {
+                SaveData.Instance.Assists = origAssists.Value;
+                origAssists = null;
+            }
+            if (origModSettings != null) {
+                foreach (EverestModule module in Everest.Modules) {
+                    if (module != CelesteTASModule.Instance && module._Settings != null && origModSettings.TryGetValue(module, out object modSettings) && modSettings != null) {
+                        module._Settings.CopyAllProperties(modSettings);
+                        module._Settings.CopyAllFields(modSettings);
+                    }
+                }
+                origModSettings = null;
             }
         }
     }

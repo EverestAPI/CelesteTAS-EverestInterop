@@ -65,6 +65,11 @@
   - `Set, ExtendedVariantMode.Dashcount, 3`
   - `Set, CelesteTAS.CenterCamera, true`
 
+### RestoreSettings
+- `RestoreSettings`
+- Restore all settings when tas finished or cancelled
+- The settings modified before this command will not be restored
+
 ### Unsafe
 - The TAS will normally only run inside levels.
 - Console load normally forces the TAS to load the debug save.

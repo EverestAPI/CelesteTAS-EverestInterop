@@ -144,5 +144,20 @@ public class HitboxColor {
 
         return customColor;
     }
+
+    [Command("entity_hitbox_color", "change the entity hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000")]
+    private static void CmdChangeEntityHitboxColor(string color) {
+        CelesteTASModule.Settings.EntityHitboxColor = HitboxColor.HexToColor(color, CelesteTASModule.Settings.EntityHitboxColor);
+    }
+
+    [Command("trigger_hitbox_color", "change the trigger hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000")]
+    private static void CmdChangeTriggerHitboxColor(string color) {
+        CelesteTASModule.Settings.TriggerHitboxColor = HitboxColor.HexToColor(color, CelesteTASModule.Settings.TriggerHitboxColor);
+    }
+
+    [Command("solidtiles_hitbox_color", "change the solid tiles hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000")]
+    private static void CmdChangeSolidTilesHitboxColor(string color) {
+        CelesteTASModule.Settings.SolidTilesHitboxColor = HitboxColor.HexToColor(color, CelesteTASModule.Settings.SolidTilesHitboxColor);
+    }
 }
 }

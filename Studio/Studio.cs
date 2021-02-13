@@ -891,6 +891,10 @@ public partial class Studio : Form {
         InsertNewLine("Set, (Optional Mod).Setting, Value");
     }
 
+    private void restoreSettingsToolStripMenuItem_Click(object sender, EventArgs e) {
+        InsertNewLine("RestoreSettings");
+    }
+
     private void analogueModeToolStripMenuItem_Click(object sender, EventArgs e) {
         InsertNewLine("AnalogueMode, (Type)");
     }

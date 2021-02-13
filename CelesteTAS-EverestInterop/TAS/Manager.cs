@@ -268,6 +268,7 @@ namespace TAS {
             allowUnsafeInput = false;
             analogueMode = AnalogueMode.Ignore;
             Hotkeys.ReleaseAllKeys();
+            InputCommands.TryRestoreSettings();
         }
 
         private static void EnableRun() {

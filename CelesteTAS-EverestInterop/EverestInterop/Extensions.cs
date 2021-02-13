@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
@@ -14,8 +15,7 @@ internal static class ReflectionExtensions {
 
     public delegate object GetStaticField();
 
-    private const BindingFlags StaticInstanceAnyVisibility =
-        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+    private const BindingFlags StaticInstanceAnyVisibility = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
     public static FieldInfo GetFieldInfo(this Type type, string name) {
         return type.GetField(name, StaticInstanceAnyVisibility);
@@ -65,6 +65,51 @@ internal static class ReflectionExtensions {
         ilGen.Emit(OpCodes.Ldfld, field);
         ilGen.Emit(OpCodes.Ret);
         return dyn.CreateDelegate(typeof(GetStaticField)) as GetStaticField;
+    }
+
+    public static IEnumerable<FieldInfo> GetFieldInfos(this Type type, BindingFlags bindingFlags = StaticInstanceAnyVisibility, bool filterBackingField = false) {
+        IEnumerable<FieldInfo> fieldInfos = type.GetFields(bindingFlags);
+        if (filterBackingField) {
+            fieldInfos = fieldInfos.Where(info => !info.Name.EndsWith("k__BackingField"));
+        }
+
+        return fieldInfos;
+    }
+
+    public static IEnumerable<FieldInfo> GetAllFieldInfos(this Type type, BindingFlags bindingFlags = StaticInstanceAnyVisibility, bool filterBackingField = false) {
+        List<FieldInfo> result = new List<FieldInfo>();
+        while (type != null && type.IsSubclassOf(typeof(object))) {
+            IEnumerable<FieldInfo> fieldInfos = type.GetFieldInfos(bindingFlags, filterBackingField);
+            foreach (FieldInfo fieldInfo in fieldInfos) {
+                if (result.Contains(fieldInfo)) {
+                    continue;
+                }
+
+                result.Add(fieldInfo);
+            }
+
+            type = type.BaseType;
+        }
+
+        return result;
+    }
+
+    public static IEnumerable<PropertyInfo> GetAllProperties(this Type type, BindingFlags bindingFlags = StaticInstanceAnyVisibility) {
+        List<PropertyInfo> result = new List<PropertyInfo>();
+        while (type != null && type.IsSubclassOf(typeof(object))) {
+            IEnumerable<PropertyInfo> properties = type.GetProperties(bindingFlags);
+            foreach (PropertyInfo fieldInfo in properties) {
+                if (result.Contains(fieldInfo)) {
+                    continue;
+                }
+
+                result.Add(fieldInfo);
+            }
+
+            type = type.BaseType;
+        }
+
+        return result;
     }
 }
 
@@ -165,5 +210,42 @@ internal static class EntityExtensions {
 
 internal static class SceneExtensions {
     public static Player GetPlayer(this Scene scene) => scene.Tracker.GetEntity<Player>();
+}
+
+internal static class CloneUtil<T> {
+    private static readonly Func<T, object> clone;
+
+    static CloneUtil() {
+        MethodInfo cloneMethod = typeof(T).GetMethod("MemberwiseClone", BindingFlags.Instance | BindingFlags.NonPublic);
+        clone = (Func<T, object>) cloneMethod.CreateDelegate(typeof(Func<T, object>));
+    }
+
+    public static T ShallowClone(T obj) => (T) clone(obj);
+}
+
+internal static class CloneUtil {
+    private const BindingFlags InstanceAnyVisibilityDeclaredOnly = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+    public static T ShallowClone<T>(this T obj) => CloneUtil<T>.ShallowClone(obj);
+
+    public static void CopyAllFields(this object to, object from) {
+        if (to.GetType() != from.GetType()) throw new ArgumentException("object to and from must be the same type");
+
+        foreach (FieldInfo fieldInfo in to.GetType().GetAllFieldInfos(InstanceAnyVisibilityDeclaredOnly)) {
+            object fromValue = fieldInfo.GetValue(from);
+            fieldInfo.SetValue(to, fromValue);
+        }
+    }
+
+    public static void CopyAllProperties(this object to, object from) {
+        if (to.GetType() != from.GetType()) throw new ArgumentException("object to and from must be the same type");
+
+        foreach (PropertyInfo propertyInfo in to.GetType().GetAllProperties(InstanceAnyVisibilityDeclaredOnly)) {
+            if (propertyInfo.GetGetMethod(true) == null || propertyInfo.GetSetMethod(true) == null) {
+                continue;
+            }
+            object fromValue = propertyInfo.GetValue(from);
+            propertyInfo.SetValue(to, fromValue);
+        }
+    }
 }
 }
