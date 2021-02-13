@@ -70,6 +70,21 @@ static class CommunicationWrapper {
             }
 
             if (pressed) {
+                if (!keys.Contains(Keys.LShiftKey) && (GetAsyncKeyState(Keys.LShiftKey) & 0x8000) == 0x8000) {
+                    pressed = false;
+                }
+                if (!keys.Contains(Keys.RShiftKey) && (GetAsyncKeyState(Keys.RShiftKey) & 0x8000) == 0x8000) {
+                    pressed = false;
+                }
+                if (!keys.Contains(Keys.LControlKey) && (GetAsyncKeyState(Keys.LControlKey) & 0x8000) == 0x8000) {
+                    pressed = false;
+                }
+                if (!keys.Contains(Keys.RControlKey) && (GetAsyncKeyState(Keys.RControlKey) & 0x8000) == 0x8000) {
+                    pressed = false;
+                }
+            }
+
+            if (pressed) {
                 if (i == (int) HotkeyIDs.FastForward) {
                     fastForwarding = true;
                 }
