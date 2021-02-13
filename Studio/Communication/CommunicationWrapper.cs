@@ -69,7 +69,7 @@ static class CommunicationWrapper {
                 }
             }
 
-            if (pressed) {
+            if (pressed && keys.Count >= 2) {
                 if (!keys.Contains(Keys.LShiftKey) && (GetAsyncKeyState(Keys.LShiftKey) & 0x8000) == 0x8000) {
                     pressed = false;
                 }
