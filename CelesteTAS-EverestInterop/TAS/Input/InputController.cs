@@ -68,7 +68,7 @@ namespace TAS.Input {
                 FfIndex = 0;
                 commandIndex = 0;
             }
-            if (NeedsReload) {
+            if (NeedsReload || fromStart) {
                 int trycount = 5;
                 while (trycount > 0) {
                     initializationFrameCount = 0;
