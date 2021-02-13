@@ -189,7 +189,7 @@ static class Savestates {
         analogueMode = savedAnalogueMode;
         PlayerStatus = savedPlayerStatus;
         LastPos = savedLastPos;
-        savedLastPlayerSeekerPos = savedLastPlayerSeekerPos;
+        LastPlayerSeekerPos = savedLastPlayerSeekerPos;
         UpdateStudio();
     }
 
