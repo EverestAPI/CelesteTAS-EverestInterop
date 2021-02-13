@@ -123,7 +123,7 @@ namespace TAS.Input {
                 state.AddFrames(args[1], studioLine);
             }
 
-            state.ReadFile(state.defaultPath, startLine);
+            state.ReadFile(state.defaultPath, startLine, int.MaxValue, startLine - 1);
         }
 
         [TASCommand(args = new string[] {
