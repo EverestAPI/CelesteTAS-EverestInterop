@@ -41,7 +41,7 @@ namespace TAS {
         private static readonly GetPlayerSeekerDashTimer PlayerSeekerDashTimer;
 
         public static bool Running, Recording;
-        public static InputController controller = new InputController("Celeste.tas");
+        public static InputController controller = new InputController();
         public static State lastState, state, nextState;
         public static string CurrentStatus, PlayerStatus = "";
         public static int FrameLoops = 1;
@@ -113,7 +113,7 @@ namespace TAS {
                                                       controller.CurrentFrame <= 1)))
                         DisableRun();
                 }
-                if (canPlayback && controller.CurrentFrame > 0 && controller.inputs.Count > 0) {
+                if (canPlayback && controller.CurrentFrame > 0) {
                     UpdateManagerStatus();
                 }
             } else {

@@ -4,6 +4,7 @@ using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using TAS.EverestInterop.Hitboxes;
+using YamlDotNet.Serialization;
 
 namespace TAS.EverestInterop {
 public class CelesteTASModuleSettings : EverestModuleSettings {
@@ -72,7 +73,7 @@ public class CelesteTASModuleSettings : EverestModuleSettings {
 
     [SettingNeedsRelaunch] public bool LaunchStudioAtBoot { get; set; } = false;
 
-    [SettingIgnore] public string DefaultPath { get; set; } = null;
+    [YamlIgnore] public string TasFilePath = null;
 
     public bool Mod9DLighting { get; set; } = false;
 

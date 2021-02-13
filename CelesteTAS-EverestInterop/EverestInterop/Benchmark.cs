@@ -33,7 +33,7 @@ public static class Benchmark {
         lastFrameCounter = Engine.FrameCounter;
         watch = new Stopwatch();
         watch.Start();
-        $"Benchmark Start: {Manager.controller.defaultPath}".Log();
+        $"Benchmark Start: {Manager.controller.tasFilePath}".Log();
     }
 
     public static void Stop() {

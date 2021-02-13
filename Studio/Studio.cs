@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -216,22 +215,14 @@ public partial class Studio : Form {
         RegWrite("w", Size.Width);
         RegWrite("h", Size.Height);
         Settings.Default.Save();
-        BackupCelesteTas();
+        StudioCommunicationServer.instance?.SendPath(string.Empty);
+        Thread.Sleep(50);
     }
 
     private void Studio_Shown(object sender, EventArgs e) {
         Thread updateThread = new Thread(UpdateLoop);
         updateThread.IsBackground = true;
         updateThread.Start();
-    }
-
-    private void BackupCelesteTas() {
-        if (string.IsNullOrEmpty(defaultFileName) || !File.Exists(defaultFileName)) return;
-        try {
-            File.Copy(defaultFileName, "Celeste_bak.tas", true);
-        } catch (Exception) {
-            // ignore
-        }
     }
 
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData) {
@@ -286,7 +277,7 @@ public partial class Studio : Form {
     private void SaveAsFile() {
         StudioCommunicationServer.instance?.WriteWait();
         tasText.SaveNewFile();
-        StudioCommunicationServer.instance?.SendPath(Path.GetDirectoryName(lastFileName));
+        StudioCommunicationServer.instance?.SendPath(lastFileName);
         Text = titleBarText;
         UpdateRecentFiles();
     }
@@ -328,21 +319,12 @@ public partial class Studio : Form {
     }
 
     private void OpenFile(string fileName = null) {
-        if (tasText.TextSource.Manager.UndoEnabled && (string.IsNullOrEmpty(lastFileName) || lastFileName == defaultFileName)) {
-            DialogResult result = MessageBox.Show("Celeste.tas progress will be lost If you open another file, do you want to continue?",
-                "Warning",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Warning
-            );
-            if (result == DialogResult.No) return;
-        }
-
         StudioCommunicationServer.instance?.WriteWait();
         if (tasText.OpenFile(fileName)) {
             UpdateRecentFiles();
         }
 
-        StudioCommunicationServer.instance?.SendPath(Path.GetDirectoryName(lastFileName));
+        StudioCommunicationServer.instance?.SendPath(lastFileName);
         Text = titleBarText;
     }
 
@@ -474,7 +456,7 @@ public partial class Studio : Form {
                 if (lastChanged.AddSeconds(0.3f) < DateTime.Now) {
                     lastChanged = DateTime.Now;
                     this.Invoke((Action) delegate() {
-                        if ((!string.IsNullOrEmpty(lastFileName) || !string.IsNullOrEmpty(tasText.SaveToFileName)) && tasText.IsChanged) {
+                        if (!string.IsNullOrEmpty(lastFileName) && tasText.IsChanged) {
                             tasText.SaveFile();
                         }
                     });
@@ -505,16 +487,8 @@ public partial class Studio : Form {
                 }
 
                 if (string.IsNullOrEmpty(lastFileName)) {
-                    if (string.IsNullOrEmpty(tasText.SaveToFileName)) {
-                        tasText.OpenBindingFile(fileName, Encoding.ASCII);
-                    }
-
+                    tasText.OpenBindingFile(fileName, Encoding.ASCII);
                     lastFileName = fileName;
-                }
-
-                tasText.SaveToFileName = fileName;
-                if (lastFileName != tasText.SaveToFileName) {
-                    tasText.SaveFile(true);
                 }
 
                 tasText.Focus();
@@ -527,7 +501,6 @@ public partial class Studio : Form {
             if (Settings.Default.RememberLastFileName
                 && File.Exists(Settings.Default.LastFileName)
                 && IsFileReadable(Settings.Default.LastFileName)
-                && Settings.Default.LastFileName != defaultFileName
                 && string.IsNullOrEmpty(lastFileName)) {
                 lastFileName = Settings.Default.LastFileName;
                 tasText.ReloadFile();
@@ -768,7 +741,7 @@ public partial class Studio : Form {
 
     private void tasText_FileOpened(object sender, EventArgs e) {
         try {
-            tasText.SaveFile(true);
+            tasText.SaveFile();
         } catch { }
     }
 

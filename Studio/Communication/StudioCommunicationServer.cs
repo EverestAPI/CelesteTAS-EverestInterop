@@ -121,7 +121,7 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
 
         studio?.ProcessSendPath(lastMessage?.Data);
 
-        studio?.SendPathNow(Path.GetDirectoryName(Studio.instance.tasText.LastFileName), false);
+        studio?.SendPathNow(Studio.instance.tasText.LastFileName, false);
         lastMessage = celeste?.ReadMessageGuaranteed();
         celeste?.ProcessSendPath(lastMessage?.Data);
 
@@ -137,7 +137,7 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
     }
 
 
-    public void SendPath(string path) => pendingWrite = () => SendPathNow(path, true);
+    public void SendPath(string path) => pendingWrite = () => SendPathNow(path, false);
     public void SendHotkeyPressed(HotkeyIDs hotkey, bool released = false) => pendingWrite = () => SendHotkeyPressedNow(hotkey, released);
     public void GetConsoleCommand() => pendingWrite = () => GetConsoleCommandNow();
 

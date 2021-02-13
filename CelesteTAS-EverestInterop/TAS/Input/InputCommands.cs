@@ -63,7 +63,7 @@ namespace TAS.Input {
         })]
         private static void ReadCommand(InputController state, string[] args, int studioLine) {
             string filePath = args[0];
-            string origFilePath = Manager.settings.DefaultPath;
+            string origFilePath = Path.GetDirectoryName(Manager.settings.TasFilePath);
             // Check for full and shortened Read versions for absolute path
             if (origFilePath != null) {
                 string altFilePath = origFilePath + Path.DirectorySeparatorChar + filePath;
@@ -118,12 +118,12 @@ namespace TAS.Input {
             "Play, StartLine, FramesToWait"
         })]
         private static void PlayCommand(InputController state, string[] args, int studioLine) {
-            GetLine(args[0], state.defaultPath, out int startLine);
+            GetLine(args[0], state.tasFilePath, out int startLine);
             if (args.Length > 1 && int.TryParse(args[1], out _)) {
                 state.AddFrames(args[1], studioLine);
             }
 
-            state.ReadFile(state.defaultPath, startLine, int.MaxValue, startLine - 1);
+            state.ReadFile(state.tasFilePath, startLine, int.MaxValue, startLine - 1);
         }
 
         [TASCommand(args = new string[] {
@@ -168,7 +168,7 @@ namespace TAS.Input {
                 string setting;
                 Type settingType;
                 object value;
-                int index = args[0].IndexOf(".");
+                int index = args[0].IndexOf(".", StringComparison.Ordinal);
                 if (index != -1) {
                     string moduleName = args[0].Substring(0, index);
                     setting = args[0].Substring(index + 1);

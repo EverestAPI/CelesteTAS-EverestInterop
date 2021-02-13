@@ -151,7 +151,6 @@ public class RichText : UserControl {
         base.AutoScroll = true;
     }
 
-    public string SaveToFileName { get; set; }
     public string LastFileName { get; set; }
 
     /// <summary>
@@ -2283,25 +2282,9 @@ public class RichText : UserControl {
         }
     }
 
-    public void SaveFile(bool mainSaveOnly = false) {
+    public void SaveFile() {
         FileSaving?.Invoke(this, new EventArgs());
-
-        bool savedLastFile = false;
-        if (!mainSaveOnly && SaveToFileName != LastFileName) {
-            SaveToFile(LastFileName, Encoding.ASCII);
-            savedLastFile = true;
-        }
-
-        if (string.IsNullOrEmpty(SaveToFileName)) {
-            return;
-        }
-
-        // Avoid stuttering due to repeated UpdateHighlighting().
-        if (savedLastFile) {
-            File.Copy(LastFileName, SaveToFileName, true);
-        } else {
-            SaveToFile(SaveToFileName, Encoding.ASCII);
-        }
+        SaveToFile(LastFileName, Encoding.ASCII);
     }
 
     protected override void OnKeyDown(KeyEventArgs e) {

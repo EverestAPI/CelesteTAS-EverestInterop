@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -7,8 +8,17 @@ using Microsoft.Xna.Framework;
 
 namespace TAS.Input {
     public class InputController {
+        public string tasFilePath {
+            get {
+                string path = string.IsNullOrEmpty(Manager.settings.TasFilePath) ? "Celeste.tas" : Manager.settings.TasFilePath;
+                if (!File.Exists(path)) {
+                    File.WriteAllText(path, string.Empty);
+                }
 
-        public string defaultPath;
+                return path;
+            }
+        }
+
         public Vector2? resetSpawn;
 
         public List<InputFrame> inputs = new List<InputFrame>();
@@ -56,9 +66,7 @@ namespace TAS.Input {
         }
 
 
-        public InputController(string filePath) {
-            this.defaultPath = filePath;
-        }
+        public InputController() {}
 
         public void RefreshInputs(bool fromStart) {
             if (fromStart) {
@@ -78,7 +86,7 @@ namespace TAS.Input {
                     fastForwards.Clear();
                     commands.Clear();
                     usedFiles.Clear();
-                    if (ReadFile(defaultPath))
+                    if (ReadFile(tasFilePath))
                         break;
                     System.Threading.Thread.Sleep(50);
                     trycount--;
@@ -196,7 +204,7 @@ namespace TAS.Input {
 
         public bool ReadFile(string filePath, int startLine = 0, int endLine = int.MaxValue, int studioLine = 0) {
             try {
-                if (filePath == defaultPath && startLine == 0) {
+                if (filePath == tasFilePath && startLine == 0) {
                     if (!File.Exists(filePath))
                         return false;
                 }
@@ -225,7 +233,7 @@ namespace TAS.Input {
                         else
                             AddFrames(line, studioLine);
 
-                        if (filePath == defaultPath)
+                        if (filePath == tasFilePath)
                             studioLine++;
                     }
                 }
@@ -289,7 +297,7 @@ namespace TAS.Input {
         }
 
         public InputController Clone() {
-            InputController clone = new InputController(defaultPath);
+            InputController clone = new InputController();
 
             for (int i = 0; i < inputs.Count; i++) {
                 if (i == 0 || !object.ReferenceEquals(inputs[i], inputs[i - 1]))
@@ -313,7 +321,7 @@ namespace TAS.Input {
         }
 
         public string Checksum(int toInputFrame) {
-            StringBuilder result = new StringBuilder(defaultPath);
+            StringBuilder result = new StringBuilder(tasFilePath);
             result.AppendLine();
 
             try {

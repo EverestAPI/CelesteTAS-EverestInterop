@@ -468,7 +468,6 @@ namespace CelesteStudio {
             this.tasText.Location = new System.Drawing.Point(0, 24);
             this.tasText.Name = "tasText";
             this.tasText.Paddings = new System.Windows.Forms.Padding(0);
-            this.tasText.SaveToFileName = null;
             this.tasText.SelectionColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.tasText.Size = new System.Drawing.Size(308, 567);
             this.tasText.TabIndex = 0;

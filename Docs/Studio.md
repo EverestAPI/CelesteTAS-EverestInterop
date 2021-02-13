@@ -4,8 +4,8 @@ Can be used instead of notepad or similar for easier editing of the TAS file. It
 If Celeste.exe is running it will automatically open Celeste.tas.
 
 ### Controls
-- Ctrl + O: Open file (Updates Celeste.tas as well)
-- Ctrl + Shift + S: Save as (Updates Celeste.tas as well)
+- Ctrl + O: Open file
+- Ctrl + Shift + S: Save as
 - Ctrl + D: Toggle sending inputs to Celeste
 - Ctrl + Shift + D: Refresh connection between Studio and Celeste
 - Ctrl + Shift + C: Copy player data to clipboard

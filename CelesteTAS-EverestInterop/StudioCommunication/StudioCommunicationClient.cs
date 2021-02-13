@@ -116,10 +116,8 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
 
     private void ProcessSendPath(byte[] data) {
         string path = Encoding.Default.GetString(data);
-        Log(path);
-        if (path != null) {
-            Manager.settings.DefaultPath = path;
-        }
+        Log("ProcessSendPath: " + path);
+        Manager.settings.TasFilePath = path;
     }
 
     private void ProcessHotkeyPressed(byte[] data) {
