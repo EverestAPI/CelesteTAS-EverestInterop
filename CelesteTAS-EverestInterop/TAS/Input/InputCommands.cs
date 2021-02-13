@@ -220,7 +220,9 @@ namespace TAS.Input {
                         SaveData.Instance.Assists = assists;
                     }
                 }
-            } catch { }
+            } catch (Exception e) {
+                e.Log();
+            }
         }
 
         private static bool SettingsSpecialCases(string setting, object obj, object value) {
@@ -317,7 +319,7 @@ namespace TAS.Input {
         private static Settings origSettings;
         private static Dictionary<EverestModule, object> origModSettings;
 
-        [TASCommand(args = new string[] { "RestoreSettings" }, illegalInMaingame = true)]
+        [TASCommand(args = new string[] { "RestoreSettings" })]
         private static void RestoreSettingsCommand(string[] args) {
             origSettings  = Settings.Instance.ShallowClone();
             origAssists = SaveData.Instance.Assists;
