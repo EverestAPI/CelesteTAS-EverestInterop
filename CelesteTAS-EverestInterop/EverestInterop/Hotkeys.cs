@@ -73,17 +73,20 @@ public static class Hotkeys {
     }
 
     public static void InputInitialize() {
-        InitBinding(Settings.KeyStart, Keys.RightControl);
-        InitBinding(Settings.KeyRestart, Keys.OemPlus);
-        InitBinding(Settings.KeyFastForward, Keys.RightShift);
-        InitBinding(Settings.KeyFrameAdvance, Keys.OemOpenBrackets);
-        InitBinding(Settings.KeyPause, Keys.OemCloseBrackets);
-        InitBinding(Settings.KeyHitboxes, Keys.B);
-        InitBinding(Settings.KeyTriggerHitboxes, Keys.LeftAlt, Keys.T);
-        InitBinding(Settings.KeyGraphics, Keys.N);
-        InitBinding(Settings.KeyCamera, Keys.M);
-        InitBinding(Settings.KeySaveState, Keys.RightAlt, Keys.OemMinus);
-        InitBinding(Settings.KeyClearState, Keys.RightAlt, Keys.Back);
+        if (Settings.FirstLaunch) {
+            InitBinding(Settings.KeyStart, Keys.RightControl);
+            InitBinding(Settings.KeyRestart, Keys.OemPlus);
+            InitBinding(Settings.KeyFastForward, Keys.RightShift);
+            InitBinding(Settings.KeyFrameAdvance, Keys.OemOpenBrackets);
+            InitBinding(Settings.KeyPause, Keys.OemCloseBrackets);
+            InitBinding(Settings.KeyHitboxes, Keys.B);
+            InitBinding(Settings.KeyTriggerHitboxes, Keys.LeftAlt, Keys.T);
+            InitBinding(Settings.KeyGraphics, Keys.N);
+            InitBinding(Settings.KeyCamera, Keys.M);
+            InitBinding(Settings.KeySaveState, Keys.RightAlt, Keys.OemMinus);
+            InitBinding(Settings.KeyClearState, Keys.RightAlt, Keys.Back);
+            Settings.FirstLaunch = false;
+        }
 
         listHotkeyKeys = new List<Keys>[] {
             Settings.KeyStart.Keys, Settings.KeyRestart.Keys, Settings.KeyFastForward.Keys, Settings.KeyFrameAdvance.Keys, Settings.KeyPause.Keys,

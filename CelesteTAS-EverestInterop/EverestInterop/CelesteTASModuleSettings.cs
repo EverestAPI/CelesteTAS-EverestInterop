@@ -131,5 +131,7 @@ public class CelesteTASModuleSettings : EverestModuleSettings {
     public bool SimplifiedLightning { get; set; } = true;
 
     #endregion
+
+    [SettingIgnore] public bool FirstLaunch { get; set; } = true;
 }
 }
