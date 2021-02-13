@@ -13,7 +13,7 @@ using MonoMod.RuntimeDetour;
 
 namespace TAS.EverestInterop {
 public static class Hotkeys {
-    private static ILHook ilHook;
+    private static readonly List<ILHook> ilHooks = new List<ILHook>();
     private static FieldInfo bindingFieldInfo;
 
     private static readonly Lazy<FieldInfo> celesteNetClientModuleInstance = new Lazy<FieldInfo>(() =>
@@ -215,13 +215,20 @@ public static class Hotkeys {
     public static void Load() {
         InputInitialize();
         if (typeof(ModuleSettingsKeyboardConfigUI).GetMethodInfo("<Reload>b__6_0") is MethodInfo methodInfo) {
-            ilHook = new ILHook(methodInfo, ModReload);
+            ilHooks.Add(new ILHook(methodInfo, ModReload));
+        }
+        if (typeof(Everest).Assembly.GetTypesSafe().FirstOrDefault(type => type.FullName == "Celeste.Mod.ModuleSettingsKeyboardConfigUIV2") is Type typeV2) {
+            if (typeV2.GetMethodInfo("Reset") is MethodInfo methodInfoV2) {
+                ilHooks.Add(new ILHook(methodInfoV2, ModReload));
+            }
         }
     }
 
     public static void Unload() {
-        ilHook?.Dispose();
-        ilHook = null;
+        foreach (ILHook ilHook in ilHooks) {
+            ilHook.Dispose();
+        }
+        ilHooks.Clear();
     }
 
     private static void ModReload(ILContext il) {
