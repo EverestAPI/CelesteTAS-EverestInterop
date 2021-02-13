@@ -83,6 +83,8 @@ namespace TAS.Input {
                     System.Threading.Thread.Sleep(50);
                     trycount--;
                 }
+
+                CurrentFrame = Math.Min(inputs.Count, CurrentFrame);
             }
         }
 
