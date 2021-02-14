@@ -218,9 +218,12 @@ public static partial class Manager {
                     }
                 }
 
-                string output = string.Join("\t",
-                    controller.Current.Line, controller.Current, controller.CurrentFrame, time, pos, speed, (PlayerState) player.StateMachine.State,
-                    statuses);
+                string output = string.Empty;
+                if (controller.CurrentFrame > 0 && controller.inputs.Count > 0) {
+                    output = string.Join("\t",
+                        controller.Previous.Line, controller.Previous, controller.CurrentFrame - 1, time, pos, speed, (PlayerState) player.StateMachine.State,
+                        statuses);
+                }
 
                 foreach (MethodInfo method in trackedEntities) {
                     if (method == null) {

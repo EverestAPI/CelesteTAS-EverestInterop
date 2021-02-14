@@ -259,6 +259,7 @@ namespace TAS.Input {
                 return;
             }
             frames = Math.Min(frames, 9999);
+            frame.Frames = frames;
             while (index < line.Length) {
                 char c = line[index];
 

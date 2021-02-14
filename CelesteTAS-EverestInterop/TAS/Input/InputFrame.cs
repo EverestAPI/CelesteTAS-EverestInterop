@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Text;
 
 namespace TAS.Input {
@@ -21,6 +22,7 @@ namespace TAS.Input {
         Confirm = 1 << 13
     }
     public class InputFrame {
+        public int Frames;
         public Actions Actions;
         public float Angle;
         public int Line;
@@ -37,6 +39,7 @@ namespace TAS.Input {
 
         public override string ToString() {
             StringBuilder sb = new StringBuilder();
+            sb.Append(Frames);
             if (HasActions(Actions.Left))
                 sb.Append(",L");
             if (HasActions(Actions.Right))
@@ -64,12 +67,13 @@ namespace TAS.Input {
             if (HasActions(Actions.Confirm))
                 sb.Append(",O");
             if (HasActions(Actions.Feather))
-                sb.Append(",F,").Append(Angle == 0 ? string.Empty : Angle.ToString("0"));
+                sb.Append(",F,").Append(Angle == 0 ? string.Empty : Angle.ToString(CultureInfo.InvariantCulture));
             return sb.ToString();
         }
 
         public InputFrame Clone() {
             InputFrame clone = new InputFrame {
+                Frames = Frames,
                 Actions = Actions,
                 Angle = Angle,
                 Line = Line,
