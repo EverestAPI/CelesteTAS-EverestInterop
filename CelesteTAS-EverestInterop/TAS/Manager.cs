@@ -9,6 +9,8 @@ using Monocle;
 using TAS.EverestInterop;
 using TAS.StudioCommunication;
 using TAS.Input;
+using FMOD;
+using System.Net.NetworkInformation;
 
 namespace TAS {
     [Flags]
@@ -391,54 +393,61 @@ namespace TAS {
             );
         }
 
-        private static Vector2 ValidateFeatherInput(InputFrame input) {
-            const float maxShort = short.MaxValue;
-            short X;
-            short Y;
+        private static Vector2 ComputeFeather(float x,float y) {
+            if (x < 0) {
+                Vector2 feather = ComputeFeather(-x, y);
+                return new Vector2(-feather.X,feather.Y);
+            }
+            if (y < 0) {
+                Vector2 feather = ComputeFeather(x, -y);
+                return new Vector2(feather.X, -feather.Y);
+            }
+            if (x < y) {
+                Vector2 feather = ComputeFeather(y,x);
+                return new Vector2(feather.Y, feather.X);
+            }
+            /// assure positive and x>y
+            const short deadzone = 7849;
+            const short validArea = 32767 - deadzone;
+            short X, Y;
             switch (analogueMode) {
                 case AnalogueMode.Ignore:
-                    return new Vector2(input.GetX(), input.GetY());
+                    return new Vector2(x, y);
                 case AnalogueMode.Circle:
-                    X = (short)(input.GetX() * maxShort);
-                    Y = (short)(input.GetY() * maxShort);
+                    X = (short)(x*validArea + 0.5);
+                    Y = (short)(y*validArea + 0.5);
                     break;
                 case AnalogueMode.Square:
-                    float x = input.GetX();
-                    float y = input.GetY();
-                    float mult = 1 / Math.Max(Math.Abs(x), Math.Abs(y));
-                    x *= mult;
-                    y *= mult;
-                    X = (short)(x * maxShort);
-                    Y = (short)(y * maxShort);
+                    float divisor = Math.Max(Math.Abs(x), Math.Abs(y));
+                    x /= divisor;
+                    y /= divisor;
+                    X = (short)(x * validArea + 0.5);
+                    Y = (short)(y * validArea + 0.5);
                     break;
                 case AnalogueMode.Precise:
-                    if (input.Angle == 0) {
-                        X = 0;
-                        Y = short.MaxValue;
-                        break;
-                    }
-
-                    GetPreciseFeatherPos(input.GetX(), input.GetY(), out X, out Y);
+                    GetPreciseFeatherPos(x,y,out X,out Y);
                     break;
                 default:
                     throw new Exception("what the fuck");
             }
-            // SDL2_FNAPlatform.GetGamePadState()
-            // (float)SDL.SDL_GameControllerGetAxis(intPtr, SDL.SDL_GameControllerAxis.SDL_CONTROLLER_AXIS_LEFTX) / 32767f
-
-            return new Vector2((float)X / maxShort, (float)Y / maxShort);
+            return new Vector2((float)X/validArea,(float)Y/validArea);
+        }
+        private static Vector2 ValidateFeatherInput(InputFrame input) {
+            return ComputeFeather(input.GetX(),input.GetY());
         }
 
         //https://www.ics.uci.edu/~eppstein/numth/frap.c
         private static void GetPreciseFeatherPos(float xPos, float yPos, out short outX, out short outY) {
+
+            const short maxden = short.MaxValue - 7849;
             //special cases where this is imprecise
             if (Math.Abs(xPos) == Math.Abs(yPos) || Math.Abs(xPos) < 1E-10 || Math.Abs(yPos) < 1E-10) {
                 if (Math.Abs(xPos) < 1E-10)
                     xPos = 0;
                 if (Math.Abs(yPos) < 1E-10)
                     yPos = 0;
-                outX = (short)(short.MaxValue * (short)Math.Sign(xPos));
-                outY = (short)(short.MaxValue * (short)Math.Sign(yPos));
+                outX = (short)(maxden * (short)Math.Sign(xPos));
+                outY = (short)(maxden * (short)Math.Sign(yPos));
                 return;
             }
 
@@ -451,9 +460,8 @@ namespace TAS {
             long[][] m = new long[2][];
             m[0] = new long[2];
             m[1] = new long[2];
-            double x = xPos / yPos;
+            double x = (double)xPos / (double)yPos;
             double startx = x;
-            short maxden = short.MaxValue;
             long ai;
 
             /* initialize matrix */
@@ -505,7 +513,7 @@ namespace TAS {
             }
 
             //make sure it doesn't end up in the deadzone
-            short mult = (short)Math.Floor(short.MaxValue / (float)Math.Max(Math.Abs(outX), Math.Abs(outY)));
+            short mult = (short)Math.Floor(maxden / (float)Math.Max(Math.Abs(outX), Math.Abs(outY)));
             outX *= mult;
             outY *= mult;
 
