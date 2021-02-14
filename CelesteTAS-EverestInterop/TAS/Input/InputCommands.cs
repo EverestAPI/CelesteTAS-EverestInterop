@@ -315,14 +315,25 @@ namespace TAS.Input {
             }
         }
 
-        private static Assists? origAssists;
         private static Settings origSettings;
+        private static Assists? origAssists;
         private static Dictionary<EverestModule, object> origModSettings;
 
         [TASCommand(args = new string[] { "RestoreSettings" })]
         private static void RestoreSettingsCommand(string[] args) {
+            origSettings = null;
+            origAssists = null;
+            origModSettings = null;
+
             origSettings  = Settings.Instance.ShallowClone();
-            origAssists = SaveData.Instance.Assists;
+
+            if (SaveData.Instance != null) {
+                origAssists = SaveData.Instance.Assists;
+            } else {
+                On.Celeste.SaveData.Start -= SaveDataOnStart;
+                On.Celeste.SaveData.Start += SaveDataOnStart;
+            }
+
             origModSettings = new Dictionary<EverestModule, object>();
             foreach (EverestModule module in Everest.Modules) {
                 if (module._Settings != null && module.SettingsType != null) {
@@ -332,6 +343,8 @@ namespace TAS.Input {
         }
 
         public static void TryRestoreSettings() {
+            On.Celeste.SaveData.Start -= SaveDataOnStart;
+
             if (origSettings != null) {
                 Settings.Instance.CopyAllFields(origSettings);
                 origSettings = null;
@@ -348,6 +361,14 @@ namespace TAS.Input {
                     }
                 }
                 origModSettings = null;
+            }
+        }
+
+        private static void SaveDataOnStart(On.Celeste.SaveData.orig_Start orig, SaveData data, int slot) {
+            orig(data, slot);
+            if (origAssists == null) {
+                On.Celeste.SaveData.Start -= SaveDataOnStart;
+                origAssists = SaveData.Instance.Assists;
             }
         }
     }
