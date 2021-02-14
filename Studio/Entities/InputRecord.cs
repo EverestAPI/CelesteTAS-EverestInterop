@@ -23,7 +23,7 @@ public enum Actions {
 }
 
 public class InputRecord {
-    private static readonly Regex duplicateZeroRegex = new Regex(@"^0+");
+    private static readonly Regex duplicateZeroRegex = new Regex(@"^0+([^.])");
     public static char Delimiter = ',';
 
     public InputRecord(int frameCount, Actions actions, string notes = null) {
@@ -162,7 +162,7 @@ public class InputRecord {
         if (!float.TryParse(AngleStr, out float _)) {
             AngleStr = string.Empty;
         } else {
-            AngleStr = duplicateZeroRegex.Replace(AngleStr, "0");
+            AngleStr = duplicateZeroRegex.Replace(AngleStr, "$1");
         }
 
         while (start < line.Length) {
