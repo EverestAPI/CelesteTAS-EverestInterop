@@ -108,6 +108,7 @@ public class InputRecord {
     public int Frames { get; set; }
     public Actions Actions { get; set; }
     public float Angle { get; set; }
+    public string AngleStr { get; set; }
     public string Notes { get; set; }
     public int ZeroPadding { get; set; }
     public bool FastForward { get; set; }
@@ -154,6 +155,11 @@ public class InputRecord {
         int decimalPlaces = 1;
         int angle = 0;
         bool negative = false;
+
+        AngleStr = line.Substring(start).Replace(",", "").Trim();
+        if (!float.TryParse(AngleStr, out float _)) {
+            AngleStr = string.Empty;
+        }
 
         while (start < line.Length) {
             char c = line[start];
@@ -277,7 +283,7 @@ public class InputRecord {
         }
 
         if (HasActions(Actions.Feather)) {
-            sb.Append(",F,").Append(Angle == 0 ? string.Empty : Angle.ToString());
+            sb.Append(",F,").Append(AngleStr);
         }
 
         return sb.ToString();
