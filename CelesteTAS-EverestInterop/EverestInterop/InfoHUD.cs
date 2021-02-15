@@ -1,7 +1,11 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
+using TAS.Input;
 
 namespace TAS.EverestInterop {
 public static class InfoHUD {
@@ -38,8 +42,52 @@ public static class InfoHUD {
         float fontSize = 0.15f * pixelScale;
         float alpha = 1f;
 
-        string text = Manager.PlayerStatus;
+        StringBuilder stringBuilder = new StringBuilder();
+        InputController controller = Manager.controller;
+        List<InputFrame> inputs = controller.inputs;
+        if (Manager.Running && controller.CurrentFrame >= 0 && controller.CurrentFrame < inputs.Count) {
+            InputFrame previous = null;
+            InputFrame next = null;
 
+            InputFrame current = controller.Current;
+            if (controller.CurrentFrame >= 1 && current != controller.Previous) {
+                current = controller.Previous;
+            }
+
+            int currentIndex = inputs.IndexOf(current);
+            if (currentIndex >= 1) {
+                previous = inputs[currentIndex - 1];
+            }
+
+            currentIndex = inputs.LastIndexOf(current);
+            if (currentIndex < inputs.Count - 1) {
+                next = inputs[currentIndex + 1];
+            }
+
+            int maxLine = Math.Max(current.Line, Math.Max(previous?.Line ?? 0, next?.Line ?? 0)) + 1;
+            int linePadLeft = maxLine.ToString().Length;
+
+            int maxFrames = Math.Max(current.Frames, Math.Max(previous?.Frames ?? 0, next?.Frames ?? 0));
+            int framesPadLeft = maxFrames.ToString().Length;
+
+            if (previous != null) {
+                stringBuilder.Append($"{(previous.Line + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - previous.Frames.ToString().Length)}{previous}\n");
+            }
+
+            string currentStr = $"{(current.Line + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - current.Frames.ToString().Length)}{current}";
+            int maxWidth = currentStr.ToString().Length + controller.StudioFrameCount.ToString().Length + 1;
+            maxWidth = Manager.PlayerStatus.Split('\n').Select(s => s.Length).Concat(new[] {maxWidth}).Max();
+            stringBuilder.Append($"{currentStr.PadRight(maxWidth - controller.StudioFrameCount.ToString().Length - 1)}{controller.StudioFrameCount}\n");
+            if (next != null) {
+                stringBuilder.Append($"{(next.Line + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - next.Frames.ToString().Length)}{next}\n");
+            }
+
+            stringBuilder.AppendLine();
+        }
+
+        stringBuilder.Append(Manager.PlayerStatus);
+
+        string text = stringBuilder.ToString();
         if (string.IsNullOrEmpty(text)) {
             return;
         }

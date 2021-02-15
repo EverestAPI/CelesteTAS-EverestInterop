@@ -12,6 +12,7 @@ internal static class Menu {
     private static readonly MethodInfo createKeyboardConfigUI = typeof(EverestModule).GetMethodInfo("CreateKeyboardConfigUI");
     private static List<TextMenu.Item> options;
     private static TextMenu.Item showHitboxesSubmenu;
+    private static TextMenu.Item keyConfigButton;
     private static CelesteTASModuleSettings Settings => CelesteTASModule.Settings;
 
     internal static string ToDialogText(this string input) => Dialog.Clean("TAS_" + input.Replace(" ", "_"));
@@ -37,7 +38,9 @@ internal static class Menu {
                 subMenu.Add(HitboxColor.CreateTriggerHitboxColorButton(menu, inGame));
                 subMenu.Add(HitboxColor.CreateSolidTilesHitboxColorButton(menu, inGame));
             }),
+
             SimplifiedGraphicsFeature.CreateSimplifiedGraphicsOption(),
+
             new TextMenuExt.SubMenu("Relaunch Required".ToDialogText(), false).Apply(subMenu => {
                 subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), Settings.LaunchStudioAtBoot).Change(value =>
                     Settings.LaunchStudioAtBoot = value));
@@ -45,6 +48,7 @@ internal static class Menu {
                     Settings.AutoExtractNewStudio = value));
                 subMenu.Add(new TextMenu.OnOff("Unix RTC".ToDialogText(), Settings.UnixRTC).Change(value => Settings.UnixRTC = value));
             }),
+
             new TextMenuExt.SubMenu("More Options".ToDialogText(), false).Apply(subMenu => {
                 subMenu.Add(new TextMenu.OnOff("Center Camera".ToDialogText(), Settings.CenterCamera).Change(value =>
                     Settings.CenterCamera = value));
@@ -81,7 +85,7 @@ internal static class Menu {
 
                 Engine.Scene.Add(keyboardConfig);
                 Engine.Scene.OnEndOfFrame += () => Engine.Scene.Entities.UpdateLists();
-            })
+            }).Apply(item => keyConfigButton = item)
         };
     }
 
@@ -102,6 +106,8 @@ internal static class Menu {
             showHitboxesSubmenu.AddDescription(menu, "Hitbox Color Description 2".ToDialogText());
             showHitboxesSubmenu.AddDescription(menu, "Hitbox Color Description 1".ToDialogText());
         }
+
+        keyConfigButton.AddDescription(menu, "Key Config Description".ToDialogText());
     }
 
     public static IEnumerable<KeyValuePair<int?, string>> CreateSliderOptions(int start, int end, Func<int, string> formatter = null) {

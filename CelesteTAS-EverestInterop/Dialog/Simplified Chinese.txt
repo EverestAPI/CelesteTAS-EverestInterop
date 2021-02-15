@@ -6,6 +6,7 @@ TAS_HITBOX_COLOR_DESCRIPTION_2= 或者在控制台中使用 entity/trigger/solid
 TAS_SIMPLIFIED_GRAPHICS=      简化图形
 TAS_RELAUNCH_REQUIRED=        需要重启的选项
 TAS_MORE_OPTIONS=             更多选项
+TAS_KEY_CONFIG_DESCRIPTION=   绑定多个按键表示组合键，需要同时按下才能触发相应操作
 
 # ================================== Hitbox Submenu ==================================
 TAS_ACTUAL_COLLIDE_HITBOXES=  实际碰撞箱

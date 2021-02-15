@@ -6,6 +6,7 @@ TAS_HITBOX_COLOR_DESCRIPTION_2= Or use the entity/trigger/solidtiles_hitbox_colo
 TAS_SIMPLIFIED_GRAPHICS=      Simplified Graphics
 TAS_RELAUNCH_REQUIRED=        Relaunch Required
 TAS_MORE_OPTIONS=             More Options
+TAS_KEY_CONFIG_DESCRIPTION=   Binding multiple keys to a control will cause those keys to act as a keycombo
 
 # ================================== Hitbox Submenu ==================================
 TAS_ACTUAL_COLLIDE_HITBOXES=  Actual Collide Hitboxes

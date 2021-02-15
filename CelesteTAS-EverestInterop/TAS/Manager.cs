@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading.Tasks;
 using Celeste;
 using GameInput = Celeste.Input;
 using Microsoft.Xna.Framework;
@@ -54,6 +55,7 @@ namespace TAS {
 
         private static long lastTimer;
         private static List<VirtualButton.Node>[] playerBindings;
+        private static Task checkHotkeyStarTask;
 
         static Manager() {
             MethodInfo WallJumpCheck = typeof(Player).GetMethodInfo("WallJumpCheck");
@@ -226,7 +228,7 @@ namespace TAS {
             }
 
             if (Hotkeys.hotkeyStart.pressed) {
-                if (!HasFlag(state, State.Enable)) {
+                if (!HasFlag(state, State.Enable) && checkHotkeyStarTask == null) {
                     nextState |= State.Enable;
                 } else {
                     nextState |= State.Disable;
@@ -244,6 +246,25 @@ namespace TAS {
                 EnableRun();
             } else if (HasFlag(nextState, State.Disable))
                 DisableRun();
+        }
+
+        private static void EnableRun() {
+            nextState &= ~State.Enable;
+            InitializeRun(false);
+            BackupPlayerBindings();
+            kbTextInput = Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput;
+            Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = false;
+
+            checkHotkeyStarTask = Task.Run(() => {
+                while (Running || Hotkeys.hotkeyStart.pressed) {
+                    if (FrameLoops > 100) {
+                        if (Running && Hotkeys.hotkeyStart.pressed) {
+                            DisableRun();
+                        }
+                    }
+                }
+                checkHotkeyStarTask = null;
+            });
         }
 
         private static void DisableRun() {
@@ -269,14 +290,6 @@ namespace TAS {
             analogueMode = AnalogueMode.Ignore;
             Hotkeys.ReleaseAllKeys();
             InputCommands.TryRestoreSettings();
-        }
-
-        private static void EnableRun() {
-            nextState &= ~State.Enable;
-            InitializeRun(false);
-            BackupPlayerBindings();
-            kbTextInput = Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput;
-            Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = false;
         }
 
         public static void EnableExternal() => EnableRun();
