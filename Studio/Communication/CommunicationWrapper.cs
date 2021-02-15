@@ -57,10 +57,12 @@ static class CommunicationWrapper {
         bool anyPressed = false;
         for (int i = 0; i < bindings.Length; i++) {
             List<Keys> keys = bindings[i];
-            bool pressed = true;
+
             if (keys == null || keys.Count == 0) {
-                pressed = false;
+                continue;
             }
+
+            bool pressed = true;
 
             foreach (Keys key in keys) {
                 if ((GetAsyncKeyState(key) & 0x8000) != 0x8000) {
@@ -69,7 +71,7 @@ static class CommunicationWrapper {
                 }
             }
 
-            if (pressed && keys.Count >= 2) {
+            if (pressed && keys.Count == 1) {
                 if (!keys.Contains(Keys.LShiftKey) && (GetAsyncKeyState(Keys.LShiftKey) & 0x8000) == 0x8000) {
                     pressed = false;
                 }
