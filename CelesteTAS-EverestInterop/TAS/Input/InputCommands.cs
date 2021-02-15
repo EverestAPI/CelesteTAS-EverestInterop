@@ -331,6 +331,24 @@ namespace TAS.Input {
             }
         }
 
+        [TASCommand(args = new string[] { "ExportLibTAS path"})]
+        private static void ExportLibTASCommand(string[] args) {
+            string path = "export.ltm";
+            if (args.Length > 0) {
+                path = args[0];
+            }
+
+            Manager.LibTASExport(path);
+        }
+        [TASCommand(args=new string[] { "EndExportLibTAS"})]
+        private static void EndExportLibTASCommand(string[] args) {
+            Manager.EndLibTASExport();
+        }
+        [TASCommand(args=new string[] { "Add frames"})]
+        private static void AddCommand(string[] args) {
+            Manager.AddFrames(int.Parse(args[0]));
+        }
+
         public static void TryRestoreSettings() {
             if (origSettings != null) {
                 Settings.Instance.CopyAllFields(origSettings);

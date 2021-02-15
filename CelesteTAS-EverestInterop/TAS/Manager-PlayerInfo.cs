@@ -182,6 +182,19 @@ public static partial class Manager {
     public static void EndExport() {
         Engine.Scene.OnEndOfFrame += () => { sw?.Dispose(); };
     }
+    private static StreamWriter LibTAS;
+        private static bool ExportLibTAS;
+    public static void LibTASExport(string path) {
+        if(!ExportLibTAS) {
+            LibTAS = new StreamWriter(path,false,Encoding.ASCII,1<<20);
+            ExportLibTAS = true;
+        }
+    }
+    public static void EndLibTASExport() {
+        LibTAS.Flush();
+        LibTAS.Dispose();
+        ExportLibTAS = false;
+    }
 
     public static void ExportPlayerInfo() {
         Engine.Scene.OnEndOfFrame += () => {

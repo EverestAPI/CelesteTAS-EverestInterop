@@ -1,10 +1,9 @@
+using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Microsoft.Xna.Framework;
 
 namespace TAS.Input {
     public class InputController {
@@ -66,7 +65,7 @@ namespace TAS.Input {
         }
 
 
-        public InputController() {}
+        public InputController() { }
 
         public void RefreshInputs(bool fromStart) {
             if (fromStart) {
@@ -252,8 +251,7 @@ namespace TAS.Input {
             if (index == -1) {
                 framesStr = line;
                 index = 0;
-            }
-            else
+            } else
                 framesStr = line.Substring(0, index);
             if (!int.TryParse(framesStr, out frames)) {
                 return;
@@ -263,19 +261,45 @@ namespace TAS.Input {
                 char c = line[index];
 
                 switch (char.ToUpper(c)) {
-                    case 'L': frame.Actions ^= Actions.Left; break;
-                    case 'R': frame.Actions ^= Actions.Right; break;
-                    case 'U': frame.Actions ^= Actions.Up; break;
-                    case 'D': frame.Actions ^= Actions.Down; break;
-                    case 'J': frame.Actions ^= Actions.Jump; break;
-                    case 'X': frame.Actions ^= Actions.Dash; break;
-                    case 'G': frame.Actions ^= Actions.Grab; break;
-                    case 'S': frame.Actions ^= Actions.Start; break;
-                    case 'Q': frame.Actions ^= Actions.Restart; break;
-                    case 'N': frame.Actions ^= Actions.Journal; break;
-                    case 'K': frame.Actions ^= Actions.Jump2; break;
-                    case 'C': frame.Actions ^= Actions.Dash2; break;
-                    case 'O': frame.Actions ^= Actions.Confirm; break;
+                    case 'L':
+                        frame.Actions ^= Actions.Left;
+                        break;
+                    case 'R':
+                        frame.Actions ^= Actions.Right;
+                        break;
+                    case 'U':
+                        frame.Actions ^= Actions.Up;
+                        break;
+                    case 'D':
+                        frame.Actions ^= Actions.Down;
+                        break;
+                    case 'J':
+                        frame.Actions ^= Actions.Jump;
+                        break;
+                    case 'X':
+                        frame.Actions ^= Actions.Dash;
+                        break;
+                    case 'G':
+                        frame.Actions ^= Actions.Grab;
+                        break;
+                    case 'S':
+                        frame.Actions ^= Actions.Start;
+                        break;
+                    case 'Q':
+                        frame.Actions ^= Actions.Restart;
+                        break;
+                    case 'N':
+                        frame.Actions ^= Actions.Journal;
+                        break;
+                    case 'K':
+                        frame.Actions ^= Actions.Jump2;
+                        break;
+                    case 'C':
+                        frame.Actions ^= Actions.Dash2;
+                        break;
+                    case 'O':
+                        frame.Actions ^= Actions.Confirm;
+                        break;
                     case 'F':
                         frame.Actions ^= Actions.Feather;
                         index++;
