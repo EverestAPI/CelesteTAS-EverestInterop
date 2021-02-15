@@ -165,16 +165,15 @@ public static partial class Manager {
     }
 
     public static void BeginExport(string path, string[] tracked) {
-        if (sw?.BaseStream == null) {
-            sw = new StreamWriter(path);
-            sw.WriteLine(string.Join("\t", "Line", "Inputs", "Frames", "Time", "Position", "Speed", "State", "Statuses", "Entities"));
-            trackedEntities = new List<MethodInfo>();
-            foreach (string typeName in tracked) {
-                string fullTypeName = typeName.Contains("@") ? typeName.Replace("@", ",") : $"Celeste.{typeName}, Celeste";
-                Type t = Type.GetType(fullTypeName);
-                if (t != null) {
-                    trackedEntities.Add(typeof(EntityList).GetMethod("FindAll")?.MakeGenericMethod(t));
-                }
+        sw?.Dispose();
+        sw = new StreamWriter(path);
+        sw.WriteLine(string.Join("\t", "Line", "Inputs", "Frames", "Time", "Position", "Speed", "State", "Statuses", "Entities"));
+        trackedEntities = new List<MethodInfo>();
+        foreach (string typeName in tracked) {
+            string fullTypeName = typeName.Contains("@") ? typeName.Replace("@", ",") : $"Celeste.{typeName}, Celeste";
+            Type t = Type.GetType(fullTypeName);
+            if (t != null) {
+                trackedEntities.Add(typeof(EntityList).GetMethod("FindAll")?.MakeGenericMethod(t));
             }
         }
     }
