@@ -211,7 +211,7 @@ public class CelesteTASModule : EverestModule {
 
         UnixRTC?.Dispose();
 
-        Manager.EndExport();
+        Manager.DisableExternal();
 
 #if DEBUG
         Benchmark.Unload();
