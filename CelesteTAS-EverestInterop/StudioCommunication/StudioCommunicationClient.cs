@@ -12,8 +12,6 @@ namespace TAS.StudioCommunication {
 public sealed class StudioCommunicationClient : StudioCommunicationBase {
     public static StudioCommunicationClient instance;
 
-    private Thread thread;
-
     private StudioCommunicationClient() { }
     private StudioCommunicationClient(string target) : base(target) { }
 
@@ -31,7 +29,6 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         RunThread.Start(Setup, "StudioCom Client");
 
         void Setup() {
-            instance.thread = Thread.CurrentThread;
             Celeste.Celeste.Instance.Exiting -= Destroy;
             Celeste.Celeste.Instance.Exiting += Destroy;
             instance.UpdateLoop();
@@ -42,7 +39,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
 
     public static void Destroy(object sender = null, EventArgs e = null) {
         if (instance != null) {
-            instance.thread.Abort();
+            instance.abort = true;
             instance = null;
         }
     }

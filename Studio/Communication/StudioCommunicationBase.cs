@@ -31,6 +31,8 @@ public class StudioCommunicationBase {
     private int timeoutCount = 0;
     private bool waiting;
 
+    protected bool abort;
+
     protected StudioCommunicationBase() {
         sharedMemory = MemoryMappedFile.CreateOrOpen("CelesteTAS", BUFFER_SIZE);
         mutex = new Mutex(false, "CelesteTASCOM", out bool created);
@@ -59,10 +61,10 @@ public class StudioCommunicationBase {
     }
 
     protected void UpdateLoop() {
-        for (;;) {
+        while (!abort) {
             EstablishConnectionLoop();
             try {
-                for (;;) {
+                while (!abort) {
                     Message? message = ReadMessage();
 
                     if (message != null) {
