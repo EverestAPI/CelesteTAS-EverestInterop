@@ -9,8 +9,6 @@ using Monocle;
 using TAS.EverestInterop;
 using TAS.StudioCommunication;
 using TAS.Input;
-using FMOD;
-using System.Net.NetworkInformation;
 
 namespace TAS {
     [Flags]
@@ -324,18 +322,34 @@ namespace TAS {
         }
 
         public static bool HasFlag(State state, State flag) => (state & flag) == flag;
+        private static void WriteLibTASFrame(string outputKeys, string outputAxes, string outputButtons) {
+            LibTAS.WriteLine($"|{outputKeys}|{outputAxes}:0:0:0:0:{outputButtons}|.........|");
+        }
+        private static void WriteEmptyFrame() {
+            WriteLibTASFrame("", "0:0", "...............");
+        }
+        public static void AddFrames(int number) {
+            if (ExportLibTAS) {
+                for (int i = 0; i < number; ++i)
+                    WriteEmptyFrame();
+            }
+        }
 
         public static void SetInputs(InputFrame input) {
             GamePadDPad pad = default;
             GamePadThumbSticks sticks = default;
             GamePadState state = default;
-
+            FeatherInput = false;
+            FeatherX = FeatherY = 0;
             if (input.HasActions(Actions.Feather))
                 SetFeather(input, ref pad, ref sticks);
             else
                 SetDPad(input, ref pad, ref sticks);
 
             SetState(input, ref state, ref pad, ref sticks);
+
+            if(ExportLibTAS)
+               WriteLibTASFrame(input.LibTASKeys(),FeatherInput?($"{FeatherX}:{FeatherY}"):"0:0",input.LibTASButtons());
 
             bool found = false;
             for (int i = 0; i < 4; i++) {
@@ -392,18 +406,24 @@ namespace TAS {
                 pad
             );
         }
-
+        private static short FeatherX, FeatherY;
+        private static bool FeatherInput;
         private static Vector2 ComputeFeather(float x,float y) {
             if (x < 0) {
                 Vector2 feather = ComputeFeather(-x, y);
+                FeatherX = (short)-FeatherX;
                 return new Vector2(-feather.X,feather.Y);
             }
             if (y < 0) {
                 Vector2 feather = ComputeFeather(x, -y);
+                FeatherY = (short)-FeatherY;
                 return new Vector2(feather.X, -feather.Y);
             }
             if (x < y) {
                 Vector2 feather = ComputeFeather(y,x);
+                short t = FeatherY;
+                FeatherY = FeatherX;
+                FeatherX = t;
                 return new Vector2(feather.Y, feather.X);
             }
             /// assure positive and x>y
@@ -430,9 +450,12 @@ namespace TAS {
                 default:
                     throw new Exception("what the fuck");
             }
+            FeatherX = (short)(X+(X>0?deadzone:0));
+            FeatherY = (short)(Y+(Y>0?deadzone:0));
             return new Vector2((float)X/validArea,(float)Y/validArea);
         }
         private static Vector2 ValidateFeatherInput(InputFrame input) {
+            FeatherInput = true;
             return ComputeFeather(input.GetX(),input.GetY());
         }
 
