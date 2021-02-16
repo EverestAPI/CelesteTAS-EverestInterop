@@ -10,7 +10,6 @@ using Monocle;
 using TAS.EverestInterop;
 using TAS.StudioCommunication;
 using TAS.Input;
-using System.Xml.Serialization;
 
 namespace TAS {
     [Flags]
