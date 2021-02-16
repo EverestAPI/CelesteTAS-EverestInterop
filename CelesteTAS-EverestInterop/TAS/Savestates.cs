@@ -21,6 +21,7 @@ static class Savestates {
     private static Vector2 savedLastPlayerSeekerPos;
     private static bool savedByBreakpoint;
     private static AnalogueMode savedAnalogueMode;
+    private static short savedAnalogueLimit;
 
     private static readonly Lazy<bool> speedrunToolInstalledLazy = new Lazy<bool>(() =>
         Type.GetType("Celeste.Mod.SpeedrunTool.SaveLoad.StateManager, SpeedrunTool") != null
@@ -114,7 +115,9 @@ static class Savestates {
         savedPlayerStatus = PlayerStatus;
         savedLastPos = LastPos;
         savedLastPlayerSeekerPos = LastPlayerSeekerPos;
-        savedAnalogueMode = analogueMode;
+        savedAnalogueMode = Ana.mode;
+        savedAnalogueLimit = Ana.limit;
+
 
         savedController = controller.Clone();
         LoadStateRoutine();
@@ -186,7 +189,7 @@ static class Savestates {
        }
 
         SetTasState();
-        analogueMode = savedAnalogueMode;
+        Ana.AnalogModeChange(savedAnalogueMode,savedAnalogueLimit);
         PlayerStatus = savedPlayerStatus;
         LastPos = savedLastPos;
         LastPlayerSeekerPos = savedLastPlayerSeekerPos;

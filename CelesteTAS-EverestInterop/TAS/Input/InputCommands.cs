@@ -287,13 +287,21 @@ namespace TAS.Input {
             }
         }
 
-        [TASCommand(args = new string[] { "AnalogMode, Mode" })]
+        [TASCommand(args = new string[] { 
+            "AnalogMode, Mode",
+            "AnalogMode, Precise, UpperLimit"})]
         private static void AnalogModeCommand(string[] args) => AnalogueModeCommand(args);
 
-        [TASCommand(args = new string[] { "AnalogueMode, Mode" })]
+        [TASCommand(args = new string[] {
+            "AnalogueMode, Mode",
+            "AnalogueMode, Precise, UpperLimit"})]
         private static void AnalogueModeCommand(string[] args) {
             if (Enum.TryParse<Manager.AnalogueMode>(args[0], true, out var mode)) {
-                Manager.analogueMode = mode;
+                short lim = 32767;
+                if (args.Length >= 2)
+                    if (float.TryParse(args[1], out var limit))
+                        lim = (short)(limit * 32767);
+                Manager.Ana.AnalogModeChange(mode,lim);
             }
         }
 

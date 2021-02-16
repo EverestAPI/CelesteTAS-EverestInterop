@@ -31,8 +31,8 @@ public static partial class Manager {
                     string speed = $"Speed: {player.Speed.X.ToString("0.00")}, {player.Speed.Y.ToString("0.00")}";
                     Vector2 diff = (player.ExactPosition - LastPos) * 60f;
                     string vel = $"Vel:   {diff.X.ToString("0.00")}, {diff.Y.ToString("0.00")}";
-                    string polarvel = $"Fly:   {diff.Length().ToString("0.00")}, {GetAngle(diff).ToString("0.00")}°";
-                    string js = $"Analog:({Debug_Joystick.X.ToString("F5")},{Debug_Joystick.Y.ToString("F5")})";
+                    string polarvel = $"Fly:   {diff.Length().ToString("0.00")}, {GetAngle(diff).ToString("0.00000")}°";
+                    string js = $"Analog:({Ana.LastDirection.X.ToString("F5")},{Ana.LastDirection.Y.ToString("F5")})\n       ({GetAngle(new Vector2(Ana.LastDirection.X,-Ana.LastDirection.Y)).ToString("F5")})";
 
                         string miscstats = $"Stamina: {player.Stamina.ToString("0")}  "
                                        + (WallJumpCheck(player, 1) ? "Wall-R " : string.Empty)
