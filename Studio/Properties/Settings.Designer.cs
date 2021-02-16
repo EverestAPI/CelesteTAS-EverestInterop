@@ -69,5 +69,29 @@ namespace CelesteStudio.Properties {
                 this["UpdatingHotkeys"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("324, 713")]
+        public global::System.Drawing.Size Size {
+            get {
+                return ((global::System.Drawing.Size)(this["Size"]));
+            }
+            set {
+                this["Size"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0, 0")]
+        public global::System.Drawing.Point DesktopLocation {
+            get {
+                return ((global::System.Drawing.Point)(this["DesktopLocation"]));
+            }
+            set {
+                this["DesktopLocation"] = value;
+            }
+        }
     }
 }
