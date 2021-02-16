@@ -287,13 +287,21 @@ namespace TAS.Input {
             }
         }
 
-        [TASCommand(args = new string[] { "AnalogMode, Mode" })]
+        [TASCommand(args = new string[] { 
+            "AnalogMode, Mode",
+            "AnalogMode, Precise, UpperLimit"})]
         private static void AnalogModeCommand(string[] args) => AnalogueModeCommand(args);
 
-        [TASCommand(args = new string[] { "AnalogueMode, Mode" })]
+        [TASCommand(args = new string[] {
+            "AnalogueMode, Mode",
+            "AnalogueMode, Precise, UpperLimit"})]
         private static void AnalogueModeCommand(string[] args) {
             if (Enum.TryParse<Manager.AnalogueMode>(args[0], true, out var mode)) {
-                Manager.analogueMode = mode;
+                short lim = 32767;
+                if (args.Length >= 2)
+                    if (float.TryParse(args[1], out var limit))
+                        lim = (short)(limit * 32767);
+                Manager.Ana.AnalogModeChange(mode,lim);
             }
         }
 
@@ -313,6 +321,26 @@ namespace TAS.Input {
                     lineNumber = int.MaxValue;
                 }
             }
+        }
+
+        [TASCommand(args = new string[] { "ExportLibTAS path"})]
+        private static void ExportLibTASCommand(string[] args) {
+            string path = "export.ltm";
+            if (args.Length > 0) {
+                path = args[0];
+            }
+
+            Manager.LibTASExport(path);
+        }
+
+        [TASCommand(args=new string[] { "EndExportLibTAS"})]
+        private static void EndExportLibTASCommand(string[] args) {
+            Manager.EndLibTASExport();
+        }
+
+        [TASCommand(args=new string[] { "Add frames"})]
+        private static void AddCommand(string[] args) {
+            Manager.AddFrames(int.Parse(args[0]));
         }
     }
 }
