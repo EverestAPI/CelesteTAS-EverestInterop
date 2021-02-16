@@ -132,6 +132,7 @@ public class CelesteTASModuleSettings : EverestModuleSettings {
 
     #endregion
 
+    public bool RestoreSettings { get; set; } = false;
     [SettingIgnore] public bool FirstLaunch { get; set; } = true;
 }
 }

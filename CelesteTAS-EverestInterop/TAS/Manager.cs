@@ -266,6 +266,8 @@ namespace TAS {
                 }
                 checkHotkeyStarTask = null;
             });
+
+            RestoreSettings.TryBackup();
         }
 
         private static void DisableRun() {
@@ -290,7 +292,7 @@ namespace TAS {
             allowUnsafeInput = false;
             Ana.AnalogModeChange(AnalogueMode.Ignore);
             Hotkeys.ReleaseAllKeys();
-            InputCommands.TryRestoreSettings();
+            RestoreSettings.TryRestore();
         }
 
         public static void EnableExternal() => EnableRun();

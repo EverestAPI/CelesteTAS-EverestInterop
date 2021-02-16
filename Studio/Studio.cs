@@ -15,7 +15,6 @@ using CelesteStudio.Communication;
 using CelesteStudio.Entities;
 using CelesteStudio.Properties;
 using CelesteStudio.RichText;
-using Microsoft.Win32;
 
 namespace CelesteStudio {
 public partial class Studio : Form {
@@ -42,14 +41,12 @@ public partial class Studio : Form {
         Lines.Add(new InputRecord(""));
         EnableStudio(false);
 
-        DesktopLocation = new Point(RegRead("x", DesktopLocation.X), RegRead("y", DesktopLocation.Y));
+        DesktopLocation = Settings.Default.DesktopLocation;
+        Size = Settings.Default.Size;
 
-        Size size = new Size(RegRead("w", Size.Width), RegRead("h", Size.Height));
-        if (size != Size.Empty)
-            Size = size;
-
-        if (!IsTitleBarVisible())
+        if (!IsTitleBarVisible()) {
             DesktopLocation = new Point(0, 0);
+        }
 
         instance = this;
     }
@@ -82,7 +79,7 @@ public partial class Studio : Form {
 
     float scaleFactor => DeviceDpi / 96f;
 
-    private FileList recentFiles => Settings.Default.RecentFiles ?? (Settings.Default.RecentFiles = new FileList());
+    private FileList recentFiles => Settings.Default.RecentFileList ?? (Settings.Default.RecentFileList = new FileList());
 
     [STAThread]
     public static void Main() {
@@ -210,10 +207,8 @@ public partial class Studio : Form {
     }
 
     private void TASStudio_FormClosed(object sender, FormClosedEventArgs e) {
-        RegWrite("x", DesktopLocation.X);
-        RegWrite("y", DesktopLocation.Y);
-        RegWrite("w", Size.Width);
-        RegWrite("h", Size.Height);
+        Settings.Default.DesktopLocation = DesktopLocation;
+        Settings.Default.Size = Size;
         Settings.Default.Save();
         StudioCommunicationServer.instance?.SendPath(string.Empty);
         Thread.Sleep(50);
@@ -742,25 +737,6 @@ public partial class Studio : Form {
     private void tasText_FileOpened(object sender, EventArgs e) {
         try {
             tasText.SaveFile();
-        } catch { }
-    }
-
-    private T RegRead<T>(string name, T def) {
-        object o = null;
-        try {
-            o = Registry.GetValue(RegKey, name, null);
-        } catch { }
-
-        if (o is T) {
-            return (T) o;
-        }
-
-        return def;
-    }
-
-    private void RegWrite<T>(string name, T val) {
-        try {
-            Registry.SetValue(RegKey, name, val);
         } catch { }
     }
 

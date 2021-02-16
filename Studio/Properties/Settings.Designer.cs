@@ -49,12 +49,12 @@ namespace CelesteStudio.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        public global::CelesteStudio.Properties.FileList RecentFiles {
+        public global::CelesteStudio.Properties.FileList RecentFileList {
             get {
-                return ((global::CelesteStudio.Properties.FileList)(this["RecentFiles"]));
+                return ((global::CelesteStudio.Properties.FileList)(this["RecentFileList"]));
             }
             set {
-                this["RecentFiles"] = value;
+                this["RecentFileList"] = value;
             }
         }
         
@@ -67,6 +67,30 @@ namespace CelesteStudio.Properties {
             }
             set {
                 this["UpdatingHotkeys"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("324, 713")]
+        public global::System.Drawing.Size Size {
+            get {
+                return ((global::System.Drawing.Size)(this["Size"]));
+            }
+            set {
+                this["Size"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0, 0")]
+        public global::System.Drawing.Point DesktopLocation {
+            get {
+                return ((global::System.Drawing.Point)(this["DesktopLocation"]));
+            }
+            set {
+                this["DesktopLocation"] = value;
             }
         }
     }

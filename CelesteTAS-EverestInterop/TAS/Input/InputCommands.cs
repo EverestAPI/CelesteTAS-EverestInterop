@@ -323,33 +323,6 @@ namespace TAS.Input {
             }
         }
 
-        private static Settings origSettings;
-        private static Assists? origAssists;
-        private static Dictionary<EverestModule, object> origModSettings;
-
-        [TASCommand(args = new string[] { "RestoreSettings" })]
-        private static void RestoreSettingsCommand(string[] args) {
-            origSettings = null;
-            origAssists = null;
-            origModSettings = null;
-
-            origSettings  = Settings.Instance.ShallowClone();
-
-            if (SaveData.Instance != null) {
-                origAssists = SaveData.Instance.Assists;
-            } else {
-                On.Celeste.SaveData.Start -= SaveDataOnStart;
-                On.Celeste.SaveData.Start += SaveDataOnStart;
-            }
-
-            origModSettings = new Dictionary<EverestModule, object>();
-            foreach (EverestModule module in Everest.Modules) {
-                if (module._Settings != null && module.SettingsType != null) {
-                    origModSettings.Add(module, module._Settings.ShallowClone());
-                }
-            }
-        }
-
         [TASCommand(args = new string[] { "ExportLibTAS path"})]
         private static void ExportLibTASCommand(string[] args) {
             string path = "export.ltm";
@@ -359,43 +332,15 @@ namespace TAS.Input {
 
             Manager.LibTASExport(path);
         }
+
         [TASCommand(args=new string[] { "EndExportLibTAS"})]
         private static void EndExportLibTASCommand(string[] args) {
             Manager.EndLibTASExport();
         }
+
         [TASCommand(args=new string[] { "Add frames"})]
         private static void AddCommand(string[] args) {
             Manager.AddFrames(int.Parse(args[0]));
-        }
-
-        public static void TryRestoreSettings() {
-            On.Celeste.SaveData.Start -= SaveDataOnStart;
-
-            if (origSettings != null) {
-                Settings.Instance.CopyAllFields(origSettings);
-                origSettings = null;
-            }
-            if (origAssists != null) {
-                SaveData.Instance.Assists = origAssists.Value;
-                origAssists = null;
-            }
-            if (origModSettings != null) {
-                foreach (EverestModule module in Everest.Modules) {
-                    if (module != CelesteTASModule.Instance && module._Settings != null && origModSettings.TryGetValue(module, out object modSettings) && modSettings != null) {
-                        module._Settings.CopyAllProperties(modSettings);
-                        module._Settings.CopyAllFields(modSettings);
-                    }
-                }
-                origModSettings = null;
-            }
-        }
-
-        private static void SaveDataOnStart(On.Celeste.SaveData.orig_Start orig, SaveData data, int slot) {
-            orig(data, slot);
-            if (origAssists == null) {
-                On.Celeste.SaveData.Start -= SaveDataOnStart;
-                origAssists = SaveData.Instance.Assists;
-            }
         }
     }
 }

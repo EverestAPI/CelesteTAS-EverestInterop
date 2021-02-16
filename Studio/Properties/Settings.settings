@@ -1,21 +1,27 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)">
-    <Profiles>
-        <Profile Name="(Default)"/>
-    </Profiles>
-    <Settings>
-        <Setting Name="RememberLastFileName" Type="System.Boolean" Scope="User">
-            <Value Profile="(Default)">False</Value>
-        </Setting>
-        <Setting Name="LastFileName" Type="System.String" Scope="User">
-            <Value Profile="(Default)"/>
-        </Setting>
-        <Setting Name="RecentFiles" Type="CelesteStudio.Properties.FileList" Scope="User">
-            <Value Profile="(Default)"/>
-        </Setting>
-        <Setting Name="UpdatingHotkeys" Type="System.Boolean" Scope="User">
-            <Value Profile="(Default)">True</Value>
-        </Setting>
-    </Settings>
+  <Profiles>
+    <Profile Name="(Default)" />
+  </Profiles>
+  <Settings>
+    <Setting Name="RememberLastFileName" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="LastFileName" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="RecentFileList" Type="CelesteStudio.Properties.FileList" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="UpdatingHotkeys" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="Size" Type="System.Drawing.Size" Scope="User">
+      <Value Profile="(Default)">324, 713</Value>
+    </Setting>
+    <Setting Name="DesktopLocation" Type="System.Drawing.Point" Scope="User">
+      <Value Profile="(Default)">0, 0</Value>
+    </Setting>
+  </Settings>
 </SettingsFile>
 

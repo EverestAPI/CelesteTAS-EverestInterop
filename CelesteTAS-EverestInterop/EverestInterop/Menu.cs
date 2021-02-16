@@ -64,6 +64,8 @@ internal static class Menu {
                 }));
                 subMenu.Add(new TextMenu.OnOff("Pause After Load State".ToDialogText(), Settings.PauseAfterLoadState).Change(value =>
                     Settings.PauseAfterLoadState = value));
+                subMenu.Add(new TextMenu.OnOff("Restore Settings".ToDialogText(), Settings.RestoreSettings).Change(value =>
+                    Settings.RestoreSettings = value));
                 subMenu.Add(
                     new TextMenu.OnOff("Disable Achievements".ToDialogText(), Settings.DisableAchievements).Change(value =>
                         Settings.DisableAchievements = value));
