@@ -32,8 +32,9 @@ public static partial class Manager {
                     Vector2 diff = (player.ExactPosition - LastPos) * 60f;
                     string vel = $"Vel:   {diff.X.ToString("0.00")}, {diff.Y.ToString("0.00")}";
                     string polarvel = $"Fly:   {diff.Length().ToString("0.00")}, {GetAngle(diff).ToString("0.00")}°";
+                    string js = $"Analog:({Debug_Joystick.X.ToString("F5")},{Debug_Joystick.Y.ToString("F5")})";
 
-                    string miscstats = $"Stamina: {player.Stamina.ToString("0")}  "
+                        string miscstats = $"Stamina: {player.Stamina.ToString("0")}  "
                                        + (WallJumpCheck(player, 1) ? "Wall-R " : string.Empty)
                                        + (WallJumpCheck(player, -1) ? "Wall-L " : string.Empty);
                     int dashCooldown = (int) (DashCooldownTimer(player) * framesPerSecond);
@@ -101,6 +102,9 @@ public static partial class Manager {
                         || SaveData.Instance.Assists.ThreeSixtyDashing
                         || SaveData.Instance.Assists.SuperDashing) {
                         sb.AppendLine(polarvel);
+                    }
+                    if (FeatherInput) {
+                        sb.AppendLine(js);
                     }
 
                     sb.AppendLine(miscstats);

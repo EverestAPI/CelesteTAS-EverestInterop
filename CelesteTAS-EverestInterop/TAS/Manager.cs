@@ -362,7 +362,7 @@ namespace TAS {
             SetState(input, ref state, ref pad, ref sticks);
 
             if(ExportLibTAS)
-               WriteLibTASFrame(input.LibTASKeys(),FeatherInput?($"{FeatherX}:{FeatherY}"):"0:0",input.LibTASButtons());
+               WriteLibTASFrame(input.LibTASKeys(),FeatherInput?($"{FeatherX}:{-FeatherY}"):"0:0",input.LibTASButtons());
 
             bool found = false;
             for (int i = 0; i < 4; i++) {
@@ -467,9 +467,12 @@ namespace TAS {
             FeatherY = (short)(Y+(Y>0?deadzone:0));
             return new Vector2((float)X/validArea,(float)Y/validArea);
         }
+        private static Vector2 Debug_Joystick;
         private static Vector2 ValidateFeatherInput(InputFrame input) {
             FeatherInput = true;
-            return ComputeFeather(input.GetX(),input.GetY());
+            Vector2 ret=ComputeFeather(input.GetX(),input.GetY());
+            Debug_Joystick = ret;
+            return ret;
         }
 
         //https://www.ics.uci.edu/~eppstein/numth/frap.c
