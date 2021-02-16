@@ -15,7 +15,6 @@ using CelesteStudio.Communication;
 using CelesteStudio.Entities;
 using CelesteStudio.Properties;
 using CelesteStudio.RichText;
-using Microsoft.Win32;
 
 namespace CelesteStudio {
 public partial class Studio : Form {
@@ -80,7 +79,7 @@ public partial class Studio : Form {
 
     float scaleFactor => DeviceDpi / 96f;
 
-    private FileList recentFiles => Settings.Default.RecentFiles ?? (Settings.Default.RecentFiles = new FileList());
+    private FileList recentFiles => Settings.Default.RecentFileList ?? (Settings.Default.RecentFileList = new FileList());
 
     [STAThread]
     public static void Main() {

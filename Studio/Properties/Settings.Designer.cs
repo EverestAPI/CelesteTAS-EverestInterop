@@ -49,12 +49,12 @@ namespace CelesteStudio.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        public global::CelesteStudio.Properties.FileList RecentFiles {
+        public global::CelesteStudio.Properties.FileList RecentFileList {
             get {
-                return ((global::CelesteStudio.Properties.FileList)(this["RecentFiles"]));
+                return ((global::CelesteStudio.Properties.FileList)(this["RecentFileList"]));
             }
             set {
-                this["RecentFiles"] = value;
+                this["RecentFileList"] = value;
             }
         }
         

@@ -10,7 +10,7 @@
     <Setting Name="LastFileName" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
-    <Setting Name="RecentFiles" Type="CelesteStudio.Properties.FileList" Scope="User">
+    <Setting Name="RecentFileList" Type="CelesteStudio.Properties.FileList" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
     <Setting Name="UpdatingHotkeys" Type="System.Boolean" Scope="User">
