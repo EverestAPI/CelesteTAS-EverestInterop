@@ -354,6 +354,10 @@ namespace TAS {
             GamePadThumbSticks sticks = default;
             GamePadState state = default;
             FeatherInput = false;
+<<<<<<< HEAD
+=======
+            FeatherX = FeatherY = 0;
+>>>>>>> 2bf4c2fdcb84aa7311b9da639bcb71eaaa4cbac5
             if (input.HasActions(Actions.Feather))
                 SetFeather(input, ref pad, ref sticks);
             else
@@ -362,7 +366,11 @@ namespace TAS {
             SetState(input, ref state, ref pad, ref sticks);
 
             if(ExportLibTAS)
+<<<<<<< HEAD
                WriteLibTASFrame(input.LibTASKeys(),FeatherInput?($"{Ana.LastDS.x}:{-Ana.LastDS.y}"):"0:0",input.LibTASButtons());
+=======
+               WriteLibTASFrame(input.LibTASKeys(),FeatherInput?($"{FeatherX}:{FeatherY}"):"0:0",input.LibTASButtons());
+>>>>>>> 2bf4c2fdcb84aa7311b9da639bcb71eaaa4cbac5
 
             bool found = false;
             for (int i = 0; i < 4; i++) {
@@ -419,11 +427,149 @@ namespace TAS {
                 pad
             );
         }
+<<<<<<< HEAD
         private static bool FeatherInput;
         public static AnalogHelper Ana;
         private static Vector2 ValidateFeatherInput(InputFrame input) {
             FeatherInput = true;
             return Ana.ComputeFeather(input.GetX(), input.GetY());
+=======
+        private static short FeatherX, FeatherY;
+        private static bool FeatherInput;
+        private static Vector2 ComputeFeather(float x,float y) {
+            if (x < 0) {
+                Vector2 feather = ComputeFeather(-x, y);
+                FeatherX = (short)-FeatherX;
+                return new Vector2(-feather.X,feather.Y);
+            }
+            if (y < 0) {
+                Vector2 feather = ComputeFeather(x, -y);
+                FeatherY = (short)-FeatherY;
+                return new Vector2(feather.X, -feather.Y);
+            }
+            if (x < y) {
+                Vector2 feather = ComputeFeather(y,x);
+                short t = FeatherY;
+                FeatherY = FeatherX;
+                FeatherX = t;
+                return new Vector2(feather.Y, feather.X);
+            }
+            /// assure positive and x>y
+            const short deadzone = 7849;
+            const short validArea = 32767 - deadzone;
+            short X, Y;
+            switch (analogueMode) {
+                case AnalogueMode.Ignore:
+                    return new Vector2(x, y);
+                case AnalogueMode.Circle:
+                    X = (short)(x*validArea + 0.5);
+                    Y = (short)(y*validArea + 0.5);
+                    break;
+                case AnalogueMode.Square:
+                    float divisor = Math.Max(Math.Abs(x), Math.Abs(y));
+                    x /= divisor;
+                    y /= divisor;
+                    X = (short)(x * validArea + 0.5);
+                    Y = (short)(y * validArea + 0.5);
+                    break;
+                case AnalogueMode.Precise:
+                    GetPreciseFeatherPos(x,y,out X,out Y);
+                    break;
+                default:
+                    throw new Exception("what the fuck");
+            }
+            FeatherX = (short)(X+(X>0?deadzone:0));
+            FeatherY = (short)(Y+(Y>0?deadzone:0));
+            return new Vector2((float)X/validArea,(float)Y/validArea);
+        }
+        private static Vector2 ValidateFeatherInput(InputFrame input) {
+            FeatherInput = true;
+            return ComputeFeather(input.GetX(),input.GetY());
+        }
+
+        //https://www.ics.uci.edu/~eppstein/numth/frap.c
+        private static void GetPreciseFeatherPos(float xPos, float yPos, out short outX, out short outY) {
+
+            const short maxden = short.MaxValue - 7849;
+            //special cases where this is imprecise
+            if (Math.Abs(xPos) == Math.Abs(yPos) || Math.Abs(xPos) < 1E-10 || Math.Abs(yPos) < 1E-10) {
+                if (Math.Abs(xPos) < 1E-10)
+                    xPos = 0;
+                if (Math.Abs(yPos) < 1E-10)
+                    yPos = 0;
+                outX = (short)(maxden * (short)Math.Sign(xPos));
+                outY = (short)(maxden * (short)Math.Sign(yPos));
+                return;
+            }
+
+            if (Math.Abs(xPos) > Math.Abs(yPos)) {
+                GetPreciseFeatherPos(yPos, xPos, out outY, out outX);
+                return;
+            }
+
+
+            long[][] m = new long[2][];
+            m[0] = new long[2];
+            m[1] = new long[2];
+            double x = (double)xPos / (double)yPos;
+            double startx = x;
+            long ai;
+
+            /* initialize matrix */
+            m[0][0] = m[1][1] = 1;
+            m[0][1] = m[1][0] = 0;
+
+            /* loop finding terms until denom gets too big */
+            while (m[1][0] * (ai = (long)x) + m[1][1] <= maxden) {
+                long t;
+                t = m[0][0] * ai + m[0][1];
+                m[0][1] = m[0][0];
+                m[0][0] = t;
+                t = m[1][0] * ai + m[1][1];
+                m[1][1] = m[1][0];
+                m[1][0] = t;
+                if (x == (double)ai)
+                    break; // AF: division by zero
+                x = 1 / (x - (double)ai);
+                if (x > (double)0x7FFFFFFF)
+                    break; // AF: representation failure
+            }
+
+            /* now remaining x is between 0 and 1/ai */
+            /* approx as either 0 or 1/m where m is max that will fit in maxden */
+            /* first try zero */
+            outX = (short)m[0][0];
+            outY = (short)m[1][0];
+
+            double err1 = startx - ((double)m[0][0] / (double)m[1][0]);
+
+            /* now try other possibility */
+            ai = (maxden - m[1][1]) / m[1][0];
+            m[0][0] = m[0][0] * ai + m[0][1];
+            m[1][0] = m[1][0] * ai + m[1][1];
+
+            double err2 = startx - ((double)m[0][0] / (double)m[1][0]);
+
+
+            //magic
+            if (err1 > err2) {
+                outX = (short)m[0][0];
+                outY = (short)m[1][0];
+            }
+
+            //why is there no short negation operator lmfao
+            if (yPos < 0) {
+                outX = (short)-outX;
+                outY = (short)-outY;
+            }
+
+            //make sure it doesn't end up in the deadzone
+            short mult = (short)Math.Floor(maxden / (float)Math.Max(Math.Abs(outX), Math.Abs(outY)));
+            outX *= mult;
+            outY *= mult;
+
+            return;
+>>>>>>> 2bf4c2fdcb84aa7311b9da639bcb71eaaa4cbac5
         }
 
         //The things we do for faster replay times
