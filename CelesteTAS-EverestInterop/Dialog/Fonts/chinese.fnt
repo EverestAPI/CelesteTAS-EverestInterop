@@ -5,22 +5,23 @@
   <pages>
     <page id="0" file="chinese_tas_0.png" />
   </pages>
-  <chars count="16">
-    <char id="22278" x="622" y="0" width="37" height="39" xoffset="3" yoffset="15" xadvance="43" page="0" chnl="15" />
-    <char id="22495" x="208" y="0" width="41" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
-    <char id="23721" x="126" y="0" width="40" height="41" xoffset="1" yoffset="13" xadvance="43" page="0" chnl="15" />
-    <char id="27867" x="250" y="0" width="41" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
-    <char id="29028" x="0" y="0" width="41" height="41" xoffset="1" yoffset="13" xadvance="43" page="0" chnl="15" />
-    <char id="31665" x="167" y="0" width="40" height="41" xoffset="1" yoffset="13" xadvance="43" page="0" chnl="15" />
-    <char id="31890" x="42" y="0" width="41" height="41" xoffset="1" yoffset="13" xadvance="43" page="0" chnl="15" />
-    <char id="32043" x="376" y="0" width="40" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
-    <char id="32418" x="539" y="0" width="41" height="39" xoffset="1" yoffset="13" xadvance="43" page="0" chnl="15" />
-    <char id="32465" x="417" y="0" width="40" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
-    <char id="32511" x="292" y="0" width="41" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
-    <char id="34013" x="458" y="0" width="40" height="40" xoffset="2" yoffset="13" xadvance="43" page="0" chnl="15" />
-    <char id="35206" x="581" y="0" width="40" height="39" xoffset="1" yoffset="15" xadvance="43" page="0" chnl="15" />
-    <char id="35302" x="84" y="0" width="41" height="41" xoffset="1" yoffset="13" xadvance="43" page="0" chnl="15" />
-    <char id="35759" x="334" y="0" width="41" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
-    <char id="38468" x="499" y="0" width="39" height="40" xoffset="3" yoffset="14" xadvance="43" page="0" chnl="15" />
+  <chars count="17">
+    <char id="22278" x="664" y="0" width="37" height="39" xoffset="3" yoffset="15" xadvance="43" page="0" chnl="15" />
+    <char id="22495" x="250" y="0" width="41" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
+    <char id="23721" x="168" y="0" width="40" height="41" xoffset="1" yoffset="13" xadvance="43" page="0" chnl="15" />
+    <char id="24674" x="0" y="0" width="41" height="41" xoffset="1" yoffset="13" xadvance="43" page="0" chnl="15" />
+    <char id="27867" x="292" y="0" width="41" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
+    <char id="29028" x="42" y="0" width="41" height="41" xoffset="1" yoffset="13" xadvance="43" page="0" chnl="15" />
+    <char id="31665" x="209" y="0" width="40" height="41" xoffset="1" yoffset="13" xadvance="43" page="0" chnl="15" />
+    <char id="31890" x="84" y="0" width="41" height="41" xoffset="1" yoffset="13" xadvance="43" page="0" chnl="15" />
+    <char id="32043" x="418" y="0" width="40" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
+    <char id="32418" x="581" y="0" width="41" height="39" xoffset="1" yoffset="13" xadvance="43" page="0" chnl="15" />
+    <char id="32465" x="459" y="0" width="40" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
+    <char id="32511" x="334" y="0" width="41" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
+    <char id="34013" x="500" y="0" width="40" height="40" xoffset="2" yoffset="13" xadvance="43" page="0" chnl="15" />
+    <char id="35206" x="623" y="0" width="40" height="39" xoffset="1" yoffset="15" xadvance="43" page="0" chnl="15" />
+    <char id="35302" x="126" y="0" width="41" height="41" xoffset="1" yoffset="13" xadvance="43" page="0" chnl="15" />
+    <char id="35759" x="376" y="0" width="41" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
+    <char id="38468" x="541" y="0" width="39" height="40" xoffset="3" yoffset="14" xadvance="43" page="0" chnl="15" />
   </chars>
 </font>
