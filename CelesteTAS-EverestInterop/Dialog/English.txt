@@ -47,7 +47,6 @@ TAS_PAUSE_AFTER_LOAD_STATE=   Pause After Load State
 TAS_RESTORE_SETTINGS=         Restore Settings After TAS Stop
 TAS_DISABLE_ACHIEVEMENTS=     Disable Achievements
 TAS_DISABLE_GRAB_DESYNC_FIX=  Disable Grab Desync Fix
-TAS_AUTO_MUTE_ON_FAST_FORWARD=Auto Mute on Fast Forward
 TAS_MOD_9D_LIGHTING=          Mod 9D Lighting
 
 # ================================== Keyboard Config ==================================

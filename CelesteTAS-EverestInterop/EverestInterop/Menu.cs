@@ -71,8 +71,6 @@ namespace TAS.EverestInterop {
                             Settings.DisableAchievements = value));
                     subMenu.Add(new TextMenu.OnOff("Disable Grab Desync Fix".ToDialogText(), Settings.DisableGrabDesyncFix).Change(value =>
                         Settings.DisableGrabDesyncFix = value));
-                    subMenu.Add(new TextMenu.OnOff("Auto Mute on Fast Forward".ToDialogText(), Settings.AutoMute).Change(value =>
-                        Settings.AutoMute = value));
                     subMenu.Add(new TextMenu.OnOff("Mod 9D Lighting".ToDialogText(), Settings.Mod9DLighting).Change(value =>
                         Settings.Mod9DLighting = value));
                 }),

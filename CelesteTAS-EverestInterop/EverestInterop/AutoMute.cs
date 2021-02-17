@@ -50,7 +50,7 @@ namespace TAS.EverestInterop {
 
         private static bool settingMusic;
         private static CelesteTasModuleSettings TasSettings => CelesteTasModule.Settings;
-        private static bool ShouldBeMute => Manager.FrameLoops >= 2 && CelesteTasModule.Settings.AutoMute && !settingMusic;
+        private static bool ShouldBeMuted => Manager.FrameLoops >= 2 && !settingMusic;
         private static bool FrameStep => Manager.Running && (Manager.State & State.FrameStep) != 0;
 
         public static void Load() {
@@ -87,7 +87,7 @@ namespace TAS.EverestInterop {
             RESULT result = orig(self, out instance);
 
             if (instance != null && self.getPath(out string path) == RESULT.OK && path != null) {
-                if (ShouldBeMute) {
+                if (ShouldBeMuted) {
                     instance.setVolume(0);
                 }
 
@@ -109,14 +109,14 @@ namespace TAS.EverestInterop {
         private static void SceneOnUpdate(On.Monocle.Scene.orig_Update orig, Monocle.Scene self) {
             orig(self);
 
-            if (ShouldBeMute && TasSettings.LastSfxVolume < 0) {
+            if (ShouldBeMuted && TasSettings.LastSfxVolume < 0) {
                 TasSettings.LastSfxVolume = Settings.Instance.SFXVolume;
                 CelesteTasModule.Instance.SaveSettings();
                 Settings.Instance.SFXVolume = 0;
                 Settings.Instance.ApplyVolumes();
             }
 
-            if (!ShouldBeMute && TasSettings.LastSfxVolume >= 0) {
+            if (!ShouldBeMuted && TasSettings.LastSfxVolume >= 0) {
                 Settings.Instance.SFXVolume = TasSettings.LastSfxVolume;
                 Settings.Instance.ApplyVolumes();
                 TasSettings.LastSfxVolume = -1;
