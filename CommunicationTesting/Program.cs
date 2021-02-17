@@ -1,4 +1,5 @@
-﻿#if DEBUG
+﻿using TAS.StudioCommunication;
+#if DEBUG
 using TASALT.StudioCommunication;
 
 #endif
@@ -10,8 +11,8 @@ namespace CommunicationTesting {
 
         static void Main(string[] args) {
 #if DEBUG
-        StudioCommunicationServer.Run();
-        StudioCommunicationClient.Run();
+            StudioCommunicationServer.Run();
+            StudioCommunicationClient.Run();
 #endif
         }
     }
