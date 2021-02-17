@@ -8,6 +8,7 @@ using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.EverestInterop;
+using TAS.Input;
 
 namespace TAS {
     public static partial class Manager {
@@ -31,14 +32,20 @@ namespace TAS {
                     if (chapterTime != lastTimer || LastPos != player.ExactPosition) {
                         framesPerSecond = 60f / Engine.TimeRateB;
                         string pos = GetAdjustedPos(player.Position, player.PositionRemainder);
-                        string speed = $"Speed: {player.Speed.X.ToString("0.00")}, {player.Speed.Y.ToString("0.00")}";
+                        string speed = $"Speed: {player.Speed.X:F2}, {player.Speed.Y:F2}";
                         Vector2 diff = (player.ExactPosition - LastPos) * 60f;
-                        string vel = $"Vel:   {diff.X.ToString("0.00")}, {diff.Y.ToString("0.00")}";
-                        string polarvel = $"Fly:   {diff.Length().ToString("0.00")}, {GetAngle(diff).ToString("0.00000")}°";
-                        string js =
-                            $"Analog:({AnalogHelper.LastDirection.X.ToString("F5")},{AnalogHelper.LastDirection.Y.ToString("F5")})\n       ({GetAngle(new Vector2(AnalogHelper.LastDirection.X, -AnalogHelper.LastDirection.Y)).ToString("F5")})";
+                        string vel = $"Vel:   {diff.X:F2}, {diff.Y:F2}";
+                        string polarvel = $"Fly:   {diff.Length():F2}, {GetAngle(diff):F5}°";
 
-                        string miscstats = $"Stamina: {player.Stamina.ToString("0")}  "
+                        string joystick;
+                        if (Running && Controller.Previous is InputFrame inputFrame && inputFrame.HasActions(Actions.Feather)) {
+                            joystick =
+                                $"Analog: {AnalogHelper.LastDirection.X:F5}, {AnalogHelper.LastDirection.Y:F5}, {GetAngle(new Vector2(AnalogHelper.LastDirection.X, -AnalogHelper.LastDirection.Y)):F5}°";
+                        } else {
+                            joystick = string.Empty;
+                        }
+
+                        string miscstats = $"Stamina: {player.Stamina:0}  "
                                            + (WallJumpCheck(player, 1) ? "Wall-R " : string.Empty)
                                            + (WallJumpCheck(player, -1) ? "Wall-L " : string.Empty);
                         int dashCooldown = (int) (DashCooldownTimer(player) * framesPerSecond);
@@ -47,10 +54,10 @@ namespace TAS {
                         if (playerSeeker != null) {
                             pos = GetAdjustedPos(playerSeeker.Position, playerSeeker.PositionRemainder);
                             speed =
-                                $"Speed: {PlayerSeekerSpeed(playerSeeker).X.ToString("0.00")}, {PlayerSeekerSpeed(playerSeeker).Y.ToString("0.00")}";
+                                $"Speed: {PlayerSeekerSpeed(playerSeeker).X:F2}, {PlayerSeekerSpeed(playerSeeker).Y:F2}";
                             diff = (playerSeeker.ExactPosition - LastPlayerSeekerPos) * 60f;
-                            vel = $"Vel:   {diff.X.ToString("0.00")}, {diff.Y.ToString("0.00")}";
-                            polarvel = $"Chase: {diff.Length().ToString("0.00")}, {GetAngle(diff).ToString("0.00")}°";
+                            vel = $"Vel:   {diff.X:F2}, {diff.Y:F2}";
+                            polarvel = $"Chase: {diff.Length():F2}, {GetAngle(diff):F2}°";
                             dashCooldown = (int) (PlayerSeekerDashTimer(playerSeeker) * framesPerSecond);
                         }
 
@@ -95,7 +102,7 @@ namespace TAS {
                                             : string.Empty)
                                         + (dashCooldown != 0 ? $"DashTimer: {(dashCooldown).ToString()} " : string.Empty);
                         string roomNameAndTime =
-                            $"[{level.Session.Level}] Timer: {(chapterTime / 10000000D).ToString("0.000")}({chapterTime / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks})";
+                            $"[{level.Session.Level}] Timer: {(chapterTime / 10000000D):F3}({chapterTime / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks})";
 
                         StringBuilder sb = new StringBuilder();
                         sb.AppendLine(pos);
@@ -110,7 +117,7 @@ namespace TAS {
                         }
 
                         if (featherInput) {
-                            sb.AppendLine(js);
+                            sb.AppendLine(joystick);
                         }
 
                         sb.AppendLine(miscstats);
@@ -147,7 +154,7 @@ namespace TAS {
             double subY = subpixelPos.Y;
 
             if (!Settings.RoundPosition) {
-                return $"Pos:   {(x + subX).ToString("0.000000000000")}, {(y + subY).ToString("0.000000000000")}";
+                return $"Pos:   {(x + subX):F12}, {(y + subY):F12}";
             }
 
             if (Math.Abs(subX) % 0.25 < 0.01 || Math.Abs(subX) % 0.25 > 0.24) {
@@ -170,7 +177,7 @@ namespace TAS {
                 y += subY;
             }
 
-            string pos = $"Pos:   {x.ToString("0.00")}, {y.ToString("0.00")}";
+            string pos = $"Pos:   {x:F2}, {y:F2}";
             return pos;
         }
 
@@ -281,7 +288,7 @@ namespace TAS {
         }
     }
 
-    enum PlayerState {
+    internal enum PlayerState {
         Normal = Player.StNormal,
         Climb = Player.StClimb,
         Dash = Player.StDash,
