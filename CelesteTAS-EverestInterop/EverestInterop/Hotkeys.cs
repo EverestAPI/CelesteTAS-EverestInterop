@@ -127,11 +127,11 @@ public static class Hotkeys {
                 }
             }
 
-            return kbState.GetPressedKeys().Length == keys.Count;
+            return true;
         } else {
             foreach (Keys key in keys) {
                 if (kbState.IsKeyDown(key)) {
-                    return kbState.GetPressedKeys().Length == keys.Count;
+                    return true;
                 }
             }
 
