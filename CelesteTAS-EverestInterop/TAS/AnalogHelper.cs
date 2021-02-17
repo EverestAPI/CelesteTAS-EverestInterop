@@ -23,18 +23,15 @@ namespace TAS {
     public static class AnalogHelper {
         private const double Deadzone = 0.239532471;
         private const double DcMult = (1 - Deadzone) * (1 - Deadzone);
+        public const short Lowerbound = 7849;
 
-        private const short Lowerbound = 7849;
         private static readonly Dictionary<Vector2, Vector2Short> ConvertCache = new Dictionary<Vector2, Vector2Short>();
         private static float ampLowerbound = (float) (0.25 * DcMult);
         private static AnalogueMode analogMode = AnalogueMode.Ignore;
         public static Vector2 LastDirection;
         public static Vector2Short LastDirectionShort;
-
         private static short upperbound = 32767;
-
         public static AnalogueMode Mode => analogMode;
-
         public static short Limit => upperbound;
 
         public static void AnalogModeChange(AnalogueMode mode, short newUpperbound = 32767, float newDeadzone = 0.5f) {

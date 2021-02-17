@@ -297,15 +297,15 @@ namespace TAS.Input {
             "AnalogueMode, Precise, UpperLimit"
         })]
         private static void AnalogueModeCommand(string[] args) {
-            if (Enum.TryParse<AnalogueMode>(args[0], true, out var mode)) {
-                short lim = 32767;
+            if (Enum.TryParse(args[0], true, out AnalogueMode mode)) {
+                short limitShort = short.MaxValue;
                 if (args.Length >= 2) {
-                    if (float.TryParse(args[1], out var limit)) {
-                        lim = (short) (limit * 32767);
+                    if (float.TryParse(args[1], out float limit)) {
+                        limitShort = (short) Calc.Clamp(limit * short.MaxValue, AnalogHelper.Lowerbound, short.MaxValue);
                     }
                 }
 
-                AnalogHelper.AnalogModeChange(mode, lim);
+                AnalogHelper.AnalogModeChange(mode, limitShort);
             }
         }
 
