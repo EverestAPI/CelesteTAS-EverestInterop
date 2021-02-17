@@ -1,10 +1,10 @@
 using System;
 
 namespace TAS.Input {
-[AttributeUsage(AttributeTargets.Method)]
-public class TASCommandAttribute : Attribute {
-    public string[] args;
-    public bool executeAtStart;
-    public bool illegalInMaingame;
-}
+    [AttributeUsage(AttributeTargets.Method)]
+    public class TasCommandAttribute : Attribute {
+        public string[] Args;
+        public bool ExecuteAtStart;
+        public bool IllegalInMaingame;
+    }
 }

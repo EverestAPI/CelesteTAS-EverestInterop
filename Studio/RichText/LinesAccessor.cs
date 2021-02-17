@@ -2,80 +2,76 @@
 using System.Collections.Generic;
 
 namespace CelesteStudio.RichText {
-class LinesAccessor : IList<string> {
-    readonly IList<Line> ts;
+    class LinesAccessor : IList<string> {
+        readonly IList<Line> ts;
 
-    public LinesAccessor(IList<Line> ts) {
-        this.ts = ts;
-    }
+        public LinesAccessor(IList<Line> ts) {
+            this.ts = ts;
+        }
 
-    public int IndexOf(string item) {
-        for (int i = 0; i < ts.Count; i++) {
-            if (ts[i].Text == item) {
-                return i;
+        public int IndexOf(string item) {
+            for (int i = 0; i < ts.Count; i++) {
+                if (ts[i].Text == item) {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        public void Insert(int index, string item) {
+            throw new NotImplementedException();
+        }
+
+        public void RemoveAt(int index) {
+            throw new NotImplementedException();
+        }
+
+        public string this[int index] {
+            get => ts[index].Text;
+            set => throw new NotImplementedException();
+        }
+
+        public void Add(string item) {
+            throw new NotImplementedException();
+        }
+
+        public void Clear() {
+            throw new NotImplementedException();
+        }
+
+        public bool Contains(string item) {
+            for (int i = 0; i < ts.Count; i++) {
+                if (ts[i].Text == item) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public void CopyTo(string[] array, int arrayIndex) {
+            for (int i = 0; i < ts.Count; i++) {
+                array[i + arrayIndex] = ts[i].Text;
             }
         }
 
-        return -1;
-    }
+        public int Count => ts.Count;
 
-    public void Insert(int index, string item) {
-        throw new NotImplementedException();
-    }
+        public bool IsReadOnly => true;
 
-    public void RemoveAt(int index) {
-        throw new NotImplementedException();
-    }
+        public bool Remove(string item) {
+            throw new NotImplementedException();
+        }
 
-    public string this[int index] {
-        get { return ts[index].Text; }
-        set { throw new NotImplementedException(); }
-    }
-
-    public void Add(string item) {
-        throw new NotImplementedException();
-    }
-
-    public void Clear() {
-        throw new NotImplementedException();
-    }
-
-    public bool Contains(string item) {
-        for (int i = 0; i < ts.Count; i++) {
-            if (ts[i].Text == item) {
-                return true;
+        public IEnumerator<string> GetEnumerator() {
+            for (int i = 0; i < ts.Count; i++) {
+                yield return ts[i].Text;
             }
         }
 
-        return false;
-    }
-
-    public void CopyTo(string[] array, int arrayIndex) {
-        for (int i = 0; i < ts.Count; i++) {
-            array[i + arrayIndex] = ts[i].Text;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
+            return GetEnumerator();
         }
     }
-
-    public int Count {
-        get { return ts.Count; }
-    }
-
-    public bool IsReadOnly {
-        get { return true; }
-    }
-
-    public bool Remove(string item) {
-        throw new NotImplementedException();
-    }
-
-    public IEnumerator<string> GetEnumerator() {
-        for (int i = 0; i < ts.Count; i++) {
-            yield return ts[i].Text;
-        }
-    }
-
-    System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
-        return GetEnumerator();
-    }
-}
 }

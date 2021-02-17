@@ -6,12 +6,12 @@ using Microsoft.Xna.Framework;
 using Monocle;
 
 namespace TAS {
-internal static class LogUtil {
-    private const string TAG = "CelesteTAS";
+    internal static class LogUtil {
+        private const string Tag = "CelesteTAS";
 
-    public static void Log(this object text, LogLevel logLevel = LogLevel.Verbose) {
-        text = text == null ? "null" : text.ToString();
-        Logger.Log(logLevel, TAG, text.ToString());
+        public static void Log(this object text, LogLevel logLevel = LogLevel.Verbose) {
+            text = text == null ? "null" : text.ToString();
+            Logger.Log(logLevel, Tag, text.ToString());
 #if DEBUG
         Color color;
         switch (logLevel) {
@@ -32,6 +32,6 @@ internal static class LogUtil {
             // ignored
         }
 #endif
+        }
     }
-}
 }

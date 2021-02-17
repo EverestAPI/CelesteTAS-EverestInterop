@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 using Celeste;
-using GameInput = Celeste.Input;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
 using TAS.EverestInterop;
-using TAS.StudioCommunication;
 using TAS.Input;
+using TAS.StudioCommunication;
+using GameInput = Celeste.Input;
 
 namespace TAS {
     [Flags]
@@ -23,18 +23,11 @@ namespace TAS {
     }
 
     public static partial class Manager {
-        public enum AnalogueMode {
-            Ignore,
-            Circle,
-            Square,
-            Precise,
-        }
+        private static readonly FieldInfo SummitVignetteReadyFieldInfo = typeof(SummitVignette).GetFieldInfo("ready");
+        private static readonly FieldInfo StrawberryCollectTimerFieldInfo = typeof(Strawberry).GetFieldInfo("collectTimer");
 
-        private static readonly FieldInfo summitVignetteReady = typeof(SummitVignette).GetFieldInfo("ready");
-        private static readonly FieldInfo strawberryCollectTimer = typeof(Strawberry).GetFieldInfo("collectTimer");
-
-        private static readonly d_UpdateVirtualInputs UpdateVirtualInputs;
-        private static readonly d_WallJumpCheck WallJumpCheck;
+        private static readonly DUpdateVirtualInputs UpdateVirtualInputs;
+        private static readonly DWallJumpCheck WallJumpCheck;
         private static readonly GetBerryFloat StrawberryCollectTimer;
         private static readonly GetFloat DashCooldownTimer;
         private static readonly GetFloat JumpGraceTimer;
@@ -42,23 +35,25 @@ namespace TAS {
         private static readonly GetPlayerSeekerDashTimer PlayerSeekerDashTimer;
 
         public static bool Running, Recording;
-        public static InputController controller = new InputController();
-        public static State lastState, state, nextState;
+        public static InputController Controller = new InputController();
+        public static State LastState, State, NextState;
         public static string CurrentStatus, PlayerStatus = "";
         public static int FrameLoops = 1;
-        public static bool enforceLegal, allowUnsafeInput;
+        public static bool EnforceLegal, AllowUnsafeInput;
         public static Vector2 LastPos;
         public static Vector2 LastPlayerSeekerPos;
-        public static Buttons grabButton = Buttons.Back;
-        public static bool kbTextInput;
+        public static Buttons GrabButton = Buttons.Back;
+        public static bool KbTextInput;
 
         private static long lastTimer;
         private static List<VirtualButton.Node>[] playerBindings;
         private static Task checkHotkeyStarTask;
 
+        private static bool featherInput;
+
         static Manager() {
-            MethodInfo WallJumpCheck = typeof(Player).GetMethodInfo("WallJumpCheck");
-            MethodInfo UpdateVirtualInputs = typeof(MInput).GetMethodInfo("UpdateVirtualInputs");
+            MethodInfo wallJumpCheck = typeof(Player).GetMethodInfo("WallJumpCheck");
+            MethodInfo updateVirtualInputs = typeof(MInput).GetMethodInfo("UpdateVirtualInputs");
 
             FieldInfo strawberryCollectTimer = typeof(Strawberry).GetFieldInfo("collectTimer");
             FieldInfo dashCooldownTimer = typeof(Player).GetFieldInfo("dashCooldownTimer");
@@ -67,35 +62,34 @@ namespace TAS {
             FieldInfo playerSeekerDashTimer = typeof(PlayerSeeker).GetFieldInfo("dashTimer");
 
 
-            Manager.UpdateVirtualInputs = (d_UpdateVirtualInputs)UpdateVirtualInputs.CreateDelegate(typeof(d_UpdateVirtualInputs));
-            Manager.WallJumpCheck = (d_WallJumpCheck)WallJumpCheck.CreateDelegate(typeof(d_WallJumpCheck));
+            Manager.UpdateVirtualInputs = (DUpdateVirtualInputs) updateVirtualInputs.CreateDelegate(typeof(DUpdateVirtualInputs));
+            Manager.WallJumpCheck = (DWallJumpCheck) wallJumpCheck.CreateDelegate(typeof(DWallJumpCheck));
 
             StrawberryCollectTimer = strawberryCollectTimer.CreateDelegate_Get<GetBerryFloat>();
             DashCooldownTimer = dashCooldownTimer.CreateDelegate_Get<GetFloat>();
             JumpGraceTimer = jumpGraceTimer.CreateDelegate_Get<GetFloat>();
             PlayerSeekerSpeed = playerSeekerSpeed.CreateDelegate_Get<GetPlayerSeekerSpeed>();
             PlayerSeekerDashTimer = playerSeekerDashTimer.CreateDelegate_Get<GetPlayerSeekerDashTimer>();
-            Ana = new AnalogHelper();
         }
 
-        public static CelesteTASModuleSettings settings => CelesteTASModule.Settings;
-        private static bool ShouldForceState => HasFlag(nextState, State.FrameStep) && !Hotkeys.hotkeyFastForward.overridePressed;
+        public static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
+        private static bool ShouldForceState => HasFlag(NextState, State.FrameStep) && !Hotkeys.HotkeyFastForward.OverridePressed;
 
         public static void Update() {
-            lastState = state;
+            LastState = State;
             Hotkeys.Update();
             Savestates.HandleSaveStates();
-            Savestates.routine?.Update();
+            Savestates.Routine?.Update();
             HandleFrameRates();
             CheckToEnable();
             FrameStepping();
 
-            if (HasFlag(state, State.Enable)) {
-                bool canPlayback = controller.CanPlayback;
+            if (HasFlag(State, State.Enable)) {
+                bool canPlayback = Controller.CanPlayback;
                 Running = true;
 
-                if (HasFlag(state, State.FrameStep)) {
-                    StudioCommunicationClient.instance?.SendStateAndPlayerData(CurrentStatus, PlayerStatus, !ShouldForceState);
+                if (HasFlag(State, State.FrameStep)) {
+                    StudioCommunicationClient.Instance?.SendStateAndPlayerData(CurrentStatus, PlayerStatus, !ShouldForceState);
                     return;
                 }
                 /*
@@ -104,18 +98,20 @@ namespace TAS {
                 }
                 */
                 else {
-                    controller.AdvanceFrame();
-                    if (controller.Break && controller.CurrentFrame < controller.inputs.Count) {
-                        nextState |= State.FrameStep;
+                    Controller.AdvanceFrame();
+                    if (Controller.Break && Controller.CurrentFrame < Controller.Inputs.Count) {
+                        NextState |= State.FrameStep;
                         FrameLoops = 1;
                     }
 
-                    if (!canPlayback || (!allowUnsafeInput &&
-                                                    !(Engine.Scene is Level || Engine.Scene is LevelLoader || Engine.Scene is LevelExit ||
-                                                      controller.CurrentFrame <= 1)))
+                    if (!canPlayback || (!AllowUnsafeInput &&
+                                         !(Engine.Scene is Level || Engine.Scene is LevelLoader || Engine.Scene is LevelExit ||
+                                           Controller.CurrentFrame <= 1))) {
                         DisableRun();
+                    }
                 }
-                if (canPlayback && controller.CurrentFrame > 0) {
+
+                if (canPlayback && Controller.CurrentFrame > 0) {
                     UpdateManagerStatus();
                 }
             } else {
@@ -125,21 +121,21 @@ namespace TAS {
                     UpdateVirtualInputs();
                     for (int i = 0; i < 4; i++) {
                         if (MInput.GamePads[i].Attached) {
-                            MInput.GamePads[i].CurrentState = GamePad.GetState((PlayerIndex)i);
+                            MInput.GamePads[i].CurrentState = GamePad.GetState((PlayerIndex) i);
                         }
                     }
                 }
             }
 
-            StudioCommunicationClient.instance?.SendStateAndPlayerData(CurrentStatus, PlayerStatus, !ShouldForceState);
+            StudioCommunicationClient.Instance?.SendStateAndPlayerData(CurrentStatus, PlayerStatus, !ShouldForceState);
         }
 
         public static void UpdateManagerStatus() {
             string status = string.Join(",", new object[] {
-                controller.Previous.Line,
-                controller.StudioFrameCount,
-                controller.CurrentFrame,
-                controller.inputs.Count,
+                Controller.Previous.Line,
+                Controller.StudioFrameCount,
+                Controller.CurrentFrame,
+                Controller.Inputs.Count,
                 Savestates.StudioHighlightLine
             });
             CurrentStatus = status;
@@ -147,15 +143,19 @@ namespace TAS {
 
         public static bool IsLoading() {
             if (Engine.Scene is Level level) {
-                if (!level.IsAutoSaving())
+                if (!level.IsAutoSaving()) {
                     return false;
+                }
+
                 return level.Session.Level == "end-cinematic";
             }
 
-            if (Engine.Scene is SummitVignette summit)
-                return !(bool)summitVignetteReady.GetValue(summit);
-            else if (Engine.Scene is Overworld overworld)
+            if (Engine.Scene is SummitVignette summit) {
+                return !(bool) SummitVignetteReadyFieldInfo.GetValue(summit);
+            } else if (Engine.Scene is Overworld overworld) {
                 return overworld.Current is OuiFileSelect slot && slot.SlotIndex >= 0 && slot.Slots[slot.SlotIndex].StartingGame;
+            }
+
             bool isLoading = (Engine.Scene is LevelExit) || (Engine.Scene is LevelLoader) || (Engine.Scene is GameLoader) ||
                              Engine.Scene.GetType().Name == "LevelExitToLobby";
             return isLoading;
@@ -163,22 +163,24 @@ namespace TAS {
 
         public static float GetAngle(Vector2 vector) {
             float angle = 360f / 6.283186f * Calc.Angle(vector);
-            if (angle < -90.01f)
+            if (angle < -90.01f) {
                 return 450f + angle;
-            else
+            } else {
                 return 90f + angle;
+            }
         }
 
         private static void HandleFrameRates() {
-            if (HasFlag(state, State.Enable) && !HasFlag(state, State.FrameStep) && !HasFlag(nextState, State.FrameStep) && !HasFlag(state, State.Record)) {
-                if (controller.HasFastForward) {
-                    FrameLoops = controller.FastForwardSpeed;
+            if (HasFlag(State, State.Enable) && !HasFlag(State, State.FrameStep) && !HasFlag(NextState, State.FrameStep) &&
+                !HasFlag(State, State.Record)) {
+                if (Controller.HasFastForward) {
+                    FrameLoops = Controller.FastForwardSpeed;
                     return;
                 }
 
                 //q: but euni, why not just use the hotkey system you implemented?
                 //a: i have no fucking idea
-                if (Hotkeys.IsKeyDown(settings.KeyFastForward.Keys) || Hotkeys.hotkeyFastForward.overridePressed) {
+                if (Hotkeys.IsKeyDown(Settings.KeyFastForward.Keys) || Hotkeys.HotkeyFastForward.OverridePressed) {
                     FrameLoops = 10;
                     return;
                 }
@@ -188,81 +190,83 @@ namespace TAS {
         }
 
         private static void FrameStepping() {
-            bool frameAdvance = Hotkeys.hotkeyFrameAdvance.pressed && !Hotkeys.hotkeyStart.pressed;
-            bool pause = Hotkeys.hotkeyPause.pressed && !Hotkeys.hotkeyStart.pressed;
+            bool frameAdvance = Hotkeys.HotkeyFrameAdvance.Pressed && !Hotkeys.HotkeyStart.Pressed;
+            bool pause = Hotkeys.HotkeyPause.Pressed && !Hotkeys.HotkeyStart.Pressed;
 
-            if (HasFlag(state, State.Enable) && !HasFlag(state, State.Record)) {
-                if (HasFlag(nextState, State.FrameStep)) {
-                    state |= State.FrameStep;
-                    nextState &= ~State.FrameStep;
+            if (HasFlag(State, State.Enable) && !HasFlag(State, State.Record)) {
+                if (HasFlag(NextState, State.FrameStep)) {
+                    State |= State.FrameStep;
+                    NextState &= ~State.FrameStep;
                 }
 
-                if (frameAdvance && !Hotkeys.hotkeyFrameAdvance.wasPressed) {
-                    if (!HasFlag(state, State.FrameStep)) {
-                        state |= State.FrameStep;
-                        nextState &= ~State.FrameStep;
+                if (frameAdvance && !Hotkeys.HotkeyFrameAdvance.WasPressed) {
+                    if (!HasFlag(State, State.FrameStep)) {
+                        State |= State.FrameStep;
+                        NextState &= ~State.FrameStep;
                     } else {
-                        state &= ~State.FrameStep;
-                        nextState |= State.FrameStep;
+                        State &= ~State.FrameStep;
+                        NextState |= State.FrameStep;
                     }
-                } else if (pause && !Hotkeys.hotkeyPause.wasPressed) {
-                    if (!HasFlag(state, State.FrameStep)) {
-                        state |= State.FrameStep;
-                        nextState &= ~State.FrameStep;
+                } else if (pause && !Hotkeys.HotkeyPause.WasPressed) {
+                    if (!HasFlag(State, State.FrameStep)) {
+                        State |= State.FrameStep;
+                        NextState &= ~State.FrameStep;
                     } else {
-                        state &= ~State.FrameStep;
-                        nextState &= ~State.FrameStep;
+                        State &= ~State.FrameStep;
+                        NextState &= ~State.FrameStep;
                     }
-                } else if (HasFlag(lastState, State.FrameStep) && HasFlag(state, State.FrameStep) && Hotkeys.hotkeyFastForward.pressed) {
-                    state &= ~State.FrameStep;
-                    nextState |= State.FrameStep;
+                } else if (HasFlag(LastState, State.FrameStep) && HasFlag(State, State.FrameStep) && Hotkeys.HotkeyFastForward.Pressed) {
+                    State &= ~State.FrameStep;
+                    NextState |= State.FrameStep;
                 }
             }
         }
 
         private static void CheckToEnable() {
-            if (!Savestates.SpeedrunToolInstalled && Hotkeys.hotkeyRestart.pressed && !Hotkeys.hotkeyRestart.wasPressed) {
+            if (!Savestates.SpeedrunToolInstalled && Hotkeys.HotkeyRestart.Pressed && !Hotkeys.HotkeyRestart.WasPressed) {
                 DisableRun();
                 EnableRun();
                 return;
             }
 
-            if (Hotkeys.hotkeyStart.pressed) {
-                if (!HasFlag(state, State.Enable) && checkHotkeyStarTask == null) {
-                    nextState |= State.Enable;
+            if (Hotkeys.HotkeyStart.Pressed) {
+                if (!HasFlag(State, State.Enable) && checkHotkeyStarTask == null) {
+                    NextState |= State.Enable;
                 } else {
-                    nextState |= State.Disable;
+                    NextState |= State.Disable;
                 }
-            } else if (HasFlag(nextState, State.Enable)) {
+            } else if (HasFlag(NextState, State.Enable)) {
                 if (Engine.Scene is Level level && (!level.CanPause || Engine.FreezeTimer > 0)) {
-                    controller.RefreshInputs(true);
-                    if (controller.Current.HasActions(Actions.Restart) || controller.Current.HasActions(Actions.Start)) {
-                        nextState |= State.Delay;
+                    Controller.RefreshInputs(true);
+                    if (Controller.Current.HasActions(Actions.Restart) || Controller.Current.HasActions(Actions.Start)) {
+                        NextState |= State.Delay;
                         FrameLoops = FastForward.DefaultFastForwardSpeed;
                         return;
                     }
                 }
 
                 EnableRun();
-            } else if (HasFlag(nextState, State.Disable))
+            } else if (HasFlag(NextState, State.Disable)) {
                 DisableRun();
+            }
         }
 
         private static void EnableRun() {
-            nextState &= ~State.Enable;
+            NextState &= ~State.Enable;
             InitializeRun(false);
             BackupPlayerBindings();
-            kbTextInput = Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput;
+            KbTextInput = Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput;
             Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = false;
 
             checkHotkeyStarTask = Task.Run(() => {
-                while (Running || Hotkeys.hotkeyStart.pressed) {
+                while (Running || Hotkeys.HotkeyStart.Pressed) {
                     if (FrameLoops > 100) {
-                        if (Running && Hotkeys.hotkeyStart.pressed) {
+                        if (Running && Hotkeys.HotkeyStart.Pressed) {
                             DisableRun();
                         }
                     }
                 }
+
                 checkHotkeyStarTask = null;
             });
 
@@ -277,19 +281,19 @@ namespace TAS {
             }
             */
             Recording = false;
-            state = State.None;
-            nextState = State.None;
+            State = State.None;
+            NextState = State.None;
             RestorePlayerBindings();
-            Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = kbTextInput;
-            controller.resetSpawn = null;
+            Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = KbTextInput;
+            Controller.ResetSpawn = null;
             if (ExportSyncData) {
                 EndExport();
                 ExportSyncData = false;
             }
 
-            enforceLegal = false;
-            allowUnsafeInput = false;
-            Ana.AnalogModeChange(AnalogueMode.Ignore);
+            EnforceLegal = false;
+            AllowUnsafeInput = false;
+            AnalogHelper.AnalogModeChange(AnalogueMode.Ignore);
             Hotkeys.ReleaseAllKeys();
             RestoreSettings.TryRestore();
         }
@@ -305,15 +309,17 @@ namespace TAS {
                 {new VirtualButton.PadButton(GameInput.Gamepad, Buttons.A), new VirtualButton.PadButton(GameInput.Gamepad, Buttons.Y)};
             GameInput.Dash.Nodes = new List<VirtualButton.Node>
                 {new VirtualButton.PadButton(GameInput.Gamepad, Buttons.B), new VirtualButton.PadButton(GameInput.Gamepad, Buttons.X)};
-            GameInput.Grab.Nodes = new List<VirtualButton.Node> { new VirtualButton.PadButton(GameInput.Gamepad, grabButton) };
-            GameInput.Talk.Nodes = new List<VirtualButton.Node> { new VirtualButton.PadButton(GameInput.Gamepad, Buttons.B) };
-            GameInput.QuickRestart.Nodes = new List<VirtualButton.Node> { new VirtualButton.PadButton(GameInput.Gamepad, Buttons.LeftShoulder) };
+            GameInput.Grab.Nodes = new List<VirtualButton.Node> {new VirtualButton.PadButton(GameInput.Gamepad, GrabButton)};
+            GameInput.Talk.Nodes = new List<VirtualButton.Node> {new VirtualButton.PadButton(GameInput.Gamepad, Buttons.B)};
+            GameInput.QuickRestart.Nodes = new List<VirtualButton.Node> {new VirtualButton.PadButton(GameInput.Gamepad, Buttons.LeftShoulder)};
         }
 
         private static void RestorePlayerBindings() {
             //This can happen if DisableExternal is called before any TAS has been run
-            if (playerBindings == null)
+            if (playerBindings == null) {
                 return;
+            }
+
             GameInput.Jump.Nodes = playerBindings[0];
             GameInput.Dash.Nodes = playerBindings[1];
             GameInput.Grab.Nodes = playerBindings[2];
@@ -322,31 +328,34 @@ namespace TAS {
         }
 
         private static void InitializeRun(bool recording) {
-            state |= State.Enable;
-            state &= ~State.FrameStep;
+            State |= State.Enable;
+            State &= ~State.FrameStep;
             if (recording) {
                 Recording = recording;
-                state |= State.Record;
-                controller.InitializeRecording();
-            } 
-            else {
-                state &= ~State.Record;
-                controller.RefreshInputs(true);
+                State |= State.Record;
+                Controller.InitializeRecording();
+            } else {
+                State &= ~State.Record;
+                Controller.RefreshInputs(true);
                 Running = true;
             }
         }
 
         public static bool HasFlag(State state, State flag) => (state & flag) == flag;
-        private static void WriteLibTASFrame(string outputKeys, string outputAxes, string outputButtons) {
-            LibTAS.WriteLine($"|{outputKeys}|{outputAxes}:0:0:0:0:{outputButtons}|.........|");
+
+        private static void WriteLibTasFrame(string outputKeys, string outputAxes, string outputButtons) {
+            libTas.WriteLine($"|{outputKeys}|{outputAxes}:0:0:0:0:{outputButtons}|.........|");
         }
+
         private static void WriteEmptyFrame() {
-            WriteLibTASFrame("", "0:0", "...............");
+            WriteLibTasFrame("", "0:0", "...............");
         }
+
         public static void AddFrames(int number) {
-            if (ExportLibTAS) {
-                for (int i = 0; i < number; ++i)
+            if (exportLibTas) {
+                for (int i = 0; i < number; ++i) {
                     WriteEmptyFrame();
+                }
             }
         }
 
@@ -354,16 +363,20 @@ namespace TAS {
             GamePadDPad pad = default;
             GamePadThumbSticks sticks = default;
             GamePadState state = default;
-            FeatherInput = false;
-            if (input.HasActions(Actions.Feather))
+            featherInput = false;
+            if (input.HasActions(Actions.Feather)) {
                 SetFeather(input, ref pad, ref sticks);
-            else
+            } else {
                 SetDPad(input, ref pad, ref sticks);
+            }
 
             SetState(input, ref state, ref pad, ref sticks);
 
-            if(ExportLibTAS)
-               WriteLibTASFrame(input.LibTASKeys(),FeatherInput?($"{Ana.LastDS.x}:{-Ana.LastDS.y}"):"0:0",input.LibTASButtons());
+            if (exportLibTas) {
+                WriteLibTasFrame(input.LibTasKeys(),
+                    featherInput ? ($"{AnalogHelper.LastDirectionShort.X}:{-AnalogHelper.LastDirectionShort.Y}") : "0:0",
+                    input.LibTasButtons());
+            }
 
             bool found = false;
             for (int i = 0; i < 4; i++) {
@@ -413,26 +426,30 @@ namespace TAS {
                     | (input.HasActions(Actions.Jump2) ? Buttons.Y : 0)
                     | (input.HasActions(Actions.Dash) ? Buttons.B : 0)
                     | (input.HasActions(Actions.Dash2) ? Buttons.X : 0)
-                    | (input.HasActions(Actions.Grab) ? grabButton : 0)
+                    | (input.HasActions(Actions.Grab) ? GrabButton : 0)
                     | (input.HasActions(Actions.Start) ? Buttons.Start : 0)
                     | (input.HasActions(Actions.Restart) ? Buttons.LeftShoulder : 0)
                 ),
                 pad
             );
         }
-        private static bool FeatherInput;
-        public static AnalogHelper Ana;
+
         private static Vector2 ValidateFeatherInput(InputFrame input) {
-            FeatherInput = true;
-            return Ana.ComputeFeather(input.GetX(), input.GetY());
+            featherInput = true;
+            return AnalogHelper.ComputeFeather(input.GetX(), input.GetY());
         }
 
         //The things we do for faster replay times
-        private delegate void d_UpdateVirtualInputs();
-        private delegate bool d_WallJumpCheck(Player player, int dir);
+        private delegate void DUpdateVirtualInputs();
+
+        private delegate bool DWallJumpCheck(Player player, int dir);
+
         private delegate float GetBerryFloat(Strawberry berry);
+
         private delegate float GetFloat(Player player);
+
         private delegate Vector2 GetPlayerSeekerSpeed(PlayerSeeker playerSeeker);
+
         private delegate float GetPlayerSeekerDashTimer(PlayerSeeker playerSeeker);
     }
 }

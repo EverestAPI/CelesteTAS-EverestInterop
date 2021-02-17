@@ -1,216 +1,216 @@
 using System;
-using System.Collections;
 using System.Linq;
 using Celeste;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.EverestInterop;
-using TAS.StudioCommunication;
 using TAS.Input;
+using TAS.StudioCommunication;
 using static TAS.Manager;
 
 namespace TAS {
 // TODO Add a command to check if savestate will cause desync
-static class Savestates {
-    public static Coroutine routine;
-    private static InputController savedController;
-    private static int? savedLine;
-    private static string savedPlayerStatus;
-    private static Vector2 savedLastPos;
-    private static Vector2 savedLastPlayerSeekerPos;
-    private static bool savedByBreakpoint;
-    private static AnalogueMode savedAnalogueMode;
-    private static short savedAnalogueLimit;
+    static class Savestates {
+        public static Coroutine Routine;
+        private static InputController savedController;
+        private static int? savedLine;
+        private static string savedPlayerStatus;
+        private static Vector2 savedLastPos;
+        private static Vector2 savedLastPlayerSeekerPos;
+        private static bool savedByBreakpoint;
+        private static AnalogueMode savedAnalogueMode;
+        private static short savedAnalogueLimit;
 
-    private static readonly Lazy<bool> speedrunToolInstalledLazy = new Lazy<bool>(() =>
-        Type.GetType("Celeste.Mod.SpeedrunTool.SaveLoad.StateManager, SpeedrunTool") != null
-    );
+        private static readonly Lazy<bool> SpeedrunToolInstalledLazy = new Lazy<bool>(() =>
+            Type.GetType("Celeste.Mod.SpeedrunTool.SaveLoad.StateManager, SpeedrunTool") != null
+        );
 
-    public static int StudioHighlightLine => (speedrunToolInstalledLazy.Value && IsSaved() && savedLine.HasValue ? savedLine.Value : -1);
-    public static bool SpeedrunToolInstalled => speedrunToolInstalledLazy.Value;
+        public static int StudioHighlightLine => (SpeedrunToolInstalledLazy.Value && IsSaved() && savedLine.HasValue ? savedLine.Value : -1);
+        public static bool SpeedrunToolInstalled => SpeedrunToolInstalledLazy.Value;
 
-    private static bool BreakpointHasBeenDeleted =>
+        private static bool BreakpointHasBeenDeleted =>
             IsSaved() && savedByBreakpoint
-            && savedController.FfIndex < savedController.fastForwards.Count
-            && !controller.fastForwards.Any(ff => ff.SaveState && ff.frame == savedController.CurrentFF.frame);
+                      && savedController.FfIndex < savedController.FastForwards.Count
+                      && !Controller.FastForwards.Any(ff => ff.SaveState && ff.Frame == savedController.CurrentFf.Frame);
 
-    private static bool IsSaved() {
-        return StateManager.Instance.IsSaved && StateManager.Instance.SavedByTas && savedController != null;
-    }
-
-    public static void HandleSaveStates() {
-        if (!SpeedrunToolInstalled) {
-            return;
+        private static bool IsSaved() {
+            return StateManager.Instance.IsSaved && StateManager.Instance.SavedByTas && savedController != null;
         }
 
-        if (!Running && IsSaved() && Engine.Scene is Level && Hotkeys.hotkeyStart.wasPressed && !Hotkeys.hotkeyStart.pressed) {
-            Load();
-            return;
-        }
-
-        if (Running && Hotkeys.hotkeySaveState.pressed && !Hotkeys.hotkeySaveState.wasPressed) {
-            Save(false);
-            return;
-        }
-
-        if (Hotkeys.hotkeyRestart.pressed && !Hotkeys.hotkeyRestart.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
-            Load();
-            return;
-        }
-
-        if (Hotkeys.hotkeyClearState.pressed && !Hotkeys.hotkeyClearState.wasPressed && !Hotkeys.hotkeySaveState.pressed) {
-            Clear();
-            DisableExternal();
-            return;
-        }
-
-        if (BreakpointHasBeenDeleted) {
-            Clear();
-        }
-
-        // save state when tas run to the last savestate breakpoint
-        if (Running
-            && controller.inputs.Count > controller.CurrentFrame
-            && controller.fastForwards.Count > controller.FfIndex
-            && controller.CurrentFF.SaveState && !controller.CurrentFF.HasSavedState
-            && controller.CurrentFF.frame == controller.CurrentFrame
-            && controller.fastForwards.LastOrDefault(record => record.SaveState) == controller.CurrentFF) {
-            Save(true);
-            return;
-        }
-
-        // auto load state after entering the level if tas is started from outside the level.
-        if (Running && IsSaved() && Engine.Scene is Level && controller.CurrentFrame < savedController.CurrentFrame) {
-            Load();
-        }
-    }
-
-    private static void Save(bool breakpoint) {
-        if (IsSaved()) {
-            if (controller.CurrentFrame == savedController.CurrentFrame) {
-                if (savedController.SavedChecksum == controller.Checksum(savedController)) {
-                    state &= ~State.FrameStep;
-                    nextState &= ~State.FrameStep;
-                    return;
-                }
+        public static void HandleSaveStates() {
+            if (!SpeedrunToolInstalled) {
+                return;
             }
-        }
 
-        if (!StateManager.Instance.SaveState()) {
-            return;
-        }
+            if (!Running && IsSaved() && Engine.Scene is Level && Hotkeys.HotkeyStart.WasPressed && !Hotkeys.HotkeyStart.Pressed) {
+                Load();
+                return;
+            }
 
-        if (breakpoint && controller.CurrentFF.SaveState) {
-            controller.CurrentFF.HasSavedState = true;
-        }
+            if (Running && Hotkeys.HotkeySaveState.Pressed && !Hotkeys.HotkeySaveState.WasPressed) {
+                Save(false);
+                return;
+            }
 
-        if (breakpoint) {
-            savedLine = controller.Current.Line - 1;
-        } else {
-            savedLine = controller.Current.Line;
-        }
+            if (Hotkeys.HotkeyRestart.Pressed && !Hotkeys.HotkeyRestart.WasPressed && !Hotkeys.HotkeySaveState.Pressed) {
+                Load();
+                return;
+            }
 
-        savedByBreakpoint = breakpoint;
-        savedPlayerStatus = PlayerStatus;
-        savedLastPos = LastPos;
-        savedLastPlayerSeekerPos = LastPlayerSeekerPos;
-        savedAnalogueMode = Ana.mode;
-        savedAnalogueLimit = Ana.limit;
+            if (Hotkeys.HotkeyClearState.Pressed && !Hotkeys.HotkeyClearState.WasPressed && !Hotkeys.HotkeySaveState.Pressed) {
+                Clear();
+                DisableExternal();
+                return;
+            }
 
-
-        savedController = controller.Clone();
-        LoadStateRoutine();
-    }
-
-    private static void Load() {
-        if (Engine.Scene is LevelLoader) {
-            return;
-        }
-
-        if (IsSaved()) {
-            controller.RefreshInputs(false);
-            if (!BreakpointHasBeenDeleted && savedController.SavedChecksum == controller.Checksum(savedController)) {
-                if (Running && controller.CurrentFrame == savedController.CurrentFrame) {
-                    // Don't repeat load state, just play
-                    state &= ~State.FrameStep;
-                    nextState &= ~State.FrameStep;
-                    return;
-                }
-
-                if (StateManager.Instance.LoadState()) {
-                    if (!Running) {
-                        EnableExternal();
-                    }
-
-                    LoadStateRoutine();
-                    return;
-                }
-            } else {
+            if (BreakpointHasBeenDeleted) {
                 Clear();
             }
+
+            // save state when tas run to the last savestate breakpoint
+            if (Running
+                && Controller.Inputs.Count > Controller.CurrentFrame
+                && Controller.FastForwards.Count > Controller.FfIndex
+                && Controller.CurrentFf.SaveState && !Controller.CurrentFf.HasSavedState
+                && Controller.CurrentFf.Frame == Controller.CurrentFrame
+                && Controller.FastForwards.LastOrDefault(record => record.SaveState) == Controller.CurrentFf) {
+                Save(true);
+                return;
+            }
+
+            // auto load state after entering the level if tas is started from outside the level.
+            if (Running && IsSaved() && Engine.Scene is Level && Controller.CurrentFrame < savedController.CurrentFrame) {
+                Load();
+            }
         }
 
-        // If load state failed just playback normally
-        PlayTAS();
-    }
+        private static void Save(bool breakpoint) {
+            if (IsSaved()) {
+                if (Controller.CurrentFrame == savedController.CurrentFrame) {
+                    if (savedController.SavedChecksum == Controller.Checksum(savedController)) {
+                        Manager.State &= ~State.FrameStep;
+                        NextState &= ~State.FrameStep;
+                        return;
+                    }
+                }
+            }
 
-    private static void Clear() {
-        StateManager.Instance.ClearState();
-        routine = null;
-        savedController = null;
-        savedLine = null;
-        savedPlayerStatus = null;
-        savedLastPos = default;
-        savedLastPlayerSeekerPos = default;
-        savedByBreakpoint = false;
-        foreach (FastForward fastForward in controller.fastForwards) {
-            fastForward.HasSavedState = false;
+            if (!StateManager.Instance.SaveState()) {
+                return;
+            }
+
+            if (breakpoint && Controller.CurrentFf.SaveState) {
+                Controller.CurrentFf.HasSavedState = true;
+            }
+
+            if (breakpoint) {
+                savedLine = Controller.Current.Line - 1;
+            } else {
+                savedLine = Controller.Current.Line;
+            }
+
+            savedByBreakpoint = breakpoint;
+            savedPlayerStatus = PlayerStatus;
+            savedLastPos = LastPos;
+            savedLastPlayerSeekerPos = LastPlayerSeekerPos;
+            savedAnalogueMode = AnalogHelper.Mode;
+            savedAnalogueLimit = AnalogHelper.Limit;
+
+
+            savedController = Controller.Clone();
+            LoadStateRoutine();
         }
 
-        UpdateStudio();
-    }
+        private static void Load() {
+            if (Engine.Scene is LevelLoader) {
+                return;
+            }
 
-    private static void PlayTAS() {
-        DisableExternal();
-        EnableExternal();
-    }
+            if (IsSaved()) {
+                Controller.RefreshInputs(false);
+                if (!BreakpointHasBeenDeleted && savedController.SavedChecksum == Controller.Checksum(savedController)) {
+                    if (Running && Controller.CurrentFrame == savedController.CurrentFrame) {
+                        // Don't repeat load state, just play
+                        Manager.State &= ~State.FrameStep;
+                        NextState &= ~State.FrameStep;
+                        return;
+                    }
 
-    private static void LoadStateRoutine() {
-        controller = savedController.Clone();
-        controller.RefreshInputs(false);
-       // Some fields were reset by RefreshInputs(false), so we need restore it.
-       controller.FfIndex = savedController.FfIndex;
-       for (int i = 0; i < savedController.fastForwards.Count && i < controller.fastForwards.Count; i++) {
-           if (savedController.fastForwards[i].HasSavedState) {
-               controller.fastForwards[i].HasSavedState = true;
-               break;
-           }
-       }
+                    if (StateManager.Instance.LoadState()) {
+                        if (!Running) {
+                            EnableExternal();
+                        }
 
-        SetTasState();
-        Ana.AnalogModeChange(savedAnalogueMode,savedAnalogueLimit);
-        PlayerStatus = savedPlayerStatus;
-        LastPos = savedLastPos;
-        LastPlayerSeekerPos = savedLastPlayerSeekerPos;
-        UpdateStudio();
-    }
+                        LoadStateRoutine();
+                        return;
+                    }
+                } else {
+                    Clear();
+                }
+            }
 
-    private static void SetTasState() {
-        if ((CelesteTASModule.Settings.PauseAfterLoadState || savedByBreakpoint) && !(controller.HasFastForward)) {
-            state |= State.FrameStep;
-        } else {
-            state &= ~State.FrameStep;
+            // If load state failed just playback normally
+            PlayTas();
         }
 
-        nextState &= ~State.FrameStep;
-    }
+        private static void Clear() {
+            StateManager.Instance.ClearState();
+            Routine = null;
+            savedController = null;
+            savedLine = null;
+            savedPlayerStatus = null;
+            savedLastPos = default;
+            savedLastPlayerSeekerPos = default;
+            savedByBreakpoint = false;
+            foreach (FastForward fastForward in Controller.FastForwards) {
+                fastForward.HasSavedState = false;
+            }
 
-    private static void UpdateStudio() {
-        if (controller.CurrentFrame > 0) {
-            UpdateManagerStatus();
+            UpdateStudio();
         }
-        StudioCommunicationClient.instance?.SendStateAndPlayerData(CurrentStatus, PlayerStatus, false);
+
+        private static void PlayTas() {
+            DisableExternal();
+            EnableExternal();
+        }
+
+        private static void LoadStateRoutine() {
+            Controller = savedController.Clone();
+            Controller.RefreshInputs(false);
+            // Some fields were reset by RefreshInputs(false), so we need restore it.
+            Controller.FfIndex = savedController.FfIndex;
+            for (int i = 0; i < savedController.FastForwards.Count && i < Controller.FastForwards.Count; i++) {
+                if (savedController.FastForwards[i].HasSavedState) {
+                    Controller.FastForwards[i].HasSavedState = true;
+                    break;
+                }
+            }
+
+            SetTasState();
+            AnalogHelper.AnalogModeChange(savedAnalogueMode, savedAnalogueLimit);
+            PlayerStatus = savedPlayerStatus;
+            LastPos = savedLastPos;
+            LastPlayerSeekerPos = savedLastPlayerSeekerPos;
+            UpdateStudio();
+        }
+
+        private static void SetTasState() {
+            if ((CelesteTasModule.Settings.PauseAfterLoadState || savedByBreakpoint) && !(Controller.HasFastForward)) {
+                Manager.State |= State.FrameStep;
+            } else {
+                Manager.State &= ~State.FrameStep;
+            }
+
+            NextState &= ~State.FrameStep;
+        }
+
+        private static void UpdateStudio() {
+            if (Controller.CurrentFrame > 0) {
+                UpdateManagerStatus();
+            }
+
+            StudioCommunicationClient.Instance?.SendStateAndPlayerData(CurrentStatus, PlayerStatus, false);
+        }
     }
-}
 }

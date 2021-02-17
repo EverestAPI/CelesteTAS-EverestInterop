@@ -1,15 +1,32 @@
-using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Microsoft.Xna.Framework;
 
 namespace TAS.Input {
     public class InputController {
-        public string tasFilePath {
+        private string checksum;
+        private int commandIndex;
+        public List<Command> Commands = new List<Command>();
+        public List<FastForward> FastForwards = new List<FastForward>();
+        public int FfIndex;
+        private int initializationFrameCount;
+
+        public List<InputFrame> Inputs = new List<InputFrame>();
+
+        public Vector2? ResetSpawn;
+        public int StudioFrameCount;
+
+        private Dictionary<string, DateTime> usedFiles = new Dictionary<string, DateTime>();
+
+
+        public InputController() { }
+
+        public string TasFilePath {
             get {
-                string path = string.IsNullOrEmpty(Manager.settings.TasFilePath) ? "Celeste.tas" : Manager.settings.TasFilePath;
+                string path = string.IsNullOrEmpty(Manager.Settings.TasFilePath) ? "Celeste.tas" : Manager.Settings.TasFilePath;
                 if (!File.Exists(path)) {
                     File.WriteAllText(path, string.Empty);
                 }
@@ -18,29 +35,20 @@ namespace TAS.Input {
             }
         }
 
-        public Vector2? resetSpawn;
-
-        public List<InputFrame> inputs = new List<InputFrame>();
-        public List<FastForward> fastForwards = new List<FastForward>();
-        public List<Command> commands = new List<Command>();
-
         public int CurrentFrame { get; private set; }
-        public int FfIndex;
-        private int commandIndex;
-        private int initializationFrameCount;
-        public int StudioFrameCount;
 
-        public InputFrame Previous => inputs[CurrentFrame - 1];
-        public InputFrame Current => inputs[CurrentFrame];
-        public InputFrame Next => inputs[CurrentFrame + 1];
-        public FastForward CurrentFF => fastForwards[FfIndex];
-        public Command CurrentCommand => commands[commandIndex];
+        public InputFrame Previous => Inputs[CurrentFrame - 1];
+        public InputFrame Current => Inputs[CurrentFrame];
+        public InputFrame Next => Inputs[CurrentFrame + 1];
+        public FastForward CurrentFf => FastForwards[FfIndex];
+        public Command CurrentCommand => Commands[commandIndex];
 
-        private Dictionary<string, DateTime> usedFiles = new Dictionary<string, DateTime>();
         private bool NeedsReload {
             get {
-                if (usedFiles.Count == 0)
+                if (usedFiles.Count == 0) {
                     return true;
+                }
+
                 foreach (var file in usedFiles) {
                     if (File.GetLastWriteTime(file.Key) != file.Value) {
                         return true;
@@ -51,21 +59,17 @@ namespace TAS.Input {
             }
         }
 
-        public bool CanPlayback => CurrentFrame < inputs.Count;
+        public bool CanPlayback => CurrentFrame < Inputs.Count;
         public bool NeedsToWait => Manager.IsLoading();
 
-        public bool HasFastForward => fastForwards.Count > FfIndex && !Break;
-        public int FastForwardSpeed => CurrentFF.speed;
-        public bool Break => FfIndex + 1 == fastForwards.Count && CurrentFF.frame == CurrentFrame;
+        public bool HasFastForward => FastForwards.Count > FfIndex && !Break;
+        public int FastForwardSpeed => CurrentFf.Speed;
+        public bool Break => FfIndex + 1 == FastForwards.Count && CurrentFf.Frame == CurrentFrame;
 
-        private string _checksum;
         public string SavedChecksum {
-            get => string.IsNullOrEmpty(_checksum) ? Checksum() : _checksum;
-            private set => _checksum = value;
+            get => string.IsNullOrEmpty(checksum) ? Checksum() : checksum;
+            private set => checksum = value;
         }
-
-
-        public InputController() { }
 
         public void RefreshInputs(bool fromStart) {
             if (fromStart) {
@@ -75,138 +79,76 @@ namespace TAS.Input {
                 FfIndex = 0;
                 commandIndex = 0;
             }
+
             if (NeedsReload || fromStart) {
                 int trycount = 5;
                 while (trycount > 0) {
                     initializationFrameCount = 0;
                     FfIndex = 0;
                     commandIndex = 0;
-                    inputs.Clear();
-                    fastForwards.Clear();
-                    commands.Clear();
+                    Inputs.Clear();
+                    FastForwards.Clear();
+                    Commands.Clear();
                     usedFiles.Clear();
-                    if (ReadFile(tasFilePath))
+                    if (ReadFile(TasFilePath)) {
                         break;
+                    }
+
                     System.Threading.Thread.Sleep(50);
                     trycount--;
                 }
 
-                CurrentFrame = Math.Min(inputs.Count, CurrentFrame);
+                CurrentFrame = Math.Min(Inputs.Count, CurrentFrame);
             }
         }
 
         public void AdvanceFrame() {
             RefreshInputs(false);
 
-            if (NeedsToWait)
+            if (NeedsToWait) {
                 return;
+            }
 
-            while (commands.Count > commandIndex && CurrentCommand.frame <= CurrentFrame) {
-                if (CurrentCommand.frame == CurrentFrame)
+            while (Commands.Count > commandIndex && CurrentCommand.Frame <= CurrentFrame) {
+                if (CurrentCommand.Frame == CurrentFrame) {
                     CurrentCommand.Invoke();
+                }
+
                 commandIndex++;
             }
-            while (fastForwards.Count > FfIndex && CurrentFF.frame <= CurrentFrame) {
+
+            while (FastForwards.Count > FfIndex && CurrentFf.Frame <= CurrentFrame) {
                 FfIndex++;
             }
-            if (!CanPlayback)
+
+            if (!CanPlayback) {
                 return;
-            if (Manager.ExportSyncData)
+            }
+
+            if (Manager.ExportSyncData) {
                 Manager.ExportPlayerInfo();
+            }
+
             Manager.SetInputs(Current);
-            if (StudioFrameCount == 0 || Current.Line == Previous.Line)
+            if (StudioFrameCount == 0 || Current.Line == Previous.Line) {
                 StudioFrameCount++;
-            else
+            } else {
                 StudioFrameCount = 1;
+            }
+
             CurrentFrame++;
         }
 
-        public void InitializeRecording() {
-
-        }
-
-        #region ignore
-        /*
-        public void RecordPlayer() {
-            InputRecord input = new InputRecord() { Line = inputIndex + 1, Frames = currentFrame };
-            GetCurrentInputs(input);
-
-            if (currentFrame == 0 && input == Current) {
-                return;
-            } else if (input != Current && !Manager.IsLoading()) {
-                Current.Frames = currentFrame - Current.Frames;
-                inputIndex++;
-                if (Current.Frames != 0) {
-                    inputs.Add(Current);
-                }
-                Current = input;
-            }
-            currentFrame++;
-        }
-        
-
-        private static void GetCurrentInputs(InputRecord record) {
-            if (Input.Jump.Check || Input.MenuConfirm.Check) {
-                record.Actions |= Actions.Jump;
-            }
-
-            if (Input.Dash.Check || Input.MenuCancel.Check || Input.Talk.Check) {
-                record.Actions |= Actions.Dash;
-            }
-
-            if (Input.Grab.Check) {
-                record.Actions |= Actions.Grab;
-            }
-
-            if (Input.MenuJournal.Check) {
-                record.Actions |= Actions.Journal;
-            }
-
-            if (Input.Pause.Check) {
-                record.Actions |= Actions.Start;
-            }
-
-            if (Input.QuickRestart.Check) {
-                record.Actions |= Actions.Restart;
-            }
-
-            if (Input.MenuLeft.Check || Input.MoveX.Value < 0) {
-                record.Actions |= Actions.Left;
-            }
-
-            if (Input.MenuRight.Check || Input.MoveX.Value > 0) {
-                record.Actions |= Actions.Right;
-            }
-
-            if (Input.MenuUp.Check || Input.MoveY.Value < 0) {
-                record.Actions |= Actions.Up;
-            }
-
-            if (Input.MenuDown.Check || Input.MoveY.Value > 0) {
-                record.Actions |= Actions.Down;
-            }
-        }
-
-        /*
-        public void WriteInputs() {
-            using (FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)) {
-                for (int i = 0; i < inputs.Count; i++) {
-                    InputRecord record = inputs[i];
-                    byte[] data = Encoding.ASCII.GetBytes(record.ToString() + "\r\n");
-                    fs.Write(data, 0, data.Length);
-                }
-                fs.Close();
-            }
-        }
-        */
-        #endregion
+        public void InitializeRecording() { }
 
         public bool ReadFile(string filePath, int startLine = 0, int endLine = int.MaxValue, int studioLine = 0) {
             try {
-                if (filePath == tasFilePath && startLine == 0) {
-                    if (!File.Exists(filePath))
+                if (filePath == TasFilePath && startLine == 0) {
+                    if (!File.Exists(filePath)) {
                         return false;
+                    }
                 }
+
                 if (!usedFiles.ContainsKey(filePath)) {
                     usedFiles.Add(filePath, File.GetLastWriteTime(filePath));
                 }
@@ -217,25 +159,32 @@ namespace TAS.Input {
                         string line = sr.ReadLine().Trim();
 
                         subLine++;
-                        if (subLine < startLine)
+                        if (subLine < startLine) {
                             continue;
-                        if (subLine > endLine)
+                        }
+
+                        if (subLine > endLine) {
                             break;
+                        }
 
                         if (InputCommands.TryExecuteCommand(this, line, initializationFrameCount, studioLine))
                             //workaround for the play command
+                        {
                             return true;
+                        }
 
-                        if (line.StartsWith("***"))
-                            fastForwards.Add(new FastForward(initializationFrameCount, line.Substring(3)));
-
-                        else
+                        if (line.StartsWith("***")) {
+                            FastForwards.Add(new FastForward(initializationFrameCount, line.Substring(3)));
+                        } else {
                             AddFrames(line, studioLine);
+                        }
 
-                        if (filePath == tasFilePath)
+                        if (filePath == TasFilePath) {
                             studioLine++;
+                        }
                     }
                 }
+
                 return true;
             } catch {
                 return false;
@@ -251,11 +200,14 @@ namespace TAS.Input {
             if (index == -1) {
                 framesStr = line;
                 index = 0;
-            } else
+            } else {
                 framesStr = line.Substring(0, index);
+            }
+
             if (!int.TryParse(framesStr, out frames)) {
                 return;
             }
+
             frames = Math.Min(frames, 9999);
             frame.Frames = frames;
             while (index < line.Length) {
@@ -305,36 +257,43 @@ namespace TAS.Input {
                         frame.Actions ^= Actions.Feather;
                         index++;
                         string angle = line.Substring(index + 1);
-                        if (angle == "")
+                        if (angle == "") {
                             frame.Angle = 0;
-                        else
+                        } else {
                             frame.Angle = float.Parse(angle.Trim());
+                        }
+
                         continue;
                 }
 
                 index++;
             }
-            for (int i = 0; i < frames; i++) {
-                inputs.Add(frame);
-            }
-            initializationFrameCount += frames;
 
+            for (int i = 0; i < frames; i++) {
+                Inputs.Add(frame);
+            }
+
+            initializationFrameCount += frames;
         }
 
         public InputController Clone() {
             InputController clone = new InputController();
 
-            for (int i = 0; i < inputs.Count; i++) {
-                if (i == 0 || !object.ReferenceEquals(inputs[i], inputs[i - 1]))
-                    clone.inputs.Add(inputs[i].Clone());
-                else
-                    clone.inputs.Add(clone.inputs[i - 1]);
+            for (int i = 0; i < Inputs.Count; i++) {
+                if (i == 0 || !object.ReferenceEquals(Inputs[i], Inputs[i - 1])) {
+                    clone.Inputs.Add(Inputs[i].Clone());
+                } else {
+                    clone.Inputs.Add(clone.Inputs[i - 1]);
+                }
             }
 
-            foreach (FastForward ff in fastForwards)
-                clone.fastForwards.Add(ff.Clone());
-            foreach (Command command in commands)
-                clone.commands.Add(command.Clone());
+            foreach (FastForward ff in FastForwards) {
+                clone.FastForwards.Add(ff.Clone());
+            }
+
+            foreach (Command command in Commands) {
+                clone.Commands.Add(command.Clone());
+            }
 
             clone.CurrentFrame = CurrentFrame;
             clone.FfIndex = FfIndex;
@@ -346,29 +305,108 @@ namespace TAS.Input {
         }
 
         public string Checksum(int toInputFrame) {
-            StringBuilder result = new StringBuilder(tasFilePath);
+            StringBuilder result = new StringBuilder(TasFilePath);
             result.AppendLine();
 
             try {
                 int checkInputFrame = 0;
 
                 while (checkInputFrame <= toInputFrame) {
-                    InputFrame currentInput = inputs[checkInputFrame];
+                    InputFrame currentInput = Inputs[checkInputFrame];
                     result.AppendLine(currentInput.ToString());
 
-                    if (commands.FirstOrDefault(command => command.frame == checkInputFrame) is Command currentCommand) {
-                        result.Append(currentCommand.lineText);
+                    if (Commands.FirstOrDefault(command => command.Frame == checkInputFrame) is Command currentCommand) {
+                        result.Append(currentCommand.LineText);
                     }
 
                     checkInputFrame++;
                 }
-                return SavedChecksum = MD5Helper.ComputeHash(result.ToString());
+
+                return SavedChecksum = Md5Helper.ComputeHash(result.ToString());
             } catch {
-                return SavedChecksum = MD5Helper.ComputeHash(result.ToString());
+                return SavedChecksum = Md5Helper.ComputeHash(result.ToString());
             }
         }
 
         public string Checksum(InputController controller) => Checksum(controller.CurrentFrame);
         public string Checksum() => Checksum(CurrentFrame);
+
+        #region ignore
+
+        /*
+        public void RecordPlayer() {
+            InputRecord input = new InputRecord() { Line = inputIndex + 1, Frames = currentFrame };
+            GetCurrentInputs(input);
+    
+            if (currentFrame == 0 && input == Current) {
+                return;
+            } else if (input != Current && !Manager.IsLoading()) {
+                Current.Frames = currentFrame - Current.Frames;
+                inputIndex++;
+                if (Current.Frames != 0) {
+                    inputs.Add(Current);
+                }
+                Current = input;
+            }
+            currentFrame++;
+        }
+        
+    
+        private static void GetCurrentInputs(InputRecord record) {
+            if (Input.Jump.Check || Input.MenuConfirm.Check) {
+                record.Actions |= Actions.Jump;
+            }
+    
+            if (Input.Dash.Check || Input.MenuCancel.Check || Input.Talk.Check) {
+                record.Actions |= Actions.Dash;
+            }
+    
+            if (Input.Grab.Check) {
+                record.Actions |= Actions.Grab;
+            }
+    
+            if (Input.MenuJournal.Check) {
+                record.Actions |= Actions.Journal;
+            }
+    
+            if (Input.Pause.Check) {
+                record.Actions |= Actions.Start;
+            }
+    
+            if (Input.QuickRestart.Check) {
+                record.Actions |= Actions.Restart;
+            }
+    
+            if (Input.MenuLeft.Check || Input.MoveX.Value < 0) {
+                record.Actions |= Actions.Left;
+            }
+    
+            if (Input.MenuRight.Check || Input.MoveX.Value > 0) {
+                record.Actions |= Actions.Right;
+            }
+    
+            if (Input.MenuUp.Check || Input.MoveY.Value < 0) {
+                record.Actions |= Actions.Up;
+            }
+    
+            if (Input.MenuDown.Check || Input.MoveY.Value > 0) {
+                record.Actions |= Actions.Down;
+            }
+        }
+    
+        /*
+        public void WriteInputs() {
+            using (FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)) {
+                for (int i = 0; i < inputs.Count; i++) {
+                    InputRecord record = inputs[i];
+                    byte[] data = Encoding.ASCII.GetBytes(record.ToString() + "\r\n");
+                    fs.Write(data, 0, data.Length);
+                }
+                fs.Close();
+            }
+        }
+        */
+
+        #endregion
     }
 }

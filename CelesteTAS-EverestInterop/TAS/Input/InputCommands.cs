@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -7,7 +6,6 @@ using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
-using TAS.EverestInterop;
 
 namespace TAS.Input {
     public class InputCommands {
@@ -36,16 +34,16 @@ namespace TAS.Input {
                     }
 
                     string[] commandArgs = args.Skip(1).ToArray();
-                    TASCommandAttribute attribute = (TASCommandAttribute)method.GetCustomAttribute(typeof(TASCommandAttribute));
-                    if (!(Manager.enforceLegal && attribute.illegalInMaingame)) {
-                        if (attribute.executeAtStart) {
-                            method.Invoke(null, new object[] { state, commandArgs, lineNumber });
+                    TasCommandAttribute attribute = (TasCommandAttribute) method.GetCustomAttribute(typeof(TasCommandAttribute));
+                    if (!(Manager.EnforceLegal && attribute.IllegalInMaingame)) {
+                        if (attribute.ExecuteAtStart) {
+                            method.Invoke(null, new object[] {state, commandArgs, lineNumber});
                             //the play command needs to stop reading the current file when it's done to prevent recursion
                             return commandType.ToLower() == "playcommand";
                         }
 
-                        object[] parameters = { commandArgs };
-                        state.commands.Add(new Command(frame, () => method.Invoke(null, parameters), lineText));
+                        object[] parameters = {commandArgs};
+                        state.Commands.Add(new Command(frame, () => method.Invoke(null, parameters), lineText));
                     }
                 }
 
@@ -56,14 +54,14 @@ namespace TAS.Input {
         }
 
 
-        [TASCommand(executeAtStart = true, args = new string[] {
+        [TasCommand(ExecuteAtStart = true, Args = new string[] {
             "Read, Path",
             "Read, Path, StartLine",
             "Read, Path, StartLine, EndLine"
         })]
         private static void ReadCommand(InputController state, string[] args, int studioLine) {
             string filePath = args[0];
-            string origFilePath = Path.GetDirectoryName(Manager.settings.TasFilePath);
+            string origFilePath = Path.GetDirectoryName(Manager.Settings.TasFilePath);
             // Check for full and shortened Read versions for absolute path
             if (origFilePath != null) {
                 string altFilePath = origFilePath + Path.DirectorySeparatorChar + filePath;
@@ -101,36 +99,37 @@ namespace TAS.Input {
             state.ReadFile(filePath, skipLines, lineLen, studioLine);
         }
 
-        [TASCommand(illegalInMaingame = true, args = new string[] {
+        [TasCommand(IllegalInMaingame = true, Args = new string[] {
             "Console CommandType",
             "Console CommandType CommandArgs",
             "Console LoadCommand IDorSID",
             "Console LoadCommand IDorSID Screen",
             "Console LoadCommand IDorSID Screen Checkpoint",
             "Console LoadCommand IDorSID X Y"
-            })]
+        })]
         private static void ConsoleCommand(string[] args) {
             ConsoleHandler.ExecuteCommand(args);
         }
 
-        [TASCommand(executeAtStart = true, args = new string[] {
+        [TasCommand(ExecuteAtStart = true, Args = new string[] {
             "Play, StartLine",
             "Play, StartLine, FramesToWait"
         })]
         private static void PlayCommand(InputController state, string[] args, int studioLine) {
-            GetLine(args[0], state.tasFilePath, out int startLine);
+            GetLine(args[0], state.TasFilePath, out int startLine);
             if (args.Length > 1 && int.TryParse(args[1], out _)) {
                 state.AddFrames(args[1], studioLine);
             }
 
-            state.ReadFile(state.tasFilePath, startLine, int.MaxValue, startLine - 1);
+            state.ReadFile(state.TasFilePath, startLine, int.MaxValue, startLine - 1);
         }
 
-        [TASCommand(args = new string[] {
+        [TasCommand(Args = new string[] {
             "StartExport",
             "StartExport Path",
             "StartExport EntitiesToTrack",
-            "StartExport Path EntitiesToTrack" })]
+            "StartExport Path EntitiesToTrack"
+        })]
         private static void StartExportCommand(string[] args) {
             string path = "dump.txt";
             if (args.Length > 0) {
@@ -144,23 +143,23 @@ namespace TAS.Input {
             Manager.ExportSyncData = true;
         }
 
-        [TASCommand(args = new string[] { "FinishExport" })]
+        [TasCommand(Args = new string[] {"FinishExport"})]
         private static void FinishExportCommand(string[] args) {
             Manager.EndExport();
             Manager.ExportSyncData = false;
         }
 
-        [TASCommand(args = new string[] { "EnforceLegal" })]
+        [TasCommand(Args = new string[] {"EnforceLegal"})]
         private static void EnforceLegalCommand(string[] args) {
-            Manager.enforceLegal = true;
+            Manager.EnforceLegal = true;
         }
 
-        [TASCommand(executeAtStart = true, args = new string[] { "Unsafe" })]
+        [TasCommand(ExecuteAtStart = true, Args = new string[] {"Unsafe"})]
         private static void UnsafeCommand(InputController state, string[] args, int studioLine) {
-            Manager.allowUnsafeInput = true;
+            Manager.AllowUnsafeInput = true;
         }
 
-        [TASCommand(illegalInMaingame = true, args = new string[] { "Set, Setting, Value", "Set, Mod.Setting, Value" })]
+        [TasCommand(IllegalInMaingame = true, Args = new string[] {"Set, Setting, Value", "Set, Mod.Setting, Value"})]
         private static void SetCommand(string[] args) {
             try {
                 Type settings;
@@ -229,15 +228,15 @@ namespace TAS.Input {
             Player player;
             switch (setting) {
                 case "GameSpeed":
-                    SaveData.Instance.Assists.GameSpeed = (int)value;
+                    SaveData.Instance.Assists.GameSpeed = (int) value;
                     Engine.TimeRateB = SaveData.Instance.Assists.GameSpeed / 10f;
                     break;
                 case "MirrorMode":
-                    SaveData.Instance.Assists.MirrorMode = (bool)value;
-                    Celeste.Input.MoveX.Inverted = Celeste.Input.Aim.InvertedX = (bool)value;
+                    SaveData.Instance.Assists.MirrorMode = (bool) value;
+                    Celeste.Input.MoveX.Inverted = Celeste.Input.Aim.InvertedX = (bool) value;
                     break;
                 case "PlayAsBadeline":
-                    SaveData.Instance.Assists.PlayAsBadeline = (bool)value;
+                    SaveData.Instance.Assists.PlayAsBadeline = (bool) value;
                     player = (Engine.Scene as Level)?.Tracker.GetEntity<Player>();
                     if (player != null) {
                         PlayerSpriteMode mode = SaveData.Instance.Assists.PlayAsBadeline
@@ -252,7 +251,7 @@ namespace TAS.Input {
 
                     break;
                 case "DashMode":
-                    SaveData.Instance.Assists.DashMode = (Assists.DashModes)Convert.ToInt32((string)value);
+                    SaveData.Instance.Assists.DashMode = (Assists.DashModes) Convert.ToInt32((string) value);
                     player = (Engine.Scene as Level)?.Tracker.GetEntity<Player>();
                     if (player != null) {
                         player.Dashes = Math.Min(player.Dashes, player.MaxDashes);
@@ -262,7 +261,7 @@ namespace TAS.Input {
                 case "DashAssist":
                     break;
                 case "SpeedrunClock":
-                    Settings.Instance.SpeedrunClock = (SpeedrunType)Convert.ToInt32((string)value);
+                    Settings.Instance.SpeedrunClock = (SpeedrunType) Convert.ToInt32((string) value);
                     break;
                 default:
                     return false;
@@ -271,7 +270,7 @@ namespace TAS.Input {
             return true;
         }
 
-        [TASCommand(illegalInMaingame = true, args = new string[] { "Gun, x, y" })]
+        [TasCommand(IllegalInMaingame = true, Args = new string[] {"Gun, x, y"})]
         private static void GunCommand(string[] args) {
             int x = int.Parse(args[0]);
             int y = int.Parse(args[1]);
@@ -282,26 +281,31 @@ namespace TAS.Input {
                     module.GetType().Assembly.GetType("Guneline.GunInput").GetProperty("CursorPosition").SetValue(null, pos);
                     //typeof(MouseState).GetProperty("LeftButton").SetValue(MInput.Mouse.CurrentState, ButtonState.Pressed);
                     module.GetType().Assembly.GetType("Guneline.Guneline").GetMethod("Gunshot")
-                        .Invoke(null, new object[] { player, pos, false, null });
+                        .Invoke(null, new object[] {player, pos, false, null});
                 }
             }
         }
 
-        [TASCommand(args = new string[] { 
+        [TasCommand(Args = new string[] {
             "AnalogMode, Mode",
-            "AnalogMode, Precise, UpperLimit"})]
+            "AnalogMode, Precise, UpperLimit"
+        })]
         private static void AnalogModeCommand(string[] args) => AnalogueModeCommand(args);
 
-        [TASCommand(args = new string[] {
+        [TasCommand(Args = new string[] {
             "AnalogueMode, Mode",
-            "AnalogueMode, Precise, UpperLimit"})]
+            "AnalogueMode, Precise, UpperLimit"
+        })]
         private static void AnalogueModeCommand(string[] args) {
-            if (Enum.TryParse<Manager.AnalogueMode>(args[0], true, out var mode)) {
+            if (Enum.TryParse<AnalogueMode>(args[0], true, out var mode)) {
                 short lim = 32767;
-                if (args.Length >= 2)
-                    if (float.TryParse(args[1], out var limit))
-                        lim = (short)(limit * 32767);
-                Manager.Ana.AnalogModeChange(mode,lim);
+                if (args.Length >= 2) {
+                    if (float.TryParse(args[1], out var limit)) {
+                        lim = (short) (limit * 32767);
+                    }
+                }
+
+                AnalogHelper.AnalogModeChange(mode, lim);
             }
         }
 
@@ -323,22 +327,22 @@ namespace TAS.Input {
             }
         }
 
-        [TASCommand(args = new string[] { "ExportLibTAS path"})]
-        private static void ExportLibTASCommand(string[] args) {
+        [TasCommand(Args = new string[] {"ExportLibTAS path"})]
+        private static void ExportLibTasCommand(string[] args) {
             string path = "export.ltm";
             if (args.Length > 0) {
                 path = args[0];
             }
 
-            Manager.LibTASExport(path);
+            Manager.LibTasExport(path);
         }
 
-        [TASCommand(args=new string[] { "EndExportLibTAS"})]
-        private static void EndExportLibTASCommand(string[] args) {
-            Manager.EndLibTASExport();
+        [TasCommand(Args = new string[] {"EndExportLibTAS"})]
+        private static void EndExportLibTasCommand(string[] args) {
+            Manager.EndLibTasExport();
         }
 
-        [TASCommand(args=new string[] { "Add frames"})]
+        [TasCommand(Args = new string[] {"Add frames"})]
         private static void AddCommand(string[] args) {
             Manager.AddFrames(int.Parse(args[0]));
         }
