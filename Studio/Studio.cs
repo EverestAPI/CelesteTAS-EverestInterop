@@ -34,6 +34,7 @@ namespace CelesteStudio {
             InitializeComponent();
             InitMenu();
             InitDragDrop();
+            InitFont();
 
             Text = titleBarText;
             Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.CreateSpecificCulture("en-US");
@@ -178,6 +179,12 @@ namespace CelesteStudio {
             };
         }
 
+        private void InitFont() {
+            Font font = Settings.Default.Font ?? fontDialog.Font;
+            tasText.Font = font;
+            lblStatus.Font = new Font(font.FontFamily, font.Size * 0.8f, font.Style);
+        }
+
         private void CreateRecentFilesMenu() {
             openRecentMenuItem.DropDownItems.Clear();
             if (recentFiles.Count == 0) {
@@ -216,6 +223,7 @@ namespace CelesteStudio {
         private void TASStudio_FormClosed(object sender, FormClosedEventArgs e) {
             Settings.Default.DesktopLocation = DesktopLocation;
             Settings.Default.Size = Size;
+            Settings.Default.Font = fontDialog.Font;
             Settings.Default.Save();
             StudioCommunicationServer.instance?.SendPath(string.Empty);
             Thread.Sleep(50);
@@ -889,6 +897,13 @@ namespace CelesteStudio {
 
         private void copyPlayerDataMenuItem_Click(object sender, EventArgs e) {
             CopyPlayerData();
+        }
+
+        private void fontToolStripMenuItem_Click(object sender, EventArgs e) {
+            if (fontDialog.ShowDialog() != DialogResult.Cancel) {
+                tasText.Font = fontDialog.Font;
+                lblStatus.Font = new Font(fontDialog.Font.FontFamily, fontDialog.Font.Size * 0.8f, fontDialog.Font.Style);
+            }
         }
 
         private void reconnectStudioAndCelesteToolStripMenuItem_Click(object sender, EventArgs e) {
