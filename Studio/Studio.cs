@@ -345,6 +345,7 @@ namespace CelesteStudio {
         private void UpdateRecentFiles() {
             if (!recentFiles.Contains(lastFileName)) {
                 recentFiles.Insert(0, lastFileName);
+                Settings.Default.Save();
             }
 
             Settings.Default.LastFileName = lastFileName;
@@ -924,6 +925,47 @@ namespace CelesteStudio {
 
         private void insertModInfoStripMenuItem1_Click(object sender, EventArgs e) {
             InsertModInfo();
+        }
+
+        private void SwapActionKeys(char key1, char key2) {
+            if (tasText.Selection.IsEmpty) {
+                return;
+            }
+
+            Range range = tasText.Selection.Clone();
+
+            int start = range.Start.iLine;
+            int end = range.End.iLine;
+            if (start > end) {
+                int temp = start;
+                start = end;
+                end = temp;
+            }
+
+            tasText.Selection = new Range(tasText, 0, start, tasText[end].Count, end);
+            string text = tasText.SelectedText;
+
+            StringBuilder sb = new StringBuilder();
+            Regex swapKeyRegex = new Regex($"{key1}|{key2}");
+            foreach (string lineText in text.Split('\n')) {
+                if (SyntaxHighlighter.InputRecordRegex.IsMatch(lineText)) {
+                    sb.AppendLine(swapKeyRegex.Replace(lineText, match => match.Value == key1.ToString() ? key2.ToString() : key1.ToString()));
+                } else {
+                    sb.AppendLine(lineText);
+                }
+            }
+
+            tasText.SelectedText = sb.ToString().Substring(0, sb.Length - 2);
+            tasText.Selection = new Range(tasText, 0, start, tasText[end].Count, end);
+            tasText.ScrollLeft();
+        }
+
+        private void swapDashKeysStripMenuItem_Click(object sender, EventArgs e) {
+            SwapActionKeys('C', 'X');
+        }
+
+        private void swapJumpKeysToolStripMenuItem_Click(object sender, EventArgs e) {
+            SwapActionKeys('J', 'K');
         }
     }
 }
