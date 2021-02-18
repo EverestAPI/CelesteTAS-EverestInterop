@@ -22,6 +22,11 @@ namespace TAS.StudioCommunication {
         /// <summary>
         /// Structure:
         /// </summary>
+        [HighPriority] GetModInfo = 0x09,
+
+        /// <summary>
+        /// Structure:
+        /// </summary>
         [HighPriority] EstablishConnection = 0x0D,
 
         /// <summary>
@@ -76,6 +81,11 @@ namespace TAS.StudioCommunication {
         /// Structure: string
         /// </summary>
         [HighPriority] ReturnConsoleCommand = 0x31,
+
+        /// <summary>
+        /// Structure: string
+        /// </summary>
+        [HighPriority] ReturnModInfo = 0x32,
 
         //External data transfer
         ExternLow1 = 0x40,

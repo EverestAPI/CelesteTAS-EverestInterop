@@ -114,15 +114,15 @@
   <resheader name="reader">
     <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <resheader name="writer">
-    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </resheader>
-  <metadata name="statusBar.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>299, 17</value>
-  </metadata>
-  <metadata name="hotkeyToolTip.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>17, 17</value>
-  </metadata>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <metadata name="statusBar.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+        <value>299, 17</value>
+    </metadata>
+    <metadata name="hotkeyToolTip.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+        <value>17, 17</value>
+    </metadata>
     <metadata name="statusBarContextMenuStrip.TrayLocation"
               type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
         <value>405, 17</value>
@@ -147,16 +147,16 @@
             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
-        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
+            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

@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using Celeste;
+using Celeste.Mod;
 using Microsoft.Xna.Framework.Input;
+using Monocle;
 using TAS.EverestInterop;
 using WinForms = System.Windows.Forms;
 
@@ -23,7 +26,7 @@ namespace TAS.StudioCommunication {
             Instance = new StudioCommunicationClient();
 
 #if DEBUG
-        //SetupDebugVariables();
+            //SetupDebugVariables();
 #endif
 
             RunThread.Start(Setup, "StudioCom Client");
@@ -82,6 +85,9 @@ namespace TAS.StudioCommunication {
                 case MessageIDs.GetConsoleCommand:
                     ProcessGetConsoleCommand();
                     break;
+                case MessageIDs.GetModInfo:
+                    ProcessGetModInfo();
+                    break;
                 case MessageIDs.SendPath:
                     ProcessSendPath(message.Data);
                     break;
@@ -104,10 +110,79 @@ namespace TAS.StudioCommunication {
         }
 
         private void ProcessGetConsoleCommand() {
-            string command = TAS.Input.ConsoleHandler.CreateConsoleCommand();
+            string command = Input.ConsoleHandler.CreateConsoleCommand();
             if (command != null) {
                 byte[] commandBytes = Encoding.Default.GetBytes(command);
                 WriteMessageGuaranteed(new Message(MessageIDs.ReturnConsoleCommand, commandBytes));
+            }
+        }
+
+        private void ProcessGetModInfo() {
+            if (Engine.Scene is Level level) {
+                string MetaToString(EverestModuleMetadata metadata, int Indentation = 0, bool comment = true) {
+                    return (comment ? "# " : string.Empty) + string.Empty.PadLeft(Indentation) + $"{metadata.Name} {metadata.VersionString}\n";
+                }
+
+                List<EverestModuleMetadata> metas = Everest.Modules
+                    .Where(module => module.Metadata.Name != "UpdateChecker" && module.Metadata.Name != "DialogCutscene")
+                    .Select(module => module.Metadata).ToList();
+                metas.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
+
+                AreaData areaData = AreaData.Get(level);
+                string moduleName = string.Empty;
+                EverestModuleMetadata mapMeta = null;
+                if (Everest.Content.TryGet<AssetTypeMap>("Maps/" + areaData.SID, out ModAsset mapModAsset) && mapModAsset.Source != null) {
+                    moduleName = mapModAsset.Source.Name;
+                    mapMeta = metas.FirstOrDefault(meta => meta.Name == moduleName);
+                }
+
+                string command = "";
+
+                EverestModuleMetadata celesteMeta = metas.First(metadata => metadata.Name == "Celeste");
+                EverestModuleMetadata everestMeta = metas.First(metadata => metadata.Name == "Everest");
+                EverestModuleMetadata tasMeta = metas.First(metadata => metadata.Name == "CelesteTAS");
+                command += MetaToString(celesteMeta);
+                command += MetaToString(everestMeta);
+                command += MetaToString(tasMeta);
+                metas.Remove(celesteMeta);
+                metas.Remove(everestMeta);
+                metas.Remove(tasMeta);
+
+                EverestModuleMetadata speedrunToolMeta = metas.FirstOrDefault(metadata => metadata.Name == "SpeedrunTool");
+                if (speedrunToolMeta != null) {
+                    command += MetaToString(speedrunToolMeta);
+                }
+
+                command += "\n# Map:\n";
+                if (mapMeta != null) {
+                    command += MetaToString(mapMeta, 2);
+                }
+
+                string mode = level.Session.Area.Mode == AreaMode.Normal ? "ASide" : level.Session.Area.Mode.ToString();
+                command += $"#   {areaData.SID} {mode}\n";
+
+                if (!string.IsNullOrEmpty(moduleName) && mapMeta != null) {
+                    List<EverestModuleMetadata> dependencies = mapMeta.Dependencies.Where(metadata =>
+                        metadata.Name != "Celeste" && metadata.Name != "Everest" && metadata.Name != "UpdateChecker" &&
+                        metadata.Name != "DialogCutscene" && metadata.Name != "CelesteTAS").ToList();
+                    dependencies.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
+                    if (dependencies.Count > 0) {
+                        command += "\n# Dependencies:\n";
+                        command += string.Join(string.Empty,
+                            dependencies.Select(meta => metas.First(metadata => metadata.Name == meta.Name)).Select(meta => MetaToString(meta, 2)));
+                    }
+
+                    command += "\n# Other Installed Mods:\n";
+                    command += string.Join(string.Empty,
+                        metas.Where(meta => meta.Name != moduleName && dependencies.All(metadata => metadata.Name != meta.Name))
+                            .Select(meta => MetaToString(meta, 2)));
+                } else {
+                    command += "\n# Other Installed Mods:\n";
+                    command += string.Join(string.Empty, metas.Select(meta => MetaToString(meta, 2)));
+                }
+
+                byte[] commandBytes = Encoding.Default.GetBytes(command);
+                WriteMessageGuaranteed(new Message(MessageIDs.ReturnModInfo, commandBytes));
             }
         }
 

@@ -399,6 +399,18 @@ namespace CelesteStudio {
             InsertNewLine(CommunicationWrapper.command);
         }
 
+        private void InsertModInfo() {
+            CommunicationWrapper.command = null;
+            StudioCommunicationServer.instance.GetModInfo();
+            Thread.Sleep(100);
+
+            if (CommunicationWrapper.command == null) {
+                return;
+            }
+
+            InsertNewLine(CommunicationWrapper.command);
+        }
+
         private void InsertNewLine(string text) {
             text = text.Trim();
             int startLine = tasText.Selection.Start.iLine;
@@ -908,6 +920,10 @@ namespace CelesteStudio {
 
         private void reconnectStudioAndCelesteToolStripMenuItem_Click(object sender, EventArgs e) {
             StudioCommunicationServer.instance?.ExternalReset();
+        }
+
+        private void insertModInfoStripMenuItem1_Click(object sender, EventArgs e) {
+            InsertModInfo();
         }
     }
 }

@@ -60,6 +60,9 @@ namespace CelesteStudio.Communication {
                 case MessageIDs.ReturnConsoleCommand:
                     ProcessReturnConsoleCommand(message.Data);
                     break;
+                case MessageIDs.ReturnModInfo:
+                    ProcessReturnModInfo(message.Data);
+                    break;
                 default:
                     throw new InvalidOperationException($"{message.ID}");
             }
@@ -94,6 +97,10 @@ namespace CelesteStudio.Communication {
         }
 
         private void ProcessReturnConsoleCommand(byte[] data) {
+            CommunicationWrapper.command = Encoding.Default.GetString(data);
+        }
+
+        private void ProcessReturnModInfo(byte[] data) {
             CommunicationWrapper.command = Encoding.Default.GetString(data);
         }
 
@@ -138,7 +145,8 @@ namespace CelesteStudio.Communication {
 
         public void SendPath(string path) => pendingWrite = () => SendPathNow(path, false);
         public void SendHotkeyPressed(HotkeyIDs hotkey, bool released = false) => pendingWrite = () => SendHotkeyPressedNow(hotkey, released);
-        public void GetConsoleCommand() => pendingWrite = () => GetConsoleCommandNow();
+        public void GetConsoleCommand() => pendingWrite = GetConsoleCommandNow;
+        public void GetModInfo() => pendingWrite = GetModInfoNow;
 
 
         private void SendPathNow(string path, bool canFail) {
@@ -169,6 +177,14 @@ namespace CelesteStudio.Communication {
             }
 
             WriteMessageGuaranteed(new Message(MessageIDs.GetConsoleCommand, new byte[0]));
+        }
+
+        private void GetModInfoNow() {
+            if (!Initialized) {
+                return;
+            }
+
+            WriteMessageGuaranteed(new Message(MessageIDs.GetModInfo, new byte[0]));
         }
 
         private void SendNewBindings(List<Keys> keys) {
