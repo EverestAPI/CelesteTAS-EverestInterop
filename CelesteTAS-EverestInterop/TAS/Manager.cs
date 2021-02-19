@@ -429,6 +429,10 @@ namespace TAS {
                     | (input.HasActions(Actions.Grab) ? GrabButton : 0)
                     | (input.HasActions(Actions.Start) ? Buttons.Start : 0)
                     | (input.HasActions(Actions.Restart) ? Buttons.LeftShoulder : 0)
+                    | (input.HasActions(Actions.Up) ? Buttons.DPadUp : 0)
+                    | (input.HasActions(Actions.Down) ? Buttons.DPadDown : 0)
+                    | (input.HasActions(Actions.Left) ? Buttons.DPadLeft : 0)
+                    | (input.HasActions(Actions.Right) ? Buttons.DPadRight : 0)
                 ),
                 pad
             );
