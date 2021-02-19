@@ -17,7 +17,6 @@ TAS_TRIGGER_HITBOX_COLOR=     Trigger Hitbox Color
 TAS_SOLID_TILES_HITBOX_COLOR= Solid Tiles Hitbox Color
 
 # ================================== Simplified Graphics Submenu ==================================
-TAS_SIMPLIFIED_GRAPHICS=      Simplified Graphics
 TAS_GAMEPLAY=                 Gameplay
 TAS_LIGHTING=                 Lighting
 TAS_BLOOM_BASE=               Bloom Base
