@@ -123,6 +123,7 @@
     <Compile Include="EverestInterop\PlayerInfo.cs" />
     <Compile Include="EverestInterop\RestoreSettings.cs" />
     <Compile Include="TAS\AnalogHelper.cs" />
+    <Compile Include="TAS\BindingHelper.cs"/>
     <Compile Include="TAS\Input\Command.cs" />
     <Compile Include="TAS\Input\FastForward.cs" />
     <Compile Include="TAS\Input\InputFrame.cs" />

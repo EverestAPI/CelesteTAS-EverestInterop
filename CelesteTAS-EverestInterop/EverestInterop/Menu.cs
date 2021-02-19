@@ -69,8 +69,6 @@ namespace TAS.EverestInterop {
                     subMenu.Add(
                         new TextMenu.OnOff("Disable Achievements".ToDialogText(), Settings.DisableAchievements).Change(value =>
                             Settings.DisableAchievements = value));
-                    subMenu.Add(new TextMenu.OnOff("Disable Grab Desync Fix".ToDialogText(), Settings.DisableGrabDesyncFix).Change(value =>
-                        Settings.DisableGrabDesyncFix = value));
                     subMenu.Add(new TextMenu.OnOff("Mod 9D Lighting".ToDialogText(), Settings.Mod9DLighting).Change(value =>
                         Settings.Mod9DLighting = value));
                 }),

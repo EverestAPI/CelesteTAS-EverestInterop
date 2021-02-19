@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 using Celeste;
@@ -9,7 +8,6 @@ using Monocle;
 using TAS.EverestInterop;
 using TAS.Input;
 using TAS.StudioCommunication;
-using GameInput = Celeste.Input;
 
 namespace TAS {
     [Flags]
@@ -42,11 +40,9 @@ namespace TAS {
         public static bool EnforceLegal, AllowUnsafeInput;
         public static Vector2 LastPos;
         public static Vector2 LastPlayerSeekerPos;
-        public static Buttons GrabButton = Buttons.Back;
         public static bool KbTextInput;
 
         private static long lastTimer;
-        private static List<VirtualButton.Node>[] playerBindings;
         private static Task checkHotkeyStarTask;
 
         private static bool featherInput;
@@ -254,7 +250,7 @@ namespace TAS {
         private static void EnableRun() {
             NextState &= ~State.Enable;
             InitializeRun(false);
-            BackupPlayerBindings();
+            BindingHelper.SetTasBindings();
             KbTextInput = Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput;
             Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = false;
 
@@ -283,7 +279,7 @@ namespace TAS {
             Recording = false;
             State = State.None;
             NextState = State.None;
-            RestorePlayerBindings();
+            BindingHelper.RestorePlayerBindings();
             Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = KbTextInput;
             Controller.ResetSpawn = null;
             if (ExportSyncData) {
@@ -301,31 +297,6 @@ namespace TAS {
         public static void EnableExternal() => EnableRun();
 
         public static void DisableExternal() => DisableRun();
-
-        private static void BackupPlayerBindings() {
-            playerBindings = new List<VirtualButton.Node>[5]
-                {GameInput.Jump.Nodes, GameInput.Dash.Nodes, GameInput.Grab.Nodes, GameInput.Talk.Nodes, GameInput.QuickRestart.Nodes};
-            GameInput.Jump.Nodes = new List<VirtualButton.Node>
-                {new VirtualButton.PadButton(GameInput.Gamepad, Buttons.A), new VirtualButton.PadButton(GameInput.Gamepad, Buttons.Y)};
-            GameInput.Dash.Nodes = new List<VirtualButton.Node>
-                {new VirtualButton.PadButton(GameInput.Gamepad, Buttons.B), new VirtualButton.PadButton(GameInput.Gamepad, Buttons.X)};
-            GameInput.Grab.Nodes = new List<VirtualButton.Node> {new VirtualButton.PadButton(GameInput.Gamepad, GrabButton)};
-            GameInput.Talk.Nodes = new List<VirtualButton.Node> {new VirtualButton.PadButton(GameInput.Gamepad, Buttons.B)};
-            GameInput.QuickRestart.Nodes = new List<VirtualButton.Node> {new VirtualButton.PadButton(GameInput.Gamepad, Buttons.LeftShoulder)};
-        }
-
-        private static void RestorePlayerBindings() {
-            //This can happen if DisableExternal is called before any TAS has been run
-            if (playerBindings == null) {
-                return;
-            }
-
-            GameInput.Jump.Nodes = playerBindings[0];
-            GameInput.Dash.Nodes = playerBindings[1];
-            GameInput.Grab.Nodes = playerBindings[2];
-            GameInput.Talk.Nodes = playerBindings[3];
-            GameInput.QuickRestart.Nodes = playerBindings[4];
-        }
 
         private static void InitializeRun(bool recording) {
             State |= State.Enable;
@@ -422,17 +393,18 @@ namespace TAS {
                 sticks,
                 new GamePadTriggers(input.HasActions(Actions.Journal) ? 1f : 0f, 0),
                 new GamePadButtons(
-                    (input.HasActions(Actions.Jump) ? Buttons.A : 0)
-                    | (input.HasActions(Actions.Jump2) ? Buttons.Y : 0)
-                    | (input.HasActions(Actions.Dash) ? Buttons.B : 0)
-                    | (input.HasActions(Actions.Dash2) ? Buttons.X : 0)
-                    | (input.HasActions(Actions.Grab) ? GrabButton : 0)
-                    | (input.HasActions(Actions.Start) ? Buttons.Start : 0)
-                    | (input.HasActions(Actions.Restart) ? Buttons.LeftShoulder : 0)
-                    | (input.HasActions(Actions.Up) ? Buttons.DPadUp : 0)
-                    | (input.HasActions(Actions.Down) ? Buttons.DPadDown : 0)
-                    | (input.HasActions(Actions.Left) ? Buttons.DPadLeft : 0)
-                    | (input.HasActions(Actions.Right) ? Buttons.DPadRight : 0)
+                    (input.HasActions(Actions.Jump) ? BindingHelper.JumpAndConfirm : 0)
+                    | (input.HasActions(Actions.Jump2) ? BindingHelper.Jump2 : 0)
+                    | (input.HasActions(Actions.Dash) ? BindingHelper.DashAndTalkAndCancel : 0)
+                    | (input.HasActions(Actions.Dash2) ? BindingHelper.Dash2AndCancel : 0)
+                    | (input.HasActions(Actions.Grab) ? BindingHelper.Grab : 0)
+                    | (input.HasActions(Actions.Start) ? BindingHelper.Pause : 0)
+                    | (input.HasActions(Actions.Restart) ? BindingHelper.QuickRestart : 0)
+                    | (input.HasActions(Actions.Up) ? BindingHelper.Up : 0)
+                    | (input.HasActions(Actions.Down) ? BindingHelper.Down : 0)
+                    | (input.HasActions(Actions.Left) ? BindingHelper.Left : 0)
+                    | (input.HasActions(Actions.Right) ? BindingHelper.Right : 0)
+                    | (input.HasActions(Actions.Journal) ? BindingHelper.Journal : 0)
                 ),
                 pad
             );

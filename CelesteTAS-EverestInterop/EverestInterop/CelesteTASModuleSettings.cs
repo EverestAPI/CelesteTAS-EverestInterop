@@ -77,11 +77,6 @@ namespace TAS.EverestInterop {
 
         public bool Mod9DLighting { get; set; } = false;
 
-        public bool DisableGrabDesyncFix {
-            get => Manager.GrabButton != Buttons.Back;
-            set => Manager.GrabButton = value ? Buttons.LeftStick : Buttons.Back;
-        }
-
         public bool RoundPosition { get; set; } = true;
 
         [SettingIgnore] public bool FastForwardCallBase { get; set; } = false;

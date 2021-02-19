@@ -45,7 +45,6 @@ TAS_INFO_HUD=                 信息面板
 TAS_PAUSE_AFTER_LOAD_STATE=   加载保存状态后暂停
 TAS_RESTORE_SETTINGS=         TAS 停止运行后恢复所有设置
 TAS_DISABLE_ACHIEVEMENTS=     禁止解锁成就
-TAS_DISABLE_GRAB_DESYNC_FIX=  禁用抓键修复
 TAS_MOD_9D_LIGHTING=          修改 9D 亮度
 
 # ================================== Keyboard Config ==================================
