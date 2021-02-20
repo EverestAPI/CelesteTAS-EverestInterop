@@ -19,7 +19,8 @@ namespace TAS.Input {
         Journal = 1 << 10,
         Jump2 = 1 << 11,
         Dash2 = 1 << 12,
-        Confirm = 1 << 13
+        Confirm = 1 << 13,
+        DemoDash = 1 << 14
     }
 
     public class InputFrame {
@@ -62,6 +63,10 @@ namespace TAS.Input {
 
             if (HasActions(Actions.Jump2)) {
                 sb.Append(",K");
+            }
+
+            if (HasActions(Actions.DemoDash)) {
+                sb.Append(",Z");
             }
 
             if (HasActions(Actions.Dash)) {

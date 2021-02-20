@@ -253,6 +253,9 @@ namespace TAS.Input {
                     case 'O':
                         frame.Actions ^= Actions.Confirm;
                         break;
+                    case 'Z':
+                        frame.Actions ^= Actions.DemoDash;
+                        break;
                     case 'F':
                         frame.Actions ^= Actions.Feather;
                         index++;

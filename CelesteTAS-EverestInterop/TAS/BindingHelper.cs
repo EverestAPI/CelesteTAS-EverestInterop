@@ -15,19 +15,25 @@ namespace TAS {
         private static readonly Lazy<MethodInfo> BindingAddButtons =
             new Lazy<MethodInfo>(() => BindingType.GetMethod("Add", new[] {typeof(Buttons[])}));
 
+        static BindingHelper() {
+            if (typeof(GameInput).GetFieldInfo("DemoDash") == null) {
+                DemoDash = 0;
+            }
+        }
+
         public static Buttons JumpAndConfirm => Buttons.A;
         public static Buttons Jump2 => Buttons.Y;
         public static Buttons DashAndTalkAndCancel => Buttons.B;
         public static Buttons Dash2AndCancel => Buttons.X;
-        public static Buttons Grab => Buttons.LeftStick;
+        public static Buttons Grab => Buttons.LeftShoulder;
         public static Buttons Pause => Buttons.Start;
-        public static Buttons QuickRestart => Buttons.LeftShoulder;
+        public static Buttons QuickRestart => Buttons.LeftStick;
         public static Buttons Up => Buttons.DPadUp;
         public static Buttons Down => Buttons.DPadDown;
         public static Buttons Left => Buttons.DPadLeft;
         public static Buttons Right => Buttons.DPadRight;
         public static Buttons Journal => Buttons.LeftTrigger;
-        public static Buttons DemoDash => Buttons.RightShoulder; // TODO Add demodash action
+        public static Buttons DemoDash { get; } = Buttons.RightShoulder;
 
         public static void SetTasBindings() {
             Settings settingsBackup = Settings.Instance.ShallowClone();

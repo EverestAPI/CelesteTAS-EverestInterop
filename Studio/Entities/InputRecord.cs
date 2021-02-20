@@ -5,25 +5,26 @@ using System.Text.RegularExpressions;
 namespace CelesteStudio.Entities {
     [Flags]
     public enum Actions {
-        None,
-        Left = 1,
-        Right = 2,
-        Up = 4,
-        Down = 8,
-        Jump = 16,
-        Dash = 32,
-        Grab = 64,
-        Start = 128,
-        Restart = 256,
-        Feather = 512,
-        Journal = 1024,
-        Jump2 = 2048,
-        Dash2 = 4096,
-        Confirm = 8192
+        None = 0,
+        Left = 1 << 0,
+        Right = 1 << 1,
+        Up = 1 << 2,
+        Down = 1 << 3,
+        Jump = 1 << 4,
+        Dash = 1 << 5,
+        Grab = 1 << 6,
+        Start = 1 << 7,
+        Restart = 1 << 8,
+        Feather = 1 << 9,
+        Journal = 1 << 10,
+        Jump2 = 1 << 11,
+        Dash2 = 1 << 12,
+        Confirm = 1 << 13,
+        DemoDash = 1 << 14
     }
 
     public class InputRecord {
-        private static readonly Regex duplicateZeroRegex = new Regex(@"^0+([^.])");
+        private static readonly Regex DuplicateZeroRegex = new Regex(@"^0+([^.])");
         public static char Delimiter = ',';
 
         public InputRecord(int frameCount, Actions actions, string notes = null) {
@@ -89,6 +90,9 @@ namespace CelesteStudio.Entities {
                         break;
                     case 'O':
                         Actions ^= Actions.Confirm;
+                        break;
+                    case 'Z':
+                        Actions ^= Actions.DemoDash;
                         break;
                     case 'F':
                         Actions ^= Actions.Feather;
@@ -162,7 +166,7 @@ namespace CelesteStudio.Entities {
             if (!float.TryParse(AngleStr, out float _)) {
                 AngleStr = string.Empty;
             } else {
-                AngleStr = duplicateZeroRegex.Replace(AngleStr, "$1");
+                AngleStr = DuplicateZeroRegex.Replace(AngleStr, "$1");
             }
 
             while (start < line.Length) {
@@ -256,6 +260,10 @@ namespace CelesteStudio.Entities {
 
             if (HasActions(Actions.Jump2)) {
                 sb.Append(",K");
+            }
+
+            if (HasActions(Actions.DemoDash)) {
+                sb.Append(",Z");
             }
 
             if (HasActions(Actions.Dash)) {

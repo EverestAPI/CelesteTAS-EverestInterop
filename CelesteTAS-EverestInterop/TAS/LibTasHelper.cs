@@ -111,6 +111,11 @@ namespace TAS {
                 buttons[3] = 'Y';
             }
 
+            if (inputFrame.HasActions(Actions.DemoDash)) {
+                // Playback via libtas requires the right shoulder to be set to demodash
+                buttons[10] = ']';
+            }
+
             if (inputFrame.HasActions(Actions.Dash)) {
                 buttons[1] = 'B';
             }
