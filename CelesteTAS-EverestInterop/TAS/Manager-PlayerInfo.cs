@@ -113,8 +113,10 @@ namespace TAS {
                             || SaveData.Instance.Assists.SuperDashing) {
                             sb.AppendLine(polarvel);
                         }
-
-                        sb.AppendLine(joystick);
+                        
+                        if (!string.IsNullOrEmpty(joystick)) {
+                            sb.AppendLine(joystick);
+                        }
 
                         sb.AppendLine(miscstats);
                         if (!string.IsNullOrEmpty(statuses)) {
