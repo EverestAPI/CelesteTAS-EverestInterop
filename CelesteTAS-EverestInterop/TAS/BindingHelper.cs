@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using Celeste;
 using Microsoft.Xna.Framework.Input;
@@ -11,25 +10,10 @@ using GameInput = Celeste.Input;
 
 namespace TAS {
     public static class BindingHelper {
-        private static readonly HashSet<Type> RestoreTypes = new HashSet<Type> {
-            typeof(Keys),
-            typeof(List<Keys>),
-            typeof(List<Buttons>),
-        };
-
-        private static readonly Type BindingType;
+        private static readonly Type BindingType = typeof(Engine).Assembly.GetType("Monocle.Binding");
 
         private static readonly Lazy<MethodInfo> BindingAddButtons =
             new Lazy<MethodInfo>(() => BindingType.GetMethod("Add", new[] {typeof(Buttons[])}));
-
-        private static Settings playerSettings;
-
-        static BindingHelper() {
-            if (typeof(Engine).Assembly.GetType("Monocle.Binding") is Type bindingType) {
-                RestoreTypes.Add(bindingType);
-                BindingType = bindingType;
-            }
-        }
 
         public static Buttons JumpAndConfirm => Buttons.A;
         public static Buttons Jump2 => Buttons.Y;
@@ -46,7 +30,7 @@ namespace TAS {
         public static Buttons DemoDash => Buttons.RightShoulder; // TODO Add demodash action
 
         public static void SetTasBindings() {
-            playerSettings = Settings.Instance.ShallowClone();
+            Settings settingsBackup = Settings.Instance.ShallowClone();
 
             if (BindingType == null) {
                 SetTasBindingsV1312();
@@ -54,6 +38,11 @@ namespace TAS {
                 SetTasBindingsNew();
             }
 
+            GameInput.Initialize();
+            Settings.Instance.CopyAllFields(settingsBackup);
+        }
+
+        public static void RestorePlayerBindings() {
             GameInput.Initialize();
         }
 
@@ -79,13 +68,6 @@ namespace TAS {
             settings.Set("BtnDash", new List<Buttons> {DashAndTalkAndCancel, Dash2AndCancel});
             settings.Set("BtnTalk", new List<Buttons> {DashAndTalkAndCancel});
             settings.Set("BtnAltQuickRestart", new List<Buttons> {QuickRestart});
-        }
-
-        private static void SetBinding(string fieldName, params Buttons[] buttons) {
-            MethodInfo addButtons = BindingAddButtons.Value;
-            object binding = Activator.CreateInstance(BindingType);
-            addButtons.Invoke(binding, new object[] {buttons});
-            Settings.Instance.GetDynDataInstance().Set(fieldName, binding);
         }
 
         private static void SetTasBindingsNew() {
@@ -124,17 +106,11 @@ namespace TAS {
             SetBinding("DownDashOnly");
         }
 
-        public static void RestorePlayerBindings() {
-            //This can happen if DisableExternal is called before any TAS has been run
-            if (playerSettings == null) {
-                return;
-            }
-
-            foreach (FieldInfo fieldInfo in typeof(Settings).GetFieldInfos().Where(info => RestoreTypes.Contains(info.FieldType))) {
-                fieldInfo.SetValue(Settings.Instance, fieldInfo.GetValue(playerSettings));
-            }
-
-            playerSettings = null;
+        private static void SetBinding(string fieldName, params Buttons[] buttons) {
+            MethodInfo addButtons = BindingAddButtons.Value;
+            object binding = Activator.CreateInstance(BindingType);
+            addButtons.Invoke(binding, new object[] {buttons});
+            Settings.Instance.GetDynDataInstance().Set(fieldName, binding);
         }
     }
 }
