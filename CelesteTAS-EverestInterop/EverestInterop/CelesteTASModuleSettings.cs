@@ -83,7 +83,6 @@ namespace TAS.EverestInterop {
         [SettingIgnore] public int FastForwardThreshold { get; set; } = 10;
         [SettingIgnore] public DateTime StudioLastModifiedTime { get; set; } = new DateTime();
         public bool AutoExtractNewStudio { get; set; } = true;
-        [SettingIgnore] public int LastSfxVolume { get; set; } = -1;
         [SettingIgnore] public Color EntityHitboxColor { get; set; } = HitboxColor.DefaultEntityColor;
         [SettingIgnore] public Color TriggerHitboxColor { get; set; } = HitboxColor.DefaultTriggerColor;
         [SettingIgnore] public Color SolidTilesHitboxColor { get; set; } = HitboxColor.DefaultSolidTilesColor;
