@@ -114,7 +114,7 @@ namespace TAS {
                             sb.AppendLine(polarvel);
                         }
 
-                        if (featherInput) {
+                        if (!string.IsNullOrEmpty(joystick)) {
                             sb.AppendLine(joystick);
                         }
 
