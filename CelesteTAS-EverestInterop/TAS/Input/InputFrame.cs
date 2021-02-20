@@ -113,5 +113,87 @@ namespace TAS.Input {
             };
             return clone;
         }
+
+        public static bool TryParse(string line, int studioLine, out InputFrame inputFrame) {
+            int index = line.IndexOf(",", StringComparison.Ordinal);
+            string framesStr;
+            if (index == -1) {
+                framesStr = line;
+                index = 0;
+            } else {
+                framesStr = line.Substring(0, index);
+            }
+
+            if (!int.TryParse(framesStr, out int frames)) {
+                inputFrame = null;
+                return false;
+            }
+
+            frames = Math.Min(frames, 9999);
+            inputFrame = new InputFrame {Line = studioLine, Frames = frames};
+            while (index < line.Length) {
+                char c = line[index];
+
+                switch (char.ToUpper(c)) {
+                    case 'L':
+                        inputFrame.Actions ^= Actions.Left;
+                        break;
+                    case 'R':
+                        inputFrame.Actions ^= Actions.Right;
+                        break;
+                    case 'U':
+                        inputFrame.Actions ^= Actions.Up;
+                        break;
+                    case 'D':
+                        inputFrame.Actions ^= Actions.Down;
+                        break;
+                    case 'J':
+                        inputFrame.Actions ^= Actions.Jump;
+                        break;
+                    case 'X':
+                        inputFrame.Actions ^= Actions.Dash;
+                        break;
+                    case 'G':
+                        inputFrame.Actions ^= Actions.Grab;
+                        break;
+                    case 'S':
+                        inputFrame.Actions ^= Actions.Start;
+                        break;
+                    case 'Q':
+                        inputFrame.Actions ^= Actions.Restart;
+                        break;
+                    case 'N':
+                        inputFrame.Actions ^= Actions.Journal;
+                        break;
+                    case 'K':
+                        inputFrame.Actions ^= Actions.Jump2;
+                        break;
+                    case 'C':
+                        inputFrame.Actions ^= Actions.Dash2;
+                        break;
+                    case 'O':
+                        inputFrame.Actions ^= Actions.Confirm;
+                        break;
+                    case 'Z':
+                        inputFrame.Actions ^= Actions.DemoDash;
+                        break;
+                    case 'F':
+                        inputFrame.Actions ^= Actions.Feather;
+                        index++;
+                        string angle = line.Substring(index + 1);
+                        if (angle == "") {
+                            inputFrame.Angle = 0;
+                        } else {
+                            inputFrame.Angle = float.Parse(angle.Trim());
+                        }
+
+                        continue;
+                }
+
+                index++;
+            }
+
+            return true;
+        }
     }
 }

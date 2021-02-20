@@ -328,10 +328,6 @@ namespace TAS {
 
             SetState(input, ref state, ref pad, ref sticks);
 
-            if (LibTasHelper.ExportLibTas) {
-                LibTasHelper.WriteLibTasFrame(input);
-            }
-
             bool found = false;
             for (int i = 0; i < 4; i++) {
                 MInput.GamePads[i].Update();

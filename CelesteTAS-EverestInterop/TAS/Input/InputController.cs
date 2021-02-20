@@ -7,14 +7,14 @@ using Microsoft.Xna.Framework;
 
 namespace TAS.Input {
     public class InputController {
+        public readonly List<Command> Commands = new List<Command>();
+        public readonly List<FastForward> FastForwards = new List<FastForward>();
+
+        public readonly List<InputFrame> Inputs = new List<InputFrame>();
         private string checksum;
         private int commandIndex;
-        public List<Command> Commands = new List<Command>();
-        public List<FastForward> FastForwards = new List<FastForward>();
         public int FfIndex;
         private int initializationFrameCount;
-
-        public List<InputFrame> Inputs = new List<InputFrame>();
 
         public Vector2? ResetSpawn;
         public int StudioFrameCount;
@@ -130,6 +130,12 @@ namespace TAS.Input {
             }
 
             Manager.SetInputs(Current);
+
+            // This should be executed after calculating the feather Angle
+            if (LibTasHelper.ExportLibTas) {
+                LibTasHelper.WriteLibTasFrame(Current);
+            }
+
             if (StudioFrameCount == 0 || Current.Line == Previous.Line) {
                 StudioFrameCount++;
             } else {
@@ -192,90 +198,15 @@ namespace TAS.Input {
         }
 
         public void AddFrames(string line, int studioLine) {
-            InputFrame inputFrame = new InputFrame();
-            inputFrame.Line = studioLine;
-            int index = line.IndexOf(",", StringComparison.Ordinal);
-            string framesStr;
-            if (index == -1) {
-                framesStr = line;
-                index = 0;
-            } else {
-                framesStr = line.Substring(0, index);
-            }
-
-            if (!int.TryParse(framesStr, out int frames)) {
+            if (!InputFrame.TryParse(line, studioLine, out InputFrame inputFrame)) {
                 return;
             }
 
-            frames = Math.Min(frames, 9999);
-            inputFrame.Frames = frames;
-            while (index < line.Length) {
-                char c = line[index];
-
-                switch (char.ToUpper(c)) {
-                    case 'L':
-                        inputFrame.Actions ^= Actions.Left;
-                        break;
-                    case 'R':
-                        inputFrame.Actions ^= Actions.Right;
-                        break;
-                    case 'U':
-                        inputFrame.Actions ^= Actions.Up;
-                        break;
-                    case 'D':
-                        inputFrame.Actions ^= Actions.Down;
-                        break;
-                    case 'J':
-                        inputFrame.Actions ^= Actions.Jump;
-                        break;
-                    case 'X':
-                        inputFrame.Actions ^= Actions.Dash;
-                        break;
-                    case 'G':
-                        inputFrame.Actions ^= Actions.Grab;
-                        break;
-                    case 'S':
-                        inputFrame.Actions ^= Actions.Start;
-                        break;
-                    case 'Q':
-                        inputFrame.Actions ^= Actions.Restart;
-                        break;
-                    case 'N':
-                        inputFrame.Actions ^= Actions.Journal;
-                        break;
-                    case 'K':
-                        inputFrame.Actions ^= Actions.Jump2;
-                        break;
-                    case 'C':
-                        inputFrame.Actions ^= Actions.Dash2;
-                        break;
-                    case 'O':
-                        inputFrame.Actions ^= Actions.Confirm;
-                        break;
-                    case 'Z':
-                        inputFrame.Actions ^= Actions.DemoDash;
-                        break;
-                    case 'F':
-                        inputFrame.Actions ^= Actions.Feather;
-                        index++;
-                        string angle = line.Substring(index + 1);
-                        if (angle == "") {
-                            inputFrame.Angle = 0;
-                        } else {
-                            inputFrame.Angle = float.Parse(angle.Trim());
-                        }
-
-                        continue;
-                }
-
-                index++;
-            }
-
-            for (int i = 0; i < frames; i++) {
+            for (int i = 0; i < inputFrame.Frames; i++) {
                 Inputs.Add(inputFrame);
             }
 
-            initializationFrameCount += frames;
+            initializationFrameCount += inputFrame.Frames;
         }
 
         public InputController Clone() {

@@ -7,6 +7,8 @@ namespace TAS {
         private static StreamWriter streamWriter;
         public static bool ExportLibTas;
 
+        private static InputFrame skipInputFrame;
+
         public static void BeginExport(string path) {
             if (!ExportLibTas) {
                 streamWriter = new StreamWriter(path, false, Encoding.ASCII, 1 << 20);
@@ -22,7 +24,7 @@ namespace TAS {
         }
 
         public static void WriteLibTasFrame(InputFrame inputFrame) {
-            if (!ExportLibTas) {
+            if (inputFrame == skipInputFrame) {
                 return;
             }
 
@@ -31,22 +33,20 @@ namespace TAS {
                 LibTasButtons(inputFrame));
         }
 
-        public static void AddFrames(int number) {
+        public static void AddInputFrame(string inputText) {
             if (!ExportLibTas) {
                 return;
             }
 
-            for (int i = 0; i < number; ++i) {
-                WriteEmptyFrame();
+            if (InputFrame.TryParse(inputText, 0, out InputFrame inputFrame)) {
+                for (int i = 0; i < inputFrame.Frames; ++i) {
+                    WriteLibTasFrame(inputFrame);
+                }
             }
         }
 
         private static void WriteLibTasFrame(string outputKeys, string outputAxes, string outputButtons) {
             streamWriter.WriteLine($"|{outputKeys}|{outputAxes}:0:0:0:0:{outputButtons}|.........|");
-        }
-
-        private static void WriteEmptyFrame() {
-            WriteLibTasFrame("", "0:0", "...............");
         }
 
         private static string LibTasKeys(InputFrame inputFrame) {
@@ -133,6 +133,10 @@ namespace TAS {
             }
 
             return string.Join("", buttons);
+        }
+
+        public static void SkipNextInput() {
+            skipInputFrame = Manager.Controller.Current;
         }
     }
 }

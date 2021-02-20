@@ -327,8 +327,8 @@ namespace TAS.Input {
             }
         }
 
-        [TasCommand(Args = new string[] {"ExportLibTAS path"})]
-        private static void ExportLibTasCommand(string[] args) {
+        [TasCommand(Args = new string[] {"StartExportLibTAS (Optional Path)"})]
+        private static void StartExportLibTASCommand(string[] args) {
             string path = "inputs";
             if (args.Length > 0) {
                 path = args[0];
@@ -337,16 +337,22 @@ namespace TAS.Input {
             LibTasHelper.BeginExport(path);
         }
 
-        [TasCommand(Args = new string[] {"EndExportLibTAS"})]
-        private static void EndExportLibTasCommand(string[] args) {
+        [TasCommand(Args = new string[] {"FinishExportLibTAS"})]
+        private static void FinishExportLibTasCommand(string[] args) {
             LibTasHelper.EndExport();
         }
 
-        [TasCommand(Args = new string[] {"Add frames"})]
+        // It must use a comma as a separator
+        [TasCommand(Args = new string[] {"Add, input"})]
         private static void AddCommand(string[] args) {
-            if (args.Length > 0 && int.TryParse(args[0], out int frames)) {
-                LibTasHelper.AddFrames(frames);
+            if (args.Length > 0) {
+                LibTasHelper.AddInputFrame(string.Join(",", args));
             }
+        }
+
+        [TasCommand(Args = new string[] {"Skip"})]
+        private static void SkipCommand(string[] args) {
+            LibTasHelper.SkipNextInput();
         }
     }
 }

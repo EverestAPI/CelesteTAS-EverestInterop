@@ -881,7 +881,7 @@ namespace CelesteStudio {
         }
 
         private void readToolStripMenuItem_Click(object sender, EventArgs e) {
-            InsertNewLine("Read, File Name, Starting Line, (Optional Ending Line)");
+            InsertNewLine("Read, File Name, Starting Line, (Ending Line)");
         }
 
         private void playToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -889,19 +889,15 @@ namespace CelesteStudio {
         }
 
         private void setToolStripMenuItem_Click(object sender, EventArgs e) {
-            InsertNewLine("Set, (Optional Mod).Setting, Value");
-        }
-
-        private void restoreSettingsToolStripMenuItem_Click(object sender, EventArgs e) {
-            InsertNewLine("RestoreSettings");
+            InsertNewLine("Set, (Mod).Setting, Value");
         }
 
         private void analogueModeToolStripMenuItem_Click(object sender, EventArgs e) {
-            InsertNewLine("AnalogueMode, (Type)");
+            InsertNewLine("AnalogueMode, Ignore/Circle/Square/Precise, (UpperLimit)");
         }
 
         private void startExportToolStripMenuItem_Click(object sender, EventArgs e) {
-            InsertNewLine("StartExport (Optional File Path) (Optional Entities)");
+            InsertNewLine("StartExport (Path) (Entities)");
         }
 
         private void finishExportToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -913,7 +909,15 @@ namespace CelesteStudio {
         }
 
         private void skipToolStripMenuItem_Click(object sender, EventArgs e) {
-            InsertNewLine("Skip, (frames)");
+            InsertNewLine("Skip");
+        }
+
+        private void startExportLibTASToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertNewLine("StartExportLibTAS (Path)");
+        }
+
+        private void finishExportLibTASToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertNewLine("FinishExportLibTAS");
         }
 
         private void copyPlayerDataMenuItem_Click(object sender, EventArgs e) {
