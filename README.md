@@ -33,6 +33,7 @@ e.g. 123,R,J (For 123 frames, hold Right and Jump)
 - K = Jump Bind 2
 - X = Dash / Talk
 - C = Dash Bind 2
+- Z = Crouch Dash (Celeste beta versions only)
 - G = Grab
 - S = Pause
 - Q = Quick Reset
@@ -67,7 +68,6 @@ While in game or in Studio:
 - The program when played back from the start will fast forward until it reaches that line and then go into frame stepping mode
 - `***S` will make a savestate, which can reduce TAS playback time. ([Experimental](#savestate))
 - You can specify the speed with `***X`, where `X` is the speedup factor. e.g. `***10` will go at 10x speed
-- `***!` will force the TAS to pause even if there are breakpoints afterward in the file
 
 ### Commands
 

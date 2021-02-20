@@ -45,8 +45,6 @@ namespace TAS {
         private static long lastTimer;
         private static Task checkHotkeyStarTask;
 
-        private static bool featherInput;
-
         static Manager() {
             MethodInfo wallJumpCheck = typeof(Player).GetMethodInfo("WallJumpCheck");
             MethodInfo updateVirtualInputs = typeof(MInput).GetMethodInfo("UpdateVirtualInputs");
