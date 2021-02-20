@@ -5,13 +5,14 @@ using TAS.Input;
 namespace TAS {
     public static class LibTasHelper {
         private static StreamWriter streamWriter;
-        public static bool ExportLibTas;
-
         private static InputFrame skipInputFrame;
+
+        public static bool ExportLibTas;
 
         public static void BeginExport(string path) {
             if (!ExportLibTas) {
                 streamWriter = new StreamWriter(path, false, Encoding.ASCII, 1 << 20);
+                skipInputFrame = null;
                 ExportLibTas = true;
             }
         }
@@ -20,6 +21,7 @@ namespace TAS {
             streamWriter?.Flush();
             streamWriter?.Dispose();
             streamWriter = null;
+            skipInputFrame = null;
             ExportLibTas = false;
         }
 
@@ -42,6 +44,12 @@ namespace TAS {
                 for (int i = 0; i < inputFrame.Frames; ++i) {
                     WriteLibTasFrame(inputFrame);
                 }
+            }
+        }
+
+        public static void SkipNextInput() {
+            if (ExportLibTas) {
+                skipInputFrame = Manager.Controller.Current;
             }
         }
 
@@ -133,10 +141,6 @@ namespace TAS {
             }
 
             return string.Join("", buttons);
-        }
-
-        public static void SkipNextInput() {
-            skipInputFrame = Manager.Controller.Current;
         }
     }
 }
