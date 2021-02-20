@@ -25,7 +25,7 @@
   - `core (int)` (Set core mode to ice or fire)
   - `givekey` (gives a key)
   - `giveberry` (gives a berry)
-  - `hearts` (Gives all hearts)
+  - `cheat` (Gives all hearts)
   - `summitgem (string)` (gives summit gem, either 0-6 or "all")
   - `sd_clearflags` (Clears all save data flags)
   - `unlock_doors` (Unlocks all key doors)
@@ -60,15 +60,9 @@
 - Open the settings file in a text editor to look for the setting's name.
 - Names are case sensitive.
 - Make sure the value entered matches the type of the setting (if it is a boolean in the settings file, make sure you're inputting a boolean into the Set command).
-- Most vanilla variants (except for mirror mode and gamespeed) are not currently functional.
 - Examples:
   - `Set, ExtendedVariantMode.Dashcount, 3`
   - `Set, CelesteTAS.CenterCamera, true`
-
-### RestoreSettings
-- `RestoreSettings`
-- Restore all settings when tas finished or cancelled
-- The settings modified before this command will not be restored
 
 ### Unsafe
 - The TAS will normally only run inside levels.
@@ -84,13 +78,19 @@
 - `FinishExport`
 - Dumps data to a file, which can be used to analyze desyncs.
 - Default filepath is dump.txt
-- Keeps track of any additional entities specified - e.g. `StartExport holdables.txt TheoCrystal Glider FrostHelper.CustomSpinner@FrostTempleHelper` will keep track of Theo and Jellyfish and custom spinner. You can get the name of the entity by opening the console and clicking on it, the entity name will be displayed in the top left corner and output to log.txt.
+- Keeps track of any additional entities specified - e.g. `StartExport holdables.txt TheoCrystal Glider FrostHelper.CustomSpinner@FrostTempleHelper` will keep track of Theo, Jellyfish, and custom spinners from the FrostHelper mod. You can get the name of the entity by opening the console and clicking on it, the entity name will be displayed in the top left corner and output to log.txt.
 
 ### AnalogueMode
 - `AnalogueMode, (Type)`
 - `AnalogMode, (Type)` also works
 - Types are `Ignore` (no check), `Circle`, `Square` and `Precise`.
 - `Circle`, `Square` and `Precise` are make sure the analogue inputs sent to the game are actually possible, locking it to a circular or square deadzone, or calculating the closest position possible on a controller. Odds are you don't need to worry about this.
+
+### ExportLibTAS and EndExportLibTAS
+- `StartExport, (Optional File Path)`
+- Converts the TAS to the inputs portion of a .ltm.
+- Default filepath is `inputs`
+- Odds are you don't need to worry about this.
 
 ### Add and Skip
 - These commands appear in overworld menuing and do not do anything in-game.
