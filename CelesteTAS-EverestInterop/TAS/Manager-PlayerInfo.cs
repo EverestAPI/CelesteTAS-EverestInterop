@@ -20,8 +20,6 @@ namespace TAS {
         //for debugging
         public static string AdditionalStatusInfo;
 
-        private static StreamWriter libTas;
-        private static bool exportLibTas;
         public static bool ExportSyncData { get; set; }
 
         public static void UpdatePlayerInfo() {
@@ -197,19 +195,6 @@ namespace TAS {
 
         public static void EndExport() {
             Engine.Scene.OnEndOfFrame += () => { sw?.Dispose(); };
-        }
-
-        public static void LibTasExport(string path) {
-            if (!exportLibTas) {
-                libTas = new StreamWriter(path, false, Encoding.ASCII, 1 << 20);
-                exportLibTas = true;
-            }
-        }
-
-        public static void EndLibTasExport() {
-            libTas.Flush();
-            libTas.Dispose();
-            exportLibTas = false;
         }
 
         public static void ExportPlayerInfo() {

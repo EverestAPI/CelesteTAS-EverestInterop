@@ -127,6 +127,7 @@
     <Compile Include="TAS\Input\Command.cs" />
     <Compile Include="TAS\Input\FastForward.cs" />
     <Compile Include="TAS\Input\InputFrame.cs" />
+      <Compile Include="TAS\LibTasHelper.cs"/>
     <Compile Include="TAS\Savestates.cs" />
     <Compile Include="StudioCommunication\HotkeyIDs.cs" />
     <Compile Include="StudioCommunication\StudioCommunicationBase.cs" />

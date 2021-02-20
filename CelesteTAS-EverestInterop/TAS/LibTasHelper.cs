@@ -1,0 +1,133 @@
+﻿using System.IO;
+using System.Text;
+using TAS.Input;
+
+namespace TAS {
+    public static class LibTasHelper {
+        private static StreamWriter streamWriter;
+        public static bool ExportLibTas;
+
+        public static void BeginExport(string path) {
+            if (!ExportLibTas) {
+                streamWriter = new StreamWriter(path, false, Encoding.ASCII, 1 << 20);
+                ExportLibTas = true;
+            }
+        }
+
+        public static void EndExport() {
+            streamWriter?.Flush();
+            streamWriter?.Dispose();
+            streamWriter = null;
+            ExportLibTas = false;
+        }
+
+        public static void WriteLibTasFrame(InputFrame inputFrame) {
+            if (!ExportLibTas) {
+                return;
+            }
+
+            WriteLibTasFrame(LibTasKeys(inputFrame),
+                inputFrame.HasActions(Actions.Feather) ? ($"{AnalogHelper.LastDirectionShort.X}:{-AnalogHelper.LastDirectionShort.Y}") : "0:0",
+                LibTasButtons(inputFrame));
+        }
+
+        public static void AddFrames(int number) {
+            if (!ExportLibTas) {
+                return;
+            }
+
+            for (int i = 0; i < number; ++i) {
+                WriteEmptyFrame();
+            }
+        }
+
+        private static void WriteLibTasFrame(string outputKeys, string outputAxes, string outputButtons) {
+            streamWriter.WriteLine($"|{outputKeys}|{outputAxes}:0:0:0:0:{outputButtons}|.........|");
+        }
+
+        private static void WriteEmptyFrame() {
+            WriteLibTasFrame("", "0:0", "...............");
+        }
+
+        private static string LibTasKeys(InputFrame inputFrame) {
+            if (inputFrame.HasActions(Actions.Confirm)) {
+                return "ff0d";
+            }
+
+            if (inputFrame.HasActions(Actions.Restart)) {
+                return "72";
+            }
+
+            if (inputFrame.HasActions(Actions.Journal)) {
+                return "ff09";
+            }
+
+            return "";
+        }
+
+        private static string LibTasButtons(InputFrame inputFrame) {
+            // 0 BUTTON_A = A
+            // 1 BUTTON_B = B
+            // 2 BUTTON_X = X
+            // 3 BUTTON_Y = Y
+            // 4 BUTTON_BACK = b
+            // 5 BUTTON_GUIDE = g
+            // 6 BUTTON_START = s
+            // 7 BUTTON_LEFTSTICK = (
+            // 8 BUTTON_RIGHTSTICK = )
+            // 9 BUTTON_LEFTSHOULDER = [
+            // 10 BUTTON_RIGHTSHOULDER = ]
+            // 11 BUTTON_DPAD_UP = u
+            // 12 BUTTON_DPAD_DOWN = d
+            // 13 BUTTON_DPAD_LEFT = l
+            // 14 BUTTON_DPAD_RIGHT = r
+
+            char[] buttons = new char[15];
+            for (int i = 0; i < 15; ++i) {
+                buttons[i] = '.';
+            }
+
+            if (inputFrame.HasActions(Actions.Left)) {
+                buttons[13] = 'l';
+            }
+
+            if (inputFrame.HasActions(Actions.Right)) {
+                buttons[14] = 'r';
+            }
+
+            if (inputFrame.HasActions(Actions.Up)) {
+                buttons[11] = 'u';
+            }
+
+            if (inputFrame.HasActions(Actions.Down)) {
+                buttons[12] = 'd';
+            }
+
+            if (inputFrame.HasActions(Actions.Jump)) {
+                buttons[0] = 'A';
+            }
+
+            if (inputFrame.HasActions(Actions.Jump2)) {
+                buttons[3] = 'Y';
+            }
+
+            if (inputFrame.HasActions(Actions.Dash)) {
+                buttons[1] = 'B';
+            }
+
+            if (inputFrame.HasActions(Actions.Dash2)) {
+                buttons[2] = 'X';
+            }
+
+            if (inputFrame.HasActions(Actions.Start)) {
+                buttons[6] = 's';
+            }
+
+            if (inputFrame.HasActions(Actions.Grab)) {
+                buttons[9] = '[';
+            }
+
+            return string.Join("", buttons);
+        }
+    }
+}

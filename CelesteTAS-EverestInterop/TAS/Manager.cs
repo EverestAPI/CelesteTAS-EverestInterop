@@ -287,6 +287,8 @@ namespace TAS {
                 ExportSyncData = false;
             }
 
+            LibTasHelper.EndExport();
+
             EnforceLegal = false;
             AllowUnsafeInput = false;
             AnalogHelper.AnalogModeChange(AnalogueMode.Ignore);
@@ -314,27 +316,10 @@ namespace TAS {
 
         public static bool HasFlag(State state, State flag) => (state & flag) == flag;
 
-        private static void WriteLibTasFrame(string outputKeys, string outputAxes, string outputButtons) {
-            libTas.WriteLine($"|{outputKeys}|{outputAxes}:0:0:0:0:{outputButtons}|.........|");
-        }
-
-        private static void WriteEmptyFrame() {
-            WriteLibTasFrame("", "0:0", "...............");
-        }
-
-        public static void AddFrames(int number) {
-            if (exportLibTas) {
-                for (int i = 0; i < number; ++i) {
-                    WriteEmptyFrame();
-                }
-            }
-        }
-
         public static void SetInputs(InputFrame input) {
             GamePadDPad pad = default;
             GamePadThumbSticks sticks = default;
             GamePadState state = default;
-            featherInput = false;
             if (input.HasActions(Actions.Feather)) {
                 SetFeather(input, ref pad, ref sticks);
             } else {
@@ -343,10 +328,8 @@ namespace TAS {
 
             SetState(input, ref state, ref pad, ref sticks);
 
-            if (exportLibTas) {
-                WriteLibTasFrame(input.LibTasKeys(),
-                    featherInput ? ($"{AnalogHelper.LastDirectionShort.X}:{-AnalogHelper.LastDirectionShort.Y}") : "0:0",
-                    input.LibTasButtons());
+            if (LibTasHelper.ExportLibTas) {
+                LibTasHelper.WriteLibTasFrame(input);
             }
 
             bool found = false;
@@ -411,7 +394,6 @@ namespace TAS {
         }
 
         private static Vector2 ValidateFeatherInput(InputFrame input) {
-            featherInput = true;
             return AnalogHelper.ComputeFeather(input.GetX(), input.GetY());
         }
 
