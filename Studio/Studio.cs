@@ -709,6 +709,9 @@ namespace CelesteStudio {
 
                         Range oldRange = tas.Selection;
                         if (!string.IsNullOrEmpty(line)) {
+                            InputRecord.ProcessExclusiveActions(old, input);
+                            line = input.ToString();
+
                             int index = oldRange.Start.iChar + line.Length - text.Length;
                             if (index < 0) {
                                 index = 0;

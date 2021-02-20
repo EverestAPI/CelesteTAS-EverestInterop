@@ -192,10 +192,9 @@ namespace TAS.Input {
         }
 
         public void AddFrames(string line, int studioLine) {
-            InputFrame frame = new InputFrame();
-            frame.Line = studioLine;
+            InputFrame inputFrame = new InputFrame();
+            inputFrame.Line = studioLine;
             int index = line.IndexOf(",", StringComparison.Ordinal);
-            int frames = 0;
             string framesStr;
             if (index == -1) {
                 framesStr = line;
@@ -204,66 +203,66 @@ namespace TAS.Input {
                 framesStr = line.Substring(0, index);
             }
 
-            if (!int.TryParse(framesStr, out frames)) {
+            if (!int.TryParse(framesStr, out int frames)) {
                 return;
             }
 
             frames = Math.Min(frames, 9999);
-            frame.Frames = frames;
+            inputFrame.Frames = frames;
             while (index < line.Length) {
                 char c = line[index];
 
                 switch (char.ToUpper(c)) {
                     case 'L':
-                        frame.Actions ^= Actions.Left;
+                        inputFrame.Actions ^= Actions.Left;
                         break;
                     case 'R':
-                        frame.Actions ^= Actions.Right;
+                        inputFrame.Actions ^= Actions.Right;
                         break;
                     case 'U':
-                        frame.Actions ^= Actions.Up;
+                        inputFrame.Actions ^= Actions.Up;
                         break;
                     case 'D':
-                        frame.Actions ^= Actions.Down;
+                        inputFrame.Actions ^= Actions.Down;
                         break;
                     case 'J':
-                        frame.Actions ^= Actions.Jump;
+                        inputFrame.Actions ^= Actions.Jump;
                         break;
                     case 'X':
-                        frame.Actions ^= Actions.Dash;
+                        inputFrame.Actions ^= Actions.Dash;
                         break;
                     case 'G':
-                        frame.Actions ^= Actions.Grab;
+                        inputFrame.Actions ^= Actions.Grab;
                         break;
                     case 'S':
-                        frame.Actions ^= Actions.Start;
+                        inputFrame.Actions ^= Actions.Start;
                         break;
                     case 'Q':
-                        frame.Actions ^= Actions.Restart;
+                        inputFrame.Actions ^= Actions.Restart;
                         break;
                     case 'N':
-                        frame.Actions ^= Actions.Journal;
+                        inputFrame.Actions ^= Actions.Journal;
                         break;
                     case 'K':
-                        frame.Actions ^= Actions.Jump2;
+                        inputFrame.Actions ^= Actions.Jump2;
                         break;
                     case 'C':
-                        frame.Actions ^= Actions.Dash2;
+                        inputFrame.Actions ^= Actions.Dash2;
                         break;
                     case 'O':
-                        frame.Actions ^= Actions.Confirm;
+                        inputFrame.Actions ^= Actions.Confirm;
                         break;
                     case 'Z':
-                        frame.Actions ^= Actions.DemoDash;
+                        inputFrame.Actions ^= Actions.DemoDash;
                         break;
                     case 'F':
-                        frame.Actions ^= Actions.Feather;
+                        inputFrame.Actions ^= Actions.Feather;
                         index++;
                         string angle = line.Substring(index + 1);
                         if (angle == "") {
-                            frame.Angle = 0;
+                            inputFrame.Angle = 0;
                         } else {
-                            frame.Angle = float.Parse(angle.Trim());
+                            inputFrame.Angle = float.Parse(angle.Trim());
                         }
 
                         continue;
@@ -273,7 +272,7 @@ namespace TAS.Input {
             }
 
             for (int i = 0; i < frames; i++) {
-                Inputs.Add(frame);
+                Inputs.Add(inputFrame);
             }
 
             initializationFrameCount += frames;

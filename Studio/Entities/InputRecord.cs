@@ -25,14 +25,14 @@ namespace CelesteStudio.Entities {
 
     public class InputRecord {
         private static readonly Regex DuplicateZeroRegex = new Regex(@"^0+([^.])");
-        public static char Delimiter = ',';
+        public static readonly char Delimiter = ',';
 
-        public InputRecord(int frameCount, Actions actions, string notes = null) {
-            Frames = frameCount;
-            Actions = actions;
-            Notes = notes;
-            FastForward = false;
-        }
+        private static readonly Actions[][] ExclusiveActions = {
+            new[] {Actions.Dash, Actions.Dash2, Actions.DemoDash},
+            new[] {Actions.Jump, Actions.Jump2},
+            new[] {Actions.Up, Actions.Down, Actions.Feather},
+            new[] {Actions.Left, Actions.Right, Actions.Feather},
+        };
 
         public InputRecord(string line) {
             Notes = string.Empty;
@@ -41,10 +41,6 @@ namespace CelesteStudio.Entities {
             Frames = ReadFrames(line, ref index);
             if (Frames == 0) {
                 Notes = line;
-                if (Notes.StartsWith("***")) {
-                    FastForward = true;
-                }
-
                 return;
             }
 
@@ -103,12 +99,6 @@ namespace CelesteStudio.Entities {
 
                 index++;
             }
-
-            if (HasActions(Actions.Feather)) {
-                Actions &= ~Actions.Right & ~Actions.Left & ~Actions.Up & ~Actions.Down;
-            } else {
-                Angle = 0;
-            }
         }
 
         public int Frames { get; set; }
@@ -117,7 +107,6 @@ namespace CelesteStudio.Entities {
         public string AngleStr { get; set; }
         public string Notes { get; set; }
         public int ZeroPadding { get; set; }
-        public bool FastForward { get; set; }
 
         private int ReadFrames(string line, ref int start) {
             bool foundFrames = false;
@@ -156,73 +145,14 @@ namespace CelesteStudio.Entities {
         }
 
         private float ReadAngle(string line, ref int start) {
-            bool foundAngle = false;
-            bool foundDecimal = false;
-            int decimalPlaces = 1;
-            int angle = 0;
-            bool negative = false;
-
-            AngleStr = line.Substring(start).Replace(",", "").Trim();
-            if (!float.TryParse(AngleStr, out float _)) {
+            AngleStr = line.Substring(start).Replace(Delimiter.ToString(), "").Trim();
+            if (!float.TryParse(AngleStr, out float angle)) {
                 AngleStr = string.Empty;
             } else {
                 AngleStr = DuplicateZeroRegex.Replace(AngleStr, "$1");
             }
 
-            while (start < line.Length) {
-                char c = line[start];
-
-                if (!foundAngle) {
-                    if (char.IsDigit(c)) {
-                        foundAngle = true;
-                        angle = c ^ 0x30;
-                    } else if (c == ',') {
-                        foundAngle = true;
-                    } else if (c == '.') {
-                        foundAngle = true;
-                        foundDecimal = true;
-                    } else if (c == '-') {
-                        negative = true;
-                    }
-                } else if (char.IsDigit(c)) {
-                    angle = angle * 10 + (c ^ 0x30);
-                    if (foundDecimal) {
-                        decimalPlaces *= 10;
-                    }
-                } else if (c == '.') {
-                    foundDecimal = true;
-                } else if (c != ' ') {
-                    return (negative ? (float) -angle : (float) angle) / (float) decimalPlaces;
-                }
-
-                start++;
-            }
-
-            return (negative ? (float) -angle : (float) angle) / (float) decimalPlaces;
-        }
-
-        public float GetX() {
-            if (HasActions(Actions.Right)) {
-                return 1f;
-            } else if (HasActions(Actions.Left)) {
-                return -1f;
-            } else if (!HasActions(Actions.Feather)) {
-                return 0f;
-            }
-
-            return (float) Math.Sin(Angle * Math.PI / 180.0);
-        }
-
-        public float GetY() {
-            if (HasActions(Actions.Up)) {
-                return 1f;
-            } else if (HasActions(Actions.Down)) {
-                return -1f;
-            } else if (!HasActions(Actions.Feather)) {
-                return 0f;
-            }
-
-            return (float) Math.Cos(Angle * Math.PI / 180.0);
+            return angle;
         }
 
         public bool HasActions(Actions actions) {
@@ -239,70 +169,70 @@ namespace CelesteStudio.Entities {
         public string ActionsToString() {
             StringBuilder sb = new StringBuilder();
             if (HasActions(Actions.Left)) {
-                sb.Append(",L");
+                sb.Append($"{Delimiter}L");
             }
 
             if (HasActions(Actions.Right)) {
-                sb.Append(",R");
+                sb.Append($"{Delimiter}R");
             }
 
             if (HasActions(Actions.Up)) {
-                sb.Append(",U");
+                sb.Append($"{Delimiter}U");
             }
 
             if (HasActions(Actions.Down)) {
-                sb.Append(",D");
+                sb.Append($"{Delimiter}D");
             }
 
             if (HasActions(Actions.Jump)) {
-                sb.Append(",J");
+                sb.Append($"{Delimiter}J");
             }
 
             if (HasActions(Actions.Jump2)) {
-                sb.Append(",K");
+                sb.Append($"{Delimiter}K");
             }
 
             if (HasActions(Actions.DemoDash)) {
-                sb.Append(",Z");
+                sb.Append($"{Delimiter}Z");
             }
 
             if (HasActions(Actions.Dash)) {
-                sb.Append(",X");
+                sb.Append($"{Delimiter}X");
             }
 
             if (HasActions(Actions.Dash2)) {
-                sb.Append(",C");
+                sb.Append($"{Delimiter}C");
             }
 
             if (HasActions(Actions.Grab)) {
-                sb.Append(",G");
+                sb.Append($"{Delimiter}G");
             }
 
             if (HasActions(Actions.Start)) {
-                sb.Append(",S");
+                sb.Append($"{Delimiter}S");
             }
 
             if (HasActions(Actions.Restart)) {
-                sb.Append(",Q");
+                sb.Append($"{Delimiter}Q");
             }
 
             if (HasActions(Actions.Journal)) {
-                sb.Append(",N");
+                sb.Append($"{Delimiter}N");
             }
 
             if (HasActions(Actions.Confirm)) {
-                sb.Append(",O");
+                sb.Append($"{Delimiter}O");
             }
 
             if (HasActions(Actions.Feather)) {
-                sb.Append(",F,").Append(AngleStr);
+                sb.Append($"{Delimiter}F{Delimiter}").Append(AngleStr);
             }
 
             return sb.ToString();
         }
 
         public override bool Equals(object obj) {
-            return obj is InputRecord && ((InputRecord) obj) == this;
+            return obj is InputRecord && (InputRecord) obj == this;
         }
 
         public override int GetHashCode() {
@@ -314,27 +244,31 @@ namespace CelesteStudio.Entities {
             bool twoNull = (object) two == null;
             if (oneNull != twoNull) {
                 return false;
-            } else if (oneNull && twoNull) {
+            } else if (oneNull) {
                 return true;
             }
 
-            return one.Actions == two.Actions && one.Angle == two.Angle;
+            return one.Actions == two.Actions && Math.Abs(one.Angle - two.Angle) < 1e-10;
         }
 
         public static bool operator !=(InputRecord one, InputRecord two) {
-            bool oneNull = (object) one == null;
-            bool twoNull = (object) two == null;
-            if (oneNull != twoNull) {
-                return true;
-            } else if (oneNull && twoNull) {
-                return false;
-            }
-
-            return one.Actions != two.Actions || one.Angle != two.Angle;
+            return !(one == two);
         }
 
-        public int ActionPosition() {
-            return Frames == 0 ? -1 : Math.Max(4, Frames.ToString().Length);
+        public static void ProcessExclusiveActions(InputRecord oldInput, InputRecord newInput) {
+            foreach (Actions[] exclusiveActions in ExclusiveActions) {
+                foreach (Actions action in exclusiveActions) {
+                    if (!oldInput.HasActions(action) && newInput.HasActions(action)) {
+                        foreach (Actions exclusiveAction in exclusiveActions) {
+                            if (exclusiveAction == action) {
+                                continue;
+                            }
+
+                            newInput.Actions &= ~exclusiveAction;
+                        }
+                    }
+                }
+            }
         }
     }
 }
