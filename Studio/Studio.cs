@@ -34,7 +34,7 @@ namespace CelesteStudio {
             InitializeComponent();
             InitMenu();
             InitDragDrop();
-            InitFont();
+            InitFont(Settings.Default.Font ?? fontDialog.Font);
 
             Text = titleBarText;
             Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.CreateSpecificCulture("en-US");
@@ -179,10 +179,9 @@ namespace CelesteStudio {
             };
         }
 
-        private void InitFont() {
-            Font font = Settings.Default.Font ?? fontDialog.Font;
+        private void InitFont(Font font) {
             tasText.Font = font;
-            lblStatus.Font = new Font(font.FontFamily, font.Size * 0.8f, font.Style);
+            lblStatus.Font = new Font(font.FontFamily, (font.Size - 1) * 0.8f, font.Style);
         }
 
         private void CreateRecentFilesMenu() {
@@ -613,7 +612,12 @@ namespace CelesteStudio {
             }
 
             int bottomExtraSpace = TextRenderer.MeasureText("\n", lblStatus.Font).Height / 5;
-            statusBar.Height = TextRenderer.MeasureText(lblStatus.Text.Trim(), lblStatus.Font).Height + bottomExtraSpace;
+            if (Settings.Default.ShowGameInfo) {
+                statusBar.Height = TextRenderer.MeasureText(lblStatus.Text.Trim(), lblStatus.Font).Height + bottomExtraSpace;
+            } else {
+                statusBar.Height = 0;
+            }
+
             tasText.Height = ClientSize.Height - statusBar.Height - menuStrip.Height;
         }
 
@@ -808,6 +812,7 @@ namespace CelesteStudio {
         private void settingsToolStripMenuItem_Opened(object sender, EventArgs e) {
             rememberCurrentFileMenuItem.Checked = Settings.Default.RememberLastFileName;
             sendInputsToCelesteMenuItem.Checked = Settings.Default.UpdatingHotkeys;
+            showGameInfoToolStripMenuItem.Checked = Settings.Default.ShowGameInfo;
         }
 
         private void openCelesteTasMenuItem_Click(object sender, EventArgs e) {
@@ -917,8 +922,7 @@ namespace CelesteStudio {
 
         private void fontToolStripMenuItem_Click(object sender, EventArgs e) {
             if (fontDialog.ShowDialog() != DialogResult.Cancel) {
-                tasText.Font = fontDialog.Font;
-                lblStatus.Font = new Font(fontDialog.Font.FontFamily, fontDialog.Font.Size * 0.8f, fontDialog.Font.Style);
+                InitFont(fontDialog.Font);
             }
         }
 
@@ -969,6 +973,10 @@ namespace CelesteStudio {
 
         private void swapJumpKeysToolStripMenuItem_Click(object sender, EventArgs e) {
             SwapActionKeys('J', 'K');
+        }
+
+        private void showGameInfoToolStripMenuItem_Click(object sender, EventArgs e) {
+            Settings.Default.ShowGameInfo = !Settings.Default.ShowGameInfo;
         }
     }
 }

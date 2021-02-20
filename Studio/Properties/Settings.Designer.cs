@@ -104,5 +104,17 @@ namespace CelesteStudio.Properties {
                 this["Font"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ShowGameInfo {
+            get {
+                return ((bool)(this["ShowGameInfo"]));
+            }
+            set {
+                this["ShowGameInfo"] = value;
+            }
+        }
     }
 }

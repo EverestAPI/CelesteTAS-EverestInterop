@@ -4,15 +4,15 @@
     <Profile Name="(Default)" />
   </Profiles>
   <Settings>
-    <Setting Name="RememberLastFileName" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">False</Value>
-    </Setting>
-    <Setting Name="LastFileName" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
-    </Setting>
-    <Setting Name="RecentFileList" Type="CelesteStudio.Properties.FileList" Scope="User">
-      <Value Profile="(Default)" />
-    </Setting>
+      <Setting Name="RememberLastFileName" Type="System.Boolean" Scope="User">
+          <Value Profile="(Default)">False</Value>
+      </Setting>
+      <Setting Name="LastFileName" Type="System.String" Scope="User">
+          <Value Profile="(Default)"/>
+      </Setting>
+      <Setting Name="RecentFileList" Type="CelesteStudio.Properties.FileList" Scope="User">
+          <Value Profile="(Default)"/>
+      </Setting>
       <Setting Name="UpdatingHotkeys" Type="System.Boolean" Scope="User">
           <Value Profile="(Default)">True</Value>
       </Setting>
@@ -24,6 +24,9 @@
       </Setting>
       <Setting Name="Font" Type="System.Drawing.Font" Scope="User">
           <Value Profile="(Default)"/>
+      </Setting>
+      <Setting Name="ShowGameInfo" Type="System.Boolean" Scope="User">
+          <Value Profile="(Default)">True</Value>
       </Setting>
   </Settings>
 </SettingsFile>
