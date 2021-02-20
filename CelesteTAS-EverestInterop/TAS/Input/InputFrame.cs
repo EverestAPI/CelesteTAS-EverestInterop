@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace TAS.Input {
     [Flags]
@@ -24,10 +25,13 @@ namespace TAS.Input {
     }
 
     public class InputFrame {
+        static private Regex fractional = new Regex(@"\d+\.(\d*)", RegexOptions.Compiled);
+
         public Actions Actions;
         public float Angle;
         public int Frames;
         public int Line;
+        public float Precision;
 
         public bool HasActions(Actions actions) =>
             (Actions & actions) != 0;
@@ -183,10 +187,17 @@ namespace TAS.Input {
                         string angle = line.Substring(index + 1);
                         if (angle == "") {
                             inputFrame.Angle = 0;
+                            inputFrame.Precision = 1E-6f;
                         } else {
                             inputFrame.Angle = float.Parse(angle.Trim());
+                            int digits = 0;
+                            MatchCollection match=fractional.Matches(angle);
+                            if (match.Count != 0) {
+                                Match mat = match[0];
+                                digits = mat.Groups[0].Value.Length;
+                            }
+                            inputFrame.Precision = float.Parse($"0.5E-{digits+2}");
                         }
-
                         continue;
                 }
 

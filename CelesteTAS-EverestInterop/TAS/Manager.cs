@@ -351,7 +351,7 @@ namespace TAS {
 
         private static void SetFeather(InputFrame input, ref GamePadDPad pad, ref GamePadThumbSticks sticks) {
             pad = new GamePadDPad(ButtonState.Released, ButtonState.Released, ButtonState.Released, ButtonState.Released);
-            Vector2 aim = ValidateFeatherInput(input);
+            Vector2 aim = AnalogHelper.GetFeather(input);
             sticks = new GamePadThumbSticks(aim, new Vector2(0, 0));
         }
 
@@ -388,9 +388,6 @@ namespace TAS {
             );
         }
 
-        private static Vector2 ValidateFeatherInput(InputFrame input) {
-            return AnalogHelper.ComputeFeather(input.GetX(), input.GetY());
-        }
 
         //The things we do for faster replay times
         private delegate void DUpdateVirtualInputs();
