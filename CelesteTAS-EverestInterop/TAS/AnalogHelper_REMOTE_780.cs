@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
-using TAS.Input;
 using GameInput = Celeste.Input;
 
 namespace TAS {
@@ -26,6 +25,7 @@ namespace TAS {
         private const double DcMult = (1 - Deadzone) * (1 - Deadzone);
         public const short Lowerbound = 7849;
 
+        private static readonly Dictionary<Vector2, Vector2Short> ConvertCache = new Dictionary<Vector2, Vector2Short>();
         private static float ampLowerbound = (float) (0.25 * DcMult);
         private static AnalogueMode analogMode = AnalogueMode.Ignore;
         public static Vector2 LastDirection;
@@ -39,69 +39,75 @@ namespace TAS {
                 analogMode = mode;
                 upperbound = newUpperbound;
                 ampLowerbound = (float) (newDeadzone * newDeadzone * DcMult);
+                ConvertCache.Clear();
             }
         }
 
-        private static Vector2Short ComputePrecise(Vector2 direction,float prec) {
+        private static Vector2Short ComputePrecise(Vector2 direction) {
             // it should hold that direction has x>0, y>0, x>y
             // we look for the least y/x difference
             if (direction.Y < 1e-10) {
                 return new Vector2Short(upperbound, 0);
             }
-            double approx = direction.Y / direction.X;
-            double multip = direction.X / direction.Y;
-            double upperl = (double) upperbound / 32767;
-            double leastError = approx;
-            short retX = upperbound, retY = 0; // y/x=0, so error is approx
-            short y = Lowerbound;
-            while (true) {
-                double ys = (double) y / 32767 - Deadzone;
-                double xx = Math.Min(Deadzone + multip * ys, upperl);
-                short x = (short) Math.Floor(xx * 32767);
-                double xs = (double) x / 32767 - Deadzone;
-                double error = Math.Abs(ys / xs - approx);
-                if (xs * xs + ys * ys >= ampLowerbound && (error < leastError || error <= prec)) {
-                    leastError = error;
-                    retX = x;
-                    retY = y;
-                }
 
-                if (x < upperbound) {
-                    ++x;
-                    xs = (double) x / 32767 - Deadzone;
-                    error = Math.Abs(ys / xs - approx);
-                    if (xs * xs + ys * ys >= ampLowerbound && (error < leastError || error <= prec)) {
+            if (ConvertCache.ContainsKey(direction)) {
+                return ConvertCache[direction];
+            } else {
+                double approx = direction.Y / direction.X;
+                double multip = direction.X / direction.Y;
+                double upperl = (double) upperbound / 32767;
+                double leastError = approx;
+                short retX = upperbound, retY = 0; // y/x=0, so error is approx
+                short y = Lowerbound;
+                while (true) {
+                    double ys = (double) y / 32767 - Deadzone;
+                    double xx = Math.Min(Deadzone + multip * ys, upperl);
+                    short x = (short) Math.Floor(xx * 32767);
+                    double xs = (double) x / 32767 - Deadzone;
+                    double error = Math.Abs(ys / xs - approx);
+                    if (xs * xs + ys * ys >= ampLowerbound && error < leastError) {
                         leastError = error;
                         retX = x;
                         retY = y;
                     }
+
+                    if (x < upperbound) {
+                        ++x;
+                        xs = (double) x / 32767 - Deadzone;
+                        error = Math.Abs(ys / xs - approx);
+                        if (xs * xs + ys * ys >= ampLowerbound && error < leastError) {
+                            leastError = error;
+                            retX = x;
+                            retY = y;
+                        }
+                    }
+
+                    if (xx >= upperl) {
+                        break;
+                    }
+
+                    ++y;
                 }
 
-                if (xx >= upperl) {
-                    break;
-                }
-
-                ++y;
+                return ConvertCache[direction] = new Vector2Short(retX, retY);
             }
-
-            return new Vector2Short(retX, retY);
         }
 
-        private static Vector2 ComputeFeather(float x, float y, float prec) {
+        public static Vector2 ComputeFeather(float x, float y) {
             if (x < 0) {
-                Vector2 feather = ComputeFeather(-x, y, prec);
+                Vector2 feather = ComputeFeather(-x, y);
                 LastDirectionShort.X = (short) -LastDirectionShort.X;
                 return LastDirection = new Vector2(-feather.X, feather.Y);
             }
 
             if (y < 0) {
-                Vector2 feather = ComputeFeather(x, -y, prec);
+                Vector2 feather = ComputeFeather(x, -y);
                 LastDirectionShort.Y = (short) -LastDirectionShort.Y;
                 return LastDirection = new Vector2(feather.X, -feather.Y);
             }
 
             if (x < y) {
-                Vector2 feather = ComputeFeather(y, x, prec);
+                Vector2 feather = ComputeFeather(y, x);
                 LastDirectionShort = new Vector2Short(LastDirectionShort.Y, LastDirectionShort.X);
                 return LastDirection = new Vector2(feather.Y, feather.X);
             }
@@ -123,7 +129,7 @@ namespace TAS {
                     shortY = (short) Math.Round((y * (1.0 - Deadzone) + Deadzone) * 32767);
                     break;
                 case AnalogueMode.Precise:
-                    Vector2Short result = ComputePrecise(new Vector2(x, y),prec);
+                    Vector2Short result = ComputePrecise(new Vector2(x, y));
                     shortX = result.X;
                     shortY = result.Y;
                     break;
@@ -136,13 +142,6 @@ namespace TAS {
             y = (float) (Math.Max(shortY / 32767.0 - Deadzone, 0.0) / (1 - Deadzone));
             LastDirection = new Vector2(x, y);
             return LastDirection;
-        }
-        private static InputFrame LastQuery;
-        static public Vector2 GetFeather(InputFrame input) {
-            if (input == LastQuery)
-                return LastDirection;
-            LastQuery = input;
-            return ComputeFeather(input.GetX(),input.GetY(),input.Precision);
         }
     }
 }
