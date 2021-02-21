@@ -1006,7 +1006,7 @@ namespace CelesteStudio {
                 dialog.FilterIndex = 0;
                 if (!string.IsNullOrEmpty(LastFileName)) {
                     dialog.InitialDirectory = Path.GetDirectoryName(LastFileName);
-                    dialog.FileName = Path.GetFileNameWithoutExtension(LastFileName + "_libTAS_inputs.txt");
+                    dialog.FileName = Path.GetFileNameWithoutExtension(LastFileName) + "_libTAS_inputs.txt";
                 } else {
                     dialog.FileName = "libTAS_inputs.txt";
                 }

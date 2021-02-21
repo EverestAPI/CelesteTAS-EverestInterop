@@ -23,7 +23,6 @@ namespace TAS.Input {
             string trimLine = line.Trim();
             // Determined by the first separator
             string[] args = SpaceRegex.IsMatch(trimLine) ? trimLine.Split() : trimLine.Split(',');
-            $"line={string.Join(",", args)}".Log();
             return args.Select(text => text.Trim()).ToArray();
         }
 
@@ -35,7 +34,6 @@ namespace TAS.Input {
                     MethodInfo method =
                         typeof(InputCommands).GetMethod(commandType, BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.IgnoreCase);
                     if (method == null) {
-                        $"failed: {string.Join(",", args)}".Log();
                         return false;
                     }
 
