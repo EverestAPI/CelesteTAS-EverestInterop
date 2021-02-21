@@ -71,6 +71,11 @@ namespace TAS.StudioCommunication {
         /// </summary>
         [HighPriority] ReloadBindings = 0x23,
 
+        /// <summary>
+        /// Structure:
+        /// </summary>
+        [HighPriority] ConvertToLibTas = 0x24,
+
         //Data transfer from CelesteTAS
         /// <summary>
         /// Structure: List&lt;Keys&gt;[];

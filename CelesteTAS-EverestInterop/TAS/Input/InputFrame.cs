@@ -1,7 +1,7 @@
 using System;
 using System.Globalization;
 using System.Text;
-using System.Text.RegularExpressions;
+using Microsoft.Xna.Framework;
 
 namespace TAS.Input {
     [Flags]
@@ -25,13 +25,12 @@ namespace TAS.Input {
     }
 
     public class InputFrame {
-        private static readonly Regex Fractional = new Regex(@"\d+\.(\d*)", RegexOptions.Compiled);
-
         public Actions Actions;
         public float Angle;
+        public Vector2 AngleVector2;
+        public Vector2Short AngleVector2Short;
         public int Frames;
         public int Line;
-        public float Precision;
 
         public bool HasActions(Actions actions) =>
             (Actions & actions) != 0;
@@ -187,23 +186,18 @@ namespace TAS.Input {
                         string angle = line.Substring(index + 1).Trim();
                         if (angle == "") {
                             inputFrame.Angle = 0;
-                            inputFrame.Precision = 1E-6f;
                         } else {
-                            inputFrame.Angle = float.Parse(angle);
-                            int digits = 0;
-                            MatchCollection match = Fractional.Matches(angle);
-                            if (match.Count != 0) {
-                                digits = match[0].Groups[0].Value.Length;
-                            }
-
-                            inputFrame.Precision = float.Parse($"0.5E-{digits + 2}");
+                            inputFrame.Angle = float.Parse(angle.Trim());
                         }
 
+                        AnalogHelper.ComputeAngleVector2(inputFrame);
                         continue;
                 }
 
                 index++;
             }
+
+            LibTasHelper.WriteLibTasFrame(inputFrame);
 
             return true;
         }

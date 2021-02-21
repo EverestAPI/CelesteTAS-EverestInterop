@@ -19,8 +19,6 @@ namespace TAS {
         private static Vector2 savedLastPos;
         private static Vector2 savedLastPlayerSeekerPos;
         private static bool savedByBreakpoint;
-        private static AnalogueMode savedAnalogueMode;
-        private static short savedAnalogueLimit;
 
         private static readonly Lazy<bool> SpeedrunToolInstalledLazy = new Lazy<bool>(() =>
             Type.GetType("Celeste.Mod.SpeedrunTool.SaveLoad.StateManager, SpeedrunTool") != null
@@ -114,9 +112,6 @@ namespace TAS {
             savedPlayerStatus = PlayerStatus;
             savedLastPos = LastPos;
             savedLastPlayerSeekerPos = LastPlayerSeekerPos;
-            savedAnalogueMode = AnalogHelper.Mode;
-            savedAnalogueLimit = AnalogHelper.Limit;
-
 
             savedController = Controller.Clone();
             LoadStateRoutine();
@@ -188,7 +183,6 @@ namespace TAS {
             }
 
             SetTasState();
-            AnalogHelper.AnalogModeChange(savedAnalogueMode, savedAnalogueLimit);
             PlayerStatus = savedPlayerStatus;
             LastPos = savedLastPos;
             LastPlayerSeekerPos = savedLastPlayerSeekerPos;

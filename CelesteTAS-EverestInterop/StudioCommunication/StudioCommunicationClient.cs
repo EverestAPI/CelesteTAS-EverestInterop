@@ -100,6 +100,9 @@ namespace TAS.StudioCommunication {
                 case MessageIDs.ReloadBindings:
                     ProcessReloadBindings(message.Data);
                     break;
+                case MessageIDs.ConvertToLibTas:
+                    ProcessConvertToLibTas(message.Data);
+                    break;
                 default:
                     if (ExternalReadHandler?.Invoke(message.Data) != true) {
                         throw new InvalidOperationException($"{message.Id}");
@@ -214,6 +217,12 @@ namespace TAS.StudioCommunication {
         private void ProcessReloadBindings(byte[] data) {
             Log("Reloading bindings");
             Hotkeys.InputInitialize();
+        }
+
+        private void ProcessConvertToLibTas(byte[] data) {
+            string path = Encoding.Default.GetString(data);
+            Log("Convert to libTAS:" + path);
+            LibTasHelper.ConvertToLibTas(path);
         }
 
         #endregion

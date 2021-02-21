@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -26,9 +28,9 @@ namespace CelesteStudio {
         //private GameMemory memory = new GameMemory();
         private DateTime lastChanged = DateTime.MinValue;
         private FormWindowState lastWindowState = FormWindowState.Normal;
-        private int totalFrames = 0, currentFrame = 0;
+        private int totalFrames, currentFrame;
 
-        private bool updating = false;
+        private bool updating;
 
         public Studio() {
             InitializeComponent();
@@ -37,7 +39,7 @@ namespace CelesteStudio {
             InitFont(Settings.Default.Font ?? fontDialog.Font);
 
             Text = titleBarText;
-            Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.CreateSpecificCulture("en-US");
+            Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("en-US");
 
             Lines.Add(new InputRecord(""));
             EnableStudio(false);
@@ -477,15 +479,15 @@ namespace CelesteStudio {
             bool lastHooked = false;
             while (true) {
                 try {
-                    bool hooked = StudioCommunicationServer.Initialized;
+                    bool hooked = StudioCommunicationBase.Initialized;
                     if (lastHooked != hooked) {
                         lastHooked = hooked;
-                        this.Invoke((Action) delegate() { EnableStudio(hooked); });
+                        Invoke((Action) delegate { EnableStudio(hooked); });
                     }
 
                     if (lastChanged.AddSeconds(0.3f) < DateTime.Now) {
                         lastChanged = DateTime.Now;
-                        this.Invoke((Action) delegate() {
+                        Invoke((Action) delegate {
                             if (!string.IsNullOrEmpty(lastFileName) && tasText.IsChanged) {
                                 tasText.SaveFile();
                             }
@@ -603,10 +605,10 @@ namespace CelesteStudio {
 
         private void UpdateStatusBar() {
             if (StudioCommunicationBase.Initialized) {
-                string playeroutput = CommunicationWrapper.playerData;
+                string playerData = CommunicationWrapper.playerData;
                 lblStatus.Text = "(" + (currentFrame > 0 ? currentFrame + "/" : "")
-                                     + totalFrames + ") \n" + playeroutput
-                                     + new string('\n', Math.Max(0, 7 - playeroutput.Split('\n').Length));
+                                     + totalFrames + ") \n" + playerData
+                                     + new string('\n', Math.Max(0, 7 - playerData.Split('\n').Length));
             } else {
                 lblStatus.Text = "(" + totalFrames + ")\r\nSearching...";
             }
@@ -806,7 +808,7 @@ namespace CelesteStudio {
         }
 
         private void homeMenuItem_Click(object sender, EventArgs e) {
-            System.Diagnostics.Process.Start("https://github.com/EverestAPI/CelesteTAS-EverestInterop");
+            Process.Start("https://github.com/EverestAPI/CelesteTAS-EverestInterop");
         }
 
         private void settingsToolStripMenuItem_Opened(object sender, EventArgs e) {
@@ -981,6 +983,34 @@ namespace CelesteStudio {
 
         private void showGameInfoToolStripMenuItem_Click(object sender, EventArgs e) {
             Settings.Default.ShowGameInfo = !Settings.Default.ShowGameInfo;
+        }
+
+        private void convertToLibTASInputsToolStripMenuItem_Click(object sender, EventArgs e) {
+            if (!StudioCommunicationBase.Initialized || Process.GetProcessesByName("Celeste").Length == 0) {
+                MessageBox.Show("This feature requires the support of CelesteTAS mod, please launch the game.",
+                    "Information",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information
+                );
+                return;
+            }
+
+            using (SaveFileDialog dialog = new SaveFileDialog()) {
+                dialog.DefaultExt = ".txt";
+                dialog.AddExtension = true;
+                dialog.Filter = "TXT|*.txt";
+                dialog.FilterIndex = 0;
+                if (!string.IsNullOrEmpty(lastFileName)) {
+                    dialog.InitialDirectory = Path.GetDirectoryName(lastFileName);
+                    dialog.FileName = Path.GetFileNameWithoutExtension(lastFileName + "_libTAS_inputs.txt");
+                } else {
+                    dialog.FileName = "libTAS_inputs.txt";
+                }
+
+                if (dialog.ShowDialog() == DialogResult.OK) {
+                    StudioCommunicationServer.instance.ConvertToLibTas(dialog.FileName);
+                }
+            }
         }
     }
 }

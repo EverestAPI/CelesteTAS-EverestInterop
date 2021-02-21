@@ -56,8 +56,8 @@ namespace TAS {
             FieldInfo playerSeekerDashTimer = typeof(PlayerSeeker).GetFieldInfo("dashTimer");
 
 
-            Manager.UpdateVirtualInputs = (DUpdateVirtualInputs) updateVirtualInputs.CreateDelegate(typeof(DUpdateVirtualInputs));
-            Manager.WallJumpCheck = (DWallJumpCheck) wallJumpCheck.CreateDelegate(typeof(DWallJumpCheck));
+            UpdateVirtualInputs = (DUpdateVirtualInputs) updateVirtualInputs.CreateDelegate(typeof(DUpdateVirtualInputs));
+            WallJumpCheck = (DWallJumpCheck) wallJumpCheck.CreateDelegate(typeof(DWallJumpCheck));
 
             StrawberryCollectTimer = strawberryCollectTimer.CreateDelegate_Get<GetBerryFloat>();
             DashCooldownTimer = dashCooldownTimer.CreateDelegate_Get<GetFloat>();
@@ -247,6 +247,7 @@ namespace TAS {
 
         private static void EnableRun() {
             NextState &= ~State.Enable;
+            AnalogHelper.AnalogModeChange(AnalogueMode.Ignore);
             InitializeRun(false);
             BindingHelper.SetTasBindings();
             KbTextInput = Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput;
@@ -285,11 +286,9 @@ namespace TAS {
                 ExportSyncData = false;
             }
 
-            LibTasHelper.EndExport();
-
+            AnalogHelper.AnalogModeChange(AnalogueMode.Ignore);
             EnforceLegal = false;
             AllowUnsafeInput = false;
-            AnalogHelper.AnalogModeChange(AnalogueMode.Ignore);
             Hotkeys.ReleaseAllKeys();
             RestoreSettings.TryRestore();
         }
@@ -351,8 +350,7 @@ namespace TAS {
 
         private static void SetFeather(InputFrame input, ref GamePadDPad pad, ref GamePadThumbSticks sticks) {
             pad = new GamePadDPad(ButtonState.Released, ButtonState.Released, ButtonState.Released, ButtonState.Released);
-            Vector2 aim = AnalogHelper.GetFeather(input);
-            sticks = new GamePadThumbSticks(aim, new Vector2(0, 0));
+            sticks = new GamePadThumbSticks(input.AngleVector2, new Vector2(0, 0));
         }
 
         private static void SetDPad(InputFrame input, ref GamePadDPad pad, ref GamePadThumbSticks sticks) {

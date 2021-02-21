@@ -1,5 +1,8 @@
 using System;
+using System.Globalization;
+using System.Text.RegularExpressions;
 using Microsoft.Xna.Framework;
+using Monocle;
 using TAS.Input;
 using GameInput = Celeste.Input;
 
@@ -23,35 +26,44 @@ namespace TAS {
     public static class AnalogHelper {
         private const double Deadzone = 0.239532471;
         private const double DcMult = (1 - Deadzone) * (1 - Deadzone);
-        public const short Lowerbound = 7849;
+        private const float AmpLowerbound = (float) (0.25 * DcMult);
+        private const short Lowerbound = 7849;
 
-        private static InputFrame lastQuery;
-        private static float ampLowerbound = (float) (0.25 * DcMult);
+        private static readonly Regex Fractional = new Regex(@"\d+\.(\d*)", RegexOptions.Compiled);
         private static AnalogueMode analogMode = AnalogueMode.Ignore;
-        public static Vector2 LastDirection;
-        public static Vector2Short LastDirectionShort;
+        private static Vector2 lastDirection;
+        private static Vector2Short lastDirectionShort;
         private static short upperbound = 32767;
-        public static AnalogueMode Mode => analogMode;
-        public static short Limit => upperbound;
 
-        public static void AnalogModeChange(AnalogueMode mode, short newUpperbound = 32767, float newDeadzone = 0.5f) {
-            if (mode != analogMode || upperbound != newUpperbound) {
-                analogMode = mode;
-                upperbound = newUpperbound;
-                ampLowerbound = (float) (newDeadzone * newDeadzone * DcMult);
+        public static void AnalogModeChange(AnalogueMode mode, float? upperLimit = null) {
+            analogMode = mode;
+
+            if (upperLimit.HasValue) {
+                upperbound = (short) Calc.Clamp(upperLimit.Value * 32767, Lowerbound, 32767);
+                ;
             }
         }
 
-        public static Vector2 GetFeather(InputFrame input) {
-            if (input == lastQuery) {
-                return LastDirection;
+        public static void ComputeAngleVector2(InputFrame input) {
+            float precision;
+            if (input.Angle == 0) {
+                precision = 1E-6f;
+            } else {
+                int digits = 0;
+                Match match = Fractional.Match(input.Angle.ToString(CultureInfo.InvariantCulture));
+                if (match.Success) {
+                    digits = match.Value.Length;
+                }
+
+                precision = float.Parse($"0.5E-{digits + 2}");
             }
 
-            lastQuery = input;
-            return ComputeFeather(input.GetX(), input.GetY(), input.Precision);
+            input.AngleVector2 = ComputeFeather(input.GetX(), input.GetY(), precision);
+            ;
+            input.AngleVector2Short = lastDirectionShort;
         }
 
-        private static Vector2Short ComputePrecise(Vector2 direction, float prec) {
+        private static Vector2Short ComputePrecise(Vector2 direction, float precision) {
             // it should hold that direction has x>0, y>0, x>y
             // we look for the least y/x difference
             if (direction.Y < 1e-10) {
@@ -70,7 +82,7 @@ namespace TAS {
                 short x = (short) Math.Floor(xx * 32767);
                 double xs = (double) x / 32767 - Deadzone;
                 double error = Math.Abs(ys / xs - approx);
-                if (xs * xs + ys * ys >= ampLowerbound && (error < leastError || error <= prec)) {
+                if (xs * xs + ys * ys >= AmpLowerbound && (error < leastError || error <= precision)) {
                     leastError = error;
                     retX = x;
                     retY = y;
@@ -80,7 +92,7 @@ namespace TAS {
                     ++x;
                     xs = (double) x / 32767 - Deadzone;
                     error = Math.Abs(ys / xs - approx);
-                    if (xs * xs + ys * ys >= ampLowerbound && (error < leastError || error <= prec)) {
+                    if (xs * xs + ys * ys >= AmpLowerbound && (error < leastError || error <= precision)) {
                         leastError = error;
                         retX = x;
                         retY = y;
@@ -97,23 +109,23 @@ namespace TAS {
             return new Vector2Short(retX, retY);
         }
 
-        private static Vector2 ComputeFeather(float x, float y, float prec) {
+        private static Vector2 ComputeFeather(float x, float y, float precision) {
             if (x < 0) {
-                Vector2 feather = ComputeFeather(-x, y, prec);
-                LastDirectionShort.X = (short) -LastDirectionShort.X;
-                return LastDirection = new Vector2(-feather.X, feather.Y);
+                Vector2 feather = ComputeFeather(-x, y, precision);
+                lastDirectionShort.X = (short) -lastDirectionShort.X;
+                return lastDirection = new Vector2(-feather.X, feather.Y);
             }
 
             if (y < 0) {
-                Vector2 feather = ComputeFeather(x, -y, prec);
-                LastDirectionShort.Y = (short) -LastDirectionShort.Y;
-                return LastDirection = new Vector2(feather.X, -feather.Y);
+                Vector2 feather = ComputeFeather(x, -y, precision);
+                lastDirectionShort.Y = (short) -lastDirectionShort.Y;
+                return lastDirection = new Vector2(feather.X, -feather.Y);
             }
 
             if (x < y) {
-                Vector2 feather = ComputeFeather(y, x, prec);
-                LastDirectionShort = new Vector2Short(LastDirectionShort.Y, LastDirectionShort.X);
-                return LastDirection = new Vector2(feather.Y, feather.X);
+                Vector2 feather = ComputeFeather(y, x, precision);
+                lastDirectionShort = new Vector2Short(lastDirectionShort.Y, lastDirectionShort.X);
+                return lastDirection = new Vector2(feather.Y, feather.X);
             }
 
             // assure positive and x>=y
@@ -133,7 +145,7 @@ namespace TAS {
                     shortY = (short) Math.Round((y * (1.0 - Deadzone) + Deadzone) * 32767);
                     break;
                 case AnalogueMode.Precise:
-                    Vector2Short result = ComputePrecise(new Vector2(x, y), prec);
+                    Vector2Short result = ComputePrecise(new Vector2(x, y), precision);
                     shortX = result.X;
                     shortY = result.Y;
                     break;
@@ -141,11 +153,11 @@ namespace TAS {
                     throw new Exception("what the fuck");
             }
 
-            LastDirectionShort = new Vector2Short(shortX, shortY);
+            lastDirectionShort = new Vector2Short(shortX, shortY);
             x = (float) (Math.Max(shortX / 32767.0 - Deadzone, 0.0) / (1 - Deadzone));
             y = (float) (Math.Max(shortY / 32767.0 - Deadzone, 0.0) / (1 - Deadzone));
-            LastDirection = new Vector2(x, y);
-            return LastDirection;
+            lastDirection = new Vector2(x, y);
+            return lastDirection;
         }
     }
 }

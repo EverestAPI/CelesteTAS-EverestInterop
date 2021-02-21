@@ -6,51 +6,68 @@ namespace TAS {
     public static class LibTasHelper {
         private static StreamWriter streamWriter;
         private static InputFrame skipInputFrame;
+        private static string path;
 
-        public static bool ExportLibTas;
+        public static bool exportLibTas;
 
-        public static void BeginExport(string path) {
-            if (!ExportLibTas) {
-                streamWriter = new StreamWriter(path, false, Encoding.ASCII, 1 << 20);
-                skipInputFrame = null;
-                ExportLibTas = true;
-            }
+        public static void StartExport(string path) {
+            FinishExport();
+            streamWriter = new StreamWriter(path, false, Encoding.ASCII, 1 << 20);
+            LibTasHelper.path = path;
+            skipInputFrame = null;
+            exportLibTas = true;
         }
 
-        public static void EndExport() {
+        public static void RestartExport() {
+            StartExport(path);
+        }
+
+        public static void FinishExport() {
             streamWriter?.Flush();
             streamWriter?.Dispose();
             streamWriter = null;
+            path = "";
             skipInputFrame = null;
-            ExportLibTas = false;
+            exportLibTas = false;
         }
 
         public static void WriteLibTasFrame(InputFrame inputFrame) {
-            if (inputFrame == skipInputFrame) {
+            if (!exportLibTas || inputFrame == skipInputFrame) {
                 return;
             }
 
-            WriteLibTasFrame(LibTasKeys(inputFrame),
-                inputFrame.HasActions(Actions.Feather) ? ($"{AnalogHelper.LastDirectionShort.X}:{-AnalogHelper.LastDirectionShort.Y}") : "0:0",
-                LibTasButtons(inputFrame));
+            for (int i = 0; i < inputFrame.Frames; ++i) {
+                WriteLibTasFrame(LibTasKeys(inputFrame),
+                    inputFrame.HasActions(Actions.Feather) ? ($"{inputFrame.AngleVector2Short.X}:{-inputFrame.AngleVector2Short.Y}") : "0:0",
+                    LibTasButtons(inputFrame));
+            }
         }
 
         public static void AddInputFrame(string inputText) {
-            if (!ExportLibTas) {
+            if (!exportLibTas) {
                 return;
             }
 
             if (InputFrame.TryParse(inputText, 0, out InputFrame inputFrame)) {
-                for (int i = 0; i < inputFrame.Frames; ++i) {
-                    WriteLibTasFrame(inputFrame);
-                }
+                WriteLibTasFrame(inputFrame);
             }
         }
 
         public static void SkipNextInput() {
-            if (ExportLibTas) {
+            if (exportLibTas) {
                 skipInputFrame = Manager.Controller.Current;
             }
+        }
+
+        public static void ConvertToLibTas(string fileName) {
+            if (string.IsNullOrEmpty(fileName)) {
+                fileName = "libTAS_inputs.txt";
+            }
+
+            Manager.DisableExternal();
+            StartExport(fileName);
+            Manager.Controller.RefreshInputs(true);
+            Manager.DisableExternal();
         }
 
         private static void WriteLibTasFrame(string outputKeys, string outputAxes, string outputButtons) {

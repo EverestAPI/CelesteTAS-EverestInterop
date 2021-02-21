@@ -37,8 +37,9 @@ namespace TAS {
 
                         string joystick;
                         if (Running && Controller.Previous is InputFrame inputFrame && inputFrame.HasActions(Actions.Feather)) {
+                            Vector2 angleVector2 = inputFrame.AngleVector2;
                             joystick =
-                                $"Analog: {AnalogHelper.LastDirection.X:F5}, {AnalogHelper.LastDirection.Y:F5}, {GetAngle(new Vector2(AnalogHelper.LastDirection.X, -AnalogHelper.LastDirection.Y)):F5}°";
+                                $"Analog: {angleVector2.X:F5}, {angleVector2.Y:F5}, {GetAngle(new Vector2(angleVector2.X, -angleVector2.Y)):F5}°";
                         } else {
                             joystick = string.Empty;
                         }

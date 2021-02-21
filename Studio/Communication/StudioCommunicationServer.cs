@@ -147,19 +147,25 @@ namespace CelesteStudio.Communication {
         public void SendHotkeyPressed(HotkeyIDs hotkey, bool released = false) => pendingWrite = () => SendHotkeyPressedNow(hotkey, released);
         public void GetConsoleCommand() => pendingWrite = GetConsoleCommandNow;
         public void GetModInfo() => pendingWrite = GetModInfoNow;
+        public void ConvertToLibTas(string path) => pendingWrite = () => ConvertToLibTasNow(path);
 
 
         private void SendPathNow(string path, bool canFail) {
             if (Initialized || !canFail) {
-                byte[] pathBytes;
-                if (path != null) {
-                    pathBytes = Encoding.Default.GetBytes(path);
-                } else {
-                    pathBytes = new byte[0];
-                }
+                byte[] pathBytes = path != null ? Encoding.Default.GetBytes(path) : new byte[0];
 
                 WriteMessageGuaranteed(new Message(MessageIDs.SendPath, pathBytes));
             }
+        }
+
+        private void ConvertToLibTasNow(string path) {
+            if (!Initialized) {
+                return;
+            }
+
+            byte[] pathBytes = string.IsNullOrEmpty(path) ? new byte[0] : Encoding.Default.GetBytes(path);
+
+            WriteMessageGuaranteed(new Message(MessageIDs.ConvertToLibTas, pathBytes));
         }
 
         private void SendHotkeyPressedNow(HotkeyIDs hotkey, bool released) {

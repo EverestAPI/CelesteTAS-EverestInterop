@@ -80,8 +80,8 @@ namespace TAS.Input {
             }
 
             if (NeedsReload || fromStart) {
-                int trycount = 5;
-                while (trycount > 0) {
+                int tryCount = 5;
+                while (tryCount > 0) {
                     initializationFrameCount = 0;
                     FfIndex = 0;
                     commandIndex = 0;
@@ -90,11 +90,17 @@ namespace TAS.Input {
                     Commands.Clear();
                     usedFiles.Clear();
                     if (ReadFile(TasFilePath)) {
+                        LibTasHelper.FinishExport();
                         break;
                     }
 
+                    // read file failed, rewrite the libtas inputs file.
+                    if (LibTasHelper.exportLibTas) {
+                        LibTasHelper.RestartExport();
+                    }
+
                     System.Threading.Thread.Sleep(50);
-                    trycount--;
+                    tryCount--;
                 }
 
                 CurrentFrame = Math.Min(Inputs.Count, CurrentFrame);
@@ -129,11 +135,6 @@ namespace TAS.Input {
             }
 
             Manager.SetInputs(Current);
-
-            // This should be executed after calculating the feather Angle
-            if (LibTasHelper.ExportLibTas) {
-                LibTasHelper.WriteLibTasFrame(Current);
-            }
 
             if (StudioFrameCount == 0 || Current.Line == Previous.Line) {
                 StudioFrameCount++;
