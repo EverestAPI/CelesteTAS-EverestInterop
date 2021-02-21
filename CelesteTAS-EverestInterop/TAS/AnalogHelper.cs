@@ -30,17 +30,11 @@ namespace TAS {
 
         private static readonly Regex Fractional = new Regex(@"\d+\.(\d*)", RegexOptions.Compiled);
         private static AnalogueMode analogMode = AnalogueMode.Ignore;
-        private static short upperbound = 32767;
         private static Vector2 retDirection;
         private static Vector2Short retDirectionShort;
 
-        public static void AnalogModeChange(AnalogueMode mode, float? upperLimit = null) {
+        public static void AnalogModeChange(AnalogueMode mode) {
             analogMode = mode;
-
-            if (upperLimit.HasValue) {
-                upperbound = (short) Calc.Clamp(upperLimit.Value * 32767, Lowerbound, 32767);
-                ;
-            }
         }
 
         public static void ComputeAngleVector2(InputFrame input) {
@@ -57,12 +51,63 @@ namespace TAS {
                 precision = float.Parse($"0.5E-{digits + 2}");
             }
 
-            input.AngleVector2 = ComputeFeather(input.GetX(), input.GetY(), precision);
+            input.AngleVector2 = ComputeFeather(input.GetX(), input.GetY(), precision, input.UpperLimit);
             input.AngleVector2Short = retDirectionShort;
         }
 
-        private static Vector2Short ComputePrecise(Vector2 direction, float precision) {
-            // it should hold that direction has x>0, y>0, x>y
+        private static Vector2 ComputeFeather(float x, float y, float precision, float upperLimit) {
+            if (x < 0) {
+                Vector2 feather = ComputeFeather(-x, y, precision, upperLimit);
+                retDirectionShort.X = (short) -retDirectionShort.X;
+                return retDirection = new Vector2(-feather.X, feather.Y);
+            }
+
+            if (y < 0) {
+                Vector2 feather = ComputeFeather(x, -y, precision, upperLimit);
+                retDirectionShort.Y = (short) -retDirectionShort.Y;
+                return retDirection = new Vector2(feather.X, -feather.Y);
+            }
+
+            if (x < y) {
+                Vector2 feather = ComputeFeather(y, x, precision, upperLimit);
+                retDirectionShort = new Vector2Short(retDirectionShort.Y, retDirectionShort.X);
+                return retDirection = new Vector2(feather.Y, feather.X);
+            }
+
+            short upperbound = (short) Calc.Clamp(upperLimit * 32767, Lowerbound, 32767);
+
+            // assure positive and x>=y
+            short shortX, shortY;
+            switch (analogMode) {
+                case AnalogueMode.Ignore:
+                    retDirectionShort = ComputePrecise(new Vector2(x, y), precision, upperbound);
+                    retDirection = new Vector2(x, y) * upperLimit;
+                    return retDirection;
+                case AnalogueMode.Square:
+                    float divisor = Math.Max(Math.Abs(x), Math.Abs(y));
+                    x /= divisor;
+                    y /= divisor;
+                    shortX = (short) Math.Round((x * (1.0 - DeadZone) + DeadZone) * 32767);
+                    shortY = (short) Math.Round((y * (1.0 - DeadZone) + DeadZone) * 32767);
+                    break;
+                case AnalogueMode.Precise:
+                    Vector2Short result = ComputePrecise(new Vector2(x, y), precision, upperbound);
+                    shortX = result.X;
+                    shortY = result.Y;
+                    break;
+                default:
+                    throw new Exception("what the fuck");
+            }
+
+            retDirectionShort = new Vector2Short(shortX, shortY);
+            x = (float) (Math.Max(shortX / 32767.0 - DeadZone, 0.0) / (1 - DeadZone));
+            y = (float) (Math.Max(shortY / 32767.0 - DeadZone, 0.0) / (1 - DeadZone));
+            retDirection = new Vector2(x, y);
+            return retDirection;
+        }
+
+        private static Vector2Short ComputePrecise(Vector2 direction, float precision, short upperbound) {
+            // it should hold that direction has x>0, y>0, x>=y
             // we look for the least y/x difference
             if (direction.Y < 1e-10) {
                 return new Vector2Short(upperbound, 0);
@@ -105,54 +150,6 @@ namespace TAS {
             }
 
             return new Vector2Short(retX, retY);
-        }
-
-        private static Vector2 ComputeFeather(float x, float y, float precision) {
-            if (x < 0) {
-                Vector2 feather = ComputeFeather(-x, y, precision);
-                retDirectionShort.X = (short) -retDirectionShort.X;
-                return retDirection = new Vector2(-feather.X, feather.Y);
-            }
-
-            if (y < 0) {
-                Vector2 feather = ComputeFeather(x, -y, precision);
-                retDirectionShort.Y = (short) -retDirectionShort.Y;
-                return retDirection = new Vector2(feather.X, -feather.Y);
-            }
-
-            if (x < y) {
-                Vector2 feather = ComputeFeather(y, x, precision);
-                retDirectionShort = new Vector2Short(retDirectionShort.Y, retDirectionShort.X);
-                return retDirection = new Vector2(feather.Y, feather.X);
-            }
-
-            // assure positive and x>=y
-            short shortX, shortY;
-            switch (analogMode) {
-                case AnalogueMode.Ignore:
-                    retDirectionShort = ComputePrecise(new Vector2(x, y), precision);
-                    return retDirection = new Vector2(x, y);
-                case AnalogueMode.Square:
-                    float divisor = Math.Max(Math.Abs(x), Math.Abs(y));
-                    x /= divisor;
-                    y /= divisor;
-                    shortX = (short) Math.Round((x * (1.0 - DeadZone) + DeadZone) * 32767);
-                    shortY = (short) Math.Round((y * (1.0 - DeadZone) + DeadZone) * 32767);
-                    break;
-                case AnalogueMode.Precise:
-                    Vector2Short result = ComputePrecise(new Vector2(x, y), precision);
-                    shortX = result.X;
-                    shortY = result.Y;
-                    break;
-                default:
-                    throw new Exception("what the fuck");
-            }
-
-            retDirectionShort = new Vector2Short(shortX, shortY);
-            x = (float) (Math.Max(shortX / 32767.0 - DeadZone, 0.0) / (1 - DeadZone));
-            y = (float) (Math.Max(shortY / 32767.0 - DeadZone, 0.0) / (1 - DeadZone));
-            retDirection = new Vector2(x, y);
-            return retDirection;
         }
     }
 }

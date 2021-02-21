@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.Text;
 using Microsoft.Xna.Framework;
+using TAS.EverestInterop;
 
 namespace TAS.Input {
     [Flags]
@@ -25,12 +26,13 @@ namespace TAS.Input {
     }
 
     public class InputFrame {
-        public Actions Actions;
-        public float Angle;
-        public Vector2 AngleVector2;
-        public Vector2Short AngleVector2Short;
-        public int Frames;
-        public int Line;
+        public Actions Actions { get; private set; }
+        public float Angle { get; private set; }
+        public float UpperLimit { get; private set; } = 1f;
+        public Vector2 AngleVector2 { get; set; }
+        public Vector2Short AngleVector2Short { get; set; }
+        public int Frames { get; private set; }
+        public int Line { get; private set; }
 
         public bool HasActions(Actions actions) =>
             (Actions & actions) != 0;
@@ -177,11 +179,17 @@ namespace TAS.Input {
                     case 'F':
                         inputFrame.Actions ^= Actions.Feather;
                         index++;
-                        string angle = line.Substring(index + 1).Trim();
-                        if (angle == "") {
-                            inputFrame.Angle = 0;
-                        } else {
-                            inputFrame.Angle = float.Parse(angle.Trim());
+                        string angleAndUpperLimit = line.Substring(index + 1).Trim();
+                        if (angleAndUpperLimit.IsNotNullOrEmpty()) {
+                            string[] args = angleAndUpperLimit.Split(',');
+                            string angle = args[0];
+                            if (float.TryParse(angle, out float angleFloat)) {
+                                inputFrame.Angle = angleFloat;
+                            }
+
+                            if (args.Length >= 2 && float.TryParse(args[1], out float upperLimitFloat)) {
+                                inputFrame.UpperLimit = upperLimitFloat;
+                            }
                         }
 
                         AnalogHelper.ComputeAngleVector2(inputFrame);

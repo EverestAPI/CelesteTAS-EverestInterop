@@ -89,7 +89,7 @@ namespace TAS.Input {
                     FastForwards.Clear();
                     Commands.Clear();
                     usedFiles.Clear();
-                    AnalogHelper.AnalogModeChange(AnalogueMode.Ignore, 1);
+                    AnalogHelper.AnalogModeChange(AnalogueMode.Ignore);
                     if (ReadFile(TasFilePath)) {
                         LibTasHelper.FinishExport();
                         break;

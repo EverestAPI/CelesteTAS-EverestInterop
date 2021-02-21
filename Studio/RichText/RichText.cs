@@ -22,7 +22,7 @@ namespace CelesteStudio.RichText {
         private const int SB_ENDSCROLL = 0x8;
 
         private const Keys AltShift = Keys.Alt | Keys.Shift;
-        private static readonly Regex AllSpaceRegex = new Regex(@"^\s+$");
+        private static readonly Regex AllSpaceRegex = new Regex(@"^\s+$", RegexOptions.Compiled);
 
         internal readonly List<LineInfo> lineInfos = new List<LineInfo>();
 

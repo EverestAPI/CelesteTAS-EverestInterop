@@ -29,7 +29,7 @@ namespace CelesteStudio.Communication {
         }
 
         protected override bool NeedsToWait() {
-            return base.NeedsToWait() || Studio.instance.tasText.IsChanged;
+            return base.NeedsToWait() || Studio.Instance.tasText.IsChanged;
         }
 
         public void ExternalReset() => pendingWrite = () => throw new NeedsResetException();
@@ -127,7 +127,7 @@ namespace CelesteStudio.Communication {
 
             studio?.ProcessSendPath(lastMessage?.Data);
 
-            studio?.SendPathNow(Studio.instance.tasText.LastFileName, false);
+            studio?.SendPathNow(Studio.Instance.tasText.LastFileName, false);
             lastMessage = celeste?.ReadMessageGuaranteed();
             celeste?.ProcessSendPath(lastMessage?.Data);
 

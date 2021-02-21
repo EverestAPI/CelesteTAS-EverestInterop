@@ -7,9 +7,10 @@ using System.Xml;
 
 namespace CelesteStudio.RichText {
     public class SyntaxHighlighter : IDisposable {
-        public static readonly Regex CommentRegex = new Regex(@"^\s*#.*");
-        public static readonly Regex BreakPointRegex = new Regex(@"^\s*\*\*\*");
-        public static readonly Regex InputRecordRegex = new Regex(@"^( {3}\d| {2}\d{2}| \d{3}|\d{4})");
+        public static readonly Regex CommentRegex = new Regex(@"^\s*#.*", RegexOptions.Compiled);
+        public static readonly Regex BreakPointRegex = new Regex(@"^\s*\*\*\*", RegexOptions.Compiled);
+        public static readonly Regex InputRecordRegex = new Regex(@"^( {3}\d| {2}\d{2}| \d{3}|\d{4})", RegexOptions.Compiled);
+
         public readonly Style AquaStyle = new TextStyle(Brushes.Aqua, null, FontStyle.Regular);
 
         public readonly Style BlueBoldStyle = new TextStyle(Brushes.Blue, null, FontStyle.Bold);
@@ -259,10 +260,10 @@ namespace CelesteStudio.RichText {
                     int charStart = 4;
                     while (charStart < charEnd) {
                         sub = new Range(tb, charStart, start, charStart + 1, start);
-
-                        if (char.IsDigit(tb[start][charStart].c)) {
+                        char c = tb[start][charStart].c;
+                        if (char.IsDigit(c) || c == '.') {
                             sub.SetStyle(PinkStyle);
-                        } else if ((charStart & 1) == 0) {
+                        } else if (c == ',') {
                             sub.SetStyle(GrayStyle);
                         } else {
                             sub.SetStyle(BlueStyle);

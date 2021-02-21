@@ -20,10 +20,9 @@ using CelesteStudio.RichText;
 
 namespace CelesteStudio {
     public partial class Studio : Form {
-        private const string RegKey = @"HKEY_CURRENT_USER\SOFTWARE\CeletseStudio\Form";
-        public static Studio instance;
+        public static Studio Instance;
 
-        private readonly List<InputRecord> Lines = new List<InputRecord>();
+        private readonly List<InputRecord> lines = new List<InputRecord>();
 
         //private GameMemory memory = new GameMemory();
         private DateTime lastChanged = DateTime.MinValue;
@@ -38,10 +37,10 @@ namespace CelesteStudio {
             InitDragDrop();
             InitFont(Settings.Default.Font ?? fontDialog.Font);
 
-            Text = titleBarText;
+            Text = TitleBarText;
             Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("en-US");
 
-            Lines.Add(new InputRecord(""));
+            lines.Add(new InputRecord(""));
             EnableStudio(false);
 
             DesktopLocation = Settings.Default.DesktopLocation;
@@ -51,11 +50,11 @@ namespace CelesteStudio {
                 DesktopLocation = new Point(0, 0);
             }
 
-            instance = this;
+            Instance = this;
         }
 
-        private string titleBarText =>
-            (string.IsNullOrEmpty(lastFileName) ? "Celeste.tas" : Path.GetFileName(lastFileName))
+        private string TitleBarText =>
+            (string.IsNullOrEmpty(LastFileName) ? "Celeste.tas" : Path.GetFileName(LastFileName))
             + " - Studio v"
             + Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
 
@@ -74,12 +73,10 @@ namespace CelesteStudio {
             }
         }
 
-        private string lastFileName {
+        private string LastFileName {
             get => tasText.LastFileName;
             set => tasText.LastFileName = value;
         }
-
-        float scaleFactor => DeviceDpi / 96f;
 
         private FileList recentFiles => Settings.Default.RecentFileList ?? (Settings.Default.RecentFileList = new FileList());
 
@@ -199,7 +196,7 @@ namespace CelesteStudio {
 
                 foreach (var fileName in recentFiles) {
                     openRecentMenuItem.DropDownItems.Add(new ToolStripMenuItem(fileName) {
-                        Checked = lastFileName == fileName
+                        Checked = LastFileName == fileName
                     });
                 }
 
@@ -289,8 +286,8 @@ namespace CelesteStudio {
         private void SaveAsFile() {
             StudioCommunicationServer.instance?.WriteWait();
             tasText.SaveNewFile();
-            StudioCommunicationServer.instance?.SendPath(lastFileName);
-            Text = titleBarText;
+            StudioCommunicationServer.instance?.SendPath(LastFileName);
+            Text = TitleBarText;
             UpdateRecentFiles();
         }
 
@@ -339,17 +336,17 @@ namespace CelesteStudio {
                 UpdateRecentFiles();
             }
 
-            StudioCommunicationServer.instance?.SendPath(lastFileName);
-            Text = titleBarText;
+            StudioCommunicationServer.instance?.SendPath(LastFileName);
+            Text = TitleBarText;
         }
 
         private void UpdateRecentFiles() {
-            if (!recentFiles.Contains(lastFileName)) {
-                recentFiles.Insert(0, lastFileName);
+            if (!recentFiles.Contains(LastFileName)) {
+                recentFiles.Insert(0, LastFileName);
                 Settings.Default.Save();
             }
 
-            Settings.Default.LastFileName = lastFileName;
+            Settings.Default.LastFileName = LastFileName;
         }
 
         private void ClearBreakpointsAndSaveState() {
@@ -488,7 +485,7 @@ namespace CelesteStudio {
                     if (lastChanged.AddSeconds(0.3f) < DateTime.Now) {
                         lastChanged = DateTime.Now;
                         Invoke((Action) delegate {
-                            if (!string.IsNullOrEmpty(lastFileName) && tasText.IsChanged) {
+                            if (!string.IsNullOrEmpty(LastFileName) && tasText.IsChanged) {
                                 tasText.SaveFile();
                             }
                         });
@@ -504,11 +501,12 @@ namespace CelesteStudio {
                     }
 
                     Thread.Sleep(14);
-                } catch //(Exception e)
-                {
-                    //Console.Write(e);
+                } catch {
+                    // ignore
                 }
             }
+
+            // ReSharper disable once FunctionNeverReturns
         }
 
         public void EnableStudio(bool hooked) {
@@ -519,9 +517,9 @@ namespace CelesteStudio {
                         File.WriteAllText(fileName, string.Empty);
                     }
 
-                    if (string.IsNullOrEmpty(lastFileName)) {
+                    if (string.IsNullOrEmpty(LastFileName)) {
                         tasText.OpenBindingFile(fileName, Encoding.ASCII);
-                        lastFileName = fileName;
+                        LastFileName = fileName;
                     }
 
                     tasText.Focus();
@@ -534,8 +532,8 @@ namespace CelesteStudio {
                 if (Settings.Default.RememberLastFileName
                     && File.Exists(Settings.Default.LastFileName)
                     && IsFileReadable(Settings.Default.LastFileName)
-                    && string.IsNullOrEmpty(lastFileName)) {
-                    lastFileName = Settings.Default.LastFileName;
+                    && string.IsNullOrEmpty(LastFileName)) {
+                    LastFileName = Settings.Default.LastFileName;
                     tasText.ReloadFile();
                 }
 
@@ -583,9 +581,9 @@ namespace CelesteStudio {
         private void tasText_LineRemoved(object sender, LineRemovedEventArgs e) {
             int count = e.Count;
             while (count-- > 0) {
-                InputRecord input = Lines[e.Index];
+                InputRecord input = lines[e.Index];
                 totalFrames -= input.Frames;
-                Lines.RemoveAt(e.Index);
+                lines.RemoveAt(e.Index);
             }
 
             UpdateStatusBar();
@@ -596,7 +594,7 @@ namespace CelesteStudio {
             int count = e.Count;
             while (count-- > 0) {
                 InputRecord input = new InputRecord(tas.GetLineText(e.Index + count));
-                Lines.Insert(e.Index, input);
+                lines.Insert(e.Index, input);
                 totalFrames += input.Frames;
             }
 
@@ -700,14 +698,20 @@ namespace CelesteStudio {
             StringBuilder sb = new StringBuilder();
             Place place = new Place(0, end);
             while (start <= end) {
-                InputRecord old = Lines.Count > start ? Lines[start] : null;
+                InputRecord old = lines.Count > start ? lines[start] : null;
                 string text = tas[start++].Text;
                 InputRecord input = new InputRecord(text);
                 if (old != null) {
                     totalFrames -= old.Frames;
 
                     string line = input.ToString();
-                    if (text != line) {
+
+                    bool featherAngle = old.HasActions(Actions.Feather)
+                                        && !string.IsNullOrEmpty(input.AngleStr)
+                                        && string.IsNullOrEmpty(input.UpperLimitStr)
+                                        && text[text.Length - 1] == ','
+                                        && text.Substring(0, text.Length - 1) == line;
+                    if (text != line && !featherAngle) {
                         if (old.Frames == 0 && input.Frames == 0 && old.ZeroPadding == input.ZeroPadding && old.Equals(input) &&
                             line.Length >= text.Length) {
                             line = string.Empty;
@@ -740,7 +744,7 @@ namespace CelesteStudio {
                     }
 
                     text = line;
-                    Lines[start - 1] = input;
+                    lines[start - 1] = input;
                 } else {
                     place = new Place(text.Length, start - 1);
                 }
@@ -761,7 +765,7 @@ namespace CelesteStudio {
             }
 
             if (tas.IsChanged) {
-                Text = titleBarText + " ***";
+                Text = TitleBarText + " ***";
             }
 
             UpdateStatusBar();
@@ -770,11 +774,11 @@ namespace CelesteStudio {
         }
 
         private void tasText_NoChanges(object sender, EventArgs e) {
-            Text = titleBarText;
+            Text = TitleBarText;
         }
 
         private void tasText_FileOpening(object sender, EventArgs e) {
-            Lines.Clear();
+            lines.Clear();
             totalFrames = 0;
             UpdateStatusBar();
         }
@@ -895,7 +899,7 @@ namespace CelesteStudio {
         }
 
         private void analogueModeToolStripMenuItem_Click(object sender, EventArgs e) {
-            InsertNewLine("AnalogueMode, Ignore/Square/Precise, (UpperLimit)");
+            InsertNewLine("AnalogueMode, Ignore/Square/Precise");
         }
 
         private void startExportToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -1000,9 +1004,9 @@ namespace CelesteStudio {
                 dialog.AddExtension = true;
                 dialog.Filter = "TXT|*.txt";
                 dialog.FilterIndex = 0;
-                if (!string.IsNullOrEmpty(lastFileName)) {
-                    dialog.InitialDirectory = Path.GetDirectoryName(lastFileName);
-                    dialog.FileName = Path.GetFileNameWithoutExtension(lastFileName + "_libTAS_inputs.txt");
+                if (!string.IsNullOrEmpty(LastFileName)) {
+                    dialog.InitialDirectory = Path.GetDirectoryName(LastFileName);
+                    dialog.FileName = Path.GetFileNameWithoutExtension(LastFileName + "_libTAS_inputs.txt");
                 } else {
                     dialog.FileName = "libTAS_inputs.txt";
                 }

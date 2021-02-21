@@ -17,7 +17,7 @@ namespace TAS.Input {
          * in the future.
          * Commands that execute can be void Command(InputController, string[], int) or void Command(string[]).
          */
-        private static readonly Regex SpaceRegex = new Regex(@"^[^,]+?\s+[^,]");
+        private static readonly Regex SpaceRegex = new Regex(@"^[^,]+?\s+[^,]", RegexOptions.Compiled);
 
         private static string[] Split(string line) {
             string trimLine = line.Trim();
@@ -317,28 +317,17 @@ namespace TAS.Input {
             }
         }
 
-        [TasCommand(Args = new string[] {
-            "AnalogMode, Mode",
-            "AnalogMode, Precise, UpperLimit"
-        }, ExecuteAtStart = true)]
+        [TasCommand(Args = new string[] {"AnalogMode, Mode",}, ExecuteAtStart = true)]
         private static void AnalogModeCommand(string[] args) => AnalogueModeCommand(args);
 
-        [TasCommand(Args = new string[] {
-            "AnalogueMode, Mode",
-            "AnalogueMode, Precise, UpperLimit"
-        }, ExecuteAtStart = true)]
+        [TasCommand(Args = new string[] {"AnalogueMode, Mode",}, ExecuteAtStart = true)]
         private static void AnalogueModeCommand(string[] args) {
-            if (args.Length >= 1 && Enum.TryParse(args[0], true, out AnalogueMode mode)) {
-                float? upperLimit = null;
-                if (args.Length >= 2 && float.TryParse(args[1], out float limit)) {
-                    upperLimit = limit;
-                }
-
-                AnalogHelper.AnalogModeChange(mode, upperLimit);
+            if (args.Length > 0 && Enum.TryParse(args[0], true, out AnalogueMode mode)) {
+                AnalogHelper.AnalogModeChange(mode);
             }
         }
 
-        [TasCommand(Args = new string[] {"StartExportLibTAS (Optional Path)"}, ExecuteAtStart = true, IllegalInMaingame = true)]
+        [TasCommand(Args = new string[] {"StartExportLibTAS (Optional Path)"}, ExecuteAtStart = true)]
         private static void StartExportLibTasCommand(string[] args) {
             string path = "libTAS_inputs.txt";
             if (args.Length > 0) {
@@ -348,19 +337,19 @@ namespace TAS.Input {
             LibTasHelper.StartExport(path);
         }
 
-        [TasCommand(Args = new string[] {"FinishExportLibTAS"}, ExecuteAtStart = true, IllegalInMaingame = true)]
+        [TasCommand(Args = new string[] {"FinishExportLibTAS"}, ExecuteAtStart = true)]
         private static void FinishExportLibTasCommand(string[] args) {
             LibTasHelper.FinishExport();
         }
 
-        [TasCommand(Args = new string[] {"Add, input"}, ExecuteAtStart = true, IllegalInMaingame = true)]
+        [TasCommand(Args = new string[] {"Add, input"}, ExecuteAtStart = true)]
         private static void AddCommand(string[] args) {
             if (args.Length > 0) {
                 LibTasHelper.AddInputFrame(string.Join(",", args));
             }
         }
 
-        [TasCommand(Args = new string[] {"Skip"}, ExecuteAtStart = true, IllegalInMaingame = true)]
+        [TasCommand(Args = new string[] {"Skip"}, ExecuteAtStart = true)]
         private static void SkipCommand(string[] args) {
             LibTasHelper.SkipNextInput();
         }

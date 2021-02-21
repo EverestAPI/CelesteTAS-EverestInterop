@@ -24,8 +24,9 @@ namespace CelesteStudio.Entities {
     }
 
     public class InputRecord {
-        private static readonly Regex DuplicateZeroRegex = new Regex(@"^0+([^.])");
-        public static readonly char Delimiter = ',';
+        private const char Delimiter = ',';
+        private static readonly Regex DuplicateZeroRegex = new Regex(@"^0+([^.])", RegexOptions.Compiled);
+        private static readonly Regex FloatRegex = new Regex(@"^,-?([0-9.]+)", RegexOptions.Compiled);
 
         private static readonly Actions[][] ExclusiveActions = {
             new[] {Actions.Dash, Actions.Dash2, Actions.DemoDash},
@@ -93,7 +94,13 @@ namespace CelesteStudio.Entities {
                     case 'F':
                         Actions ^= Actions.Feather;
                         index++;
-                        Angle = ReadAngle(line, ref index);
+                        ReadAngle(line, ref index);
+                        if (string.IsNullOrEmpty(AngleStr)) {
+                            UpperLimitStr = string.Empty;
+                            continue;
+                        }
+
+                        ReadUpperLimit(line, ref index);
                         continue;
                 }
 
@@ -101,12 +108,12 @@ namespace CelesteStudio.Entities {
             }
         }
 
+        public int ZeroPadding { get; set; }
         public int Frames { get; set; }
         public Actions Actions { get; set; }
-        public float Angle { get; set; }
         public string AngleStr { get; set; }
+        public string UpperLimitStr { get; set; }
         public string Notes { get; set; }
-        public int ZeroPadding { get; set; }
 
         private int ReadFrames(string line, ref int start) {
             bool foundFrames = false;
@@ -145,14 +152,39 @@ namespace CelesteStudio.Entities {
         }
 
         private float ReadAngle(string line, ref int start) {
-            AngleStr = line.Substring(start).Replace(Delimiter.ToString(), "").Trim();
-            if (!float.TryParse(AngleStr, out float angle)) {
-                AngleStr = string.Empty;
-            } else {
-                AngleStr = DuplicateZeroRegex.Replace(AngleStr, "$1");
-            }
+            string angleStr = line.Substring(start).Trim();
+            if (FloatRegex.Match(angleStr) is Match match && match.Success && float.TryParse(match.Groups[1].Value, out float angle)) {
+                AngleStr = DuplicateZeroRegex.Replace(match.Groups[1].Value, "$1");
+                start += match.Groups[0].Value.Length;
+                if (angle < 0f) {
+                    AngleStr = "0";
+                } else if (angle > 360f) {
+                    AngleStr = "360";
+                }
 
-            return angle;
+                return angle;
+            } else {
+                AngleStr = string.Empty;
+                return 0;
+            }
+        }
+
+        private float ReadUpperLimit(string line, ref int start) {
+            string upperLimitStr = line.Substring(start).Trim();
+            if (FloatRegex.Match(upperLimitStr) is Match match && match.Success && float.TryParse(match.Groups[1].Value, out float upperLimit)) {
+                UpperLimitStr = DuplicateZeroRegex.Replace(match.Groups[1].Value, "$1");
+                start += match.Groups[0].Value.Length;
+                if (upperLimit != 0 && upperLimit < 0.5f) {
+                    UpperLimitStr = "0.5";
+                } else if (upperLimit > 1f) {
+                    UpperLimitStr = "1";
+                }
+
+                return upperLimit;
+            } else {
+                UpperLimitStr = string.Empty;
+                return 0;
+            }
         }
 
         public bool HasActions(Actions actions) {
@@ -160,13 +192,10 @@ namespace CelesteStudio.Entities {
         }
 
         public override string ToString() {
-            return Frames == 0
-                ? Notes
-                : Frames.ToString().PadLeft(ZeroPadding, '0').PadLeft(4, ' ')
-                  + ActionsToString();
+            return Frames == 0 ? Notes : Frames.ToString().PadLeft(ZeroPadding, '0').PadLeft(4, ' ') + ActionsToString();
         }
 
-        public string ActionsToString() {
+        private string ActionsToString() {
             StringBuilder sb = new StringBuilder();
             if (HasActions(Actions.Left)) {
                 sb.Append($"{Delimiter}L");
@@ -225,7 +254,14 @@ namespace CelesteStudio.Entities {
             }
 
             if (HasActions(Actions.Feather)) {
-                sb.Append($"{Delimiter}F{Delimiter}").Append(AngleStr);
+                sb.Append($"{Delimiter}F{Delimiter}");
+                if (!string.IsNullOrEmpty(AngleStr)) {
+                    sb.Append($"{AngleStr}");
+
+                    if (!string.IsNullOrEmpty(UpperLimitStr)) {
+                        sb.Append($"{Delimiter}{UpperLimitStr}");
+                    }
+                }
             }
 
             return sb.ToString();
@@ -236,7 +272,7 @@ namespace CelesteStudio.Entities {
         }
 
         public override int GetHashCode() {
-            return Frames ^ (int) Actions;
+            return Frames ^ (int) Actions + AngleStr.GetHashCode() + UpperLimitStr.GetHashCode();
         }
 
         public static bool operator ==(InputRecord one, InputRecord two) {
@@ -248,7 +284,7 @@ namespace CelesteStudio.Entities {
                 return true;
             }
 
-            return one.Actions == two.Actions && Math.Abs(one.Angle - two.Angle) < 1e-10;
+            return one.Actions == two.Actions && one.AngleStr == two.AngleStr && one.UpperLimitStr == two.UpperLimitStr;
         }
 
         public static bool operator !=(InputRecord one, InputRecord two) {
