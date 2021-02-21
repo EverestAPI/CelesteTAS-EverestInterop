@@ -895,7 +895,7 @@ namespace CelesteStudio {
         }
 
         private void analogueModeToolStripMenuItem_Click(object sender, EventArgs e) {
-            InsertNewLine("AnalogueMode, Ignore/Circle/Square/Precise, (UpperLimit)");
+            InsertNewLine("AnalogueMode, Ignore/Square/Precise, (UpperLimit)");
         }
 
         private void startExportToolStripMenuItem_Click(object sender, EventArgs e) {

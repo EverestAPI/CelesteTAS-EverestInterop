@@ -9,7 +9,6 @@ using GameInput = Celeste.Input;
 namespace TAS {
     public enum AnalogueMode {
         Ignore,
-        Circle,
         Square,
         Precise,
     }
@@ -133,10 +132,6 @@ namespace TAS {
                 case AnalogueMode.Ignore:
                     retDirectionShort = ComputePrecise(new Vector2(x, y), precision);
                     return retDirection = new Vector2(x, y);
-                case AnalogueMode.Circle:
-                    shortX = (short) Math.Round((x * (1.0 - DeadZone) + DeadZone) * 32767);
-                    shortY = (short) Math.Round((y * (1.0 - DeadZone) + DeadZone) * 32767);
-                    break;
                 case AnalogueMode.Square:
                     float divisor = Math.Max(Math.Abs(x), Math.Abs(y));
                     x /= divisor;

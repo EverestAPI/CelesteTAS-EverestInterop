@@ -339,7 +339,7 @@ namespace TAS.Input {
         }
 
         [TasCommand(Args = new string[] {"StartExportLibTAS (Optional Path)"}, ExecuteAtStart = true, IllegalInMaingame = true)]
-        private static void StartExportLibTASCommand(string[] args) {
+        private static void StartExportLibTasCommand(string[] args) {
             string path = "libTAS_inputs.txt";
             if (args.Length > 0) {
                 path = args[0];
