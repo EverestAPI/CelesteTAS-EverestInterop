@@ -108,13 +108,7 @@ namespace TAS.Input {
         }
 
         public InputFrame Clone() {
-            InputFrame clone = new InputFrame {
-                Frames = Frames,
-                Actions = Actions,
-                Angle = Angle,
-                Line = Line,
-            };
-            return clone;
+            return (InputFrame) MemberwiseClone();
         }
 
         public static bool TryParse(string line, int studioLine, out InputFrame inputFrame) {

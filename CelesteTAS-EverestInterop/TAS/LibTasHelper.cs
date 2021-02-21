@@ -6,27 +6,27 @@ namespace TAS {
     public static class LibTasHelper {
         private static StreamWriter streamWriter;
         private static InputFrame skipInputFrame;
-        private static string path;
-
-        public static bool exportLibTas;
+        private static string fileName;
+        private static bool exportLibTas;
 
         public static void StartExport(string path) {
             FinishExport();
             streamWriter = new StreamWriter(path, false, Encoding.ASCII, 1 << 20);
-            LibTasHelper.path = path;
+            fileName = path;
             skipInputFrame = null;
             exportLibTas = true;
         }
 
         public static void RestartExport() {
-            StartExport(path);
+            if (exportLibTas) {
+                StartExport(fileName);
+            }
         }
 
         public static void FinishExport() {
             streamWriter?.Flush();
             streamWriter?.Dispose();
             streamWriter = null;
-            path = "";
             skipInputFrame = null;
             exportLibTas = false;
         }
@@ -59,13 +59,13 @@ namespace TAS {
             }
         }
 
-        public static void ConvertToLibTas(string fileName) {
-            if (string.IsNullOrEmpty(fileName)) {
-                fileName = "libTAS_inputs.txt";
+        public static void ConvertToLibTas(string path) {
+            if (string.IsNullOrEmpty(path)) {
+                path = "libTAS_inputs.txt";
             }
 
             Manager.DisableExternal();
-            StartExport(fileName);
+            StartExport(path);
             Manager.Controller.RefreshInputs(true);
             Manager.DisableExternal();
         }

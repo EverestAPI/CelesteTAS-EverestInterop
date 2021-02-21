@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework;
 using Monocle;
 
 namespace TAS.Input {
-    public class ConsoleHandler {
+    public static class ConsoleHandler {
         public static void ExecuteCommand(string[] command) {
             string[] args = command.Skip(1).ToArray();
             string commandId = command[0].ToLower();

@@ -234,7 +234,7 @@ namespace TAS {
                     Controller.RefreshInputs(true);
                     if (Controller.Current.HasActions(Actions.Restart) || Controller.Current.HasActions(Actions.Start)) {
                         NextState |= State.Delay;
-                        FrameLoops = FastForward.DefaultFastForwardSpeed;
+                        FrameLoops = FastForward.DefaultSpeed;
                         return;
                     }
                 }
@@ -247,7 +247,6 @@ namespace TAS {
 
         private static void EnableRun() {
             NextState &= ~State.Enable;
-            AnalogHelper.AnalogModeChange(AnalogueMode.Ignore);
             InitializeRun(false);
             BindingHelper.SetTasBindings();
             KbTextInput = Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput;
@@ -286,7 +285,6 @@ namespace TAS {
                 ExportSyncData = false;
             }
 
-            AnalogHelper.AnalogModeChange(AnalogueMode.Ignore);
             EnforceLegal = false;
             AllowUnsafeInput = false;
             Hotkeys.ReleaseAllKeys();

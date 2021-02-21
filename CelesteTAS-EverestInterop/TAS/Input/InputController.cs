@@ -89,15 +89,14 @@ namespace TAS.Input {
                     FastForwards.Clear();
                     Commands.Clear();
                     usedFiles.Clear();
+                    AnalogHelper.AnalogModeChange(AnalogueMode.Ignore, 1);
                     if (ReadFile(TasFilePath)) {
                         LibTasHelper.FinishExport();
                         break;
                     }
 
                     // read file failed, rewrite the libtas inputs file.
-                    if (LibTasHelper.exportLibTas) {
-                        LibTasHelper.RestartExport();
-                    }
+                    LibTasHelper.RestartExport();
 
                     System.Threading.Thread.Sleep(50);
                     tryCount--;
@@ -192,7 +191,8 @@ namespace TAS.Input {
                 }
 
                 return true;
-            } catch {
+            } catch (Exception e) {
+                e.Log();
                 return false;
             }
         }

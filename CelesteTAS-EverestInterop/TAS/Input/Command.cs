@@ -7,9 +7,9 @@ namespace TAS.Input {
         public readonly string LineText;
 
         public Command(int frame, Action commandCall, string lineText) {
-            this.Frame = frame;
+            Frame = frame;
             this.commandCall = commandCall;
-            this.LineText = lineText;
+            LineText = lineText;
         }
 
         public void Invoke() => commandCall.Invoke();
