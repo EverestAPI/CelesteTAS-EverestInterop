@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using TAS.Input;
 using GameInput = Celeste.Input;
@@ -26,6 +25,7 @@ namespace TAS {
         private const double DcMult = (1 - Deadzone) * (1 - Deadzone);
         public const short Lowerbound = 7849;
 
+        private static InputFrame lastQuery;
         private static float ampLowerbound = (float) (0.25 * DcMult);
         private static AnalogueMode analogMode = AnalogueMode.Ignore;
         public static Vector2 LastDirection;
@@ -42,12 +42,22 @@ namespace TAS {
             }
         }
 
-        private static Vector2Short ComputePrecise(Vector2 direction,float prec) {
+        public static Vector2 GetFeather(InputFrame input) {
+            if (input == lastQuery) {
+                return LastDirection;
+            }
+
+            lastQuery = input;
+            return ComputeFeather(input.GetX(), input.GetY(), input.Precision);
+        }
+
+        private static Vector2Short ComputePrecise(Vector2 direction, float prec) {
             // it should hold that direction has x>0, y>0, x>y
             // we look for the least y/x difference
             if (direction.Y < 1e-10) {
                 return new Vector2Short(upperbound, 0);
             }
+
             double approx = direction.Y / direction.X;
             double multip = direction.X / direction.Y;
             double upperl = (double) upperbound / 32767;
@@ -123,7 +133,7 @@ namespace TAS {
                     shortY = (short) Math.Round((y * (1.0 - Deadzone) + Deadzone) * 32767);
                     break;
                 case AnalogueMode.Precise:
-                    Vector2Short result = ComputePrecise(new Vector2(x, y),prec);
+                    Vector2Short result = ComputePrecise(new Vector2(x, y), prec);
                     shortX = result.X;
                     shortY = result.Y;
                     break;
@@ -136,13 +146,6 @@ namespace TAS {
             y = (float) (Math.Max(shortY / 32767.0 - Deadzone, 0.0) / (1 - Deadzone));
             LastDirection = new Vector2(x, y);
             return LastDirection;
-        }
-        private static InputFrame LastQuery;
-        static public Vector2 GetFeather(InputFrame input) {
-            if (input == LastQuery)
-                return LastDirection;
-            LastQuery = input;
-            return ComputeFeather(input.GetX(),input.GetY(),input.Precision);
         }
     }
 }

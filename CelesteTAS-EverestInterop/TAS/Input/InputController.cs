@@ -21,7 +21,6 @@ namespace TAS.Input {
 
         private Dictionary<string, DateTime> usedFiles = new Dictionary<string, DateTime>();
 
-
         public InputController() { }
 
         public string TasFilePath {

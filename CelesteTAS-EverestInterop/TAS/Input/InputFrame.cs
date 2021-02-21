@@ -25,7 +25,7 @@ namespace TAS.Input {
     }
 
     public class InputFrame {
-        static private Regex fractional = new Regex(@"\d+\.(\d*)", RegexOptions.Compiled);
+        private static readonly Regex Fractional = new Regex(@"\d+\.(\d*)", RegexOptions.Compiled);
 
         public Actions Actions;
         public float Angle;
@@ -184,20 +184,21 @@ namespace TAS.Input {
                     case 'F':
                         inputFrame.Actions ^= Actions.Feather;
                         index++;
-                        string angle = line.Substring(index + 1);
+                        string angle = line.Substring(index + 1).Trim();
                         if (angle == "") {
                             inputFrame.Angle = 0;
                             inputFrame.Precision = 1E-6f;
                         } else {
-                            inputFrame.Angle = float.Parse(angle.Trim());
+                            inputFrame.Angle = float.Parse(angle);
                             int digits = 0;
-                            MatchCollection match=fractional.Matches(angle);
+                            MatchCollection match = Fractional.Matches(angle);
                             if (match.Count != 0) {
-                                Match mat = match[0];
-                                digits = mat.Groups[0].Value.Length;
+                                digits = match[0].Groups[0].Value.Length;
                             }
-                            inputFrame.Precision = float.Parse($"0.5E-{digits+2}");
+
+                            inputFrame.Precision = float.Parse($"0.5E-{digits + 2}");
                         }
+
                         continue;
                 }
 
