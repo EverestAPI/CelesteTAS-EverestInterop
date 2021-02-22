@@ -190,61 +190,60 @@ namespace TAS.Input {
 
         [TasCommand(IllegalInMaingame = true, Args = new string[] {"Set, Setting, Value", "Set, Mod.Setting, Value"})]
         private static void SetCommand(string[] args) {
+            if (args.Length < 2) {
+                return;
+            }
+
             try {
-                Type settings;
-                object settingsObj;
-                string setting;
-                Type settingType;
-                object value;
+                Type settingsType;
+                Type valueType;
+                object settings;
+                string settingName;
                 int index = args[0].IndexOf(".", StringComparison.Ordinal);
                 if (index != -1) {
                     string moduleName = args[0].Substring(0, index);
-                    setting = args[0].Substring(index + 1);
+                    settingName = args[0].Substring(index + 1);
                     foreach (EverestModule module in Everest.Modules) {
                         if (module.Metadata.Name == moduleName) {
-                            settings = module.SettingsType;
-                            settingsObj = module._Settings;
-                            PropertyInfo property = settings.GetProperty(setting);
+                            settingsType = module.SettingsType;
+                            settings = module._Settings;
+                            PropertyInfo property = settingsType.GetProperty(settingName);
                             if (property != null) {
-                                settingType = property.PropertyType;
-                                property.SetValue(settingsObj, Convert.ChangeType(args[1], settingType));
+                                valueType = property.PropertyType;
+                                property.SetValue(settings, ConvertType(args[1], valueType));
                             }
 
                             return;
                         }
                     }
                 } else {
-                    setting = args[0];
+                    settingName = args[0];
 
-                    settings = typeof(Settings);
-                    FieldInfo field = settings.GetField(setting);
+                    settingsType = typeof(Settings);
+                    FieldInfo field = settingsType.GetField(settingName);
                     if (field != null) {
-                        settingsObj = Settings.Instance;
-                        settingType = field.FieldType;
+                        settings = Settings.Instance;
+                        valueType = field.FieldType;
                     } else {
-                        settings = typeof(Assists);
-                        field = settings.GetField(setting);
+                        settingsType = typeof(Assists);
+                        field = settingsType.GetField(settingName);
                         if (field == null) {
                             return;
                         }
 
-                        settingsObj = SaveData.Instance.Assists;
-                        settingType = field.FieldType;
+                        settings = SaveData.Instance.Assists;
+                        valueType = field.FieldType;
                     }
 
-                    try {
-                        value = Convert.ChangeType(args[1], settingType);
-                    } catch {
-                        value = args[1];
-                    }
+                    object value = ConvertType(args[1], valueType);
 
-                    if (SettingsSpecialCases(setting, settingsObj, value)) {
+                    if (SettingsSpecialCases(settingName, value)) {
                         return;
                     }
 
-                    field.SetValue(settingsObj, value);
+                    field.SetValue(settings, value);
 
-                    if (settingsObj is Assists assists) {
+                    if (settings is Assists assists) {
                         SaveData.Instance.Assists = assists;
                     }
                 }
@@ -253,7 +252,15 @@ namespace TAS.Input {
             }
         }
 
-        private static bool SettingsSpecialCases(string setting, object obj, object value) {
+        private static object ConvertType(string value, Type type) {
+            try {
+                return type.IsEnum ? Enum.Parse(type, value, true) : Convert.ChangeType(value, type);
+            } catch {
+                return value;
+            }
+        }
+
+        private static bool SettingsSpecialCases(string setting, object value) {
             Player player;
             switch (setting) {
                 case "GameSpeed":
@@ -280,7 +287,7 @@ namespace TAS.Input {
 
                     break;
                 case "DashMode":
-                    SaveData.Instance.Assists.DashMode = (Assists.DashModes) Convert.ToInt32((string) value);
+                    SaveData.Instance.Assists.DashMode = (Assists.DashModes) value;
                     player = (Engine.Scene as Level)?.Tracker.GetEntity<Player>();
                     if (player != null) {
                         player.Dashes = Math.Min(player.Dashes, player.MaxDashes);
@@ -290,7 +297,7 @@ namespace TAS.Input {
                 case "DashAssist":
                     break;
                 case "SpeedrunClock":
-                    Settings.Instance.SpeedrunClock = (SpeedrunType) Convert.ToInt32((string) value);
+                    Settings.Instance.SpeedrunClock = (SpeedrunType) value;
                     break;
                 default:
                     return false;
