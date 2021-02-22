@@ -5,6 +5,8 @@ using Monocle;
 
 namespace TAS.Input {
     public static class ConsoleHandler {
+        public static Vector2? ResetSpawn;
+
         public static void ExecuteCommand(string[] command) {
             string[] args = command.Skip(1).ToArray();
             string commandId = command[0].ToLower();
@@ -79,7 +81,7 @@ namespace TAS.Input {
 
             if (checkpoint != 0) {
                 LevelData levelData = session.MapData.Get(screen);
-                Manager.Controller.ResetSpawn = levelData.Spawns[checkpoint];
+                ResetSpawn = levelData.Spawns[checkpoint];
             }
 
             session.StartedFromBeginning = checkpoint == 0 && session.FirstLevel;
@@ -91,7 +93,7 @@ namespace TAS.Input {
             session.Level = session.MapData.GetAt(spawnPoint)?.Name;
             session.FirstLevel = false;
             session.StartedFromBeginning = false;
-            Manager.Controller.ResetSpawn = spawnPoint;
+            ResetSpawn = spawnPoint;
             Engine.Scene = new LevelLoader(session);
         }
 

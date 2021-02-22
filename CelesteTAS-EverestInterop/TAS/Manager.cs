@@ -279,7 +279,6 @@ namespace TAS {
             NextState = State.None;
             BindingHelper.RestorePlayerBindings();
             Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = KbTextInput;
-            Controller.ResetSpawn = null;
             if (ExportSyncData) {
                 EndExport();
                 ExportSyncData = false;
@@ -287,6 +286,7 @@ namespace TAS {
 
             EnforceLegal = false;
             AllowUnsafeInput = false;
+            ConsoleHandler.ResetSpawn = null;
             Hotkeys.ReleaseAllKeys();
             RestoreSettings.TryRestore();
         }

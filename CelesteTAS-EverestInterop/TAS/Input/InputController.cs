@@ -3,20 +3,18 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Microsoft.Xna.Framework;
 
 namespace TAS.Input {
     public class InputController {
         public readonly List<Command> Commands = new List<Command>();
         public readonly List<FastForward> FastForwards = new List<FastForward>();
-
         public readonly List<InputFrame> Inputs = new List<InputFrame>();
+
         private string checksum;
         private int commandIndex;
         public int FfIndex;
         private int initializationFrameCount;
 
-        public Vector2? ResetSpawn;
         public int StudioFrameCount;
 
         private Dictionary<string, DateTime> usedFiles = new Dictionary<string, DateTime>();
@@ -179,7 +177,7 @@ namespace TAS.Input {
                         }
 
                         if (line.StartsWith("***")) {
-                            FastForwards.Add(new FastForward(initializationFrameCount, line.Substring(3)));
+                            FastForwards.Add(new FastForward(initializationFrameCount, line.Substring(3), studioLine));
                         } else {
                             AddFrames(line, studioLine);
                         }
@@ -250,6 +248,10 @@ namespace TAS.Input {
 
                     if (Commands.FirstOrDefault(command => command.Frame == checkInputFrame) is Command currentCommand) {
                         result.Append(currentCommand.LineText);
+                    }
+
+                    if (FastForwards.FirstOrDefault(forward => forward.Frame == checkInputFrame) is FastForward fastForward) {
+                        result.Append(fastForward);
                     }
 
                     checkInputFrame++;

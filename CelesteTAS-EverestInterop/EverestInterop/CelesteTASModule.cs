@@ -8,6 +8,7 @@ using Celeste.Mod;
 using Ionic.Zip;
 using Microsoft.Xna.Framework;
 using TAS.EverestInterop.Hitboxes;
+using TAS.Input;
 using TAS.StudioCommunication;
 
 namespace TAS.EverestInterop {
@@ -189,7 +190,7 @@ namespace TAS.EverestInterop {
             }
 
 #if DEBUG
-        Benchmark.Load();
+            Benchmark.Load();
 #endif
         }
 
@@ -214,7 +215,7 @@ namespace TAS.EverestInterop {
             Manager.DisableExternal();
 
 #if DEBUG
-        Benchmark.Unload();
+            Benchmark.Unload();
 #endif
         }
 
@@ -226,12 +227,11 @@ namespace TAS.EverestInterop {
         private void LevelLoader_LoadingThread(On.Celeste.LevelLoader.orig_LoadingThread orig, LevelLoader self) {
             orig(self);
             Session session = self.Level.Session;
-            Vector2? spawn = Manager.Controller.ResetSpawn;
-            if (spawn != null) {
+            if (ConsoleHandler.ResetSpawn is Vector2 spawn) {
                 session.RespawnPoint = spawn;
-                session.Level = session.MapData.GetAt((Vector2) spawn)?.Name;
+                session.Level = session.MapData.GetAt(spawn)?.Name;
                 session.FirstLevel = false;
-                Manager.Controller.ResetSpawn = null;
+                ConsoleHandler.ResetSpawn = null;
             }
         }
     }

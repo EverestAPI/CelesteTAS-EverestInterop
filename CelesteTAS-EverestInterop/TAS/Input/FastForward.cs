@@ -4,11 +4,13 @@ namespace TAS.Input {
     public class FastForward {
         public const int DefaultSpeed = 400;
         public readonly int Frame;
+        public readonly int Line;
         public readonly int Speed;
 
-        public FastForward(int frame, string modifiers) {
+        public FastForward(int frame, string modifiers, int line) {
             Frame = frame;
-            if (modifiers.EndsWith("s", StringComparison.OrdinalIgnoreCase)) {
+            Line = line;
+            if (modifiers.StartsWith("s", StringComparison.OrdinalIgnoreCase)) {
                 SaveState = true;
                 modifiers = modifiers.Substring(1, modifiers.Length - 1);
             }
@@ -23,7 +25,10 @@ namespace TAS.Input {
         public bool SaveState { get; }
         public bool HasSavedState { get; set; }
 
-
         public FastForward Clone() => (FastForward) MemberwiseClone();
+
+        public override string ToString() {
+            return "***" + (SaveState ? "S" : "") + Speed;
+        }
     }
 }

@@ -11,10 +11,10 @@ using static TAS.Manager;
 
 namespace TAS {
 // TODO Add a command to check if savestate will cause desync
-    static class Savestates {
+    public static class Savestates {
         public static Coroutine Routine;
         private static InputController savedController;
-        private static int? savedLine;
+        private static int savedLine;
         private static string savedPlayerStatus;
         private static Vector2 savedLastPos;
         private static Vector2 savedLastPlayerSeekerPos;
@@ -24,7 +24,7 @@ namespace TAS {
             Type.GetType("Celeste.Mod.SpeedrunTool.SaveLoad.StateManager, SpeedrunTool") != null
         );
 
-        public static int StudioHighlightLine => (SpeedrunToolInstalledLazy.Value && IsSaved() && savedLine.HasValue ? savedLine.Value : -1);
+        public static int StudioHighlightLine => SpeedrunToolInstalledLazy.Value && IsSaved() ? savedLine : -1;
         public static bool SpeedrunToolInstalled => SpeedrunToolInstalledLazy.Value;
 
         private static bool BreakpointHasBeenDeleted =>
@@ -103,7 +103,7 @@ namespace TAS {
             }
 
             if (breakpoint) {
-                savedLine = Controller.Current.Line - 1;
+                savedLine = Controller.CurrentFf.Line;
             } else {
                 savedLine = Controller.Current.Line;
             }
@@ -153,7 +153,7 @@ namespace TAS {
             StateManager.Instance.ClearState();
             Routine = null;
             savedController = null;
-            savedLine = null;
+            savedLine = -1;
             savedPlayerStatus = null;
             savedLastPos = default;
             savedLastPlayerSeekerPos = default;
