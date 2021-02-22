@@ -24,10 +24,12 @@ namespace TAS.Input {
         public string TasFilePath {
             get {
                 string path = string.IsNullOrEmpty(Manager.Settings.TasFilePath) ? "Celeste.tas" : Manager.Settings.TasFilePath;
-                if (!File.Exists(path)) {
-                    File.WriteAllText(path, string.Empty);
+                try {
+                    if (!File.Exists(path)) {
+                        File.WriteAllText(path, string.Empty);
+                    }
                 }
-
+                catch { return "Celeste.tas"; }
                 return path;
             }
         }
