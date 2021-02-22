@@ -389,7 +389,7 @@ namespace CelesteStudio {
             // 
             this.analogueModeToolStripMenuItem.Name = "analogueModeToolStripMenuItem";
             this.analogueModeToolStripMenuItem.Size = new System.Drawing.Size(185, 22);
-            this.analogueModeToolStripMenuItem.Text = "AnalogueMode";
+            this.analogueModeToolStripMenuItem.Text = "AnalogMode";
             this.analogueModeToolStripMenuItem.ToolTipText = resources.GetString("analogueModeToolStripMenuItem.ToolTipText");
             this.analogueModeToolStripMenuItem.Click += new System.EventHandler(this.analogueModeToolStripMenuItem_Click);
             // 
