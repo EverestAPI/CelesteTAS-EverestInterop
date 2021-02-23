@@ -37,8 +37,8 @@ e.g. 123,R,J (For 123 frames, hold Right and Jump)
 - G = Grab
 - S = Pause
 - Q = Quick Reset
-- F = Feather Aim (Format: F, angle, optional upper limit of single axis (default value is 1, range is 0.5 - 1, only works in
-  precise ([AnalogMode](Docs/Commands.md#analoguemode)))
+- F = Feather Aim
+<br>Format: F, angle, optional upper limit of single axis (default value is 1, range is 0.5 - 1, only works in precise [AnalogMode](Docs/Commands.md#analoguemode)
 - O = Confirm
 - N = Journal (Used only for Cheat Code)
 
