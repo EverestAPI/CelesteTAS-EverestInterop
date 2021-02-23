@@ -89,9 +89,11 @@ namespace TAS.Input {
             // Check for full and shortened Read versions for relative path
             if (!File.Exists(filePath)) {
                 string[] files = Directory.GetFiles(Directory.GetCurrentDirectory(), $"{filePath}*.tas");
-                filePath = files[0].ToString();
-                if (!File.Exists(filePath)) {
-                    return;
+                if (files.Length > 0) {
+                    filePath = files[0].ToString();
+                    if (!File.Exists(filePath)) {
+                        return;
+                    }
                 }
             }
 
