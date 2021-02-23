@@ -29,6 +29,7 @@ TAS_BACKDROP=                 Backdrop
 TAS_DECAL=                    Decal
 TAS_PARTICLE=                 Particle
 TAS_DISTORT=                  Distort
+TAS_MINI_TEXT_BOX=            Mini Text Box
 TAS_DREAM_BLOCK=              Dream Block
 TAS_LAVA=                     Lava
 TAS_LIGHTNING=                Lightning

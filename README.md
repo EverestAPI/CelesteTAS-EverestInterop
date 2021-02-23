@@ -31,13 +31,14 @@ e.g. 123,R,J (For 123 frames, hold Right and Jump)
 - D = Down
 - J = Jump / Confirm
 - K = Jump Bind 2
-- X = Dash / Talk
-- C = Dash Bind 2
+- X = Dash / Talk / Cancel
+- C = Dash Bind 2 / Cancel
 - Z = Crouch Dash (Celeste beta versions only)
 - G = Grab
 - S = Pause
 - Q = Quick Reset
-- F = Feather Aim (Format: F,angle)
+- F = Feather Aim
+<br>Format: F, angle, optional upper limit of single axis (default value is 1, range is 0.5 - 1, only works in precise [AnalogMode](Docs/Commands.md#analoguemode)
 - O = Confirm
 - N = Journal (Used only for Cheat Code)
 

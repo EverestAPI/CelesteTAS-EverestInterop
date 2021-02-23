@@ -4,13 +4,10 @@ using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using TAS.EverestInterop.Hitboxes;
-using YamlDotNet.Serialization;
 
 namespace TAS.EverestInterop {
     public class CelesteTasModuleSettings : EverestModuleSettings {
         private bool centerCamera = false;
-
-        [YamlIgnore] public string TasFilePath = null;
         public bool Enabled { get; set; } = true;
 
         [SettingName("TAS_KEY_START")]
@@ -122,6 +119,7 @@ namespace TAS.EverestInterop {
         public bool SimplifiedDecal { get; set; } = true;
         public bool SimplifiedParticle { get; set; } = true;
         public bool SimplifiedDistort { get; set; } = true;
+        public bool SimplifiedMiniTextbox { get; set; } = true;
         public bool SimplifiedDreamBlock { get; set; } = true;
         public bool SimplifiedLava { get; set; } = true;
         public bool SimplifiedLightning { get; set; } = true;

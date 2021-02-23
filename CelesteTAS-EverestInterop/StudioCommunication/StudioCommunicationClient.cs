@@ -9,6 +9,7 @@ using Celeste.Mod;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
 using TAS.EverestInterop;
+using TAS.Input;
 using WinForms = System.Windows.Forms;
 
 namespace TAS.StudioCommunication {
@@ -192,7 +193,7 @@ namespace TAS.StudioCommunication {
         private void ProcessSendPath(byte[] data) {
             string path = Encoding.Default.GetString(data);
             Log("ProcessSendPath: " + path);
-            Manager.Settings.TasFilePath = path;
+            InputController.StudioTasFilePath = path;
         }
 
         private void ProcessHotkeyPressed(byte[] data) {

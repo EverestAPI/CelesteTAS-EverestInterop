@@ -72,7 +72,7 @@ namespace TAS.Input {
         })]
         private static void ReadCommand(InputController state, string[] args, int studioLine) {
             string filePath = args[0];
-            string origFilePath = Path.GetDirectoryName(Manager.Settings.TasFilePath);
+            string origFilePath = Path.GetDirectoryName(InputController.StudioTasFilePath);
             // Check for full and shortened Read versions for absolute path
             if (origFilePath != null) {
                 string altFilePath = origFilePath + Path.DirectorySeparatorChar + filePath;

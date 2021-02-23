@@ -49,7 +49,7 @@ namespace TAS.EverestInterop {
 
             if (origModSettings != null) {
                 foreach (EverestModule module in Everest.Modules) {
-                    if (module._Settings != null && origModSettings.TryGetValue(module, out object modSettings) && modSettings != null) {
+                    if (module?._Settings != null && origModSettings.TryGetValue(module, out object modSettings) && modSettings != null) {
                         if (modSettings is CelesteTasModuleSettings backupTasSettings) {
                             CelesteTasModuleSettings tasSettings = CelesteTasModule.Settings;
                             backupTasSettings.HideTriggerHitboxes = tasSettings.HideTriggerHitboxes;

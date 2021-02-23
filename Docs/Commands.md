@@ -84,12 +84,12 @@
 - `AnalogueMode, (Type)`
 - `AnalogMode, (Type)` also works
 - Types are `Ignore` (no check), `Circle`, `Square` and `Precise`.
-- `Circle`, `Square` and `Precise` are make sure the analogue inputs sent to the game are actually possible, locking it to a circular or square deadzone, or calculating the closest position possible on a controller. Odds are you don't need to worry about this.
+- `Circle`, `Square` and `Precise` are make sure the analogue inputs sent to the game are actually possible, locking it to a circular or square deadzone with the maximum amplitude, or calculating the closest position possible on a controller within the possible amplitude. Odds are you don't need to worry about this.
 
-### ExportLibTAS and EndExportLibTAS
-- `StartExport, (Optional File Path)`
+### StartExportLibTAS and FinishExportLibTAS
+- `StartExportLibTAS, (Optional File Path)`
 - Converts the TAS to the inputs portion of a .ltm.
-- Default filepath is `inputs`
+- Default filepath is `libTAS_inputs.txt`
 - Odds are you don't need to worry about this.
 
 ### Add and Skip

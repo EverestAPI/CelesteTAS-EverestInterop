@@ -6,6 +6,7 @@ using System.Text;
 
 namespace TAS.Input {
     public class InputController {
+        public static string StudioTasFilePath = null;
         public readonly List<Command> Commands = new List<Command>();
         public readonly List<FastForward> FastForwards = new List<FastForward>();
         public readonly List<InputFrame> Inputs = new List<InputFrame>();
@@ -23,13 +24,15 @@ namespace TAS.Input {
 
         public string TasFilePath {
             get {
-                string path = string.IsNullOrEmpty(Manager.Settings.TasFilePath) ? "Celeste.tas" : Manager.Settings.TasFilePath;
+                string path = string.IsNullOrEmpty(StudioTasFilePath) ? "Celeste.tas" : StudioTasFilePath;
                 try {
                     if (!File.Exists(path)) {
                         File.WriteAllText(path, string.Empty);
                     }
+                } catch {
+                    return "Celeste.tas";
                 }
-                catch { return "Celeste.tas"; }
+
                 return path;
             }
         }
