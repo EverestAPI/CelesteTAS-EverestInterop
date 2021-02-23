@@ -1,193 +1,193 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
-  <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{12CEFB4D-5E61-4F7E-93A6-637D96AB0139}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>TAS</RootNamespace>
-    <AssemblyName>CelesteTAS-EverestInterop</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
-    <LangVersion>7.3</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;CELESTETAS</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>0</WarningLevel>
-    <UseVSHostingProcess>true</UseVSHostingProcess>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\</OutputPath>
-    <DefineConstants>TRACE;CELESTETAS</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DocumentationFile>
-    </DocumentationFile>
-    <NoWarn>CS1591</NoWarn>
-    <PlatformTarget>x86</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup>
-    <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="Celeste">
-      <HintPath>lib-stripped\Celeste.exe</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="DotNetZip, Version=1.13.8.0, Culture=neutral, PublicKeyToken=6583c7c814667745, processorArchitecture=MSIL">
-      <HintPath>..\packages\DotNetZip.1.13.8\lib\net40\DotNetZip.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="FNA">
-      <HintPath>lib-stripped\FNA.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="MMHOOK_Celeste">
-      <HintPath>lib-stripped\MMHOOK_Celeste.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Mono.Cecil, Version=0.11.3.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e">
-      <HintPath>..\packages\Mono.Cecil.0.11.3\lib\net40\Mono.Cecil.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Mono.Cecil.Mdb, Version=0.11.3.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e">
-      <HintPath>..\packages\Mono.Cecil.0.11.3\lib\net40\Mono.Cecil.Mdb.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Mono.Cecil.Pdb, Version=0.11.3.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e">
-      <HintPath>..\packages\Mono.Cecil.0.11.3\lib\net40\Mono.Cecil.Pdb.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Mono.Cecil.Rocks, Version=0.11.3.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e">
-      <HintPath>..\packages\Mono.Cecil.0.11.3\lib\net40\Mono.Cecil.Rocks.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Mono.Posix, Version=4.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756">
-      <HintPath>..\packages\Mono.Posix-4.5.4.5.0\lib\net45\Mono.Posix.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="MonoMod, Version=20.11.26.2, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\packages\MonoMod.20.11.26.2\lib\net40\MonoMod.exe</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="MonoMod.RuntimeDetour, Version=20.11.26.2, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\packages\MonoMod.RuntimeDetour.20.11.26.2\lib\net40\MonoMod.RuntimeDetour.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="MonoMod.Utils, Version=20.11.26.2, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\packages\MonoMod.Utils.20.11.26.2\lib\net40\MonoMod.Utils.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="SpeedrunTool">
-      <HintPath>lib-stripped\SpeedrunTool.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
-    <Reference Include="YamlDotNet, Version=8.0.0.0, Culture=neutral, PublicKeyToken=ec19458f3c15af5e">
-      <HintPath>..\packages\YamlDotNet.8.1.2\lib\net45\YamlDotNet.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="EverestInterop\AutoMute.cs" />
-    <Compile Include="EverestInterop\Benchmark.cs" />
-    <Compile Include="EverestInterop\CelesteTASModuleSettings.cs" />
-    <Compile Include="EverestInterop\CelesteTASModule.cs" />
-    <Compile Include="EverestInterop\CenterCamera.cs" />
-    <Compile Include="EverestInterop\FastForwardBoost.cs" />
-    <Compile Include="EverestInterop\HideGameplay.cs" />
-    <Compile Include="EverestInterop\Hitboxes\HitboxColor.cs" />
-    <Compile Include="EverestInterop\Hitboxes\HitboxFinalBoss.cs" />
-    <Compile Include="EverestInterop\Hitboxes\HitboxFixer.cs" />
-    <Compile Include="EverestInterop\Hitboxes\ActualEntityCollideHitbox.cs" />
-    <Compile Include="EverestInterop\Hitboxes\ActualPlayerCollideHitbox.cs" />
-    <Compile Include="EverestInterop\Hitboxes\HitboxSimplified.cs" />
-    <Compile Include="EverestInterop\Hitboxes\HitboxTriggerSpikes.cs" />
-    <Compile Include="EverestInterop\Hitboxes\HitboxTweak.cs" />
-    <Compile Include="EverestInterop\Hotkeys.cs" />
-    <Compile Include="EverestInterop\InfoHUD.cs" />
-    <Compile Include="EverestInterop\Menu.cs" />
-    <Compile Include="EverestInterop\PlayerInfo.cs" />
-    <Compile Include="EverestInterop\RestoreSettings.cs" />
-    <Compile Include="TAS\AnalogHelper.cs" />
-      <Compile Include="TAS\BindingHelper.cs"/>
-    <Compile Include="TAS\Input\Command.cs" />
-    <Compile Include="TAS\Input\FastForward.cs" />
-    <Compile Include="TAS\Input\InputFrame.cs" />
-      <Compile Include="TAS\LibTasHelper.cs"/>
-    <Compile Include="TAS\Savestates.cs" />
-    <Compile Include="StudioCommunication\HotkeyIDs.cs" />
-    <Compile Include="StudioCommunication\StudioCommunicationBase.cs" />
-    <Compile Include="StudioCommunication\StudioCommunicationClient.cs" />
-    <Compile Include="StudioCommunication\StudioCommunicationServer.cs" Condition=" '$(Configuration)' == 'Debug' " />
-    <Compile Include="TAS\Input\InputCommands.cs" />
-    <Compile Include="EverestInterop\Core.cs" />
-    <Compile Include="EverestInterop\DisableAchievements.cs" />
-    <Compile Include="EverestInterop\Extensions.cs" />
-    <Compile Include="EverestInterop\GraphicsCore.cs" />
-    <Compile Include="TAS\Input\InputController.cs" />
-    <Compile Include="TAS\Input\ConsoleHandler.cs" />
-    <Compile Include="TAS\Manager.cs" />
-    <Compile Include="TAS\Manager-PlayerInfo.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="EverestInterop\RemoveSelfComponent.cs" />
-    <Compile Include="EverestInterop\SimplifiedGraphicsFeature.cs" />
-    <Compile Include="StudioCommunication\MessageIDs.cs" />
-    <Compile Include="TAS\Input\TASCommandAttribute.cs" />
-    <Compile Include="Utils\LogUtil.cs" />
-    <Compile Include="Utils\MD5Helper.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Dialog\English.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Dialog\Simplified Chinese.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Dialog\Fonts\JetBrainsMono-Regular.fnt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Dialog\Fonts\JetBrainsMono-Regular_*.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Dialog\Fonts\chinese.fnt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Dialog\Fonts\chinese_tas_0.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="everest.yaml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="app.config" />
-    <None Include="packages.config" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>
-    </PostBuildEvent>
-  </PropertyGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
-         Other similar extension points exist, see Microsoft.Common.targets.
-    <Target Name="BeforeBuild">
-    </Target>
-    <Target Name="AfterBuild">
-    </Target>
-    -->
+    <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')"/>
+    <PropertyGroup>
+        <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+        <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+        <ProjectGuid>{12CEFB4D-5E61-4F7E-93A6-637D96AB0139}</ProjectGuid>
+        <OutputType>Library</OutputType>
+        <AppDesignerFolder>Properties</AppDesignerFolder>
+        <RootNamespace>TAS</RootNamespace>
+        <AssemblyName>CelesteTAS-EverestInterop</AssemblyName>
+        <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+        <FileAlignment>512</FileAlignment>
+        <NuGetPackageImportStamp>
+        </NuGetPackageImportStamp>
+        <LangVersion>7.3</LangVersion>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+        <DebugSymbols>true</DebugSymbols>
+        <DebugType>full</DebugType>
+        <Optimize>false</Optimize>
+        <OutputPath>bin\</OutputPath>
+        <DefineConstants>TRACE;DEBUG;CELESTETAS</DefineConstants>
+        <ErrorReport>prompt</ErrorReport>
+        <WarningLevel>0</WarningLevel>
+        <UseVSHostingProcess>true</UseVSHostingProcess>
+        <PlatformTarget>AnyCPU</PlatformTarget>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+        <DebugType>pdbonly</DebugType>
+        <Optimize>true</Optimize>
+        <OutputPath>bin\</OutputPath>
+        <DefineConstants>TRACE;CELESTETAS</DefineConstants>
+        <ErrorReport>prompt</ErrorReport>
+        <WarningLevel>4</WarningLevel>
+        <DocumentationFile>
+        </DocumentationFile>
+        <NoWarn>CS1591</NoWarn>
+        <PlatformTarget>x86</PlatformTarget>
+    </PropertyGroup>
+    <PropertyGroup>
+        <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
+    </PropertyGroup>
+    <ItemGroup>
+        <Reference Include="Celeste">
+            <HintPath>lib-stripped\Celeste.exe</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="DotNetZip, Version=1.13.8.0, Culture=neutral, PublicKeyToken=6583c7c814667745, processorArchitecture=MSIL">
+            <HintPath>..\packages\DotNetZip.1.13.8\lib\net40\DotNetZip.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
+        <Reference Include="FNA">
+            <HintPath>lib-stripped\FNA.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="MMHOOK_Celeste">
+            <HintPath>lib-stripped\MMHOOK_Celeste.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="Mono.Cecil, Version=0.11.3.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e">
+            <HintPath>..\packages\Mono.Cecil.0.11.3\lib\net40\Mono.Cecil.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="Mono.Cecil.Mdb, Version=0.11.3.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e">
+            <HintPath>..\packages\Mono.Cecil.0.11.3\lib\net40\Mono.Cecil.Mdb.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="Mono.Cecil.Pdb, Version=0.11.3.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e">
+            <HintPath>..\packages\Mono.Cecil.0.11.3\lib\net40\Mono.Cecil.Pdb.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="Mono.Cecil.Rocks, Version=0.11.3.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e">
+            <HintPath>..\packages\Mono.Cecil.0.11.3\lib\net40\Mono.Cecil.Rocks.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="Mono.Posix, Version=4.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756">
+            <HintPath>..\packages\Mono.Posix-4.5.4.5.0\lib\net45\Mono.Posix.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="MonoMod, Version=20.11.26.2, Culture=neutral, PublicKeyToken=null">
+            <HintPath>..\packages\MonoMod.20.11.26.2\lib\net40\MonoMod.exe</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="MonoMod.RuntimeDetour, Version=20.11.26.2, Culture=neutral, PublicKeyToken=null">
+            <HintPath>..\packages\MonoMod.RuntimeDetour.20.11.26.2\lib\net40\MonoMod.RuntimeDetour.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="MonoMod.Utils, Version=20.11.26.2, Culture=neutral, PublicKeyToken=null">
+            <HintPath>..\packages\MonoMod.Utils.20.11.26.2\lib\net40\MonoMod.Utils.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="SpeedrunTool">
+            <HintPath>lib-stripped\SpeedrunTool.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="System"/>
+        <Reference Include="System.Windows.Forms"/>
+        <Reference Include="System.Xml"/>
+        <Reference Include="YamlDotNet, Version=8.0.0.0, Culture=neutral, PublicKeyToken=ec19458f3c15af5e">
+            <HintPath>..\packages\YamlDotNet.8.1.2\lib\net45\YamlDotNet.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+    </ItemGroup>
+    <ItemGroup>
+        <Compile Include="EverestInterop\AutoMute.cs"/>
+        <Compile Include="EverestInterop\Benchmark.cs"/>
+        <Compile Include="EverestInterop\CelesteTASModuleSettings.cs"/>
+        <Compile Include="EverestInterop\CelesteTASModule.cs"/>
+        <Compile Include="EverestInterop\CenterCamera.cs"/>
+        <Compile Include="EverestInterop\FastForwardBoost.cs"/>
+        <Compile Include="EverestInterop\HideGameplay.cs"/>
+        <Compile Include="EverestInterop\Hitboxes\HitboxColor.cs"/>
+        <Compile Include="EverestInterop\Hitboxes\HitboxFinalBoss.cs"/>
+        <Compile Include="EverestInterop\Hitboxes\HitboxFixer.cs"/>
+        <Compile Include="EverestInterop\Hitboxes\ActualEntityCollideHitbox.cs"/>
+        <Compile Include="EverestInterop\Hitboxes\ActualPlayerCollideHitbox.cs"/>
+        <Compile Include="EverestInterop\Hitboxes\HitboxSimplified.cs"/>
+        <Compile Include="EverestInterop\Hitboxes\HitboxTriggerSpikes.cs"/>
+        <Compile Include="EverestInterop\Hitboxes\HitboxTweak.cs"/>
+        <Compile Include="EverestInterop\Hotkeys.cs"/>
+        <Compile Include="EverestInterop\InfoHUD.cs"/>
+        <Compile Include="EverestInterop\Menu.cs"/>
+        <Compile Include="EverestInterop\PlayerInfo.cs"/>
+        <Compile Include="EverestInterop\RestoreSettings.cs"/>
+        <Compile Include="TAS\AnalogHelper.cs"/>
+        <Compile Include="TAS\BindingHelper.cs"/>
+        <Compile Include="TAS\Input\Command.cs"/>
+        <Compile Include="TAS\Input\FastForward.cs"/>
+        <Compile Include="TAS\Input\InputFrame.cs"/>
+        <Compile Include="TAS\LibTasHelper.cs"/>
+        <Compile Include="TAS\Savestates.cs"/>
+        <Compile Include="StudioCommunication\HotkeyIDs.cs"/>
+        <Compile Include="StudioCommunication\StudioCommunicationBase.cs"/>
+        <Compile Include="StudioCommunication\StudioCommunicationClient.cs"/>
+        <Compile Include="StudioCommunication\StudioCommunicationServer.cs" Condition=" '$(Configuration)' == 'Debug' "/>
+        <Compile Include="TAS\Input\InputCommands.cs"/>
+        <Compile Include="EverestInterop\Core.cs"/>
+        <Compile Include="EverestInterop\DisableAchievements.cs"/>
+        <Compile Include="EverestInterop\Extensions.cs"/>
+        <Compile Include="EverestInterop\GraphicsCore.cs"/>
+        <Compile Include="TAS\Input\InputController.cs"/>
+        <Compile Include="TAS\Input\ConsoleHandler.cs"/>
+        <Compile Include="TAS\Manager.cs"/>
+        <Compile Include="TAS\Manager-PlayerInfo.cs"/>
+        <Compile Include="Properties\AssemblyInfo.cs"/>
+        <Compile Include="EverestInterop\RemoveSelfComponent.cs"/>
+        <Compile Include="EverestInterop\SimplifiedGraphicsFeature.cs"/>
+        <Compile Include="StudioCommunication\MessageIDs.cs"/>
+        <Compile Include="TAS\Input\TASCommandAttribute.cs"/>
+        <Compile Include="Utils\LogUtil.cs"/>
+        <Compile Include="Utils\MD5Helper.cs"/>
+    </ItemGroup>
+    <ItemGroup>
+        <Content Include="Dialog\English.txt">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+        <Content Include="Dialog\Simplified Chinese.txt">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+        <Content Include="Dialog\Fonts\JetBrainsMono-Regular.fnt">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+        <Content Include="Dialog\Fonts\JetBrainsMono-Regular_*.png">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+        <Content Include="Dialog\Fonts\chinese.fnt">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+        <Content Include="Dialog\Fonts\chinese_tas_0.png">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+        <Content Include="everest.yaml">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+    <ItemGroup>
+        <None Include="app.config"/>
+        <None Include="packages.config"/>
+    </ItemGroup>
+    <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
+    <PropertyGroup>
+        <PostBuildEvent>
+        </PostBuildEvent>
+    </PropertyGroup>
+    <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
+           Other similar extension points exist, see Microsoft.Common.targets.
+      <Target Name="BeforeBuild">
+      </Target>
+      <Target Name="AfterBuild">
+      </Target>
+      -->
 </Project>

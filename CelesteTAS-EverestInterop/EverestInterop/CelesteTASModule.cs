@@ -154,8 +154,7 @@ namespace TAS.EverestInterop {
             GraphicsCore.Instance = new GraphicsCore();
             GraphicsCore.Instance.Load();
 
-            SimplifiedGraphicsFeature.Instance = new SimplifiedGraphicsFeature();
-            SimplifiedGraphicsFeature.Instance.Load();
+            SimplifiedGraphicsFeature.Load();
 
             CenterCamera.Instance = new CenterCamera();
             CenterCamera.Instance.Load();
@@ -200,7 +199,7 @@ namespace TAS.EverestInterop {
             FastForwardBoost.Unload();
             DisableAchievements.Instance.Unload();
             GraphicsCore.Instance.Unload();
-            SimplifiedGraphicsFeature.Instance.Unload();
+            SimplifiedGraphicsFeature.Unload();
             CenterCamera.Instance.Unload();
             AutoMute.Unload();
             HideGameplay.Instance.Unload();

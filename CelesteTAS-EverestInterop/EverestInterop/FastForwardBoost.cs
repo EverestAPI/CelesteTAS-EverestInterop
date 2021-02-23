@@ -28,7 +28,7 @@ namespace TAS.EverestInterop {
         }
 
         private static void ReflectionTentaclesOnUpdateVertices(On.Celeste.ReflectionTentacles.orig_UpdateVertices orig, ReflectionTentacles self) {
-            if (SkipUpdate || Settings.SimplifiedGraphics) {
+            if (SkipUpdate) {
                 return;
             }
 

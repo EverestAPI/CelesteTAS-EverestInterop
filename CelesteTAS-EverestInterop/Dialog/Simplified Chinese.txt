@@ -29,6 +29,7 @@ TAS_BACKDROP=                 背景图
 TAS_DECAL=                    贴图
 TAS_PARTICLE=                 粒子
 TAS_DISTORT=                  扭曲特效
+TAS_MINI_TEXT_BOX=            迷你对话框
 TAS_DREAM_BLOCK=              果冻
 TAS_LAVA=                     岩浆
 TAS_LIGHTNING=                电网
