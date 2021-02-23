@@ -12,6 +12,9 @@ namespace TAS {
     public static class BindingHelper {
         private static readonly Type BindingType = typeof(Engine).Assembly.GetType("Monocle.Binding");
 
+        private static readonly Lazy<MethodInfo> BindingAddKeys =
+            new Lazy<MethodInfo>(() => BindingType.GetMethod("Add", new[] {typeof(Keys[])}));
+
         private static readonly Lazy<MethodInfo> BindingAddButtons =
             new Lazy<MethodInfo>(() => BindingType.GetMethod("Add", new[] {typeof(Buttons[])}));
 
@@ -93,7 +96,7 @@ namespace TAS {
             SetBinding("Talk", DashAndTalkAndCancel);
 
             SetBinding("Pause", Pause);
-            SetBinding("Confirm", JumpAndConfirm);
+            SetBinding("Confirm", new[] {Keys.Enter}, JumpAndConfirm);
             SetBinding("Cancel", DashAndTalkAndCancel, Dash2AndCancel);
 
             SetBinding("Journal", Journal);
@@ -113,9 +116,15 @@ namespace TAS {
         }
 
         private static void SetBinding(string fieldName, params Buttons[] buttons) {
-            MethodInfo addButtons = BindingAddButtons.Value;
             object binding = Activator.CreateInstance(BindingType);
-            addButtons.Invoke(binding, new object[] {buttons});
+            BindingAddButtons.Value.Invoke(binding, new object[] {buttons});
+            Settings.Instance.GetDynDataInstance().Set(fieldName, binding);
+        }
+
+        private static void SetBinding(string fieldName, Keys[] keys, params Buttons[] buttons) {
+            object binding = Activator.CreateInstance(BindingType);
+            BindingAddKeys.Value.Invoke(binding, new object[] {keys});
+            BindingAddButtons.Value.Invoke(binding, new object[] {buttons});
             Settings.Instance.GetDynDataInstance().Set(fieldName, binding);
         }
     }
