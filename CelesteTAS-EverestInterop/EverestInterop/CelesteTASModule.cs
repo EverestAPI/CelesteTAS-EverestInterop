@@ -211,7 +211,10 @@ namespace TAS.EverestInterop {
 
             UnixRtc?.Dispose();
 
+            // for hot reloading
             Manager.DisableExternal();
+            Savestates.Unload();
+            InputController.SaveStudioTasFilePath();
 
 #if DEBUG
             Benchmark.Unload();

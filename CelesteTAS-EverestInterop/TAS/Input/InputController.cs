@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using TAS.EverestInterop;
 
 namespace TAS.Input {
     public class InputController {
-        public static string StudioTasFilePath = null;
+        public static string StudioTasFilePath = Celeste.Celeste.Instance.GetDynDataInstance().Get<string>("lastStudioTasFilePath");
         public readonly List<Command> Commands = new List<Command>();
         public readonly List<FastForward> FastForwards = new List<FastForward>();
         public readonly List<InputFrame> Inputs = new List<InputFrame>();
@@ -270,6 +271,10 @@ namespace TAS.Input {
 
         public string Checksum(InputController controller) => Checksum(controller.CurrentFrame);
         public string Checksum() => Checksum(CurrentFrame);
+
+        public static void SaveStudioTasFilePath() {
+            Celeste.Celeste.Instance.GetDynDataInstance().Set("lastStudioTasFilePath", StudioTasFilePath);
+        }
 
         #region ignore
 

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Celeste;
 using Celeste.Mod;
@@ -49,20 +50,24 @@ namespace TAS.EverestInterop {
 
             if (origModSettings != null) {
                 foreach (EverestModule module in Everest.Modules) {
-                    if (module?._Settings != null && origModSettings.TryGetValue(module, out object modSettings) && modSettings != null) {
-                        if (modSettings is CelesteTasModuleSettings backupTasSettings) {
-                            CelesteTasModuleSettings tasSettings = CelesteTasModule.Settings;
-                            backupTasSettings.HideTriggerHitboxes = tasSettings.HideTriggerHitboxes;
-                            backupTasSettings.SimplifiedGraphics = tasSettings.SimplifiedGraphics;
-                            backupTasSettings.CenterCamera = tasSettings.CenterCamera;
+                    try {
+                        if (module?._Settings != null && origModSettings.TryGetValue(module, out object modSettings) && modSettings != null) {
+                            if (modSettings is CelesteTasModuleSettings backupTasSettings) {
+                                CelesteTasModuleSettings tasSettings = CelesteTasModule.Settings;
+                                backupTasSettings.HideTriggerHitboxes = tasSettings.HideTriggerHitboxes;
+                                backupTasSettings.SimplifiedGraphics = tasSettings.SimplifiedGraphics;
+                                backupTasSettings.CenterCamera = tasSettings.CenterCamera;
+                            }
+
+                            bool showHitbox = GameplayRendererExt.RenderDebug;
+
+                            module._Settings.CopyAllProperties(modSettings);
+                            module._Settings.CopyAllFields(modSettings);
+
+                            GameplayRendererExt.RenderDebug = showHitbox;
                         }
-
-                        bool showHitbox = GameplayRendererExt.RenderDebug;
-
-                        module._Settings.CopyAllProperties(modSettings);
-                        module._Settings.CopyAllFields(modSettings);
-
-                        GameplayRendererExt.RenderDebug = showHitbox;
+                    } catch (NullReferenceException e) {
+                        // maybe caused by hot reloading
                     }
                 }
 

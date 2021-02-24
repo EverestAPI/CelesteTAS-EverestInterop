@@ -206,5 +206,11 @@ namespace TAS {
 
             StudioCommunicationClient.Instance?.SendStateAndPlayerData(CurrentStatus, PlayerStatus, false);
         }
+
+        public static void Unload() {
+            if (IsSaved()) {
+                Clear();
+            }
+        }
     }
 }
