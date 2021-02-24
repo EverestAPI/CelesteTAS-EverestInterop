@@ -208,7 +208,7 @@ namespace TAS {
         }
 
         public static void Unload() {
-            if (IsSaved()) {
+            if (SpeedrunToolInstalled && IsSaved()) {
                 Clear();
             }
         }
