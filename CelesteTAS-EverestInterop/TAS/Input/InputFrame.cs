@@ -104,6 +104,9 @@ namespace TAS.Input {
 
             if (HasActions(Actions.Feather)) {
                 sb.Append(",F,").Append(Angle == 0 ? string.Empty : Angle.ToString(CultureInfo.InvariantCulture));
+                if (Math.Abs(UpperLimit - 1f) > 1e-10) {
+                    sb.Append($",{UpperLimit}");
+                }
             }
 
             return sb.ToString();
