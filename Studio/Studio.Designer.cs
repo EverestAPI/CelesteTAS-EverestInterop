@@ -44,6 +44,7 @@ namespace CelesteStudio {
             this.settingsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.rememberCurrentFileMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.sendInputsToCelesteMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.autoRemoveExclusiveActionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.showGameInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.fontToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -201,7 +202,7 @@ namespace CelesteStudio {
             // 
             // settingsToolStripMenuItem
             // 
-            this.settingsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.rememberCurrentFileMenuItem, this.sendInputsToCelesteMenuItem, this.showGameInfoToolStripMenuItem, this.fontToolStripMenuItem});
+            this.settingsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.rememberCurrentFileMenuItem, this.sendInputsToCelesteMenuItem, this.autoRemoveExclusiveActionsToolStripMenuItem, this.showGameInfoToolStripMenuItem, this.fontToolStripMenuItem});
             this.settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
             this.settingsToolStripMenuItem.Size = new System.Drawing.Size(83, 20);
             this.settingsToolStripMenuItem.Text = "&Settings";
@@ -221,6 +222,13 @@ namespace CelesteStudio {
             this.sendInputsToCelesteMenuItem.Size = new System.Drawing.Size(402, 22);
             this.sendInputsToCelesteMenuItem.Text = "&Send Inputs to Celeste";
             this.sendInputsToCelesteMenuItem.Click += new System.EventHandler(this.sendInputsToCelesteMenuItem_Click);
+            // 
+            // autoRemoveExclusiveActionsToolStripMenuItem
+            // 
+            this.autoRemoveExclusiveActionsToolStripMenuItem.Name = "autoRemoveExclusiveActionsToolStripMenuItem";
+            this.autoRemoveExclusiveActionsToolStripMenuItem.Size = new System.Drawing.Size(402, 22);
+            this.autoRemoveExclusiveActionsToolStripMenuItem.Text = "Auto Remove Mutually Exclusive Actions";
+            this.autoRemoveExclusiveActionsToolStripMenuItem.Click += new System.EventHandler(this.autoRemoveExclusiveActionsToolStripMenuItem_Click);
             // 
             // showGameInfoToolStripMenuItem
             // 
@@ -263,7 +271,7 @@ namespace CelesteStudio {
             // 
             this.tasTextContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.insertRemoveBreakPointToolStripMenuItem, this.insertRemoveSavestateBreakPointToolStripMenuItem, this.removeAllBreakpointsToolStripMenuItem, this.toolStripSeparator2, this.commentUncommentTextToolStripMenuItem, this.insertRoomNameToolStripMenuItem, this.insertCurrentInGameTimeToolStripMenuItem, this.insertModInfoStripMenuItem1, this.insertConsoleLoadCommandToolStripMenuItem, this.insertOtherCommandToolStripMenuItem, this.toolStripSeparator6, this.swapDashKeysStripMenuItem, this.swapJumpKeysToolStripMenuItem});
             this.tasTextContextMenuStrip.Name = "tasTextContextMenuStrip";
-            this.tasTextContextMenuStrip.Size = new System.Drawing.Size(426, 280);
+            this.tasTextContextMenuStrip.Size = new System.Drawing.Size(426, 258);
             // 
             // insertRemoveBreakPointToolStripMenuItem
             // 
@@ -535,6 +543,8 @@ namespace CelesteStudio {
             this.ResumeLayout(false);
             this.PerformLayout();
         }
+
+        private System.Windows.Forms.ToolStripMenuItem autoRemoveExclusiveActionsToolStripMenuItem;
 
         private System.Windows.Forms.ToolStripMenuItem convertToLibTASInputsToolStripMenuItem;
 

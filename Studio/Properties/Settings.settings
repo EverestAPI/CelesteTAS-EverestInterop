@@ -5,7 +5,7 @@
   </Profiles>
   <Settings>
       <Setting Name="RememberLastFileName" Type="System.Boolean" Scope="User">
-          <Value Profile="(Default)">False</Value>
+          <Value Profile="(Default)">True</Value>
       </Setting>
       <Setting Name="LastFileName" Type="System.String" Scope="User">
           <Value Profile="(Default)"/>
@@ -26,6 +26,9 @@
           <Value Profile="(Default)"/>
       </Setting>
       <Setting Name="ShowGameInfo" Type="System.Boolean" Scope="User">
+          <Value Profile="(Default)">True</Value>
+      </Setting>
+      <Setting Name="AutoRemoveMutuallyExclusiveActions" Type="System.Boolean" Scope="User">
           <Value Profile="(Default)">True</Value>
       </Setting>
   </Settings>

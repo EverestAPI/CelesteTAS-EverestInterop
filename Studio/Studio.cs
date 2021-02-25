@@ -811,6 +811,10 @@ namespace CelesteStudio {
             Settings.Default.RememberLastFileName = !Settings.Default.RememberLastFileName;
         }
 
+        private void autoRemoveExclusiveActionsToolStripMenuItem_Click(object sender, EventArgs e) {
+            Settings.Default.AutoRemoveMutuallyExclusiveActions = !Settings.Default.AutoRemoveMutuallyExclusiveActions;
+        }
+
         private void homeMenuItem_Click(object sender, EventArgs e) {
             Process.Start("https://github.com/EverestAPI/CelesteTAS-EverestInterop");
         }
@@ -818,6 +822,7 @@ namespace CelesteStudio {
         private void settingsToolStripMenuItem_Opened(object sender, EventArgs e) {
             rememberCurrentFileMenuItem.Checked = Settings.Default.RememberLastFileName;
             sendInputsToCelesteMenuItem.Checked = Settings.Default.UpdatingHotkeys;
+            autoRemoveExclusiveActionsToolStripMenuItem.Checked = Settings.Default.AutoRemoveMutuallyExclusiveActions;
             showGameInfoToolStripMenuItem.Checked = Settings.Default.ShowGameInfo;
         }
 

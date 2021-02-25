@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using System.Text.RegularExpressions;
+using CelesteStudio.Properties;
 
 namespace CelesteStudio.Entities {
     [Flags]
@@ -105,6 +106,10 @@ namespace CelesteStudio.Entities {
                 }
 
                 index++;
+            }
+
+            if (!Settings.Default.AutoRemoveMutuallyExclusiveActions && HasActions(Actions.Feather)) {
+                Actions &= ~Actions.Right & ~Actions.Left & ~Actions.Up & ~Actions.Down;
             }
         }
 
@@ -292,6 +297,10 @@ namespace CelesteStudio.Entities {
         }
 
         public static void ProcessExclusiveActions(InputRecord oldInput, InputRecord newInput) {
+            if (!Settings.Default.AutoRemoveMutuallyExclusiveActions) {
+                return;
+            }
+
             foreach (Actions[] exclusiveActions in ExclusiveActions) {
                 foreach (Actions action in exclusiveActions) {
                     if (!oldInput.HasActions(action) && newInput.HasActions(action)) {

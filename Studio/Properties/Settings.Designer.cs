@@ -25,7 +25,7 @@ namespace CelesteStudio.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool RememberLastFileName {
             get {
                 return ((bool)(this["RememberLastFileName"]));
@@ -114,6 +114,18 @@ namespace CelesteStudio.Properties {
             }
             set {
                 this["ShowGameInfo"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool AutoRemoveMutuallyExclusiveActions {
+            get {
+                return ((bool)(this["AutoRemoveMutuallyExclusiveActions"]));
+            }
+            set {
+                this["AutoRemoveMutuallyExclusiveActions"] = value;
             }
         }
     }
