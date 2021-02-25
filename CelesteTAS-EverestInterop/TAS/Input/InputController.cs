@@ -248,7 +248,7 @@ namespace TAS.Input {
             try {
                 int checkInputFrame = 0;
 
-                while (checkInputFrame <= toInputFrame) {
+                while (checkInputFrame < toInputFrame) {
                     InputFrame currentInput = Inputs[checkInputFrame];
                     result.AppendLine(currentInput.ToString());
 
