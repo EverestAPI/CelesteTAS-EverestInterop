@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Celeste;
+using Celeste.Mod;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
 using MonoMod.Utils;
@@ -47,7 +48,6 @@ namespace TAS {
                 SetTasBindingsNew();
             }
 
-            GameInput.Initialize();
             Settings.Instance.CopyAllFields(settingsBackup);
         }
 
@@ -76,7 +76,11 @@ namespace TAS {
             settings.Set("BtnJump", new List<Buttons> {JumpAndConfirm, Jump2});
             settings.Set("BtnDash", new List<Buttons> {DashAndTalkAndCancel, Dash2AndCancel});
             settings.Set("BtnTalk", new List<Buttons> {DashAndTalkAndCancel});
-            settings.Set("BtnAltQuickRestart", new List<Buttons> {QuickRestart});
+            settings.Set("BtnAltQuickRestart", new List<Buttons>());
+
+            GameInput.Initialize();
+
+            GameInput.QuickRestart.AddButtons(new List<Buttons> {QuickRestart});
         }
 
         private static void SetTasBindingsNew() {
@@ -113,6 +117,8 @@ namespace TAS {
             SetBinding("LeftDashOnly");
             SetBinding("UpDashOnly");
             SetBinding("DownDashOnly");
+
+            GameInput.Initialize();
         }
 
         private static void SetBinding(string fieldName, params Buttons[] buttons) {
