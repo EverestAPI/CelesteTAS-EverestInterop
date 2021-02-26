@@ -183,6 +183,7 @@ namespace TAS.Input {
                         }
 
                         if (line.StartsWith("***")) {
+                            FastForwards.RemoveAll(forward => forward.Frame == initializationFrameCount);
                             FastForwards.Add(new FastForward(initializationFrameCount, line.Substring(3), studioLine));
                         } else {
                             AddFrames(line, studioLine);
