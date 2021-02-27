@@ -255,7 +255,9 @@ namespace CelesteStudio {
                 } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.K) {
                     CommentText();
                 } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.P) {
-                    ClearBreakpointsAndSaveState();
+                    ClearUncommentedBreakpoints();
+                } else if (e.Modifiers == (Keys.Control | Keys.Shift) && e.KeyCode == Keys.P) {
+                    ClearBreakpoints();
                 } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.OemPeriod) {
                     InsertOrRemoveText(SyntaxHighlighter.BreakPointRegex, "***");
                 } else if (e.Modifiers == (Keys.Control | Keys.Shift) && e.KeyCode == Keys.OemPeriod) {
@@ -349,11 +351,17 @@ namespace CelesteStudio {
             Settings.Default.LastFileName = LastFileName;
         }
 
-        private void ClearBreakpointsAndSaveState() {
+        private void ClearUncommentedBreakpoints() {
             var line = Math.Min(tasText.Selection.Start.iLine, tasText.Selection.End.iLine);
-            List<int> breakpoints = tasText.FindLines(@"\*\*\*");
-            List<int> saveStates = tasText.FindLines(@"^\s*savestate\s*$", RegexOptions.IgnoreCase);
-            tasText.RemoveLines(breakpoints.Union(saveStates).ToList());
+            List<int> breakpoints = tasText.FindLines(@"^\s*\*\*\*");
+            tasText.RemoveLines(breakpoints);
+            tasText.Selection.Start = new Place(0, Math.Min(line, tasText.LinesCount - 1));
+        }
+
+        private void ClearBreakpoints() {
+            var line = Math.Min(tasText.Selection.Start.iLine, tasText.Selection.End.iLine);
+            List<int> breakpoints = tasText.FindLines(@"^\s*#*\s*\*\*\*");
+            tasText.RemoveLines(breakpoints);
             tasText.Selection.Start = new Place(0, Math.Min(line, tasText.LinesCount - 1));
         }
 
@@ -867,8 +875,12 @@ namespace CelesteStudio {
             CommentText();
         }
 
-        private void toolStripMenuItem1_Click(object sender, EventArgs e) {
-            ClearBreakpointsAndSaveState();
+        private void removeAllUncommentedBreakpointsToolStripMenuItem_Click(object sender, EventArgs e) {
+            ClearUncommentedBreakpoints();
+        }
+
+        private void removeAllBreakpointsToolStripMenuItem_Click(object sender, EventArgs e) {
+            ClearBreakpoints();
         }
 
         private void insertRoomNameToolStripMenuItem_Click(object sender, EventArgs e) {
