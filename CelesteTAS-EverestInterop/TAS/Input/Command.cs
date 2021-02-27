@@ -1,7 +1,7 @@
 using System;
 
 namespace TAS.Input {
-    public class Command {
+    public readonly struct Command {
         private readonly Action commandCall;
         public readonly int Frame;
         public readonly string LineText;
@@ -13,7 +13,5 @@ namespace TAS.Input {
         }
 
         public void Invoke() => commandCall.Invoke();
-
-        public Command Clone() => new Command(Frame, commandCall, LineText);
     }
 }

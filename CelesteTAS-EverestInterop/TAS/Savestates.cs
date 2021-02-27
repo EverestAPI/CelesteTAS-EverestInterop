@@ -14,7 +14,6 @@ namespace TAS {
     public static class Savestates {
         public static Coroutine Routine;
         private static InputController savedController;
-        private static int savedLine;
         private static string savedPlayerStatus;
         private static Vector2 savedLastPos;
         private static Vector2 savedLastPlayerSeekerPos;
@@ -24,13 +23,18 @@ namespace TAS {
             Type.GetType("Celeste.Mod.SpeedrunTool.SaveLoad.StateManager, SpeedrunTool") != null
         );
 
-        public static int StudioHighlightLine => SpeedrunToolInstalledLazy.Value && IsSaved() ? savedLine : -1;
+        private static int SavedLine =>
+            (savedByBreakpoint
+                ? Controller.FastForwards.GetValueOrDefault(SavedCurrentFrame)?.Line
+                : Controller.Inputs.GetValueOrDefault(SavedCurrentFrame)?.Line) ?? -1;
+
+        private static int SavedCurrentFrame => savedController?.CurrentFrame ?? -1;
+
+        public static int StudioHighlightLine => SpeedrunToolInstalledLazy.Value && IsSaved() ? SavedLine : -1;
         public static bool SpeedrunToolInstalled => SpeedrunToolInstalledLazy.Value;
 
         private static bool BreakpointHasBeenDeleted =>
-            IsSaved() && savedByBreakpoint
-                      && savedController.FfIndex < savedController.FastForwards.Count
-                      && !Controller.FastForwards.Any(ff => ff.SaveState && ff.Frame == savedController.CurrentFf.Frame);
+            IsSaved() && savedByBreakpoint && Controller.FastForwards.GetValueOrDefault(SavedCurrentFrame)?.SaveState != true;
 
         private static bool IsSaved() {
             return StateManager.Instance.IsSaved && StateManager.Instance.SavedByTas && savedController != null;
@@ -62,17 +66,16 @@ namespace TAS {
                 return;
             }
 
-            if (BreakpointHasBeenDeleted) {
+            if (Running && BreakpointHasBeenDeleted) {
                 Clear();
             }
 
             // save state when tas run to the last savestate breakpoint
             if (Running
                 && Controller.Inputs.Count > Controller.CurrentFrame
-                && Controller.FastForwards.Count > Controller.FfIndex
-                && Controller.CurrentFf.SaveState && !Controller.CurrentFf.HasSavedState
-                && Controller.CurrentFf.Frame == Controller.CurrentFrame
-                && Controller.FastForwards.LastOrDefault(record => record.SaveState) == Controller.CurrentFf) {
+                && Controller.CurrentFastForward is FastForward currentFastForward && currentFastForward.SaveState
+                && Controller.FastForwards.Last(pair => pair.Value.SaveState).Value == currentFastForward
+                && SavedCurrentFrame != currentFastForward.Frame) {
                 Save(true);
                 return;
             }
@@ -96,16 +99,6 @@ namespace TAS {
 
             if (!StateManager.Instance.SaveState()) {
                 return;
-            }
-
-            if (breakpoint && Controller.CurrentFf.SaveState) {
-                Controller.CurrentFf.HasSavedState = true;
-            }
-
-            if (breakpoint) {
-                savedLine = Controller.CurrentFf.Line;
-            } else {
-                savedLine = Controller.Current.Line;
             }
 
             savedByBreakpoint = breakpoint;
@@ -153,14 +146,10 @@ namespace TAS {
             StateManager.Instance.ClearState();
             Routine = null;
             savedController = null;
-            savedLine = -1;
             savedPlayerStatus = null;
             savedLastPos = default;
             savedLastPlayerSeekerPos = default;
             savedByBreakpoint = false;
-            foreach (FastForward fastForward in Controller.FastForwards) {
-                fastForward.HasSavedState = false;
-            }
 
             UpdateStudio();
         }
@@ -173,14 +162,6 @@ namespace TAS {
         private static void LoadStateRoutine() {
             Controller = savedController.Clone();
             Controller.RefreshInputs(false);
-            // Some fields were reset by RefreshInputs(false), so we need restore it.
-            Controller.FfIndex = savedController.FfIndex;
-            for (int i = 0; i < savedController.FastForwards.Count && i < Controller.FastForwards.Count; i++) {
-                if (savedController.FastForwards[i].HasSavedState) {
-                    Controller.FastForwards[i].HasSavedState = true;
-                    break;
-                }
-            }
 
             SetTasState();
             PlayerStatus = savedPlayerStatus;

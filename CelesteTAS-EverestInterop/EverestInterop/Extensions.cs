@@ -141,6 +141,26 @@ namespace TAS.EverestInterop {
         }
     }
 
+    internal static class ListExtensions {
+        public static T GetValueOrDefault<T>(this IList<T> list, int index, T defaultValue = default) {
+            return index > 0 && index < list.Count ? list[index] : defaultValue;
+        }
+    }
+
+    internal static class DictionaryExtensions {
+        public static TValue GetValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key, TValue defaultValue = default) {
+            return dict.TryGetValue(key, out TValue value) ? value : defaultValue;
+        }
+
+        public static TKey LastKeyOrDefault<TKey, TValue>(this SortedDictionary<TKey, TValue> dict) {
+            return dict.Count > 0 ? dict.Last().Key : default;
+        }
+
+        public static TValue LastValueOrDefault<TKey, TValue>(this SortedDictionary<TKey, TValue> dict) {
+            return dict.Count > 0 ? dict.Last().Value : default;
+        }
+    }
+
 // source from: https://stackoverflow.com/a/17264480
     internal static class ExtendedDataExtensions {
         private static readonly ConditionalWeakTable<object, object> ExtendedData =

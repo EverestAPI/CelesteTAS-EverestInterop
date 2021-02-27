@@ -5,6 +5,7 @@ namespace TAS.Input {
         public const int DefaultSpeed = 400;
         public readonly int Frame;
         public readonly int Line;
+        public readonly bool SaveState;
         public readonly int Speed;
 
         public FastForward(int frame, string modifiers, int line) {
@@ -13,17 +14,12 @@ namespace TAS.Input {
             if (modifiers.StartsWith("s", StringComparison.OrdinalIgnoreCase)) {
                 SaveState = true;
                 modifiers = modifiers.Substring(1, modifiers.Length - 1);
-            }
-
-            if (int.TryParse(modifiers, out int speed)) {
-                Speed = speed;
             } else {
-                Speed = DefaultSpeed;
+                SaveState = false;
             }
-        }
 
-        public bool SaveState { get; }
-        public bool HasSavedState { get; set; }
+            Speed = int.TryParse(modifiers, out int speed) ? speed : DefaultSpeed;
+        }
 
         public FastForward Clone() => (FastForward) MemberwiseClone();
 

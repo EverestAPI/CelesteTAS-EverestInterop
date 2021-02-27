@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -53,7 +54,11 @@ namespace TAS.Input {
                             return commandType.ToLower() == "playcommand";
                         }
 
-                        inputController.Commands.Add(new Command(frame, () => method.Invoke(null, parameters), lineText));
+                        if (!inputController.Commands.ContainsKey(frame)) {
+                            inputController.Commands[frame] = new List<Command>();
+                        }
+
+                        inputController.Commands[frame].Add(new Command(frame, () => method.Invoke(null, parameters), lineText));
                     }
                 }
 

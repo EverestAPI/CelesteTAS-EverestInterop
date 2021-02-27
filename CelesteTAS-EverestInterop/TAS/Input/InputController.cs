@@ -1,27 +1,22 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using TAS.EverestInterop;
 
 namespace TAS.Input {
     public class InputController {
         public static string StudioTasFilePath = Celeste.Celeste.Instance.GetDynDataInstance().Get<string>("lastStudioTasFilePath");
-        public readonly List<Command> Commands = new List<Command>();
-        public readonly List<FastForward> FastForwards = new List<FastForward>();
+        public readonly SortedDictionary<int, List<Command>> Commands = new SortedDictionary<int, List<Command>>();
+        public readonly SortedDictionary<int, FastForward> FastForwards = new SortedDictionary<int, FastForward>();
         public readonly List<InputFrame> Inputs = new List<InputFrame>();
 
         private string checksum;
-        private int commandIndex;
-        public int FfIndex;
         private int initializationFrameCount;
 
         public int StudioFrameCount;
 
         private Dictionary<string, DateTime> usedFiles = new Dictionary<string, DateTime>();
-
-        public InputController() { }
 
         public string TasFilePath {
             get {
@@ -43,8 +38,8 @@ namespace TAS.Input {
         public InputFrame Previous => CurrentFrame - 1 >= 0 ? Inputs[CurrentFrame - 1] : null;
         public InputFrame Current => Inputs[CurrentFrame];
         public InputFrame Next => CurrentFrame + 1 < Inputs.Count ? Inputs[CurrentFrame + 1] : null;
-        public FastForward CurrentFf => FastForwards[FfIndex];
-        public Command CurrentCommand => Commands[commandIndex];
+        public FastForward CurrentFastForward => FastForwards.GetValueOrDefault(CurrentFrame);
+        public List<Command> CurrentCommands => Commands.GetValueOrDefault(CurrentFrame);
 
         private bool NeedsReload {
             get {
@@ -65,9 +60,9 @@ namespace TAS.Input {
         public bool CanPlayback => CurrentFrame < Inputs.Count;
         public bool NeedsToWait => Manager.IsLoading();
 
-        public bool HasFastForward => FastForwards.Count > FfIndex && !Break;
-        public int FastForwardSpeed => CurrentFf.Speed;
-        public bool Break => FfIndex + 1 == FastForwards.Count && CurrentFf.Frame == CurrentFrame;
+        public bool HasFastForward => (FastForwards.LastValueOrDefault()?.Frame ?? -1) > CurrentFrame;
+        public int FastForwardSpeed => FastForwards.LastValueOrDefault()?.Speed ?? 1;
+        public bool Break => FastForwards.LastValueOrDefault()?.Frame == CurrentFrame;
 
         public string SavedChecksum {
             get => string.IsNullOrEmpty(checksum) ? Checksum() : checksum;
@@ -79,16 +74,12 @@ namespace TAS.Input {
                 initializationFrameCount = 0;
                 StudioFrameCount = 0;
                 CurrentFrame = 0;
-                FfIndex = 0;
-                commandIndex = 0;
             }
 
             if (NeedsReload || fromStart) {
                 int tryCount = 5;
                 while (tryCount > 0) {
                     initializationFrameCount = 0;
-                    FfIndex = 0;
-                    commandIndex = 0;
                     Inputs.Clear();
                     FastForwards.Clear();
                     Commands.Clear();
@@ -117,17 +108,7 @@ namespace TAS.Input {
                 return;
             }
 
-            while (Commands.Count > commandIndex && CurrentCommand.Frame <= CurrentFrame) {
-                if (CurrentCommand.Frame == CurrentFrame) {
-                    CurrentCommand.Invoke();
-                }
-
-                commandIndex++;
-            }
-
-            while (FastForwards.Count > FfIndex && CurrentFf.Frame <= CurrentFrame) {
-                FfIndex++;
-            }
+            CurrentCommands?.ForEach(command => command.Invoke());
 
             if (!CanPlayback) {
                 return;
@@ -183,8 +164,7 @@ namespace TAS.Input {
                         }
 
                         if (line.StartsWith("***")) {
-                            FastForwards.RemoveAll(forward => forward.Frame == initializationFrameCount);
-                            FastForwards.Add(new FastForward(initializationFrameCount, line.Substring(3), studioLine));
+                            FastForwards[initializationFrameCount] = new FastForward(initializationFrameCount, line.Substring(3), studioLine);
                         } else {
                             AddFrames(line, studioLine);
                         }
@@ -225,18 +205,16 @@ namespace TAS.Input {
                 }
             }
 
-            foreach (FastForward ff in FastForwards) {
-                clone.FastForwards.Add(ff.Clone());
+            foreach (int frame in FastForwards.Keys) {
+                clone.FastForwards[frame] = FastForwards[frame].Clone();
             }
 
-            foreach (Command command in Commands) {
-                clone.Commands.Add(command.Clone());
+            foreach (int frame in Commands.Keys) {
+                clone.Commands[frame] = new List<Command>(Commands[frame]);
             }
 
             clone.CurrentFrame = CurrentFrame;
-            clone.FfIndex = FfIndex;
             clone.StudioFrameCount = StudioFrameCount;
-            clone.commandIndex = commandIndex;
             clone.usedFiles = new Dictionary<string, DateTime>(usedFiles);
 
             return clone;
@@ -253,12 +231,10 @@ namespace TAS.Input {
                     InputFrame currentInput = Inputs[checkInputFrame];
                     result.AppendLine(currentInput.ToString());
 
-                    if (Commands.FirstOrDefault(command => command.Frame == checkInputFrame) is Command currentCommand) {
-                        result.Append(currentCommand.LineText);
-                    }
-
-                    if (FastForwards.FirstOrDefault(forward => forward.Frame == checkInputFrame) is FastForward fastForward) {
-                        result.Append(fastForward);
+                    if (Commands.GetValueOrDefault(checkInputFrame) is List<Command> commands) {
+                        foreach (Command command in commands) {
+                            result.Append(command.LineText);
+                        }
                     }
 
                     checkInputFrame++;
