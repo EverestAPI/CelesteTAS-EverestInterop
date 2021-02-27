@@ -55,6 +55,7 @@ namespace CelesteStudio {
             this.insertRemoveSavestateBreakPointToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.removeAllUncommentedBreakpointsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.removeAllBreakpointsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.commentUncommentAllBreakpointsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.commentUncommentTextToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.insertRoomNameToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -270,9 +271,9 @@ namespace CelesteStudio {
             //
             // tasTextContextMenuStrip
             //
-            this.tasTextContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.insertRemoveBreakPointToolStripMenuItem, this.insertRemoveSavestateBreakPointToolStripMenuItem, this.removeAllUncommentedBreakpointsToolStripMenuItem, this.removeAllBreakpointsToolStripMenuItem, this.toolStripSeparator2, this.commentUncommentTextToolStripMenuItem, this.insertRoomNameToolStripMenuItem, this.insertCurrentInGameTimeToolStripMenuItem, this.insertModInfoStripMenuItem1, this.insertConsoleLoadCommandToolStripMenuItem, this.insertOtherCommandToolStripMenuItem, this.toolStripSeparator6, this.swapDashKeysStripMenuItem, this.swapJumpKeysToolStripMenuItem});
+            this.tasTextContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.insertRemoveBreakPointToolStripMenuItem, this.insertRemoveSavestateBreakPointToolStripMenuItem, this.removeAllUncommentedBreakpointsToolStripMenuItem, this.removeAllBreakpointsToolStripMenuItem, this.commentUncommentAllBreakpointsToolStripMenuItem, this.toolStripSeparator2, this.commentUncommentTextToolStripMenuItem, this.insertRoomNameToolStripMenuItem, this.insertCurrentInGameTimeToolStripMenuItem, this.insertModInfoStripMenuItem1, this.insertConsoleLoadCommandToolStripMenuItem, this.insertOtherCommandToolStripMenuItem, this.toolStripSeparator6, this.swapDashKeysStripMenuItem, this.swapJumpKeysToolStripMenuItem});
             this.tasTextContextMenuStrip.Name = "tasTextContextMenuStrip";
-            this.tasTextContextMenuStrip.Size = new System.Drawing.Size(426, 280);
+            this.tasTextContextMenuStrip.Size = new System.Drawing.Size(426, 302);
             //
             // insertRemoveBreakPointToolStripMenuItem
             //
@@ -305,6 +306,14 @@ namespace CelesteStudio {
             this.removeAllBreakpointsToolStripMenuItem.Size = new System.Drawing.Size(425, 22);
             this.removeAllBreakpointsToolStripMenuItem.Text = "Remove All Breakpoints";
             this.removeAllBreakpointsToolStripMenuItem.Click += new System.EventHandler(this.removeAllBreakpointsToolStripMenuItem_Click);
+            //
+            // commentUncommentAllBreakpointsToolStripMenuItem
+            //
+            this.commentUncommentAllBreakpointsToolStripMenuItem.Name = "commentUncommentAllBreakpointsToolStripMenuItem";
+            this.commentUncommentAllBreakpointsToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys) (((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Alt) | System.Windows.Forms.Keys.P)));
+            this.commentUncommentAllBreakpointsToolStripMenuItem.Size = new System.Drawing.Size(425, 22);
+            this.commentUncommentAllBreakpointsToolStripMenuItem.Text = "Comment/Uncomment All Breakpoints";
+            this.commentUncommentAllBreakpointsToolStripMenuItem.Click += new System.EventHandler(this.commentUncommentAllBreakpointsToolStripMenuItem_Click);
             //
             // toolStripSeparator2
             //
@@ -552,6 +561,8 @@ namespace CelesteStudio {
             this.ResumeLayout(false);
             this.PerformLayout();
         }
+
+        private System.Windows.Forms.ToolStripMenuItem commentUncommentAllBreakpointsToolStripMenuItem;
 
         private System.Windows.Forms.ToolStripMenuItem removeAllUncommentedBreakpointsToolStripMenuItem;
 

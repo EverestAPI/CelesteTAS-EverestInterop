@@ -258,6 +258,8 @@ namespace CelesteStudio {
                     ClearUncommentedBreakpoints();
                 } else if (e.Modifiers == (Keys.Control | Keys.Shift) && e.KeyCode == Keys.P) {
                     ClearBreakpoints();
+                } else if (e.Modifiers == (Keys.Control | Keys.Alt) && e.KeyCode == Keys.P) {
+                    CommentUncommentAllBreakpoints();
                 } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.OemPeriod) {
                     InsertOrRemoveText(SyntaxHighlighter.BreakPointRegex, "***");
                 } else if (e.Modifiers == (Keys.Control | Keys.Shift) && e.KeyCode == Keys.OemPeriod) {
@@ -363,6 +365,27 @@ namespace CelesteStudio {
             List<int> breakpoints = tasText.FindLines(@"^\s*#*\s*\*\*\*");
             tasText.RemoveLines(breakpoints);
             tasText.Selection.Start = new Place(0, Math.Min(line, tasText.LinesCount - 1));
+        }
+
+        private void CommentUncommentAllBreakpoints() {
+            Range range = tasText.Selection.Clone();
+
+            List<int> uncommentedBreakpoints = tasText.FindLines(@"^\s*\*\*\*");
+            if (uncommentedBreakpoints.Count > 0) {
+                foreach (int line in uncommentedBreakpoints) {
+                    tasText.Selection = new Range(tasText, 0, line, 0, line);
+                    tasText.InsertText("#");
+                }
+            } else {
+                List<int> breakpoints = tasText.FindLines(@"^\s*#+\s*\*\*\*");
+                foreach (int line in breakpoints) {
+                    tasText.Selection = new Range(tasText, 0, line, 0, line);
+                    tasText.RemoveLinePrefix("#");
+                }
+            }
+
+            tasText.Selection = range;
+            tasText.ScrollLeft();
         }
 
         private void InsertOrRemoveText(Regex regex, string insertText) {
@@ -881,6 +904,10 @@ namespace CelesteStudio {
 
         private void removeAllBreakpointsToolStripMenuItem_Click(object sender, EventArgs e) {
             ClearBreakpoints();
+        }
+
+        private void commentUncommentAllBreakpointsToolStripMenuItem_Click(object sender, EventArgs e) {
+            CommentUncommentAllBreakpoints();
         }
 
         private void insertRoomNameToolStripMenuItem_Click(object sender, EventArgs e) {
