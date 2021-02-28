@@ -160,9 +160,7 @@ namespace TAS {
         }
 
         private static void LoadStateRoutine() {
-            Controller = savedController.Clone();
-            Controller.RefreshInputs(false);
-
+            Controller.CopyFrom(savedController);
             SetTasState();
             PlayerStatus = savedPlayerStatus;
             LastPos = savedLastPos;

@@ -141,6 +141,16 @@ namespace TAS.EverestInterop {
         }
     }
 
+    internal static class EnumerableExtensions {
+        public static bool IsEmpty<T>(this IEnumerable<T> enumerable) {
+            return !enumerable.Any();
+        }
+
+        public static bool IsNotEmpty<T>(this IEnumerable<T> enumerable) {
+            return !enumerable.IsEmpty();
+        }
+    }
+
     internal static class ListExtensions {
         public static T GetValueOrDefault<T>(this IList<T> list, int index, T defaultValue = default) {
             return index > 0 && index < list.Count ? list[index] : defaultValue;

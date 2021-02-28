@@ -1,22 +1,22 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
+using MonoMod.Utils;
 using TAS.EverestInterop;
 
 namespace TAS.Input {
     public class InputController {
-        public static string StudioTasFilePath = Celeste.Celeste.Instance.GetDynDataInstance().Get<string>("lastStudioTasFilePath");
+        public static string StudioTasFilePath = Celeste.Celeste.Instance.GetDynDataInstance().Get<string>(nameof(StudioTasFilePath));
         public readonly SortedDictionary<int, List<Command>> Commands = new SortedDictionary<int, List<Command>>();
         public readonly SortedDictionary<int, FastForward> FastForwards = new SortedDictionary<int, FastForward>();
         public readonly List<InputFrame> Inputs = new List<InputFrame>();
+        private readonly Dictionary<string, DateTime> usedFiles = new Dictionary<string, DateTime>();
 
         private string checksum;
         private int initializationFrameCount;
 
-        public int StudioFrameCount;
-
-        private Dictionary<string, DateTime> usedFiles = new Dictionary<string, DateTime>();
 
         public string TasFilePath {
             get {
@@ -33,6 +33,7 @@ namespace TAS.Input {
             }
         }
 
+        public int StudioFrameCount { get; private set; }
         public int CurrentFrame { get; private set; }
 
         public InputFrame Previous => CurrentFrame - 1 >= 0 ? Inputs[CurrentFrame - 1] : null;
@@ -40,23 +41,7 @@ namespace TAS.Input {
         public InputFrame Next => CurrentFrame + 1 < Inputs.Count ? Inputs[CurrentFrame + 1] : null;
         public FastForward CurrentFastForward => FastForwards.GetValueOrDefault(CurrentFrame);
         public List<Command> CurrentCommands => Commands.GetValueOrDefault(CurrentFrame);
-
-        private bool NeedsReload {
-            get {
-                if (usedFiles.Count == 0) {
-                    return true;
-                }
-
-                foreach (var file in usedFiles) {
-                    if (File.GetLastWriteTime(file.Key) != file.Value) {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-        }
-
+        private bool NeedsReload => usedFiles.Any(file => File.GetLastWriteTime(file.Key) != file.Value);
         public bool CanPlayback => CurrentFrame < Inputs.Count;
         public bool NeedsToWait => Manager.IsLoading();
 
@@ -69,17 +54,19 @@ namespace TAS.Input {
             private set => checksum = value;
         }
 
-        public void RefreshInputs(bool fromStart) {
-            if (fromStart) {
+        public void RefreshInputs(bool enableRun) {
+            if (enableRun) {
                 initializationFrameCount = 0;
+                checksum = string.Empty;
                 StudioFrameCount = 0;
                 CurrentFrame = 0;
             }
 
-            if (NeedsReload || fromStart) {
+            if (NeedsReload || enableRun) {
                 int tryCount = 5;
                 while (tryCount > 0) {
                     initializationFrameCount = 0;
+                    checksum = string.Empty;
                     Inputs.Clear();
                     FastForwards.Clear();
                     Commands.Clear();
@@ -213,14 +200,23 @@ namespace TAS.Input {
                 clone.Commands[frame] = new List<Command>(Commands[frame]);
             }
 
+            clone.usedFiles.AddRange(usedFiles);
             clone.CurrentFrame = CurrentFrame;
             clone.StudioFrameCount = StudioFrameCount;
-            clone.usedFiles = new Dictionary<string, DateTime>(usedFiles);
 
             return clone;
         }
 
-        public string Checksum(int toInputFrame) {
+        public void CopyFrom(InputController controller) {
+            StudioFrameCount = controller.StudioFrameCount;
+            CurrentFrame = controller.CurrentFrame;
+        }
+
+        public string Checksum(int? toInputFrame = null) {
+            if (toInputFrame == null) {
+                toInputFrame = CurrentFrame;
+            }
+
             StringBuilder result = new StringBuilder(TasFilePath);
             result.AppendLine();
 
@@ -247,10 +243,9 @@ namespace TAS.Input {
         }
 
         public string Checksum(InputController controller) => Checksum(controller.CurrentFrame);
-        public string Checksum() => Checksum(CurrentFrame);
 
         public static void SaveStudioTasFilePath() {
-            Celeste.Celeste.Instance.GetDynDataInstance().Set("lastStudioTasFilePath", StudioTasFilePath);
+            Celeste.Celeste.Instance.GetDynDataInstance().Set(nameof(StudioTasFilePath), StudioTasFilePath);
         }
 
         #region ignore
