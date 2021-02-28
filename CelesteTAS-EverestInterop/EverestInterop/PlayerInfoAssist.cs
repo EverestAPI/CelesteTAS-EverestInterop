@@ -5,7 +5,7 @@ using Microsoft.Xna.Framework;
 using Monocle;
 
 namespace TAS.EverestInterop {
-    public static class PlayerInfo {
+    public static class PlayerInfoAssist {
         public static int TransitionFrames { get; private set; }
         private static float FramesPerSecond => 60f / Engine.TimeRateB;
 

@@ -127,7 +127,9 @@ namespace TAS.EverestInterop {
 
                     writer.WriteLine();
                     writer.FlushAsync();
-                } catch { }
+                } catch {
+                    // ignored
+                }
             }
 
             if (skipBaseUpdate) {
@@ -188,7 +190,7 @@ namespace TAS.EverestInterop {
 
         private void Scene_AfterUpdate(On.Monocle.Scene.orig_AfterUpdate orig, Scene self) {
             orig(self);
-            Manager.UpdatePlayerInfo();
+            PlayerInfo.UpdatePlayerInfo();
         }
     }
 }

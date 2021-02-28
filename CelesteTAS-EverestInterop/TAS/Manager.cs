@@ -20,17 +20,10 @@ namespace TAS {
         Delay = 16
     }
 
-    public static partial class Manager {
+    public static class Manager {
         private static readonly FieldInfo SummitVignetteReadyFieldInfo = typeof(SummitVignette).GetFieldInfo("ready");
-        private static readonly FieldInfo StrawberryCollectTimerFieldInfo = typeof(Strawberry).GetFieldInfo("collectTimer");
 
         private static readonly DUpdateVirtualInputs UpdateVirtualInputs;
-        private static readonly DWallJumpCheck WallJumpCheck;
-        private static readonly GetBerryFloat StrawberryCollectTimer;
-        private static readonly GetFloat DashCooldownTimer;
-        private static readonly GetFloat JumpGraceTimer;
-        private static readonly GetPlayerSeekerSpeed PlayerSeekerSpeed;
-        private static readonly GetPlayerSeekerDashTimer PlayerSeekerDashTimer;
 
         public static bool Running, Recording;
         public static InputController Controller = new InputController();
@@ -46,24 +39,8 @@ namespace TAS {
         private static Task checkHotkeyStarTask;
 
         static Manager() {
-            MethodInfo wallJumpCheck = typeof(Player).GetMethodInfo("WallJumpCheck");
             MethodInfo updateVirtualInputs = typeof(MInput).GetMethodInfo("UpdateVirtualInputs");
-
-            FieldInfo strawberryCollectTimer = typeof(Strawberry).GetFieldInfo("collectTimer");
-            FieldInfo dashCooldownTimer = typeof(Player).GetFieldInfo("dashCooldownTimer");
-            FieldInfo jumpGraceTimer = typeof(Player).GetFieldInfo("jumpGraceTimer");
-            FieldInfo playerSeekerSpeed = typeof(PlayerSeeker).GetFieldInfo("speed");
-            FieldInfo playerSeekerDashTimer = typeof(PlayerSeeker).GetFieldInfo("dashTimer");
-
-
             UpdateVirtualInputs = (DUpdateVirtualInputs) updateVirtualInputs.CreateDelegate(typeof(DUpdateVirtualInputs));
-            WallJumpCheck = (DWallJumpCheck) wallJumpCheck.CreateDelegate(typeof(DWallJumpCheck));
-
-            StrawberryCollectTimer = strawberryCollectTimer.CreateDelegate_Get<GetBerryFloat>();
-            DashCooldownTimer = dashCooldownTimer.CreateDelegate_Get<GetFloat>();
-            JumpGraceTimer = jumpGraceTimer.CreateDelegate_Get<GetFloat>();
-            PlayerSeekerSpeed = playerSeekerSpeed.CreateDelegate_Get<GetPlayerSeekerSpeed>();
-            PlayerSeekerDashTimer = playerSeekerDashTimer.CreateDelegate_Get<GetPlayerSeekerDashTimer>();
         }
 
         public static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
@@ -279,10 +256,7 @@ namespace TAS {
             NextState = State.None;
             BindingHelper.RestorePlayerBindings();
             Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = KbTextInput;
-            if (ExportSyncData) {
-                EndExport();
-                ExportSyncData = false;
-            }
+            PlayerInfo.EndExport();
 
             EnforceLegal = false;
             AllowUnsafeInput = false;

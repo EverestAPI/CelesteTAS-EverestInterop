@@ -17,7 +17,6 @@ namespace TAS.Input {
         private string checksum;
         private int initializationFrameCount;
 
-
         public string TasFilePath {
             get {
                 string path = string.IsNullOrEmpty(StudioTasFilePath) ? "Celeste.tas" : StudioTasFilePath;
@@ -101,8 +100,8 @@ namespace TAS.Input {
                 return;
             }
 
-            if (Manager.ExportSyncData) {
-                Manager.ExportPlayerInfo();
+            if (PlayerInfo.ExportSyncData) {
+                PlayerInfo.ExportPlayerInfo();
             }
 
             Manager.SetInputs(Current);

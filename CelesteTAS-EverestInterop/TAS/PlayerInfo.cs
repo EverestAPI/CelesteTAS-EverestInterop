@@ -9,9 +9,24 @@ using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.EverestInterop;
 using TAS.Input;
+using static TAS.Manager;
 
 namespace TAS {
-    public static partial class Manager {
+    public static class PlayerInfo {
+        private static readonly FieldInfo SummitVignetteReadyFieldInfo = typeof(SummitVignette).GetFieldInfo("ready");
+        private static readonly FieldInfo StrawberryCollectTimerFieldInfo = typeof(Strawberry).GetFieldInfo("collectTimer");
+
+        private static readonly DWallJumpCheck WallJumpCheck;
+        private static readonly GetBerryFloat StrawberryCollectTimer;
+        private static readonly GetFloat DashCooldownTimer;
+        private static readonly GetFloat JumpGraceTimer;
+        private static readonly GetPlayerSeekerSpeed PlayerSeekerSpeed;
+        private static readonly GetPlayerSeekerDashTimer PlayerSeekerDashTimer;
+
+        public static Vector2 LastPos;
+        public static Vector2 LastPlayerSeekerPos;
+        private static long lastTimer;
+
         private static StreamWriter sw;
         private static List<MethodInfo> trackedEntities;
 
@@ -19,6 +34,22 @@ namespace TAS {
 
         //for debugging
         public static string AdditionalStatusInfo;
+
+        static PlayerInfo() {
+            MethodInfo wallJumpCheck = typeof(Player).GetMethodInfo("WallJumpCheck");
+            FieldInfo strawberryCollectTimer = typeof(Strawberry).GetFieldInfo("collectTimer");
+            FieldInfo dashCooldownTimer = typeof(Player).GetFieldInfo("dashCooldownTimer");
+            FieldInfo jumpGraceTimer = typeof(Player).GetFieldInfo("jumpGraceTimer");
+            FieldInfo playerSeekerSpeed = typeof(PlayerSeeker).GetFieldInfo("speed");
+            FieldInfo playerSeekerDashTimer = typeof(PlayerSeeker).GetFieldInfo("dashTimer");
+
+            WallJumpCheck = (DWallJumpCheck) wallJumpCheck.CreateDelegate(typeof(DWallJumpCheck));
+            StrawberryCollectTimer = strawberryCollectTimer.CreateDelegate_Get<GetBerryFloat>();
+            DashCooldownTimer = dashCooldownTimer.CreateDelegate_Get<GetFloat>();
+            JumpGraceTimer = jumpGraceTimer.CreateDelegate_Get<GetFloat>();
+            PlayerSeekerSpeed = playerSeekerSpeed.CreateDelegate_Get<GetPlayerSeekerSpeed>();
+            PlayerSeekerDashTimer = playerSeekerDashTimer.CreateDelegate_Get<GetPlayerSeekerDashTimer>();
+        }
 
         public static bool ExportSyncData { get; set; }
 
@@ -65,7 +96,7 @@ namespace TAS {
                                           + (!player.LoseShards && JumpGraceTimer(player) > 0
                                               ? $"Coyote({(int) (JumpGraceTimer(player) * framesPerSecond)})"
                                               : string.Empty);
-                        string transitionFrames = PlayerInfo.TransitionFrames > 0 ? $"({PlayerInfo.TransitionFrames})" : string.Empty;
+                        string transitionFrames = PlayerInfoAssist.TransitionFrames > 0 ? $"({PlayerInfoAssist.TransitionFrames})" : string.Empty;
                         statuses = (player.InControl && !level.Transitioning ? statuses : $"NoControl{transitionFrames} ")
                                    + (player.TimePaused ? "Paused " : string.Empty)
                                    + (level.InCutscene ? "Cutscene " : string.Empty)
@@ -152,7 +183,7 @@ namespace TAS {
             double subX = subpixelPos.X;
             double subY = subpixelPos.Y;
 
-            if (!Settings.RoundPosition) {
+            if (!CelesteTasModule.Settings.RoundPosition) {
                 return $"Pos:   {(x + subX):F12}, {(y + subY):F12}";
             }
 
@@ -195,6 +226,7 @@ namespace TAS {
         }
 
         public static void EndExport() {
+            ExportSyncData = false;
             Engine.Scene.OnEndOfFrame += () => { sw?.Dispose(); };
         }
 
@@ -272,6 +304,17 @@ namespace TAS {
                 }
             };
         }
+
+        //The things we do for faster replay times
+        private delegate bool DWallJumpCheck(Player player, int dir);
+
+        private delegate float GetBerryFloat(Strawberry berry);
+
+        private delegate float GetFloat(Player player);
+
+        private delegate Vector2 GetPlayerSeekerSpeed(PlayerSeeker playerSeeker);
+
+        private delegate float GetPlayerSeekerDashTimer(PlayerSeeker playerSeeker);
     }
 
     internal enum PlayerState {

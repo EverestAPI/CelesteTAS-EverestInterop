@@ -175,14 +175,14 @@ namespace TAS.Input {
                 }
             }
 
-            Manager.BeginExport(path, args);
-            Manager.ExportSyncData = true;
+            PlayerInfo.BeginExport(path, args);
+            PlayerInfo.ExportSyncData = true;
         }
 
         [TasCommand(Args = new string[] {"FinishExport"})]
         private static void FinishExportCommand(string[] args) {
-            Manager.EndExport();
-            Manager.ExportSyncData = false;
+            PlayerInfo.EndExport();
+            PlayerInfo.ExportSyncData = false;
         }
 
         [TasCommand(Args = new string[] {"EnforceLegal"})]
