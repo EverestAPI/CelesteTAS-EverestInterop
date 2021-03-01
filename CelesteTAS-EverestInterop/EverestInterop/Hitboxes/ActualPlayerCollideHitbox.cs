@@ -9,20 +9,19 @@ using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 
 namespace TAS.EverestInterop.Hitboxes {
-    public static class ActualPlayerCollideHitbox {
+    public static partial class ActualEntityCollideHitbox {
         private static readonly FieldInfo PlayerHurtbox = typeof(Player).GetFieldInfo("hurtbox");
         private static readonly Color HitboxColor = Color.Red.Invert();
         private static readonly Color HurtboxColor = Color.Lime.Invert();
         private static ILHook ilHookPlayerOrigUpdate;
-        private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
-        public static void Load() {
+        private static void LoadPlayerHook() {
             On.Monocle.Hitbox.Render += HitboxOnRender;
             On.Celeste.Level.TransitionRoutine += LevelOnTransitionRoutine;
             ilHookPlayerOrigUpdate = new ILHook(typeof(Player).GetMethod("orig_Update"), ModPlayerOrigUpdate);
         }
 
-        public static void Unload() {
+        private static void UnloadPlayerHook() {
             On.Monocle.Hitbox.Render -= HitboxOnRender;
             On.Celeste.Level.TransitionRoutine -= LevelOnTransitionRoutine;
             ilHookPlayerOrigUpdate?.Dispose();
@@ -56,11 +55,11 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void HitboxOnRender(On.Monocle.Hitbox.orig_Render orig, Hitbox self, Camera camera, Color color) {
-            if (!(self.Entity is Player player) || !Settings.ShowHitboxes || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Off
+            if (!(self.Entity is Player player) || !Settings.ShowHitboxes || Settings.ShowActualCollideHitboxes != ActualCollideHitboxTypes.Append
                 || Manager.FrameLoops > 1
+                || player.Scene is Level level && level.Transitioning
                 || player.LoadActualCollidePosition() == null
                 || player.LoadActualCollidePosition().Value == player.Position
-                || player.Scene is Level level && level.Transitioning
             ) {
                 orig(self, camera, color);
                 return;

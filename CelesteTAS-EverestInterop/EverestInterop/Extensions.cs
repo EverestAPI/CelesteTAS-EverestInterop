@@ -5,7 +5,6 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using Celeste;
-using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.Utils;
 
@@ -231,31 +230,6 @@ namespace TAS.EverestInterop {
             }
 
             return dynData;
-        }
-    }
-
-    internal static class EntityExtensions {
-        private const string ActualCollidePositionKey = nameof(ActualCollidePositionKey);
-        private const string ActualCollidableKey = nameof(ActualCollidableKey);
-
-        public static void SaveActualCollidePosition(this Entity entity) {
-            entity.SetExtendedDataValue(ActualCollidePositionKey, entity.Position);
-        }
-
-        public static Vector2? LoadActualCollidePosition(this Entity entity) {
-            return entity.GetExtendedDataValue<Vector2?>(ActualCollidePositionKey);
-        }
-
-        public static void ClearActualCollidePosition(this Entity entity) {
-            entity.SetExtendedDataValue(ActualCollidePositionKey, null);
-        }
-
-        public static void SaveActualCollidable(this Entity entity) {
-            entity.SetExtendedDataValue(ActualCollidableKey, entity.Collidable);
-        }
-
-        public static bool LoadActualCollidable(this Entity entity) {
-            return entity.GetExtendedDataValue<bool>(ActualCollidableKey);
         }
     }
 

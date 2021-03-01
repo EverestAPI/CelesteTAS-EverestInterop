@@ -9,23 +9,31 @@ using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 
 namespace TAS.EverestInterop.Hitboxes {
-    public static class ActualEntityCollideHitbox {
-        private static ILHook ilHookPlayerOrigUpdate;
+    public static partial class ActualEntityCollideHitbox {
+        private const string ActualCollidePositionKey = nameof(ActualCollidePositionKey);
+        private const string ActualCollidableKey = nameof(ActualCollidableKey);
+        private const string MovingKey = nameof(MovingKey);
+        private static ILHook ilHookPlayerOrigUpdateEntity;
+        private static Vector2? beforeUpdatePosition;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
         public static void Load() {
-            ilHookPlayerOrigUpdate = new ILHook(typeof(Player).GetMethod("orig_Update"), ModPlayerOrigUpdate);
-            On.Monocle.Hitbox.Render += HitboxOnRender;
+            ilHookPlayerOrigUpdate = new ILHook(typeof(Player).GetMethod("orig_Update"), ModPlayerOrigUpdateEntity);
+            IL.Monocle.EntityList.Update += EntityListOnUpdate;
+            On.Monocle.Hitbox.Render += HitboxOnRenderEntity;
             On.Monocle.Circle.Render += CircleOnRender;
+            LoadPlayerHook();
         }
 
         public static void Unload() {
             ilHookPlayerOrigUpdate?.Dispose();
-            On.Monocle.Hitbox.Render -= HitboxOnRender;
+            IL.Monocle.EntityList.Update -= EntityListOnUpdate;
+            On.Monocle.Hitbox.Render -= HitboxOnRenderEntity;
             On.Monocle.Circle.Render -= CircleOnRender;
+            UnloadPlayerHook();
         }
 
-        private static void ModPlayerOrigUpdate(ILContext il) {
+        private static void ModPlayerOrigUpdateEntity(ILContext il) {
             ILCursor ilCursor = new ILCursor(il);
             if (ilCursor.TryGotoNext(MoveType.After, ins => ins.MatchCastclass<PlayerCollider>())) {
                 ilCursor.Emit(OpCodes.Dup).EmitDelegate<Action<PlayerCollider>>(playerCollider => {
@@ -38,10 +46,27 @@ namespace TAS.EverestInterop.Hitboxes {
 
                     entity.SaveActualCollidePosition();
                     entity.SaveActualCollidable();
+                });
+            }
+        }
 
-                    if (entity.Get<StaticMover>() is StaticMover staticMover && staticMover.Platform is Platform platform) {
-                        platform.SaveActualCollidePosition();
+        private static void EntityListOnUpdate(ILContext il) {
+            ILCursor ilCursor = new ILCursor(il);
+            if (ilCursor.TryGotoNext(
+                ins => ins.OpCode == OpCodes.Ldloc_1,
+                ins => ins.MatchCallvirt<Entity>("Update")
+            )) {
+                ilCursor.Emit(OpCodes.Ldloc_1).EmitDelegate<Action<Entity>>(entity => { beforeUpdatePosition = entity.Position; });
+                ilCursor.Index += 2;
+                ilCursor.Emit(OpCodes.Ldloc_1).EmitDelegate<Action<Entity>>(entity => {
+                    if (!Settings.ShowHitboxes
+                        || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Off
+                        || Manager.FrameLoops > 1) {
+                        return;
                     }
+
+                    entity.SaveMoving(beforeUpdatePosition != null && beforeUpdatePosition.Value != entity.Position);
+                    beforeUpdatePosition = null;
                 });
             }
         }
@@ -50,7 +75,7 @@ namespace TAS.EverestInterop.Hitboxes {
             DrawLastFrameHitbox(self, color, hitboxColor => orig(self, camera, hitboxColor));
         }
 
-        private static void HitboxOnRender(On.Monocle.Hitbox.orig_Render orig, Hitbox self, Camera camera, Color color) {
+        private static void HitboxOnRenderEntity(On.Monocle.Hitbox.orig_Render orig, Hitbox self, Camera camera, Color color) {
             DrawLastFrameHitbox(self, color, hitboxColor => orig(self, camera, hitboxColor));
         }
 
@@ -63,16 +88,14 @@ namespace TAS.EverestInterop.Hitboxes {
                 || entity.Get<PlayerCollider>() == null
                 || entity.Scene?.Tracker.GetEntity<Player>() == null
                 || entity.LoadActualCollidePosition() == null
-                || entity.LoadActualCollidePosition() == entity.Position && Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Append
+                || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Append && entity.LoadActualCollidePosition() == entity.Position
+                || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Override && !entity.LoadMoving()
             ) {
                 invokeOrig(color);
                 return;
             }
 
-            bool movedByPlatform = entity.Get<StaticMover>() is StaticMover staticMover && staticMover.Platform is Platform platform &&
-                                   platform.Position != platform.LoadActualCollidePosition().Value;
-
-            Color lastFrameColor = Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Append || movedByPlatform ? color.Invert() : color;
+            Color lastFrameColor = Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Append ? color.Invert() : color;
 
             if (entity.Collidable && !entity.LoadActualCollidable()) {
                 lastFrameColor *= 0.5f;
@@ -80,7 +103,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 lastFrameColor *= 2f;
             }
 
-            if (Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Append || movedByPlatform) {
+            if (Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Append) {
                 invokeOrig(color);
             }
 
@@ -101,6 +124,34 @@ namespace TAS.EverestInterop.Hitboxes {
                 invokeOrig(lastFrameColor);
                 entity.Position = currentPosition;
             }
+        }
+
+        private static void SaveActualCollidePosition(this Entity entity) {
+            entity.SetExtendedDataValue(ActualCollidePositionKey, entity.Position);
+        }
+
+        private static Vector2? LoadActualCollidePosition(this Entity entity) {
+            return entity.GetExtendedDataValue<Vector2?>(ActualCollidePositionKey);
+        }
+
+        private static void ClearActualCollidePosition(this Entity entity) {
+            entity.SetExtendedDataValue(ActualCollidePositionKey, null);
+        }
+
+        private static void SaveActualCollidable(this Entity entity) {
+            entity.SetExtendedDataValue(ActualCollidableKey, entity.Collidable);
+        }
+
+        private static bool LoadActualCollidable(this Entity entity) {
+            return entity.GetExtendedDataValue<bool>(ActualCollidableKey);
+        }
+
+        private static void SaveMoving(this Entity entity, bool moving) {
+            entity.SetExtendedDataValue(MovingKey, moving);
+        }
+
+        private static bool LoadMoving(this Entity entity) {
+            return entity.GetExtendedDataValue<bool>(MovingKey);
         }
     }
 
