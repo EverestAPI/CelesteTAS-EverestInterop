@@ -43,10 +43,6 @@ namespace TAS.EverestInterop.Hitboxes {
 
                     entity.SaveActualCollidePosition();
                     entity.SaveActualCollidable();
-
-                    if (entity.Get<StaticMover>() is StaticMover staticMover && staticMover.Platform is Platform platform) {
-                        platform.SaveActualCollidePosition();
-                    }
                 });
             }
         }
@@ -69,18 +65,6 @@ namespace TAS.EverestInterop.Hitboxes {
                 || entity.Scene?.Tracker.GetEntity<Player>() == null
                 || entity.LoadActualCollidePosition() == null
                 || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Append && entity.LoadActualCollidePosition() == entity.Position
-            ) {
-                invokeOrig(color);
-                return;
-            }
-
-            if (
-                Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Override
-                && entity.Get<StaticMover>() is StaticMover staticMover
-                && staticMover.Platform is Platform platform
-                && staticMover.Platform.Scene != null
-                && (platform is JumpThru jumpThru && jumpThru.HasRider() || platform is Solid solid && solid.HasRider())
-                && entity.Position - entity.LoadActualCollidePosition() == platform.Position - platform.LoadActualCollidePosition()
             ) {
                 invokeOrig(color);
                 return;

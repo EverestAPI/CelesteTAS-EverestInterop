@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Linq;
 using System.Reflection;
 using Celeste;
 using Microsoft.Xna.Framework;
@@ -64,21 +63,6 @@ namespace TAS.EverestInterop.Hitboxes {
             ) {
                 orig(self, camera, color);
                 return;
-            }
-
-            if (Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Override && player.Scene?.Tracker is Tracker tracker) {
-                Platform platform = null;
-                if (tracker.GetEntities<Solid>().Cast<Solid>().FirstOrDefault(entity => player.IsRiding(entity)) is Solid solid) {
-                    platform = solid;
-                } else if (tracker.GetEntities<JumpThru>().Cast<JumpThru>().FirstOrDefault(entity => player.IsRiding(entity)) is JumpThru jumpThru) {
-                    platform = jumpThru;
-                }
-
-                if (platform?.LoadActualCollidePosition() != null && platform.Position - platform.LoadActualCollidePosition() ==
-                    player.Position - player.LoadActualCollidePosition()) {
-                    orig(self, camera, color);
-                    return;
-                }
             }
 
             DrawAssistedHitbox(orig, self, camera, player, player.LoadActualCollidePosition().Value);
