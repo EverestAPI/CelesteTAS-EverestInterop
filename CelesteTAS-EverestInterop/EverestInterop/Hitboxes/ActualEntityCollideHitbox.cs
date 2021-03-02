@@ -12,14 +12,12 @@ namespace TAS.EverestInterop.Hitboxes {
     public static partial class ActualEntityCollideHitbox {
         private const string ActualCollidePositionKey = nameof(ActualCollidePositionKey);
         private const string ActualCollidableKey = nameof(ActualCollidableKey);
-        private const string MovingKey = nameof(MovingKey);
         private static ILHook ilHookPlayerOrigUpdateEntity;
         private static Vector2? beforeUpdatePosition;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
         public static void Load() {
             ilHookPlayerOrigUpdate = new ILHook(typeof(Player).GetMethod("orig_Update"), ModPlayerOrigUpdateEntity);
-            IL.Monocle.EntityList.Update += EntityListOnUpdate;
             On.Monocle.Hitbox.Render += HitboxOnRenderEntity;
             On.Monocle.Circle.Render += CircleOnRender;
             LoadPlayerHook();
@@ -27,7 +25,6 @@ namespace TAS.EverestInterop.Hitboxes {
 
         public static void Unload() {
             ilHookPlayerOrigUpdate?.Dispose();
-            IL.Monocle.EntityList.Update -= EntityListOnUpdate;
             On.Monocle.Hitbox.Render -= HitboxOnRenderEntity;
             On.Monocle.Circle.Render -= CircleOnRender;
             UnloadPlayerHook();
@@ -46,27 +43,10 @@ namespace TAS.EverestInterop.Hitboxes {
 
                     entity.SaveActualCollidePosition();
                     entity.SaveActualCollidable();
-                });
-            }
-        }
 
-        private static void EntityListOnUpdate(ILContext il) {
-            ILCursor ilCursor = new ILCursor(il);
-            if (ilCursor.TryGotoNext(
-                ins => ins.OpCode == OpCodes.Ldloc_1,
-                ins => ins.MatchCallvirt<Entity>("Update")
-            )) {
-                ilCursor.Emit(OpCodes.Ldloc_1).EmitDelegate<Action<Entity>>(entity => { beforeUpdatePosition = entity.Position; });
-                ilCursor.Index += 2;
-                ilCursor.Emit(OpCodes.Ldloc_1).EmitDelegate<Action<Entity>>(entity => {
-                    if (!Settings.ShowHitboxes
-                        || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Off
-                        || Manager.FrameLoops > 1) {
-                        return;
+                    if (entity.Get<StaticMover>() is StaticMover staticMover && staticMover.Platform is Platform platform) {
+                        platform.SaveActualCollidePosition();
                     }
-
-                    entity.SaveMoving(beforeUpdatePosition != null && beforeUpdatePosition.Value != entity.Position);
-                    beforeUpdatePosition = null;
                 });
             }
         }
@@ -89,7 +69,18 @@ namespace TAS.EverestInterop.Hitboxes {
                 || entity.Scene?.Tracker.GetEntity<Player>() == null
                 || entity.LoadActualCollidePosition() == null
                 || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Append && entity.LoadActualCollidePosition() == entity.Position
-                || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Override && !entity.LoadMoving()
+            ) {
+                invokeOrig(color);
+                return;
+            }
+
+            if (
+                Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Override
+                && entity.Get<StaticMover>() is StaticMover staticMover
+                && staticMover.Platform is Platform platform
+                && staticMover.Platform.Scene != null
+                && (platform is JumpThru jumpThru && jumpThru.HasRider() || platform is Solid solid && solid.HasRider())
+                && entity.Position - entity.LoadActualCollidePosition() == platform.Position - platform.LoadActualCollidePosition()
             ) {
                 invokeOrig(color);
                 return;
@@ -144,14 +135,6 @@ namespace TAS.EverestInterop.Hitboxes {
 
         private static bool LoadActualCollidable(this Entity entity) {
             return entity.GetExtendedDataValue<bool>(ActualCollidableKey);
-        }
-
-        private static void SaveMoving(this Entity entity, bool moving) {
-            entity.SetExtendedDataValue(MovingKey, moving);
-        }
-
-        private static bool LoadMoving(this Entity entity) {
-            return entity.GetExtendedDataValue<bool>(MovingKey);
         }
     }
 

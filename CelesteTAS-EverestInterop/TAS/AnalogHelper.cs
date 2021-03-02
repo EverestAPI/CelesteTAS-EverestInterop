@@ -14,8 +14,9 @@ namespace TAS {
         Precise,
     }
 
-    public struct Vector2Short {
-        public short X, Y;
+    public readonly struct Vector2Short {
+        public readonly short X;
+        public readonly short Y;
 
         public Vector2Short(short x = 0, short y = 0) {
             X = x;
@@ -31,8 +32,6 @@ namespace TAS {
 
         private static readonly Regex Fractional = new Regex(@"\d+\.(\d*)", RegexOptions.Compiled);
         private static AnalogueMode analogMode = AnalogueMode.Ignore;
-        private static Vector2 retDirection;
-        private static Vector2Short retDirectionShort;
 
         public static void AnalogModeChange(AnalogueMode mode) {
             analogMode = mode;
@@ -52,31 +51,31 @@ namespace TAS {
                 precision = float.Parse($"0.5E-{digits + 2}");
             }
 
-            input.AngleVector2 = ComputeFeather(input.GetX(), input.GetY(), precision, input.UpperLimit);
+            input.AngleVector2 = ComputeFeather(input.GetX(), input.GetY(), precision, input.UpperLimit, out Vector2Short retDirectionShort);
             input.AngleVector2Short = retDirectionShort;
         }
 
-        private static Vector2 ComputeFeather(float x, float y, float precision, float upperLimit) {
+        private static Vector2 ComputeFeather(float x, float y, float precision, float upperLimit, out Vector2Short retDirectionShort) {
             short RoundToValidShort(float f) {
                 return (short) Math.Round((f * (1.0 - DeadZone) + DeadZone) * 32767);
             }
 
             if (x < 0) {
-                Vector2 feather = ComputeFeather(-x, y, precision, upperLimit);
-                retDirectionShort.X = (short) -retDirectionShort.X;
-                return retDirection = new Vector2(-feather.X, feather.Y);
+                Vector2 feather = ComputeFeather(-x, y, precision, upperLimit, out Vector2Short directionShort);
+                retDirectionShort = new Vector2Short((short) -directionShort.X, directionShort.Y);
+                return new Vector2(-feather.X, feather.Y);
             }
 
             if (y < 0) {
-                Vector2 feather = ComputeFeather(x, -y, precision, upperLimit);
-                retDirectionShort.Y = (short) -retDirectionShort.Y;
-                return retDirection = new Vector2(feather.X, -feather.Y);
+                Vector2 feather = ComputeFeather(x, -y, precision, upperLimit, out Vector2Short directionShort);
+                retDirectionShort = new Vector2Short(directionShort.X, (short) -directionShort.Y);
+                return new Vector2(feather.X, -feather.Y);
             }
 
             if (x < y) {
-                Vector2 feather = ComputeFeather(y, x, precision, upperLimit);
-                retDirectionShort = new Vector2Short(retDirectionShort.Y, retDirectionShort.X);
-                return retDirection = new Vector2(feather.Y, feather.X);
+                Vector2 feather = ComputeFeather(y, x, precision, upperLimit, out Vector2Short directionShort);
+                retDirectionShort = new Vector2Short(directionShort.Y, directionShort.X);
+                return new Vector2(feather.Y, feather.X);
             }
 
             short upperbound = (short) Calc.Clamp(upperLimit * 32767, Lowerbound, 32767);
@@ -113,8 +112,7 @@ namespace TAS {
 
             x = (float) (Math.Max(shortX / 32767.0 - DeadZone, 0.0) / (1 - DeadZone));
             y = (float) (Math.Max(shortY / 32767.0 - DeadZone, 0.0) / (1 - DeadZone));
-            retDirection = new Vector2(x, y);
-            return retDirection;
+            return new Vector2(x, y);
         }
 
         private static Vector2Short ComputePrecise(Vector2 direction, float precision, short upperbound) {
