@@ -13,7 +13,7 @@ using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 
 namespace TAS.EverestInterop {
-    public class SimplifiedGraphicsFeature {
+    public static class SimplifiedGraphicsFeature {
         private static readonly List<string> SolidDecals = new List<string> {
             "3-resort/bridgecolumn",
             "3-resort/bridgecolumntop",
@@ -63,7 +63,7 @@ namespace TAS.EverestInterop {
                         Settings.SimplifiedSpinnerColor).Change(value =>
                         Settings.SimplifiedSpinnerColor = value));
                 subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<Color?>("Dust Sprite Color".ToDialogText(), Menu.CreateNaturalColorOptions(),
+                    new TextMenuExt.EnumerableSlider<Color>("Dust Sprite Color".ToDialogText(), Menu.CreateNaturalColorOptions(),
                         Settings.SimplifiedDustSpriteColor).Change(value =>
                         Settings.SimplifiedDustSpriteColor = value));
                 subMenu.Add(
@@ -295,7 +295,7 @@ namespace TAS.EverestInterop {
         }
 
         private static void CrystalStaticSpinner_CreateSprites(On.Celeste.CrystalStaticSpinner.orig_CreateSprites orig, CrystalStaticSpinner self) {
-            if (Settings.SimplifiedGraphics && Settings.SimplifiedSpinnerColor.Name != null) {
+            if (Settings.SimplifiedGraphics && Settings.SimplifiedSpinnerColor.Name != (CrystalColor) (-1)) {
                 SpinnerColorField.SetValue(self, Settings.SimplifiedSpinnerColor.Name);
             }
 
@@ -311,8 +311,8 @@ namespace TAS.EverestInterop {
         }
 
         private static DustStyles.DustStyle DustStyles_Get_Session(On.Celeste.DustStyles.orig_Get_Session orig, Session session) {
-            if (Settings.SimplifiedGraphics && Settings.SimplifiedDustSpriteColor.HasValue) {
-                Color color = Settings.SimplifiedDustSpriteColor.Value;
+            if (Settings.SimplifiedGraphics && Settings.SimplifiedDustSpriteColor != default) {
+                Color color = Settings.SimplifiedDustSpriteColor;
                 return new DustStyles.DustStyle {
                     EdgeColors = new[] {color.ToVector3(), color.ToVector3(), color.ToVector3()},
                     EyeColor = color,
@@ -445,26 +445,28 @@ namespace TAS.EverestInterop {
             }
         }
 
-        public readonly struct SpinnerColor {
+        // ReSharper disable FieldCanBeMadeReadOnly.Global
+        public struct SpinnerColor {
             public static readonly List<SpinnerColor> All = new List<SpinnerColor> {
-                new SpinnerColor(null, null),
+                new SpinnerColor((CrystalColor) (-1), null),
                 new SpinnerColor(CrystalColor.Blue, "#639BFF"),
                 new SpinnerColor(CrystalColor.Red, "#FF4F4F"),
                 new SpinnerColor(CrystalColor.Purple, "#FF4FEF"),
             };
 
-            public readonly CrystalColor? Name;
-            public readonly string Value;
+            public CrystalColor Name;
+            public string Value;
 
-            private SpinnerColor(CrystalColor? name, string value) {
-                this.Name = name;
-                this.Value = value;
+            private SpinnerColor(CrystalColor name, string value) {
+                Name = name;
+                Value = value;
             }
 
             public override string ToString() {
-                string result = Name == null ? "Default" : Name.ToString();
+                string result = Name == (CrystalColor) (-1) ? "Default" : Name.ToString();
                 return result.ToDialogText();
             }
         }
+        // ReSharper restore FieldCanBeMadeReadOnly.Global
     }
 }

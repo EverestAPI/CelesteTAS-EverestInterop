@@ -148,17 +148,20 @@ namespace TAS.EverestInterop.Hitboxes {
 
         [Command("entity_hitbox_color", "change the entity hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000")]
         private static void CmdChangeEntityHitboxColor(string color) {
-            CelesteTasModule.Settings.EntityHitboxColor = HitboxColor.HexToColor(color, CelesteTasModule.Settings.EntityHitboxColor);
+            CelesteTasModule.Settings.EntityHitboxColor = HexToColor(color, CelesteTasModule.Settings.EntityHitboxColor);
+            CelesteTasModule.Instance.SaveSettings();
         }
 
         [Command("trigger_hitbox_color", "change the trigger hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000")]
         private static void CmdChangeTriggerHitboxColor(string color) {
-            CelesteTasModule.Settings.TriggerHitboxColor = HitboxColor.HexToColor(color, CelesteTasModule.Settings.TriggerHitboxColor);
+            CelesteTasModule.Settings.TriggerHitboxColor = HexToColor(color, CelesteTasModule.Settings.TriggerHitboxColor);
+            CelesteTasModule.Instance.SaveSettings();
         }
 
         [Command("solidtiles_hitbox_color", "change the solid tiles hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000")]
         private static void CmdChangeSolidTilesHitboxColor(string color) {
-            CelesteTasModule.Settings.SolidTilesHitboxColor = HitboxColor.HexToColor(color, CelesteTasModule.Settings.SolidTilesHitboxColor);
+            CelesteTasModule.Settings.SolidTilesHitboxColor = HexToColor(color, CelesteTasModule.Settings.SolidTilesHitboxColor);
+            CelesteTasModule.Instance.SaveSettings();
         }
     }
 }
