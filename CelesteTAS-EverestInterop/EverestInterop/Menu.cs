@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using Celeste;
 using Celeste.Mod;
-using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.EverestInterop.Hitboxes;
 
@@ -143,19 +142,6 @@ namespace TAS.EverestInterop {
             return new List<KeyValuePair<bool, string>> {
                 new KeyValuePair<bool, string>(false, "Default".ToDialogText()),
                 new KeyValuePair<bool, string>(true, "Simplify".ToDialogText()),
-            };
-        }
-
-        public static IEnumerable<KeyValuePair<Color, string>> CreateNaturalColorOptions() {
-            return new List<KeyValuePair<Color, string>> {
-                new KeyValuePair<Color, string>(default, "Default".ToDialogText()),
-                new KeyValuePair<Color, string>(new Color(196, 2, 51), "Red".ToDialogText()),
-                new KeyValuePair<Color, string>(new Color(0, 159, 107), "Green".ToDialogText()),
-                new KeyValuePair<Color, string>(new Color(0, 135, 189), "Blue".ToDialogText()),
-                new KeyValuePair<Color, string>(new Color(255, 211, 0), "Yellow".ToDialogText()),
-                new KeyValuePair<Color, string>(Color.White, "White".ToDialogText()),
-                new KeyValuePair<Color, string>(Color.Black, "Black".ToDialogText()),
-                new KeyValuePair<Color, string>(Color.Transparent, "Transparent".ToDialogText()),
             };
         }
     }

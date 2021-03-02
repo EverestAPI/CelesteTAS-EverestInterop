@@ -63,9 +63,9 @@ namespace TAS.EverestInterop {
                         Settings.SimplifiedSpinnerColor).Change(value =>
                         Settings.SimplifiedSpinnerColor = value));
                 subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<Color>("Dust Sprite Color".ToDialogText(), Menu.CreateNaturalColorOptions(),
-                        Settings.SimplifiedDustSpriteColor).Change(value =>
-                        Settings.SimplifiedDustSpriteColor = value));
+                    new TextMenuExt.EnumerableSlider<bool>("Dust Sprite Edge".ToDialogText(), Menu.CreateDefaultHideOptions(),
+                        Settings.SimplifiedDustSpriteEdge).Change(value =>
+                        Settings.SimplifiedDustSpriteEdge = value));
                 subMenu.Add(
                     new TextMenuExt.EnumerableSlider<bool>("Spotlight Wipe".ToDialogText(), Menu.CreateDefaultHideOptions(),
                         Settings.SimplifiedSpotlightWipe).Change(value =>
@@ -311,8 +311,8 @@ namespace TAS.EverestInterop {
         }
 
         private static DustStyles.DustStyle DustStyles_Get_Session(On.Celeste.DustStyles.orig_Get_Session orig, Session session) {
-            if (Settings.SimplifiedGraphics && Settings.SimplifiedDustSpriteColor != default) {
-                Color color = Settings.SimplifiedDustSpriteColor;
+            if (Settings.SimplifiedGraphics && Settings.SimplifiedDustSpriteEdge) {
+                Color color = Color.Transparent;
                 return new DustStyles.DustStyle {
                     EdgeColors = new[] {color.ToVector3(), color.ToVector3(), color.ToVector3()},
                     EyeColor = color,

@@ -112,7 +112,7 @@ namespace TAS.EverestInterop {
         public int? SimplifiedBloomBase { get; set; } = 0;
         public int? SimplifiedBloomStrength { get; set; } = 1;
         public SimplifiedGraphicsFeature.SpinnerColor SimplifiedSpinnerColor { get; set; } = SimplifiedGraphicsFeature.SpinnerColor.All[1];
-        public Color SimplifiedDustSpriteColor { get; set; } = Color.Transparent;
+        public bool SimplifiedDustSpriteEdge { get; set; } = true;
         public bool SimplifiedSpotlightWipe { get; set; } = true;
         public bool SimplifiedColorGrade { get; set; } = true;
         public bool SimplifiedBackdrop { get; set; } = true;

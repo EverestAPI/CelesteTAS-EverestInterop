@@ -14,12 +14,14 @@ namespace TAS.EverestInterop.Hitboxes {
         private const string ActualCollidableKey = nameof(ActualCollidableKey);
         private static ILHook ilHookPlayerOrigUpdateEntity;
         private static Vector2? beforeUpdatePosition;
+        private static bool colliderListRendering;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
         public static void Load() {
             ilHookPlayerOrigUpdate = new ILHook(typeof(Player).GetMethod("orig_Update"), ModPlayerOrigUpdateEntity);
             On.Monocle.Hitbox.Render += HitboxOnRenderEntity;
             On.Monocle.Circle.Render += CircleOnRender;
+            On.Monocle.ColliderList.Render += ColliderListOnRender;
             LoadPlayerHook();
         }
 
@@ -27,6 +29,7 @@ namespace TAS.EverestInterop.Hitboxes {
             ilHookPlayerOrigUpdate?.Dispose();
             On.Monocle.Hitbox.Render -= HitboxOnRenderEntity;
             On.Monocle.Circle.Render -= CircleOnRender;
+            On.Monocle.ColliderList.Render -= ColliderListOnRender;
             UnloadPlayerHook();
         }
 
@@ -55,12 +58,19 @@ namespace TAS.EverestInterop.Hitboxes {
             DrawLastFrameHitbox(self, color, hitboxColor => orig(self, camera, hitboxColor));
         }
 
+        private static void ColliderListOnRender(On.Monocle.ColliderList.orig_Render orig, ColliderList self, Camera camera, Color color) {
+            colliderListRendering = true;
+            DrawLastFrameHitbox(self, color, hitboxColor => orig(self, camera, hitboxColor));
+            colliderListRendering = false;
+        }
+
         private static void DrawLastFrameHitbox(Collider self, Color color, Action<Color> invokeOrig) {
             Entity entity = self.Entity;
 
             if (!Settings.ShowHitboxes
                 || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Off
                 || Manager.FrameLoops > 1
+                || colliderListRendering && !(self is ColliderList)
                 || entity.Get<PlayerCollider>() == null
                 || entity.Scene?.Tracker.GetEntity<Player>() == null
                 || entity.LoadActualCollidePosition() == null
