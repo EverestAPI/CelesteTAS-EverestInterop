@@ -36,7 +36,7 @@ namespace TAS.EverestInterop {
                         Settings.SimplifiedHitboxes = value));
                     subMenu.Add(HitboxColor.CreateEntityHitboxColorButton(menu, inGame));
                     subMenu.Add(HitboxColor.CreateTriggerHitboxColorButton(menu, inGame));
-                    subMenu.Add(HitboxColor.CreateSolidTilesHitboxColorButton(menu, inGame));
+                    subMenu.Add(HitboxColor.CreatePlatformHitboxColorButton(menu, inGame));
                 }),
 
                 SimplifiedGraphicsFeature.CreateSimplifiedGraphicsOption(),

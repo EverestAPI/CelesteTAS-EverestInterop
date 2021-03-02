@@ -9,16 +9,16 @@ using Monocle;
 using MonoMod.Cil;
 
 namespace TAS.EverestInterop.Hitboxes {
-    public class HitboxColor {
+    public static class HitboxColor {
         public static readonly Color DefaultEntityColor = Color.Red;
-        public static readonly Color DefaultTriggerColor = Color.Peru;
-        public static readonly Color DefaultSolidTilesColor = Color.Red;
+        public static readonly Color DefaultTriggerColor = Color.MediumPurple;
+        public static readonly Color DefaultPlatformColor = Color.Coral;
 
         private static readonly Regex HexChar = new Regex(@"^[0-9a-f]*$", RegexOptions.IgnoreCase);
 
         public static Color EntityColor => Settings.EntityHitboxColor;
         public static Color TriggerColor => Settings.TriggerHitboxColor;
-        public static Color SolidTilesColor => Settings.SolidTilesHitboxColor;
+        public static Color PlatformColor => Settings.PlatformHitboxColor;
         public static Color EntityColorInversely => EntityColor.Invert();
         public static Color EntityColorInverselyLessAlpha => EntityColorInversely * 0.6f;
 
@@ -29,7 +29,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 () => {
                     Audio.Play("event:/ui/main/savefile_rename_start");
                     textMenu.SceneAs<Overworld>().Goto<OuiModOptionString>()
-                        .Init<OuiModOptions>(ColorToHex(Settings.EntityHitboxColor),
+                        .Init<OuiModOptions>(ColorToHex(DefaultEntityColor),
                             value => Settings.EntityHitboxColor = HexToColor(value, Settings.EntityHitboxColor), 9);
                 });
             item.Disabled = inGame;
@@ -41,21 +41,21 @@ namespace TAS.EverestInterop.Hitboxes {
                 () => {
                     Audio.Play("event:/ui/main/savefile_rename_start");
                     textMenu.SceneAs<Overworld>().Goto<OuiModOptionString>()
-                        .Init<OuiModOptions>(ColorToHex(Settings.TriggerHitboxColor),
+                        .Init<OuiModOptions>(ColorToHex(DefaultTriggerColor),
                             value => Settings.TriggerHitboxColor = HexToColor(value, Settings.TriggerHitboxColor), 9);
                 });
             item.Disabled = inGame;
             return item;
         }
 
-        public static TextMenu.Item CreateSolidTilesHitboxColorButton(TextMenu textMenu, bool inGame) {
-            TextMenu.Item item = new TextMenu.Button("Solid Tiles Hitbox Color".ToDialogText() + $": {ColorToHex(Settings.SolidTilesHitboxColor)}")
+        public static TextMenu.Item CreatePlatformHitboxColorButton(TextMenu textMenu, bool inGame) {
+            TextMenu.Item item = new TextMenu.Button("Platform Hitbox Color".ToDialogText() + $": {ColorToHex(Settings.PlatformHitboxColor)}")
                 .Pressed(
                     () => {
                         Audio.Play("event:/ui/main/savefile_rename_start");
                         textMenu.SceneAs<Overworld>().Goto<OuiModOptionString>()
-                            .Init<OuiModOptions>(ColorToHex(Settings.SolidTilesHitboxColor),
-                                value => Settings.SolidTilesHitboxColor = HexToColor(value, Settings.SolidTilesHitboxColor), 9);
+                            .Init<OuiModOptions>(ColorToHex(DefaultPlatformColor),
+                                value => Settings.PlatformHitboxColor = HexToColor(value, Settings.PlatformHitboxColor), 9);
                     });
             item.Disabled = inGame;
             return item;
@@ -135,8 +135,8 @@ namespace TAS.EverestInterop.Hitboxes {
             Color customColor = Settings.EntityHitboxColor;
             if (entity is Trigger) {
                 customColor = Settings.TriggerHitboxColor;
-            } else if (entity is SolidTiles) {
-                customColor = Settings.SolidTilesHitboxColor;
+            } else if (entity is Platform) {
+                customColor = Settings.PlatformHitboxColor;
             }
 
             if (!entity.Collidable) {
@@ -158,9 +158,9 @@ namespace TAS.EverestInterop.Hitboxes {
             CelesteTasModule.Instance.SaveSettings();
         }
 
-        [Command("solidtiles_hitbox_color", "change the solid tiles hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000")]
-        private static void CmdChangeSolidTilesHitboxColor(string color) {
-            CelesteTasModule.Settings.SolidTilesHitboxColor = HexToColor(color, CelesteTasModule.Settings.SolidTilesHitboxColor);
+        [Command("platform_hitbox_color", "change the platform hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000")]
+        private static void CmdChangePlatformHitboxColor(string color) {
+            CelesteTasModule.Settings.PlatformHitboxColor = HexToColor(color, CelesteTasModule.Settings.PlatformHitboxColor);
             CelesteTasModule.Instance.SaveSettings();
         }
     }

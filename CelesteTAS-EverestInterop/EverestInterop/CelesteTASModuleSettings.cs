@@ -82,7 +82,7 @@ namespace TAS.EverestInterop {
         public bool AutoExtractNewStudio { get; set; } = true;
         [SettingIgnore] public Color EntityHitboxColor { get; set; } = HitboxColor.DefaultEntityColor;
         [SettingIgnore] public Color TriggerHitboxColor { get; set; } = HitboxColor.DefaultTriggerColor;
-        [SettingIgnore] public Color SolidTilesHitboxColor { get; set; } = HitboxColor.DefaultSolidTilesColor;
+        [SettingIgnore] public Color PlatformHitboxColor { get; set; } = HitboxColor.DefaultPlatformColor;
         public bool HideTriggerHitboxes { get; set; } = false;
         public bool SimplifiedHitboxes { get; set; } = true;
         public ActualCollideHitboxTypes ShowActualCollideHitboxes { get; set; } = ActualCollideHitboxTypes.Off;

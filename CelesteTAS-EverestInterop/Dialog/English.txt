@@ -2,7 +2,7 @@
 TAS_ENABLED=                  Enabled
 TAS_SHOW_HITBOXES=            Show Hitboxes
 TAS_HITBOX_COLOR_DESCRIPTION_1= Hitbox color can only be edited in the menu of the title screen
-TAS_HITBOX_COLOR_DESCRIPTION_2= Or use the entity/trigger/solidtiles_hitbox_color command in the console
+TAS_HITBOX_COLOR_DESCRIPTION_2= Or use the entity/trigger/platform_hitbox_color command in the console
 TAS_SIMPLIFIED_GRAPHICS=      Simplified Graphics
 TAS_RELAUNCH_REQUIRED=        Relaunch Required
 TAS_MORE_OPTIONS=             More Options
@@ -14,7 +14,7 @@ TAS_HIDE_TRIGGER_HITBOXES=    Hide Trigger Hitboxes
 TAS_SIMPLIFIED_HITBOXES=      Simplified Hitboxes
 TAS_ENTITY_HITBOX_COLOR=      Entity Hitbox Color
 TAS_TRIGGER_HITBOX_COLOR=     Trigger Hitbox Color
-TAS_SOLID_TILES_HITBOX_COLOR= Solid Tiles Hitbox Color
+TAS_PLATFORM_HITBOX_COLOR=    Platform Hitbox Color
 
 # ================================== Simplified Graphics Submenu ==================================
 TAS_GAMEPLAY=                 Gameplay
