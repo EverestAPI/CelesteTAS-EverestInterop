@@ -20,12 +20,13 @@ namespace TAS.EverestInterop {
         private static ButtonState lastButtonState;
         private static readonly List<WeakReference> RequireInspectEntities = new List<WeakReference>();
         private static readonly HashSet<EntityID> RequireInspectEntityIds = new HashSet<EntityID>();
+        private static AreaKey requireInspectAreaKey;
         private static WeakReference<HashSet<Entity>> inspectingEntities;
 
         public static void Load() {
-            // Forced: Add more positions to top-left positioning helper.
             IL.Monocle.Commands.Render += Commands_Render;
             On.Monocle.EntityList.DebugRender += EntityListOnDebugRender;
+            On.Celeste.Level.Begin += LevelOnBegin;
             origLoadLevelHook = new ILHook(typeof(Level).GetMethod("orig_LoadLevel"), ModOrigLoadLevel);
             loadCustomEntityHook = new ILHook(typeof(Level).GetMethod("LoadCustomEntity"), ModLoadCustomEntity);
         }
@@ -33,6 +34,7 @@ namespace TAS.EverestInterop {
         public static void Unload() {
             IL.Monocle.Commands.Render -= Commands_Render;
             On.Monocle.EntityList.DebugRender -= EntityListOnDebugRender;
+            On.Celeste.Level.Begin -= LevelOnBegin;
             origLoadLevelHook?.Dispose();
             loadCustomEntityHook?.Dispose();
             origLoadLevelHook = null;
@@ -56,7 +58,7 @@ namespace TAS.EverestInterop {
 
                 MouseState mouseState = Mouse.GetState();
                 if (mouseState.RightButton == ButtonState.Pressed) {
-                    ClearClickedEntities();
+                    ClearInspectEntities();
                 }
 
                 if (Engine.Instance.IsActive && mouseState.LeftButton == ButtonState.Pressed && lastButtonState == ButtonState.Released) {
@@ -117,6 +119,14 @@ namespace TAS.EverestInterop {
             }
         }
 
+        private static void LevelOnBegin(On.Celeste.Level.orig_Begin orig, Level self) {
+            orig(self);
+
+            if (self.Session.Area != requireInspectAreaKey) {
+                ClearInspectEntities();
+            }
+        }
+
         private static void ModOrigLoadLevel(ILContext il) {
             ILCursor cursor = new ILCursor(il);
 
@@ -149,6 +159,7 @@ namespace TAS.EverestInterop {
         }
 
         private static void ProcessInspectingEntity(Entity clickedEntity) {
+            requireInspectAreaKey = clickedEntity.SceneAs<Level>().Session.Area;
             if (clickedEntity.LoadEntityData() is EntityData entityData) {
                 EntityID entityId = entityData.ToEntityId();
                 if (RequireInspectEntityIds.Contains(entityId)) {
@@ -165,7 +176,7 @@ namespace TAS.EverestInterop {
             }
         }
 
-        private static void ClearClickedEntities() {
+        private static void ClearInspectEntities() {
             RequireInspectEntities.Clear();
             RequireInspectEntityIds.Clear();
             inspectingEntities = null;
