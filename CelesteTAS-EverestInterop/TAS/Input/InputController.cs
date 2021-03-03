@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Monocle;
 using MonoMod.Utils;
 using TAS.EverestInterop;
 
 namespace TAS.Input {
     public class InputController {
-        public static string StudioTasFilePath = Celeste.Celeste.Instance.GetDynDataInstance().Get<string>(nameof(StudioTasFilePath));
+        public static string StudioTasFilePath = LoadStudioTasFilePath();
         public readonly SortedDictionary<int, List<Command>> Commands = new SortedDictionary<int, List<Command>>();
         public readonly SortedDictionary<int, FastForward> FastForwards = new SortedDictionary<int, FastForward>();
         public readonly List<InputFrame> Inputs = new List<InputFrame>();
@@ -243,8 +244,13 @@ namespace TAS.Input {
 
         public string Checksum(InputController controller) => Checksum(controller.CurrentFrame);
 
+        // for hot loading
         public static void SaveStudioTasFilePath() {
-            Celeste.Celeste.Instance.GetDynDataInstance().Set(nameof(StudioTasFilePath), StudioTasFilePath);
+            Engine.Instance.GetDynDataInstance().Set(nameof(StudioTasFilePath), StudioTasFilePath);
+        }
+
+        private static string LoadStudioTasFilePath() {
+            return Engine.Instance.GetDynDataInstance().Get<string>(nameof(StudioTasFilePath));
         }
 
         #region ignore

@@ -7,7 +7,7 @@ using TAS.EverestInterop.Hitboxes;
 
 namespace TAS.EverestInterop {
     public class CelesteTasModuleSettings : EverestModuleSettings {
-        private bool centerCamera = false;
+        private bool centerCamera;
         public bool Enabled { get; set; } = true;
 
         [SettingName("TAS_KEY_START")]

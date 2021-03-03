@@ -7,6 +7,7 @@ using Celeste;
 using Celeste.Mod;
 using Ionic.Zip;
 using Microsoft.Xna.Framework;
+using Monocle;
 using TAS.EverestInterop.Hitboxes;
 using TAS.Input;
 using TAS.StudioCommunication;
@@ -140,7 +141,6 @@ namespace TAS.EverestInterop {
             }
         }
 
-
         public override void Load() {
             Hotkeys.Load();
             Core.Load();
@@ -174,6 +174,9 @@ namespace TAS.EverestInterop {
                 StudioCommunicationClient.Run();
             }
 
+            // for hot reloading
+            GameplayRendererExt.RenderDebug = Engine.Instance.GetDynDataInstance().Get<bool?>(nameof(Settings.ShowHitboxes)) ?? false;
+
 #if DEBUG
             Benchmark.Load();
 #endif
@@ -199,6 +202,7 @@ namespace TAS.EverestInterop {
             UnixRtc?.Dispose();
 
             // for hot reloading
+            Engine.Instance.GetDynDataInstance().Set(nameof(Settings.ShowHitboxes), Settings.ShowHitboxes);
             Manager.DisableExternal();
             Savestates.Unload();
             InputController.SaveStudioTasFilePath();

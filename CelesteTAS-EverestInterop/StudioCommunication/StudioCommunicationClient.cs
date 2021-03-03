@@ -33,8 +33,8 @@ namespace TAS.StudioCommunication {
             RunThread.Start(Setup, "StudioCom Client");
 
             void Setup() {
-                Celeste.Celeste.Instance.Exiting -= Destroy;
-                Celeste.Celeste.Instance.Exiting += Destroy;
+                Engine.Instance.Exiting -= Destroy;
+                Engine.Instance.Exiting += Destroy;
                 Instance.UpdateLoop();
             }
 
