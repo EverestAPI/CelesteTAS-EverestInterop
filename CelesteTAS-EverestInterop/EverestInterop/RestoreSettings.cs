@@ -66,7 +66,7 @@ namespace TAS.EverestInterop {
 
                             GameplayRendererExt.RenderDebug = showHitbox;
                         }
-                    } catch (NullReferenceException e) {
+                    } catch (NullReferenceException) {
                         // maybe caused by hot reloading
                     }
                 }

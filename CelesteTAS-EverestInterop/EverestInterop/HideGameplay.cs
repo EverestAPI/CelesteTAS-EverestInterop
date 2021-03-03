@@ -5,15 +5,14 @@ using Monocle;
 using MonoMod.Cil;
 
 namespace TAS.EverestInterop {
-    public class HideGameplay {
-        public static HideGameplay Instance;
+    public static class HideGameplay {
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
-        public void Load() {
+        public static void Load() {
             IL.Celeste.GameplayRenderer.Render += GameplayRenderer_Render;
         }
 
-        public void Unload() {
+        public static void Unload() {
             IL.Celeste.GameplayRenderer.Render -= GameplayRenderer_Render;
         }
 

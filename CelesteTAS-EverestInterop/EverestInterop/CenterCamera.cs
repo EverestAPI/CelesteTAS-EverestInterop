@@ -3,24 +3,23 @@ using Microsoft.Xna.Framework;
 using Monocle;
 
 namespace TAS.EverestInterop {
-    class CenterCamera {
-        public static CenterCamera Instance;
-        private Camera savedCamera;
+    public static class CenterCamera {
+        private static Camera savedCamera;
 
         public static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
-        public void Load() {
+        public static void Load() {
             // Optional: Center the camera
             On.Celeste.Level.BeforeRender += Level_BeforeRender;
             On.Celeste.Level.AfterRender += Level_AfterRender;
         }
 
-        public void Unload() {
+        public static void Unload() {
             On.Celeste.Level.BeforeRender -= Level_BeforeRender;
             On.Celeste.Level.AfterRender -= Level_AfterRender;
         }
 
-        private void Level_BeforeRender(On.Celeste.Level.orig_BeforeRender orig, Level self) {
+        private static void Level_BeforeRender(On.Celeste.Level.orig_BeforeRender orig, Level self) {
             orig.Invoke(self);
             if (Settings.CenterCamera) {
                 Player player = self.Tracker.GetEntity<Player>();
@@ -34,7 +33,7 @@ namespace TAS.EverestInterop {
             }
         }
 
-        private void Level_AfterRender(On.Celeste.Level.orig_AfterRender orig, Level self) {
+        private static void Level_AfterRender(On.Celeste.Level.orig_AfterRender orig, Level self) {
             if (savedCamera != null) {
                 self.Camera.CopyFrom(savedCamera);
             }

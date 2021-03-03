@@ -9,7 +9,6 @@ using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.EverestInterop;
 using TAS.Input;
-using static TAS.Manager;
 
 namespace TAS {
     public static class PlayerInfo {
@@ -23,6 +22,7 @@ namespace TAS {
         private static readonly GetPlayerSeekerSpeed PlayerSeekerSpeed;
         private static readonly GetPlayerSeekerDashTimer PlayerSeekerDashTimer;
 
+        public static string PlayerStatus = string.Empty;
         public static Vector2 LastPos;
         public static Vector2 LastPlayerSeekerPos;
         private static long lastTimer;
@@ -64,13 +64,13 @@ namespace TAS {
                         string speed = $"Speed: {player.Speed.X:F2}, {player.Speed.Y:F2}";
                         Vector2 diff = (player.ExactPosition - LastPos) * 60f;
                         string vel = $"Vel:   {diff.X:F2}, {diff.Y:F2}";
-                        string polarvel = $"Fly:   {diff.Length():F2}, {GetAngle(diff):F5}°";
+                        string polarvel = $"Fly:   {diff.Length():F2}, {Manager.GetAngle(diff):F5}°";
 
                         string joystick;
-                        if (Running && Controller.Previous is InputFrame inputFrame && inputFrame.HasActions(Actions.Feather)) {
+                        if (Manager.Running && Manager.Controller.Previous is InputFrame inputFrame && inputFrame.HasActions(Actions.Feather)) {
                             Vector2 angleVector2 = inputFrame.AngleVector2;
                             joystick =
-                                $"Analog: {angleVector2.X:F5}, {angleVector2.Y:F5}, {GetAngle(new Vector2(angleVector2.X, -angleVector2.Y)):F5}°";
+                                $"Analog: {angleVector2.X:F5}, {angleVector2.Y:F5}, {Manager.GetAngle(new Vector2(angleVector2.X, -angleVector2.Y)):F5}°";
                         } else {
                             joystick = string.Empty;
                         }
@@ -87,7 +87,7 @@ namespace TAS {
                                 $"Speed: {PlayerSeekerSpeed(playerSeeker).X:F2}, {PlayerSeekerSpeed(playerSeeker).Y:F2}";
                             diff = (playerSeeker.ExactPosition - LastPlayerSeekerPos) * 60f;
                             vel = $"Vel:   {diff.X:F2}, {diff.Y:F2}";
-                            polarvel = $"Chase: {diff.Length():F2}, {GetAngle(diff):F2}°";
+                            polarvel = $"Chase: {diff.Length():F2}, {Manager.GetAngle(diff):F2}°";
                             dashCooldown = (int) (PlayerSeekerDashTimer(playerSeeker) * framesPerSecond);
                         }
 
@@ -157,6 +157,13 @@ namespace TAS {
 
                         if (!string.IsNullOrEmpty(timers)) {
                             sb.AppendLine(timers);
+                        }
+
+                        if (Manager.FrameLoops == 1) {
+                            string inspectingInfo = ConsoleEnhancements.GetInspectingEntitiesInfo();
+                            if (inspectingInfo.IsNotNullOrEmpty()) {
+                                sb.AppendLine(inspectingInfo);
+                            }
                         }
 
                         sb.Append(roomNameAndTime);
@@ -232,6 +239,7 @@ namespace TAS {
 
         public static void ExportPlayerInfo() {
             Engine.Scene.OnEndOfFrame += () => {
+                InputController controller = Manager.Controller;
                 if (Engine.Scene is Level level) {
                     Player player = level.Tracker.GetEntity<Player>();
                     if (player == null) {
@@ -266,9 +274,9 @@ namespace TAS {
                     }
 
                     string output = string.Empty;
-                    if (Controller.CurrentFrame > 0 && Controller.Inputs.Count > 0) {
+                    if (controller.CurrentFrame > 0 && controller.Inputs.Count > 0) {
                         output = string.Join("\t",
-                            Controller.Previous.Line, Controller.Previous, Controller.CurrentFrame - 1, time, pos, speed,
+                            controller.Previous.Line, controller.Previous, controller.CurrentFrame - 1, time, pos, speed,
                             (PlayerState) player.StateMachine.State,
                             statuses);
                     }
@@ -292,14 +300,16 @@ namespace TAS {
                         }
                     }
 
+                    output += ConsoleEnhancements.GetInspectingEntitiesInfo("\t");
+
                     sw.WriteLine(output);
                 } else {
-                    string inputs = Controller.Current.ToString();
+                    string inputs = controller.Current.ToString();
                     if (inputs.Length > 1) {
                         inputs = inputs.Substring(1);
                     }
 
-                    string output = string.Join(" ", inputs, Controller.CurrentFrame, Engine.Scene.GetType().Name);
+                    string output = string.Join(" ", inputs, controller.CurrentFrame, Engine.Scene.GetType().Name);
                     sw.WriteLine(output);
                 }
             };

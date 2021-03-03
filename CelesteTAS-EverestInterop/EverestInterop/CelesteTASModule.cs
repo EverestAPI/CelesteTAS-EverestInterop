@@ -12,6 +12,7 @@ using TAS.Input;
 using TAS.StudioCommunication;
 
 namespace TAS.EverestInterop {
+    // ReSharper disable once ClassNeverInstantiated.Global
     public class CelesteTasModule : EverestModule {
         private const string StudioName = "Celeste Studio";
         public static CelesteTasModule Instance;
@@ -142,33 +143,18 @@ namespace TAS.EverestInterop {
 
         public override void Load() {
             Hotkeys.Load();
-
-            Core.Instance = new Core();
-            Core.Instance.Load();
-
+            Core.Load();
             FastForwardBoost.Load();
-
-            DisableAchievements.Instance = new DisableAchievements();
-            DisableAchievements.Instance.Load();
-
-            GraphicsCore.Instance = new GraphicsCore();
-            GraphicsCore.Instance.Load();
-
+            DisableAchievements.Load();
+            GraphicsCore.Load();
             SimplifiedGraphicsFeature.Load();
-
-            CenterCamera.Instance = new CenterCamera();
-            CenterCamera.Instance.Load();
-
+            CenterCamera.Load();
             AutoMute.Load();
-
-            HideGameplay.Instance = new HideGameplay();
-            HideGameplay.Instance.Load();
-
+            HideGameplay.Load();
             HitboxTweak.Load();
-
             InfoHud.Load();
-
             PlayerInfoAssist.Load();
+            ConsoleEnhancements.Load();
 
             // Optional: Allow spawning at specified location
             On.Celeste.LevelLoader.LoadingThread += LevelLoader_LoadingThread;
@@ -195,17 +181,18 @@ namespace TAS.EverestInterop {
 
         public override void Unload() {
             Hotkeys.Unload();
-            Core.Instance.Unload();
+            Core.Unload();
             FastForwardBoost.Unload();
-            DisableAchievements.Instance.Unload();
-            GraphicsCore.Instance.Unload();
+            DisableAchievements.Unload();
+            GraphicsCore.Unload();
             SimplifiedGraphicsFeature.Unload();
-            CenterCamera.Instance.Unload();
+            CenterCamera.Unload();
             AutoMute.Unload();
-            HideGameplay.Instance.Unload();
+            HideGameplay.Unload();
             HitboxTweak.Unload();
             InfoHud.Unload();
             PlayerInfoAssist.Unload();
+            ConsoleEnhancements.Unload();
             On.Celeste.LevelLoader.LoadingThread -= LevelLoader_LoadingThread;
             StudioCommunicationClient.Destroy();
 
@@ -226,7 +213,7 @@ namespace TAS.EverestInterop {
             Menu.CreateMenu(this, menu, inGame);
         }
 
-        private void LevelLoader_LoadingThread(On.Celeste.LevelLoader.orig_LoadingThread orig, LevelLoader self) {
+        private static void LevelLoader_LoadingThread(On.Celeste.LevelLoader.orig_LoadingThread orig, LevelLoader self) {
             orig(self);
             Session session = self.Level.Session;
             if (ConsoleHandler.ResetSpawn is Vector2 spawn) {

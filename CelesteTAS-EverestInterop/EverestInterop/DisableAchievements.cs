@@ -2,12 +2,10 @@
 using MonoMod.Utils;
 
 namespace TAS.EverestInterop {
-    class DisableAchievements {
-        public static DisableAchievements Instance;
+    public static class DisableAchievements {
+        private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
-        public static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
-
-        public void Load() {
+        public static void Load() {
             // Optional: Disable achievements, stats and terminal.
 
             // Before hooking Stats.Increment, check if the method is empty.
@@ -30,12 +28,12 @@ namespace TAS.EverestInterop {
             }
         }
 
-        public void Unload() {
+        public static void Unload() {
             On.Celeste.Achievements.Register -= Achievements_Register;
             On.Celeste.Stats.Increment -= Stats_Increment;
         }
 
-        public static void Achievements_Register(On.Celeste.Achievements.orig_Register orig, Achievement achievement) {
+        private static void Achievements_Register(On.Celeste.Achievements.orig_Register orig, Achievement achievement) {
             if (Settings.DisableAchievements) {
                 return;
             }
@@ -43,7 +41,7 @@ namespace TAS.EverestInterop {
             orig(achievement);
         }
 
-        public static void Stats_Increment(On.Celeste.Stats.orig_Increment orig, Stat stat, int increment) {
+        private static void Stats_Increment(On.Celeste.Stats.orig_Increment orig, Stat stat, int increment) {
             if (Settings.DisableAchievements) {
                 return;
             }

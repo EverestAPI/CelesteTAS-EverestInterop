@@ -233,6 +233,22 @@ namespace TAS.EverestInterop {
         }
     }
 
+    internal static class EntityExtensions {
+        private const string CelesteTasEntityDataKey = nameof(CelesteTasEntityDataKey);
+
+        public static void SaveEntityData(this Entity entity, EntityData data) {
+            entity.GetDynDataInstance().Set(CelesteTasEntityDataKey, data);
+        }
+
+        public static EntityData LoadEntityData(this Entity entity) {
+            return entity.GetDynDataInstance().Get<EntityData>(CelesteTasEntityDataKey);
+        }
+
+        public static EntityID ToEntityId(this EntityData entityData) {
+            return new EntityID(entityData.Level.Name, entityData.ID);
+        }
+    }
+
     internal static class SceneExtensions {
         public static Player GetPlayer(this Scene scene) => scene.Tracker.GetEntity<Player>();
     }

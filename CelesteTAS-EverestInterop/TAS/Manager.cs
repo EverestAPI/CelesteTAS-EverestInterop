@@ -28,14 +28,11 @@ namespace TAS {
         public static bool Running, Recording;
         public static InputController Controller = new InputController();
         public static State LastState, State, NextState;
-        public static string CurrentStatus, PlayerStatus = "";
+        public static string CurrentStatus = string.Empty;
         public static int FrameLoops = 1;
         public static bool EnforceLegal, AllowUnsafeInput;
-        public static Vector2 LastPos;
-        public static Vector2 LastPlayerSeekerPos;
         public static bool KbTextInput;
 
-        private static long lastTimer;
         private static Task checkHotkeyStarTask;
 
         static Manager() {
@@ -60,7 +57,7 @@ namespace TAS {
                 Running = true;
 
                 if (HasFlag(State, State.FrameStep)) {
-                    StudioCommunicationClient.Instance?.SendStateAndPlayerData(CurrentStatus, PlayerStatus, !ShouldForceState);
+                    StudioCommunicationClient.Instance?.SendStateAndPlayerData(CurrentStatus, PlayerInfo.PlayerStatus, !ShouldForceState);
                     return;
                 }
                 /*
@@ -98,7 +95,7 @@ namespace TAS {
                 }
             }
 
-            StudioCommunicationClient.Instance?.SendStateAndPlayerData(CurrentStatus, PlayerStatus, !ShouldForceState);
+            StudioCommunicationClient.Instance?.SendStateAndPlayerData(CurrentStatus, PlayerInfo.PlayerStatus, !ShouldForceState);
         }
 
         public static void UpdateManagerStatus() {

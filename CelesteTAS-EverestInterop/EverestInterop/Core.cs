@@ -9,10 +9,8 @@ using Monocle;
 using MonoMod.RuntimeDetour;
 
 namespace TAS.EverestInterop {
-    class Core {
+    public static class Core {
         public delegate void DGameUpdate(Game self, GameTime gameTime);
-
-        public static Core Instance;
 
         // The fields we want to access from Celeste-Addons
         public static bool SkipBaseUpdate;
@@ -26,9 +24,9 @@ namespace TAS.EverestInterop {
 
         public static Action PreviousGameLoop;
 
-        public static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
+        private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
-        public void Load() {
+        public static void Load() {
             // Relink RunThreadWithLogging to Celeste.RunThread.RunThreadWithLogging because reflection invoke is slow.
             HRunThreadWithLogging = new Detour(
                 typeof(Core).GetMethod("RunThreadWithLogging"),
@@ -59,7 +57,7 @@ namespace TAS.EverestInterop {
             On.Monocle.Scene.AfterUpdate += Scene_AfterUpdate;
         }
 
-        public void Unload() {
+        public static void Unload() {
             HRunThreadWithLogging.Dispose();
             On.Monocle.Engine.Update -= Engine_Update;
             On.Monocle.MInput.Update -= MInput_Update;
@@ -117,7 +115,7 @@ namespace TAS.EverestInterop {
             if (CelesteTasModule.UnixRtcEnabled && Manager.CurrentStatus != null) {
                 StreamWriter writer = CelesteTasModule.Instance.UnixRtcStreamOut;
                 try {
-                    writer.Write(Manager.PlayerStatus.Replace('\n', '~'));
+                    writer.Write(PlayerInfo.PlayerStatus.Replace('\n', '~'));
                     writer.Write('%');
                     writer.Write(Manager.CurrentStatus.Replace('\n', '~'));
                     writer.Write('%');
@@ -180,7 +178,7 @@ namespace TAS.EverestInterop {
             orig(method, name, highPriority);
         }
 
-        private void Entity_Render(On.Monocle.Entity.orig_Render orig, Entity self) {
+        private static void Entity_Render(On.Monocle.Entity.orig_Render orig, Entity self) {
             if (InUpdate) {
                 return;
             }
@@ -188,7 +186,7 @@ namespace TAS.EverestInterop {
             orig(self);
         }
 
-        private void Scene_AfterUpdate(On.Monocle.Scene.orig_AfterUpdate orig, Scene self) {
+        private static void Scene_AfterUpdate(On.Monocle.Scene.orig_AfterUpdate orig, Scene self) {
             orig(self);
             PlayerInfo.UpdatePlayerInfo();
         }

@@ -102,9 +102,9 @@ namespace TAS {
             }
 
             savedByBreakpoint = breakpoint;
-            savedPlayerStatus = PlayerStatus;
-            savedLastPos = LastPos;
-            savedLastPlayerSeekerPos = LastPlayerSeekerPos;
+            savedPlayerStatus = PlayerInfo.PlayerStatus;
+            savedLastPos = PlayerInfo.LastPos;
+            savedLastPlayerSeekerPos = PlayerInfo.LastPlayerSeekerPos;
 
             savedController = Controller.Clone();
             LoadStateRoutine();
@@ -162,9 +162,9 @@ namespace TAS {
         private static void LoadStateRoutine() {
             Controller.CopyFrom(savedController);
             SetTasState();
-            PlayerStatus = savedPlayerStatus;
-            LastPos = savedLastPos;
-            LastPlayerSeekerPos = savedLastPlayerSeekerPos;
+            PlayerInfo.PlayerStatus = savedPlayerStatus;
+            PlayerInfo.LastPos = savedLastPos;
+            PlayerInfo.LastPlayerSeekerPos = savedLastPlayerSeekerPos;
             UpdateStudio();
         }
 
@@ -183,7 +183,7 @@ namespace TAS {
                 UpdateManagerStatus();
             }
 
-            StudioCommunicationClient.Instance?.SendStateAndPlayerData(CurrentStatus, PlayerStatus, false);
+            StudioCommunicationClient.Instance?.SendStateAndPlayerData(CurrentStatus, PlayerInfo.PlayerStatus, false);
         }
 
         public static void Unload() {

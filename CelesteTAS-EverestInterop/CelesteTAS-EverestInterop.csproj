@@ -108,6 +108,7 @@
         <Compile Include="EverestInterop\CelesteTASModuleSettings.cs"/>
         <Compile Include="EverestInterop\CelesteTASModule.cs"/>
         <Compile Include="EverestInterop\CenterCamera.cs"/>
+        <Compile Include="EverestInterop\ConsoleEnhancements.cs"/>
         <Compile Include="EverestInterop\FastForwardBoost.cs"/>
         <Compile Include="EverestInterop\HideGameplay.cs"/>
         <Compile Include="EverestInterop\Hitboxes\HitboxColor.cs"/>

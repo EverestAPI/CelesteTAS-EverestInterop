@@ -12,8 +12,6 @@ namespace TAS.EverestInterop.Hitboxes {
     public static partial class ActualEntityCollideHitbox {
         private const string ActualCollidePositionKey = nameof(ActualCollidePositionKey);
         private const string ActualCollidableKey = nameof(ActualCollidableKey);
-        private static ILHook ilHookPlayerOrigUpdateEntity;
-        private static Vector2? beforeUpdatePosition;
         private static bool colliderListRendering;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
