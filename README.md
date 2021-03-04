@@ -7,7 +7,7 @@
 ----
 
 - Install [Everest](https://everestapi.github.io/) if you haven't already.
-- (Recommended) Use the 1-click installer [here](https://gamebanana.com/tools/6715). (Alternatively) [Download the latest autobuild](https://nightly.link/EverestAPI/CelesteTAS-EverestInterop/workflows/NetFramework.Legacy.CI/master/CelesteTAS.zip)
+- (Recommended) Use the 1-click installer [here](https://gamebanana.com/tools/6715). (Alternatively) [Download the latest autobuild](https://0x0ade.ga/twoclick/?nightly.link/EverestAPI/CelesteTAS-EverestInterop/workflows/NetFramework.Legacy.CI/master/CelesteTAS.zip)
   and put it in the game_path/mods folder.
 - Enable the mod in the in-game mod options.
 - If on Linux, enable `Unix RTC` in the mod options and restart Celeste.
@@ -81,3 +81,8 @@ While in game or in Studio:
 - Savestates may not work properly in custom maps that use code mods. Placing a savestate right before leaving a room can help with this.
 - Currently cannot savestate while skipping a cutscene or during the death animation.
 - Crashes due to running out of memory are possible, although uncommon.
+
+### Misc
+
+- Inspect entity: open the console then left-click to add the entity to be inspected, right-click to clear the inspecting entities. Supports exporting position
+  data via the `StartExport` command.
