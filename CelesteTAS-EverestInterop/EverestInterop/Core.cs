@@ -115,7 +115,7 @@ namespace TAS.EverestInterop {
             if (CelesteTasModule.UnixRtcEnabled && Manager.CurrentStatus != null) {
                 StreamWriter writer = CelesteTasModule.Instance.UnixRtcStreamOut;
                 try {
-                    writer.Write(PlayerInfo.PlayerStatus.Replace('\n', '~'));
+                    writer.Write(PlayerInfo.Status.Replace('\n', '~'));
                     writer.Write('%');
                     writer.Write(Manager.CurrentStatus.Replace('\n', '~'));
                     writer.Write('%');
@@ -188,7 +188,7 @@ namespace TAS.EverestInterop {
 
         private static void Scene_AfterUpdate(On.Monocle.Scene.orig_AfterUpdate orig, Scene self) {
             orig(self);
-            PlayerInfo.UpdatePlayerInfo();
+            PlayerInfo.Update();
         }
     }
 }

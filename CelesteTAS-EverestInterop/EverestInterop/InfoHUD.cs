@@ -78,7 +78,7 @@ namespace TAS.EverestInterop {
                 string currentStr =
                     $"{(current.Line + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - current.Frames.ToString().Length)}{current}";
                 int maxWidth = currentStr.Length + controller.StudioFrameCount.ToString().Length + 1;
-                maxWidth = PlayerInfo.PlayerStatus.Split('\n').Select(s => s.Length).Concat(new[] {maxWidth}).Max();
+                maxWidth = PlayerInfo.Status.Split('\n').Select(s => s.Length).Concat(new[] {maxWidth}).Max();
                 stringBuilder.Append(
                     $"{currentStr.PadRight(maxWidth - controller.StudioFrameCount.ToString().Length - 1)}{controller.StudioFrameCount}\n");
                 if (next != null) {
@@ -89,7 +89,7 @@ namespace TAS.EverestInterop {
                 stringBuilder.AppendLine();
             }
 
-            stringBuilder.Append(PlayerInfo.PlayerStatus);
+            stringBuilder.Append(PlayerInfo.Status);
 
             string text = stringBuilder.ToString();
             if (string.IsNullOrEmpty(text)) {

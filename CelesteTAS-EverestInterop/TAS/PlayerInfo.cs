@@ -22,7 +22,7 @@ namespace TAS {
         private static readonly GetPlayerSeekerSpeed PlayerSeekerSpeed;
         private static readonly GetPlayerSeekerDashTimer PlayerSeekerDashTimer;
 
-        public static string PlayerStatus = string.Empty;
+        public static string Status = string.Empty;
         public static Vector2 LastPos;
         public static Vector2 LastPlayerSeekerPos;
         private static long lastTimer;
@@ -53,134 +53,132 @@ namespace TAS {
 
         public static bool ExportSyncData { get; set; }
 
-        public static void UpdatePlayerInfo() {
+        public static void Update() {
             if (Engine.Scene is Level level) {
                 Player player = level.Tracker.GetEntity<Player>();
                 if (player != null) {
                     long chapterTime = level.Session.Time;
-                    if (chapterTime != lastTimer || LastPos != player.ExactPosition) {
-                        framesPerSecond = 60f / Engine.TimeRateB;
-                        string pos = GetAdjustedPos(player.Position, player.PositionRemainder);
-                        string speed = $"Speed: {player.Speed.X:F2}, {player.Speed.Y:F2}";
-                        Vector2 diff = (player.ExactPosition - LastPos) * 60f;
-                        string vel = $"Vel:   {diff.X:F2}, {diff.Y:F2}";
-                        string polarvel = $"Fly:   {diff.Length():F2}, {Manager.GetAngle(diff):F5}°";
+                    framesPerSecond = 60f / Engine.TimeRateB;
+                    string pos = GetAdjustedPos(player.Position, player.PositionRemainder);
+                    string speed = $"Speed: {player.Speed.X:F2}, {player.Speed.Y:F2}";
+                    Vector2 diff = (player.ExactPosition - LastPos) * 60f;
+                    string vel = $"Vel:   {diff.X:F2}, {diff.Y:F2}";
+                    string polarvel = $"Fly:   {diff.Length():F2}, {Manager.GetAngle(diff):F5}°";
 
-                        string joystick;
-                        if (Manager.Running && Manager.Controller.Previous is InputFrame inputFrame && inputFrame.HasActions(Actions.Feather)) {
-                            Vector2 angleVector2 = inputFrame.AngleVector2;
-                            joystick =
-                                $"Analog: {angleVector2.X:F5}, {angleVector2.Y:F5}, {Manager.GetAngle(new Vector2(angleVector2.X, -angleVector2.Y)):F5}°";
-                        } else {
-                            joystick = string.Empty;
-                        }
-
-                        string miscstats = $"Stamina: {player.Stamina:0}  "
-                                           + (WallJumpCheck(player, 1) ? "Wall-R " : string.Empty)
-                                           + (WallJumpCheck(player, -1) ? "Wall-L " : string.Empty);
-                        int dashCooldown = (int) (DashCooldownTimer(player) * framesPerSecond);
-
-                        PlayerSeeker playerSeeker = level.Entities.FindFirst<PlayerSeeker>();
-                        if (playerSeeker != null) {
-                            pos = GetAdjustedPos(playerSeeker.Position, playerSeeker.PositionRemainder);
-                            speed =
-                                $"Speed: {PlayerSeekerSpeed(playerSeeker).X:F2}, {PlayerSeekerSpeed(playerSeeker).Y:F2}";
-                            diff = (playerSeeker.ExactPosition - LastPlayerSeekerPos) * 60f;
-                            vel = $"Vel:   {diff.X:F2}, {diff.Y:F2}";
-                            polarvel = $"Chase: {diff.Length():F2}, {Manager.GetAngle(diff):F2}°";
-                            dashCooldown = (int) (PlayerSeekerDashTimer(playerSeeker) * framesPerSecond);
-                        }
-
-                        string statuses = (dashCooldown < 1 && player.Dashes > 0 ? "Dash " : string.Empty)
-                                          + (player.LoseShards ? "Ground " : string.Empty)
-                                          + (!player.LoseShards && JumpGraceTimer(player) > 0
-                                              ? $"Coyote({(int) (JumpGraceTimer(player) * framesPerSecond)})"
-                                              : string.Empty);
-                        string transitionFrames = PlayerInfoAssist.TransitionFrames > 0 ? $"({PlayerInfoAssist.TransitionFrames})" : string.Empty;
-                        statuses = (player.InControl && !level.Transitioning ? statuses : $"NoControl{transitionFrames} ")
-                                   + (player.TimePaused ? "Paused " : string.Empty)
-                                   + (level.InCutscene ? "Cutscene " : string.Empty)
-                                   + (AdditionalStatusInfo ?? string.Empty);
-
-
-                        if (player.Holding == null) {
-                            foreach (Component component in level.Tracker.GetComponents<Holdable>()) {
-                                Holdable holdable = (Holdable) component;
-                                if (holdable.Check(player)) {
-                                    statuses += "Grab ";
-                                    break;
-                                }
-                            }
-                        }
-
-                        int berryTimer = -10;
-                        Follower firstRedBerryFollower =
-                            player.Leader.Followers.Find(follower => follower.Entity is Strawberry berry && !berry.Golden);
-                        if (firstRedBerryFollower?.Entity is Strawberry firstRedBerry) {
-                            object collectTimer;
-                            if (firstRedBerry.GetType() == typeof(Strawberry)
-                                || (collectTimer = StrawberryCollectTimer(firstRedBerry)) == null) {
-                                // if this is a vanilla berry or a mod berry having no collectTimer, use the cached FieldInfo for Strawberry.collectTimer.
-                                collectTimer = StrawberryCollectTimerFieldInfo.GetValue(firstRedBerry);
-                            }
-
-                            berryTimer = 9 - (int) Math.Round((float) collectTimer * framesPerSecond);
-                        }
-
-                        string timers = (berryTimer != -10
-                                            ? berryTimer <= 9 ? $"BerryTimer: {berryTimer} " : $"BerryTimer: 9+{berryTimer - 9} "
-                                            : string.Empty)
-                                        + (dashCooldown != 0 ? $"DashTimer: {(dashCooldown).ToString()} " : string.Empty);
-                        string roomNameAndTime =
-                            $"[{level.Session.Level}] Timer: {(chapterTime / 10000000D):F3}({chapterTime / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks})";
-
-                        StringBuilder sb = new StringBuilder();
-                        sb.AppendLine(pos);
-                        sb.AppendLine(speed);
-                        sb.AppendLine(vel);
-
-                        if (player.StateMachine.State == Player.StStarFly
-                            || playerSeeker != null
-                            || SaveData.Instance.Assists.ThreeSixtyDashing
-                            || SaveData.Instance.Assists.SuperDashing) {
-                            sb.AppendLine(polarvel);
-                        }
-
-                        if (!string.IsNullOrEmpty(joystick)) {
-                            sb.AppendLine(joystick);
-                        }
-
-                        sb.AppendLine(miscstats);
-                        if (!string.IsNullOrEmpty(statuses)) {
-                            sb.AppendLine(statuses);
-                        }
-
-                        if (!string.IsNullOrEmpty(timers)) {
-                            sb.AppendLine(timers);
-                        }
-
-                        if (Manager.FrameLoops == 1) {
-                            string inspectingInfo = ConsoleEnhancements.GetInspectingEntitiesInfo();
-                            if (inspectingInfo.IsNotNullOrEmpty()) {
-                                sb.AppendLine(inspectingInfo);
-                            }
-                        }
-
-                        sb.Append(roomNameAndTime);
-                        LastPos = player.ExactPosition;
-                        LastPlayerSeekerPos = playerSeeker?.ExactPosition ?? default;
-                        lastTimer = chapterTime;
-                        PlayerStatus = sb.ToString().TrimEnd();
+                    string joystick;
+                    if (Manager.Running && Manager.Controller.Previous is InputFrame inputFrame && inputFrame.HasActions(Actions.Feather)) {
+                        Vector2 angleVector2 = inputFrame.AngleVector2;
+                        joystick =
+                            $"Analog: {angleVector2.X:F5}, {angleVector2.Y:F5}, {Manager.GetAngle(new Vector2(angleVector2.X, -angleVector2.Y)):F5}°";
+                    } else {
+                        joystick = string.Empty;
                     }
+
+                    string miscstats = $"Stamina: {player.Stamina:0}  "
+                                       + (WallJumpCheck(player, 1) ? "Wall-R " : string.Empty)
+                                       + (WallJumpCheck(player, -1) ? "Wall-L " : string.Empty);
+                    int dashCooldown = (int) (DashCooldownTimer(player) * framesPerSecond);
+
+                    PlayerSeeker playerSeeker = level.Entities.FindFirst<PlayerSeeker>();
+                    if (playerSeeker != null) {
+                        pos = GetAdjustedPos(playerSeeker.Position, playerSeeker.PositionRemainder);
+                        speed =
+                            $"Speed: {PlayerSeekerSpeed(playerSeeker).X:F2}, {PlayerSeekerSpeed(playerSeeker).Y:F2}";
+                        diff = (playerSeeker.ExactPosition - LastPlayerSeekerPos) * 60f;
+                        vel = $"Vel:   {diff.X:F2}, {diff.Y:F2}";
+                        polarvel = $"Chase: {diff.Length():F2}, {Manager.GetAngle(diff):F2}°";
+                        dashCooldown = (int) (PlayerSeekerDashTimer(playerSeeker) * framesPerSecond);
+                    }
+
+                    string statuses = (dashCooldown < 1 && player.Dashes > 0 ? "Dash " : string.Empty)
+                                      + (player.LoseShards ? "Ground " : string.Empty)
+                                      + (!player.LoseShards && JumpGraceTimer(player) > 0
+                                          ? $"Coyote({(int) (JumpGraceTimer(player) * framesPerSecond)})"
+                                          : string.Empty);
+                    string transitionFrames = PlayerInfoAssist.TransitionFrames > 0 ? $"({PlayerInfoAssist.TransitionFrames})" : string.Empty;
+                    statuses = (player.InControl && !level.Transitioning ? statuses : $"NoControl{transitionFrames} ")
+                               + (player.TimePaused ? "Paused " : string.Empty)
+                               + (level.InCutscene ? "Cutscene " : string.Empty)
+                               + (AdditionalStatusInfo ?? string.Empty);
+
+
+                    if (player.Holding == null) {
+                        foreach (Component component in level.Tracker.GetComponents<Holdable>()) {
+                            Holdable holdable = (Holdable) component;
+                            if (holdable.Check(player)) {
+                                statuses += "Grab ";
+                                break;
+                            }
+                        }
+                    }
+
+                    int berryTimer = -10;
+                    Follower firstRedBerryFollower =
+                        player.Leader.Followers.Find(follower => follower.Entity is Strawberry berry && !berry.Golden);
+                    if (firstRedBerryFollower?.Entity is Strawberry firstRedBerry) {
+                        object collectTimer;
+                        if (firstRedBerry.GetType() == typeof(Strawberry)
+                            || (collectTimer = StrawberryCollectTimer(firstRedBerry)) == null) {
+                            // if this is a vanilla berry or a mod berry having no collectTimer, use the cached FieldInfo for Strawberry.collectTimer.
+                            collectTimer = StrawberryCollectTimerFieldInfo.GetValue(firstRedBerry);
+                        }
+
+                        berryTimer = 9 - (int) Math.Round((float) collectTimer * framesPerSecond);
+                    }
+
+                    string timers = (berryTimer != -10
+                                        ? berryTimer <= 9 ? $"BerryTimer: {berryTimer} " : $"BerryTimer: 9+{berryTimer - 9} "
+                                        : string.Empty)
+                                    + (dashCooldown != 0 ? $"DashTimer: {(dashCooldown).ToString()} " : string.Empty);
+                    string roomNameAndTime =
+                        $"[{level.Session.Level}] Timer: {(chapterTime / 10000000D):F3}({chapterTime / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks})";
+
+                    StringBuilder sb = new StringBuilder();
+                    sb.AppendLine(pos);
+                    sb.AppendLine(speed);
+                    sb.AppendLine(vel);
+
+                    if (player.StateMachine.State == Player.StStarFly
+                        || playerSeeker != null
+                        || SaveData.Instance.Assists.ThreeSixtyDashing
+                        || SaveData.Instance.Assists.SuperDashing) {
+                        sb.AppendLine(polarvel);
+                    }
+
+                    if (!string.IsNullOrEmpty(joystick)) {
+                        sb.AppendLine(joystick);
+                    }
+
+                    sb.AppendLine(miscstats);
+                    if (!string.IsNullOrEmpty(statuses)) {
+                        sb.AppendLine(statuses);
+                    }
+
+                    if (!string.IsNullOrEmpty(timers)) {
+                        sb.AppendLine(timers);
+                    }
+
+                    if (Manager.FrameLoops == 1) {
+                        string inspectingInfo = ConsoleEnhancements.GetInspectingEntitiesInfo();
+                        if (inspectingInfo.IsNotNullOrEmpty()) {
+                            sb.AppendLine(inspectingInfo);
+                        }
+                    }
+
+                    sb.Append(roomNameAndTime);
+                    LastPos = player.ExactPosition;
+                    LastPlayerSeekerPos = playerSeeker?.ExactPosition ?? default;
+                    lastTimer = chapterTime;
+                    Status = sb.ToString().TrimEnd();
                 } else {
-                    PlayerStatus = level.InCutscene ? "Cutscene" : string.Empty;
+                    Status = level.InCutscene ? "Cutscene" : string.Empty;
                 }
             } else if (Engine.Scene is SummitVignette summit) {
-                PlayerStatus = "SummitVignette " + SummitVignetteReadyFieldInfo.GetValue(summit);
+                Status = "SummitVignette " + SummitVignetteReadyFieldInfo.GetValue(summit);
             } else if (Engine.Scene is Overworld overworld) {
-                PlayerStatus = "Overworld " + overworld.ShowInputUI;
+                Status = "Overworld " + overworld.ShowInputUI;
             } else if (Engine.Scene != null) {
-                PlayerStatus = Engine.Scene.GetType().Name;
+                Status = Engine.Scene.GetType().Name;
             }
         }
 

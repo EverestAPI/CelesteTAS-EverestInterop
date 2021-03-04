@@ -18,15 +18,19 @@ namespace TAS.EverestInterop {
 
         private static string clickedEntityInfo = string.Empty;
         private static ButtonState lastButtonState;
+        private static ulong lastToggleConsoleFrame;
+        private static bool consoleOpen;
         private static readonly List<WeakReference> RequireInspectEntities = new List<WeakReference>();
         private static readonly HashSet<EntityID> RequireInspectEntityIds = new HashSet<EntityID>();
+        private static readonly HashSet<Entity> InspectingEntities = new HashSet<Entity>();
         private static AreaKey requireInspectAreaKey;
-        private static WeakReference<HashSet<Entity>> inspectingEntities;
 
         public static void Load() {
             IL.Monocle.Commands.Render += Commands_Render;
             On.Monocle.EntityList.DebugRender += EntityListOnDebugRender;
             On.Celeste.Level.Begin += LevelOnBegin;
+            On.Celeste.Level.LoadLevel += LevelOnLoadLevel;
+            On.Celeste.Level.End += LevelOnEnd;
             origLoadLevelHook = new ILHook(typeof(Level).GetMethod("orig_LoadLevel"), ModOrigLoadLevel);
             loadCustomEntityHook = new ILHook(typeof(Level).GetMethod("LoadCustomEntity"), ModLoadCustomEntity);
         }
@@ -35,10 +39,18 @@ namespace TAS.EverestInterop {
             IL.Monocle.Commands.Render -= Commands_Render;
             On.Monocle.EntityList.DebugRender -= EntityListOnDebugRender;
             On.Celeste.Level.Begin -= LevelOnBegin;
+            On.Celeste.Level.LoadLevel -= LevelOnLoadLevel;
+            On.Celeste.Level.End -= LevelOnEnd;
             origLoadLevelHook?.Dispose();
             loadCustomEntityHook?.Dispose();
             origLoadLevelHook = null;
             loadCustomEntityHook = null;
+        }
+
+        public static void ResetConsole() {
+            consoleOpen = false;
+            Engine.Commands.Open = false;
+            Engine.Commands.Enabled = Celeste.Celeste.PlayMode == Celeste.Celeste.PlayModes.Debug;
         }
 
         private static void Commands_Render(ILContext il) {
@@ -112,7 +124,7 @@ namespace TAS.EverestInterop {
 
             if (CelesteTasModule.Settings.ShowHitboxes) {
                 foreach (Entity entity in Engine.Scene.Entities) {
-                    if (inspectingEntities != null && inspectingEntities.TryGetTarget(out HashSet<Entity> entities) && entities.Contains(entity)) {
+                    if (InspectingEntities.Contains(entity)) {
                         Draw.Point(entity.Position, HitboxColor.EntityColorInversely);
                     }
                 }
@@ -125,6 +137,16 @@ namespace TAS.EverestInterop {
             if (self.Session.Area != requireInspectAreaKey) {
                 ClearInspectEntities();
             }
+        }
+
+        private static void LevelOnLoadLevel(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader) {
+            orig(self, playerIntro, isFromLoader);
+            InspectingEntities.Clear();
+        }
+
+        private static void LevelOnEnd(On.Celeste.Level.orig_End orig, Level self) {
+            orig(self);
+            InspectingEntities.Clear();
         }
 
         private static void ModOrigLoadLevel(ILContext il) {
@@ -174,12 +196,15 @@ namespace TAS.EverestInterop {
                     RequireInspectEntities.Add(new WeakReference(clickedEntity));
                 }
             }
+
+            PlayerInfo.Update();
         }
 
         private static void ClearInspectEntities() {
             RequireInspectEntities.Clear();
             RequireInspectEntityIds.Clear();
-            inspectingEntities = null;
+            InspectingEntities.Clear();
+            PlayerInfo.Update();
         }
 
         private static void CacheEntityData(Entity entity, EntityData data) {
@@ -187,8 +212,7 @@ namespace TAS.EverestInterop {
         }
 
         public static string GetInspectingEntitiesInfo(string separator = "\n") {
-            HashSet<Entity> target = new HashSet<Entity>();
-            inspectingEntities = new WeakReference<HashSet<Entity>>(target);
+            InspectingEntities.Clear();
             if (!(Engine.Scene is Level level)) {
                 return string.Empty;
             }
@@ -196,7 +220,7 @@ namespace TAS.EverestInterop {
             string inspectingInfo = string.Join(separator, RequireInspectEntities.Where(reference => reference.IsAlive).Select(
                 reference => {
                     Entity entity = (Entity) reference.Target;
-                    target.Add(entity);
+                    InspectingEntities.Add(entity);
                     return $"{entity.GetType().Name}: {GetPosition(entity)}";
                 }
             ));
@@ -210,7 +234,7 @@ namespace TAS.EverestInterop {
 
                 inspectingInfo += string.Join(separator, entityIds.Select(id => {
                     Entity entity = allEntities[id];
-                    target.Add(entity);
+                    InspectingEntities.Add(entity);
                     return $"{entity.GetType().Name}: {GetPosition(entity)}";
                 }));
             }
@@ -242,6 +266,20 @@ namespace TAS.EverestInterop {
             }
 
             return result;
+        }
+
+        public static void ToggleConsole(KeyboardState kbState) {
+            if (!Manager.Running) {
+                return;
+            }
+
+            if ((kbState.IsKeyDown(Keys.OemTilde) || kbState.IsKeyDown(Keys.Oem8) || kbState.IsKeyDown(Keys.OemPeriod)) &&
+                Engine.FrameCounter - lastToggleConsoleFrame > 15) {
+                lastToggleConsoleFrame = Engine.FrameCounter;
+                // for compatibility with ~ key
+                consoleOpen = !consoleOpen;
+                Engine.Commands.Open = consoleOpen;
+            }
         }
     }
 }

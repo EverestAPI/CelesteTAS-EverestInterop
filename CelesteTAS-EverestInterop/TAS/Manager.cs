@@ -57,7 +57,7 @@ namespace TAS {
                 Running = true;
 
                 if (HasFlag(State, State.FrameStep)) {
-                    StudioCommunicationClient.Instance?.SendStateAndPlayerData(CurrentStatus, PlayerInfo.PlayerStatus, !ShouldForceState);
+                    StudioCommunicationClient.Instance?.SendStateAndPlayerData(CurrentStatus, PlayerInfo.Status, !ShouldForceState);
                     return;
                 }
                 /*
@@ -95,7 +95,7 @@ namespace TAS {
                 }
             }
 
-            StudioCommunicationClient.Instance?.SendStateAndPlayerData(CurrentStatus, PlayerInfo.PlayerStatus, !ShouldForceState);
+            StudioCommunicationClient.Instance?.SendStateAndPlayerData(CurrentStatus, PlayerInfo.Status, !ShouldForceState);
         }
 
         public static void UpdateManagerStatus() {
@@ -239,6 +239,7 @@ namespace TAS {
             });
 
             RestoreSettings.TryBackup();
+            ConsoleEnhancements.ResetConsole();
         }
 
         private static void DisableRun() {
@@ -260,6 +261,7 @@ namespace TAS {
             ConsoleHandler.ResetSpawn = null;
             Hotkeys.ReleaseAllKeys();
             RestoreSettings.TryRestore();
+            ConsoleEnhancements.ResetConsole();
         }
 
         public static void EnableExternal() => EnableRun();
