@@ -25,7 +25,7 @@ namespace TAS {
         public static string Status = string.Empty;
         public static Vector2 LastPos;
         public static Vector2 LastPlayerSeekerPos;
-        private static long lastTimer;
+        public static string statusWithoutTime = string.Empty;
 
         private static StreamWriter sw;
         private static List<MethodInfo> trackedEntities;
@@ -56,8 +56,9 @@ namespace TAS {
         public static void Update() {
             if (Engine.Scene is Level level) {
                 Player player = level.Tracker.GetEntity<Player>();
+                long chapterTime = level.Session.Time;
                 if (player != null) {
-                    long chapterTime = level.Session.Time;
+                    StringBuilder stringBuilder = new StringBuilder();
                     framesPerSecond = 60f / Engine.TimeRateB;
                     string pos = GetAdjustedPos(player.Position, player.PositionRemainder);
                     string speed = $"Speed: {player.Speed.X:F2}, {player.Speed.Y:F2}";
@@ -130,49 +131,48 @@ namespace TAS {
                                         ? berryTimer <= 9 ? $"BerryTimer: {berryTimer} " : $"BerryTimer: 9+{berryTimer - 9} "
                                         : string.Empty)
                                     + (dashCooldown != 0 ? $"DashTimer: {(dashCooldown).ToString()} " : string.Empty);
-                    string roomNameAndTime =
-                        $"[{level.Session.Level}] Timer: {(chapterTime / 10000000D):F3}({chapterTime / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks})";
 
-                    StringBuilder sb = new StringBuilder();
-                    sb.AppendLine(pos);
-                    sb.AppendLine(speed);
-                    sb.AppendLine(vel);
+                    stringBuilder.AppendLine(pos);
+                    stringBuilder.AppendLine(speed);
+                    stringBuilder.AppendLine(vel);
 
                     if (player.StateMachine.State == Player.StStarFly
                         || playerSeeker != null
                         || SaveData.Instance.Assists.ThreeSixtyDashing
                         || SaveData.Instance.Assists.SuperDashing) {
-                        sb.AppendLine(polarvel);
+                        stringBuilder.AppendLine(polarvel);
                     }
 
                     if (!string.IsNullOrEmpty(joystick)) {
-                        sb.AppendLine(joystick);
+                        stringBuilder.AppendLine(joystick);
                     }
 
-                    sb.AppendLine(miscstats);
+                    stringBuilder.AppendLine(miscstats);
                     if (!string.IsNullOrEmpty(statuses)) {
-                        sb.AppendLine(statuses);
+                        stringBuilder.AppendLine(statuses);
                     }
 
                     if (!string.IsNullOrEmpty(timers)) {
-                        sb.AppendLine(timers);
+                        stringBuilder.AppendLine(timers);
                     }
 
                     if (Manager.FrameLoops == 1) {
                         string inspectingInfo = ConsoleEnhancements.GetInspectingEntitiesInfo();
                         if (inspectingInfo.IsNotNullOrEmpty()) {
-                            sb.AppendLine(inspectingInfo);
+                            stringBuilder.AppendLine(inspectingInfo);
                         }
                     }
 
-                    sb.Append(roomNameAndTime);
+                    statusWithoutTime = stringBuilder.ToString();
                     LastPos = player.ExactPosition;
                     LastPlayerSeekerPos = playerSeeker?.ExactPosition ?? default;
-                    lastTimer = chapterTime;
-                    Status = sb.ToString().TrimEnd();
-                } else {
-                    Status = level.InCutscene ? "Cutscene" : string.Empty;
+                } else if (level.InCutscene) {
+                    statusWithoutTime = "Cutscene";
                 }
+
+                string roomNameAndTime =
+                    $"[{level.Session.Level}] Timer: {(chapterTime / 10000000D):F3}({chapterTime / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks})";
+                Status = statusWithoutTime + roomNameAndTime;
             } else if (Engine.Scene is SummitVignette summit) {
                 Status = "SummitVignette " + SummitVignetteReadyFieldInfo.GetValue(summit);
             } else if (Engine.Scene is Overworld overworld) {
