@@ -20,7 +20,7 @@ namespace TAS {
             new Lazy<MethodInfo>(() => BindingType.GetMethod("Add", new[] {typeof(Buttons[])}));
 
         static BindingHelper() {
-            if (typeof(GameInput).GetFieldInfo("DemoDash") == null) {
+            if (typeof(GameInput).GetFieldInfo("DemoDash") == null && typeof(GameInput).GetFieldInfo("CrouchDash") == null) {
                 DemoDash = 0;
             }
         }
