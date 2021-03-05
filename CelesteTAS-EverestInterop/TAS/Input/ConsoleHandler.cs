@@ -2,10 +2,40 @@ using System.Linq;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
+using TAS.EverestInterop;
 
 namespace TAS.Input {
     public static class ConsoleHandler {
-        public static Vector2? ResetSpawn;
+        private static Vector2? resetSpawn;
+
+        // ReSharper disable once UnusedMember.Local
+        [DisableRun]
+        private static void ClearResetSpawn() {
+            resetSpawn = null;
+        }
+
+        // ReSharper disable once UnusedMember.Local
+        [Load]
+        private static void Load() {
+            On.Celeste.LevelLoader.LoadingThread += LevelLoader_LoadingThread;
+        }
+
+        // ReSharper disable once UnusedMember.Local
+        [Unload]
+        private static void Unload() {
+            On.Celeste.LevelLoader.LoadingThread -= LevelLoader_LoadingThread;
+        }
+
+        private static void LevelLoader_LoadingThread(On.Celeste.LevelLoader.orig_LoadingThread orig, LevelLoader self) {
+            orig(self);
+            Session session = self.Level.Session;
+            if (resetSpawn is Vector2 spawn) {
+                session.RespawnPoint = spawn;
+                session.Level = session.MapData.GetAt(spawn)?.Name;
+                session.FirstLevel = false;
+                resetSpawn = null;
+            }
+        }
 
         public static void ExecuteCommand(string[] command) {
             string[] args = command.Skip(1).ToArray();
@@ -81,7 +111,7 @@ namespace TAS.Input {
 
             if (checkpoint != 0) {
                 LevelData levelData = session.MapData.Get(screen);
-                ResetSpawn = levelData.Spawns[checkpoint];
+                resetSpawn = levelData.Spawns[checkpoint];
             }
 
             session.StartedFromBeginning = checkpoint == 0 && session.FirstLevel;
@@ -93,7 +123,7 @@ namespace TAS.Input {
             session.Level = session.MapData.GetAt(spawnPoint)?.Name;
             session.FirstLevel = false;
             session.StartedFromBeginning = false;
-            ResetSpawn = spawnPoint;
+            resetSpawn = spawnPoint;
             Engine.Scene = new LevelLoader(session);
         }
 

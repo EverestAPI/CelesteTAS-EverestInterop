@@ -186,7 +186,9 @@ namespace TAS {
             StudioCommunicationClient.Instance?.SendStateAndPlayerData(CurrentStatus, PlayerInfo.Status, false);
         }
 
-        public static void Unload() {
+        // ReSharper disable once UnusedMember.Local
+        [Unload]
+        private static void ClearStateWhenHotReload() {
             if (SpeedrunToolInstalled && IsSaved()) {
                 Clear();
             }

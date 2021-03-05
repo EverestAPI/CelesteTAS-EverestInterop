@@ -6,10 +6,11 @@ using System.Text;
 using Monocle;
 using MonoMod.Utils;
 using TAS.EverestInterop;
+using TAS.Utils;
 
 namespace TAS.Input {
     public class InputController {
-        public static string StudioTasFilePath = LoadStudioTasFilePath();
+        public static string StudioTasFilePath = string.Empty;
         public readonly SortedDictionary<int, List<Command>> Commands = new SortedDictionary<int, List<Command>>();
         public readonly SortedDictionary<int, FastForward> FastForwards = new SortedDictionary<int, FastForward>();
         public readonly List<InputFrame> Inputs = new List<InputFrame>();
@@ -245,12 +246,16 @@ namespace TAS.Input {
         public string Checksum(InputController controller) => Checksum(controller.CurrentFrame);
 
         // for hot loading
-        public static void SaveStudioTasFilePath() {
+        // ReSharper disable once UnusedMember.Local
+        [Unload]
+        private static void SaveStudioTasFilePath() {
             Engine.Instance.GetDynDataInstance().Set(nameof(StudioTasFilePath), StudioTasFilePath);
         }
 
-        private static string LoadStudioTasFilePath() {
-            return Engine.Instance.GetDynDataInstance().Get<string>(nameof(StudioTasFilePath));
+        // ReSharper disable once UnusedMember.Local
+        [Load]
+        private static void RestoreStudioTasFilePath() {
+            StudioTasFilePath = Engine.Instance.GetDynDataInstance().Get<string>(nameof(StudioTasFilePath));
         }
 
         #region ignore

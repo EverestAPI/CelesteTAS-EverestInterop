@@ -8,6 +8,7 @@ using Monocle;
 using TAS.EverestInterop;
 using TAS.Input;
 using TAS.StudioCommunication;
+using TAS.Utils;
 
 namespace TAS {
     [Flags]
@@ -38,6 +39,9 @@ namespace TAS {
         static Manager() {
             MethodInfo updateVirtualInputs = typeof(MInput).GetMethodInfo("UpdateVirtualInputs");
             UpdateVirtualInputs = (DUpdateVirtualInputs) updateVirtualInputs.CreateDelegate(typeof(DUpdateVirtualInputs));
+
+            AttributeUtils.CollectMethods<EnableRunAttribute>();
+            AttributeUtils.CollectMethods<DisableRunAttribute>();
         }
 
         public static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
@@ -222,7 +226,6 @@ namespace TAS {
         private static void EnableRun() {
             NextState &= ~State.Enable;
             InitializeRun(false);
-            BindingHelper.SetTasBindings();
             KbTextInput = Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput;
             Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = false;
 
@@ -238,8 +241,7 @@ namespace TAS {
                 checkHotkeyStarTask = null;
             });
 
-            RestoreSettings.TryBackup();
-            ConsoleEnhancements.ResetConsole();
+            AttributeUtils.Invoke<EnableRunAttribute>();
         }
 
         private static void DisableRun() {
@@ -252,16 +254,14 @@ namespace TAS {
             Recording = false;
             State = State.None;
             NextState = State.None;
-            BindingHelper.RestorePlayerBindings();
             Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = KbTextInput;
             PlayerInfo.EndExport();
 
             EnforceLegal = false;
             AllowUnsafeInput = false;
-            ConsoleHandler.ResetSpawn = null;
             Hotkeys.ReleaseAllKeys();
-            RestoreSettings.TryRestore();
-            ConsoleEnhancements.ResetConsole();
+
+            AttributeUtils.Invoke<DisableRunAttribute>();
         }
 
         public static void EnableExternal() => EnableRun();
@@ -371,4 +371,10 @@ namespace TAS {
 
         private delegate float GetPlayerSeekerDashTimer(PlayerSeeker playerSeeker);
     }
+
+    [AttributeUsage(AttributeTargets.Method)]
+    public class EnableRunAttribute : Attribute { }
+
+    [AttributeUsage(AttributeTargets.Method)]
+    public class DisableRunAttribute : Attribute { }
 }

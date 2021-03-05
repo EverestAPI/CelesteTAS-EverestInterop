@@ -5,7 +5,7 @@ using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
 
-namespace TAS {
+namespace TAS.Utils {
     internal static class LogUtil {
         private const string Tag = "CelesteTAS";
 

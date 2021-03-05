@@ -9,7 +9,9 @@ namespace TAS.EverestInterop {
         private static Assists? origAssists;
         private static Dictionary<EverestModule, object> origModSettings;
 
-        public static void TryBackup() {
+        // ReSharper disable once UnusedMember.Local
+        [EnableRun]
+        private static void TryBackup() {
             origSettings = null;
             origAssists = null;
             origModSettings = null;
@@ -35,7 +37,9 @@ namespace TAS.EverestInterop {
             }
         }
 
-        public static void TryRestore() {
+        // ReSharper disable once UnusedMember.Local
+        [DisableRun]
+        private static void TryRestore() {
             On.Celeste.SaveData.Start -= SaveDataOnStart;
 
             if (origSettings != null) {

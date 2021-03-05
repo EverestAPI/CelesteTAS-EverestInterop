@@ -39,7 +39,9 @@ namespace TAS {
         public static Buttons Journal => Buttons.LeftTrigger;
         public static Buttons DemoDash { get; } = Buttons.RightShoulder;
 
-        public static void SetTasBindings() {
+        // ReSharper disable once UnusedMember.Local
+        [EnableRun]
+        private static void SetTasBindings() {
             Settings settingsBackup = Settings.Instance.ShallowClone();
 
             if (BindingType == null) {
@@ -51,7 +53,9 @@ namespace TAS {
             Settings.Instance.CopyAllFields(settingsBackup);
         }
 
-        public static void RestorePlayerBindings() {
+        // ReSharper disable once UnusedMember.Local
+        [DisableRun]
+        private static void RestorePlayerBindings() {
             GameInput.Initialize();
         }
 

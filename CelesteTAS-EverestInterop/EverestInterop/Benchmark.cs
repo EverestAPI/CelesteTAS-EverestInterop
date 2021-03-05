@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Monocle;
+using TAS.Utils;
 
 namespace TAS.EverestInterop {
     public static class Benchmark {

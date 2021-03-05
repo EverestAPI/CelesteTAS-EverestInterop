@@ -10,6 +10,7 @@ using Monocle;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using TAS.EverestInterop.Hitboxes;
+using TAS.Utils;
 
 namespace TAS.EverestInterop {
     public static class ConsoleEnhancements {
@@ -47,10 +48,12 @@ namespace TAS.EverestInterop {
             loadCustomEntityHook = null;
         }
 
-        public static void ResetConsole() {
+        // ReSharper disable once UnusedMember.Local
+        [EnableRun]
+        [DisableRun]
+        private static void CloseConsole() {
             consoleOpen = false;
             Engine.Commands.Open = false;
-            Engine.Commands.Enabled = Celeste.Celeste.PlayMode == Celeste.Celeste.PlayModes.Debug;
         }
 
         private static void Commands_Render(ILContext il) {

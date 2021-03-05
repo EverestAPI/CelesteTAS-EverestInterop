@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Celeste.Mod;
 
-namespace TAS {
+namespace TAS.Utils {
     internal static class Md5Helper {
         private static readonly MD5 ChecksumHasher = MD5.Create();
 

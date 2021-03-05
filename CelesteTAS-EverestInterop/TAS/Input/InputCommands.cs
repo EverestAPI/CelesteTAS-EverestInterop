@@ -8,6 +8,7 @@ using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
+using TAS.Utils;
 
 namespace TAS.Input {
     public static class InputCommands {

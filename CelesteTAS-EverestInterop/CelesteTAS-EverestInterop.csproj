@@ -124,6 +124,7 @@
         <Compile Include="EverestInterop\Menu.cs"/>
         <Compile Include="EverestInterop\PlayerInfoAssist.cs"/>
         <Compile Include="EverestInterop\RestoreSettings.cs"/>
+        <Compile Include="EverestInterop\StudioHelper.cs"/>
         <Compile Include="TAS\AnalogHelper.cs"/>
         <Compile Include="TAS\BindingHelper.cs"/>
         <Compile Include="TAS\Input\Command.cs"/>
@@ -149,6 +150,7 @@
         <Compile Include="EverestInterop\SimplifiedGraphicsFeature.cs"/>
         <Compile Include="StudioCommunication\MessageIDs.cs"/>
         <Compile Include="TAS\Input\TASCommandAttribute.cs"/>
+        <Compile Include="Utils\AttributeUtils.cs"/>
         <Compile Include="Utils\LogUtil.cs"/>
         <Compile Include="Utils\MD5Helper.cs"/>
     </ItemGroup>

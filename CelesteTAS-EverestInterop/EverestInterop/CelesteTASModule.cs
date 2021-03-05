@@ -1,21 +1,16 @@
 ﻿using System;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
-using System.Linq;
 using Celeste;
 using Celeste.Mod;
-using Ionic.Zip;
-using Microsoft.Xna.Framework;
-using Monocle;
+using FMOD.Studio;
 using TAS.EverestInterop.Hitboxes;
-using TAS.Input;
 using TAS.StudioCommunication;
+using TAS.Utils;
 
 namespace TAS.EverestInterop {
     // ReSharper disable once ClassNeverInstantiated.Global
     public class CelesteTasModule : EverestModule {
-        private const string StudioName = "Celeste Studio";
         public static CelesteTasModule Instance;
 
         public NamedPipeServerStream UnixRtc;
@@ -24,121 +19,16 @@ namespace TAS.EverestInterop {
 
         public CelesteTasModule() {
             Instance = this;
+            AttributeUtils.CollectMethods<LoadAttribute>();
+            AttributeUtils.CollectMethods<UnloadAttribute>();
         }
 
         public override Type SettingsType => typeof(CelesteTasModuleSettings);
         public static CelesteTasModuleSettings Settings => (CelesteTasModuleSettings) Instance?._Settings;
         public static bool UnixRtcEnabled => (Environment.OSVersion.Platform == PlatformID.Unix) && Settings.UnixRtc;
-        private string StudioNameWithExe => StudioName + ".exe";
-        private string CopiedStudioExePath => Path.Combine(Everest.PathGame, StudioNameWithExe);
 
         public override void Initialize() {
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
-                ExtractStudio(out bool studioProcessWasKilled);
-                LaunchStudioAtBoot(studioProcessWasKilled);
-            }
-        }
-
-        private void ExtractStudio(out bool studioProcessWasKilled) {
-            studioProcessWasKilled = false;
-            if (!File.Exists(CopiedStudioExePath) || CheckNewerStudio()) {
-                try {
-                    Process studioProcess = Process.GetProcesses().FirstOrDefault(process =>
-                        process.ProcessName.StartsWith("Celeste") &&
-                        process.ProcessName.Contains("Studio"));
-
-                    if (studioProcess != null) {
-                        studioProcess.Kill();
-                        studioProcess.WaitForExit(50000);
-                    }
-
-                    if (studioProcess?.HasExited == false) {
-                        return;
-                    }
-
-                    if (studioProcess?.HasExited == true) {
-                        studioProcessWasKilled = true;
-                    }
-
-                    if (!string.IsNullOrEmpty(Metadata.PathArchive)) {
-                        using (ZipFile zip = ZipFile.Read(Metadata.PathArchive)) {
-                            if (zip.EntryFileNames.Contains(StudioNameWithExe)) {
-                                foreach (ZipEntry entry in zip.Entries) {
-                                    if (entry.FileName.StartsWith(StudioName)) {
-                                        entry.Extract(Everest.PathGame, ExtractExistingFileAction.OverwriteSilently);
-                                    }
-                                }
-                            }
-                        }
-                    } else if (!string.IsNullOrEmpty(Metadata.PathDirectory)) {
-                        string[] files = Directory.GetFiles(Metadata.PathDirectory);
-
-                        if (files.Any(filePath => filePath.EndsWith(StudioNameWithExe))) {
-                            foreach (string sourceFile in files) {
-                                string fileName = Path.GetFileName(sourceFile);
-                                if (fileName.StartsWith(StudioName)) {
-                                    string destFile = Path.Combine(Everest.PathGame, fileName);
-                                    File.Copy(sourceFile, destFile, true);
-                                }
-                            }
-                        }
-                    }
-
-                    Settings.StudioLastModifiedTime = File.GetLastWriteTime(CopiedStudioExePath);
-                    Instance.SaveSettings();
-                } catch (UnauthorizedAccessException e) {
-                    Logger.Log("CelesteTASModule", "Failed to extract studio.");
-                    Logger.LogDetailed(e);
-                }
-            } else {
-                foreach (string file in Directory.GetFiles(Everest.PathGame, "*.PendingOverwrite")) {
-                    File.Delete(file);
-                }
-            }
-        }
-
-        private bool CheckNewerStudio() {
-            if (!Settings.AutoExtractNewStudio) {
-                return false;
-            }
-
-            DateTime modifiedTime = new DateTime();
-
-            if (!string.IsNullOrEmpty(Metadata.PathArchive)) {
-                using (ZipFile zip = ZipFile.Read(Metadata.PathArchive)) {
-                    if (zip.Entries.FirstOrDefault(zipEntry => zipEntry.FileName == StudioNameWithExe) is ZipEntry studioZipEntry) {
-                        modifiedTime = studioZipEntry.LastModified;
-                    }
-                }
-            } else if (!string.IsNullOrEmpty(Metadata.PathDirectory)) {
-                string[] files = Directory.GetFiles(Metadata.PathDirectory);
-
-                if (files.FirstOrDefault(filePath => filePath.EndsWith(StudioNameWithExe)) is string studioFilePath) {
-                    modifiedTime = File.GetLastWriteTime(studioFilePath);
-                }
-            }
-
-            return modifiedTime.CompareTo(Settings.StudioLastModifiedTime) > 0;
-        }
-
-        private void LaunchStudioAtBoot(bool studioProcessWasKilled) {
-            if (Settings.Enabled && Settings.LaunchStudioAtBoot || studioProcessWasKilled) {
-                try {
-                    Process[] processes = Process.GetProcesses();
-                    foreach (Process process in processes) {
-                        if (process.ProcessName.StartsWith("Celeste") && process.ProcessName.Contains("Studio")) {
-                            return;
-                        }
-                    }
-
-                    if (File.Exists(CopiedStudioExePath)) {
-                        Process.Start(CopiedStudioExePath);
-                    }
-                } catch (Exception e) {
-                    Logger.Log("CelesteTASModule", "Failed to launch studio at boot.");
-                    Logger.LogDetailed(e);
-                }
-            }
+            StudioHelper.Initialize();
         }
 
         public override void Load() {
@@ -156,8 +46,7 @@ namespace TAS.EverestInterop {
             PlayerInfoAssist.Load();
             ConsoleEnhancements.Load();
 
-            // Optional: Allow spawning at specified location
-            On.Celeste.LevelLoader.LoadingThread += LevelLoader_LoadingThread;
+            AttributeUtils.Invoke<LoadAttribute>();
 
             // Open unix IO pipe for interfacing with Linux / Mac Celeste Studio
             if (UnixRtcEnabled) {
@@ -173,9 +62,6 @@ namespace TAS.EverestInterop {
             if (StudioCommunicationClient.Instance == null) {
                 StudioCommunicationClient.Run();
             }
-
-            // for hot reloading
-            GameplayRendererExt.RenderDebug = Engine.Instance.GetDynDataInstance().Get<bool?>(nameof(Settings.ShowHitboxes)) ?? false;
 
 #if DEBUG
             Benchmark.Load();
@@ -196,36 +82,26 @@ namespace TAS.EverestInterop {
             InfoHud.Unload();
             PlayerInfoAssist.Unload();
             ConsoleEnhancements.Unload();
-            On.Celeste.LevelLoader.LoadingThread -= LevelLoader_LoadingThread;
             StudioCommunicationClient.Destroy();
 
-            UnixRtc?.Dispose();
+            AttributeUtils.Invoke<UnloadAttribute>();
 
-            // for hot reloading
-            Engine.Instance.GetDynDataInstance().Set(nameof(Settings.ShowHitboxes), Settings.ShowHitboxes);
-            Manager.DisableExternal();
-            Savestates.Unload();
-            InputController.SaveStudioTasFilePath();
+            UnixRtc?.Dispose();
 
 #if DEBUG
             Benchmark.Unload();
 #endif
         }
 
-        public override void CreateModMenuSection(TextMenu menu, bool inGame, FMOD.Studio.EventInstance snapshot) {
+        public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance snapshot) {
             CreateModMenuSectionHeader(menu, inGame, snapshot);
             Menu.CreateMenu(this, menu, inGame);
         }
-
-        private static void LevelLoader_LoadingThread(On.Celeste.LevelLoader.orig_LoadingThread orig, LevelLoader self) {
-            orig(self);
-            Session session = self.Level.Session;
-            if (ConsoleHandler.ResetSpawn is Vector2 spawn) {
-                session.RespawnPoint = spawn;
-                session.Level = session.MapData.GetAt(spawn)?.Name;
-                session.FirstLevel = false;
-                ConsoleHandler.ResetSpawn = null;
-            }
-        }
     }
+
+    [AttributeUsage(AttributeTargets.Method)]
+    internal class LoadAttribute : Attribute { }
+
+    [AttributeUsage(AttributeTargets.Method)]
+    internal class UnloadAttribute : Attribute { }
 }

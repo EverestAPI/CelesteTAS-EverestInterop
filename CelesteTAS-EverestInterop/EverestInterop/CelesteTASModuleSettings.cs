@@ -3,6 +3,7 @@ using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
+using Monocle;
 using TAS.EverestInterop.Hitboxes;
 
 namespace TAS.EverestInterop {
@@ -91,6 +92,21 @@ namespace TAS.EverestInterop {
 
         public bool RestoreSettings { get; set; } = false;
         [SettingIgnore] public bool FirstLaunch { get; set; } = true;
+
+        // for hot reloading
+        // ReSharper disable once UnusedMember.Local
+        [Load]
+        private static void RestoreHitboxSetting() {
+            GameplayRendererExt.RenderDebug =
+                Engine.Instance.GetDynDataInstance().Get<bool?>(nameof(CelesteTasModule.Settings.ShowHitboxes)) ?? false;
+        }
+
+        // for hot reloading
+        // ReSharper disable once UnusedMember.Local
+        [Unload]
+        private static void SaveHitboxSetting() {
+            Engine.Instance.GetDynDataInstance().Set(nameof(CelesteTasModule.Settings.ShowHitboxes), CelesteTasModule.Settings.ShowHitboxes);
+        }
 
         #region SimplifiedGraphics
 
