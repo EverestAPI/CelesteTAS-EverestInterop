@@ -16,6 +16,8 @@ namespace TAS.StudioCommunication {
     public sealed class StudioCommunicationClient : StudioCommunicationBase {
         public static StudioCommunicationClient Instance;
 
+        private Thread thread;
+
         private StudioCommunicationClient() { }
         private StudioCommunicationClient(string target) : base(target) { }
 
@@ -35,6 +37,7 @@ namespace TAS.StudioCommunication {
             void Setup() {
                 Engine.Instance.Exiting -= Destroy;
                 Engine.Instance.Exiting += Destroy;
+                Instance.thread = Thread.CurrentThread;
                 Instance.UpdateLoop();
             }
 
@@ -44,6 +47,7 @@ namespace TAS.StudioCommunication {
         public static void Destroy(object sender = null, EventArgs e = null) {
             if (Instance != null) {
                 Instance.Abort = true;
+                Instance.thread.Abort();
                 Instance = null;
             }
         }
