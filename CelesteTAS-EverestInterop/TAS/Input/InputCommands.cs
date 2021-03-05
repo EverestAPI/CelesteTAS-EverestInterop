@@ -10,6 +10,8 @@ using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Utils;
 
+// ReSharper disable UnusedMember.Local
+
 namespace TAS.Input {
     public static class InputCommands {
         /* Additional commands can be added by giving them the TASCommand attribute and naming them (CommandName)Command.
@@ -19,6 +21,7 @@ namespace TAS.Input {
          * in the future.
          * Commands that execute can be void Command(InputController, string[], int) or void Command(string[]).
          */
+
         private static readonly Regex SpaceRegex = new Regex(@"^[^,]+?\s+[^,]", RegexOptions.Compiled);
 
         private static string[] Split(string line) {
@@ -32,35 +35,40 @@ namespace TAS.Input {
             try {
                 if (!string.IsNullOrEmpty(lineText) && char.IsLetter(lineText[0])) {
                     string[] args = Split(lineText);
-                    string commandType = args[0] + "Command";
-                    MethodInfo method =
-                        typeof(InputCommands).GetMethod(commandType, BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.IgnoreCase);
-                    if (method == null) {
+                    string commandType = args[0];
+
+                    KeyValuePair<TasCommandAttribute, MethodInfo> pair = TasCommandAttribute.FindMethod(commandType);
+                    if (pair.Equals(default)) {
+                        return false;
+                    }
+
+                    MethodInfo method = pair.Value;
+                    TasCommandAttribute attribute = pair.Key;
+
+                    if (Manager.EnforceLegal && !attribute.LegalInMainGame) {
                         return false;
                     }
 
                     string[] commandArgs = args.Skip(1).ToArray();
-                    TasCommandAttribute attribute = (TasCommandAttribute) method.GetCustomAttribute(typeof(TasCommandAttribute));
-                    if (!(Manager.EnforceLegal && attribute.IllegalInMaingame)) {
-                        object[] parameters;
-                        if (method.GetParameters().Length == 3) {
-                            parameters = new object[] {inputController, commandArgs, lineNumber};
-                        } else {
-                            parameters = new object[] {commandArgs};
-                        }
 
-                        if (attribute.ExecuteAtStart) {
-                            method.Invoke(null, parameters);
-                            //the play command needs to stop reading the current file when it's done to prevent recursion
-                            return commandType.ToLower() == "playcommand";
-                        }
-
-                        if (!inputController.Commands.ContainsKey(frame)) {
-                            inputController.Commands[frame] = new List<Command>();
-                        }
-
-                        inputController.Commands[frame].Add(new Command(frame, () => method.Invoke(null, parameters), lineText));
+                    object[] parameters;
+                    if (method.GetParameters().Length == 3) {
+                        parameters = new object[] {inputController, commandArgs, lineNumber};
+                    } else {
+                        parameters = new object[] {commandArgs};
                     }
+
+                    if (attribute.ExecuteAtStart) {
+                        method.Invoke(null, parameters);
+                        //the play command needs to stop reading the current file when it's done to prevent recursion
+                        return commandType.Equals("play", StringComparison.InvariantCultureIgnoreCase);
+                    }
+
+                    if (!inputController.Commands.ContainsKey(frame)) {
+                        inputController.Commands[frame] = new List<Command>();
+                    }
+
+                    inputController.Commands[frame].Add(new Command(frame, () => method.Invoke(null, parameters), lineText));
                 }
 
                 return false;
@@ -70,12 +78,10 @@ namespace TAS.Input {
             }
         }
 
-
-        [TasCommand(ExecuteAtStart = true, Args = new string[] {
-            "Read, Path",
-            "Read, Path, StartLine",
-            "Read, Path, StartLine, EndLine"
-        })]
+        // "Read, Path",
+        // "Read, Path, StartLine",
+        // "Read, Path, StartLine, EndLine"
+        [TasCommand(ExecuteAtStart = true, Name = "Read")]
         private static void ReadCommand(InputController state, string[] args, int studioLine) {
             string filePath = args[0];
             string origFilePath = Path.GetDirectoryName(InputController.StudioTasFilePath);
@@ -118,10 +124,9 @@ namespace TAS.Input {
             state.ReadFile(filePath, skipLines, lineLen, studioLine);
         }
 
-        [TasCommand(ExecuteAtStart = true, Args = new string[] {
-            "Play, StartLine",
-            "Play, StartLine, FramesToWait"
-        })]
+        // "Play, StartLine",
+        // "Play, StartLine, FramesToWait"
+        [TasCommand(ExecuteAtStart = true, Name = "Play")]
         private static void PlayCommand(InputController state, string[] args, int studioLine) {
             GetLine(args[0], state.TasFilePath, out int startLine);
             if (args.Length > 1 && int.TryParse(args[1], out _)) {
@@ -149,54 +154,18 @@ namespace TAS.Input {
             }
         }
 
-        [TasCommand(IllegalInMaingame = true, Args = new string[] {
-            "Console CommandType",
-            "Console CommandType CommandArgs",
-            "Console LoadCommand IDorSID",
-            "Console LoadCommand IDorSID Screen",
-            "Console LoadCommand IDorSID Screen Checkpoint",
-            "Console LoadCommand IDorSID X Y"
-        })]
-        private static void ConsoleCommand(string[] args) {
-            ConsoleHandler.ExecuteCommand(args);
-        }
-
-        [TasCommand(Args = new string[] {
-            "StartExport",
-            "StartExport Path",
-            "StartExport EntitiesToTrack",
-            "StartExport Path EntitiesToTrack"
-        })]
-        private static void StartExportCommand(string[] args) {
-            string path = "dump.txt";
-            if (args.Length > 0) {
-                if (args[0].Contains(".")) {
-                    path = args[0];
-                    args = args.Skip(1).ToArray();
-                }
-            }
-
-            PlayerInfo.BeginExport(path, args);
-            PlayerInfo.ExportSyncData = true;
-        }
-
-        [TasCommand(Args = new string[] {"FinishExport"})]
-        private static void FinishExportCommand(string[] args) {
-            PlayerInfo.EndExport();
-            PlayerInfo.ExportSyncData = false;
-        }
-
-        [TasCommand(Args = new string[] {"EnforceLegal"})]
+        [TasCommand(Name = "EnforceLegal")]
         private static void EnforceLegalCommand(string[] args) {
             Manager.EnforceLegal = true;
         }
 
-        [TasCommand(ExecuteAtStart = true, Args = new string[] {"Unsafe"})]
+        [TasCommand(ExecuteAtStart = true, Name = "Unsafe")]
         private static void UnsafeCommand(InputController state, string[] args, int studioLine) {
             Manager.AllowUnsafeInput = true;
         }
 
-        [TasCommand(IllegalInMaingame = true, Args = new string[] {"Set, Setting, Value", "Set, Mod.Setting, Value"})]
+        // Set, Setting, Value", "Set, Mod.Setting, Value
+        [TasCommand(LegalInMainGame = false, Name = "Set")]
         private static void SetCommand(string[] args) {
             if (args.Length < 2) {
                 return;
@@ -314,7 +283,8 @@ namespace TAS.Input {
             return true;
         }
 
-        [TasCommand(IllegalInMaingame = true, Args = new string[] {"Gun, x, y"})]
+        // Gun, x, y
+        [TasCommand(LegalInMainGame = false, Name = "Gun")]
         private static void GunCommand(string[] args) {
             int x = int.Parse(args[0]);
             int y = int.Parse(args[1]);
@@ -328,43 +298,6 @@ namespace TAS.Input {
                         .Invoke(null, new object[] {player, pos, false, null});
                 }
             }
-        }
-
-        [TasCommand(Args = new string[] {"AnalogMode, Mode",}, ExecuteAtStart = true)]
-        private static void AnalogModeCommand(string[] args) => AnalogueModeCommand(args);
-
-        [TasCommand(Args = new string[] {"AnalogueMode, Mode",}, ExecuteAtStart = true)]
-        private static void AnalogueModeCommand(string[] args) {
-            if (args.Length > 0 && Enum.TryParse(args[0], true, out AnalogueMode mode)) {
-                AnalogHelper.AnalogModeChange(mode);
-            }
-        }
-
-        [TasCommand(Args = new string[] {"StartExportLibTAS (Optional Path)"}, ExecuteAtStart = true)]
-        private static void StartExportLibTasCommand(string[] args) {
-            string path = "libTAS_inputs.txt";
-            if (args.Length > 0) {
-                path = args[0];
-            }
-
-            LibTasHelper.StartExport(path);
-        }
-
-        [TasCommand(Args = new string[] {"FinishExportLibTAS"}, ExecuteAtStart = true)]
-        private static void FinishExportLibTasCommand(string[] args) {
-            LibTasHelper.FinishExport();
-        }
-
-        [TasCommand(Args = new string[] {"Add, input"}, ExecuteAtStart = true)]
-        private static void AddCommand(string[] args) {
-            if (args.Length > 0) {
-                LibTasHelper.AddInputFrame(string.Join(",", args));
-            }
-        }
-
-        [TasCommand(Args = new string[] {"Skip"}, ExecuteAtStart = true)]
-        private static void SkipCommand(string[] args) {
-            LibTasHelper.SkipNextInput();
         }
     }
 }

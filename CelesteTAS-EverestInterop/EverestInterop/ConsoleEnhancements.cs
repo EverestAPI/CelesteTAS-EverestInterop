@@ -30,7 +30,6 @@ namespace TAS.EverestInterop {
             IL.Monocle.Commands.Render += Commands_Render;
             On.Monocle.EntityList.DebugRender += EntityListOnDebugRender;
             On.Celeste.Level.Begin += LevelOnBegin;
-            On.Celeste.Level.LoadLevel += LevelOnLoadLevel;
             On.Celeste.Level.End += LevelOnEnd;
             origLoadLevelHook = new ILHook(typeof(Level).GetMethod("orig_LoadLevel"), ModOrigLoadLevel);
             loadCustomEntityHook = new ILHook(typeof(Level).GetMethod("LoadCustomEntity"), ModLoadCustomEntity);
@@ -40,7 +39,6 @@ namespace TAS.EverestInterop {
             IL.Monocle.Commands.Render -= Commands_Render;
             On.Monocle.EntityList.DebugRender -= EntityListOnDebugRender;
             On.Celeste.Level.Begin -= LevelOnBegin;
-            On.Celeste.Level.LoadLevel -= LevelOnLoadLevel;
             On.Celeste.Level.End -= LevelOnEnd;
             origLoadLevelHook?.Dispose();
             loadCustomEntityHook?.Dispose();
@@ -140,11 +138,6 @@ namespace TAS.EverestInterop {
             if (self.Session.Area != requireInspectAreaKey) {
                 ClearInspectEntities();
             }
-        }
-
-        private static void LevelOnLoadLevel(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader) {
-            orig(self, playerIntro, isFromLoader);
-            InspectingEntities.Clear();
         }
 
         private static void LevelOnEnd(On.Celeste.Level.orig_End orig, Level self) {

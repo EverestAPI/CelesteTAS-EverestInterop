@@ -5,6 +5,7 @@ using Celeste;
 using Celeste.Mod;
 using FMOD.Studio;
 using TAS.EverestInterop.Hitboxes;
+using TAS.Input;
 using TAS.StudioCommunication;
 using TAS.Utils;
 
@@ -91,6 +92,12 @@ namespace TAS.EverestInterop {
 #if DEBUG
             Benchmark.Unload();
 #endif
+        }
+
+        public override void LoadContent(bool firstLoad) {
+            if (firstLoad) {
+                TasCommandAttribute.CollectMethods();
+            }
         }
 
         public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance snapshot) {

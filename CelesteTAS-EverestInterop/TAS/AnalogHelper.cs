@@ -160,5 +160,15 @@ namespace TAS {
 
             return new Vector2Short(retX, retY);
         }
+
+        // AnalogMode, Mode
+        // AnalogueMode, Mode
+        [TasCommand(Name = "AnalogMode", ExecuteAtStart = true)]
+        [TasCommand(Name = "AnalogueMode", ExecuteAtStart = true)]
+        private static void AnalogueModeCommand(string[] args) {
+            if (args.Length > 0 && Enum.TryParse(args[0], true, out AnalogueMode mode)) {
+                AnalogModeChange(mode);
+            }
+        }
     }
 }

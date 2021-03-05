@@ -360,21 +360,11 @@ namespace TAS {
 
         //The things we do for faster replay times
         private delegate void DUpdateVirtualInputs();
-
-        private delegate bool DWallJumpCheck(Player player, int dir);
-
-        private delegate float GetBerryFloat(Strawberry berry);
-
-        private delegate float GetFloat(Player player);
-
-        private delegate Vector2 GetPlayerSeekerSpeed(PlayerSeeker playerSeeker);
-
-        private delegate float GetPlayerSeekerDashTimer(PlayerSeeker playerSeeker);
     }
 
     [AttributeUsage(AttributeTargets.Method)]
-    public class EnableRunAttribute : Attribute { }
+    internal class EnableRunAttribute : Attribute { }
 
     [AttributeUsage(AttributeTargets.Method)]
-    public class DisableRunAttribute : Attribute { }
+    internal class DisableRunAttribute : Attribute { }
 }

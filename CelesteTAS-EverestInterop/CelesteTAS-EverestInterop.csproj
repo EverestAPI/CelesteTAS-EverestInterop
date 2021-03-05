@@ -149,7 +149,7 @@
         <Compile Include="EverestInterop\RemoveSelfComponent.cs"/>
         <Compile Include="EverestInterop\SimplifiedGraphicsFeature.cs"/>
         <Compile Include="StudioCommunication\MessageIDs.cs"/>
-        <Compile Include="TAS\Input\TASCommandAttribute.cs"/>
+        <Compile Include="TAS\Input\TasCommandAttribute.cs"/>
         <Compile Include="Utils\AttributeUtils.cs"/>
         <Compile Include="Utils\LogUtil.cs"/>
         <Compile Include="Utils\MD5Helper.cs"/>

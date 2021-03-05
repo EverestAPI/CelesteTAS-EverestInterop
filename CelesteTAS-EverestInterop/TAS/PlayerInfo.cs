@@ -1,7 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using Celeste;
@@ -51,7 +53,7 @@ namespace TAS {
             PlayerSeekerDashTimer = playerSeekerDashTimer.CreateDelegate_Get<GetPlayerSeekerDashTimer>();
         }
 
-        public static bool ExportSyncData { get; set; }
+        public static bool ExportSyncData { get; private set; }
 
         public static void Update() {
             if (Engine.Scene is Level level) {
@@ -216,7 +218,7 @@ namespace TAS {
             return pos;
         }
 
-        public static void BeginExport(string path, string[] tracked) {
+        private static void BeginExport(string path, string[] tracked) {
             sw?.Dispose();
             sw = new StreamWriter(path);
             sw.WriteLine(string.Join("\t", "Line", "Inputs", "Frames", "Time", "Position", "Speed", "State", "Statuses", "Entities"));
@@ -313,6 +315,32 @@ namespace TAS {
             };
         }
 
+        // ReSharper disable once UnusedMember.Local
+        // "StartExport",
+        // "StartExport Path",
+        // "StartExport EntitiesToTrack",
+        // "StartExport Path EntitiesToTrack"
+        [TasCommand(Name = "StartExport")]
+        private static void StartExportCommand(string[] args) {
+            string path = "dump.txt";
+            if (args.Length > 0) {
+                if (args[0].Contains(".")) {
+                    path = args[0];
+                    args = args.Skip(1).ToArray();
+                }
+            }
+
+            BeginExport(path, args);
+            ExportSyncData = true;
+        }
+
+        // ReSharper disable once UnusedMember.Local
+        [TasCommand(Name = "FinishExport")]
+        private static void FinishExportCommand(string[] args) {
+            EndExport();
+            ExportSyncData = false;
+        }
+
         //The things we do for faster replay times
         private delegate bool DWallJumpCheck(Player player, int dir);
 
@@ -325,6 +353,7 @@ namespace TAS {
         private delegate float GetPlayerSeekerDashTimer(PlayerSeeker playerSeeker);
     }
 
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal enum PlayerState {
         Normal = Player.StNormal,
         Climb = Player.StClimb,

@@ -9,7 +9,7 @@ namespace TAS {
         private static string fileName;
         private static bool exportLibTas;
 
-        public static void StartExport(string path) {
+        private static void StartExport(string path) {
             FinishExport();
             streamWriter = new StreamWriter(path, false, Encoding.ASCII, 1 << 20);
             fileName = path;
@@ -43,7 +43,7 @@ namespace TAS {
             }
         }
 
-        public static void AddInputFrame(string inputText) {
+        private static void AddInputFrame(string inputText) {
             if (!exportLibTas) {
                 return;
             }
@@ -53,7 +53,7 @@ namespace TAS {
             }
         }
 
-        public static void SkipNextInput() {
+        private static void SkipNextInput() {
             if (exportLibTas) {
                 skipInputFrame = Manager.Controller.Current;
             }
@@ -158,6 +158,35 @@ namespace TAS {
             }
 
             return string.Join("", buttons);
+        }
+
+        // StartExportLibTAS (Optional Path)
+        [TasCommand(Name = "StartExportLibTAS", ExecuteAtStart = true)]
+        private static void StartExportLibTasCommand(string[] args) {
+            string path = "libTAS_inputs.txt";
+            if (args.Length > 0) {
+                path = args[0];
+            }
+
+            StartExport(path);
+        }
+
+        [TasCommand(Name = "FinishExportLibTAS", ExecuteAtStart = true)]
+        private static void FinishExportLibTasCommand(string[] args) {
+            FinishExport();
+        }
+
+        // Add, input
+        [TasCommand(Name = "Add", ExecuteAtStart = true)]
+        private static void AddCommand(string[] args) {
+            if (args.Length > 0) {
+                AddInputFrame(string.Join(",", args));
+            }
+        }
+
+        [TasCommand(Name = "Skip", ExecuteAtStart = true)]
+        private static void SkipCommand(string[] args) {
+            SkipNextInput();
         }
     }
 }

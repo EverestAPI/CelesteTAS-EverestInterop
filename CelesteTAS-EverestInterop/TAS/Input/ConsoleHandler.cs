@@ -37,13 +37,20 @@ namespace TAS.Input {
             }
         }
 
-        public static void ExecuteCommand(string[] command) {
-            string[] args = command.Skip(1).ToArray();
-            string commandId = command[0].ToLower();
-            if (commandId == "load" || commandId == "hard" || commandId == "rmx2") {
-                LoadCommand(commandId, args);
+        // "Console CommandType",
+        // "Console CommandType CommandArgs",
+        // "Console LoadCommand IDorSID",
+        // "Console LoadCommand IDorSID Screen",
+        // "Console LoadCommand IDorSID Screen Checkpoint",
+        // "Console LoadCommand IDorSID X Y"
+        [TasCommand(LegalInMainGame = false, Name = "Console")]
+        private static void ConsoleCommand(string[] arguments) {
+            string commandName = arguments[0].ToLower();
+            string[] args = arguments.Skip(1).ToArray();
+            if (commandName == "load" || commandName == "hard" || commandName == "rmx2") {
+                LoadCommand(commandName, args);
             } else {
-                Engine.Commands.ExecuteCommand(commandId, args);
+                Engine.Commands.ExecuteCommand(commandName, args);
             }
         }
 
