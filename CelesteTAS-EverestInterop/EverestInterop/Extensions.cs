@@ -215,18 +215,17 @@ namespace TAS.EverestInterop {
     }
 
     internal static class DynDataExtensions {
-        private const string DynDataInstanceKey = nameof(DynDataInstanceKey);
-
         public static DynData<T> GetDynDataInstance<T>(this T target) where T : class {
             object obj = target;
             if (target == null) {
                 obj = typeof(T);
             }
 
-            DynData<T> dynData = obj.GetExtendedDataValue<DynData<T>>(DynDataInstanceKey);
+            string dynDataInstanceKey = $"{typeof(T).FullName}_DynDataInstanceKey";
+            DynData<T> dynData = obj.GetExtendedDataValue<DynData<T>>(dynDataInstanceKey);
             if (dynData == null) {
                 dynData = new DynData<T>(target);
-                obj.SetExtendedDataValue(DynDataInstanceKey, dynData);
+                obj.SetExtendedDataValue(dynDataInstanceKey, dynData);
             }
 
             return dynData;
