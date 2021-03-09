@@ -53,8 +53,6 @@ namespace TAS.EverestInterop {
 
             // Forced: Allow "rendering" entities without actually rendering them.
             On.Monocle.Entity.Render += Entity_Render;
-
-            On.Monocle.Scene.AfterUpdate += Scene_AfterUpdate;
         }
 
         public static void Unload() {
@@ -64,7 +62,6 @@ namespace TAS.EverestInterop {
             On.Celeste.RunThread.Start -= RunThread_Start;
             HGameUpdate.Dispose();
             On.Monocle.Entity.Render -= Entity_Render;
-            On.Monocle.Scene.AfterUpdate -= Scene_AfterUpdate;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -184,11 +181,6 @@ namespace TAS.EverestInterop {
             }
 
             orig(self);
-        }
-
-        private static void Scene_AfterUpdate(On.Monocle.Scene.orig_AfterUpdate orig, Scene self) {
-            orig(self);
-            PlayerInfo.Update();
         }
     }
 }

@@ -122,7 +122,6 @@
         <Compile Include="EverestInterop\Hotkeys.cs"/>
         <Compile Include="EverestInterop\InfoHUD.cs"/>
         <Compile Include="EverestInterop\Menu.cs"/>
-        <Compile Include="EverestInterop\PlayerInfoAssist.cs"/>
         <Compile Include="EverestInterop\RestoreSettings.cs"/>
         <Compile Include="EverestInterop\StudioHelper.cs"/>
         <Compile Include="TAS\AnalogHelper.cs"/>

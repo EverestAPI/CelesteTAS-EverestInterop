@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using Celeste;
+using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.EverestInterop;
@@ -27,12 +28,12 @@ namespace TAS {
         public static string Status = string.Empty;
         public static Vector2 LastPos;
         public static Vector2 LastPlayerSeekerPos;
-        public static string statusWithoutTime = string.Empty;
+        private static string statusWithoutTime = string.Empty;
 
         private static StreamWriter sw;
         private static List<MethodInfo> trackedEntities;
 
-        private static float framesPerSecond;
+        private static int transitionFrames;
 
         //for debugging
         public static string AdditionalStatusInfo;
@@ -53,7 +54,72 @@ namespace TAS {
             PlayerSeekerDashTimer = playerSeekerDashTimer.CreateDelegate_Get<GetPlayerSeekerDashTimer>();
         }
 
+        private static float FramesPerSecond => 60f / Engine.TimeRateB;
+
         public static bool ExportSyncData { get; private set; }
+
+        [Load]
+        private static void Load() {
+            On.Monocle.Engine.Update += EngineOnUpdate;
+            On.Monocle.Scene.AfterUpdate += SceneOnAfterUpdate;
+            Everest.Events.Level.OnTransitionTo += LevelOnOnTransitionTo;
+            On.Celeste.Level.Update += LevelOnUpdate;
+        }
+
+        [Unload]
+        private static void Unload() {
+            On.Monocle.Engine.Update -= EngineOnUpdate;
+            On.Monocle.Scene.AfterUpdate -= SceneOnAfterUpdate;
+            Everest.Events.Level.OnTransitionTo -= LevelOnOnTransitionTo;
+            On.Celeste.Level.Update -= LevelOnUpdate;
+        }
+
+        private static void EngineOnUpdate(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gametime) {
+            bool frozen = Engine.FreezeTimer > 0;
+            orig(self, gametime);
+            if (frozen) {
+                Update();
+            }
+        }
+
+        private static void SceneOnAfterUpdate(On.Monocle.Scene.orig_AfterUpdate orig, Scene self) {
+            orig(self);
+            Update();
+        }
+
+        private static void LevelOnOnTransitionTo(Level level, LevelData next, Vector2 direction) {
+            transitionFrames = GetTransitionFrames(level, next);
+        }
+
+        private static void LevelOnUpdate(On.Celeste.Level.orig_Update orig, Level self) {
+            orig(self);
+
+            if (transitionFrames > 0) {
+                transitionFrames--;
+            }
+        }
+
+        private static int GetTransitionFrames(Level level, LevelData nextLevelData) {
+            int result = 0;
+            Session session = level.Session;
+
+            bool darkRoom = nextLevelData.Dark && !session.GetFlag("ignore_darkness_" + nextLevelData.Name);
+
+            float lightingStart = level.Lighting.Alpha;
+            float lightingCurrent = lightingStart;
+            float lightingEnd = darkRoom ? session.DarkRoomAlpha : level.BaseLightingAlpha + session.LightingAlphaAdd;
+            bool lightingWait = lightingStart >= session.DarkRoomAlpha || lightingEnd >= session.DarkRoomAlpha;
+            if (lightingWait) {
+                while (Math.Abs(lightingCurrent - lightingEnd) > 0.000001f) {
+                    result++;
+                    lightingCurrent = Calc.Approach(lightingCurrent, lightingEnd, 2f * Engine.DeltaTime);
+                }
+            }
+
+            result += (int) (level.NextTransitionDuration * FramesPerSecond) + 2;
+
+            return result;
+        }
 
         public static void Update() {
             if (Engine.Scene is Level level) {
@@ -61,7 +127,6 @@ namespace TAS {
                 long chapterTime = level.Session.Time;
                 if (player != null) {
                     StringBuilder stringBuilder = new StringBuilder();
-                    framesPerSecond = 60f / Engine.TimeRateB;
                     string pos = GetAdjustedPos(player.Position, player.PositionRemainder);
                     string speed = $"Speed: {player.Speed.X:F2}, {player.Speed.Y:F2}";
                     Vector2 diff = (player.ExactPosition - LastPos) * 60f;
@@ -80,7 +145,7 @@ namespace TAS {
                     string miscstats = $"Stamina: {player.Stamina:0}  "
                                        + (WallJumpCheck(player, 1) ? "Wall-R " : string.Empty)
                                        + (WallJumpCheck(player, -1) ? "Wall-L " : string.Empty);
-                    int dashCooldown = (int) (DashCooldownTimer(player) * framesPerSecond);
+                    int dashCooldown = (int) (DashCooldownTimer(player) * FramesPerSecond);
 
                     PlayerSeeker playerSeeker = level.Entities.FindFirst<PlayerSeeker>();
                     if (playerSeeker != null) {
@@ -90,16 +155,17 @@ namespace TAS {
                         diff = (playerSeeker.ExactPosition - LastPlayerSeekerPos) * 60f;
                         vel = $"Vel:   {diff.X:F2}, {diff.Y:F2}";
                         polarvel = $"Chase: {diff.Length():F2}, {Manager.GetAngle(diff):F2}°";
-                        dashCooldown = (int) (PlayerSeekerDashTimer(playerSeeker) * framesPerSecond);
+                        dashCooldown = (int) (PlayerSeekerDashTimer(playerSeeker) * FramesPerSecond);
                     }
 
                     string statuses = (dashCooldown < 1 && player.Dashes > 0 ? "Dash " : string.Empty)
                                       + (player.LoseShards ? "Ground " : string.Empty)
                                       + (!player.LoseShards && JumpGraceTimer(player) > 0
-                                          ? $"Coyote({(int) (JumpGraceTimer(player) * framesPerSecond)})"
+                                          ? $"Coyote({JumpGraceTimer(player) * FramesPerSecond:F0})"
                                           : string.Empty);
-                    string transitionFrames = PlayerInfoAssist.TransitionFrames > 0 ? $"({PlayerInfoAssist.TransitionFrames})" : string.Empty;
-                    statuses = (player.InControl && !level.Transitioning ? statuses : $"NoControl{transitionFrames} ")
+                    string transitionFrames = PlayerInfo.transitionFrames > 0 ? $"({PlayerInfo.transitionFrames})" : string.Empty;
+                    statuses = (Engine.FreezeTimer > 0f ? $"Frozen({Engine.FreezeTimer * FramesPerSecond:F0}) " : string.Empty)
+                               + (player.InControl && !level.Transitioning ? statuses : $"NoControl{transitionFrames} ")
                                + (player.TimePaused ? "Paused " : string.Empty)
                                + (level.InCutscene ? "Cutscene " : string.Empty)
                                + (AdditionalStatusInfo ?? string.Empty);
@@ -126,7 +192,7 @@ namespace TAS {
                             collectTimer = StrawberryCollectTimerFieldInfo.GetValue(firstRedBerry);
                         }
 
-                        berryTimer = 9 - (int) Math.Round((float) collectTimer * framesPerSecond);
+                        berryTimer = 9 - (int) Math.Round((float) collectTimer * FramesPerSecond);
                     }
 
                     string timers = (berryTimer != -10
@@ -252,7 +318,7 @@ namespace TAS {
                     string pos = x + ", " + y;
                     string speed = player.Speed.X + ", " + player.Speed.Y;
 
-                    int dashCooldown = (int) (DashCooldownTimer(player) * framesPerSecond);
+                    int dashCooldown = (int) (DashCooldownTimer(player) * FramesPerSecond);
                     string statuses = (dashCooldown < 1 && player.Dashes > 0 ? "Dash " : string.Empty)
                                       + (player.LoseShards ? "Ground " : string.Empty)
                                       + (WallJumpCheck(player, 1) ? "Wall-R " : string.Empty)

@@ -44,7 +44,6 @@ namespace TAS.EverestInterop {
             HideGameplay.Load();
             HitboxTweak.Load();
             InfoHud.Load();
-            PlayerInfoAssist.Load();
             ConsoleEnhancements.Load();
 
             AttributeUtils.Invoke<LoadAttribute>();
@@ -81,7 +80,6 @@ namespace TAS.EverestInterop {
             HideGameplay.Unload();
             HitboxTweak.Unload();
             InfoHud.Unload();
-            PlayerInfoAssist.Unload();
             ConsoleEnhancements.Unload();
             StudioCommunicationClient.Destroy();
 
