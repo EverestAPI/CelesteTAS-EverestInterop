@@ -163,13 +163,12 @@ namespace TAS {
                                       + (!player.LoseShards && JumpGraceTimer(player) > 0
                                           ? $"Coyote({JumpGraceTimer(player) * FramesPerSecond:F0})"
                                           : string.Empty);
-                    string transitionFrames = PlayerInfo.transitionFrames > 0 ? $"({PlayerInfo.transitionFrames})" : string.Empty;
+                    string transitionFramesStr = transitionFrames > 0 ? $"({transitionFrames})" : string.Empty;
                     statuses = (Engine.FreezeTimer > 0f ? $"Frozen({Engine.FreezeTimer * FramesPerSecond:F0}) " : string.Empty)
-                               + (player.InControl && !level.Transitioning ? statuses : $"NoControl{transitionFrames} ")
+                               + (player.InControl && !level.Transitioning ? statuses : $"NoControl{transitionFramesStr} ")
                                + (player.TimePaused ? "Paused " : string.Empty)
                                + (level.InCutscene ? "Cutscene " : string.Empty)
                                + (AdditionalStatusInfo ?? string.Empty);
-
 
                     if (player.Holding == null) {
                         foreach (Component component in level.Tracker.GetComponents<Holdable>()) {
@@ -185,14 +184,7 @@ namespace TAS {
                     Follower firstRedBerryFollower =
                         player.Leader.Followers.Find(follower => follower.Entity is Strawberry berry && !berry.Golden);
                     if (firstRedBerryFollower?.Entity is Strawberry firstRedBerry) {
-                        object collectTimer;
-                        if (firstRedBerry.GetType() == typeof(Strawberry)
-                            || (collectTimer = StrawberryCollectTimer(firstRedBerry)) == null) {
-                            // if this is a vanilla berry or a mod berry having no collectTimer, use the cached FieldInfo for Strawberry.collectTimer.
-                            collectTimer = StrawberryCollectTimerFieldInfo.GetValue(firstRedBerry);
-                        }
-
-                        berryTimer = 9 - (int) Math.Round((float) collectTimer * FramesPerSecond);
+                        berryTimer = 9 - (int) Math.Round(StrawberryCollectTimer(firstRedBerry) * FramesPerSecond);
                     }
 
                     string timers = (berryTimer != -10
