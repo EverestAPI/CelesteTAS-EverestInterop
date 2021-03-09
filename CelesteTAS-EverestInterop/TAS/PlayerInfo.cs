@@ -224,8 +224,10 @@ namespace TAS {
                     }
 
                     statusWithoutTime = stringBuilder.ToString();
-                    LastPos = player.ExactPosition;
-                    LastPlayerSeekerPos = playerSeeker?.ExactPosition ?? default;
+                    if (Engine.FreezeTimer <= 0f) {
+                        LastPos = player.ExactPosition;
+                        LastPlayerSeekerPos = playerSeeker?.ExactPosition ?? default;
+                    }
                 } else if (level.InCutscene) {
                     statusWithoutTime = "Cutscene";
                 }
