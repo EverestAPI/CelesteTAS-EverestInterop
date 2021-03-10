@@ -71,6 +71,7 @@ namespace TAS {
                 */
                 else {
                     Controller.AdvanceFrame();
+                    canPlayback = canPlayback || Controller.CanPlayback;
                     if (Controller.Break && Controller.CurrentFrame < Controller.Inputs.Count) {
                         NextState |= State.FrameStep;
                         FrameLoops = 1;
