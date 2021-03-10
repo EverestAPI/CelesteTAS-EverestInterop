@@ -72,13 +72,17 @@ namespace TAS.EverestInterop.Hitboxes {
                 || entity.Get<PlayerCollider>() == null
                 || entity.Scene?.Tracker.GetEntity<Player>() == null
                 || entity.LoadActualCollidePosition() == null
-                || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Append && entity.LoadActualCollidePosition() == entity.Position
+                || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Append && entity.Position == entity.LoadActualCollidePosition() &&
+                entity.Collidable == entity.LoadActualCollidable()
             ) {
                 invokeOrig(color);
                 return;
             }
 
-            Color lastFrameColor = Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Append ? color.Invert() : color;
+            Color lastFrameColor =
+                Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Append && entity.Position != entity.LoadActualCollidePosition()
+                    ? color.Invert()
+                    : color;
 
             if (entity.Collidable && !entity.LoadActualCollidable()) {
                 lastFrameColor *= 0.5f;
@@ -87,6 +91,11 @@ namespace TAS.EverestInterop.Hitboxes {
             }
 
             if (Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Append) {
+                if (entity.Position == entity.LoadActualCollidePosition()) {
+                    invokeOrig(lastFrameColor);
+                    return;
+                }
+
                 invokeOrig(color);
             }
 
