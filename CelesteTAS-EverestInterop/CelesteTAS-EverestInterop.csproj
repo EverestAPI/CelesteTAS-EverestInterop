@@ -116,6 +116,7 @@
         <Compile Include="EverestInterop\Hitboxes\HitboxFixer.cs"/>
         <Compile Include="EverestInterop\Hitboxes\ActualEntityCollideHitbox.cs"/>
         <Compile Include="EverestInterop\Hitboxes\ActualPlayerCollideHitbox.cs"/>
+        <Compile Include="EverestInterop\Hitboxes\HitboxHideTrigger.cs"/>
         <Compile Include="EverestInterop\Hitboxes\HitboxSimplified.cs"/>
         <Compile Include="EverestInterop\Hitboxes\HitboxTriggerSpikes.cs"/>
         <Compile Include="EverestInterop\Hitboxes\HitboxTweak.cs"/>

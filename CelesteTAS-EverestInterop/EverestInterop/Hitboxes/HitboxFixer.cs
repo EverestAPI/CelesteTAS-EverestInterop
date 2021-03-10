@@ -5,7 +5,7 @@ using Monocle;
 namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxFixer {
         private static bool drawingHitboxes;
-        public static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
+        private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
         public static void Load() {
             On.Monocle.EntityList.DebugRender += EntityListOnDebugRender;

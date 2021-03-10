@@ -148,19 +148,19 @@ namespace TAS.EverestInterop.Hitboxes {
 
         [Command("entity_hitbox_color", "change the entity hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000")]
         private static void CmdChangeEntityHitboxColor(string color) {
-            CelesteTasModule.Settings.EntityHitboxColor = HexToColor(color, CelesteTasModule.Settings.EntityHitboxColor);
+            CelesteTasModule.Settings.EntityHitboxColor = HexToColor(color, DefaultEntityColor);
             CelesteTasModule.Instance.SaveSettings();
         }
 
         [Command("trigger_hitbox_color", "change the trigger hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000")]
         private static void CmdChangeTriggerHitboxColor(string color) {
-            CelesteTasModule.Settings.TriggerHitboxColor = HexToColor(color, CelesteTasModule.Settings.TriggerHitboxColor);
+            CelesteTasModule.Settings.TriggerHitboxColor = HexToColor(color, DefaultTriggerColor);
             CelesteTasModule.Instance.SaveSettings();
         }
 
         [Command("platform_hitbox_color", "change the platform hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000")]
         private static void CmdChangePlatformHitboxColor(string color) {
-            CelesteTasModule.Settings.PlatformHitboxColor = HexToColor(color, CelesteTasModule.Settings.PlatformHitboxColor);
+            CelesteTasModule.Settings.PlatformHitboxColor = HexToColor(color, DefaultPlatformColor);
             CelesteTasModule.Instance.SaveSettings();
         }
     }

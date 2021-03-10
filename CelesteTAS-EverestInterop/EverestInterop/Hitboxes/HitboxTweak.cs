@@ -6,7 +6,7 @@ using Monocle;
 using MonoMod.Cil;
 
 namespace TAS.EverestInterop.Hitboxes {
-    public class HitboxTweak {
+    public static class HitboxTweak {
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
         public static void Load() {
@@ -14,6 +14,7 @@ namespace TAS.EverestInterop.Hitboxes {
             ActualEntityCollideHitbox.Load();
             HitboxFixer.Load();
             HitboxSimplified.Load();
+            HitboxHideTrigger.Load();
             HitboxColor.Load();
             HitboxFinalBoss.Load();
             On.Monocle.Entity.DebugRender += ModHitbox;
@@ -28,6 +29,7 @@ namespace TAS.EverestInterop.Hitboxes {
             ActualEntityCollideHitbox.Unload();
             HitboxFixer.Unload();
             HitboxSimplified.Unload();
+            HitboxHideTrigger.Unload();
             HitboxColor.Unload();
             HitboxFinalBoss.Unload();
             On.Monocle.Entity.DebugRender -= ModHitbox;

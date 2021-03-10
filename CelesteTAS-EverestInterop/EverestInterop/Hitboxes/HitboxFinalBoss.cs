@@ -31,7 +31,6 @@ namespace TAS.EverestInterop.Hitboxes {
                     Vector2 vector = boss.BeamOrigin + Calc.AngleToVector(angle, 12f);
                     Vector2 vector2 = boss.BeamOrigin + Calc.AngleToVector(angle, 2000f);
                     Vector2 value = (vector2 - vector).Perpendicular().SafeNormalize(2f);
-                    Player player = boss.Scene.CollideFirst<Player>(vector + value, vector2 + value);
                     Draw.Line(vector + value, vector2 + value, Color.Aqua);
                     Draw.Line(vector - value, vector2 - value, Color.Aqua);
                     Draw.Line(vector, vector2, Color.Aqua);

@@ -49,10 +49,6 @@ namespace TAS.EverestInterop.Hitboxes {
             Instruction start = ilCursor.Next;
             ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Func<Entity, bool>>(entity => {
                 if (Settings.ShowHitboxes) {
-                    if (Settings.HideTriggerHitboxes && entity is Trigger) {
-                        return true;
-                    }
-
                     if (Settings.SimplifiedHitboxes && UselessTypes.Contains(entity.GetType())) {
                         return true;
                     }
