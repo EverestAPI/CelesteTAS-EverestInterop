@@ -2,6 +2,7 @@ using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.Utils;
+using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxFinalBoss {

@@ -5,6 +5,7 @@ using Celeste;
 using Celeste.Mod;
 using Monocle;
 using TAS.EverestInterop.Hitboxes;
+using TAS.Utils;
 
 namespace TAS.EverestInterop {
     internal static class Menu {

@@ -117,6 +117,7 @@
         <Compile Include="EverestInterop\Hitboxes\ActualEntityCollideHitbox.cs"/>
         <Compile Include="EverestInterop\Hitboxes\ActualPlayerCollideHitbox.cs"/>
         <Compile Include="EverestInterop\Hitboxes\HitboxHideTrigger.cs"/>
+        <Compile Include="EverestInterop\Hitboxes\HitboxOptimized.cs"/>
         <Compile Include="EverestInterop\Hitboxes\HitboxSimplified.cs"/>
         <Compile Include="EverestInterop\Hitboxes\HitboxTriggerSpikes.cs"/>
         <Compile Include="EverestInterop\Hitboxes\HitboxTweak.cs"/>
@@ -139,7 +140,6 @@
         <Compile Include="TAS\Input\InputCommands.cs"/>
         <Compile Include="EverestInterop\Core.cs"/>
         <Compile Include="EverestInterop\DisableAchievements.cs"/>
-        <Compile Include="EverestInterop\Extensions.cs"/>
         <Compile Include="EverestInterop\GraphicsCore.cs"/>
         <Compile Include="TAS\Input\InputController.cs"/>
         <Compile Include="TAS\Input\ConsoleHandler.cs"/>
@@ -151,6 +151,7 @@
         <Compile Include="StudioCommunication\MessageIDs.cs"/>
         <Compile Include="TAS\Input\TasCommandAttribute.cs"/>
         <Compile Include="Utils\AttributeUtils.cs"/>
+        <Compile Include="Utils\Extensions.cs"/>
         <Compile Include="Utils\LogUtil.cs"/>
         <Compile Include="Utils\MD5Helper.cs"/>
     </ItemGroup>

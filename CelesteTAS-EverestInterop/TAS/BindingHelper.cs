@@ -6,7 +6,7 @@ using Celeste.Mod;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
 using MonoMod.Utils;
-using TAS.EverestInterop;
+using TAS.Utils;
 using GameInput = Celeste.Input;
 
 namespace TAS {

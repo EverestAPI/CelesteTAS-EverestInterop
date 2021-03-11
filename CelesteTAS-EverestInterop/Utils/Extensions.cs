@@ -8,7 +8,7 @@ using Celeste;
 using Monocle;
 using MonoMod.Utils;
 
-namespace TAS.EverestInterop {
+namespace TAS.Utils {
     internal static class ReflectionExtensions {
         public delegate object GetField(object o);
 

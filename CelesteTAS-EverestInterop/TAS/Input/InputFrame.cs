@@ -2,7 +2,7 @@ using System;
 using System.Globalization;
 using System.Text;
 using Microsoft.Xna.Framework;
-using TAS.EverestInterop;
+using TAS.Utils;
 
 namespace TAS.Input {
     [Flags]

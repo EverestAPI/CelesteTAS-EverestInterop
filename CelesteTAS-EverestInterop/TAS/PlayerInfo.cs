@@ -12,6 +12,7 @@ using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.EverestInterop;
 using TAS.Input;
+using TAS.Utils;
 
 namespace TAS {
     public static class PlayerInfo {

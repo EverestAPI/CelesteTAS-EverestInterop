@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Celeste;
 using Celeste.Mod;
+using TAS.Utils;
 
 namespace TAS.EverestInterop {
     public static class RestoreSettings {

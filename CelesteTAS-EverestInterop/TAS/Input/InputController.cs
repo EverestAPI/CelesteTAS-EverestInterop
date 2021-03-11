@@ -57,8 +57,6 @@ namespace TAS.Input {
 
         public void RefreshInputs(bool enableRun) {
             if (enableRun) {
-                initializationFrameCount = 0;
-                checksum = string.Empty;
                 StudioFrameCount = 0;
                 CurrentFrame = 0;
             }
@@ -121,10 +119,8 @@ namespace TAS.Input {
 
         public bool ReadFile(string filePath, int startLine = 0, int endLine = int.MaxValue, int studioLine = 0) {
             try {
-                if (filePath == TasFilePath && startLine == 0) {
-                    if (!File.Exists(filePath)) {
-                        return false;
-                    }
+                if (filePath == TasFilePath && startLine == 0 && !File.Exists(filePath)) {
+                    return false;
                 }
 
                 if (!usedFiles.ContainsKey(filePath)) {
