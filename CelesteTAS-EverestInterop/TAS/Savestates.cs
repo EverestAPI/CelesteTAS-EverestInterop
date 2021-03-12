@@ -13,7 +13,6 @@ using static TAS.Manager;
 namespace TAS {
 // TODO Add a command to check if savestate will cause desync
     public static class Savestates {
-        public static Coroutine Routine;
         private static InputController savedController;
         private static string savedPlayerStatus;
         private static Vector2 savedLastPos;
@@ -145,7 +144,6 @@ namespace TAS {
 
         private static void Clear() {
             StateManager.Instance.ClearState();
-            Routine = null;
             savedController = null;
             savedPlayerStatus = null;
             savedLastPos = default;

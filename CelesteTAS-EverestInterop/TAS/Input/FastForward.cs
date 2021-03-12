@@ -21,8 +21,6 @@ namespace TAS.Input {
             Speed = int.TryParse(modifiers, out int speed) ? speed : DefaultSpeed;
         }
 
-        public FastForward Clone() => (FastForward) MemberwiseClone();
-
         public override string ToString() {
             return "***" + (SaveState ? "S" : "") + Speed;
         }

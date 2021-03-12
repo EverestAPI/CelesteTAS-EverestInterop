@@ -37,7 +37,7 @@ namespace TAS {
             analogMode = mode;
         }
 
-        public static void ComputeAngleVector2(InputFrame input) {
+        public static Vector2 ComputeAngleVector2(InputFrame input, out Vector2Short angleVector2Short) {
             float precision;
             if (input.Angle == 0) {
                 precision = 1E-6f;
@@ -51,8 +51,9 @@ namespace TAS {
                 precision = float.Parse($"0.5E-{digits + 2}");
             }
 
-            input.AngleVector2 = ComputeFeather(input.GetX(), input.GetY(), precision, input.UpperLimit, out Vector2Short retDirectionShort);
-            input.AngleVector2Short = retDirectionShort;
+            Vector2 angleVector2 = ComputeFeather(input.GetX(), input.GetY(), precision, input.UpperLimit, out Vector2Short retDirectionShort);
+            angleVector2Short = retDirectionShort;
+            return angleVector2;
         }
 
         private static Vector2 ComputeFeather(float x, float y, float precision, float upperLimit, out Vector2Short retDirectionShort) {

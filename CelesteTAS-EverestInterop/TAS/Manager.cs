@@ -51,7 +51,6 @@ namespace TAS {
             LastState = State;
             Hotkeys.Update();
             Savestates.HandleSaveStates();
-            Savestates.Routine?.Update();
             HandleFrameRates();
             CheckToEnable();
             FrameStepping();

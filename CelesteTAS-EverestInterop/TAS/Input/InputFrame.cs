@@ -29,8 +29,8 @@ namespace TAS.Input {
         public Actions Actions { get; private set; }
         public float Angle { get; private set; }
         public float UpperLimit { get; private set; } = 1f;
-        public Vector2 AngleVector2 { get; set; }
-        public Vector2Short AngleVector2Short { get; set; }
+        public Vector2 AngleVector2 { get; private set; }
+        public Vector2Short AngleVector2Short { get; private set; }
         public int Frames { get; private set; }
         public int Line { get; private set; }
 
@@ -44,8 +44,11 @@ namespace TAS.Input {
             (float) Math.Cos(Angle * Math.PI / 180.0);
 
         public override string ToString() {
+            return Frames + ToActionsString();
+        }
+
+        public string ToActionsString() {
             StringBuilder sb = new StringBuilder();
-            sb.Append(Frames);
             if (HasActions(Actions.Left)) {
                 sb.Append(",L");
             }
@@ -110,10 +113,6 @@ namespace TAS.Input {
             }
 
             return sb.ToString();
-        }
-
-        public InputFrame Clone() {
-            return (InputFrame) MemberwiseClone();
         }
 
         public static bool TryParse(string line, int studioLine, out InputFrame inputFrame) {
@@ -195,7 +194,8 @@ namespace TAS.Input {
                             }
                         }
 
-                        AnalogHelper.ComputeAngleVector2(inputFrame);
+                        inputFrame.AngleVector2 = AnalogHelper.ComputeAngleVector2(inputFrame, out Vector2Short angleVector2Short);
+                        inputFrame.AngleVector2Short = angleVector2Short;
                         continue;
                 }
 

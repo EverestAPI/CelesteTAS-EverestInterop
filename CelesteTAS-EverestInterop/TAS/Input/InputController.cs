@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -181,18 +182,8 @@ namespace TAS.Input {
         public InputController Clone() {
             InputController clone = new InputController();
 
-            for (int i = 0; i < Inputs.Count; i++) {
-                if (i == 0 || !object.ReferenceEquals(Inputs[i], Inputs[i - 1])) {
-                    clone.Inputs.Add(Inputs[i].Clone());
-                } else {
-                    clone.Inputs.Add(clone.Inputs[i - 1]);
-                }
-            }
-
-            foreach (int frame in FastForwards.Keys) {
-                clone.FastForwards[frame] = FastForwards[frame].Clone();
-            }
-
+            clone.Inputs.AddRange(Inputs);
+            clone.FastForwards.AddRange((IDictionary) FastForwards);
             foreach (int frame in Commands.Keys) {
                 clone.Commands[frame] = new List<Command>(Commands[frame]);
             }
@@ -222,7 +213,7 @@ namespace TAS.Input {
 
                 while (checkInputFrame < toInputFrame) {
                     InputFrame currentInput = Inputs[checkInputFrame];
-                    result.AppendLine(currentInput.ToString());
+                    result.AppendLine(currentInput.ToActionsString());
 
                     if (Commands.GetValueOrDefault(checkInputFrame) is List<Command> commands) {
                         foreach (Command command in commands) {
