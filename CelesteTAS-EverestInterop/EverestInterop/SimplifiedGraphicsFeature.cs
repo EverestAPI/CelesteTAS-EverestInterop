@@ -122,6 +122,7 @@ namespace TAS.EverestInterop {
             On.Celeste.MiniTextbox.Render += MiniTextbox_Render;
             IL.Celeste.BackdropRenderer.Render += BackdropRenderer_Render;
             On.Celeste.CrystalStaticSpinner.CreateSprites += CrystalStaticSpinner_CreateSprites;
+            IL.Celeste.CrystalStaticSpinner.GetHue += CrystalStaticSpinnerOnGetHue;
             IlHooks.Add(new ILHook(typeof(DustGraphic).GetNestedType("Eyeballs", BindingFlags.NonPublic).GetMethod("Render"), ModDustEyes));
             On.Celeste.DustStyles.Get_Session += DustStyles_Get_Session;
             On.Celeste.DreamBlock.Lerp += DreamBlock_Lerp;
@@ -153,6 +154,7 @@ namespace TAS.EverestInterop {
             On.Celeste.MiniTextbox.Render -= MiniTextbox_Render;
             IL.Celeste.BackdropRenderer.Render -= BackdropRenderer_Render;
             On.Celeste.CrystalStaticSpinner.CreateSprites -= CrystalStaticSpinner_CreateSprites;
+            IL.Celeste.CrystalStaticSpinner.GetHue -= CrystalStaticSpinnerOnGetHue;
             On.Celeste.DustStyles.Get_Session -= DustStyles_Get_Session;
             On.Celeste.DreamBlock.Lerp -= DreamBlock_Lerp;
             On.Celeste.LavaRect.Wave -= LavaRect_Wave;
@@ -284,7 +286,7 @@ namespace TAS.EverestInterop {
             c.Emit(OpCodes.Ret);
             c.GotoNext(i => i.MatchLdloc(2));
             c.Emit(OpCodes.Ldloc_2);
-            c.EmitDelegate<Action<Backdrop>>((backdrop => {
+            c.EmitDelegate<Action<Backdrop>>(backdrop => {
                 if (Settings.Mod9DLighting && backdrop.Visible && Engine.Scene is Level level) {
                     bool hideBackdrop =
                         (level.Session.Level.StartsWith("g") || level.Session.Level.StartsWith("h"))
@@ -292,15 +294,23 @@ namespace TAS.EverestInterop {
                         && backdrop.Name?.StartsWith("bgs/nameguysdsides") == true;
                     backdrop.Visible = !hideBackdrop;
                 }
-            }));
+            });
         }
 
         private static void CrystalStaticSpinner_CreateSprites(On.Celeste.CrystalStaticSpinner.orig_CreateSprites orig, CrystalStaticSpinner self) {
-            if (Settings.SimplifiedGraphics && Settings.SimplifiedSpinnerColor.Name != (CrystalColor) (-1)) {
+            if (Settings.SimplifiedGraphics && Settings.SimplifiedSpinnerColor.Name >= 0) {
                 SpinnerColorField.SetValue(self, Settings.SimplifiedSpinnerColor.Name);
             }
 
             orig(self);
+        }
+
+        private static void CrystalStaticSpinnerOnGetHue(ILContext il) {
+            ILCursor ilCursor = new ILCursor(il);
+            if (ilCursor.TryGotoNext(MoveType.After, ins => ins.MatchCall(typeof(Calc), "HsvToColor"))) {
+                ilCursor.EmitDelegate<Func<Color, Color>>(color =>
+                    Settings.SimplifiedGraphics && Settings.SimplifiedSpinnerColor.Name == CrystalColor.Rainbow ? Color.White : color);
+            }
         }
 
         private static void ModDustEyes(ILContext il) {
@@ -450,6 +460,7 @@ namespace TAS.EverestInterop {
         public struct SpinnerColor {
             public static readonly List<SpinnerColor> All = new List<SpinnerColor> {
                 new SpinnerColor((CrystalColor) (-1), null),
+                new SpinnerColor(CrystalColor.Rainbow, "#FFFFFF"),
                 new SpinnerColor(CrystalColor.Blue, "#639BFF"),
                 new SpinnerColor(CrystalColor.Red, "#FF4F4F"),
                 new SpinnerColor(CrystalColor.Purple, "#FF4FEF"),
@@ -464,10 +475,26 @@ namespace TAS.EverestInterop {
             }
 
             public override string ToString() {
-                string result = Name == (CrystalColor) (-1) ? "Default" : Name.ToString();
+                string result = Name == (CrystalColor) (-1) ? "Default" : Name == CrystalColor.Rainbow ? "White" : Name.ToString();
                 return result.ToDialogText();
             }
         }
         // ReSharper restore FieldCanBeMadeReadOnly.Global
+    }
+
+    internal class RemoveSelfComponent : Component {
+        public RemoveSelfComponent() : base(true, false) { }
+
+        public override void Added(Entity entity) {
+            base.Added(entity);
+            entity.Visible = false;
+            entity.Collidable = false;
+            entity.Collider = null;
+        }
+
+        public override void Update() {
+            Entity?.RemoveSelf();
+            RemoveSelf();
+        }
     }
 }
