@@ -56,9 +56,9 @@ namespace TAS.Input {
 
         private static void LoadCommand(string command, string[] args) {
             try {
-                if (SaveData.Instance == null || (!Manager.AllowUnsafeInput && SaveData.Instance.FileSlot != -1)) {
+                if (SaveData.Instance == null || !Manager.AllowUnsafeInput && SaveData.Instance.FileSlot != -1) {
                     int slot = SaveData.Instance == null ? -1 : SaveData.Instance.FileSlot;
-                    SaveData data = UserIO.Load<SaveData>(SaveData.GetFilename(slot));
+                    SaveData data = UserIO.Load<SaveData>(SaveData.GetFilename(slot)) ?? new SaveData();
                     SaveData.Start(data, -1);
 
                     // Complete Prologue if incomplete
