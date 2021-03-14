@@ -25,10 +25,10 @@
   - `core (int)` (Set core mode to ice or fire)
   - `givekey` (gives a key)
   - `giveberry` (gives a berry)
-  - `cheat` (Gives all hearts)
+  - `hearts` (gives all hearts)
   - `summitgem (string)` (gives summit gem, either 0-6 or "all")
-  - `sd_clearflags` (Clears all save data flags)
-  - `unlock_doors` (Unlocks all key doors)
+  - `sd_clearflags` (clears all save data flags)
+  - `unlock_doors` (unlocks all key doors)
   
 ### Console load
 - `load` (for A-Sides) is used in these examples, but this also applies to `hard` (B-Sides) and `rmx2` (C-Sides).
@@ -61,6 +61,8 @@
 - Names are case sensitive.
 - Make sure the value entered matches the type of the setting (if it is a boolean in the settings file, make sure you're inputting a boolean into the Set command).
 - Examples:
+  - `Set, VariantMode, false`
+  - `Set, CheatMode, true`
   - `Set, ExtendedVariantMode.Dashcount, 3`
   - `Set, CelesteTAS.CenterCamera, true`
 

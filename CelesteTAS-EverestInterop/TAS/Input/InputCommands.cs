@@ -172,9 +172,7 @@ namespace TAS.Input {
             }
 
             try {
-                Type settingsType;
-                Type valueType;
-                object settings;
+                object settings = null;
                 string settingName;
                 int index = args[0].IndexOf(".", StringComparison.Ordinal);
                 if (index != -1) {
@@ -182,12 +180,11 @@ namespace TAS.Input {
                     settingName = args[0].Substring(index + 1);
                     foreach (EverestModule module in Everest.Modules) {
                         if (module.Metadata.Name == moduleName) {
-                            settingsType = module.SettingsType;
+                            Type settingsType = module.SettingsType;
                             settings = module._Settings;
                             PropertyInfo property = settingsType.GetProperty(settingName);
                             if (property != null) {
-                                valueType = property.PropertyType;
-                                property.SetValue(settings, ConvertType(args[1], valueType));
+                                property.SetValue(settings, ConvertType(args[1], property.PropertyType));
                             }
 
                             return;
@@ -196,23 +193,20 @@ namespace TAS.Input {
                 } else {
                     settingName = args[0];
 
-                    settingsType = typeof(Settings);
-                    FieldInfo field = settingsType.GetField(settingName);
-                    if (field != null) {
+                    FieldInfo field;
+                    if ((field = typeof(Settings).GetField(settingName)) != null) {
                         settings = Settings.Instance;
-                        valueType = field.FieldType;
-                    } else {
-                        settingsType = typeof(Assists);
-                        field = settingsType.GetField(settingName);
-                        if (field == null) {
-                            return;
-                        }
-
+                    } else if ((field = typeof(SaveData).GetField(settingName)) != null) {
+                        settings = SaveData.Instance;
+                    } else if ((field = typeof(Assists).GetField(settingName)) != null) {
                         settings = SaveData.Instance.Assists;
-                        valueType = field.FieldType;
                     }
 
-                    object value = ConvertType(args[1], valueType);
+                    if (settings == null) {
+                        return;
+                    }
+
+                    object value = ConvertType(args[1], field.FieldType);
 
                     if (SettingsSpecialCases(settingName, value)) {
                         return;
@@ -275,6 +269,14 @@ namespace TAS.Input {
                     break;
                 case "SpeedrunClock":
                     Settings.Instance.SpeedrunClock = (SpeedrunType) value;
+                    break;
+                case "VariantMode":
+                    SaveData.Instance.VariantMode = (bool) value;
+                    SaveData.Instance.AssistMode = false;
+                    break;
+                case "AssistMode":
+                    SaveData.Instance.AssistMode = (bool) value;
+                    SaveData.Instance.VariantMode = false;
                     break;
                 default:
                     return false;
