@@ -1,12 +1,17 @@
+using System;
 using System.Linq;
+using System.Reflection;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.EverestInterop;
+using TAS.Utils;
 
 namespace TAS.Input {
     public static class ConsoleHandler {
+        private static readonly FieldInfo MovementCounter = typeof(Actor).GetFieldInfo("movementCounter");
         private static Vector2? resetSpawn;
+        private static Vector2 initSpeed;
 
         // ReSharper disable once UnusedMember.Local
         [DisableRun]
@@ -18,22 +23,46 @@ namespace TAS.Input {
         [Load]
         private static void Load() {
             On.Celeste.LevelLoader.LoadingThread += LevelLoader_LoadingThread;
+            On.Celeste.Level.LoadNewPlayer += LevelOnLoadNewPlayer;
+            On.Celeste.Player.IntroRespawnEnd += PlayerOnIntroRespawnEnd;
         }
 
         // ReSharper disable once UnusedMember.Local
         [Unload]
         private static void Unload() {
             On.Celeste.LevelLoader.LoadingThread -= LevelLoader_LoadingThread;
+            On.Celeste.Level.LoadNewPlayer -= LevelOnLoadNewPlayer;
+            On.Celeste.Player.IntroRespawnEnd -= PlayerOnIntroRespawnEnd;
         }
 
         private static void LevelLoader_LoadingThread(On.Celeste.LevelLoader.orig_LoadingThread orig, LevelLoader self) {
             orig(self);
-            Session session = self.Level.Session;
+            if (resetSpawn is Vector2 respawnPoint) {
+                Session session = self.Level.Session;
+                session.RespawnPoint = respawnPoint;
+                session.Level = session.MapData.GetAt(respawnPoint)?.Name;
+            }
+        }
+
+        private static Player LevelOnLoadNewPlayer(On.Celeste.Level.orig_LoadNewPlayer orig, Vector2 position, PlayerSpriteMode spriteMode) {
+            Player player = orig(position, spriteMode);
+
             if (resetSpawn is Vector2 spawn) {
-                session.RespawnPoint = spawn;
-                session.Level = session.MapData.GetAt(spawn)?.Name;
-                session.FirstLevel = false;
+                double x = spawn.X - Math.Truncate(spawn.X);
+                double y = spawn.Y - Math.Truncate(spawn.Y);
+                MovementCounter.SetValue(player, new Vector2((float) x, (float) y));
                 resetSpawn = null;
+            }
+
+            return player;
+        }
+
+        private static void PlayerOnIntroRespawnEnd(On.Celeste.Player.orig_IntroRespawnEnd orig, Player self) {
+            orig(self);
+
+            if (initSpeed != Vector2.Zero) {
+                self.Speed = initSpeed;
+                initSpeed = Vector2.Zero;
             }
         }
 
@@ -79,7 +108,7 @@ namespace TAS.Input {
                 int levelId = GetLevelId(args[0]);
 
                 if (args.Length > 1) {
-                    if (!int.TryParse(args[1], out int x) || args.Length == 2) {
+                    if (!float.TryParse(args[1], out float x) || args.Length == 2) {
                         string screen = args[1];
                         if (screen.StartsWith("lvl_")) {
                             screen = screen.Substring(4);
@@ -92,13 +121,24 @@ namespace TAS.Input {
                             Load(mode, levelId, screen);
                         }
                     } else if (args.Length > 2) {
-                        int y = int.Parse(args[2]);
-                        Load(mode, levelId, new Vector2(x, y));
+                        float y = float.Parse(args[2]);
+                        Vector2 speed = Vector2.Zero;
+                        if (args.Length > 3 && float.TryParse(args[3], out float speedX)) {
+                            speed.X = speedX;
+                        }
+
+                        if (args.Length > 4 && float.TryParse(args[4], out float speedY)) {
+                            speed.Y = speedY;
+                        }
+
+                        Load(mode, levelId, new Vector2(x, y), speed);
                     }
                 } else {
                     Load(mode, levelId);
                 }
-            } catch { }
+            } catch {
+                // ignored
+            }
         }
 
         private static int GetLevelId(string id) {
@@ -125,12 +165,13 @@ namespace TAS.Input {
             Engine.Scene = new LevelLoader(session);
         }
 
-        private static void Load(AreaMode mode, int levelId, Vector2 spawnPoint) {
+        private static void Load(AreaMode mode, int levelId, Vector2 spawnPoint, Vector2 speed) {
             Session session = new Session(new AreaKey(levelId, mode));
             session.Level = session.MapData.GetAt(spawnPoint)?.Name;
             session.FirstLevel = false;
             session.StartedFromBeginning = false;
             resetSpawn = spawnPoint;
+            initSpeed = speed;
             Engine.Scene = new LevelLoader(session);
         }
 
@@ -159,7 +200,7 @@ namespace TAS.Input {
             if (player == null) {
                 location = level.Session.Level;
             } else {
-                location = player.X.ToString() + " " + player.Y.ToString();
+                location = player.ExactPosition.X + " " + player.ExactPosition.Y;
             }
 
             if (id.Contains(" ")) {
