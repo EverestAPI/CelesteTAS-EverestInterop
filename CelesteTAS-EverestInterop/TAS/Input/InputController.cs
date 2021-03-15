@@ -39,7 +39,7 @@ namespace TAS.Input {
         public int CurrentFrame { get; private set; }
 
         public InputFrame Previous => CurrentFrame - 1 >= 0 ? Inputs[CurrentFrame - 1] : null;
-        public InputFrame Current => Inputs[CurrentFrame];
+        public InputFrame Current => Inputs.IsNotEmpty() ? Inputs[CurrentFrame] : null;
         public InputFrame Next => CurrentFrame + 1 < Inputs.Count ? Inputs[CurrentFrame + 1] : null;
         public FastForward CurrentFastForward => FastForwards.GetValueOrDefault(CurrentFrame);
         public List<Command> CurrentCommands => Commands.GetValueOrDefault(CurrentFrame);

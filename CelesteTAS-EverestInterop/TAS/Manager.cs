@@ -210,7 +210,8 @@ namespace TAS {
             } else if (HasFlag(NextState, State.Enable)) {
                 if (Engine.Scene is Level level && (!level.CanPause || Engine.FreezeTimer > 0)) {
                     Controller.RefreshInputs(true);
-                    if (Controller.Current.HasActions(Actions.Restart) || Controller.Current.HasActions(Actions.Start)) {
+                    if (Controller.Current != null &&
+                        (Controller.Current.HasActions(Actions.Restart) || Controller.Current.HasActions(Actions.Start))) {
                         NextState |= State.Delay;
                         FrameLoops = FastForward.DefaultSpeed;
                         return;
