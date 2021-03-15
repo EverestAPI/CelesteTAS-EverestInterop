@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using Celeste;
@@ -200,23 +202,26 @@ namespace TAS.Input {
             }
 
             string id = area.ID <= 10 ? area.ID.ToString() : area.GetSID();
-            string location = null;
-            Player player = level.Entities.FindFirst<Player>();
+            string separator = id.Contains(" ") ? ", " : " ";
+            List<string> values = new List<string> {"console", mode, id};
+            Player player = level.Tracker.GetEntity<Player>();
             if (player == null) {
-                location = level.Session.Level;
+                values.Add(level.Session.Level);
             } else {
                 double x = player.X;
                 double y = player.Y;
                 double subX = player.PositionRemainder.X;
                 double subY = player.PositionRemainder.Y;
-                location = $"{x + subX:0.############} {y + subY:0.############}";
+                values.Add((x + subX).ToString("0.############", CultureInfo.InvariantCulture));
+                values.Add((y + subY).ToString("0.############", CultureInfo.InvariantCulture));
+
+                if (player.Speed != Vector2.Zero) {
+                    values.Add(player.Speed.X.ToString(CultureInfo.InvariantCulture));
+                    values.Add(player.Speed.Y.ToString(CultureInfo.InvariantCulture));
+                }
             }
 
-            if (id.Contains(" ")) {
-                return $"console, {mode}, {id}, {location.Replace(" ", ", ")}";
-            } else {
-                return $"console {mode} {id} {location}";
-            }
+            return string.Join(separator, values);
         }
 
         [Monocle.Command("giveberry", "Gives player a red berry")]
