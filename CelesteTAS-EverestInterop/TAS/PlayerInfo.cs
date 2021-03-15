@@ -245,7 +245,7 @@ namespace TAS {
             }
         }
 
-        private static string GetAdjustedPos(Vector2 intPos, Vector2 subpixelPos) {
+        public static string GetAdjustedPos(Vector2 intPos, Vector2 subpixelPos) {
             double x = intPos.X;
             double y = intPos.Y;
             double subX = subpixelPos.X;

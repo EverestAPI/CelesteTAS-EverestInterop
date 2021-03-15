@@ -11,6 +11,7 @@ namespace TAS.Input {
     public static class ConsoleHandler {
         private static readonly FieldInfo MovementCounter = typeof(Actor).GetFieldInfo("movementCounter");
         private static Vector2? resetSpawn;
+        private static Vector2 resetRemainder;
         private static Vector2 initSpeed;
 
         // ReSharper disable once UnusedMember.Local
@@ -41,17 +42,16 @@ namespace TAS.Input {
                 Session session = self.Level.Session;
                 session.RespawnPoint = respawnPoint;
                 session.Level = session.MapData.GetAt(respawnPoint)?.Name;
+                resetSpawn = null;
             }
         }
 
         private static Player LevelOnLoadNewPlayer(On.Celeste.Level.orig_LoadNewPlayer orig, Vector2 position, PlayerSpriteMode spriteMode) {
             Player player = orig(position, spriteMode);
 
-            if (resetSpawn is Vector2 spawn) {
-                double x = spawn.X - Math.Truncate(spawn.X);
-                double y = spawn.Y - Math.Truncate(spawn.Y);
-                MovementCounter.SetValue(player, new Vector2((float) x, (float) y));
-                resetSpawn = null;
+            if (resetRemainder != Vector2.Zero) {
+                MovementCounter.SetValue(player, resetRemainder);
+                resetRemainder = Vector2.Zero;
             }
 
             return player;
@@ -71,7 +71,8 @@ namespace TAS.Input {
         // "Console LoadCommand IDorSID",
         // "Console LoadCommand IDorSID Screen",
         // "Console LoadCommand IDorSID Screen Checkpoint",
-        // "Console LoadCommand IDorSID X Y"
+        // "Console LoadCommand IDorSID positionX positionY"
+        // "Console LoadCommand IDorSID positionX positionY speedX speedY"
         [TasCommand(LegalInMainGame = false, Name = "Console")]
         private static void ConsoleCommand(string[] arguments) {
             string commandName = arguments[0].ToLower();
@@ -108,7 +109,7 @@ namespace TAS.Input {
                 int levelId = GetLevelId(args[0]);
 
                 if (args.Length > 1) {
-                    if (!float.TryParse(args[1], out float x) || args.Length == 2) {
+                    if (!double.TryParse(args[1], out double x) || args.Length == 2) {
                         string screen = args[1];
                         if (screen.StartsWith("lvl_")) {
                             screen = screen.Substring(4);
@@ -120,8 +121,9 @@ namespace TAS.Input {
                         } else {
                             Load(mode, levelId, screen);
                         }
-                    } else if (args.Length > 2) {
-                        float y = float.Parse(args[2]);
+                    } else if (args.Length > 2 && double.TryParse(args[2], out double y)) {
+                        Vector2 position = new Vector2((int) Math.Round(x), (int) Math.Round(y));
+                        Vector2 remainder = new Vector2((float) (x - Math.Truncate(x)), (float) (y - Math.Truncate(y)));
                         Vector2 speed = Vector2.Zero;
                         if (args.Length > 3 && float.TryParse(args[3], out float speedX)) {
                             speed.X = speedX;
@@ -131,7 +133,7 @@ namespace TAS.Input {
                             speed.Y = speedY;
                         }
 
-                        Load(mode, levelId, new Vector2(x, y), speed);
+                        Load(mode, levelId, position, remainder, speed);
                     }
                 } else {
                     Load(mode, levelId);
@@ -165,12 +167,13 @@ namespace TAS.Input {
             Engine.Scene = new LevelLoader(session);
         }
 
-        private static void Load(AreaMode mode, int levelId, Vector2 spawnPoint, Vector2 speed) {
+        private static void Load(AreaMode mode, int levelId, Vector2 spawnPoint, Vector2 remainder, Vector2 speed) {
             Session session = new Session(new AreaKey(levelId, mode));
             session.Level = session.MapData.GetAt(spawnPoint)?.Name;
             session.FirstLevel = false;
             session.StartedFromBeginning = false;
             resetSpawn = spawnPoint;
+            resetRemainder = remainder;
             initSpeed = speed;
             Engine.Scene = new LevelLoader(session);
         }
@@ -200,7 +203,11 @@ namespace TAS.Input {
             if (player == null) {
                 location = level.Session.Level;
             } else {
-                location = player.ExactPosition.X + " " + player.ExactPosition.Y;
+                double x = player.X;
+                double y = player.Y;
+                double subX = player.PositionRemainder.X;
+                double subY = player.PositionRemainder.Y;
+                location = $"{x + subX:0.############} {y + subY:0.############}";
             }
 
             if (id.Contains(" ")) {
