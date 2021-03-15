@@ -122,7 +122,7 @@ namespace TAS.Input {
                             Load(mode, levelId, screen);
                         }
                     } else if (args.Length > 2 && double.TryParse(args[2], out double y)) {
-                        Vector2 position = new Vector2((int) Math.Round(x), (int) Math.Round(y));
+                        Vector2 position = new Vector2((int) x, (int) y);
                         Vector2 remainder = new Vector2((float) (x - Math.Truncate(x)), (float) (y - Math.Truncate(y)));
                         Vector2 speed = Vector2.Zero;
                         if (args.Length > 3 && float.TryParse(args[3], out float speedX)) {
