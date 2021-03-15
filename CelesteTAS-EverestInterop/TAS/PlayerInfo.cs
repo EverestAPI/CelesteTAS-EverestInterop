@@ -143,9 +143,11 @@ namespace TAS {
                         joystick = string.Empty;
                     }
 
-                    string miscstats = $"Stamina: {player.Stamina:0}  "
+                    string miscStats = $"Stamina: {player.Stamina:0}  "
                                        + (WallJumpCheck(player, 1) ? "Wall-R " : string.Empty)
-                                       + (WallJumpCheck(player, -1) ? "Wall-L " : string.Empty);
+                                       + (WallJumpCheck(player, -1) ? "Wall-L " : string.Empty)
+                                       + (PlayerState) player.StateMachine.State;
+
                     int dashCooldown = (int) (DashCooldownTimer(player) * FramesPerSecond);
 
                     PlayerSeeker playerSeeker = level.Entities.FindFirst<PlayerSeeker>();
@@ -162,7 +164,7 @@ namespace TAS {
                     string statuses = (dashCooldown < 1 && player.Dashes > 0 ? "Dash " : string.Empty)
                                       + (player.LoseShards ? "Ground " : string.Empty)
                                       + (!player.LoseShards && JumpGraceTimer(player) > 0
-                                          ? $"Coyote({JumpGraceTimer(player) * FramesPerSecond:F0})"
+                                          ? $"Coyote({(int) (JumpGraceTimer(player) * FramesPerSecond)})"
                                           : string.Empty);
                     string transitionFramesStr = transitionFrames > 0 ? $"({transitionFrames})" : string.Empty;
                     statuses = (Engine.FreezeTimer > 0f ? $"Frozen({Engine.FreezeTimer * FramesPerSecond:F0}) " : string.Empty)
@@ -208,7 +210,7 @@ namespace TAS {
                         stringBuilder.AppendLine(joystick);
                     }
 
-                    stringBuilder.AppendLine(miscstats);
+                    stringBuilder.AppendLine(miscStats);
                     if (!string.IsNullOrEmpty(statuses)) {
                         stringBuilder.AppendLine(statuses);
                     }
@@ -416,31 +418,31 @@ namespace TAS {
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal enum PlayerState {
-        Normal = Player.StNormal,
-        Climb = Player.StClimb,
-        Dash = Player.StDash,
-        Swim = Player.StSwim,
-        Boost = Player.StBoost,
-        RedDash = Player.StRedDash,
-        HitSquash = Player.StHitSquash,
-        Launch = Player.StLaunch,
-        Pickup = Player.StPickup,
-        DreamDash = Player.StDreamDash,
-        SummitLaunch = Player.StSummitLaunch,
-        Dummy = Player.StDummy,
-        IntroWalk = Player.StIntroWalk,
-        IntroJump = Player.StIntroJump,
-        IntroRespawn = Player.StIntroRespawn,
-        IntroWakeUp = Player.StIntroWakeUp,
-        BirdDashTutorial = Player.StBirdDashTutorial,
-        Frozen = Player.StFrozen,
-        ReflectionFall = Player.StReflectionFall,
-        StarFly = Player.StStarFly,
-        TempleFall = Player.StTempleFall,
-        CassetteFly = Player.StCassetteFly,
-        Attract = Player.StAttract,
-        IntroMoonJump = Player.StIntroMoonJump,
-        FlingBird = Player.StFlingBird,
-        IntroThinkForABit = Player.StIntroThinkForABit
+        StNormal = Player.StNormal,
+        StClimb = Player.StClimb,
+        StDash = Player.StDash,
+        StSwim = Player.StSwim,
+        StBoost = Player.StBoost,
+        StRedDash = Player.StRedDash,
+        StHitSquash = Player.StHitSquash,
+        StLaunch = Player.StLaunch,
+        StPickup = Player.StPickup,
+        StDreamDash = Player.StDreamDash,
+        StSummitLaunch = Player.StSummitLaunch,
+        StDummy = Player.StDummy,
+        StIntroWalk = Player.StIntroWalk,
+        StIntroJump = Player.StIntroJump,
+        StIntroRespawn = Player.StIntroRespawn,
+        StIntroWakeUp = Player.StIntroWakeUp,
+        StBirdDashTutorial = Player.StBirdDashTutorial,
+        StFrozen = Player.StFrozen,
+        StReflectionFall = Player.StReflectionFall,
+        StStarFly = Player.StStarFly,
+        StTempleFall = Player.StTempleFall,
+        StCassetteFly = Player.StCassetteFly,
+        StAttract = Player.StAttract,
+        StIntroMoonJump = Player.StIntroMoonJump,
+        StFlingBird = Player.StFlingBird,
+        StIntroThinkForABit = Player.StIntroThinkForABit
     }
 }
