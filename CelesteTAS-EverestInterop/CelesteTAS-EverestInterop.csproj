@@ -131,6 +131,7 @@
         <Compile Include="TAS\Input\Command.cs"/>
         <Compile Include="TAS\Input\FastForward.cs"/>
         <Compile Include="TAS\Input\InputFrame.cs"/>
+        <Compile Include="TAS\Input\SetCommandHandler.cs"/>
         <Compile Include="TAS\LibTasHelper.cs"/>
         <Compile Include="TAS\Savestates.cs"/>
         <Compile Include="StudioCommunication\HotkeyIDs.cs"/>
@@ -142,7 +143,7 @@
         <Compile Include="EverestInterop\DisableAchievements.cs"/>
         <Compile Include="EverestInterop\GraphicsCore.cs"/>
         <Compile Include="TAS\Input\InputController.cs"/>
-        <Compile Include="TAS\Input\ConsoleHandler.cs"/>
+        <Compile Include="TAS\Input\ConsoleCommandHandler.cs"/>
         <Compile Include="TAS\Manager.cs"/>
         <Compile Include="TAS\PlayerInfo.cs"/>
         <Compile Include="Properties\AssemblyInfo.cs"/>
