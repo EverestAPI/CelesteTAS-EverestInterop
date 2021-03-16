@@ -47,7 +47,7 @@ namespace TAS.EverestInterop {
             // 1. Expose the trampoline to be used for the base.Update call in MInput_Update
             // 2. XNA Framework methods would require a separate MMHOOK .dll
             OrigGameUpdate = (HGameUpdate = new Detour(
-                typeof(Game).GetMethod("Update", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic),
+                typeof(Game).GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic),
                 typeof(Core).GetMethod("Game_Update")
             )).GenerateTrampoline<DGameUpdate>();
 
@@ -129,6 +129,7 @@ namespace TAS.EverestInterop {
 
             if (skipBaseUpdate) {
                 OrigGameUpdate(self, gameTime);
+                PlayerInfo.Update();
             }
         }
 

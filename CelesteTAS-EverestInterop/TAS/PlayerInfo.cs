@@ -17,7 +17,6 @@ using TAS.Utils;
 namespace TAS {
     public static class PlayerInfo {
         private static readonly FieldInfo SummitVignetteReadyFieldInfo = typeof(SummitVignette).GetFieldInfo("ready");
-        private static readonly FieldInfo StrawberryCollectTimerFieldInfo = typeof(Strawberry).GetFieldInfo("collectTimer");
 
         private static readonly DWallJumpCheck WallJumpCheck;
         private static readonly GetBerryFloat StrawberryCollectTimer;
@@ -75,9 +74,9 @@ namespace TAS {
             On.Celeste.Level.Update -= LevelOnUpdate;
         }
 
-        private static void EngineOnUpdate(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gametime) {
+        private static void EngineOnUpdate(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
             bool frozen = Engine.FreezeTimer > 0;
-            orig(self, gametime);
+            orig(self, gameTime);
             if (frozen) {
                 Update();
             }
@@ -132,7 +131,7 @@ namespace TAS {
                     string speed = $"Speed: {player.Speed.X:F2}, {player.Speed.Y:F2}";
                     Vector2 diff = (player.ExactPosition - LastPos) * 60f;
                     string vel = $"Vel:   {diff.X:F2}, {diff.Y:F2}";
-                    string polarvel = $"Fly:   {diff.Length():F2}, {Manager.GetAngle(diff):F5}°";
+                    string polarVel = $"Fly:   {diff.Length():F2}, {Manager.GetAngle(diff):F5}°";
 
                     string joystick;
                     if (Manager.Running && Manager.Controller.Previous is InputFrame inputFrame && inputFrame.HasActions(Actions.Feather)) {
@@ -143,7 +142,7 @@ namespace TAS {
                         joystick = string.Empty;
                     }
 
-                    string miscStats = $"Stamina: {player.Stamina:0}  "
+                    string miscStats = $"Stamina: {player.Stamina:0} "
                                        + (WallJumpCheck(player, 1) ? "Wall-R " : string.Empty)
                                        + (WallJumpCheck(player, -1) ? "Wall-L " : string.Empty)
                                        + (PlayerState) player.StateMachine.State;
@@ -157,7 +156,7 @@ namespace TAS {
                             $"Speed: {PlayerSeekerSpeed(playerSeeker).X:F2}, {PlayerSeekerSpeed(playerSeeker).Y:F2}";
                         diff = (playerSeeker.ExactPosition - LastPlayerSeekerPos) * 60f;
                         vel = $"Vel:   {diff.X:F2}, {diff.Y:F2}";
-                        polarvel = $"Chase: {diff.Length():F2}, {Manager.GetAngle(diff):F2}°";
+                        polarVel = $"Chase: {diff.Length():F2}, {Manager.GetAngle(diff):F2}°";
                         dashCooldown = (int) (PlayerSeekerDashTimer(playerSeeker) * FramesPerSecond);
                     }
 
@@ -173,14 +172,9 @@ namespace TAS {
                                + (level.InCutscene ? "Cutscene " : string.Empty)
                                + (AdditionalStatusInfo ?? string.Empty);
 
-                    if (player.Holding == null) {
-                        foreach (Component component in level.Tracker.GetComponents<Holdable>()) {
-                            Holdable holdable = (Holdable) component;
-                            if (holdable.Check(player)) {
-                                statuses += "Grab ";
-                                break;
-                            }
-                        }
+                    if (player.Holding == null
+                        && level.Tracker.GetComponents<Holdable>().Any(holdable => ((Holdable) holdable).Check(player))) {
+                        statuses += "Grab ";
                     }
 
                     int berryTimer = -10;
@@ -203,7 +197,7 @@ namespace TAS {
                         || playerSeeker != null
                         || SaveData.Instance.Assists.ThreeSixtyDashing
                         || SaveData.Instance.Assists.SuperDashing) {
-                        stringBuilder.AppendLine(polarvel);
+                        stringBuilder.AppendLine(polarVel);
                     }
 
                     if (!string.IsNullOrEmpty(joystick)) {
@@ -247,7 +241,7 @@ namespace TAS {
             }
         }
 
-        public static string GetAdjustedPos(Vector2 intPos, Vector2 subpixelPos) {
+        private static string GetAdjustedPos(Vector2 intPos, Vector2 subpixelPos) {
             double x = intPos.X;
             double y = intPos.Y;
             double subX = subpixelPos.X;
