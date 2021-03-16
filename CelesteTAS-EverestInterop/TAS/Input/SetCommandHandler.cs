@@ -27,7 +27,7 @@ namespace TAS.Input {
                 if (index != -1) {
                     string moduleName = args[0].Substring(0, index);
                     settingName = args[0].Substring(index + 1);
-                    if (moduleName == "player" && Engine.Scene.Tracker.GetEntity<Player>() is Player player) {
+                    if (moduleName == "Player" && Engine.Scene.Tracker.GetEntity<Player>() is Player player) {
                         SetPlayer(player, settingName, args.Skip(1).ToArray());
                     } else {
                         foreach (EverestModule module in Everest.Modules) {
