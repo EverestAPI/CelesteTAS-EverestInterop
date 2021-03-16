@@ -72,7 +72,8 @@ While in game or in Studio:
 
 ### Commands
 
-- Various commands exist to facilitate TAS playback. Documentation can be found [here.](https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/master/Docs/Commands.md)
+- Various commands exist to facilitate TAS
+  playback. [Documentation can be found here](https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/master/Docs/Commands.md).
 
 ## Savestate
 

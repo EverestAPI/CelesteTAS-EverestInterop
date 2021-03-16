@@ -55,7 +55,8 @@
 - `Set, (Optional Mod).Setting, Value`
 - Sets the specified setting to the specified value.
 - Defaults to Celeste if no mod specified.
-- Everest settings use the mod name Everest.
+- Player statuses use the mod name `player`.
+- Everest settings use the mod name `Everest`.
 - Note that setting names/values may be unintuitive.
 - To find the mod and setting names, go to the saves folder in your Celeste directory. The mod name should be `modsettings-(name).celeste`.
 - Open the settings file in a text editor to look for the setting's name.
@@ -64,6 +65,11 @@
 - Examples:
   - `Set, VariantMode, false`
   - `Set, CheatMode, true`
+  - `Set, CheatMode, true`
+  - `Set, player.Position, 123.123, -1028`
+  - `Set, player.Speed, 325, -52.5`
+  - `Set, player.Ducking, true`
+  - `Set, Everest.ShowModOptionsInGame, false`
   - `Set, ExtendedVariantMode.Dashcount, 3`
   - `Set, CelesteTAS.CenterCamera, true`
 
