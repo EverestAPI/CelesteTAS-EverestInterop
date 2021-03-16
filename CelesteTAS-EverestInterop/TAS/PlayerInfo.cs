@@ -128,7 +128,7 @@ namespace TAS {
                 if (player != null) {
                     StringBuilder stringBuilder = new StringBuilder();
                     string pos = GetAdjustedPos(player.Position, player.PositionRemainder);
-                    string speed = $"Speed: {player.Speed.X:F2}, {player.Speed.Y:F2}";
+                    string speed = GetAdjustedSpeed(player.Speed);
                     Vector2 diff = (player.ExactPosition - LastPos) * 60f;
                     string vel = $"Vel:   {diff.X:F2}, {diff.Y:F2}";
                     string polarVel = $"Fly:   {diff.Length():F2}, {Manager.GetAngle(diff):F5}°";
@@ -273,6 +273,10 @@ namespace TAS {
 
             string pos = $"Pos:   {x:F2}, {y:F2}";
             return pos;
+        }
+
+        private static string GetAdjustedSpeed(Vector2 speed) {
+            return "Speed: " + (CelesteTasModule.Settings.RoundSpeed ? $"{speed.X:F2}, {speed.Y:F2}" : $"{speed.X:F10}, {speed.Y:F10}");
         }
 
         private static void BeginExport(string path, string[] tracked) {

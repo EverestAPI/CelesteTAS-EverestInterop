@@ -54,6 +54,8 @@ namespace TAS.EverestInterop {
                         Settings.CenterCamera = value));
                     subMenu.Add(new TextMenu.OnOff("Round Position".ToDialogText(), Settings.RoundPosition).Change(value =>
                         Settings.RoundPosition = value));
+                    subMenu.Add(new TextMenu.OnOff("Round Speed".ToDialogText(), Settings.RoundSpeed).Change(value =>
+                        Settings.RoundSpeed = value));
                     subMenu.Add(new TextMenu.Option<InfoPositions>("Info HUD".ToDialogText()).Apply(option => {
                         Array enumValues = Enum.GetValues(typeof(InfoPositions));
                         foreach (InfoPositions value in enumValues) {
