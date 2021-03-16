@@ -62,9 +62,11 @@ namespace TAS.Input {
         private static void PlayerOnIntroRespawnEnd(On.Celeste.Player.orig_IntroRespawnEnd orig, Player self) {
             orig(self);
 
-            if (initSpeed != Vector2.Zero) {
-                self.Speed = initSpeed;
-                initSpeed = Vector2.Zero;
+            if (initSpeed != Vector2.Zero && self.Scene != null) {
+                self.Scene.OnEndOfFrame += () => {
+                    self.Speed = initSpeed;
+                    initSpeed = Vector2.Zero;
+                };
             }
         }
 
