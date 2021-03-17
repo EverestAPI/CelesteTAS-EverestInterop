@@ -118,7 +118,7 @@ namespace TAS.StudioCommunication {
         }
 
         private void ProcessGetConsoleCommand() {
-            string command = Input.ConsoleHandler.CreateConsoleCommand();
+            string command = Input.ConsoleCommandHandler.CreateConsoleCommand();
             if (command != null) {
                 byte[] commandBytes = Encoding.Default.GetBytes(command);
                 WriteMessageGuaranteed(new Message(MessageIDs.ReturnConsoleCommand, commandBytes));

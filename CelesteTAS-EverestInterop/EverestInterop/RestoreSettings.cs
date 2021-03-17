@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using Celeste;
 using Celeste.Mod;
 using Monocle;
+using TAS.Input;
 using TAS.Utils;
 
 namespace TAS.EverestInterop {
+    // ReSharper disable once UnusedType.Global
     public static class RestoreSettings {
-        private static readonly FieldInfo InputFeather = typeof(Celeste.Input).GetFieldInfo("Feather");
         private static Settings origSettings;
         private static Assists? origAssists;
         private static Dictionary<EverestModule, object> origModSettings;
@@ -57,24 +57,7 @@ namespace TAS.EverestInterop {
 
             if (origAssists != null) {
                 SaveData.Instance.Assists = origAssists.Value;
-                Assists assists = SaveData.Instance.Assists;
-                Engine.TimeRateB = assists.GameSpeed / 10f;
-                Celeste.Input.MoveX.Inverted = Celeste.Input.Aim.InvertedX = assists.MirrorMode;
-                if (InputFeather?.GetValue(null) is VirtualJoystick featherJoystick) {
-                    featherJoystick.InvertedX = assists.MirrorMode;
-                }
-
-                if (Engine.Scene.Tracker.GetEntity<Player>() is Player player) {
-                    PlayerSpriteMode mode = assists.PlayAsBadeline ? PlayerSpriteMode.MadelineAsBadeline : player.DefaultSpriteMode;
-                    if (player.Active) {
-                        player.ResetSpriteNextFrame(mode);
-                    } else {
-                        player.ResetSprite(mode);
-                    }
-
-                    player.Dashes = Math.Min(player.Dashes, player.MaxDashes);
-                }
-
+                SetCommandHandler.ResetVariants(origAssists.Value);
                 origAssists = null;
             }
 

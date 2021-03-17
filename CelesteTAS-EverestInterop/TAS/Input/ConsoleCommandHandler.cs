@@ -10,7 +10,7 @@ using TAS.EverestInterop;
 using TAS.Utils;
 
 namespace TAS.Input {
-    public static class ConsoleHandler {
+    public static class ConsoleCommandHandler {
         private static readonly FieldInfo MovementCounter = typeof(Actor).GetFieldInfo("movementCounter");
         private static Vector2? resetSpawn;
         private static Vector2 resetRemainder;

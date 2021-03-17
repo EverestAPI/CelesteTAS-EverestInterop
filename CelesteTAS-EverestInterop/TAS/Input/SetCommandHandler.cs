@@ -9,8 +9,9 @@ using TAS.Utils;
 
 namespace TAS.Input {
     // ReSharper disable once UnusedType.Global
-    public static class SetHandler {
-        private static readonly FieldInfo MovementCounter = typeof(Actor).GetFieldInfo("movementCounter");
+    public static class SetCommandHandler {
+        private static readonly FieldInfo ActorMovementCounter = typeof(Actor).GetFieldInfo("movementCounter");
+        private static readonly FieldInfo InputFeather = typeof(Celeste.Input).GetFieldInfo("Feather");
 
         // Set, Setting, Value
         // Set, Mod.Setting, Value
@@ -93,7 +94,7 @@ namespace TAS.Input {
                     Vector2 remainder = new Vector2((float) (x - Math.Truncate(x) + (int) x - (int) Math.Round(x)),
                         (float) (y - Math.Truncate(y) + (int) y - (int) Math.Round(y)));
                     player.Position = position;
-                    MovementCounter.SetValue(player, remainder);
+                    ActorMovementCounter.SetValue(player, remainder);
                 } else {
                     object value = ConvertType(values, field.FieldType);
                     field.SetValue(player, value);
@@ -122,21 +123,25 @@ namespace TAS.Input {
         }
 
         private static bool SettingsSpecialCases(string setting, object value) {
-            Player player;
+            Player player = (Engine.Scene as Level)?.Tracker.GetEntity<Player>();
+            SaveData saveData = SaveData.Instance;
             switch (setting) {
                 case "GameSpeed":
-                    SaveData.Instance.Assists.GameSpeed = (int) value;
-                    Engine.TimeRateB = SaveData.Instance.Assists.GameSpeed / 10f;
+                    saveData.Assists.GameSpeed = (int) value;
+                    Engine.TimeRateB = saveData.Assists.GameSpeed / 10f;
                     break;
                 case "MirrorMode":
-                    SaveData.Instance.Assists.MirrorMode = (bool) value;
+                    saveData.Assists.MirrorMode = (bool) value;
                     Celeste.Input.MoveX.Inverted = Celeste.Input.Aim.InvertedX = (bool) value;
+                    if (InputFeather?.GetValue(null) is VirtualJoystick featherJoystick) {
+                        featherJoystick.InvertedX = (bool) value;
+                    }
+
                     break;
                 case "PlayAsBadeline":
-                    SaveData.Instance.Assists.PlayAsBadeline = (bool) value;
-                    player = (Engine.Scene as Level)?.Tracker.GetEntity<Player>();
+                    saveData.Assists.PlayAsBadeline = (bool) value;
                     if (player != null) {
-                        PlayerSpriteMode mode = SaveData.Instance.Assists.PlayAsBadeline
+                        PlayerSpriteMode mode = saveData.Assists.PlayAsBadeline
                             ? PlayerSpriteMode.MadelineAsBadeline
                             : player.DefaultSpriteMode;
                         if (player.Active) {
@@ -148,31 +153,45 @@ namespace TAS.Input {
 
                     break;
                 case "DashMode":
-                    SaveData.Instance.Assists.DashMode = (Assists.DashModes) value;
-                    player = (Engine.Scene as Level)?.Tracker.GetEntity<Player>();
+                    saveData.Assists.DashMode = (Assists.DashModes) value;
                     if (player != null) {
                         player.Dashes = Math.Min(player.Dashes, player.MaxDashes);
                     }
 
                     break;
-                case "DashAssist":
-                    break;
-                case "SpeedrunClock":
-                    Settings.Instance.SpeedrunClock = (SpeedrunType) value;
-                    break;
                 case "VariantMode":
-                    SaveData.Instance.VariantMode = (bool) value;
-                    SaveData.Instance.AssistMode = false;
+                    saveData.VariantMode = (bool) value;
+                    saveData.AssistMode = false;
+                    if (!saveData.VariantMode) {
+                        Assists assists = default;
+                        assists.GameSpeed = 10;
+                        ResetVariants(assists);
+                    }
+
                     break;
                 case "AssistMode":
-                    SaveData.Instance.AssistMode = (bool) value;
-                    SaveData.Instance.VariantMode = false;
+                    saveData.AssistMode = (bool) value;
+                    saveData.VariantMode = false;
+                    if (!saveData.AssistMode) {
+                        Assists assists = default;
+                        assists.GameSpeed = 10;
+                        ResetVariants(assists);
+                    }
+
                     break;
                 default:
                     return false;
             }
 
             return true;
+        }
+
+        public static void ResetVariants(Assists assists) {
+            SaveData.Instance.Assists = assists;
+            SettingsSpecialCases("DashMode", assists.DashMode);
+            SettingsSpecialCases("GameSpeed", assists.GameSpeed);
+            SettingsSpecialCases("MirrorMode", assists.MirrorMode);
+            SettingsSpecialCases("PlayAsBadeline", assists.PlayAsBadeline);
         }
     }
 }
