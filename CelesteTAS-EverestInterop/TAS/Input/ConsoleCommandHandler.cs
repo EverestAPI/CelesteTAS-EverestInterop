@@ -120,8 +120,8 @@ namespace TAS.Input {
                         }
 
                         if (args.Length > 2) {
-                            int checkpoint = int.Parse(args[2]);
-                            Load(mode, levelId, screen, checkpoint);
+                            int spawnpoint = int.Parse(args[2]);
+                            Load(mode, levelId, screen, spawnpoint);
                         } else {
                             Load(mode, levelId, screen);
                         }
@@ -157,19 +157,19 @@ namespace TAS.Input {
             }
         }
 
-        private static void Load(AreaMode mode, int levelId, string screen = null, int spawnpoint = 0) {
-            Session session = new Session(new AreaKey(levelId, mode));
+        private static void Load(AreaMode mode, int levelId, string screen = null, int? spawnpoint = null) {
+            Session session = new Session(new AreaKey(levelId, mode), screen);
             if (screen != null) {
                 session.Level = screen;
                 session.FirstLevel = session.LevelData == session.MapData.StartLevel();
             }
 
-            if (spawnpoint != 0) {
+            if (spawnpoint != null) {
                 LevelData levelData = session.MapData.Get(screen);
-                resetSpawn = levelData.Spawns[spawnpoint];
+                resetSpawn = levelData.Spawns[spawnpoint.Value];
             }
 
-            session.StartedFromBeginning = spawnpoint == 0 && session.FirstLevel;
+            session.StartedFromBeginning = spawnpoint == null && session.FirstLevel;
             Engine.Scene = new LevelLoader(session);
         }
 
