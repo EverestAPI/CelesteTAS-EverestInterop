@@ -158,7 +158,9 @@ namespace TAS.Input {
         }
 
         private static void Load(AreaMode mode, int levelId, string screen = null, int? spawnpoint = null) {
-            Session session = new Session(new AreaKey(levelId, mode), screen);
+            AreaKey areaKey = new AreaKey(levelId, mode);
+            Session session = AreaData.GetCheckpoint(areaKey, screen) != null ? new Session(areaKey, screen) : new Session(areaKey);
+
             if (screen != null) {
                 session.Level = screen;
                 session.FirstLevel = session.LevelData == session.MapData.StartLevel();
@@ -174,8 +176,13 @@ namespace TAS.Input {
         }
 
         private static void Load(AreaMode mode, int levelId, Vector2 spawnPoint, Vector2 remainder, Vector2 speed) {
-            Session session = new Session(new AreaKey(levelId, mode));
+            AreaKey areaKey = new AreaKey(levelId, mode);
+            Session session = new Session(areaKey);
             session.Level = session.MapData.GetAt(spawnPoint)?.Name;
+            if (AreaData.GetCheckpoint(areaKey, session.Level) != null) {
+                session = new Session(areaKey, session.Level);
+            }
+
             session.FirstLevel = false;
             session.StartedFromBeginning = false;
             resetSpawn = spawnPoint;
