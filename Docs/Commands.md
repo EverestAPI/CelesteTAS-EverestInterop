@@ -34,16 +34,16 @@
 - `load` (for A-Sides) is used in these examples, but this also applies to `hard` (B-Sides) and `rmx2` (C-Sides).
 - `load` can be used to in place of a reset to start a chapter. However, `load` can be used to start playback from any location in the game without risk of desyncing.
 - Takes the following formats:
-  - `console load (SID or ID)`
-  - `console load (SID or ID) screen`
-  - `console load (SID or ID) screen checkpoint`
-  - `console load (SID or ID) positionX positionY speedX speedY`
+  - `console load (ID or SID)`
+  - `console load (ID or SID) screen`
+  - `console load (ID or SID) screen spawnpoint`
+  - `console load (ID or SID) positionX positionY speedX speedY`
   - `ID` is just the level ID (e.g. Old Site = 2).
   - `SID` is the path to the map from the Celeste or from a mod's Maps folder (e.g. Celeste/2-OldSite). Can be found by opening the debug console.
-  - `Screen` is the name of the screen you want you load (Note that if the screen name is a number you have to prepend "lvl_", so lvl_00 instead of 00).
-  - `Checkpoint` is the # of the checkpoint in the room you want to load, as most rooms have multiple checkpoints (starts at 0).
+  - `screen` is the name of the screen you want you load (Note that if the screen name is a number you have to prepend "lvl_", so lvl_00 instead of 00).
+  - `spawnpoint` is the # of the spawnpoint in the room you want to load, as most rooms have multiple spawnpoints (starts at 0).
   - Alternatively, `positionX` and `positionY` are the position you want to load at, `speedX` and `speedY` are the speed after respawning.
-- So the following all do the same thing:
+- So the following all do the same thing:t
   - `console load 2 3x`
   - `console load 2 lvl_3x`
   - `console load Celeste/2-OldSite 3x`

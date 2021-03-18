@@ -74,9 +74,9 @@ namespace TAS.Input {
         // "Console CommandType CommandArgs",
         // "Console LoadCommand IDorSID",
         // "Console LoadCommand IDorSID Screen",
-        // "Console LoadCommand IDorSID Screen Checkpoint",
-        // "Console LoadCommand IDorSID positionX positionY"
-        // "Console LoadCommand IDorSID positionX positionY speedX speedY"
+        // "Console LoadCommand IDorSID Screen Spawnpoint",
+        // "Console LoadCommand IDorSID PositionX PositionY"
+        // "Console LoadCommand IDorSID PositionX PositionY SpeedX SpeedY"
         [TasCommand(LegalInMainGame = false, Name = "Console")]
         private static void ConsoleCommand(string[] arguments) {
             string commandName = arguments[0].ToLower();
@@ -157,19 +157,19 @@ namespace TAS.Input {
             }
         }
 
-        private static void Load(AreaMode mode, int levelId, string screen = null, int checkpoint = 0) {
+        private static void Load(AreaMode mode, int levelId, string screen = null, int spawnpoint = 0) {
             Session session = new Session(new AreaKey(levelId, mode));
             if (screen != null) {
                 session.Level = screen;
                 session.FirstLevel = session.LevelData == session.MapData.StartLevel();
             }
 
-            if (checkpoint != 0) {
+            if (spawnpoint != 0) {
                 LevelData levelData = session.MapData.Get(screen);
-                resetSpawn = levelData.Spawns[checkpoint];
+                resetSpawn = levelData.Spawns[spawnpoint];
             }
 
-            session.StartedFromBeginning = checkpoint == 0 && session.FirstLevel;
+            session.StartedFromBeginning = spawnpoint == 0 && session.FirstLevel;
             Engine.Scene = new LevelLoader(session);
         }
 
