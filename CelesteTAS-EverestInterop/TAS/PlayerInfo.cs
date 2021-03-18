@@ -24,6 +24,7 @@ namespace TAS {
         private static readonly GetFloat JumpGraceTimer;
         private static readonly GetPlayerSeekerSpeed PlayerSeekerSpeed;
         private static readonly GetPlayerSeekerDashTimer PlayerSeekerDashTimer;
+        private static readonly Func<Level, float> LevelUnpauseTimer;
 
         public static string Status = string.Empty;
         public static Vector2 LastPos;
@@ -45,6 +46,7 @@ namespace TAS {
             FieldInfo jumpGraceTimer = typeof(Player).GetFieldInfo("jumpGraceTimer");
             FieldInfo playerSeekerSpeed = typeof(PlayerSeeker).GetFieldInfo("speed");
             FieldInfo playerSeekerDashTimer = typeof(PlayerSeeker).GetFieldInfo("dashTimer");
+            FieldInfo levelUnpauseTimer = typeof(Level).GetFieldInfo("unpauseTimer");
 
             WallJumpCheck = (DWallJumpCheck) wallJumpCheck.CreateDelegate(typeof(DWallJumpCheck));
             StrawberryCollectTimer = strawberryCollectTimer.CreateDelegate_Get<GetBerryFloat>();
@@ -52,6 +54,7 @@ namespace TAS {
             JumpGraceTimer = jumpGraceTimer.CreateDelegate_Get<GetFloat>();
             PlayerSeekerSpeed = playerSeekerSpeed.CreateDelegate_Get<GetPlayerSeekerSpeed>();
             PlayerSeekerDashTimer = playerSeekerDashTimer.CreateDelegate_Get<GetPlayerSeekerDashTimer>();
+            LevelUnpauseTimer = levelUnpauseTimer?.CreateDelegate_Get<Func<Level, float>>();
         }
 
         private static float FramesPerSecond => 60f / Engine.TimeRateB;
@@ -165,9 +168,15 @@ namespace TAS {
                                       + (!player.LoseShards && JumpGraceTimer(player) > 0
                                           ? $"Coyote({(int) (JumpGraceTimer(player) * FramesPerSecond)})"
                                           : string.Empty);
-                    string transitionFramesStr = transitionFrames > 0 ? $"({transitionFrames})" : string.Empty;
+
+                    string noControlFrames = transitionFrames > 0 ? $"({transitionFrames})" : string.Empty;
+                    float unpauseTimer = LevelUnpauseTimer?.Invoke(level) ?? 0f;
+                    if (unpauseTimer > 0f) {
+                        noControlFrames = $"({unpauseTimer * FramesPerSecond:F0})";
+                    }
+
                     statuses = (Engine.FreezeTimer > 0f ? $"Frozen({Engine.FreezeTimer * FramesPerSecond:F0}) " : string.Empty)
-                               + (player.InControl && !level.Transitioning ? statuses : $"NoControl{transitionFramesStr} ")
+                               + (player.InControl && !level.Transitioning && unpauseTimer <= 0f ? statuses : $"NoControl{noControlFrames} ")
                                + (player.TimePaused ? "Paused " : string.Empty)
                                + (level.InCutscene ? "Cutscene " : string.Empty)
                                + (AdditionalStatusInfo ?? string.Empty);
