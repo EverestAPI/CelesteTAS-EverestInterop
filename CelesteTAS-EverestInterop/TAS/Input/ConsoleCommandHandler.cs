@@ -233,24 +233,21 @@ namespace TAS.Input {
             return string.Join(separator, values);
         }
 
-        [Monocle.Command("giveberry", "Gives player a red berry")]
+        [Monocle.Command("giveberry", "Gives player a red berry (CelesteTAS)")]
         private static void CmdGiveBerry() {
-            Level level = Engine.Scene as Level;
-            if (level != null) {
-                Player entity = level.Tracker.GetEntity<Player>();
-                if (entity != null) {
-                    EntityData entityData = new EntityData();
-                    entityData.Position = entity.Position + new Vector2(0f, -16f);
-                    entityData.ID = Calc.Random.Next();
-                    entityData.Name = "strawberry";
-                    EntityID gid = new EntityID(level.Session.Level, entityData.ID);
-                    Strawberry entity2 = new Strawberry(entityData, Vector2.Zero, gid);
-                    level.Add(entity2);
-                }
+            if (Engine.Scene is Level level && level.Tracker.GetEntity<Player>() is Player player) {
+                EntityData entityData = new EntityData {
+                    Position = player.Position + new Vector2(0f, -16f),
+                    ID = new Random().Next(),
+                    Name = "strawberry"
+                };
+                EntityID gid = new EntityID(level.Session.Level, entityData.ID);
+                Strawberry entity2 = new Strawberry(entityData, Vector2.Zero, gid);
+                level.Add(entity2);
             }
         }
 
-        [Monocle.Command("clrsav", "clears save data on debug file")]
+        [Monocle.Command("clrsav", "clears save data on debug file (CelesteTAS)")]
         private static void CmdClearSave() {
             SaveData.TryDelete(-1);
             SaveData.Start(new SaveData {Name = "debug"}, -1);
