@@ -46,6 +46,14 @@ namespace TAS.EverestInterop.Hitboxes {
                 return;
             }
 
+            if (!(self.Collider is Grid)) {
+                Rectangle bounds = new Rectangle((int) camera.Left - 2, (int) camera.Top - 2, camera.Viewport.Width + 4, camera.Viewport.Height + 4);
+                Rectangle entityRect = new Rectangle((int) self.Left, (int) self.Top, (int) self.Width, (int) self.Height);
+                if (!bounds.Contains(entityRect) && !bounds.Intersects(entityRect)) {
+                    return;
+                }
+            }
+
             if (self is Puffer) {
                 Vector2 bottomCenter = self.BottomCenter - Vector2.UnitY * 1;
                 if (self.Scene.Tracker.GetEntity<Player>() is Player player && player.Ducking) {
