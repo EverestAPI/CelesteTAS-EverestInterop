@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Celeste;
@@ -256,12 +257,17 @@ namespace TAS {
             State = State.None;
             NextState = State.None;
             Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = KbTextInput;
-            PlayerInfo.EndExport();
 
             EnforceLegal = false;
             AllowUnsafeInput = false;
-            Hotkeys.ReleaseAllKeys();
 
+            // fix the input that was last held stays for a frame when it ends
+            if (MInput.GamePads.FirstOrDefault(data => data.Attached) is MInput.GamePadData gamePadData) {
+                gamePadData.CurrentState = new GamePadState();
+            }
+
+            PlayerInfo.EndExport();
+            Hotkeys.ReleaseAllKeys();
             AttributeUtils.Invoke<DisableRunAttribute>();
         }
 
