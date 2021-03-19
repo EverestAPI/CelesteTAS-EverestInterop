@@ -47,9 +47,12 @@ namespace TAS.EverestInterop.Hitboxes {
             }
 
             if (!(self.Collider is Grid)) {
-                Rectangle bounds = new Rectangle((int) camera.Left - 2, (int) camera.Top - 2, camera.Viewport.Width + 4, camera.Viewport.Height + 4);
+                int width = camera.Viewport.Width;
+                int height = camera.Viewport.Height;
+                Rectangle bounds = new Rectangle((int) camera.Left - width / 2, (int) camera.Top - height / 2, width * 2, height * 2);
                 Rectangle entityRect = new Rectangle((int) self.Left, (int) self.Top, (int) self.Width, (int) self.Height);
-                if (!bounds.Contains(entityRect) && !bounds.Intersects(entityRect)) {
+                if (entityRect.Right < bounds.Left || entityRect.Left > bounds.Right || entityRect.Top > bounds.Bottom ||
+                    entityRect.Bottom < bounds.Top) {
                     return;
                 }
             }
