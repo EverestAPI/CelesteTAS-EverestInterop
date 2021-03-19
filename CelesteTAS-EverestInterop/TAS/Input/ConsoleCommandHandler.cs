@@ -274,8 +274,6 @@ namespace TAS.Input {
                 levelSet = saveData.GetLevelSet();
             }
 
-            levelSet.Log();
-
             int num = 0;
             foreach (AreaStats areaStats in saveData.Areas_Safe.Where(stats => stats.LevelSet == levelSet)) {
                 foreach (AreaModeStats areaStatsMode in areaStats.Modes) {
