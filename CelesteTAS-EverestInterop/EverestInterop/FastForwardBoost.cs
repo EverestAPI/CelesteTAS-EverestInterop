@@ -1,4 +1,6 @@
-﻿using Celeste;
+﻿using System;
+using System.Collections.Generic;
+using Celeste;
 using Monocle;
 
 namespace TAS.EverestInterop {
@@ -9,6 +11,10 @@ namespace TAS.EverestInterop {
                                           && !Settings.FastForwardCallBase
                                           && Manager.FrameLoops >= Settings.FastForwardThreshold;
 
+        public static void Init() {
+            AddToTracker(typeof(PlayerSeeker));
+        }
+
         public static void Load() {
             On.Celeste.BackdropRenderer.Update += BackdropRendererOnUpdate;
             On.Celeste.ReflectionTentacles.UpdateVertices += ReflectionTentaclesOnUpdateVertices;
@@ -17,6 +23,18 @@ namespace TAS.EverestInterop {
         public static void Unload() {
             On.Celeste.BackdropRenderer.Update -= BackdropRendererOnUpdate;
             On.Celeste.ReflectionTentacles.UpdateVertices -= ReflectionTentaclesOnUpdateVertices;
+        }
+
+        private static void AddToTracker(Type type) {
+            if (!Tracker.StoredEntityTypes.Contains(type)) {
+                Tracker.StoredEntityTypes.Add(type);
+            }
+
+            if (!Tracker.TrackedEntityTypes.ContainsKey(type)) {
+                Tracker.TrackedEntityTypes[type] = new List<Type> {type};
+            } else if (!Tracker.TrackedEntityTypes[type].Contains(type)) {
+                Tracker.TrackedEntityTypes[type].Add(type);
+            }
         }
 
         private static void BackdropRendererOnUpdate(On.Celeste.BackdropRenderer.orig_Update orig, BackdropRenderer self, Scene scene) {

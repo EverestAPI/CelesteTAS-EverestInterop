@@ -6,6 +6,7 @@ using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Input;
+using TAS.Utils;
 
 namespace TAS.EverestInterop {
     public static class InfoHud {
@@ -131,7 +132,7 @@ namespace TAS.EverestInterop {
 
             Rectangle bgRect = new Rectangle((int) x, (int) y, (int) (size.X + padding * 2), (int) (size.Y + padding * 2));
 
-            if (self.Entities.FindFirst<Player>() is Player player) {
+            if (self.GetPlayer() is Player player) {
                 Vector2 playerPosition = self.Camera.CameraToScreen(player.TopLeft) * pixelScale;
                 Rectangle playerRect = new Rectangle((int) playerPosition.X, (int) playerPosition.Y, (int) (8 * pixelScale), (int) (11 * pixelScale));
                 Rectangle mirrorBgRect = bgRect;

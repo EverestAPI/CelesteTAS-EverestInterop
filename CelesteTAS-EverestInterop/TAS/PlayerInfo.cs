@@ -152,7 +152,7 @@ namespace TAS {
 
                     int dashCooldown = (int) (DashCooldownTimer(player) * FramesPerSecond);
 
-                    PlayerSeeker playerSeeker = level.Entities.FindFirst<PlayerSeeker>();
+                    PlayerSeeker playerSeeker = level.Tracker.GetEntity<PlayerSeeker>();
                     if (playerSeeker != null) {
                         pos = GetAdjustedPos(playerSeeker.Position, playerSeeker.PositionRemainder);
                         speed =

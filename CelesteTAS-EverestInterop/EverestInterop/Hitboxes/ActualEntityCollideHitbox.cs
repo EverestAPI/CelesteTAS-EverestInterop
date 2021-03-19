@@ -7,12 +7,12 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
-using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static partial class ActualEntityCollideHitbox {
-        private const string ActualCollidePositionKey = nameof(ActualCollidePositionKey);
-        private const string ActualCollidableKey = nameof(ActualCollidableKey);
+        private static readonly Dictionary<Entity, Vector2> LastPositions = new Dictionary<Entity, Vector2>();
+        private static readonly Dictionary<Entity, bool> LastColldables = new Dictionary<Entity, bool>();
+
         private static bool colliderListRendering;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
@@ -21,6 +21,8 @@ namespace TAS.EverestInterop.Hitboxes {
             On.Monocle.Hitbox.Render += HitboxOnRenderEntity;
             On.Monocle.Circle.Render += CircleOnRender;
             On.Monocle.ColliderList.Render += ColliderListOnRender;
+            On.Celeste.Level.Update += LevelOnUpdate;
+            On.Celeste.Level.End += LevelOnEnd;
             LoadPlayerHook();
         }
 
@@ -29,7 +31,21 @@ namespace TAS.EverestInterop.Hitboxes {
             On.Monocle.Hitbox.Render -= HitboxOnRenderEntity;
             On.Monocle.Circle.Render -= CircleOnRender;
             On.Monocle.ColliderList.Render -= ColliderListOnRender;
+            On.Celeste.Level.Update -= LevelOnUpdate;
+            On.Celeste.Level.End -= LevelOnEnd;
             UnloadPlayerHook();
+        }
+
+        private static void LevelOnUpdate(On.Celeste.Level.orig_Update orig, Level self) {
+            LastPositions.Clear();
+            LastColldables.Clear();
+            orig(self);
+        }
+
+        private static void LevelOnEnd(On.Celeste.Level.orig_End orig, Level self) {
+            LastPositions.Clear();
+            LastColldables.Clear();
+            orig(self);
         }
 
         private static void ModPlayerOrigUpdateEntity(ILContext il) {
@@ -120,30 +136,29 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void SaveActualCollidePosition(this Entity entity) {
-            entity.SetExtendedDataValue(ActualCollidePositionKey, entity.Position);
+            LastPositions[entity] = entity.Position;
         }
 
         private static Vector2? LoadActualCollidePosition(this Entity entity) {
-            return entity.GetExtendedDataValue<Vector2?>(ActualCollidePositionKey);
-        }
+            if (LastPositions.ContainsKey(entity)) {
+                return LastPositions[entity];
+            }
 
-        private static void ClearActualCollidePosition(this Entity entity) {
-            entity.SetExtendedDataValue(ActualCollidePositionKey, null);
+            return null;
         }
 
         private static void SaveActualCollidable(this Entity entity) {
-            entity.SetExtendedDataValue(ActualCollidableKey, entity.Collidable);
+            LastColldables[entity] = entity.Collidable;
         }
 
         private static bool LoadActualCollidable(this Entity entity) {
-            return entity.GetExtendedDataValue<bool>(ActualCollidableKey);
+            return LastColldables.ContainsKey(entity) && LastColldables[entity];
         }
     }
 
+    // ReSharper disable once UnusedMember.Global
     public enum ActualCollideHitboxTypes {
         Off,
-
-        // ReSharper disable once UnusedMember.Global
         Override,
         Append
     }

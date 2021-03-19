@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Reflection;
 using Celeste;
 using Microsoft.Xna.Framework;
@@ -18,13 +17,11 @@ namespace TAS.EverestInterop.Hitboxes {
 
         private static void LoadPlayerHook() {
             On.Monocle.Hitbox.Render += HitboxOnRender;
-            On.Celeste.Level.TransitionRoutine += LevelOnTransitionRoutine;
             ilHookPlayerOrigUpdate = new ILHook(typeof(Player).GetMethod("orig_Update"), ModPlayerOrigUpdate);
         }
 
         private static void UnloadPlayerHook() {
             On.Monocle.Hitbox.Render -= HitboxOnRender;
-            On.Celeste.Level.TransitionRoutine -= LevelOnTransitionRoutine;
             ilHookPlayerOrigUpdate?.Dispose();
         }
 
@@ -40,18 +37,6 @@ namespace TAS.EverestInterop.Hitboxes {
 
                     player.SaveActualCollidePosition();
                 });
-            }
-        }
-
-        private static IEnumerator LevelOnTransitionRoutine(On.Celeste.Level.orig_TransitionRoutine orig, Level self, LevelData next,
-            Vector2 direction) {
-            IEnumerator enumerator = orig(self, next, direction);
-            while (enumerator.MoveNext()) {
-                yield return enumerator.Current;
-            }
-
-            if (self.GetPlayer() is Player player) {
-                player.ClearActualCollidePosition();
             }
         }
 
