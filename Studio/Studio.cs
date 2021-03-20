@@ -190,7 +190,7 @@ namespace CelesteStudio {
                     Enabled = false
                 });
             } else {
-                for (var i = recentFiles.Count - 1; i >= 10; i--) {
+                for (var i = recentFiles.Count - 1; i >= 20; i--) {
                     recentFiles.Remove(recentFiles[i]);
                 }
 
@@ -1059,6 +1059,21 @@ namespace CelesteStudio {
                     StudioCommunicationServer.instance.ConvertToLibTas(dialog.FileName);
                 }
             }
+        }
+
+        private void newFileToolStripMenuItem_Click(object sender, EventArgs e) {
+            int index = 1;
+            string tempPath = Path.GetTempPath();
+            string fileName = Path.Combine(tempPath, $"Untitled-{index}.tas");
+            while (File.Exists(fileName) && new FileInfo(fileName).Length > 0) {
+                index++;
+                fileName = Path.Combine(tempPath, $"Untitled-{index}.tas");
+            }
+
+            File.WriteAllText(fileName, string.Empty);
+
+            OpenFile(fileName);
+            tasText.Selection = new Range(tasText, 0, 0, 0, 0);
         }
     }
 }

@@ -35,6 +35,7 @@ namespace CelesteStudio {
             this.reconnectStudioAndCelesteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.newFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openFileMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openCelesteTasMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openRecentMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -83,6 +84,7 @@ namespace CelesteStudio {
             this.swapJumpKeysToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.tasText = new CelesteStudio.RichText.RichText();
             this.fontDialog = new System.Windows.Forms.FontDialog();
+            this.toolStripSeparator7 = new System.Windows.Forms.ToolStripSeparator();
             this.statusBar.SuspendLayout();
             this.statusBarContextMenuStrip.SuspendLayout();
             this.menuStrip.SuspendLayout();
@@ -155,11 +157,18 @@ namespace CelesteStudio {
             //
             // fileToolStripMenuItem
             //
-            this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.openFileMenuItem, this.openCelesteTasMenuItem, this.openRecentMenuItem, this.toolStripSeparator1, this.saveAsToolStripMenuItem, this.convertToLibTASInputsToolStripMenuItem});
+            this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.newFileToolStripMenuItem, this.toolStripSeparator7, this.openFileMenuItem, this.openCelesteTasMenuItem, this.openRecentMenuItem, this.toolStripSeparator1, this.saveAsToolStripMenuItem, this.convertToLibTASInputsToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(51, 20);
             this.fileToolStripMenuItem.Text = "&File";
             this.fileToolStripMenuItem.DropDownOpened += new System.EventHandler(this.fileToolStripMenuItem_DropDownOpened);
+            //
+            // newFileToolStripMenuItem
+            //
+            this.newFileToolStripMenuItem.Name = "newFileToolStripMenuItem";
+            this.newFileToolStripMenuItem.Size = new System.Drawing.Size(290, 22);
+            this.newFileToolStripMenuItem.Text = "New File";
+            this.newFileToolStripMenuItem.Click += new System.EventHandler(this.newFileToolStripMenuItem_Click);
             //
             // openFileMenuItem
             //
@@ -531,6 +540,11 @@ namespace CelesteStudio {
             // fontDialog
             //
             this.fontDialog.Font = new System.Drawing.Font("Courier New", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte) (0)));
+            //
+            // toolStripSeparator7
+            //
+            this.toolStripSeparator7.Name = "toolStripSeparator7";
+            this.toolStripSeparator7.Size = new System.Drawing.Size(287, 6);
             // 
             // Studio
             // 
@@ -561,6 +575,10 @@ namespace CelesteStudio {
             this.ResumeLayout(false);
             this.PerformLayout();
         }
+
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator7;
+
+        private System.Windows.Forms.ToolStripMenuItem newFileToolStripMenuItem;
 
         private System.Windows.Forms.ToolStripMenuItem commentUncommentAllBreakpointsToolStripMenuItem;
 
