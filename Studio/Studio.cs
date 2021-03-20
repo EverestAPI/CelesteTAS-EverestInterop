@@ -338,6 +338,8 @@ namespace CelesteStudio {
             StudioCommunicationServer.instance?.WriteWait();
             if (tasText.OpenFile(fileName)) {
                 UpdateRecentFiles();
+                tasText.Selection = new Range(tasText, 0, 0, 0, 0);
+                tasText.ScrollLeft();
             }
 
             StudioCommunicationServer.instance?.SendPath(LastFileName);
@@ -1073,7 +1075,6 @@ namespace CelesteStudio {
             File.WriteAllText(fileName, string.Empty);
 
             OpenFile(fileName);
-            tasText.Selection = new Range(tasText, 0, 0, 0, 0);
         }
     }
 }
