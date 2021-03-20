@@ -50,9 +50,8 @@ namespace TAS.EverestInterop.Hitboxes {
                 int width = camera.Viewport.Width;
                 int height = camera.Viewport.Height;
                 Rectangle bounds = new Rectangle((int) camera.Left - width / 2, (int) camera.Top - height / 2, width * 2, height * 2);
-                Rectangle entityRect = new Rectangle((int) self.Left, (int) self.Top, (int) self.Width, (int) self.Height);
-                if (entityRect.Right < bounds.Left || entityRect.Left > bounds.Right || entityRect.Top > bounds.Bottom ||
-                    entityRect.Bottom < bounds.Top) {
+                if (self.Right < bounds.Left || self.Left > bounds.Right || self.Top > bounds.Bottom ||
+                    self.Bottom < bounds.Top) {
                     return;
                 }
             }
