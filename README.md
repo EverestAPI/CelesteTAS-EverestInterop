@@ -83,7 +83,7 @@ While in game or in Studio:
 - Currently cannot savestate while skipping a cutscene or during the death animation.
 - Crashes due to running out of memory are possible, although uncommon.
 
-### Misc
+## Misc
 
 - Inspect entity: open the console then left-click to add the entity to be inspected, right-click to clear the inspecting entities. Supports exporting position
   data via the `StartExport` command.
