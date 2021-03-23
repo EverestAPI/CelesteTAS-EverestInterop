@@ -30,7 +30,6 @@ namespace TAS.EverestInterop {
 
         public override void Initialize() {
             StudioHelper.Initialize();
-            FastForwardBoost.Init();
         }
 
         public override void Load() {

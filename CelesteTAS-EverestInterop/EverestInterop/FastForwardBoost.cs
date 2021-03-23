@@ -11,18 +11,21 @@ namespace TAS.EverestInterop {
                                           && !Settings.FastForwardCallBase
                                           && Manager.FrameLoops >= Settings.FastForwardThreshold;
 
-        public static void Init() {
-            AddToTracker(typeof(PlayerSeeker));
-        }
-
         public static void Load() {
+            On.Monocle.Tracker.Initialize += TrackerOnInitialize;
             On.Celeste.BackdropRenderer.Update += BackdropRendererOnUpdate;
             On.Celeste.ReflectionTentacles.UpdateVertices += ReflectionTentaclesOnUpdateVertices;
         }
 
         public static void Unload() {
+            On.Monocle.Tracker.Initialize -= TrackerOnInitialize;
             On.Celeste.BackdropRenderer.Update -= BackdropRendererOnUpdate;
             On.Celeste.ReflectionTentacles.UpdateVertices -= ReflectionTentaclesOnUpdateVertices;
+        }
+
+        private static void TrackerOnInitialize(On.Monocle.Tracker.orig_Initialize orig) {
+            orig();
+            AddToTracker(typeof(PlayerSeeker));
         }
 
         private static void AddToTracker(Type type) {
