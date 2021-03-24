@@ -12,20 +12,12 @@ using TAS.Utils;
 namespace TAS.Input {
     public static class ConsoleCommandHandler {
         private static readonly FieldInfo MovementCounter = typeof(Actor).GetFieldInfo("movementCounter");
-        private static Vector2? resetSpawn;
         private static Vector2 resetRemainder;
         private static Vector2 initSpeed;
 
         // ReSharper disable once UnusedMember.Local
-        [DisableRun]
-        private static void ClearResetSpawn() {
-            resetSpawn = null;
-        }
-
-        // ReSharper disable once UnusedMember.Local
         [Load]
         private static void Load() {
-            On.Celeste.LevelLoader.LoadingThread += LevelLoader_LoadingThread;
             On.Celeste.Level.LoadNewPlayer += LevelOnLoadNewPlayer;
             On.Celeste.Player.IntroRespawnEnd += PlayerOnIntroRespawnEnd;
         }
@@ -33,19 +25,8 @@ namespace TAS.Input {
         // ReSharper disable once UnusedMember.Local
         [Unload]
         private static void Unload() {
-            On.Celeste.LevelLoader.LoadingThread -= LevelLoader_LoadingThread;
             On.Celeste.Level.LoadNewPlayer -= LevelOnLoadNewPlayer;
             On.Celeste.Player.IntroRespawnEnd -= PlayerOnIntroRespawnEnd;
-        }
-
-        private static void LevelLoader_LoadingThread(On.Celeste.LevelLoader.orig_LoadingThread orig, LevelLoader self) {
-            orig(self);
-            if (resetSpawn is Vector2 respawnPoint) {
-                Session session = self.Level.Session;
-                session.RespawnPoint = respawnPoint;
-                session.Level = session.MapData.GetAt(respawnPoint)?.Name;
-                resetSpawn = null;
-            }
         }
 
         private static Player LevelOnLoadNewPlayer(On.Celeste.Level.orig_LoadNewPlayer orig, Vector2 position, PlayerSpriteMode spriteMode) {
@@ -166,13 +147,14 @@ namespace TAS.Input {
                 session.FirstLevel = session.LevelData == session.MapData.StartLevel();
             }
 
+            Vector2? startPosition = null;
             if (spawnpoint != null) {
                 LevelData levelData = session.MapData.Get(screen);
-                resetSpawn = levelData.Spawns[spawnpoint.Value];
+                startPosition = levelData.Spawns[spawnpoint.Value];
             }
 
             session.StartedFromBeginning = spawnpoint == null && session.FirstLevel;
-            Engine.Scene = new LevelLoader(session);
+            Engine.Scene = new LevelLoader(session, startPosition);
         }
 
         private static void Load(AreaMode mode, int levelId, Vector2 spawnPoint, Vector2 remainder, Vector2 speed) {
@@ -185,7 +167,7 @@ namespace TAS.Input {
 
             session.FirstLevel = false;
             session.StartedFromBeginning = false;
-            resetSpawn = spawnPoint;
+            session.RespawnPoint = spawnPoint;
             resetRemainder = remainder;
             initSpeed = speed;
             Engine.Scene = new LevelLoader(session);
