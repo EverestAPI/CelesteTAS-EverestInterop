@@ -24,6 +24,8 @@ namespace TAS {
         private static readonly GetFloat JumpGraceTimer;
         private static readonly GetPlayerSeekerSpeed PlayerSeekerSpeed;
         private static readonly GetPlayerSeekerDashTimer PlayerSeekerDashTimer;
+        private static readonly Func<Player, Vector2> PlayerLiftBoost;
+        private static readonly GetFloat ActorLiftSpeedTimer;
         private static readonly Func<Level, float> LevelUnpauseTimer;
 
         public static string Status = string.Empty;
@@ -46,6 +48,8 @@ namespace TAS {
             FieldInfo jumpGraceTimer = typeof(Player).GetFieldInfo("jumpGraceTimer");
             FieldInfo playerSeekerSpeed = typeof(PlayerSeeker).GetFieldInfo("speed");
             FieldInfo playerSeekerDashTimer = typeof(PlayerSeeker).GetFieldInfo("dashTimer");
+            MethodInfo playerLiftSpeed = typeof(Player).GetPropertyInfo("LiftBoost").GetGetMethod(true);
+            FieldInfo actorLiftSpeedTimer = typeof(Actor).GetFieldInfo("liftSpeedTimer");
             FieldInfo levelUnpauseTimer = typeof(Level).GetFieldInfo("unpauseTimer");
 
             WallJumpCheck = (DWallJumpCheck) wallJumpCheck.CreateDelegate(typeof(DWallJumpCheck));
@@ -54,6 +58,8 @@ namespace TAS {
             JumpGraceTimer = jumpGraceTimer.CreateDelegate_Get<GetFloat>();
             PlayerSeekerSpeed = playerSeekerSpeed.CreateDelegate_Get<GetPlayerSeekerSpeed>();
             PlayerSeekerDashTimer = playerSeekerDashTimer.CreateDelegate_Get<GetPlayerSeekerDashTimer>();
+            PlayerLiftBoost = (Func<Player, Vector2>) playerLiftSpeed.CreateDelegate(typeof(Func<Player, Vector2>));
+            ActorLiftSpeedTimer = actorLiftSpeedTimer.CreateDelegate_Get<GetFloat>();
             LevelUnpauseTimer = levelUnpauseTimer?.CreateDelegate_Get<Func<Level, float>>();
         }
 
@@ -136,13 +142,17 @@ namespace TAS {
                     string vel = $"Vel:   {diff.X:F2}, {diff.Y:F2}";
                     string polarVel = $"Fly:   {diff.Length():F2}, {Manager.GetAngle(diff):F5}°";
 
-                    string joystick;
+                    string joystick = string.Empty;
                     if (Manager.Running && Manager.Controller.Previous is InputFrame inputFrame && inputFrame.HasActions(Actions.Feather)) {
                         Vector2 angleVector2 = inputFrame.AngleVector2;
                         joystick =
                             $"Analog: {angleVector2.X:F5}, {angleVector2.Y:F5}, {Manager.GetAngle(new Vector2(angleVector2.X, -angleVector2.Y)):F5}°";
-                    } else {
-                        joystick = string.Empty;
+                    }
+
+                    string liftBoost = string.Empty;
+                    if (PlayerLiftBoost(player) is Vector2 liftBoostVector2 && liftBoostVector2 != Vector2.Zero) {
+                        liftBoost =
+                            $"LiftBoost: {liftBoostVector2.X:F2}, {liftBoostVector2.Y:F2} ({ActorLiftSpeedTimer(player) * FramesPerSecond:F0})";
                     }
 
                     string miscStats = $"Stamina: {player.Stamina:0} "
@@ -211,6 +221,10 @@ namespace TAS {
 
                     if (!string.IsNullOrEmpty(joystick)) {
                         stringBuilder.AppendLine(joystick);
+                    }
+
+                    if (!string.IsNullOrEmpty(liftBoost)) {
+                        stringBuilder.AppendLine(liftBoost);
                     }
 
                     stringBuilder.AppendLine(miscStats);
