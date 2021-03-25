@@ -8,6 +8,7 @@ using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
+using StudioCommunication;
 using TAS.EverestInterop;
 using TAS.Input;
 using WinForms = System.Windows.Forms;

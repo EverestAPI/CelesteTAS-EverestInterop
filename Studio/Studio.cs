@@ -17,6 +17,7 @@ using CelesteStudio.Communication;
 using CelesteStudio.Entities;
 using CelesteStudio.Properties;
 using CelesteStudio.RichText;
+using StudioCommunication;
 
 namespace CelesteStudio {
     public partial class Studio : Form {

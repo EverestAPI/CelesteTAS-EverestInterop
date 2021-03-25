@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
+using StudioCommunication;
 
 //using Microsoft.Xna.Framework.Input;
-
 
 namespace CelesteStudio.Communication {
     public sealed class StudioCommunicationServer : StudioCommunicationBase {
@@ -32,13 +32,17 @@ namespace CelesteStudio.Communication {
             return base.NeedsToWait() || Studio.Instance.tasText.IsChanged;
         }
 
-        public void ExternalReset() => pendingWrite = () => throw new NeedsResetException();
+        protected override void WriteReset() {
+            // ignored
+        }
+
+        public void ExternalReset() => PendingWrite = () => throw new NeedsResetException();
 
 
         #region Read
 
         protected override void ReadData(Message message) {
-            switch (message.ID) {
+            switch (message.Id) {
                 case MessageIDs.EstablishConnection:
                     throw new NeedsResetException("Recieved initialization message (EstablishConnection) from main loop");
                 case MessageIDs.Reset:
@@ -64,7 +68,7 @@ namespace CelesteStudio.Communication {
                     ProcessReturnModInfo(message.Data);
                     break;
                 default:
-                    throw new InvalidOperationException($"{message.ID}");
+                    throw new InvalidOperationException($"{message.Id}");
             }
         }
 
@@ -114,14 +118,13 @@ namespace CelesteStudio.Communication {
             celeste = null;
             Message? lastMessage;
 
-
             studio?.ReadMessage();
             studio?.WriteMessageGuaranteed(new Message(MessageIDs.EstablishConnection, new byte[0]));
             celeste?.ReadMessageGuaranteed();
 
             celeste?.SendPath(null);
             lastMessage = studio?.ReadMessageGuaranteed();
-            if (lastMessage?.ID != MessageIDs.SendPath) {
+            if (lastMessage?.Id != MessageIDs.SendPath) {
                 throw new NeedsResetException("Invalid data recieved while establishing connection");
             }
 
@@ -133,7 +136,7 @@ namespace CelesteStudio.Communication {
 
             //celeste?.SendCurrentBindings(Hotkeys.listHotkeyKeys);
             lastMessage = studio?.ReadMessageGuaranteed();
-            if (lastMessage?.ID != MessageIDs.SendCurrentBindings) {
+            if (lastMessage?.Id != MessageIDs.SendCurrentBindings) {
                 throw new NeedsResetException("Invalid data recieved while establishing connection");
             }
 
@@ -142,12 +145,11 @@ namespace CelesteStudio.Communication {
             Initialized = true;
         }
 
-
-        public void SendPath(string path) => pendingWrite = () => SendPathNow(path, false);
-        public void SendHotkeyPressed(HotkeyIDs hotkey, bool released = false) => pendingWrite = () => SendHotkeyPressedNow(hotkey, released);
-        public void GetConsoleCommand() => pendingWrite = GetConsoleCommandNow;
-        public void GetModInfo() => pendingWrite = GetModInfoNow;
-        public void ConvertToLibTas(string path) => pendingWrite = () => ConvertToLibTasNow(path);
+        public void SendPath(string path) => PendingWrite = () => SendPathNow(path, false);
+        public void SendHotkeyPressed(HotkeyIDs hotkey, bool released = false) => PendingWrite = () => SendHotkeyPressedNow(hotkey, released);
+        public void GetConsoleCommand() => PendingWrite = GetConsoleCommandNow;
+        public void GetModInfo() => PendingWrite = GetModInfoNow;
+        public void ConvertToLibTas(string path) => PendingWrite = () => ConvertToLibTasNow(path);
 
 
         private void SendPathNow(string path, bool canFail) {

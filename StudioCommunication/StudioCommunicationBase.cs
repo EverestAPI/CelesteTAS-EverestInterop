@@ -6,16 +6,12 @@ using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
 
-#if STUDIO
-namespace CelesteStudio.Communication {
-#elif CELESTETAS
-namespace TAS.StudioCommunication {
-#endif
+namespace StudioCommunication {
     public class StudioCommunicationBase {
-        protected const int BUFFER_SIZE = 0x1000;
-        protected const int HEADER_LENGTH = 9;
+        protected const int BufferSize = 0x1000;
+        protected const int HeaderLength = 9;
 
-        private static readonly List<StudioCommunicationBase> attachedCom = new List<StudioCommunicationBase>();
+        private static readonly List<StudioCommunicationBase> AttachedCom = new List<StudioCommunicationBase>();
         private readonly Mutex mutex;
 
         //I gave up on using pipes.
@@ -23,34 +19,34 @@ namespace TAS.StudioCommunication {
         //Almost certainly the former.
         private readonly MemoryMappedFile sharedMemory;
 
-        protected bool abort;
-        public Func<byte[], bool> externalReadHandler;
+        protected bool Abort;
+        public Func<byte[], bool> ExternalReadHandler;
         private int failedWrites = 0;
         private int lastSignature;
 
-        public Action pendingWrite;
-        protected int timeout = 16;
+        public Action PendingWrite;
+        protected int Timeout = 16;
         private int timeoutCount = 0;
         private bool waiting;
 
         protected StudioCommunicationBase() {
-            sharedMemory = MemoryMappedFile.CreateOrOpen("CelesteTAS", BUFFER_SIZE);
+            sharedMemory = MemoryMappedFile.CreateOrOpen("CelesteTAS", BufferSize);
             mutex = new Mutex(false, "CelesteTASCOM", out bool created);
             if (!created) {
                 mutex = Mutex.OpenExisting("CelesteTASCOM");
             }
 
-            attachedCom.Add(this);
+            AttachedCom.Add(this);
         }
 
         protected StudioCommunicationBase(string target) {
-            sharedMemory = MemoryMappedFile.CreateOrOpen(target, BUFFER_SIZE);
+            sharedMemory = MemoryMappedFile.CreateOrOpen(target, BufferSize);
             mutex = new Mutex(false, target, out bool created);
             if (!created) {
                 mutex = Mutex.OpenExisting(target);
             }
 
-            attachedCom.Add(this);
+            AttachedCom.Add(this);
         }
 
         public static bool Initialized { get; protected set; }
@@ -61,10 +57,10 @@ namespace TAS.StudioCommunication {
         }
 
         protected void UpdateLoop() {
-            while (!abort) {
+            while (!Abort) {
                 EstablishConnectionLoop();
                 try {
-                    while (!abort) {
+                    while (!Abort) {
                         Message? message = ReadMessage();
 
                         if (message != null) {
@@ -72,11 +68,11 @@ namespace TAS.StudioCommunication {
                             waiting = false;
                         }
 
-                        Thread.Sleep(timeout);
+                        Thread.Sleep(Timeout);
 
                         if (!NeedsToWait()) {
-                            pendingWrite?.Invoke();
-                            pendingWrite = null;
+                            PendingWrite?.Invoke();
+                            PendingWrite = null;
                         }
                     }
                 }
@@ -89,8 +85,8 @@ namespace TAS.StudioCommunication {
 
         protected virtual bool NeedsToWait() => waiting;
 
-        private bool IsHighPriority(MessageIDs ID) =>
-            Attribute.IsDefined(typeof(MessageIDs).GetField(Enum.GetName(typeof(MessageIDs), ID)), typeof(HighPriorityAttribute));
+        private bool IsHighPriority(MessageIDs id) =>
+            Attribute.IsDefined(typeof(MessageIDs).GetField(Enum.GetName(typeof(MessageIDs), id)), typeof(HighPriorityAttribute));
 
         protected Message? ReadMessage() {
             MessageIDs id = default;
@@ -130,8 +126,8 @@ namespace TAS.StudioCommunication {
 
 
             Message message = new Message(id, data);
-            if (message.ID != MessageIDs.SendState && message.ID != MessageIDs.SendHotkeyPressed) {
-                Log($"{this} received {message.ID} with length {message.Length}");
+            if (message.Id != MessageIDs.SendState && message.Id != MessageIDs.SendHotkeyPressed) {
+                Log($"{this} received {message.Id} with length {message.Length}");
             }
 
             return message;
@@ -150,15 +146,15 @@ namespace TAS.StudioCommunication {
                     throw new NeedsResetException("Read timed out");
                 }
 
-                Thread.Sleep(timeout);
+                Thread.Sleep(Timeout);
             }
         }
 
         protected bool WriteMessage(Message message, bool local = true) {
             if (!local) {
-                foreach (var com in attachedCom) {
+                foreach (var com in AttachedCom) {
                     if (com != this) {
-                        com.pendingWrite = com.pendingWrite ?? (() => WriteMessage(message));
+                        com.PendingWrite = com.PendingWrite ?? (() => WriteMessage(message));
                     }
                 }
             }
@@ -172,7 +168,7 @@ namespace TAS.StudioCommunication {
 
                 //Check that there isn't a message waiting to be read
                 byte firstByte = reader.ReadByte();
-                if (firstByte != 0 && (!IsHighPriority(message.ID) || IsHighPriority((MessageIDs) firstByte))) {
+                if (firstByte != 0 && (!IsHighPriority(message.Id) || IsHighPriority((MessageIDs) firstByte))) {
                     mutex.ReleaseMutex();
                     if ( /*Initialized &&*/ ++failedWrites > 100) {
                         throw new NeedsResetException("Write timed out");
@@ -181,8 +177,8 @@ namespace TAS.StudioCommunication {
                     return false;
                 }
 
-                if (message.ID != MessageIDs.SendState && message.ID != MessageIDs.SendHotkeyPressed) {
-                    Log($"{this} writing {message.ID} with length {message.Length}");
+                if (message.Id != MessageIDs.SendState && message.Id != MessageIDs.SendHotkeyPressed) {
+                    Log($"{this} writing {message.Id} with length {message.Length}");
                 }
 
                 stream.Position = 0;
@@ -198,15 +194,15 @@ namespace TAS.StudioCommunication {
 
         protected void WriteMessageGuaranteed(Message message, bool local = true) {
             if (!local) {
-                foreach (var com in attachedCom) {
+                foreach (var com in AttachedCom) {
                     if (com != this) {
-                        com.pendingWrite = () => WriteMessageGuaranteed(message);
+                        com.PendingWrite = () => WriteMessageGuaranteed(message);
                     }
                 }
             }
 
-            if (message.ID != MessageIDs.SendState) {
-                Log($"{this} forcing write of {message.ID} with length {message.Length}");
+            if (message.Id != MessageIDs.SendState) {
+                Log($"{this} forcing write of {message.Id} with length {message.Length}");
             }
 
             for (;;) {
@@ -214,7 +210,7 @@ namespace TAS.StudioCommunication {
                     break;
                 }
 
-                Thread.Sleep(timeout);
+                Thread.Sleep(Timeout);
             }
         }
 
@@ -222,7 +218,7 @@ namespace TAS.StudioCommunication {
             Initialized = false;
             waiting = false;
             failedWrites = 0;
-            pendingWrite = null;
+            PendingWrite = null;
             timeoutCount++;
             Log($"Exception thrown - {e.Message}");
             //Ensure the first byte of the mmf is reset
@@ -232,14 +228,13 @@ namespace TAS.StudioCommunication {
                 writer.Write((byte) 0);
                 mutex.ReleaseMutex();
             }
-#if CELESTETAS
-			WriteReset();
-#endif
-            Thread.Sleep(timeout * 2);
+
+            WriteReset();
+            Thread.Sleep(Timeout * 2);
         }
 
         //Only needs to be used on the Celeste end, as Celeste will detect disconnects much faster
-        protected void WriteReset() {
+        protected virtual void WriteReset() {
             using (MemoryMappedViewStream stream = sharedMemory.CreateViewStream()) {
                 mutex.WaitOne();
                 BinaryWriter writer = new BinaryWriter(stream);
@@ -250,7 +245,7 @@ namespace TAS.StudioCommunication {
         }
 
         public void WriteWait() {
-            pendingWrite = () => WriteMessageGuaranteed(new Message(MessageIDs.Wait, new byte[0]));
+            PendingWrite = () => WriteMessageGuaranteed(new Message(MessageIDs.Wait, new byte[0]));
         }
 
         protected void ProcessWait() {
@@ -304,11 +299,7 @@ namespace TAS.StudioCommunication {
 
         public override string ToString() {
             string location = Assembly.GetExecutingAssembly().GetName().Name;
-#if STUDIO
-            return $"Server @ {location}";
-#elif CELESTETAS
-			return $"Client @ {location}";
-#endif
+            return $"StudioCommunicationBase Location @ {location}";
         }
 
         protected void Log(string s) {
@@ -320,24 +311,24 @@ namespace TAS.StudioCommunication {
         // Apologies in advance to anyone else working on this
 
         public struct Message {
-            public MessageIDs ID { get; private set; }
+            public MessageIDs Id { get; private set; }
             public int Length { get; private set; }
             public byte[] Data { get; private set; }
 
             public static readonly int Signature = Thread.CurrentThread.GetHashCode();
 
             public Message(MessageIDs id, byte[] data) {
-                ID = id;
+                Id = id;
                 Data = data;
                 Length = data.Length;
             }
 
             public byte[] GetBytes() {
-                byte[] bytes = new byte[Length + HEADER_LENGTH];
-                bytes[0] = (byte) ID;
+                byte[] bytes = new byte[Length + HeaderLength];
+                bytes[0] = (byte) Id;
                 Buffer.BlockCopy(BitConverter.GetBytes(Signature), 0, bytes, 1, 4);
                 Buffer.BlockCopy(BitConverter.GetBytes(Length), 0, bytes, 5, 4);
-                Buffer.BlockCopy(Data, 0, bytes, HEADER_LENGTH, Length);
+                Buffer.BlockCopy(Data, 0, bytes, HeaderLength, Length);
                 return bytes;
             }
         }

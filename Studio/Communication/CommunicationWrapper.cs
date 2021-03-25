@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using CelesteStudio.Properties;
+using StudioCommunication;
 
 namespace CelesteStudio.Communication {
     static class CommunicationWrapper {

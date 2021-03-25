@@ -1,10 +1,6 @@
 ﻿using System;
 
-#if STUDIO
-namespace CelesteStudio.Communication {
-#elif CELESTETAS
-namespace TAS.StudioCommunication {
-#endif
+namespace StudioCommunication {
     public class HighPriorityAttribute : Attribute { }
 
     public enum MessageIDs : byte {

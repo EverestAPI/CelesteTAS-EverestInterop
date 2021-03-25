@@ -1,4 +1,4 @@
-﻿namespace CelesteStudio.Communication {
+﻿namespace StudioCommunication {
     public enum HotkeyIDs : byte {
         Start,
         Restart,

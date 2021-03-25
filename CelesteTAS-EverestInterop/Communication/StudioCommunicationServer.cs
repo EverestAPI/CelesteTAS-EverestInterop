@@ -5,7 +5,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using Microsoft.Xna.Framework.Input;
-using TAS.StudioCommunication;
+using StudioCommunication;
 
 namespace TASALT.StudioCommunication {
     public sealed class StudioCommunicationServer : StudioCommunicationBase {
@@ -85,7 +85,7 @@ namespace TASALT.StudioCommunication {
             var celeste = this;
             celeste = null;
 
-            Message? lastMessage;
+            StudioCommunicationBase.Message? lastMessage;
 
             studio?.WriteMessageGuaranteed(new Message(MessageIDs.EstablishConnection, new byte[0]));
             celeste?.ReadMessageGuaranteed();

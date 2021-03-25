@@ -51,9 +51,6 @@
         <Reference Include="System.Xml"/>
     </ItemGroup>
     <ItemGroup>
-        <Compile Include="Communication\HotkeyIDs.cs"/>
-        <Compile Include="Communication\MessageIDs.cs"/>
-        <Compile Include="Communication\StudioCommunicationBase.cs"/>
         <Compile Include="Communication\StudioCommunicationServer.cs"/>
         <Compile Include="Communication\CommunicationWrapper.cs"/>
         <Compile Include="Entities\GameMemory.cs"/>
@@ -135,4 +132,5 @@
         <Content Include="GoldBerry.ico"/>
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
+    <Import Project="..\StudioCommunication\StudioCommunication.projitems" Label="Shared"/>
 </Project>
