@@ -49,7 +49,7 @@ namespace CelesteStudio {
             this.autoRemoveExclusiveActionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.showGameInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.fontToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.gameToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toggleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toggleHitboxesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toggleTriggerHitboxesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toggleSimplifiedHitboxesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -161,7 +161,7 @@ namespace CelesteStudio {
             // 
             this.menuStrip.BackColor = System.Drawing.SystemColors.Control;
             this.menuStrip.Font = new System.Drawing.Font("Courier New", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte) (0)));
-            this.menuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.fileToolStripMenuItem, this.settingsToolStripMenuItem, this.gameToolStripMenuItem, this.helpToolStripMenuItem});
+            this.menuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.fileToolStripMenuItem, this.settingsToolStripMenuItem, this.toggleToolStripMenuItem, this.helpToolStripMenuItem});
             this.menuStrip.Location = new System.Drawing.Point(0, 0);
             this.menuStrip.Name = "menuStrip";
             this.menuStrip.Size = new System.Drawing.Size(308, 24);
@@ -273,91 +273,91 @@ namespace CelesteStudio {
             this.fontToolStripMenuItem.Text = "Font...";
             this.fontToolStripMenuItem.Click += new System.EventHandler(this.fontToolStripMenuItem_Click);
             // 
-            // gameToolStripMenuItem
+            // toggleToolStripMenuItem
             // 
-            this.gameToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.toggleHitboxesToolStripMenuItem, this.toggleTriggerHitboxesToolStripMenuItem, this.toggleSimplifiedHitboxesToolStripMenuItem, this.switchActualCollideHitboxesToolStripMenuItem, this.toolStripSeparator8, this.toggleSimplifiedGraphicsToolStripMenuItem, this.toggleGameplayToolStripMenuItem, this.toolStripSeparator9, this.toggleCenterCameraToolStripMenuItem, this.toggleRoundPositionToolStripMenuItem, this.toggleRoundSpeedToolStripMenuItem, this.switchInfoHUDToolStripMenuItem});
-            this.gameToolStripMenuItem.Name = "gameToolStripMenuItem";
-            this.gameToolStripMenuItem.Size = new System.Drawing.Size(51, 20);
-            this.gameToolStripMenuItem.Text = "&Game";
+            this.toggleToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.toggleHitboxesToolStripMenuItem, this.toggleTriggerHitboxesToolStripMenuItem, this.toggleSimplifiedHitboxesToolStripMenuItem, this.switchActualCollideHitboxesToolStripMenuItem, this.toolStripSeparator8, this.toggleSimplifiedGraphicsToolStripMenuItem, this.toggleGameplayToolStripMenuItem, this.toolStripSeparator9, this.toggleCenterCameraToolStripMenuItem, this.toggleRoundPositionToolStripMenuItem, this.toggleRoundSpeedToolStripMenuItem, this.switchInfoHUDToolStripMenuItem});
+            this.toggleToolStripMenuItem.Name = "toggleToolStripMenuItem";
+            this.toggleToolStripMenuItem.Size = new System.Drawing.Size(75, 20);
+            this.toggleToolStripMenuItem.Text = "&Toggles";
             // 
             // toggleHitboxesToolStripMenuItem
             // 
             this.toggleHitboxesToolStripMenuItem.Name = "toggleHitboxesToolStripMenuItem";
-            this.toggleHitboxesToolStripMenuItem.Size = new System.Drawing.Size(314, 22);
-            this.toggleHitboxesToolStripMenuItem.Text = "Toggle &Hitboxes";
+            this.toggleHitboxesToolStripMenuItem.Size = new System.Drawing.Size(258, 22);
+            this.toggleHitboxesToolStripMenuItem.Text = "&Hitboxes";
             this.toggleHitboxesToolStripMenuItem.Click += new System.EventHandler(this.toggleHitboxesToolStripMenuItem_Click);
             // 
             // toggleTriggerHitboxesToolStripMenuItem
             // 
             this.toggleTriggerHitboxesToolStripMenuItem.Name = "toggleTriggerHitboxesToolStripMenuItem";
-            this.toggleTriggerHitboxesToolStripMenuItem.Size = new System.Drawing.Size(314, 22);
-            this.toggleTriggerHitboxesToolStripMenuItem.Text = "Toggle &Trigger Hitboxes";
+            this.toggleTriggerHitboxesToolStripMenuItem.Size = new System.Drawing.Size(258, 22);
+            this.toggleTriggerHitboxesToolStripMenuItem.Text = "&Trigger Hitboxes";
             this.toggleTriggerHitboxesToolStripMenuItem.Click += new System.EventHandler(this.toggleTriggerHitboxesToolStripMenuItem_Click);
             // 
             // toggleSimplifiedHitboxesToolStripMenuItem
             // 
             this.toggleSimplifiedHitboxesToolStripMenuItem.Name = "toggleSimplifiedHitboxesToolStripMenuItem";
-            this.toggleSimplifiedHitboxesToolStripMenuItem.Size = new System.Drawing.Size(314, 22);
-            this.toggleSimplifiedHitboxesToolStripMenuItem.Text = "Toggle &Simplified Hitboxes";
+            this.toggleSimplifiedHitboxesToolStripMenuItem.Size = new System.Drawing.Size(258, 22);
+            this.toggleSimplifiedHitboxesToolStripMenuItem.Text = "&Simplified Hitboxes";
             this.toggleSimplifiedHitboxesToolStripMenuItem.Click += new System.EventHandler(this.toggleSimplifiedHitboxesToolStripMenuItem_Click);
             // 
             // switchActualCollideHitboxesToolStripMenuItem
             // 
             this.switchActualCollideHitboxesToolStripMenuItem.Name = "switchActualCollideHitboxesToolStripMenuItem";
-            this.switchActualCollideHitboxesToolStripMenuItem.Size = new System.Drawing.Size(314, 22);
-            this.switchActualCollideHitboxesToolStripMenuItem.Text = "Switch &Actual Collide Hitboxes";
+            this.switchActualCollideHitboxesToolStripMenuItem.Size = new System.Drawing.Size(258, 22);
+            this.switchActualCollideHitboxesToolStripMenuItem.Text = "&Actual Collide Hitboxes";
             this.switchActualCollideHitboxesToolStripMenuItem.Click += new System.EventHandler(this.switchActualCollideHitboxesToolStripMenuItem_Click);
             // 
             // toolStripSeparator8
             // 
             this.toolStripSeparator8.Name = "toolStripSeparator8";
-            this.toolStripSeparator8.Size = new System.Drawing.Size(311, 6);
+            this.toolStripSeparator8.Size = new System.Drawing.Size(255, 6);
             // 
             // toggleSimplifiedGraphicsToolStripMenuItem
             // 
             this.toggleSimplifiedGraphicsToolStripMenuItem.Name = "toggleSimplifiedGraphicsToolStripMenuItem";
-            this.toggleSimplifiedGraphicsToolStripMenuItem.Size = new System.Drawing.Size(314, 22);
-            this.toggleSimplifiedGraphicsToolStripMenuItem.Text = "Toggle Simplified &Graphics";
+            this.toggleSimplifiedGraphicsToolStripMenuItem.Size = new System.Drawing.Size(258, 22);
+            this.toggleSimplifiedGraphicsToolStripMenuItem.Text = "Simplified &Graphics";
             this.toggleSimplifiedGraphicsToolStripMenuItem.Click += new System.EventHandler(this.toggleSimplifiedGraphicsToolStripMenuItem_Click);
             // 
             // toggleGameplayToolStripMenuItem
             // 
             this.toggleGameplayToolStripMenuItem.Name = "toggleGameplayToolStripMenuItem";
-            this.toggleGameplayToolStripMenuItem.Size = new System.Drawing.Size(314, 22);
-            this.toggleGameplayToolStripMenuItem.Text = "Toggle Game&play";
+            this.toggleGameplayToolStripMenuItem.Size = new System.Drawing.Size(258, 22);
+            this.toggleGameplayToolStripMenuItem.Text = "Game&play";
             this.toggleGameplayToolStripMenuItem.Click += new System.EventHandler(this.toggleGameplayToolStripMenuItem_Click);
             // 
             // toolStripSeparator9
             // 
             this.toolStripSeparator9.Name = "toolStripSeparator9";
-            this.toolStripSeparator9.Size = new System.Drawing.Size(311, 6);
+            this.toolStripSeparator9.Size = new System.Drawing.Size(255, 6);
             // 
             // toggleCenterCameraToolStripMenuItem
             // 
             this.toggleCenterCameraToolStripMenuItem.Name = "toggleCenterCameraToolStripMenuItem";
-            this.toggleCenterCameraToolStripMenuItem.Size = new System.Drawing.Size(314, 22);
-            this.toggleCenterCameraToolStripMenuItem.Text = "Toggle &Center Camera";
+            this.toggleCenterCameraToolStripMenuItem.Size = new System.Drawing.Size(258, 22);
+            this.toggleCenterCameraToolStripMenuItem.Text = "&Center Camera";
             this.toggleCenterCameraToolStripMenuItem.Click += new System.EventHandler(this.toggleCenterCameraToolStripMenuItem_Click);
             // 
             // toggleRoundPositionToolStripMenuItem
             // 
             this.toggleRoundPositionToolStripMenuItem.Name = "toggleRoundPositionToolStripMenuItem";
-            this.toggleRoundPositionToolStripMenuItem.Size = new System.Drawing.Size(314, 22);
-            this.toggleRoundPositionToolStripMenuItem.Text = "Toggle &Round Position";
+            this.toggleRoundPositionToolStripMenuItem.Size = new System.Drawing.Size(258, 22);
+            this.toggleRoundPositionToolStripMenuItem.Text = "&Round Position";
             this.toggleRoundPositionToolStripMenuItem.Click += new System.EventHandler(this.toggleRoundPositionToolStripMenuItem_Click);
             // 
             // toggleRoundSpeedToolStripMenuItem
             // 
             this.toggleRoundSpeedToolStripMenuItem.Name = "toggleRoundSpeedToolStripMenuItem";
-            this.toggleRoundSpeedToolStripMenuItem.Size = new System.Drawing.Size(314, 22);
-            this.toggleRoundSpeedToolStripMenuItem.Text = "Toggle R&ound Speed";
+            this.toggleRoundSpeedToolStripMenuItem.Size = new System.Drawing.Size(258, 22);
+            this.toggleRoundSpeedToolStripMenuItem.Text = "R&ound Speed";
             this.toggleRoundSpeedToolStripMenuItem.Click += new System.EventHandler(this.toggleRoundSpeedToolStripMenuItem_Click);
             // 
             // switchInfoHUDToolStripMenuItem
             // 
             this.switchInfoHUDToolStripMenuItem.Name = "switchInfoHUDToolStripMenuItem";
-            this.switchInfoHUDToolStripMenuItem.Size = new System.Drawing.Size(314, 22);
-            this.switchInfoHUDToolStripMenuItem.Text = "Switch &Info HUD";
+            this.switchInfoHUDToolStripMenuItem.Size = new System.Drawing.Size(258, 22);
+            this.switchInfoHUDToolStripMenuItem.Text = "&Info HUD";
             this.switchInfoHUDToolStripMenuItem.Click += new System.EventHandler(this.switchInfoHUDToolStripMenuItem_Click);
             // 
             // helpToolStripMenuItem
@@ -696,7 +696,7 @@ namespace CelesteStudio {
 
         private System.Windows.Forms.ToolStripMenuItem toggleTriggerHitboxesToolStripMenuItem;
 
-        private System.Windows.Forms.ToolStripMenuItem gameToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem toggleToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem toggleHitboxesToolStripMenuItem;
 
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator7;
