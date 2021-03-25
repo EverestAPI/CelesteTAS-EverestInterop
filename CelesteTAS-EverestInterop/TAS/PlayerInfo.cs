@@ -26,6 +26,8 @@ namespace TAS {
         private static readonly GetPlayerSeekerDashTimer PlayerSeekerDashTimer;
         private static readonly Func<Player, Vector2> PlayerLiftBoost;
         private static readonly GetFloat ActorLiftSpeedTimer;
+        private static readonly GetFloat PlayerRetainedSpeed;
+        private static readonly GetFloat PlayerRetainedSpeedTimer;
         private static readonly Func<Level, float> LevelUnpauseTimer;
 
         public static string Status = string.Empty;
@@ -50,6 +52,8 @@ namespace TAS {
             FieldInfo playerSeekerDashTimer = typeof(PlayerSeeker).GetFieldInfo("dashTimer");
             MethodInfo playerLiftSpeed = typeof(Player).GetPropertyInfo("LiftBoost").GetGetMethod(true);
             FieldInfo actorLiftSpeedTimer = typeof(Actor).GetFieldInfo("liftSpeedTimer");
+            FieldInfo playerRetainedSpeed = typeof(Player).GetFieldInfo("wallSpeedRetained");
+            FieldInfo playerRetainedSpeedTimer = typeof(Player).GetFieldInfo("wallSpeedRetentionTimer");
             FieldInfo levelUnpauseTimer = typeof(Level).GetFieldInfo("unpauseTimer");
 
             WallJumpCheck = (DWallJumpCheck) wallJumpCheck.CreateDelegate(typeof(DWallJumpCheck));
@@ -60,6 +64,8 @@ namespace TAS {
             PlayerSeekerDashTimer = playerSeekerDashTimer.CreateDelegate_Get<GetPlayerSeekerDashTimer>();
             PlayerLiftBoost = (Func<Player, Vector2>) playerLiftSpeed.CreateDelegate(typeof(Func<Player, Vector2>));
             ActorLiftSpeedTimer = actorLiftSpeedTimer.CreateDelegate_Get<GetFloat>();
+            PlayerRetainedSpeed = playerRetainedSpeed.CreateDelegate_Get<GetFloat>();
+            PlayerRetainedSpeedTimer = playerRetainedSpeedTimer.CreateDelegate_Get<GetFloat>();
             LevelUnpauseTimer = levelUnpauseTimer?.CreateDelegate_Get<Func<Level, float>>();
         }
 
@@ -149,6 +155,11 @@ namespace TAS {
                             $"Analog: {angleVector2.X:F5}, {angleVector2.Y:F5}, {Manager.GetAngle(new Vector2(angleVector2.X, -angleVector2.Y)):F5}°";
                     }
 
+                    string retainedSpeed = string.Empty;
+                    if (PlayerRetainedSpeedTimer(player) is float retainedSpeedTimer && retainedSpeedTimer > 0f) {
+                        retainedSpeed = $"Retained: {PlayerRetainedSpeed(player):F2} ({PlayerRetainedSpeedTimer(player) * FramesPerSecond:F0})";
+                    }
+
                     string liftBoost = string.Empty;
                     if (PlayerLiftBoost(player) is Vector2 liftBoostVector2 && liftBoostVector2 != Vector2.Zero) {
                         liftBoost =
@@ -221,6 +232,10 @@ namespace TAS {
 
                     if (!string.IsNullOrEmpty(joystick)) {
                         stringBuilder.AppendLine(joystick);
+                    }
+
+                    if (!string.IsNullOrEmpty(retainedSpeed)) {
+                        stringBuilder.AppendLine(retainedSpeed);
                     }
 
                     if (!string.IsNullOrEmpty(liftBoost)) {
