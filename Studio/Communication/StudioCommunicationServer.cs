@@ -146,10 +146,11 @@ namespace CelesteStudio.Communication {
         }
 
         public void SendPath(string path) => PendingWrite = () => SendPathNow(path, false);
+        public void ConvertToLibTas(string path) => PendingWrite = () => ConvertToLibTasNow(path);
         public void SendHotkeyPressed(HotkeyIDs hotkey, bool released = false) => PendingWrite = () => SendHotkeyPressedNow(hotkey, released);
+        public void ToggleGameSetting(string settingName) => PendingWrite = () => ToggleGameSettingNow(settingName);
         public void GetConsoleCommand() => PendingWrite = GetConsoleCommandNow;
         public void GetModInfo() => PendingWrite = GetModInfoNow;
-        public void ConvertToLibTas(string path) => PendingWrite = () => ConvertToLibTasNow(path);
 
 
         private void SendPathNow(string path, bool canFail) {
@@ -175,8 +176,16 @@ namespace CelesteStudio.Communication {
                 return;
             }
 
-            byte[] hotkeyBytes = new byte[] {(byte) hotkey, Convert.ToByte(released)};
+            byte[] hotkeyBytes = {(byte) hotkey, Convert.ToByte(released)};
             WriteMessageGuaranteed(new Message(MessageIDs.SendHotkeyPressed, hotkeyBytes));
+        }
+
+        private void ToggleGameSettingNow(string settingName) {
+            if (!Initialized) {
+                return;
+            }
+
+            WriteMessageGuaranteed(new Message(MessageIDs.ToggleGameSetting, Encoding.Default.GetBytes(settingName)));
         }
 
         private void GetConsoleCommandNow() {

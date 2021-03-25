@@ -177,7 +177,7 @@ namespace TAS {
 
                     statuses = (Engine.FreezeTimer > 0f ? $"Frozen({Engine.FreezeTimer * FramesPerSecond:F0}) " : string.Empty)
                                + (player.InControl && !level.Transitioning && unpauseTimer <= 0f ? statuses : $"NoControl{noControlFrames} ")
-                               + (player.TimePaused ? "Paused " : string.Empty)
+                               + (player.Dead ? "Dead " : string.Empty)
                                + (level.InCutscene ? "Cutscene " : string.Empty)
                                + (AdditionalStatusInfo ?? string.Empty);
 

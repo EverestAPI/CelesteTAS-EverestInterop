@@ -1077,5 +1077,45 @@ namespace CelesteStudio {
 
             OpenFile(fileName);
         }
+
+        private void toggleHitboxesToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.instance?.ToggleGameSetting("ShowHitboxes");
+        }
+
+        private void toggleTriggerHitboxesToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.instance?.ToggleGameSetting("HideTriggerHitboxes");
+        }
+
+        private void toggleSimplifiedHitboxesToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.instance?.ToggleGameSetting("SimplifiedHitboxes");
+        }
+
+        private void switchActualCollideHitboxesToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.instance?.ToggleGameSetting("ShowActualCollideHitboxes");
+        }
+
+        private void toggleSimplifiedGraphicsToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.instance?.ToggleGameSetting("SimplifiedGraphics");
+        }
+
+        private void toggleGameplayToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.instance?.ToggleGameSetting("HideGameplay");
+        }
+
+        private void toggleCenterCameraToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.instance?.ToggleGameSetting("CenterCamera");
+        }
+
+        private void toggleRoundPositionToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.instance?.ToggleGameSetting("RoundPosition");
+        }
+
+        private void toggleRoundSpeedToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.instance?.ToggleGameSetting("RoundSpeed");
+        }
+
+        private void switchInfoHUDToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.instance?.ToggleGameSetting("InfoHud");
+        }
     }
 }

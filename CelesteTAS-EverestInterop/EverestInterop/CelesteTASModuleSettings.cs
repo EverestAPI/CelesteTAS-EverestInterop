@@ -120,11 +120,11 @@ namespace TAS.EverestInterop {
             set => simplifiedGraphics = value;
         }
 
-        private bool hideGamePlayer;
+        private bool hideGamePlay;
 
         public bool HideGameplay {
-            get => hideGamePlayer;
-            set => hideGamePlayer = ShowHitboxes = value;
+            get => hideGamePlay;
+            set => hideGamePlay = ShowHitboxes = value;
         }
 
         public int? SimplifiedLighting { get; set; } = 10;

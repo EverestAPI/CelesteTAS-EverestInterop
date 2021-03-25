@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using Celeste;
@@ -11,6 +12,7 @@ using Monocle;
 using StudioCommunication;
 using TAS.EverestInterop;
 using TAS.Input;
+using TAS.Utils;
 using WinForms = System.Windows.Forms;
 
 namespace TAS.StudioCommunication {
@@ -108,6 +110,9 @@ namespace TAS.StudioCommunication {
                     break;
                 case MessageIDs.ConvertToLibTas:
                     ProcessConvertToLibTas(message.Data);
+                    break;
+                case MessageIDs.ToggleGameSetting:
+                    ProcessToggleGameSetting(message.Data);
                     break;
                 default:
                     if (ExternalReadHandler?.Invoke(message.Data) != true) {
@@ -227,8 +232,30 @@ namespace TAS.StudioCommunication {
 
         private void ProcessConvertToLibTas(byte[] data) {
             string path = Encoding.Default.GetString(data);
-            Log("Convert to libTAS:" + path);
+            Log("Convert to libTAS: " + path);
             LibTasHelper.ConvertToLibTas(path);
+        }
+
+        private void ProcessToggleGameSetting(byte[] data) {
+            string settingName = Encoding.Default.GetString(data);
+            Log("Toggle game setting: " + settingName);
+            if (settingName.IsNullOrEmpty()) {
+                return;
+            }
+
+            if (typeof(CelesteTasModuleSettings).GetProperty(settingName) is PropertyInfo property) {
+                if (property.GetSetMethod(true) == null) {
+                    return;
+                }
+
+                CelesteTasModuleSettings settings = CelesteTasModule.Settings;
+                object value = property.GetValue(settings);
+                if (value is bool boolValue) {
+                    property.SetValue(settings, !boolValue);
+                } else if (value is Enum) {
+                    property.SetValue(settings, ((int) value + 1) % Enum.GetValues(property.PropertyType).Length);
+                }
+            }
         }
 
         #endregion

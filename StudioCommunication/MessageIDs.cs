@@ -72,6 +72,11 @@ namespace StudioCommunication {
         /// </summary>
         [HighPriority] ConvertToLibTas = 0x24,
 
+        /// <summary>
+        /// Structure: string settingName
+        /// </summary>
+        [HighPriority] ToggleGameSetting = 0x25,
+
         //Data transfer from CelesteTAS
         /// <summary>
         /// Structure: List&lt;Keys&gt;[];
