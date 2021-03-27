@@ -97,7 +97,8 @@ namespace TAS.EverestInterop {
                 int delayFrames = -1;
                 if (LoopAudioPaths.Contains(path)) {
                     delayFrames = 10;
-                } else if (path.StartsWith("event:/env/local/") || path.StartsWith("event:/new_content/env/")) {
+                } else if (path.StartsWith("event:/env/local/") || path.StartsWith("event:/new_content/env/") ||
+                           path.StartsWith("event:/char/dialogue/")) {
                     delayFrames = 0;
                 }
 
