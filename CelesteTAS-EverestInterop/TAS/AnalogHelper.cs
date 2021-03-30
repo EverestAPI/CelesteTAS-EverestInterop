@@ -14,7 +14,9 @@ namespace TAS {
         Precise,
     }
 
-    public readonly struct Vector2Short {
+    // ReSharper disable once StructCanBeMadeReadOnly
+    // mono explodes on loading the dll if there is a readonly struct in it on MacOS
+    public struct Vector2Short {
         public readonly short X;
         public readonly short Y;
 
