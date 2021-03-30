@@ -96,7 +96,7 @@ namespace TAS.EverestInterop {
                 }
 
                 // Autosaving prevents opening the menu to skip cutscenes during fast forward.
-                if (Engine.Scene is Level level && UserIO.Saving && !SaveData.Instance.Areas[level.Session.Area.ID].Modes[0].Completed) {
+                if (Engine.Scene is Level level && UserIO.Saving && !SaveData.Instance.Areas_Safe[level.Session.Area.ID].Modes[0].Completed) {
                     if (Engine.Scene.Entities.FindFirst<EventTrigger>() != null
                         || Engine.Scene.Entities.FindFirst<NPC>() != null
                         || Engine.Scene.Entities.FindFirst<FlingBirdIntro>() != null) {
