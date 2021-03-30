@@ -15,7 +15,7 @@ using TAS.Input;
 using TAS.Utils;
 using WinForms = System.Windows.Forms;
 
-namespace TAS.StudioCommunication {
+namespace TAS.Communication {
     public sealed class StudioCommunicationClient : StudioCommunicationBase {
         public static StudioCommunicationClient Instance;
 

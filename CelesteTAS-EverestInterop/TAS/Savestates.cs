@@ -4,9 +4,9 @@ using Celeste;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Microsoft.Xna.Framework;
 using Monocle;
+using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.Input;
-using TAS.StudioCommunication;
 using TAS.Utils;
 using static TAS.Manager;
 

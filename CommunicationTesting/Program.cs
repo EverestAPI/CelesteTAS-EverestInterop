@@ -1,4 +1,4 @@
-﻿using TAS.StudioCommunication;
+﻿using TAS.Communication;
 #if DEBUG
 using TASALT.StudioCommunication;
 

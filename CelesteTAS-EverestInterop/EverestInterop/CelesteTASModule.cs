@@ -4,9 +4,9 @@ using System.IO.Pipes;
 using Celeste;
 using Celeste.Mod;
 using FMOD.Studio;
+using TAS.Communication;
 using TAS.EverestInterop.Hitboxes;
 using TAS.Input;
-using TAS.StudioCommunication;
 using TAS.Utils;
 
 namespace TAS.EverestInterop {
