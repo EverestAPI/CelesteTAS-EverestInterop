@@ -112,7 +112,7 @@ namespace TAS.EverestInterop {
             if (CelesteTasModule.UnixRtcEnabled && Manager.CurrentStatus != null) {
                 StreamWriter writer = CelesteTasModule.Instance.UnixRtcStreamOut;
                 try {
-                    writer.Write(PlayerInfo.Status.Replace('\n', '~'));
+                    writer.Write(GameInfo.Status.Replace('\n', '~'));
                     writer.Write('%');
                     writer.Write(Manager.CurrentStatus.Replace('\n', '~'));
                     writer.Write('%');
@@ -129,7 +129,7 @@ namespace TAS.EverestInterop {
 
             if (skipBaseUpdate) {
                 OrigGameUpdate(self, gameTime);
-                PlayerInfo.Update();
+                GameInfo.Update();
             }
         }
 

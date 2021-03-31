@@ -9,7 +9,7 @@ namespace CelesteStudio.Communication {
     static class CommunicationWrapper {
         public static string gamePath;
         public static string state;
-        public static string playerData = "";
+        public static string gameData = "";
         public static string command;
         public static List<Keys>[] bindings;
 
@@ -20,24 +20,24 @@ namespace CelesteStudio.Communication {
         public static extern short GetAsyncKeyState(Keys key);
 
         public static string LevelName() {
-            if (string.IsNullOrEmpty(playerData)) {
+            if (string.IsNullOrEmpty(gameData)) {
                 return string.Empty;
             }
 
-            int nameStart = playerData.IndexOf('[') + 1;
-            int nameEnd = playerData.IndexOf(']');
-            return playerData.Substring(nameStart, nameEnd - nameStart);
+            int nameStart = gameData.IndexOf('[') + 1;
+            int nameEnd = gameData.IndexOf(']');
+            return gameData.Substring(nameStart, nameEnd - nameStart);
         }
 
         public static string Timer() {
-            int timerIndex = playerData.LastIndexOf("Timer");
+            int timerIndex = gameData.LastIndexOf("Timer");
             if (timerIndex == -1) {
                 return null;
             }
 
             timerIndex += 7;
-            int timerEnd = playerData.IndexOf(')', timerIndex);
-            return playerData.Substring(timerIndex, timerEnd - timerIndex + 1);
+            int timerEnd = gameData.IndexOf(')', timerIndex);
+            return gameData.Substring(timerIndex, timerEnd - timerIndex + 1);
         }
 
         public static void SetBindings(List<Keys>[] newBindings) {

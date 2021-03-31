@@ -102,9 +102,9 @@ namespace TAS {
             }
 
             savedByBreakpoint = breakpoint;
-            savedPlayerStatus = PlayerInfo.Status;
-            savedLastPos = PlayerInfo.LastPos;
-            savedLastPlayerSeekerPos = PlayerInfo.LastPlayerSeekerPos;
+            savedPlayerStatus = GameInfo.Status;
+            savedLastPos = GameInfo.LastPos;
+            savedLastPlayerSeekerPos = GameInfo.LastPlayerSeekerPos;
 
             savedController = Controller.Clone();
             LoadStateRoutine();
@@ -161,9 +161,9 @@ namespace TAS {
         private static void LoadStateRoutine() {
             Controller.CopyFrom(savedController);
             SetTasState();
-            PlayerInfo.Status = savedPlayerStatus;
-            PlayerInfo.LastPos = savedLastPos;
-            PlayerInfo.LastPlayerSeekerPos = savedLastPlayerSeekerPos;
+            GameInfo.Status = savedPlayerStatus;
+            GameInfo.LastPos = savedLastPos;
+            GameInfo.LastPlayerSeekerPos = savedLastPlayerSeekerPos;
             UpdateStudio();
         }
 
@@ -182,7 +182,7 @@ namespace TAS {
                 UpdateManagerStatus();
             }
 
-            StudioCommunicationClient.Instance?.SendStateAndPlayerData(CurrentStatus, PlayerInfo.Status, false);
+            StudioCommunicationClient.Instance?.SendStateAndGameData(CurrentStatus, GameInfo.Status, false);
         }
 
         // ReSharper disable once UnusedMember.Local

@@ -61,7 +61,7 @@ namespace TAS {
                 Running = true;
 
                 if (HasFlag(State, State.FrameStep)) {
-                    StudioCommunicationClient.Instance?.SendStateAndPlayerData(CurrentStatus, PlayerInfo.Status, !ShouldForceState);
+                    StudioCommunicationClient.Instance?.SendStateAndGameData(CurrentStatus, GameInfo.Status, !ShouldForceState);
                     return;
                 }
                 /*
@@ -100,7 +100,7 @@ namespace TAS {
                 }
             }
 
-            StudioCommunicationClient.Instance?.SendStateAndPlayerData(CurrentStatus, PlayerInfo.Status, !ShouldForceState);
+            StudioCommunicationClient.Instance?.SendStateAndGameData(CurrentStatus, GameInfo.Status, !ShouldForceState);
         }
 
         public static void UpdateManagerStatus() {
@@ -266,7 +266,7 @@ namespace TAS {
                 gamePadData.CurrentState = new GamePadState();
             }
 
-            PlayerInfo.EndExport();
+            GameInfo.EndExport();
             Hotkeys.ReleaseAllKeys();
             AttributeUtils.Invoke<DisableRunAttribute>();
         }

@@ -53,8 +53,8 @@ namespace CelesteStudio.Communication {
                 case MessageIDs.SendState:
                     ProcessSendState(message.Data);
                     break;
-                case MessageIDs.SendPlayerData:
-                    ProcessSendPlayerData(message.Data);
+                case MessageIDs.SendGameData:
+                    ProcessSendGameData(message.Data);
                     break;
                 case MessageIDs.SendCurrentBindings:
                     ProcessSendCurrentBindings(message.Data);
@@ -82,13 +82,13 @@ namespace CelesteStudio.Communication {
             string[] stateAndData = FromByteArray<string[]>(data);
             //Log(stateAndData[0]);
             CommunicationWrapper.state = stateAndData[0];
-            CommunicationWrapper.playerData = stateAndData[1];
+            CommunicationWrapper.gameData = stateAndData[1];
         }
 
-        private void ProcessSendPlayerData(byte[] data) {
-            string playerData = Encoding.Default.GetString(data);
-            //Log(playerData);
-            CommunicationWrapper.playerData = playerData;
+        private void ProcessSendGameData(byte[] data) {
+            string gameData = Encoding.Default.GetString(data);
+            //Log(gameData);
+            CommunicationWrapper.gameData = gameData;
         }
 
         private void ProcessSendCurrentBindings(byte[] data) {

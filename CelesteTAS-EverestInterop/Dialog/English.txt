@@ -4,6 +4,7 @@ TAS_SHOW_HITBOXES=            Show Hitboxes
 TAS_HITBOX_COLOR_DESCRIPTION_1= Hitbox color can only be edited in the menu of the title screen
 TAS_HITBOX_COLOR_DESCRIPTION_2= Or use the entity/trigger/platform_hitbox_color command in the console
 TAS_SIMPLIFIED_GRAPHICS=      Simplified Graphics
+TAS_INFO_HUD_DESCRIPTION=     Hold down ctrl and use the left mouse button to drag and drop the HUD
 TAS_RELAUNCH_REQUIRED=        Relaunch Required
 TAS_MORE_OPTIONS=             More Options
 TAS_KEY_CONFIG_DESCRIPTION=   Binding multiple keys to a control will cause those keys to act as a keycombo
@@ -33,6 +34,13 @@ TAS_MINI_TEXT_BOX=            Mini Text Box
 TAS_DREAM_BLOCK=              Dream Block
 TAS_LAVA=                     Lava
 TAS_LIGHTNING=                Lightning
+
+# ================================== Info HUD ==================================
+TAS_INFO_GAME=                Game Info
+TAS_INFO_TAS_INPUT=           TAS Input
+TAS_INFO_SCALE=               Scale
+TAS_INFO_OPACITY=             Opacity
+TAS_INFO_MASKED_OPACITY=      Masked Opacity
 
 # ================================== Relaunch Required Submenu ==================================
 TAS_LAUNCH_STUDIO_AT_BOOT=    Launch Studio At Boot

@@ -5,7 +5,7 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxTweak {
-        public static TextMenu.Item ShowHitboxesSubmenu { get; private set; }
+        private static TextMenu.Item subMenuItem;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
         public static void Load() {
@@ -31,7 +31,7 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         public static TextMenu.Item CreateSubMenu(TextMenu menu, bool inGame) {
-            ShowHitboxesSubmenu = new TextMenuExt.SubMenu("Show Hitboxes".ToDialogText(), false).Apply(subMenu => {
+            subMenuItem = new TextMenuExt.SubMenu("Show Hitboxes".ToDialogText(), false).Apply(subMenu => {
                 subMenu.Add(new TextMenu.OnOff("Enabled".ToDialogText(), Settings.ShowHitboxes).Change(value => Settings.ShowHitboxes = value));
                 subMenu.Add(new TextMenu.Option<ActualCollideHitboxTypes>("Actual Collide Hitboxes".ToDialogText()).Apply(option => {
                     Array enumValues = Enum.GetValues(typeof(ActualCollideHitboxTypes));
@@ -49,7 +49,14 @@ namespace TAS.EverestInterop.Hitboxes {
                 subMenu.Add(HitboxColor.CreateTriggerHitboxColorButton(menu, inGame));
                 subMenu.Add(HitboxColor.CreatePlatformHitboxColorButton(menu, inGame));
             });
-            return ShowHitboxesSubmenu;
+            return subMenuItem;
+        }
+
+        public static void AddSubMenuDescription(TextMenu menu, bool inGame) {
+            if (inGame) {
+                subMenuItem.AddDescription(menu, "Hitbox Color Description 2".ToDialogText());
+                subMenuItem.AddDescription(menu, "Hitbox Color Description 1".ToDialogText());
+            }
         }
     }
 }

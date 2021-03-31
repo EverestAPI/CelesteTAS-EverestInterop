@@ -15,7 +15,7 @@ using TAS.Input;
 using TAS.Utils;
 
 namespace TAS {
-    public static class PlayerInfo {
+    public static class GameInfo {
         private static readonly FieldInfo SummitVignetteReadyFieldInfo = typeof(SummitVignette).GetFieldInfo("ready");
 
         private static readonly DWallJumpCheck WallJumpCheck;
@@ -43,7 +43,7 @@ namespace TAS {
         //for debugging
         public static string AdditionalStatusInfo;
 
-        static PlayerInfo() {
+        static GameInfo() {
             MethodInfo wallJumpCheck = typeof(Player).GetMethodInfo("WallJumpCheck");
             FieldInfo strawberryCollectTimer = typeof(Strawberry).GetFieldInfo("collectTimer");
             FieldInfo dashCooldownTimer = typeof(Player).GetFieldInfo("dashCooldownTimer");

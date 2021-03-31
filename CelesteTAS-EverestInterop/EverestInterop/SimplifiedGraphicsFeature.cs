@@ -37,7 +37,7 @@ namespace TAS.EverestInterop {
         private static bool lastSimplifiedGraphics = Settings.SimplifiedGraphics;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
-        public static TextMenu.Item CreateSimplifiedGraphicsOption() {
+        public static TextMenu.Item CreateSubMenu() {
             return new TextMenuExt.SubMenu("Simplified Graphics".ToDialogText(), false).Apply(subMenu => {
                 subMenu.Add(new TextMenu.OnOff("Enabled".ToDialogText(), Settings.SimplifiedGraphics).Change(value =>
                     Settings.SimplifiedGraphics = value));

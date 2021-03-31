@@ -272,7 +272,7 @@ namespace CelesteStudio {
                 } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.T) {
                     InsertTime();
                 } else if (e.Modifiers == (Keys.Control | Keys.Shift) && e.KeyCode == Keys.C) {
-                    CopyPlayerData();
+                    CopyGameData();
                 } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.D) {
                     ToggleUpdatingHotkeys();
                 } else if (e.Modifiers == (Keys.Shift | Keys.Control) && e.KeyCode == Keys.D) {
@@ -452,12 +452,12 @@ namespace CelesteStudio {
             tasText.Selection = new Range(tasText, text.Length, startLine, text.Length, startLine);
         }
 
-        private void CopyPlayerData() {
-            if (string.IsNullOrEmpty(CommunicationWrapper.playerData)) {
+        private void CopyGameData() {
+            if (string.IsNullOrEmpty(CommunicationWrapper.gameData)) {
                 return;
             }
 
-            Clipboard.SetText(CommunicationWrapper.playerData);
+            Clipboard.SetText(CommunicationWrapper.gameData);
         }
 
         private DialogResult ShowInputDialog(string title, ref string input) {
@@ -637,10 +637,10 @@ namespace CelesteStudio {
 
         private void UpdateStatusBar() {
             if (StudioCommunicationBase.Initialized) {
-                string playerData = CommunicationWrapper.playerData;
+                string gameData = CommunicationWrapper.gameData;
                 lblStatus.Text = "(" + (currentFrame > 0 ? currentFrame + "/" : "")
-                                     + totalFrames + ") \n" + playerData
-                                     + new string('\n', Math.Max(0, 7 - playerData.Split('\n').Length));
+                                     + totalFrames + ") \n" + gameData
+                                     + new string('\n', Math.Max(0, 7 - gameData.Split('\n').Length));
             } else {
                 lblStatus.Text = "(" + totalFrames + ")\r\nSearching...";
             }
@@ -973,8 +973,8 @@ namespace CelesteStudio {
             InsertNewLine("FinishExportLibTAS");
         }
 
-        private void copyPlayerDataMenuItem_Click(object sender, EventArgs e) {
-            CopyPlayerData();
+        private void copyGamerDataMenuItem_Click(object sender, EventArgs e) {
+            CopyGameData();
         }
 
         private void fontToolStripMenuItem_Click(object sender, EventArgs e) {

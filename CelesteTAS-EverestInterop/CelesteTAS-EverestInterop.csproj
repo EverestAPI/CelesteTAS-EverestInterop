@@ -146,7 +146,7 @@
         <Compile Include="TAS\Input\InputController.cs"/>
         <Compile Include="TAS\Input\ConsoleCommandHandler.cs"/>
         <Compile Include="TAS\Manager.cs"/>
-        <Compile Include="TAS\PlayerInfo.cs"/>
+        <Compile Include="TAS\GameInfo.cs"/>
         <Compile Include="Properties\AssemblyInfo.cs"/>
         <Compile Include="EverestInterop\SimplifiedGraphicsFeature.cs"/>
         <Compile Include="TAS\Input\TasCommandAttribute.cs"/>

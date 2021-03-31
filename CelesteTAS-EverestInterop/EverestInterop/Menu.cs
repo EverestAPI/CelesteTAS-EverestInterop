@@ -5,6 +5,7 @@ using Celeste;
 using Celeste.Mod;
 using Monocle;
 using TAS.EverestInterop.Hitboxes;
+using TAS.EverestInterop.InfoHUD;
 using TAS.Utils;
 
 namespace TAS.EverestInterop {
@@ -19,7 +20,8 @@ namespace TAS.EverestInterop {
         private static void CreateOptions(EverestModule everestModule, TextMenu menu, bool inGame) {
             options = new List<TextMenu.Item> {
                 HitboxTweak.CreateSubMenu(menu, inGame),
-                SimplifiedGraphicsFeature.CreateSimplifiedGraphicsOption(),
+                SimplifiedGraphicsFeature.CreateSubMenu(),
+                InfoHud.CreateSubMenu(),
 
                 new TextMenuExt.SubMenu("Relaunch Required".ToDialogText(), false).Apply(subMenu => {
                     subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), Settings.LaunchStudioAtBoot).Change(value =>
@@ -36,8 +38,6 @@ namespace TAS.EverestInterop {
                         Settings.RoundPosition = value));
                     subMenu.Add(new TextMenu.OnOff("Round Speed".ToDialogText(), Settings.RoundSpeed).Change(value =>
                         Settings.RoundSpeed = value));
-                    subMenu.Add(new TextMenu.OnOff("Info HUD".ToDialogText(), Settings.InfoHud).Change(value =>
-                        Settings.InfoHud = value));
                     subMenu.Add(new TextMenu.OnOff("Pause After Load State".ToDialogText(), Settings.PauseAfterLoadState).Change(value =>
                         Settings.PauseAfterLoadState = value));
                     subMenu.Add(new TextMenu.OnOff("Restore Settings".ToDialogText(), Settings.RestoreSettings).Change(value =>
@@ -76,11 +76,8 @@ namespace TAS.EverestInterop {
                 item.Visible = Settings.Enabled;
             }
 
-            if (inGame) {
-                HitboxTweak.ShowHitboxesSubmenu.AddDescription(menu, "Hitbox Color Description 2".ToDialogText());
-                HitboxTweak.ShowHitboxesSubmenu.AddDescription(menu, "Hitbox Color Description 1".ToDialogText());
-            }
-
+            HitboxTweak.AddSubMenuDescription(menu, inGame);
+            InfoHud.AddSubMenuDescription(menu);
             keyConfigButton.AddDescription(menu, "Key Config Description".ToDialogText());
         }
 

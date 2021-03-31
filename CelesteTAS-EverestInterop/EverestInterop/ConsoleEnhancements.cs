@@ -193,14 +193,14 @@ namespace TAS.EverestInterop {
                 }
             }
 
-            PlayerInfo.Update();
+            GameInfo.Update();
         }
 
         private static void ClearInspectEntities() {
             RequireInspectEntities.Clear();
             RequireInspectEntityIds.Clear();
             InspectingEntities.Clear();
-            PlayerInfo.Update();
+            GameInfo.Update();
         }
 
         private static void CacheEntityData(Entity entity, EntityData data) {

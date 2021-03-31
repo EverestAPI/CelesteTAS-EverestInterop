@@ -101,8 +101,8 @@ namespace TAS.Input {
                 return;
             }
 
-            if (PlayerInfo.ExportSyncData) {
-                PlayerInfo.ExportPlayerInfo();
+            if (GameInfo.ExportSyncData) {
+                GameInfo.ExportPlayerInfo();
             }
 
             Manager.SetInputs(Current);

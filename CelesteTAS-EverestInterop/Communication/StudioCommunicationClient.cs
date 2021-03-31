@@ -308,9 +308,9 @@ namespace TAS.Communication {
             WriteMessageGuaranteed(new Message(MessageIDs.SendPath, pathBytes));
         }
 
-        private void SendStateAndPlayerDataNow(string state, string playerData, bool canFail) {
+        private void SendStateAndGameDataNow(string state, string gameData, bool canFail) {
             if (Initialized) {
-                string[] data = new string[] {state, playerData};
+                string[] data = new string[] {state, gameData};
                 byte[] dataBytes = ToByteArray(data);
                 Message message = new Message(MessageIDs.SendState, dataBytes);
                 if (canFail) {
@@ -321,8 +321,8 @@ namespace TAS.Communication {
             }
         }
 
-        public void SendStateAndPlayerData(string state, string playerData, bool canFail) {
-            PendingWrite = () => SendStateAndPlayerDataNow(state, playerData, canFail);
+        public void SendStateAndGameData(string state, string gameData, bool canFail) {
+            PendingWrite = () => SendStateAndGameDataNow(state, gameData, canFail);
         }
 
         private void SendCurrentBindings(List<Keys>[] bindings) {

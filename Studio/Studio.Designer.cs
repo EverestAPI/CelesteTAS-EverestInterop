@@ -31,7 +31,7 @@ namespace CelesteStudio {
             this.lblStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.hotkeyToolTip = new System.Windows.Forms.ToolTip(this.components);
             this.statusBarContextMenuStrip = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.copyPlayerDataMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.copyGameDataMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.reconnectStudioAndCelesteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -137,23 +137,23 @@ namespace CelesteStudio {
             // 
             // statusBarContextMenuStrip
             // 
-            this.statusBarContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.copyPlayerDataMenuItem, this.reconnectStudioAndCelesteToolStripMenuItem});
+            this.statusBarContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.copyGameDataMenuItem, this.reconnectStudioAndCelesteToolStripMenuItem});
             this.statusBarContextMenuStrip.Name = "statusBarMenuStrip";
-            this.statusBarContextMenuStrip.Size = new System.Drawing.Size(334, 48);
+            this.statusBarContextMenuStrip.Size = new System.Drawing.Size(333, 48);
             // 
-            // copyPlayerDataMenuItem
+            // copyGameDataMenuItem
             // 
-            this.copyPlayerDataMenuItem.Name = "copyPlayerDataMenuItem";
-            this.copyPlayerDataMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys) (((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Shift) | System.Windows.Forms.Keys.C)));
-            this.copyPlayerDataMenuItem.Size = new System.Drawing.Size(333, 22);
-            this.copyPlayerDataMenuItem.Text = "Copy Player Data to Clipboard";
-            this.copyPlayerDataMenuItem.Click += new System.EventHandler(this.copyPlayerDataMenuItem_Click);
+            this.copyGameDataMenuItem.Name = "copyGameDataMenuItem";
+            this.copyGameDataMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys) (((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Shift) | System.Windows.Forms.Keys.C)));
+            this.copyGameDataMenuItem.Size = new System.Drawing.Size(332, 22);
+            this.copyGameDataMenuItem.Text = "Copy Game Data to Clipboard";
+            this.copyGameDataMenuItem.Click += new System.EventHandler(this.copyGamerDataMenuItem_Click);
             // 
             // reconnectStudioAndCelesteToolStripMenuItem
             // 
             this.reconnectStudioAndCelesteToolStripMenuItem.Name = "reconnectStudioAndCelesteToolStripMenuItem";
             this.reconnectStudioAndCelesteToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys) (((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Shift) | System.Windows.Forms.Keys.D)));
-            this.reconnectStudioAndCelesteToolStripMenuItem.Size = new System.Drawing.Size(333, 22);
+            this.reconnectStudioAndCelesteToolStripMenuItem.Size = new System.Drawing.Size(332, 22);
             this.reconnectStudioAndCelesteToolStripMenuItem.Text = "Reconnect Studio and Celeste";
             this.reconnectStudioAndCelesteToolStripMenuItem.Click += new System.EventHandler(this.reconnectStudioAndCelesteToolStripMenuItem_Click);
             // 
@@ -730,7 +730,7 @@ namespace CelesteStudio {
         private System.Windows.Forms.ToolTip hotkeyToolTip;
         private System.Windows.Forms.ToolStripStatusLabel lblStatus;
         private System.Windows.Forms.ContextMenuStrip statusBarContextMenuStrip;
-        private System.Windows.Forms.ToolStripMenuItem copyPlayerDataMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem copyGameDataMenuItem;
         private System.Windows.Forms.MenuStrip menuStrip;
         private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
         private System.Windows.Forms.Label dividerLabel;

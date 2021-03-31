@@ -31,7 +31,7 @@ namespace TASALT.StudioCommunication {
         private class FakeStudio {
             public readonly string path = Directory.GetCurrentDirectory() + "/Celeste.tas";
             public List<Keys>[] bindings;
-            public string playerData;
+            public string gameData;
             public string state;
         }
 
@@ -43,8 +43,8 @@ namespace TASALT.StudioCommunication {
                 case MessageIDs.SendState:
                     ProcessSendState(message.Data);
                     break;
-                case MessageIDs.SendPlayerData:
-                    ProcessSendPlayerData(message.Data);
+                case MessageIDs.SendGameData:
+                    ProcessSendGameData(message.Data);
                     break;
                 case MessageIDs.SendCurrentBindings:
                     ProcessSendCurrentBindings(message.Data);
@@ -61,10 +61,10 @@ namespace TASALT.StudioCommunication {
             Studio.state = state;
         }
 
-        private void ProcessSendPlayerData(byte[] data) {
-            string playerData = Encoding.Default.GetString(data);
-            Log(playerData);
-            Studio.playerData = playerData;
+        private void ProcessSendGameData(byte[] data) {
+            string gameData = Encoding.Default.GetString(data);
+            Log(gameData);
+            Studio.gameData = gameData;
         }
 
         private void ProcessSendCurrentBindings(byte[] data) {

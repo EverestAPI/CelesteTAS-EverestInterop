@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Celeste;
+using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Input;
@@ -10,6 +11,7 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD {
     public static class InfoHud {
+        private static TextMenu.Item subMenuItem;
         private static CelesteTasModuleSettings TasSettings => CelesteTasModule.Settings;
 
         public static void Load() {
@@ -40,6 +42,69 @@ namespace TAS.EverestInterop.InfoHUD {
             }
 
             StringBuilder stringBuilder = new StringBuilder();
+
+            if (TasSettings.InfoTasInput) {
+                WriteTasInput(stringBuilder);
+            }
+
+            if (TasSettings.InfoGame) {
+                if (stringBuilder.Length > 0) {
+                    stringBuilder.AppendLine();
+                }
+
+                stringBuilder.Append(GameInfo.Status);
+            }
+
+            string text = stringBuilder.ToString().Trim();
+            if (string.IsNullOrEmpty(text)) {
+                return;
+            }
+
+            int viewWidth = Engine.ViewWidth;
+            int viewHeight = Engine.ViewHeight;
+
+            float pixelScale = viewWidth / 320f;
+            float margin = 2 * pixelScale;
+            float padding = 2 * pixelScale;
+            float fontSize = 0.15f * pixelScale * TasSettings.InfoScale / 5f;
+            float alpha = TasSettings.InfoOpacity / 10f;
+
+            Vector2 size = JetBrainsMonoFont.Measure(text) * fontSize;
+
+            TasSettings.InfoPosition =
+                TasSettings.InfoPosition.Clamp(margin, margin, viewWidth - size.X - margin - padding * 2, viewHeight - size.Y - margin - padding * 2);
+
+            float x = TasSettings.InfoPosition.X;
+            float y = TasSettings.InfoPosition.Y;
+
+            Rectangle bgRect = new Rectangle((int) x, (int) y, (int) (size.X + padding * 2), (int) (size.Y + padding * 2));
+
+            if (self.GetPlayer() is Player player) {
+                Vector2 playerPosition = self.Camera.CameraToScreen(player.TopLeft) * pixelScale;
+                Rectangle playerRect = new Rectangle((int) playerPosition.X, (int) playerPosition.Y, (int) (8 * pixelScale), (int) (11 * pixelScale));
+                Rectangle mirrorBgRect = bgRect;
+                if (SaveData.Instance?.Assists.MirrorMode == true) {
+                    mirrorBgRect.X = (int) Math.Abs(x - viewWidth + size.X + padding * 2);
+                }
+
+                if (self.Paused || playerRect.Intersects(mirrorBgRect)) {
+                    alpha *= TasSettings.InfoMaskedOpacity / 10f;
+                }
+            }
+
+            Draw.SpriteBatch.Begin();
+
+            Draw.Rect(bgRect, Color.Black * alpha);
+
+            Vector2 textPosition = new Vector2(x + padding, y + padding);
+            Vector2 scale = new Vector2(fontSize);
+
+            JetBrainsMonoFont.Draw(text, textPosition, Vector2.Zero, scale, Color.White * alpha);
+
+            Draw.SpriteBatch.End();
+        }
+
+        private static void WriteTasInput(StringBuilder stringBuilder) {
             InputController controller = Manager.Controller;
             List<InputFrame> inputs = controller.Inputs;
             if (Manager.Running && controller.CurrentFrame >= 0 && controller.CurrentFrame < inputs.Count) {
@@ -68,73 +133,41 @@ namespace TAS.EverestInterop.InfoHUD {
                 int framesPadLeft = maxFrames.ToString().Length;
 
                 if (previous != null) {
-                    stringBuilder.Append(
-                        $"{(previous.Line + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - previous.Frames.ToString().Length)}{previous}\n");
+                    stringBuilder.AppendLine(
+                        $"{(previous.Line + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - previous.Frames.ToString().Length)}{previous}");
                 }
 
                 string currentStr =
                     $"{(current.Line + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - current.Frames.ToString().Length)}{current}";
                 int maxWidth = currentStr.Length + controller.StudioFrameCount.ToString().Length + 1;
-                maxWidth = PlayerInfo.Status.Split('\n').Select(s => s.Length).Concat(new[] {maxWidth}).Max();
-                stringBuilder.Append(
-                    $"{currentStr.PadRight(maxWidth - controller.StudioFrameCount.ToString().Length - 1)}{controller.StudioFrameCount}\n");
+                maxWidth = GameInfo.Status.Split('\n').Select(s => s.Length).Concat(new[] {maxWidth}).Max();
+                stringBuilder.AppendLine(
+                    $"{currentStr.PadRight(maxWidth - controller.StudioFrameCount.ToString().Length - 1)}{controller.StudioFrameCount}");
                 if (next != null) {
-                    stringBuilder.Append(
-                        $"{(next.Line + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - next.Frames.ToString().Length)}{next}\n");
-                }
-
-                stringBuilder.AppendLine();
-            }
-
-            stringBuilder.Append(PlayerInfo.Status);
-
-            string text = stringBuilder.ToString();
-            if (string.IsNullOrEmpty(text)) {
-                return;
-            }
-
-            int viewWidth = Engine.ViewWidth;
-            int viewHeight = Engine.ViewHeight;
-
-            float pixelScale = viewWidth / 320f;
-            float margin = 2 * pixelScale;
-            float padding = 2 * pixelScale;
-            float fontSize = 0.15f * pixelScale;
-            float alpha = 1f;
-
-            Vector2 size = JetBrainsMonoFont.Measure(text) * fontSize;
-
-            TasSettings.InfoPosition =
-                TasSettings.InfoPosition.Clamp(margin, margin, viewWidth - size.X - margin - padding * 2, viewHeight - size.Y - margin - padding * 2);
-
-            float x = TasSettings.InfoPosition.X;
-            float y = TasSettings.InfoPosition.Y;
-
-            Rectangle bgRect = new Rectangle((int) x, (int) y, (int) (size.X + padding * 2), (int) (size.Y + padding * 2));
-
-            if (self.GetPlayer() is Player player) {
-                Vector2 playerPosition = self.Camera.CameraToScreen(player.TopLeft) * pixelScale;
-                Rectangle playerRect = new Rectangle((int) playerPosition.X, (int) playerPosition.Y, (int) (8 * pixelScale), (int) (11 * pixelScale));
-                Rectangle mirrorBgRect = bgRect;
-                if (SaveData.Instance?.Assists.MirrorMode == true) {
-                    mirrorBgRect.X = (int) Math.Abs(x - viewWidth + size.X + padding * 2);
-                }
-
-                if (self.Paused || playerRect.Intersects(mirrorBgRect)) {
-                    alpha = 0.5f;
+                    stringBuilder.AppendLine(
+                        $"{(next.Line + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - next.Frames.ToString().Length)}{next}");
                 }
             }
+        }
 
-            Draw.SpriteBatch.Begin();
+        public static TextMenu.Item CreateSubMenu() {
+            subMenuItem = new TextMenuExt.SubMenu("Info HUD".ToDialogText(), false).Apply(subMenu => {
+                subMenu.Add(new TextMenu.OnOff("Enabled".ToDialogText(), TasSettings.InfoHud).Change(value => TasSettings.InfoHud = value));
+                subMenu.Add(new TextMenu.OnOff("Info Game".ToDialogText(), TasSettings.InfoGame).Change(value => TasSettings.InfoGame = value));
+                subMenu.Add(new TextMenu.OnOff("Info TAS Input".ToDialogText(), TasSettings.InfoTasInput).Change(value =>
+                    TasSettings.InfoTasInput = value));
+                subMenu.Add(new TextMenuExt.IntSlider("Info Scale".ToDialogText(), 1, 20, TasSettings.InfoScale).Change(value =>
+                    TasSettings.InfoScale = value));
+                subMenu.Add(new TextMenuExt.IntSlider("Info Opacity".ToDialogText(), 1, 10, TasSettings.InfoOpacity).Change(value =>
+                    TasSettings.InfoOpacity = value));
+                subMenu.Add(new TextMenuExt.IntSlider("Info Masked Opacity".ToDialogText(), 0, 10, TasSettings.InfoMaskedOpacity).Change(value =>
+                    TasSettings.InfoMaskedOpacity = value));
+            });
+            return subMenuItem;
+        }
 
-            Draw.Rect(bgRect, Color.Black * 0.8f * alpha);
-
-            Vector2 textPosition = new Vector2(x + padding, y + padding);
-            Vector2 scale = new Vector2(fontSize);
-
-            JetBrainsMonoFont.Draw(text, textPosition, Vector2.Zero, scale, Color.White * alpha);
-
-            Draw.SpriteBatch.End();
+        public static void AddSubMenuDescription(TextMenu menu) {
+            subMenuItem.AddDescription(menu, "Info HUD Description".ToDialogText());
         }
     }
 }

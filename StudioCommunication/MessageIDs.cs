@@ -37,14 +37,14 @@ namespace StudioCommunication {
 
         //Pure data transfer
         /// <summary>
-        /// Structure: string[] = { state, playerData }
+        /// Structure: string[] = { state, gameData }
         /// </summary>
         SendState = 0x10,
 
         /// <summary>
         /// Structure: string
         /// </summary>
-        SendPlayerData = 0x11,
+        SendGameData = 0x11,
 
         //Data transfer from Studio
         /// <summary>

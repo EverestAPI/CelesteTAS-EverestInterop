@@ -14,7 +14,8 @@ namespace TAS.EverestInterop.InfoHUD {
                 return;
             }
 
-            if (!MInput.Keyboard.Check(Keys.LeftControl) && !MInput.Keyboard.Check(Keys.RightControl)) {
+            KeyboardState keyboardState = Keyboard.GetState();
+            if (!keyboardState.IsKeyDown(Keys.LeftControl) && !keyboardState.IsKeyDown(Keys.RightControl)) {
                 return;
             }
 
