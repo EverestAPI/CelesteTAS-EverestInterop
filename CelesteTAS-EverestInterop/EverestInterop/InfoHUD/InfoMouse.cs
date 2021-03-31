@@ -10,7 +10,7 @@ namespace TAS.EverestInterop.InfoHUD {
         private static CelesteTasModuleSettings TasSettings => CelesteTasModule.Settings;
 
         public static void DragAndDropHud() {
-            if (!TasSettings.Enabled || !TasSettings.InfoHud) {
+            if (!TasSettings.Enabled || !TasSettings.InfoHud || !Engine.Instance.IsActive) {
                 return;
             }
 
