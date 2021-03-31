@@ -5,26 +5,28 @@
   <pages>
     <page id="0" file="chinese_tas_0.png" />
   </pages>
-  <chars count="20">
-    <char id="22278" x="786" y="0" width="37" height="39" xoffset="3" yoffset="15" xadvance="43" page="0" chnl="15" />
-    <char id="22495" x="292" y="0" width="41" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
+  <chars count="22">
+    <char id="20122" x="865" y="0" width="40" height="36" xoffset="1" yoffset="16" xadvance="43" page="0" chnl="15" />
+    <char id="22278" x="827" y="0" width="37" height="39" xoffset="3" yoffset="15" xadvance="43" page="0" chnl="15" />
+    <char id="22495" x="333" y="0" width="41" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
     <char id="23721" x="210" y="0" width="40" height="41" xoffset="1" yoffset="13" xadvance="43" page="0" chnl="15" />
     <char id="24674" x="0" y="0" width="41" height="41" xoffset="1" yoffset="13" xadvance="43" page="0" chnl="15" />
-    <char id="25341" x="334" y="0" width="41" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
+    <char id="25341" x="375" y="0" width="41" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
     <char id="26694" x="42" y="0" width="41" height="41" xoffset="1" yoffset="13" xadvance="43" page="0" chnl="15" />
-    <char id="27867" x="376" y="0" width="41" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
+    <char id="27867" x="417" y="0" width="41" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
     <char id="29028" x="84" y="0" width="41" height="41" xoffset="1" yoffset="13" xadvance="43" page="0" chnl="15" />
     <char id="31665" x="251" y="0" width="40" height="41" xoffset="1" yoffset="13" xadvance="43" page="0" chnl="15" />
     <char id="31890" x="126" y="0" width="41" height="41" xoffset="1" yoffset="13" xadvance="43" page="0" chnl="15" />
-    <char id="32043" x="502" y="0" width="40" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
-    <char id="32418" x="703" y="0" width="41" height="39" xoffset="1" yoffset="13" xadvance="43" page="0" chnl="15" />
-    <char id="32465" x="543" y="0" width="40" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
-    <char id="32511" x="418" y="0" width="41" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
-    <char id="34013" x="584" y="0" width="40" height="40" xoffset="2" yoffset="13" xadvance="43" page="0" chnl="15" />
-    <char id="35206" x="745" y="0" width="40" height="39" xoffset="1" yoffset="15" xadvance="43" page="0" chnl="15" />
+    <char id="32032" x="292" y="0" width="40" height="41" xoffset="1" yoffset="13" xadvance="43" page="0" chnl="15" />
+    <char id="32043" x="543" y="0" width="40" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
+    <char id="32418" x="744" y="0" width="41" height="39" xoffset="1" yoffset="13" xadvance="43" page="0" chnl="15" />
+    <char id="32465" x="584" y="0" width="40" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
+    <char id="32511" x="459" y="0" width="41" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
+    <char id="34013" x="625" y="0" width="40" height="40" xoffset="2" yoffset="13" xadvance="43" page="0" chnl="15" />
+    <char id="35206" x="786" y="0" width="40" height="39" xoffset="1" yoffset="15" xadvance="43" page="0" chnl="15" />
     <char id="35302" x="168" y="0" width="41" height="41" xoffset="1" yoffset="13" xadvance="43" page="0" chnl="15" />
-    <char id="35759" x="460" y="0" width="41" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
-    <char id="38468" x="625" y="0" width="39" height="40" xoffset="3" yoffset="14" xadvance="43" page="0" chnl="15" />
-    <char id="40736" x="665" y="0" width="37" height="40" xoffset="4" yoffset="14" xadvance="43" page="0" chnl="15" />
+    <char id="35759" x="501" y="0" width="41" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
+    <char id="38468" x="666" y="0" width="39" height="40" xoffset="3" yoffset="14" xadvance="43" page="0" chnl="15" />
+    <char id="40736" x="706" y="0" width="37" height="40" xoffset="4" yoffset="14" xadvance="43" page="0" chnl="15" />
   </chars>
 </font>

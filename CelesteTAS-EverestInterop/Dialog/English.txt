@@ -36,11 +36,13 @@ TAS_LAVA=                     Lava
 TAS_LIGHTNING=                Lightning
 
 # ================================== Info HUD ==================================
-TAS_INFO_GAME=                Game Info
-TAS_INFO_TAS_INPUT=           TAS Input
-TAS_INFO_SCALE=               Scale
-TAS_INFO_OPACITY=             Opacity
-TAS_INFO_MASKED_OPACITY=      Masked Opacity
+TAS_INFO_GAME=                     Game Info
+TAS_INFO_TAS_INPUT=                TAS Input
+TAS_INFO_SUB_PIXEL_INDICATOR=      Sub Pixel Indicator
+TAS_INFO_TEXT_SIZE=                Text Size
+TAS_INFO_SUB_PIXEL_INDICATOR_SIZE= Sub Pixel Indicator Size
+TAS_INFO_OPACITY=                  Opacity
+TAS_INFO_MASKED_OPACITY=           Masked Opacity
 
 # ================================== Relaunch Required Submenu ==================================
 TAS_LAUNCH_STUDIO_AT_BOOT=    Launch Studio At Boot

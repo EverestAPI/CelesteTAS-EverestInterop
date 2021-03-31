@@ -36,11 +36,13 @@ TAS_LAVA=                     岩浆
 TAS_LIGHTNING=                电网
 
 # ================================== Info HUD ==================================
-TAS_INFO_GAME=                游戏数据
-TAS_INFO_TAS_INPUT=           TAS 语句
-TAS_INFO_SCALE=               大小
-TAS_INFO_OPACITY=             不透明度
-TAS_INFO_MASKED_OPACITY=      遮挡人物时的透明度
+TAS_INFO_GAME=                     游戏数据
+TAS_INFO_TAS_INPUT=                TAS 语句
+TAS_INFO_SUB_PIXEL_INDICATOR=      亚像素指示器
+TAS_INFO_TEXT_SIZE=                文字大小
+TAS_INFO_SUB_PIXEL_INDICATOR_SIZE= 亚像素指示器大小
+TAS_INFO_OPACITY=                  不透明度
+TAS_INFO_MASKED_OPACITY=           遮挡人物时的透明度
 
 # ================================== Relaunch Required Submenu ==================================
 TAS_LAUNCH_STUDIO_AT_BOOT=    启动 Celeste 时打开 Studio

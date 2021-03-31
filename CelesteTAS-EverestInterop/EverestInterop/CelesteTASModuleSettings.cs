@@ -149,9 +149,11 @@ namespace TAS.EverestInterop {
         public bool InfoHud { get; set; } = false;
         public bool InfoGame { get; set; } = true;
         public bool InfoTasInput { get; set; } = true;
+        public bool InfoSubPixelIndicator { get; set; } = true;
         [SettingIgnore] public Vector2 InfoPosition { get; set; } = Vector2.Zero;
-        [SettingIgnore] public int InfoScale { get; set; } = 5;
-        [SettingIgnore] public int InfoOpacity { get; set; } = 9;
+        [SettingIgnore] public int InfoTextSize { get; set; } = 10;
+        [SettingIgnore] public int InfoSubPixelIndicatorSize { get; set; } = 10;
+        [SettingIgnore] public int InfoOpacity { get; set; } = 6;
         [SettingIgnore] public int InfoMaskedOpacity { get; set; } = 3;
 
         #endregion
