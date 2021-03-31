@@ -11,7 +11,6 @@ namespace TAS.EverestInterop {
     internal static class Menu {
         private static readonly MethodInfo CreateKeyboardConfigUi = typeof(EverestModule).GetMethodInfo("CreateKeyboardConfigUI");
         private static List<TextMenu.Item> options;
-        private static TextMenu.Item showHitboxesSubmenu;
         private static TextMenu.Item keyConfigButton;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
@@ -19,26 +18,7 @@ namespace TAS.EverestInterop {
 
         private static void CreateOptions(EverestModule everestModule, TextMenu menu, bool inGame) {
             options = new List<TextMenu.Item> {
-                new TextMenuExt.SubMenu("Show Hitboxes".ToDialogText(), false).Apply(subMenu => {
-                    showHitboxesSubmenu = subMenu;
-                    subMenu.Add(new TextMenu.OnOff("Enabled".ToDialogText(), Settings.ShowHitboxes).Change(value => Settings.ShowHitboxes = value));
-                    subMenu.Add(new TextMenu.Option<ActualCollideHitboxTypes>("Actual Collide Hitboxes".ToDialogText()).Apply(option => {
-                        Array enumValues = Enum.GetValues(typeof(ActualCollideHitboxTypes));
-                        foreach (ActualCollideHitboxTypes value in enumValues) {
-                            option.Add(value.ToString().SpacedPascalCase().ToDialogText(), value, value.Equals(Settings.ShowActualCollideHitboxes));
-                        }
-
-                        option.Change(value => Settings.ShowActualCollideHitboxes = value);
-                    }));
-                    subMenu.Add(new TextMenu.OnOff("Hide Trigger Hitboxes".ToDialogText(), Settings.HideTriggerHitboxes).Change(value =>
-                        Settings.HideTriggerHitboxes = value));
-                    subMenu.Add(new TextMenu.OnOff("Simplified Hitboxes".ToDialogText(), Settings.SimplifiedHitboxes).Change(value =>
-                        Settings.SimplifiedHitboxes = value));
-                    subMenu.Add(HitboxColor.CreateEntityHitboxColorButton(menu, inGame));
-                    subMenu.Add(HitboxColor.CreateTriggerHitboxColorButton(menu, inGame));
-                    subMenu.Add(HitboxColor.CreatePlatformHitboxColorButton(menu, inGame));
-                }),
-
+                HitboxTweak.CreateSubMenu(menu, inGame),
                 SimplifiedGraphicsFeature.CreateSimplifiedGraphicsOption(),
 
                 new TextMenuExt.SubMenu("Relaunch Required".ToDialogText(), false).Apply(subMenu => {
@@ -97,8 +77,8 @@ namespace TAS.EverestInterop {
             }
 
             if (inGame) {
-                showHitboxesSubmenu.AddDescription(menu, "Hitbox Color Description 2".ToDialogText());
-                showHitboxesSubmenu.AddDescription(menu, "Hitbox Color Description 1".ToDialogText());
+                HitboxTweak.ShowHitboxesSubmenu.AddDescription(menu, "Hitbox Color Description 2".ToDialogText());
+                HitboxTweak.ShowHitboxesSubmenu.AddDescription(menu, "Hitbox Color Description 1".ToDialogText());
             }
 
             keyConfigButton.AddDescription(menu, "Key Config Description".ToDialogText());
