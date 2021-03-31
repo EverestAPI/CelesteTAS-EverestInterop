@@ -11,10 +11,12 @@ using TAS.Utils;
 using static TAS.Manager;
 
 namespace TAS {
-// TODO Add a command to check if savestate will cause desync
     public static class Savestates {
         private static InputController savedController;
-        private static string savedPlayerStatus;
+        private static string savedGameStatus;
+        private static string savedStatusWithoutTime;
+        private static string savedLastVel;
+        private static long savedLastChapterTime;
         private static Vector2 savedLastPos;
         private static Vector2 savedLastPlayerSeekerPos;
         private static bool savedByBreakpoint;
@@ -102,7 +104,10 @@ namespace TAS {
             }
 
             savedByBreakpoint = breakpoint;
-            savedPlayerStatus = GameInfo.Status;
+            savedGameStatus = GameInfo.Status;
+            savedLastVel = GameInfo.LastVel;
+            savedLastChapterTime = GameInfo.LastChapterTime;
+            savedStatusWithoutTime = GameInfo.StatusWithoutTime;
             savedLastPos = GameInfo.LastPos;
             savedLastPlayerSeekerPos = GameInfo.LastPlayerSeekerPos;
 
@@ -145,7 +150,10 @@ namespace TAS {
         private static void Clear() {
             StateManager.Instance.ClearState();
             savedController = null;
-            savedPlayerStatus = null;
+            savedGameStatus = null;
+            savedLastVel = null;
+            savedLastChapterTime = 0;
+            savedStatusWithoutTime = null;
             savedLastPos = default;
             savedLastPlayerSeekerPos = default;
             savedByBreakpoint = false;
@@ -161,7 +169,10 @@ namespace TAS {
         private static void LoadStateRoutine() {
             Controller.CopyFrom(savedController);
             SetTasState();
-            GameInfo.Status = savedPlayerStatus;
+            GameInfo.Status = savedGameStatus;
+            GameInfo.LastVel = savedLastVel;
+            GameInfo.StatusWithoutTime = savedStatusWithoutTime;
+            GameInfo.LastChapterTime = savedLastChapterTime;
             GameInfo.LastPos = savedLastPos;
             GameInfo.LastPlayerSeekerPos = savedLastPlayerSeekerPos;
             UpdateStudio();

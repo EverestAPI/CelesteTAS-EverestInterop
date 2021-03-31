@@ -124,6 +124,7 @@
         <Compile Include="EverestInterop\Hitboxes\HitboxTweak.cs"/>
         <Compile Include="EverestInterop\Hotkeys.cs"/>
         <Compile Include="EverestInterop\InfoHUD\InfoHud.cs"/>
+        <Compile Include="EverestInterop\InfoHUD\InfoInspectEntity.cs"/>
         <Compile Include="EverestInterop\InfoHUD\InfoMouse.cs"/>
         <Compile Include="EverestInterop\InfoHUD\JetBrainsMonoFont.cs"/>
         <Compile Include="EverestInterop\Menu.cs"/>

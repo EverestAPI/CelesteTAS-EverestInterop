@@ -85,5 +85,5 @@ While in game or in Studio:
 
 ## Misc
 
-- Inspect entity: open the console then left-click to add the entity to be inspected, right-click to clear the inspecting entities. Supports exporting position
+- Inspect entity: holding left ctrl then left-click to add the entity to be inspected, right-click to clear the inspecting entities. Supports exporting position
   data via the `StartExport` command.

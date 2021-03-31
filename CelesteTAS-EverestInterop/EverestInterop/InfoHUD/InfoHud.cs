@@ -18,11 +18,13 @@ namespace TAS.EverestInterop.InfoHUD {
         public static void Load() {
             On.Celeste.Level.Render += LevelOnRender;
             On.Celeste.Fonts.Prepare += FontsOnPrepare;
+            InfoInspectEntity.Load();
         }
 
         public static void Unload() {
             On.Celeste.Level.Render -= LevelOnRender;
             On.Celeste.Fonts.Prepare -= FontsOnPrepare;
+            InfoInspectEntity.Unload();
         }
 
         private static void FontsOnPrepare(On.Celeste.Fonts.orig_Prepare orig) {

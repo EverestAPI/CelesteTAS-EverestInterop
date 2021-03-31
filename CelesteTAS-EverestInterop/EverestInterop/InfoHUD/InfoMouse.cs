@@ -22,6 +22,9 @@ namespace TAS.EverestInterop.InfoHUD {
             Draw.SpriteBatch.Begin();
 
             MouseState mouseState = Mouse.GetState();
+
+            InfoInspectEntity.HandleMouseData(mouseState, lastMouseState);
+
             Draw.Line(mouseState.X - 9f, mouseState.Y, mouseState.X + 8f, mouseState.Y, Color.Yellow, 3f);
             Draw.Line(mouseState.X, mouseState.Y - 9f, mouseState.X, mouseState.Y + 8f, Color.Yellow, 3f);
 

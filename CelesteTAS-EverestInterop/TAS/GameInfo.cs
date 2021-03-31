@@ -11,6 +11,7 @@ using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.EverestInterop;
+using TAS.EverestInterop.InfoHUD;
 using TAS.Input;
 using TAS.Utils;
 
@@ -31,9 +32,11 @@ namespace TAS {
         private static readonly Func<Level, float> LevelUnpauseTimer;
 
         public static string Status = string.Empty;
+        public static string StatusWithoutTime = string.Empty;
+        public static string LastVel = string.Empty;
+        public static long LastChapterTime;
         public static Vector2 LastPos;
         public static Vector2 LastPlayerSeekerPos;
-        private static string statusWithoutTime = string.Empty;
 
         private static StreamWriter sw;
         private static List<MethodInfo> trackedEntities;
@@ -146,6 +149,12 @@ namespace TAS {
                     string speed = GetAdjustedSpeed(player.Speed);
                     Vector2 diff = (player.ExactPosition - LastPos) * 60f;
                     string vel = $"Vel:   {diff.X:F2}, {diff.Y:F2}";
+                    if (chapterTime == LastChapterTime) {
+                        vel = LastVel;
+                    } else {
+                        LastVel = vel;
+                    }
+
                     string polarVel = $"Fly:   {diff.Length():F2}, {Manager.GetAngle(diff):F5}°";
 
                     string joystick = string.Empty;
@@ -252,24 +261,25 @@ namespace TAS {
                     }
 
                     if (Manager.FrameLoops == 1) {
-                        string inspectingInfo = ConsoleEnhancements.GetInspectingEntitiesInfo();
+                        string inspectingInfo = InfoInspectEntity.GetInspectingEntitiesInfo();
                         if (inspectingInfo.IsNotNullOrEmpty()) {
                             stringBuilder.AppendLine(inspectingInfo);
                         }
                     }
 
-                    statusWithoutTime = stringBuilder.ToString();
+                    StatusWithoutTime = stringBuilder.ToString();
                     if (Engine.FreezeTimer <= 0f) {
                         LastPos = player.ExactPosition;
                         LastPlayerSeekerPos = playerSeeker?.ExactPosition ?? default;
                     }
                 } else if (level.InCutscene) {
-                    statusWithoutTime = "Cutscene";
+                    StatusWithoutTime = "Cutscene";
                 }
 
                 string roomNameAndTime =
                     $"[{level.Session.Level}] Timer: {(chapterTime / 10000000D):F3}({chapterTime / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks})";
-                Status = statusWithoutTime + roomNameAndTime;
+                Status = StatusWithoutTime + roomNameAndTime;
+                LastChapterTime = chapterTime;
             } else if (Engine.Scene is SummitVignette summit) {
                 Status = "SummitVignette " + SummitVignetteReadyFieldInfo.GetValue(summit);
             } else if (Engine.Scene is Overworld overworld) {
@@ -399,7 +409,7 @@ namespace TAS {
                         }
                     }
 
-                    output += ConsoleEnhancements.GetInspectingEntitiesInfo("\t");
+                    output += InfoInspectEntity.GetInspectingEntitiesInfo("\t");
 
                     sw.WriteLine(output);
                 } else {

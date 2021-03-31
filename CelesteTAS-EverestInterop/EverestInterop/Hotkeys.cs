@@ -180,8 +180,6 @@ namespace TAS.EverestInterop {
             kbState = Keyboard.GetState();
             padState = GetGamePadState();
 
-            ConsoleEnhancements.ToggleConsole(kbState);
-
             if (!Manager.Running && (Engine.Commands.Open || CelesteNetChatting)) {
                 return;
             }
