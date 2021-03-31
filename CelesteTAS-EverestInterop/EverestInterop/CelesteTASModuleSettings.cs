@@ -90,7 +90,6 @@ namespace TAS.EverestInterop {
         public bool HideTriggerHitboxes { get; set; } = false;
         public bool SimplifiedHitboxes { get; set; } = true;
         public ActualCollideHitboxTypes ShowActualCollideHitboxes { get; set; } = ActualCollideHitboxTypes.Off;
-        public InfoPositions InfoHud { get; set; } = InfoPositions.Off;
         public bool PauseAfterLoadState { get; set; } = true;
 
         public bool RestoreSettings { get; set; } = false;
@@ -142,6 +141,14 @@ namespace TAS.EverestInterop {
         public bool SimplifiedDreamBlock { get; set; } = true;
         public bool SimplifiedLava { get; set; } = true;
         public bool SimplifiedLightning { get; set; } = true;
+
+        #endregion
+
+        #region Info HUD
+
+        public bool InfoHud { get; set; } = false;
+
+        [SettingIgnore] public Vector2 InfoPosition { get; set; } = Vector2.Zero;
 
         #endregion
     }

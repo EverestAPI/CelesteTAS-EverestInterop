@@ -56,14 +56,8 @@ namespace TAS.EverestInterop {
                         Settings.RoundPosition = value));
                     subMenu.Add(new TextMenu.OnOff("Round Speed".ToDialogText(), Settings.RoundSpeed).Change(value =>
                         Settings.RoundSpeed = value));
-                    subMenu.Add(new TextMenu.Option<InfoPositions>("Info HUD".ToDialogText()).Apply(option => {
-                        Array enumValues = Enum.GetValues(typeof(InfoPositions));
-                        foreach (InfoPositions value in enumValues) {
-                            option.Add(value.ToString().SpacedPascalCase(), value, value.Equals(Settings.InfoHud));
-                        }
-
-                        option.Change(value => Settings.InfoHud = value);
-                    }));
+                    subMenu.Add(new TextMenu.OnOff("Info HUD".ToDialogText(), Settings.InfoHud).Change(value =>
+                        Settings.InfoHud = value));
                     subMenu.Add(new TextMenu.OnOff("Pause After Load State".ToDialogText(), Settings.PauseAfterLoadState).Change(value =>
                         Settings.PauseAfterLoadState = value));
                     subMenu.Add(new TextMenu.OnOff("Restore Settings".ToDialogText(), Settings.RestoreSettings).Change(value =>

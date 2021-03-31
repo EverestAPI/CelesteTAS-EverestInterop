@@ -6,6 +6,7 @@ using Celeste.Mod;
 using FMOD.Studio;
 using TAS.Communication;
 using TAS.EverestInterop.Hitboxes;
+using TAS.EverestInterop.InfoHUD;
 using TAS.Input;
 using TAS.Utils;
 
