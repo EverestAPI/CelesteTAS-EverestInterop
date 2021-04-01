@@ -26,11 +26,15 @@ namespace CelesteStudio.Communication {
 
             int nameStart = gameData.IndexOf('[') + 1;
             int nameEnd = gameData.IndexOf(']');
+            if (nameStart == -1 || nameEnd == -1) {
+                return string.Empty;
+            }
+
             return gameData.Substring(nameStart, nameEnd - nameStart);
         }
 
         public static string Timer() {
-            int timerIndex = gameData.LastIndexOf("Timer");
+            int timerIndex = gameData.LastIndexOf("Timer", StringComparison.Ordinal);
             if (timerIndex == -1) {
                 return null;
             }
