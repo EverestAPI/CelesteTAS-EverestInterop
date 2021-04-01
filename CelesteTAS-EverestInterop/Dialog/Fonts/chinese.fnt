@@ -5,8 +5,9 @@
   <pages>
     <page id="0" file="chinese_tas_0.png" />
   </pages>
-  <chars count="22">
-    <char id="20122" x="865" y="0" width="40" height="36" xoffset="1" yoffset="16" xadvance="43" page="0" chnl="15" />
+  <chars count="23">
+    <char id="20122" x="906" y="0" width="40" height="36" xoffset="1" yoffset="16" xadvance="43" page="0" chnl="15" />
+    <char id="21452" x="865" y="0" width="40" height="37" xoffset="1" yoffset="17" xadvance="43" page="0" chnl="15" />
     <char id="22278" x="827" y="0" width="37" height="39" xoffset="3" yoffset="15" xadvance="43" page="0" chnl="15" />
     <char id="22495" x="333" y="0" width="41" height="40" xoffset="1" yoffset="14" xadvance="43" page="0" chnl="15" />
     <char id="23721" x="210" y="0" width="40" height="41" xoffset="1" yoffset="13" xadvance="43" page="0" chnl="15" />

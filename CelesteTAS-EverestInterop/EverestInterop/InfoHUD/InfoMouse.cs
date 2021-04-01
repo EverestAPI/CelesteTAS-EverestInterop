@@ -5,22 +5,46 @@ using Monocle;
 
 namespace TAS.EverestInterop.InfoHUD {
     public static class InfoMouse {
+        private static KeyboardState lastKeyboardState;
+        private static DateTime lastLeftCtrlPressedTime;
         private static MouseState lastMouseState;
         private static Vector2? startDragPosition;
         private static CelesteTasModuleSettings TasSettings => CelesteTasModule.Settings;
 
-        public static void DragAndDropHud() {
-            if (!TasSettings.Enabled || !TasSettings.InfoHud || !Engine.Instance.IsActive) {
+        public static void ToggleAndDrag() {
+            if (!TasSettings.Enabled || !Engine.Instance.IsActive) {
                 return;
             }
 
-            if (!Keyboard.GetState().IsKeyDown(Keys.LeftControl)) {
+            KeyboardState keyboardState = Keyboard.GetState();
+            if (!keyboardState.IsKeyDown(Keys.LeftControl)) {
+                lastKeyboardState = keyboardState;
+                return;
+            }
+
+            MouseState mouseState = Mouse.GetState();
+            Toggle(keyboardState);
+            DragAndDropHud(mouseState);
+        }
+
+        private static void Toggle(KeyboardState keyboardState) {
+            if (lastKeyboardState.IsKeyUp(Keys.LeftControl)) {
+                if (DateTime.Now.Subtract(lastLeftCtrlPressedTime).TotalMilliseconds < 300) {
+                    TasSettings.InfoHud = !TasSettings.InfoHud;
+                }
+
+                lastLeftCtrlPressedTime = DateTime.Now;
+            }
+
+            lastKeyboardState = keyboardState;
+        }
+
+        private static void DragAndDropHud(MouseState mouseState) {
+            if (!TasSettings.InfoHud) {
                 return;
             }
 
             Draw.SpriteBatch.Begin();
-
-            MouseState mouseState = Mouse.GetState();
 
             InfoInspectEntity.HandleMouseData(mouseState, lastMouseState);
 
