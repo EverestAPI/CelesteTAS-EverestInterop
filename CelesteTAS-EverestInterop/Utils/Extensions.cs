@@ -17,6 +17,10 @@ namespace TAS.Utils {
         private const BindingFlags StaticInstanceAnyVisibility =
             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
+        public static bool IsSameOrSubclassOf(this Type potentialDescendant, Type potentialBase) {
+            return potentialDescendant.IsSubclassOf(potentialBase) || potentialDescendant == potentialBase;
+        }
+
         public static FieldInfo GetFieldInfo(this Type type, string name) {
             return type.GetField(name, StaticInstanceAnyVisibility);
         }
@@ -147,6 +151,20 @@ namespace TAS.Utils {
 
         public static bool IsNotEmpty<T>(this IEnumerable<T> enumerable) {
             return !enumerable.IsEmpty();
+        }
+
+        public static IEnumerable<T> SkipLast<T>(this IEnumerable<T> source, int n = 1) {
+            var it = source.GetEnumerator();
+            bool hasRemainingItems = false;
+            var cache = new Queue<T>(n + 1);
+
+            do {
+                if (hasRemainingItems = it.MoveNext()) {
+                    cache.Enqueue(it.Current);
+                    if (cache.Count > n)
+                        yield return cache.Dequeue();
+                }
+            } while (hasRemainingItems);
         }
     }
 

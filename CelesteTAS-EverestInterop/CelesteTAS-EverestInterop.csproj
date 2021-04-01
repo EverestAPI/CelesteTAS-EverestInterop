@@ -123,6 +123,7 @@
         <Compile Include="EverestInterop\Hitboxes\HitboxTriggerSpikes.cs"/>
         <Compile Include="EverestInterop\Hitboxes\HitboxTweak.cs"/>
         <Compile Include="EverestInterop\Hotkeys.cs"/>
+        <Compile Include="EverestInterop\InfoHUD\InfoCustom.cs"/>
         <Compile Include="EverestInterop\InfoHUD\InfoHud.cs"/>
         <Compile Include="EverestInterop\InfoHUD\InfoInspectEntity.cs"/>
         <Compile Include="EverestInterop\InfoHUD\InfoMouse.cs"/>

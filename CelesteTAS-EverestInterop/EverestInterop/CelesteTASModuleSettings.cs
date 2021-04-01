@@ -150,6 +150,14 @@ namespace TAS.EverestInterop {
         public bool InfoGame { get; set; } = true;
         public bool InfoTasInput { get; set; } = true;
         public bool InfoSubPixelIndicator { get; set; } = true;
+        public bool InfoCustom { get; set; } = false;
+
+        [SettingIgnore]
+        public string InfoCustomTemplate { get; set; } =
+            "Theo: {TheoCrystal.ExactPosition}\n" +
+            "TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer}\n" +
+            "Paused: {Level.Paused}";
+
         [SettingIgnore] public Vector2 InfoPosition { get; set; } = Vector2.Zero;
         [SettingIgnore] public int InfoTextSize { get; set; } = 10;
         [SettingIgnore] public int InfoSubPixelIndicatorSize { get; set; } = 10;

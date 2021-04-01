@@ -265,6 +265,11 @@ namespace TAS {
                         if (inspectingInfo.IsNotNullOrEmpty()) {
                             stringBuilder.AppendLine(inspectingInfo);
                         }
+
+                        string customInfo = InfoCustom.Parse();
+                        if (customInfo.IsNotEmpty()) {
+                            stringBuilder.AppendLine(customInfo);
+                        }
                     }
 
                     StatusWithoutTime = stringBuilder.ToString();

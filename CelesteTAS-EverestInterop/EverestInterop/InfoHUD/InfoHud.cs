@@ -157,7 +157,6 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-
         public static TextMenu.Item CreateSubMenu() {
             subMenuItem = new TextMenuExt.SubMenu("Info HUD".ToDialogText(), false).Apply(subMenu => {
                 subMenu.Add(new TextMenu.OnOff("Enabled".ToDialogText(), TasSettings.InfoHud).Change(value => TasSettings.InfoHud = value));
@@ -166,6 +165,13 @@ namespace TAS.EverestInterop.InfoHUD {
                     TasSettings.InfoTasInput = value));
                 subMenu.Add(new TextMenu.OnOff("Info Sub Pixel Indicator".ToDialogText(), TasSettings.InfoSubPixelIndicator).Change(value =>
                     TasSettings.InfoSubPixelIndicator = value));
+                subMenu.Add(new TextMenu.OnOff("Info Custom".ToDialogText(), TasSettings.InfoCustom).Change(value => TasSettings.InfoCustom = value));
+                subMenu.Add(new TextMenu.Button("Info Copy Custom Template".ToDialogText()).Pressed(() =>
+                    TextInput.SetClipboardText(TasSettings.InfoCustomTemplate)));
+                subMenu.Add(new TextMenu.Button("Info Set Custom Template".ToDialogText()).Pressed(() => {
+                    TasSettings.InfoCustomTemplate = TextInput.GetClipboardText();
+                    CelesteTasModule.Instance.SaveSettings();
+                }));
                 subMenu.Add(new TextMenuExt.IntSlider("Info Text Size".ToDialogText(), 5, 20, TasSettings.InfoTextSize).Change(value =>
                     TasSettings.InfoTextSize = value));
                 subMenu.Add(new TextMenuExt.IntSlider("Info Sub Pixel Indicator Size".ToDialogText(), 5, 20, TasSettings.InfoSubPixelIndicatorSize)

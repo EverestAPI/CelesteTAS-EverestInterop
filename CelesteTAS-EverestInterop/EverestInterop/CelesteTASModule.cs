@@ -96,6 +96,7 @@ namespace TAS.EverestInterop {
         public override void LoadContent(bool firstLoad) {
             if (firstLoad) {
                 TasCommandAttribute.CollectMethods();
+                InfoCustom.CollectAllTypeInfo();
             }
         }
 
