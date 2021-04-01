@@ -65,7 +65,7 @@
 - Examples:
   - `Set, VariantMode, false`
   - `Set, CheatMode, true`
-  - `Set, CheatMode, true`
+  - `Set, DashMode, Infinite` or `Set, DashMode, 2`
   - `Set, Player.Position, 123.123, -1028`
   - `Set, Player.Speed, 325, -52.5`
   - `Set, Player.Ducking, true`
