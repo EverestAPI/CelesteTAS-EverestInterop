@@ -85,5 +85,18 @@ While in game or in Studio:
 
 ## Misc
 
-- Inspect entity: holding left ctrl then left-click to add the entity to be inspected, right-click to clear the inspecting entities. Supports exporting position
-  data via the `StartExport` command.
+### Inspect Entity
+
+holding left ctrl then left-click to add the entity to be inspected, right-click to clear the inspecting entities. Supports exporting position data via
+the `StartExport` command.
+
+### Custom Info
+
+The contents of the curly brackets will be converted to actual data, here are some examples:
+
+- `Wind: {Level.Wind}`
+- `AutoJump: {Player.AutoJump} ({Player.AutoJumpTimer.toFrame()})`
+- `ForceMoveX: {Player.forceMoveX} ({Player.forceMoveXTimer.toFrame()})`
+- `Theo: {TheoCrystal.ExactPosition}`
+- `TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}`
+- `CustomSpinner: {FrostHelper.CustomSpinner@FrostTempleHelper.Position}`

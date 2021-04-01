@@ -48,8 +48,8 @@ namespace TAS.EverestInterop.InfoHUD {
 
             InfoInspectEntity.HandleMouseData(mouseState, lastMouseState);
 
-            Draw.Line(mouseState.X - 9f, mouseState.Y, mouseState.X + 8f, mouseState.Y, Color.Yellow, 3f);
-            Draw.Line(mouseState.X, mouseState.Y - 9f, mouseState.X, mouseState.Y + 8f, Color.Yellow, 3f);
+            Draw.Line(mouseState.X - 13f, mouseState.Y, mouseState.X + 12f, mouseState.Y, Color.Red, 5f);
+            Draw.Line(mouseState.X, mouseState.Y - 13f, mouseState.X, mouseState.Y + 12f, Color.Red, 5f);
 
             if (lastMouseState.LeftButton == ButtonState.Released && mouseState.LeftButton == ButtonState.Pressed) {
                 startDragPosition = new Vector2(mouseState.X, mouseState.Y);

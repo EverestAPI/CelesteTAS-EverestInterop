@@ -55,7 +55,14 @@ namespace TAS.EverestInterop.InfoHUD {
                 }
 
                 stringBuilder.Append(GameInfo.Status);
+            } else if (TasSettings.InfoCustom) {
+                if (stringBuilder.Length > 0) {
+                    stringBuilder.AppendLine();
+                }
+
+                stringBuilder.Append(GameInfo.CustomInfo);
             }
+
 
             string text = stringBuilder.ToString().Trim();
             if (string.IsNullOrEmpty(text) && !TasSettings.InfoSubPixelIndicator) {
@@ -73,15 +80,15 @@ namespace TAS.EverestInterop.InfoHUD {
             float infoAlpha = 1f;
 
             Vector2 size = JetBrainsMonoFont.Measure(text) * fontSize;
+            size = InfoSubPixelIndicator.TryExpandSize(size, padding);
 
-            TasSettings.InfoPosition =
-                TasSettings.InfoPosition.Clamp(margin, margin, viewWidth - size.X - margin - padding * 2, viewHeight - size.Y - margin - padding * 2);
+            TasSettings.InfoPosition = TasSettings.InfoPosition.Clamp(margin, margin, viewWidth - size.X - margin - padding * 2,
+                viewHeight - size.Y - margin - padding * 2);
 
             float x = TasSettings.InfoPosition.X;
             float y = TasSettings.InfoPosition.Y;
 
             Rectangle bgRect = new Rectangle((int) x, (int) y, (int) (size.X + padding * 2), (int) (size.Y + padding * 2));
-            bgRect = InfoSubPixelIndicator.TryExpandRect(bgRect, (int) padding);
 
             if (self.GetPlayer() is Player player) {
                 Vector2 playerPosition = self.Camera.CameraToScreen(player.TopLeft) * pixelScale;

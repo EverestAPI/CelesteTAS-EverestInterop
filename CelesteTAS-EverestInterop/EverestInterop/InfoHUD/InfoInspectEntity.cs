@@ -212,7 +212,7 @@ namespace TAS.EverestInterop.InfoHUD {
 
         private static string GetPosition(Entity entity) {
             if (entity is Actor actor) {
-                return $"{actor.X + actor.PositionRemainder.X}, {actor.Y + actor.PositionRemainder.Y}";
+                return $"{actor.X + actor.PositionRemainder.X:F2}, {actor.Y + actor.PositionRemainder.Y:F2}";
             } else {
                 return $"{entity.X}, {entity.Y}";
             }

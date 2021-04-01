@@ -16,6 +16,7 @@ namespace TAS {
         private static string savedGameStatus;
         private static string savedStatusWithoutTime;
         private static string savedLastVel;
+        private static string savedCustomInfo;
         private static long savedLastChapterTime;
         private static Vector2 savedLastPos;
         private static Vector2 savedLastPlayerSeekerPos;
@@ -106,6 +107,7 @@ namespace TAS {
             savedByBreakpoint = breakpoint;
             savedGameStatus = GameInfo.Status;
             savedLastVel = GameInfo.LastVel;
+            savedCustomInfo = GameInfo.CustomInfo;
             savedLastChapterTime = GameInfo.LastChapterTime;
             savedStatusWithoutTime = GameInfo.StatusWithoutTime;
             savedLastPos = GameInfo.LastPos;
@@ -152,6 +154,7 @@ namespace TAS {
             savedController = null;
             savedGameStatus = null;
             savedLastVel = null;
+            savedCustomInfo = null;
             savedLastChapterTime = 0;
             savedStatusWithoutTime = null;
             savedLastPos = default;
@@ -171,6 +174,7 @@ namespace TAS {
             SetTasState();
             GameInfo.Status = savedGameStatus;
             GameInfo.LastVel = savedLastVel;
+            GameInfo.CustomInfo = savedCustomInfo;
             GameInfo.StatusWithoutTime = savedStatusWithoutTime;
             GameInfo.LastChapterTime = savedLastChapterTime;
             GameInfo.LastPos = savedLastPos;

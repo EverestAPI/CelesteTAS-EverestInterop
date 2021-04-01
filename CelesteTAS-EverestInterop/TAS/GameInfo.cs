@@ -34,6 +34,7 @@ namespace TAS {
         public static string Status = string.Empty;
         public static string StatusWithoutTime = string.Empty;
         public static string LastVel = string.Empty;
+        public static string CustomInfo = string.Empty;
         public static long LastChapterTime;
         public static Vector2 LastPos;
         public static Vector2 LastPlayerSeekerPos;
@@ -266,9 +267,9 @@ namespace TAS {
                             stringBuilder.AppendLine(inspectingInfo);
                         }
 
-                        string customInfo = InfoCustom.Parse();
-                        if (customInfo.IsNotEmpty()) {
-                            stringBuilder.AppendLine(customInfo);
+                        CustomInfo = InfoCustom.Parse();
+                        if (CustomInfo.IsNotEmpty()) {
+                            stringBuilder.AppendLine(CustomInfo);
                         }
                     }
 

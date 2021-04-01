@@ -154,9 +154,11 @@ namespace TAS.EverestInterop {
 
         [SettingIgnore]
         public string InfoCustomTemplate { get; set; } =
+            "Wind: {Level.Wind}\n" +
+            "AutoJump: {Player.AutoJump} ({Player.AutoJumpTimer.toFrame()})\n" +
+            "ForceMoveX: {Player.forceMoveX} ({Player.forceMoveXTimer.toFrame()})\n" +
             "Theo: {TheoCrystal.ExactPosition}\n" +
-            "TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer}\n" +
-            "Paused: {Level.Paused}";
+            "TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}";
 
         [SettingIgnore] public Vector2 InfoPosition { get; set; } = Vector2.Zero;
         [SettingIgnore] public int InfoTextSize { get; set; } = 10;

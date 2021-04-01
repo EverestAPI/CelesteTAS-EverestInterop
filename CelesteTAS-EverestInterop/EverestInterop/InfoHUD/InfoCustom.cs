@@ -18,6 +18,7 @@ namespace TAS.EverestInterop.InfoHUD {
                                                            BindingFlags.Public | BindingFlags.NonPublic;
 
         private static readonly Regex BraceRegex = new Regex(@"\{(.+?)\}", RegexOptions.Compiled);
+        private static readonly Regex ModTypeNameRegex = new Regex(@"(.+@[^\.]+?)\.", RegexOptions.Compiled);
         private static readonly MethodInfo EntityListFindFirst = typeof(EntityList).GetMethod("FindFirst");
         private static readonly Dictionary<string, Type> AllTypes = new Dictionary<string, Type>();
         private static readonly Dictionary<string, MethodInfo> CachedGetMethodInfos = new Dictionary<string, MethodInfo>();
@@ -30,9 +31,14 @@ namespace TAS.EverestInterop.InfoHUD {
             AllTypes.Clear();
             CachedGetMethodInfos.Clear();
             CachedFieldInfos.Clear();
+            Assembly officialAssembly = typeof(Celeste.Celeste).Assembly;
             foreach (Type type in Everest.Modules.SelectMany(module => module.GetType().Assembly.GetTypesSafe())) {
                 if (type.FullName != null) {
-                    AllTypes[type.FullName] = type;
+                    if (type.Assembly == officialAssembly) {
+                        AllTypes[type.FullName] = type;
+                    } else {
+                        AllTypes[$"{type.FullName}@{type.Assembly.GetName().Name}"] = type;
+                    }
                 }
             }
         }
@@ -43,19 +49,38 @@ namespace TAS.EverestInterop.InfoHUD {
             }
 
             return BraceRegex.Replace(Settings.InfoCustomTemplate, match => {
-                string origText = match.Value;
                 string matchText = match.Groups[1].Value;
 
                 string[] splitText = matchText.Split('.').Select(s => s.Trim()).ToArray();
                 if (splitText.Length <= 1) {
-                    return origText;
+                    return "invalid template";
                 }
 
-                string typeFullName = $"Celeste.{splitText[0]}";
-                if (!AllTypes.ContainsKey(typeFullName)) {
-                    typeFullName = $"Monocle.{splitText[0]}";
+                string typeFullName;
+
+                if (matchText.Contains("@")) {
+                    if (ModTypeNameRegex.Match(matchText) is Match matchTypeName) {
+                        typeFullName = matchTypeName.Groups[1].Value;
+                        List<string> modTypeSplitText = ModTypeNameRegex.Replace(matchText, string.Empty).Split('.').ToList();
+                        modTypeSplitText.Insert(0, typeFullName);
+                        splitText = modTypeSplitText.ToArray();
+                        if (splitText.Length <= 1) {
+                            return "invalid template";
+                        }
+
+                        if (!AllTypes.ContainsKey(typeFullName)) {
+                            return $"{splitText[0]} not found";
+                        }
+                    } else {
+                        return "invalid template";
+                    }
+                } else {
+                    typeFullName = $"Celeste.{splitText[0]}";
                     if (!AllTypes.ContainsKey(typeFullName)) {
-                        return $"{splitText[0]} not found";
+                        typeFullName = $"Monocle.{splitText[0]}";
+                        if (!AllTypes.ContainsKey(typeFullName)) {
+                            return $"{splitText[0]} not found";
+                        }
                     }
                 }
 
@@ -70,7 +95,7 @@ namespace TAS.EverestInterop.InfoHUD {
 
                 if (Engine.Scene is Level level) {
                     if (type.IsSameOrSubclassOf(typeof(Entity))) {
-                        if (FindEntity(type, level.Entities) is object entity) {
+                        if (FindEntity(type, level) is object entity) {
                             return FormatValue(GetMemberValue(entity, memberNames), toFrame);
                         } else {
                             return string.Empty;
@@ -146,8 +171,12 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-        private static object FindEntity(Type type, EntityList entityList) {
-            return EntityListFindFirst.MakeGenericMethod(type).Invoke(entityList, null);
+        private static object FindEntity(Type type, Level level) {
+            if (level.Tracker.Entities.ContainsKey(type)) {
+                return level.Tracker.Entities[type].FirstOrDefault();
+            } else {
+                return EntityListFindFirst.MakeGenericMethod(type).Invoke(level.Entities, null);
+            }
         }
     }
 }

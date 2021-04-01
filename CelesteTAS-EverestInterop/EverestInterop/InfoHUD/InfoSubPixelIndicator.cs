@@ -32,9 +32,10 @@ namespace TAS.EverestInterop.InfoHUD {
             float x = TasSettings.InfoPosition.X + textWidth + padding * 2;
             y = y - rectSide - padding * 1.5f - textHeight;
             float thickness = PixelScale * TasSettings.InfoSubPixelIndicatorSize / 20f;
-
             DrawHollowRect(x, y, rectSide, rectSide, Color.Green * alpha, thickness);
-            Draw.Rect(x + rectSide * subPixelLeft - thickness, y + rectSide * subPixelTop - thickness, thickness * 2, thickness * 2,
+
+            float pointSize = thickness * 1.5f;
+            Draw.Rect(x + rectSide * subPixelLeft - pointSize / 2 + 1, y + rectSide * subPixelTop - pointSize / 2 + 1, pointSize, pointSize,
                 Color.Red * alpha);
 
             JetBrainsMonoFont.Draw(subPixelLeft.ToString("F2"), new Vector2(x - textWidth - padding / 2f, y + (rectSide - textHeight) / 2f),
@@ -47,16 +48,24 @@ namespace TAS.EverestInterop.InfoHUD {
                 Vector2.Zero, new Vector2(GetSubPixelFontSize()), Color.White * alpha);
         }
 
-        public static Rectangle TryExpandRect(Rectangle bgRect, int padding) {
+        public static Vector2 TryExpandSize(Vector2 size, float padding) {
             if (TasSettings.InfoSubPixelIndicator) {
-                bgRect.Height += (int) (GetSubPixelRectSize() + GetSubPixelTextSize().Y * 2 + padding * 2);
-                if (!TasSettings.InfoGame && !TasSettings.InfoTasInput) {
-                    bgRect.Height -= padding;
-                    bgRect.Width = (int) (GetSubPixelRectSize() + GetSubPixelTextSize().X * 2 + padding * 4);
+                size.Y += GetSubPixelRectSize() + GetSubPixelTextSize().Y * 2 + padding * 2;
+                if (!TasSettings.InfoGame && !TasSettings.InfoCustom && (!TasSettings.InfoTasInput || !Manager.Running)) {
+                    size.Y -= padding;
+                    size.X = GetSubPixelRectSize() + GetSubPixelTextSize().X * 2 + padding * 2;
                 }
             }
 
-            return bgRect;
+            return size;
+        }
+
+        public static float GetHeight(float padding) {
+            if (TasSettings.InfoSubPixelIndicator) {
+                return GetSubPixelRectSize() + GetSubPixelTextSize().Y * 2 + padding * 2;
+            } else {
+                return 0f;
+            }
         }
 
         private static float GetSubPixelRectSize() {
