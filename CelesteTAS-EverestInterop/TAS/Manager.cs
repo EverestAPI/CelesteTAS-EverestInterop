@@ -134,12 +134,12 @@ namespace TAS {
             return isLoading;
         }
 
-        public static float GetAngle(Vector2 vector) {
-            float angle = 360f / 6.283186f * Calc.Angle(vector);
+        public static double GetAngle(Vector2 vector) {
+            double angle = 180 / Math.PI * Math.Atan2(vector.Y, vector.X);
             if (angle < -90.01f) {
-                return 450f + angle;
+                return 450 + angle;
             } else {
-                return 90f + angle;
+                return 90 + angle;
             }
         }
 
