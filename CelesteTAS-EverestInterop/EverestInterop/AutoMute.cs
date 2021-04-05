@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Celeste;
@@ -48,8 +49,8 @@ namespace TAS.EverestInterop {
             "event:/new_content/game/10_farewell/fakeheart_get",
         };
 
-        private static readonly Dictionary<WeakReference<EventInstance>, int>
-            LoopAudioInstances = new Dictionary<WeakReference<EventInstance>, int>();
+        private static readonly IDictionary<WeakReference<EventInstance>, int>
+            LoopAudioInstances = new ConcurrentDictionary<WeakReference<EventInstance>, int>();
 
         private static bool settingMusic;
         private static bool hasMuted;
