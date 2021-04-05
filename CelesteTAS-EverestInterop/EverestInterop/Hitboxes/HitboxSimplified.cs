@@ -8,10 +8,11 @@ using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
+using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxSimplified {
-        private static readonly FieldInfo FireBallIceMode = typeof(FireBall).GetField("iceMode", BindingFlags.NonPublic | BindingFlags.Instance);
+        private static readonly FieldInfo FireBallIceMode = typeof(FireBall).GetFieldInfo("iceMode");
 
         private static readonly List<Type> UselessTypes = new List<Type> {
             typeof(ClutterBlockBase),

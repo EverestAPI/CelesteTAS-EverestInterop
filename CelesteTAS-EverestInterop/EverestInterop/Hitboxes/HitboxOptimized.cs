@@ -9,7 +9,8 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxOptimized {
-        private static readonly FieldInfo FireBallIceMode = typeof(FireBall).GetField("iceMode", BindingFlags.NonPublic | BindingFlags.Instance);
+        private static readonly FieldInfo FireBallIceMode = typeof(FireBall).GetFieldInfo("iceMode");
+        private static readonly FieldInfo SeekerPushRadius = typeof(Seeker).GetFieldInfo("pushRadius");
 
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
@@ -19,6 +20,7 @@ namespace TAS.EverestInterop.Hitboxes {
             On.Celeste.PlayerCollider.DebugRender += AddFeatherHitbox;
             On.Monocle.Circle.Render += CircleOnRender;
             On.Celeste.SoundSource.DebugRender += SoundSource_DebugRender;
+            On.Celeste.Seeker.DebugRender += SeekerOnDebugRender;
         }
 
         public static void Unload() {
@@ -27,6 +29,7 @@ namespace TAS.EverestInterop.Hitboxes {
             On.Celeste.PlayerCollider.DebugRender -= AddFeatherHitbox;
             On.Monocle.Circle.Render -= CircleOnRender;
             On.Celeste.SoundSource.DebugRender -= SoundSource_DebugRender;
+            On.Celeste.Seeker.DebugRender -= SeekerOnDebugRender;
         }
 
         private static void AddFeatherHitbox(On.Celeste.PlayerCollider.orig_DebugRender orig, PlayerCollider self, Camera camera) {
@@ -103,6 +106,17 @@ namespace TAS.EverestInterop.Hitboxes {
         private static void SoundSource_DebugRender(On.Celeste.SoundSource.orig_DebugRender orig, SoundSource self, Camera camera) {
             if (!Settings.ShowHitboxes) {
                 orig(self, camera);
+            }
+        }
+
+        private static void SeekerOnDebugRender(On.Celeste.Seeker.orig_DebugRender orig, Seeker self, Camera camera) {
+            orig(self, camera);
+
+            if (self.Regenerating && SeekerPushRadius.GetValue(self) is Circle pushRadius) {
+                Collider origCollider = self.Collider;
+                self.Collider = pushRadius;
+                pushRadius.Render(camera, HitboxColor.EntityColor);
+                self.Collider = origCollider;
             }
         }
     }
