@@ -54,7 +54,7 @@ namespace TAS.EverestInterop {
                             clickedEntityInfo += $"\n entity id  : {entityData.ToEntityId()}";
                         }
 
-                        ("Info of entity to be clicked: " + clickedEntityInfo).Log();
+                        ("Info of clicked entity: " + clickedEntityInfo).Log();
                     } else {
                         clickedEntityInfo = string.Empty;
                     }

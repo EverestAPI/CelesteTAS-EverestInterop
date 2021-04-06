@@ -18,6 +18,7 @@ using TAS.Utils;
 namespace TAS {
     public static class GameInfo {
         private static readonly FieldInfo SummitVignetteReadyFieldInfo = typeof(SummitVignette).GetFieldInfo("ready");
+        private static readonly MethodInfo EntityListFindAll = typeof(EntityList).GetMethod("FindAll");
 
         private static readonly DWallJumpCheck WallJumpCheck;
         private static readonly GetBerryFloat StrawberryCollectTimer;
@@ -40,7 +41,7 @@ namespace TAS {
         public static Vector2 LastPlayerSeekerPos;
 
         private static StreamWriter sw;
-        private static List<MethodInfo> trackedEntities;
+        private static IDictionary<string, Func<Level, IList>> trackedEntities;
 
         private static int transitionFrames;
 
@@ -158,10 +159,10 @@ namespace TAS {
 
                     string polarVel = $"Fly:   {diff.Length():F2}, {Manager.GetAngle(diff):F5}°";
 
-                    string joystick = string.Empty;
+                    string analog = string.Empty;
                     if (Manager.Running && Manager.Controller.Previous is InputFrame inputFrame && inputFrame.HasActions(Actions.Feather)) {
                         Vector2 angleVector2 = inputFrame.AngleVector2;
-                        joystick =
+                        analog =
                             $"Analog: {angleVector2.X:F5}, {angleVector2.Y:F5}, {Manager.GetAngle(new Vector2(angleVector2.X, -angleVector2.Y)):F5}°";
                     }
 
@@ -240,8 +241,8 @@ namespace TAS {
                         stringBuilder.AppendLine(polarVel);
                     }
 
-                    if (!string.IsNullOrEmpty(joystick)) {
-                        stringBuilder.AppendLine(joystick);
+                    if (!string.IsNullOrEmpty(analog)) {
+                        stringBuilder.AppendLine(analog);
                     }
 
                     if (!string.IsNullOrEmpty(retainedSpeed)) {
@@ -337,13 +338,21 @@ namespace TAS {
             sw?.Dispose();
             sw = new StreamWriter(path);
             sw.WriteLine(string.Join("\t", "Line", "Inputs", "Frames", "Time", "Position", "Speed", "State", "Statuses", "Entities"));
-            trackedEntities = new List<MethodInfo>();
+            trackedEntities = new Dictionary<string, Func<Level, IList>>();
             foreach (string typeName in tracked) {
                 string fullTypeName = typeName.Contains("@") ? typeName.Replace("@", ",") : $"Celeste.{typeName}, Celeste";
                 Type t = Type.GetType(fullTypeName);
-                if (t != null) {
-                    trackedEntities.Add(typeof(EntityList).GetMethod("FindAll")?.MakeGenericMethod(t));
+                if (t != null && t.IsSameOrSubclassOf(typeof(Entity))) {
+                    trackedEntities[t.Name] = level => FindEntity(t, level);
                 }
+            }
+        }
+
+        private static IList FindEntity(Type type, Level level) {
+            if (level.Tracker.Entities.ContainsKey(type)) {
+                return level.Tracker.Entities[type];
+            } else {
+                return EntityListFindAll.MakeGenericMethod(type).Invoke(level.Entities, null) as IList;
             }
         }
 
@@ -396,12 +405,12 @@ namespace TAS {
                             statuses);
                     }
 
-                    foreach (MethodInfo method in trackedEntities) {
-                        if (method == null) {
+                    foreach (string typeName in trackedEntities.Keys) {
+                        IList entities = trackedEntities[typeName].Invoke(level);
+                        if (entities == null) {
                             continue;
                         }
 
-                        IList entities = (IList) method.Invoke(level.Entities, null);
                         foreach (Entity entity in entities) {
                             if (entity is Actor actor) {
                                 x = (double) actor.X + actor.PositionRemainder.X;
@@ -411,7 +420,7 @@ namespace TAS {
                                 pos = entity.X + ", " + entity.Y;
                             }
 
-                            output += $"\t{method.GetGenericArguments()[0].Name}: {pos}";
+                            output += $"\t{typeName}: {pos}";
                         }
                     }
 
