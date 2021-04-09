@@ -80,6 +80,8 @@ namespace TAS.EverestInterop {
 
         public bool RoundSpeed { get; set; } = true;
 
+        public bool RoundVelocity { get; set; } = true;
+
         [SettingIgnore] public bool FastForwardCallBase { get; set; } = false;
         [SettingIgnore] public int FastForwardThreshold { get; set; } = 10;
         [SettingIgnore] public DateTime StudioLastModifiedTime { get; set; } = new DateTime();

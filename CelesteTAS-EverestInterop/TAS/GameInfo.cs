@@ -150,11 +150,11 @@ namespace TAS {
                     string pos = GetAdjustedPos(player.Position, player.PositionRemainder);
                     string speed = GetAdjustedSpeed(player.Speed);
                     Vector2 diff = (player.ExactPosition - LastPos) * 60f;
-                    string vel = $"Vel:   {diff.X:F2}, {diff.Y:F2}";
+                    string velocity = GetAdjustedVelocity(diff);
                     if (chapterTime == LastChapterTime) {
-                        vel = LastVel;
+                        velocity = LastVel;
                     } else {
-                        LastVel = vel;
+                        LastVel = velocity;
                     }
 
                     string polarVel = $"Fly:   {diff.Length():F2}, {Manager.GetAngle(diff):F5}°";
@@ -187,11 +187,10 @@ namespace TAS {
                     PlayerSeeker playerSeeker = level.Tracker.GetEntity<PlayerSeeker>();
                     if (playerSeeker != null) {
                         pos = GetAdjustedPos(playerSeeker.Position, playerSeeker.PositionRemainder);
-                        speed =
-                            $"Speed: {PlayerSeekerSpeed(playerSeeker).X:F2}, {PlayerSeekerSpeed(playerSeeker).Y:F2}";
+                        speed = GetAdjustedSpeed(PlayerSeekerSpeed(playerSeeker));
                         diff = (playerSeeker.ExactPosition - LastPlayerSeekerPos) * 60f;
-                        vel = $"Vel:   {diff.X:F2}, {diff.Y:F2}";
-                        polarVel = $"Chase: {diff.Length():F2}, {Manager.GetAngle(diff):F2}°";
+                        velocity = GetAdjustedVelocity(diff);
+                        polarVel = $"Chase: {diff.Length():F2}, {Manager.GetAngle(diff):F5}°";
                         dashCooldown = (int) (PlayerSeekerDashTimer(playerSeeker) * FramesPerSecond);
                     }
 
@@ -232,7 +231,7 @@ namespace TAS {
 
                     stringBuilder.AppendLine(pos);
                     stringBuilder.AppendLine(speed);
-                    stringBuilder.AppendLine(vel);
+                    stringBuilder.AppendLine(velocity);
 
                     if (player.StateMachine.State == Player.StStarFly
                         || playerSeeker != null
@@ -331,7 +330,11 @@ namespace TAS {
         }
 
         private static string GetAdjustedSpeed(Vector2 speed) {
-            return "Speed: " + (CelesteTasModule.Settings.RoundSpeed ? $"{speed.X:F2}, {speed.Y:F2}" : $"{speed.X:F10}, {speed.Y:F10}");
+            return $"Speed: {(CelesteTasModule.Settings.RoundSpeed ? $"{speed.X:F2}, {speed.Y:F2}" : $"{speed.X:F12}, {speed.Y:F12}")}";
+        }
+
+        private static string GetAdjustedVelocity(Vector2 diff) {
+            return $"Vel:   {(CelesteTasModule.Settings.RoundVelocity ? $"{diff.X:F2}, {diff.Y:F2}" : $"{diff.X:F12}, {diff.Y:F12}")}";
         }
 
         private static void BeginExport(string path, string[] tracked) {

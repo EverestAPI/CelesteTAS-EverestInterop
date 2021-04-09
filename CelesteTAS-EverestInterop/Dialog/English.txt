@@ -57,6 +57,7 @@ TAS_UNIX_RTC=                 Unix RTC
 TAS_CENTER_CAMERA=            Center Camera
 TAS_ROUND_POSITION=           Round Position
 TAS_ROUND_SPEED=              Round Speed
+TAS_ROUND_VELOCITY=           Round Velocity
 TAS_INFO_HUD=                 Info HUD
 TAS_PAUSE_AFTER_LOAD_STATE=   Pause After Load State
 TAS_RESTORE_SETTINGS=         Restore Settings After TAS Stop

@@ -38,6 +38,8 @@ namespace TAS.EverestInterop {
                         Settings.RoundPosition = value));
                     subMenu.Add(new TextMenu.OnOff("Round Speed".ToDialogText(), Settings.RoundSpeed).Change(value =>
                         Settings.RoundSpeed = value));
+                    subMenu.Add(new TextMenu.OnOff("Round Velocity".ToDialogText(), Settings.RoundVelocity).Change(value =>
+                        Settings.RoundVelocity = value));
                     subMenu.Add(new TextMenu.OnOff("Pause After Load State".ToDialogText(), Settings.PauseAfterLoadState).Change(value =>
                         Settings.PauseAfterLoadState = value));
                     subMenu.Add(new TextMenu.OnOff("Restore Settings".ToDialogText(), Settings.RestoreSettings).Change(value =>
