@@ -56,8 +56,8 @@ TAS_UNIX_RTC=                 使用 Unix 的进程间通讯
 # ================================== More Options Submenu ==================================
 TAS_CENTER_CAMERA=            镜头居中
 TAS_ROUND_POSITION=           坐标保留两位小数
-TAS_ROUND_SPEED=              速率保留两位小数
-TAS_ROUND_VELOCITY=           速度保留两位小数
+TAS_ROUND_SPEED=              速度保留两位小数
+TAS_ROUND_VELOCITY=           位移速度保留两位小数
 TAS_INFO_HUD=                 信息面板
 TAS_PAUSE_AFTER_LOAD_STATE=   加载保存状态后暂停
 TAS_RESTORE_SETTINGS=         TAS 停止运行后恢复所有设置
