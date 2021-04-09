@@ -1114,6 +1114,10 @@ namespace CelesteStudio {
             StudioCommunicationServer.instance?.ToggleGameSetting("RoundSpeed");
         }
 
+        private void roundVelocityToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.instance?.ToggleGameSetting("RoundVelocity");
+        }
+
         private void switchInfoHUDToolStripMenuItem_Click(object sender, EventArgs e) {
             StudioCommunicationServer.instance?.ToggleGameSetting("InfoHud");
         }

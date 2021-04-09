@@ -170,7 +170,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 subMenu.Add(new TextMenu.OnOff("Info Game".ToDialogText(), TasSettings.InfoGame).Change(value => TasSettings.InfoGame = value));
                 subMenu.Add(new TextMenu.OnOff("Info TAS Input".ToDialogText(), TasSettings.InfoTasInput).Change(value =>
                     TasSettings.InfoTasInput = value));
-                subMenu.Add(new TextMenu.OnOff("Info Sub Pixel Indicator".ToDialogText(), TasSettings.InfoSubPixelIndicator).Change(value =>
+                subMenu.Add(new TextMenu.OnOff("Info Subpixel Indicator".ToDialogText(), TasSettings.InfoSubPixelIndicator).Change(value =>
                     TasSettings.InfoSubPixelIndicator = value));
                 subMenu.Add(new TextMenu.OnOff("Info Custom".ToDialogText(), TasSettings.InfoCustom).Change(value => TasSettings.InfoCustom = value));
                 subMenu.Add(new TextMenu.Button("Info Copy Custom Template".ToDialogText()).Pressed(() =>
@@ -181,7 +181,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 }));
                 subMenu.Add(new TextMenuExt.IntSlider("Info Text Size".ToDialogText(), 5, 20, TasSettings.InfoTextSize).Change(value =>
                     TasSettings.InfoTextSize = value));
-                subMenu.Add(new TextMenuExt.IntSlider("Info Sub Pixel Indicator Size".ToDialogText(), 5, 20, TasSettings.InfoSubPixelIndicatorSize)
+                subMenu.Add(new TextMenuExt.IntSlider("Info Subpixel Indicator Size".ToDialogText(), 5, 20, TasSettings.InfoSubPixelIndicatorSize)
                     .Change(value =>
                         TasSettings.InfoSubPixelIndicatorSize = value));
                 subMenu.Add(new TextMenuExt.IntSlider("Info Opacity".ToDialogText(), 1, 10, TasSettings.InfoOpacity).Change(value =>
