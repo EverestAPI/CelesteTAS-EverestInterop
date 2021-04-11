@@ -86,6 +86,22 @@ namespace TAS.EverestInterop.InfoHUD {
         private static void ModOrigLoadLevel(ILContext il) {
             ILCursor cursor = new ILCursor(il);
 
+            if (cursor.TryGotoNext(MoveType.After,
+                ins => ins.OpCode == OpCodes.Call &&
+                       ins.Operand.ToString() == "T System.Collections.Generic.List`1/Enumerator<Celeste.EntityData>::get_Current()")) {
+                cursor.Index++;
+                object entityDataOperand = cursor.Next.Operand;
+                while (cursor.TryGotoNext(MoveType.Before,
+                    i => i.OpCode == OpCodes.Newobj && i.Operand is MethodReference m && m.HasParameters && m.Parameters.Count == 1 &&
+                         m.Parameters[0].ParameterType.Name == "Vector2",
+                    i => i.OpCode == OpCodes.Call && i.Operand.ToString() == "System.Void Monocle.Scene::Add(Monocle.Entity)")) {
+                    cursor.Index++;
+                    cursor.Emit(OpCodes.Dup).Emit(OpCodes.Ldloc_S, entityDataOperand);
+                    cursor.EmitDelegate<Action<Entity, EntityData>>(CacheEntityData);
+                }
+            }
+
+            cursor.Goto(0);
             while (cursor.TryGotoNext(MoveType.After,
                 i => i.OpCode == OpCodes.Newobj && i.Operand is MethodReference m && m.HasParameters &&
                      m.Parameters.Any(parameter => parameter.ParameterType.Name == "EntityData"))) {
