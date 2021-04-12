@@ -14,19 +14,19 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop {
     public static class Hotkeys {
-        private static readonly List<ILHook> IlHooks = new List<ILHook>();
+        private static readonly List<ILHook> IlHooks = new();
         private static FieldInfo bindingFieldInfo;
 
-        private static readonly Lazy<FieldInfo> CelesteNetClientModuleInstance = new Lazy<FieldInfo>(() =>
+        private static readonly Lazy<FieldInfo> CelesteNetClientModuleInstance = new(() =>
             Type.GetType("Celeste.Mod.CelesteNet.Client.CelesteNetClientModule, CelesteNet.Client")?.GetFieldInfo("Instance"));
 
-        private static readonly Lazy<FieldInfo> CelesteNetClientModuleContext = new Lazy<FieldInfo>(() =>
+        private static readonly Lazy<FieldInfo> CelesteNetClientModuleContext = new(() =>
             Type.GetType("Celeste.Mod.CelesteNet.Client.CelesteNetClientModule, CelesteNet.Client")?.GetFieldInfo("Context"));
 
-        private static readonly Lazy<FieldInfo> CelesteNetClientContextChat = new Lazy<FieldInfo>(() =>
+        private static readonly Lazy<FieldInfo> CelesteNetClientContextChat = new(() =>
             Type.GetType("Celeste.Mod.CelesteNet.Client.CelesteNetClientContext, CelesteNet.Client")?.GetFieldInfo("Chat"));
 
-        private static readonly Lazy<PropertyInfo> CelesteNetChatComponentActive = new Lazy<PropertyInfo>(() =>
+        private static readonly Lazy<PropertyInfo> CelesteNetChatComponentActive = new(() =>
             Type.GetType("Celeste.Mod.CelesteNet.Client.Components.CelesteNetChatComponent, CelesteNet.Client")?.GetPropertyInfo("Active"));
 
         private static KeyboardState kbState;
@@ -49,15 +49,15 @@ namespace TAS.EverestInterop {
 
         private static bool CelesteNetChatting {
             get {
-                if (!(CelesteNetClientModuleInstance.Value?.GetValue(null) is object instance)) {
+                if (CelesteNetClientModuleInstance.Value?.GetValue(null) is not { } instance) {
                     return false;
                 }
 
-                if (!(CelesteNetClientModuleContext.Value?.GetValue(instance) is object context)) {
+                if (CelesteNetClientModuleContext.Value?.GetValue(instance) is not { } context) {
                     return false;
                 }
 
-                if (!(CelesteNetClientContextChat.Value?.GetValue(context) is object chat)) {
+                if (CelesteNetClientContextChat.Value?.GetValue(context) is not { } chat) {
                     return false;
                 }
 
@@ -113,7 +113,7 @@ namespace TAS.EverestInterop {
         }
 
         public static Hotkey BindingToHotkey(ButtonBinding binding) {
-            return new Hotkey(binding.Keys, null, true, ReferenceEquals(binding, Settings.KeyFastForward));
+            return new(binding.Keys, null, true, ReferenceEquals(binding, Settings.KeyFastForward));
         }
 
         public static bool IsKeyDown(List<Keys> keys, bool keyCombo = true) {
@@ -188,7 +188,7 @@ namespace TAS.EverestInterop {
                 hotkey?.Update();
             }
 
-            if (Engine.Scene is Level level && !level.Paused) {
+            if (Engine.Scene is Level {Paused: false}) {
                 if (HotkeyHitboxes.Pressed && !HotkeyHitboxes.WasPressed) {
                     Settings.ShowHitboxes = !Settings.ShowHitboxes;
                 }
@@ -215,14 +215,14 @@ namespace TAS.EverestInterop {
 
         public static void Load() {
             InputInitialize();
-            if (typeof(ModuleSettingsKeyboardConfigUI).GetMethodInfo("<Reload>b__6_0") is MethodInfo methodInfo) {
+            if (typeof(ModuleSettingsKeyboardConfigUI).GetMethodInfo("<Reload>b__6_0") is { } methodInfo) {
                 IlHooks.Add(new ILHook(methodInfo, ModReload));
             }
 
             if (typeof(Everest).Assembly.GetTypesSafe()
-                    .FirstOrDefault(type => type.FullName == "Celeste.Mod.ModuleSettingsKeyboardConfigUIV2") is Type typeV2
+                    .FirstOrDefault(type => type.FullName == "Celeste.Mod.ModuleSettingsKeyboardConfigUIV2") is { } typeV2
             ) {
-                if (typeV2.GetMethodInfo("Reset") is MethodInfo methodInfoV2) {
+                if (typeV2.GetMethodInfo("Reset") is { } methodInfoV2) {
                     IlHooks.Add(new ILHook(methodInfoV2, ModReload));
                 }
             }
@@ -237,7 +237,7 @@ namespace TAS.EverestInterop {
         }
 
         private static void ModReload(ILContext il) {
-            ILCursor ilCursor = new ILCursor(il);
+            ILCursor ilCursor = new(il);
             if (ilCursor.TryGotoNext(
                 MoveType.After,
                 ins => ins.OpCode == OpCodes.Callvirt && ins.Operand.ToString().Contains("<Microsoft.Xna.Framework.Input.Keys>::Add(T)")
@@ -247,7 +247,7 @@ namespace TAS.EverestInterop {
                         bindingFieldInfo = bindingEntry.GetType().GetFieldInfo("Binding");
                     }
 
-                    if (!(bindingFieldInfo?.GetValue(bindingEntry) is ButtonBinding binding)) {
+                    if (bindingFieldInfo?.GetValue(bindingEntry) is not ButtonBinding binding) {
                         return;
                     }
 

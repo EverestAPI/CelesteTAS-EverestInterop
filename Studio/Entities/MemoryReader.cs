@@ -6,7 +6,7 @@ using System.Text;
 
 namespace CelesteStudio.Entities {
     public static class MemoryReader {
-        private static readonly Dictionary<int, Module64[]> ModuleCache = new Dictionary<int, Module64[]>();
+        private static readonly Dictionary<int, Module64[]> ModuleCache = new();
         public static bool is64Bit;
 
         public static void Update64Bit(Process program) {
@@ -129,7 +129,7 @@ namespace CelesteStudio.Entities {
                 return string.Empty;
             }
 
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             byte[] data = new byte[128];
             int bytesRead;
             int offset = 0;
@@ -267,8 +267,8 @@ namespace CelesteStudio.Entities {
                 return ModuleCache[key];
             }
 
-            List<Module64> list = new List<Module64>();
-            StringBuilder stringBuilder = new StringBuilder(260);
+            List<Module64> list = new();
+            StringBuilder stringBuilder = new(260);
             int count = 0;
             while ((long) count < (long) ((ulong) moduleSize)) {
                 stringBuilder.Clear();
@@ -414,7 +414,7 @@ namespace CelesteStudio.Entities {
             GetMemoryInfo(process.Handle);
             int[] offsets = GetCharacterOffsets(pattern, mask);
 
-            List<IntPtr> pointers = new List<IntPtr>();
+            List<IntPtr> pointers = new();
             for (int i = 0; i < memoryInfo.Count; i++) {
                 byte[] buff = ReadMemory(process, i);
                 MemInfo info = memoryInfo[i];
@@ -433,7 +433,7 @@ namespace CelesteStudio.Entities {
             memoryInfo = new List<MemInfo>();
             IntPtr current = (IntPtr) 65536;
             while (true) {
-                MemInfo memInfo = new MemInfo();
+                MemInfo memInfo = new();
                 int dump = VirtualQueryEx(pHandle, current, out memInfo, Marshal.SizeOf(memInfo));
                 if (dump == 0) {
                     break;

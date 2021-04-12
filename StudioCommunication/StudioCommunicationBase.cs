@@ -11,7 +11,7 @@ namespace StudioCommunication {
         protected const int BufferSize = 0x1000;
         protected const int HeaderLength = 9;
 
-        private static readonly List<StudioCommunicationBase> AttachedCom = new List<StudioCommunicationBase>();
+        private static readonly List<StudioCommunicationBase> AttachedCom = new();
         private readonly Mutex mutex;
 
         //I gave up on using pipes.
@@ -98,8 +98,8 @@ namespace StudioCommunication {
                 mutex.WaitOne();
                 //Log($"{this} acquired mutex for read");
 
-                BinaryReader reader = new BinaryReader(stream);
-                BinaryWriter writer = new BinaryWriter(stream);
+                BinaryReader reader = new(stream);
+                BinaryWriter writer = new(stream);
 
                 id = (MessageIDs) reader.ReadByte();
                 if (id == MessageIDs.Default) {
@@ -125,7 +125,7 @@ namespace StudioCommunication {
             }
 
 
-            Message message = new Message(id, data);
+            Message message = new(id, data);
             if (message.Id != MessageIDs.SendState && message.Id != MessageIDs.SendHotkeyPressed) {
                 Log($"{this} received {message.Id} with length {message.Length}");
             }
@@ -163,8 +163,8 @@ namespace StudioCommunication {
                 mutex.WaitOne();
 
                 //Log($"{this} acquired mutex for write");
-                BinaryReader reader = new BinaryReader(stream);
-                BinaryWriter writer = new BinaryWriter(stream);
+                BinaryReader reader = new(stream);
+                BinaryWriter writer = new(stream);
 
                 //Check that there isn't a message waiting to be read
                 byte firstByte = reader.ReadByte();
@@ -224,7 +224,7 @@ namespace StudioCommunication {
             //Ensure the first byte of the mmf is reset
             using (MemoryMappedViewStream stream = sharedMemory.CreateViewStream()) {
                 mutex.WaitOne();
-                BinaryWriter writer = new BinaryWriter(stream);
+                BinaryWriter writer = new(stream);
                 writer.Write((byte) 0);
                 mutex.ReleaseMutex();
             }
@@ -237,8 +237,8 @@ namespace StudioCommunication {
         protected virtual void WriteReset() {
             using (MemoryMappedViewStream stream = sharedMemory.CreateViewStream()) {
                 mutex.WaitOne();
-                BinaryWriter writer = new BinaryWriter(stream);
-                Message reset = new Message(MessageIDs.Reset, new byte[0]);
+                BinaryWriter writer = new(stream);
+                Message reset = new(MessageIDs.Reset, new byte[0]);
                 writer.Write(reset.GetBytes());
                 mutex.ReleaseMutex();
             }
@@ -278,8 +278,8 @@ namespace StudioCommunication {
                 length = data.Length - offset;
             }
 
-            BinaryFormatter bf = new BinaryFormatter();
-            using (MemoryStream ms = new MemoryStream(data, offset, length)) {
+            BinaryFormatter bf = new();
+            using (MemoryStream ms = new(data, offset, length)) {
                 object obj = bf.Deserialize(ms);
                 return (T) obj;
             }
@@ -290,8 +290,8 @@ namespace StudioCommunication {
                 return new byte[0];
             }
 
-            BinaryFormatter bf = new BinaryFormatter();
-            using (MemoryStream ms = new MemoryStream()) {
+            BinaryFormatter bf = new();
+            using (MemoryStream ms = new()) {
                 bf.Serialize(ms, obj);
                 return ms.ToArray();
             }

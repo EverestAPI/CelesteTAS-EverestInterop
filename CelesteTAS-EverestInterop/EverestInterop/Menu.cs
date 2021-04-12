@@ -88,7 +88,7 @@ namespace TAS.EverestInterop {
                 formatter = i => i.ToString();
             }
 
-            List<KeyValuePair<int?, string>> result = new List<KeyValuePair<int?, string>>();
+            List<KeyValuePair<int?, string>> result = new();
 
             if (start <= end) {
                 for (int current = start; current <= end; current++) {
@@ -109,15 +109,15 @@ namespace TAS.EverestInterop {
 
         public static IEnumerable<KeyValuePair<bool, string>> CreateDefaultHideOptions() {
             return new List<KeyValuePair<bool, string>> {
-                new KeyValuePair<bool, string>(false, "Default".ToDialogText()),
-                new KeyValuePair<bool, string>(true, "Hide".ToDialogText()),
+                new(false, "Default".ToDialogText()),
+                new(true, "Hide".ToDialogText()),
             };
         }
 
         public static IEnumerable<KeyValuePair<bool, string>> CreateSimplifyOptions() {
             return new List<KeyValuePair<bool, string>> {
-                new KeyValuePair<bool, string>(false, "Default".ToDialogText()),
-                new KeyValuePair<bool, string>(true, "Simplify".ToDialogText()),
+                new(false, "Default".ToDialogText()),
+                new(true, "Simplify".ToDialogText()),
             };
         }
     }

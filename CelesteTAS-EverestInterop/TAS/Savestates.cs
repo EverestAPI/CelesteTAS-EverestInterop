@@ -22,7 +22,7 @@ namespace TAS {
         private static Vector2 savedLastPlayerSeekerPos;
         private static bool savedByBreakpoint;
 
-        private static readonly Lazy<bool> SpeedrunToolInstalledLazy = new Lazy<bool>(() =>
+        private static readonly Lazy<bool> SpeedrunToolInstalledLazy = new(() =>
             Type.GetType("Celeste.Mod.SpeedrunTool.SaveLoad.StateManager, SpeedrunTool") != null
         );
 
@@ -76,9 +76,9 @@ namespace TAS {
             // save state when tas run to the last savestate breakpoint
             if (Running
                 && Controller.Inputs.Count > Controller.CurrentFrame
-                && Controller.CurrentFastForward is FastForward currentFastForward && currentFastForward.SaveState
-                && Controller.FastForwards.Last(pair => pair.Value.SaveState).Value == currentFastForward
-                && SavedCurrentFrame != currentFastForward.Frame) {
+                && Controller.CurrentFastForward is {SaveState: true} currentFastForward &&
+                Controller.FastForwards.Last(pair => pair.Value.SaveState).Value == currentFastForward &&
+                SavedCurrentFrame != currentFastForward.Frame) {
                 Save(true);
                 return;
             }

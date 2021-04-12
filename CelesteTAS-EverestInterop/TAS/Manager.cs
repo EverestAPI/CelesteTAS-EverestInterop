@@ -28,7 +28,7 @@ namespace TAS {
         private static readonly DUpdateVirtualInputs UpdateVirtualInputs;
 
         public static bool Running, Recording;
-        public static InputController Controller = new InputController();
+        public static InputController Controller = new();
         public static State LastState, State, NextState;
         public static string CurrentStatus = string.Empty;
         public static int FrameLoops = 1;
@@ -126,7 +126,7 @@ namespace TAS {
             if (Engine.Scene is SummitVignette summit) {
                 return !(bool) SummitVignetteReadyFieldInfo.GetValue(summit);
             } else if (Engine.Scene is Overworld overworld) {
-                return overworld.Current is OuiFileSelect slot && slot.SlotIndex >= 0 && slot.Slots[slot.SlotIndex].StartingGame;
+                return overworld.Current is OuiFileSelect {SlotIndex: >= 0} slot && slot.Slots[slot.SlotIndex].StartingGame;
             }
 
             bool isLoading = (Engine.Scene is LevelExit) || (Engine.Scene is LevelLoader) || (Engine.Scene is GameLoader) ||
@@ -262,7 +262,7 @@ namespace TAS {
             AllowUnsafeInput = false;
 
             // fix the input that was last held stays for a frame when it ends
-            if (MInput.GamePads.FirstOrDefault(data => data.Attached) is MInput.GamePadData gamePadData) {
+            if (MInput.GamePads.FirstOrDefault(data => data.Attached) is { } gamePadData) {
                 gamePadData.CurrentState = new GamePadState();
             }
 

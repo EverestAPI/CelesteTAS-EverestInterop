@@ -107,8 +107,8 @@ namespace TAS.Input {
                             Load(mode, levelId, screen);
                         }
                     } else if (args.Length > 2 && double.TryParse(args[2], out double y)) {
-                        Vector2 position = new Vector2((int) Math.Round(x), (int) Math.Round(y));
-                        Vector2 remainder = new Vector2((float) (x - Math.Truncate(x) + (int) x - (int) Math.Round(x)),
+                        Vector2 position = new((int) Math.Round(x), (int) Math.Round(y));
+                        Vector2 remainder = new((float) (x - Math.Truncate(x) + (int) x - (int) Math.Round(x)),
                             (float) (y - Math.Truncate(y) + (int) y - (int) Math.Round(y)));
 
                         Vector2 speed = Vector2.Zero;
@@ -138,8 +138,8 @@ namespace TAS.Input {
             }
         }
 
-        private static void Load(AreaMode mode, int levelId, string screen = null, int? spawnpoint = null) {
-            AreaKey areaKey = new AreaKey(levelId, mode);
+        private static void Load(AreaMode mode, int levelId, string screen = null, int? spawnPoint = null) {
+            AreaKey areaKey = new(levelId, mode);
             Session session = AreaData.GetCheckpoint(areaKey, screen) != null ? new Session(areaKey, screen) : new Session(areaKey);
 
             if (screen != null) {
@@ -148,18 +148,18 @@ namespace TAS.Input {
             }
 
             Vector2? startPosition = null;
-            if (spawnpoint != null) {
+            if (spawnPoint != null) {
                 LevelData levelData = session.MapData.Get(screen);
-                startPosition = levelData.Spawns[spawnpoint.Value];
+                startPosition = levelData.Spawns[spawnPoint.Value];
             }
 
-            session.StartedFromBeginning = spawnpoint == null && session.FirstLevel;
+            session.StartedFromBeginning = spawnPoint == null && session.FirstLevel;
             Engine.Scene = new LevelLoader(session, startPosition);
         }
 
         private static void Load(AreaMode mode, int levelId, Vector2 spawnPoint, Vector2 remainder, Vector2 speed) {
-            AreaKey areaKey = new AreaKey(levelId, mode);
-            Session session = new Session(areaKey);
+            AreaKey areaKey = new(levelId, mode);
+            Session session = new(areaKey);
             session.Level = session.MapData.GetAt(spawnPoint)?.Name;
             if (AreaData.GetCheckpoint(areaKey, session.Level) != null) {
                 session = new Session(areaKey, session.Level);
@@ -174,7 +174,7 @@ namespace TAS.Input {
         }
 
         public static string CreateConsoleCommand() {
-            if (!(Engine.Scene is Level level)) {
+            if (Engine.Scene is not Level level) {
                 return null;
             }
 
@@ -194,7 +194,7 @@ namespace TAS.Input {
 
             string id = area.ID <= 10 ? area.ID.ToString() : area.GetSID();
             string separator = id.Contains(" ") ? ", " : " ";
-            List<string> values = new List<string> {"console", mode, id};
+            List<string> values = new() {"console", mode, id};
             Player player = level.Tracker.GetEntity<Player>();
             if (player == null) {
                 values.Add(level.Session.Level);
@@ -217,14 +217,14 @@ namespace TAS.Input {
 
         [Monocle.Command("giveberry", "Gives player a red berry (CelesteTAS)")]
         private static void CmdGiveBerry() {
-            if (Engine.Scene is Level level && level.Tracker.GetEntity<Player>() is Player player) {
-                EntityData entityData = new EntityData {
+            if (Engine.Scene is Level level && level.Tracker.GetEntity<Player>() is { } player) {
+                EntityData entityData = new() {
                     Position = player.Position + new Vector2(0f, -16f),
                     ID = new Random().Next(),
                     Name = "strawberry"
                 };
-                EntityID gid = new EntityID(level.Session.Level, entityData.ID);
-                Strawberry entity2 = new Strawberry(entityData, Vector2.Zero, gid);
+                EntityID gid = new(level.Session.Level, entityData.ID);
+                Strawberry entity2 = new(entityData, Vector2.Zero, gid);
                 level.Add(entity2);
             }
         }

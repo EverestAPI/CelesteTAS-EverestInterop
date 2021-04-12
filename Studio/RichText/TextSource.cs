@@ -11,7 +11,7 @@ namespace CelesteStudio.RichText {
     /// It stores a text lines, the manager of commands, undo/redo stack, styles.
     /// </summary>
     public class TextSource : IList<Line>, IDisposable {
-        readonly protected List<Line> lines = new List<Line>();
+        readonly protected List<Line> lines = new();
         readonly LinesAccessor linesAccessor;
 
         /// <summary>
@@ -24,7 +24,7 @@ namespace CelesteStudio.RichText {
         int lastLineUniqueId;
 
         public TextSource(RichText currentTB) {
-            this.CurrentTB = currentTB;
+            CurrentTB = currentTB;
             linesAccessor = new LinesAccessor(this);
             Manager = new CommandManager(this);
             InitDefaultStyle();
@@ -67,7 +67,7 @@ namespace CelesteStudio.RichText {
             return lines.GetEnumerator();
         }
 
-        IEnumerator System.Collections.IEnumerable.GetEnumerator() {
+        IEnumerator IEnumerable.GetEnumerator() {
             return (lines as IEnumerator);
         }
 
@@ -153,7 +153,7 @@ namespace CelesteStudio.RichText {
         }
 
         public virtual Line CreateLine() {
-            return new Line(GenerateUniqueLineId());
+            return new(GenerateUniqueLineId());
         }
 
         private void OnCurrentTBChanged() {
@@ -198,7 +198,7 @@ namespace CelesteStudio.RichText {
         }
 
         public virtual void RemoveLine(int index, int count) {
-            List<int> removedLineIds = new List<int>();
+            List<int> removedLineIds = new();
             //
             if (count > 0) {
                 if (IsNeedBuildRemovedLineIds) {
@@ -265,7 +265,7 @@ namespace CelesteStudio.RichText {
         }
 
         public virtual void SaveToFile(string fileName, Encoding enc) {
-            using (StreamWriter sw = new StreamWriter(fileName, false, enc)) {
+            using (StreamWriter sw = new(fileName, false, enc)) {
                 for (int i = 0; i < Count - 1; i++) {
                     sw.WriteLine(lines[i].Text);
                 }

@@ -12,12 +12,8 @@ using GameInput = Celeste.Input;
 namespace TAS {
     public static class BindingHelper {
         private static readonly Type BindingType = typeof(Engine).Assembly.GetType("Monocle.Binding");
-
-        private static readonly Lazy<MethodInfo> BindingAddKeys =
-            new Lazy<MethodInfo>(() => BindingType.GetMethod("Add", new[] {typeof(Keys[])}));
-
-        private static readonly Lazy<MethodInfo> BindingAddButtons =
-            new Lazy<MethodInfo>(() => BindingType.GetMethod("Add", new[] {typeof(Buttons[])}));
+        private static readonly MethodInfo BindingAddKeys = BindingType.GetMethod("Add", new[] {typeof(Keys[])});
+        private static readonly MethodInfo BindingAddButtons = BindingType.GetMethod("Add", new[] {typeof(Buttons[])});
 
         static BindingHelper() {
             if (typeof(GameInput).GetFieldInfo("DemoDash") == null && typeof(GameInput).GetFieldInfo("CrouchDash") == null) {
@@ -127,14 +123,14 @@ namespace TAS {
 
         private static void SetBinding(string fieldName, params Buttons[] buttons) {
             object binding = Activator.CreateInstance(BindingType);
-            BindingAddButtons.Value.Invoke(binding, new object[] {buttons});
+            BindingAddButtons.Invoke(binding, new object[] {buttons});
             Settings.Instance.GetDynDataInstance().Set(fieldName, binding);
         }
 
         private static void SetBinding(string fieldName, Keys[] keys, params Buttons[] buttons) {
             object binding = Activator.CreateInstance(BindingType);
-            BindingAddKeys.Value.Invoke(binding, new object[] {keys});
-            BindingAddButtons.Value.Invoke(binding, new object[] {buttons});
+            BindingAddKeys.Invoke(binding, new object[] {keys});
+            BindingAddButtons.Invoke(binding, new object[] {buttons});
             Settings.Instance.GetDynDataInstance().Set(fieldName, binding);
         }
     }

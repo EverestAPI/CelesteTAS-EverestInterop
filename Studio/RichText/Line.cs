@@ -8,7 +8,7 @@ namespace CelesteStudio.RichText {
         protected List<Char> chars;
 
         internal Line(int uid) {
-            this.UniqueId = uid;
+            UniqueId = uid;
             chars = new List<Char>();
         }
 
@@ -28,7 +28,7 @@ namespace CelesteStudio.RichText {
 
         public virtual string Text {
             get {
-                StringBuilder sb = new StringBuilder(Count);
+                StringBuilder sb = new(Count);
                 foreach (Char c in this) {
                     sb.Append(c.c);
                 }
@@ -238,28 +238,28 @@ namespace CelesteStudio.RichText {
         private bool isCJKLetter(char c) {
             int code = Convert.ToInt32(c);
             return
-                (code >= 0x3300 && code <= 0x33FF) ||
-                (code >= 0xFE30 && code <= 0xFE4F) ||
-                (code >= 0xF900 && code <= 0xFAFF) ||
-                (code >= 0x2E80 && code <= 0x2EFF) ||
-                (code >= 0x31C0 && code <= 0x31EF) ||
-                (code >= 0x4E00 && code <= 0x9FFF) ||
-                (code >= 0x3400 && code <= 0x4DBF) ||
-                (code >= 0x3200 && code <= 0x32FF) ||
-                (code >= 0x2460 && code <= 0x24FF) ||
-                (code >= 0x3040 && code <= 0x309F) ||
-                (code >= 0x2F00 && code <= 0x2FDF) ||
-                (code >= 0x31A0 && code <= 0x31BF) ||
-                (code >= 0x4DC0 && code <= 0x4DFF) ||
-                (code >= 0x3100 && code <= 0x312F) ||
-                (code >= 0x30A0 && code <= 0x30FF) ||
-                (code >= 0x31F0 && code <= 0x31FF) ||
-                (code >= 0x2FF0 && code <= 0x2FFF) ||
-                (code >= 0x1100 && code <= 0x11FF) ||
-                (code >= 0xA960 && code <= 0xA97F) ||
-                (code >= 0xD7B0 && code <= 0xD7FF) ||
-                (code >= 0x3130 && code <= 0x318F) ||
-                (code >= 0xAC00 && code <= 0xD7AF);
+                (code is >= 0x3300 and <= 0x33FF) ||
+                (code is >= 0xFE30 and <= 0xFE4F) ||
+                (code is >= 0xF900 and <= 0xFAFF) ||
+                (code is >= 0x2E80 and <= 0x2EFF) ||
+                (code is >= 0x31C0 and <= 0x31EF) ||
+                (code is >= 0x4E00 and <= 0x9FFF) ||
+                (code is >= 0x3400 and <= 0x4DBF) ||
+                (code is >= 0x3200 and <= 0x32FF) ||
+                (code is >= 0x2460 and <= 0x24FF) ||
+                (code is >= 0x3040 and <= 0x309F) ||
+                (code is >= 0x2F00 and <= 0x2FDF) ||
+                (code is >= 0x31A0 and <= 0x31BF) ||
+                (code is >= 0x4DC0 and <= 0x4DFF) ||
+                (code is >= 0x3100 and <= 0x312F) ||
+                (code is >= 0x30A0 and <= 0x30FF) ||
+                (code is >= 0x31F0 and <= 0x31FF) ||
+                (code is >= 0x2FF0 and <= 0x2FFF) ||
+                (code is >= 0x1100 and <= 0x11FF) ||
+                (code is >= 0xA960 and <= 0xA97F) ||
+                (code is >= 0xD7B0 and <= 0xD7FF) ||
+                (code is >= 0x3130 and <= 0x318F) ||
+                (code is >= 0xAC00 and <= 0xD7AF);
         }
     }
 

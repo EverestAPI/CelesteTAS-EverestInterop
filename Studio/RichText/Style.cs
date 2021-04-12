@@ -56,11 +56,11 @@ namespace CelesteStudio.RichText {
         }
 
         public static Size GetSizeOfRange(Range range) {
-            return new Size((range.End.iChar - range.Start.iChar) * range.tb.CharWidth, range.tb.CharHeight);
+            return new((range.End.iChar - range.Start.iChar) * range.tb.CharWidth, range.tb.CharHeight);
         }
 
         public static GraphicsPath GetRoundedRectangle(Rectangle rect, int d) {
-            GraphicsPath gp = new GraphicsPath();
+            GraphicsPath gp = new();
 
             gp.AddArc(rect.X, rect.Y, d, d, 180, 90);
             gp.AddArc(rect.X + rect.Width - d, rect.Y, d, d, 270, 90);
@@ -89,9 +89,9 @@ namespace CelesteStudio.RichText {
         public StringFormat stringFormat;
 
         public TextStyle(Brush foreBrush, Brush backgroundBrush, FontStyle fontStyle) {
-            this.ForeBrush = foreBrush;
-            this.BackgroundBrush = backgroundBrush;
-            this.FontStyle = fontStyle;
+            ForeBrush = foreBrush;
+            BackgroundBrush = backgroundBrush;
+            FontStyle = fontStyle;
             stringFormat = new StringFormat(StringFormatFlags.MeasureTrailingSpaces);
         }
 
@@ -108,7 +108,7 @@ namespace CelesteStudio.RichText {
             }
 
             //draw chars
-            Font f = new Font(range.tb.Font, FontStyle);
+            Font f = new(range.tb.Font, FontStyle);
             //Font fHalfSize = new Font(range.tb.Font.FontFamily, f.SizeInPoints/2, FontStyle);
             Line line = range.tb[range.Start.iLine];
             float dx = range.tb.CharWidth;
@@ -229,7 +229,7 @@ namespace CelesteStudio.RichText {
                         position.X + (range.End.iChar - range.Start.iChar) * range.tb.CharWidth - firstNonSpaceSymbolX, range.tb.CharHeight)));
             } else {
                 //draw '...'
-                using (Font f = new Font(range.tb.Font, FontStyle)) {
+                using (Font f = new(range.tb.Font, FontStyle)) {
                     gr.DrawString("...", f, ForeBrush, range.tb.LeftIndent, position.Y - 2);
                 }
 
@@ -245,7 +245,7 @@ namespace CelesteStudio.RichText {
     /// </summary>
     public class SelectionStyle : Style {
         public SelectionStyle(Brush backgroundBrush) {
-            this.BackgroundBrush = backgroundBrush;
+            BackgroundBrush = backgroundBrush;
         }
 
         public Brush BackgroundBrush { get; set; }
@@ -258,7 +258,7 @@ namespace CelesteStudio.RichText {
         public override void Draw(Graphics gr, Point position, Range range) {
             //draw background
             if (BackgroundBrush != null) {
-                Rectangle rect = new Rectangle(position.X, position.Y, (range.End.iChar - range.Start.iChar) * range.tb.CharWidth,
+                Rectangle rect = new(position.X, position.Y, (range.End.iChar - range.Start.iChar) * range.tb.CharWidth,
                     range.tb.CharHeight);
                 if (rect.Width == 0) {
                     return;
@@ -283,7 +283,7 @@ namespace CelesteStudio.RichText {
     /// </summary>
     public class MarkerStyle : Style {
         public MarkerStyle(Brush backgroundBrush) {
-            this.BackgroundBrush = backgroundBrush;
+            BackgroundBrush = backgroundBrush;
             IsExportable = true;
         }
 
@@ -292,7 +292,7 @@ namespace CelesteStudio.RichText {
         public override void Draw(Graphics gr, Point position, Range range) {
             //draw background
             if (BackgroundBrush != null) {
-                Rectangle rect = new Rectangle(position.X, position.Y, (range.End.iChar - range.Start.iChar) * range.tb.CharWidth,
+                Rectangle rect = new(position.X, position.Y, (range.End.iChar - range.Start.iChar) * range.tb.CharWidth,
                     range.tb.CharHeight);
                 if (rect.Width == 0) {
                     return;
@@ -340,7 +340,7 @@ namespace CelesteStudio.RichText {
             //get last char coordinates
             Point p = range.tb.PlaceToPoint(range.End);
             //draw small square under char
-            Rectangle rect = new Rectangle(p.X - 5, p.Y + range.tb.CharHeight - 2, 4, 3);
+            Rectangle rect = new(p.X - 5, p.Y + range.tb.CharHeight - 2, 4, 3);
             gr.FillPath(Brushes.White, GetRoundedRectangle(rect, 1));
             gr.DrawPath(borderPen, GetRoundedRectangle(rect, 1));
             //add visual marker for handle mouse events

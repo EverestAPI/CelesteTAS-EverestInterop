@@ -28,7 +28,7 @@ namespace TAS.Input {
                 if (index != -1) {
                     string moduleName = args[0].Substring(0, index);
                     settingName = args[0].Substring(index + 1);
-                    if (moduleName == "Player" && Engine.Scene.Tracker.GetEntity<Player>() is Player player) {
+                    if (moduleName == "Player" && Engine.Scene.Tracker.GetEntity<Player>() is { } player) {
                         SetPlayer(player, settingName, args.Skip(1).ToArray());
                     } else {
                         foreach (EverestModule module in Everest.Modules) {
@@ -83,15 +83,15 @@ namespace TAS.Input {
             }
 
             const BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
-            if (typeof(Player).GetProperty(name, bindingFlags) is PropertyInfo property && property.GetSetMethod(true) != null) {
+            if (typeof(Player).GetProperty(name, bindingFlags) is { } property && property.GetSetMethod(true) != null) {
                 object value = ConvertType(values, property.PropertyType);
                 property.SetValue(player, value);
-            } else if (typeof(Player).GetField(name, bindingFlags) is FieldInfo field) {
+            } else if (typeof(Player).GetField(name, bindingFlags) is { } field) {
                 if (name == "Position" && values.Length == 2) {
                     double.TryParse(values[0], out double x);
                     double.TryParse(values[1], out double y);
-                    Vector2 position = new Vector2((int) Math.Round(x), (int) Math.Round(y));
-                    Vector2 remainder = new Vector2((float) (x - Math.Truncate(x) + (int) x - (int) Math.Round(x)),
+                    Vector2 position = new((int) Math.Round(x), (int) Math.Round(y));
+                    Vector2 remainder = new((float) (x - Math.Truncate(x) + (int) x - (int) Math.Round(x)),
                         (float) (y - Math.Truncate(y) + (int) y - (int) Math.Round(y)));
                     player.Position = position;
                     ActorMovementCounter.SetValue(player, remainder);

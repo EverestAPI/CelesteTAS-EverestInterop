@@ -10,8 +10,8 @@ using MonoMod.RuntimeDetour;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static partial class ActualEntityCollideHitbox {
-        private static readonly Dictionary<Entity, Vector2> LastPositions = new Dictionary<Entity, Vector2>();
-        private static readonly Dictionary<Entity, bool> LastColldables = new Dictionary<Entity, bool>();
+        private static readonly Dictionary<Entity, Vector2> LastPositions = new();
+        private static readonly Dictionary<Entity, bool> LastColldables = new();
 
         private static bool colliderListRendering;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
@@ -49,7 +49,7 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void ModPlayerOrigUpdateEntity(ILContext il) {
-            ILCursor ilCursor = new ILCursor(il);
+            ILCursor ilCursor = new(il);
             if (ilCursor.TryGotoNext(MoveType.After, ins => ins.MatchCastclass<PlayerCollider>())) {
                 ilCursor.Emit(OpCodes.Dup).EmitDelegate<Action<PlayerCollider>>(playerCollider => {
                     Entity entity = playerCollider.Entity;
@@ -85,7 +85,7 @@ namespace TAS.EverestInterop.Hitboxes {
             if (!Settings.ShowHitboxes
                 || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Off
                 || Manager.FrameLoops > 1
-                || colliderListRendering && !(self is ColliderList)
+                || colliderListRendering && self is not ColliderList
                 || entity.Get<PlayerCollider>() == null
                 || entity.Scene?.Tracker.GetEntity<Player>() == null
                 || entity.LoadActualCollidePosition() == null

@@ -278,7 +278,7 @@ namespace CelesteStudio.RichText {
     /// Insert text into given ranges
     /// </summary>
     internal class ReplaceTextCommand : UndoableCommand {
-        readonly List<string> prevText = new List<string>();
+        readonly List<string> prevText = new();
         readonly List<Range> ranges;
         string insertedText;
 
@@ -440,7 +440,7 @@ namespace CelesteStudio.RichText {
     /// Replaces text
     /// </summary>
     internal class ReplaceMultipleTextCommand : UndoableCommand {
-        readonly List<string> prevText = new List<string>();
+        readonly List<string> prevText = new();
         readonly List<ReplaceRange> ranges;
 
         /// <summary>
@@ -529,7 +529,7 @@ namespace CelesteStudio.RichText {
     /// </summary>
     internal class RemoveLinesCommand : UndoableCommand {
         readonly List<int> iLines;
-        readonly List<string> prevText = new List<string>();
+        readonly List<string> prevText = new();
 
         /// <summary>
         /// Constructor
@@ -622,12 +622,12 @@ namespace CelesteStudio.RichText {
     /// </summary>
     internal class MultiRangeCommand : UndoableCommand {
         private readonly UndoableCommand cmd;
-        private readonly List<UndoableCommand> commandsByRanges = new List<UndoableCommand>();
+        private readonly List<UndoableCommand> commandsByRanges = new();
         private readonly Range range;
 
         public MultiRangeCommand(UndoableCommand command)
             : base(command.ts) {
-            this.cmd = command;
+            cmd = command;
             range = ts.CurrentTB.Selection.Clone();
         }
 

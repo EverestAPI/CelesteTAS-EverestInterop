@@ -65,7 +65,7 @@ namespace CelesteStudio.RichText {
     public class StyleVisualMarker : VisualMarker {
         public StyleVisualMarker(Rectangle rectangle, Style style)
             : base(rectangle) {
-            this.Style = style;
+            Style = style;
         }
 
         public Style Style { get; private set; }
@@ -74,8 +74,8 @@ namespace CelesteStudio.RichText {
     public class VisualMarkerEventArgs : MouseEventArgs {
         public VisualMarkerEventArgs(Style style, StyleVisualMarker marker, MouseEventArgs args)
             : base(args.Button, args.Clicks, args.X, args.Y, args.Delta) {
-            this.Style = style;
-            this.Marker = marker;
+            Style = style;
+            Marker = marker;
         }
 
         public Style Style { get; private set; }

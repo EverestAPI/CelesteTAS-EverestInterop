@@ -14,7 +14,7 @@ namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxSimplified {
         private static readonly FieldInfo FireBallIceMode = typeof(FireBall).GetFieldInfo("iceMode");
 
-        private static readonly List<Type> UselessTypes = new List<Type> {
+        private static readonly List<Type> UselessTypes = new() {
             typeof(ClutterBlockBase),
             typeof(CrystalDebris),
             typeof(Debris),
@@ -46,7 +46,7 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void HideHitbox(ILContext il) {
-            ILCursor ilCursor = new ILCursor(il);
+            ILCursor ilCursor = new(il);
             Instruction start = ilCursor.Next;
             ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Func<Entity, bool>>(entity => {
                 if (Settings.ShowHitboxes) {
@@ -55,7 +55,7 @@ namespace TAS.EverestInterop.Hitboxes {
                     }
 
                     if (Settings.SimplifiedHitboxes
-                        && entity.Scene?.Tracker.GetEntity<Player>()?.Leader is Leader leader
+                        && entity.Scene?.Tracker.GetEntity<Player>()?.Leader is { } leader
                         && leader.Followers.Any(follower => follower.Entity == entity)) {
                         return true;
                     }
@@ -118,7 +118,7 @@ namespace TAS.EverestInterop.Hitboxes {
             Vector2 width = Vector2.UnitX * grid.CellWidth;
             Vector2 height = Vector2.UnitY * grid.CellHeight;
 
-            Vector2 topLeft = new Vector2(topLeftX, topLeftY);
+            Vector2 topLeft = new(topLeftX, topLeftY);
             Vector2 topRight = topLeft + width;
             Vector2 bottomLeft = topLeft + height;
             Vector2 bottomRight = topRight + height;
@@ -195,7 +195,7 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void AvoidRedrawCorners(ILContext il) {
-            ILCursor ilCursor = new ILCursor(il);
+            ILCursor ilCursor = new(il);
             if (ilCursor.TryGotoNext(
                 ins => ins.OpCode == OpCodes.Ldc_I4_1,
                 ins => ins.OpCode == OpCodes.Sub,

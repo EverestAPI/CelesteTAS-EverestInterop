@@ -48,7 +48,7 @@ namespace TAS.Input {
         }
 
         public string ToActionsString() {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             if (HasActions(Actions.Left)) {
                 sb.Append(",L");
             }

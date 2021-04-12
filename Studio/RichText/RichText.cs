@@ -22,12 +22,12 @@ namespace CelesteStudio.RichText {
         private const int SB_ENDSCROLL = 0x8;
 
         private const Keys AltShift = Keys.Alt | Keys.Shift;
-        private static readonly Regex AllSpaceRegex = new Regex(@"^\s+$", RegexOptions.Compiled);
+        private static readonly Regex AllSpaceRegex = new(@"^\s+$", RegexOptions.Compiled);
 
-        internal readonly List<LineInfo> lineInfos = new List<LineInfo>();
+        internal readonly List<LineInfo> lineInfos = new();
 
         private readonly Range selection;
-        private readonly List<VisualMarker> visibleMarkers = new List<VisualMarker>();
+        private readonly List<VisualMarker> visibleMarkers = new();
         internal bool allowInsertRemoveLines = true;
         private Brush backBrush;
 
@@ -48,7 +48,7 @@ namespace CelesteStudio.RichText {
         private string currentLineText;
         private string descriptionFile;
 
-        protected Dictionary<int, int> foldingPairs = new Dictionary<int, int>();
+        protected Dictionary<int, int> foldingPairs = new();
         public bool InsertLocked = false;
         private Language language;
         private Keys lastModifiers;
@@ -1082,7 +1082,7 @@ namespace CelesteStudio.RichText {
         /// Range of all text
         /// </summary>
         [Browsable(false)]
-        public Range Range => new Range(this, new Place(0, 0), new Place(lines[lines.Count - 1].Count, lines.Count - 1));
+        public Range Range => new(this, new Place(0, 0), new Place(lines[lines.Count - 1].Count, lines.Count - 1));
 
         /// <summary>
         /// Color of selected area
@@ -1269,7 +1269,7 @@ namespace CelesteStudio.RichText {
         public event EventHandler<EventArgs> UndoRedoStateChanged;
 
         private TextSource CreateTextSource() {
-            return new TextSource(this);
+            return new(this);
         }
 
         private void SetAsCurrentTB() {
@@ -2194,7 +2194,7 @@ namespace CelesteStudio.RichText {
         public bool OpenFile(string fileName) {
             lastModifiers = Keys.None;
             if (string.IsNullOrEmpty(fileName) || !File.Exists(fileName)) {
-                using (OpenFileDialog diag = new OpenFileDialog()) {
+                using (OpenFileDialog diag = new()) {
                     diag.Filter = "TAS|*.tas";
                     diag.FilterIndex = 0;
                     if (!string.IsNullOrEmpty(LastFileName)) {
@@ -2227,7 +2227,7 @@ namespace CelesteStudio.RichText {
 
         public void SaveNewFile() {
             lastModifiers = Keys.None;
-            using (SaveFileDialog diag = new SaveFileDialog()) {
+            using (SaveFileDialog diag = new()) {
                 diag.DefaultExt = ".tas";
                 diag.AddExtension = true;
                 diag.Filter = "TAS|*.tas";
@@ -2618,7 +2618,7 @@ namespace CelesteStudio.RichText {
                     }
 
                     if ((e.Modifiers & Keys.Alt) != 0) {
-                        if ((Control.MouseButtons & MouseButtons.Left) != 0) {
+                        if ((MouseButtons & MouseButtons.Left) != 0) {
                             CheckAndChangeSelectionType();
                         }
 
@@ -3319,7 +3319,7 @@ namespace CelesteStudio.RichText {
                 //CreateCaret(Handle, 0, carWidth, CharHeight);
                 NativeMethodsWrapper.SetCaretPos(car.X, car.Y);
                 //ShowCaret(Handle);
-                using (Pen pen = new Pen(Color.Black)) {
+                using (Pen pen = new(Color.Black)) {
                     e.Graphics.DrawLine(pen, car.X, car.Y, car.X, car.Y + CharHeight - 1);
                 }
             } else {
@@ -3505,7 +3505,7 @@ namespace CelesteStudio.RichText {
 
         private void CheckAndChangeSelectionType() {
             //change selection type to ColumnSelectionMode
-            if ((Control.ModifierKeys & Keys.Alt) != 0 && !WordWrap) {
+            if ((ModifierKeys & Keys.Alt) != 0 && !WordWrap) {
                 Selection.ColumnSelectionMode = true;
             } else {
                 //change selection type to Range
@@ -3997,7 +3997,7 @@ namespace CelesteStudio.RichText {
         /// <param name="toPlace">Line and char position</param>
         /// <returns>Range</returns>
         public Range GetRange(Place fromPlace, Place toPlace) {
-            return new Range(this, fromPlace, toPlace);
+            return new(this, fromPlace, toPlace);
         }
 
         /// <summary>
@@ -4169,7 +4169,7 @@ namespace CelesteStudio.RichText {
             //find end of block
             int i;
             string marker = lines[iStartLine].FoldingStartMarker;
-            Stack<string> stack = new Stack<string>();
+            Stack<string> stack = new();
 
             for (i = iStartLine /*+1*/; i < LinesCount; i++) {
                 if (lines.LineHasFoldingEndMarker(i)) {
@@ -4686,7 +4686,7 @@ namespace CelesteStudio.RichText {
             exporter.IncludeLineNumbers = settings.IncludeLineNumbers;
 
             if (range == null) {
-                range = this.Range;
+                range = Range;
             }
 
             if (range.Text == string.Empty) {
@@ -4908,7 +4908,7 @@ window.status = ""#print"";
         /// Search lines by regex pattern
         /// </summary>
         public List<int> FindLines(string searchPattern, RegexOptions options = RegexOptions.None) {
-            List<int> iLines = new List<int>();
+            List<int> iLines = new();
             foreach (var r in Range.GetRangesByLines(searchPattern, options)) {
                 iLines.Add(r.Start.iLine);
             }

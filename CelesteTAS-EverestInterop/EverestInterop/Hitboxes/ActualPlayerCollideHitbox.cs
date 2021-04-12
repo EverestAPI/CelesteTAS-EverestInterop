@@ -26,7 +26,7 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void ModPlayerOrigUpdate(ILContext il) {
-            ILCursor ilCursor = new ILCursor(il);
+            ILCursor ilCursor = new(il);
             if (ilCursor.TryGotoNext(MoveType.After,
                 ins => ins.OpCode == OpCodes.Callvirt &&
                        ins.Operand.ToString().Contains("Monocle.Tracker::GetComponents<Celeste.PlayerCollider>()"))) {
@@ -41,10 +41,9 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void HitboxOnRender(On.Monocle.Hitbox.orig_Render orig, Hitbox self, Camera camera, Color color) {
-            if (!(self.Entity is Player player) || !Settings.ShowHitboxes || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Off
+            if (self.Entity is not Player player || !Settings.ShowHitboxes || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Off
                 || Manager.FrameLoops > 1
-                || player.Scene is Level level && level.Transitioning
-                || player.LoadActualCollidePosition() == null
+                || player.Scene is Level {Transitioning: true} || player.LoadActualCollidePosition() == null
                 || player.LoadActualCollidePosition().Value == player.Position
             ) {
                 orig(self, camera, color);

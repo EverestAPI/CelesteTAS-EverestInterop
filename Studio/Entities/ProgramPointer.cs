@@ -121,7 +121,7 @@ namespace CelesteStudio.Entities {
 
         private IntPtr GetVersionedFunctionPointer(Process program) {
             if (signatures != null) {
-                MemorySearcher searcher = new MemorySearcher();
+                MemorySearcher searcher = new();
                 searcher.MemoryFilter = delegate(MemInfo info) {
                     return (info.State & 0x1000) != 0 && (info.Protect & 0x40) != 0 && (info.Protect & 0x100) == 0;
                 };

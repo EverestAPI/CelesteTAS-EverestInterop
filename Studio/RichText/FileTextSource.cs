@@ -10,8 +10,8 @@ namespace CelesteStudio.RichText {
     /// It stores a text lines, the manager of commands, undo/redo stack, styles.
     /// </summary>
     public class FileTextSource : TextSource, IDisposable {
-        readonly List<int> sourceFileLinePositions = new List<int>();
-        readonly System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
+        readonly List<int> sourceFileLinePositions = new();
+        readonly System.Windows.Forms.Timer timer = new();
         FileStream _fs;
 
         Encoding fileEncoding;
@@ -45,7 +45,7 @@ namespace CelesteStudio.RichText {
 
         public override Line this[int i] {
             get {
-                if (base.lines[i] != null) {
+                if (lines[i] != null) {
                     return lines[i];
                 } else {
                     for (int j = 0;; j++) {
@@ -97,8 +97,8 @@ namespace CelesteStudio.RichText {
 
             int count = 0;
             for (int i = 0; i < Count; i++) {
-                if (base.lines[i] != null && !base.lines[i].IsChanged && Math.Abs(i - iFinishVisibleLine) > margin) {
-                    base.lines[i] = null;
+                if (lines[i] != null && !lines[i].IsChanged && Math.Abs(i - iFinishVisibleLine) > margin) {
+                    lines[i] = null;
                     count++;
                 }
             }
@@ -116,26 +116,26 @@ namespace CelesteStudio.RichText {
             int shift = DefineShift(enc);
             //first line
             sourceFileLinePositions.Add((int) fs.Position);
-            base.lines.Add(null);
+            lines.Add(null);
             //other lines
             while (fs.Position < length) {
                 int b = fs.ReadByte();
                 if (b == 10) // char \n
                 {
                     sourceFileLinePositions.Add((int) (fs.Position) + shift);
-                    base.lines.Add(null);
+                    lines.Add(null);
                 }
             }
 
             Line[] temp = new Line[100];
-            int c = base.lines.Count;
-            base.lines.AddRange(temp);
-            base.lines.TrimExcess();
-            base.lines.RemoveRange(c, temp.Length);
+            int c = lines.Count;
+            lines.AddRange(temp);
+            lines.TrimExcess();
+            lines.RemoveRange(c, temp.Length);
 
 
             int[] temp2 = new int[100];
-            c = base.lines.Count;
+            c = lines.Count;
             sourceFileLinePositions.AddRange(temp2);
             sourceFileLinePositions.TrimExcess();
             sourceFileLinePositions.RemoveRange(c, temp.Length);
@@ -223,7 +223,7 @@ namespace CelesteStudio.RichText {
         private void LoadLineFromSourceFile(int i) {
             var line = CreateLine();
             fs.Seek(sourceFileLinePositions[i], SeekOrigin.Begin);
-            StreamReader sr = new StreamReader(fs, fileEncoding);
+            StreamReader sr = new(fs, fileEncoding);
 
             string s = sr.ReadLine();
             if (s == null) {
@@ -244,7 +244,7 @@ namespace CelesteStudio.RichText {
                 line.Add(new Char(c));
             }
 
-            base.lines[i] = line;
+            lines[i] = line;
         }
 
         public override void InsertLine(int index, Line line) {
@@ -258,10 +258,10 @@ namespace CelesteStudio.RichText {
         }
 
         public override int GetLineLength(int i) {
-            if (base.lines[i] == null) {
+            if (lines[i] == null) {
                 return 0;
             } else {
-                return base.lines[i].Count;
+                return lines[i].Count;
             }
         }
 
@@ -289,9 +289,9 @@ namespace CelesteStudio.RichText {
 
     public class LineNeededEventArgs : EventArgs {
         public LineNeededEventArgs(string sourceLineText, int displayedLineIndex) {
-            this.SourceLineText = sourceLineText;
-            this.DisplayedLineIndex = displayedLineIndex;
-            this.DisplayedLineText = sourceLineText;
+            SourceLineText = sourceLineText;
+            DisplayedLineIndex = displayedLineIndex;
+            DisplayedLineText = sourceLineText;
         }
 
         public string SourceLineText { get; private set; }
@@ -305,10 +305,10 @@ namespace CelesteStudio.RichText {
 
     public class LinePushedEventArgs : EventArgs {
         public LinePushedEventArgs(string sourceLineText, int displayedLineIndex, string displayedLineText) {
-            this.SourceLineText = sourceLineText;
-            this.DisplayedLineIndex = displayedLineIndex;
-            this.DisplayedLineText = displayedLineText;
-            this.SavedText = displayedLineText;
+            SourceLineText = sourceLineText;
+            DisplayedLineIndex = displayedLineIndex;
+            DisplayedLineText = displayedLineText;
+            SavedText = displayedLineText;
         }
 
         public string SourceLineText { get; private set; }

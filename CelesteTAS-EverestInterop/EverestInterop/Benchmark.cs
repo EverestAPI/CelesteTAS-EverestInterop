@@ -17,7 +17,7 @@ namespace TAS.EverestInterop {
             On.Monocle.Engine.Update -= EngineOnUpdate;
         }
 
-        private static void EngineOnUpdate(On.Monocle.Engine.orig_Update orig, Monocle.Engine self, GameTime gameTime) {
+        private static void EngineOnUpdate(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
             orig(self, gameTime);
             if (lastRunning != Manager.Running) {
                 if (Manager.Running) {

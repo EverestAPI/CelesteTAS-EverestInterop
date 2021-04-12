@@ -146,7 +146,7 @@ namespace TAS {
                 Player player = level.Tracker.GetEntity<Player>();
                 long chapterTime = level.Session.Time;
                 if (player != null) {
-                    StringBuilder stringBuilder = new StringBuilder();
+                    StringBuilder stringBuilder = new();
                     string pos = GetAdjustedPos(player.Position, player.PositionRemainder);
                     string speed = GetAdjustedSpeed(player.Speed);
                     Vector2 diff = (player.ExactPosition - LastPos) * 60f;
@@ -160,19 +160,19 @@ namespace TAS {
                     string polarVel = $"Fly:   {diff.Length():F2}, {Manager.GetAngle(diff):F5}°";
 
                     string analog = string.Empty;
-                    if (Manager.Running && Manager.Controller.Previous is InputFrame inputFrame && inputFrame.HasActions(Actions.Feather)) {
+                    if (Manager.Running && Manager.Controller.Previous is { } inputFrame && inputFrame.HasActions(Actions.Feather)) {
                         Vector2 angleVector2 = inputFrame.AngleVector2;
                         analog =
                             $"Analog: {angleVector2.X:F5}, {angleVector2.Y:F5}, {Manager.GetAngle(new Vector2(angleVector2.X, -angleVector2.Y)):F5}°";
                     }
 
                     string retainedSpeed = string.Empty;
-                    if (PlayerRetainedSpeedTimer(player) is float retainedSpeedTimer && retainedSpeedTimer > 0f) {
+                    if (PlayerRetainedSpeedTimer(player) is { } and > 0f) {
                         retainedSpeed = $"Retained: {PlayerRetainedSpeed(player):F2} ({PlayerRetainedSpeedTimer(player) * FramesPerSecond:F0})";
                     }
 
                     string liftBoost = string.Empty;
-                    if (PlayerLiftBoost(player) is Vector2 liftBoostVector2 && liftBoostVector2 != Vector2.Zero) {
+                    if (PlayerLiftBoost(player) is { } liftBoostVector2 && liftBoostVector2 != Vector2.Zero) {
                         liftBoost =
                             $"LiftBoost: {liftBoostVector2.X:F2}, {liftBoostVector2.Y:F2} ({ActorLiftSpeedTimer(player) * FramesPerSecond:F0})";
                     }
@@ -219,7 +219,7 @@ namespace TAS {
 
                     int berryTimer = -10;
                     Follower firstRedBerryFollower =
-                        player.Leader.Followers.Find(follower => follower.Entity is Strawberry berry && !berry.Golden);
+                        player.Leader.Followers.Find(follower => follower.Entity is Strawberry {Golden: false});
                     if (firstRedBerryFollower?.Entity is Strawberry firstRedBerry) {
                         berryTimer = 9 - (int) Math.Round(StrawberryCollectTimer(firstRedBerry) * FramesPerSecond);
                     }

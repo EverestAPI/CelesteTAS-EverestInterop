@@ -23,7 +23,7 @@ namespace CelesteStudio {
     public partial class Studio : Form {
         public static Studio Instance;
 
-        private readonly List<InputRecord> lines = new List<InputRecord>();
+        private readonly List<InputRecord> lines = new();
 
         //private GameMemory memory = new GameMemory();
         private DateTime lastChanged = DateTime.MinValue;
@@ -209,7 +209,7 @@ namespace CelesteStudio {
 
         private bool IsTitleBarVisible() {
             int titleBarHeight = RectangleToScreen(ClientRectangle).Top - Top;
-            Rectangle titleBar = new Rectangle(Left, Top, Width, titleBarHeight);
+            Rectangle titleBar = new(Left, Top, Width, titleBarHeight);
             foreach (Screen screen in Screen.AllScreens) {
                 if (screen.Bounds.IntersectsWith(titleBar)) {
                     return true;
@@ -229,7 +229,7 @@ namespace CelesteStudio {
         }
 
         private void Studio_Shown(object sender, EventArgs e) {
-            Thread updateThread = new Thread(UpdateLoop);
+            Thread updateThread = new(UpdateLoop);
             updateThread.IsBackground = true;
             updateThread.Start();
         }
@@ -407,7 +407,7 @@ namespace CelesteStudio {
             }
 
             string text = tasText.Lines[currentLine];
-            InputRecord input = new InputRecord(text);
+            InputRecord input = new(text);
             int cursor = 4;
             if (input.Frames == 0 && input.Actions == Actions.None) {
                 cursor = text.Length;
@@ -461,10 +461,10 @@ namespace CelesteStudio {
         }
 
         private DialogResult ShowInputDialog(string title, ref string input) {
-            Size size = new Size(200, 70);
+            Size size = new(200, 70);
             DialogResult result = DialogResult.Cancel;
 
-            using (Form inputBox = new Form()) {
+            using (Form inputBox = new()) {
                 inputBox.FormBorderStyle = FormBorderStyle.FixedDialog;
                 inputBox.ClientSize = size;
                 inputBox.Text = title;
@@ -472,7 +472,7 @@ namespace CelesteStudio {
                 inputBox.MinimizeBox = false;
                 inputBox.MaximizeBox = false;
 
-                TextBox textBox = new TextBox();
+                TextBox textBox = new();
                 textBox.Size = new Size(size.Width - 10, 23);
                 textBox.Location = new Point(5, 5);
                 textBox.Font = tasText.Font;
@@ -480,7 +480,7 @@ namespace CelesteStudio {
                 textBox.MaxLength = 1;
                 inputBox.Controls.Add(textBox);
 
-                Button okButton = new Button();
+                Button okButton = new();
                 okButton.DialogResult = DialogResult.OK;
                 okButton.Name = "okButton";
                 okButton.Size = new Size(75, 23);
@@ -488,7 +488,7 @@ namespace CelesteStudio {
                 okButton.Location = new Point(size.Width - 80 - 80, 39);
                 inputBox.Controls.Add(okButton);
 
-                Button cancelButton = new Button();
+                Button cancelButton = new();
                 cancelButton.DialogResult = DialogResult.Cancel;
                 cancelButton.Name = "cancelButton";
                 cancelButton.Size = new Size(75, 23);
@@ -627,7 +627,7 @@ namespace CelesteStudio {
             RichText.RichText tas = (RichText.RichText) sender;
             int count = e.Count;
             while (count-- > 0) {
-                InputRecord input = new InputRecord(tas.GetLineText(e.Index + count));
+                InputRecord input = new(tas.GetLineText(e.Index + count));
                 lines.Insert(e.Index, input);
                 totalFrames += input.Frames;
             }
@@ -676,7 +676,7 @@ namespace CelesteStudio {
 
             int i = 0;
             bool startLine = true;
-            StringBuilder sb = new StringBuilder(text.Length + end - start);
+            StringBuilder sb = new(text.Length + end - start);
             while (i < text.Length) {
                 char c = text[i++];
                 if (startLine) {
@@ -729,12 +729,12 @@ namespace CelesteStudio {
             int originalStart = start;
 
             bool modified = false;
-            StringBuilder sb = new StringBuilder();
-            Place place = new Place(0, end);
+            StringBuilder sb = new();
+            Place place = new(0, end);
             while (start <= end) {
                 InputRecord old = lines.Count > start ? lines[start] : null;
                 string text = tas[start++].Text;
-                InputRecord input = new InputRecord(text);
+                InputRecord input = new(text);
                 if (old != null) {
                     totalFrames -= old.Frames;
 
@@ -818,7 +818,7 @@ namespace CelesteStudio {
         }
 
         private void tasText_LineNeeded(object sender, LineNeededEventArgs e) {
-            InputRecord record = new InputRecord(e.SourceLineText);
+            InputRecord record = new(e.SourceLineText);
             e.DisplayedLineText = record.ToString();
         }
 
@@ -1009,8 +1009,8 @@ namespace CelesteStudio {
             tasText.Selection = new Range(tasText, 0, start, tasText[end].Count, end);
             string text = tasText.SelectedText;
 
-            StringBuilder sb = new StringBuilder();
-            Regex swapKeyRegex = new Regex($"{key1}|{key2}");
+            StringBuilder sb = new();
+            Regex swapKeyRegex = new($"{key1}|{key2}");
             foreach (string lineText in text.Split('\n')) {
                 if (SyntaxHighlighter.InputRecordRegex.IsMatch(lineText)) {
                     sb.AppendLine(swapKeyRegex.Replace(lineText, match => match.Value == key1.ToString() ? key2.ToString() : key1.ToString()));
@@ -1046,7 +1046,7 @@ namespace CelesteStudio {
                 return;
             }
 
-            using (SaveFileDialog dialog = new SaveFileDialog()) {
+            using (SaveFileDialog dialog = new()) {
                 dialog.DefaultExt = ".txt";
                 dialog.AddExtension = true;
                 dialog.Filter = "TXT|*.txt";

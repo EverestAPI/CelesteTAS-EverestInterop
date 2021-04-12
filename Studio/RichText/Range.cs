@@ -111,7 +111,7 @@ namespace CelesteStudio.RichText {
                 }
 
                 //
-                StringBuilder sb = new StringBuilder();
+                StringBuilder sb = new();
                 for (int y = fromLine; y <= toLine; y++) {
                     int fromX = y == fromLine ? fromChar : 0;
                     int toX = y == toLine ? Math.Min(tb[y].Count - 1, toChar - 1) : tb[y].Count - 1;
@@ -273,7 +273,7 @@ namespace CelesteStudio.RichText {
                 return GetIntersectionWith_ColumnSelectionMode(range);
             }
 
-            Range r1 = this.Clone();
+            Range r1 = Clone();
             Range r2 = range.Clone();
             r1.Normalize();
             r2.Normalize();
@@ -292,7 +292,7 @@ namespace CelesteStudio.RichText {
         /// <param name="range"></param>
         /// <returns></returns>
         public Range GetUnionWith(Range range) {
-            Range r1 = this.Clone();
+            Range r1 = Clone();
             Range r2 = range.Clone();
             r1.Normalize();
             r2.Normalize();
@@ -335,7 +335,7 @@ namespace CelesteStudio.RichText {
             int fromChar = FromX;
             int toChar = ToX;
 
-            StringBuilder sb = new StringBuilder((toLine - fromLine) * 50);
+            StringBuilder sb = new((toLine - fromLine) * 50);
             charIndexToPlace = new List<Place>(sb.Capacity);
             if (fromLine >= 0) {
                 for (int y = fromLine; y <= toLine; y++) {
@@ -888,10 +888,10 @@ namespace CelesteStudio.RichText {
             List<Place> charIndexToPlace;
             GetText(out text, out charIndexToPlace);
             //create regex
-            Regex regex = new Regex(regexPattern, options);
+            Regex regex = new(regexPattern, options);
             //
             foreach (Match m in regex.Matches(text)) {
-                Range r = new Range(this.tb);
+                Range r = new(tb);
                 //try get 'range' group, otherwise use group 0
                 Group group = m.Groups["range"];
                 if (!group.Success) {
@@ -915,7 +915,7 @@ namespace CelesteStudio.RichText {
         public IEnumerable<Range> GetRangesByLines(string regexPattern, RegexOptions options) {
             Normalize();
             //create regex
-            Regex regex = new Regex(regexPattern, options);
+            Regex regex = new(regexPattern, options);
             //
             var fts = tb.TextSource as FileTextSource; //<----!!!! ugly
             //enumaerate lines
@@ -949,7 +949,7 @@ namespace CelesteStudio.RichText {
             GetText(out text, out charIndexToPlace);
             //
             foreach (Match m in regex.Matches(text)) {
-                Range r = new Range(this.tb);
+                Range r = new(tb);
                 //try get 'range' group, otherwise use group 0
                 Group group = m.Groups["range"];
                 if (!group.Success) {
@@ -1098,9 +1098,9 @@ namespace CelesteStudio.RichText {
         /// <param name="allowedSymbolsPattern">Allowed chars pattern for fragment</param>
         /// <returns>Range of found fragment</returns>
         public Range GetFragment(string allowedSymbolsPattern, RegexOptions options) {
-            Range r = new Range(tb);
+            Range r = new(tb);
             r.Start = Start;
-            Regex regex = new Regex(allowedSymbolsPattern, options);
+            Regex regex = new(allowedSymbolsPattern, options);
             //go left, check symbols
             while (r.GoLeftThroughFolded()) {
                 if (!regex.IsMatch(r.CharAfterStart.ToString())) {
@@ -1138,7 +1138,7 @@ namespace CelesteStudio.RichText {
                 }
             }
 
-            Range range = this.Clone(); //for OnSelectionChanged disable
+            Range range = Clone(); //for OnSelectionChanged disable
 
             Place prev;
             bool findIdentifier = IsIdentifierChar(range.CharBeforeStart);
@@ -1153,8 +1153,8 @@ namespace CelesteStudio.RichText {
                 range.GoLeft(shift);
             } while (prev != range.Start);
 
-            this.Start = range.Start;
-            this.End = range.End;
+            Start = range.Start;
+            End = range.End;
 
             if (tb.lineInfos[Start.iLine].VisibleState != VisibleState.Visible) {
                 GoRight(shift);
@@ -1171,7 +1171,7 @@ namespace CelesteStudio.RichText {
                 }
             }
 
-            Range range = this.Clone(); //for OnSelectionChanged disable
+            Range range = Clone(); //for OnSelectionChanged disable
 
             Place prev;
             bool findIdentifier = IsIdentifierChar(range.CharAfterStart);
@@ -1186,8 +1186,8 @@ namespace CelesteStudio.RichText {
                 range.GoRight(shift);
             } while (prev != range.Start);
 
-            this.Start = range.Start;
-            this.End = range.End;
+            Start = range.Start;
+            End = range.End;
 
             if (tb.lineInfos[Start.iLine].VisibleState != VisibleState.Visible) {
                 GoLeft(shift);
@@ -1304,7 +1304,7 @@ namespace CelesteStudio.RichText {
 
         private string Text_ColumnSelectionMode {
             get {
-                StringBuilder sb = new StringBuilder();
+                StringBuilder sb = new();
                 var bounds = Bounds;
                 if (bounds.iStartLine < 0) {
                     return "";

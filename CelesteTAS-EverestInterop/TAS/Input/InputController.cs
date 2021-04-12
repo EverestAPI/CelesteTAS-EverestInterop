@@ -12,10 +12,10 @@ using TAS.Utils;
 namespace TAS.Input {
     public class InputController {
         public static string StudioTasFilePath = string.Empty;
-        public readonly SortedDictionary<int, List<Command>> Commands = new SortedDictionary<int, List<Command>>();
-        public readonly SortedDictionary<int, FastForward> FastForwards = new SortedDictionary<int, FastForward>();
-        public readonly List<InputFrame> Inputs = new List<InputFrame>();
-        private readonly Dictionary<string, DateTime> usedFiles = new Dictionary<string, DateTime>();
+        public readonly SortedDictionary<int, List<Command>> Commands = new();
+        public readonly SortedDictionary<int, FastForward> FastForwards = new();
+        public readonly List<InputFrame> Inputs = new();
+        private readonly Dictionary<string, DateTime> usedFiles = new();
 
         private string checksum;
         private int initializationFrameCount;
@@ -129,7 +129,7 @@ namespace TAS.Input {
                 }
 
                 int subLine = 0;
-                using (StreamReader sr = new StreamReader(filePath)) {
+                using (StreamReader sr = new(filePath)) {
                     while (!sr.EndOfStream) {
                         string line = sr.ReadLine().Trim();
 
@@ -180,7 +180,7 @@ namespace TAS.Input {
         }
 
         public InputController Clone() {
-            InputController clone = new InputController();
+            InputController clone = new();
 
             clone.Inputs.AddRange(Inputs);
             clone.FastForwards.AddRange((IDictionary) FastForwards);
@@ -205,7 +205,7 @@ namespace TAS.Input {
                 toInputFrame = CurrentFrame;
             }
 
-            StringBuilder result = new StringBuilder(TasFilePath);
+            StringBuilder result = new(TasFilePath);
             result.AppendLine();
 
             try {
@@ -215,7 +215,7 @@ namespace TAS.Input {
                     InputFrame currentInput = Inputs[checkInputFrame];
                     result.AppendLine(currentInput.ToActionsString());
 
-                    if (Commands.GetValueOrDefault(checkInputFrame) is List<Command> commands) {
+                    if (Commands.GetValueOrDefault(checkInputFrame) is { } commands) {
                         foreach (Command command in commands) {
                             result.Append(command.LineText);
                         }

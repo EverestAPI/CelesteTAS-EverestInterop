@@ -43,7 +43,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 return;
             }
 
-            StringBuilder stringBuilder = new StringBuilder();
+            StringBuilder stringBuilder = new();
 
             if (TasSettings.InfoTasInput) {
                 WriteTasInput(stringBuilder);
@@ -88,11 +88,11 @@ namespace TAS.EverestInterop.InfoHUD {
             float x = TasSettings.InfoPosition.X;
             float y = TasSettings.InfoPosition.Y;
 
-            Rectangle bgRect = new Rectangle((int) x, (int) y, (int) (size.X + padding * 2), (int) (size.Y + padding * 2));
+            Rectangle bgRect = new((int) x, (int) y, (int) (size.X + padding * 2), (int) (size.Y + padding * 2));
 
-            if (self.GetPlayer() is Player player) {
+            if (self.GetPlayer() is { } player) {
                 Vector2 playerPosition = self.Camera.CameraToScreen(player.TopLeft) * pixelScale;
-                Rectangle playerRect = new Rectangle((int) playerPosition.X, (int) playerPosition.Y, (int) (8 * pixelScale), (int) (11 * pixelScale));
+                Rectangle playerRect = new((int) playerPosition.X, (int) playerPosition.Y, (int) (8 * pixelScale), (int) (11 * pixelScale));
                 Rectangle mirrorBgRect = bgRect;
                 if (SaveData.Instance?.Assists.MirrorMode == true) {
                     mirrorBgRect.X = (int) Math.Abs(x - viewWidth + size.X + padding * 2);
@@ -110,8 +110,8 @@ namespace TAS.EverestInterop.InfoHUD {
 
             InfoSubPixelIndicator.DrawIndicator(bgRect.Bottom, padding, infoAlpha);
 
-            Vector2 textPosition = new Vector2(x + padding, y + padding);
-            Vector2 scale = new Vector2(fontSize);
+            Vector2 textPosition = new(x + padding, y + padding);
+            Vector2 scale = new(fontSize);
 
             JetBrainsMonoFont.Draw(text, textPosition, Vector2.Zero, scale, Color.White * infoAlpha);
 

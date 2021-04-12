@@ -42,7 +42,7 @@ namespace TAS.Utils {
                 param = new Type[0];
             }
 
-            DynamicMethod dyn = new DynamicMethod(field.Name + "_FastAccess", field.FieldType, param, field.DeclaringType);
+            DynamicMethod dyn = new(field.Name + "_FastAccess", field.FieldType, param, field.DeclaringType);
             ILGenerator ilGen = dyn.GetILGenerator();
             if (!isStatic) {
                 ilGen.Emit(OpCodes.Ldarg_0);
@@ -54,7 +54,7 @@ namespace TAS.Utils {
         }
 
         public static GetField CreateDelegate_GetInstance(this FieldInfo field) {
-            DynamicMethod dyn = new DynamicMethod(field.Name + "_FastAccess", typeof(object), new Type[] {typeof(object)}, field.DeclaringType);
+            DynamicMethod dyn = new(field.Name + "_FastAccess", typeof(object), new Type[] {typeof(object)}, field.DeclaringType);
             ILGenerator ilGen = dyn.GetILGenerator();
             ilGen.Emit(OpCodes.Ldarg_0);
             ilGen.Emit(OpCodes.Castclass, field.DeclaringType);
@@ -64,7 +64,7 @@ namespace TAS.Utils {
         }
 
         public static GetStaticField CreateDelegate_GetStatic(this FieldInfo field) {
-            DynamicMethod dyn = new DynamicMethod(field.Name + "_FastAccess", typeof(object), new Type[0]);
+            DynamicMethod dyn = new(field.Name + "_FastAccess", typeof(object), new Type[0]);
             ILGenerator ilGen = dyn.GetILGenerator();
             ilGen.Emit(OpCodes.Ldfld, field);
             ilGen.Emit(OpCodes.Ret);
@@ -83,7 +83,7 @@ namespace TAS.Utils {
 
         public static IEnumerable<FieldInfo> GetAllFieldInfos(this Type type, BindingFlags bindingFlags = StaticInstanceAnyVisibility,
             bool filterBackingField = false) {
-            List<FieldInfo> result = new List<FieldInfo>();
+            List<FieldInfo> result = new();
             while (type != null && type.IsSubclassOf(typeof(object))) {
                 IEnumerable<FieldInfo> fieldInfos = type.GetFieldInfos(bindingFlags, filterBackingField);
                 foreach (FieldInfo fieldInfo in fieldInfos) {
@@ -101,7 +101,7 @@ namespace TAS.Utils {
         }
 
         public static IEnumerable<PropertyInfo> GetAllProperties(this Type type, BindingFlags bindingFlags = StaticInstanceAnyVisibility) {
-            List<PropertyInfo> result = new List<PropertyInfo>();
+            List<PropertyInfo> result = new();
             while (type != null && type.IsSubclassOf(typeof(object))) {
                 IEnumerable<PropertyInfo> properties = type.GetProperties(bindingFlags);
                 foreach (PropertyInfo fieldInfo in properties) {
@@ -191,7 +191,7 @@ namespace TAS.Utils {
 // source from: https://stackoverflow.com/a/17264480
     internal static class ExtendedDataExtensions {
         private static readonly ConditionalWeakTable<object, object> ExtendedData =
-            new ConditionalWeakTable<object, object>();
+            new();
 
         private static IDictionary<string, object> CreateDictionary(object o) {
             return new Dictionary<string, object>();
@@ -262,7 +262,7 @@ namespace TAS.Utils {
         }
 
         public static EntityID ToEntityId(this EntityData entityData) {
-            return new EntityID(entityData.Level.Name, entityData.ID);
+            return new(entityData.Level.Name, entityData.ID);
         }
     }
 

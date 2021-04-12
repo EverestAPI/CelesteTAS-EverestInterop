@@ -4,9 +4,9 @@ using System.Text.RegularExpressions;
 
 namespace CelesteStudio.RichText {
     public class SyntaxDescriptor : IDisposable {
-        public readonly List<FoldingDesc> foldings = new List<FoldingDesc>();
-        public readonly List<RuleDesc> rules = new List<RuleDesc>();
-        public readonly List<Style> styles = new List<Style>();
+        public readonly List<FoldingDesc> foldings = new();
+        public readonly List<RuleDesc> rules = new();
+        public readonly List<Style> styles = new();
         public char leftBracket = '(';
         public char leftBracket2 = '\x0';
         public char rightBracket = ')';

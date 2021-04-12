@@ -21,8 +21,8 @@ namespace CelesteStudio.Communication {
 
             instance = new StudioCommunicationServer();
 
-            ThreadStart mainLoop = new ThreadStart(instance.UpdateLoop);
-            Thread updateThread = new Thread(mainLoop);
+            ThreadStart mainLoop = new(instance.UpdateLoop);
+            Thread updateThread = new(mainLoop);
             updateThread.Name = "StudioCom Server";
             updateThread.IsBackground = true;
             updateThread.Start();

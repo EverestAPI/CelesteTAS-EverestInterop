@@ -7,11 +7,11 @@ using System.Threading.Tasks;
 namespace CelesteStudio.Entities {
 //.load C:\Windows\Microsoft.NET\Framework\v4.0.30319\SOS.dll
     public class GameMemory {
-        private static readonly ProgramPointer TAS = new ProgramPointer(AutoDeref.Single,
+        private static readonly ProgramPointer TAS = new(AutoDeref.Single,
             new ProgramSignature(PointerVersion.XNA, "8B0D????????3909FF15????????EB158325", 2),
             new ProgramSignature(PointerVersion.OpenGL, "007417908B0D????????3909", 6));
 
-        private static readonly ProgramPointer Celeste = new ProgramPointer(AutoDeref.Single,
+        private static readonly ProgramPointer Celeste = new(AutoDeref.Single,
             new ProgramSignature(PointerVersion.XNA, "83C604F30F7E06660FD6078BCBFF15????????8D15", 21),
             new ProgramSignature(PointerVersion.OpenGL, "8B55F08B45E88D5274E8????????8B45F08D15", 19),
             new ProgramSignature(PointerVersion.Itch, "8D5674E8????????8D15????????E8????????C605", 10));
@@ -66,7 +66,7 @@ namespace CelesteStudio.Entities {
 
         private void ReadStream() {
             string line = null;
-            StreamReader UnixRTCStream = new StreamReader("/tmp/celestetas");
+            StreamReader UnixRTCStream = new("/tmp/celestetas");
             while (UnixRTCStream.Peek() > 0) {
                 line = UnixRTCStream.ReadLine();
             }
@@ -88,7 +88,7 @@ namespace CelesteStudio.Entities {
             if (Environment.OSVersion.Platform == PlatformID.Unix) {
                 if (!IsHooked) {
                     try {
-                        StreamReader UnixRTCStream = new StreamReader("/tmp/celestetas");
+                        StreamReader UnixRTCStream = new("/tmp/celestetas");
                         while (UnixRTCStream.Peek() > 0) {
                             UnixRTCStream.Read();
                         }
@@ -104,13 +104,13 @@ namespace CelesteStudio.Entities {
                     }
                 }
             } else {
-                IsHooked = Program != null && !Program.HasExited;
+                IsHooked = Program is {HasExited: false};
                 if (!IsHooked && DateTime.Now > lastHooked.AddSeconds(1)) {
                     lastHooked = DateTime.Now;
                     Process[] processes = Process.GetProcessesByName("Celeste");
-                    Program = processes != null && processes.Length > 0 ? processes[0] : null;
+                    Program = processes is {Length: > 0} ? processes[0] : null;
 
-                    if (Program != null && !Program.HasExited) {
+                    if (Program is {HasExited: false}) {
                         MemoryReader.Update64Bit(Program);
                         IsHooked = true;
                     }

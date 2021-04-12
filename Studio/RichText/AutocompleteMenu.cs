@@ -92,7 +92,7 @@ namespace CelesteStudio.RichText {
 
         internal void CalcSize() {
             host.Size = listView.Size;
-            Size = new System.Drawing.Size(listView.Size.Width + 4, listView.Size.Height + 4);
+            Size = new Size(listView.Size.Width + 4, listView.Size.Height + 4);
         }
 
         public virtual void OnSelecting() {
@@ -128,12 +128,12 @@ namespace CelesteStudio.RichText {
         readonly int hoveredItemIndex = -1;
         readonly int itemHeight;
         readonly RichText tb;
-        readonly System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
+        readonly Timer timer = new();
 
         int oldItemCount = 0;
         int selectedItemIndex = 0;
         IEnumerable<AutocompleteItem> sourceItems = new List<AutocompleteItem>();
-        internal ToolTip toolTip = new ToolTip();
+        internal ToolTip toolTip = new();
         internal List<AutocompleteItem> visibleItems;
 
         internal AutocompleteListView(RichText tb) {
@@ -202,7 +202,7 @@ namespace CelesteStudio.RichText {
             DoAutocomplete(false);
         }
 
-        void ResetTimer(System.Windows.Forms.Timer timer) {
+        void ResetTimer(Timer timer) {
             timer.Stop();
             timer.Start();
         }
@@ -260,7 +260,7 @@ namespace CelesteStudio.RichText {
             //show popup menu
             if (Count > 0) {
                 if (!Menu.Visible) {
-                    CancelEventArgs args = new CancelEventArgs();
+                    CancelEventArgs args = new();
                     Menu.OnOpening(args);
                     if (!args.Cancel) {
                         Menu.Show(tb, point);
@@ -389,7 +389,7 @@ namespace CelesteStudio.RichText {
         protected override void OnMouseClick(MouseEventArgs e) {
             base.OnMouseClick(e);
 
-            if (e.Button == System.Windows.Forms.MouseButtons.Left) {
+            if (e.Button == MouseButtons.Left) {
                 selectedItemIndex = PointToItemIndex(e.Location);
                 DoSelectedVisible();
                 Invalidate();
@@ -411,7 +411,7 @@ namespace CelesteStudio.RichText {
             tb.TextSource.Manager.BeginAutoUndoCommands();
             try {
                 AutocompleteItem item = visibleItems[selectedItemIndex];
-                SelectingEventArgs args = new SelectingEventArgs() {Item = item, SelectedIndex = selectedItemIndex};
+                SelectingEventArgs args = new() {Item = item, SelectedIndex = selectedItemIndex};
 
                 Menu.OnSelecting(args);
 
@@ -428,7 +428,7 @@ namespace CelesteStudio.RichText {
 
                 Menu.Close();
                 //
-                SelectedEventArgs args2 = new SelectedEventArgs() {Item = item, Tb = Menu.Fragment.tb};
+                SelectedEventArgs args2 = new() {Item = item, Tb = Menu.Fragment.tb};
                 item.OnSelected(Menu, args2);
                 Menu.OnSelected(args2);
             } finally {
@@ -546,7 +546,7 @@ namespace CelesteStudio.RichText {
         }
 
         public void SetAutocompleteItems(ICollection<string> items) {
-            List<AutocompleteItem> list = new List<AutocompleteItem>(items.Count);
+            List<AutocompleteItem> list = new(items.Count);
             foreach (string item in items) {
                 list.Add(new AutocompleteItem(item));
             }

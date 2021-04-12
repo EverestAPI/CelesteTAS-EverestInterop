@@ -19,7 +19,7 @@ namespace TAS.EverestInterop.Hitboxes {
             On.Monocle.Draw.Circle_Vector2_float_Color_int -= ModDrawCircle;
         }
 
-        private static void EntityListOnDebugRender(On.Monocle.EntityList.orig_DebugRender orig, Monocle.EntityList self, Camera camera) {
+        private static void EntityListOnDebugRender(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
             drawingHitboxes = true;
             orig(self, camera);
             drawingHitboxes = false;

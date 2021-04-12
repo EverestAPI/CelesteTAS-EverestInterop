@@ -22,7 +22,7 @@ namespace TAS.Input {
          * Commands that execute can be void Command(InputController, string[], int) or void Command(string[]).
          */
 
-        private static readonly Regex SpaceRegex = new Regex(@"^[^,]+?\s+[^,]", RegexOptions.Compiled);
+        private static readonly Regex SpaceRegex = new(@"^[^,]+?\s+[^,]", RegexOptions.Compiled);
 
         private static string[] Split(string line) {
             string trimLine = line.Trim();
@@ -139,7 +139,7 @@ namespace TAS.Input {
         private static void GetLine(string labelOrLineNumber, string path, out int lineNumber) {
             if (!int.TryParse(labelOrLineNumber, out lineNumber)) {
                 int curLine = 0;
-                using (StreamReader sr = new StreamReader(path)) {
+                using (StreamReader sr = new(path)) {
                     while (!sr.EndOfStream) {
                         curLine++;
                         string line = sr.ReadLine().TrimEnd();
@@ -170,7 +170,7 @@ namespace TAS.Input {
             int x = int.Parse(args[0]);
             int y = int.Parse(args[1]);
             Player player = Engine.Scene.Tracker.GetEntity<Player>();
-            Vector2 pos = new Vector2(x, y);
+            Vector2 pos = new(x, y);
             foreach (EverestModule module in Everest.Modules) {
                 if (module.Metadata.Name == "Guneline") {
                     module.GetType().Assembly.GetType("Guneline.GunInput").GetProperty("CursorPosition").SetValue(null, pos);

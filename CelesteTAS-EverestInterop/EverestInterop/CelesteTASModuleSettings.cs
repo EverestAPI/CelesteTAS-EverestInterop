@@ -14,49 +14,49 @@ namespace TAS.EverestInterop {
 
         [SettingName("TAS_KEY_START")]
         [DefaultButtonBinding(0, Keys.RightControl)]
-        public ButtonBinding KeyStart { get; set; } = new ButtonBinding();
+        public ButtonBinding KeyStart { get; set; } = new();
 
         [SettingName("TAS_KEY_RESTART")]
         [DefaultButtonBinding(0, Keys.OemPlus)]
-        public ButtonBinding KeyRestart { get; set; } = new ButtonBinding();
+        public ButtonBinding KeyRestart { get; set; } = new();
 
         [SettingName("TAS_KEY_FAST_FORWARD")]
         [DefaultButtonBinding(0, Keys.RightShift)]
-        public ButtonBinding KeyFastForward { get; set; } = new ButtonBinding();
+        public ButtonBinding KeyFastForward { get; set; } = new();
 
         [SettingName("TAS_KEY_FRAME_ADVANCE")]
         [DefaultButtonBinding(0, Keys.OemOpenBrackets)]
-        public ButtonBinding KeyFrameAdvance { get; set; } = new ButtonBinding();
+        public ButtonBinding KeyFrameAdvance { get; set; } = new();
 
         [SettingName("TAS_KEY_PAUSE")]
         [DefaultButtonBinding(0, Keys.OemCloseBrackets)]
-        public ButtonBinding KeyPause { get; set; } = new ButtonBinding();
+        public ButtonBinding KeyPause { get; set; } = new();
 
         [SettingName("TAS_KEY_HITBOXES")]
         [DefaultButtonBinding(0, Keys.B)]
-        public ButtonBinding KeyHitboxes { get; set; } = new ButtonBinding();
+        public ButtonBinding KeyHitboxes { get; set; } = new();
 
         [SettingName("TAS_KEY_TRIGGER_HITBOXES")]
         [DefaultButtonBinding(0, Keys.LeftAlt)]
-        public ButtonBinding KeyTriggerHitboxes { get; set; } = new ButtonBinding();
+        public ButtonBinding KeyTriggerHitboxes { get; set; } = new();
 
         [SettingName("TAS_KEY_GRAPHICS")]
         [DefaultButtonBinding(0, Keys.N)]
-        public ButtonBinding KeyGraphics { get; set; } = new ButtonBinding();
+        public ButtonBinding KeyGraphics { get; set; } = new();
 
         [SettingName("TAS_KEY_CAMERA")]
         [DefaultButtonBinding(0, Keys.M)]
-        public ButtonBinding KeyCamera { get; set; } = new ButtonBinding();
+        public ButtonBinding KeyCamera { get; set; } = new();
 
         // Multiple default keys are not supported, handled by Hotkeys.ModReload()
         [SettingName("TAS_KEY_SAVE_STATE")]
         [DefaultButtonBinding(0, Keys.OemMinus)]
-        public ButtonBinding KeySaveState { get; set; } = new ButtonBinding();
+        public ButtonBinding KeySaveState { get; set; } = new();
 
         // Multiple default keys are not supported, handled by Hotkeys.ModReload()
         [SettingName("TAS_KEY_CLEAR_STATE")]
         [DefaultButtonBinding(0, Keys.Back)]
-        public ButtonBinding KeyClearState { get; set; } = new ButtonBinding();
+        public ButtonBinding KeyClearState { get; set; } = new();
 
         public bool ShowHitboxes {
             get => GameplayRendererExt.RenderDebug;
@@ -84,7 +84,7 @@ namespace TAS.EverestInterop {
 
         [SettingIgnore] public bool FastForwardCallBase { get; set; } = false;
         [SettingIgnore] public int FastForwardThreshold { get; set; } = 10;
-        [SettingIgnore] public DateTime StudioLastModifiedTime { get; set; } = new DateTime();
+        [SettingIgnore] public DateTime StudioLastModifiedTime { get; set; } = new();
         public bool AutoExtractNewStudio { get; set; } = true;
         [SettingIgnore] public Color EntityHitboxColor { get; set; } = HitboxColor.DefaultEntityColor;
         [SettingIgnore] public Color TriggerHitboxColor { get; set; } = HitboxColor.DefaultTriggerColor;

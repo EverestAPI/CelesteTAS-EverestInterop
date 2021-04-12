@@ -36,7 +36,7 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void Entity_DebugRender(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {
-            if (!CelesteTasModule.Settings.ShowHitboxes || !(self is TriggerSpikes) && !(self is TriggerSpikesOriginal)) {
+            if (!CelesteTasModule.Settings.ShowHitboxes || self is not TriggerSpikes && self is not TriggerSpikesOriginal) {
                 orig(self, camera);
                 return;
             }

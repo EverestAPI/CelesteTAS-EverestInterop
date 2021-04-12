@@ -15,7 +15,7 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop {
     public static class SimplifiedGraphicsFeature {
-        private static readonly List<string> SolidDecals = new List<string> {
+        private static readonly List<string> SolidDecals = new() {
             "3-resort/bridgecolumn",
             "3-resort/bridgecolumntop",
             "3-resort/brokenelevator",
@@ -32,7 +32,7 @@ namespace TAS.EverestInterop {
 
         private static readonly FieldInfo SpinnerColorField = typeof(CrystalStaticSpinner).GetFieldInfo("color");
         private static readonly FieldInfo DecalInfoCustomProperties = typeof(DecalRegistry.DecalInfo).GetFieldInfo("CustomProperties");
-        private static readonly List<ILHook> IlHooks = new List<ILHook>();
+        private static readonly List<ILHook> IlHooks = new();
 
         private static bool lastSimplifiedGraphics = Settings.SimplifiedGraphics;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
@@ -135,11 +135,11 @@ namespace TAS.EverestInterop {
             On.Celeste.SpotlightWipe.Render += SpotlightWipeOnRender;
             On.Celeste.ReflectionTentacles.Render += ReflectionTentacles_Render;
 
-            if (Type.GetType("FrostHelper.CustomSpinner, FrostTempleHelper") is Type customSpinnerType) {
+            if (Type.GetType("FrostHelper.CustomSpinner, FrostTempleHelper") is { } customSpinnerType) {
                 IlHooks.Add(new ILHook(customSpinnerType.GetConstructors()[0], ModCustomSpinnerColor));
             }
 
-            if (Type.GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController, MaxHelpingHand") is Type rainbowSpinnerType) {
+            if (Type.GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController, MaxHelpingHand") is { } rainbowSpinnerType) {
                 IlHooks.Add(new ILHook(rainbowSpinnerType.GetConstructors()[0], ModRainbowSpinnerColor));
             }
         }
@@ -169,7 +169,7 @@ namespace TAS.EverestInterop {
         }
 
         private static void OnSimplifiedGraphicsChanged(bool simplifiedGraphics) {
-            if (!(Engine.Scene is Level level)) {
+            if (Engine.Scene is not Level level) {
                 return;
             }
 
@@ -193,7 +193,7 @@ namespace TAS.EverestInterop {
         }
 
         private static void LightingRenderer_Render(ILContext il) {
-            ILCursor ilCursor = new ILCursor(il);
+            ILCursor ilCursor = new(il);
             if (ilCursor.TryGotoNext(
                 MoveType.After,
                 ins => ins.MatchCall(typeof(MathHelper), "Clamp")
@@ -218,7 +218,7 @@ namespace TAS.EverestInterop {
         }
 
         private static void BloomRendererOnApply(ILContext il) {
-            ILCursor ilCursor = new ILCursor(il);
+            ILCursor ilCursor = new(il);
             while (ilCursor.TryGotoNext(
                 MoveType.After,
                 ins => ins.OpCode == OpCodes.Ldarg_0,
@@ -278,7 +278,7 @@ namespace TAS.EverestInterop {
         }
 
         private static void BackdropRenderer_Render(ILContext il) {
-            ILCursor c = new ILCursor(il);
+            ILCursor c = new(il);
 
             Instruction methodStart = c.Next;
             c.EmitDelegate<Func<bool>>(() => !Settings.SimplifiedGraphics || !Settings.SimplifiedBackdrop);
@@ -306,7 +306,7 @@ namespace TAS.EverestInterop {
         }
 
         private static void CrystalStaticSpinnerOnGetHue(ILContext il) {
-            ILCursor ilCursor = new ILCursor(il);
+            ILCursor ilCursor = new(il);
             if (ilCursor.TryGotoNext(MoveType.After, ins => ins.MatchCall(typeof(Calc), "HsvToColor"))) {
                 ilCursor.EmitDelegate<Func<Color, Color>>(color =>
                     Settings.SimplifiedGraphics && Settings.SimplifiedSpinnerColor.Name == CrystalColor.Rainbow ? Color.White : color);
@@ -314,7 +314,7 @@ namespace TAS.EverestInterop {
         }
 
         private static void ModDustEyes(ILContext il) {
-            ILCursor ilCursor = new ILCursor(il);
+            ILCursor ilCursor = new(il);
             Instruction start = ilCursor.Next;
             ilCursor.EmitDelegate<Func<bool>>(() => Settings.SimplifiedGraphics);
             ilCursor.Emit(OpCodes.Brfalse, start);
@@ -365,7 +365,7 @@ namespace TAS.EverestInterop {
         }
 
         private static void LightningRenderer_RenderIL(ILContext il) {
-            ILCursor c = new ILCursor(il);
+            ILCursor c = new(il);
 
             if (c.TryGotoNext(
                 MoveType.After,
@@ -422,7 +422,7 @@ namespace TAS.EverestInterop {
         }
 
         private static void ModCustomSpinnerColor(ILContext il) {
-            ILCursor ilCursor = new ILCursor(il);
+            ILCursor ilCursor = new(il);
             if (ilCursor.TryGotoNext(
                 i => i.OpCode == OpCodes.Ldarg_0,
                 i => i.OpCode == OpCodes.Ldarg_S && i.Operand.ToString() == "tint",
@@ -436,8 +436,8 @@ namespace TAS.EverestInterop {
         }
 
         private static void ModRainbowSpinnerColor(ILContext il) {
-            ILCursor ilCursor = new ILCursor(il);
-            if (Type.GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController, MaxHelpingHand") is Type rainbowSpinnerType &&
+            ILCursor ilCursor = new(il);
+            if (Type.GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController, MaxHelpingHand") is { } rainbowSpinnerType &&
                 ilCursor.TryGotoNext(
                     i => i.MatchLdstr("gradientSize")
                 )) {
@@ -458,7 +458,7 @@ namespace TAS.EverestInterop {
 
         // ReSharper disable FieldCanBeMadeReadOnly.Global
         public struct SpinnerColor {
-            public static readonly List<SpinnerColor> All = new List<SpinnerColor> {
+            public static readonly List<SpinnerColor> All = new() {
                 new SpinnerColor((CrystalColor) (-1), null),
                 new SpinnerColor(CrystalColor.Rainbow, "#FFFFFF"),
                 new SpinnerColor(CrystalColor.Blue, "#639BFF"),

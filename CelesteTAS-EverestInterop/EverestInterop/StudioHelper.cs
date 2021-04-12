@@ -82,18 +82,18 @@ namespace TAS.EverestInterop {
                 return false;
             }
 
-            DateTime modifiedTime = new DateTime();
+            DateTime modifiedTime = new();
 
             if (!string.IsNullOrEmpty(Metadata.PathArchive)) {
                 using (ZipFile zip = ZipFile.Read(Metadata.PathArchive)) {
-                    if (zip.Entries.FirstOrDefault(zipEntry => zipEntry.FileName == StudioNameWithExe) is ZipEntry studioZipEntry) {
+                    if (zip.Entries.FirstOrDefault(zipEntry => zipEntry.FileName == StudioNameWithExe) is { } studioZipEntry) {
                         modifiedTime = studioZipEntry.LastModified;
                     }
                 }
             } else if (!string.IsNullOrEmpty(Metadata.PathDirectory)) {
                 string[] files = Directory.GetFiles(Metadata.PathDirectory);
 
-                if (files.FirstOrDefault(filePath => filePath.EndsWith(StudioNameWithExe)) is string studioFilePath) {
+                if (files.FirstOrDefault(filePath => filePath.EndsWith(StudioNameWithExe)) is { } studioFilePath) {
                     modifiedTime = File.GetLastWriteTime(studioFilePath);
                 }
             }

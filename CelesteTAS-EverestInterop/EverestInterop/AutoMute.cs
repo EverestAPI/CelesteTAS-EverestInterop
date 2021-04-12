@@ -8,7 +8,7 @@ using FMOD.Studio;
 
 namespace TAS.EverestInterop {
     public static class AutoMute {
-        private static readonly HashSet<string> LoopAudioPaths = new HashSet<string> {
+        private static readonly HashSet<string> LoopAudioPaths = new() {
             "event:/char/madeline/wallslide",
             "event:/char/madeline/dreamblock_travel",
             "event:/char/madeline/water_move_shallow",

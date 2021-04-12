@@ -18,7 +18,7 @@
         }
 
         public override bool Equals(object obj) {
-            return obj != null && obj is Place && ((Place) obj).iLine == iLine && ((Place) obj).iChar == iChar;
+            return obj is Place && ((Place) obj).iLine == iLine && ((Place) obj).iChar == iChar;
         }
 
         public static bool operator !=(Place p1, Place p2) {
@@ -101,7 +101,7 @@
             return false;
         }
 
-        public static Place Empty => new Place();
+        public static Place Empty => new();
 
         public override string ToString() {
             return "(" + iChar + "," + iLine + ")";

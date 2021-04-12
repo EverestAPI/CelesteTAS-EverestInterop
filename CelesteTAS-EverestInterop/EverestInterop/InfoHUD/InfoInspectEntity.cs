@@ -14,9 +14,9 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD {
     public static class InfoInspectEntity {
-        private static readonly List<WeakReference> RequireInspectEntities = new List<WeakReference>();
-        private static readonly HashSet<EntityID> RequireInspectEntityIds = new HashSet<EntityID>();
-        private static readonly HashSet<Entity> InspectingEntities = new HashSet<Entity>();
+        private static readonly List<WeakReference> RequireInspectEntities = new();
+        private static readonly HashSet<EntityID> RequireInspectEntityIds = new();
+        private static readonly HashSet<Entity> InspectingEntities = new();
         private static AreaKey requireInspectAreaKey;
 
         private static ILHook origLoadLevelHook;
@@ -52,30 +52,30 @@ namespace TAS.EverestInterop.InfoHUD {
             }
 
             if (mouseState.LeftButton == ButtonState.Pressed && lastMouseData.LeftButton == ButtonState.Released &&
-                FindClickedEntity(mouseState) is Entity entity) {
+                FindClickedEntity(mouseState) is { } entity) {
                 InspectingEntity(entity);
             }
         }
 
         public static Entity FindClickedEntity(MouseState mouseState) {
-            Vector2 mousePosition = new Vector2(mouseState.X, mouseState.Y);
+            Vector2 mousePosition = new(mouseState.X, mouseState.Y);
             if (Engine.Scene is Level level) {
                 Camera cam = level.Camera;
                 int viewScale = (int) Math.Round(Engine.Instance.GraphicsDevice.PresentationParameters.BackBufferWidth / (float) cam.Viewport.Width);
                 Vector2 mouseWorldPosition = mousePosition;
                 mouseWorldPosition = (mouseWorldPosition / viewScale).Floor();
                 mouseWorldPosition = cam.ScreenToCamera(mouseWorldPosition);
-                Entity tempEntity = new Entity {Position = mouseWorldPosition, Collider = new Hitbox(1, 1)};
-                Entity clickedEntity = level.Entities.Where(entity => !(entity is Trigger)
+                Entity tempEntity = new() {Position = mouseWorldPosition, Collider = new Hitbox(1, 1)};
+                Entity clickedEntity = level.Entities.Where(entity => entity is not Trigger
                                                                       && entity.GetType() != typeof(Entity)
-                                                                      && !(entity is LookoutBlocker)
-                                                                      && !(entity is Killbox)
-                                                                      && !(entity is WindController)
-                                                                      && !(entity is Water)
-                                                                      && !(entity is WaterFall)
-                                                                      && !(entity is BigWaterfall)
-                                                                      && !(entity is PlaybackBillboard)
-                                                                      && !(entity is ParticleSystem))
+                                                                      && entity is not LookoutBlocker
+                                                                      && entity is not Killbox
+                                                                      && entity is not WindController
+                                                                      && entity is not Water
+                                                                      && entity is not WaterFall
+                                                                      && entity is not BigWaterfall
+                                                                      && entity is not PlaybackBillboard
+                                                                      && entity is not ParticleSystem)
                     .FirstOrDefault(entity => entity.CollideCheck(tempEntity));
                 return clickedEntity;
             } else {
@@ -84,7 +84,7 @@ namespace TAS.EverestInterop.InfoHUD {
         }
 
         private static void ModOrigLoadLevel(ILContext il) {
-            ILCursor cursor = new ILCursor(il);
+            ILCursor cursor = new(il);
 
             if (cursor.TryGotoNext(MoveType.After,
                 ins => ins.OpCode == OpCodes.Call &&
@@ -92,7 +92,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 cursor.Index++;
                 object entityDataOperand = cursor.Next.Operand;
                 while (cursor.TryGotoNext(MoveType.Before,
-                    i => i.OpCode == OpCodes.Newobj && i.Operand is MethodReference m && m.HasParameters && m.Parameters.Count == 1 &&
+                    i => i.OpCode == OpCodes.Newobj && i.Operand is MethodReference {HasParameters: true} m && m.Parameters.Count == 1 &&
                          m.Parameters[0].ParameterType.Name == "Vector2",
                     i => i.OpCode == OpCodes.Call && i.Operand.ToString() == "System.Void Monocle.Scene::Add(Monocle.Entity)")) {
                     cursor.Index++;
@@ -103,7 +103,7 @@ namespace TAS.EverestInterop.InfoHUD {
 
             cursor.Goto(0);
             while (cursor.TryGotoNext(MoveType.After,
-                i => i.OpCode == OpCodes.Newobj && i.Operand is MethodReference m && m.HasParameters &&
+                i => i.OpCode == OpCodes.Newobj && i.Operand is MethodReference {HasParameters: true} m &&
                      m.Parameters.Any(parameter => parameter.ParameterType.Name == "EntityData"))) {
                 if (cursor.TryFindPrev(out ILCursor[] results,
                     i => i.OpCode == OpCodes.Ldloc_S && i.Operand is VariableDefinition v && v.VariableType.Name == "EntityData")) {
@@ -114,7 +114,7 @@ namespace TAS.EverestInterop.InfoHUD {
         }
 
         private static void ModLoadCustomEntity(ILContext il) {
-            ILCursor cursor = new ILCursor(il);
+            ILCursor cursor = new(il);
 
             if (cursor.TryGotoNext(MoveType.After, ins => ins.MatchCallvirt<Level.EntityLoader>("Invoke"))) {
                 cursor.Emit(OpCodes.Dup).Emit(OpCodes.Ldarg_0);
@@ -135,7 +135,7 @@ namespace TAS.EverestInterop.InfoHUD {
 
         private static void InspectingEntity(Entity clickedEntity) {
             requireInspectAreaKey = clickedEntity.SceneAs<Level>().Session.Area;
-            if (clickedEntity.LoadEntityData() is EntityData entityData) {
+            if (clickedEntity.LoadEntityData() is { } entityData) {
                 EntityID entityId = entityData.ToEntityId();
                 if (RequireInspectEntityIds.Contains(entityId)) {
                     RequireInspectEntityIds.Remove(entityId);
@@ -143,7 +143,7 @@ namespace TAS.EverestInterop.InfoHUD {
                     RequireInspectEntityIds.Add(entityId);
                 }
             } else {
-                if (RequireInspectEntities.FirstOrDefault(reference => reference.Target == clickedEntity) is WeakReference alreadyAdded) {
+                if (RequireInspectEntities.FirstOrDefault(reference => reference.Target == clickedEntity) is { } alreadyAdded) {
                     RequireInspectEntities.Remove(alreadyAdded);
                 } else {
                     RequireInspectEntities.Add(new WeakReference(clickedEntity));
@@ -178,11 +178,11 @@ namespace TAS.EverestInterop.InfoHUD {
             InspectingEntities.Clear();
         }
 
-        private static void LevelOnLoadLevel(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerintro, bool isfromloader) {
-            orig(self, playerintro, isfromloader);
+        private static void LevelOnLoadLevel(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader) {
+            orig(self, playerIntro, isFromLoader);
 
             RequireInspectEntities.ToList().ForEach(reference => {
-                if (reference.Target is Entity entity && entity.Scene == null) {
+                if (reference.Target is Entity {Scene: null}) {
                     RequireInspectEntities.Remove(reference);
                 }
             });
@@ -197,7 +197,7 @@ namespace TAS.EverestInterop.InfoHUD {
 
         public static string GetInspectingEntitiesInfo(string separator = "\n") {
             InspectingEntities.Clear();
-            if (!(Engine.Scene is Level level)) {
+            if (Engine.Scene is not Level level) {
                 return string.Empty;
             }
 
@@ -235,11 +235,11 @@ namespace TAS.EverestInterop.InfoHUD {
         }
 
         private static Dictionary<EntityID, Entity> GetAllEntities(Level level) {
-            Dictionary<EntityID, Entity> result = new Dictionary<EntityID, Entity>();
+            Dictionary<EntityID, Entity> result = new();
 
-            Entity[] entities = level.Entities.FindAll<Entity>().Where(entity => !(entity is Trigger)).ToArray();
+            Entity[] entities = level.Entities.FindAll<Entity>().Where(entity => entity is not Trigger).ToArray();
             foreach (Entity entity in entities) {
-                if (!(entity.LoadEntityData() is EntityData entityData)) {
+                if (entity.LoadEntityData() is not { } entityData) {
                     continue;
                 }
 

@@ -67,7 +67,7 @@ namespace TAS.EverestInterop {
 
         private static void Pathfinder_Render(ILContext il) {
             // Remove the for loop which draws pathfinder tiles
-            ILCursor c = new ILCursor(il);
+            ILCursor c = new(il);
             c.FindNext(out ILCursor[] found, i => i.MatchLdfld(typeof(Pathfinder), "lastPath"));
             c.RemoveRange(found[0].Index - 1);
         }

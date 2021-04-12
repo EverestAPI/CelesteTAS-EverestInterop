@@ -5,7 +5,7 @@ namespace CelesteStudio.RichText {
     internal class CommandManager {
         readonly LimitedStack<UndoableCommand> history;
         readonly int maxHistoryLength = 200;
-        readonly Stack<UndoableCommand> redoStack = new Stack<UndoableCommand>();
+        readonly Stack<UndoableCommand> redoStack = new();
 
         int autoUndoCommands = 0;
 

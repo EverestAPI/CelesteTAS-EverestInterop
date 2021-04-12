@@ -3,12 +3,12 @@ using Celeste.Mod;
 
 namespace TAS.EverestInterop {
     public static class DebugRcPage {
-        private static readonly RCEndPoint InfoEndPoint = new RCEndPoint {
+        private static readonly RCEndPoint InfoEndPoint = new() {
             Path = "/tas/info",
             Name = "CelesteTAS Info",
             InfoHTML = "List some tas info.",
             Handle = c => {
-                StringBuilder builder = new StringBuilder();
+                StringBuilder builder = new();
                 Everest.DebugRC.WriteHTMLStart(c, builder);
                 WriteLine(builder, $"Running: {Manager.Running}");
                 WriteLine(builder, $"State: {Manager.State}");

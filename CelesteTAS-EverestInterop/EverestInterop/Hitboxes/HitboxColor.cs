@@ -14,7 +14,7 @@ namespace TAS.EverestInterop.Hitboxes {
         public static readonly Color DefaultTriggerColor = Color.MediumPurple;
         public static readonly Color DefaultPlatformColor = Color.Coral;
 
-        private static readonly Regex HexChar = new Regex(@"^[0-9a-f]*$", RegexOptions.IgnoreCase);
+        private static readonly Regex HexChar = new(@"^[0-9a-f]*$", RegexOptions.IgnoreCase);
 
         public static Color EntityColor => Settings.EntityHitboxColor;
         public static Color TriggerColor => Settings.TriggerHitboxColor;
@@ -115,7 +115,7 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void EntityOnDebugRender(ILContext il) {
-            ILCursor ilCursor = new ILCursor(il);
+            ILCursor ilCursor = new(il);
             if (ilCursor.TryGotoNext(MoveType.After, instruction => instruction.MatchCall<Color>("get_DarkRed"))) {
                 ilCursor.Emit(OpCodes.Ldarg_0);
                 ilCursor.EmitDelegate<Func<Color, Entity, Color>>(GetCustomColor);

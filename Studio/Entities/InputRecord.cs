@@ -26,8 +26,8 @@ namespace CelesteStudio.Entities {
 
     public class InputRecord {
         private const char Delimiter = ',';
-        private static readonly Regex DuplicateZeroRegex = new Regex(@"^0+([^.])", RegexOptions.Compiled);
-        private static readonly Regex FloatRegex = new Regex(@"^,-?([0-9.]+)", RegexOptions.Compiled);
+        private static readonly Regex DuplicateZeroRegex = new(@"^0+([^.])", RegexOptions.Compiled);
+        private static readonly Regex FloatRegex = new(@"^,-?([0-9.]+)", RegexOptions.Compiled);
 
         private static readonly Actions[][] ExclusiveActions = {
             new[] {Actions.Dash, Actions.Dash2, Actions.DemoDash},
@@ -158,7 +158,7 @@ namespace CelesteStudio.Entities {
 
         private float ReadAngle(string line, ref int start) {
             string angleStr = line.Substring(start).Trim();
-            if (FloatRegex.Match(angleStr) is Match match && match.Success && float.TryParse(match.Groups[1].Value, out float angle)) {
+            if (FloatRegex.Match(angleStr) is {Success: true} match && float.TryParse(match.Groups[1].Value, out float angle)) {
                 AngleStr = DuplicateZeroRegex.Replace(match.Groups[1].Value, "$1");
                 start += match.Groups[0].Value.Length;
                 if (angle < 0f) {
@@ -176,7 +176,7 @@ namespace CelesteStudio.Entities {
 
         private float ReadUpperLimit(string line, ref int start) {
             string upperLimitStr = line.Substring(start).Trim();
-            if (FloatRegex.Match(upperLimitStr) is Match match && match.Success && float.TryParse(match.Groups[1].Value, out float upperLimit)) {
+            if (FloatRegex.Match(upperLimitStr) is {Success: true} match && float.TryParse(match.Groups[1].Value, out float upperLimit)) {
                 UpperLimitStr = DuplicateZeroRegex.Replace(match.Groups[1].Value, "$1");
                 start += match.Groups[0].Value.Length;
                 if (upperLimit != 0 && upperLimit < 0.5f) {
@@ -201,7 +201,7 @@ namespace CelesteStudio.Entities {
         }
 
         private string ActionsToString() {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             if (HasActions(Actions.Left)) {
                 sb.Append($"{Delimiter}L");
             }

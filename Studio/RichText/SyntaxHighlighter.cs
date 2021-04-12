@@ -7,9 +7,9 @@ using System.Xml;
 
 namespace CelesteStudio.RichText {
     public class SyntaxHighlighter : IDisposable {
-        public static readonly Regex CommentRegex = new Regex(@"^\s*#.*", RegexOptions.Compiled);
-        public static readonly Regex BreakPointRegex = new Regex(@"^\s*\*\*\*", RegexOptions.Compiled);
-        public static readonly Regex InputRecordRegex = new Regex(@"^( {3}\d| {2}\d{2}| \d{3}|\d{4})", RegexOptions.Compiled);
+        public static readonly Regex CommentRegex = new(@"^\s*#.*", RegexOptions.Compiled);
+        public static readonly Regex BreakPointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
+        public static readonly Regex InputRecordRegex = new(@"^( {3}\d| {2}\d{2}| \d{3}|\d{4})", RegexOptions.Compiled);
 
         public readonly Style AquaStyle = new TextStyle(Brushes.Aqua, null, FontStyle.Regular);
 
@@ -22,7 +22,7 @@ namespace CelesteStudio.RichText {
         public readonly Style ChocolateBgStyle = new TextStyle(Brushes.White, Brushes.Chocolate, FontStyle.Regular);
         public readonly Style ChocolateStyle = new TextStyle(Brushes.Chocolate, null, FontStyle.Regular);
 
-        readonly Dictionary<string, SyntaxDescriptor> descByXMLfileNames = new Dictionary<string, SyntaxDescriptor>();
+        readonly Dictionary<string, SyntaxDescriptor> descByXMLfileNames = new();
         public readonly Style GoldenrodBgStyle = new TextStyle(Brushes.White, Brushes.Goldenrod, FontStyle.Regular);
         public readonly Style GrayStyle = new TextStyle(Brushes.Gray, null, FontStyle.Regular);
         public readonly Style GreenStyle = new TextStyle(Brushes.Green, null, FontStyle.Regular);
@@ -87,7 +87,7 @@ namespace CelesteStudio.RichText {
         }
 
         public static SyntaxDescriptor ParseXmlDescription(XmlDocument doc) {
-            SyntaxDescriptor desc = new SyntaxDescriptor();
+            SyntaxDescriptor desc = new();
             XmlNode brackets = doc.SelectSingleNode("doc/brackets");
             if (brackets != null) {
                 if (brackets.Attributes["left"] == null || brackets.Attributes["right"] == null || brackets.Attributes["left"].Value == "" ||
@@ -109,7 +109,7 @@ namespace CelesteStudio.RichText {
                 }
             }
 
-            Dictionary<string, Style> styleByName = new Dictionary<string, Style>();
+            Dictionary<string, Style> styleByName = new();
 
             foreach (XmlNode style in doc.SelectNodes("doc/style")) {
                 var s = ParseStyle(style);
@@ -129,7 +129,7 @@ namespace CelesteStudio.RichText {
         }
 
         private static FoldingDesc ParseFolding(XmlNode foldingNode) {
-            FoldingDesc folding = new FoldingDesc();
+            FoldingDesc folding = new();
             //regex
             folding.startMarkerRegex = foldingNode.Attributes["start"].Value;
             folding.finishMarkerRegex = foldingNode.Attributes["finish"].Value;
@@ -143,7 +143,7 @@ namespace CelesteStudio.RichText {
         }
 
         private static RuleDesc ParseRule(XmlNode ruleNode, Dictionary<string, Style> styles) {
-            RuleDesc rule = new RuleDesc();
+            RuleDesc rule = new();
             rule.pattern = ruleNode.InnerText;
             var styleA = ruleNode.Attributes["style"];
             var optionsA = ruleNode.Attributes["options"];
@@ -251,10 +251,10 @@ namespace CelesteStudio.RichText {
 
             while (start <= end) {
                 int charEnd = tb[start].Count;
-                Range line = new Range(tb, 0, start, charEnd, start);
+                Range line = new(tb, 0, start, charEnd, start);
 
                 if (InputRecordRegex.IsMatch(line.Text)) {
-                    Range sub = new Range(tb, 0, start, 4, start);
+                    Range sub = new(tb, 0, start, 4, start);
                     sub.SetStyle(RedStyle);
 
                     int charStart = 4;
@@ -273,7 +273,7 @@ namespace CelesteStudio.RichText {
                     }
                 } else if (BreakPointRegex.IsMatch(line.Text)) {
                     int index = line.Text.IndexOf("***", StringComparison.Ordinal);
-                    Range sub = new Range(tb, index, start, index + 3, start);
+                    Range sub = new(tb, index, start, index + 3, start);
                     sub.SetStyle(RedBgStyle);
 
                     if (tb[start].Count >= index + 4) {

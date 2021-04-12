@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Threading;
 using Celeste;
@@ -75,9 +74,9 @@ namespace TAS.Communication {
 
         private static void SetupDebugVariables() {
             Hotkeys.KeysList = new List<Keys>[] {
-                new List<Keys> {Keys.RightControl, Keys.OemOpenBrackets}, new List<Keys> {Keys.RightControl, Keys.RightShift},
-                new List<Keys> {Keys.OemOpenBrackets}, new List<Keys> {Keys.OemCloseBrackets}, new List<Keys> {Keys.V}, new List<Keys> {Keys.B},
-                new List<Keys> {Keys.N}
+                new() {Keys.RightControl, Keys.OemOpenBrackets}, new() {Keys.RightControl, Keys.RightShift},
+                new() {Keys.OemOpenBrackets}, new() {Keys.OemCloseBrackets}, new() {Keys.V}, new() {Keys.B},
+                new() {Keys.N}
             };
         }
 
@@ -124,7 +123,7 @@ namespace TAS.Communication {
         }
 
         private void ProcessGetConsoleCommand() {
-            string command = Input.ConsoleCommandHandler.CreateConsoleCommand();
+            string command = ConsoleCommandHandler.CreateConsoleCommand();
             if (command != null) {
                 byte[] commandBytes = Encoding.Default.GetBytes(command);
                 WriteMessageGuaranteed(new Message(MessageIDs.ReturnConsoleCommand, commandBytes));
@@ -243,7 +242,7 @@ namespace TAS.Communication {
                 return;
             }
 
-            if (typeof(CelesteTasModuleSettings).GetProperty(settingName) is PropertyInfo property) {
+            if (typeof(CelesteTasModuleSettings).GetProperty(settingName) is { } property) {
                 if (property.GetSetMethod(true) == null) {
                     return;
                 }
@@ -312,7 +311,7 @@ namespace TAS.Communication {
             if (Initialized) {
                 string[] data = new string[] {state, gameData};
                 byte[] dataBytes = ToByteArray(data);
-                Message message = new Message(MessageIDs.SendState, dataBytes);
+                Message message = new(MessageIDs.SendState, dataBytes);
                 if (canFail) {
                     WriteMessage(message);
                 } else {

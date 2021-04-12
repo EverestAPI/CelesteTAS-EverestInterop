@@ -12,8 +12,8 @@ namespace CelesteStudio.RichText {
 
         protected override void OnLoad(EventArgs e) {
             base.OnLoad(e);
-            this.label.Text = String.Format("Line number (1 - {0}):", this.TotalLineCount);
-            this.textBox.DataBindings.Add("Text", this, "SelectedLineNumber", true, DataSourceUpdateMode.OnPropertyChanged);
+            label.Text = String.Format("Line number (1 - {0}):", TotalLineCount);
+            textBox.DataBindings.Add("Text", this, "SelectedLineNumber", true, DataSourceUpdateMode.OnPropertyChanged);
         }
     }
 }

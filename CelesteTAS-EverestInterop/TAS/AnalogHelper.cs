@@ -32,7 +32,7 @@ namespace TAS {
         private const float AmpLowerbound = (float) (0.25 * DcMult);
         private const short Lowerbound = 7849;
 
-        private static readonly Regex Fractional = new Regex(@"\d+\.(\d*)", RegexOptions.Compiled);
+        private static readonly Regex Fractional = new(@"\d+\.(\d*)", RegexOptions.Compiled);
         private static AnalogueMode analogMode = AnalogueMode.Ignore;
 
         public static void AnalogModeChange(AnalogueMode mode) {

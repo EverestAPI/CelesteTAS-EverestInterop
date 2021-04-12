@@ -34,7 +34,7 @@ namespace TAS.EverestInterop.Hitboxes {
 
         private static void AddFeatherHitbox(On.Celeste.PlayerCollider.orig_DebugRender orig, PlayerCollider self, Camera camera) {
             orig(self, camera);
-            if (Settings.ShowHitboxes && self.FeatherCollider != null && self.Scene.GetPlayer() is Player player &&
+            if (Settings.ShowHitboxes && self.FeatherCollider != null && self.Scene.GetPlayer() is { } player &&
                 player.StateMachine.State == Player.StStarFly) {
                 Collider collider = self.Entity.Collider;
                 self.Entity.Collider = self.FeatherCollider;
@@ -49,10 +49,10 @@ namespace TAS.EverestInterop.Hitboxes {
                 return;
             }
 
-            if (!(self.Collider is Grid)) {
+            if (self.Collider is not Grid) {
                 int width = camera.Viewport.Width;
                 int height = camera.Viewport.Height;
-                Rectangle bounds = new Rectangle((int) camera.Left - width / 2, (int) camera.Top - height / 2, width * 2, height * 2);
+                Rectangle bounds = new((int) camera.Left - width / 2, (int) camera.Top - height / 2, width * 2, height * 2);
                 if (self.Right < bounds.Left || self.Left > bounds.Right || self.Top > bounds.Bottom ||
                     self.Bottom < bounds.Top) {
                     return;
@@ -61,7 +61,7 @@ namespace TAS.EverestInterop.Hitboxes {
 
             if (self is Puffer) {
                 Vector2 bottomCenter = self.BottomCenter - Vector2.UnitY * 1;
-                if (self.Scene.Tracker.GetEntity<Player>() is Player player && player.Ducking) {
+                if (self.Scene.Tracker.GetEntity<Player>() is {Ducking: true}) {
                     bottomCenter -= Vector2.UnitY * 3;
                 }
 
@@ -79,7 +79,7 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void PlayerColliderOnDebugRender(ILContext il) {
-            ILCursor ilCursor = new ILCursor(il);
+            ILCursor ilCursor = new(il);
             if (ilCursor.TryGotoNext(
                 MoveType.After,
                 ins => ins.MatchCall<Color>("get_HotPink")

@@ -17,7 +17,7 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void HideHitbox(ILContext il) {
-            ILCursor ilCursor = new ILCursor(il);
+            ILCursor ilCursor = new(il);
             Instruction start = ilCursor.Next;
             ilCursor.Emit(OpCodes.Ldarg_0)
                 .EmitDelegate<Func<Entity, bool>>(entity => Settings.ShowHitboxes && Settings.HideTriggerHitboxes && entity is Trigger);

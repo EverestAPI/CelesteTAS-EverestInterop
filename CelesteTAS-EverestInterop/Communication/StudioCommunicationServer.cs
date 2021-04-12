@@ -12,7 +12,7 @@ namespace TASALT.StudioCommunication {
         public static StudioCommunicationServer instance;
 
 
-        private readonly FakeStudio Studio = new FakeStudio();
+        private readonly FakeStudio Studio = new();
 
         private StudioCommunicationServer() {
             //pipe = new NamedPipeServerStream("CelesteTAS");
@@ -22,8 +22,8 @@ namespace TASALT.StudioCommunication {
         public static void Run() {
             instance = new StudioCommunicationServer();
 
-            ThreadStart mainLoop = new ThreadStart(instance.UpdateLoop);
-            Thread updateThread = new Thread(mainLoop);
+            ThreadStart mainLoop = new(instance.UpdateLoop);
+            Thread updateThread = new(mainLoop);
             updateThread.Name = "StudioCom Server";
             updateThread.Start();
         }
@@ -85,7 +85,7 @@ namespace TASALT.StudioCommunication {
             var celeste = this;
             celeste = null;
 
-            StudioCommunicationBase.Message? lastMessage;
+            Message? lastMessage;
 
             studio?.WriteMessageGuaranteed(new Message(MessageIDs.EstablishConnection, new byte[0]));
             celeste?.ReadMessageGuaranteed();
