@@ -94,6 +94,9 @@ the `StartExport` command.
 
 The contents of the curly brackets will be converted to actual data, here are some examples:
 
+- `{EntityClassName.field...}` find the first entity. e.g. `{Strawberry.ExactPosition}`
+- `{EntityClassName[entityId].field...}` Find the entity with the specified entityId. e.g. `{Strawberry[1:12].Position}` means 1A gold berry. You can get the entityId by opening the console and clicking on the entity with the mouse
+- `{ClassName.staticField.field...}`
 - `Wind: {Level.Wind}`
 - `AutoJump: {Player.AutoJump} ({Player.AutoJumpTimer.toFrame()})`
 - `ForceMoveX: {Player.forceMoveX} ({Player.forceMoveXTimer.toFrame()})`

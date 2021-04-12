@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -17,12 +18,13 @@ namespace TAS.EverestInterop.InfoHUD {
         private const BindingFlags AllStaticBindingFlags = BindingFlags.Static | BindingFlags.FlattenHierarchy |
                                                            BindingFlags.Public | BindingFlags.NonPublic;
 
-        private static readonly Regex BraceRegex = new Regex(@"\{(.+?)\}", RegexOptions.Compiled);
-        private static readonly Regex ModTypeNameRegex = new Regex(@"(.+@[^\.]+?)\.", RegexOptions.Compiled);
-        private static readonly MethodInfo EntityListFindFirst = typeof(EntityList).GetMethod("FindFirst");
-        private static readonly Dictionary<string, Type> AllTypes = new Dictionary<string, Type>();
-        private static readonly Dictionary<string, MethodInfo> CachedGetMethodInfos = new Dictionary<string, MethodInfo>();
-        private static readonly Dictionary<string, FieldInfo> CachedFieldInfos = new Dictionary<string, FieldInfo>();
+        private static readonly Regex BraceRegex = new(@"\{(.+?)\}", RegexOptions.Compiled);
+        private static readonly Regex EntityIdSuffixRegex = new(@"\[(.+?)\]$", RegexOptions.Compiled);
+        private static readonly Regex ModTypeNameRegex = new(@"(.+@[^\.]+?)\.", RegexOptions.Compiled);
+        private static readonly MethodInfo EntityListFindAll = typeof(EntityList).GetMethod("FindAll");
+        private static readonly Dictionary<string, Type> AllTypes = new();
+        private static readonly Dictionary<string, MethodInfo> CachedGetMethodInfos = new();
+        private static readonly Dictionary<string, FieldInfo> CachedFieldInfos = new();
 
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
         private static float FramesPerSecond => 60f / Engine.TimeRateB;
@@ -57,31 +59,33 @@ namespace TAS.EverestInterop.InfoHUD {
                 }
 
                 string typeFullName;
+                string entityId = string.Empty;
+                string firstText = splitText[0];
 
                 if (matchText.Contains("@")) {
-                    if (ModTypeNameRegex.Match(matchText) is Match matchTypeName) {
-                        typeFullName = matchTypeName.Groups[1].Value;
+                    if (ModTypeNameRegex.Match(matchText) is { } matchTypeName) {
+                        firstText = matchTypeName.Groups[1].Value;
+                        TryParseEntityId(ref firstText, ref entityId);
+                        typeFullName = firstText;
                         List<string> modTypeSplitText = ModTypeNameRegex.Replace(matchText, string.Empty).Split('.').ToList();
                         modTypeSplitText.Insert(0, typeFullName);
                         splitText = modTypeSplitText.ToArray();
                         if (splitText.Length <= 1) {
                             return "invalid template";
                         }
-
-                        if (!AllTypes.ContainsKey(typeFullName)) {
-                            return $"{splitText[0]} not found";
-                        }
                     } else {
                         return "invalid template";
                     }
                 } else {
-                    typeFullName = $"Celeste.{splitText[0]}";
+                    TryParseEntityId(ref firstText, ref entityId);
+                    typeFullName = $"Celeste.{firstText}";
                     if (!AllTypes.ContainsKey(typeFullName)) {
-                        typeFullName = $"Monocle.{splitText[0]}";
-                        if (!AllTypes.ContainsKey(typeFullName)) {
-                            return $"{splitText[0]} not found";
-                        }
+                        typeFullName = $"Monocle.{firstText}";
                     }
+                }
+
+                if (!AllTypes.ContainsKey(typeFullName)) {
+                    return $"{typeFullName} not found";
                 }
 
                 Type type = AllTypes[typeFullName];
@@ -95,7 +99,7 @@ namespace TAS.EverestInterop.InfoHUD {
 
                 if (Engine.Scene is Level level) {
                     if (type.IsSameOrSubclassOf(typeof(Entity))) {
-                        if (FindEntity(type, level) is object entity) {
+                        if (FindEntity(type, level, entityId) is { } entity) {
                             return FormatValue(GetMemberValue(entity, memberNames), toFrame);
                         } else {
                             return string.Empty;
@@ -107,6 +111,13 @@ namespace TAS.EverestInterop.InfoHUD {
 
                 return FormatValue(GetMemberValue(null, memberNames, type), toFrame);
             });
+        }
+
+        private static void TryParseEntityId(ref string firstText, ref string entityId) {
+            if (EntityIdSuffixRegex.IsMatch(firstText)) {
+                entityId = EntityIdSuffixRegex.Match(firstText).Groups[1].Value;
+                firstText = EntityIdSuffixRegex.Replace(firstText, "");
+            }
         }
 
         private static string FormatValue(object obj, bool toFrame) {
@@ -133,9 +144,9 @@ namespace TAS.EverestInterop.InfoHUD {
             object result = obj;
             foreach (string memberName in memberNames) {
                 Type objType = result?.GetType() ?? type;
-                if (GetGetMethod(objType, memberName, result == null) is MethodInfo methodInfo) {
+                if (GetGetMethod(objType, memberName, result == null) is { } methodInfo) {
                     result = methodInfo.Invoke(methodInfo.IsStatic ? null : result, null);
-                } else if (GetFieldInfo(objType, memberName, result == null) is FieldInfo fieldInfo) {
+                } else if (GetFieldInfo(objType, memberName, result == null) is { } fieldInfo) {
                     result = fieldInfo.GetValue(fieldInfo.IsStatic ? null : result);
                 } else {
                     return $"{memberName} not found";
@@ -171,11 +182,19 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-        private static object FindEntity(Type type, Level level) {
+        private static object FindEntity(Type type, Level level, string entityId) {
+            IEnumerable<Entity> entities;
             if (level.Tracker.Entities.ContainsKey(type)) {
-                return level.Tracker.Entities[type].FirstOrDefault();
+                entities = level.Tracker.Entities[type];
             } else {
-                return EntityListFindFirst.MakeGenericMethod(type).Invoke(level.Entities, null);
+                IList list = EntityListFindAll.MakeGenericMethod(type).Invoke(level.Entities, null) as IList;
+                entities = list?.Cast<Entity>();
+            }
+
+            if (entityId.IsNullOrEmpty()) {
+                return entities?.FirstOrDefault();
+            } else {
+                return entities?.FirstOrDefault(entity => entity.LoadEntityData()?.ToEntityId().ToString() == entityId);
             }
         }
     }
