@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace StudioCommunication {
     public class StudioCommunicationBase {
-        protected const int BufferSize = 0x1000;
+        protected const int BufferSize = 0x100000;
         protected const int HeaderLength = 9;
 
         private static readonly List<StudioCommunicationBase> AttachedCom = new();

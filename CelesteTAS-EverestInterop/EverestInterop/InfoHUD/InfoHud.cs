@@ -179,6 +179,11 @@ namespace TAS.EverestInterop.InfoHUD {
                     TasSettings.InfoCustomTemplate = TextInput.GetClipboardText();
                     CelesteTasModule.Instance.SaveSettings();
                 }));
+                subMenu.Add(new TextMenuExt.EnumerableSlider<InspectEntityTypes>("Info Inspect Entity".ToDialogText(), new[] {
+                    new KeyValuePair<InspectEntityTypes, string>(InspectEntityTypes.Position, "Info Inspect Entity Position".ToDialogText()),
+                    new KeyValuePair<InspectEntityTypes, string>(InspectEntityTypes.DeclaredOnly, "Info Inspect Entity Declared Only".ToDialogText()),
+                    new KeyValuePair<InspectEntityTypes, string>(InspectEntityTypes.All, "Info Inspect Entity All".ToDialogText()),
+                }, TasSettings.InfoInspectEntityType).Change(value => TasSettings.InfoInspectEntityType = value));
                 subMenu.Add(new TextMenu.OnOff("Info Ignore Trigger When Click Entity".ToDialogText(), TasSettings.InfoIgnoreTriggerWhenClickEntity)
                     .Change(value => TasSettings.InfoIgnoreTriggerWhenClickEntity = value));
                 subMenu.Add(new TextMenuExt.IntSlider("Info Text Size".ToDialogText(), 5, 20, TasSettings.InfoTextSize).Change(value =>

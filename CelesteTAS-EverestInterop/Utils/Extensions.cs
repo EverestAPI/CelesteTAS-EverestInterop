@@ -227,6 +227,10 @@ namespace TAS.Utils {
         public static EntityID ToEntityId(this EntityData entityData) {
             return new(entityData.Level.Name, entityData.ID);
         }
+
+        public static string ToUniqueId(this EntityData entityData, Entity entity) {
+            return $"{entity.GetType().Name}:{entityData.ToEntityId()}";
+        }
     }
 
     internal static class SceneExtensions {

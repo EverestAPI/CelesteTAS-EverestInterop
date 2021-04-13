@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
 using TAS.EverestInterop.Hitboxes;
+using TAS.EverestInterop.InfoHUD;
 using TAS.Utils;
 
 namespace TAS.EverestInterop {
@@ -153,6 +154,7 @@ namespace TAS.EverestInterop {
         public bool InfoTasInput { get; set; } = true;
         public bool InfoSubPixelIndicator { get; set; } = true;
         public bool InfoCustom { get; set; } = false;
+        public InspectEntityTypes InfoInspectEntityType { get; set; } = InspectEntityTypes.Position;
         public bool InfoIgnoreTriggerWhenClickEntity { get; set; } = true;
 
         [SettingIgnore]

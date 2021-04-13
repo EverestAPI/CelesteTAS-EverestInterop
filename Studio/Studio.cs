@@ -647,7 +647,9 @@ namespace CelesteStudio {
 
             int bottomExtraSpace = TextRenderer.MeasureText("\n", lblStatus.Font).Height / 5;
             if (Settings.Default.ShowGameInfo) {
-                statusBar.Height = TextRenderer.MeasureText(lblStatus.Text.Trim(), lblStatus.Font).Height + bottomExtraSpace;
+                // TODO add scroll bar
+                string maxHeightText = string.Join("\n", lblStatus.Text.Trim().Split('\n').Take(20));
+                statusBar.Height = TextRenderer.MeasureText(maxHeightText, lblStatus.Font).Height + bottomExtraSpace;
             } else {
                 statusBar.Height = 0;
             }

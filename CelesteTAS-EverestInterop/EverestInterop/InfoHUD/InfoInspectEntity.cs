@@ -15,12 +15,21 @@ using TAS.EverestInterop.Hitboxes;
 using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD {
+    public enum InspectEntityTypes {
+        Position,
+        DeclaredOnly,
+        All
+    }
+
     public static class InfoInspectEntity {
         private static readonly Dictionary<string, IEnumerable<MemberInfo>> CachedMemberInfos = new();
         private static readonly Regex NewLineRegex = new(@"\r\n?|\n", RegexOptions.Compiled);
 
+        private static readonly PropertyInfo ActorExactPosition = typeof(Actor).GetPropertyInfo("ExactPosition");
+        private static readonly FieldInfo EntityPosition = typeof(Entity).GetFieldInfo("Position");
+
         private static readonly List<WeakReference> RequireInspectEntities = new();
-        private static readonly HashSet<EntityID> RequireInspectEntityIds = new();
+        private static readonly HashSet<string> RequireInspectEntityIds = new();
         private static readonly HashSet<Entity> InspectingEntities = new();
         private static AreaKey requireInspectAreaKey;
 
@@ -75,6 +84,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 Entity clickedEntity = level.Entities.Where(entity =>
                         (!CelesteTasModule.Settings.InfoIgnoreTriggerWhenClickEntity || entity is not Trigger)
                         && entity.GetType() != typeof(Entity)
+                        && entity is not RespawnTargetTrigger
                         && entity is not LookoutBlocker
                         && entity is not Killbox
                         && entity is not Water
@@ -92,6 +102,7 @@ namespace TAS.EverestInterop.InfoHUD {
         private static void ModOrigLoadLevel(ILContext il) {
             ILCursor cursor = new(il);
 
+            // NPC
             if (cursor.TryGotoNext(MoveType.After,
                 ins => ins.OpCode == OpCodes.Call &&
                        ins.Operand.ToString() == "T System.Collections.Generic.List`1/Enumerator<Celeste.EntityData>::get_Current()")) {
@@ -107,9 +118,26 @@ namespace TAS.EverestInterop.InfoHUD {
                 }
             }
 
+            // DashSwitch.Create and FallingBlock.Create
+            cursor.Goto(0);
+            if (cursor.TryGotoNext(MoveType.After,
+                ins => ins.OpCode == OpCodes.Call &&
+                       ins.Operand.ToString() == "T System.Collections.Generic.List`1/Enumerator<Celeste.EntityData>::get_Current()")) {
+                cursor.Index++;
+                object entityDataOperand = cursor.Next.Operand;
+                while (cursor.TryGotoNext(MoveType.Before,
+                    i => i.OpCode == OpCodes.Call && i.Operand.ToString().Contains("::Create"),
+                    i => i.OpCode == OpCodes.Call && i.Operand.ToString() == "System.Void Monocle.Scene::Add(Monocle.Entity)")) {
+                    cursor.Index++;
+                    cursor.Emit(OpCodes.Dup).Emit(OpCodes.Ldloc_S, entityDataOperand);
+                    cursor.EmitDelegate<Action<Entity, EntityData>>(CacheEntityData);
+                }
+            }
+
+            // General
             cursor.Goto(0);
             while (cursor.TryGotoNext(MoveType.After,
-                i => i.OpCode == OpCodes.Newobj && i.Operand is MethodReference {HasParameters: true} m &&
+                i => (i.OpCode == OpCodes.Newobj) && i.Operand is MethodReference {HasParameters: true} m &&
                      m.Parameters.Any(parameter => parameter.ParameterType.Name == "EntityData"))) {
                 if (cursor.TryFindPrev(out ILCursor[] results,
                     i => i.OpCode == OpCodes.Ldloc_S && i.Operand is VariableDefinition v && v.VariableType.Name == "EntityData")) {
@@ -142,11 +170,11 @@ namespace TAS.EverestInterop.InfoHUD {
         private static void InspectingEntity(Entity clickedEntity) {
             requireInspectAreaKey = clickedEntity.SceneAs<Level>().Session.Area;
             if (clickedEntity.LoadEntityData() is { } entityData) {
-                EntityID entityId = entityData.ToEntityId();
-                if (RequireInspectEntityIds.Contains(entityId)) {
-                    RequireInspectEntityIds.Remove(entityId);
+                string uniqueEntityId = entityData.ToUniqueId(clickedEntity);
+                if (RequireInspectEntityIds.Contains(uniqueEntityId)) {
+                    RequireInspectEntityIds.Remove(uniqueEntityId);
                 } else {
-                    RequireInspectEntityIds.Add(entityId);
+                    RequireInspectEntityIds.Add(uniqueEntityId);
                 }
             } else {
                 if (RequireInspectEntities.FirstOrDefault(reference => reference.Target == clickedEntity) is { } alreadyAdded) {
@@ -211,12 +239,12 @@ namespace TAS.EverestInterop.InfoHUD {
                 reference => {
                     Entity entity = (Entity) reference.Target;
                     InspectingEntities.Add(entity);
-                    return $"{entity.GetType().Name}: {GetPosition(entity)}";
+                    return GetEntityValues(entity, CelesteTasModule.Settings.InfoInspectEntityType);
                 }
             ));
 
-            Dictionary<EntityID, Entity> allEntities = GetAllEntities(level);
-            EntityID[] entityIds = RequireInspectEntityIds.Where(id => allEntities.ContainsKey(id)).ToArray();
+            Dictionary<string, Entity> allEntities = GetAllEntities(level);
+            string[] entityIds = RequireInspectEntityIds.Where(id => allEntities.ContainsKey(id)).ToArray();
             if (entityIds.IsNotEmpty()) {
                 if (inspectingInfo.IsNotNullOrEmpty()) {
                     inspectingInfo += separator;
@@ -225,69 +253,104 @@ namespace TAS.EverestInterop.InfoHUD {
                 inspectingInfo += string.Join(separator, entityIds.Select(id => {
                     Entity entity = allEntities[id];
                     InspectingEntities.Add(entity);
-                    return $"{entity.GetType().Name}[{id}]: {GetPosition(entity)}";
+                    return GetEntityValues(entity, CelesteTasModule.Settings.InfoInspectEntityType);
                 }));
             }
 
             return inspectingInfo;
         }
 
-        private static string GetPosition(Entity entity) {
-            if (entity is Actor actor) {
-                return $"{actor.X + actor.PositionRemainder.X:F2}, {actor.Y + actor.PositionRemainder.Y:F2}";
-            } else {
-                return $"{entity.X}, {entity.Y}";
-            }
+        private static void PrintAllSimpleValues(Entity entity) {
+            ("Info of Clicked Entity:\n" + GetEntityValues(entity, InspectEntityTypes.All)).Log(true);
         }
 
-        private static void PrintAllSimpleValues(Entity entity) {
+        private static string GetEntityValues(Entity entity, InspectEntityTypes inspectEntityType) {
             Type type = entity.GetType();
             string entityId = "";
             if (entity.LoadEntityData() is { } entityData) {
                 entityId = $"[{entityData.ToEntityId().ToString()}]";
             }
 
-            List<string> values = GetAllSimpleFields(type).Select(info => {
+            if (inspectEntityType == InspectEntityTypes.Position) {
+                return GetPositionInfo(entity, entityId);
+            }
+
+            List<string> values = GetAllSimpleFields(type, inspectEntityType == InspectEntityTypes.DeclaredOnly).Select(info => {
                 object value = info switch {
                     FieldInfo fieldInfo => fieldInfo.GetValue(entity),
                     PropertyInfo propertyInfo => propertyInfo.GetValue(entity),
                     _ => null
                 };
-                return $"{type.Name}{entityId}.{info.Name} = {value}";
+
+                if (value is float floatValue) {
+                    value = $"{(int) 60f / Engine.TimeRateB * floatValue:F0}";
+                } else if (value is Vector2 vector2) {
+                    value = $"{vector2.X}, {vector2.Y}";
+                }
+
+                return $"{type.Name}{entityId}.{info.Name}: {value}";
             }).ToList();
 
-            ("Info of Clicked Entity:\n" + string.Join("\n", values)).Log();
+            return string.Join("\n", values);
         }
 
-        private static IEnumerable<MemberInfo> GetAllSimpleFields(Type type) {
-            string key = type.FullName;
-            if (key == null) {
-                return Enumerable.Empty<MemberInfo>();
+        private static string GetPositionInfo(Entity entity, string entityId) {
+            if (entity is Actor actor) {
+                return $"{entity.GetType().Name}{entityId}: {actor.X + actor.PositionRemainder.X:F2}, {actor.Y + actor.PositionRemainder.Y:F2}";
+            } else {
+                return $"{entity.GetType().Name}{entityId}: {entity.X}, {entity.Y}";
             }
+        }
+
+        private static IEnumerable<MemberInfo> GetAllSimpleFields(Type type, bool declaredOnly = false) {
+            BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            if (declaredOnly) {
+                bindingFlags |= BindingFlags.DeclaredOnly;
+            }
+
+            string key = type.FullName + "-" + bindingFlags;
 
             if (CachedMemberInfos.ContainsKey(key)) {
                 return CachedMemberInfos[key];
             } else {
                 List<MemberInfo> memberInfos = type
-                    .GetFields(BindingFlags.Instance | BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.NonPublic).Where(info => {
+                    .GetFields(bindingFlags).Where(info => {
                         Type t = info.FieldType;
-                        return (t.IsPrimitive || t.IsEnum || t.IsValueType) && !info.Name.EndsWith("k__BackingField");
+                        return (t.IsPrimitive || t.IsEnum || t == typeof(Vector2)) && !info.Name.EndsWith("k__BackingField");
                     }).Cast<MemberInfo>().ToList();
                 List<MemberInfo> propertyInfos = type
-                    .GetProperties(BindingFlags.Instance | BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.NonPublic).Where(
+                    .GetProperties(bindingFlags).Where(
                         info => {
                             Type t = info.PropertyType;
-                            return t.IsPrimitive || t.IsEnum || t.IsValueType;
+                            return t.IsPrimitive || t.IsEnum || t == typeof(Vector2);
                         }).Cast<MemberInfo>().ToList();
                 memberInfos.AddRange(propertyInfos);
-                memberInfos.Sort((info1, info2) => string.Compare(info1.Name, info2.Name, StringComparison.InvariantCultureIgnoreCase));
-                CachedMemberInfos[key] = memberInfos;
-                return memberInfos;
+
+                List<MemberInfo> result = new();
+                foreach (IGrouping<bool, MemberInfo> grouping in memberInfos.GroupBy(info => type == info.DeclaringType)) {
+                    List<MemberInfo> infos = grouping.ToList();
+                    infos.Sort((info1, info2) => string.Compare(info1.Name, info2.Name, StringComparison.InvariantCultureIgnoreCase));
+                    if (grouping.Key) {
+                        result.InsertRange(0, infos);
+                    } else {
+                        result.AddRange(infos);
+                    }
+                }
+
+                MemberInfo positionMemberInfo = type.IsSubclassOf(typeof(Actor)) ? ActorExactPosition : EntityPosition;
+                if (!declaredOnly) {
+                    result.Remove(positionMemberInfo);
+                }
+
+                result.Insert(0, positionMemberInfo);
+
+                CachedMemberInfos[key] = result;
+                return result;
             }
         }
 
-        private static Dictionary<EntityID, Entity> GetAllEntities(Level level) {
-            Dictionary<EntityID, Entity> result = new();
+        private static Dictionary<string, Entity> GetAllEntities(Level level) {
+            Dictionary<string, Entity> result = new();
 
             Entity[] entities = level.Entities.FindAll<Entity>()
                 .Where(entity => !CelesteTasModule.Settings.InfoIgnoreTriggerWhenClickEntity || entity is not Trigger).ToArray();
@@ -296,9 +359,9 @@ namespace TAS.EverestInterop.InfoHUD {
                     continue;
                 }
 
-                EntityID entityId = entityData.ToEntityId();
-                if (!result.ContainsKey(entityId)) {
-                    result[entityId] = entity;
+                string entityIdPlus = entityData.ToUniqueId(entity);
+                if (!result.ContainsKey(entityIdPlus)) {
+                    result[entityIdPlus] = entity;
                 }
             }
 

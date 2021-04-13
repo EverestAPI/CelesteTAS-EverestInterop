@@ -5,14 +5,23 @@ using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
 
+// ReSharper disable HeuristicUnreachableCode
 namespace TAS.Utils {
     internal static class LogUtil {
         private const string Tag = "CelesteTAS";
 
-        public static void Log(this object text, LogLevel logLevel = LogLevel.Verbose) {
+        // ReSharper disable once RedundantAssignment
+        public static void Log(this object text, bool outputToCommands = false, LogLevel logLevel = LogLevel.Verbose) {
             text = text == null ? "null" : text.ToString();
             Logger.Log(logLevel, Tag, text.ToString());
 #if DEBUG
+            outputToCommands = true;
+#endif
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+            if (!outputToCommands) {
+                return;
+            }
+
             Color color;
             switch (logLevel) {
                 case LogLevel.Warn:
@@ -31,7 +40,6 @@ namespace TAS.Utils {
             } catch (Exception err) {
                 // ignored
             }
-#endif
         }
     }
 }
