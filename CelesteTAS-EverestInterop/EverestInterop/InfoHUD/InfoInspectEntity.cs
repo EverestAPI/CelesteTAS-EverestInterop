@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Text.RegularExpressions;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
@@ -14,6 +16,9 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD {
     public static class InfoInspectEntity {
+        private static readonly Dictionary<string, IEnumerable<MemberInfo>> CachedMemberInfos = new();
+        private static readonly Regex NewLineRegex = new(@"\r\n?|\n", RegexOptions.Compiled);
+
         private static readonly List<WeakReference> RequireInspectEntities = new();
         private static readonly HashSet<EntityID> RequireInspectEntityIds = new();
         private static readonly HashSet<Entity> InspectingEntities = new();
@@ -54,6 +59,7 @@ namespace TAS.EverestInterop.InfoHUD {
             if (mouseState.LeftButton == ButtonState.Pressed && lastMouseData.LeftButton == ButtonState.Released &&
                 FindClickedEntity(mouseState) is { } entity) {
                 InspectingEntity(entity);
+                PrintAllSimpleValues(entity);
             }
         }
 
@@ -219,7 +225,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 inspectingInfo += string.Join(separator, entityIds.Select(id => {
                     Entity entity = allEntities[id];
                     InspectingEntities.Add(entity);
-                    return $"{entity.GetType().Name}: {GetPosition(entity)}";
+                    return $"{entity.GetType().Name}[${id}]: {GetPosition(entity)}";
                 }));
             }
 
@@ -231,6 +237,53 @@ namespace TAS.EverestInterop.InfoHUD {
                 return $"{actor.X + actor.PositionRemainder.X:F2}, {actor.Y + actor.PositionRemainder.Y:F2}";
             } else {
                 return $"{entity.X}, {entity.Y}";
+            }
+        }
+
+        private static void PrintAllSimpleValues(Entity entity) {
+            Type type = entity.GetType();
+            string entityId = "";
+            if (entity.LoadEntityData() is { } entityData) {
+                entityId = $"[{entityData.ToEntityId().ToString()}]";
+            }
+
+            List<string> values = GetAllSimpleFields(type).Select(info => {
+                object value = info switch {
+                    FieldInfo fieldInfo => fieldInfo.GetValue(entity),
+                    PropertyInfo propertyInfo => propertyInfo.GetValue(entity),
+                    _ => null
+                };
+                string trimValue = NewLineRegex.Replace(value?.ToString() ?? "", " ").Trim();
+                return $"{type.Name}{entityId}.{info.Name}: {trimValue}";
+            }).ToList();
+
+            ("\n" + string.Join("\n", values)).Log();
+        }
+
+        private static IEnumerable<MemberInfo> GetAllSimpleFields(Type type) {
+            string key = type.FullName;
+            if (key == null) {
+                return Enumerable.Empty<MemberInfo>();
+            }
+
+            if (CachedMemberInfos.ContainsKey(key)) {
+                return CachedMemberInfos[key];
+            } else {
+                List<MemberInfo> memberInfos = type
+                    .GetFields(BindingFlags.Instance | BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.NonPublic).Where(info => {
+                        Type t = info.FieldType;
+                        return (t.IsPrimitive || t.IsEnum || t.IsValueType) && !info.Name.EndsWith("k__BackingField");
+                    }).Cast<MemberInfo>().ToList();
+                List<MemberInfo> propertyInfos = type
+                    .GetProperties(BindingFlags.Instance | BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.NonPublic).Where(
+                        info => {
+                            Type t = info.PropertyType;
+                            return t.IsPrimitive || t.IsEnum || t.IsValueType;
+                        }).Cast<MemberInfo>().ToList();
+                memberInfos.AddRange(propertyInfos);
+                memberInfos.Sort((info1, info2) => string.Compare(info1.Name, info2.Name, StringComparison.InvariantCultureIgnoreCase));
+                CachedMemberInfos[key] = memberInfos;
+                return memberInfos;
             }
         }
 

@@ -80,43 +80,6 @@ namespace TAS.Utils {
 
             return fieldInfos;
         }
-
-        public static IEnumerable<FieldInfo> GetAllFieldInfos(this Type type, BindingFlags bindingFlags = StaticInstanceAnyVisibility,
-            bool filterBackingField = false) {
-            List<FieldInfo> result = new();
-            while (type != null && type.IsSubclassOf(typeof(object))) {
-                IEnumerable<FieldInfo> fieldInfos = type.GetFieldInfos(bindingFlags, filterBackingField);
-                foreach (FieldInfo fieldInfo in fieldInfos) {
-                    if (result.Contains(fieldInfo)) {
-                        continue;
-                    }
-
-                    result.Add(fieldInfo);
-                }
-
-                type = type.BaseType;
-            }
-
-            return result;
-        }
-
-        public static IEnumerable<PropertyInfo> GetAllProperties(this Type type, BindingFlags bindingFlags = StaticInstanceAnyVisibility) {
-            List<PropertyInfo> result = new();
-            while (type != null && type.IsSubclassOf(typeof(object))) {
-                IEnumerable<PropertyInfo> properties = type.GetProperties(bindingFlags);
-                foreach (PropertyInfo fieldInfo in properties) {
-                    if (result.Contains(fieldInfo)) {
-                        continue;
-                    }
-
-                    result.Add(fieldInfo);
-                }
-
-                type = type.BaseType;
-            }
-
-            return result;
-        }
     }
 
     internal static class CommonExtensions {
@@ -292,7 +255,7 @@ namespace TAS.Utils {
                 throw new ArgumentException("object to and from must be the same type");
             }
 
-            foreach (FieldInfo fieldInfo in to.GetType().GetAllFieldInfos(InstanceAnyVisibilityDeclaredOnly)) {
+            foreach (FieldInfo fieldInfo in GetAllFieldInfos(to.GetType())) {
                 object fromValue = fieldInfo.GetValue(from);
                 fieldInfo.SetValue(to, fromValue);
             }
@@ -303,7 +266,7 @@ namespace TAS.Utils {
                 throw new ArgumentException("object to and from must be the same type");
             }
 
-            foreach (PropertyInfo propertyInfo in to.GetType().GetAllProperties(InstanceAnyVisibilityDeclaredOnly)) {
+            foreach (PropertyInfo propertyInfo in GetAllProperties(to.GetType())) {
                 if (propertyInfo.GetGetMethod(true) == null || propertyInfo.GetSetMethod(true) == null) {
                     continue;
                 }
@@ -311,6 +274,42 @@ namespace TAS.Utils {
                 object fromValue = propertyInfo.GetValue(from);
                 propertyInfo.SetValue(to, fromValue);
             }
+        }
+
+        private static IEnumerable<FieldInfo> GetAllFieldInfos(Type type, bool filterBackingField = false) {
+            List<FieldInfo> result = new();
+            while (type != null && type.IsSubclassOf(typeof(object))) {
+                IEnumerable<FieldInfo> fieldInfos = type.GetFieldInfos(InstanceAnyVisibilityDeclaredOnly, filterBackingField);
+                foreach (FieldInfo fieldInfo in fieldInfos) {
+                    if (result.Contains(fieldInfo)) {
+                        continue;
+                    }
+
+                    result.Add(fieldInfo);
+                }
+
+                type = type.BaseType;
+            }
+
+            return result;
+        }
+
+        private static IEnumerable<PropertyInfo> GetAllProperties(Type type) {
+            List<PropertyInfo> result = new();
+            while (type != null && type.IsSubclassOf(typeof(object))) {
+                IEnumerable<PropertyInfo> properties = type.GetProperties(InstanceAnyVisibilityDeclaredOnly);
+                foreach (PropertyInfo fieldInfo in properties) {
+                    if (result.Contains(fieldInfo)) {
+                        continue;
+                    }
+
+                    result.Add(fieldInfo);
+                }
+
+                type = type.BaseType;
+            }
+
+            return result;
         }
     }
 }
