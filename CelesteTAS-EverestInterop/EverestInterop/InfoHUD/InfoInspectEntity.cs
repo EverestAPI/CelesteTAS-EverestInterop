@@ -170,11 +170,11 @@ namespace TAS.EverestInterop.InfoHUD {
         private static void InspectingEntity(Entity clickedEntity) {
             requireInspectAreaKey = clickedEntity.SceneAs<Level>().Session.Area;
             if (clickedEntity.LoadEntityData() is { } entityData) {
-                string uniqueEntityId = entityData.ToUniqueId(clickedEntity);
-                if (RequireInspectEntityIds.Contains(uniqueEntityId)) {
-                    RequireInspectEntityIds.Remove(uniqueEntityId);
+                string uniqueId = entityData.ToUniqueId();
+                if (RequireInspectEntityIds.Contains(uniqueId)) {
+                    RequireInspectEntityIds.Remove(uniqueId);
                 } else {
-                    RequireInspectEntityIds.Add(uniqueEntityId);
+                    RequireInspectEntityIds.Add(uniqueId);
                 }
             } else {
                 if (RequireInspectEntities.FirstOrDefault(reference => reference.Target == clickedEntity) is { } alreadyAdded) {
@@ -359,9 +359,9 @@ namespace TAS.EverestInterop.InfoHUD {
                     continue;
                 }
 
-                string entityIdPlus = entityData.ToUniqueId(entity);
-                if (!result.ContainsKey(entityIdPlus)) {
-                    result[entityIdPlus] = entity;
+                string uniqueId = entityData.ToUniqueId();
+                if (!result.ContainsKey(uniqueId)) {
+                    result[uniqueId] = entity;
                 }
             }
 

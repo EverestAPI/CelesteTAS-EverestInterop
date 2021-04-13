@@ -228,8 +228,8 @@ namespace TAS.Utils {
             return new(entityData.Level.Name, entityData.ID);
         }
 
-        public static string ToUniqueId(this EntityData entityData, Entity entity) {
-            return $"{entity.GetType().Name}:{entityData.ToEntityId()}";
+        public static string ToUniqueId(this EntityData entityData) {
+            return $"{entityData.Name}:{entityData.Level.Name}:{entityData.ID}";
         }
     }
 
