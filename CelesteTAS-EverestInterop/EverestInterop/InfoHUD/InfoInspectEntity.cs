@@ -72,16 +72,16 @@ namespace TAS.EverestInterop.InfoHUD {
                 mouseWorldPosition = (mouseWorldPosition / viewScale).Floor();
                 mouseWorldPosition = cam.ScreenToCamera(mouseWorldPosition);
                 Entity tempEntity = new() {Position = mouseWorldPosition, Collider = new Hitbox(1, 1)};
-                Entity clickedEntity = level.Entities.Where(entity => entity is not Trigger
-                                                                      && entity.GetType() != typeof(Entity)
-                                                                      && entity is not LookoutBlocker
-                                                                      && entity is not Killbox
-                                                                      && entity is not WindController
-                                                                      && entity is not Water
-                                                                      && entity is not WaterFall
-                                                                      && entity is not BigWaterfall
-                                                                      && entity is not PlaybackBillboard
-                                                                      && entity is not ParticleSystem)
+                Entity clickedEntity = level.Entities.Where(entity =>
+                        (!CelesteTasModule.Settings.InfoIgnoreTriggerWhenClickEntity || entity is not Trigger)
+                        && entity.GetType() != typeof(Entity)
+                        && entity is not LookoutBlocker
+                        && entity is not Killbox
+                        && entity is not Water
+                        && entity is not WaterFall
+                        && entity is not BigWaterfall
+                        && entity is not PlaybackBillboard
+                        && entity is not ParticleSystem)
                     .FirstOrDefault(entity => entity.CollideCheck(tempEntity));
                 return clickedEntity;
             } else {
@@ -225,7 +225,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 inspectingInfo += string.Join(separator, entityIds.Select(id => {
                     Entity entity = allEntities[id];
                     InspectingEntities.Add(entity);
-                    return $"{entity.GetType().Name}[${id}]: {GetPosition(entity)}";
+                    return $"{entity.GetType().Name}[{id}]: {GetPosition(entity)}";
                 }));
             }
 
@@ -253,11 +253,10 @@ namespace TAS.EverestInterop.InfoHUD {
                     PropertyInfo propertyInfo => propertyInfo.GetValue(entity),
                     _ => null
                 };
-                string trimValue = NewLineRegex.Replace(value?.ToString() ?? "", " ").Trim();
-                return $"{type.Name}{entityId}.{info.Name}: {trimValue}";
+                return $"{type.Name}{entityId}.{info.Name} = {value}";
             }).ToList();
 
-            ("\n" + string.Join("\n", values)).Log();
+            ("Info of Clicked Entity:\n" + string.Join("\n", values)).Log();
         }
 
         private static IEnumerable<MemberInfo> GetAllSimpleFields(Type type) {
@@ -290,7 +289,8 @@ namespace TAS.EverestInterop.InfoHUD {
         private static Dictionary<EntityID, Entity> GetAllEntities(Level level) {
             Dictionary<EntityID, Entity> result = new();
 
-            Entity[] entities = level.Entities.FindAll<Entity>().Where(entity => entity is not Trigger).ToArray();
+            Entity[] entities = level.Entities.FindAll<Entity>()
+                .Where(entity => !CelesteTasModule.Settings.InfoIgnoreTriggerWhenClickEntity || entity is not Trigger).ToArray();
             foreach (Entity entity in entities) {
                 if (entity.LoadEntityData() is not { } entityData) {
                     continue;

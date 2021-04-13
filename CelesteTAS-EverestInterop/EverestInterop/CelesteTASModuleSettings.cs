@@ -153,6 +153,7 @@ namespace TAS.EverestInterop {
         public bool InfoTasInput { get; set; } = true;
         public bool InfoSubPixelIndicator { get; set; } = true;
         public bool InfoCustom { get; set; } = false;
+        public bool InfoIgnoreTriggerWhenClickEntity { get; set; } = true;
 
         [SettingIgnore]
         public string InfoCustomTemplate { get; set; } =

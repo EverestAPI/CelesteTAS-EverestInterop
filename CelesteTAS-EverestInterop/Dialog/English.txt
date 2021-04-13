@@ -37,17 +37,18 @@ TAS_LAVA=                     Lava
 TAS_LIGHTNING=                Lightning
 
 # ================================== Info HUD ==================================
-TAS_INFO_GAME=                     Game Info
-TAS_INFO_TAS_INPUT=                TAS Input
-TAS_INFO_SUBPIXEL_INDICATOR=       Subpixel Indicator
-TAS_INFO_CUSTOM=                   Custom Info
-TAS_INFO_COPY_CUSTOM_TEMPLATE=     Copy Custom Info Template to Clipboard
-TAS_INFO_SET_CUSTOM_TEMPLATE=      Set Custom Info Template From Clipboard
-TAS_INFO_TEXT_SIZE=                Text Size
-TAS_INFO_SUBPIXEL_INDICATOR_SIZE=  Subpixel Indicator Size
-TAS_INFO_OPACITY=                  Opacity
-TAS_INFO_MASKED_OPACITY=           Masked Opacity
-
+TAS_INFO_GAME=                             Game Info
+TAS_INFO_TAS_INPUT=                        TAS Input
+TAS_INFO_SUBPIXEL_INDICATOR=               Subpixel Indicator
+TAS_INFO_CUSTOM=                           Custom Info
+TAS_INFO_COPY_CUSTOM_TEMPLATE=             Copy Custom Info Template to Clipboard
+TAS_INFO_SET_CUSTOM_TEMPLATE=              Set Custom Info Template From Clipboard
+TAS_INFO_IGNORE_TRIGGER_WHEN_CLICK_ENTITY= Ignore Trigger When Click Entity
+TAS_INFO_TEXT_SIZE=                        Text Size
+TAS_INFO_SUBPIXEL_INDICATOR_SIZE=          Subpixel Indicator Size
+TAS_INFO_OPACITY=                          Opacity
+TAS_INFO_MASKED_OPACITY=                   Masked Opacity
+ 
 # ================================== Relaunch Required Submenu ==================================
 TAS_LAUNCH_STUDIO_AT_BOOT=    Launch Studio At Boot
 TAS_AUTO_EXTRACT_NEW_STUDIO=  Auto Extract New Studio
