@@ -61,6 +61,7 @@ namespace CelesteStudio {
             this.toggleCenterCameraToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toggleRoundPositionToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toggleRoundSpeedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.roundVelocityToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.switchInfoHUDToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.homeMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -98,7 +99,6 @@ namespace CelesteStudio {
             this.swapJumpKeysToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.tasText = new CelesteStudio.RichText.RichText();
             this.fontDialog = new System.Windows.Forms.FontDialog();
-            this.roundVelocityToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusBar.SuspendLayout();
             this.statusBarContextMenuStrip.SuspendLayout();
             this.menuStrip.SuspendLayout();
@@ -353,6 +353,13 @@ namespace CelesteStudio {
             this.toggleRoundSpeedToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
             this.toggleRoundSpeedToolStripMenuItem.Text = "R&ound Speed";
             this.toggleRoundSpeedToolStripMenuItem.Click += new System.EventHandler(this.toggleRoundSpeedToolStripMenuItem_Click);
+            // 
+            // roundVelocityToolStripMenuItem
+            // 
+            this.roundVelocityToolStripMenuItem.Name = "roundVelocityToolStripMenuItem";
+            this.roundVelocityToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
+            this.roundVelocityToolStripMenuItem.Text = "Ro&und Velocity";
+            this.roundVelocityToolStripMenuItem.Click += new System.EventHandler(this.roundVelocityToolStripMenuItem_Click);
             // 
             // switchInfoHUDToolStripMenuItem
             // 
@@ -646,13 +653,6 @@ namespace CelesteStudio {
             // fontDialog
             // 
             this.fontDialog.Font = new System.Drawing.Font("Courier New", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte) (0)));
-            // 
-            // roundVelocityToolStripMenuItem
-            // 
-            this.roundVelocityToolStripMenuItem.Name = "roundVelocityToolStripMenuItem";
-            this.roundVelocityToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
-            this.roundVelocityToolStripMenuItem.Text = "Ro&und Velocity";
-            this.roundVelocityToolStripMenuItem.Click += new System.EventHandler(this.roundVelocityToolStripMenuItem_Click);
             // 
             // Studio
             // 

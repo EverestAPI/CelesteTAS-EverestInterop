@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
@@ -79,7 +80,7 @@ namespace CelesteStudio {
             set => tasText.LastFileName = value;
         }
 
-        private FileList recentFiles => Settings.Default.RecentFileList ?? (Settings.Default.RecentFileList = new FileList());
+        private StringCollection RecentFiles => Settings.Default.RecentFiles ??= new StringCollection();
 
         [STAThread]
         public static void Main() {
@@ -151,13 +152,13 @@ namespace CelesteStudio {
             openRecentMenuItem.DropDownItemClicked += (sender, args) => {
                 ToolStripItem clickedItem = args.ClickedItem;
                 if (clickedItem.Text == "Clear") {
-                    recentFiles.Clear();
+                    RecentFiles.Clear();
                     return;
                 }
 
                 if (!File.Exists(clickedItem.Text)) {
                     openRecentMenuItem.Owner.Hide();
-                    recentFiles.Remove(clickedItem.Text);
+                    RecentFiles.Remove(clickedItem.Text);
                 }
 
                 OpenFile(clickedItem.Text);
@@ -186,16 +187,16 @@ namespace CelesteStudio {
 
         private void CreateRecentFilesMenu() {
             openRecentMenuItem.DropDownItems.Clear();
-            if (recentFiles.Count == 0) {
+            if (RecentFiles.Count == 0) {
                 openRecentMenuItem.DropDownItems.Add(new ToolStripMenuItem("Nothing") {
                     Enabled = false
                 });
             } else {
-                for (var i = recentFiles.Count - 1; i >= 20; i--) {
-                    recentFiles.Remove(recentFiles[i]);
+                for (var i = RecentFiles.Count - 1; i >= 20; i--) {
+                    RecentFiles.Remove(RecentFiles[i]);
                 }
 
-                foreach (var fileName in recentFiles) {
+                foreach (var fileName in RecentFiles) {
                     openRecentMenuItem.DropDownItems.Add(new ToolStripMenuItem(fileName) {
                         Checked = LastFileName == fileName
                     });
@@ -348,8 +349,8 @@ namespace CelesteStudio {
         }
 
         private void UpdateRecentFiles() {
-            if (!recentFiles.Contains(LastFileName)) {
-                recentFiles.Insert(0, LastFileName);
+            if (!RecentFiles.Contains(LastFileName)) {
+                RecentFiles.Insert(0, LastFileName);
                 Settings.Default.Save();
             }
 

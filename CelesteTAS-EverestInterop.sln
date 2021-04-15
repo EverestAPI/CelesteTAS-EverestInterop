@@ -14,6 +14,11 @@ EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "StudioCommunication", "StudioCommunication\StudioCommunication.shproj", "{6B20B22D-D4C8-4F9D-A84A-E340551AE591}"
 EndProject
 Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		StudioCommunication\StudioCommunication.projitems*{12cefb4d-5e61-4f7e-93a6-637d96ab0139}*SharedItemsImports = 4
+		StudioCommunication\StudioCommunication.projitems*{51388820-c0ee-420a-bb43-94c7f75145fc}*SharedItemsImports = 4
+		StudioCommunication\StudioCommunication.projitems*{6b20b22d-d4c8-4f9d-a84a-e340551ae591}*SharedItemsImports = 13
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU

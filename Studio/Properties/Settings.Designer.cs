@@ -49,17 +49,6 @@ namespace CelesteStudio.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        public global::CelesteStudio.Properties.FileList RecentFileList {
-            get {
-                return ((global::CelesteStudio.Properties.FileList)(this["RecentFileList"]));
-            }
-            set {
-                this["RecentFileList"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool UpdatingHotkeys {
             get {
@@ -126,6 +115,17 @@ namespace CelesteStudio.Properties {
             }
             set {
                 this["AutoRemoveMutuallyExclusiveActions"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        public global::System.Collections.Specialized.StringCollection RecentFiles {
+            get {
+                return ((global::System.Collections.Specialized.StringCollection)(this["RecentFiles"]));
+            }
+            set {
+                this["RecentFiles"] = value;
             }
         }
     }
