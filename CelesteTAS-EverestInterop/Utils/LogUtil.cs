@@ -37,7 +37,7 @@ namespace TAS.Utils {
 
             try {
                 Engine.Commands?.Log($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [{Tag}] {logLevel}: {text}", color);
-            } catch (Exception err) {
+            } catch (Exception) {
                 // ignored
             }
         }

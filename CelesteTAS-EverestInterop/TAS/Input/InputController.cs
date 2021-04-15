@@ -20,15 +20,16 @@ namespace TAS.Input {
         private string checksum;
         private int initializationFrameCount;
 
-        public string TasFilePath {
+        public static string TasFilePath {
             get {
-                string path = string.IsNullOrEmpty(StudioTasFilePath) ? "Celeste.tas" : StudioTasFilePath;
+                string defaultPath = Path.Combine(Directory.GetCurrentDirectory(), "Celeste.tas");
+                string path = string.IsNullOrEmpty(StudioTasFilePath) ? defaultPath : StudioTasFilePath;
                 try {
                     if (!File.Exists(path)) {
                         File.WriteAllText(path, string.Empty);
                     }
                 } catch {
-                    return "Celeste.tas";
+                    return defaultPath;
                 }
 
                 return path;

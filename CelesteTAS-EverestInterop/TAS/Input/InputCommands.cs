@@ -84,29 +84,23 @@ namespace TAS.Input {
         [TasCommand(ExecuteAtStart = true, Name = "Read")]
         private static void ReadCommand(InputController state, string[] args, int studioLine) {
             string filePath = args[0];
-            string origFilePath = Path.GetDirectoryName(InputController.StudioTasFilePath);
-            // Check for full and shortened Read versions for absolute path
-            if (origFilePath != null) {
-                string altFilePath = origFilePath + Path.DirectorySeparatorChar + filePath;
-                if (File.Exists(altFilePath)) {
-                    filePath = altFilePath;
+            string fileDirectory = Path.GetDirectoryName(InputController.TasFilePath);
+            // Check for full and shortened Read versions
+            if (fileDirectory != null) {
+                // Path.Combine can handle the case when filePath is an absolute path
+                string absoluteOrRelativePath = Path.Combine(fileDirectory, filePath);
+                if (File.Exists(absoluteOrRelativePath) && absoluteOrRelativePath != InputController.TasFilePath) {
+                    filePath = absoluteOrRelativePath;
                 } else {
-                    string[] files = Directory.GetFiles(origFilePath, $"{filePath}*.tas");
-                    if (files.Length != 0) {
-                        filePath = files[0].ToString();
+                    string[] files = Directory.GetFiles(fileDirectory, $"{filePath}*.tas");
+                    if (files.FirstOrDefault(path => path != InputController.TasFilePath) is { } shortenedFilePath) {
+                        filePath = shortenedFilePath;
                     }
                 }
             }
 
-            // Check for full and shortened Read versions for relative path
             if (!File.Exists(filePath)) {
-                string[] files = Directory.GetFiles(Directory.GetCurrentDirectory(), $"{filePath}*.tas");
-                if (files.Length > 0) {
-                    filePath = files[0].ToString();
-                    if (!File.Exists(filePath)) {
-                        return;
-                    }
-                }
+                return;
             }
 
             // Find starting and ending lines
@@ -128,12 +122,12 @@ namespace TAS.Input {
         // "Play, StartLine, FramesToWait"
         [TasCommand(ExecuteAtStart = true, Name = "Play")]
         private static void PlayCommand(InputController state, string[] args, int studioLine) {
-            GetLine(args[0], state.TasFilePath, out int startLine);
+            GetLine(args[0], InputController.TasFilePath, out int startLine);
             if (args.Length > 1 && int.TryParse(args[1], out _)) {
                 state.AddFrames(args[1], studioLine);
             }
 
-            state.ReadFile(state.TasFilePath, startLine, int.MaxValue, startLine - 1);
+            state.ReadFile(InputController.TasFilePath, startLine, int.MaxValue, startLine - 1);
         }
 
         private static void GetLine(string labelOrLineNumber, string path, out int lineNumber) {

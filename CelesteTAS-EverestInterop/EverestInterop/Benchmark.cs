@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Monocle;
+using TAS.Input;
 using TAS.Utils;
 
 namespace TAS.EverestInterop {
@@ -34,7 +35,7 @@ namespace TAS.EverestInterop {
             lastFrameCounter = Engine.FrameCounter;
             watch = new Stopwatch();
             watch.Start();
-            $"Benchmark Start: {Manager.Controller.TasFilePath}".Log();
+            $"Benchmark Start: {InputController.TasFilePath}".Log();
         }
 
         public static void Stop() {
