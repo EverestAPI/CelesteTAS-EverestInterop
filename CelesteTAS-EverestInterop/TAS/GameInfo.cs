@@ -37,8 +37,8 @@ namespace TAS {
         public static string LastVel = string.Empty;
         public static string CustomInfo = string.Empty;
         public static long LastChapterTime;
-        public static Vector2 LastPos;
-        public static Vector2 LastPlayerSeekerPos;
+        public static Vector2Double LastPos;
+        public static Vector2Double LastPlayerSeekerPos;
 
         private static StreamWriter sw;
         private static IDictionary<string, Func<Level, IList>> trackedEntities;
@@ -149,7 +149,7 @@ namespace TAS {
                     StringBuilder stringBuilder = new();
                     string pos = GetAdjustedPos(player.Position, player.PositionRemainder);
                     string speed = GetAdjustedSpeed(player.Speed);
-                    Vector2 diff = (player.ExactPosition - LastPos) * 60f;
+                    Vector2Double diff = (player.GetMoreExtractPosition() - LastPos) * 60f;
                     string velocity = GetAdjustedVelocity(diff);
                     if (chapterTime == LastChapterTime) {
                         velocity = LastVel;
@@ -157,7 +157,7 @@ namespace TAS {
                         LastVel = velocity;
                     }
 
-                    string polarVel = $"Fly:   {diff.Length():F2}, {Manager.GetAngle(diff):F5}°";
+                    string polarVel = $"Fly:   {diff.Length():F2}, {diff.GetAngle():F5}°";
 
                     string analog = string.Empty;
                     if (Manager.Running && Manager.Controller.Previous is { } inputFrame && inputFrame.HasActions(Actions.Feather)) {
@@ -188,9 +188,9 @@ namespace TAS {
                     if (playerSeeker != null) {
                         pos = GetAdjustedPos(playerSeeker.Position, playerSeeker.PositionRemainder);
                         speed = GetAdjustedSpeed(PlayerSeekerSpeed(playerSeeker));
-                        diff = (playerSeeker.ExactPosition - LastPlayerSeekerPos) * 60f;
+                        diff = (playerSeeker.GetMoreExtractPosition() - LastPlayerSeekerPos) * 60f;
                         velocity = GetAdjustedVelocity(diff);
-                        polarVel = $"Chase: {diff.Length():F2}, {Manager.GetAngle(diff):F5}°";
+                        polarVel = $"Chase: {diff.Length():F2}, {diff.GetAngle():F5}°";
                         dashCooldown = (int) (PlayerSeekerDashTimer(playerSeeker) * FramesPerSecond);
                     }
 
@@ -275,8 +275,8 @@ namespace TAS {
 
                     StatusWithoutTime = stringBuilder.ToString();
                     if (Engine.FreezeTimer <= 0f) {
-                        LastPos = player.ExactPosition;
-                        LastPlayerSeekerPos = playerSeeker?.ExactPosition ?? default;
+                        LastPos = player.GetMoreExtractPosition();
+                        LastPlayerSeekerPos = playerSeeker?.GetMoreExtractPosition() ?? default;
                     }
                 } else if (level.InCutscene) {
                     StatusWithoutTime = "Cutscene";
@@ -333,7 +333,7 @@ namespace TAS {
             return $"Speed: {(CelesteTasModule.Settings.RoundSpeed ? $"{speed.X:F2}, {speed.Y:F2}" : $"{speed.X:F12}, {speed.Y:F12}")}";
         }
 
-        private static string GetAdjustedVelocity(Vector2 diff) {
+        private static string GetAdjustedVelocity(Vector2Double diff) {
             return $"Vel:   {(CelesteTasModule.Settings.RoundVelocity ? $"{diff.X:F2}, {diff.Y:F2}" : $"{diff.X:F12}, {diff.Y:F12}")}";
         }
 
@@ -508,5 +508,49 @@ namespace TAS {
         StIntroMoonJump = Player.StIntroMoonJump,
         StFlingBird = Player.StFlingBird,
         StIntroThinkForABit = Player.StIntroThinkForABit
+    }
+
+    // ReSharper disable once StructCanBeMadeReadOnly
+    public struct Vector2Double {
+        public readonly double X;
+        public readonly double Y;
+
+        public Vector2Double(double x = 0, double y = 0) {
+            X = x;
+            Y = y;
+        }
+
+        public double Length() => Math.Sqrt(X * X + Y * Y);
+
+        public double GetAngle() {
+            double angle = 180 / Math.PI * Math.Atan2(Y, X);
+            if (angle < -90.01f) {
+                return 450 + angle;
+            } else {
+                return 90 + angle;
+            }
+        }
+
+        public static bool operator ==(Vector2Double value1, Vector2Double value2) => value1.X == value2.X && value1.Y == value2.Y;
+
+        public static bool operator !=(Vector2Double value1, Vector2Double value2) => !(value1 == value2);
+
+        public static Vector2Double operator +(Vector2Double value1, Vector2Double value2) {
+            return new(value1.X + value2.X, value1.Y + value2.Y);
+        }
+
+        public static Vector2Double operator -(Vector2Double value1, Vector2Double value2) {
+            return new(value1.X - value2.X, value1.Y - value2.Y);
+        }
+
+        public static Vector2Double operator *(Vector2Double value, double scaleFactor) {
+            return new(value.X * scaleFactor, value.Y * scaleFactor);
+        }
+    }
+
+    public static class Vector2DoubleExtension {
+        public static Vector2Double GetMoreExtractPosition(this Actor actor) {
+            return new Vector2Double(actor.Position.X + actor.PositionRemainder.X, actor.Position.Y + actor.PositionRemainder.Y);
+        }
     }
 }

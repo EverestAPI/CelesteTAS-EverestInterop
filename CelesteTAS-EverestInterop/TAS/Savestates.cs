@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using Celeste;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
-using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Communication;
 using TAS.EverestInterop;
@@ -18,8 +17,8 @@ namespace TAS {
         private static string savedLastVel;
         private static string savedCustomInfo;
         private static long savedLastChapterTime;
-        private static Vector2 savedLastPos;
-        private static Vector2 savedLastPlayerSeekerPos;
+        private static Vector2Double savedLastPos;
+        private static Vector2Double savedLastPlayerSeekerPos;
         private static bool savedByBreakpoint;
 
         private static readonly Lazy<bool> SpeedrunToolInstalledLazy = new(() =>

@@ -102,5 +102,6 @@
     </ItemGroup>
     <ItemGroup>
         <None Remove="lib-stripped\**" />
+        <None Remove="CelesteTAS-EverestInterop.csproj.DotSettings" />
     </ItemGroup>
 </Project>
