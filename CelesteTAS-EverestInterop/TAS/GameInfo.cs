@@ -157,7 +157,7 @@ namespace TAS {
                         LastVel = velocity;
                     }
 
-                    string polarVel = $"Fly:   {diff.Length():F2}, {diff.GetAngle():F5}°";
+                    string polarVel = $"Fly:   {diff.Length():F2}, {diff.Angle():F5}°";
 
                     string analog = string.Empty;
                     if (Manager.Running && Manager.Controller.Previous is { } inputFrame && inputFrame.HasActions(Actions.Feather)) {
@@ -167,8 +167,8 @@ namespace TAS {
                     }
 
                     string retainedSpeed = string.Empty;
-                    if (PlayerRetainedSpeedTimer(player) is { } and > 0f) {
-                        retainedSpeed = $"Retained: {PlayerRetainedSpeed(player):F2} ({PlayerRetainedSpeedTimer(player) * FramesPerSecond:F0})";
+                    if (PlayerRetainedSpeedTimer(player) is float retainedSpeedTimer and > 0f) {
+                        retainedSpeed = $"Retained: {PlayerRetainedSpeed(player):F2} ({retainedSpeedTimer * FramesPerSecond:F0})";
                     }
 
                     string liftBoost = string.Empty;
@@ -190,7 +190,7 @@ namespace TAS {
                         speed = GetAdjustedSpeed(PlayerSeekerSpeed(playerSeeker));
                         diff = (playerSeeker.GetMoreExtractPosition() - LastPlayerSeekerPos) * 60f;
                         velocity = GetAdjustedVelocity(diff);
-                        polarVel = $"Chase: {diff.Length():F2}, {diff.GetAngle():F5}°";
+                        polarVel = $"Chase: {diff.Length():F2}, {diff.Angle():F5}°";
                         dashCooldown = (int) (PlayerSeekerDashTimer(playerSeeker) * FramesPerSecond);
                     }
 
@@ -302,11 +302,11 @@ namespace TAS {
             double subY = subpixelPos.Y;
 
             if (!CelesteTasModule.Settings.RoundPosition) {
-                return $"Pos:   {(x + subX):F12}, {(y + subY):F12}";
+                return $"Pos:   {x + subX:F12}, {y + subY:F12}";
             }
 
             if (Math.Abs(subX) % 0.25 < 0.01 || Math.Abs(subX) % 0.25 > 0.24) {
-                if (x > 0 || (x == 0 && subX > 0)) {
+                if (x > 0 || x == 0 && subX > 0) {
                     x += Math.Floor(subX * 100) / 100;
                 } else {
                     x += Math.Ceiling(subX * 100) / 100;
@@ -316,7 +316,7 @@ namespace TAS {
             }
 
             if (Math.Abs(subY) % 0.25 < 0.01 || Math.Abs(subY) % 0.25 > 0.24) {
-                if (y > 0 || (y == 0 && subY > 0)) {
+                if (y > 0 || y == 0 && subY > 0) {
                     y += Math.Floor(subY * 100) / 100;
                 } else {
                     y += Math.Ceiling(subY * 100) / 100;
@@ -522,9 +522,9 @@ namespace TAS {
 
         public double Length() => Math.Sqrt(X * X + Y * Y);
 
-        public double GetAngle() {
+        public double Angle() {
             double angle = 180 / Math.PI * Math.Atan2(Y, X);
-            if (angle < -90.01f) {
+            if (angle < -90.01) {
                 return 450 + angle;
             } else {
                 return 90 + angle;
@@ -550,7 +550,7 @@ namespace TAS {
 
     public static class Vector2DoubleExtension {
         public static Vector2Double GetMoreExtractPosition(this Actor actor) {
-            return new Vector2Double(actor.Position.X + actor.PositionRemainder.X, actor.Position.Y + actor.PositionRemainder.Y);
+            return new(actor.Position.X + actor.PositionRemainder.X, actor.Position.Y + actor.PositionRemainder.Y);
         }
     }
 }
