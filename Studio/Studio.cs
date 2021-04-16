@@ -22,6 +22,8 @@ using StudioCommunication;
 
 namespace CelesteStudio {
     public partial class Studio : Form {
+        private const string MaxStatusHeight20Line = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
+
         public static Studio Instance;
 
         private readonly List<InputRecord> lines = new();
@@ -648,14 +650,16 @@ namespace CelesteStudio {
 
             int bottomExtraSpace = TextRenderer.MeasureText("\n", lblStatus.Font).Height / 5;
             if (Settings.Default.ShowGameInfo) {
-                // TODO add scroll bar
-                string maxHeightText = string.Join("\n", lblStatus.Text.Trim().Split('\n').Take(20));
-                statusBar.Height = TextRenderer.MeasureText(maxHeightText, lblStatus.Font).Height + bottomExtraSpace;
+                int maxHeight = TextRenderer.MeasureText(MaxStatusHeight20Line, lblStatus.Font).Height + bottomExtraSpace;
+                int statusBarHeight = TextRenderer.MeasureText(lblStatus.Text.Trim(), lblStatus.Font).Height + bottomExtraSpace;
+                statusPanel.Height = Math.Min(maxHeight, statusBarHeight);
+                statusPanel.AutoScrollMinSize = new Size(0, statusBarHeight);
+                statusBar.Height = statusBarHeight;
             } else {
                 statusBar.Height = 0;
             }
 
-            tasText.Height = ClientSize.Height - statusBar.Height - menuStrip.Height;
+            tasText.Height = ClientSize.Height - statusPanel.Height - menuStrip.Height;
         }
 
         private void tasText_TextChanged(object sender, TextChangedEventArgs e) {
