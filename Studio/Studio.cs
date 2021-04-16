@@ -342,8 +342,7 @@ namespace CelesteStudio {
             StudioCommunicationServer.instance?.WriteWait();
             if (tasText.OpenFile(fileName)) {
                 UpdateRecentFiles();
-                tasText.Selection = new Range(tasText, 0, 0, 0, 0);
-                tasText.ScrollLeft();
+                tasText.GoHome();
             }
 
             StudioCommunicationServer.instance?.SendPath(LastFileName);
