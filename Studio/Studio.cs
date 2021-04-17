@@ -655,7 +655,7 @@ namespace CelesteStudio {
                 statusPanel.AutoScrollMinSize = new Size(0, statusBarHeight);
                 statusBar.Height = statusBarHeight;
             } else {
-                statusBar.Height = 0;
+                statusPanel.Height = 0;
             }
 
             tasText.Height = ClientSize.Height - statusPanel.Height - menuStrip.Height;
