@@ -29,6 +29,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 int top = levelBounds.Top;
                 int bottom = levelBounds.Bottom;
                 Color color = HitboxColor.TriggerColor;
+                string levelName = level.Session.Level;
 
                 if (entity is NPC00_Granny) {
                     float x = left + 100;
@@ -36,14 +37,13 @@ namespace TAS.EverestInterop.Hitboxes {
                 } else if (entity is NPC03_Oshiro_Hallway1 or NPC03_Oshiro_Hallway2 or NPC06_Granny) {
                     float x = entity.X - 55;
                     Draw.Line(x, top, x, bottom, color);
-                } else if (entity is NPC04_Granny) {
-                    float x = entity.X - 35;
+                } else if (entity is NPC03_Theo_Escaping && levelName == "11-b") {
+                    float x = 5477;
                     Draw.Line(x, top, x, bottom, color);
                 } else if (level.Session.Area.ID == 4 && entity is Gondola) {
                     float x = entity.Left - 11;
                     Draw.Line(x, top, x, bottom, color);
                 } else if (entity is NPC05_Badeline) {
-                    string levelName = level.Session.Level;
                     if (levelName == "c-00") {
                         float x = entity.X - 57;
                         Draw.Line(x, top, x, bottom, color);
