@@ -251,6 +251,7 @@ namespace TAS.Communication {
                 case "Set Custom Info Template From Clipboard":
                     settings.InfoCustomTemplate = TextInput.GetClipboardText();
                     CelesteTasModule.Instance.SaveSettings();
+                    GameInfo.Update();
                     return;
             }
 

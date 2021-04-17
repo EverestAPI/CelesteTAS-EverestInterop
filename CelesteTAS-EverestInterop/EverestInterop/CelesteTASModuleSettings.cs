@@ -77,11 +77,6 @@ namespace TAS.EverestInterop {
 
         public bool Mod9DLighting { get; set; } = false;
 
-        public bool RoundPosition { get; set; } = true;
-        public bool RoundSpeed { get; set; } = true;
-        public bool RoundVelocity { get; set; } = true;
-        public bool RoundCustomInfo { get; set; } = true;
-
         [SettingIgnore] public bool FastForwardCallBase { get; set; } = false;
         [SettingIgnore] public int FastForwardThreshold { get; set; } = 10;
         [SettingIgnore] public DateTime StudioLastModifiedTime { get; set; } = new();
@@ -169,6 +164,47 @@ namespace TAS.EverestInterop {
         [SettingIgnore] public int InfoSubPixelIndicatorSize { get; set; } = 10;
         [SettingIgnore] public int InfoOpacity { get; set; } = 6;
         [SettingIgnore] public int InfoMaskedOpacity { get; set; } = 3;
+
+        #endregion
+
+        #region Round Values
+
+        private bool roundPosition = true;
+        private bool roundSpeed = true;
+        private bool roundVelocity = true;
+        private bool roundCustomInfo = true;
+
+        public bool RoundPosition {
+            get => roundPosition;
+            set {
+                roundPosition = value;
+                GameInfo.Update();
+            }
+        }
+
+        public bool RoundSpeed {
+            get => roundSpeed;
+            set {
+                roundSpeed = value;
+                GameInfo.Update();
+            }
+        }
+
+        public bool RoundVelocity {
+            get => roundVelocity;
+            set {
+                roundVelocity = value;
+                GameInfo.Update();
+            }
+        }
+
+        public bool RoundCustomInfo {
+            get => roundCustomInfo;
+            set {
+                roundCustomInfo = value;
+                GameInfo.Update();
+            }
+        }
 
         #endregion
     }
