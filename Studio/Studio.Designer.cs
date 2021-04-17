@@ -31,6 +31,9 @@ namespace CelesteStudio {
             this.statusBarContextMenuStrip = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.copyGameDataMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.reconnectStudioAndCelesteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator11 = new System.Windows.Forms.ToolStripSeparator();
+            this.copyCustomInfoTemplateToClipboardToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.setCustomInfoTemplateFromClipboardToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.newFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -56,11 +59,13 @@ namespace CelesteStudio {
             this.toggleSimplifiedGraphicsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toggleGameplayToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator9 = new System.Windows.Forms.ToolStripSeparator();
-            this.toggleCenterCameraToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.switchInfoHUDToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toggleRoundPositionToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toggleRoundSpeedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.roundVelocityToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.switchInfoHUDToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.roundCustomInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator10 = new System.Windows.Forms.ToolStripSeparator();
+            this.toggleCenterCameraToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.homeMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.dividerLabel = new System.Windows.Forms.Label();
@@ -100,8 +105,6 @@ namespace CelesteStudio {
             this.statusPanel = new System.Windows.Forms.Panel();
             this.statusBar = new System.Windows.Forms.StatusStrip();
             this.lblStatus = new System.Windows.Forms.ToolStripStatusLabel();
-            this.roundCustomInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator10 = new System.Windows.Forms.ToolStripSeparator();
             this.statusBarContextMenuStrip.SuspendLayout();
             this.menuStrip.SuspendLayout();
             this.tasTextContextMenuStrip.SuspendLayout();
@@ -121,25 +124,44 @@ namespace CelesteStudio {
             // 
             // statusBarContextMenuStrip
             // 
-            this.statusBarContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.copyGameDataMenuItem, this.reconnectStudioAndCelesteToolStripMenuItem});
+            this.statusBarContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.copyGameDataMenuItem, this.reconnectStudioAndCelesteToolStripMenuItem, this.toolStripSeparator11, this.copyCustomInfoTemplateToClipboardToolStripMenuItem, this.setCustomInfoTemplateFromClipboardToolStripMenuItem});
             this.statusBarContextMenuStrip.Name = "statusBarMenuStrip";
-            this.statusBarContextMenuStrip.Size = new System.Drawing.Size(333, 48);
+            this.statusBarContextMenuStrip.Size = new System.Drawing.Size(330, 98);
             // 
             // copyGameDataMenuItem
             // 
             this.copyGameDataMenuItem.Name = "copyGameDataMenuItem";
             this.copyGameDataMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys) (((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Shift) | System.Windows.Forms.Keys.C)));
-            this.copyGameDataMenuItem.Size = new System.Drawing.Size(332, 22);
-            this.copyGameDataMenuItem.Text = "Copy Game Data to Clipboard";
+            this.copyGameDataMenuItem.Size = new System.Drawing.Size(329, 22);
+            this.copyGameDataMenuItem.Text = "Copy Game Info to Clipboard";
             this.copyGameDataMenuItem.Click += new System.EventHandler(this.copyGamerDataMenuItem_Click);
             // 
             // reconnectStudioAndCelesteToolStripMenuItem
             // 
             this.reconnectStudioAndCelesteToolStripMenuItem.Name = "reconnectStudioAndCelesteToolStripMenuItem";
             this.reconnectStudioAndCelesteToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys) (((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Shift) | System.Windows.Forms.Keys.D)));
-            this.reconnectStudioAndCelesteToolStripMenuItem.Size = new System.Drawing.Size(332, 22);
+            this.reconnectStudioAndCelesteToolStripMenuItem.Size = new System.Drawing.Size(329, 22);
             this.reconnectStudioAndCelesteToolStripMenuItem.Text = "Reconnect Studio and Celeste";
             this.reconnectStudioAndCelesteToolStripMenuItem.Click += new System.EventHandler(this.reconnectStudioAndCelesteToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator11
+            // 
+            this.toolStripSeparator11.Name = "toolStripSeparator11";
+            this.toolStripSeparator11.Size = new System.Drawing.Size(326, 6);
+            // 
+            // copyCustomInfoTemplateToClipboardToolStripMenuItem
+            // 
+            this.copyCustomInfoTemplateToClipboardToolStripMenuItem.Name = "copyCustomInfoTemplateToClipboardToolStripMenuItem";
+            this.copyCustomInfoTemplateToClipboardToolStripMenuItem.Size = new System.Drawing.Size(329, 22);
+            this.copyCustomInfoTemplateToClipboardToolStripMenuItem.Text = "Copy Custom Info Template to Clipboard";
+            this.copyCustomInfoTemplateToClipboardToolStripMenuItem.Click += new System.EventHandler(this.copyCustomInfoTemplateToClipboardToolStripMenuItem_Click);
+            // 
+            // setCustomInfoTemplateFromClipboardToolStripMenuItem
+            // 
+            this.setCustomInfoTemplateFromClipboardToolStripMenuItem.Name = "setCustomInfoTemplateFromClipboardToolStripMenuItem";
+            this.setCustomInfoTemplateFromClipboardToolStripMenuItem.Size = new System.Drawing.Size(329, 22);
+            this.setCustomInfoTemplateFromClipboardToolStripMenuItem.Text = "Set Custom Info Template From Clipboard";
+            this.setCustomInfoTemplateFromClipboardToolStripMenuItem.Click += new System.EventHandler(this.setCustomInfoTemplateFromClipboardToolStripMenuItem_Click);
             // 
             // menuStrip
             // 
@@ -316,12 +338,12 @@ namespace CelesteStudio {
             this.toolStripSeparator9.Name = "toolStripSeparator9";
             this.toolStripSeparator9.Size = new System.Drawing.Size(257, 6);
             // 
-            // toggleCenterCameraToolStripMenuItem
+            // switchInfoHUDToolStripMenuItem
             // 
-            this.toggleCenterCameraToolStripMenuItem.Name = "toggleCenterCameraToolStripMenuItem";
-            this.toggleCenterCameraToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
-            this.toggleCenterCameraToolStripMenuItem.Text = "&Center Camera";
-            this.toggleCenterCameraToolStripMenuItem.Click += new System.EventHandler(this.toggleCenterCameraToolStripMenuItem_Click);
+            this.switchInfoHUDToolStripMenuItem.Name = "switchInfoHUDToolStripMenuItem";
+            this.switchInfoHUDToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
+            this.switchInfoHUDToolStripMenuItem.Text = "&Info HUD";
+            this.switchInfoHUDToolStripMenuItem.Click += new System.EventHandler(this.switchInfoHUDToolStripMenuItem_Click);
             // 
             // toggleRoundPositionToolStripMenuItem
             // 
@@ -344,12 +366,24 @@ namespace CelesteStudio {
             this.roundVelocityToolStripMenuItem.Text = "Ro&und Velocity";
             this.roundVelocityToolStripMenuItem.Click += new System.EventHandler(this.roundVelocityToolStripMenuItem_Click);
             // 
-            // switchInfoHUDToolStripMenuItem
+            // roundCustomInfoToolStripMenuItem
             // 
-            this.switchInfoHUDToolStripMenuItem.Name = "switchInfoHUDToolStripMenuItem";
-            this.switchInfoHUDToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
-            this.switchInfoHUDToolStripMenuItem.Text = "&Info HUD";
-            this.switchInfoHUDToolStripMenuItem.Click += new System.EventHandler(this.switchInfoHUDToolStripMenuItem_Click);
+            this.roundCustomInfoToolStripMenuItem.Name = "roundCustomInfoToolStripMenuItem";
+            this.roundCustomInfoToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
+            this.roundCustomInfoToolStripMenuItem.Text = "Rou&nd Custom Info";
+            this.roundCustomInfoToolStripMenuItem.Click += new System.EventHandler(this.roundCustomInfoToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator10
+            // 
+            this.toolStripSeparator10.Name = "toolStripSeparator10";
+            this.toolStripSeparator10.Size = new System.Drawing.Size(257, 6);
+            // 
+            // toggleCenterCameraToolStripMenuItem
+            // 
+            this.toggleCenterCameraToolStripMenuItem.Name = "toggleCenterCameraToolStripMenuItem";
+            this.toggleCenterCameraToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
+            this.toggleCenterCameraToolStripMenuItem.Text = "&Center Camera";
+            this.toggleCenterCameraToolStripMenuItem.Click += new System.EventHandler(this.toggleCenterCameraToolStripMenuItem_Click);
             // 
             // helpToolStripMenuItem
             // 
@@ -669,18 +703,6 @@ namespace CelesteStudio {
             this.lblStatus.Text = "Searching...";
             this.lblStatus.TextAlign = System.Drawing.ContentAlignment.TopLeft;
             // 
-            // roundCustomInfoToolStripMenuItem
-            // 
-            this.roundCustomInfoToolStripMenuItem.Name = "roundCustomInfoToolStripMenuItem";
-            this.roundCustomInfoToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
-            this.roundCustomInfoToolStripMenuItem.Text = "Rou&nd Custom Info";
-            this.roundCustomInfoToolStripMenuItem.Click += new System.EventHandler(this.roundCustomInfoToolStripMenuItem_Click);
-            // 
-            // toolStripSeparator10
-            // 
-            this.toolStripSeparator10.Name = "toolStripSeparator10";
-            this.toolStripSeparator10.Size = new System.Drawing.Size(257, 6);
-            // 
             // Studio
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -711,6 +733,12 @@ namespace CelesteStudio {
             this.ResumeLayout(false);
             this.PerformLayout();
         }
+
+        private System.Windows.Forms.ToolStripMenuItem setCustomInfoTemplateFromClipboardToolStripMenuItem;
+
+        private System.Windows.Forms.ToolStripMenuItem copyCustomInfoTemplateToClipboardToolStripMenuItem;
+
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator11;
 
         private System.Windows.Forms.ToolStripMenuItem roundCustomInfoToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator10;
@@ -766,7 +794,7 @@ namespace CelesteStudio {
         private System.Windows.Forms.ToolStripMenuItem insertModInfoStripMenuItem1;
 
         #endregion
-		public RichText.RichText tasText;
+		public CelesteStudio.RichText.RichText tasText;
         private System.Windows.Forms.ToolTip hotkeyToolTip;
         private System.Windows.Forms.ContextMenuStrip statusBarContextMenuStrip;
         private System.Windows.Forms.ToolStripMenuItem copyGameDataMenuItem;

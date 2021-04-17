@@ -1131,5 +1131,13 @@ namespace CelesteStudio {
         private void toggleCenterCameraToolStripMenuItem_Click(object sender, EventArgs e) {
             StudioCommunicationServer.instance?.ToggleGameSetting("CenterCamera");
         }
+
+        private void copyCustomInfoTemplateToClipboardToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.instance?.ToggleGameSetting("Copy Custom Info Template to Clipboard");
+        }
+
+        private void setCustomInfoTemplateFromClipboardToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.instance?.ToggleGameSetting("Set Custom Info Template From Clipboard");
+        }
     }
 }

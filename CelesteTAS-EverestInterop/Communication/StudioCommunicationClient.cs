@@ -242,12 +242,23 @@ namespace TAS.Communication {
                 return;
             }
 
+            CelesteTasModuleSettings settings = CelesteTasModule.Settings;
+
+            switch (settingName) {
+                case "Copy Custom Info Template to Clipboard":
+                    TextInput.SetClipboardText(settings.InfoCustomTemplate);
+                    return;
+                case "Set Custom Info Template From Clipboard":
+                    settings.InfoCustomTemplate = TextInput.GetClipboardText();
+                    CelesteTasModule.Instance.SaveSettings();
+                    return;
+            }
+
             if (typeof(CelesteTasModuleSettings).GetProperty(settingName) is { } property) {
                 if (property.GetSetMethod(true) == null) {
                     return;
                 }
 
-                CelesteTasModuleSettings settings = CelesteTasModule.Settings;
                 object value = property.GetValue(settings);
                 if (value is bool boolValue) {
                     property.SetValue(settings, !boolValue);
