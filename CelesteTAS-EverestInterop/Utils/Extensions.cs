@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using Celeste;
+using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.Utils;
 
@@ -230,6 +231,12 @@ namespace TAS.Utils {
 
         public static string ToUniqueId(this EntityData entityData) {
             return $"{entityData.Name}:{entityData.Level.Name}:{entityData.ID}";
+        }
+    }
+
+    internal static class Vector2Extensions {
+        public static string ToSimpleString(this Vector2 vector2, bool round) {
+            return $"{vector2.X.ToString(round ? "F2" : "F12")}, {vector2.Y.ToString(round ? "F2" : "F12")}";
         }
     }
 

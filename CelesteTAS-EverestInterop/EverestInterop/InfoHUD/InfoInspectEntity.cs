@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
@@ -23,7 +22,6 @@ namespace TAS.EverestInterop.InfoHUD {
 
     public static class InfoInspectEntity {
         private static readonly Dictionary<string, IEnumerable<MemberInfo>> CachedMemberInfos = new();
-        private static readonly Regex NewLineRegex = new(@"\r\n?|\n", RegexOptions.Compiled);
 
         private static readonly PropertyInfo ActorExactPosition = typeof(Actor).GetPropertyInfo("ExactPosition");
         private static readonly FieldInfo EntityPosition = typeof(Entity).GetFieldInfo("Position");
@@ -35,6 +33,8 @@ namespace TAS.EverestInterop.InfoHUD {
 
         private static ILHook origLoadLevelHook;
         private static ILHook loadCustomEntityHook;
+
+        private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
         public static void Load() {
             On.Monocle.EntityList.DebugRender += EntityListOnDebugRender;
@@ -82,7 +82,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 mouseWorldPosition = cam.ScreenToCamera(mouseWorldPosition);
                 Entity tempEntity = new() {Position = mouseWorldPosition, Collider = new Hitbox(1, 1)};
                 Entity clickedEntity = level.Entities.Where(entity =>
-                        (!CelesteTasModule.Settings.InfoIgnoreTriggerWhenClickEntity || entity is not Trigger)
+                        (!Settings.InfoIgnoreTriggerWhenClickEntity || entity is not Trigger)
                         && entity.GetType() != typeof(Entity)
                         && entity is not RespawnTargetTrigger
                         && entity is not LookoutBlocker
@@ -190,7 +190,7 @@ namespace TAS.EverestInterop.InfoHUD {
         private static void EntityListOnDebugRender(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
             orig(self, camera);
 
-            if (CelesteTasModule.Settings.ShowHitboxes) {
+            if (Settings.ShowHitboxes) {
                 foreach (Entity entity in Engine.Scene.Entities) {
                     if (InspectingEntities.Contains(entity)) {
                         Draw.Point(entity.Position, HitboxColor.EntityColorInversely);
@@ -239,7 +239,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 reference => {
                     Entity entity = (Entity) reference.Target;
                     InspectingEntities.Add(entity);
-                    return GetEntityValues(entity, CelesteTasModule.Settings.InfoInspectEntityType);
+                    return GetEntityValues(entity, Settings.InfoInspectEntityType);
                 }
             ));
 
@@ -253,7 +253,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 inspectingInfo += string.Join(separator, entityIds.Select(id => {
                     Entity entity = allEntities[id];
                     InspectingEntities.Add(entity);
-                    return GetEntityValues(entity, CelesteTasModule.Settings.InfoInspectEntityType);
+                    return GetEntityValues(entity, Settings.InfoInspectEntityType);
                 }));
             }
 
@@ -283,9 +283,13 @@ namespace TAS.EverestInterop.InfoHUD {
                 };
 
                 if (value is float floatValue) {
-                    value = $"{(int) 60f / Engine.TimeRateB * floatValue:F0}";
+                    if (info.Name.EndsWith("Timer")) {
+                        value = $"{(int) 60f / Engine.TimeRateB * floatValue:F0}";
+                    } else {
+                        value = Settings.RoundCustomInfo ? $"{floatValue:F2}" : $"{floatValue:F12}";
+                    }
                 } else if (value is Vector2 vector2) {
-                    value = $"{vector2.X}, {vector2.Y}";
+                    value = vector2.ToSimpleString(Settings.RoundCustomInfo);
                 }
 
                 return $"{type.Name}{entityId}.{info.Name}: {value}";
@@ -295,11 +299,14 @@ namespace TAS.EverestInterop.InfoHUD {
         }
 
         private static string GetPositionInfo(Entity entity, string entityId) {
+            string position;
             if (entity is Actor actor) {
-                return $"{entity.GetType().Name}{entityId}: {actor.X + actor.PositionRemainder.X:F2}, {actor.Y + actor.PositionRemainder.Y:F2}";
+                position = actor.GetMoreExactPosition().ToSimpleString(Settings.RoundCustomInfo);
             } else {
-                return $"{entity.GetType().Name}{entityId}: {entity.X}, {entity.Y}";
+                position = entity.Position.ToSimpleString(Settings.RoundCustomInfo);
             }
+
+            return $"{entity.GetType().Name}{entityId}: {position}";
         }
 
         private static IEnumerable<MemberInfo> GetAllSimpleFields(Type type, bool declaredOnly = false) {
@@ -352,8 +359,7 @@ namespace TAS.EverestInterop.InfoHUD {
         private static Dictionary<string, Entity> GetAllEntities(Level level) {
             Dictionary<string, Entity> result = new();
 
-            Entity[] entities = level.Entities.FindAll<Entity>()
-                .Where(entity => !CelesteTasModule.Settings.InfoIgnoreTriggerWhenClickEntity || entity is not Trigger).ToArray();
+            Entity[] entities = level.Entities.FindAll<Entity>().ToArray();
             foreach (Entity entity in entities) {
                 if (entity.LoadEntityData() is not { } entityData) {
                     continue;

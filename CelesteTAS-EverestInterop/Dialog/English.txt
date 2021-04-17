@@ -1,11 +1,12 @@
 ﻿# ================================== Menu ==================================
 TAS_ENABLED=                  Enabled
-TAS_SHOW_HITBOXES=            Show Hitboxes
+TAS_SHOW_HITBOXES=            Hitboxes
 TAS_HITBOX_COLOR_DESCRIPTION_1= Hitbox color can only be edited in the menu of the title screen
 TAS_HITBOX_COLOR_DESCRIPTION_2= Or use the entity/trigger/platform_hitbox_color command in the console
 TAS_SIMPLIFIED_GRAPHICS=      Simplified Graphics
 TAS_INFO_HUD_DESCRIPTION_1=   Hold down the left ctrl and use the mouse to drag & drop the HUD
 TAS_INFO_HUD_DESCRIPTION_2=   Double click the left ctrl to toggle HUD
+TAS_ROUND_VALUES=             Round Values
 TAS_RELAUNCH_REQUIRED=        Relaunch Required
 TAS_MORE_OPTIONS=             More Options
 TAS_KEY_CONFIG_DESCRIPTION=   Binding multiple keys to a control will cause those keys to act as a keycombo
@@ -52,7 +53,13 @@ TAS_INFO_TEXT_SIZE=                        Text Size
 TAS_INFO_SUBPIXEL_INDICATOR_SIZE=          Subpixel Indicator Size
 TAS_INFO_OPACITY=                          Opacity
 TAS_INFO_MASKED_OPACITY=                   Masked Opacity
- 
+
+# ================================== Round Values ==================================
+TAS_ROUND_POSITION=           Round Position
+TAS_ROUND_SPEED=              Round Speed
+TAS_ROUND_VELOCITY=           Round Velocity
+TAS_ROUND_CUSTOM_INFO=        Round Custom Info
+
 # ================================== Relaunch Required Submenu ==================================
 TAS_LAUNCH_STUDIO_AT_BOOT=    Launch Studio At Boot
 TAS_AUTO_EXTRACT_NEW_STUDIO=  Auto Extract New Studio
@@ -60,9 +67,6 @@ TAS_UNIX_RTC=                 Unix RTC
 
 # ================================== More Options Submenu ==================================
 TAS_CENTER_CAMERA=            Center Camera
-TAS_ROUND_POSITION=           Round Position
-TAS_ROUND_SPEED=              Round Speed
-TAS_ROUND_VELOCITY=           Round Velocity
 TAS_INFO_HUD=                 Info HUD
 TAS_PAUSE_AFTER_LOAD_STATE=   Pause After Load State
 TAS_RESTORE_SETTINGS=         Restore Settings After TAS Stop

@@ -126,14 +126,14 @@ namespace TAS.EverestInterop.InfoHUD {
             }
 
             if (obj is Vector2 vector2) {
-                return $"{vector2.X:F2}, {vector2.Y:F2}";
+                return vector2.ToSimpleString(Settings.RoundCustomInfo);
             }
 
             if (obj is float floatValue) {
                 if (toFrame) {
                     return $"{(int) FramesPerSecond * floatValue:F0}";
                 } else {
-                    return floatValue.ToString("F2");
+                    return Settings.RoundCustomInfo ? $"{floatValue:F2}" : $"{floatValue:F12}";
                 }
             }
 

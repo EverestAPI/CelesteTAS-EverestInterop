@@ -1108,10 +1108,6 @@ namespace CelesteStudio {
             StudioCommunicationServer.instance?.ToggleGameSetting("HideGameplay");
         }
 
-        private void toggleCenterCameraToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.instance?.ToggleGameSetting("CenterCamera");
-        }
-
         private void toggleRoundPositionToolStripMenuItem_Click(object sender, EventArgs e) {
             StudioCommunicationServer.instance?.ToggleGameSetting("RoundPosition");
         }
@@ -1124,8 +1120,16 @@ namespace CelesteStudio {
             StudioCommunicationServer.instance?.ToggleGameSetting("RoundVelocity");
         }
 
+        private void roundCustomInfoToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.instance?.ToggleGameSetting("RoundCustomInfo");
+        }
+
         private void switchInfoHUDToolStripMenuItem_Click(object sender, EventArgs e) {
             StudioCommunicationServer.instance?.ToggleGameSetting("InfoHud");
+        }
+
+        private void toggleCenterCameraToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.instance?.ToggleGameSetting("CenterCamera");
         }
     }
 }

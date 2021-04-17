@@ -78,10 +78,9 @@ namespace TAS.EverestInterop {
         public bool Mod9DLighting { get; set; } = false;
 
         public bool RoundPosition { get; set; } = true;
-
         public bool RoundSpeed { get; set; } = true;
-
         public bool RoundVelocity { get; set; } = true;
+        public bool RoundCustomInfo { get; set; } = true;
 
         [SettingIgnore] public bool FastForwardCallBase { get; set; } = false;
         [SettingIgnore] public int FastForwardThreshold { get; set; } = 10;

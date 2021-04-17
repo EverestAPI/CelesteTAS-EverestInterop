@@ -23,6 +23,17 @@ namespace TAS.EverestInterop {
                 SimplifiedGraphicsFeature.CreateSubMenu(),
                 InfoHud.CreateSubMenu(),
 
+                new TextMenuExt.SubMenu("Round Values".ToDialogText(), false).Apply(subMenu => {
+                    subMenu.Add(new TextMenu.OnOff("Round Position".ToDialogText(), Settings.RoundPosition).Change(value =>
+                        Settings.RoundPosition = value));
+                    subMenu.Add(new TextMenu.OnOff("Round Speed".ToDialogText(), Settings.RoundSpeed).Change(value =>
+                        Settings.RoundSpeed = value));
+                    subMenu.Add(new TextMenu.OnOff("Round Velocity".ToDialogText(), Settings.RoundVelocity).Change(value =>
+                        Settings.RoundVelocity = value));
+                    subMenu.Add(new TextMenu.OnOff("Round Custom Info".ToDialogText(), Settings.RoundCustomInfo).Change(value =>
+                        Settings.RoundCustomInfo = value));
+                }),
+
                 new TextMenuExt.SubMenu("Relaunch Required".ToDialogText(), false).Apply(subMenu => {
                     subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), Settings.LaunchStudioAtBoot).Change(value =>
                         Settings.LaunchStudioAtBoot = value));
@@ -34,12 +45,6 @@ namespace TAS.EverestInterop {
                 new TextMenuExt.SubMenu("More Options".ToDialogText(), false).Apply(subMenu => {
                     subMenu.Add(new TextMenu.OnOff("Center Camera".ToDialogText(), Settings.CenterCamera).Change(value =>
                         Settings.CenterCamera = value));
-                    subMenu.Add(new TextMenu.OnOff("Round Position".ToDialogText(), Settings.RoundPosition).Change(value =>
-                        Settings.RoundPosition = value));
-                    subMenu.Add(new TextMenu.OnOff("Round Speed".ToDialogText(), Settings.RoundSpeed).Change(value =>
-                        Settings.RoundSpeed = value));
-                    subMenu.Add(new TextMenu.OnOff("Round Velocity".ToDialogText(), Settings.RoundVelocity).Change(value =>
-                        Settings.RoundVelocity = value));
                     subMenu.Add(new TextMenu.OnOff("Pause After Load State".ToDialogText(), Settings.PauseAfterLoadState).Change(value =>
                         Settings.PauseAfterLoadState = value));
                     subMenu.Add(new TextMenu.OnOff("Restore Settings".ToDialogText(), Settings.RestoreSettings).Change(value =>

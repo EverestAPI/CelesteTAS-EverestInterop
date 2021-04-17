@@ -149,7 +149,7 @@ namespace TAS {
                     StringBuilder stringBuilder = new();
                     string pos = GetAdjustedPos(player.Position, player.PositionRemainder);
                     string speed = GetAdjustedSpeed(player.Speed);
-                    Vector2Double diff = (player.GetMoreExtractPosition() - LastPos) * 60f;
+                    Vector2Double diff = (player.GetMoreExactPosition() - LastPos) * 60f;
                     string velocity = GetAdjustedVelocity(diff);
                     if (chapterTime == LastChapterTime) {
                         velocity = LastVel;
@@ -188,7 +188,7 @@ namespace TAS {
                     if (playerSeeker != null) {
                         pos = GetAdjustedPos(playerSeeker.Position, playerSeeker.PositionRemainder);
                         speed = GetAdjustedSpeed(PlayerSeekerSpeed(playerSeeker));
-                        diff = (playerSeeker.GetMoreExtractPosition() - LastPlayerSeekerPos) * 60f;
+                        diff = (playerSeeker.GetMoreExactPosition() - LastPlayerSeekerPos) * 60f;
                         velocity = GetAdjustedVelocity(diff);
                         polarVel = $"Chase: {diff.Length():F2}, {diff.Angle():F5}°";
                         dashCooldown = (int) (PlayerSeekerDashTimer(playerSeeker) * FramesPerSecond);
@@ -275,8 +275,8 @@ namespace TAS {
 
                     StatusWithoutTime = stringBuilder.ToString();
                     if (Engine.FreezeTimer <= 0f) {
-                        LastPos = player.GetMoreExtractPosition();
-                        LastPlayerSeekerPos = playerSeeker?.GetMoreExtractPosition() ?? default;
+                        LastPos = player.GetMoreExactPosition();
+                        LastPlayerSeekerPos = playerSeeker?.GetMoreExactPosition() ?? default;
                     }
                 } else if (level.InCutscene) {
                     StatusWithoutTime = "Cutscene";
@@ -330,11 +330,11 @@ namespace TAS {
         }
 
         private static string GetAdjustedSpeed(Vector2 speed) {
-            return $"Speed: {(CelesteTasModule.Settings.RoundSpeed ? $"{speed.X:F2}, {speed.Y:F2}" : $"{speed.X:F12}, {speed.Y:F12}")}";
+            return $"Speed: {speed.ToSimpleString(CelesteTasModule.Settings.RoundSpeed)}";
         }
 
         private static string GetAdjustedVelocity(Vector2Double diff) {
-            return $"Vel:   {(CelesteTasModule.Settings.RoundVelocity ? $"{diff.X:F2}, {diff.Y:F2}" : $"{diff.X:F12}, {diff.Y:F12}")}";
+            return $"Vel:   {diff.ToSimpleString(CelesteTasModule.Settings.RoundVelocity)}";
         }
 
         private static void BeginExport(string path, string[] tracked) {
@@ -520,6 +520,14 @@ namespace TAS {
             Y = y;
         }
 
+        public override bool Equals(object obj) => obj is Vector2Double other && X == other.X && Y == other.Y;
+
+        public override int GetHashCode() => ToString().GetHashCode();
+
+        public override string ToString() => "{X:" + X + " Y:" + Y + "}";
+
+        public string ToSimpleString(bool round) => $"{X.ToString(round ? "F2" : "F12")}, {Y.ToString(round ? "F2" : "F12")}";
+
         public double Length() => Math.Sqrt(X * X + Y * Y);
 
         public double Angle() {
@@ -546,10 +554,14 @@ namespace TAS {
         public static Vector2Double operator *(Vector2Double value, double scaleFactor) {
             return new(value.X * scaleFactor, value.Y * scaleFactor);
         }
+
+        public static Vector2Double operator /(Vector2Double value, double scaleFactor) {
+            return value * (1 / scaleFactor);
+        }
     }
 
-    public static class Vector2DoubleExtension {
-        public static Vector2Double GetMoreExtractPosition(this Actor actor) {
+    internal static class Vector2DoubleExtension {
+        public static Vector2Double GetMoreExactPosition(this Actor actor) {
             return new(actor.Position.X + actor.PositionRemainder.X, actor.Position.Y + actor.PositionRemainder.Y);
         }
     }
