@@ -1,4 +1,5 @@
-﻿using Celeste;
+﻿using System;
+using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 
@@ -50,22 +51,15 @@ namespace TAS.EverestInterop.InfoHUD {
 
         public static Vector2 TryExpandSize(Vector2 size, float padding) {
             if (TasSettings.InfoSubPixelIndicator) {
-                size.Y += GetSubPixelRectSize() + GetSubPixelTextSize().Y * 2 + padding * 2;
-                if (!TasSettings.InfoGame && !TasSettings.InfoCustom && (!TasSettings.InfoTasInput || !Manager.Running)) {
-                    size.Y -= padding;
-                    size.X = GetSubPixelRectSize() + GetSubPixelTextSize().X * 2 + padding * 2;
+                if (size.Y == 0) {
+                    size.Y = -padding;
                 }
+
+                size.Y += GetSubPixelRectSize() + GetSubPixelTextSize().Y * 2 + padding * 2;
+                size.X = Math.Max(size.X, GetSubPixelRectSize() + GetSubPixelTextSize().X * 2 + padding * 2);
             }
 
             return size;
-        }
-
-        public static float GetHeight(float padding) {
-            if (TasSettings.InfoSubPixelIndicator) {
-                return GetSubPixelRectSize() + GetSubPixelTextSize().Y * 2 + padding * 2;
-            } else {
-                return 0f;
-            }
         }
 
         private static float GetSubPixelRectSize() {
