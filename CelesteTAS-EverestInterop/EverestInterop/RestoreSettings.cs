@@ -68,8 +68,16 @@ namespace TAS.EverestInterop {
                             if (modSettings is CelesteTasModuleSettings backupTasSettings) {
                                 CelesteTasModuleSettings tasSettings = CelesteTasModule.Settings;
                                 backupTasSettings.HideTriggerHitboxes = tasSettings.HideTriggerHitboxes;
+                                backupTasSettings.ShowActualCollideHitboxes = tasSettings.ShowActualCollideHitboxes;
                                 backupTasSettings.SimplifiedGraphics = tasSettings.SimplifiedGraphics;
+                                backupTasSettings.HideGameplay = tasSettings.HideGameplay;
                                 backupTasSettings.CenterCamera = tasSettings.CenterCamera;
+                                backupTasSettings.InfoHud = tasSettings.InfoHud;
+                                backupTasSettings.InfoCustomTemplate = tasSettings.InfoCustomTemplate;
+                                backupTasSettings.RoundPosition = tasSettings.RoundPosition;
+                                backupTasSettings.RoundSpeed = tasSettings.RoundSpeed;
+                                backupTasSettings.RoundVelocity = tasSettings.RoundVelocity;
+                                backupTasSettings.RoundCustomInfo = tasSettings.RoundCustomInfo;
                             }
 
                             bool showHitbox = GameplayRendererExt.RenderDebug;
