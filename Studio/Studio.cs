@@ -133,16 +133,16 @@ namespace CelesteStudio {
 
         private void InitMenu() {
             tasText.MouseClick += (sender, args) => {
-                if ((args.Button & MouseButtons.Right) == 0) {
-                    return;
-                }
+                if ((args.Button & MouseButtons.Right) == MouseButtons.Right) {
+                    if (tasText.Selection.IsEmpty) {
+                        tasText.Selection.Start = tasText.PointToPlace(args.Location);
+                        tasText.Invalidate();
+                    }
 
-                if (tasText.Selection.IsEmpty) {
-                    tasText.Selection.Start = tasText.PointToPlace(args.Location);
-                    tasText.Invalidate();
+                    tasTextContextMenuStrip.Show(Cursor.Position);
+                } else if (ModifierKeys == Keys.Control && (args.Button & MouseButtons.Left) == MouseButtons.Left) {
+                    TryOpenReadFile();
                 }
-
-                tasTextContextMenuStrip.Show(Cursor.Position);
             };
             statusBar.MouseClick += (sender, args) => {
                 if ((args.Button & MouseButtons.Right) == 0) {
@@ -338,15 +338,76 @@ namespace CelesteStudio {
             Settings.Default.UpdatingHotkeys = CommunicationWrapper.updatingHotkeys;
         }
 
-        private void OpenFile(string fileName = null) {
+        private void OpenFile(string fileName = null, int startLine = 0) {
             StudioCommunicationServer.instance?.WriteWait();
             if (tasText.OpenFile(fileName)) {
                 UpdateRecentFiles();
                 tasText.GoHome();
+                if (startLine > 0) {
+                    startLine = Math.Min(startLine, tasText.LinesCount - 1);
+                    tasText.Selection = new Range(tasText, 0, startLine, 0, startLine);
+                    tasText.DoSelectionVisible();
+                }
             }
 
             StudioCommunicationServer.instance?.SendPath(LastFileName);
             Text = TitleBarText;
+        }
+
+        private void TryOpenReadFile() {
+            string lineText = tasText.Lines[tasText.Selection.Start.iLine].Trim();
+            if (lineText.StartsWith("read", StringComparison.OrdinalIgnoreCase)) {
+                Regex spaceRegex = new(@"^[^,]+?\s+[^,]", RegexOptions.Compiled);
+
+                string[] args = spaceRegex.IsMatch(lineText) ? lineText.Split() : lineText.Split(',');
+                args = args.Select(text => text.Trim()).ToArray();
+                if (args[0].Equals("read", StringComparison.OrdinalIgnoreCase) && args.Length >= 2) {
+                    string filePath = args[1];
+                    string fileDirectory = Path.GetDirectoryName(LastFileName);
+                    // Check for full and shortened Read versions
+                    if (fileDirectory != null) {
+                        // Path.Combine can handle the case when filePath is an absolute path
+                        string absoluteOrRelativePath = Path.Combine(fileDirectory, filePath);
+                        if (File.Exists(absoluteOrRelativePath) && absoluteOrRelativePath != LastFileName) {
+                            filePath = absoluteOrRelativePath;
+                        } else {
+                            string[] files = Directory.GetFiles(fileDirectory, $"{filePath}*.tas");
+                            if (files.FirstOrDefault(path => path != LastFileName) is { } shortenedFilePath) {
+                                filePath = shortenedFilePath;
+                            }
+                        }
+                    }
+
+                    if (!File.Exists(filePath)) {
+                        return;
+                    }
+
+                    int startLine = 0;
+                    if (args.Length >= 3) {
+                        startLine = GetLine(filePath, args[2]);
+                    }
+
+                    OpenFile(filePath, startLine);
+                }
+            }
+        }
+
+        private static int GetLine(string path, string labelOrLineNumber) {
+            if (int.TryParse(labelOrLineNumber, out int lineNumber)) {
+                return lineNumber;
+            }
+
+            int curLine = 0;
+            using StreamReader sr = new(path);
+            while (!sr.EndOfStream) {
+                curLine++;
+                string line = sr.ReadLine()?.TrimEnd();
+                if (line == "#" + labelOrLineNumber) {
+                    return curLine - 1;
+                }
+            }
+
+            return 0;
         }
 
         private void UpdateRecentFiles() {
@@ -1036,6 +1097,10 @@ namespace CelesteStudio {
 
         private void swapJumpKeysToolStripMenuItem_Click(object sender, EventArgs e) {
             SwapActionKeys('J', 'K');
+        }
+
+        private void openReadFileToolStripMenuItem_Click(object sender, EventArgs e) {
+            TryOpenReadFile();
         }
 
         private void showGameInfoToolStripMenuItem_Click(object sender, EventArgs e) {
