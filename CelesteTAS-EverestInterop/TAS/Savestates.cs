@@ -30,7 +30,7 @@ namespace TAS {
                 ? Controller.FastForwards.GetValueOrDefault(SavedCurrentFrame)?.Line
                 : Controller.Inputs.GetValueOrDefault(SavedCurrentFrame)?.Line) ?? -1;
 
-        private static int SavedCurrentFrame => savedController?.CurrentFrame ?? -1;
+        private static int SavedCurrentFrame => IsSaved() ? savedController.CurrentFrame : -1;
 
         public static int StudioHighlightLine => SpeedrunToolInstalledLazy.Value && IsSaved() ? SavedLine : -1;
         public static bool SpeedrunToolInstalled => SpeedrunToolInstalledLazy.Value;
