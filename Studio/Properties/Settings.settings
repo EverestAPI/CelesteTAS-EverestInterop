@@ -3,9 +3,6 @@
               GeneratedClassName="Settings">
     <Profiles />
     <Settings>
-        <Setting Name="RememberLastFileName" Type="System.Boolean" Scope="User">
-            <Value Profile="(Default)">True</Value>
-        </Setting>
         <Setting Name="LastFileName" Type="System.String" Scope="User">
             <Value Profile="(Default)" />
         </Setting>

@@ -130,7 +130,7 @@ namespace CelesteStudio.Communication {
 
             studio?.ProcessSendPath(lastMessage?.Data);
 
-            studio?.SendPathNow(Studio.Instance.tasText.LastFileName, false);
+            studio?.SendPathNow(Studio.Instance.tasText.CurrentFileName, false);
             lastMessage = celeste?.ReadMessageGuaranteed();
             celeste?.ProcessSendPath(lastMessage?.Data);
 

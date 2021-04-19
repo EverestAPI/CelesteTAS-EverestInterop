@@ -58,7 +58,7 @@ namespace CelesteStudio {
         }
 
         private string TitleBarText =>
-            (string.IsNullOrEmpty(LastFileName) ? "Celeste.tas" : Path.GetFileName(LastFileName))
+            (string.IsNullOrEmpty(CurrentFileName) ? "Celeste.tas" : Path.GetFileName(CurrentFileName))
             + " - Studio v"
             + Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
 
@@ -77,12 +77,12 @@ namespace CelesteStudio {
             }
         }
 
-        private string LastFileName {
-            get => tasText.LastFileName;
-            set => tasText.LastFileName = value;
+        private string CurrentFileName {
+            get => tasText.CurrentFileName;
+            set => tasText.CurrentFileName = value;
         }
 
-        private StringCollection RecentFiles => Settings.Default.RecentFiles ??= new StringCollection();
+        private static StringCollection RecentFiles => Settings.Default.RecentFiles ??= new StringCollection();
 
         [STAThread]
         public static void Main() {
@@ -200,7 +200,7 @@ namespace CelesteStudio {
 
                 foreach (var fileName in RecentFiles) {
                     openRecentMenuItem.DropDownItems.Add(new ToolStripMenuItem(fileName) {
-                        Checked = LastFileName == fileName
+                        Checked = CurrentFileName == fileName
                     });
                 }
 
@@ -222,11 +222,15 @@ namespace CelesteStudio {
             return false;
         }
 
-        private void TASStudio_FormClosed(object sender, FormClosedEventArgs e) {
+        private void SaveSettings() {
             Settings.Default.DesktopLocation = DesktopLocation;
             Settings.Default.Size = Size;
             Settings.Default.Font = fontDialog.Font;
             Settings.Default.Save();
+        }
+
+        private void TASStudio_FormClosed(object sender, FormClosedEventArgs e) {
+            SaveSettings();
             StudioCommunicationServer.instance?.SendPath(string.Empty);
             Thread.Sleep(50);
         }
@@ -294,7 +298,7 @@ namespace CelesteStudio {
         private void SaveAsFile() {
             StudioCommunicationServer.instance?.WriteWait();
             tasText.SaveNewFile();
-            StudioCommunicationServer.instance?.SendPath(LastFileName);
+            StudioCommunicationServer.instance?.SendPath(CurrentFileName);
             Text = TitleBarText;
             UpdateRecentFiles();
         }
@@ -339,6 +343,10 @@ namespace CelesteStudio {
         }
 
         private void OpenFile(string fileName = null, int startLine = 0) {
+            if (fileName == CurrentFileName) {
+                return;
+            }
+
             StudioCommunicationServer.instance?.WriteWait();
             if (tasText.OpenFile(fileName)) {
                 UpdateRecentFiles();
@@ -350,7 +358,7 @@ namespace CelesteStudio {
                 }
             }
 
-            StudioCommunicationServer.instance?.SendPath(LastFileName);
+            StudioCommunicationServer.instance?.SendPath(CurrentFileName);
             Text = TitleBarText;
         }
 
@@ -363,16 +371,16 @@ namespace CelesteStudio {
                 args = args.Select(text => text.Trim()).ToArray();
                 if (args[0].Equals("read", StringComparison.OrdinalIgnoreCase) && args.Length >= 2) {
                     string filePath = args[1];
-                    string fileDirectory = Path.GetDirectoryName(LastFileName);
+                    string fileDirectory = Path.GetDirectoryName(CurrentFileName);
                     // Check for full and shortened Read versions
                     if (fileDirectory != null) {
                         // Path.Combine can handle the case when filePath is an absolute path
                         string absoluteOrRelativePath = Path.Combine(fileDirectory, filePath);
-                        if (File.Exists(absoluteOrRelativePath) && absoluteOrRelativePath != LastFileName) {
+                        if (File.Exists(absoluteOrRelativePath) && absoluteOrRelativePath != CurrentFileName) {
                             filePath = absoluteOrRelativePath;
                         } else {
                             string[] files = Directory.GetFiles(fileDirectory, $"{filePath}*.tas");
-                            if (files.FirstOrDefault(path => path != LastFileName) is { } shortenedFilePath) {
+                            if (files.FirstOrDefault(path => path != CurrentFileName) is { } shortenedFilePath) {
                                 filePath = shortenedFilePath;
                             }
                         }
@@ -411,12 +419,14 @@ namespace CelesteStudio {
         }
 
         private void UpdateRecentFiles() {
-            if (!RecentFiles.Contains(LastFileName)) {
-                RecentFiles.Insert(0, LastFileName);
-                Settings.Default.Save();
+            if (RecentFiles.Contains(CurrentFileName)) {
+                RecentFiles.Remove(CurrentFileName);
             }
 
-            Settings.Default.LastFileName = LastFileName;
+            RecentFiles.Insert(0, CurrentFileName);
+            SaveSettings();
+
+            Settings.Default.LastFileName = CurrentFileName;
         }
 
         private void ClearUncommentedBreakpoints() {
@@ -582,7 +592,7 @@ namespace CelesteStudio {
                     if (lastChanged.AddSeconds(0.3f) < DateTime.Now) {
                         lastChanged = DateTime.Now;
                         Invoke((Action) delegate {
-                            if (!string.IsNullOrEmpty(LastFileName) && tasText.IsChanged) {
+                            if (!string.IsNullOrEmpty(CurrentFileName) && tasText.IsChanged) {
                                 tasText.SaveFile();
                             }
                         });
@@ -614,9 +624,9 @@ namespace CelesteStudio {
                         File.WriteAllText(fileName, string.Empty);
                     }
 
-                    if (string.IsNullOrEmpty(LastFileName)) {
+                    if (string.IsNullOrEmpty(CurrentFileName)) {
                         tasText.OpenBindingFile(fileName, Encoding.ASCII);
-                        LastFileName = fileName;
+                        CurrentFileName = fileName;
                     }
 
                     tasText.Focus();
@@ -626,11 +636,10 @@ namespace CelesteStudio {
             } else {
                 UpdateStatusBar();
 
-                if (Settings.Default.RememberLastFileName
-                    && File.Exists(Settings.Default.LastFileName)
+                if (File.Exists(Settings.Default.LastFileName)
                     && IsFileReadable(Settings.Default.LastFileName)
-                    && string.IsNullOrEmpty(LastFileName)) {
-                    LastFileName = Settings.Default.LastFileName;
+                    && string.IsNullOrEmpty(CurrentFileName)) {
+                    CurrentFileName = Settings.Default.LastFileName;
                     tasText.ReloadFile();
                 }
 
@@ -908,10 +917,6 @@ namespace CelesteStudio {
             return true;
         }
 
-        private void rememberCurrentFileMenuItem_Click(object sender, EventArgs e) {
-            Settings.Default.RememberLastFileName = !Settings.Default.RememberLastFileName;
-        }
-
         private void autoRemoveExclusiveActionsToolStripMenuItem_Click(object sender, EventArgs e) {
             Settings.Default.AutoRemoveMutuallyExclusiveActions = !Settings.Default.AutoRemoveMutuallyExclusiveActions;
         }
@@ -921,20 +926,20 @@ namespace CelesteStudio {
         }
 
         private void settingsToolStripMenuItem_Opened(object sender, EventArgs e) {
-            rememberCurrentFileMenuItem.Checked = Settings.Default.RememberLastFileName;
             sendInputsToCelesteMenuItem.Checked = Settings.Default.UpdatingHotkeys;
             autoRemoveExclusiveActionsToolStripMenuItem.Checked = Settings.Default.AutoRemoveMutuallyExclusiveActions;
             showGameInfoToolStripMenuItem.Checked = Settings.Default.ShowGameInfo;
         }
 
-        private void openCelesteTasMenuItem_Click(object sender, EventArgs e) {
-            string fileName = defaultFileName;
-            if (string.IsNullOrEmpty(fileName)) {
+        private void openPreviousFileToolStripMenuItem_Click(object sender, EventArgs e) {
+            if (RecentFiles.Count <= 1) {
                 return;
             }
 
+            string fileName = RecentFiles[1];
+
             if (!File.Exists(fileName)) {
-                File.WriteAllText(fileName, string.Empty);
+                RecentFiles.Remove(fileName);
             }
 
             OpenFile(fileName);
@@ -950,6 +955,7 @@ namespace CelesteStudio {
 
         private void fileToolStripMenuItem_DropDownOpened(object sender, EventArgs e) {
             CreateRecentFilesMenu();
+            openPreviousFileToolStripMenuItem.Enabled = RecentFiles.Count >= 2;
         }
 
         private void insertRemoveBreakPointToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -1122,9 +1128,9 @@ namespace CelesteStudio {
                 dialog.AddExtension = true;
                 dialog.Filter = "TXT|*.txt";
                 dialog.FilterIndex = 0;
-                if (!string.IsNullOrEmpty(LastFileName)) {
-                    dialog.InitialDirectory = Path.GetDirectoryName(LastFileName);
-                    dialog.FileName = Path.GetFileNameWithoutExtension(LastFileName) + "_libTAS_inputs.txt";
+                if (!string.IsNullOrEmpty(CurrentFileName)) {
+                    dialog.InitialDirectory = Path.GetDirectoryName(CurrentFileName);
+                    dialog.FileName = Path.GetFileNameWithoutExtension(CurrentFileName) + "_libTAS_inputs.txt";
                 } else {
                     dialog.FileName = "libTAS_inputs.txt";
                 }

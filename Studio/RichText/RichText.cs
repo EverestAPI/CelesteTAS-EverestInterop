@@ -151,7 +151,7 @@ namespace CelesteStudio.RichText {
             base.AutoScroll = true;
         }
 
-        public string LastFileName { get; set; }
+        public string CurrentFileName { get; set; }
 
         /// <summary>
         /// Indicates if tab characters are accepted as input
@@ -2197,21 +2197,21 @@ namespace CelesteStudio.RichText {
                 using (OpenFileDialog diag = new()) {
                     diag.Filter = "TAS|*.tas";
                     diag.FilterIndex = 0;
-                    if (!string.IsNullOrEmpty(LastFileName)) {
-                        diag.InitialDirectory = Path.GetDirectoryName(LastFileName);
+                    if (!string.IsNullOrEmpty(CurrentFileName)) {
+                        diag.InitialDirectory = Path.GetDirectoryName(CurrentFileName);
                     } else if (Environment.OSVersion.Platform == PlatformID.Unix
                                && Directory.Exists("~/.steam/steam/steamapps/common/Celeste")) {
                         diag.InitialDirectory = Path.GetFullPath("~/.steam/steam/steamapps/common/Celeste");
                     }
 
                     if (diag.ShowDialog() == DialogResult.OK) {
-                        LastFileName = diag.FileName;
+                        CurrentFileName = diag.FileName;
                         OpenBindingFile(diag.FileName, Encoding.ASCII);
                         return true;
                     }
                 }
             } else {
-                LastFileName = fileName;
+                CurrentFileName = fileName;
                 OpenBindingFile(fileName, Encoding.ASCII);
                 return true;
             }
@@ -2220,8 +2220,8 @@ namespace CelesteStudio.RichText {
         }
 
         public void ReloadFile() {
-            if (!string.IsNullOrEmpty(LastFileName) && File.Exists(LastFileName)) {
-                OpenBindingFile(LastFileName, Encoding.ASCII);
+            if (!string.IsNullOrEmpty(CurrentFileName) && File.Exists(CurrentFileName)) {
+                OpenBindingFile(CurrentFileName, Encoding.ASCII);
             }
         }
 
@@ -2232,15 +2232,15 @@ namespace CelesteStudio.RichText {
                 diag.AddExtension = true;
                 diag.Filter = "TAS|*.tas";
                 diag.FilterIndex = 0;
-                if (!string.IsNullOrEmpty(LastFileName)) {
-                    diag.InitialDirectory = Path.GetDirectoryName(LastFileName);
-                    diag.FileName = Path.GetFileName(LastFileName);
+                if (!string.IsNullOrEmpty(CurrentFileName)) {
+                    diag.InitialDirectory = Path.GetDirectoryName(CurrentFileName);
+                    diag.FileName = Path.GetFileName(CurrentFileName);
                 } else {
                     diag.FileName = "Kalimba.tas";
                 }
 
                 if (diag.ShowDialog() == DialogResult.OK) {
-                    LastFileName = diag.FileName;
+                    CurrentFileName = diag.FileName;
                     SaveFile();
                 }
             }
@@ -2248,7 +2248,7 @@ namespace CelesteStudio.RichText {
 
         public void SaveFile() {
             FileSaving?.Invoke(this, new EventArgs());
-            SaveToFile(LastFileName, Encoding.ASCII);
+            SaveToFile(CurrentFileName, Encoding.ASCII);
         }
 
         protected override void OnKeyDown(KeyEventArgs e) {
