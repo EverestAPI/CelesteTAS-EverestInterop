@@ -1143,11 +1143,15 @@ namespace CelesteStudio {
 
         private void newFileToolStripMenuItem_Click(object sender, EventArgs e) {
             int index = 1;
-            string tempPath = Path.GetTempPath();
-            string fileName = Path.Combine(tempPath, $"Untitled-{index}.tas");
+            string gamePath = Path.Combine(Directory.GetCurrentDirectory(), "TAS Files");
+            if (!Directory.Exists(gamePath)) {
+                Directory.CreateDirectory(gamePath);
+            }
+
+            string fileName = Path.Combine(gamePath, $"Untitled-{index}.tas");
             while (File.Exists(fileName) && new FileInfo(fileName).Length > 0) {
                 index++;
-                fileName = Path.Combine(tempPath, $"Untitled-{index}.tas");
+                fileName = Path.Combine(gamePath, $"Untitled-{index}.tas");
             }
 
             File.WriteAllText(fileName, string.Empty);
