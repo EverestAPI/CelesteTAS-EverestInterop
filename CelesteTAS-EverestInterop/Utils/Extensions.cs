@@ -134,7 +134,7 @@ namespace TAS.Utils {
 
     internal static class ListExtensions {
         public static T GetValueOrDefault<T>(this IList<T> list, int index, T defaultValue = default) {
-            return index > 0 && index < list.Count ? list[index] : defaultValue;
+            return index >= 0 && index < list.Count ? list[index] : defaultValue;
         }
     }
 
