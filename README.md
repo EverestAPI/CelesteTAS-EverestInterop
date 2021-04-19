@@ -87,7 +87,7 @@ While in game or in Studio:
 
 ### Inspect Entity
 
-holding left ctrl then left-click to add the entity to be inspected, right-click to clear the inspecting entities. Supports exporting position data via
+Enable `Info HUD`, holding left ctrl then left-click to add the entity to be inspected, right-click to clear the inspecting entities. Supports exporting inspecting entities info via
 the `StartExport` command.
 
 ### Custom Info
