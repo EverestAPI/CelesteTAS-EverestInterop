@@ -82,7 +82,7 @@ namespace TAS.Input {
                 return;
             }
 
-            const BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
+            const BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
             if (typeof(Player).GetProperty(name, bindingFlags) is { } property && property.GetSetMethod(true) != null) {
                 object value = ConvertType(values, property.PropertyType);
                 property.SetValue(player, value);

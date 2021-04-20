@@ -12,8 +12,7 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD {
     public static class InfoCustom {
-        private const BindingFlags AllBindingFlags = BindingFlags.Static | BindingFlags.Instance | BindingFlags.FlattenHierarchy |
-                                                     BindingFlags.Public | BindingFlags.NonPublic;
+        private const BindingFlags AllBindingFlags = BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
         private const BindingFlags AllStaticBindingFlags = BindingFlags.Static | BindingFlags.FlattenHierarchy |
                                                            BindingFlags.Public | BindingFlags.NonPublic;

@@ -25,9 +25,6 @@ namespace TAS.EverestInterop.InfoHUD {
         private static readonly Regex NewLineRegex = new(@"\r\n?|\n", RegexOptions.Compiled);
         private static readonly Dictionary<string, IEnumerable<MemberInfo>> CachedMemberInfos = new();
 
-        private static readonly PropertyInfo ActorExactPosition = typeof(Actor).GetPropertyInfo("ExactPosition");
-        private static readonly FieldInfo EntityPosition = typeof(Entity).GetFieldInfo("Position");
-
         private static readonly List<WeakReference> RequireInspectEntities = new();
         private static readonly HashSet<string> RequireInspectEntityIds = new();
         private static readonly HashSet<Entity> InspectingEntities = new();
@@ -301,18 +298,13 @@ namespace TAS.EverestInterop.InfoHUD {
                 return $"{type.Name}{entityId}.{info.Name}: {value}";
             }).ToList();
 
+            values.Insert(0, GetPositionInfo(entity, entityId));
+
             return string.Join(separator, values);
         }
 
         private static string GetPositionInfo(Entity entity, string entityId) {
-            string position;
-            if (entity is Actor actor) {
-                position = actor.GetMoreExactPosition().ToSimpleString(Settings.RoundCustomInfo);
-            } else {
-                position = entity.Position.ToSimpleString(Settings.RoundCustomInfo);
-            }
-
-            return $"{entity.GetType().Name}{entityId}: {position}";
+            return $"{entity.GetType().Name}{entityId}: {entity.ToSimplePositionString(Settings.RoundCustomInfo)}";
         }
 
         private static IEnumerable<MemberInfo> GetAllSimpleFields(Type type, bool declaredOnly = false) {
@@ -349,13 +341,6 @@ namespace TAS.EverestInterop.InfoHUD {
                         result.AddRange(infos);
                     }
                 }
-
-                MemberInfo positionMemberInfo = type.IsSubclassOf(typeof(Actor)) ? ActorExactPosition : EntityPosition;
-                if (!declaredOnly) {
-                    result.Remove(positionMemberInfo);
-                }
-
-                result.Insert(0, positionMemberInfo);
 
                 CachedMemberInfos[key] = result;
                 return result;

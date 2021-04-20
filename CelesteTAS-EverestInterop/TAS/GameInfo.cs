@@ -374,9 +374,7 @@ namespace TAS {
                     }
 
                     string time = (level.Session.Time / 10000000D).ToString("0.000");
-                    double x = (double) player.X + player.PositionRemainder.X;
-                    double y = (double) player.Y + player.PositionRemainder.Y;
-                    string pos = x + ", " + y;
+                    string pos = player.ToSimplePositionString(CelesteTasModule.Settings.RoundPosition);
                     string speed = player.Speed.X + ", " + player.Speed.Y;
 
                     int dashCooldown = (int) (DashCooldownTimer(player) * FramesPerSecond);
@@ -415,19 +413,11 @@ namespace TAS {
                         }
 
                         foreach (Entity entity in entities) {
-                            if (entity is Actor actor) {
-                                x = (double) actor.X + actor.PositionRemainder.X;
-                                y = (double) actor.Y + actor.PositionRemainder.Y;
-                                pos = x + ", " + y;
-                            } else {
-                                pos = entity.X + ", " + entity.Y;
-                            }
-
-                            output += $"\t{typeName}: {pos}";
+                            output += $"\t{typeName}: {entity.ToSimplePositionString(CelesteTasModule.Settings.RoundCustomInfo)}";
                         }
                     }
 
-                    output += InfoInspectEntity.GetInspectingEntitiesInfo("\t");
+                    output += $"\t{InfoInspectEntity.GetInspectingEntitiesInfo("\t")}";
 
                     sw.WriteLine(output);
                 } else {
@@ -563,6 +553,14 @@ namespace TAS {
     internal static class Vector2DoubleExtension {
         public static Vector2Double GetMoreExactPosition(this Actor actor) {
             return new(actor.Position.X + actor.PositionRemainder.X, actor.Position.Y + actor.PositionRemainder.Y);
+        }
+
+        public static string ToSimplePositionString(this Entity entity, bool round) {
+            if (entity is Actor actor) {
+                return actor.GetMoreExactPosition().ToSimpleString(round);
+            } else {
+                return entity.Position.ToSimpleString(round);
+            }
         }
     }
 }
