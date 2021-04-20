@@ -132,8 +132,8 @@ namespace TAS.Communication {
 
         private void ProcessGetModInfo() {
             if (Engine.Scene is Level level) {
-                string MetaToString(EverestModuleMetadata metadata, int Indentation = 0, bool comment = true) {
-                    return (comment ? "# " : string.Empty) + string.Empty.PadLeft(Indentation) + $"{metadata.Name} {metadata.VersionString}\n";
+                string MetaToString(EverestModuleMetadata metadata, int indentation = 0, bool comment = true) {
+                    return (comment ? "# " : string.Empty) + string.Empty.PadLeft(indentation) + $"{metadata.Name} {metadata.VersionString}\n";
                 }
 
                 List<EverestModuleMetadata> metas = Everest.Modules
@@ -164,6 +164,7 @@ namespace TAS.Communication {
                 EverestModuleMetadata speedrunToolMeta = metas.FirstOrDefault(metadata => metadata.Name == "SpeedrunTool");
                 if (speedrunToolMeta != null) {
                     command += MetaToString(speedrunToolMeta);
+                    metas.Remove(speedrunToolMeta);
                 }
 
                 command += "\n# Map:\n";
@@ -189,7 +190,7 @@ namespace TAS.Communication {
                     command += string.Join(string.Empty,
                         metas.Where(meta => meta.Name != moduleName && dependencies.All(metadata => metadata.Name != meta.Name))
                             .Select(meta => MetaToString(meta, 2)));
-                } else {
+                } else if (metas.IsNotEmpty()) {
                     command += "\n# Other Installed Mods:\n";
                     command += string.Join(string.Empty, metas.Select(meta => MetaToString(meta, 2)));
                 }
