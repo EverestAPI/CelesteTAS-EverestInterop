@@ -59,11 +59,8 @@ namespace TAS.EverestInterop.Hitboxes {
                 }
             }
 
-            if (self is Puffer) {
-                Vector2 bottomCenter = self.BottomCenter - Vector2.UnitY * 1;
-                if (self.Scene.Tracker.GetEntity<Player>() is {Ducking: true}) {
-                    bottomCenter -= Vector2.UnitY * 3;
-                }
+            if (self is Puffer && self.Scene.GetPlayer() is { } player) {
+                Vector2 bottomCenter = self.BottomCenter - Vector2.UnitY * (6 - player.Bottom + player.CenterY);
 
                 Color hitboxColor = HitboxColor.EntityColor;
                 if (!self.Collidable) {

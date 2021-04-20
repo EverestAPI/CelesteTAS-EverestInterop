@@ -18,6 +18,7 @@ namespace TAS.EverestInterop.Hitboxes {
             HitboxFinalBoss.Load();
             HitboxOptimized.Load();
             HitboxNpc.Load();
+            HitboxRoomBoundary.Load();
         }
 
         public static void Unload() {
@@ -30,6 +31,7 @@ namespace TAS.EverestInterop.Hitboxes {
             HitboxFinalBoss.Unload();
             HitboxOptimized.Unload();
             HitboxNpc.Unload();
+            HitboxRoomBoundary.Unload();
         }
 
         public static TextMenu.Item CreateSubMenu(TextMenu menu, bool inGame) {
