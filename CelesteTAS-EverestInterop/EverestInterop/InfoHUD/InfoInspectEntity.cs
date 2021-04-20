@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
@@ -21,6 +22,7 @@ namespace TAS.EverestInterop.InfoHUD {
     }
 
     public static class InfoInspectEntity {
+        private static readonly Regex NewLineRegex = new(@"\r\n?|\n", RegexOptions.Compiled);
         private static readonly Dictionary<string, IEnumerable<MemberInfo>> CachedMemberInfos = new();
 
         private static readonly PropertyInfo ActorExactPosition = typeof(Actor).GetPropertyInfo("ExactPosition");
@@ -239,7 +241,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 reference => {
                     Entity entity = (Entity) reference.Target;
                     InspectingEntities.Add(entity);
-                    return GetEntityValues(entity, Settings.InfoInspectEntityType);
+                    return GetEntityValues(entity, Settings.InfoInspectEntityType, separator);
                 }
             ));
 
@@ -253,7 +255,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 inspectingInfo += string.Join(separator, entityIds.Select(id => {
                     Entity entity = allEntities[id];
                     InspectingEntities.Add(entity);
-                    return GetEntityValues(entity, Settings.InfoInspectEntityType);
+                    return GetEntityValues(entity, Settings.InfoInspectEntityType, separator);
                 }));
             }
 
@@ -264,7 +266,7 @@ namespace TAS.EverestInterop.InfoHUD {
             ("Info of Clicked Entity:\n" + GetEntityValues(entity, InspectEntityTypes.All)).Log(true);
         }
 
-        private static string GetEntityValues(Entity entity, InspectEntityTypes inspectEntityType) {
+        private static string GetEntityValues(Entity entity, InspectEntityTypes inspectEntityType, string separator = "\n") {
             Type type = entity.GetType();
             string entityId = "";
             if (entity.LoadEntityData() is { } entityData) {
@@ -292,10 +294,14 @@ namespace TAS.EverestInterop.InfoHUD {
                     value = vector2.ToSimpleString(Settings.RoundCustomInfo);
                 }
 
+                if (separator == "\t" && value != null) {
+                    value = NewLineRegex.Replace(value.ToString(), "");
+                }
+
                 return $"{type.Name}{entityId}.{info.Name}: {value}";
             }).ToList();
 
-            return string.Join("\n", values);
+            return string.Join(separator, values);
         }
 
         private static string GetPositionInfo(Entity entity, string entityId) {
