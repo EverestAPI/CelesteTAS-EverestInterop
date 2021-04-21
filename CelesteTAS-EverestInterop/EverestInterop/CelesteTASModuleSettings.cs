@@ -60,8 +60,8 @@ namespace TAS.EverestInterop {
         public ButtonBinding KeyClearState { get; set; } = new();
 
         public bool ShowHitboxes {
-            get => GameplayRendererExt.RenderDebug;
-            set => GameplayRendererExt.RenderDebug = value;
+            get => GameplayRenderer.RenderDebug;
+            set => GameplayRenderer.RenderDebug = value;
         }
 
         public bool CenterCamera {
@@ -96,7 +96,7 @@ namespace TAS.EverestInterop {
         // ReSharper disable once UnusedMember.Local
         [Load]
         private static void RestoreHitboxSetting() {
-            GameplayRendererExt.RenderDebug =
+            GameplayRenderer.RenderDebug =
                 Engine.Instance.GetDynDataInstance().Get<bool?>(nameof(CelesteTasModule.Settings.ShowHitboxes)) ?? false;
         }
 

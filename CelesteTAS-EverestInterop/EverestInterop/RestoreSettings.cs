@@ -47,7 +47,7 @@ namespace TAS.EverestInterop {
             On.Celeste.SaveData.Start -= SaveDataOnStart;
 
             if (origSettings != null) {
-                Settings.Instance.CopyAllFields(origSettings);
+                Settings.Instance.CopyAllFields(origSettings, true);
                 Settings.Instance.ApplyVolumes();
                 Settings.Instance.ApplyScreen();
                 Settings.Instance.ApplyLanguage();
@@ -65,6 +65,8 @@ namespace TAS.EverestInterop {
                 foreach (EverestModule module in Everest.Modules) {
                     try {
                         if (module?._Settings != null && origModSettings.TryGetValue(module, out object modSettings) && modSettings != null) {
+                            bool showHitbox = CelesteTasModule.Settings.ShowHitboxes;
+
                             if (modSettings is CelesteTasModuleSettings backupTasSettings) {
                                 CelesteTasModuleSettings tasSettings = CelesteTasModule.Settings;
                                 backupTasSettings.HideTriggerHitboxes = tasSettings.HideTriggerHitboxes;
@@ -80,12 +82,10 @@ namespace TAS.EverestInterop {
                                 backupTasSettings.RoundCustomInfo = tasSettings.RoundCustomInfo;
                             }
 
-                            bool showHitbox = GameplayRendererExt.RenderDebug;
-
                             module._Settings.CopyAllProperties(modSettings);
-                            module._Settings.CopyAllFields(modSettings);
+                            module._Settings.CopyAllFields(modSettings, true);
 
-                            GameplayRendererExt.RenderDebug = showHitbox;
+                            CelesteTasModule.Settings.ShowHitboxes = showHitbox;
                         }
                     } catch (NullReferenceException) {
                         // maybe caused by hot reloading

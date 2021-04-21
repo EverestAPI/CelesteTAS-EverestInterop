@@ -261,12 +261,12 @@ namespace TAS.Utils {
 
         public static T ShallowClone<T>(this T obj) => CloneUtil<T>.ShallowClone(obj);
 
-        public static void CopyAllFields(this object to, object from) {
+        public static void CopyAllFields(this object to, object from, bool filterBackingField = false) {
             if (to.GetType() != from.GetType()) {
                 throw new ArgumentException("object to and from must be the same type");
             }
 
-            foreach (FieldInfo fieldInfo in GetAllFieldInfos(to.GetType())) {
+            foreach (FieldInfo fieldInfo in GetAllFieldInfos(to.GetType(), filterBackingField)) {
                 object fromValue = fieldInfo.GetValue(from);
                 fieldInfo.SetValue(to, fromValue);
             }
