@@ -106,9 +106,11 @@ namespace TAS.EverestInterop.InfoHUD {
             ILCursor cursor = new(il);
 
             // NPC
-            if (cursor.TryGotoNext(MoveType.After,
+            if (cursor.TryGotoNext(MoveType.Before,
                 ins => ins.OpCode == OpCodes.Call &&
-                       ins.Operand.ToString() == "T System.Collections.Generic.List`1/Enumerator<Celeste.EntityData>::get_Current()")) {
+                       ins.Operand.ToString() == "T System.Collections.Generic.List`1/Enumerator<Celeste.EntityData>::get_Current()",
+                ins => ins.OpCode == OpCodes.Stloc_S
+            )) {
                 cursor.Index++;
                 object entityDataOperand = cursor.Next.Operand;
                 while (cursor.TryGotoNext(MoveType.Before,
@@ -123,9 +125,11 @@ namespace TAS.EverestInterop.InfoHUD {
 
             // DashSwitch.Create and FallingBlock.Create
             cursor.Goto(0);
-            if (cursor.TryGotoNext(MoveType.After,
+            if (cursor.TryGotoNext(MoveType.Before,
                 ins => ins.OpCode == OpCodes.Call &&
-                       ins.Operand.ToString() == "T System.Collections.Generic.List`1/Enumerator<Celeste.EntityData>::get_Current()")) {
+                       ins.Operand.ToString() == "T System.Collections.Generic.List`1/Enumerator<Celeste.EntityData>::get_Current()",
+                ins => ins.OpCode == OpCodes.Stloc_S
+            )) {
                 cursor.Index++;
                 object entityDataOperand = cursor.Next.Operand;
                 while (cursor.TryGotoNext(MoveType.Before,
