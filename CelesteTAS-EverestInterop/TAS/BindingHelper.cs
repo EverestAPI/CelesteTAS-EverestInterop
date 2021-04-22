@@ -12,8 +12,8 @@ using GameInput = Celeste.Input;
 namespace TAS {
     public static class BindingHelper {
         private static readonly Type BindingType = typeof(Engine).Assembly.GetType("Monocle.Binding");
-        private static readonly MethodInfo BindingAddKeys = BindingType.GetMethod("Add", new[] {typeof(Keys[])});
-        private static readonly MethodInfo BindingAddButtons = BindingType.GetMethod("Add", new[] {typeof(Buttons[])});
+        private static readonly MethodInfo BindingAddKeys = BindingType?.GetMethod("Add", new[] {typeof(Keys[])});
+        private static readonly MethodInfo BindingAddButtons = BindingType?.GetMethod("Add", new[] {typeof(Buttons[])});
 
         static BindingHelper() {
             if (typeof(GameInput).GetFieldInfo("DemoDash") == null && typeof(GameInput).GetFieldInfo("CrouchDash") == null) {
