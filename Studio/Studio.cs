@@ -86,11 +86,26 @@ namespace CelesteStudio {
 
         [STAThread]
         public static void Main() {
+            AppDomain.CurrentDomain.UnhandledException += UnhandledException;
             RunSingleton(() => {
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
                 Application.Run(new Studio());
             });
+        }
+
+        private static void UnhandledException(object sender, UnhandledExceptionEventArgs e) {
+            Exception exception = e.ExceptionObject as Exception ?? new Exception("Unknown unhandled exception");
+            if (exception.GetType().FullName == "System.Configuration.ConfigurationErrorsException") {
+                MessageBox.Show("Your configuration file is corrupted and will be deleted automatically, please try to launch celeste studio again.",
+                    "Configuration Errors Exception", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                string configFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Celeste_Studio");
+                Directory.Delete(configFolder, true);
+                return;
+            }
+
+            ErrorLog.Write(exception);
+            ErrorLog.Open();
         }
 
         private static void RunSingleton(Action action) {
