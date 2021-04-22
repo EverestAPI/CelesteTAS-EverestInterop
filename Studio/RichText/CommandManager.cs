@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace CelesteStudio.RichText {
     internal class CommandManager {
         readonly LimitedStack<UndoableCommand> history;
-        readonly int maxHistoryLength = 200;
+        readonly int maxHistoryLength = 1000;
         readonly Stack<UndoableCommand> redoStack = new();
 
         int autoUndoCommands = 0;
