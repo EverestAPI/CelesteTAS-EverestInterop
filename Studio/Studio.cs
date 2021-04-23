@@ -63,21 +63,6 @@ namespace CelesteStudio {
             + " - Studio v"
             + Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
 
-        private string defaultFileName {
-            get {
-                string fileName = "";
-                if (Environment.OSVersion.Platform == PlatformID.Unix) {
-                    if (null == (fileName = Environment.GetEnvironmentVariable("CELESTE_TAS_FILE"))) {
-                        fileName = Environment.GetEnvironmentVariable("HOME") + "/.steam/steam/steamapps/common/Celeste/Celeste.tas";
-                    }
-                } else if (CommunicationWrapper.gamePath != null) {
-                    fileName = Path.Combine(CommunicationWrapper.gamePath, "Celeste.tas");
-                }
-
-                return fileName;
-            }
-        }
-
         private string CurrentFileName {
             get => tasText.CurrentFileName;
             set => tasText.CurrentFileName = value;
@@ -101,7 +86,10 @@ namespace CelesteStudio {
                 MessageBox.Show("Your configuration file is corrupted and will be deleted automatically, please try to launch celeste studio again.",
                     "Configuration Errors Exception", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 string configFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Celeste_Studio");
-                Directory.Delete(configFolder, true);
+                if (Directory.Exists(configFolder)) {
+                    Directory.Delete(configFolder, true);
+                }
+
                 return;
             }
 
@@ -185,6 +173,25 @@ namespace CelesteStudio {
 
                 OpenFile(clickedItem.Text);
             };
+
+            openBackupToolStripMenuItem.DropDownItemClicked += (sender, args) => {
+                ToolStripItem clickedItem = args.ClickedItem;
+                string backupFolder = tasText.BackupFolder;
+                if (clickedItem.Text == "Delete All Files") {
+                    Directory.Delete(backupFolder, true);
+                    return;
+                } else if (clickedItem.Text == "Open Backup Folder") {
+                    Process.Start(backupFolder);
+                    return;
+                }
+
+                string filePath = Path.Combine(backupFolder, clickedItem.Text);
+                if (!File.Exists(filePath)) {
+                    openRecentMenuItem.Owner.Hide();
+                }
+
+                OpenFile(filePath);
+            };
         }
 
         private void InitDragDrop() {
@@ -225,8 +232,31 @@ namespace CelesteStudio {
                 }
 
                 openRecentMenuItem.DropDownItems.Add(new ToolStripSeparator());
-
                 openRecentMenuItem.DropDownItems.Add(new ToolStripMenuItem("Clear"));
+            }
+        }
+
+        private void CreateBackupFilesMenu() {
+            openBackupToolStripMenuItem.DropDownItems.Clear();
+            List<string> files = Directory.GetFiles(tasText.BackupFolder).ToList();
+            if (files.Count == 0) {
+                openBackupToolStripMenuItem.DropDownItems.Add(new ToolStripMenuItem("Nothing") {
+                    Enabled = false
+                });
+            } else {
+                for (int i = files.Count - 1; i >= 20; i--) {
+                    files.Remove(files[i]);
+                }
+
+                foreach (string filePath in files) {
+                    openBackupToolStripMenuItem.DropDownItems.Add(new ToolStripMenuItem(Path.GetFileName(filePath)) {
+                        Checked = CurrentFileName == filePath
+                    });
+                }
+
+                openBackupToolStripMenuItem.DropDownItems.Add(new ToolStripSeparator());
+                openBackupToolStripMenuItem.DropDownItems.Add(new ToolStripMenuItem("Delete All Files"));
+                openBackupToolStripMenuItem.DropDownItems.Add(new ToolStripMenuItem("Open Backup Folder"));
             }
         }
 
@@ -557,44 +587,42 @@ namespace CelesteStudio {
             Size size = new(200, 70);
             DialogResult result = DialogResult.Cancel;
 
-            using (Form inputBox = new()) {
-                inputBox.FormBorderStyle = FormBorderStyle.FixedDialog;
-                inputBox.ClientSize = size;
-                inputBox.Text = title;
-                inputBox.StartPosition = FormStartPosition.CenterParent;
-                inputBox.MinimizeBox = false;
-                inputBox.MaximizeBox = false;
+            using Form inputBox = new();
+            inputBox.FormBorderStyle = FormBorderStyle.FixedDialog;
+            inputBox.ClientSize = size;
+            inputBox.Text = title;
+            inputBox.StartPosition = FormStartPosition.CenterParent;
+            inputBox.MinimizeBox = false;
+            inputBox.MaximizeBox = false;
 
-                TextBox textBox = new();
-                textBox.Size = new Size(size.Width - 10, 23);
-                textBox.Location = new Point(5, 5);
-                textBox.Font = tasText.Font;
-                textBox.Text = input;
-                textBox.MaxLength = 1;
-                inputBox.Controls.Add(textBox);
+            TextBox textBox = new();
+            textBox.Size = new Size(size.Width - 10, 20);
+            textBox.Location = new Point(5, 10);
+            textBox.Font = new Font(FontFamily.GenericSansSerif, 11);
+            textBox.Text = input;
+            inputBox.Controls.Add(textBox);
 
-                Button okButton = new();
-                okButton.DialogResult = DialogResult.OK;
-                okButton.Name = "okButton";
-                okButton.Size = new Size(75, 23);
-                okButton.Text = "&OK";
-                okButton.Location = new Point(size.Width - 80 - 80, 39);
-                inputBox.Controls.Add(okButton);
+            Button okButton = new();
+            okButton.DialogResult = DialogResult.OK;
+            okButton.Name = "okButton";
+            okButton.Size = new Size(75, 23);
+            okButton.Text = "&OK";
+            okButton.Location = new Point(size.Width - 80 - 80, 39);
+            inputBox.Controls.Add(okButton);
 
-                Button cancelButton = new();
-                cancelButton.DialogResult = DialogResult.Cancel;
-                cancelButton.Name = "cancelButton";
-                cancelButton.Size = new Size(75, 23);
-                cancelButton.Text = "&Cancel";
-                cancelButton.Location = new Point(size.Width - 80, 39);
-                inputBox.Controls.Add(cancelButton);
+            Button cancelButton = new();
+            cancelButton.DialogResult = DialogResult.Cancel;
+            cancelButton.Name = "cancelButton";
+            cancelButton.Size = new Size(75, 23);
+            cancelButton.Text = "&Cancel";
+            cancelButton.Location = new Point(size.Width - 80, 39);
+            inputBox.Controls.Add(cancelButton);
 
-                inputBox.AcceptButton = okButton;
-                inputBox.CancelButton = cancelButton;
+            inputBox.AcceptButton = okButton;
+            inputBox.CancelButton = cancelButton;
 
-                result = inputBox.ShowDialog(this);
-                input = textBox.Text;
-            }
+            result = inputBox.ShowDialog(this);
+            input = textBox.Text;
 
             return result;
         }
@@ -636,17 +664,11 @@ namespace CelesteStudio {
             // ReSharper disable once FunctionNeverReturns
         }
 
-        public void EnableStudio(bool hooked) {
+        private void EnableStudio(bool hooked) {
             if (hooked) {
                 try {
-                    string fileName = defaultFileName;
-                    if (!File.Exists(fileName)) {
-                        File.WriteAllText(fileName, string.Empty);
-                    }
-
                     if (string.IsNullOrEmpty(CurrentFileName)) {
-                        tasText.OpenBindingFile(fileName, Encoding.ASCII);
-                        CurrentFileName = fileName;
+                        newFileToolStripMenuItem_Click(null, null);
                     }
 
                     tasText.Focus();
@@ -661,13 +683,15 @@ namespace CelesteStudio {
                     && string.IsNullOrEmpty(CurrentFileName)) {
                     CurrentFileName = Settings.Default.LastFileName;
                     tasText.ReloadFile();
+                } else {
+                    newFileToolStripMenuItem_Click(null, null);
                 }
 
                 StudioCommunicationServer.Run();
             }
         }
 
-        public void UpdateValues() {
+        private void UpdateValues() {
             if (InvokeRequired) {
                 Invoke((Action) UpdateValues);
             } else {
@@ -918,12 +942,6 @@ namespace CelesteStudio {
             e.DisplayedLineText = record.ToString();
         }
 
-        private void tasText_FileOpened(object sender, EventArgs e) {
-            try {
-                tasText.SaveFile();
-            } catch { }
-        }
-
         private bool IsFileReadable(string fileName) {
             try {
                 using (FileStream stream = File.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.None)) {
@@ -949,6 +967,9 @@ namespace CelesteStudio {
             sendInputsToCelesteMenuItem.Checked = Settings.Default.UpdatingHotkeys;
             autoRemoveExclusiveActionsToolStripMenuItem.Checked = Settings.Default.AutoRemoveMutuallyExclusiveActions;
             showGameInfoToolStripMenuItem.Checked = Settings.Default.ShowGameInfo;
+            enabledAutoBackupToolStripMenuItem.Checked = Settings.Default.AutoBackupEnabled;
+            backupRateToolStripMenuItem.Text = $"Backup Rate (minutes): {Settings.Default.AutoBackupRate}";
+            backupFileCountsToolStripMenuItem.Text = $"Backup File Count: {Settings.Default.AutoBackupCount}";
         }
 
         private void openPreviousFileToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -975,6 +996,7 @@ namespace CelesteStudio {
 
         private void fileToolStripMenuItem_DropDownOpened(object sender, EventArgs e) {
             CreateRecentFilesMenu();
+            CreateBackupFilesMenu();
             openPreviousFileToolStripMenuItem.Enabled = RecentFiles.Count >= 2;
         }
 
@@ -1131,6 +1153,7 @@ namespace CelesteStudio {
 
         private void showGameInfoToolStripMenuItem_Click(object sender, EventArgs e) {
             Settings.Default.ShowGameInfo = !Settings.Default.ShowGameInfo;
+            SaveSettings();
         }
 
         private void convertToLibTASInputsToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -1233,6 +1256,41 @@ namespace CelesteStudio {
 
         private void setCustomInfoTemplateFromClipboardToolStripMenuItem_Click(object sender, EventArgs e) {
             StudioCommunicationServer.instance?.ToggleGameSetting("Set Custom Info Template From Clipboard");
+        }
+
+        private void enabledAutoBackupToolStripMenuItem_Click(object sender, EventArgs e) {
+            Settings.Default.AutoBackupEnabled = !Settings.Default.AutoBackupEnabled;
+            SaveSettings();
+        }
+
+        private void backupRateToolStripMenuItem_Click(object sender, EventArgs e) {
+            string origRate = Settings.Default.AutoBackupRate.ToString();
+            if (ShowInputDialog("Backup Rate (minutes)", ref origRate) != DialogResult.OK) {
+                return;
+            }
+
+            if (string.IsNullOrEmpty(origRate)) {
+                Settings.Default.AutoBackupRate = 0;
+            } else if (int.TryParse(origRate, out int count)) {
+                Settings.Default.AutoBackupRate = Math.Max(0, count);
+            }
+
+            backupRateToolStripMenuItem.Text = $"Backup Rate (minutes): {Settings.Default.AutoBackupRate}";
+        }
+
+        private void backupFileCountsToolStripMenuItem_Click(object sender, EventArgs e) {
+            string origCount = Settings.Default.AutoBackupCount.ToString();
+            if (ShowInputDialog("Backup File Count", ref origCount) != DialogResult.OK) {
+                return;
+            }
+
+            if (string.IsNullOrEmpty(origCount)) {
+                Settings.Default.AutoBackupCount = 0;
+            } else if (int.TryParse(origCount, out int count)) {
+                Settings.Default.AutoBackupCount = Math.Max(0, count);
+            }
+
+            backupFileCountsToolStripMenuItem.Text = $"Backup File Count: {Settings.Default.AutoBackupCount}";
         }
     }
 }

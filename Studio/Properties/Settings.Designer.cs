@@ -116,5 +116,41 @@ namespace CelesteStudio.Properties {
                 this["RecentFiles"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool AutoBackupEnabled {
+            get {
+                return ((bool)(this["AutoBackupEnabled"]));
+            }
+            set {
+                this["AutoBackupEnabled"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public int AutoBackupRate {
+            get {
+                return ((int)(this["AutoBackupRate"]));
+            }
+            set {
+                this["AutoBackupRate"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("100")]
+        public int AutoBackupCount {
+            get {
+                return ((int)(this["AutoBackupCount"]));
+            }
+            set {
+                this["AutoBackupCount"] = value;
+            }
+        }
     }
 }

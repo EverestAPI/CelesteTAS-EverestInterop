@@ -41,13 +41,18 @@ namespace CelesteStudio {
             this.openFileMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openPreviousFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openRecentMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.openBackupToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator15 = new System.Windows.Forms.ToolStripSeparator();
             this.saveAsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.convertToLibTASInputsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.settingsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.sendInputsToCelesteMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.autoRemoveExclusiveActionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.showGameInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.autoBackupToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.enabledAutoBackupToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.backupRateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.backupFileCountsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.fontToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toggleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toggleHitboxesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -177,7 +182,7 @@ namespace CelesteStudio {
             // 
             // fileToolStripMenuItem
             // 
-            this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.newFileToolStripMenuItem, this.toolStripSeparator7, this.openFileMenuItem, this.openPreviousFileToolStripMenuItem, this.openRecentMenuItem, this.toolStripSeparator1, this.saveAsToolStripMenuItem, this.convertToLibTASInputsToolStripMenuItem});
+            this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.newFileToolStripMenuItem, this.toolStripSeparator7, this.openFileMenuItem, this.openPreviousFileToolStripMenuItem, this.openRecentMenuItem, this.openBackupToolStripMenuItem, this.toolStripSeparator15, this.saveAsToolStripMenuItem, this.convertToLibTASInputsToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(52, 20);
             this.fileToolStripMenuItem.Text = "&File";
@@ -187,7 +192,7 @@ namespace CelesteStudio {
             // 
             this.newFileToolStripMenuItem.Name = "newFileToolStripMenuItem";
             this.newFileToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
-            this.newFileToolStripMenuItem.Text = "New File";
+            this.newFileToolStripMenuItem.Text = "&New File";
             this.newFileToolStripMenuItem.Click += new System.EventHandler(this.newFileToolStripMenuItem_Click);
             // 
             // toolStripSeparator7
@@ -207,7 +212,7 @@ namespace CelesteStudio {
             // 
             this.openPreviousFileToolStripMenuItem.Name = "openPreviousFileToolStripMenuItem";
             this.openPreviousFileToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
-            this.openPreviousFileToolStripMenuItem.Text = "Open Previous File";
+            this.openPreviousFileToolStripMenuItem.Text = "Open &Previous File";
             this.openPreviousFileToolStripMenuItem.Click += new System.EventHandler(this.openPreviousFileToolStripMenuItem_Click);
             // 
             // openRecentMenuItem
@@ -216,10 +221,16 @@ namespace CelesteStudio {
             this.openRecentMenuItem.Size = new System.Drawing.Size(292, 22);
             this.openRecentMenuItem.Text = "Open &Recent";
             // 
-            // toolStripSeparator1
+            // openBackupToolStripMenuItem
             // 
-            this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(289, 6);
+            this.openBackupToolStripMenuItem.Name = "openBackupToolStripMenuItem";
+            this.openBackupToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.openBackupToolStripMenuItem.Text = "Open &Backup";
+            // 
+            // toolStripSeparator15
+            // 
+            this.toolStripSeparator15.Name = "toolStripSeparator15";
+            this.toolStripSeparator15.Size = new System.Drawing.Size(289, 6);
             // 
             // saveAsToolStripMenuItem
             // 
@@ -233,12 +244,12 @@ namespace CelesteStudio {
             // 
             this.convertToLibTASInputsToolStripMenuItem.Name = "convertToLibTASInputsToolStripMenuItem";
             this.convertToLibTASInputsToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
-            this.convertToLibTASInputsToolStripMenuItem.Text = "Convert to LibTAS Inputs...";
+            this.convertToLibTASInputsToolStripMenuItem.Text = "&Convert to LibTAS Inputs...";
             this.convertToLibTASInputsToolStripMenuItem.Click += new System.EventHandler(this.convertToLibTASInputsToolStripMenuItem_Click);
             // 
             // settingsToolStripMenuItem
             // 
-            this.settingsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.sendInputsToCelesteMenuItem, this.autoRemoveExclusiveActionsToolStripMenuItem, this.showGameInfoToolStripMenuItem, this.fontToolStripMenuItem});
+            this.settingsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.sendInputsToCelesteMenuItem, this.autoRemoveExclusiveActionsToolStripMenuItem, this.showGameInfoToolStripMenuItem, this.autoBackupToolStripMenuItem, this.fontToolStripMenuItem});
             this.settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
             this.settingsToolStripMenuItem.Size = new System.Drawing.Size(84, 20);
             this.settingsToolStripMenuItem.Text = "&Settings";
@@ -265,6 +276,36 @@ namespace CelesteStudio {
             this.showGameInfoToolStripMenuItem.Size = new System.Drawing.Size(380, 22);
             this.showGameInfoToolStripMenuItem.Text = "Show Game Info";
             this.showGameInfoToolStripMenuItem.Click += new System.EventHandler(this.showGameInfoToolStripMenuItem_Click);
+            // 
+            // autoBackupToolStripMenuItem
+            // 
+            this.autoBackupToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.enabledAutoBackupToolStripMenuItem, this.backupRateToolStripMenuItem, this.backupFileCountsToolStripMenuItem});
+            this.autoBackupToolStripMenuItem.Name = "autoBackupToolStripMenuItem";
+            this.autoBackupToolStripMenuItem.Size = new System.Drawing.Size(380, 22);
+            this.autoBackupToolStripMenuItem.Text = "Automatic Backup";
+            // 
+            // enabledAutoBackupToolStripMenuItem
+            // 
+            this.enabledAutoBackupToolStripMenuItem.Checked = true;
+            this.enabledAutoBackupToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.enabledAutoBackupToolStripMenuItem.Name = "enabledAutoBackupToolStripMenuItem";
+            this.enabledAutoBackupToolStripMenuItem.Size = new System.Drawing.Size(244, 22);
+            this.enabledAutoBackupToolStripMenuItem.Text = "Enabled";
+            this.enabledAutoBackupToolStripMenuItem.Click += new System.EventHandler(this.enabledAutoBackupToolStripMenuItem_Click);
+            // 
+            // backupRateToolStripMenuItem
+            // 
+            this.backupRateToolStripMenuItem.Name = "backupRateToolStripMenuItem";
+            this.backupRateToolStripMenuItem.Size = new System.Drawing.Size(244, 22);
+            this.backupRateToolStripMenuItem.Text = "Backup Rate (minutes)";
+            this.backupRateToolStripMenuItem.Click += new System.EventHandler(this.backupRateToolStripMenuItem_Click);
+            // 
+            // backupFileCountsToolStripMenuItem
+            // 
+            this.backupFileCountsToolStripMenuItem.Name = "backupFileCountsToolStripMenuItem";
+            this.backupFileCountsToolStripMenuItem.Size = new System.Drawing.Size(244, 22);
+            this.backupFileCountsToolStripMenuItem.Text = "Backup File Count";
+            this.backupFileCountsToolStripMenuItem.Click += new System.EventHandler(this.backupFileCountsToolStripMenuItem_Click);
             // 
             // fontToolStripMenuItem
             // 
@@ -649,6 +690,7 @@ namespace CelesteStudio {
             this.tasText.BackBrush = null;
             this.tasText.ChangedLineColor = System.Drawing.Color.DarkOrange;
             this.tasText.CommentPrefix = "#";
+            this.tasText.CurrentFileName = null;
             this.tasText.CurrentLineColor = System.Drawing.Color.FromArgb(((int) (((byte) (64)))), ((int) (((byte) (64)))), ((int) (((byte) (64)))));
             this.tasText.CurrentLineText = null;
             this.tasText.Cursor = System.Windows.Forms.Cursors.IBeam;
@@ -656,7 +698,6 @@ namespace CelesteStudio {
             this.tasText.Font = new System.Drawing.Font("Courier New", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte) (0)));
             this.tasText.ForeColor = System.Drawing.Color.Black;
             this.tasText.Language = CelesteStudio.RichText.Language.TAS;
-            this.tasText.CurrentFileName = null;
             this.tasText.LineNumberColor = System.Drawing.Color.Black;
             this.tasText.Location = new System.Drawing.Point(0, 24);
             this.tasText.Name = "tasText";
@@ -668,7 +709,6 @@ namespace CelesteStudio {
             this.tasText.TextChanged += new System.EventHandler<CelesteStudio.RichText.TextChangedEventArgs>(this.tasText_TextChanged);
             this.tasText.NoChanges += new System.EventHandler(this.tasText_NoChanges);
             this.tasText.FileOpening += new System.EventHandler(this.tasText_FileOpening);
-            this.tasText.FileOpened += new System.EventHandler(this.tasText_FileOpened);
             this.tasText.LineInserted += new System.EventHandler<CelesteStudio.RichText.LineInsertedEventArgs>(this.tasText_LineInserted);
             this.tasText.LineNeeded += new System.EventHandler<CelesteStudio.RichText.LineNeededEventArgs>(this.tasText_LineNeeded);
             this.tasText.LineRemoved += new System.EventHandler<CelesteStudio.RichText.LineRemovedEventArgs>(this.tasText_LineRemoved);
@@ -739,6 +779,24 @@ namespace CelesteStudio {
             this.ResumeLayout(false);
             this.PerformLayout();
         }
+
+        private System.Windows.Forms.ToolStripMenuItem openBackupToolStripMenuItem;
+
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator15;
+
+        private System.Windows.Forms.ToolStripTextBox backupRateToolStripTextBox1;
+
+        private System.Windows.Forms.ToolStripTextBox backupFileCountToolStripTextBox1;
+
+        private System.Windows.Forms.ToolStripTextBox toolStripTextBox1;
+
+        private System.Windows.Forms.ToolStripTextBox backRateToolStripTextBox1;
+        private System.Windows.Forms.ToolStripMenuItem backupFileCountsToolStripMenuItem;
+
+        private System.Windows.Forms.ToolStripMenuItem backupRateToolStripMenuItem;
+
+        private System.Windows.Forms.ToolStripMenuItem autoBackupToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem enabledAutoBackupToolStripMenuItem;
 
         private System.Windows.Forms.ToolStripMenuItem openPreviousFileToolStripMenuItem;
 
@@ -823,7 +881,6 @@ namespace CelesteStudio {
         private System.Windows.Forms.ToolStripMenuItem insertRemoveBreakPointToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem insertRemoveSavestateBreakPointToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem saveAsToolStripMenuItem;
-        private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.ToolStripMenuItem commentUncommentTextToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem removeAllBreakpointsToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;

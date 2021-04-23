@@ -5,10 +5,12 @@ using System.Drawing;
 using System.Drawing.Design;
 using System.Drawing.Drawing2D;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
+using CelesteStudio.Properties;
 
 namespace CelesteStudio.RichText {
     public class RichText : UserControl {
@@ -1099,6 +1101,18 @@ namespace CelesteStudio.RichText {
 
                 SelectionStyle = new SelectionStyle(new SolidBrush(selectionColor));
                 Invalidate();
+            }
+        }
+
+        public string BackupFolder {
+            get {
+                string validDir = $"{Path.GetFileName(CurrentFileName)}-{CurrentFileName.GetHashCode()}";
+                string backupDir = Path.Combine(Directory.GetCurrentDirectory(), "TAS Files", "Backups", validDir);
+                if (!Directory.Exists(backupDir)) {
+                    Directory.CreateDirectory(backupDir);
+                }
+
+                return backupDir;
             }
         }
 
@@ -2194,21 +2208,20 @@ namespace CelesteStudio.RichText {
         public bool OpenFile(string fileName) {
             lastModifiers = Keys.None;
             if (string.IsNullOrEmpty(fileName) || !File.Exists(fileName)) {
-                using (OpenFileDialog diag = new()) {
-                    diag.Filter = "TAS|*.tas";
-                    diag.FilterIndex = 0;
-                    if (!string.IsNullOrEmpty(CurrentFileName)) {
-                        diag.InitialDirectory = Path.GetDirectoryName(CurrentFileName);
-                    } else if (Environment.OSVersion.Platform == PlatformID.Unix
-                               && Directory.Exists("~/.steam/steam/steamapps/common/Celeste")) {
-                        diag.InitialDirectory = Path.GetFullPath("~/.steam/steam/steamapps/common/Celeste");
-                    }
+                using OpenFileDialog diag = new();
+                diag.Filter = "TAS|*.tas";
+                diag.FilterIndex = 0;
+                if (!string.IsNullOrEmpty(CurrentFileName)) {
+                    diag.InitialDirectory = Path.GetDirectoryName(CurrentFileName);
+                } else if (Environment.OSVersion.Platform == PlatformID.Unix
+                           && Directory.Exists("~/.steam/steam/steamapps/common/Celeste")) {
+                    diag.InitialDirectory = Path.GetFullPath("~/.steam/steam/steamapps/common/Celeste");
+                }
 
-                    if (diag.ShowDialog() == DialogResult.OK) {
-                        CurrentFileName = diag.FileName;
-                        OpenBindingFile(diag.FileName, Encoding.ASCII);
-                        return true;
-                    }
+                if (diag.ShowDialog() == DialogResult.OK) {
+                    CurrentFileName = diag.FileName;
+                    OpenBindingFile(diag.FileName, Encoding.ASCII);
+                    return true;
                 }
             } else {
                 CurrentFileName = fileName;
@@ -2227,28 +2240,53 @@ namespace CelesteStudio.RichText {
 
         public void SaveNewFile() {
             lastModifiers = Keys.None;
-            using (SaveFileDialog diag = new()) {
-                diag.DefaultExt = ".tas";
-                diag.AddExtension = true;
-                diag.Filter = "TAS|*.tas";
-                diag.FilterIndex = 0;
-                if (!string.IsNullOrEmpty(CurrentFileName)) {
-                    diag.InitialDirectory = Path.GetDirectoryName(CurrentFileName);
-                    diag.FileName = Path.GetFileName(CurrentFileName);
-                } else {
-                    diag.FileName = "Kalimba.tas";
-                }
+            using SaveFileDialog diag = new();
+            diag.DefaultExt = ".tas";
+            diag.AddExtension = true;
+            diag.Filter = "TAS|*.tas";
+            diag.FilterIndex = 0;
+            if (!string.IsNullOrEmpty(CurrentFileName)) {
+                diag.InitialDirectory = Path.GetDirectoryName(CurrentFileName);
+                diag.FileName = Path.GetFileName(CurrentFileName);
+            } else {
+                diag.FileName = "Kalimba.tas";
+            }
 
-                if (diag.ShowDialog() == DialogResult.OK) {
-                    CurrentFileName = diag.FileName;
-                    SaveFile();
-                }
+            if (diag.ShowDialog() == DialogResult.OK) {
+                CurrentFileName = diag.FileName;
+                SaveFile();
             }
         }
 
         public void SaveFile() {
             FileSaving?.Invoke(this, new EventArgs());
             SaveToFile(CurrentFileName, Encoding.ASCII);
+            TryBackupFile();
+        }
+
+        private void TryBackupFile() {
+            if (!Settings.Default.AutoBackupEnabled) {
+                return;
+            }
+
+            string backupDir = BackupFolder;
+            string[] files = Directory.GetFiles(backupDir);
+            if (files.Length > 0) {
+                DateTime lastFileTime = File.GetLastWriteTime(files.Last());
+                if (Settings.Default.AutoBackupRate > 0 && lastFileTime.AddMinutes(Settings.Default.AutoBackupRate) > DateTime.Now) {
+                    return;
+                }
+
+                if (Settings.Default.AutoBackupCount > 0 && files.Length >= Settings.Default.AutoBackupCount) {
+                    foreach (string path in files.Take(files.Length - Settings.Default.AutoBackupCount + 1)) {
+                        File.Delete(path);
+                    }
+                }
+            }
+
+            string backupFileName = Path.Combine(backupDir,
+                Path.GetFileNameWithoutExtension(CurrentFileName) + DateTime.Now.ToString("_yyyy_MM-dd_HH-mm-ss-fff") + ".tas");
+            File.Copy(CurrentFileName, Path.Combine(backupDir, backupFileName));
         }
 
         protected override void OnKeyDown(KeyEventArgs e) {
