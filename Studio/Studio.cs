@@ -474,9 +474,8 @@ namespace CelesteStudio {
             }
 
             RecentFiles.Insert(0, CurrentFileName);
-            SaveSettings();
-
             Settings.Default.LastFileName = CurrentFileName;
+            SaveSettings();
         }
 
         private void ClearUncommentedBreakpoints() {
@@ -683,8 +682,6 @@ namespace CelesteStudio {
                     && string.IsNullOrEmpty(CurrentFileName)) {
                     CurrentFileName = Settings.Default.LastFileName;
                     tasText.ReloadFile();
-                } else {
-                    newFileToolStripMenuItem_Click(null, null);
                 }
 
                 StudioCommunicationServer.Run();

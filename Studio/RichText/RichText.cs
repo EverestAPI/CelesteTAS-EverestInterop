@@ -3543,7 +3543,9 @@ namespace CelesteStudio.RichText {
 
         protected override void OnMouseUp(MouseEventArgs e) {
             base.OnMouseUp(e);
-            mouseIsDrag = false;
+            if ((e.Button & MouseButtons.Left) != 0) {
+                mouseIsDrag = false;
+            }
         }
 
         private void CheckAndChangeSelectionType() {
