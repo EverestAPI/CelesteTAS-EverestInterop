@@ -1155,6 +1155,9 @@ namespace CelesteStudio {
         private void showGameInfoToolStripMenuItem_Click(object sender, EventArgs e) {
             Settings.Default.ShowGameInfo = !Settings.Default.ShowGameInfo;
             SaveSettings();
+            if (Settings.Default.ShowGameInfo) {
+                StudioCommunicationServer.instance?.ExternalReset();
+            }
         }
 
         private void convertToLibTASInputsToolStripMenuItem_Click(object sender, EventArgs e) {
