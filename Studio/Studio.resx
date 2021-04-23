@@ -134,22 +134,25 @@
 locking it to a circular or square deadzone, or calculating the closest position possible on a controller.
 Odds are you don't need to worry about this.</value>
   </data>
-  <metadata name="fontDialog.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>821, 17</value>
-  </metadata>
-  <metadata name="statusBar.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>280, 20</value>
-  </metadata>
-  <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-  <data name="$this.Icon" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-    <value>
-        AAABAAYAICAQAAEABADoAgAAZgAAABAQEAABAAQAKAEAAE4DAAAwMAAAAQAIAKgOAAB2BAAAICAAAAEA
-        CACoCAAAHhMAABgYAAABAAgAyAYAAMYbAAAQEAAAAQAIAGgFAACOIgAAKAAAACAAAABAAAAAAQAEAAAA
-        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAIAAAACAgACAAAAAgACAAICAAACAgIAAwMDAAAAA
-        /wAA/wAAAP//AP8AAAD/AP8A//8AAP///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADuLAAAAAAAAAAAAAAAAAAC4uwAAAAAA
-        AAAAAAAAAAF7kzG7AAAAAAAAAAAAAAAAizMziwAAAAAAAAAAAAAAuzMzMzW4AAAAAAAAAAAAALgzc5Mz
-        uwAAAAAAAAAAAHsxubi7M3G7AAAAAAAAAAC7Mbe3t5MztxAAAAAAAAAAl7i7Mbe7ezMAAAAAAAAAADO5
+    <metadata name="fontDialog.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+        <value>821, 17</value>
+    </metadata>
+    <metadata name="statusBar.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+        <value>280, 20</value>
+    </metadata>
+    <metadata name="statusBar.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+        <value>280, 20</value>
+    </metadata>
+    <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+    <data name="$this.Icon" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>
+            AAABAAYAICAQAAEABADoAgAAZgAAABAQEAABAAQAKAEAAE4DAAAwMAAAAQAIAKgOAAB2BAAAICAAAAEA
+            CACoCAAAHhMAABgYAAABAAgAyAYAAMYbAAAQEAAAAQAIAGgFAACOIgAAKAAAACAAAABAAAAAAQAEAAAA
+            AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAIAAAACAgACAAAAAgACAAICAAACAgIAAwMDAAAAA
+            /wAA/wAAAP//AP8AAAD/AP8A//8AAP///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+            AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADuLAAAAAAAAAAAAAAAAAAC4uwAAAAAA
+            AAAAAAAAAAF7kzG7AAAAAAAAAAAAAAAAizMziwAAAAAAAAAAAAAAuzMzMzW4AAAAAAAAAAAAALgzc5Mz
+            uwAAAAAAAAAAAHsxubi7M3G7AAAAAAAAAAC7Mbe3t5MztxAAAAAAAAAAl7i7Mbe7ezMAAAAAAAAAADO5
         t5O7uLlzAAAAAAAAAACLt7u4uLe7iwAAAAAAAAAAu4uzizubt7sAAAAAAAAAAHM7e7e7izNzAAAAAAAA
         AAAzuLO4s4s3MwAAAAAAAAAAABcxMzMzEQAAAAAAAAAAAAATE1NTU3EAAAAAAAAAAAAAAAAAAAAAAAAA
         AAAAAAAAAAAAAAAAAAAAAAAAAAAAcTO3uzMzubszMwAAAAAAADMze7czM7e4M1MAAAAAAABxu3uVGVOR

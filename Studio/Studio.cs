@@ -648,7 +648,7 @@ namespace CelesteStudio {
 
                     if (hooked) {
                         UpdateValues();
-                        ScrollLeftWhenOutOfMinimized();
+                        FixSomeBugsWhenOutOfMinimized();
                         tasText.Invalidate();
                         if (CommunicationWrapper.fastForwarding) {
                             CommunicationWrapper.CheckFastForward();
@@ -720,9 +720,10 @@ namespace CelesteStudio {
             }
         }
 
-        private void ScrollLeftWhenOutOfMinimized() {
+        private void FixSomeBugsWhenOutOfMinimized() {
             if (lastWindowState == FormWindowState.Minimized && WindowState == FormWindowState.Normal) {
                 tasText.ScrollLeft();
+                StudioCommunicationServer.instance?.ExternalReset();
             }
 
             lastWindowState = WindowState;
