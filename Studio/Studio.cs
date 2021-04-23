@@ -36,6 +36,7 @@ namespace CelesteStudio {
         private bool updating;
 
         public Studio() {
+            InitSettings();
             InitializeComponent();
             InitMenu();
             InitDragDrop();
@@ -144,6 +145,10 @@ namespace CelesteStudio {
                     }
                 }
             }
+        }
+
+        private void InitSettings() {
+            Settings.Default.Upgrade();
         }
 
         private void InitMenu() {
@@ -258,7 +263,7 @@ namespace CelesteStudio {
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData) {
             // if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN)
-            if ((msg.Msg == 0x100) || (msg.Msg == 0x104)) {
+            if (msg.Msg is 0x100 or 0x104) {
                 if (!tasText.IsChanged && CommunicationWrapper.CheckControls(ref msg)) {
                     return true;
                 }
