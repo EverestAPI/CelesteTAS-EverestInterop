@@ -2285,7 +2285,7 @@ namespace CelesteStudio.RichText {
             }
 
             string backupFileName = Path.Combine(backupDir,
-                Path.GetFileNameWithoutExtension(CurrentFileName) + DateTime.Now.ToString("_yyyy_MM-dd_HH-mm-ss-fff") + ".tas");
+                Path.GetFileNameWithoutExtension(CurrentFileName) + DateTime.Now.ToString("_yyyy-MM-dd_HH-mm-ss-fff") + ".tas");
             File.Copy(CurrentFileName, Path.Combine(backupDir, backupFileName));
         }
 
