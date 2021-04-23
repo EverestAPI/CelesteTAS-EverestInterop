@@ -3541,6 +3541,11 @@ namespace CelesteStudio.RichText {
             }
         }
 
+        protected override void OnMouseUp(MouseEventArgs e) {
+            base.OnMouseUp(e);
+            mouseIsDrag = false;
+        }
+
         private void CheckAndChangeSelectionType() {
             //change selection type to ColumnSelectionMode
             if ((ModifierKeys & Keys.Alt) != 0 && !WordWrap) {
