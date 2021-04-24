@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -180,7 +179,7 @@ namespace TAS {
                     string miscStats = $"Stamina: {player.Stamina:0} "
                                        + (WallJumpCheck(player, 1) ? "Wall-R " : string.Empty)
                                        + (WallJumpCheck(player, -1) ? "Wall-L " : string.Empty)
-                                       + (PlayerState) player.StateMachine.State;
+                                       + PlayerStates.GetStateName(player.StateMachine.State);
 
                     int dashCooldown = (int) (DashCooldownTimer(player) * FramesPerSecond);
 
@@ -402,7 +401,7 @@ namespace TAS {
                     if (controller.CurrentFrame > 0 && controller.Inputs.Count > 0) {
                         output = string.Join("\t",
                             controller.Previous.Line, controller.Previous, controller.CurrentFrame - 1, time, pos, speed,
-                            (PlayerState) player.StateMachine.State,
+                            PlayerStates.GetStateName(player.StateMachine.State),
                             statuses);
                     }
 
@@ -470,34 +469,49 @@ namespace TAS {
         private delegate float GetPlayerSeekerDashTimer(PlayerSeeker playerSeeker);
     }
 
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    internal enum PlayerState {
-        StNormal = Player.StNormal,
-        StClimb = Player.StClimb,
-        StDash = Player.StDash,
-        StSwim = Player.StSwim,
-        StBoost = Player.StBoost,
-        StRedDash = Player.StRedDash,
-        StHitSquash = Player.StHitSquash,
-        StLaunch = Player.StLaunch,
-        StPickup = Player.StPickup,
-        StDreamDash = Player.StDreamDash,
-        StSummitLaunch = Player.StSummitLaunch,
-        StDummy = Player.StDummy,
-        StIntroWalk = Player.StIntroWalk,
-        StIntroJump = Player.StIntroJump,
-        StIntroRespawn = Player.StIntroRespawn,
-        StIntroWakeUp = Player.StIntroWakeUp,
-        StBirdDashTutorial = Player.StBirdDashTutorial,
-        StFrozen = Player.StFrozen,
-        StReflectionFall = Player.StReflectionFall,
-        StStarFly = Player.StStarFly,
-        StTempleFall = Player.StTempleFall,
-        StCassetteFly = Player.StCassetteFly,
-        StAttract = Player.StAttract,
-        StIntroMoonJump = Player.StIntroMoonJump,
-        StFlingBird = Player.StFlingBird,
-        StIntroThinkForABit = Player.StIntroThinkForABit
+    public static class PlayerStates {
+        private static readonly IDictionary<int, string> States = new Dictionary<int, string> {
+            {Player.StNormal, "StNormal"},
+            {Player.StClimb, "StClimb"},
+            {Player.StDash, "StDash"},
+            {Player.StSwim, "StSwim"},
+            {Player.StBoost, "StBoost"},
+            {Player.StRedDash, "StRedDash"},
+            {Player.StHitSquash, "StHitSquash"},
+            {Player.StLaunch, "StLaunch"},
+            {Player.StPickup, "StPickup"},
+            {Player.StDreamDash, "StDreamDash"},
+            {Player.StSummitLaunch, "StSummitLaunch"},
+            {Player.StDummy, "StDummy"},
+            {Player.StIntroWalk, "StIntroWalk"},
+            {Player.StIntroJump, "StIntroJump"},
+            {Player.StIntroRespawn, "StIntroRespawn"},
+            {Player.StIntroWakeUp, "StIntroWakeUp"},
+            {Player.StBirdDashTutorial, "StBirdDashTutorial"},
+            {Player.StFrozen, "StFrozen"},
+            {Player.StReflectionFall, "StReflectionFall"},
+            {Player.StStarFly, "StStarFly"},
+            {Player.StTempleFall, "StTempleFall"},
+            {Player.StCassetteFly, "StCassetteFly"},
+            {Player.StAttract, "StAttract"},
+            {Player.StIntroMoonJump, "StIntroMoonJump"},
+            {Player.StFlingBird, "StFlingBird"},
+            {Player.StIntroThinkForABit, "StIntroThinkForABit"},
+        };
+
+        public static string GetStateName(int state) {
+            return States.ContainsKey(state) ? States[state] : state.ToString();
+        }
+
+        // ReSharper disable once UnusedMember.Global
+        public static void Register(int state, string stateName) {
+            States[state] = stateName;
+        }
+
+        // ReSharper disable once UnusedMember.Global
+        public static bool Unregister(int state) {
+            return States.Remove(state);
+        }
     }
 
     // ReSharper disable once StructCanBeMadeReadOnly
