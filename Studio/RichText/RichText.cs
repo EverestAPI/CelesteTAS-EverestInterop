@@ -1107,12 +1107,7 @@ namespace CelesteStudio.RichText {
         public string BackupFolder {
             get {
                 string validDir = $"{Path.GetFileName(CurrentFileName)}-{CurrentFileName.GetHashCode()}";
-                string backupDir = Path.Combine(Directory.GetCurrentDirectory(), "TAS Files", "Backups", validDir);
-                if (!Directory.Exists(backupDir)) {
-                    Directory.CreateDirectory(backupDir);
-                }
-
-                return backupDir;
+                return Path.Combine(Directory.GetCurrentDirectory(), "TAS Files", "Backups", validDir);
             }
         }
 
@@ -2270,6 +2265,10 @@ namespace CelesteStudio.RichText {
             }
 
             string backupDir = BackupFolder;
+            if (!Directory.Exists(backupDir)) {
+                Directory.CreateDirectory(backupDir);
+            }
+
             string[] files = Directory.GetFiles(backupDir);
             if (files.Length > 0) {
                 DateTime lastFileTime = File.GetLastWriteTime(files.Last());

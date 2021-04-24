@@ -181,6 +181,10 @@ namespace CelesteStudio {
                     Directory.Delete(backupFolder, true);
                     return;
                 } else if (clickedItem.Text == "Open Backup Folder") {
+                    if (!Directory.Exists(backupFolder)) {
+                        Directory.CreateDirectory(backupFolder);
+                    }
+
                     Process.Start(backupFolder);
                     return;
                 }
@@ -238,7 +242,8 @@ namespace CelesteStudio {
 
         private void CreateBackupFilesMenu() {
             openBackupToolStripMenuItem.DropDownItems.Clear();
-            List<string> files = Directory.GetFiles(tasText.BackupFolder).ToList();
+            string backupFolder = tasText.BackupFolder;
+            List<string> files = Directory.Exists(backupFolder) ? Directory.GetFiles(backupFolder).ToList() : new List<string>();
             if (files.Count == 0) {
                 openBackupToolStripMenuItem.DropDownItems.Add(new ToolStripMenuItem("Nothing") {
                     Enabled = false
