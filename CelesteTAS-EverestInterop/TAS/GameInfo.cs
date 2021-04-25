@@ -195,8 +195,8 @@ namespace TAS {
 
                     string statuses = (dashCooldown < 1 && player.Dashes > 0 ? "Dash " : string.Empty)
                                       + (player.LoseShards ? "Ground " : string.Empty)
-                                      + (!player.LoseShards && JumpGraceTimer(player) > 0
-                                          ? $"Coyote({(int) (JumpGraceTimer(player) * FramesPerSecond)})"
+                                      + (!player.LoseShards && (int) (JumpGraceTimer(player) * FramesPerSecond) is var coyote and > 1
+                                          ? $"Coyote({coyote - 1}) "
                                           : string.Empty);
 
                     string noControlFrames = transitionFrames > 0 ? $"({transitionFrames})" : string.Empty;
