@@ -36,7 +36,7 @@ namespace TAS.Input {
             }
         }
 
-        public int StudioFrameCount { get; private set; }
+        public int InputCurrentFrame { get; private set; }
         public int CurrentFrame { get; private set; }
 
         public InputFrame Previous => CurrentFrame - 1 >= 0 ? Inputs[CurrentFrame - 1] : null;
@@ -59,7 +59,7 @@ namespace TAS.Input {
 
         public void RefreshInputs(bool enableRun) {
             if (enableRun) {
-                StudioFrameCount = 0;
+                InputCurrentFrame = 0;
                 CurrentFrame = 0;
             }
 
@@ -108,10 +108,10 @@ namespace TAS.Input {
 
             Manager.SetInputs(Current);
 
-            if (StudioFrameCount == 0 || Current.Line == Previous.Line) {
-                StudioFrameCount++;
+            if (InputCurrentFrame == 0 || Current.Line == Previous.Line) {
+                InputCurrentFrame++;
             } else {
-                StudioFrameCount = 1;
+                InputCurrentFrame = 1;
             }
 
             CurrentFrame++;
@@ -191,13 +191,13 @@ namespace TAS.Input {
 
             clone.usedFiles.AddRange(usedFiles);
             clone.CurrentFrame = CurrentFrame;
-            clone.StudioFrameCount = StudioFrameCount;
+            clone.InputCurrentFrame = InputCurrentFrame;
 
             return clone;
         }
 
         public void CopyFrom(InputController controller) {
-            StudioFrameCount = controller.StudioFrameCount;
+            InputCurrentFrame = controller.InputCurrentFrame;
             CurrentFrame = controller.CurrentFrame;
         }
 

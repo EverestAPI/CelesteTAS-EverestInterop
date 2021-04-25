@@ -61,6 +61,7 @@ namespace TAS {
                 Running = true;
 
                 if (HasFlag(State, State.FrameStep)) {
+                    UpdateManagerStatus();
                     StudioCommunicationClient.Instance?.SendStateAndGameData(CurrentStatus, GameInfo.Status, !ShouldForceState);
                     return;
                 }
@@ -104,14 +105,14 @@ namespace TAS {
         }
 
         public static void UpdateManagerStatus() {
-            string status = string.Join(",", new object[] {
+            CurrentStatus = string.Join(",", new object[] {
                 Controller.Previous.Line,
-                Controller.StudioFrameCount,
+                Controller.InputCurrentFrame,
                 Controller.CurrentFrame,
                 Controller.Inputs.Count,
-                Savestates.StudioHighlightLine
+                Savestates.StudioHighlightLine,
+                State.ToString().Replace(",", "")
             });
-            CurrentStatus = status;
         }
 
         public static bool IsLoading() {

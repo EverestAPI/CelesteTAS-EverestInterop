@@ -153,10 +153,10 @@ namespace TAS.EverestInterop.InfoHUD {
 
                 string currentStr =
                     $"{(current.Line + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - current.Frames.ToString().Length)}{current}";
-                int maxWidth = currentStr.Length + controller.StudioFrameCount.ToString().Length + 1;
+                int maxWidth = currentStr.Length + controller.InputCurrentFrame.ToString().Length + 1;
                 maxWidth = GameInfo.Status.Split('\n').Select(s => s.Length).Concat(new[] {maxWidth}).Max();
                 stringBuilder.AppendLine(
-                    $"{currentStr.PadRight(maxWidth - controller.StudioFrameCount.ToString().Length - 1)}{controller.StudioFrameCount}");
+                    $"{currentStr.PadRight(maxWidth - controller.InputCurrentFrame.ToString().Length - 1)}{controller.InputCurrentFrame}");
                 if (next != null) {
                     stringBuilder.AppendLine(
                         $"{(next.Line + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - next.Frames.ToString().Length)}{next}");

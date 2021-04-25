@@ -31,6 +31,7 @@ namespace CelesteStudio {
         //private GameMemory memory = new GameMemory();
         private DateTime lastChanged = DateTime.MinValue;
         private FormWindowState lastWindowState = FormWindowState.Normal;
+        private string tasState;
         private int totalFrames, currentFrame;
 
         private bool updating;
@@ -57,6 +58,8 @@ namespace CelesteStudio {
 
             Instance = this;
         }
+
+        private bool DisableTyping => !string.IsNullOrEmpty(tasState) && tasState.Contains("Enable") && !tasState.Contains("FrameStep");
 
         private string TitleBarText =>
             (string.IsNullOrEmpty(CurrentFileName) ? "Celeste.tas" : Path.GetFileName(CurrentFileName))
@@ -141,6 +144,10 @@ namespace CelesteStudio {
 
         private void InitMenu() {
             tasText.MouseClick += (sender, args) => {
+                if (DisableTyping) {
+                    return;
+                }
+
                 if ((args.Button & MouseButtons.Right) == MouseButtons.Right) {
                     if (tasText.Selection.IsEmpty) {
                         tasText.Selection.Start = tasText.PointToPlace(args.Location);
@@ -697,9 +704,9 @@ namespace CelesteStudio {
             if (InvokeRequired) {
                 Invoke((Action) UpdateValues);
             } else {
-                string tas = CommunicationWrapper.state;
-                if (!string.IsNullOrEmpty(tas)) {
-                    string[] values = tas.Split(',');
+                string state = CommunicationWrapper.state;
+                if (!string.IsNullOrEmpty(state)) {
+                    string[] values = state.Split(',');
                     int currentLine = int.Parse(values[0]);
                     if (tasText.CurrentLine != currentLine) {
                         tasText.CurrentLine = currentLine;
@@ -709,6 +716,7 @@ namespace CelesteStudio {
                     currentFrame = int.Parse(values[2]);
                     totalFrames = int.Parse(values[3]);
                     tasText.SaveStateLine = int.Parse(values[4]);
+                    tasState = values[5];
                 } else {
                     currentFrame = 0;
                     if (tasText.CurrentLine >= 0) {
@@ -716,7 +724,10 @@ namespace CelesteStudio {
                     }
 
                     tasText.SaveStateLine = -1;
+                    tasState = string.Empty;
                 }
+
+                tasText.ReadOnly = DisableTyping;
 
                 UpdateStatusBar();
             }
