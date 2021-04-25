@@ -874,13 +874,6 @@ namespace CelesteStudio {
 
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator15;
 
-        private System.Windows.Forms.ToolStripTextBox backupRateToolStripTextBox1;
-
-        private System.Windows.Forms.ToolStripTextBox backupFileCountToolStripTextBox1;
-
-        private System.Windows.Forms.ToolStripTextBox toolStripTextBox1;
-
-        private System.Windows.Forms.ToolStripTextBox backRateToolStripTextBox1;
         private System.Windows.Forms.ToolStripMenuItem backupFileCountsToolStripMenuItem;
 
         private System.Windows.Forms.ToolStripMenuItem backupRateToolStripMenuItem;

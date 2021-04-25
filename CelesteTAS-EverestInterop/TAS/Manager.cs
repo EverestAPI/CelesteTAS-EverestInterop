@@ -262,7 +262,7 @@ namespace TAS {
             AllowUnsafeInput = false;
 
             // fix the input that was last held stays for a frame when it ends
-            if (MInput.GamePads.FirstOrDefault(data => data.Attached) is { } gamePadData) {
+            if (MInput.GamePads != null && MInput.GamePads.FirstOrDefault(data => data.Attached) is { } gamePadData) {
                 gamePadData.CurrentState = new GamePadState();
             }
 
