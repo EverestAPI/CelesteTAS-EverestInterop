@@ -24,8 +24,8 @@ namespace CelesteStudio.Communication {
                 return string.Empty;
             }
 
-            int nameStart = gameData.IndexOf('[') + 1;
-            int nameEnd = gameData.IndexOf(']');
+            int nameStart = gameData.LastIndexOf('[') + 1;
+            int nameEnd = gameData.LastIndexOf(']');
             if (nameStart == -1 || nameEnd == -1) {
                 return string.Empty;
             }
