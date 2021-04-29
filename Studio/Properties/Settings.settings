@@ -36,6 +36,9 @@
         <Setting Name="AutoBackupCount" Type="System.Int32" Scope="User">
             <Value Profile="(Default)">100</Value>
         </Setting>
+        <Setting Name="UpgradeTime" Type="System.DateTime" Scope="User">
+            <Value Profile="(Default)">2000-01-01</Value>
+        </Setting>
     </Settings>
 </SettingsFile>
 

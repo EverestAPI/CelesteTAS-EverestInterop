@@ -139,7 +139,10 @@ namespace CelesteStudio {
         }
 
         private void InitSettings() {
-            Settings.Default.Upgrade();
+            if (Settings.Default.UpgradeTime < File.GetLastWriteTime(Assembly.GetEntryAssembly().Location)) {
+                Settings.Default.Upgrade();
+                Settings.Default.UpgradeTime = DateTime.Now;
+            }
         }
 
         private void InitMenu() {
