@@ -190,7 +190,7 @@ namespace TAS {
                         diff = (playerSeeker.GetMoreExactPosition() - LastPlayerSeekerPos) * 60f;
                         velocity = GetAdjustedVelocity(diff);
                         polarVel = $"Chase: {diff.Length():F2}, {diff.Angle():F5}°";
-                        dashCooldown = (int) (PlayerSeekerDashTimer(playerSeeker) * FramesPerSecond);
+                        dashCooldown = (int) Math.Round(PlayerSeekerDashTimer(playerSeeker) * FramesPerSecond);
                     }
 
                     string statuses = (dashCooldown < 1 && player.Dashes > 0 ? "Dash " : string.Empty)
