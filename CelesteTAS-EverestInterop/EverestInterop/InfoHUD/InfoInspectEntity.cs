@@ -26,7 +26,7 @@ namespace TAS.EverestInterop.InfoHUD {
         private static readonly Dictionary<string, IEnumerable<MemberInfo>> CachedMemberInfos = new();
 
         private static readonly List<WeakReference> RequireInspectEntities = new();
-        private static readonly HashSet<string> RequireInspectEntityIds = new();
+        private static readonly HashSet<UniqueEntityId> RequireInspectUniqueEntityIds = new();
         private static readonly HashSet<Entity> InspectingEntities = new();
         private static AreaKey requireInspectAreaKey;
 
@@ -177,11 +177,11 @@ namespace TAS.EverestInterop.InfoHUD {
         private static void InspectingEntity(Entity clickedEntity) {
             requireInspectAreaKey = clickedEntity.SceneAs<Level>().Session.Area;
             if (clickedEntity.LoadEntityData() is { } entityData) {
-                string uniqueId = entityData.ToUniqueId();
-                if (RequireInspectEntityIds.Contains(uniqueId)) {
-                    RequireInspectEntityIds.Remove(uniqueId);
+                UniqueEntityId uniqueEntityId = new(clickedEntity, entityData);
+                if (RequireInspectUniqueEntityIds.Contains(uniqueEntityId)) {
+                    RequireInspectUniqueEntityIds.Remove(uniqueEntityId);
                 } else {
-                    RequireInspectEntityIds.Add(uniqueId);
+                    RequireInspectUniqueEntityIds.Add(uniqueEntityId);
                 }
             } else {
                 if (RequireInspectEntities.FirstOrDefault(reference => reference.Target == clickedEntity) is { } alreadyAdded) {
@@ -231,37 +231,41 @@ namespace TAS.EverestInterop.InfoHUD {
 
         private static void ClearInspectEntities() {
             RequireInspectEntities.Clear();
-            RequireInspectEntityIds.Clear();
+            RequireInspectUniqueEntityIds.Clear();
             InspectingEntities.Clear();
             GameInfo.Update();
         }
 
         public static string GetInspectingEntitiesInfo(string separator = "\n") {
             InspectingEntities.Clear();
+            string inspectingInfo = string.Empty;
             if (Engine.Scene is not Level level) {
                 return string.Empty;
             }
 
-            string inspectingInfo = string.Join(separator, RequireInspectEntities.Where(reference => reference.IsAlive).Select(
-                reference => {
-                    Entity entity = (Entity) reference.Target;
-                    InspectingEntities.Add(entity);
-                    return GetEntityValues(entity, Settings.InfoInspectEntityType, separator);
-                }
-            ));
+            if (RequireInspectEntities.IsNotEmpty()) {
+                inspectingInfo = string.Join(separator, RequireInspectEntities.Where(reference => reference.IsAlive).Select(
+                    reference => {
+                        Entity entity = (Entity) reference.Target;
+                        InspectingEntities.Add(entity);
+                        return GetEntityValues(entity, Settings.InfoInspectEntityType, separator);
+                    }
+                ));
+            }
 
-            Dictionary<string, Entity> allEntities = GetAllEntities(level);
-            string[] entityIds = RequireInspectEntityIds.Where(id => allEntities.ContainsKey(id)).ToArray();
-            if (entityIds.IsNotEmpty()) {
-                if (inspectingInfo.IsNotNullOrEmpty()) {
-                    inspectingInfo += separator;
-                }
+            if (RequireInspectUniqueEntityIds.IsNotEmpty()) {
+                Dictionary<UniqueEntityId, Entity> matchEntities = GetMatchEntities(level);
+                if (matchEntities.IsNotEmpty()) {
+                    if (inspectingInfo.IsNotNullOrEmpty()) {
+                        inspectingInfo += separator;
+                    }
 
-                inspectingInfo += string.Join(separator, entityIds.Select(id => {
-                    Entity entity = allEntities[id];
-                    InspectingEntities.Add(entity);
-                    return GetEntityValues(entity, Settings.InfoInspectEntityType, separator);
-                }));
+                    inspectingInfo += string.Join(separator, matchEntities.Select(pair => {
+                        Entity entity = matchEntities[pair.Key];
+                        InspectingEntities.Add(entity);
+                        return GetEntityValues(entity, Settings.InfoInspectEntityType, separator);
+                    }));
+                }
             }
 
             return inspectingInfo;
@@ -355,22 +359,56 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-        private static Dictionary<string, Entity> GetAllEntities(Level level) {
-            Dictionary<string, Entity> result = new();
+        private static Dictionary<UniqueEntityId, Entity> GetMatchEntities(Level level) {
+            Dictionary<UniqueEntityId, Entity> result = new();
+            List<Entity> possibleEntities = new();
+            HashSet<Type> possibleTypes = new();
 
-            Entity[] entities = level.Entities.FindAll<Entity>().ToArray();
-            foreach (Entity entity in entities) {
+            string currentRoom = level.Session.Level;
+            foreach (UniqueEntityId id in RequireInspectUniqueEntityIds.Where(id => id.GlobalOrPersistent || id.EntityId.Level == currentRoom)) {
+                possibleTypes.Add(id.Type);
+            }
+
+            if (possibleTypes.IsEmpty()) {
+                return result;
+            }
+
+            if (possibleTypes.All(type => level.Tracker.Entities.ContainsKey(type))) {
+                foreach (Type type in possibleTypes) {
+                    possibleEntities.AddRange(level.Tracker.Entities[type]);
+                }
+            } else {
+                possibleEntities.AddRange(level.Entities.Where(entity => possibleTypes.Contains(entity.GetType())));
+            }
+
+            foreach (Entity entity in possibleEntities) {
                 if (entity.LoadEntityData() is not { } entityData) {
                     continue;
                 }
 
-                string uniqueId = entityData.ToUniqueId();
-                if (!result.ContainsKey(uniqueId)) {
-                    result[uniqueId] = entity;
+                UniqueEntityId uniqueEntityId = new(entity, entityData);
+                if (RequireInspectUniqueEntityIds.Contains(uniqueEntityId) && !result.ContainsKey(uniqueEntityId)) {
+                    result[uniqueEntityId] = entity;
+
+                    if (result.Count == RequireInspectUniqueEntityIds.Count) {
+                        return result;
+                    }
                 }
             }
 
             return result;
+        }
+    }
+
+    internal record UniqueEntityId {
+        public readonly Type Type;
+        public readonly bool GlobalOrPersistent;
+        public readonly EntityID EntityId;
+
+        public UniqueEntityId(Entity entity, EntityData entityData) {
+            Type = entity.GetType();
+            GlobalOrPersistent = entity.TagCheck(Tags.Global) || entity.TagCheck(Tags.Persistent);
+            EntityId = entityData.ToEntityId();
         }
     }
 }

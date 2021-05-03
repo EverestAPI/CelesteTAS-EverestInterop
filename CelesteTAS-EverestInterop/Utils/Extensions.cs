@@ -228,10 +228,6 @@ namespace TAS.Utils {
         public static EntityID ToEntityId(this EntityData entityData) {
             return new(entityData.Level.Name, entityData.ID);
         }
-
-        public static string ToUniqueId(this EntityData entityData) {
-            return $"{entityData.Name}:{entityData.Level.Name}:{entityData.ID}";
-        }
     }
 
     internal static class Vector2Extensions {
