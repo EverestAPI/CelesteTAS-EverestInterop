@@ -74,6 +74,9 @@ namespace TAS.EverestInterop.InfoHUD {
         public static Entity FindClickedEntity(MouseState mouseState) {
             if (Engine.Scene is Level level) {
                 Vector2 mousePosition = new(mouseState.X, mouseState.Y);
+                if (SaveData.Instance?.Assists.MirrorMode == true) {
+                    mousePosition.X = Engine.ViewWidth - mousePosition.X;
+                }
                 Camera camera = level.Camera;
                 int viewScale =
                     (int) Math.Round(Engine.Instance.GraphicsDevice.PresentationParameters.BackBufferWidth / (float) camera.Viewport.Width);
