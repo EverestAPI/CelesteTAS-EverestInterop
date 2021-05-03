@@ -12,7 +12,7 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD {
     public static class InfoCustom {
-        private const BindingFlags AllBindingFlags = BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        private const BindingFlags AllBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
         private const BindingFlags AllStaticBindingFlags = BindingFlags.Static | BindingFlags.FlattenHierarchy |
                                                            BindingFlags.Public | BindingFlags.NonPublic;
@@ -49,6 +49,8 @@ namespace TAS.EverestInterop.InfoHUD {
                 return string.Empty;
             }
 
+            IDictionary<string, Entity> cachedEntities = new Dictionary<string, Entity>();
+
             return BraceRegex.Replace(Settings.InfoCustomTemplate, match => {
                 string matchText = match.Groups[1].Value;
 
@@ -58,14 +60,13 @@ namespace TAS.EverestInterop.InfoHUD {
                 }
 
                 string typeFullName;
-                string entityId = string.Empty;
+                string entityId;
                 string firstText = splitText[0];
 
                 if (matchText.Contains("@")) {
                     if (ModTypeNameRegex.Match(matchText) is { } matchTypeName) {
                         firstText = matchTypeName.Groups[1].Value;
-                        TryParseEntityId(ref firstText, ref entityId);
-                        typeFullName = firstText;
+                        typeFullName = TryParseTypeName(firstText, out entityId);
                         List<string> modTypeSplitText = ModTypeNameRegex.Replace(matchText, string.Empty).Split('.').ToList();
                         modTypeSplitText.Insert(0, typeFullName);
                         splitText = modTypeSplitText.ToArray();
@@ -76,10 +77,10 @@ namespace TAS.EverestInterop.InfoHUD {
                         return "invalid template";
                     }
                 } else {
-                    TryParseEntityId(ref firstText, ref entityId);
-                    typeFullName = $"Celeste.{firstText}";
+                    string typeSimpleName = TryParseTypeName(firstText, out entityId);
+                    typeFullName = $"Celeste.{typeSimpleName}";
                     if (!AllTypes.ContainsKey(typeFullName)) {
-                        typeFullName = $"Monocle.{firstText}";
+                        typeFullName = $"Monocle.{typeSimpleName}";
                     }
                 }
 
@@ -98,11 +99,14 @@ namespace TAS.EverestInterop.InfoHUD {
 
                 if (Engine.Scene is Level level) {
                     if (type.IsSameOrSubclassOf(typeof(Entity))) {
-                        if (FindEntity(type, level, entityId) is { } entity) {
-                            return FormatValue(GetMemberValue(entity, memberNames), toFrame);
+                        Entity entity;
+                        if (cachedEntities.ContainsKey(firstText)) {
+                            entity = cachedEntities[firstText];
                         } else {
-                            return string.Empty;
+                            entity = FindEntity(type, level, entityId);
+                            cachedEntities[firstText] = entity;
                         }
+                        return entity != null ? FormatValue(GetMemberValue(entity, memberNames), toFrame) : string.Empty;
                     } else if (type == typeof(Level)) {
                         return FormatValue(GetMemberValue(level, memberNames), toFrame);
                     }
@@ -112,10 +116,13 @@ namespace TAS.EverestInterop.InfoHUD {
             });
         }
 
-        private static void TryParseEntityId(ref string firstText, ref string entityId) {
+        private static string TryParseTypeName(string firstText, out string entityId) {
             if (EntityIdSuffixRegex.IsMatch(firstText)) {
                 entityId = EntityIdSuffixRegex.Match(firstText).Groups[1].Value;
-                firstText = EntityIdSuffixRegex.Replace(firstText, "");
+                return EntityIdSuffixRegex.Replace(firstText, "");
+            } else {
+                entityId = string.Empty;
+                return firstText;
             }
         }
 
@@ -181,7 +188,7 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-        private static object FindEntity(Type type, Level level, string entityId) {
+        private static Entity FindEntity(Type type, Level level, string entityId) {
             IEnumerable<Entity> entities;
             if (level.Tracker.Entities.ContainsKey(type)) {
                 entities = level.Tracker.Entities[type];
