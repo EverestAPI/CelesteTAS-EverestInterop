@@ -106,7 +106,7 @@ namespace TAS {
 
         public static void UpdateManagerStatus() {
             CurrentStatus = string.Join(",", new object[] {
-                Controller.Previous.Line,
+                Controller.Previous?.Line ?? 0,
                 Controller.InputCurrentFrame,
                 Controller.CurrentFrame,
                 Controller.Inputs.Count,
