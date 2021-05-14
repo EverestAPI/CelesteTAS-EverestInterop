@@ -174,9 +174,9 @@ namespace TAS.EverestInterop.InfoHUD {
                     TasSettings.InfoSubPixelIndicator = value));
                 subMenu.Add(new TextMenu.OnOff("Info Custom".ToDialogText(), TasSettings.InfoCustom).Change(value => TasSettings.InfoCustom = value));
                 subMenu.Add(new TextMenu.Button("Info Copy Custom Template".ToDialogText()).Pressed(() =>
-                    TextInput.SetClipboardText(TasSettings.InfoCustomTemplate)));
+                    TextInput.SetClipboardText(TasSettings.InfoCustomTemplate ?? string.Empty)));
                 subMenu.Add(new TextMenu.Button("Info Set Custom Template".ToDialogText()).Pressed(() => {
-                    TasSettings.InfoCustomTemplate = TextInput.GetClipboardText();
+                    TasSettings.InfoCustomTemplate = TextInput.GetClipboardText() ?? string.Empty;
                     CelesteTasModule.Instance.SaveSettings();
                 }));
                 subMenu.Add(new TextMenuExt.EnumerableSlider<InspectEntityTypes>("Info Inspect Entity".ToDialogText(), new[] {
