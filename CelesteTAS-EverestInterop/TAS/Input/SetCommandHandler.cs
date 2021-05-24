@@ -15,6 +15,7 @@ namespace TAS.Input {
 
         // Set, Setting, Value
         // Set, Mod.Setting, Value
+        // Set, Player.Field, Value
         [TasCommand(LegalInMainGame = false, Name = "Set")]
         private static void SetCommand(string[] args) {
             if (args.Length < 2) {
@@ -122,10 +123,12 @@ namespace TAS.Input {
             return default;
         }
 
-        private static bool SettingsSpecialCases(string setting, object value) {
+        private static bool SettingsSpecialCases(string settingName, object value) {
             Player player = (Engine.Scene as Level)?.Tracker.GetEntity<Player>();
             SaveData saveData = SaveData.Instance;
-            switch (setting) {
+            Settings settings = Settings.Instance;
+            switch (settingName) {
+                // Assists
                 case "GameSpeed":
                     saveData.Assists.GameSpeed = (int) value;
                     Engine.TimeRateB = saveData.Assists.GameSpeed / 10f;
@@ -159,6 +162,8 @@ namespace TAS.Input {
                     }
 
                     break;
+
+                // SaveData
                 case "VariantMode":
                     saveData.VariantMode = (bool) value;
                     saveData.AssistMode = false;
@@ -178,6 +183,33 @@ namespace TAS.Input {
                         ResetVariants(assists);
                     }
 
+                    break;
+
+                // Settings
+                case "Rumble":
+                    settings.Rumble = (RumbleAmount) value;
+                    Celeste.Input.Rumble(RumbleStrength.Medium, RumbleLength.Medium);
+                    break;
+                case "GrabMode":
+                    settings.SetFieldValue("GrabMode", value);
+                    typeof(Celeste.Celeste).InvokeMethod("ResetGrab", null);
+                    break;
+                case "Fullscreen":
+                    // game get stuck when toggle fullscreen
+                    return false;
+                    typeof(MenuOptions).InvokeMethod("SetFullscreen", value);
+                    break;
+                case "WindowScale":
+                    typeof(MenuOptions).InvokeMethod("SetWindow", value);
+                    break;
+                case "VSync":
+                    typeof(MenuOptions).InvokeMethod("SetVSync", value);
+                    break;
+                case "MusicVolume":
+                    typeof(MenuOptions).InvokeMethod("SetMusic", value);
+                    break;
+                case "SFXVolume":
+                    typeof(MenuOptions).InvokeMethod("SetSfx", value);
                     break;
                 default:
                     return false;
