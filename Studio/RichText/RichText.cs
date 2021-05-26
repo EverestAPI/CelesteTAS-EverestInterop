@@ -1106,6 +1106,9 @@ namespace CelesteStudio.RichText {
 
         public string BackupFolder {
             get {
+                if (string.IsNullOrEmpty(CurrentFileName)) {
+                    return string.Empty;
+                }
                 string validDir = $"{Path.GetFileName(CurrentFileName)}-{CurrentFileName.GetHashCode()}";
                 return Path.Combine(Directory.GetCurrentDirectory(), "TAS Files", "Backups", validDir);
             }
@@ -2260,7 +2263,7 @@ namespace CelesteStudio.RichText {
         }
 
         private void TryBackupFile() {
-            if (!Settings.Default.AutoBackupEnabled) {
+            if (!Settings.Default.AutoBackupEnabled || string.IsNullOrEmpty(CurrentFileName)) {
                 return;
             }
 

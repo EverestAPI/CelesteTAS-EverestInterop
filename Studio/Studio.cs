@@ -408,7 +408,7 @@ namespace CelesteStudio {
         }
 
         private void OpenFile(string fileName = null, int startLine = 0) {
-            if (fileName == CurrentFileName) {
+            if (fileName == CurrentFileName && fileName != null) {
                 return;
             }
 
@@ -484,6 +484,9 @@ namespace CelesteStudio {
         }
 
         private void UpdateRecentFiles() {
+            if (string.IsNullOrEmpty(CurrentFileName)) {
+                return;
+            }
             if (RecentFiles.Contains(CurrentFileName)) {
                 RecentFiles.Remove(CurrentFileName);
             }
