@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Celeste;
 using Celeste.Mod;
 using Monocle;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
+using TAS.Input;
 using TAS.Utils;
 
 namespace TAS.EverestInterop {
@@ -71,21 +73,38 @@ namespace TAS.EverestInterop {
         }
 
         public static void CreateMenu(EverestModule everestModule, TextMenu menu, bool inGame) {
-            menu.Add(new TextMenu.OnOff("Enabled".ToDialogText(), Settings.Enabled).Change((value) => {
+            TextMenu.Item enabledItem = new TextMenu.OnOff("Enabled".ToDialogText(), Settings.Enabled).Change((value) => {
                 Settings.Enabled = value;
                 foreach (TextMenu.Item item in options) {
                     item.Visible = value;
                 }
-            }));
+            });
+            menu.Add(enabledItem);
             CreateOptions(everestModule, menu, inGame);
             foreach (TextMenu.Item item in options) {
                 menu.Add(item);
                 item.Visible = Settings.Enabled;
             }
 
+            foreach (string text in Split(InputController.TasFilePath, 60).Reverse()) {
+                enabledItem.AddDescription(menu, text);
+            }
+
+            enabledItem.AddDescription(menu, "Working TAS File Path:");
+
             HitboxTweak.AddSubMenuDescription(menu, inGame);
             InfoHud.AddSubMenuDescription(menu);
             keyConfigButton.AddDescription(menu, "Key Config Description".ToDialogText());
+        }
+
+        private static IEnumerable<string> Split(string str, int n) {
+            if (String.IsNullOrEmpty(str) || n < 1) {
+                throw new ArgumentException();
+            }
+
+            for (int i = 0; i < str.Length; i += n) {
+                yield return str.Substring(i, Math.Min(n, str.Length - i));
+            }
         }
 
         public static IEnumerable<KeyValuePair<int?, string>> CreateSliderOptions(int start, int end, Func<int, string> formatter = null) {
