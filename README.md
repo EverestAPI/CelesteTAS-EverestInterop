@@ -10,9 +10,8 @@
 - (Recommended) Use the 1-click installer [here](https://gamebanana.com/tools/6715). (Alternatively) [Download the latest autobuild](https://0x0ade.ga/twoclick/?nightly.link/EverestAPI/CelesteTAS-EverestInterop/workflows/NetFramework.Legacy.CI/master/CelesteTAS.zip)
   and put it in the game_path/mods folder.
 - Enable the mod in the in-game mod options.
-- If on Linux, enable `Unix RTC` in the mod options and restart Celeste.
-- Open Celeste Studio, our input editor. It should be in your main Celeste directory. (Note that Studio is not supported on Mac and may not work on
-  Linux.) [Studio documentation can be found here.](https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/master/Docs/Studio.md)
+- Open Celeste Studio, our input editor. It should be in your main Celeste directory. (Note that Studio only works on Windows) [Studio documentation can be found here.](https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/master/Docs/Studio.md)
+- If on Linux or macOS, check the working TAS file path in the `Mod Options -> Enabled` menu item, edit it with your favorite text editor, and enable `Info HUD` to show the auxiliary information
 
 ## Input File
 
