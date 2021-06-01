@@ -49,7 +49,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 return;
             }
 
-            if (self.Collider is not Grid) {
+            if (self.Collider is not Grid && self is not FinalBossBeam) {
                 int width = camera.Viewport.Width;
                 int height = camera.Viewport.Height;
                 Rectangle bounds = new((int) camera.Left - width / 2, (int) camera.Top - height / 2, width * 2, height * 2);
