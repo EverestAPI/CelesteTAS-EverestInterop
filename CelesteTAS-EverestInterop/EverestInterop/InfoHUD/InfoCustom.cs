@@ -26,7 +26,6 @@ namespace TAS.EverestInterop.InfoHUD {
         private static readonly Dictionary<string, FieldInfo> CachedFieldInfos = new();
 
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
-        private static float FramesPerSecond => 60f / Engine.TimeRateB;
 
         public static void CollectAllTypeInfo() {
             AllTypes.Clear();
@@ -137,7 +136,7 @@ namespace TAS.EverestInterop.InfoHUD {
 
             if (obj is float floatValue) {
                 if (toFrame) {
-                    return $"{(int) FramesPerSecond * floatValue:F0}";
+                    return $"{(int) GameInfo.FramesPerSecond * floatValue:F0}";
                 } else {
                     return Settings.RoundCustomInfo ? $"{floatValue:F2}" : $"{floatValue:F12}";
                 }

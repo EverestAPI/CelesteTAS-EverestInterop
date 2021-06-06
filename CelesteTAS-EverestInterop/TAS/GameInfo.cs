@@ -73,7 +73,7 @@ namespace TAS {
             LevelUnpauseTimer = levelUnpauseTimer?.CreateDelegate_Get<Func<Level, float>>();
         }
 
-        private static float FramesPerSecond => 60f / Engine.TimeRateB;
+        public static float FramesPerSecond => (int) Math.Round(10000000.0 / Engine.Instance.TargetElapsedTime.Ticks / Engine.TimeRateB);
 
         public static bool ExportSyncData { get; private set; }
 
