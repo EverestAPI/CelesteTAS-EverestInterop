@@ -37,6 +37,9 @@ namespace CelesteStudio {
         private bool updating;
 
         public Studio() {
+            CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+
             InitSettings();
             InitializeComponent();
             InitMenu();
@@ -44,7 +47,6 @@ namespace CelesteStudio {
             InitFont(Settings.Default.Font ?? fontDialog.Font);
 
             Text = TitleBarText;
-            Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("en-US");
 
             lines.Add(new InputRecord(""));
             EnableStudio(false);

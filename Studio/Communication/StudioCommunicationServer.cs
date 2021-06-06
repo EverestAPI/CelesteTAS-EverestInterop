@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -23,6 +24,7 @@ namespace CelesteStudio.Communication {
 
             ThreadStart mainLoop = new(instance.UpdateLoop);
             Thread updateThread = new(mainLoop);
+            updateThread.CurrentCulture = CultureInfo.InvariantCulture;
             updateThread.Name = "StudioCom Server";
             updateThread.IsBackground = true;
             updateThread.Start();
