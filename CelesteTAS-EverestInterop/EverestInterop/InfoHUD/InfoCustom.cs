@@ -136,7 +136,7 @@ namespace TAS.EverestInterop.InfoHUD {
 
             if (obj is float floatValue) {
                 if (toFrame) {
-                    return $"{(int) GameInfo.FramesPerSecond * floatValue:F0}";
+                    return $"{(int) GameInfo.GameTimeFps * floatValue:F0}";
                 } else {
                     return Settings.RoundCustomInfo ? $"{floatValue:F2}" : $"{floatValue:F12}";
                 }
