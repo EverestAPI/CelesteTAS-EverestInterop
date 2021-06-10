@@ -68,7 +68,7 @@ TAS_UNIX_RTC=                 使用 Unix 的进程间通讯
 # ================================== More Options Submenu ==================================
 TAS_CENTER_CAMERA=            镜头居中
 TAS_INFO_HUD=                 信息面板
-TAS_PAUSE_AFTER_LOAD_STATE=   加载保存状态后暂停
+TAS_PAUSE_AFTER_LOAD_STATE=   加载状态后暂停
 TAS_RESTORE_SETTINGS=         TAS 停止运行后恢复所有设置
 TAS_DISABLE_ACHIEVEMENTS=     禁止解锁成就
 TAS_MOD_9D_LIGHTING=          修改 9D 亮度

@@ -489,6 +489,7 @@ namespace CelesteStudio {
             if (string.IsNullOrEmpty(CurrentFileName)) {
                 return;
             }
+
             if (RecentFiles.Contains(CurrentFileName)) {
                 RecentFiles.Remove(CurrentFileName);
             }
@@ -1251,6 +1252,30 @@ namespace CelesteStudio {
             StudioCommunicationServer.instance?.ToggleGameSetting("HideGameplay");
         }
 
+        private void toggleCenterCameraToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.instance?.ToggleGameSetting("CenterCamera");
+        }
+
+        private void switchInfoHUDToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.instance?.ToggleGameSetting("InfoHud");
+        }
+
+        private void tASInputInfoToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.instance?.ToggleGameSetting("InfoTasInput");
+        }
+
+        private void gameInfoToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.instance?.ToggleGameSetting("InfoGame");
+        }
+
+        private void customInfoToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.instance?.ToggleGameSetting("InfoCustom");
+        }
+
+        private void subpixelIndicatorToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.instance?.ToggleGameSetting("InfoSubPixelIndicator");
+        }
+
         private void toggleRoundPositionToolStripMenuItem_Click(object sender, EventArgs e) {
             StudioCommunicationServer.instance?.ToggleGameSetting("RoundPosition");
         }
@@ -1265,14 +1290,6 @@ namespace CelesteStudio {
 
         private void roundCustomInfoToolStripMenuItem_Click(object sender, EventArgs e) {
             StudioCommunicationServer.instance?.ToggleGameSetting("RoundCustomInfo");
-        }
-
-        private void switchInfoHUDToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.instance?.ToggleGameSetting("InfoHud");
-        }
-
-        private void toggleCenterCameraToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.instance?.ToggleGameSetting("CenterCamera");
         }
 
         private void copyCustomInfoTemplateToClipboardToolStripMenuItem_Click(object sender, EventArgs e) {

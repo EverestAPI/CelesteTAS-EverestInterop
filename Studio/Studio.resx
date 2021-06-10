@@ -124,21 +124,19 @@
     <value>405, 17</value>
   </metadata>
   <metadata name="menuStrip.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>159, 16</value>
+      <value>159, 16</value>
   </metadata>
-  <metadata name="tasTextContextMenuStrip.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>619, 17</value>
-  </metadata>
-  <data name="analogueModeToolStripMenuItem.ToolTipText" xml:space="preserve">
+    <metadata name="tasTextContextMenuStrip.TrayLocation"
+              type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+        <value>619, 17</value>
+    </metadata>
+    <data name="analogueModeToolStripMenuItem.ToolTipText" xml:space="preserve">
     <value>Circle, Square and Precise are make sure the analogue inputs sent to the game are actually possible,
 locking it to a circular or square deadzone, or calculating the closest position possible on a controller.
 Odds are you don't need to worry about this.</value>
   </data>
     <metadata name="fontDialog.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
         <value>821, 17</value>
-    </metadata>
-    <metadata name="statusBar.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-        <value>280, 20</value>
     </metadata>
     <metadata name="statusBar.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
         <value>280, 20</value>
@@ -153,16 +151,16 @@ Odds are you don't need to worry about this.</value>
             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
-        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
+            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
