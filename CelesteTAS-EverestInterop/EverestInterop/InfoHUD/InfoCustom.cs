@@ -105,6 +105,7 @@ namespace TAS.EverestInterop.InfoHUD {
                             entity = FindEntity(type, level, entityId);
                             cachedEntities[firstText] = entity;
                         }
+
                         return entity != null ? FormatValue(GetMemberValue(entity, memberNames), toFrame) : string.Empty;
                     } else if (type == typeof(Level)) {
                         return FormatValue(GetMemberValue(level, memberNames), toFrame);
@@ -136,7 +137,7 @@ namespace TAS.EverestInterop.InfoHUD {
 
             if (obj is float floatValue) {
                 if (toFrame) {
-                    return $"{(int) GameInfo.GameTimeFps * floatValue:F0}";
+                    return GameInfo.ConvertToFrames(floatValue).ToString();
                 } else {
                     return Settings.RoundCustomInfo ? $"{floatValue:F2}" : $"{floatValue:F12}";
                 }
