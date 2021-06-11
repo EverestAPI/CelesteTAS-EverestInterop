@@ -15,11 +15,12 @@ namespace TAS {
         private static string savedGameStatus;
         private static string savedStatusWithoutTime;
         private static string savedLastVel;
+        private static string savedLastPlayerSeekerVel;
         private static string savedCustomInfo;
-        private static long savedLastChapterTime;
         private static Vector2Double savedLastPos;
         private static Vector2Double savedLastPlayerSeekerPos;
         private static float savedDashTime;
+        private static bool savedFrozen;
         private static bool savedByBreakpoint;
 
         private static readonly Lazy<bool> SpeedrunToolInstalledLazy = new(() =>
@@ -107,12 +108,13 @@ namespace TAS {
             savedByBreakpoint = breakpoint;
             savedGameStatus = GameInfo.Status;
             savedLastVel = GameInfo.LastVel;
+            savedLastPlayerSeekerVel = GameInfo.LastPlayerSeekerVel;
             savedCustomInfo = GameInfo.CustomInfo;
-            savedLastChapterTime = GameInfo.LastChapterTime;
             savedStatusWithoutTime = GameInfo.StatusWithoutTime;
             savedLastPos = GameInfo.LastPos;
             savedLastPlayerSeekerPos = GameInfo.LastPlayerSeekerPos;
             savedDashTime = GameInfo.DashTime;
+            savedFrozen = GameInfo.Frozen;
 
             savedController = Controller.Clone();
             LoadStateRoutine();
@@ -155,12 +157,13 @@ namespace TAS {
             savedController = null;
             savedGameStatus = null;
             savedLastVel = null;
+            savedLastPlayerSeekerVel = null;
             savedCustomInfo = null;
-            savedLastChapterTime = 0;
             savedStatusWithoutTime = null;
             savedLastPos = default;
             savedLastPlayerSeekerPos = default;
             savedDashTime = 0f;
+            savedFrozen = false;
             savedByBreakpoint = false;
 
             UpdateStudio();
@@ -176,12 +179,13 @@ namespace TAS {
             SetTasState();
             GameInfo.Status = savedGameStatus;
             GameInfo.LastVel = savedLastVel;
+            GameInfo.LastPlayerSeekerVel = savedLastPlayerSeekerVel;
             GameInfo.CustomInfo = savedCustomInfo;
             GameInfo.StatusWithoutTime = savedStatusWithoutTime;
-            GameInfo.LastChapterTime = savedLastChapterTime;
             GameInfo.LastPos = savedLastPos;
             GameInfo.LastPlayerSeekerPos = savedLastPlayerSeekerPos;
             GameInfo.DashTime = savedDashTime;
+            GameInfo.Frozen = savedFrozen;
             UpdateStudio();
         }
 

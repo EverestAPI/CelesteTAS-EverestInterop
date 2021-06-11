@@ -42,11 +42,12 @@ namespace TAS {
         public static string Status = string.Empty;
         public static string StatusWithoutTime = string.Empty;
         public static string LastVel = string.Empty;
+        public static string LastPlayerSeekerVel = string.Empty;
         public static string CustomInfo = string.Empty;
-        public static long LastChapterTime;
         public static Vector2Double LastPos;
         public static Vector2Double LastPlayerSeekerPos;
         public static float DashTime;
+        public static bool Frozen;
 
         private static StreamWriter sw;
         private static IDictionary<string, Func<Level, IList>> trackedEntities;
@@ -126,16 +127,16 @@ namespace TAS {
         }
 
         private static void EngineOnUpdate(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
-            bool frozen = Engine.FreezeTimer > 0;
+            Frozen = Engine.FreezeTimer > 0;
             orig(self, gameTime);
-            if (frozen) {
+            if (Frozen) {
                 Update();
             }
         }
 
         private static void SceneOnAfterUpdate(On.Monocle.Scene.orig_AfterUpdate orig, Scene self) {
             orig(self);
-            Update();
+            Update(true);
         }
 
         private static void LevelOnOnTransitionTo(Level level, LevelData next, Vector2 direction) {
@@ -172,7 +173,7 @@ namespace TAS {
             return result;
         }
 
-        public static void Update() {
+        public static void Update(bool updateVel = false) {
             if (Engine.Scene is Level level) {
                 Player player = level.Tracker.GetEntity<Player>();
                 long chapterTime = level.Session.Time;
@@ -182,10 +183,10 @@ namespace TAS {
                     string speed = GetAdjustedSpeed(player.Speed);
                     Vector2Double diff = (player.GetMoreExactPosition() - LastPos) * FramesPerSecond;
                     string velocity = GetAdjustedVelocity(diff);
-                    if (chapterTime == LastChapterTime) {
-                        velocity = LastVel;
-                    } else {
+                    if (!Frozen && updateVel) {
                         LastVel = velocity;
+                    } else {
+                        velocity = LastVel;
                     }
 
                     string polarVel = $"Fly:   {diff.Length():F2}, {diff.Angle():F5}°";
@@ -221,6 +222,11 @@ namespace TAS {
                         speed = GetAdjustedSpeed(PlayerSeekerSpeed(playerSeeker));
                         diff = (playerSeeker.GetMoreExactPosition() - LastPlayerSeekerPos) * FramesPerSecond;
                         velocity = GetAdjustedVelocity(diff);
+                        if (!Frozen && updateVel) {
+                            LastPlayerSeekerVel = velocity;
+                        } else {
+                            velocity = LastPlayerSeekerVel;
+                        }
                         polarVel = $"Chase: {diff.Length():F2}, {diff.Angle():F5}°";
                         dashCooldown = PlayerSeekerDashTimer(playerSeeker).ToCeilingFrames();
                     }
@@ -270,6 +276,10 @@ namespace TAS {
                     if ((FramesPerSecond != 60 || Math.Abs(Engine.TimeRateB - 1f) > 0.000001f || SaveData.Instance.Assists.SuperDashing) && DashTime.ToCeilingFrames() >= 1 && player.StateMachine.State == Player.StDash) {
                         DashTime = CoroutineWaitTimer(StateMachineCurrentCoroutine(player.StateMachine));
                         timers += $"Dash({DashTime.ToCeilingFrames()}) ";
+                    }
+
+                    if (player.StateMachine.State != Player.StDash) {
+                        DashTime = 0f;
                     }
 
                     stringBuilder.AppendLine(pos);
@@ -328,7 +338,6 @@ namespace TAS {
                 string roomNameAndTime =
                     $"[{level.Session.Level}] Timer: {(chapterTime / 10000000D):F3}({chapterTime / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks})";
                 Status = StatusWithoutTime + roomNameAndTime;
-                LastChapterTime = chapterTime;
             } else if (Engine.Scene is SummitVignette summit) {
                 Status = "SummitVignette " + SummitVignetteReadyFieldInfo.GetValue(summit);
             } else if (Engine.Scene is Overworld overworld) {
