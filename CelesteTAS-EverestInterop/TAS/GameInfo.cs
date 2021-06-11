@@ -8,7 +8,11 @@ using System.Text;
 using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
+using Mono.Cecil.Cil;
 using Monocle;
+using MonoMod.Cil;
+using MonoMod.RuntimeDetour;
+using MonoMod.Utils;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Input;
@@ -30,6 +34,10 @@ namespace TAS {
         private static readonly GetFloat PlayerRetainedSpeed;
         private static readonly GetFloat PlayerRetainedSpeedTimer;
         private static readonly Func<Level, float> LevelUnpauseTimer;
+        private static readonly Func<StateMachine, Coroutine> StateMachineCurrentCoroutine;
+        private static readonly Func<Coroutine, float> CoroutineWaitTimer;
+
+        private static ILHook dashCoroutineIlHook;
 
         public static string Status = string.Empty;
         public static string StatusWithoutTime = string.Empty;
@@ -38,6 +46,7 @@ namespace TAS {
         public static long LastChapterTime;
         public static Vector2Double LastPos;
         public static Vector2Double LastPlayerSeekerPos;
+        public static float DashTime;
 
         private static StreamWriter sw;
         private static IDictionary<string, Func<Level, IList>> trackedEntities;
@@ -59,6 +68,8 @@ namespace TAS {
             FieldInfo playerRetainedSpeed = typeof(Player).GetFieldInfo("wallSpeedRetained");
             FieldInfo playerRetainedSpeedTimer = typeof(Player).GetFieldInfo("wallSpeedRetentionTimer");
             FieldInfo levelUnpauseTimer = typeof(Level).GetFieldInfo("unpauseTimer");
+            FieldInfo currentCoroutine = typeof(StateMachine).GetFieldInfo("currentCoroutine");
+            FieldInfo waitTimer = typeof(Coroutine).GetFieldInfo("waitTimer");
 
             WallJumpCheck = (DWallJumpCheck) wallJumpCheck.CreateDelegate(typeof(DWallJumpCheck));
             StrawberryCollectTimer = strawberryCollectTimer.CreateDelegate_Get<GetBerryFloat>();
@@ -71,6 +82,8 @@ namespace TAS {
             PlayerRetainedSpeed = playerRetainedSpeed.CreateDelegate_Get<GetFloat>();
             PlayerRetainedSpeedTimer = playerRetainedSpeedTimer.CreateDelegate_Get<GetFloat>();
             LevelUnpauseTimer = levelUnpauseTimer?.CreateDelegate_Get<Func<Level, float>>();
+            StateMachineCurrentCoroutine = currentCoroutine.CreateDelegate_Get<Func<StateMachine, Coroutine>>();
+            CoroutineWaitTimer = waitTimer.CreateDelegate_Get<Func<Coroutine, float>>();
         }
 
         private static int FramesPerSecond => (int) Math.Round(1 / Engine.RawDeltaTime);
@@ -83,6 +96,7 @@ namespace TAS {
             On.Monocle.Scene.AfterUpdate += SceneOnAfterUpdate;
             Everest.Events.Level.OnTransitionTo += LevelOnOnTransitionTo;
             On.Celeste.Level.Update += LevelOnUpdate;
+            dashCoroutineIlHook = new ILHook(typeof(Player).GetMethodInfo("DashCoroutine").GetStateMachineTarget(), PlayerOnDashCoroutine);
         }
 
         [Unload]
@@ -91,6 +105,24 @@ namespace TAS {
             On.Monocle.Scene.AfterUpdate -= SceneOnAfterUpdate;
             Everest.Events.Level.OnTransitionTo -= LevelOnOnTransitionTo;
             On.Celeste.Level.Update -= LevelOnUpdate;
+            dashCoroutineIlHook?.Dispose();
+            dashCoroutineIlHook = null;
+        }
+
+        private static void PlayerOnDashCoroutine(ILContext il) {
+            ILCursor ilCursor = new(il);
+            while (ilCursor.TryGotoNext(
+                ins => ins.OpCode == OpCodes.Ldarg_0,
+                ins => ins.OpCode == OpCodes.Ldc_R4,
+                ins => ins.MatchBox<float>(),
+                ins => ins.OpCode == OpCodes.Stfld && ins.Operand.ToString().EndsWith("::<>2__current")
+                )) {
+                ilCursor.Index += 2;
+                ilCursor.EmitDelegate<Func<float, float>>(dashTime => {
+                    DashTime = dashTime;
+                    return dashTime;
+                });
+            }
         }
 
         private static void EngineOnUpdate(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
@@ -135,7 +167,7 @@ namespace TAS {
                 }
             }
 
-            result += level.NextTransitionDuration.ToFrames() + 1;
+            result += level.NextTransitionDuration.ToCeilingFrames() + 1;
 
             return result;
         }
@@ -167,13 +199,13 @@ namespace TAS {
 
                     string retainedSpeed = string.Empty;
                     if (PlayerRetainedSpeedTimer(player) is float retainedSpeedTimer and > 0f) {
-                        retainedSpeed = $"Retained: {PlayerRetainedSpeed(player):F2} ({retainedSpeedTimer.ToFrames()})";
+                        retainedSpeed = $"Retained: {PlayerRetainedSpeed(player):F2} ({retainedSpeedTimer.ToCeilingFrames()})";
                     }
 
                     string liftBoost = string.Empty;
-                    if (PlayerLiftBoost(player) is { } liftBoostVector2 && liftBoostVector2 != Vector2.Zero) {
+                    if (PlayerLiftBoost(player) is var liftBoostVector2 && liftBoostVector2 != Vector2.Zero) {
                         liftBoost =
-                            $"LiftBoost: {liftBoostVector2.X:F2}, {liftBoostVector2.Y:F2} ({ActorLiftSpeedTimer(player).ToFrames()})";
+                            $"LiftBoost: {liftBoostVector2.X:F2}, {liftBoostVector2.Y:F2} ({ActorLiftSpeedTimer(player).ToCeilingFrames()})";
                     }
 
                     string miscStats = $"Stamina: {player.Stamina:0} "
@@ -181,7 +213,7 @@ namespace TAS {
                                        + (WallJumpCheck(player, -1) ? "Wall-L " : string.Empty)
                                        + PlayerStates.GetStateName(player.StateMachine.State);
 
-                    int dashCooldown = DashCooldownTimer(player).ToFrames();
+                    int dashCooldown = DashCooldownTimer(player).ToFloorFrames();
 
                     PlayerSeeker playerSeeker = level.Tracker.GetEntity<PlayerSeeker>();
                     if (playerSeeker != null) {
@@ -190,22 +222,22 @@ namespace TAS {
                         diff = (playerSeeker.GetMoreExactPosition() - LastPlayerSeekerPos) * FramesPerSecond;
                         velocity = GetAdjustedVelocity(diff);
                         polarVel = $"Chase: {diff.Length():F2}, {diff.Angle():F5}°";
-                        dashCooldown = PlayerSeekerDashTimer(playerSeeker).ToFrames();
+                        dashCooldown = PlayerSeekerDashTimer(playerSeeker).ToCeilingFrames();
                     }
 
-                    string statuses = (dashCooldown < 1 && player.Dashes > 0 ? "Dash " : string.Empty)
+                    string statuses = (dashCooldown <= 0 && player.Dashes > 0 ? "CanDash " : string.Empty)
                                       + (player.LoseShards ? "Ground " : string.Empty)
-                                      + (!player.LoseShards && JumpGraceTimer(player).ToFrames() is var coyote and > 1
-                                          ? $"Coyote({coyote - 1}) "
+                                      + (!player.LoseShards && JumpGraceTimer(player).ToFloorFrames() is int coyote and > 0
+                                          ? $"Coyote({coyote}) "
                                           : string.Empty);
 
                     string noControlFrames = transitionFrames > 0 ? $"({transitionFrames})" : string.Empty;
                     float unpauseTimer = LevelUnpauseTimer?.Invoke(level) ?? 0f;
                     if (unpauseTimer > 0f) {
-                        noControlFrames = $"({unpauseTimer.ToFrames()})";
+                        noControlFrames = $"({unpauseTimer.ToCeilingFrames()})";
                     }
 
-                    statuses = (Engine.FreezeTimer > 0f ? $"Frozen({Engine.FreezeTimer.ToFrames()}) " : string.Empty)
+                    statuses = (Engine.FreezeTimer > 0f ? $"Frozen({Engine.FreezeTimer.ToCeilingFrames()}) " : string.Empty)
                                + (player.InControl && !level.Transitioning && unpauseTimer <= 0f ? statuses : $"NoControl{noControlFrames} ")
                                + (player.Dead ? "Dead " : string.Empty)
                                + (level.InCutscene ? "Cutscene " : string.Empty)
@@ -221,18 +253,23 @@ namespace TAS {
                     if (firstRedBerryFollower?.Entity is Strawberry firstRedBerry) {
                         float collectTimer = StrawberryCollectTimer(firstRedBerry);
                         if (collectTimer <= 0.15f) {
-                            int collectFrames = (0.15f - collectTimer).ToFrames();
+                            int collectFrames = (0.15f - collectTimer).ToCeilingFrames();
                             if (collectTimer >= 0f) {
-                                timers += $"BerryTimer: {collectFrames} ";
+                                timers += $"Berry({collectFrames}) ";
                             } else {
-                                int additionalFrames = Math.Abs(collectTimer).ToFrames();
-                                timers += $"BerryTimer: {collectFrames - additionalFrames}+{additionalFrames} ";
+                                int additionalFrames = Math.Abs(collectTimer).ToCeilingFrames();
+                                timers += $"Berry({collectFrames - additionalFrames}+{additionalFrames}) ";
                             }
                         }
                     }
 
-                    if (dashCooldown != 0) {
-                        timers += $"DashTimer: {(dashCooldown).ToString()} ";
+                    if (dashCooldown > 0) {
+                        timers += $"DashCD({dashCooldown}) ";
+                    }
+
+                    if ((FramesPerSecond != 60 || Math.Abs(Engine.TimeRateB - 1f) > 0.000001f || SaveData.Instance.Assists.SuperDashing) && DashTime.ToCeilingFrames() >= 1 && player.StateMachine.State == Player.StDash) {
+                        DashTime = CoroutineWaitTimer(StateMachineCurrentCoroutine(player.StateMachine));
+                        timers += $"Dash({DashTime.ToCeilingFrames()}) ";
                     }
 
                     stringBuilder.AppendLine(pos);
@@ -301,12 +338,16 @@ namespace TAS {
             }
         }
 
-        private static int ToFrames(this float seconds) {
+        private static int ToCeilingFrames(this float seconds) {
             return (int) Math.Ceiling(seconds / Engine.RawDeltaTime / Engine.TimeRateB);
         }
 
+        private static int ToFloorFrames(this float seconds) {
+            return (int) Math.Floor(seconds / Engine.RawDeltaTime / Engine.TimeRateB);
+        }
+
         public static int ConvertToFrames(float seconds) {
-            return seconds.ToFrames();
+            return seconds.ToCeilingFrames();
         }
 
         private static string GetAdjustedPos(Vector2 intPos, Vector2 subpixelPos) {

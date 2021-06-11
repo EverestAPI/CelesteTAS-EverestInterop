@@ -19,6 +19,7 @@ namespace TAS {
         private static long savedLastChapterTime;
         private static Vector2Double savedLastPos;
         private static Vector2Double savedLastPlayerSeekerPos;
+        private static float savedDashTime;
         private static bool savedByBreakpoint;
 
         private static readonly Lazy<bool> SpeedrunToolInstalledLazy = new(() =>
@@ -111,6 +112,7 @@ namespace TAS {
             savedStatusWithoutTime = GameInfo.StatusWithoutTime;
             savedLastPos = GameInfo.LastPos;
             savedLastPlayerSeekerPos = GameInfo.LastPlayerSeekerPos;
+            savedDashTime = GameInfo.DashTime;
 
             savedController = Controller.Clone();
             LoadStateRoutine();
@@ -158,6 +160,7 @@ namespace TAS {
             savedStatusWithoutTime = null;
             savedLastPos = default;
             savedLastPlayerSeekerPos = default;
+            savedDashTime = 0f;
             savedByBreakpoint = false;
 
             UpdateStudio();
@@ -178,6 +181,7 @@ namespace TAS {
             GameInfo.LastChapterTime = savedLastChapterTime;
             GameInfo.LastPos = savedLastPos;
             GameInfo.LastPlayerSeekerPos = savedLastPlayerSeekerPos;
+            GameInfo.DashTime = savedDashTime;
             UpdateStudio();
         }
 
