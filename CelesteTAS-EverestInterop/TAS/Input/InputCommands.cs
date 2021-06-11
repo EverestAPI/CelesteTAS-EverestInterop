@@ -5,7 +5,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using Celeste;
-using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Utils;
@@ -23,6 +22,11 @@ namespace TAS.Input {
          */
 
         private static readonly Regex SpaceRegex = new(@"^[^,]+?\s+[^,]", RegexOptions.Compiled);
+
+        private static readonly Lazy<PropertyInfo> GunInputCursorPosition =
+            new(() => Type.GetType("Guneline.GunInput, Guneline")?.GetProperty("CursorPosition"));
+
+        private static readonly Lazy<MethodInfo> GunlineGunshot = new(() => Type.GetType("Guneline.Guneline, Guneline")?.GetMethod("Gunshot"));
 
         private static string[] Split(string line) {
             string trimLine = line.Trim();
@@ -161,17 +165,19 @@ namespace TAS.Input {
         // Gun, x, y
         [TasCommand(LegalInMainGame = false, Name = "Gun")]
         private static void GunCommand(string[] args) {
-            int x = int.Parse(args[0]);
-            int y = int.Parse(args[1]);
-            Player player = Engine.Scene.Tracker.GetEntity<Player>();
-            Vector2 pos = new(x, y);
-            foreach (EverestModule module in Everest.Modules) {
-                if (module.Metadata.Name == "Guneline") {
-                    module.GetType().Assembly.GetType("Guneline.GunInput").GetProperty("CursorPosition").SetValue(null, pos);
-                    //typeof(MouseState).GetProperty("LeftButton").SetValue(MInput.Mouse.CurrentState, ButtonState.Pressed);
-                    module.GetType().Assembly.GetType("Guneline.Guneline").GetMethod("Gunshot")
-                        .Invoke(null, new object[] {player, pos, false, null});
-                }
+            if (args.Length < 2) {
+                return;
+            }
+
+            if (float.TryParse(args[0], out float x)
+                && float.TryParse(args[1], out float y)
+                && Engine.Scene.Tracker.GetEntity<Player>() is { } player
+                && GunInputCursorPosition.Value != null
+                && GunlineGunshot.Value != null
+            ) {
+                Vector2 pos = new(x, y);
+                GunInputCursorPosition.Value.SetValue(null, pos);
+                GunlineGunshot.Value.Invoke(null, new object[] {player, pos, Facings.Left});
             }
         }
     }
