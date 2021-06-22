@@ -4,8 +4,8 @@ TAS_SHOW_HITBOXES=            碰撞箱
 TAS_HITBOX_COLOR_DESCRIPTION_1= 请到标题页 Mod 菜单中修改碰撞箱颜色
 TAS_HITBOX_COLOR_DESCRIPTION_2= 或者在控制台中使用 entity/trigger/platform_hitbox_color 命令
 TAS_SIMPLIFIED_GRAPHICS=      简化图形
-TAS_INFO_HUD_DESCRIPTION_1=   按住左 Ctrl 键然后使用鼠标左键拖放信息面板
-TAS_INFO_HUD_DESCRIPTION_2=   双击左 Ctrl 键开关信息面板
+TAS_INFO_HUD_DESCRIPTION_1=   按住信息面板快捷键和鼠标左键然后拖放信息面板
+TAS_INFO_HUD_DESCRIPTION_2=   双击信息面板快捷键开关信息面板
 TAS_ROUND_VALUES=             数值精度
 TAS_RELAUNCH_REQUIRED=        需要重启的选项
 TAS_MORE_OPTIONS=             更多选项
@@ -52,7 +52,8 @@ TAS_INFO_IGNORE_TRIGGER_WHEN_CLICK_ENTITY= 点击实体时忽略触发器
 TAS_INFO_TEXT_SIZE=                        文字大小
 TAS_INFO_SUBPIXEL_INDICATOR_SIZE=          亚像素指示器大小
 TAS_INFO_OPACITY=                          不透明度
-TAS_INFO_MASKED_OPACITY=                   遮挡人物时的透明度
+TAS_INFO_MASKED_OPACITY=                   遮挡人物时的不透明度
+TAS_KEY_INFO_HUD=                          信息面板
 
 # ================================== Round Values ==================================
 TAS_ROUND_POSITION=           坐标保留两位小数

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
@@ -19,7 +20,7 @@ namespace TAS.EverestInterop.InfoHUD {
             }
 
             KeyboardState keyboardState = Keyboard.GetState();
-            if (!keyboardState.IsKeyDown(Keys.LeftControl)) {
+            if (TasSettings.KeyInfoHud.Keys.Any(key => keyboardState.IsKeyUp(key))) {
                 lastKeyboardState = keyboardState;
                 return;
             }

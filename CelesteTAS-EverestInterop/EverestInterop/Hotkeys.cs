@@ -86,10 +86,11 @@ namespace TAS.EverestInterop {
                 InitBinding(Settings.KeyCamera, Keys.M);
                 InitBinding(Settings.KeySaveState, Keys.RightAlt, Keys.OemMinus);
                 InitBinding(Settings.KeyClearState, Keys.RightAlt, Keys.Back);
+                InitBinding(Settings.KeyInfoHud, Keys.LeftControl);
                 Settings.FirstLaunch = false;
             }
 
-            KeysList = new List<Keys>[] {
+            KeysList = new[] {
                 Settings.KeyStart.Keys, Settings.KeyRestart.Keys, Settings.KeyFastForward.Keys, Settings.KeyFrameAdvance.Keys, Settings.KeyPause.Keys,
                 Settings.KeyHitboxes.Keys, Settings.KeyTriggerHitboxes.Keys, Settings.KeyGraphics.Keys, Settings.KeyCamera.Keys,
                 Settings.KeySaveState.Keys, Settings.KeyClearState.Keys

@@ -13,6 +13,8 @@ namespace TAS.EverestInterop {
         private bool centerCamera;
         public bool Enabled { get; set; } = true;
 
+        #region HotKey
+
         [SettingName("TAS_KEY_START")]
         [DefaultButtonBinding(0, Keys.RightControl)]
         public ButtonBinding KeyStart { get; set; } = new();
@@ -58,6 +60,12 @@ namespace TAS.EverestInterop {
         [SettingName("TAS_KEY_CLEAR_STATE")]
         [DefaultButtonBinding(0, Keys.Back)]
         public ButtonBinding KeyClearState { get; set; } = new();
+
+        [SettingName("TAS_KEY_INFO_HUD")]
+        [DefaultButtonBinding(0, Keys.LeftControl)]
+        public ButtonBinding KeyInfoHud { get; set; } = new();
+
+        #endregion
 
         public bool ShowHitboxes {
             get => GameplayRenderer.RenderDebug;
@@ -163,7 +171,7 @@ namespace TAS.EverestInterop {
         [SettingIgnore] public int InfoTextSize { get; set; } = 10;
         [SettingIgnore] public int InfoSubPixelIndicatorSize { get; set; } = 10;
         [SettingIgnore] public int InfoOpacity { get; set; } = 6;
-        [SettingIgnore] public int InfoMaskedOpacity { get; set; } = 3;
+        [SettingIgnore] public int InfoMaskedOpacity { get; set; } = 4;
 
         #endregion
 
