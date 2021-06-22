@@ -1,36 +1,36 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using Celeste;
+using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.RuntimeDetour;
+using TAS.Utils;
 
 namespace TAS.EverestInterop {
     public static class Core {
-        public delegate void DGameUpdate(Game self, GameTime gameTime);
-
         // The fields we want to access from Celeste-Addons
-        public static bool SkipBaseUpdate;
-        public static bool InUpdate;
+        private static bool SkipBaseUpdate;
+        private static bool InUpdate;
 
-        public static Detour HRunThreadWithLogging;
+        private static Detour HRunThreadWithLogging;
 
-        public static Detour HGameUpdate;
+        private static Detour HGameUpdate;
 
-        public static DGameUpdate OrigGameUpdate;
+        private static DGameUpdate OrigGameUpdate;
 
-        public static Action PreviousGameLoop;
+        private static Action PreviousGameLoop;
+        private static readonly Lazy<bool> CantPauseWhileSaving = new(() => Everest.Version < new Version(1, 2865));
 
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
         public static void Load() {
             // Relink RunThreadWithLogging to Celeste.RunThread.RunThreadWithLogging because reflection invoke is slow.
             HRunThreadWithLogging = new Detour(
-                typeof(Core).GetMethod("RunThreadWithLogging"),
-                typeof(RunThread).GetMethod("RunThreadWithLogging", BindingFlags.NonPublic | BindingFlags.Static)
+                typeof(Core).GetMethodInfo("RunThreadWithLogging"),
+                typeof(RunThread).GetMethodInfo("RunThreadWithLogging")
             );
 
             // The original mod adds a few lines of code into Monocle.Engine::Update.
@@ -47,8 +47,8 @@ namespace TAS.EverestInterop {
             // 1. Expose the trampoline to be used for the base.Update call in MInput_Update
             // 2. XNA Framework methods would require a separate MMHOOK .dll
             OrigGameUpdate = (HGameUpdate = new Detour(
-                typeof(Game).GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic),
-                typeof(Core).GetMethod("Game_Update")
+                typeof(Game).GetMethodInfo("Update"),
+                typeof(Core).GetMethodInfo("Game_Update")
             )).GenerateTrampoline<DGameUpdate>();
 
             // Forced: Allow "rendering" entities without actually rendering them.
@@ -65,12 +65,12 @@ namespace TAS.EverestInterop {
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void RunThreadWithLogging(Action method) {
+        private static void RunThreadWithLogging(Action method) {
             // This gets relinked to Celeste.RunThread.RunThreadWithLogging
             throw new Exception("Failed relinking RunThreadWithLogging!");
         }
 
-        public static void Engine_Update(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
+        private static void Engine_Update(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
             SkipBaseUpdate = false;
             InUpdate = false;
 
@@ -96,10 +96,10 @@ namespace TAS.EverestInterop {
                 }
 
                 // Autosaving prevents opening the menu to skip cutscenes during fast forward.
-                if (Engine.Scene is Level level && UserIO.Saving && !SaveData.Instance.Areas_Safe[level.Session.Area.ID].Modes[0].Completed) {
-                    if (Engine.Scene.Entities.FindFirst<EventTrigger>() != null
-                        || Engine.Scene.Entities.FindFirst<NPC>() != null
-                        || Engine.Scene.Entities.FindFirst<FlingBirdIntro>() != null) {
+                if (CantPauseWhileSaving.Value && Engine.Scene is Level level && UserIO.Saving) {
+                    if (level.Entities.FindFirst<EventTrigger>() != null
+                        || level.Entities.FindFirst<NPC>() != null
+                        || level.Entities.FindFirst<FlingBirdIntro>() != null) {
                         skipBaseUpdate = false;
                         loops = 1;
                     }
@@ -133,7 +133,7 @@ namespace TAS.EverestInterop {
             }
         }
 
-        public static void MInput_Update(On.Monocle.MInput.orig_Update orig) {
+        private static void MInput_Update(On.Monocle.MInput.orig_Update orig) {
             if (!Settings.Enabled) {
                 orig();
                 return;
@@ -155,7 +155,8 @@ namespace TAS.EverestInterop {
             }
         }
 
-        public static void Game_Update(Game self, GameTime gameTime) {
+        // ReSharper disable once UnusedMember.Local
+        private static void Game_Update(Game self, GameTime gameTime) {
             if (Settings.Enabled && SkipBaseUpdate) {
                 return;
             }
@@ -163,12 +164,12 @@ namespace TAS.EverestInterop {
             OrigGameUpdate(self, gameTime);
         }
 
-        public static void FrameStepGameLoop() {
+        private static void FrameStepGameLoop() {
             Engine.OverloadGameLoop = PreviousGameLoop;
         }
 
-        public static void RunThread_Start(On.Celeste.RunThread.orig_Start orig, Action method, string name, bool highPriority) {
-            if (Manager.Running) {
+        private static void RunThread_Start(On.Celeste.RunThread.orig_Start orig, Action method, string name, bool highPriority) {
+            if (Manager.Running && (CantPauseWhileSaving.Value || name != "USER_IO" && name != "MOD_IO")) {
                 RunThreadWithLogging(method);
                 return;
             }
@@ -183,5 +184,7 @@ namespace TAS.EverestInterop {
 
             orig(self);
         }
+
+        private delegate void DGameUpdate(Game self, GameTime gameTime);
     }
 }
