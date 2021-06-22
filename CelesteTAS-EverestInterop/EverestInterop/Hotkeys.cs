@@ -215,15 +215,22 @@ namespace TAS.EverestInterop {
 
         public static void Load() {
             InputInitialize();
-            if (typeof(ModuleSettingsKeyboardConfigUI).GetMethodInfo("<Reload>b__6_0") is { } methodInfo) {
-                IlHooks.Add(new ILHook(methodInfo, ModReload));
+            if (typeof(ModuleSettingsKeyboardConfigUI) is { } type) {
+                if (type.GetMethodInfo("Reset") is { } resetMethod) {
+                    // Celeste v1.4: after Everest drop support v1.3.1.2
+                    IlHooks.Add(new ILHook(resetMethod, ModReload));
+                } else if (type.GetMethodInfo("<Reload>b__6_0") is { } reloadMethod) {
+                    // Celeste v1.3
+                    IlHooks.Add(new ILHook(reloadMethod, ModReload));
+                }
             }
 
+            // Celeste v1.4: before Everest drop support v1.3.1.2
             if (typeof(Everest).Assembly.GetTypesSafe()
-                    .FirstOrDefault(type => type.FullName == "Celeste.Mod.ModuleSettingsKeyboardConfigUIV2") is { } typeV2
+                    .FirstOrDefault(t => t.FullName == "Celeste.Mod.ModuleSettingsKeyboardConfigUIV2") is { } typeV2
             ) {
-                if (typeV2.GetMethodInfo("Reset") is { } methodInfoV2) {
-                    IlHooks.Add(new ILHook(methodInfoV2, ModReload));
+                if (typeV2.GetMethodInfo("Reset") is { } resetMethodV2) {
+                    IlHooks.Add(new ILHook(resetMethodV2, ModReload));
                 }
             }
         }
