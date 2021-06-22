@@ -38,13 +38,13 @@
         <PackageReference Include="Mono.Cecil" Version="0.11.3">
             <IncludeAssets>compile</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="MonoMod" Version="20.11.26.2">
+        <PackageReference Include="MonoMod" Version="21.4.29.1">
             <IncludeAssets>compile</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="MonoMod.RuntimeDetour" Version="20.11.26.2">
+        <PackageReference Include="MonoMod.RuntimeDetour" Version="21.4.29.1">
             <IncludeAssets>compile</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="MonoMod.Utils" Version="20.11.26.2">
+        <PackageReference Include="MonoMod.Utils" Version="21.4.29.1">
             <IncludeAssets>compile</IncludeAssets>
         </PackageReference>
         <PackageReference Include="YamlDotNet" Version="8.1.2">
