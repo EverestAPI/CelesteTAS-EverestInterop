@@ -14,7 +14,7 @@ namespace TAS.EverestInterop {
                 WriteLine(builder, $"State: {Manager.State}");
                 WriteLine(builder, $"SaveState: {Savestates.StudioHighlightLine >= 0}");
                 WriteLine(builder, $"Game Info: ");
-                builder.Append($@"<pre>{GameInfo.Status}</pre>");
+                builder.Append($@"<pre>{GameInfo.StudioInfo}</pre>");
                 Everest.DebugRC.WriteHTMLEnd(c, builder);
                 Everest.DebugRC.Write(c, builder.ToString());
             }

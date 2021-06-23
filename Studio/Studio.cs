@@ -1268,6 +1268,10 @@ namespace CelesteStudio {
             StudioCommunicationServer.instance?.ToggleGameSetting("InfoGame");
         }
 
+        private void inspectEntityInfoToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.instance?.ToggleGameSetting("InfoInspectEntity");
+        }
+
         private void customInfoToolStripMenuItem_Click(object sender, EventArgs e) {
             StudioCommunicationServer.instance?.ToggleGameSetting("InfoCustom");
         }

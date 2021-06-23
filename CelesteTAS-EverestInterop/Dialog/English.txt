@@ -45,6 +45,7 @@ TAS_INFO_CUSTOM=                           Custom Info
 TAS_INFO_COPY_CUSTOM_TEMPLATE=             Copy Custom Info Template to Clipboard
 TAS_INFO_SET_CUSTOM_TEMPLATE=              Set Custom Info Template From Clipboard
 TAS_INFO_INSPECT_ENTITY=                   Inspect Entity
+TAS_INFO_INSPECT_ENTITY_TYPE=              Inspect Entity Info
 TAS_INFO_INSPECT_ENTITY_POSITION=          Position
 TAS_INFO_INSPECT_ENTITY_DECLARED_ONLY=     Declared Only
 TAS_INFO_INSPECT_ENTITY_ALL=               All
@@ -53,6 +54,12 @@ TAS_INFO_TEXT_SIZE=                        Text Size
 TAS_INFO_SUBPIXEL_INDICATOR_SIZE=          Subpixel Indicator Size
 TAS_INFO_OPACITY=                          Opacity
 TAS_INFO_MASKED_OPACITY=                   Masked Opacity
+
+# ================================== Info HUD Options ==================================
+TAS_INFO_HUD_OPTIONS_OFF=         OFF
+TAS_INFO_HUD_OPTIONS_HUD_ONLY=    Hud Only
+TAS_INFO_HUD_OPTIONS_STUDIO_ONLY= Studio Only
+TAS_INFO_HUD_OPTIONS_BOTH=        Both
 
 # ================================== Round Values ==================================
 TAS_ROUND_POSITION=           Round Position

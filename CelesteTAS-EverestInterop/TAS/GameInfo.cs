@@ -43,6 +43,7 @@ namespace TAS {
         public static string StatusWithoutTime = string.Empty;
         public static string LastVel = string.Empty;
         public static string LastPlayerSeekerVel = string.Empty;
+        public static string InspectingInfo = string.Empty;
         public static string CustomInfo = string.Empty;
         public static Vector2Double LastPos;
         public static Vector2Double LastPlayerSeekerPos;
@@ -87,6 +88,42 @@ namespace TAS {
             CoroutineWaitTimer = waitTimer.CreateDelegate_Get<Func<Coroutine, float>>();
         }
 
+        private static CelesteTasModuleSettings TasSettings => CelesteTasModule.Settings;
+
+        public static string StudioInfo {
+            get {
+                List<string> infos = new() {Status};
+                if ((TasSettings.InfoCustom & HudOptions.StudioOnly) != 0 && CustomInfo.IsNotNullOrWhiteSpace()) {
+                    infos.Add(CustomInfo);
+                }
+
+                if ((TasSettings.InfoInspectEntity & HudOptions.StudioOnly) != 0 && InspectingInfo.IsNotNullOrWhiteSpace()) {
+                    infos.Add(InspectingInfo);
+                }
+
+                return string.Join("\n\n", infos);
+            }
+        }
+
+        public static string HudInfo {
+            get {
+                List<string> infos = new();
+                if (TasSettings.InfoGame && Status.IsNotNullOrWhiteSpace()) {
+                    infos.Add(Status);
+                }
+
+                if ((TasSettings.InfoCustom & HudOptions.HudOnly) != 0 && CustomInfo.IsNotNullOrWhiteSpace()) {
+                    infos.Add(CustomInfo);
+                }
+
+                if ((TasSettings.InfoInspectEntity & HudOptions.HudOnly) != 0 && InspectingInfo.IsNotNullOrWhiteSpace()) {
+                    infos.Add(InspectingInfo);
+                }
+
+                return string.Join("\n\n", infos);
+            }
+        }
+
         private static int FramesPerSecond => (int) Math.Round(1 / Engine.RawDeltaTime);
 
         public static bool ExportSyncData { get; private set; }
@@ -117,7 +154,7 @@ namespace TAS {
                 ins => ins.OpCode == OpCodes.Ldc_R4,
                 ins => ins.MatchBox<float>(),
                 ins => ins.OpCode == OpCodes.Stfld && ins.Operand.ToString().EndsWith("::<>2__current")
-                )) {
+            )) {
                 ilCursor.Index += 2;
                 ilCursor.EmitDelegate<Func<float, float>>(dashTime => {
                     DashTime = dashTime;
@@ -227,6 +264,7 @@ namespace TAS {
                         } else {
                             velocity = LastPlayerSeekerVel;
                         }
+
                         polarVel = $"Chase: {diff.Length():F2}, {diff.Angle():F5}°";
                         dashCooldown = PlayerSeekerDashTimer(playerSeeker).ToCeilingFrames();
                     }
@@ -273,7 +311,8 @@ namespace TAS {
                         timers += $"DashCD({dashCooldown}) ";
                     }
 
-                    if ((FramesPerSecond != 60 || Math.Abs(Engine.TimeRateB - 1f) > 0.000001f || SaveData.Instance.Assists.SuperDashing) && DashTime.ToCeilingFrames() >= 1 && player.StateMachine.State == Player.StDash) {
+                    if ((FramesPerSecond != 60 || Math.Abs(Engine.TimeRateB - 1f) > 0.000001f || SaveData.Instance.Assists.SuperDashing) &&
+                        DashTime.ToCeilingFrames() >= 1 && player.StateMachine.State == Player.StDash) {
                         DashTime = CoroutineWaitTimer(StateMachineCurrentCoroutine(player.StateMachine));
                         timers += $"Dash({DashTime.ToCeilingFrames()}) ";
                     }
@@ -314,18 +353,6 @@ namespace TAS {
                         stringBuilder.AppendLine(timers);
                     }
 
-                    if (Manager.FrameLoops == 1) {
-                        string inspectingInfo = InfoInspectEntity.GetInspectingEntitiesInfo();
-                        if (inspectingInfo.IsNotNullOrEmpty()) {
-                            stringBuilder.AppendLine(inspectingInfo);
-                        }
-
-                        CustomInfo = InfoCustom.Parse();
-                        if (CustomInfo.IsNotEmpty()) {
-                            stringBuilder.AppendLine(CustomInfo);
-                        }
-                    }
-
                     StatusWithoutTime = stringBuilder.ToString();
                     if (Engine.FreezeTimer <= 0f) {
                         LastPos = player.GetMoreExactPosition();
@@ -338,12 +365,21 @@ namespace TAS {
                 string roomNameAndTime =
                     $"[{level.Session.Level}] Timer: {(chapterTime / 10000000D):F3}({chapterTime / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks})";
                 Status = StatusWithoutTime + roomNameAndTime;
-            } else if (Engine.Scene is SummitVignette summit) {
-                Status = "SummitVignette " + SummitVignetteReadyFieldInfo.GetValue(summit);
-            } else if (Engine.Scene is Overworld overworld) {
-                Status = "Overworld " + overworld.ShowInputUI;
-            } else if (Engine.Scene != null) {
-                Status = Engine.Scene.GetType().Name;
+
+                if (Manager.FrameLoops == 1) {
+                    InspectingInfo = InfoInspectEntity.GetInspectingEntitiesInfo();
+                    CustomInfo = InfoCustom.Parse();
+                }
+            } else {
+                InspectingInfo = string.Empty;
+                CustomInfo = string.Empty;
+                if (Engine.Scene is SummitVignette summit) {
+                    Status = "SummitVignette " + SummitVignetteReadyFieldInfo.GetValue(summit);
+                } else if (Engine.Scene is Overworld overworld) {
+                    Status = "Overworld " + overworld.ShowInputUI;
+                } else if (Engine.Scene != null) {
+                    Status = Engine.Scene.GetType().Name;
+                }
             }
         }
 

@@ -45,15 +45,22 @@ TAS_INFO_CUSTOM=                           自定义数据
 TAS_INFO_COPY_CUSTOM_TEMPLATE=             复制自定义数据模板到剪贴板
 TAS_INFO_SET_CUSTOM_TEMPLATE=              读取剪贴板设置自定义数据模板
 TAS_INFO_INSPECT_ENTITY=                   监视实体
-TAS_INFO_INSPECT_ENTITY_POSITION=          位置信息
-TAS_INFO_INSPECT_ENTITY_DECLARED_ONLY=     特有信息
-TAS_INFO_INSPECT_ENTITY_ALL=               所有信息
+TAS_INFO_INSPECT_ENTITY_TYPE=              监视实体信息
+TAS_INFO_INSPECT_ENTITY_POSITION=          位置
+TAS_INFO_INSPECT_ENTITY_DECLARED_ONLY=     特有
+TAS_INFO_INSPECT_ENTITY_ALL=               所有
 TAS_INFO_IGNORE_TRIGGER_WHEN_CLICK_ENTITY= 点击实体时忽略触发器
 TAS_INFO_TEXT_SIZE=                        文字大小
 TAS_INFO_SUBPIXEL_INDICATOR_SIZE=          亚像素指示器大小
 TAS_INFO_OPACITY=                          不透明度
 TAS_INFO_MASKED_OPACITY=                   遮挡人物时的不透明度
 TAS_KEY_INFO_HUD=                          信息面板
+
+# ================================== Info HUD Options ==================================
+TAS_INFO_HUD_OPTIONS_OFF=         关
+TAS_INFO_HUD_OPTIONS_HUD_ONLY=    信息面板
+TAS_INFO_HUD_OPTIONS_STUDIO_ONLY= Studio
+TAS_INFO_HUD_OPTIONS_BOTH=        同时显示
 
 # ================================== Round Values ==================================
 TAS_ROUND_POSITION=           坐标保留两位小数

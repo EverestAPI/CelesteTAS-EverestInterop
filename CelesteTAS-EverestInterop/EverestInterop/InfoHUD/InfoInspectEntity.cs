@@ -77,6 +77,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 if (SaveData.Instance?.Assists.MirrorMode == true) {
                     mousePosition.X = Engine.ViewWidth - mousePosition.X;
                 }
+
                 Camera camera = level.Camera;
                 int viewScale =
                     (int) Math.Round(Engine.Instance.GraphicsDevice.PresentationParameters.BackBufferWidth / (float) camera.Viewport.Width);
@@ -242,7 +243,7 @@ namespace TAS.EverestInterop.InfoHUD {
         public static string GetInspectingEntitiesInfo(string separator = "\n") {
             InspectingEntities.Clear();
             string inspectingInfo = string.Empty;
-            if (Engine.Scene is not Level level) {
+            if (Engine.Scene is not Level level || Settings.InfoInspectEntity == HudOptions.Off) {
                 return string.Empty;
             }
 
@@ -404,9 +405,9 @@ namespace TAS.EverestInterop.InfoHUD {
     }
 
     internal record UniqueEntityId {
-        public readonly Type Type;
-        public readonly bool GlobalOrPersistent;
         public readonly EntityID EntityId;
+        public readonly bool GlobalOrPersistent;
+        public readonly Type Type;
 
         public UniqueEntityId(Entity entity, EntityData entityData) {
             Type = entity.GetType();

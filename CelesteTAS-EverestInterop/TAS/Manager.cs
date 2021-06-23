@@ -62,7 +62,7 @@ namespace TAS {
 
                 if (HasFlag(State, State.FrameStep)) {
                     UpdateManagerStatus();
-                    StudioCommunicationClient.Instance?.SendStateAndGameData(CurrentStatus, GameInfo.Status, !ShouldForceState);
+                    StudioCommunicationClient.Instance?.SendStateAndGameData(CurrentStatus, GameInfo.StudioInfo, !ShouldForceState);
                     return;
                 }
                 /*
@@ -101,7 +101,7 @@ namespace TAS {
                 }
             }
 
-            StudioCommunicationClient.Instance?.SendStateAndGameData(CurrentStatus, GameInfo.Status, !ShouldForceState);
+            StudioCommunicationClient.Instance?.SendStateAndGameData(CurrentStatus, GameInfo.StudioInfo, !ShouldForceState);
         }
 
         public static void UpdateManagerStatus() {

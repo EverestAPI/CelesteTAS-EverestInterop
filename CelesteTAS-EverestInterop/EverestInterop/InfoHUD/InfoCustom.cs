@@ -44,7 +44,7 @@ namespace TAS.EverestInterop.InfoHUD {
         }
 
         public static string Parse() {
-            if (!Settings.InfoCustom) {
+            if (Settings.InfoCustom == HudOptions.Off) {
                 return string.Empty;
             }
 

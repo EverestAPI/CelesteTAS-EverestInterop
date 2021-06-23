@@ -49,20 +49,14 @@ namespace TAS.EverestInterop.InfoHUD {
                 WriteTasInput(stringBuilder);
             }
 
-            if (TasSettings.InfoGame) {
+            string hudInfo = GameInfo.HudInfo;
+            if (hudInfo.IsNotEmpty()) {
                 if (stringBuilder.Length > 0) {
                     stringBuilder.AppendLine();
                 }
 
-                stringBuilder.Append(GameInfo.Status);
-            } else if (TasSettings.InfoCustom) {
-                if (stringBuilder.Length > 0) {
-                    stringBuilder.AppendLine();
-                }
-
-                stringBuilder.Append(GameInfo.CustomInfo);
+                stringBuilder.Append(hudInfo);
             }
-
 
             string text = stringBuilder.ToString().Trim();
             if (string.IsNullOrEmpty(text) && !TasSettings.InfoSubPixelIndicator) {
@@ -157,7 +151,8 @@ namespace TAS.EverestInterop.InfoHUD {
                 string currentStr =
                     $"{(current.Line + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - current.Frames.ToString().Length)}{current}";
                 int maxWidth = currentStr.Length + controller.InputCurrentFrame.ToString().Length + 1;
-                maxWidth = GameInfo.Status.Split('\n').Select(s => s.Length).Concat(new[] {maxWidth}).Max();
+                maxWidth = GameInfo.HudInfo.Split('\n').Select(s => s.Length).Concat(new[] {maxWidth}).Max();
+                maxWidth = Math.Max(20, maxWidth);
                 stringBuilder.AppendLine(
                     $"{currentStr.PadRight(maxWidth - controller.InputCurrentFrame.ToString().Length - 1)}{controller.InputCurrentFrame}");
                 if (next != null) {
@@ -175,14 +170,17 @@ namespace TAS.EverestInterop.InfoHUD {
                     TasSettings.InfoTasInput = value));
                 subMenu.Add(new TextMenu.OnOff("Info Subpixel Indicator".ToDialogText(), TasSettings.InfoSubPixelIndicator).Change(value =>
                     TasSettings.InfoSubPixelIndicator = value));
-                subMenu.Add(new TextMenu.OnOff("Info Custom".ToDialogText(), TasSettings.InfoCustom).Change(value => TasSettings.InfoCustom = value));
+                subMenu.Add(new TextMenuExt.EnumerableSlider<HudOptions>("Info Custom".ToDialogText(), CreateHudOptions(), TasSettings.InfoCustom)
+                    .Change(value => TasSettings.InfoCustom = value));
                 subMenu.Add(new TextMenu.Button("Info Copy Custom Template".ToDialogText()).Pressed(() =>
                     TextInput.SetClipboardText(TasSettings.InfoCustomTemplate ?? string.Empty)));
                 subMenu.Add(new TextMenu.Button("Info Set Custom Template".ToDialogText()).Pressed(() => {
                     TasSettings.InfoCustomTemplate = TextInput.GetClipboardText() ?? string.Empty;
                     CelesteTasModule.Instance.SaveSettings();
                 }));
-                subMenu.Add(new TextMenuExt.EnumerableSlider<InspectEntityTypes>("Info Inspect Entity".ToDialogText(), new[] {
+                subMenu.Add(new TextMenuExt.EnumerableSlider<HudOptions>("Info Inspect Entity".ToDialogText(), CreateHudOptions(),
+                    TasSettings.InfoInspectEntity).Change(value => TasSettings.InfoInspectEntity = value));
+                subMenu.Add(new TextMenuExt.EnumerableSlider<InspectEntityTypes>("Info Inspect Entity Type".ToDialogText(), new[] {
                     new KeyValuePair<InspectEntityTypes, string>(InspectEntityTypes.Position, "Info Inspect Entity Position".ToDialogText()),
                     new KeyValuePair<InspectEntityTypes, string>(InspectEntityTypes.DeclaredOnly, "Info Inspect Entity Declared Only".ToDialogText()),
                     new KeyValuePair<InspectEntityTypes, string>(InspectEntityTypes.All, "Info Inspect Entity All".ToDialogText()),
@@ -202,9 +200,26 @@ namespace TAS.EverestInterop.InfoHUD {
             return subMenuItem;
         }
 
+        private static KeyValuePair<HudOptions, string>[] CreateHudOptions() {
+            return new[] {
+                new KeyValuePair<HudOptions, string>(HudOptions.Off, "Info HUD Options Off".ToDialogText()),
+                new KeyValuePair<HudOptions, string>(HudOptions.HudOnly, "Info HUD Options Hud Only".ToDialogText()),
+                new KeyValuePair<HudOptions, string>(HudOptions.StudioOnly, "Info HUD Options Studio Only".ToDialogText()),
+                new KeyValuePair<HudOptions, string>(HudOptions.Both, "Info HUD Options Both".ToDialogText()),
+            };
+        }
+
         public static void AddSubMenuDescription(TextMenu menu) {
             subMenuItem.AddDescription(menu, "Info HUD Description 2".ToDialogText());
             subMenuItem.AddDescription(menu, "Info HUD Description 1".ToDialogText());
         }
+    }
+
+    [Flags]
+    public enum HudOptions {
+        Off = 0,
+        HudOnly = 1,
+        StudioOnly = 2,
+        Both = HudOnly | StudioOnly
     }
 }

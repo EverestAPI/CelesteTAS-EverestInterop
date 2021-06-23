@@ -16,6 +16,7 @@ namespace TAS {
         private static string savedStatusWithoutTime;
         private static string savedLastVel;
         private static string savedLastPlayerSeekerVel;
+        private static string savedInspectingInfo;
         private static string savedCustomInfo;
         private static Vector2Double savedLastPos;
         private static Vector2Double savedLastPlayerSeekerPos;
@@ -109,6 +110,7 @@ namespace TAS {
             savedGameStatus = GameInfo.Status;
             savedLastVel = GameInfo.LastVel;
             savedLastPlayerSeekerVel = GameInfo.LastPlayerSeekerVel;
+            savedInspectingInfo = GameInfo.InspectingInfo;
             savedCustomInfo = GameInfo.CustomInfo;
             savedStatusWithoutTime = GameInfo.StatusWithoutTime;
             savedLastPos = GameInfo.LastPos;
@@ -158,6 +160,7 @@ namespace TAS {
             savedGameStatus = null;
             savedLastVel = null;
             savedLastPlayerSeekerVel = null;
+            savedInspectingInfo = null;
             savedCustomInfo = null;
             savedStatusWithoutTime = null;
             savedLastPos = default;
@@ -180,6 +183,7 @@ namespace TAS {
             GameInfo.Status = savedGameStatus;
             GameInfo.LastVel = savedLastVel;
             GameInfo.LastPlayerSeekerVel = savedLastPlayerSeekerVel;
+            GameInfo.InspectingInfo = savedInspectingInfo;
             GameInfo.CustomInfo = savedCustomInfo;
             GameInfo.StatusWithoutTime = savedStatusWithoutTime;
             GameInfo.LastPos = savedLastPos;
@@ -204,7 +208,7 @@ namespace TAS {
                 UpdateManagerStatus();
             }
 
-            StudioCommunicationClient.Instance?.SendStateAndGameData(CurrentStatus, GameInfo.Status, false);
+            StudioCommunicationClient.Instance?.SendStateAndGameData(CurrentStatus, GameInfo.StudioInfo, false);
         }
 
         // ReSharper disable once UnusedMember.Local

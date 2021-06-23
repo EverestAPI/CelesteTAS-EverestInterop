@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using CelesteStudio.Properties;
 using StudioCommunication;
@@ -16,32 +17,26 @@ namespace CelesteStudio.Communication {
         public static bool updatingHotkeys = Settings.Default.UpdatingHotkeys;
         public static bool fastForwarding = false;
 
+        private static readonly Regex LevelAndTimerRegex =
+            new(@"^\[([^\[]+?)\] Timer: ([0-9.]+?\(\d+\))$", RegexOptions.Compiled | RegexOptions.Multiline);
+
         [DllImport("User32.dll")]
         public static extern short GetAsyncKeyState(Keys key);
 
         public static string LevelName() {
-            if (string.IsNullOrEmpty(gameData)) {
+            if (LevelAndTimerRegex.IsMatch(gameData)) {
+                return LevelAndTimerRegex.Match(gameData).Groups[1].Value;
+            } else {
                 return string.Empty;
             }
-
-            int nameStart = gameData.LastIndexOf('[') + 1;
-            int nameEnd = gameData.LastIndexOf(']');
-            if (nameStart == -1 || nameEnd == -1) {
-                return string.Empty;
-            }
-
-            return gameData.Substring(nameStart, nameEnd - nameStart);
         }
 
         public static string Timer() {
-            int timerIndex = gameData.LastIndexOf("Timer", StringComparison.Ordinal);
-            if (timerIndex == -1) {
-                return null;
+            if (LevelAndTimerRegex.IsMatch(gameData)) {
+                return LevelAndTimerRegex.Match(gameData).Groups[2].Value;
+            } else {
+                return string.Empty;
             }
-
-            timerIndex += 7;
-            int timerEnd = gameData.IndexOf(')', timerIndex);
-            return gameData.Substring(timerIndex, timerEnd - timerIndex + 1);
         }
 
         public static void SetBindings(List<Keys>[] newBindings) {
