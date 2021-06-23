@@ -13,60 +13,6 @@ namespace TAS.EverestInterop {
         private bool centerCamera;
         public bool Enabled { get; set; } = true;
 
-        #region HotKey
-
-        [SettingName("TAS_KEY_START")]
-        [DefaultButtonBinding(0, Keys.RightControl)]
-        public ButtonBinding KeyStart { get; set; } = new();
-
-        [SettingName("TAS_KEY_RESTART")]
-        [DefaultButtonBinding(0, Keys.OemPlus)]
-        public ButtonBinding KeyRestart { get; set; } = new();
-
-        [SettingName("TAS_KEY_FAST_FORWARD")]
-        [DefaultButtonBinding(0, Keys.RightShift)]
-        public ButtonBinding KeyFastForward { get; set; } = new();
-
-        [SettingName("TAS_KEY_FRAME_ADVANCE")]
-        [DefaultButtonBinding(0, Keys.OemOpenBrackets)]
-        public ButtonBinding KeyFrameAdvance { get; set; } = new();
-
-        [SettingName("TAS_KEY_PAUSE")]
-        [DefaultButtonBinding(0, Keys.OemCloseBrackets)]
-        public ButtonBinding KeyPause { get; set; } = new();
-
-        [SettingName("TAS_KEY_HITBOXES")]
-        [DefaultButtonBinding(0, Keys.B)]
-        public ButtonBinding KeyHitboxes { get; set; } = new();
-
-        [SettingName("TAS_KEY_TRIGGER_HITBOXES")]
-        [DefaultButtonBinding(0, Keys.LeftAlt)]
-        public ButtonBinding KeyTriggerHitboxes { get; set; } = new();
-
-        [SettingName("TAS_KEY_GRAPHICS")]
-        [DefaultButtonBinding(0, Keys.N)]
-        public ButtonBinding KeyGraphics { get; set; } = new();
-
-        [SettingName("TAS_KEY_CAMERA")]
-        [DefaultButtonBinding(0, Keys.M)]
-        public ButtonBinding KeyCamera { get; set; } = new();
-
-        // Multiple default keys are not supported, handled by Hotkeys.ModReload()
-        [SettingName("TAS_KEY_SAVE_STATE")]
-        [DefaultButtonBinding(0, Keys.OemMinus)]
-        public ButtonBinding KeySaveState { get; set; } = new();
-
-        // Multiple default keys are not supported, handled by Hotkeys.ModReload()
-        [SettingName("TAS_KEY_CLEAR_STATE")]
-        [DefaultButtonBinding(0, Keys.Back)]
-        public ButtonBinding KeyClearState { get; set; } = new();
-
-        [SettingName("TAS_KEY_INFO_HUD")]
-        [DefaultButtonBinding(0, Keys.LeftControl)]
-        public ButtonBinding KeyInfoHud { get; set; } = new();
-
-        #endregion
-
         public bool ShowHitboxes {
             get => GameplayRenderer.RenderDebug;
             set => GameplayRenderer.RenderDebug = value;
@@ -98,7 +44,6 @@ namespace TAS.EverestInterop {
         public bool PauseAfterLoadState { get; set; } = true;
 
         public bool RestoreSettings { get; set; } = false;
-        [SettingIgnore] public bool FirstLaunch { get; set; } = true;
 
         // for hot reloading
         // ReSharper disable once UnusedMember.Local
@@ -114,6 +59,61 @@ namespace TAS.EverestInterop {
         private static void SaveHitboxSetting() {
             Engine.Instance.GetDynDataInstance().Set(nameof(CelesteTasModule.Settings.ShowHitboxes), CelesteTasModule.Settings.ShowHitboxes);
         }
+
+        #region HotKey
+
+        [SettingName("TAS_KEY_START")]
+        [DefaultButtonBinding(0, Keys.RightControl)]
+        public ButtonBinding KeyStart { get; set; } = new(0, Keys.RightControl);
+
+        [SettingName("TAS_KEY_RESTART")]
+        [DefaultButtonBinding(0, Keys.OemPlus)]
+        public ButtonBinding KeyRestart { get; set; } = new(0, Keys.OemPlus);
+
+        [SettingName("TAS_KEY_FAST_FORWARD")]
+        [DefaultButtonBinding(0, Keys.RightShift)]
+        public ButtonBinding KeyFastForward { get; set; } = new(0, Keys.RightShift);
+
+        [SettingName("TAS_KEY_FRAME_ADVANCE")]
+        [DefaultButtonBinding(0, Keys.OemOpenBrackets)]
+        public ButtonBinding KeyFrameAdvance { get; set; } = new(0, Keys.OemOpenBrackets);
+
+        [SettingName("TAS_KEY_PAUSE")]
+        [DefaultButtonBinding(0, Keys.OemCloseBrackets)]
+        public ButtonBinding KeyPause { get; set; } = new(0, Keys.OemCloseBrackets);
+
+        [SettingName("TAS_KEY_HITBOXES")]
+        [DefaultButtonBinding(0, Keys.B)]
+        public ButtonBinding KeyHitboxes { get; set; } = new(0, Keys.B);
+
+        // Multiple default keys are not supported, handled by Hotkeys.ModReload()
+        [SettingName("TAS_KEY_TRIGGER_HITBOXES")]
+        [DefaultButtonBinding(0, Keys.LeftAlt)]
+        public ButtonBinding KeyTriggerHitboxes { get; set; } = new(0, Keys.LeftAlt, Keys.T);
+
+        [SettingName("TAS_KEY_GRAPHICS")]
+        [DefaultButtonBinding(0, Keys.N)]
+        public ButtonBinding KeyGraphics { get; set; } = new(0, Keys.N);
+
+        [SettingName("TAS_KEY_CAMERA")]
+        [DefaultButtonBinding(0, Keys.M)]
+        public ButtonBinding KeyCamera { get; set; } = new(0, Keys.M);
+
+        // Multiple default keys are not supported, handled by Hotkeys.ModReload()
+        [SettingName("TAS_KEY_SAVE_STATE")]
+        [DefaultButtonBinding(0, Keys.OemMinus)]
+        public ButtonBinding KeySaveState { get; set; } = new(0, Keys.RightAlt, Keys.OemMinus);
+
+        // Multiple default keys are not supported, handled by Hotkeys.ModReload()
+        [SettingName("TAS_KEY_CLEAR_STATE")]
+        [DefaultButtonBinding(0, Keys.Back)]
+        public ButtonBinding KeyClearState { get; set; } = new(0, Keys.RightAlt, Keys.Back);
+
+        [SettingName("TAS_KEY_INFO_HUD")]
+        [DefaultButtonBinding(0, Keys.LeftControl)]
+        public ButtonBinding KeyInfoHud { get; set; } = new(0, Keys.LeftControl);
+
+        #endregion
 
         #region SimplifiedGraphics
 
