@@ -174,11 +174,8 @@ namespace TAS.EverestInterop {
             }
 
             if (simplifiedGraphics) {
-                level.Entities.FindAll<FloatingDebris>().ForEach(debris => debris.Visible = false);
-                level.Entities.FindAll<MoonCreature>().ForEach(creature => creature.Visible = false);
-            } else {
-                level.Entities.FindAll<FloatingDebris>().ForEach(debris => debris.Visible = true);
-                level.Entities.FindAll<MoonCreature>().ForEach(creature => creature.Visible = true);
+                level.Tracker.GetEntities<FloatingDebris>().ForEach(debris => debris.RemoveSelf());
+                level.Entities.FindAll<MoonCreature>().ForEach(creature => creature.RemoveSelf());
             }
         }
 
