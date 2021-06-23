@@ -35,8 +35,8 @@ namespace TAS.EverestInterop.InfoHUD {
             float thickness = PixelScale * TasSettings.InfoSubPixelIndicatorSize / 20f;
             DrawHollowRect(x, y, rectSide, rectSide, Color.Green * alpha, thickness);
 
-            float pointSize = thickness * 1.5f;
-            Draw.Rect(x + rectSide * subPixelLeft - pointSize / 2 + 1, y + rectSide * subPixelTop - pointSize / 2 + 1, pointSize, pointSize,
+            float pointSize = thickness * 1.1f;
+            Draw.Rect(x + (rectSide - pointSize) * subPixelLeft, y + (rectSide - pointSize) * subPixelTop, pointSize, pointSize,
                 Color.Red * alpha);
 
             JetBrainsMonoFont.Draw(subPixelLeft.ToString("F2"), new Vector2(x - textWidth - padding / 2f, y + (rectSide - textHeight) / 2f),
