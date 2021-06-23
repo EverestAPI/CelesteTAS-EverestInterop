@@ -82,8 +82,11 @@ namespace TAS.EverestInterop.InfoHUD {
             Vector2 size = JetBrainsMonoFont.Measure(text) * fontSize;
             size = InfoSubPixelIndicator.TryExpandSize(size, padding);
 
-            TasSettings.InfoPosition = TasSettings.InfoPosition.Clamp(margin, margin, viewWidth - size.X - margin - padding * 2,
-                viewHeight - size.Y - margin - padding * 2);
+            float maxX = viewWidth - size.X - margin - padding * 2;
+            float maxY = viewHeight - size.Y - margin - padding * 2;
+            if (maxY > 0f) {
+                TasSettings.InfoPosition = TasSettings.InfoPosition.Clamp(margin, margin, maxX, maxY);
+            }
 
             float x = TasSettings.InfoPosition.X;
             float y = TasSettings.InfoPosition.Y;
