@@ -1109,6 +1109,7 @@ namespace CelesteStudio.RichText {
                 if (string.IsNullOrEmpty(CurrentFileName)) {
                     return string.Empty;
                 }
+
                 string validDir = $"{Path.GetFileName(CurrentFileName)}-{CurrentFileName.GetHashCode()}";
                 return Path.Combine(Directory.GetCurrentDirectory(), "TAS Files", "Backups", validDir);
             }
@@ -1563,7 +1564,7 @@ namespace CelesteStudio.RichText {
         /// </summary>
         public void Copy() {
             if (Selection.IsEmpty) {
-                Selection.Expand();
+                ExpandLine();
             }
 
             if (!Selection.IsEmpty) {
@@ -1621,7 +1622,7 @@ namespace CelesteStudio.RichText {
         /// </summary>
         public void Cut() {
             if (Selection.IsEmpty) {
-                Selection.Expand();
+                ExpandLine();
             }
 
             if (!Selection.IsEmpty) {
@@ -2390,13 +2391,7 @@ namespace CelesteStudio.RichText {
                     }
 
                     if (e.Modifiers == Keys.Control) {
-                        Selection.Expand();
-                        int line = Selection.End.iLine;
-                        if (line < LinesCount - 1) {
-                            line++;
-                        }
-
-                        Selection.End = new Place(0, line);
+                        ExpandLine();
                         ClearSelected();
                         TryMoveCursorBehindFrame();
                     }
@@ -2676,6 +2671,21 @@ namespace CelesteStudio.RichText {
 
             DoCaretVisible();
             Invalidate();
+        }
+
+        private void ExpandLine() {
+            Selection.Expand();
+            int line = Selection.End.iLine;
+            if (LinesCount <= 1) {
+                // ignored
+            } else if (line < LinesCount - 1) {
+                Selection.End = new Place(0, line + 1);
+            } else {
+                Place end = Selection.End;
+                line = Selection.Start.iLine - 1;
+                Selection.Start = new Place(Lines[line].Length, line);
+                Selection.End = end;
+            }
         }
 
         /// <summary>
