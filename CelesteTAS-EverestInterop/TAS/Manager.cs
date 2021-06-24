@@ -35,7 +35,7 @@ namespace TAS {
         public static bool EnforceLegal, AllowUnsafeInput;
         public static bool KbTextInput;
 
-        private static Task checkHotkeyStarTask;
+        private static Task checkHotkeyStartTask;
 
         static Manager() {
             MethodInfo updateVirtualInputs = typeof(MInput).GetMethodInfo("UpdateVirtualInputs");
@@ -204,7 +204,7 @@ namespace TAS {
             }
 
             if (Hotkeys.HotkeyStart.Pressed) {
-                if (!HasFlag(State, State.Enable) && checkHotkeyStarTask == null) {
+                if (!HasFlag(State, State.Enable) && checkHotkeyStartTask == null) {
                     NextState |= State.Enable;
                 } else {
                     NextState |= State.Disable;
@@ -231,8 +231,13 @@ namespace TAS {
             InitializeRun(false);
             KbTextInput = Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput;
             Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = false;
+            AllowInterruptingFastForward();
+            AttributeUtils.Invoke<EnableRunAttribute>();
+        }
 
-            checkHotkeyStarTask = Task.Run(() => {
+        // TODO: really bad, need hold down the start key for a long time to stop tas
+        private static void AllowInterruptingFastForward() {
+            checkHotkeyStartTask = Task.Run(() => {
                 while (Running || Hotkeys.HotkeyStart.Pressed) {
                     if (FrameLoops > 100) {
                         if (Running && Hotkeys.HotkeyStart.Pressed) {
@@ -241,10 +246,8 @@ namespace TAS {
                     }
                 }
 
-                checkHotkeyStarTask = null;
+                checkHotkeyStartTask = null;
             });
-
-            AttributeUtils.Invoke<EnableRunAttribute>();
         }
 
         private static void DisableRun() {
