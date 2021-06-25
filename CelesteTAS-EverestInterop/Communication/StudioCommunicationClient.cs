@@ -16,15 +16,17 @@ using WinForms = System.Windows.Forms;
 
 namespace TAS.Communication {
     public sealed class StudioCommunicationClient : StudioCommunicationBase {
-        public static StudioCommunicationClient Instance;
-
-        private Thread thread;
-
+        private List<Thread> threads = new();
         private StudioCommunicationClient() { }
         private StudioCommunicationClient(string target) : base(target) { }
+        public static StudioCommunicationClient Instance { get; private set; }
 
         public static bool Run() {
             if (Environment.OSVersion.Platform != PlatformID.Win32NT) {
+                return false;
+            }
+
+            if (Instance != null) {
                 return false;
             }
 
@@ -34,24 +36,29 @@ namespace TAS.Communication {
             //SetupDebugVariables();
 #endif
 
-            RunThread.Start(Setup, "StudioCom Client");
-
-            void Setup() {
-                Engine.Instance.Exiting -= Destroy;
-                Engine.Instance.Exiting += Destroy;
-                Instance.thread = Thread.CurrentThread;
-                Instance.UpdateLoop();
-            }
-
+            RunThread("StudioCom Client");
             return true;
         }
 
-        public static void Destroy(object sender = null, EventArgs e = null) {
-            if (Instance != null) {
-                Instance.Abort = true;
-                Instance.thread.Abort();
-                Instance = null;
-            }
+        public static void Destroy() {
+            Instance?.threads?.ForEach(thread => thread.Abort());
+            Instance = null;
+        }
+
+        private static void RunThread(string threadName) {
+            Thread thread = new(() => {
+                try {
+                    Instance.UpdateLoop();
+                } catch (Exception e) when (e is not ThreadAbortException) {
+                    Logger.Log(LogLevel.Warn, "CelesteTAS", $"Studio Communication Thread Name: {threadName}");
+                    Logger.LogDetailed(e);
+                }
+            }) {
+                Name = threadName,
+                IsBackground = true
+            };
+            thread.Start();
+            Instance.threads.Add(thread);
         }
 
         /// <summary>
@@ -66,11 +73,10 @@ namespace TAS.Communication {
 
             var client = new StudioCommunicationClient(target);
 
-            RunThread.Start(Instance.UpdateLoop, "StudioCom Client_" + target);
+            RunThread($"StudioCom Client_{target}");
 
             return client;
         }
-
 
         private static void SetupDebugVariables() {
             Hotkeys.KeysList = new List<Keys>[] {

@@ -19,7 +19,6 @@ namespace StudioCommunication {
         //Almost certainly the former.
         private readonly MemoryMappedFile sharedMemory;
 
-        protected bool Abort;
         public Func<byte[], bool> ExternalReadHandler;
         private int failedWrites = 0;
         private int lastSignature;
@@ -57,10 +56,10 @@ namespace StudioCommunication {
         }
 
         protected void UpdateLoop() {
-            while (!Abort) {
+            while (true) {
                 EstablishConnectionLoop();
                 try {
-                    while (!Abort) {
+                    while (true) {
                         Message? message = ReadMessage();
 
                         if (message != null) {
@@ -136,7 +135,7 @@ namespace StudioCommunication {
         protected Message ReadMessageGuaranteed() {
             Log($"{this} forcing read");
             int failedReads = 0;
-            for (;;) {
+            while (true) {
                 Message? message = ReadMessage();
                 if (message != null) {
                     return (Message) message;
@@ -205,7 +204,7 @@ namespace StudioCommunication {
                 Log($"{this} forcing write of {message.Id} with length {message.Length}");
             }
 
-            for (;;) {
+            while (true) {
                 if (WriteMessage(message)) {
                     break;
                 }
@@ -255,7 +254,7 @@ namespace StudioCommunication {
         protected virtual void ReadData(Message message) { }
 
         private void EstablishConnectionLoop() {
-            for (;;) {
+            while (true) {
                 try {
                     EstablishConnection();
                     timeoutCount = 0;

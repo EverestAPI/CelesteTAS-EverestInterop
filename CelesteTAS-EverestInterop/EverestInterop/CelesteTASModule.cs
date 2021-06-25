@@ -60,9 +60,7 @@ namespace TAS.EverestInterop {
             }
 
             // Open memory mapped file for interfacing with Windows Celeste Studio
-            if (StudioCommunicationClient.Instance == null) {
-                StudioCommunicationClient.Run();
-            }
+            StudioCommunicationClient.Run();
 
 #if DEBUG
             Benchmark.Load();
