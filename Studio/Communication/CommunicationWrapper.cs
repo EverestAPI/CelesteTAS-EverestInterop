@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
@@ -12,7 +13,7 @@ namespace CelesteStudio.Communication {
         public static string state;
         public static string gameData = "";
         public static string command;
-        public static List<Keys>[] bindings;
+        private static List<Keys>[] bindings;
 
         public static bool updatingHotkeys = Settings.Default.UpdatingHotkeys;
         public static bool fastForwarding = false;
@@ -21,7 +22,11 @@ namespace CelesteStudio.Communication {
             new(@"^\[([^\[]+?)\] Timer: ([0-9.]+?\(\d+\))$", RegexOptions.Compiled | RegexOptions.Multiline);
 
         [DllImport("User32.dll")]
-        public static extern short GetAsyncKeyState(Keys key);
+        private static extern short GetAsyncKeyState(Keys key);
+
+        private static bool IsKeyDown(Keys keys) {
+            return (GetAsyncKeyState(keys) & 0x8000) == 0x8000;
+        }
 
         public static string LevelName() {
             if (LevelAndTimerRegex.IsMatch(gameData)) {
@@ -62,29 +67,22 @@ namespace CelesteStudio.Communication {
                     continue;
                 }
 
-                bool pressed = true;
-
-                foreach (Keys key in keys) {
-                    if ((GetAsyncKeyState(key) & 0x8000) != 0x8000) {
-                        pressed = false;
-                        break;
-                    }
-                }
+                bool pressed = keys.All(IsKeyDown);
 
                 if (pressed && keys.Count == 1) {
-                    if (!keys.Contains(Keys.LShiftKey) && (GetAsyncKeyState(Keys.LShiftKey) & 0x8000) == 0x8000) {
+                    if (!keys.Contains(Keys.LShiftKey) && IsKeyDown(Keys.LShiftKey)) {
                         pressed = false;
                     }
 
-                    if (!keys.Contains(Keys.RShiftKey) && (GetAsyncKeyState(Keys.RShiftKey) & 0x8000) == 0x8000) {
+                    if (!keys.Contains(Keys.RShiftKey) && IsKeyDown(Keys.RShiftKey)) {
                         pressed = false;
                     }
 
-                    if (!keys.Contains(Keys.LControlKey) && (GetAsyncKeyState(Keys.LControlKey) & 0x8000) == 0x8000) {
+                    if (!keys.Contains(Keys.LControlKey) && IsKeyDown(Keys.LControlKey)) {
                         pressed = false;
                     }
 
-                    if (!keys.Contains(Keys.RControlKey) && (GetAsyncKeyState(Keys.RControlKey) & 0x8000) == 0x8000) {
+                    if (!keys.Contains(Keys.RControlKey) && IsKeyDown(Keys.RControlKey)) {
                         pressed = false;
                     }
                 }
@@ -108,16 +106,11 @@ namespace CelesteStudio.Communication {
             }
 
             List<Keys> keys = bindings[(int) HotkeyIDs.FastForward];
-            bool pressed = true;
+            bool pressed;
             if (keys == null || keys.Count == 0) {
                 pressed = false;
-            }
-
-            foreach (Keys key in keys) {
-                if ((GetAsyncKeyState(key) & 0x8000) != 0x8000) {
-                    pressed = false;
-                    break;
-                }
+            } else {
+                pressed = keys.All(IsKeyDown);
             }
 
             if (!pressed) {

@@ -12,7 +12,6 @@ using StudioCommunication;
 using TAS.EverestInterop;
 using TAS.Input;
 using TAS.Utils;
-using WinForms = System.Windows.Forms;
 
 namespace TAS.Communication {
     public sealed class StudioCommunicationClient : StudioCommunicationBase {
@@ -348,17 +347,7 @@ namespace TAS.Communication {
         }
 
         private void SendCurrentBindings(List<Keys>[] bindings) {
-            List<WinForms.Keys>[] nativeBindings = new List<WinForms.Keys>[bindings.Length];
-            int i = 0;
-            foreach (List<Keys> keys in bindings) {
-                nativeBindings[i] = new List<WinForms.Keys>();
-                foreach (Keys key in keys) {
-                    nativeBindings[i].Add((WinForms.Keys) key);
-                }
-
-                i++;
-            }
-
+            List<int>[] nativeBindings = bindings.Select(keys => keys.Cast<int>().ToList()).ToArray();
             byte[] data = ToByteArray(nativeBindings);
             WriteMessageGuaranteed(new Message(MessageIDs.SendCurrentBindings, data));
         }

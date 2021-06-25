@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -94,7 +95,7 @@ namespace CelesteStudio.Communication {
         }
 
         private void ProcessSendCurrentBindings(byte[] data) {
-            List<Keys>[] keys = FromByteArray<List<Keys>[]>(data);
+            List<Keys>[] keys = FromByteArray<List<int>[]>(data).Select(ints => ints.Cast<Keys>().ToList()).ToArray();
             foreach (List<Keys> key in keys) {
                 Log(key.ToString());
             }
