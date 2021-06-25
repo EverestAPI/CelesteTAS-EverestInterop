@@ -13,8 +13,6 @@ using TAS.Utils;
 namespace TAS.EverestInterop {
     // ReSharper disable once ClassNeverInstantiated.Global
     public class CelesteTasModule : EverestModule {
-        public static CelesteTasModule Instance;
-
         public NamedPipeServerStream UnixRtc;
         public StreamReader UnixRtcStreamIn;
         public StreamWriter UnixRtcStreamOut;
@@ -24,6 +22,8 @@ namespace TAS.EverestInterop {
             AttributeUtils.CollectMethods<LoadAttribute>();
             AttributeUtils.CollectMethods<UnloadAttribute>();
         }
+
+        public static CelesteTasModule Instance { get; private set; }
 
         public override Type SettingsType => typeof(CelesteTasModuleSettings);
         public static CelesteTasModuleSettings Settings => (CelesteTasModuleSettings) Instance?._Settings;

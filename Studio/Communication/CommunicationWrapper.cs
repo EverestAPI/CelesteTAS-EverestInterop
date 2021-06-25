@@ -13,7 +13,7 @@ namespace CelesteStudio.Communication {
         public static string state;
         public static string gameData = "";
         public static string command;
-        private static List<Keys>[] bindings;
+        private static Dictionary<HotkeyIDs, List<Keys>> bindings;
 
         public static bool updatingHotkeys = Settings.Default.UpdatingHotkeys;
         public static bool fastForwarding = false;
@@ -44,7 +44,7 @@ namespace CelesteStudio.Communication {
             }
         }
 
-        public static void SetBindings(List<Keys>[] newBindings) {
+        public static void SetBindings(Dictionary<HotkeyIDs, List<Keys>> newBindings) {
             bindings = newBindings;
         }
 
@@ -60,12 +60,8 @@ namespace CelesteStudio.Communication {
             }
 
             bool anyPressed = false;
-            for (int i = 0; i < bindings.Length; i++) {
-                List<Keys> keys = bindings[i];
-
-                if (keys == null || keys.Count == 0) {
-                    continue;
-                }
+            foreach (HotkeyIDs hotkeyIDs in bindings.Keys) {
+                List<Keys> keys = bindings[hotkeyIDs];
 
                 bool pressed = keys.All(IsKeyDown);
 
@@ -88,11 +84,11 @@ namespace CelesteStudio.Communication {
                 }
 
                 if (pressed) {
-                    if (i == (int) HotkeyIDs.FastForward) {
+                    if (hotkeyIDs == HotkeyIDs.FastForward) {
                         fastForwarding = true;
                     }
 
-                    StudioCommunicationServer.instance?.SendHotkeyPressed((HotkeyIDs) i);
+                    StudioCommunicationServer.instance?.SendHotkeyPressed(hotkeyIDs);
                     anyPressed = true;
                 }
             }
@@ -105,12 +101,11 @@ namespace CelesteStudio.Communication {
                 throw new InvalidOperationException();
             }
 
-            List<Keys> keys = bindings[(int) HotkeyIDs.FastForward];
             bool pressed;
-            if (keys == null || keys.Count == 0) {
-                pressed = false;
+            if (bindings.ContainsKey(HotkeyIDs.FastForward)) {
+                pressed = bindings[HotkeyIDs.FastForward].All(IsKeyDown);
             } else {
-                pressed = keys.All(IsKeyDown);
+                pressed = false;
             }
 
             if (!pressed) {

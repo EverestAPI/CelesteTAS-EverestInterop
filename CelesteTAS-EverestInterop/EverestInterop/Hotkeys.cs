@@ -10,11 +10,13 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
+using StudioCommunication;
+using TAS.Communication;
 using TAS.Utils;
 
 namespace TAS.EverestInterop {
     public static class Hotkeys {
-        private static readonly List<ILHook> IlHooks = new();
+        private static readonly List<IDetour> Detours = new();
         private static FieldInfo bindingFieldInfo;
 
         private static readonly Lazy<FieldInfo> CelesteNetClientModuleInstance = new(() =>
@@ -45,7 +47,7 @@ namespace TAS.EverestInterop {
         public static Hotkey HotkeyClearState;
 
         public static Hotkey[] HotkeyList;
-        public static List<Keys>[] KeysList;
+        public static readonly Dictionary<HotkeyIDs, List<Keys>> KeysDict = new();
 
         private static bool CelesteNetChatting {
             get {
@@ -67,12 +69,19 @@ namespace TAS.EverestInterop {
 
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
-        public static void InputInitialize() {
-            KeysList = new[] {
-                Settings.KeyStart.Keys, Settings.KeyRestart.Keys, Settings.KeyFastForward.Keys, Settings.KeyFrameAdvance.Keys, Settings.KeyPause.Keys,
-                Settings.KeyHitboxes.Keys, Settings.KeyTriggerHitboxes.Keys, Settings.KeyGraphics.Keys, Settings.KeyCamera.Keys,
-                Settings.KeySaveState.Keys, Settings.KeyClearState.Keys
-            };
+        private static void InputInitialize() {
+            KeysDict.Clear();
+            KeysDict[HotkeyIDs.Start] = Settings.KeyStart.Keys;
+            KeysDict[HotkeyIDs.Restart] = Settings.KeyRestart.Keys;
+            KeysDict[HotkeyIDs.FastForward] = Settings.KeyFastForward.Keys;
+            KeysDict[HotkeyIDs.FrameAdvance] = Settings.KeyFrameAdvance.Keys;
+            KeysDict[HotkeyIDs.Pause] = Settings.KeyPause.Keys;
+            KeysDict[HotkeyIDs.Hitboxes] = Settings.KeyHitboxes.Keys;
+            KeysDict[HotkeyIDs.TriggerHitboxes] = Settings.KeyTriggerHitboxes.Keys;
+            KeysDict[HotkeyIDs.Graphics] = Settings.KeyGraphics.Keys;
+            KeysDict[HotkeyIDs.Camera] = Settings.KeyCamera.Keys;
+            KeysDict[HotkeyIDs.SaveState] = Settings.KeySaveState.Keys;
+            KeysDict[HotkeyIDs.ClearState] = Settings.KeyClearState.Keys;
 
             HotkeyStart = BindingToHotkey(Settings.KeyStart);
             HotkeyRestart = BindingToHotkey(Settings.KeyRestart);
@@ -194,32 +203,37 @@ namespace TAS.EverestInterop {
 
         public static void Load() {
             InputInitialize();
-            if (typeof(ModuleSettingsKeyboardConfigUI) is { } type) {
-                if (type.GetMethodInfo("Reset") is { } resetMethod) {
-                    // Celeste v1.4: after Everest drop support v1.3.1.2
-                    IlHooks.Add(new ILHook(resetMethod, ModReload));
-                } else if (type.GetMethodInfo("<Reload>b__6_0") is { } reloadMethod) {
-                    // Celeste v1.3
-                    IlHooks.Add(new ILHook(reloadMethod, ModReload));
-                }
-            }
-
-            // Celeste v1.4: before Everest drop support v1.3.1.2
+            On.Celeste.Input.Initialize += InputOnInitialize;
+            Type configUiType = typeof(ModuleSettingsKeyboardConfigUI);
             if (typeof(Everest).Assembly.GetTypesSafe()
                     .FirstOrDefault(t => t.FullName == "Celeste.Mod.ModuleSettingsKeyboardConfigUIV2") is { } typeV2
             ) {
+                // Celeste v1.4: before Everest drop support v1.3.1.2
                 if (typeV2.GetMethodInfo("Reset") is { } resetMethodV2) {
-                    IlHooks.Add(new ILHook(resetMethodV2, ModReload));
+                    Detours.Add(new ILHook(resetMethodV2, ModReload));
                 }
+            } else if (configUiType.GetMethodInfo("Reset") is { } resetMethod) {
+                // Celeste v1.4: after Everest drop support v1.3.1.2
+                Detours.Add(new ILHook(resetMethod, ModReload));
+            } else if (configUiType.GetMethodInfo("<Reload>b__6_0") is { } reloadMethod) {
+                // Celeste v1.3
+                Detours.Add(new ILHook(reloadMethod, ModReload));
             }
         }
 
         public static void Unload() {
-            foreach (ILHook ilHook in IlHooks) {
-                ilHook.Dispose();
+            On.Celeste.Input.Initialize -= InputOnInitialize;
+
+            foreach (IDetour detour in Detours) {
+                detour.Dispose();
             }
 
-            IlHooks.Clear();
+            Detours.Clear();
+        }
+
+        private static void InputOnInitialize(On.Celeste.Input.orig_Initialize orig) {
+            orig();
+            StudioCommunicationClient.Instance?.SendCurrentBindings();
         }
 
         private static void ModReload(ILContext il) {

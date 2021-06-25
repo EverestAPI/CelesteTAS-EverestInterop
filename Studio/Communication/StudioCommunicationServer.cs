@@ -95,12 +95,12 @@ namespace CelesteStudio.Communication {
         }
 
         private void ProcessSendCurrentBindings(byte[] data) {
-            List<Keys>[] keys = FromByteArray<List<int>[]>(data).Select(ints => ints.Cast<Keys>().ToList()).ToArray();
-            foreach (List<Keys> key in keys) {
-                Log(key.ToString());
+            Dictionary<int, List<int>> nativeBindings = FromByteArray<Dictionary<int, List<int>>>(data);
+            Dictionary<HotkeyIDs, List<Keys>> bindings = nativeBindings.ToDictionary(pair => (HotkeyIDs) pair.Key, pair => pair.Value.Cast<Keys>().ToList());
+            foreach (var pair in bindings) {
+                Log(pair.ToString());
             }
-
-            CommunicationWrapper.SetBindings(keys);
+            CommunicationWrapper.SetBindings(bindings);
         }
 
         private void ProcessReturnConsoleCommand(byte[] data) {
@@ -205,15 +205,6 @@ namespace CelesteStudio.Communication {
             }
 
             WriteMessageGuaranteed(new Message(MessageIDs.GetModInfo, new byte[0]));
-        }
-
-        private void SendNewBindings(List<Keys> keys) {
-            byte[] data = ToByteArray(keys);
-            WriteMessageGuaranteed(new Message(MessageIDs.SendNewBindings, data));
-        }
-
-        private void SendReloadBindings(byte[] data) {
-            WriteMessageGuaranteed(new Message(MessageIDs.ReloadBindings, new byte[0]));
         }
 
         #endregion

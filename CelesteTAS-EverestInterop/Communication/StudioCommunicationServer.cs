@@ -111,15 +111,6 @@ namespace TASALT.StudioCommunication {
             WriteMessageGuaranteed(new Message(MessageIDs.SendHotkeyPressed, hotkeyByte));
         }
 
-        public void SendNewBindings(List<Keys> keys) {
-            byte[] data = ToByteArray(keys);
-            WriteMessageGuaranteed(new Message(MessageIDs.SendNewBindings, data));
-        }
-
-        public void SendReloadBindings(byte[] data) {
-            WriteMessageGuaranteed(new Message(MessageIDs.ReloadBindings, new byte[0]));
-        }
-
         public void ConvertToLibTas(string path) {
             byte[] pathBytes = Encoding.Default.GetBytes(path);
             WriteMessageGuaranteed(new Message(MessageIDs.SendPath, pathBytes));

@@ -58,16 +58,6 @@ namespace StudioCommunication {
         [HighPriority] SendHotkeyPressed = 0x21,
 
         /// <summary>
-        /// Structure: HotkeyIDs List&lt;Keys&gt;
-        /// </summary>
-        [HighPriority] SendNewBindings = 0x22,
-
-        /// <summary>
-        /// Structure: 
-        /// </summary>
-        [HighPriority] ReloadBindings = 0x23,
-
-        /// <summary>
         /// Structure:
         /// </summary>
         [HighPriority] ConvertToLibTas = 0x24,

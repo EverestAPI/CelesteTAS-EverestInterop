@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading;
 using Celeste;
 using Celeste.Mod;
-using Microsoft.Xna.Framework.Input;
 using Monocle;
 using StudioCommunication;
 using TAS.EverestInterop;
@@ -15,6 +14,7 @@ using TAS.Utils;
 
 namespace TAS.Communication {
     public sealed class StudioCommunicationClient : StudioCommunicationBase {
+        private byte[] lastBindingsData = new byte[0];
         private List<Thread> threads = new();
         private StudioCommunicationClient() { }
         private StudioCommunicationClient(string target) : base(target) { }
@@ -77,14 +77,6 @@ namespace TAS.Communication {
             return client;
         }
 
-        private static void SetupDebugVariables() {
-            Hotkeys.KeysList = new List<Keys>[] {
-                new() {Keys.RightControl, Keys.OemOpenBrackets}, new() {Keys.RightControl, Keys.RightShift},
-                new() {Keys.OemOpenBrackets}, new() {Keys.OemCloseBrackets}, new() {Keys.V}, new() {Keys.B},
-                new() {Keys.N}
-            };
-        }
-
         #region Read
 
         protected override void ReadData(Message message) {
@@ -105,12 +97,6 @@ namespace TAS.Communication {
                     break;
                 case MessageIDs.SendHotkeyPressed:
                     ProcessHotkeyPressed(message.Data);
-                    break;
-                case MessageIDs.SendNewBindings:
-                    ProcessNewBindings(message.Data);
-                    break;
-                case MessageIDs.ReloadBindings:
-                    ProcessReloadBindings(message.Data);
                     break;
                 case MessageIDs.ConvertToLibTas:
                     ProcessConvertToLibTas(message.Data);
@@ -227,18 +213,6 @@ namespace TAS.Communication {
             Hotkeys.HotkeyList[data[0]].OverridePressed = !released;
         }
 
-        private void ProcessNewBindings(byte[] data) {
-            byte id = data[0];
-            List<Keys> keys = FromByteArray<List<Keys>>(data, 1);
-            Log($"{((HotkeyIDs) id).ToString()} set to {keys}");
-            Hotkeys.KeysList[id] = keys;
-        }
-
-        private void ProcessReloadBindings(byte[] data) {
-            Log("Reloading bindings");
-            Hotkeys.InputInitialize();
-        }
-
         private void ProcessConvertToLibTas(byte[] data) {
             string path = Encoding.Default.GetString(data);
             Log("Convert to libTAS: " + path);
@@ -291,7 +265,7 @@ namespace TAS.Communication {
             Message? lastMessage;
 
             //Stall until input initialized to avoid sending invalid hotkey data
-            while (Hotkeys.KeysList == null) {
+            while (Hotkeys.KeysDict == null) {
                 Thread.Sleep(Timeout);
             }
 
@@ -315,7 +289,7 @@ namespace TAS.Communication {
 
             celeste?.ProcessSendPath(lastMessage?.Data);
 
-            celeste?.SendCurrentBindings(Hotkeys.KeysList);
+            celeste?.SendCurrentBindings(true);
             lastMessage = studio?.ReadMessageGuaranteed();
             //if (lastMessage?.ID != MessageIDs.SendCurrentBindings)
             //	throw new NeedsResetException();
@@ -331,7 +305,7 @@ namespace TAS.Communication {
 
         private void SendStateAndGameDataNow(string state, string gameData, bool canFail) {
             if (Initialized) {
-                string[] data = new string[] {state, gameData};
+                string[] data = {state, gameData};
                 byte[] dataBytes = ToByteArray(data);
                 Message message = new(MessageIDs.SendState, dataBytes);
                 if (canFail) {
@@ -346,10 +320,14 @@ namespace TAS.Communication {
             PendingWrite = () => SendStateAndGameDataNow(state, gameData, canFail);
         }
 
-        private void SendCurrentBindings(List<Keys>[] bindings) {
-            List<int>[] nativeBindings = bindings.Select(keys => keys.Cast<int>().ToList()).ToArray();
+        public void SendCurrentBindings(bool forceSend = false) {
+            Dictionary<int,List<int>> nativeBindings = Hotkeys.KeysDict.ToDictionary(pair=>(int) pair.Key, pair => pair.Value.Cast<int>().ToList());
             byte[] data = ToByteArray(nativeBindings);
+            if (!forceSend && string.Join("", data) == string.Join("", lastBindingsData)) {
+                return;
+            }
             WriteMessageGuaranteed(new Message(MessageIDs.SendCurrentBindings, data));
+            lastBindingsData = data;
         }
 
         #endregion
