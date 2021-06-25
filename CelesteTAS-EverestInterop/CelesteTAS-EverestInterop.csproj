@@ -7,10 +7,14 @@
         <Product>CelesteTAS-EverestInterop</Product>
         <Copyright>Copyright © 2018</Copyright>
         <OutputPath>bin\</OutputPath>
-        <PostBuildEvent />
-        <PostBuildEvent />
-        <PostBuildEvent />
+        <MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB3270</MSBuildWarningsAsMessages>
     </PropertyGroup>
+    <ItemDefinitionGroup>
+        <PackageReference PrivateAssets="all" ExcludeAssets="runtime" />
+        <Reference>
+            <Private>False</Private>
+        </Reference>
+    </ItemDefinitionGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
         <DebugType>portable</DebugType>
         <DefineConstants>TRACE;DEBUG;CELESTETAS</DefineConstants>
@@ -32,47 +36,31 @@
     </PropertyGroup>
     <Import Project="..\StudioCommunication\StudioCommunication.projitems" Label="Shared" />
     <ItemGroup>
-        <PackageReference Include="DotNetZip" Version="1.13.8">
-            <IncludeAssets>compile</IncludeAssets>
-        </PackageReference>
-        <PackageReference Include="Mono.Cecil" Version="0.11.3">
-            <IncludeAssets>compile</IncludeAssets>
-        </PackageReference>
-        <PackageReference Include="MonoMod" Version="21.4.29.1">
-            <IncludeAssets>compile</IncludeAssets>
-        </PackageReference>
-        <PackageReference Include="MonoMod.RuntimeDetour" Version="21.4.29.1">
-            <IncludeAssets>compile</IncludeAssets>
-        </PackageReference>
-        <PackageReference Include="MonoMod.Utils" Version="21.4.29.1">
-            <IncludeAssets>compile</IncludeAssets>
-        </PackageReference>
-        <PackageReference Include="YamlDotNet" Version="8.1.2">
-            <IncludeAssets>compile</IncludeAssets>
-        </PackageReference>
+        <PackageReference Include="DotNetZip" Version="1.13.8" />
+        <PackageReference Include="Mono.Cecil" Version="0.11.3" />
+        <PackageReference Include="MonoMod" Version="21.4.29.1" />
+        <PackageReference Include="MonoMod.RuntimeDetour" Version="21.4.29.1" />
+        <PackageReference Include="MonoMod.Utils" Version="21.4.29.1" />
+        <PackageReference Include="YamlDotNet" Version="8.1.2" />
     </ItemGroup>
     <ItemGroup>
         <Reference Include="Celeste">
             <HintPath>lib-stripped\Celeste.exe</HintPath>
-            <Private>False</Private>
         </Reference>
         <Reference Include="FNA">
             <HintPath>lib-stripped\FNA.dll</HintPath>
-            <Private>False</Private>
         </Reference>
         <Reference Include="MMHOOK_Celeste">
             <HintPath>lib-stripped\MMHOOK_Celeste.dll</HintPath>
-            <Private>False</Private>
         </Reference>
         <Reference Include="SpeedrunTool">
             <HintPath>lib-stripped\SpeedrunTool.dll</HintPath>
-            <Private>False</Private>
         </Reference>
         <Reference Include="System.Windows.Forms" />
     </ItemGroup>
     <ItemGroup>
-        <Compile Condition=" '$(Configuration)' == 'Debug' " Update="Communication\StudioCommunicationServer.cs" />
         <Compile Remove="lib-stripped\**" />
+        <EmbeddedResource Remove="lib-stripped\**" />
     </ItemGroup>
     <ItemGroup>
         <Content Include="Dialog\English.txt">
@@ -96,9 +84,6 @@
         <Content Include="everest.yaml">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
-    </ItemGroup>
-    <ItemGroup>
-        <EmbeddedResource Remove="lib-stripped\**" />
     </ItemGroup>
     <ItemGroup>
         <None Remove="lib-stripped\**" />

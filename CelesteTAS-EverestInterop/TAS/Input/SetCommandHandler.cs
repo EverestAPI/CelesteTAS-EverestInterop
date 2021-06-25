@@ -194,11 +194,10 @@ namespace TAS.Input {
                     settings.SetFieldValue("GrabMode", value);
                     typeof(Celeste.Celeste).InvokeMethod("ResetGrab", null);
                     break;
-                case "Fullscreen":
+                // case "Fullscreen":
                     // game get stuck when toggle fullscreen
-                    return false;
-                    typeof(MenuOptions).InvokeMethod("SetFullscreen", value);
-                    break;
+                    // typeof(MenuOptions).InvokeMethod("SetFullscreen", value);
+                    // break;
                 case "WindowScale":
                     typeof(MenuOptions).InvokeMethod("SetWindow", value);
                     break;
