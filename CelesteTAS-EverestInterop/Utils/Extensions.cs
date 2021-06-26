@@ -11,10 +11,6 @@ using MonoMod.Utils;
 
 namespace TAS.Utils {
     internal static class ReflectionExtensions {
-        public delegate object GetField(object o);
-
-        public delegate object GetStaticField();
-
         private const BindingFlags StaticInstanceAnyVisibility =
             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
@@ -146,40 +142,48 @@ namespace TAS.Utils {
 
         public static T CreateDelegate_Get<T>(this FieldInfo field) where T : Delegate {
             bool isStatic = field.IsStatic;
-            Type[] param;
-            if (!isStatic) {
-                param = new Type[] {field.DeclaringType};
-            } else {
-                param = new Type[0];
-            }
+            Type[] param = isStatic ? new Type[0] : new[] {field.DeclaringType};
 
-            DynamicMethod dyn = new(field.Name + "_FastAccess", field.FieldType, param, field.DeclaringType);
+            DynamicMethod dyn = new($"{field.DeclaringType?.FullName}_{field.Name}_FastAccess", field.FieldType, param, field.DeclaringType);
             ILGenerator ilGen = dyn.GetILGenerator();
-            if (!isStatic) {
+            if (isStatic) {
+                ilGen.Emit(OpCodes.Ldsfld, field);
+            } else {
                 ilGen.Emit(OpCodes.Ldarg_0);
+                ilGen.Emit(OpCodes.Ldfld, field);
             }
 
-            ilGen.Emit(OpCodes.Ldfld, field);
             ilGen.Emit(OpCodes.Ret);
             return dyn.CreateDelegate(typeof(T)) as T;
         }
 
-        public static GetField CreateDelegate_GetInstance(this FieldInfo field) {
-            DynamicMethod dyn = new(field.Name + "_FastAccess", typeof(object), new Type[] {typeof(object)}, field.DeclaringType);
+        public static Func<object, object> CreateDelegate_GetInstance(this FieldInfo field) {
+            if (field.IsStatic) {
+                throw new Exception("Not support static field.");
+            }
+
+            DynamicMethod dyn =
+                new($"{field.DeclaringType?.FullName}_{field.Name}_FastAccess", typeof(object), new Type[] {typeof(object)}, field.DeclaringType);
             ILGenerator ilGen = dyn.GetILGenerator();
             ilGen.Emit(OpCodes.Ldarg_0);
             ilGen.Emit(OpCodes.Castclass, field.DeclaringType);
             ilGen.Emit(OpCodes.Ldfld, field);
+            ilGen.Emit(field.FieldType.IsClass ? OpCodes.Castclass : OpCodes.Box, field.FieldType);
             ilGen.Emit(OpCodes.Ret);
-            return dyn.CreateDelegate(typeof(GetField)) as GetField;
+            return dyn.CreateDelegate(typeof(Func<object, object>)) as Func<object, object>;
         }
 
-        public static GetStaticField CreateDelegate_GetStatic(this FieldInfo field) {
-            DynamicMethod dyn = new(field.Name + "_FastAccess", typeof(object), new Type[0]);
+        public static Func<object> CreateDelegate_GetStatic(this FieldInfo field) {
+            if (!field.IsStatic) {
+                throw new Exception("Not support non static field.");
+            }
+
+            DynamicMethod dyn = new($"{field.DeclaringType?.FullName}_{field.Name}_FastAccess", typeof(object), new Type[0]);
             ILGenerator ilGen = dyn.GetILGenerator();
-            ilGen.Emit(OpCodes.Ldfld, field);
+            ilGen.Emit(OpCodes.Ldsfld, field);
+            ilGen.Emit(field.FieldType.IsClass ? OpCodes.Castclass : OpCodes.Box, field.FieldType);
             ilGen.Emit(OpCodes.Ret);
-            return dyn.CreateDelegate(typeof(GetStaticField)) as GetStaticField;
+            return dyn.CreateDelegate(typeof(Func<object>)) as Func<object>;
         }
 
         public static IEnumerable<FieldInfo> GetFieldInfos(this Type type, BindingFlags bindingFlags = StaticInstanceAnyVisibility,
