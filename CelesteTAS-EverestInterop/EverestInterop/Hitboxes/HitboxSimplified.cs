@@ -12,7 +12,11 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxSimplified {
-        private static readonly FieldInfo FireBallIceMode = typeof(FireBall).GetFieldInfo("iceMode");
+        private static readonly Func<FireBall, bool> FireBallIceMode =
+            typeof(FireBall).GetFieldInfo("iceMode").CreateDelegate_Get<Func<FireBall, bool>>();
+
+        private static readonly Lazy<Func<object, object>> GeckoHostile = new(() =>
+            Type.GetType("Celeste.Mod.JungleHelper.Entities.Gecko, JungleHelper")?.GetFieldInfo("hostile")?.CreateDelegate_GetInstance());
 
         private static readonly List<Type> UselessTypes = new() {
             typeof(ClutterBlockBase),
@@ -34,14 +38,14 @@ namespace TAS.EverestInterop.Hitboxes {
         public static void Load() {
             IL.Monocle.Entity.DebugRender += HideHitbox;
             On.Monocle.Hitbox.Render += ModHitbox;
-            On.Monocle.Grid.Render += CombineHitbox;
+            On.Monocle.Grid.Render += CombineGridHitbox;
             IL.Monocle.Draw.HollowRect_float_float_float_float_Color += AvoidRedrawCorners;
         }
 
         public static void Unload() {
             IL.Monocle.Entity.DebugRender -= HideHitbox;
             On.Monocle.Hitbox.Render -= ModHitbox;
-            On.Monocle.Grid.Render -= CombineHitbox;
+            On.Monocle.Grid.Render -= CombineGridHitbox;
             IL.Monocle.Draw.HollowRect_float_float_float_float_Color -= AvoidRedrawCorners;
         }
 
@@ -50,14 +54,20 @@ namespace TAS.EverestInterop.Hitboxes {
             Instruction start = ilCursor.Next;
             ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Func<Entity, bool>>(entity => {
                 if (Settings.ShowHitboxes) {
-                    if (Settings.SimplifiedHitboxes && UselessTypes.Contains(entity.GetType())) {
-                        return true;
-                    }
+                    if (Settings.SimplifiedHitboxes) {
+                        Type type = entity.GetType();
+                        if (UselessTypes.Contains(type)) {
+                            return true;
+                        }
 
-                    if (Settings.SimplifiedHitboxes
-                        && entity.Scene?.Tracker.GetEntity<Player>()?.Leader is { } leader
-                        && leader.Followers.Any(follower => follower.Entity == entity)) {
-                        return true;
+                        if (type.FullName == "Celeste.Mod.JungleHelper.Entities.Gecko" && false == GeckoHostile.Value?.Invoke(entity) as bool?) {
+                            return true;
+                        }
+
+                        if (entity.Scene?.Tracker.GetEntity<Player>()?.Leader is { } leader &&
+                            leader.Followers.Any(follower => follower.Entity == entity)) {
+                            return true;
+                        }
                     }
                 }
 
@@ -74,18 +84,20 @@ namespace TAS.EverestInterop.Hitboxes {
 
             Entity entity = hitbox.Entity;
 
-            if (entity is WallBooster || entity.GetType().FullName == "Celeste.Mod.ShroomHelper.Entities.SlippyWall") {
-                color = HitboxColor.EntityColorInverselyLessAlpha;
+            if (entity is FireBall fireBall && !FireBallIceMode(fireBall)) {
+                return;
             }
 
-            if (entity is FireBall fireBall && (bool) FireBallIceMode.GetValue(fireBall) == false) {
-                return;
+            if (entity is WallBooster
+                || entity.GetType().FullName is "Celeste.Mod.ShroomHelper.Entities.SlippyWall" or "Celeste.Mod.JungleHelper.Entities.MossyWall"
+            ) {
+                color = HitboxColor.EntityColorInverselyLessAlpha;
             }
 
             orig(hitbox, camera, color);
         }
 
-        private static void CombineHitbox(On.Monocle.Grid.orig_Render orig, Grid self, Camera camera, Color color) {
+        private static void CombineGridHitbox(On.Monocle.Grid.orig_Render orig, Grid self, Camera camera, Color color) {
             if (!Settings.ShowHitboxes || !Settings.SimplifiedHitboxes) {
                 orig(self, camera, color);
                 return;

@@ -4,20 +4,21 @@ using Celeste;
 using Celeste.Mod.Entities;
 using Microsoft.Xna.Framework;
 using Monocle;
+using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxTriggerSpikes {
-        private static readonly FieldInfo TriggerSpikesDirection =
-            typeof(TriggerSpikes).GetField("direction", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly Func<TriggerSpikes, TriggerSpikes.Directions> TriggerSpikesDirection =
+            typeof(TriggerSpikes).GetFieldInfo("direction").CreateDelegate_Get<Func<TriggerSpikes, TriggerSpikes.Directions>>();
 
-        private static readonly FieldInfo TriggerSpikesSpikes =
-            typeof(TriggerSpikes).GetField("spikes", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly FieldInfo TriggerSpikesSpikes = typeof(TriggerSpikes).GetFieldInfo("spikes");
 
         private static FieldInfo triggerSpikesTriggered;
         private static FieldInfo triggerSpikesLerp;
 
-        private static readonly FieldInfo TriggerSpikesOriginalDirection =
-            typeof(TriggerSpikesOriginal).GetField("direction", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly Func<TriggerSpikesOriginal, TriggerSpikesOriginal.Directions> TriggerSpikesOriginalDirection =
+            typeof(TriggerSpikesOriginal).GetFieldInfo("direction")
+                .CreateDelegate_Get<Func<TriggerSpikesOriginal, TriggerSpikesOriginal.Directions>>();
 
         private static readonly FieldInfo TriggerSpikesOriginalSpikes =
             typeof(TriggerSpikesOriginal).GetField("spikes", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -43,10 +44,10 @@ namespace TAS.EverestInterop.Hitboxes {
 
             self.Collider?.Render(camera, HitboxColor.EntityColorInverselyLessAlpha);
 
-            if (self is TriggerSpikes) {
+            if (self is TriggerSpikes triggerSpikes) {
                 Vector2 offset, value;
                 bool vertical = false;
-                switch (TriggerSpikesDirection.GetValue(self)) {
+                switch (TriggerSpikesDirection(triggerSpikes)) {
                     case TriggerSpikes.Directions.Up:
                         offset = new Vector2(-2f, -4f);
                         value = new Vector2(1f, 0f);
@@ -98,11 +99,11 @@ namespace TAS.EverestInterop.Hitboxes {
                             HitboxColor.GetCustomColor(Color.Red, self));
                     }
                 }
-            } else if (self is TriggerSpikesOriginal) {
+            } else if (self is TriggerSpikesOriginal triggerSpikesOriginal) {
                 Vector2 offset;
                 float width, height;
                 bool vertical = false;
-                switch (TriggerSpikesOriginalDirection.GetValue(self)) {
+                switch (TriggerSpikesOriginalDirection(triggerSpikesOriginal)) {
                     case TriggerSpikesOriginal.Directions.Up:
                         width = 8f;
                         height = 3f;

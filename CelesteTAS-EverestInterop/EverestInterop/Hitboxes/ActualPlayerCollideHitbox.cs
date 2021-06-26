@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
@@ -10,7 +9,9 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static partial class ActualEntityCollideHitbox {
-        private static readonly FieldInfo PlayerHurtbox = typeof(Player).GetFieldInfo("hurtbox");
+        private static readonly Func<Player, Hitbox>
+            PlayerHurtbox = typeof(Player).GetFieldInfo("hurtbox").CreateDelegate_Get<Func<Player, Hitbox>>();
+
         private static readonly Color HitboxColor = Color.Red.Invert();
         private static readonly Color HurtboxColor = Color.Lime.Invert();
         private static ILHook ilHookPlayerOrigUpdate;
@@ -58,7 +59,7 @@ namespace TAS.EverestInterop.Hitboxes {
         private static void DrawAssistedHitbox(On.Monocle.Hitbox.orig_Render orig, Hitbox self, Camera camera, Player player,
             Vector2 hitboxPosition) {
             Collider origCollider = player.Collider;
-            Collider hurtbox = (Collider) PlayerHurtbox.GetValue(player);
+            Collider hurtbox = PlayerHurtbox(player);
             Vector2 origPosition = player.Position;
 
             player.Position = hitboxPosition;
