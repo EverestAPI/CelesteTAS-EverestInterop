@@ -63,7 +63,7 @@ namespace CelesteStudio.Communication {
             foreach (HotkeyIDs hotkeyIDs in bindings.Keys) {
                 List<Keys> keys = bindings[hotkeyIDs];
 
-                bool pressed = keys.All(IsKeyDown);
+                bool pressed = keys.Count > 0 && keys.All(IsKeyDown);
 
                 if (pressed && keys.Count == 1) {
                     if (!keys.Contains(Keys.LShiftKey) && IsKeyDown(Keys.LShiftKey)) {
@@ -103,7 +103,8 @@ namespace CelesteStudio.Communication {
 
             bool pressed;
             if (bindings.ContainsKey(HotkeyIDs.FastForward)) {
-                pressed = bindings[HotkeyIDs.FastForward].All(IsKeyDown);
+                List<Keys> keys = bindings[HotkeyIDs.FastForward];
+                pressed = keys.Count > 0 && keys.All(IsKeyDown);
             } else {
                 pressed = false;
             }
