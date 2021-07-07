@@ -225,9 +225,9 @@ namespace TAS.Input {
                     checkInputFrame++;
                 }
 
-                return SavedChecksum = Md5Helper.ComputeHash(result.ToString());
+                return SavedChecksum = HashHelper.ComputeHash(result.ToString());
             } catch {
-                return SavedChecksum = Md5Helper.ComputeHash(result.ToString());
+                return SavedChecksum = HashHelper.ComputeHash(result.ToString());
             }
         }
 
