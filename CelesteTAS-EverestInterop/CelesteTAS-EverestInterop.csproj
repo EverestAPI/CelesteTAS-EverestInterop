@@ -10,7 +10,7 @@
         <MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB3270</MSBuildWarningsAsMessages>
     </PropertyGroup>
     <ItemDefinitionGroup>
-        <PackageReference PrivateAssets="all" ExcludeAssets="runtime" />
+        <PackageReference IncludeAssets="compile" />
         <Reference>
             <Private>False</Private>
         </Reference>
