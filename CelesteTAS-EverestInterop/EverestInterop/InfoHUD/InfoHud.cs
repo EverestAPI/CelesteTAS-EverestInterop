@@ -6,6 +6,7 @@ using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
+using MonoMod.RuntimeDetour;
 using TAS.Input;
 using TAS.Utils;
 
@@ -15,7 +16,11 @@ namespace TAS.EverestInterop.InfoHUD {
         private static CelesteTasModuleSettings TasSettings => CelesteTasModule.Settings;
 
         public static void Load() {
-            On.Celeste.Level.Render += LevelOnRender;
+            // avoid issues if center camera is enabled
+            using (new DetourContext {Before = new List<string> {"*"}}) {
+                On.Celeste.Level.Render += LevelOnRender;
+            }
+
             On.Celeste.Fonts.Prepare += FontsOnPrepare;
             InfoInspectEntity.Load();
         }
@@ -88,13 +93,7 @@ namespace TAS.EverestInterop.InfoHUD {
             Rectangle bgRect = new((int) x, (int) y, (int) (size.X + padding * 2), (int) (size.Y + padding * 2));
 
             if (level.GetPlayer() is { } player) {
-                Camera camera = level.Camera;
-                Vector2 offset = Vector2.Zero;
-                if (TasSettings.CenterCamera) {
-                    offset = player.Position - new Vector2(camera.Viewport.Width / 2f, camera.Viewport.Height / 2f) - camera.Position;
-                }
-
-                Vector2 playerPosition = level.Camera.CameraToScreen(player.TopLeft - offset) * pixelScale;
+                Vector2 playerPosition = level.Camera.CameraToScreen(player.TopLeft) * pixelScale;
                 Rectangle playerRect = new((int) playerPosition.X, (int) playerPosition.Y, (int) (8 * pixelScale), (int) (11 * pixelScale));
                 Rectangle mirrorBgRect = bgRect;
                 if (SaveData.Instance?.Assists.MirrorMode == true) {

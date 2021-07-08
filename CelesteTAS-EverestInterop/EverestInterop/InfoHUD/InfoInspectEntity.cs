@@ -82,11 +82,6 @@ namespace TAS.EverestInterop.InfoHUD {
                 int viewScale =
                     (int) Math.Round(Engine.Instance.GraphicsDevice.PresentationParameters.BackBufferWidth / (float) camera.Viewport.Width);
                 Vector2 mouseWorldPosition = camera.ScreenToCamera((mousePosition / viewScale).Floor());
-                if (Settings.CenterCamera && level.GetPlayer() is { } player) {
-                    Vector2 offset = player.Position - new Vector2(camera.Viewport.Width / 2f, camera.Viewport.Height / 2f) - camera.Position;
-                    mouseWorldPosition += offset;
-                }
-
                 Entity tempEntity = new() {Position = mouseWorldPosition, Collider = new Hitbox(1, 1)};
                 Entity clickedEntity = level.Entities.Where(entity =>
                         (!Settings.InfoIgnoreTriggerWhenClickEntity || entity is not Trigger)
