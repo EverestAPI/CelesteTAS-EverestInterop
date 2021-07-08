@@ -38,7 +38,7 @@ namespace TAS.EverestInterop.InfoHUD {
             InfoMouse.ToggleAndDrag();
         }
 
-        private static void DrawInfo(Level self) {
+        private static void DrawInfo(Level level) {
             if (!TasSettings.Enabled || !TasSettings.InfoHud) {
                 return;
             }
@@ -87,15 +87,21 @@ namespace TAS.EverestInterop.InfoHUD {
 
             Rectangle bgRect = new((int) x, (int) y, (int) (size.X + padding * 2), (int) (size.Y + padding * 2));
 
-            if (self.GetPlayer() is { } player) {
-                Vector2 playerPosition = self.Camera.CameraToScreen(player.TopLeft) * pixelScale;
+            if (level.GetPlayer() is { } player) {
+                Camera camera = level.Camera;
+                Vector2 offset = Vector2.Zero;
+                if (TasSettings.CenterCamera) {
+                    offset = player.Position - new Vector2(camera.Viewport.Width / 2f, camera.Viewport.Height / 2f) - camera.Position;
+                }
+
+                Vector2 playerPosition = level.Camera.CameraToScreen(player.TopLeft - offset) * pixelScale;
                 Rectangle playerRect = new((int) playerPosition.X, (int) playerPosition.Y, (int) (8 * pixelScale), (int) (11 * pixelScale));
                 Rectangle mirrorBgRect = bgRect;
                 if (SaveData.Instance?.Assists.MirrorMode == true) {
                     mirrorBgRect.X = (int) Math.Abs(x - viewWidth + size.X + padding * 2);
                 }
 
-                if (self.Paused || playerRect.Intersects(mirrorBgRect)) {
+                if (level.Paused || playerRect.Intersects(mirrorBgRect)) {
                     alpha *= TasSettings.InfoMaskedOpacity / 10f;
                     infoAlpha *= alpha;
                 }
