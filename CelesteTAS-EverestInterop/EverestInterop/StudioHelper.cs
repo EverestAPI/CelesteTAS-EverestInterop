@@ -112,7 +112,7 @@ namespace TAS.EverestInterop {
                     }
 
                     if (File.Exists(CopiedStudioExePath)) {
-                        Process.Start(CopiedStudioExePath);
+                        Process.Start("Explorer", CopiedStudioExePath);
                     }
                 } catch (Exception e) {
                     Logger.Log("CelesteTASModule", "Failed to launch studio at boot.");
