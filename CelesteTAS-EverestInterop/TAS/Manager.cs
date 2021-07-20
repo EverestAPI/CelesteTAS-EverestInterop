@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
@@ -34,8 +33,6 @@ namespace TAS {
         public static int FrameLoops = 1;
         public static bool EnforceLegal, AllowUnsafeInput;
         public static bool KbTextInput;
-
-        private static Task checkHotkeyStartTask;
 
         static Manager() {
             MethodInfo updateVirtualInputs = typeof(MInput).GetMethodInfo("UpdateVirtualInputs");
@@ -204,7 +201,7 @@ namespace TAS {
             }
 
             if (Hotkeys.HotkeyStart.Pressed) {
-                if (!HasFlag(State, State.Enable) && checkHotkeyStartTask == null) {
+                if (!HasFlag(State, State.Enable)) {
                     NextState |= State.Enable;
                 } else {
                     NextState |= State.Disable;
@@ -231,23 +228,7 @@ namespace TAS {
             InitializeRun(false);
             KbTextInput = Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput;
             Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = false;
-            AllowInterruptingFastForward();
             AttributeUtils.Invoke<EnableRunAttribute>();
-        }
-
-        // TODO: really bad, need hold down the start key for a long time to stop tas
-        private static void AllowInterruptingFastForward() {
-            checkHotkeyStartTask = Task.Run(() => {
-                while (Running || Hotkeys.HotkeyStart.Pressed) {
-                    if (FrameLoops > 100) {
-                        if (Running && Hotkeys.HotkeyStart.Pressed) {
-                            DisableRun();
-                        }
-                    }
-                }
-
-                checkHotkeyStartTask = null;
-            });
         }
 
         private static void DisableRun() {
