@@ -40,6 +40,9 @@ namespace CelesteStudio {
             CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
             Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
+            string exeDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            Directory.SetCurrentDirectory(exeDir);
+
             InitSettings();
             InitializeComponent();
             InitMenu();
