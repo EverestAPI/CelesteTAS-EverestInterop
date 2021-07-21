@@ -17,12 +17,12 @@ namespace TAS.EverestInterop.Hitboxes {
         private static ILHook ilHookPlayerOrigUpdate;
 
         private static void LoadPlayerHook() {
-            On.Monocle.Hitbox.Render += HitboxOnRender;
+            On.Celeste.Player.DebugRender += PlayerOnDebugRender;
             ilHookPlayerOrigUpdate = new ILHook(typeof(Player).GetMethod("orig_Update"), ModPlayerOrigUpdate);
         }
 
         private static void UnloadPlayerHook() {
-            On.Monocle.Hitbox.Render -= HitboxOnRender;
+            On.Celeste.Player.DebugRender -= PlayerOnDebugRender;
             ilHookPlayerOrigUpdate?.Dispose();
         }
 
@@ -41,22 +41,28 @@ namespace TAS.EverestInterop.Hitboxes {
             }
         }
 
-        private static void HitboxOnRender(On.Monocle.Hitbox.orig_Render orig, Hitbox self, Camera camera, Color color) {
-            if (self.Entity is not Player player || !Settings.ShowHitboxes || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Off
-                || Manager.FrameLoops > 1
-                || player.Scene is Level {Transitioning: true} || player.LoadActualCollidePosition() == null
-                || player.LoadActualCollidePosition().Value == player.Position
+        private static void PlayerOnDebugRender(On.Celeste.Player.orig_DebugRender orig, Player player, Camera camera) {
+            if (!Settings.ShowHitboxes || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Off
+                                       || Manager.FrameLoops > 1
+                                       || player.Scene is Level {Transitioning: true} || player.LoadActualCollidePosition() == null
+                                       || player.LoadActualCollidePosition().Value == player.Position
             ) {
-                orig(self, camera, color);
+                orig(player, camera);
                 return;
             }
 
-            DrawAssistedHitbox(orig, self, camera, player, player.LoadActualCollidePosition().Value);
+            Vector2 actualCollidePosition = player.LoadActualCollidePosition().Value;
+            if (Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Override) {
+                DrawAssistedHitbox(orig, player, camera, actualCollidePosition);
+            }
 
-            orig(self, camera, color);
+            orig(player, camera);
+            if (Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Append) {
+                DrawAssistedHitbox(orig, player, camera, actualCollidePosition);
+            }
         }
 
-        private static void DrawAssistedHitbox(On.Monocle.Hitbox.orig_Render orig, Hitbox self, Camera camera, Player player,
+        private static void DrawAssistedHitbox(On.Celeste.Player.orig_DebugRender orig, Player player, Camera camera,
             Vector2 hitboxPosition) {
             Collider origCollider = player.Collider;
             Collider hurtbox = PlayerHurtbox(player);
@@ -64,11 +70,11 @@ namespace TAS.EverestInterop.Hitboxes {
 
             player.Position = hitboxPosition;
 
-            orig(self, camera, HitboxColor);
+            Draw.HollowRect(origCollider, HitboxColor);
             player.Collider = hurtbox;
             Draw.HollowRect(hurtbox, HurtboxColor);
-            player.Collider = origCollider;
 
+            player.Collider = origCollider;
             player.Position = origPosition;
         }
     }
