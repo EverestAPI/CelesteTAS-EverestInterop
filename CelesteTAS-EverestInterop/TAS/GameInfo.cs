@@ -517,7 +517,13 @@ namespace TAS {
                         }
                     }
 
-                    output += $"\t{InfoInspectEntity.GetInspectingEntitiesInfo("\t")}";
+                    if (InfoCustom.Parse(true) is { } customInfo && customInfo.IsNotEmpty()) {
+                        output += $"\t{customInfo.ReplaceLineBreak(" ")}";
+                    }
+
+                    if (InfoInspectEntity.GetInspectingEntitiesInfo("\t", true) is { } inspectInfo && inspectInfo.IsNotEmpty()) {
+                        output += $"\t{inspectInfo}";
+                    }
 
                     sw.WriteLine(output);
                 } else {

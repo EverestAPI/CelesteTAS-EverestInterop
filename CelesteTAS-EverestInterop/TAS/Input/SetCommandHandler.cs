@@ -83,11 +83,10 @@ namespace TAS.Input {
                 return;
             }
 
-            const BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            if (typeof(Player).GetProperty(name, bindingFlags) is { } property && property.GetSetMethod(true) != null) {
+            if (typeof(Player).GetPropertyInfo(name, true) is { } property && property.GetSetMethod(true) != null) {
                 object value = ConvertType(values, property.PropertyType);
                 property.SetValue(player, value);
-            } else if (typeof(Player).GetField(name, bindingFlags) is { } field) {
+            } else if (typeof(Player).GetFieldInfo(name, true) is { } field) {
                 if (name == "Position" && values.Length == 2) {
                     double.TryParse(values[0], out double x);
                     double.TryParse(values[1], out double y);

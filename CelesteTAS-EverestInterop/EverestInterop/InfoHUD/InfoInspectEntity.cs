@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
@@ -22,7 +21,6 @@ namespace TAS.EverestInterop.InfoHUD {
     }
 
     public static class InfoInspectEntity {
-        private static readonly Regex NewLineRegex = new(@"\r\n?|\n", RegexOptions.Compiled);
         private static readonly Dictionary<string, IEnumerable<MemberInfo>> CachedMemberInfos = new();
 
         private static readonly List<WeakReference> RequireInspectEntities = new();
@@ -235,10 +233,10 @@ namespace TAS.EverestInterop.InfoHUD {
             GameInfo.Update();
         }
 
-        public static string GetInspectingEntitiesInfo(string separator = "\n") {
+        public static string GetInspectingEntitiesInfo(string separator = "\n", bool export = false) {
             InspectingEntities.Clear();
             string inspectingInfo = string.Empty;
-            if (Engine.Scene is not Level level || Settings.InfoInspectEntity == HudOptions.Off) {
+            if (Engine.Scene is not Level level || Settings.InfoInspectEntity == HudOptions.Off && !export) {
                 return string.Empty;
             }
 
@@ -294,7 +292,7 @@ namespace TAS.EverestInterop.InfoHUD {
 
                 if (value is float floatValue) {
                     if (info.Name.EndsWith("Timer")) {
-                        value = $"{(int) 60f / Engine.TimeRateB * floatValue:F0}";
+                        value = GameInfo.ConvertToFrames(floatValue);
                     } else {
                         value = Settings.RoundCustomInfo ? $"{floatValue:F2}" : $"{floatValue:F12}";
                     }
@@ -303,7 +301,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 }
 
                 if (separator == "\t" && value != null) {
-                    value = NewLineRegex.Replace(value.ToString(), "");
+                    value = value.ToString().ReplaceLineBreak(" ");
                 }
 
                 return $"{type.Name}{entityId}.{info.Name}: {value}";
@@ -319,27 +317,33 @@ namespace TAS.EverestInterop.InfoHUD {
         }
 
         private static IEnumerable<MemberInfo> GetAllSimpleFields(Type type, bool declaredOnly = false) {
-            BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            if (declaredOnly) {
-                bindingFlags |= BindingFlags.DeclaredOnly;
-            }
-
-            string key = type.FullName + "-" + bindingFlags;
+            string key = type.FullName + "-" + declaredOnly;
 
             if (CachedMemberInfos.ContainsKey(key)) {
                 return CachedMemberInfos[key];
             } else {
-                List<MemberInfo> memberInfos = type
-                    .GetFields(bindingFlags).Where(info => {
-                        Type t = info.FieldType;
-                        return (t.IsPrimitive || t.IsEnum || t == typeof(Vector2)) && !info.Name.EndsWith("k__BackingField");
+                FieldInfo[] fields;
+                PropertyInfo[] properties;
+
+                if (declaredOnly) {
+                    BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+                    fields = type.GetFields(bindingFlags);
+                    properties = type.GetProperties(bindingFlags);
+                } else {
+                    fields = type.GetAllFieldInfos().ToArray();
+                    properties = type.GetAllProperties().ToArray();
+                }
+
+                List<MemberInfo> memberInfos = fields.Where(info => {
+                    Type t = info.FieldType;
+                    return (t.IsPrimitive || t.IsEnum || t == typeof(Vector2)) && !info.Name.EndsWith("k__BackingField");
+                }).Cast<MemberInfo>().ToList();
+
+                List<MemberInfo> propertyInfos = properties.Where(
+                    info => {
+                        Type t = info.PropertyType;
+                        return t.IsPrimitive || t.IsEnum || t == typeof(Vector2);
                     }).Cast<MemberInfo>().ToList();
-                List<MemberInfo> propertyInfos = type
-                    .GetProperties(bindingFlags).Where(
-                        info => {
-                            Type t = info.PropertyType;
-                            return t.IsPrimitive || t.IsEnum || t == typeof(Vector2);
-                        }).Cast<MemberInfo>().ToList();
                 memberInfos.AddRange(propertyInfos);
 
                 List<MemberInfo> result = new();

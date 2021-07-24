@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
@@ -14,44 +15,109 @@ namespace TAS.Utils {
         private const BindingFlags StaticInstanceAnyVisibility =
             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
+        private const BindingFlags InstanceAnyVisibilityDeclaredOnly =
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+
         private static readonly Dictionary<Type, Dictionary<string, FieldInfo>> CachedFieldInfos = new();
         private static readonly Dictionary<Type, Dictionary<string, PropertyInfo>> CachedPropertyInfos = new();
         private static readonly Dictionary<Type, Dictionary<string, MethodInfo>> CachedMethodInfos = new();
 
-        public static FieldInfo GetFieldInfo(this Type type, string name) {
+        public static FieldInfo GetFieldInfo(this Type type, string name, bool includeSuperClassPrivate = false) {
             if (!CachedFieldInfos.ContainsKey(type)) {
                 CachedFieldInfos[type] = new Dictionary<string, FieldInfo>();
             }
 
             if (!CachedFieldInfos[type].ContainsKey(name)) {
-                return CachedFieldInfos[type][name] = type.GetField(name, StaticInstanceAnyVisibility);
+                FieldInfo result = type.GetField(name, StaticInstanceAnyVisibility);
+                if (result == null && type.BaseType != null && includeSuperClassPrivate) {
+                    result = type.BaseType.GetFieldInfo(name, true);
+                }
+                return CachedFieldInfos[type][name] = result;
             } else {
                 return CachedFieldInfos[type][name];
             }
         }
 
-        public static PropertyInfo GetPropertyInfo(this Type type, string name) {
+        public static PropertyInfo GetPropertyInfo(this Type type, string name, bool includeSuperClassPrivate = false) {
             if (!CachedPropertyInfos.ContainsKey(type)) {
                 CachedPropertyInfos[type] = new Dictionary<string, PropertyInfo>();
             }
 
             if (!CachedPropertyInfos[type].ContainsKey(name)) {
-                return CachedPropertyInfos[type][name] = type.GetProperty(name, StaticInstanceAnyVisibility);
+                PropertyInfo result = type.GetProperty(name, StaticInstanceAnyVisibility);
+                if (result == null && type.BaseType != null && includeSuperClassPrivate) {
+                    result = type.BaseType.GetPropertyInfo(name, true);
+                }
+                return CachedPropertyInfos[type][name] = result;
             } else {
                 return CachedPropertyInfos[type][name];
             }
         }
 
-        public static MethodInfo GetMethodInfo(this Type type, string name) {
+        public static MethodInfo GetMethodInfo(this Type type, string name, bool includeSuperClassPrivate = false) {
             if (!CachedMethodInfos.ContainsKey(type)) {
                 CachedMethodInfos[type] = new Dictionary<string, MethodInfo>();
             }
 
             if (!CachedMethodInfos[type].ContainsKey(name)) {
-                return CachedMethodInfos[type][name] = type.GetMethod(name, StaticInstanceAnyVisibility);
+                MethodInfo result = type.GetMethod(name, StaticInstanceAnyVisibility);
+                if (result == null && type.BaseType != null && includeSuperClassPrivate) {
+                    result = type.BaseType.GetMethodInfo(name, true);
+                }
+                return CachedMethodInfos[type][name] = result;
             } else {
                 return CachedMethodInfos[type][name];
             }
+        }
+
+        public static IEnumerable<FieldInfo> GetAllFieldInfos(this Type type, bool includeStatic = false, bool filterBackingField = false) {
+            BindingFlags bindingFlags = InstanceAnyVisibilityDeclaredOnly;
+            if (includeStatic) {
+                bindingFlags |= BindingFlags.Static;
+            }
+
+            List<FieldInfo> result = new();
+            while (type != null && type.IsSubclassOf(typeof(object))) {
+                IEnumerable<FieldInfo> fieldInfos = type.GetFields(bindingFlags);
+                if (filterBackingField) {
+                    fieldInfos = fieldInfos.Where(info => !info.Name.EndsWith("k__BackingField"));
+                }
+
+                foreach (FieldInfo fieldInfo in fieldInfos) {
+                    if (result.Contains(fieldInfo)) {
+                        continue;
+                    }
+
+                    result.Add(fieldInfo);
+                }
+
+                type = type.BaseType;
+            }
+
+            return result;
+        }
+
+        public static IEnumerable<PropertyInfo> GetAllProperties(this Type type, bool includeStatic = false) {
+            BindingFlags bindingFlags = InstanceAnyVisibilityDeclaredOnly;
+            if (includeStatic) {
+                bindingFlags |= BindingFlags.Static;
+            }
+
+            List<PropertyInfo> result = new();
+            while (type != null && type.IsSubclassOf(typeof(object))) {
+                IEnumerable<PropertyInfo> properties = type.GetProperties(bindingFlags);
+                foreach (PropertyInfo fieldInfo in properties) {
+                    if (result.Contains(fieldInfo)) {
+                        continue;
+                    }
+
+                    result.Add(fieldInfo);
+                }
+
+                type = type.BaseType;
+            }
+
+            return result;
         }
 
         public static T GetFieldValue<T>(this object obj, string name) {
@@ -185,16 +251,6 @@ namespace TAS.Utils {
             ilGen.Emit(OpCodes.Ret);
             return dyn.CreateDelegate(typeof(Func<object>)) as Func<object>;
         }
-
-        public static IEnumerable<FieldInfo> GetFieldInfos(this Type type, BindingFlags bindingFlags = StaticInstanceAnyVisibility,
-            bool filterBackingField = false) {
-            IEnumerable<FieldInfo> fieldInfos = type.GetFields(bindingFlags);
-            if (filterBackingField) {
-                fieldInfos = fieldInfos.Where(info => !info.Name.EndsWith("k__BackingField"));
-            }
-
-            return fieldInfos;
-        }
     }
 
     internal static class CommonExtensions {
@@ -205,6 +261,12 @@ namespace TAS.Utils {
     }
 
     internal static class StringExtensions {
+        private static readonly Regex LineBreakRegex = new(@"\r\n?|\n", RegexOptions.Compiled);
+
+        public static string ReplaceLineBreak(this string text, string replacement) {
+            return LineBreakRegex.Replace(text, replacement);
+        }
+
         public static bool IsNullOrEmpty(this string text) {
             return string.IsNullOrEmpty(text);
         }
@@ -366,9 +428,6 @@ namespace TAS.Utils {
     }
 
     internal static class CloneUtil {
-        private const BindingFlags InstanceAnyVisibilityDeclaredOnly =
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
-
         public static T ShallowClone<T>(this T obj) => CloneUtil<T>.ShallowClone(obj);
 
         public static void CopyAllFields(this object to, object from, bool filterBackingField = false) {
@@ -376,7 +435,7 @@ namespace TAS.Utils {
                 throw new ArgumentException("object to and from must be the same type");
             }
 
-            foreach (FieldInfo fieldInfo in GetAllFieldInfos(to.GetType(), filterBackingField)) {
+            foreach (FieldInfo fieldInfo in to.GetType().GetAllFieldInfos(false, filterBackingField)) {
                 object fromValue = fieldInfo.GetValue(from);
                 fieldInfo.SetValue(to, fromValue);
             }
@@ -387,7 +446,7 @@ namespace TAS.Utils {
                 throw new ArgumentException("object to and from must be the same type");
             }
 
-            foreach (PropertyInfo propertyInfo in GetAllProperties(to.GetType())) {
+            foreach (PropertyInfo propertyInfo in to.GetType().GetAllProperties()) {
                 if (propertyInfo.GetGetMethod(true) == null || propertyInfo.GetSetMethod(true) == null) {
                     continue;
                 }
@@ -395,42 +454,6 @@ namespace TAS.Utils {
                 object fromValue = propertyInfo.GetValue(from);
                 propertyInfo.SetValue(to, fromValue);
             }
-        }
-
-        private static IEnumerable<FieldInfo> GetAllFieldInfos(Type type, bool filterBackingField = false) {
-            List<FieldInfo> result = new();
-            while (type != null && type.IsSubclassOf(typeof(object))) {
-                IEnumerable<FieldInfo> fieldInfos = type.GetFieldInfos(InstanceAnyVisibilityDeclaredOnly, filterBackingField);
-                foreach (FieldInfo fieldInfo in fieldInfos) {
-                    if (result.Contains(fieldInfo)) {
-                        continue;
-                    }
-
-                    result.Add(fieldInfo);
-                }
-
-                type = type.BaseType;
-            }
-
-            return result;
-        }
-
-        private static IEnumerable<PropertyInfo> GetAllProperties(Type type) {
-            List<PropertyInfo> result = new();
-            while (type != null && type.IsSubclassOf(typeof(object))) {
-                IEnumerable<PropertyInfo> properties = type.GetProperties(InstanceAnyVisibilityDeclaredOnly);
-                foreach (PropertyInfo fieldInfo in properties) {
-                    if (result.Contains(fieldInfo)) {
-                        continue;
-                    }
-
-                    result.Add(fieldInfo);
-                }
-
-                type = type.BaseType;
-            }
-
-            return result;
         }
     }
 }

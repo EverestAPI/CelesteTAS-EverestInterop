@@ -12,7 +12,7 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD {
     public static class InfoCustom {
-        private const BindingFlags AllBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        private const BindingFlags AllInstanceBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
         private const BindingFlags AllStaticBindingFlags = BindingFlags.Static | BindingFlags.FlattenHierarchy |
                                                            BindingFlags.Public | BindingFlags.NonPublic;
@@ -43,8 +43,8 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-        public static string Parse() {
-            if (Settings.InfoCustom == HudOptions.Off) {
+        public static string Parse(bool export = false) {
+            if (Settings.InfoCustom == HudOptions.Off && !export) {
                 return string.Empty;
             }
 
@@ -171,7 +171,12 @@ namespace TAS.EverestInterop.InfoHUD {
             if (CachedGetMethodInfos.ContainsKey(key)) {
                 return CachedGetMethodInfos[key];
             } else {
-                MethodInfo methodInfo = type.GetProperty(propertyName, isStatic ? AllStaticBindingFlags : AllBindingFlags)?.GetGetMethod(true);
+                MethodInfo methodInfo = type.GetProperty(propertyName, isStatic ? AllStaticBindingFlags : AllInstanceBindingFlags)
+                    ?.GetGetMethod(true);
+                if (methodInfo == null && type.BaseType != null) {
+                    methodInfo = GetGetMethod(type.BaseType, propertyName, isStatic);
+                }
+
                 CachedGetMethodInfos[key] = methodInfo;
                 return methodInfo;
             }
@@ -182,7 +187,11 @@ namespace TAS.EverestInterop.InfoHUD {
             if (CachedFieldInfos.ContainsKey(key)) {
                 return CachedFieldInfos[key];
             } else {
-                FieldInfo fieldInfo = type.GetField(fieldName, isStatic ? AllStaticBindingFlags : AllBindingFlags);
+                FieldInfo fieldInfo = type.GetField(fieldName, isStatic ? AllStaticBindingFlags : AllInstanceBindingFlags);
+                if (fieldInfo == null && type.BaseType != null) {
+                    fieldInfo = GetFieldInfo(type.BaseType, fieldName, isStatic);
+                }
+
                 CachedFieldInfos[key] = fieldInfo;
                 return fieldInfo;
             }
