@@ -16,10 +16,10 @@ namespace TAS.EverestInterop.InfoHUD {
         private static CelesteTasModuleSettings TasSettings => CelesteTasModule.Settings;
 
         public static void Load() {
+            On.Celeste.Level.Render += LevelOnRender;
             // avoid issues if center camera is enabled
-            using (new DetourContext {Before = new List<string> {"*"}}) {
-                On.Celeste.Level.Render += LevelOnRender;
-            }
+            CenterCamera.Unload();
+            CenterCamera.Load();
 
             On.Celeste.Fonts.Prepare += FontsOnPrepare;
             InfoInspectEntity.Load();
