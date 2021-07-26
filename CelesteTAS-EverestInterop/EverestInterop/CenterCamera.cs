@@ -7,6 +7,7 @@ using TAS.Utils;
 namespace TAS.EverestInterop {
     public static class CenterCamera {
         private static Vector2? savedCameraPosition;
+        private static Vector2? lastPlayerPosition;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
         public static void Load() {
@@ -24,9 +25,15 @@ namespace TAS.EverestInterop {
 
         private static void CenterTheCamera(Action action) {
             Camera camera = (Engine.Scene as Level)?.Camera;
-            if (Settings.CenterCamera && camera != null && Engine.Scene.GetPlayer() is { } player) {
-                savedCameraPosition = camera.Position;
-                camera.Position = player.Position - new Vector2(camera.Viewport.Width / 2f, camera.Viewport.Height / 2f);
+            if (Settings.CenterCamera && camera != null) {
+                if (Engine.Scene.GetPlayer() is { } player) {
+                    lastPlayerPosition = player.Position;
+                }
+
+                if (lastPlayerPosition != null) {
+                    savedCameraPosition = camera.Position;
+                    camera.Position = lastPlayerPosition.Value - new Vector2(camera.Viewport.Width / 2f, camera.Viewport.Height / 2f);
+                }
             }
 
             action();
