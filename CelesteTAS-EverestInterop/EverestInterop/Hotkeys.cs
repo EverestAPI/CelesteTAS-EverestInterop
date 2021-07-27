@@ -105,7 +105,7 @@ namespace TAS.EverestInterop {
         }
 
         public static bool IsKeyDown(List<Keys> keys, bool keyCombo = true) {
-            if (keys == null || keys.Count == 0) {
+            if (keys == null || keys.Count == 0 || !Engine.Instance.IsActive) {
                 return false;
             }
 
