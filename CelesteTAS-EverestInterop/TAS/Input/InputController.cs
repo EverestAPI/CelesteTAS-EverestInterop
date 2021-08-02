@@ -192,6 +192,7 @@ namespace TAS.Input {
             clone.usedFiles.AddRange(usedFiles);
             clone.CurrentFrame = CurrentFrame;
             clone.InputCurrentFrame = InputCurrentFrame;
+            clone.SavedChecksum = clone.Checksum();
 
             return clone;
         }
