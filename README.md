@@ -15,8 +15,7 @@
 
 ## Input File
 
-The input file should be called Celeste.tas and needs to be in the main Celeste directory. Celeste Studio will automatically create this file for you. The tools
-will not work if there are no inputs in this file.
+The input file is a text file with `tas` as a suffix, e.g. `1A - Forsaken City.tas`.
 
 Format for the input file is (Frames),(Actions)
 

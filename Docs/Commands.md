@@ -22,7 +22,7 @@
 - Useful commands include:
   - `p_dreamdash` (enables dream dashing)
   - `p_twodashes` (enables two dashes)
-  - `core (int)` (Set core mode to ice or fire)
+  - `core (int)` (Set core mode to none(0), fire(1) or ice(2))
   - `givekey` (gives a key)
   - `giveberry` (gives a berry)
   - `hearts (int default all) (string default current level set)` (sets the amount of obtained hearts for the specified level set to a given number)
@@ -43,7 +43,7 @@
   - `screen` is the name of the screen you want you load (Note that if the screen name is a number you have to prepend "lvl_", so lvl_00 instead of 00).
   - `spawnpoint` is the # of the spawnpoint in the room you want to load, as most rooms have multiple spawnpoints (starts at 0).
   - Alternatively, `positionX` and `positionY` are the position you want to load at, `speedX` and `speedY` are the speed after respawning.
-- So the following all do the same thing:t
+- So the following all do the same thing:
   - `console load 2 3x`
   - `console load 2 lvl_3x`
   - `console load Celeste/2-OldSite 3x`
