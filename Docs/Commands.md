@@ -25,7 +25,7 @@
   - `core (int)` (Set core mode to ice or fire)
   - `givekey` (gives a key)
   - `giveberry` (gives a berry)
-  - `givehearts (int default all) (string default current level set)` (gives a certain number of hearts for the specified level set)
+  - `hearts (int default all) (string default current level set)` (sets the amount of obtained hearts for the specified level set to a given number)
   - `summitgem (string)` (gives summit gem, either 0-6 or "all")
   - `sd_clearflags` (clears all save data flags)
   - `unlock_doors` (unlocks all key doors)

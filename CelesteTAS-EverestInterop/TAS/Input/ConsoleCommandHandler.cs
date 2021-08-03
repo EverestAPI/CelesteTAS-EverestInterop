@@ -238,35 +238,5 @@ namespace TAS.Input {
             stats.UnlockedAreas = 1;
             stats.AreasIncludingCeleste[0].Modes[0].Completed = true;
         }
-
-        [Monocle.Command("givehearts",
-            "gives a certain number of hearts for the specified level set (default all hearts and current level set) (CelesteTAS)")]
-        private static void CmdGiveHearts(int amount = -1, string levelSet = null) {
-            SaveData saveData = SaveData.Instance;
-            if (saveData == null) {
-                saveData = UserIO.Load<SaveData>(SaveData.GetFilename(-1)) ?? new SaveData();
-                SaveData.Start(saveData, -1);
-            }
-
-            if (amount == -1) {
-                amount = saveData.LevelSetStats.MaxHeartGems;
-            }
-
-            if (levelSet.IsNullOrEmpty()) {
-                levelSet = saveData.GetLevelSet();
-            }
-
-            int num = 0;
-            foreach (AreaStats areaStats in saveData.Areas_Safe.Where(stats => stats.LevelSet == levelSet)) {
-                foreach (AreaModeStats areaStatsMode in areaStats.Modes) {
-                    if (num < amount) {
-                        areaStatsMode.HeartGem = true;
-                        num++;
-                    } else {
-                        areaStatsMode.HeartGem = false;
-                    }
-                }
-            }
-        }
     }
 }
