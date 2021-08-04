@@ -150,16 +150,14 @@ namespace TAS {
         private static void PlayerOnDashCoroutine(ILContext il) {
             ILCursor ilCursor = new(il);
             while (ilCursor.TryGotoNext(
-                ins => ins.OpCode == OpCodes.Ldarg_0,
-                ins => ins.OpCode == OpCodes.Ldc_R4,
                 ins => ins.MatchBox<float>(),
                 ins => ins.OpCode == OpCodes.Stfld && ins.Operand.ToString().EndsWith("::<>2__current")
             )) {
-                ilCursor.Index += 2;
                 ilCursor.EmitDelegate<Func<float, float>>(dashTime => {
                     DashTime = dashTime;
                     return dashTime;
                 });
+                ilCursor.Index++;
             }
         }
 
