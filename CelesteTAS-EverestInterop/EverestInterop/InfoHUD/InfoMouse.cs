@@ -10,7 +10,7 @@ using TAS.Utils;
 namespace TAS.EverestInterop.InfoHUD {
     public static class InfoMouse {
         private static KeyboardState lastKeyboardState;
-        private static DateTime lastLeftCtrlPressedTime;
+        private static DateTime lastHotkeyPressedTime;
         private static MouseState lastMouseState;
         private static Vector2? startDragPosition;
         private static CelesteTasModuleSettings TasSettings => CelesteTasModule.Settings;
@@ -21,8 +21,7 @@ namespace TAS.EverestInterop.InfoHUD {
             }
 
             KeyboardState keyboardState = Keyboard.GetState();
-            List<Keys> keys = TasSettings.KeyInfoHud.Keys;
-            if (keys.IsEmpty() || keys.Any(key => keyboardState.IsKeyUp(key))) {
+            if (IsKeyUp(keyboardState)) {
                 lastKeyboardState = keyboardState;
                 return;
             }
@@ -32,13 +31,18 @@ namespace TAS.EverestInterop.InfoHUD {
             DragAndDropHud(mouseState);
         }
 
+        private static bool IsKeyUp(KeyboardState keyboardState) {
+            List<Keys> keys = TasSettings.KeyInfoHud.Keys;
+            return keys.IsEmpty() || keys.Any(keyboardState.IsKeyUp);
+        }
+
         private static void Toggle(KeyboardState keyboardState) {
-            if (lastKeyboardState.IsKeyUp(Keys.LeftControl)) {
-                if (DateTime.Now.Subtract(lastLeftCtrlPressedTime).TotalMilliseconds < 300) {
+            if (IsKeyUp(lastKeyboardState)) {
+                if (DateTime.Now.Subtract(lastHotkeyPressedTime).TotalMilliseconds < 300) {
                     TasSettings.InfoHud = !TasSettings.InfoHud;
                 }
 
-                lastLeftCtrlPressedTime = DateTime.Now;
+                lastHotkeyPressedTime = DateTime.Now;
             }
 
             lastKeyboardState = keyboardState;
