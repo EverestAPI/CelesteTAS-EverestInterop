@@ -71,7 +71,7 @@ namespace CelesteStudio.Communication {
         }
 
         private void ProcessSendState(byte[] data) {
-            StudioInfo studioInfo = StudioInfo.FromArray(FromByteArray<string[]>(data));
+            StudioInfo studioInfo = StudioInfo.FromByteArray(data);
             Log(studioInfo.ToString());
             CommunicationWrapper.StudioInfo = studioInfo;
         }

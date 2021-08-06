@@ -24,32 +24,33 @@
             ChapterTime = chapterTime;
         }
 
-        public static StudioInfo FromArray(string[] values) {
+        public static StudioInfo FromByteArray(byte[] data) {
+            object[] values = StudioCommunicationBase.FromByteArray<object[]>(data);
             return new StudioInfo(
-                int.Parse(values[0]),
-                values[1],
-                int.Parse(values[2]),
-                int.Parse(values[3]),
-                int.Parse(values[4]),
-                (State) int.Parse(values[5]),
-                values[6],
-                values[7],
-                values[8]
+                (int) values[0],
+                values[1] as string,
+                (int) values[2],
+                (int) values[3],
+                (int) values[4],
+                (State) values[5],
+                values[6] as string,
+                values[7] as string,
+                values[8] as string
             );
         }
 
-        public static string[] ToArray(StudioInfo studioInfo) {
-            return new[] {
-                studioInfo.CurrentLine.ToString(),
-                studioInfo.CurrentLineText,
-                studioInfo.CurrentFrame.ToString(),
-                studioInfo.TotalFrames.ToString(),
-                studioInfo.SaveStateLine.ToString(),
-                ((int)studioInfo.TasState).ToString(),
-                studioInfo.GameInfo,
-                studioInfo.LevelName,
-                studioInfo.ChapterTime,
-            };
+        public byte[] ToByteArray() {
+            return StudioCommunicationBase.ToByteArray(new object[] {
+                CurrentLine,
+                CurrentLineText,
+                CurrentFrame,
+                TotalFrames,
+                SaveStateLine,
+                (int) TasState,
+                GameInfo,
+                LevelName,
+                ChapterTime,
+            });
         }
     }
 }

@@ -305,9 +305,8 @@ namespace TAS.Communication {
 
         private void SendStateNow(StudioInfo studioInfo, bool canFail) {
             if (Initialized) {
-                string[] data = StudioInfo.ToArray(studioInfo);
-                byte[] dataBytes = ToByteArray(data);
-                Message message = new(MessageIDs.SendState, dataBytes);
+                byte[] data = studioInfo.ToByteArray();
+                Message message = new(MessageIDs.SendState, data);
                 if (canFail) {
                     WriteMessage(message);
                 } else {

@@ -268,7 +268,7 @@ namespace StudioCommunication {
         protected virtual void EstablishConnection() { }
 
         //ty stackoverflow
-        protected T FromByteArray<T>(byte[] data, int offset = 0, int length = 0) {
+        public static T FromByteArray<T>(byte[] data, int offset = 0, int length = 0) {
             if (data == null) {
                 return default(T);
             }
@@ -284,7 +284,7 @@ namespace StudioCommunication {
             }
         }
 
-        protected byte[] ToByteArray<T>(T obj) {
+        public static byte[] ToByteArray<T>(T obj) {
             if (obj == null) {
                 return new byte[0];
             }
