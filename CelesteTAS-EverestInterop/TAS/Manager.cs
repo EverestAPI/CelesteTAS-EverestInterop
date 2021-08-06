@@ -88,7 +88,9 @@ namespace TAS {
                 Controller.Inputs.Count,
                 Savestates.StudioHighlightLine,
                 State,
-                GameInfo.StudioInfo
+                GameInfo.StudioInfo,
+                GameInfo.LevelName,
+                GameInfo.ChapterTime
             );
             StudioCommunicationClient.Instance?.SendState(studioInfo, !ShouldForceState);
         }

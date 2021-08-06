@@ -41,6 +41,8 @@ namespace TAS {
 
         public static string Status = string.Empty;
         public static string StatusWithoutTime = string.Empty;
+        public static string LevelName = string.Empty;
+        public static string ChapterTime = string.Empty;
         public static string LastVel = string.Empty;
         public static string LastPlayerSeekerVel = string.Empty;
         public static string InspectingInfo = string.Empty;
@@ -360,15 +362,18 @@ namespace TAS {
                     StatusWithoutTime = "Cutscene";
                 }
 
-                string roomNameAndTime =
-                    $"[{level.Session.Level}] Timer: {(chapterTime / 10000000D):F3}({chapterTime / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks})";
-                Status = StatusWithoutTime + roomNameAndTime;
+                LevelName = level.Session.Level;
+                ChapterTime = GetChapterTime(level);
+
+                Status = StatusWithoutTime + $"[{LevelName}] Timer: {ChapterTime}";
 
                 if (Manager.FrameLoops == 1) {
                     InspectingInfo = InfoInspectEntity.GetInspectingEntitiesInfo();
                     CustomInfo = InfoCustom.Parse();
                 }
             } else {
+                LevelName = string.Empty;
+                ChapterTime = string.Empty;
                 InspectingInfo = string.Empty;
                 CustomInfo = string.Empty;
                 if (Engine.Scene is SummitVignette summit) {
@@ -433,6 +438,11 @@ namespace TAS {
 
         private static string GetAdjustedVelocity(Vector2Double diff) {
             return $"Vel:   {diff.ToSimpleString(CelesteTasModule.Settings.RoundVelocity)}";
+        }
+
+        private static string GetChapterTime(Level level) {
+            long chapterTime = level.Session.Time;
+            return $"{(chapterTime / 10000000D):F3}({chapterTime / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks})";
         }
 
         private static void BeginExport(string path, string[] tracked) {

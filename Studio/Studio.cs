@@ -563,9 +563,9 @@ namespace CelesteStudio {
             tasText.Selection = new Range(tasText, cursor, currentLine, cursor, currentLine);
         }
 
-        private void InsertRoomName() => InsertNewLine("#lvl_" + CommunicationWrapper.LevelName());
+        private void InsertRoomName() => InsertNewLine("#lvl_" + CommunicationWrapper.StudioInfo.LevelName);
 
-        private void InsertTime() => InsertNewLine('#' + CommunicationWrapper.Timer());
+        private void InsertTime() => InsertNewLine('#' + CommunicationWrapper.StudioInfo.ChapterTime);
 
         private void InsertConsoleLoadCommand() {
             CommunicationWrapper.Command = null;

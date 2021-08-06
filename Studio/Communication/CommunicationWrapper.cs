@@ -16,30 +16,11 @@ namespace CelesteStudio.Communication {
         public static bool UpdatingHotkeys = Settings.Default.UpdatingHotkeys;
         public static bool FastForwarding;
 
-        private static readonly Regex LevelAndTimerRegex =
-            new(@"^\[([^\[]+?)\] Timer: ([0-9.]+?\(\d+\))$", RegexOptions.Compiled | RegexOptions.Multiline);
-
         [DllImport("User32.dll")]
         private static extern short GetAsyncKeyState(Keys key);
 
         private static bool IsKeyDown(Keys keys) {
             return (GetAsyncKeyState(keys) & 0x8000) == 0x8000;
-        }
-
-        public static string LevelName() {
-            if (LevelAndTimerRegex.IsMatch(StudioInfo.GameInfo)) {
-                return LevelAndTimerRegex.Match(StudioInfo.GameInfo).Groups[1].Value;
-            } else {
-                return string.Empty;
-            }
-        }
-
-        public static string Timer() {
-            if (LevelAndTimerRegex.IsMatch(StudioInfo.GameInfo)) {
-                return LevelAndTimerRegex.Match(StudioInfo.GameInfo).Groups[2].Value;
-            } else {
-                return string.Empty;
-            }
         }
 
         public static void SetBindings(Dictionary<HotkeyIDs, List<Keys>> newBindings) {

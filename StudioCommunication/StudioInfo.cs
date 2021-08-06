@@ -7,10 +7,12 @@
         public readonly State TasState;
         public readonly int TotalFrames;
         public readonly string GameInfo;
+        public readonly string LevelName;
+        public readonly string ChapterTime;
 
         public StudioInfo(
             int currentLine, string currentLineText, int currentFrame, int totalFrames, int saveStateLine, State tasState,
-            string gameInfo) {
+            string gameInfo, string levelName, string chapterTime) {
             CurrentLine = currentLine;
             CurrentLineText = currentLineText;
             CurrentFrame = currentFrame;
@@ -18,6 +20,8 @@
             SaveStateLine = saveStateLine;
             TasState = tasState;
             GameInfo = gameInfo;
+            LevelName = levelName;
+            ChapterTime = chapterTime;
         }
 
         public static StudioInfo FromArray(string[] values) {
@@ -28,7 +32,9 @@
                 int.Parse(values[3]),
                 int.Parse(values[4]),
                 (State) int.Parse(values[5]),
-                values[6]
+                values[6],
+                values[7],
+                values[8]
             );
         }
 
@@ -41,6 +47,8 @@
                 studioInfo.SaveStateLine.ToString(),
                 ((int)studioInfo.TasState).ToString(),
                 studioInfo.GameInfo,
+                studioInfo.LevelName,
+                studioInfo.ChapterTime,
             };
         }
     }

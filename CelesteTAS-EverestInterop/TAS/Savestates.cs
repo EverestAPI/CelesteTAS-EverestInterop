@@ -1,9 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Celeste;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Monocle;
-using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.Input;
 using TAS.Utils;
@@ -13,16 +14,22 @@ using TasState = StudioCommunication.State;
 namespace TAS {
     public static class Savestates {
         private static InputController savedController;
-        private static string savedGameStatus;
-        private static string savedStatusWithoutTime;
-        private static string savedLastVel;
-        private static string savedLastPlayerSeekerVel;
-        private static string savedInspectingInfo;
-        private static string savedCustomInfo;
-        private static Vector2Double savedLastPos;
-        private static Vector2Double savedLastPlayerSeekerPos;
-        private static float savedDashTime;
-        private static bool savedFrozen;
+
+        private static readonly Dictionary<FieldInfo, object> SavedGameInfo = new() {
+            {typeof(GameInfo).GetFieldInfo("Status"), null},
+            {typeof(GameInfo).GetFieldInfo("StatusWithoutTime"), null},
+            {typeof(GameInfo).GetFieldInfo("LevelName"), null},
+            {typeof(GameInfo).GetFieldInfo("ChapterTime"), null},
+            {typeof(GameInfo).GetFieldInfo("LastVel"), null},
+            {typeof(GameInfo).GetFieldInfo("LastPlayerSeekerVel"), null},
+            {typeof(GameInfo).GetFieldInfo("InspectingInfo"), null},
+            {typeof(GameInfo).GetFieldInfo("CustomInfo"), null},
+            {typeof(GameInfo).GetFieldInfo("LastPos"), null},
+            {typeof(GameInfo).GetFieldInfo("LastPlayerSeekerPos"), null},
+            {typeof(GameInfo).GetFieldInfo("DashTime"), null},
+            {typeof(GameInfo).GetFieldInfo("Frozen"), null}
+        };
+
         private static bool savedByBreakpoint;
 
         private static readonly Lazy<bool> SpeedrunToolInstalledLazy = new(() =>
@@ -96,8 +103,8 @@ namespace TAS {
             if (IsSaved()) {
                 if (Controller.CurrentFrame == savedController.CurrentFrame) {
                     if (savedController.SavedChecksum == Controller.Checksum(savedController)) {
-                        State &= ~StudioCommunication.State.FrameStep;
-                        NextState &= ~StudioCommunication.State.FrameStep;
+                        State &= ~TasState.FrameStep;
+                        NextState &= ~TasState.FrameStep;
                         return;
                     }
                 }
@@ -108,17 +115,7 @@ namespace TAS {
             }
 
             savedByBreakpoint = breakpoint;
-            savedGameStatus = GameInfo.Status;
-            savedLastVel = GameInfo.LastVel;
-            savedLastPlayerSeekerVel = GameInfo.LastPlayerSeekerVel;
-            savedInspectingInfo = GameInfo.InspectingInfo;
-            savedCustomInfo = GameInfo.CustomInfo;
-            savedStatusWithoutTime = GameInfo.StatusWithoutTime;
-            savedLastPos = GameInfo.LastPos;
-            savedLastPlayerSeekerPos = GameInfo.LastPlayerSeekerPos;
-            savedDashTime = GameInfo.DashTime;
-            savedFrozen = GameInfo.Frozen;
-
+            SaveGameInfo();
             savedController = Controller.Clone();
             LoadStateRoutine();
         }
@@ -158,19 +155,28 @@ namespace TAS {
         private static void Clear() {
             StateManager.Instance.ClearState();
             savedController = null;
-            savedGameStatus = null;
-            savedLastVel = null;
-            savedLastPlayerSeekerVel = null;
-            savedInspectingInfo = null;
-            savedCustomInfo = null;
-            savedStatusWithoutTime = null;
-            savedLastPos = default;
-            savedLastPlayerSeekerPos = default;
-            savedDashTime = 0f;
-            savedFrozen = false;
+            ClearGameInfo();
             savedByBreakpoint = false;
 
             UpdateStudio();
+        }
+
+        private static void SaveGameInfo() {
+            foreach (FieldInfo fieldInfo in SavedGameInfo.Keys.ToList()) {
+                SavedGameInfo[fieldInfo] = fieldInfo.GetValue(null);
+            }
+        }
+
+        private static void LoadGameInfo() {
+            foreach (FieldInfo fieldInfo in SavedGameInfo.Keys.ToList()) {
+                fieldInfo.SetValue(null, SavedGameInfo[fieldInfo]);
+            }
+        }
+
+        private static void ClearGameInfo() {
+            foreach (FieldInfo fieldInfo in SavedGameInfo.Keys.ToList()) {
+                SavedGameInfo[fieldInfo] = null;
+            }
         }
 
         private static void PlayTas() {
@@ -181,16 +187,7 @@ namespace TAS {
         private static void LoadStateRoutine() {
             Controller.CopyFrom(savedController);
             SetTasState();
-            GameInfo.Status = savedGameStatus;
-            GameInfo.LastVel = savedLastVel;
-            GameInfo.LastPlayerSeekerVel = savedLastPlayerSeekerVel;
-            GameInfo.InspectingInfo = savedInspectingInfo;
-            GameInfo.CustomInfo = savedCustomInfo;
-            GameInfo.StatusWithoutTime = savedStatusWithoutTime;
-            GameInfo.LastPos = savedLastPos;
-            GameInfo.LastPlayerSeekerPos = savedLastPlayerSeekerPos;
-            GameInfo.DashTime = savedDashTime;
-            GameInfo.Frozen = savedFrozen;
+            LoadGameInfo();
             UpdateStudio();
         }
 
