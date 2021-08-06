@@ -41,9 +41,6 @@ namespace TAS.EverestInterop {
                         Settings.LaunchStudioAtBoot = value));
                     subMenu.Add(new TextMenu.OnOff("Auto Extract New Studio".ToDialogText(), Settings.AutoExtractNewStudio).Change(value =>
                         Settings.AutoExtractNewStudio = value));
-
-                    // TODO need some guys who know Linux to make it actually work
-                    // subMenu.Add(new TextMenu.OnOff("Unix RTC".ToDialogText(), Settings.UnixRtc).Change(value => Settings.UnixRtc = value));
                 }),
 
                 new TextMenuExt.SubMenu("More Options".ToDialogText(), false).Apply(subMenu => {
@@ -63,9 +60,9 @@ namespace TAS.EverestInterop {
                     menu.Focused = false;
                     Entity keyboardConfig;
                     if (CreateKeyboardConfigUi != null) {
-                        keyboardConfig = CreateKeyboardConfigUi.Invoke(everestModule, new object[] {menu}) as Entity;
+                        keyboardConfig = CreateKeyboardConfigUi.Invoke(everestModule, new object[] { menu }) as Entity;
                     } else {
-                        keyboardConfig = new ModuleSettingsKeyboardConfigUI(everestModule) {OnClose = () => menu.Focused = true};
+                        keyboardConfig = new ModuleSettingsKeyboardConfigUI(everestModule) { OnClose = () => menu.Focused = true };
                     }
 
                     Engine.Scene.Add(keyboardConfig);

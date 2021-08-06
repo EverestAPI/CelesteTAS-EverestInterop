@@ -41,11 +41,6 @@ namespace StudioCommunication {
         /// </summary>
         SendState = 0x10,
 
-        /// <summary>
-        /// Structure: string
-        /// </summary>
-        SendGameData = 0x11,
-
         //Data transfer from Studio
         /// <summary>
         /// Structure: string

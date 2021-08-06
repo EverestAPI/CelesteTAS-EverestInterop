@@ -9,14 +9,12 @@ using StudioCommunication;
 
 namespace CelesteStudio.Communication {
     static class CommunicationWrapper {
-        public static string gamePath;
-        public static string state;
-        public static string gameData = "";
-        public static string command;
+        public static StudioInfo StudioInfo;
+        public static string Command;
         private static Dictionary<HotkeyIDs, List<Keys>> bindings;
 
-        public static bool updatingHotkeys = Settings.Default.UpdatingHotkeys;
-        public static bool fastForwarding = false;
+        public static bool UpdatingHotkeys = Settings.Default.UpdatingHotkeys;
+        public static bool FastForwarding;
 
         private static readonly Regex LevelAndTimerRegex =
             new(@"^\[([^\[]+?)\] Timer: ([0-9.]+?\(\d+\))$", RegexOptions.Compiled | RegexOptions.Multiline);
@@ -29,16 +27,16 @@ namespace CelesteStudio.Communication {
         }
 
         public static string LevelName() {
-            if (LevelAndTimerRegex.IsMatch(gameData)) {
-                return LevelAndTimerRegex.Match(gameData).Groups[1].Value;
+            if (LevelAndTimerRegex.IsMatch(StudioInfo.GameInfo)) {
+                return LevelAndTimerRegex.Match(StudioInfo.GameInfo).Groups[1].Value;
             } else {
                 return string.Empty;
             }
         }
 
         public static string Timer() {
-            if (LevelAndTimerRegex.IsMatch(gameData)) {
-                return LevelAndTimerRegex.Match(gameData).Groups[2].Value;
+            if (LevelAndTimerRegex.IsMatch(StudioInfo.GameInfo)) {
+                return LevelAndTimerRegex.Match(StudioInfo.GameInfo).Groups[2].Value;
             } else {
                 return string.Empty;
             }
@@ -51,11 +49,11 @@ namespace CelesteStudio.Communication {
         //"wrapper"
         //This doesn't work in release build and i don't particularly care to figure out why.
         public static bool CheckControls(ref Message msg) {
-            if (!updatingHotkeys
+            if (!UpdatingHotkeys
                 || Environment.OSVersion.Platform == PlatformID.Unix
                 || bindings == null
                 // check if key is repeated
-                || ((int) msg.LParam & 0x40000000) == 0x40000000) {
+                || ((int)msg.LParam & 0x40000000) == 0x40000000) {
                 return false;
             }
 
@@ -85,10 +83,10 @@ namespace CelesteStudio.Communication {
 
                 if (pressed) {
                     if (hotkeyIDs == HotkeyIDs.FastForward) {
-                        fastForwarding = true;
+                        FastForwarding = true;
                     }
 
-                    StudioCommunicationServer.instance?.SendHotkeyPressed(hotkeyIDs);
+                    StudioCommunicationServer.Instance?.SendHotkeyPressed(hotkeyIDs);
                     anyPressed = true;
                 }
             }
@@ -110,8 +108,8 @@ namespace CelesteStudio.Communication {
             }
 
             if (!pressed) {
-                StudioCommunicationServer.instance.SendHotkeyPressed(HotkeyIDs.FastForward, true);
-                fastForwarding = false;
+                StudioCommunicationServer.Instance.SendHotkeyPressed(HotkeyIDs.FastForward, true);
+                FastForwarding = false;
             }
 
             return pressed;

@@ -1,6 +1,4 @@
 ﻿using System;
-using System.IO;
-using System.IO.Pipes;
 using Celeste;
 using Celeste.Mod;
 using FMOD.Studio;
@@ -13,10 +11,6 @@ using TAS.Utils;
 namespace TAS.EverestInterop {
     // ReSharper disable once ClassNeverInstantiated.Global
     public class CelesteTasModule : EverestModule {
-        public NamedPipeServerStream UnixRtc;
-        public StreamReader UnixRtcStreamIn;
-        public StreamWriter UnixRtcStreamOut;
-
         public CelesteTasModule() {
             Instance = this;
             AttributeUtils.CollectMethods<LoadAttribute>();
@@ -26,8 +20,7 @@ namespace TAS.EverestInterop {
         public static CelesteTasModule Instance { get; private set; }
 
         public override Type SettingsType => typeof(CelesteTasModuleSettings);
-        public static CelesteTasModuleSettings Settings => (CelesteTasModuleSettings) Instance?._Settings;
-        public static bool UnixRtcEnabled => (Environment.OSVersion.Platform == PlatformID.Unix) && Settings.UnixRtc;
+        public static CelesteTasModuleSettings Settings => (CelesteTasModuleSettings)Instance?._Settings;
 
         public override void Initialize() {
             StudioHelper.Initialize();
@@ -48,16 +41,6 @@ namespace TAS.EverestInterop {
             ConsoleEnhancements.Load();
 
             AttributeUtils.Invoke<LoadAttribute>();
-
-            // Open unix IO pipe for interfacing with Linux / Mac Celeste Studio
-            if (UnixRtcEnabled) {
-                File.Delete("/tmp/celestetas");
-                UnixRtc = new NamedPipeServerStream("/tmp/celestetas", PipeDirection.InOut);
-                UnixRtc.WaitForConnection();
-                UnixRtcStreamOut = new StreamWriter(UnixRtc);
-                UnixRtcStreamIn = new StreamReader(UnixRtc);
-                Logger.Log("CelesteTAS", "Unix socket is active on /tmp/celestetas");
-            }
 
             // Open memory mapped file for interfacing with Windows Celeste Studio
             StudioCommunicationClient.Run();
@@ -83,8 +66,6 @@ namespace TAS.EverestInterop {
             StudioCommunicationClient.Destroy();
 
             AttributeUtils.Invoke<UnloadAttribute>();
-
-            UnixRtc?.Dispose();
 
 #if DEBUG
             Benchmark.Unload();

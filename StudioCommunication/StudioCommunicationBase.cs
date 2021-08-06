@@ -63,7 +63,7 @@ namespace StudioCommunication {
                         Message? message = ReadMessage();
 
                         if (message != null) {
-                            ReadData((Message) message);
+                            ReadData((Message)message);
                             waiting = false;
                         }
 
@@ -100,7 +100,7 @@ namespace StudioCommunication {
                 BinaryReader reader = new(stream);
                 BinaryWriter writer = new(stream);
 
-                id = (MessageIDs) reader.ReadByte();
+                id = (MessageIDs)reader.ReadByte();
                 if (id == MessageIDs.Default) {
                     mutex.ReleaseMutex();
                     return null;
@@ -118,7 +118,7 @@ namespace StudioCommunication {
 
                 //Overwriting the first byte ensures that the data will only be read once
                 stream.Position = 0;
-                writer.Write((byte) 0);
+                writer.Write((byte)0);
 
                 mutex.ReleaseMutex();
             }
@@ -138,7 +138,7 @@ namespace StudioCommunication {
             while (true) {
                 Message? message = ReadMessage();
                 if (message != null) {
-                    return (Message) message;
+                    return (Message)message;
                 }
 
                 if ( /*Initialized &&*/ ++failedReads > 100) {
@@ -167,7 +167,7 @@ namespace StudioCommunication {
 
                 //Check that there isn't a message waiting to be read
                 byte firstByte = reader.ReadByte();
-                if (firstByte != 0 && (!IsHighPriority(message.Id) || IsHighPriority((MessageIDs) firstByte))) {
+                if (firstByte != 0 && (!IsHighPriority(message.Id) || IsHighPriority((MessageIDs)firstByte))) {
                     mutex.ReleaseMutex();
                     if ( /*Initialized &&*/ ++failedWrites > 100) {
                         throw new NeedsResetException("Write timed out");
@@ -224,7 +224,7 @@ namespace StudioCommunication {
             using (MemoryMappedViewStream stream = sharedMemory.CreateViewStream()) {
                 mutex.WaitOne();
                 BinaryWriter writer = new(stream);
-                writer.Write((byte) 0);
+                writer.Write((byte)0);
                 mutex.ReleaseMutex();
             }
 
@@ -280,7 +280,7 @@ namespace StudioCommunication {
             BinaryFormatter bf = new();
             using (MemoryStream ms = new(data, offset, length)) {
                 object obj = bf.Deserialize(ms);
-                return (T) obj;
+                return (T)obj;
             }
         }
 
@@ -304,6 +304,7 @@ namespace StudioCommunication {
         protected void Log(string s) {
             if (timeoutCount <= 5) {
                 Console.WriteLine(s);
+                System.Diagnostics.Trace.WriteLine(s);
             }
         }
         // This is literally the first thing I have ever written with threading
@@ -324,7 +325,7 @@ namespace StudioCommunication {
 
             public byte[] GetBytes() {
                 byte[] bytes = new byte[Length + HeaderLength];
-                bytes[0] = (byte) Id;
+                bytes[0] = (byte)Id;
                 Buffer.BlockCopy(BitConverter.GetBytes(Signature), 0, bytes, 1, 4);
                 Buffer.BlockCopy(BitConverter.GetBytes(Length), 0, bytes, 5, 4);
                 Buffer.BlockCopy(Data, 0, bytes, HeaderLength, Length);

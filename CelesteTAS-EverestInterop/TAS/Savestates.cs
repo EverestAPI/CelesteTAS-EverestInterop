@@ -78,7 +78,7 @@ namespace TAS {
             // save state when tas run to the last savestate breakpoint
             if (Running
                 && Controller.Inputs.Count > Controller.CurrentFrame
-                && Controller.CurrentFastForward is {SaveState: true} currentFastForward &&
+                && Controller.CurrentFastForward is { SaveState: true } currentFastForward &&
                 Controller.FastForwards.Last(pair => pair.Value.SaveState).Value == currentFastForward &&
                 SavedCurrentFrame != currentFastForward.Frame) {
                 Save(true);
@@ -208,7 +208,7 @@ namespace TAS {
                 UpdateManagerStatus();
             }
 
-            StudioCommunicationClient.Instance?.SendStateAndGameData(CurrentStatus, GameInfo.StudioInfo, false);
+            StudioCommunicationClient.Instance?.SendStateAndGameData(StudioInfo, false);
         }
 
         // ReSharper disable once UnusedMember.Local

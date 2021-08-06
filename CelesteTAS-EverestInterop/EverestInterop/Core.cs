@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Celeste;
@@ -108,24 +107,6 @@ namespace TAS.EverestInterop {
 
             SkipBaseUpdate = false;
             InUpdate = false;
-
-            if (CelesteTasModule.UnixRtcEnabled && Manager.CurrentStatus != null) {
-                StreamWriter writer = CelesteTasModule.Instance.UnixRtcStreamOut;
-                try {
-                    writer.Write(GameInfo.Status.Replace('\n', '~'));
-                    writer.Write('%');
-                    writer.Write(Manager.CurrentStatus.Replace('\n', '~'));
-                    writer.Write('%');
-                    if (Engine.Scene is Level level) {
-                        writer.Write(level.Session.LevelData.Name);
-                    }
-
-                    writer.WriteLine();
-                    writer.FlushAsync();
-                } catch {
-                    // ignored
-                }
-            }
 
             if (skipBaseUpdate) {
                 OrigGameUpdate(self, gameTime);

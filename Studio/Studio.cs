@@ -107,7 +107,7 @@ namespace CelesteStudio {
 
         private static void RunSingleton(Action action) {
             string appGuid =
-                ((GuidAttribute) Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(GuidAttribute), false).GetValue(0)).Value;
+                ((GuidAttribute)Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(GuidAttribute), false).GetValue(0)).Value;
 
             string mutexId = $"Global\\{{{appGuid}}}";
 
@@ -215,13 +215,13 @@ namespace CelesteStudio {
 
         private void InitDragDrop() {
             tasText.DragDrop += (sender, args) => {
-                string[] fileList = (string[]) args.Data.GetData(DataFormats.FileDrop, false);
+                string[] fileList = (string[])args.Data.GetData(DataFormats.FileDrop, false);
                 if (fileList.Length > 0 && fileList[0].EndsWith(".tas")) {
                     OpenFile(fileList[0]);
                 }
             };
             tasText.DragEnter += (sender, args) => {
-                string[] fileList = (string[]) args.Data.GetData(DataFormats.FileDrop, false);
+                string[] fileList = (string[])args.Data.GetData(DataFormats.FileDrop, false);
                 if (fileList.Length > 0 && fileList[0].EndsWith(".tas")) {
                     args.Effect = DragDropEffects.Copy;
                 }
@@ -301,7 +301,7 @@ namespace CelesteStudio {
 
         private void TASStudio_FormClosed(object sender, FormClosedEventArgs e) {
             SaveSettings();
-            StudioCommunicationServer.instance?.SendPath(string.Empty);
+            StudioCommunicationServer.Instance?.SendPath(string.Empty);
             Thread.Sleep(50);
         }
 
@@ -349,11 +349,11 @@ namespace CelesteStudio {
                 } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.T) {
                     InsertTime();
                 } else if (e.Modifiers == (Keys.Control | Keys.Shift) && e.KeyCode == Keys.C) {
-                    CopyGameData();
+                    CopyGameInfo();
                 } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.D) {
                     ToggleUpdatingHotkeys();
                 } else if (e.Modifiers == (Keys.Shift | Keys.Control) && e.KeyCode == Keys.D) {
-                    StudioCommunicationServer.instance?.ExternalReset();
+                    StudioCommunicationServer.Instance?.ExternalReset();
                 } else if (e.KeyCode == Keys.Down && (e.Modifiers == Keys.Control || e.Modifiers == (Keys.Control | Keys.Shift))) {
                     GoDownCommentAndBreakpoint(e);
                 } else if (e.KeyCode == Keys.Up && (e.Modifiers == Keys.Control || e.Modifiers == (Keys.Control | Keys.Shift))) {
@@ -366,9 +366,9 @@ namespace CelesteStudio {
         }
 
         private void SaveAsFile() {
-            StudioCommunicationServer.instance?.WriteWait();
+            StudioCommunicationServer.Instance?.WriteWait();
             tasText.SaveNewFile();
-            StudioCommunicationServer.instance?.SendPath(CurrentFileName);
+            StudioCommunicationServer.Instance?.SendPath(CurrentFileName);
             Text = TitleBarText;
             UpdateRecentFiles();
         }
@@ -408,8 +408,8 @@ namespace CelesteStudio {
         }
 
         private void ToggleUpdatingHotkeys() {
-            CommunicationWrapper.updatingHotkeys = !CommunicationWrapper.updatingHotkeys;
-            Settings.Default.UpdatingHotkeys = CommunicationWrapper.updatingHotkeys;
+            CommunicationWrapper.UpdatingHotkeys = !CommunicationWrapper.UpdatingHotkeys;
+            Settings.Default.UpdatingHotkeys = CommunicationWrapper.UpdatingHotkeys;
         }
 
         private void OpenFile(string fileName = null, int startLine = 0) {
@@ -417,7 +417,7 @@ namespace CelesteStudio {
                 return;
             }
 
-            StudioCommunicationServer.instance?.WriteWait();
+            StudioCommunicationServer.Instance?.WriteWait();
             if (tasText.OpenFile(fileName)) {
                 UpdateRecentFiles();
                 tasText.GoHome();
@@ -428,7 +428,7 @@ namespace CelesteStudio {
                 }
             }
 
-            StudioCommunicationServer.instance?.SendPath(CurrentFileName);
+            StudioCommunicationServer.Instance?.SendPath(CurrentFileName);
             Text = TitleBarText;
         }
 
@@ -567,27 +567,27 @@ namespace CelesteStudio {
         private void InsertTime() => InsertNewLine('#' + CommunicationWrapper.Timer());
 
         private void InsertConsoleLoadCommand() {
-            CommunicationWrapper.command = null;
-            StudioCommunicationServer.instance.GetConsoleCommand();
+            CommunicationWrapper.Command = null;
+            StudioCommunicationServer.Instance.GetConsoleCommand();
             Thread.Sleep(100);
 
-            if (CommunicationWrapper.command == null) {
+            if (CommunicationWrapper.Command == null) {
                 return;
             }
 
-            InsertNewLine(CommunicationWrapper.command);
+            InsertNewLine(CommunicationWrapper.Command);
         }
 
         private void InsertModInfo() {
-            CommunicationWrapper.command = null;
-            StudioCommunicationServer.instance.GetModInfo();
+            CommunicationWrapper.Command = null;
+            StudioCommunicationServer.Instance.GetModInfo();
             Thread.Sleep(100);
 
-            if (CommunicationWrapper.command == null) {
+            if (CommunicationWrapper.Command == null) {
                 return;
             }
 
-            InsertNewLine(CommunicationWrapper.command);
+            InsertNewLine(CommunicationWrapper.Command);
         }
 
         private void InsertNewLine(string text) {
@@ -598,12 +598,12 @@ namespace CelesteStudio {
             tasText.Selection = new Range(tasText, text.Length, startLine, text.Length, startLine);
         }
 
-        private void CopyGameData() {
-            if (string.IsNullOrEmpty(CommunicationWrapper.gameData)) {
+        private void CopyGameInfo() {
+            if (string.IsNullOrEmpty(CommunicationWrapper.StudioInfo.GameInfo)) {
                 return;
             }
 
-            Clipboard.SetText(CommunicationWrapper.gameData);
+            Clipboard.SetText(CommunicationWrapper.StudioInfo.GameInfo);
         }
 
         private DialogResult ShowInputDialog(string title, ref string input) {
@@ -657,12 +657,12 @@ namespace CelesteStudio {
                     bool hooked = StudioCommunicationBase.Initialized;
                     if (lastHooked != hooked) {
                         lastHooked = hooked;
-                        Invoke((Action) delegate { EnableStudio(hooked); });
+                        Invoke((Action)delegate { EnableStudio(hooked); });
                     }
 
                     if (lastChanged.AddSeconds(0.3f) < DateTime.Now) {
                         lastChanged = DateTime.Now;
-                        Invoke((Action) delegate {
+                        Invoke((Action)delegate {
                             if (!string.IsNullOrEmpty(CurrentFileName) && tasText.IsChanged) {
                                 tasText.SaveFile();
                             }
@@ -673,7 +673,7 @@ namespace CelesteStudio {
                         UpdateValues();
                         FixSomeBugsWhenOutOfMinimized();
                         tasText.Invalidate();
-                        if (CommunicationWrapper.fastForwarding) {
+                        if (CommunicationWrapper.FastForwarding) {
                             CommunicationWrapper.CheckFastForward();
                         }
                     }
@@ -714,21 +714,19 @@ namespace CelesteStudio {
 
         private void UpdateValues() {
             if (InvokeRequired) {
-                Invoke((Action) UpdateValues);
+                Invoke((Action)UpdateValues);
             } else {
-                string state = CommunicationWrapper.state;
-                if (!string.IsNullOrEmpty(state)) {
-                    string[] values = state.Split(',');
-                    int currentLine = int.Parse(values[0]);
-                    if (tasText.CurrentLine != currentLine) {
-                        tasText.CurrentLine = currentLine;
+                if (CommunicationWrapper.StudioInfo != null) {
+                    StudioInfo studioInfo = CommunicationWrapper.StudioInfo;
+                    if (tasText.CurrentLine != studioInfo.CurrentLine) {
+                        tasText.CurrentLine = studioInfo.CurrentLine;
                     }
 
-                    tasText.CurrentLineText = values[1];
-                    currentFrame = int.Parse(values[2]);
-                    totalFrames = int.Parse(values[3]);
-                    tasText.SaveStateLine = int.Parse(values[4]);
-                    tasState = values[5];
+                    tasText.CurrentLineText = studioInfo.CurrentLineText;
+                    currentFrame = studioInfo.CurrentFrame;
+                    totalFrames = studioInfo.TotalFrames;
+                    tasText.SaveStateLine = studioInfo.SaveStateLine;
+                    tasState = studioInfo.TasState;
                 } else {
                     currentFrame = 0;
                     if (tasText.CurrentLine >= 0) {
@@ -748,7 +746,7 @@ namespace CelesteStudio {
         private void FixSomeBugsWhenOutOfMinimized() {
             if (lastWindowState == FormWindowState.Minimized && WindowState == FormWindowState.Normal) {
                 tasText.ScrollLeft();
-                StudioCommunicationServer.instance?.ExternalReset();
+                StudioCommunicationServer.Instance?.ExternalReset();
             }
 
             lastWindowState = WindowState;
@@ -766,7 +764,7 @@ namespace CelesteStudio {
         }
 
         private void tasText_LineInserted(object sender, LineInsertedEventArgs e) {
-            RichText.RichText tas = (RichText.RichText) sender;
+            RichText.RichText tas = (RichText.RichText)sender;
             int count = e.Count;
             while (count-- > 0) {
                 InputRecord input = new(tas.GetLineText(e.Index + count));
@@ -779,10 +777,10 @@ namespace CelesteStudio {
 
         private void UpdateStatusBar() {
             if (StudioCommunicationBase.Initialized) {
-                string gameData = CommunicationWrapper.gameData;
+                string gameInfo = CommunicationWrapper.StudioInfo.GameInfo;
                 lblStatus.Text = "(" + (currentFrame > 0 ? currentFrame + "/" : "")
-                                     + totalFrames + ") \n" + gameData
-                                     + new string('\n', Math.Max(0, 7 - gameData.Split('\n').Length));
+                                     + totalFrames + ") \n" + gameInfo
+                                     + new string('\n', Math.Max(0, 7 - gameInfo.Split('\n').Length));
             } else {
                 lblStatus.Text = "(" + totalFrames + ")\r\nSearching...";
             }
@@ -803,7 +801,7 @@ namespace CelesteStudio {
 
         private void tasText_TextChanged(object sender, TextChangedEventArgs e) {
             lastChanged = DateTime.Now;
-            UpdateLines((RichText.RichText) sender, e.ChangedRange);
+            UpdateLines((RichText.RichText)sender, e.ChangedRange);
         }
 
         private void CommentText() {
@@ -1115,7 +1113,7 @@ namespace CelesteStudio {
         }
 
         private void copyGamerDataMenuItem_Click(object sender, EventArgs e) {
-            CopyGameData();
+            CopyGameInfo();
         }
 
         private void fontToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -1125,7 +1123,7 @@ namespace CelesteStudio {
         }
 
         private void reconnectStudioAndCelesteToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.instance?.ExternalReset();
+            StudioCommunicationServer.Instance?.ExternalReset();
         }
 
         private void insertModInfoStripMenuItem1_Click(object sender, EventArgs e) {
@@ -1181,7 +1179,7 @@ namespace CelesteStudio {
             Settings.Default.ShowGameInfo = !Settings.Default.ShowGameInfo;
             SaveSettings();
             if (Settings.Default.ShowGameInfo) {
-                StudioCommunicationServer.instance?.ExternalReset();
+                StudioCommunicationServer.Instance?.ExternalReset();
             }
         }
 
@@ -1208,7 +1206,7 @@ namespace CelesteStudio {
                 }
 
                 if (dialog.ShowDialog() == DialogResult.OK) {
-                    StudioCommunicationServer.instance.ConvertToLibTas(dialog.FileName);
+                    StudioCommunicationServer.Instance.ConvertToLibTas(dialog.FileName);
                 }
             }
         }
@@ -1232,79 +1230,79 @@ namespace CelesteStudio {
         }
 
         private void toggleHitboxesToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.instance?.ToggleGameSetting("ShowHitboxes");
+            StudioCommunicationServer.Instance?.ToggleGameSetting("ShowHitboxes");
         }
 
         private void toggleTriggerHitboxesToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.instance?.ToggleGameSetting("HideTriggerHitboxes");
+            StudioCommunicationServer.Instance?.ToggleGameSetting("HideTriggerHitboxes");
         }
 
         private void toggleSimplifiedHitboxesToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.instance?.ToggleGameSetting("SimplifiedHitboxes");
+            StudioCommunicationServer.Instance?.ToggleGameSetting("SimplifiedHitboxes");
         }
 
         private void switchActualCollideHitboxesToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.instance?.ToggleGameSetting("ShowActualCollideHitboxes");
+            StudioCommunicationServer.Instance?.ToggleGameSetting("ShowActualCollideHitboxes");
         }
 
         private void toggleSimplifiedGraphicsToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.instance?.ToggleGameSetting("SimplifiedGraphics");
+            StudioCommunicationServer.Instance?.ToggleGameSetting("SimplifiedGraphics");
         }
 
         private void toggleGameplayToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.instance?.ToggleGameSetting("HideGameplay");
+            StudioCommunicationServer.Instance?.ToggleGameSetting("HideGameplay");
         }
 
         private void toggleCenterCameraToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.instance?.ToggleGameSetting("CenterCamera");
+            StudioCommunicationServer.Instance?.ToggleGameSetting("CenterCamera");
         }
 
         private void switchInfoHUDToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.instance?.ToggleGameSetting("InfoHud");
+            StudioCommunicationServer.Instance?.ToggleGameSetting("InfoHud");
         }
 
         private void tASInputInfoToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.instance?.ToggleGameSetting("InfoTasInput");
+            StudioCommunicationServer.Instance?.ToggleGameSetting("InfoTasInput");
         }
 
         private void gameInfoToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.instance?.ToggleGameSetting("InfoGame");
+            StudioCommunicationServer.Instance?.ToggleGameSetting("InfoGame");
         }
 
         private void inspectEntityInfoToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.instance?.ToggleGameSetting("InfoInspectEntity");
+            StudioCommunicationServer.Instance?.ToggleGameSetting("InfoInspectEntity");
         }
 
         private void customInfoToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.instance?.ToggleGameSetting("InfoCustom");
+            StudioCommunicationServer.Instance?.ToggleGameSetting("InfoCustom");
         }
 
         private void subpixelIndicatorToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.instance?.ToggleGameSetting("InfoSubPixelIndicator");
+            StudioCommunicationServer.Instance?.ToggleGameSetting("InfoSubPixelIndicator");
         }
 
         private void toggleRoundPositionToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.instance?.ToggleGameSetting("RoundPosition");
+            StudioCommunicationServer.Instance?.ToggleGameSetting("RoundPosition");
         }
 
         private void toggleRoundSpeedToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.instance?.ToggleGameSetting("RoundSpeed");
+            StudioCommunicationServer.Instance?.ToggleGameSetting("RoundSpeed");
         }
 
         private void roundVelocityToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.instance?.ToggleGameSetting("RoundVelocity");
+            StudioCommunicationServer.Instance?.ToggleGameSetting("RoundVelocity");
         }
 
         private void roundCustomInfoToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.instance?.ToggleGameSetting("RoundCustomInfo");
+            StudioCommunicationServer.Instance?.ToggleGameSetting("RoundCustomInfo");
         }
 
         private void copyCustomInfoTemplateToClipboardToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.instance?.ToggleGameSetting("Copy Custom Info Template to Clipboard");
+            StudioCommunicationServer.Instance?.ToggleGameSetting("Copy Custom Info Template to Clipboard");
         }
 
         private void setCustomInfoTemplateFromClipboardToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.instance?.ToggleGameSetting("Set Custom Info Template From Clipboard");
+            StudioCommunicationServer.Instance?.ToggleGameSetting("Set Custom Info Template From Clipboard");
         }
 
         private void enabledAutoBackupToolStripMenuItem_Click(object sender, EventArgs e) {

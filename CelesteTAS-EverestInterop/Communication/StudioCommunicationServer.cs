@@ -43,9 +43,6 @@ namespace TASALT.StudioCommunication {
                 case MessageIDs.SendState:
                     ProcessSendState(message.Data);
                     break;
-                case MessageIDs.SendGameData:
-                    ProcessSendGameData(message.Data);
-                    break;
                 case MessageIDs.SendCurrentBindings:
                     ProcessSendCurrentBindings(message.Data);
                     break;
@@ -107,7 +104,7 @@ namespace TASALT.StudioCommunication {
         }
 
         public void SendHotkeyPressed(HotkeyIDs hotkey) {
-            byte[] hotkeyByte = new byte[] {(byte) hotkey};
+            byte[] hotkeyByte = new byte[] { (byte)hotkey };
             WriteMessageGuaranteed(new Message(MessageIDs.SendHotkeyPressed, hotkeyByte));
         }
 

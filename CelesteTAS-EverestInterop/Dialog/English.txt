@@ -70,7 +70,6 @@ TAS_ROUND_CUSTOM_INFO=        Round Custom Info
 # ================================== Relaunch Required Submenu ==================================
 TAS_LAUNCH_STUDIO_AT_BOOT=    Launch Studio At Boot
 TAS_AUTO_EXTRACT_NEW_STUDIO=  Auto Extract New Studio
-TAS_UNIX_RTC=                 Unix RTC
 
 # ================================== More Options Submenu ==================================
 TAS_CENTER_CAMERA=            Center Camera

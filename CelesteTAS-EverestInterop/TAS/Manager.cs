@@ -5,6 +5,7 @@ using Celeste;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
+using StudioCommunication;
 using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.Input;
@@ -29,14 +30,14 @@ namespace TAS {
         public static bool Running, Recording;
         public static InputController Controller = new();
         public static State LastState, State, NextState;
-        public static string CurrentStatus = string.Empty;
+        public static StudioInfo StudioInfo;
         public static int FrameLoops = 1;
         public static bool EnforceLegal, AllowUnsafeInput;
         public static bool KbTextInput;
 
         static Manager() {
             MethodInfo updateVirtualInputs = typeof(MInput).GetMethodInfo("UpdateVirtualInputs");
-            UpdateVirtualInputs = (DUpdateVirtualInputs) updateVirtualInputs.CreateDelegate(typeof(DUpdateVirtualInputs));
+            UpdateVirtualInputs = (DUpdateVirtualInputs)updateVirtualInputs.CreateDelegate(typeof(DUpdateVirtualInputs));
 
             AttributeUtils.CollectMethods<EnableRunAttribute>();
             AttributeUtils.CollectMethods<DisableRunAttribute>();
@@ -59,7 +60,7 @@ namespace TAS {
 
                 if (HasFlag(State, State.FrameStep)) {
                     UpdateManagerStatus();
-                    StudioCommunicationClient.Instance?.SendStateAndGameData(CurrentStatus, GameInfo.StudioInfo, !ShouldForceState);
+                    StudioCommunicationClient.Instance?.SendStateAndGameData(StudioInfo, !ShouldForceState);
                     return;
                 }
                 /*
@@ -87,29 +88,30 @@ namespace TAS {
                 }
             } else {
                 Running = false;
-                CurrentStatus = null;
+                StudioInfo = null;
                 if (!Engine.Instance.IsActive) {
                     UpdateVirtualInputs();
                     for (int i = 0; i < 4; i++) {
                         if (MInput.GamePads[i].Attached) {
-                            MInput.GamePads[i].CurrentState = GamePad.GetState((PlayerIndex) i);
+                            MInput.GamePads[i].CurrentState = GamePad.GetState((PlayerIndex)i);
                         }
                     }
                 }
             }
 
-            StudioCommunicationClient.Instance?.SendStateAndGameData(CurrentStatus, GameInfo.StudioInfo, !ShouldForceState);
+            StudioCommunicationClient.Instance?.SendStateAndGameData(StudioInfo, !ShouldForceState);
         }
 
         public static void UpdateManagerStatus() {
-            CurrentStatus = string.Join(",", new object[] {
-                Controller.Previous?.Line ?? 0,
-                Controller.InputCurrentFrame,
+            StudioInfo = new StudioInfo(
+                (Controller.Previous?.Line ?? 0),
+                Controller.InputCurrentFrame.ToString(),
                 Controller.CurrentFrame,
                 Controller.Inputs.Count,
                 Savestates.StudioHighlightLine,
-                State.ToString().Replace(",", "")
-            });
+                State.ToString().Replace(",", ""),
+                GameInfo.StudioInfo
+            );
         }
 
         public static bool IsLoading() {
@@ -122,9 +124,9 @@ namespace TAS {
             }
 
             if (Engine.Scene is SummitVignette summit) {
-                return !(bool) SummitVignetteReadyFieldInfo.GetValue(summit);
+                return !(bool)SummitVignetteReadyFieldInfo.GetValue(summit);
             } else if (Engine.Scene is Overworld overworld) {
-                return overworld.Current is OuiFileSelect {SlotIndex: >= 0} slot && slot.Slots[slot.SlotIndex].StartingGame;
+                return overworld.Current is OuiFileSelect { SlotIndex: >= 0 } slot && slot.Slots[slot.SlotIndex].StartingGame;
             }
 
             bool isLoading = (Engine.Scene is LevelExit) || (Engine.Scene is LevelLoader) || (Engine.Scene is GameLoader) ||

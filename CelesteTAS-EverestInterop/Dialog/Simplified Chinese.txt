@@ -71,7 +71,6 @@ TAS_ROUND_CUSTOM_INFO=        自定义数据保留两位小数
 # ================================== Relaunch Required Submenu ==================================
 TAS_LAUNCH_STUDIO_AT_BOOT=    启动 Celeste 时打开 Studio
 TAS_AUTO_EXTRACT_NEW_STUDIO=  自动解压新版 Studio
-TAS_UNIX_RTC=                 使用 Unix 的进程间通讯
 
 # ================================== More Options Submenu ==================================
 TAS_CENTER_CAMERA=            镜头居中

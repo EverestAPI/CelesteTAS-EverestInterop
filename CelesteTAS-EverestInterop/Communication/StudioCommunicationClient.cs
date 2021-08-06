@@ -202,7 +202,7 @@ namespace TAS.Communication {
         }
 
         private void ProcessHotkeyPressed(byte[] data) {
-            HotkeyIDs hotkey = (HotkeyIDs) data[0];
+            HotkeyIDs hotkey = (HotkeyIDs)data[0];
             bool released = Convert.ToBoolean(data[1]);
             if (released) {
                 Log($"{hotkey.ToString()} released");
@@ -248,7 +248,7 @@ namespace TAS.Communication {
                 if (value is bool boolValue) {
                     property.SetValue(settings, !boolValue);
                 } else if (value is Enum) {
-                    property.SetValue(settings, ((int) value + 1) % Enum.GetValues(property.PropertyType).Length);
+                    property.SetValue(settings, ((int)value + 1) % Enum.GetValues(property.PropertyType).Length);
                 }
             }
         }
@@ -303,9 +303,9 @@ namespace TAS.Communication {
             WriteMessageGuaranteed(new Message(MessageIDs.SendPath, pathBytes));
         }
 
-        private void SendStateAndGameDataNow(string state, string gameData, bool canFail) {
+        private void SendStateAndGameDataNow(StudioInfo studioInfo, bool canFail) {
             if (Initialized) {
-                string[] data = {state, gameData};
+                string[] data = StudioInfo.ToArray(studioInfo);
                 byte[] dataBytes = ToByteArray(data);
                 Message message = new(MessageIDs.SendState, dataBytes);
                 if (canFail) {
@@ -316,16 +316,18 @@ namespace TAS.Communication {
             }
         }
 
-        public void SendStateAndGameData(string state, string gameData, bool canFail) {
-            PendingWrite = () => SendStateAndGameDataNow(state, gameData, canFail);
+        public void SendStateAndGameData(StudioInfo studioInfo, bool canFail) {
+            studioInfo ??= StudioInfo.DefaultInstance;
+            PendingWrite = () => SendStateAndGameDataNow(studioInfo, canFail);
         }
 
         public void SendCurrentBindings(bool forceSend = false) {
-            Dictionary<int,List<int>> nativeBindings = Hotkeys.KeysDict.ToDictionary(pair=>(int) pair.Key, pair => pair.Value.Cast<int>().ToList());
+            Dictionary<int, List<int>> nativeBindings = Hotkeys.KeysDict.ToDictionary(pair => (int)pair.Key, pair => pair.Value.Cast<int>().ToList());
             byte[] data = ToByteArray(nativeBindings);
             if (!forceSend && string.Join("", data) == string.Join("", lastBindingsData)) {
                 return;
             }
+
             WriteMessageGuaranteed(new Message(MessageIDs.SendCurrentBindings, data));
             lastBindingsData = data;
         }

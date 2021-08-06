@@ -7,27 +7,25 @@ using System.Threading;
 using System.Windows.Forms;
 using StudioCommunication;
 
-//using Microsoft.Xna.Framework.Input;
-
 namespace CelesteStudio.Communication {
     public sealed class StudioCommunicationServer : StudioCommunicationBase {
-        public static StudioCommunicationServer instance;
-
         private StudioCommunicationServer() { }
+        public static StudioCommunicationServer Instance { get; private set; }
 
         public static void Run() {
             //this should be modified to check if there's another studio open as well
-            if (instance != null) {
+            if (Instance != null) {
                 return;
             }
 
-            instance = new StudioCommunicationServer();
+            Instance = new StudioCommunicationServer();
 
-            ThreadStart mainLoop = new(instance.UpdateLoop);
-            Thread updateThread = new(mainLoop);
-            updateThread.CurrentCulture = CultureInfo.InvariantCulture;
-            updateThread.Name = "StudioCom Server";
-            updateThread.IsBackground = true;
+            ThreadStart mainLoop = Instance.UpdateLoop;
+            Thread updateThread = new(mainLoop) {
+                CurrentCulture = CultureInfo.InvariantCulture,
+                Name = "StudioCom Server",
+                IsBackground = true
+            };
             updateThread.Start();
         }
 
@@ -56,9 +54,6 @@ namespace CelesteStudio.Communication {
                 case MessageIDs.SendState:
                     ProcessSendState(message.Data);
                     break;
-                case MessageIDs.SendGameData:
-                    ProcessSendGameData(message.Data);
-                    break;
                 case MessageIDs.SendCurrentBindings:
                     ProcessSendCurrentBindings(message.Data);
                     break;
@@ -75,40 +70,29 @@ namespace CelesteStudio.Communication {
             }
         }
 
-        private void ProcessSendPath(byte[] data) {
-            string path = Encoding.Default.GetString(data);
-            Log(path);
-            CommunicationWrapper.gamePath = path;
-        }
-
         private void ProcessSendState(byte[] data) {
-            string[] stateAndData = FromByteArray<string[]>(data);
-            //Log(stateAndData[0]);
-            CommunicationWrapper.state = stateAndData[0];
-            CommunicationWrapper.gameData = stateAndData[1];
-        }
-
-        private void ProcessSendGameData(byte[] data) {
-            string gameData = Encoding.Default.GetString(data);
-            //Log(gameData);
-            CommunicationWrapper.gameData = gameData;
+            StudioInfo studioInfo = StudioInfo.FromArray(FromByteArray<string[]>(data));
+            Log(studioInfo.ToString());
+            CommunicationWrapper.StudioInfo = studioInfo;
         }
 
         private void ProcessSendCurrentBindings(byte[] data) {
             Dictionary<int, List<int>> nativeBindings = FromByteArray<Dictionary<int, List<int>>>(data);
-            Dictionary<HotkeyIDs, List<Keys>> bindings = nativeBindings.ToDictionary(pair => (HotkeyIDs) pair.Key, pair => pair.Value.Cast<Keys>().ToList());
+            Dictionary<HotkeyIDs, List<Keys>> bindings =
+                nativeBindings.ToDictionary(pair => (HotkeyIDs)pair.Key, pair => pair.Value.Cast<Keys>().ToList());
             foreach (var pair in bindings) {
                 Log(pair.ToString());
             }
+
             CommunicationWrapper.SetBindings(bindings);
         }
 
         private void ProcessReturnConsoleCommand(byte[] data) {
-            CommunicationWrapper.command = Encoding.Default.GetString(data);
+            CommunicationWrapper.Command = Encoding.Default.GetString(data);
         }
 
         private void ProcessReturnModInfo(byte[] data) {
-            CommunicationWrapper.command = Encoding.Default.GetString(data);
+            CommunicationWrapper.Command = Encoding.Default.GetString(data);
         }
 
         #endregion
@@ -131,11 +115,8 @@ namespace CelesteStudio.Communication {
                 throw new NeedsResetException("Invalid data recieved while establishing connection");
             }
 
-            studio?.ProcessSendPath(lastMessage?.Data);
-
             studio?.SendPathNow(Studio.Instance.tasText.CurrentFileName, false);
             lastMessage = celeste?.ReadMessageGuaranteed();
-            celeste?.ProcessSendPath(lastMessage?.Data);
 
             //celeste?.SendCurrentBindings(Hotkeys.listHotkeyKeys);
             lastMessage = studio?.ReadMessageGuaranteed();
@@ -179,7 +160,7 @@ namespace CelesteStudio.Communication {
                 return;
             }
 
-            byte[] hotkeyBytes = {(byte) hotkey, Convert.ToByte(released)};
+            byte[] hotkeyBytes = { (byte)hotkey, Convert.ToByte(released) };
             WriteMessageGuaranteed(new Message(MessageIDs.SendHotkeyPressed, hotkeyBytes));
         }
 

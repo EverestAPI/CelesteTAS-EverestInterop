@@ -25,8 +25,6 @@ namespace TAS.EverestInterop {
 
         public bool DisableAchievements { get; set; } = false;
 
-        [SettingNeedsRelaunch] public bool UnixRtc { get; set; } = false;
-
         [SettingNeedsRelaunch] public bool LaunchStudioAtBoot { get; set; } = false;
 
         public bool Mod9DLighting { get; set; } = false;
