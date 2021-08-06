@@ -12,16 +12,6 @@ using TAS.Input;
 using TAS.Utils;
 
 namespace TAS {
-    [Flags]
-    public enum State {
-        None = 0,
-        Enable = 1,
-        Record = 2,
-        FrameStep = 4,
-        Disable = 8,
-        Delay = 16
-    }
-
     public static class Manager {
         private static readonly FieldInfo SummitVignetteReadyFieldInfo = typeof(SummitVignette).GetFieldInfo("ready");
 
@@ -30,7 +20,6 @@ namespace TAS {
         public static bool Running, Recording;
         public static readonly InputController Controller = new();
         public static State LastState, State, NextState;
-        public static StudioInfo StudioInfo;
         public static int FrameLoops = 1;
         public static bool EnforceLegal, AllowUnsafeInput;
         private static bool kbTextInput;
@@ -44,7 +33,7 @@ namespace TAS {
         }
 
         public static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
-        private static bool ShouldForceState => HasFlag(NextState, State.FrameStep) && !Hotkeys.HotkeyFastForward.OverridePressed;
+        private static bool ShouldForceState => NextState.HasFlag(State.FrameStep) && !Hotkeys.HotkeyFastForward.OverridePressed;
 
         public static void Update() {
             LastState = State;
@@ -54,21 +43,16 @@ namespace TAS {
             CheckToEnable();
             FrameStepping();
 
-            if (HasFlag(State, State.Enable)) {
+            if (State.HasFlag(State.Enable)) {
                 bool canPlayback = Controller.CanPlayback;
                 Running = true;
 
-                if (HasFlag(State, State.FrameStep)) {
-                    UpdateManagerStatus();
-                    StudioCommunicationClient.Instance?.SendStateAndGameData(StudioInfo, !ShouldForceState);
-                    return;
-                }
                 /*
-                if (HasFlag(state, State.Record)) {
+                if (State.HasFlag(State.Record)) {
                     controller.RecordPlayer();
                 }
                 */
-                else {
+                if (!State.HasFlag(State.FrameStep)) {
                     Controller.AdvanceFrame();
                     canPlayback = canPlayback || Controller.CanPlayback;
                     if (Controller.Break && Controller.CurrentFrame < Controller.Inputs.Count) {
@@ -76,19 +60,13 @@ namespace TAS {
                         FrameLoops = 1;
                     }
 
-                    if (!canPlayback || (!AllowUnsafeInput &&
-                                         !(Engine.Scene is Level || Engine.Scene is LevelLoader || Engine.Scene is LevelExit ||
-                                           Controller.CurrentFrame <= 1))) {
+                    if (!canPlayback || !AllowUnsafeInput &&
+                        !(Engine.Scene is Level or LevelLoader or LevelExit || Controller.CurrentFrame <= 1)) {
                         DisableRun();
                     }
                 }
-
-                if (canPlayback && Controller.CurrentFrame > 0) {
-                    UpdateManagerStatus();
-                }
             } else {
                 Running = false;
-                StudioInfo = null;
                 if (!Engine.Instance.IsActive) {
                     UpdateVirtualInputs();
                     for (int i = 0; i < 4; i++) {
@@ -99,19 +77,20 @@ namespace TAS {
                 }
             }
 
-            StudioCommunicationClient.Instance?.SendStateAndGameData(StudioInfo, !ShouldForceState);
+            SendStateToStudio();
         }
 
-        public static void UpdateManagerStatus() {
-            StudioInfo = new StudioInfo(
-                (Controller.Previous?.Line ?? 0),
+        public static void SendStateToStudio() {
+            StudioInfo studioInfo = new(
+                (Controller.Previous?.Line ?? -1),
                 Controller.InputCurrentFrame.ToString(),
                 Controller.CurrentFrame,
                 Controller.Inputs.Count,
                 Savestates.StudioHighlightLine,
-                State.ToString().Replace(",", ""),
+                State,
                 GameInfo.StudioInfo
             );
+            StudioCommunicationClient.Instance?.SendState(studioInfo, !ShouldForceState);
         }
 
         public static bool IsLoading() {
@@ -144,8 +123,8 @@ namespace TAS {
         }
 
         private static void HandleFrameRates() {
-            if (HasFlag(State, State.Enable) && !HasFlag(State, State.FrameStep) && !HasFlag(NextState, State.FrameStep) &&
-                !HasFlag(State, State.Record)) {
+            if (State.HasFlag(State.Enable) && !State.HasFlag(State.FrameStep) && !NextState.HasFlag(State.FrameStep) &&
+                !State.HasFlag(State.Record)) {
                 if (Controller.HasFastForward) {
                     FrameLoops = Controller.FastForwardSpeed;
                     return;
@@ -166,14 +145,14 @@ namespace TAS {
             bool frameAdvance = Hotkeys.HotkeyFrameAdvance.Pressed && !Hotkeys.HotkeyStart.Pressed;
             bool pause = Hotkeys.HotkeyPause.Pressed && !Hotkeys.HotkeyStart.Pressed;
 
-            if (HasFlag(State, State.Enable) && !HasFlag(State, State.Record)) {
-                if (HasFlag(NextState, State.FrameStep)) {
+            if (State.HasFlag(State.Enable) && !State.HasFlag(State.Record)) {
+                if (NextState.HasFlag(State.FrameStep)) {
                     State |= State.FrameStep;
                     NextState &= ~State.FrameStep;
                 }
 
                 if (frameAdvance && !Hotkeys.HotkeyFrameAdvance.WasPressed) {
-                    if (!HasFlag(State, State.FrameStep)) {
+                    if (!State.HasFlag(State.FrameStep)) {
                         State |= State.FrameStep;
                         NextState &= ~State.FrameStep;
                     } else {
@@ -181,14 +160,14 @@ namespace TAS {
                         NextState |= State.FrameStep;
                     }
                 } else if (pause && !Hotkeys.HotkeyPause.WasPressed) {
-                    if (!HasFlag(State, State.FrameStep)) {
+                    if (!State.HasFlag(State.FrameStep)) {
                         State |= State.FrameStep;
                         NextState &= ~State.FrameStep;
                     } else {
                         State &= ~State.FrameStep;
                         NextState &= ~State.FrameStep;
                     }
-                } else if (HasFlag(LastState, State.FrameStep) && HasFlag(State, State.FrameStep) && Hotkeys.HotkeyFastForward.Pressed) {
+                } else if (LastState.HasFlag(State.FrameStep) && State.HasFlag(State.FrameStep) && Hotkeys.HotkeyFastForward.Pressed) {
                     State &= ~State.FrameStep;
                     NextState |= State.FrameStep;
                 }
@@ -203,12 +182,12 @@ namespace TAS {
             }
 
             if (Hotkeys.HotkeyStart.Pressed) {
-                if (!HasFlag(State, State.Enable)) {
+                if (!State.HasFlag(State.Enable)) {
                     NextState |= State.Enable;
                 } else {
                     NextState |= State.Disable;
                 }
-            } else if (HasFlag(NextState, State.Enable)) {
+            } else if (NextState.HasFlag(State.Enable)) {
                 if (Engine.Scene is Level level && (!level.CanPause || Engine.FreezeTimer > 0)) {
                     Controller.RefreshInputs(true);
                     if (Controller.Current != null &&
@@ -220,7 +199,7 @@ namespace TAS {
                 }
 
                 EnableRun();
-            } else if (HasFlag(NextState, State.Disable)) {
+            } else if (NextState.HasFlag(State.Disable)) {
                 DisableRun();
             }
         }
@@ -243,6 +222,9 @@ namespace TAS {
             Recording = false;
             State = State.None;
             NextState = State.None;
+            
+            Controller.Stop();
+            
             Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = kbTextInput;
 
             EnforceLegal = false;
@@ -275,8 +257,6 @@ namespace TAS {
                 Running = true;
             }
         }
-
-        private static bool HasFlag(State state, State flag) => (state & flag) == flag;
 
         public static void SetInputs(InputFrame input) {
             GamePadDPad pad = default;

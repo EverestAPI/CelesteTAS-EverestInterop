@@ -303,7 +303,7 @@ namespace TAS.Communication {
             WriteMessageGuaranteed(new Message(MessageIDs.SendPath, pathBytes));
         }
 
-        private void SendStateAndGameDataNow(StudioInfo studioInfo, bool canFail) {
+        private void SendStateNow(StudioInfo studioInfo, bool canFail) {
             if (Initialized) {
                 string[] data = StudioInfo.ToArray(studioInfo);
                 byte[] dataBytes = ToByteArray(data);
@@ -316,9 +316,8 @@ namespace TAS.Communication {
             }
         }
 
-        public void SendStateAndGameData(StudioInfo studioInfo, bool canFail) {
-            studioInfo ??= StudioInfo.DefaultInstance;
-            PendingWrite = () => SendStateAndGameDataNow(studioInfo, canFail);
+        public void SendState(StudioInfo studioInfo, bool canFail) {
+            PendingWrite = () => SendStateNow(studioInfo, canFail);
         }
 
         public void SendCurrentBindings(bool forceSend = false) {

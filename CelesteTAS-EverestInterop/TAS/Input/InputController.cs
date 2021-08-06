@@ -89,6 +89,11 @@ namespace TAS.Input {
             }
         }
 
+        public void Stop() {
+            InputCurrentFrame = 0;
+            CurrentFrame = 0;
+        }
+
         public void AdvanceFrame() {
             RefreshInputs(false);
 

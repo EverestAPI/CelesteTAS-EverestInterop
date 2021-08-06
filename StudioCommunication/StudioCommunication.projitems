@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)HotkeyIDs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MessageIDs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)State.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)StudioCommunicationBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)StudioInfo.cs" />
   </ItemGroup>

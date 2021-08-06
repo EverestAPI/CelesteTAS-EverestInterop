@@ -1,26 +1,15 @@
 ﻿namespace StudioCommunication {
     public record StudioInfo {
-        public static readonly StudioInfo DefaultInstance = new();
         public readonly int CurrentFrame;
         public readonly int CurrentLine;
         public readonly string CurrentLineText;
-        public readonly string GameInfo;
         public readonly int SaveStateLine;
-        public readonly string TasState;
+        public readonly State TasState;
         public readonly int TotalFrames;
-
-        private StudioInfo() {
-            CurrentLine = -1;
-            CurrentLineText = "";
-            CurrentFrame = 0;
-            TotalFrames = 0;
-            SaveStateLine = -1;
-            TasState = "";
-            GameInfo = "";
-        }
+        public readonly string GameInfo;
 
         public StudioInfo(
-            int currentLine, string currentLineText, int currentFrame, int totalFrames, int saveStateLine, string tasState,
+            int currentLine, string currentLineText, int currentFrame, int totalFrames, int saveStateLine, State tasState,
             string gameInfo) {
             CurrentLine = currentLine;
             CurrentLineText = currentLineText;
@@ -38,7 +27,7 @@
                 int.Parse(values[2]),
                 int.Parse(values[3]),
                 int.Parse(values[4]),
-                values[5],
+                (State) int.Parse(values[5]),
                 values[6]
             );
         }
@@ -50,7 +39,7 @@
                 studioInfo.CurrentFrame.ToString(),
                 studioInfo.TotalFrames.ToString(),
                 studioInfo.SaveStateLine.ToString(),
-                studioInfo.TasState,
+                ((int)studioInfo.TasState).ToString(),
                 studioInfo.GameInfo,
             };
         }

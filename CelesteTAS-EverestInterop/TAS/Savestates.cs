@@ -8,6 +8,7 @@ using TAS.EverestInterop;
 using TAS.Input;
 using TAS.Utils;
 using static TAS.Manager;
+using TasState = StudioCommunication.State;
 
 namespace TAS {
     public static class Savestates {
@@ -78,7 +79,7 @@ namespace TAS {
             // save state when tas run to the last savestate breakpoint
             if (Running
                 && Controller.Inputs.Count > Controller.CurrentFrame
-                && Controller.CurrentFastForward is { SaveState: true } currentFastForward &&
+                && Controller.CurrentFastForward is {SaveState: true} currentFastForward &&
                 Controller.FastForwards.Last(pair => pair.Value.SaveState).Value == currentFastForward &&
                 SavedCurrentFrame != currentFastForward.Frame) {
                 Save(true);
@@ -95,8 +96,8 @@ namespace TAS {
             if (IsSaved()) {
                 if (Controller.CurrentFrame == savedController.CurrentFrame) {
                     if (savedController.SavedChecksum == Controller.Checksum(savedController)) {
-                        Manager.State &= ~State.FrameStep;
-                        NextState &= ~State.FrameStep;
+                        State &= ~StudioCommunication.State.FrameStep;
+                        NextState &= ~StudioCommunication.State.FrameStep;
                         return;
                     }
                 }
@@ -132,8 +133,8 @@ namespace TAS {
                 if (!BreakpointHasBeenDeleted && savedController.SavedChecksum == Controller.Checksum(savedController)) {
                     if (Running && Controller.CurrentFrame == savedController.CurrentFrame) {
                         // Don't repeat load state, just play
-                        Manager.State &= ~State.FrameStep;
-                        NextState &= ~State.FrameStep;
+                        State &= ~TasState.FrameStep;
+                        NextState &= ~TasState.FrameStep;
                         return;
                     }
 
@@ -195,20 +196,16 @@ namespace TAS {
 
         private static void SetTasState() {
             if ((CelesteTasModule.Settings.PauseAfterLoadState || savedByBreakpoint) && !(Controller.HasFastForward)) {
-                Manager.State |= State.FrameStep;
+                State |= TasState.FrameStep;
             } else {
-                Manager.State &= ~State.FrameStep;
+                State &= ~TasState.FrameStep;
             }
 
-            NextState &= ~State.FrameStep;
+            NextState &= ~TasState.FrameStep;
         }
 
         private static void UpdateStudio() {
-            if (Controller.CurrentFrame > 0) {
-                UpdateManagerStatus();
-            }
-
-            StudioCommunicationClient.Instance?.SendStateAndGameData(StudioInfo, false);
+            SendStateToStudio();
         }
 
         // ReSharper disable once UnusedMember.Local

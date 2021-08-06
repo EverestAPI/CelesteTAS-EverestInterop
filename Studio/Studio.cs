@@ -31,7 +31,7 @@ namespace CelesteStudio {
         //private GameMemory memory = new GameMemory();
         private DateTime lastChanged = DateTime.MinValue;
         private FormWindowState lastWindowState = FormWindowState.Normal;
-        private string tasState;
+        private State tasState;
         private int totalFrames, currentFrame;
 
         private bool updating;
@@ -40,8 +40,9 @@ namespace CelesteStudio {
             CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
             Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
-            string exeDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            Directory.SetCurrentDirectory(exeDir);
+            if (Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) is string exeDir) {
+                Directory.SetCurrentDirectory(exeDir);
+            }
 
             InitSettings();
             InitializeComponent();
@@ -64,7 +65,7 @@ namespace CelesteStudio {
             Instance = this;
         }
 
-        private bool DisableTyping => !string.IsNullOrEmpty(tasState) && tasState.Contains("Enable") && !tasState.Contains("FrameStep");
+        private bool DisableTyping => tasState.HasFlag(State.Enable) && !tasState.HasFlag(State.FrameStep);
 
         private string TitleBarText =>
             (string.IsNullOrEmpty(CurrentFileName) ? "Celeste.tas" : Path.GetFileName(CurrentFileName))
@@ -734,7 +735,7 @@ namespace CelesteStudio {
                     }
 
                     tasText.SaveStateLine = -1;
-                    tasState = string.Empty;
+                    tasState = State.None;
                 }
 
                 tasText.ReadOnly = DisableTyping;
