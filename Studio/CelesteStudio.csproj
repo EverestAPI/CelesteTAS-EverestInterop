@@ -2,8 +2,9 @@
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
         <AssemblyName>Celeste Studio</AssemblyName>
-        <TargetFramework>net452</TargetFramework>
+        <TargetFramework>net461</TargetFramework>
         <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+        <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
         <LangVersion>9</LangVersion>
         <AssemblyTitle>Celeste Studio</AssemblyTitle>
         <Product>Celeste Studio</Product>
@@ -81,5 +82,8 @@
     </ItemGroup>
     <ItemGroup>
         <Content Include="GoldBerry.ico" />
+    </ItemGroup>
+    <ItemGroup>
+      <PackageReference Include="System.Resources.Extensions" Version="5.0.0" />
     </ItemGroup>
 </Project>

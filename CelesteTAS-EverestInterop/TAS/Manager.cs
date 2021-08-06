@@ -28,16 +28,16 @@ namespace TAS {
         private static readonly DUpdateVirtualInputs UpdateVirtualInputs;
 
         public static bool Running, Recording;
-        public static InputController Controller = new();
+        public static readonly InputController Controller = new();
         public static State LastState, State, NextState;
         public static StudioInfo StudioInfo;
         public static int FrameLoops = 1;
         public static bool EnforceLegal, AllowUnsafeInput;
-        public static bool KbTextInput;
+        private static bool kbTextInput;
 
         static Manager() {
             MethodInfo updateVirtualInputs = typeof(MInput).GetMethodInfo("UpdateVirtualInputs");
-            UpdateVirtualInputs = (DUpdateVirtualInputs)updateVirtualInputs.CreateDelegate(typeof(DUpdateVirtualInputs));
+            UpdateVirtualInputs = (DUpdateVirtualInputs) updateVirtualInputs.CreateDelegate(typeof(DUpdateVirtualInputs));
 
             AttributeUtils.CollectMethods<EnableRunAttribute>();
             AttributeUtils.CollectMethods<DisableRunAttribute>();
@@ -93,7 +93,7 @@ namespace TAS {
                     UpdateVirtualInputs();
                     for (int i = 0; i < 4; i++) {
                         if (MInput.GamePads[i].Attached) {
-                            MInput.GamePads[i].CurrentState = GamePad.GetState((PlayerIndex)i);
+                            MInput.GamePads[i].CurrentState = GamePad.GetState((PlayerIndex) i);
                         }
                     }
                 }
@@ -124,9 +124,9 @@ namespace TAS {
             }
 
             if (Engine.Scene is SummitVignette summit) {
-                return !(bool)SummitVignetteReadyFieldInfo.GetValue(summit);
+                return !(bool) SummitVignetteReadyFieldInfo.GetValue(summit);
             } else if (Engine.Scene is Overworld overworld) {
-                return overworld.Current is OuiFileSelect { SlotIndex: >= 0 } slot && slot.Slots[slot.SlotIndex].StartingGame;
+                return overworld.Current is OuiFileSelect {SlotIndex: >= 0} slot && slot.Slots[slot.SlotIndex].StartingGame;
             }
 
             bool isLoading = (Engine.Scene is LevelExit) || (Engine.Scene is LevelLoader) || (Engine.Scene is GameLoader) ||
@@ -228,7 +228,7 @@ namespace TAS {
         private static void EnableRun() {
             NextState &= ~State.Enable;
             InitializeRun(false);
-            KbTextInput = Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput;
+            kbTextInput = Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput;
             Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = false;
             AttributeUtils.Invoke<EnableRunAttribute>();
         }
@@ -243,7 +243,7 @@ namespace TAS {
             Recording = false;
             State = State.None;
             NextState = State.None;
-            Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = KbTextInput;
+            Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = kbTextInput;
 
             EnforceLegal = false;
             AllowUnsafeInput = false;
@@ -276,7 +276,7 @@ namespace TAS {
             }
         }
 
-        public static bool HasFlag(State state, State flag) => (state & flag) == flag;
+        private static bool HasFlag(State state, State flag) => (state & flag) == flag;
 
         public static void SetInputs(InputFrame input) {
             GamePadDPad pad = default;

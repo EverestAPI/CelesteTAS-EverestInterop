@@ -1,8 +1,7 @@
 ﻿namespace StudioCommunication {
     public record StudioInfo {
-        public static StudioInfo DefaultInstance = new StudioInfo();
+        public static readonly StudioInfo DefaultInstance = new();
         public readonly int CurrentFrame;
-
         public readonly int CurrentLine;
         public readonly string CurrentLineText;
         public readonly string GameInfo;
