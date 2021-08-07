@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Reflection;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
 
 namespace StudioCommunication {
@@ -20,12 +19,12 @@ namespace StudioCommunication {
         private readonly MemoryMappedFile sharedMemory;
 
         public Func<byte[], bool> ExternalReadHandler;
-        private int failedWrites = 0;
+        private int failedWrites;
         private int lastSignature;
 
         public Action PendingWrite;
         protected int Timeout = 16;
-        private int timeoutCount = 0;
+        private int timeoutCount;
         private bool waiting;
 
         protected StudioCommunicationBase() {
@@ -63,7 +62,7 @@ namespace StudioCommunication {
                         Message? message = ReadMessage();
 
                         if (message != null) {
-                            ReadData((Message)message);
+                            ReadData((Message) message);
                             waiting = false;
                         }
 
@@ -100,7 +99,7 @@ namespace StudioCommunication {
                 BinaryReader reader = new(stream);
                 BinaryWriter writer = new(stream);
 
-                id = (MessageIDs)reader.ReadByte();
+                id = (MessageIDs) reader.ReadByte();
                 if (id == MessageIDs.Default) {
                     mutex.ReleaseMutex();
                     return null;
@@ -118,7 +117,7 @@ namespace StudioCommunication {
 
                 //Overwriting the first byte ensures that the data will only be read once
                 stream.Position = 0;
-                writer.Write((byte)0);
+                writer.Write((byte) 0);
 
                 mutex.ReleaseMutex();
             }
@@ -138,7 +137,7 @@ namespace StudioCommunication {
             while (true) {
                 Message? message = ReadMessage();
                 if (message != null) {
-                    return (Message)message;
+                    return (Message) message;
                 }
 
                 if ( /*Initialized &&*/ ++failedReads > 100) {
@@ -167,7 +166,7 @@ namespace StudioCommunication {
 
                 //Check that there isn't a message waiting to be read
                 byte firstByte = reader.ReadByte();
-                if (firstByte != 0 && (!IsHighPriority(message.Id) || IsHighPriority((MessageIDs)firstByte))) {
+                if (firstByte != 0 && (!IsHighPriority(message.Id) || IsHighPriority((MessageIDs) firstByte))) {
                     mutex.ReleaseMutex();
                     if ( /*Initialized &&*/ ++failedWrites > 100) {
                         throw new NeedsResetException("Write timed out");
@@ -224,7 +223,7 @@ namespace StudioCommunication {
             using (MemoryMappedViewStream stream = sharedMemory.CreateViewStream()) {
                 mutex.WaitOne();
                 BinaryWriter writer = new(stream);
-                writer.Write((byte)0);
+                writer.Write((byte) 0);
                 mutex.ReleaseMutex();
             }
 
@@ -267,35 +266,6 @@ namespace StudioCommunication {
 
         protected virtual void EstablishConnection() { }
 
-        //ty stackoverflow
-        public static T FromByteArray<T>(byte[] data, int offset = 0, int length = 0) {
-            if (data == null) {
-                return default(T);
-            }
-
-            if (length == 0) {
-                length = data.Length - offset;
-            }
-
-            BinaryFormatter bf = new();
-            using (MemoryStream ms = new(data, offset, length)) {
-                object obj = bf.Deserialize(ms);
-                return (T)obj;
-            }
-        }
-
-        public static byte[] ToByteArray<T>(T obj) {
-            if (obj == null) {
-                return new byte[0];
-            }
-
-            BinaryFormatter bf = new();
-            using (MemoryStream ms = new()) {
-                bf.Serialize(ms, obj);
-                return ms.ToArray();
-            }
-        }
-
         public override string ToString() {
             string location = Assembly.GetExecutingAssembly().GetName().Name;
             return $"StudioCommunicationBase Location @ {location}";
@@ -325,7 +295,7 @@ namespace StudioCommunication {
 
             public byte[] GetBytes() {
                 byte[] bytes = new byte[Length + HeaderLength];
-                bytes[0] = (byte)Id;
+                bytes[0] = (byte) Id;
                 Buffer.BlockCopy(BitConverter.GetBytes(Signature), 0, bytes, 1, 4);
                 Buffer.BlockCopy(BitConverter.GetBytes(Length), 0, bytes, 5, 4);
                 Buffer.BlockCopy(Data, 0, bytes, HeaderLength, Length);

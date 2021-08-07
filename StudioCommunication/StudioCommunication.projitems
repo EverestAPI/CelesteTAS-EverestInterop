@@ -9,6 +9,7 @@
     <Import_RootNamespace>StudioCommunication</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)BinaryFormatterHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)HotkeyIDs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MessageIDs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)State.cs" />

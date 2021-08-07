@@ -77,9 +77,9 @@ namespace CelesteStudio.Communication {
         }
 
         private void ProcessSendCurrentBindings(byte[] data) {
-            Dictionary<int, List<int>> nativeBindings = FromByteArray<Dictionary<int, List<int>>>(data);
+            Dictionary<int, List<int>> nativeBindings = BinaryFormatterHelper.FromByteArray<Dictionary<int, List<int>>>(data);
             Dictionary<HotkeyIDs, List<Keys>> bindings =
-                nativeBindings.ToDictionary(pair => (HotkeyIDs)pair.Key, pair => pair.Value.Cast<Keys>().ToList());
+                nativeBindings.ToDictionary(pair => (HotkeyIDs) pair.Key, pair => pair.Value.Cast<Keys>().ToList());
             foreach (var pair in bindings) {
                 Log(pair.ToString());
             }
@@ -160,7 +160,7 @@ namespace CelesteStudio.Communication {
                 return;
             }
 
-            byte[] hotkeyBytes = { (byte)hotkey, Convert.ToByte(released) };
+            byte[] hotkeyBytes = {(byte) hotkey, Convert.ToByte(released)};
             WriteMessageGuaranteed(new Message(MessageIDs.SendHotkeyPressed, hotkeyBytes));
         }
 

@@ -108,7 +108,7 @@ namespace CelesteStudio {
 
         private static void RunSingleton(Action action) {
             string appGuid =
-                ((GuidAttribute)Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(GuidAttribute), false).GetValue(0)).Value;
+                ((GuidAttribute) Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(GuidAttribute), false).GetValue(0)).Value;
 
             string mutexId = $"Global\\{{{appGuid}}}";
 
@@ -216,13 +216,13 @@ namespace CelesteStudio {
 
         private void InitDragDrop() {
             tasText.DragDrop += (sender, args) => {
-                string[] fileList = (string[])args.Data.GetData(DataFormats.FileDrop, false);
+                string[] fileList = (string[]) args.Data.GetData(DataFormats.FileDrop, false);
                 if (fileList.Length > 0 && fileList[0].EndsWith(".tas")) {
                     OpenFile(fileList[0]);
                 }
             };
             tasText.DragEnter += (sender, args) => {
-                string[] fileList = (string[])args.Data.GetData(DataFormats.FileDrop, false);
+                string[] fileList = (string[]) args.Data.GetData(DataFormats.FileDrop, false);
                 if (fileList.Length > 0 && fileList[0].EndsWith(".tas")) {
                     args.Effect = DragDropEffects.Copy;
                 }
@@ -658,12 +658,12 @@ namespace CelesteStudio {
                     bool hooked = StudioCommunicationBase.Initialized;
                     if (lastHooked != hooked) {
                         lastHooked = hooked;
-                        Invoke((Action)delegate { EnableStudio(hooked); });
+                        Invoke((Action) delegate { EnableStudio(hooked); });
                     }
 
                     if (lastChanged.AddSeconds(0.3f) < DateTime.Now) {
                         lastChanged = DateTime.Now;
-                        Invoke((Action)delegate {
+                        Invoke((Action) delegate {
                             if (!string.IsNullOrEmpty(CurrentFileName) && tasText.IsChanged) {
                                 tasText.SaveFile();
                             }
@@ -715,7 +715,7 @@ namespace CelesteStudio {
 
         private void UpdateValues() {
             if (InvokeRequired) {
-                Invoke((Action)UpdateValues);
+                Invoke((Action) UpdateValues);
             } else {
                 if (CommunicationWrapper.StudioInfo != null) {
                     StudioInfo studioInfo = CommunicationWrapper.StudioInfo;
@@ -739,7 +739,6 @@ namespace CelesteStudio {
                 }
 
                 tasText.ReadOnly = DisableTyping;
-
                 UpdateStatusBar();
             }
         }
@@ -765,7 +764,7 @@ namespace CelesteStudio {
         }
 
         private void tasText_LineInserted(object sender, LineInsertedEventArgs e) {
-            RichText.RichText tas = (RichText.RichText)sender;
+            RichText.RichText tas = (RichText.RichText) sender;
             int count = e.Count;
             while (count-- > 0) {
                 InputRecord input = new(tas.GetLineText(e.Index + count));
@@ -802,7 +801,7 @@ namespace CelesteStudio {
 
         private void tasText_TextChanged(object sender, TextChangedEventArgs e) {
             lastChanged = DateTime.Now;
-            UpdateLines((RichText.RichText)sender, e.ChangedRange);
+            UpdateLines((RichText.RichText) sender, e.ChangedRange);
         }
 
         private void CommentText() {

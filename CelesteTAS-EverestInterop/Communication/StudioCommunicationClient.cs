@@ -202,7 +202,7 @@ namespace TAS.Communication {
         }
 
         private void ProcessHotkeyPressed(byte[] data) {
-            HotkeyIDs hotkey = (HotkeyIDs)data[0];
+            HotkeyIDs hotkey = (HotkeyIDs) data[0];
             bool released = Convert.ToBoolean(data[1]);
             if (released) {
                 Log($"{hotkey.ToString()} released");
@@ -248,7 +248,7 @@ namespace TAS.Communication {
                 if (value is bool boolValue) {
                     property.SetValue(settings, !boolValue);
                 } else if (value is Enum) {
-                    property.SetValue(settings, ((int)value + 1) % Enum.GetValues(property.PropertyType).Length);
+                    property.SetValue(settings, ((int) value + 1) % Enum.GetValues(property.PropertyType).Length);
                 }
             }
         }
@@ -320,8 +320,9 @@ namespace TAS.Communication {
         }
 
         public void SendCurrentBindings(bool forceSend = false) {
-            Dictionary<int, List<int>> nativeBindings = Hotkeys.KeysDict.ToDictionary(pair => (int)pair.Key, pair => pair.Value.Cast<int>().ToList());
-            byte[] data = ToByteArray(nativeBindings);
+            Dictionary<int, List<int>> nativeBindings =
+                Hotkeys.KeysDict.ToDictionary(pair => (int) pair.Key, pair => pair.Value.Cast<int>().ToList());
+            byte[] data = BinaryFormatterHelper.ToByteArray(nativeBindings);
             if (!forceSend && string.Join("", data) == string.Join("", lastBindingsData)) {
                 return;
             }

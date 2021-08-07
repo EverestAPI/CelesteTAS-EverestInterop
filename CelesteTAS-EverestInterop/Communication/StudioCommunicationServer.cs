@@ -65,7 +65,7 @@ namespace TASALT.StudioCommunication {
         }
 
         private void ProcessSendCurrentBindings(byte[] data) {
-            List<Keys>[] keys = FromByteArray<List<Keys>[]>(data);
+            List<Keys>[] keys = BinaryFormatterHelper.FromByteArray<List<Keys>[]>(data);
             foreach (List<Keys> key in keys) {
                 Log(key.ToString());
             }
@@ -104,7 +104,7 @@ namespace TASALT.StudioCommunication {
         }
 
         public void SendHotkeyPressed(HotkeyIDs hotkey) {
-            byte[] hotkeyByte = new byte[] { (byte)hotkey };
+            byte[] hotkeyByte = new byte[] {(byte) hotkey};
             WriteMessageGuaranteed(new Message(MessageIDs.SendHotkeyPressed, hotkeyByte));
         }
 
