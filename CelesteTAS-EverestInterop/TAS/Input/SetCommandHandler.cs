@@ -91,8 +91,7 @@ namespace TAS.Input {
                     double.TryParse(values[0], out double x);
                     double.TryParse(values[1], out double y);
                     Vector2 position = new((int) Math.Round(x), (int) Math.Round(y));
-                    Vector2 remainder = new((float) (x - Math.Truncate(x) + (int) x - (int) Math.Round(x)),
-                        (float) (y - Math.Truncate(y) + (int) y - (int) Math.Round(y)));
+                    Vector2 remainder = new((float) (x - position.X), (float) (y - position.Y));
                     player.Position = position;
                     ActorMovementCounter.SetValue(player, remainder);
                 } else {
@@ -194,9 +193,9 @@ namespace TAS.Input {
                     typeof(Celeste.Celeste).InvokeMethod("ResetGrab", null);
                     break;
                 // case "Fullscreen":
-                    // game get stuck when toggle fullscreen
-                    // typeof(MenuOptions).InvokeMethod("SetFullscreen", value);
-                    // break;
+                // game get stuck when toggle fullscreen
+                // typeof(MenuOptions).InvokeMethod("SetFullscreen", value);
+                // break;
                 case "WindowScale":
                     typeof(MenuOptions).InvokeMethod("SetWindow", value);
                     break;

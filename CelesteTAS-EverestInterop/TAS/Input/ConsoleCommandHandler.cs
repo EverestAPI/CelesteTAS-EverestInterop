@@ -108,8 +108,7 @@ namespace TAS.Input {
                         }
                     } else if (args.Length > 2 && double.TryParse(args[2], out double y)) {
                         Vector2 position = new((int) Math.Round(x), (int) Math.Round(y));
-                        Vector2 remainder = new((float) (x - Math.Truncate(x) + (int) x - (int) Math.Round(x)),
-                            (float) (y - Math.Truncate(y) + (int) y - (int) Math.Round(y)));
+                        Vector2 remainder = new((float) (x - position.X), (float) (y - position.Y));
 
                         Vector2 speed = Vector2.Zero;
                         if (args.Length > 3 && float.TryParse(args[3], out float speedX)) {
