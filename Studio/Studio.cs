@@ -563,9 +563,9 @@ namespace CelesteStudio {
             tasText.Selection = new Range(tasText, cursor, currentLine, cursor, currentLine);
         }
 
-        private void InsertRoomName() => InsertNewLine("#lvl_" + CommunicationWrapper.StudioInfo.LevelName);
+        private void InsertRoomName() => InsertNewLine($"#lvl_{CommunicationWrapper.StudioInfo?.LevelName}");
 
-        private void InsertTime() => InsertNewLine('#' + CommunicationWrapper.StudioInfo.ChapterTime);
+        private void InsertTime() => InsertNewLine($"#{CommunicationWrapper.StudioInfo?.ChapterTime}");
 
         private void InsertConsoleLoadCommand() {
             CommunicationWrapper.Command = null;
@@ -600,7 +600,7 @@ namespace CelesteStudio {
         }
 
         private void CopyGameInfo() {
-            if (string.IsNullOrEmpty(CommunicationWrapper.StudioInfo.GameInfo)) {
+            if (string.IsNullOrEmpty(CommunicationWrapper.StudioInfo?.GameInfo)) {
                 return;
             }
 
@@ -777,7 +777,7 @@ namespace CelesteStudio {
 
         private void UpdateStatusBar() {
             if (StudioCommunicationBase.Initialized) {
-                string gameInfo = CommunicationWrapper.StudioInfo.GameInfo;
+                string gameInfo = CommunicationWrapper.StudioInfo?.GameInfo ?? string.Empty;
                 lblStatus.Text = "(" + (currentFrame > 0 ? currentFrame + "/" : "")
                                      + totalFrames + ") \n" + gameInfo
                                      + new string('\n', Math.Max(0, 7 - gameInfo.Split('\n').Length));
