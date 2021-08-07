@@ -7,22 +7,21 @@ using System.Threading;
 using Microsoft.Xna.Framework.Input;
 using StudioCommunication;
 
-namespace TASALT.StudioCommunication {
-    public sealed class StudioCommunicationServer : StudioCommunicationBase {
-        public static StudioCommunicationServer instance;
+namespace CommunicationTesting {
+    public sealed class StudioCommunicationTestServer : StudioCommunicationBase {
+        public static StudioCommunicationTestServer Instance;
 
+        private readonly FakeStudio studio = new();
 
-        private readonly FakeStudio Studio = new();
-
-        private StudioCommunicationServer() {
+        private StudioCommunicationTestServer() {
             //pipe = new NamedPipeServerStream("CelesteTAS");
             //pipe.ReadMode = PipeTransmissionMode.Message;
         }
 
         public static void Run() {
-            instance = new StudioCommunicationServer();
+            Instance = new StudioCommunicationTestServer();
 
-            ThreadStart mainLoop = new(instance.UpdateLoop);
+            ThreadStart mainLoop = new(Instance.UpdateLoop);
             Thread updateThread = new(mainLoop);
             updateThread.Name = "StudioCom Server";
             updateThread.Start();
@@ -34,7 +33,6 @@ namespace TASALT.StudioCommunication {
             public string gameData;
             public string state;
         }
-
 
         #region Read
 
@@ -55,13 +53,7 @@ namespace TASALT.StudioCommunication {
         private void ProcessSendState(byte[] data) {
             string state = Encoding.Default.GetString(data);
             Log(state);
-            Studio.state = state;
-        }
-
-        private void ProcessSendGameData(byte[] data) {
-            string gameData = Encoding.Default.GetString(data);
-            Log(gameData);
-            Studio.gameData = gameData;
+            studio.state = state;
         }
 
         private void ProcessSendCurrentBindings(byte[] data) {
@@ -70,7 +62,7 @@ namespace TASALT.StudioCommunication {
                 Log(key.ToString());
             }
 
-            Studio.bindings = keys;
+            studio.bindings = keys;
         }
 
         #endregion
@@ -87,7 +79,7 @@ namespace TASALT.StudioCommunication {
             studio?.WriteMessageGuaranteed(new Message(MessageIDs.EstablishConnection, new byte[0]));
             celeste?.ReadMessageGuaranteed();
 
-            studio?.SendPath(Studio.path);
+            studio?.SendPath(this.studio.path);
             lastMessage = celeste?.ReadMessageGuaranteed();
             //celeste?.ProcessSendPath(lastMessage?.Data);
 

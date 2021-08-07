@@ -21,9 +21,12 @@
         <PlatformTarget>AnyCPU</PlatformTarget>
     </PropertyGroup>
     <ItemGroup>
-        <Reference Include="System.Data.DataSetExtensions" />
-        <Reference Include="Microsoft.CSharp" />
-        <Reference Include="System.Net.Http" />
+        <Reference Include="FNA, Version=21.3.5.0, Culture=neutral, PublicKeyToken=null">
+            <HintPath>..\CelesteTAS-EverestInterop\lib-stripped\FNA.dll</HintPath>
+        </Reference>
+        <Reference Include="System.Data.DataSetExtensions"/>
+        <Reference Include="Microsoft.CSharp"/>
+        <Reference Include="System.Net.Http"/>
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\CelesteTAS-EverestInterop\CelesteTAS-EverestInterop.csproj" />
