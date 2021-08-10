@@ -11,14 +11,9 @@ namespace StudioCommunication {
         Default = 0x00,
 
         /// <summary>
-        /// Structure:
+        /// Structure: GameDataTypes
         /// </summary>
-        [HighPriority] GetConsoleCommand = 0x08,
-
-        /// <summary>
-        /// Structure:
-        /// </summary>
-        [HighPriority] GetModInfo = 0x09,
+        [HighPriority] GetData = 0x08,
 
         /// <summary>
         /// Structure:
@@ -71,17 +66,17 @@ namespace StudioCommunication {
         /// <summary>
         /// Structure: string
         /// </summary>
-        [HighPriority] ReturnConsoleCommand = 0x31,
-
-        /// <summary>
-        /// Structure: string
-        /// </summary>
-        [HighPriority] ReturnModInfo = 0x32,
+        [HighPriority] ReturnData = 0x31,
 
         //External data transfer
         ExternLow1 = 0x40,
         ExternLow2 = 0x41,
         [HighPriority] ExternHigh1 = 0x42,
         [HighPriority] ExternHigh2 = 0x43,
+    }
+
+    public enum GameDataTypes : byte {
+        ConsoleCommand,
+        ModInfo
     }
 }

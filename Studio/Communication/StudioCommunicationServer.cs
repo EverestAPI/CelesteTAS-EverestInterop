@@ -59,11 +59,8 @@ namespace CelesteStudio.Communication {
                     break;
                 case MessageIDs.SendPath:
                     throw new NeedsResetException("Recieved initialization message (SendPath) from main loop");
-                case MessageIDs.ReturnConsoleCommand:
-                    ProcessReturnConsoleCommand(message.Data);
-                    break;
-                case MessageIDs.ReturnModInfo:
-                    ProcessReturnModInfo(message.Data);
+                case MessageIDs.ReturnData:
+                    ProcessReturnData(message.Data);
                     break;
                 default:
                     throw new InvalidOperationException($"{message.Id}");
@@ -87,11 +84,7 @@ namespace CelesteStudio.Communication {
             CommunicationWrapper.SetBindings(bindings);
         }
 
-        private void ProcessReturnConsoleCommand(byte[] data) {
-            CommunicationWrapper.Command = Encoding.Default.GetString(data);
-        }
-
-        private void ProcessReturnModInfo(byte[] data) {
+        private void ProcessReturnData(byte[] data) {
             CommunicationWrapper.Command = Encoding.Default.GetString(data);
         }
 
@@ -133,8 +126,8 @@ namespace CelesteStudio.Communication {
         public void ConvertToLibTas(string path) => PendingWrite = () => ConvertToLibTasNow(path);
         public void SendHotkeyPressed(HotkeyIDs hotkey, bool released = false) => PendingWrite = () => SendHotkeyPressedNow(hotkey, released);
         public void ToggleGameSetting(string settingName) => PendingWrite = () => ToggleGameSettingNow(settingName);
-        public void GetConsoleCommand() => PendingWrite = GetConsoleCommandNow;
-        public void GetModInfo() => PendingWrite = GetModInfoNow;
+        public void GetConsoleCommand() => PendingWrite = () => GetGameDataNow(GameDataTypes.ConsoleCommand);
+        public void GetModInfo() => PendingWrite = () => GetGameDataNow(GameDataTypes.ModInfo);
 
 
         private void SendPathNow(string path, bool canFail) {
@@ -172,20 +165,12 @@ namespace CelesteStudio.Communication {
             WriteMessageGuaranteed(new Message(MessageIDs.ToggleGameSetting, Encoding.Default.GetBytes(settingName)));
         }
 
-        private void GetConsoleCommandNow() {
+        private void GetGameDataNow(GameDataTypes gameDataType) {
             if (!Initialized) {
                 return;
             }
 
-            WriteMessageGuaranteed(new Message(MessageIDs.GetConsoleCommand, new byte[0]));
-        }
-
-        private void GetModInfoNow() {
-            if (!Initialized) {
-                return;
-            }
-
-            WriteMessageGuaranteed(new Message(MessageIDs.GetModInfo, new byte[0]));
+            WriteMessageGuaranteed(new Message(MessageIDs.GetData, new[] {(byte) gameDataType}));
         }
 
         #endregion
