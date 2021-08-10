@@ -2,17 +2,18 @@
 Can be used instead of notepad or similar for easier editing of the TAS file. It is bundled with the TAS tools, and should automatically appear in the main Celeste directory.
 
 ### Controls
-- Ctrl + O: Open file
-- Ctrl + Shift + S: Save as
-- Ctrl + D: Toggle sending inputs to Celeste
-- Ctrl + Shift + D: Refresh connection between Studio and Celeste
-- Ctrl + Shift + C: Copy player data to clipboard
-- Ctrl + K: Block comment/uncomment
+- Ctrl + O: Open File
+- Alt + Left: Open Previous File
+- Ctrl + Shift + S: Save As
+- Ctrl + D: Toggle Sending Inputs to Celeste
+- Ctrl + Shift + D: Refresh Connection Between Studio and Celeste
+- Ctrl + Shift + C: Copy Player Data to Clipboard
+- Ctrl + K: Block Comment/Uncomment
 - Ctrl + P: Remove All Uncommented Breakpoints
-- Ctrl + Shift + P: Remove all breakpoints
-- Ctrl + .: Insert/Remove breakpoint
-- Ctrl + Shift + .: Insert/Remove savestate breakpoint
+- Ctrl + Shift + P: Remove All Breakpoints
+- Ctrl + .: Insert/Remove Breakpoint
+- Ctrl + Shift + .: Insert/Remove Savestate Breakpoint
 - Ctrl + R: Insert room name
-- Ctrl + Shift + R: Insert console load command at current location and speed
-- Ctrl + T: Insert current in-game time
-- Ctrl + Down/Up: Go to comment or breakpoint
+- Ctrl + Shift + R: Insert Console Load Command at Current Location and Speed
+- Ctrl + T: Insert Current in-game Time
+- Ctrl + Down/Up: Go to Comment or Breakpoint

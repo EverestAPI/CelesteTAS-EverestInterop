@@ -68,6 +68,7 @@ namespace CelesteStudio {
             this.switchInfoHUDToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.tASInputInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.gameInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.inspectEntityInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.customInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.subpixelIndicatorToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
@@ -116,7 +117,6 @@ namespace CelesteStudio {
             this.statusPanel = new System.Windows.Forms.Panel();
             this.statusBar = new System.Windows.Forms.StatusStrip();
             this.lblStatus = new System.Windows.Forms.ToolStripStatusLabel();
-            this.inspectEntityInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusBarContextMenuStrip.SuspendLayout();
             this.menuStrip.SuspendLayout();
             this.tasTextContextMenuStrip.SuspendLayout();
@@ -217,6 +217,7 @@ namespace CelesteStudio {
             // openPreviousFileToolStripMenuItem
             // 
             this.openPreviousFileToolStripMenuItem.Name = "openPreviousFileToolStripMenuItem";
+            this.openPreviousFileToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys) ((System.Windows.Forms.Keys.Alt | System.Windows.Forms.Keys.Left)));
             this.openPreviousFileToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
             this.openPreviousFileToolStripMenuItem.Text = "Open &Previous File";
             this.openPreviousFileToolStripMenuItem.Click += new System.EventHandler(this.openPreviousFileToolStripMenuItem_Click);
@@ -411,6 +412,13 @@ namespace CelesteStudio {
             this.gameInfoToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
             this.gameInfoToolStripMenuItem.Text = "Game Info";
             this.gameInfoToolStripMenuItem.Click += new System.EventHandler(this.gameInfoToolStripMenuItem_Click);
+            // 
+            // inspectEntityInfoToolStripMenuItem
+            // 
+            this.inspectEntityInfoToolStripMenuItem.Name = "inspectEntityInfoToolStripMenuItem";
+            this.inspectEntityInfoToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
+            this.inspectEntityInfoToolStripMenuItem.Text = "Inspect Entity Info";
+            this.inspectEntityInfoToolStripMenuItem.Click += new System.EventHandler(this.inspectEntityInfoToolStripMenuItem_Click);
             // 
             // customInfoToolStripMenuItem
             // 
@@ -787,13 +795,6 @@ namespace CelesteStudio {
             this.lblStatus.Spring = true;
             this.lblStatus.Text = "Searching...";
             this.lblStatus.TextAlign = System.Drawing.ContentAlignment.TopLeft;
-            // 
-            // inspectEntityInfoToolStripMenuItem
-            // 
-            this.inspectEntityInfoToolStripMenuItem.Name = "inspectEntityInfoToolStripMenuItem";
-            this.inspectEntityInfoToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
-            this.inspectEntityInfoToolStripMenuItem.Text = "Inspect Entity Info";
-            this.inspectEntityInfoToolStripMenuItem.Click += new System.EventHandler(this.inspectEntityInfoToolStripMenuItem_Click);
             // 
             // Studio
             // 
