@@ -213,7 +213,6 @@ namespace TAS {
         public static void Update(bool updateVel = false) {
             if (Engine.Scene is Level level) {
                 Player player = level.Tracker.GetEntity<Player>();
-                long chapterTime = level.Session.Time;
                 if (player != null) {
                     StringBuilder stringBuilder = new();
                     string pos = GetAdjustedPos(player.Position, player.PositionRemainder);
@@ -442,7 +441,7 @@ namespace TAS {
 
         private static string GetChapterTime(Level level) {
             long chapterTime = level.Session.Time;
-            return $"{(chapterTime / 10000000D):F3}({chapterTime / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks})";
+            return $"{TimeSpan.FromTicks(level.Session.Time).ShortGameplayFormat()}({chapterTime / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks})";
         }
 
         private static void BeginExport(string path, string[] tracked) {
@@ -481,7 +480,7 @@ namespace TAS {
                         return;
                     }
 
-                    string time = (level.Session.Time / 10000000D).ToString("0.000");
+                    string time = GetChapterTime(level);
                     string pos = player.ToSimplePositionString(CelesteTasModule.Settings.RoundPosition);
                     string speed = player.Speed.X + ", " + player.Speed.Y;
 
