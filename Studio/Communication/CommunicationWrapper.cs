@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using CelesteStudio.Properties;
+using CelesteStudio.RichText;
 using StudioCommunication;
+using Char = CelesteStudio.RichText.Char;
 
 namespace CelesteStudio.Communication {
     static class CommunicationWrapper {
@@ -34,7 +35,7 @@ namespace CelesteStudio.Communication {
                 || Environment.OSVersion.Platform == PlatformID.Unix
                 || bindings == null
                 // check if key is repeated
-                || ((int)msg.LParam & 0x40000000) == 0x40000000) {
+                || ((int) msg.LParam & 0x40000000) == 0x40000000) {
                 return false;
             }
 
@@ -94,6 +95,24 @@ namespace CelesteStudio.Communication {
             }
 
             return pressed;
+        }
+
+        public static void UpdateLines(Dictionary<int, string> updateLines) {
+            RichText.RichText tasText = Studio.Instance.tasText;
+            foreach (int lineNumber in updateLines.Keys) {
+                string lineText = updateLines[lineNumber];
+                if (tasText.Lines.Count > lineNumber) {
+                    Line line = tasText.TextSource[lineNumber];
+                    line.Clear();
+                    if (lineText.Length > 0) {
+                        line.AddRange(lineText.ToCharArray().Select(c => new Char(c)));
+                    }
+                }
+            }
+
+            if (updateLines.Count > 0) {
+                tasText.UpdateHighlighting();
+            }
         }
     }
 }

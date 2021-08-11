@@ -57,6 +57,9 @@ namespace CelesteStudio.Communication {
                 case MessageIDs.SendCurrentBindings:
                     ProcessSendCurrentBindings(message.Data);
                     break;
+                case MessageIDs.UpdateLines:
+                    ProcessUpdateLines(message.Data);
+                    break;
                 case MessageIDs.SendPath:
                     throw new NeedsResetException("Recieved initialization message (SendPath) from main loop");
                 case MessageIDs.ReturnData:
@@ -69,7 +72,7 @@ namespace CelesteStudio.Communication {
 
         private void ProcessSendState(byte[] data) {
             StudioInfo studioInfo = StudioInfo.FromByteArray(data);
-            Log(studioInfo.ToString());
+            // Log(studioInfo.ToString());
             CommunicationWrapper.StudioInfo = studioInfo;
         }
 
@@ -82,6 +85,14 @@ namespace CelesteStudio.Communication {
             }
 
             CommunicationWrapper.SetBindings(bindings);
+        }
+
+        private void ProcessUpdateLines(byte[] data) {
+            Dictionary<int, string> updateLines = BinaryFormatterHelper.FromByteArray<Dictionary<int, string>>(data);
+            // foreach (KeyValuePair<int,string> keyValuePair in updateLines) {
+            // Log("ProcessUpdateLines: " + keyValuePair);
+            // }
+            CommunicationWrapper.UpdateLines(updateLines);
         }
 
         private void ProcessReturnData(byte[] data) {

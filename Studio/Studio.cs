@@ -1064,6 +1064,10 @@ namespace CelesteStudio {
             InsertConsoleLoadCommand();
         }
 
+        private void insertRecordCountToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertNewLine("#RecordCount 1");
+        }
+
         private void enforceLegalToolStripMenuItem_Click(object sender, EventArgs e) {
             InsertNewLine("EnforceLegal");
         }
@@ -1219,12 +1223,12 @@ namespace CelesteStudio {
             }
 
             string fileName = Path.Combine(gamePath, $"Untitled-{index}.tas");
-            while (File.Exists(fileName) && new FileInfo(fileName).Length > 0) {
+            while (File.Exists(fileName) && new FileInfo(fileName).Length != 14) {
                 index++;
                 fileName = Path.Combine(gamePath, $"Untitled-{index}.tas");
             }
 
-            File.WriteAllText(fileName, string.Empty);
+            File.WriteAllText(fileName, "#RecordCount 1");
 
             OpenFile(fileName);
         }

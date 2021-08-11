@@ -68,6 +68,11 @@ namespace StudioCommunication {
         /// </summary>
         [HighPriority] ReturnData = 0x31,
 
+        /// <summary>
+        /// Structure: Dictonary<int(line number), string(line text)>
+        /// </summary>
+        [HighPriority] UpdateLines = 0x32,
+
         //External data transfer
         ExternLow1 = 0x40,
         ExternLow2 = 0x41,

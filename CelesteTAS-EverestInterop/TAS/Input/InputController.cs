@@ -4,8 +4,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Monocle;
 using MonoMod.Utils;
+using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.Utils;
 
@@ -15,6 +17,7 @@ namespace TAS.Input {
         public readonly SortedDictionary<int, List<Command>> Commands = new();
         public readonly SortedDictionary<int, FastForward> FastForwards = new();
         public readonly List<InputFrame> Inputs = new();
+        private readonly Regex RecordCountRegex = new(@"#\s*RecordCount\s*(\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private readonly Dictionary<string, DateTime> usedFiles = new();
 
         private string checksum;
@@ -44,7 +47,7 @@ namespace TAS.Input {
         public InputFrame Next => Inputs.GetValueOrDefault(CurrentFrame + 1);
         public FastForward CurrentFastForward => FastForwards.GetValueOrDefault(CurrentFrame);
         public List<Command> CurrentCommands => Commands.GetValueOrDefault(CurrentFrame);
-        private bool NeedsReload => usedFiles.Any(file => File.GetLastWriteTime(file.Key) != file.Value);
+        private bool NeedsReload => usedFiles.IsNotEmpty() && usedFiles.Any(file => File.GetLastWriteTime(file.Key) != file.Value);
         public bool CanPlayback => CurrentFrame < Inputs.Count;
         public bool NeedsToWait => Manager.IsLoading();
 
@@ -63,7 +66,8 @@ namespace TAS.Input {
                 CurrentFrame = 0;
             }
 
-            if (NeedsReload || enableRun) {
+            bool needsReload = NeedsReload;
+            if (needsReload || enableRun) {
                 int tryCount = 5;
                 while (tryCount > 0) {
                     initializationFrameCount = 0;
@@ -85,8 +89,31 @@ namespace TAS.Input {
                     tryCount--;
                 }
 
+                if (tryCount > 0 && needsReload) {
+                    UpdateRecordCount();
+                }
+
                 CurrentFrame = Math.Min(Inputs.Count, CurrentFrame);
             }
+        }
+
+        private void UpdateRecordCount() {
+            string[] allLines = File.ReadAllLines(TasFilePath);
+            Dictionary<int, string> recordCountLines = new();
+            for (int i = 0; i < allLines.Length; i++) {
+                string line = allLines[i].Trim();
+                if (RecordCountRegex.IsMatch(line) && int.TryParse(RecordCountRegex.Match(line).Groups[1].Value, out int recordCount)) {
+                    allLines[i] = $"#RecordCount {recordCount + 1}";
+                    recordCountLines[i] = allLines[i];
+                }
+            }
+
+            File.WriteAllLines(TasFilePath, allLines);
+            if (usedFiles.ContainsKey(TasFilePath)) {
+                usedFiles[TasFilePath] = File.GetLastWriteTime(TasFilePath);
+            }
+
+            StudioCommunicationClient.Instance?.UpdateLines(recordCountLines);
         }
 
         public void Stop() {
@@ -130,39 +157,36 @@ namespace TAS.Input {
                     return false;
                 }
 
-                if (!usedFiles.ContainsKey(filePath)) {
-                    usedFiles.Add(filePath, File.GetLastWriteTime(filePath));
-                }
+                usedFiles[filePath] = File.GetLastWriteTime(filePath);
 
                 int subLine = 0;
-                using (StreamReader sr = new(filePath)) {
-                    while (!sr.EndOfStream) {
-                        string line = sr.ReadLine().Trim();
+                using StreamReader sr = new(filePath);
+                while (!sr.EndOfStream) {
+                    string line = sr.ReadLine().Trim();
 
-                        subLine++;
-                        if (subLine < startLine) {
-                            continue;
-                        }
+                    subLine++;
+                    if (subLine < startLine) {
+                        continue;
+                    }
 
-                        if (subLine > endLine) {
-                            break;
-                        }
+                    if (subLine > endLine) {
+                        break;
+                    }
 
-                        if (InputCommands.TryExecuteCommand(this, line, initializationFrameCount, studioLine))
-                            //workaround for the play command
-                        {
-                            return true;
-                        }
+                    if (InputCommands.TryExecuteCommand(this, line, initializationFrameCount, studioLine))
+                        //workaround for the play command
+                    {
+                        return true;
+                    }
 
-                        if (line.StartsWith("***")) {
-                            FastForwards[initializationFrameCount] = new FastForward(initializationFrameCount, line.Substring(3), studioLine);
-                        } else {
-                            AddFrames(line, studioLine);
-                        }
+                    if (line.StartsWith("***")) {
+                        FastForwards[initializationFrameCount] = new FastForward(initializationFrameCount, line.Substring(3), studioLine);
+                    } else {
+                        AddFrames(line, studioLine);
+                    }
 
-                        if (filePath == TasFilePath) {
-                            studioLine++;
-                        }
+                    if (filePath == TasFilePath) {
+                        studioLine++;
                     }
                 }
 
@@ -207,10 +231,8 @@ namespace TAS.Input {
             CurrentFrame = controller.CurrentFrame;
         }
 
-        public string Checksum(int? toInputFrame = null) {
-            if (toInputFrame == null) {
-                toInputFrame = CurrentFrame;
-            }
+        private string Checksum(int? toInputFrame = null) {
+            toInputFrame ??= CurrentFrame;
 
             StringBuilder result = new(TasFilePath);
             result.AppendLine();

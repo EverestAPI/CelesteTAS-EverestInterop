@@ -41,7 +41,6 @@
         <PackageReference Include="MonoMod" Version="21.4.29.1" />
         <PackageReference Include="MonoMod.RuntimeDetour" Version="21.4.29.1" />
         <PackageReference Include="MonoMod.Utils" Version="21.4.29.1" />
-        <PackageReference Include="YamlDotNet" Version="8.1.2" />
     </ItemGroup>
     <ItemGroup>
         <Reference Include="Celeste">

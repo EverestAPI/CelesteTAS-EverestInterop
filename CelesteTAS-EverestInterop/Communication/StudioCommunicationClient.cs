@@ -339,6 +339,11 @@ namespace TAS.Communication {
             lastBindingsData = data;
         }
 
+        public void UpdateLines(Dictionary<int, string> lines) {
+            byte[] data = BinaryFormatterHelper.ToByteArray(lines);
+            WriteMessageGuaranteed(new Message(MessageIDs.UpdateLines, data));
+        }
+
         #endregion
     }
 }

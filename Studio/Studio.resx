@@ -95,9 +95,9 @@
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-              </xsd:sequence>
+                <xsd:sequence>
+                    <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                </xsd:sequence>
                 <xsd:attribute name="name" type="xsd:string" use="required"/>
             </xsd:complexType>
           </xsd:element>
@@ -112,19 +112,25 @@
         <value>2.0</value>
     </resheader>
     <resheader name="reader">
-        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral,
+            PublicKeyToken=b77a5c561934e089
+        </value>
     </resheader>
     <resheader name="writer">
-        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral,
+            PublicKeyToken=b77a5c561934e089
+        </value>
     </resheader>
-    <metadata name="hotkeyToolTip.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <metadata name="hotkeyToolTip.TrayLocation"
+              type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
         <value>17, 17</value>
     </metadata>
     <metadata name="statusBarContextMenuStrip.TrayLocation"
               type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
         <value>405, 17</value>
     </metadata>
-    <metadata name="menuStrip.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <metadata name="menuStrip.TrayLocation"
+              type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
         <value>159, 16</value>
     </metadata>
     <metadata name="tasTextContextMenuStrip.TrayLocation"
@@ -136,14 +142,18 @@
 locking it to a circular or square deadzone, or calculating the closest position possible on a controller.
 Odds are you don't need to worry about this.</value>
   </data>
-    <metadata name="fontDialog.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <metadata name="fontDialog.TrayLocation"
+              type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
         <value>821, 17</value>
     </metadata>
-    <metadata name="statusBar.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <metadata name="statusBar.TrayLocation"
+              type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
         <value>280, 20</value>
     </metadata>
-    <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"/>
-    <data name="$this.Icon" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <assembly alias="System.Drawing"
+              name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"/>
+    <data name="$this.Icon" type="System.Drawing.Icon, System.Drawing"
+          mimetype="application/x-microsoft.net.object.bytearray.base64">
         <value>
             AAABAAYAICAQAAEABADoAgAAZgAAABAQEAABAAQAKAEAAE4DAAAwMAAAAQAIAKgOAAB2BAAAICAAAAEA
             CACoCAAAHhMAABgYAAABAAgAyAYAAMYbAAAQEAAAAQAIAGgFAACOIgAAKAAAACAAAABAAAAAAQAEAAAA
@@ -192,16 +202,16 @@ Odds are you don't need to worry about this.</value>
             AAAAAAAAAAAAAAAAAAAAAAQEBAMDAwMDAwQEBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
             AAAAAAQEBAMDAwMDAwQEBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEBAMDAwMD
             AwQEBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEBAMDAwMDAwMDAwMDAwQEBAAAAAAA
-        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEBAMDAwMDAwMDAwMDAwQEBAAAAAAAAAAAAAAAAAAAAAAA
-        AAAAAAAAAAAAAAAAAAQEBAMDAwMDAwMDAwMDAwQEBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQE
-        BAMDAwQEBAQEBAQEBAMDAwMDAwQEBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEBAMDAwQEBAQEBAQE
-        BAMDAwMDAwQEBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEBAMDAwQEBAQEBAQEBAMDAwMDAwQEBAAA
-        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDAwQEBAQEBAMDAwQEBAUFBQQEBAMDAwAAAAAAAAAAAAAAAAAA
-        AAAAAAAAAAAAAAMDAwQEBAQEBAMDAwQEBAUFBQQEBAMDAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMD
-        AwQEBAQEBAMDAwQEBAUFBQQEBAMDAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUFBQQEBAQEBAUFBQQE
-        BAQEBAQEBAUFBQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUFBQQEBAQEBAUFBQQEBAQEBAQEBAUFBQAA
-        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUFBQQEBAQEBAUFBQQEBAQEBAQEBAUFBQAAAAAAAAAAAAAAAAAA
-        AAAAAAAAAAAAAAMDAwQEBAQEBAQEBAQEBAUFBQMDAwMDAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMD
+            AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEBAMDAwMDAwMDAwMDAwQEBAAAAAAAAAAAAAAAAAAAAAAA
+            AAAAAAAAAAAAAAAAAAQEBAMDAwMDAwMDAwMDAwQEBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQE
+            BAMDAwQEBAQEBAQEBAMDAwMDAwQEBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEBAMDAwQEBAQEBAQE
+            BAMDAwMDAwQEBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEBAMDAwQEBAQEBAQEBAMDAwMDAwQEBAAA
+            AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDAwQEBAQEBAMDAwQEBAUFBQQEBAMDAwAAAAAAAAAAAAAAAAAA
+            AAAAAAAAAAAAAAMDAwQEBAQEBAMDAwQEBAUFBQQEBAMDAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMD
+            AwQEBAQEBAMDAwQEBAUFBQQEBAMDAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUFBQQEBAQEBAUFBQQE
+            BAQEBAQEBAUFBQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUFBQQEBAQEBAUFBQQEBAQEBAQEBAUFBQAA
+            AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUFBQQEBAQEBAUFBQQEBAQEBAQEBAUFBQAAAAAAAAAAAAAAAAAA
+            AAAAAAAAAAAAAAMDAwQEBAQEBAQEBAQEBAUFBQMDAwMDAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMD
         AwQEBAQEBAQEBAQEBAUFBQMDAwMDAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDAwQEBAQEBAQEBAQE
         BAUFBQMDAwMDAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEBAQEBAQEBAQEBAQEBAQEBAQAAAAAA
         AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEBAQEBAQEBAQEBAQEBAQEBAQAAAAAAAAAAAAAAAAAAAAAA
