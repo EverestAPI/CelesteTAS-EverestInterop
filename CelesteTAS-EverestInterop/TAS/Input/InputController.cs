@@ -162,7 +162,7 @@ namespace TAS.Input {
                 int subLine = 0;
                 using StreamReader sr = new(filePath);
                 while (!sr.EndOfStream) {
-                    string line = sr.ReadLine().Trim();
+                    string lineText = sr.ReadLine().Trim();
 
                     subLine++;
                     if (subLine < startLine) {
@@ -173,16 +173,16 @@ namespace TAS.Input {
                         break;
                     }
 
-                    if (InputCommands.TryExecuteCommand(this, line, initializationFrameCount, studioLine))
+                    if (InputCommands.TryExecuteCommand(this, filePath, lineText, initializationFrameCount, studioLine))
                         //workaround for the play command
                     {
                         return true;
                     }
 
-                    if (line.StartsWith("***")) {
-                        FastForwards[initializationFrameCount] = new FastForward(initializationFrameCount, line.Substring(3), studioLine);
+                    if (lineText.StartsWith("***")) {
+                        FastForwards[initializationFrameCount] = new FastForward(initializationFrameCount, lineText.Substring(3), studioLine);
                     } else {
-                        AddFrames(line, studioLine);
+                        AddFrames(lineText, studioLine);
                     }
 
                     if (filePath == TasFilePath) {

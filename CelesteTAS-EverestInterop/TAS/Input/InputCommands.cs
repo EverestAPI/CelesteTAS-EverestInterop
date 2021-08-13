@@ -35,7 +35,7 @@ namespace TAS.Input {
             return args.Select(text => text.Trim()).ToArray();
         }
 
-        public static bool TryExecuteCommand(InputController inputController, string lineText, int frame, int lineNumber) {
+        public static bool TryExecuteCommand(InputController inputController, string filePath, string lineText, int frame, int lineNumber) {
             try {
                 if (!string.IsNullOrEmpty(lineText) && char.IsLetter(lineText[0])) {
                     string[] args = Split(lineText);
@@ -62,17 +62,22 @@ namespace TAS.Input {
                         parameters = new object[] {commandArgs};
                     }
 
+                    Action commandCall;
                     if (attribute.ExecuteAtStart) {
+                        commandCall = null;
                         method.Invoke(null, parameters);
-                        //the play command needs to stop reading the current file when it's done to prevent recursion
-                        return commandType.Equals("play", StringComparison.InvariantCultureIgnoreCase);
+                    } else {
+                        commandCall = () => method.Invoke(null, parameters);
                     }
 
                     if (!inputController.Commands.ContainsKey(frame)) {
                         inputController.Commands[frame] = new List<Command>();
                     }
 
-                    inputController.Commands[frame].Add(new Command(frame, () => method.Invoke(null, parameters), lineText));
+                    inputController.Commands[frame].Add(new Command(frame, commandCall, filePath, lineNumber, lineText));
+
+                    //the play command needs to stop reading the current file when it's done to prevent recursion
+                    return commandType.Equals("play", StringComparison.InvariantCultureIgnoreCase);
                 }
 
                 return false;
