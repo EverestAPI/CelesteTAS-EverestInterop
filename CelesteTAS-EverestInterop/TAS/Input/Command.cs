@@ -8,7 +8,7 @@ namespace TAS.Input {
         public readonly int Frame;
         public readonly string FilePath;
         public readonly int LineNumber; // form zero
-        public string LineText => Args.Length == 0 ? Attribute.Name : $"{Attribute.Name} {string.Join(", ", Args)}";
+        public string LineText => Args.Length == 0 ? Attribute.Name : $"{Attribute.Name}, {string.Join(", ", Args)}";
 
         public Command(TasCommandAttribute attribute, int frame, Action commandCall, string[] args, string filePath, int lineNumber) {
             Attribute = attribute;
