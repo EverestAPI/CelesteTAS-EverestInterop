@@ -22,7 +22,8 @@ namespace TAS.Input {
          * Commands that execute can be void Command(InputController, string[], int) or void Command(string[]).
          */
 
-        private static readonly Regex SpaceRegex = new(@"^[^,]+?\s+[^,]", RegexOptions.Compiled);
+        private static readonly Regex CheckSpaceRegex = new(@"^[^,]+?\s+[^,]", RegexOptions.Compiled);
+        private static readonly Regex SpaceRegex = new(@"\s+", RegexOptions.Compiled);
 
         private static readonly Lazy<PropertyInfo> GunInputCursorPosition =
             new(() => Type.GetType("Guneline.GunInput, Guneline")?.GetProperty("CursorPosition"));
@@ -32,7 +33,7 @@ namespace TAS.Input {
         private static string[] Split(string line) {
             string trimLine = line.Trim();
             // Determined by the first separator
-            string[] args = SpaceRegex.IsMatch(trimLine) ? trimLine.Split() : trimLine.Split(',');
+            string[] args = CheckSpaceRegex.IsMatch(trimLine) ? SpaceRegex.Split(trimLine) : trimLine.Split(',');
             return args.Select(text => text.Trim()).ToArray();
         }
 
@@ -75,7 +76,7 @@ namespace TAS.Input {
                         inputController.Commands[frame] = new List<Command>();
                     }
 
-                    inputController.Commands[frame].Add(new Command(attribute, frame, commandCall, commandArgs, filePath, lineNumber, lineText));
+                    inputController.Commands[frame].Add(new Command(attribute, frame, commandCall, commandArgs, filePath, lineNumber));
 
                     //the play command needs to stop reading the current file when it's done to prevent recursion
                     return commandName.Equals("play", StringComparison.InvariantCultureIgnoreCase);
