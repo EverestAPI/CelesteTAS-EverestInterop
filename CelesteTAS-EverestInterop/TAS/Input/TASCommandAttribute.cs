@@ -12,6 +12,7 @@ namespace TAS.Input {
         public bool ExecuteAtStart;
         public bool LegalInMainGame = true;
         public string Name;
+        public bool SavestateChecksum = true;
 
         public static void CollectMethods() {
             MethodInfos.Clear();

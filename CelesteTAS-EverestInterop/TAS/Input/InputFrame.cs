@@ -25,7 +25,7 @@ namespace TAS.Input {
         DemoDash = 1 << 14
     }
 
-    public class InputFrame {
+    public record InputFrame {
         public Actions Actions { get; private set; }
         public float Angle { get; private set; }
         public float UpperLimit { get; private set; } = 1f;

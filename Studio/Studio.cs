@@ -1065,7 +1065,7 @@ namespace CelesteStudio {
         }
 
         private void insertRecordCountToolStripMenuItem_Click(object sender, EventArgs e) {
-            InsertNewLine("#RecordCount 1");
+            InsertNewLine("RecordCount: 1");
         }
 
         private void enforceLegalToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -1228,7 +1228,7 @@ namespace CelesteStudio {
                 fileName = Path.Combine(gamePath, $"Untitled-{index}.tas");
             }
 
-            File.WriteAllText(fileName, "#RecordCount 1");
+            File.WriteAllText(fileName, "RecordCount: 1");
 
             OpenFile(fileName);
         }

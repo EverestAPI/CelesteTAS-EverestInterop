@@ -17,8 +17,7 @@ namespace TAS.Input {
         public readonly SortedDictionary<int, List<Command>> Commands = new();
         public readonly SortedDictionary<int, FastForward> FastForwards = new();
         public readonly List<InputFrame> Inputs = new();
-        private readonly Regex RecordCountRegex = new(@"#\s*RecordCount\s*(\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        private readonly Dictionary<string, DateTime> usedFiles = new();
+        public readonly Dictionary<string, DateTime> UsedFiles = new();
 
         private string checksum;
         private int initializationFrameCount;
@@ -47,7 +46,7 @@ namespace TAS.Input {
         public InputFrame Next => Inputs.GetValueOrDefault(CurrentFrame + 1);
         public FastForward CurrentFastForward => FastForwards.GetValueOrDefault(CurrentFrame);
         public List<Command> CurrentCommands => Commands.GetValueOrDefault(CurrentFrame);
-        private bool NeedsReload => usedFiles.IsNotEmpty() && usedFiles.Any(file => File.GetLastWriteTime(file.Key) != file.Value);
+        private bool NeedsReload => UsedFiles.IsNotEmpty() && UsedFiles.Any(file => File.GetLastWriteTime(file.Key) != file.Value);
         public bool CanPlayback => CurrentFrame < Inputs.Count;
         public bool NeedsToWait => Manager.IsLoading();
 
@@ -75,10 +74,14 @@ namespace TAS.Input {
                     Inputs.Clear();
                     FastForwards.Clear();
                     Commands.Clear();
-                    usedFiles.Clear();
+                    UsedFiles.Clear();
                     AnalogHelper.AnalogModeChange(AnalogueMode.Ignore);
                     if (ReadFile(TasFilePath)) {
                         LibTasHelper.FinishExport();
+                        if (needsReload) {
+                            InputCommands.UpdateRecordCount(this);
+                        }
+
                         break;
                     }
 
@@ -89,31 +92,8 @@ namespace TAS.Input {
                     tryCount--;
                 }
 
-                if (tryCount > 0 && needsReload) {
-                    UpdateRecordCount();
-                }
-
                 CurrentFrame = Math.Min(Inputs.Count, CurrentFrame);
             }
-        }
-
-        private void UpdateRecordCount() {
-            string[] allLines = File.ReadAllLines(TasFilePath);
-            Dictionary<int, string> recordCountLines = new();
-            for (int i = 0; i < allLines.Length; i++) {
-                string line = allLines[i].Trim();
-                if (RecordCountRegex.IsMatch(line) && int.TryParse(RecordCountRegex.Match(line).Groups[1].Value, out int recordCount)) {
-                    allLines[i] = $"#RecordCount {recordCount + 1}";
-                    recordCountLines[i] = allLines[i];
-                }
-            }
-
-            File.WriteAllLines(TasFilePath, allLines);
-            if (usedFiles.ContainsKey(TasFilePath)) {
-                usedFiles[TasFilePath] = File.GetLastWriteTime(TasFilePath);
-            }
-
-            StudioCommunicationClient.Instance?.UpdateLines(recordCountLines);
         }
 
         public void Stop() {
@@ -157,7 +137,7 @@ namespace TAS.Input {
                     return false;
                 }
 
-                usedFiles[filePath] = File.GetLastWriteTime(filePath);
+                UsedFiles[filePath] = File.GetLastWriteTime(filePath);
 
                 int subLine = 0;
                 using StreamReader sr = new(filePath);
@@ -218,7 +198,7 @@ namespace TAS.Input {
                 clone.Commands[frame] = new List<Command>(Commands[frame]);
             }
 
-            clone.usedFiles.AddRange(usedFiles);
+            clone.UsedFiles.AddRange(UsedFiles);
             clone.CurrentFrame = CurrentFrame;
             clone.InputCurrentFrame = InputCurrentFrame;
             clone.SavedChecksum = clone.Checksum();
@@ -245,7 +225,7 @@ namespace TAS.Input {
                     result.AppendLine(currentInput.ToActionsString());
 
                     if (Commands.GetValueOrDefault(checkInputFrame) is { } commands) {
-                        foreach (Command command in commands) {
+                        foreach (Command command in commands.Where(command => command.Attribute.SavestateChecksum)) {
                             result.Append(command.LineText);
                         }
                     }
