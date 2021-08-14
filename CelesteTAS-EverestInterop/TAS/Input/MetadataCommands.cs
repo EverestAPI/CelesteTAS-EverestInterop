@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using TAS.Communication;
@@ -58,10 +57,9 @@ namespace TAS.Input {
         public static void UpdateRecordCount(InputController inputController) {
             string tasFilePath = InputController.TasFilePath;
             IEnumerable<Command> recordCountCommands = inputController.Commands.SelectMany(pair => pair.Value)
-                .Where(command => command.IsName("RecordCount") || command.IsName("RecordCount:") &&
+                .Where(command => (command.IsName("RecordCount") || command.IsName("RecordCount:")) &&
                     command.FilePath == tasFilePath &&
-                    command.Args.Length > 0 &&
-                    int.TryParse(command.Args[0], out int _))
+                    int.TryParse(command.Args.FirstOrDefault() ?? "0", out int _))
                 .ToList();
             if (recordCountCommands.IsEmpty()) {
                 return;
@@ -71,7 +69,8 @@ namespace TAS.Input {
             string[] allLines = File.ReadAllLines(tasFilePath);
             foreach (Command command in recordCountCommands) {
                 int lineNumber = command.LineNumber;
-                allLines[lineNumber] = "RecordCount: " + (int.Parse(command.Args[0]) + 1);
+                int recordCount = int.Parse(command.Args.FirstOrDefault() ?? "0");
+                allLines[lineNumber] = "RecordCount: " + (recordCount + 1);
                 recordCountLines[lineNumber] = allLines[lineNumber];
             }
 
