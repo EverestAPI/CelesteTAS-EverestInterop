@@ -1064,10 +1064,6 @@ namespace CelesteStudio {
             InsertConsoleLoadCommand();
         }
 
-        private void insertRecordCountToolStripMenuItem_Click(object sender, EventArgs e) {
-            InsertNewLine("RecordCount: 1");
-        }
-
         private void enforceLegalToolStripMenuItem_Click(object sender, EventArgs e) {
             InsertNewLine("EnforceLegal");
         }
@@ -1114,6 +1110,22 @@ namespace CelesteStudio {
 
         private void finishExportLibTASToolStripMenuItem_Click(object sender, EventArgs e) {
             InsertNewLine("FinishExportLibTAS");
+        }
+
+        private void recordCountToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertNewLine("RecordCount: 1");
+        }
+
+        private void fileTimeToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertNewLine("FileTime:");
+        }
+
+        private void chapterTimeToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertNewLine("ChapterTime:");
+        }
+
+        private void roomNameToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertNewLine("RoomName:");
         }
 
         private void copyGamerDataMenuItem_Click(object sender, EventArgs e) {

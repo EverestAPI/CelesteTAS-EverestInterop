@@ -20,6 +20,7 @@ namespace TAS {
             {typeof(GameInfo).GetFieldInfo("StatusWithoutTime"), null},
             {typeof(GameInfo).GetFieldInfo("LevelName"), null},
             {typeof(GameInfo).GetFieldInfo("ChapterTime"), null},
+            {typeof(GameInfo).GetFieldInfo("FileTime"), null},
             {typeof(GameInfo).GetFieldInfo("LastVel"), null},
             {typeof(GameInfo).GetFieldInfo("LastPlayerSeekerVel"), null},
             {typeof(GameInfo).GetFieldInfo("InspectingInfo"), null},

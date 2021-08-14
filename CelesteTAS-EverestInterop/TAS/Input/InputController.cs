@@ -79,7 +79,7 @@ namespace TAS.Input {
                     if (ReadFile(TasFilePath)) {
                         LibTasHelper.FinishExport();
                         if (needsReload) {
-                            InputCommands.UpdateRecordCount(this);
+                            MetadataCommands.UpdateRecordCount(this);
                         }
 
                         break;

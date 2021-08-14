@@ -11,28 +11,25 @@ namespace CelesteStudio.RichText {
         public static readonly Regex BreakPointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
         public static readonly Regex InputRecordRegex = new(@"^( {3}\d| {2}\d{2}| \d{3}|\d{4})", RegexOptions.Compiled);
 
-        public readonly Style AquaStyle = new TextStyle(Brushes.Aqua, null, FontStyle.Regular);
-
-        public readonly Style BlueBoldStyle = new TextStyle(Brushes.Blue, null, FontStyle.Bold);
-
-        //styles
-        public readonly Style BlueStyle = new TextStyle(Brushes.Blue, null, FontStyle.Regular);
-        public readonly Style BoldStyle = new TextStyle(null, null, FontStyle.Bold);
-        public readonly Style BrownStyle = new TextStyle(Brushes.Brown, null, FontStyle.Regular);
-        public readonly Style ChocolateBgStyle = new TextStyle(Brushes.White, Brushes.Chocolate, FontStyle.Regular);
-        public readonly Style ChocolateStyle = new TextStyle(Brushes.Chocolate, null, FontStyle.Regular);
-
         readonly Dictionary<string, SyntaxDescriptor> descByXMLfileNames = new();
-        public readonly Style GoldenrodBgStyle = new TextStyle(Brushes.White, Brushes.Goldenrod, FontStyle.Regular);
-        public readonly Style GrayStyle = new TextStyle(Brushes.Gray, null, FontStyle.Regular);
-        public readonly Style GreenStyle = new TextStyle(Brushes.Green, null, FontStyle.Regular);
-        public readonly Style MagentaStyle = new TextStyle(Brushes.Magenta, null, FontStyle.Regular);
-        public readonly Style MaroonStyle = new TextStyle(Brushes.Maroon, null, FontStyle.Regular);
-        public readonly Style OrangeStyle = new TextStyle(Brushes.Orange, null, FontStyle.Regular);
-        public readonly Style PinkStyle = new TextStyle(new SolidBrush(Color.FromArgb(255, 0, 255)), null, FontStyle.Regular);
-        public readonly Style RedBgStyle = new TextStyle(Brushes.White, new SolidBrush(Color.FromArgb(224, 64, 64)), FontStyle.Regular);
-        public readonly Style RedStyle = new TextStyle(Brushes.Red, null, FontStyle.Regular);
-        public readonly Style SteelBlueBgStyle = new TextStyle(Brushes.White, Brushes.SteelBlue, FontStyle.Regular);
+
+        public static readonly Style AquaStyle = new TextStyle(Brushes.Aqua, null, FontStyle.Regular);
+        public static readonly Style BlueBoldStyle = new TextStyle(Brushes.Blue, null, FontStyle.Bold);
+        //styles
+        public static readonly Style BlueStyle = new TextStyle(Brushes.Blue, null, FontStyle.Regular);
+        public static readonly Style BoldStyle = new TextStyle(null, null, FontStyle.Bold);
+        public static readonly Style BrownStyle = new TextStyle(Brushes.Brown, null, FontStyle.Regular);
+        public static readonly Style ChocolateStyle = new TextStyle(Brushes.Chocolate, null, FontStyle.Regular);
+        public static readonly Style GoldenrodBgStyle = new TextStyle(Brushes.White, Brushes.Goldenrod, FontStyle.Regular);
+        public static readonly Style GrayStyle = new TextStyle(Brushes.Gray, null, FontStyle.Regular);
+        public static readonly Style GreenStyle = new TextStyle(Brushes.Green, null, FontStyle.Regular);
+        public static readonly Style MagentaStyle = new TextStyle(Brushes.Magenta, null, FontStyle.Regular);
+        public static readonly Style MaroonStyle = new TextStyle(Brushes.Maroon, null, FontStyle.Regular);
+        public static readonly Style OrangeStyle = new TextStyle(Brushes.Orange, null, FontStyle.Regular);
+        public static readonly Style PinkStyle = new TextStyle(new SolidBrush(Color.FromArgb(255, 0, 255)), null, FontStyle.Regular);
+        public static readonly Style RedBgStyle = new TextStyle(Brushes.White, new SolidBrush(Color.FromArgb(224, 64, 64)), FontStyle.Regular);
+        public static readonly Style RedStyle = new TextStyle(Brushes.Red, null, FontStyle.Regular);
+        public static readonly Style SteelBlueBgStyle = new TextStyle(Brushes.White, Brushes.SteelBlue, FontStyle.Regular);
 
         public static RegexOptions RegexCompiledOption {
             get {
@@ -239,7 +236,7 @@ namespace CelesteStudio.RichText {
             tb.RightBracket2 = '\x0';
             //clear style of changed range
             range.ClearStyle(GrayStyle, GreenStyle, RedStyle, BlueStyle, PinkStyle,
-                RedBgStyle, ChocolateStyle, ChocolateBgStyle, SteelBlueBgStyle, GoldenrodBgStyle);
+                RedBgStyle, ChocolateStyle, SteelBlueBgStyle, GoldenrodBgStyle);
 
             int start = range.Start.iLine;
             int end = range.End.iLine;

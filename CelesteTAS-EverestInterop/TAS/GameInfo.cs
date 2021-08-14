@@ -43,6 +43,7 @@ namespace TAS {
         public static string StatusWithoutTime = string.Empty;
         public static string LevelName = string.Empty;
         public static string ChapterTime = string.Empty;
+        public static string FileTime = string.Empty;
         public static string LastVel = string.Empty;
         public static string LastPlayerSeekerVel = string.Empty;
         public static string InspectingInfo = string.Empty;
@@ -363,6 +364,7 @@ namespace TAS {
 
                 LevelName = level.Session.Level;
                 ChapterTime = GetChapterTime(level);
+                FileTime = GetFileTime();
 
                 Status = StatusWithoutTime + $"[{LevelName}] Timer: {ChapterTime}";
 
@@ -373,6 +375,7 @@ namespace TAS {
             } else {
                 LevelName = string.Empty;
                 ChapterTime = string.Empty;
+                FileTime = string.Empty;
                 InspectingInfo = string.Empty;
                 CustomInfo = string.Empty;
                 if (Engine.Scene is SummitVignette summit) {
@@ -441,7 +444,18 @@ namespace TAS {
 
         private static string GetChapterTime(Level level) {
             long chapterTime = level.Session.Time;
-            return $"{TimeSpan.FromTicks(level.Session.Time).ShortGameplayFormat()}({chapterTime / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks})";
+            return $"{TimeSpan.FromTicks(level.Session.Time).ShortGameplayFormat()}({ConvertMicroSecondToFrames(chapterTime)})";
+        }
+        
+        private static string GetFileTime() {
+            TimeSpan timeSpan = TimeSpan.FromTicks(SaveData.Instance.Time);
+            int hours = (int)timeSpan.TotalHours;
+            string formattedFileTime = hours + timeSpan.ToString("\\:mm\\:ss\\.fff");
+            return $"{formattedFileTime}";
+        }
+
+        private static long ConvertMicroSecondToFrames(long time) {
+            return time / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks;
         }
 
         private static void BeginExport(string path, string[] tracked) {

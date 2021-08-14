@@ -106,12 +106,10 @@ namespace CelesteStudio.Communication {
                     line.Clear();
                     if (lineText.Length > 0) {
                         line.AddRange(lineText.ToCharArray().Select(c => new Char(c)));
+                        Range range = new(tasText, 0, lineNumber, line.Count, lineNumber);
+                        range.SetStyle(SyntaxHighlighter.ChocolateStyle);
                     }
                 }
-            }
-
-            if (updateLines.Count > 0) {
-                tasText.UpdateHighlighting();
             }
         }
     }

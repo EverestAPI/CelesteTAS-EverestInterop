@@ -7,7 +7,6 @@ using System.Text.RegularExpressions;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
-using TAS.Communication;
 using TAS.Utils;
 
 // ReSharper disable UnusedMember.Local
@@ -186,40 +185,6 @@ namespace TAS.Input {
                 GunInputCursorPosition.Value.SetValue(null, pos);
                 GunlineGunshot.Value.Invoke(null, new object[] {player, pos, Facings.Left});
             }
-        }
-
-        [TasCommand(Name = "RecordCount", SavestateChecksum = false)]
-        [TasCommand(Name = "RecordCount:", SavestateChecksum = false)]
-        private static void RecordCountCommand(string[] args) {
-            // dummy
-        }
-
-        public static void UpdateRecordCount(InputController inputController) {
-            string tasFilePath = InputController.TasFilePath;
-            IEnumerable<Command> recordCountCommands = inputController.Commands.SelectMany(pair => pair.Value)
-                .Where(command => command.IsName("RecordCount") || command.IsName("RecordCount:") &&
-                                  command.FilePath == tasFilePath &&
-                                  command.Args.Length > 0 &&
-                                  int.TryParse(command.Args[0], out int _))
-                .ToList();
-            if (recordCountCommands.IsEmpty()) {
-                return;
-            }
-
-            Dictionary<int, string> recordCountLines = new();
-            string[] allLines = File.ReadAllLines(tasFilePath);
-            foreach (Command command in recordCountCommands) {
-                int lineNumber = command.LineNumber;
-                allLines[lineNumber] = "RecordCount: " + (int.Parse(command.Args[0]) + 1);
-                recordCountLines[lineNumber] = allLines[lineNumber];
-            }
-
-            File.WriteAllLines(tasFilePath, allLines);
-            if (inputController.UsedFiles.ContainsKey(tasFilePath)) {
-                inputController.UsedFiles[tasFilePath] = File.GetLastWriteTime(tasFilePath);
-            }
-
-            StudioCommunicationClient.Instance?.UpdateLines(recordCountLines);
         }
     }
 }
