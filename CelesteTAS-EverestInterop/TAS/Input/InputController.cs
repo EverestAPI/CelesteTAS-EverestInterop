@@ -4,10 +4,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using Monocle;
 using MonoMod.Utils;
-using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.Utils;
 
@@ -46,7 +44,7 @@ namespace TAS.Input {
         public InputFrame Next => Inputs.GetValueOrDefault(CurrentFrame + 1);
         public FastForward CurrentFastForward => FastForwards.GetValueOrDefault(CurrentFrame);
         public List<Command> CurrentCommands => Commands.GetValueOrDefault(CurrentFrame);
-        private bool NeedsReload => UsedFiles.IsNotEmpty() && UsedFiles.Any(file => File.GetLastWriteTime(file.Key) != file.Value);
+        private bool NeedsReload => UsedFiles.Any(file => File.GetLastWriteTime(file.Key) != file.Value);
         public bool CanPlayback => CurrentFrame < Inputs.Count;
         public bool NeedsToWait => Manager.IsLoading();
 

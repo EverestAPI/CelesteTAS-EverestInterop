@@ -288,9 +288,17 @@ namespace TAS.Utils {
         public static bool IsEmpty<T>(this IEnumerable<T> enumerable) {
             return !enumerable.Any();
         }
+        
+        public static bool IsNullOrEmpty<T>(this IEnumerable<T> enumerable) {
+            return enumerable == null || !enumerable.Any();
+        }
 
         public static bool IsNotEmpty<T>(this IEnumerable<T> enumerable) {
             return !enumerable.IsEmpty();
+        }
+        
+        public static bool IsNotNullOrEmpty<T>(this IEnumerable<T> enumerable) {
+            return !enumerable.IsNullOrEmpty();
         }
 
         public static IEnumerable<T> SkipLast<T>(this IEnumerable<T> source, int n = 1) {

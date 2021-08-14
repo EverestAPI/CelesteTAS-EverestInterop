@@ -111,7 +111,6 @@ namespace CelesteStudio {
             this.recordCountToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.fileTimeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.chapterTimeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.roomNameToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator6 = new System.Windows.Forms.ToolStripSeparator();
             this.swapDashKeysStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.swapJumpKeysToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -589,7 +588,7 @@ namespace CelesteStudio {
             // 
             // insertOtherCommandToolStripMenuItem
             // 
-            this.insertOtherCommandToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.enforceLegalToolStripMenuItem, this.unsafeToolStripMenuItem, this.readToolStripMenuItem, this.playToolStripMenuItem, this.setToolStripMenuItem, this.toolStripSeparator3, this.analogueModeToolStripMenuItem, this.toolStripSeparator4, this.startExportToolStripMenuItem, this.finishExportToolStripMenuItem, this.toolStripSeparator5, this.addToolStripMenuItem, this.skipToolStripMenuItem, this.startExportLibTASToolStripMenuItem, this.finishExportLibTASToolStripMenuItem, this.toolStripSeparator13, this.recordCountToolStripMenuItem, this.fileTimeToolStripMenuItem, this.chapterTimeToolStripMenuItem, this.roomNameToolStripMenuItem});
+            this.insertOtherCommandToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.enforceLegalToolStripMenuItem, this.unsafeToolStripMenuItem, this.readToolStripMenuItem, this.playToolStripMenuItem, this.setToolStripMenuItem, this.toolStripSeparator3, this.analogueModeToolStripMenuItem, this.toolStripSeparator4, this.startExportToolStripMenuItem, this.finishExportToolStripMenuItem, this.toolStripSeparator5, this.addToolStripMenuItem, this.skipToolStripMenuItem, this.startExportLibTASToolStripMenuItem, this.finishExportLibTASToolStripMenuItem, this.toolStripSeparator13, this.recordCountToolStripMenuItem, this.fileTimeToolStripMenuItem, this.chapterTimeToolStripMenuItem});
             this.insertOtherCommandToolStripMenuItem.Name = "insertOtherCommandToolStripMenuItem";
             this.insertOtherCommandToolStripMenuItem.Size = new System.Drawing.Size(515, 24);
             this.insertOtherCommandToolStripMenuItem.Text = "Insert Other Command";
@@ -728,13 +727,6 @@ namespace CelesteStudio {
             this.chapterTimeToolStripMenuItem.Size = new System.Drawing.Size(218, 24);
             this.chapterTimeToolStripMenuItem.Text = "Chapter Time";
             this.chapterTimeToolStripMenuItem.Click += new System.EventHandler(this.chapterTimeToolStripMenuItem_Click);
-            // 
-            // roomNameToolStripMenuItem
-            // 
-            this.roomNameToolStripMenuItem.Name = "roomNameToolStripMenuItem";
-            this.roomNameToolStripMenuItem.Size = new System.Drawing.Size(218, 24);
-            this.roomNameToolStripMenuItem.Text = "Room Name";
-            this.roomNameToolStripMenuItem.Click += new System.EventHandler(this.roomNameToolStripMenuItem_Click);
             // 
             // toolStripSeparator6
             // 
@@ -875,7 +867,6 @@ namespace CelesteStudio {
         private System.Windows.Forms.ToolStripMenuItem recordCountToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem fileTimeToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem chapterTimeToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem roomNameToolStripMenuItem;
 
         private System.Windows.Forms.ToolStripMenuItem inspectEntityInfoToolStripMenuItem;
 

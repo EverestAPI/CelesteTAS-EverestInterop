@@ -225,8 +225,6 @@ namespace TAS {
             State = State.None;
             NextState = State.None;
             
-            Controller.Stop();
-            
             Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = kbTextInput;
 
             EnforceLegal = false;
@@ -240,6 +238,7 @@ namespace TAS {
             GameInfo.EndExport();
             Hotkeys.ReleaseAllKeys();
             AttributeUtils.Invoke<DisableRunAttribute>();
+            Controller.Stop();
         }
 
         public static void EnableExternal() => EnableRun();

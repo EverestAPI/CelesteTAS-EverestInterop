@@ -20,7 +20,6 @@ namespace TAS {
             {typeof(GameInfo).GetFieldInfo("StatusWithoutTime"), null},
             {typeof(GameInfo).GetFieldInfo("LevelName"), null},
             {typeof(GameInfo).GetFieldInfo("ChapterTime"), null},
-            {typeof(GameInfo).GetFieldInfo("FileTime"), null},
             {typeof(GameInfo).GetFieldInfo("LastVel"), null},
             {typeof(GameInfo).GetFieldInfo("LastPlayerSeekerVel"), null},
             {typeof(GameInfo).GetFieldInfo("InspectingInfo"), null},
@@ -50,7 +49,7 @@ namespace TAS {
         private static bool BreakpointHasBeenDeleted =>
             IsSaved() && savedByBreakpoint && Controller.FastForwards.GetValueOrDefault(SavedCurrentFrame)?.SaveState != true;
 
-        private static bool IsSaved() {
+        public static bool IsSaved() {
             return StateManager.Instance.IsSaved && StateManager.Instance.SavedByTas && savedController != null;
         }
 

@@ -1124,10 +1124,6 @@ namespace CelesteStudio {
             InsertNewLine("ChapterTime:");
         }
 
-        private void roomNameToolStripMenuItem_Click(object sender, EventArgs e) {
-            InsertNewLine("RoomName:");
-        }
-
         private void copyGamerDataMenuItem_Click(object sender, EventArgs e) {
             CopyGameInfo();
         }

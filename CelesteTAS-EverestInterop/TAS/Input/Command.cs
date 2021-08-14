@@ -1,4 +1,5 @@
 using System;
+using TAS.Utils;
 
 namespace TAS.Input {
     public record Command {
@@ -20,9 +21,5 @@ namespace TAS.Input {
         }
 
         public void Invoke() => commandCall?.Invoke();
-
-        public bool IsName(string name) {
-            return Attribute.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase);
-        }
     }
 }

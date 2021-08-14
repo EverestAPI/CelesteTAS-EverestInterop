@@ -12,7 +12,17 @@ namespace TAS.Input {
         public bool ExecuteAtStart;
         public bool LegalInMainGame = true;
         public string Name;
+        public string[] AliasNames;
         public bool SavestateChecksum = true;
+
+        public bool IsName(string name) {
+            bool result = Name.Equals(name, StringComparison.InvariantCultureIgnoreCase);
+            if (AliasNames.IsNullOrEmpty()) {
+                return result;
+            } else {
+                return result || AliasNames.Any(aliasName => aliasName.Equals(name, StringComparison.InvariantCultureIgnoreCase));
+            }
+        }
 
         public static void CollectMethods() {
             MethodInfos.Clear();
@@ -27,8 +37,8 @@ namespace TAS.Input {
             }
         }
 
-        public static KeyValuePair<TasCommandAttribute, MethodInfo> FindMethod(string commandType) {
-            return MethodInfos.FirstOrDefault(pair => pair.Key.Name.Equals(commandType, StringComparison.InvariantCultureIgnoreCase));
+        public static KeyValuePair<TasCommandAttribute, MethodInfo> FindMethod(string commandName) {
+            return MethodInfos.FirstOrDefault(pair => pair.Key.IsName(commandName));
         }
     }
 }
