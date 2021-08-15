@@ -76,6 +76,7 @@ namespace TAS.EverestInterop {
             if (firstLoad) {
                 TasCommandAttribute.CollectMethods();
                 InfoCustom.CollectAllTypeInfo();
+                SimplifiedGraphicsFeature.OnLoadContent();
             }
         }
 

@@ -39,7 +39,6 @@ namespace TAS.Input {
             }
         }
 
-
         [TasCommand(Name = "RecordCount", AliasNames = new[] {"RecordCount:"}, SavestateChecksum = false)]
         private static void RecordCountCommand(string[] args) {
             // dummy

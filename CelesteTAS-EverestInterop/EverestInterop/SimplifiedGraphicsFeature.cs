@@ -111,6 +111,16 @@ namespace TAS.EverestInterop {
             });
         }
 
+        public static void OnLoadContent() {
+            if (Type.GetType("FrostHelper.CustomSpinner, FrostTempleHelper") is { } customSpinnerType) {
+                IlHooks.Add(new ILHook(customSpinnerType.GetConstructors()[0], ModCustomSpinnerColor));
+            }
+
+            if (Type.GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController, MaxHelpingHand") is { } rainbowSpinnerType) {
+                IlHooks.Add(new ILHook(rainbowSpinnerType.GetConstructors()[0], ModRainbowSpinnerColor));
+            }
+        }
+
         public static void Load() {
             // Optional: Various graphical simplifications to cut down on visual noise.
             On.Celeste.Level.Update += Level_Update;
@@ -134,14 +144,6 @@ namespace TAS.EverestInterop {
             On.Celeste.SummitCloud.Render += SummitCloudOnRender;
             On.Celeste.SpotlightWipe.Render += SpotlightWipeOnRender;
             On.Celeste.ReflectionTentacles.Render += ReflectionTentacles_Render;
-
-            if (Type.GetType("FrostHelper.CustomSpinner, FrostTempleHelper") is { } customSpinnerType) {
-                IlHooks.Add(new ILHook(customSpinnerType.GetConstructors()[0], ModCustomSpinnerColor));
-            }
-
-            if (Type.GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController, MaxHelpingHand") is { } rainbowSpinnerType) {
-                IlHooks.Add(new ILHook(rainbowSpinnerType.GetConstructors()[0], ModRainbowSpinnerColor));
-            }
         }
 
         public static void Unload() {
@@ -433,23 +435,36 @@ namespace TAS.EverestInterop {
         }
 
         private static void ModRainbowSpinnerColor(ILContext il) {
+            void ResetColors(Color[] colorArray, Color simpleColor) {
+                for (int i = 0; i < colorArray.Length; i++) {
+                    colorArray[i] = simpleColor;
+                }
+            }
+
             ILCursor ilCursor = new(il);
             if (Type.GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController, MaxHelpingHand") is { } rainbowSpinnerType &&
-                ilCursor.TryGotoNext(
-                    i => i.MatchLdstr("gradientSize")
-                )) {
-                ilCursor.Emit(OpCodes.Ldarg_0)
-                    .Emit(OpCodes.Ldfld, rainbowSpinnerType.GetField("colors", BindingFlags.Instance | BindingFlags.NonPublic));
-                ilCursor.EmitDelegate<Action<Color[]>>(colors => {
-                    if (!Settings.SimplifiedGraphics || Settings.SimplifiedSpinnerColor.Value == null) {
-                        return;
-                    }
+                rainbowSpinnerType.GetFieldInfo("colors") is { } colorsFieldInfo) {
+                while (ilCursor.TryGotoNext(i => i.MatchRet())) {
+                    ilCursor.Emit(OpCodes.Ldarg_0).Emit(OpCodes.Ldfld, colorsFieldInfo);
+                    ilCursor.EmitDelegate<Action<object>>(colors => {
+                        if (!Settings.SimplifiedGraphics || Settings.SimplifiedSpinnerColor.Value == null) {
+                            return;
+                        }
 
-                    Color simpleColor = Calc.HexToColor(Settings.SimplifiedSpinnerColor.Value);
-                    for (int i = 0; i < colors.Length; i++) {
-                        colors[i] = simpleColor;
-                    }
-                });
+                        Color simpleColor = Calc.HexToColor(Settings.SimplifiedSpinnerColor.Value);
+
+                        switch (colors) {
+                            case Color[] colorArray:
+                                ResetColors(colorArray, simpleColor);
+                                break;
+                            case Tuple<Color[], Color[]> tupleColors:
+                                ResetColors(tupleColors.Item1, simpleColor);
+                                ResetColors(tupleColors.Item2, simpleColor);
+                                break;
+                        }
+                    });
+                    ilCursor.Index++;
+                }
             }
         }
 
