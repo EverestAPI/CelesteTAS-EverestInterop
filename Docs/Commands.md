@@ -82,12 +82,12 @@
 - This is used at the start of fullgame files.
 - It prevents the use of commands which would not be legal in a run.
   
-### StartExport and FinishExport
-- `StartExport (Optional File Path) (Optional Entities)`
+### StartExportGameInfo and FinishExportGameInfo
+- `StartExportGameInfo (Optional File Path) (Optional Entities)`
 - `FinishExport`
 - Dumps data to a file, which can be used to analyze desyncs.
 - Default filepath is dump.txt
-- Keeps track of any additional entities specified - e.g. `StartExport holdables.txt TheoCrystal Glider FrostHelper.CustomSpinner@FrostTempleHelper` will keep track of Theo, Jellyfish, and custom spinners from the FrostHelper mod. You can get the name of the entity by opening the console and clicking on it, the entity name will be displayed in the top left corner and output to log.txt.
+- Keeps track of any additional entities specified - e.g. `StartExportGameInfo additional.txt TheoCrystal Glider FrostHelper.CustomSpinner@FrostTempleHelper` will keep track of Theo, Jellyfish, and custom spinners from the FrostHelper mod. You can get the name of the entity by opening the console and clicking on it, the entity name will be displayed in the top left corner and output to log.txt.
 
 ### AnalogueMode
 - `AnalogueMode, (Type)`

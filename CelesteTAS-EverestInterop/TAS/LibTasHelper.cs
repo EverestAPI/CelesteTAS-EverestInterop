@@ -7,18 +7,18 @@ namespace TAS {
         private static StreamWriter streamWriter;
         private static InputFrame skipInputFrame;
         private static string fileName;
-        private static bool exportLibTas;
+        private static bool exporting;
 
         private static void StartExport(string path) {
             FinishExport();
             streamWriter = new StreamWriter(path, false, Encoding.ASCII, 1 << 20);
             fileName = path;
             skipInputFrame = null;
-            exportLibTas = true;
+            exporting = true;
         }
 
         public static void RestartExport() {
-            if (exportLibTas) {
+            if (exporting) {
                 StartExport(fileName);
             }
         }
@@ -28,11 +28,11 @@ namespace TAS {
             streamWriter?.Dispose();
             streamWriter = null;
             skipInputFrame = null;
-            exportLibTas = false;
+            exporting = false;
         }
 
         public static void WriteLibTasFrame(InputFrame inputFrame) {
-            if (!exportLibTas || inputFrame == skipInputFrame) {
+            if (!exporting || inputFrame == skipInputFrame) {
                 return;
             }
 
@@ -44,7 +44,7 @@ namespace TAS {
         }
 
         private static void AddInputFrame(string inputText) {
-            if (!exportLibTas) {
+            if (!exporting) {
                 return;
             }
 
@@ -54,7 +54,7 @@ namespace TAS {
         }
 
         private static void SkipNextInput() {
-            if (exportLibTas) {
+            if (exporting) {
                 skipInputFrame = Manager.Controller.Current;
             }
         }

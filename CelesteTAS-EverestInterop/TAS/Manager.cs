@@ -224,7 +224,7 @@ namespace TAS {
             Recording = false;
             State = State.None;
             NextState = State.None;
-            
+
             Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = kbTextInput;
 
             EnforceLegal = false;
@@ -235,8 +235,6 @@ namespace TAS {
                 gamePadData.CurrentState = new GamePadState();
             }
 
-            GameInfo.EndExport();
-            Hotkeys.ReleaseAllKeys();
             AttributeUtils.Invoke<DisableRunAttribute>();
             Controller.Stop();
         }

@@ -24,7 +24,7 @@ namespace TAS.Input {
 
         [EnableRun]
         private static void StartFileTime() {
-            tasStartFileTime = Savestates.IsSaved() ? null : SaveData.Instance.Time;
+            tasStartFileTime = Savestates.IsSaved() ? null : SaveData.Instance?.Time;
         }
 
         [DisableRun]
@@ -58,6 +58,7 @@ namespace TAS.Input {
             if (!Manager.Running || !level.Session.StartedFromBeginning) {
                 return;
             }
+
             UpdateAllMetadata(
                 Manager.Controller,
                 command => command.Attribute.IsName("ChapterTime") && command.FilePath == InputController.TasFilePath,

@@ -112,9 +112,7 @@ namespace TAS.Input {
                 return;
             }
 
-            if (GameInfo.ExportSyncData) {
-                GameInfo.ExportPlayerInfo();
-            }
+            ExportGameInfo.ExportInfo();
 
             Manager.SetInputs(Current);
 

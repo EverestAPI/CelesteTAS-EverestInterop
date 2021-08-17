@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
@@ -1089,11 +1089,11 @@ namespace CelesteStudio {
         }
 
         private void startExportToolStripMenuItem_Click(object sender, EventArgs e) {
-            InsertNewLine("StartExport (Path) (Entities)");
+            InsertNewLine("StartExportGameInfo (Path) (Entities)");
         }
 
         private void finishExportToolStripMenuItem_Click(object sender, EventArgs e) {
-            InsertNewLine("FinishExport");
+            InsertNewLine("FinishExportGameInfo");
         }
 
         private void addToolStripMenuItem_Click(object sender, EventArgs e) {

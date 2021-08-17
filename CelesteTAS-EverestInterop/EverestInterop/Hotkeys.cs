@@ -195,7 +195,8 @@ namespace TAS.EverestInterop {
             }
         }
 
-        public static void ReleaseAllKeys() {
+        [DisableRun]
+        private static void ReleaseAllKeys() {
             foreach (Hotkey hotkey in HotkeyList) {
                 hotkey.OverridePressed = false;
             }

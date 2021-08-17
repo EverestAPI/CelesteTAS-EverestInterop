@@ -1,7 +1,5 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -21,8 +19,6 @@ using TAS.Utils;
 namespace TAS {
     public static class GameInfo {
         private static readonly FieldInfo SummitVignetteReadyFieldInfo = typeof(SummitVignette).GetFieldInfo("ready");
-        private static readonly MethodInfo EntityListFindAll = typeof(EntityList).GetMethod("FindAll");
-
         private static readonly DWallJumpCheck WallJumpCheck;
         private static readonly GetBerryFloat StrawberryCollectTimer;
         private static readonly GetFloat DashCooldownTimer;
@@ -51,9 +47,6 @@ namespace TAS {
         public static Vector2Double LastPlayerSeekerPos;
         public static float DashTime;
         public static bool Frozen;
-
-        private static StreamWriter sw;
-        private static IDictionary<string, Func<Level, IList>> trackedEntities;
 
         private static int transitionFrames;
 
@@ -127,8 +120,6 @@ namespace TAS {
         }
 
         private static int FramesPerSecond => (int) Math.Round(1 / Engine.RawDeltaTime);
-
-        public static bool ExportSyncData { get; private set; }
 
         [Load]
         private static void Load() {
@@ -385,6 +376,18 @@ namespace TAS {
             }
         }
 
+        public static float GetDashCooldownTimer(Player player) {
+            return DashCooldownTimer(player);
+        }
+
+        public static bool GetWallJumpCheck(Player player, int dir) {
+            return WallJumpCheck(player, dir);
+        }
+
+        public static float GetJumpGraceTimer(Player player) {
+            return JumpGraceTimer(player);
+        }
+
         private static int ToCeilingFrames(this float seconds) {
             return (int) Math.Ceiling(seconds / Engine.RawDeltaTime / Engine.TimeRateB);
         }
@@ -439,7 +442,7 @@ namespace TAS {
             return $"Vel:   {diff.ToSimpleString(CelesteTasModule.Settings.RoundVelocity)}";
         }
 
-        private static string GetChapterTime(Level level) {
+        public static string GetChapterTime(Level level) {
             return FormatTime(level.Session.Time);
         }
 
@@ -452,139 +455,12 @@ namespace TAS {
             return time / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks;
         }
 
-        private static void BeginExport(string path, string[] tracked) {
-            sw?.Dispose();
-            sw = new StreamWriter(path);
-            sw.WriteLine(string.Join("\t", "Line", "Inputs", "Frames", "Time", "Position", "Speed", "State", "Statuses", "Entities"));
-            trackedEntities = new Dictionary<string, Func<Level, IList>>();
-            foreach (string typeName in tracked) {
-                string fullTypeName = typeName.Contains("@") ? typeName.Replace("@", ",") : $"Celeste.{typeName}, Celeste";
-                Type t = Type.GetType(fullTypeName);
-                if (t != null && t.IsSameOrSubclassOf(typeof(Entity))) {
-                    trackedEntities[t.Name] = level => FindEntity(t, level);
-                }
-            }
-        }
-
-        private static IList FindEntity(Type type, Level level) {
-            if (level.Tracker.Entities.ContainsKey(type)) {
-                return level.Tracker.Entities[type];
-            } else {
-                return EntityListFindAll.MakeGenericMethod(type).Invoke(level.Entities, null) as IList;
-            }
-        }
-
-        public static void EndExport() {
-            ExportSyncData = false;
-            Engine.Scene.OnEndOfFrame += () => { sw?.Dispose(); };
-        }
-
-        public static void ExportPlayerInfo() {
-            Engine.Scene.OnEndOfFrame += () => {
-                InputController controller = Manager.Controller;
-                if (Engine.Scene is Level level) {
-                    Player player = level.Tracker.GetEntity<Player>();
-                    if (player == null) {
-                        return;
-                    }
-
-                    string time = GetChapterTime(level);
-                    string pos = player.ToSimplePositionString(CelesteTasModule.Settings.RoundPosition);
-                    string speed = player.Speed.X + ", " + player.Speed.Y;
-
-                    int dashCooldown = (int) (DashCooldownTimer(player));
-                    string statuses = (dashCooldown < 1 && player.Dashes > 0 ? "Dash " : string.Empty)
-                                      + (player.LoseShards ? "Ground " : string.Empty)
-                                      + (WallJumpCheck(player, 1) ? "Wall-R " : string.Empty)
-                                      + (WallJumpCheck(player, -1) ? "Wall-L " : string.Empty)
-                                      + (!player.LoseShards && JumpGraceTimer(player) > 0 ? "Coyote " : string.Empty);
-                    statuses = (player.InControl && !level.Transitioning ? statuses : "NoControl ")
-                               + (player.TimePaused ? "Paused " : string.Empty)
-                               + (level.InCutscene ? "Cutscene " : string.Empty)
-                               + (AdditionalStatusInfo ?? string.Empty);
-
-                    if (player.Holding == null) {
-                        foreach (Component component in level.Tracker.GetComponents<Holdable>()) {
-                            Holdable holdable = (Holdable) component;
-                            if (holdable.Check(player)) {
-                                statuses += "Grab ";
-                                break;
-                            }
-                        }
-                    }
-
-                    string output = string.Empty;
-                    if (controller.CurrentFrame > 0 && controller.Inputs.Count > 0) {
-                        output = string.Join("\t",
-                            controller.Previous.Line, controller.Previous, controller.CurrentFrame - 1, time, pos, speed,
-                            PlayerStates.GetStateName(player.StateMachine.State),
-                            statuses);
-                    }
-
-                    foreach (string typeName in trackedEntities.Keys) {
-                        IList entities = trackedEntities[typeName].Invoke(level);
-                        if (entities == null) {
-                            continue;
-                        }
-
-                        foreach (Entity entity in entities) {
-                            output += $"\t{typeName}: {entity.ToSimplePositionString(CelesteTasModule.Settings.RoundCustomInfo)}";
-                        }
-                    }
-
-                    if (InfoCustom.Parse(true) is { } customInfo && customInfo.IsNotEmpty()) {
-                        output += $"\t{customInfo.ReplaceLineBreak(" ")}";
-                    }
-
-                    if (InfoInspectEntity.GetInspectingEntitiesInfo("\t", true) is { } inspectInfo && inspectInfo.IsNotEmpty()) {
-                        output += $"\t{inspectInfo}";
-                    }
-
-                    sw.WriteLine(output);
-                } else {
-                    string inputs = controller.Current.ToString();
-                    if (inputs.Length > 1) {
-                        inputs = inputs.Substring(1);
-                    }
-
-                    string output = string.Join(" ", inputs, controller.CurrentFrame, Engine.Scene.GetType().Name);
-                    sw.WriteLine(output);
-                }
-            };
-        }
-
-        // ReSharper disable once UnusedMember.Local
-        // "StartExport",
-        // "StartExport Path",
-        // "StartExport EntitiesToTrack",
-        // "StartExport Path EntitiesToTrack"
-        [TasCommand(Name = "StartExport")]
-        private static void StartExportCommand(string[] args) {
-            string path = "dump.txt";
-            if (args.Length > 0) {
-                if (args[0].Contains(".")) {
-                    path = args[0];
-                    args = args.Skip(1).ToArray();
-                }
-            }
-
-            BeginExport(path, args);
-            ExportSyncData = true;
-        }
-
-        // ReSharper disable once UnusedMember.Local
-        [TasCommand(Name = "FinishExport")]
-        private static void FinishExportCommand(string[] args) {
-            EndExport();
-            ExportSyncData = false;
-        }
-
         //The things we do for faster replay times
         private delegate bool DWallJumpCheck(Player player, int dir);
 
-        private delegate float GetBerryFloat(Strawberry berry);
-
         private delegate float GetFloat(Player player);
+
+        private delegate float GetBerryFloat(Strawberry berry);
 
         private delegate Vector2 GetPlayerSeekerSpeed(PlayerSeeker playerSeeker);
 
