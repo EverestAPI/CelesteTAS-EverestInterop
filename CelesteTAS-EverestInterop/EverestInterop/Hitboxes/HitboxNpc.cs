@@ -37,6 +37,18 @@ namespace TAS.EverestInterop.Hitboxes {
                 } else if (entity is NPC03_Oshiro_Hallway1 or NPC03_Oshiro_Hallway2 or NPC06_Granny) {
                     float x = entity.X - 55;
                     Draw.Line(x, top, x, bottom, color);
+                } else if (entity is NPC04_Granny) {
+                    float x = entity.X - 35;
+                    Draw.Line(x, top, x, bottom, color);
+                } else if (entity is NPC05_Theo_Mirror) {
+                    float x = entity.X - 59;
+                    Draw.Line(x, top, x, bottom, color);
+                } else if (entity is NPC06_Badeline_Crying) {
+                    float x = entity.X - 27;
+                    Draw.Line(x, top, x, bottom, color);
+                } else if (entity is NPC09_Granny_Inside or NPC09_Granny_Outside) {
+                    float x = entity.X - 43;
+                    Draw.Line(x, top, x, bottom, color);
                 } else if (entity is NPC03_Theo_Escaping && levelName == "11-b") {
                     float x = 5477;
                     Draw.Line(x, top, x, bottom, color);
@@ -50,7 +62,7 @@ namespace TAS.EverestInterop.Hitboxes {
                     } else if (levelName == "c-01" && Npc05BadelineShadow.GetValue(entity) is BadelineDummy badelineDummy) {
                         Draw.Circle(badelineDummy.Position, 69, color, 4);
                         if (level.GetPlayer() is { } player) {
-                            Draw.Point(player.Position, Color.Aqua);
+                            Draw.Line(player.Position, badelineDummy.Position, Color.Aqua);
                         }
                     }
                 }
