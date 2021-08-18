@@ -289,11 +289,16 @@ namespace TAS.EverestInterop.InfoHUD {
             }
 
             List<string> values = GetAllSimpleFields(type, watchEntityType == WatchEntityTypes.DeclaredOnly).Select(info => {
-                object value = info switch {
-                    FieldInfo fieldInfo => fieldInfo.GetValue(entity),
-                    PropertyInfo propertyInfo => propertyInfo.GetValue(entity),
-                    _ => null
-                };
+                object value;
+                try {
+                    value = info switch {
+                        FieldInfo fieldInfo => fieldInfo.GetValue(entity),
+                        PropertyInfo propertyInfo => propertyInfo.GetValue(entity),
+                        _ => null
+                    };
+                } catch {
+                    value = string.Empty;
+                }
 
                 if (value is float floatValue) {
                     if (info.Name.EndsWith("Timer")) {
