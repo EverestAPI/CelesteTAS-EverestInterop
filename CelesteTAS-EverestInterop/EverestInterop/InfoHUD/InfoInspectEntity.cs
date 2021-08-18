@@ -63,10 +63,15 @@ namespace TAS.EverestInterop.InfoHUD {
             }
 
             if (mouseState.LeftButton == ButtonState.Pressed && lastMouseData.LeftButton == ButtonState.Released &&
-                FindClickedEntity(mouseState) is { } entity) {
+                !IsClickHud(mouseState) && FindClickedEntity(mouseState) is { } entity) {
                 InspectingEntity(entity);
                 PrintAllSimpleValues(entity);
             }
+        }
+
+        private static bool IsClickHud(MouseState mouseState) {
+            Rectangle rectangle = new((int) Settings.InfoPosition.X, (int) Settings.InfoPosition.Y, (int) InfoHud.Size.X, (int) InfoHud.Size.Y);
+            return rectangle.Contains(mouseState.X, mouseState.Y);
         }
 
         public static Entity FindClickedEntity(MouseState mouseState) {

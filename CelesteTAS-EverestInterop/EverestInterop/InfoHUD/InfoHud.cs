@@ -6,7 +6,6 @@ using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
-using MonoMod.RuntimeDetour;
 using TAS.Input;
 using TAS.Utils;
 
@@ -14,6 +13,7 @@ namespace TAS.EverestInterop.InfoHUD {
     public static class InfoHud {
         private static TextMenu.Item subMenuItem;
         private static CelesteTasModuleSettings TasSettings => CelesteTasModule.Settings;
+        public static Vector2 Size { get; private set; }
 
         public static void Load() {
             On.Celeste.Level.Render += LevelOnRender;
@@ -78,11 +78,11 @@ namespace TAS.EverestInterop.InfoHUD {
             float alpha = TasSettings.InfoOpacity / 10f;
             float infoAlpha = 1f;
 
-            Vector2 size = JetBrainsMonoFont.Measure(text) * fontSize;
-            size = InfoSubPixelIndicator.TryExpandSize(size, padding);
+            Size = JetBrainsMonoFont.Measure(text) * fontSize;
+            Size = InfoSubPixelIndicator.TryExpandSize(Size, padding);
 
-            float maxX = viewWidth - size.X - margin - padding * 2;
-            float maxY = viewHeight - size.Y - margin - padding * 2;
+            float maxX = viewWidth - Size.X - margin - padding * 2;
+            float maxY = viewHeight - Size.Y - margin - padding * 2;
             if (maxY > 0f) {
                 TasSettings.InfoPosition = TasSettings.InfoPosition.Clamp(margin, margin, maxX, maxY);
             }
@@ -90,14 +90,14 @@ namespace TAS.EverestInterop.InfoHUD {
             float x = TasSettings.InfoPosition.X;
             float y = TasSettings.InfoPosition.Y;
 
-            Rectangle bgRect = new((int) x, (int) y, (int) (size.X + padding * 2), (int) (size.Y + padding * 2));
+            Rectangle bgRect = new((int) x, (int) y, (int) (Size.X + padding * 2), (int) (Size.Y + padding * 2));
 
             if (level.GetPlayer() is { } player) {
                 Vector2 playerPosition = level.Camera.CameraToScreen(player.TopLeft) * pixelScale;
                 Rectangle playerRect = new((int) playerPosition.X, (int) playerPosition.Y, (int) (8 * pixelScale), (int) (11 * pixelScale));
                 Rectangle mirrorBgRect = bgRect;
                 if (SaveData.Instance?.Assists.MirrorMode == true) {
-                    mirrorBgRect.X = (int) Math.Abs(x - viewWidth + size.X + padding * 2);
+                    mirrorBgRect.X = (int) Math.Abs(x - viewWidth + Size.X + padding * 2);
                 }
 
                 if (level.Paused || playerRect.Intersects(mirrorBgRect)) {
