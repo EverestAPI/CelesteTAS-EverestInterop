@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using CelesteStudio.Communication;
 
 namespace CelesteStudio {
     public static class ErrorLog {
@@ -32,13 +33,18 @@ namespace CelesteStudio {
                 }
             }
 
-            stringBuilder.Append("Celeste Studio");
-
-            stringBuilder.AppendLine(" Error Log");
+            stringBuilder.AppendLine("Celeste Studio Error Log");
             stringBuilder.AppendLine(Marker);
             stringBuilder.AppendLine();
-            stringBuilder.Append("Ver ");
-            stringBuilder.AppendLine(Assembly.GetExecutingAssembly().GetName().Version.ToString(3));
+
+            stringBuilder.Append("Studio v");
+            stringBuilder.Append(Assembly.GetExecutingAssembly().GetName().Version.ToString(3));
+
+            if (CommunicationWrapper.StudioInfo?.ModVersion is { } modVersion && modVersion != string.Empty) {
+                stringBuilder.AppendLine($" & CelesteTAS v{modVersion}");
+            } else {
+                stringBuilder.AppendLine();
+            }
 
             stringBuilder.AppendLine(DateTime.Now.ToString());
             stringBuilder.AppendLine(str);

@@ -9,10 +9,11 @@
         public readonly int SaveStateLine;
         public readonly State TasState;
         public readonly int TotalFrames;
+        public readonly string ModVersion;
 
         public StudioInfo(
             int currentLine, string currentLineText, int currentFrame, int totalFrames, int saveStateLine, State tasState,
-            string gameInfo, string levelName, string chapterTime) {
+            string gameInfo, string levelName, string chapterTime, string modVersion) {
             CurrentLine = currentLine;
             CurrentLineText = currentLineText;
             CurrentFrame = currentFrame;
@@ -22,6 +23,7 @@
             GameInfo = gameInfo;
             LevelName = levelName;
             ChapterTime = chapterTime;
+            ModVersion = modVersion;
         }
 
         public byte[] ToByteArray() {
@@ -35,6 +37,7 @@
                 GameInfo,
                 LevelName,
                 ChapterTime,
+                ModVersion
             });
         }
 
@@ -49,7 +52,8 @@
                 (State) values[5],
                 values[6] as string,
                 values[7] as string,
-                values[8] as string
+                values[8] as string,
+                values[9] as string
             );
         }
     }

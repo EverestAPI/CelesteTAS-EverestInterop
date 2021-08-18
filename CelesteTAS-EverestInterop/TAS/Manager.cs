@@ -90,7 +90,8 @@ namespace TAS {
                 State,
                 GameInfo.StudioInfo,
                 GameInfo.LevelName,
-                GameInfo.ChapterTime
+                GameInfo.ChapterTime,
+                CelesteTasModule.Instance.Metadata.VersionString
             );
             StudioCommunicationClient.Instance?.SendState(studioInfo, !ShouldForceState);
         }

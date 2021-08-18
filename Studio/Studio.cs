@@ -104,6 +104,7 @@ namespace CelesteStudio {
 
             ErrorLog.Write(exception);
             ErrorLog.Open();
+            Application.Exit();
         }
 
         private static void RunSingleton(Action action) {
