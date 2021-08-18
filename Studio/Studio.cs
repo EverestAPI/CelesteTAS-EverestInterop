@@ -601,11 +601,11 @@ namespace CelesteStudio {
         }
 
         private void CopyGameInfo() {
-            if (string.IsNullOrEmpty(CommunicationWrapper.StudioInfo?.GameInfo)) {
+            if (string.IsNullOrEmpty(CommunicationWrapper.StudioInfo?.ExactGameInfo)) {
                 return;
             }
 
-            Clipboard.SetText(CommunicationWrapper.StudioInfo.GameInfo);
+            Clipboard.SetText(CommunicationWrapper.StudioInfo.ExactGameInfo);
         }
 
         private DialogResult ShowInputDialog(string title, ref string input) {

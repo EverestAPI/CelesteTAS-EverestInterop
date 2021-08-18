@@ -37,10 +37,14 @@ namespace TAS {
 
         public static string Status = string.Empty;
         public static string StatusWithoutTime = string.Empty;
+        public static string ExactStatus = string.Empty;
+        public static string ExactStatusWithoutTime = string.Empty;
         public static string LevelName = string.Empty;
         public static string ChapterTime = string.Empty;
         public static string LastVel = string.Empty;
+        public static string LastExactVel = string.Empty;
         public static string LastPlayerSeekerVel = string.Empty;
+        public static string LastPlayerSeekerExactVel = string.Empty;
         public static string WatchingInfo = string.Empty;
         public static string CustomInfo = string.Empty;
         public static Vector2Double LastPos;
@@ -85,9 +89,8 @@ namespace TAS {
 
         private static CelesteTasModuleSettings TasSettings => CelesteTasModule.Settings;
 
-        public static string StudioInfo {
-            get {
-                List<string> infos = new() {Status};
+        public static string GetStudioInfo(bool exact) {
+                List<string> infos = new() {exact ? ExactStatus : Status};
                 if ((TasSettings.InfoCustom & HudOptions.StudioOnly) != 0 && CustomInfo.IsNotNullOrWhiteSpace()) {
                     infos.Add(CustomInfo);
                 }
@@ -97,7 +100,6 @@ namespace TAS {
                 }
 
                 return string.Join("\n\n", infos);
-            }
         }
 
         public static string HudInfo {
@@ -205,15 +207,16 @@ namespace TAS {
             if (Engine.Scene is Level level) {
                 Player player = level.Tracker.GetEntity<Player>();
                 if (player != null) {
-                    StringBuilder stringBuilder = new();
-                    string pos = GetAdjustedPos(player.Position, player.PositionRemainder);
-                    string speed = GetAdjustedSpeed(player.Speed);
+                    string pos = GetAdjustedPos(player.Position, player.PositionRemainder, out string exactPos);
+                    string speed = GetAdjustedSpeed(player.Speed, out string exactSpeed);
                     Vector2Double diff = (player.GetMoreExactPosition() - LastPos) * FramesPerSecond;
-                    string velocity = GetAdjustedVelocity(diff);
+                    string velocity = GetAdjustedVelocity(diff, out string exactVelocity);
                     if (!Frozen && updateVel) {
                         LastVel = velocity;
+                        LastExactVel = exactVelocity;
                     } else {
                         velocity = LastVel;
+                        exactVelocity = LastExactVel;
                     }
 
                     string polarVel = $"Fly:   {diff.Length():F2}, {diff.Angle():F5}°";
@@ -225,11 +228,7 @@ namespace TAS {
                             $"Analog: {angleVector2.X:F5}, {angleVector2.Y:F5}, {Manager.GetAngle(new Vector2(angleVector2.X, -angleVector2.Y)):F5}°";
                     }
 
-                    string retainedSpeed = string.Empty;
-                    if (PlayerRetainedSpeedTimer(player) is float retainedSpeedTimer and > 0f) {
-                        retainedSpeed =
-                            $"Retained: {PlayerRetainedSpeed(player).ToString(TasSettings.RoundSpeed ? "F2" : "F12")} ({retainedSpeedTimer.ToCeilingFrames()})";
-                    }
+                    string retainedSpeed = GetAdjustedRetainedSpeed(player, out string exactRetainedSpeed);
 
                     string liftBoost = string.Empty;
                     if (PlayerLiftBoost(player) is var liftBoostVector2 && liftBoostVector2 != Vector2.Zero) {
@@ -246,14 +245,16 @@ namespace TAS {
 
                     PlayerSeeker playerSeeker = level.Tracker.GetEntity<PlayerSeeker>();
                     if (playerSeeker != null) {
-                        pos = GetAdjustedPos(playerSeeker.Position, playerSeeker.PositionRemainder);
-                        speed = GetAdjustedSpeed(PlayerSeekerSpeed(playerSeeker));
+                        pos = GetAdjustedPos(playerSeeker.Position, playerSeeker.PositionRemainder, out exactPos);
+                        speed = GetAdjustedSpeed(PlayerSeekerSpeed(playerSeeker), out exactSpeed);
                         diff = (playerSeeker.GetMoreExactPosition() - LastPlayerSeekerPos) * FramesPerSecond;
-                        velocity = GetAdjustedVelocity(diff);
+                        velocity = GetAdjustedVelocity(diff, out exactVelocity);
                         if (!Frozen && updateVel) {
                             LastPlayerSeekerVel = velocity;
+                            LastPlayerSeekerExactVel = exactVelocity;
                         } else {
                             velocity = LastPlayerSeekerVel;
+                            exactVelocity = LastPlayerSeekerVel;
                         }
 
                         polarVel = $"Chase: {diff.Length():F2}, {diff.Angle():F5}°";
@@ -313,39 +314,36 @@ namespace TAS {
                         DashTime = 0f;
                     }
 
-                    stringBuilder.AppendLine(pos);
-                    stringBuilder.AppendLine(speed);
-                    stringBuilder.AppendLine(velocity);
+                    StatusWithoutTime = GetStatusWithoutTime(
+                        pos,
+                        speed,
+                        velocity,
+                        player,
+                        playerSeeker,
+                        polarVel,
+                        analog,
+                        retainedSpeed,
+                        liftBoost,
+                        miscStats,
+                        statuses,
+                        timers
+                    );
+                    
+                    ExactStatusWithoutTime = GetStatusWithoutTime(
+                        exactPos,
+                        exactSpeed,
+                        exactVelocity,
+                        player,
+                        playerSeeker,
+                        polarVel,
+                        analog,
+                        exactRetainedSpeed,
+                        liftBoost,
+                        miscStats,
+                        statuses,
+                        timers
+                    );
 
-                    if (player.StateMachine.State == Player.StStarFly
-                        || playerSeeker != null
-                        || SaveData.Instance.Assists.ThreeSixtyDashing
-                        || SaveData.Instance.Assists.SuperDashing) {
-                        stringBuilder.AppendLine(polarVel);
-                    }
-
-                    if (!string.IsNullOrEmpty(analog)) {
-                        stringBuilder.AppendLine(analog);
-                    }
-
-                    if (!string.IsNullOrEmpty(retainedSpeed)) {
-                        stringBuilder.AppendLine(retainedSpeed);
-                    }
-
-                    if (!string.IsNullOrEmpty(liftBoost)) {
-                        stringBuilder.AppendLine(liftBoost);
-                    }
-
-                    stringBuilder.AppendLine(miscStats);
-                    if (!string.IsNullOrEmpty(statuses)) {
-                        stringBuilder.AppendLine(statuses);
-                    }
-
-                    if (!string.IsNullOrEmpty(timers)) {
-                        stringBuilder.AppendLine(timers);
-                    }
-
-                    StatusWithoutTime = stringBuilder.ToString();
                     if (Engine.FreezeTimer <= 0f) {
                         LastPos = player.GetMoreExactPosition();
                         LastPlayerSeekerPos = playerSeeker?.GetMoreExactPosition() ?? default;
@@ -358,6 +356,7 @@ namespace TAS {
                 ChapterTime = GetChapterTime(level);
 
                 Status = StatusWithoutTime + $"[{LevelName}] Timer: {ChapterTime}";
+                ExactStatus = ExactStatusWithoutTime + $"[{LevelName}] Timer: {ChapterTime}";
 
                 if (Manager.FrameLoops == 1) {
                     WatchingInfo = InfoWatchEntity.GetWatchingEntitiesInfo();
@@ -369,13 +368,51 @@ namespace TAS {
                 WatchingInfo = string.Empty;
                 CustomInfo = string.Empty;
                 if (Engine.Scene is SummitVignette summit) {
-                    Status = $"SummitVignette {SummitVignetteReadyFieldInfo.GetValue(summit)}";
+                    Status = ExactStatus = $"SummitVignette {SummitVignetteReadyFieldInfo.GetValue(summit)}";
                 } else if (Engine.Scene is Overworld overworld) {
-                    Status = $"Overworld {(overworld.Current ?? overworld.Next).GetType().Name} {overworld.ShowInputUI}";
+                    Status = ExactStatus = $"Overworld {(overworld.Current ?? overworld.Next).GetType().Name} {overworld.ShowInputUI}";
                 } else if (Engine.Scene != null) {
-                    Status = Engine.Scene.GetType().Name;
+                    Status = ExactStatus = Engine.Scene.GetType().Name;
                 }
             }
+        }
+
+        private static string GetStatusWithoutTime(string pos, string speed, string velocity, Player player, PlayerSeeker playerSeeker,
+            string polarVel, string analog, string retainedSpeed, string liftBoost, string miscStats, string statuses, string timers) {
+            StringBuilder builder = new();
+            builder.AppendLine(pos);
+            builder.AppendLine(speed);
+            builder.AppendLine(velocity);
+
+            if (player.StateMachine.State == Player.StStarFly
+                || playerSeeker != null
+                || SaveData.Instance.Assists.ThreeSixtyDashing
+                || SaveData.Instance.Assists.SuperDashing) {
+                builder.AppendLine(polarVel);
+            }
+
+            if (!string.IsNullOrEmpty(analog)) {
+                builder.AppendLine(analog);
+            }
+
+            if (!string.IsNullOrEmpty(retainedSpeed)) {
+                builder.AppendLine(retainedSpeed);
+            }
+
+            if (!string.IsNullOrEmpty(liftBoost)) {
+                builder.AppendLine(liftBoost);
+            }
+
+            builder.AppendLine(miscStats);
+            if (!string.IsNullOrEmpty(statuses)) {
+                builder.AppendLine(statuses);
+            }
+
+            if (!string.IsNullOrEmpty(timers)) {
+                builder.AppendLine(timers);
+            }
+
+            return builder.ToString();
         }
 
         public static float GetDashCooldownTimer(Player player) {
@@ -402,14 +439,15 @@ namespace TAS {
             return seconds.ToCeilingFrames();
         }
 
-        private static string GetAdjustedPos(Vector2 intPos, Vector2 subpixelPos) {
+        private static string GetAdjustedPos(Vector2 intPos, Vector2 subpixelPos, out string exactPos) {
             double x = intPos.X;
             double y = intPos.Y;
             double subX = subpixelPos.X;
             double subY = subpixelPos.Y;
 
+            exactPos = $"Pos:   {x + subX:F12}, {y + subY:F12}";
             if (!CelesteTasModule.Settings.RoundPosition) {
-                return $"Pos:   {x + subX:F12}, {y + subY:F12}";
+                return exactPos;
             }
 
             if (Math.Abs(subX) % 0.25 < 0.01 || Math.Abs(subX) % 0.25 > 0.24) {
@@ -436,12 +474,23 @@ namespace TAS {
             return pos;
         }
 
-        private static string GetAdjustedSpeed(Vector2 speed) {
+        private static string GetAdjustedSpeed(Vector2 speed, out string exactSpeed) {
+            exactSpeed = $"Speed: {speed.ToSimpleString(false)}";
             return $"Speed: {speed.ToSimpleString(CelesteTasModule.Settings.RoundSpeed)}";
         }
 
-        private static string GetAdjustedVelocity(Vector2Double diff) {
+        private static string GetAdjustedVelocity(Vector2Double diff, out string exactVelocity) {
+            exactVelocity = $"Vel:   {diff.ToSimpleString(false)}";
             return $"Vel:   {diff.ToSimpleString(CelesteTasModule.Settings.RoundVelocity)}";
+        }
+
+        private static string GetAdjustedRetainedSpeed(Player player, out string exactRetainedSpeed) {
+            if (PlayerRetainedSpeedTimer(player) is float retainedSpeedTimer and > 0f) {
+                exactRetainedSpeed = $"Retained: {PlayerRetainedSpeed(player):F12} ({retainedSpeedTimer.ToCeilingFrames()})";
+                return $"Retained: {PlayerRetainedSpeed(player).ToString(TasSettings.RoundSpeed ? "F2" : "F12")} ({retainedSpeedTimer.ToCeilingFrames()})";
+            } else {
+                return exactRetainedSpeed = string.Empty;
+            }
         }
 
         public static string GetChapterTime(Level level) {

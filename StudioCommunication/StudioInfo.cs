@@ -5,6 +5,7 @@
         public readonly int CurrentLine;
         public readonly string CurrentLineText;
         public readonly string GameInfo;
+        public readonly string ExactGameInfo;
         public readonly string LevelName;
         public readonly int SaveStateLine;
         public readonly State TasState;
@@ -13,7 +14,7 @@
 
         public StudioInfo(
             int currentLine, string currentLineText, int currentFrame, int totalFrames, int saveStateLine, State tasState,
-            string gameInfo, string levelName, string chapterTime, string modVersion) {
+            string gameInfo, string exactGameInfo, string levelName, string chapterTime, string modVersion) {
             CurrentLine = currentLine;
             CurrentLineText = currentLineText;
             CurrentFrame = currentFrame;
@@ -21,6 +22,7 @@
             SaveStateLine = saveStateLine;
             TasState = tasState;
             GameInfo = gameInfo;
+            ExactGameInfo = exactGameInfo;
             LevelName = levelName;
             ChapterTime = chapterTime;
             ModVersion = modVersion;
@@ -35,6 +37,7 @@
                 SaveStateLine,
                 (int) TasState,
                 GameInfo,
+                ExactGameInfo,
                 LevelName,
                 ChapterTime,
                 ModVersion
@@ -53,7 +56,8 @@
                 values[6] as string,
                 values[7] as string,
                 values[8] as string,
-                values[9] as string
+                values[9] as string,
+                values[10] as string
             );
         }
     }

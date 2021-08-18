@@ -17,11 +17,15 @@ namespace TAS {
 
         private static readonly Dictionary<FieldInfo, object> SavedGameInfo = new() {
             {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.Status)), null},
+            {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.ExactStatus)), null},
             {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.StatusWithoutTime)), null},
+            {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.ExactStatusWithoutTime)), null},
             {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LevelName)), null},
             {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.ChapterTime)), null},
             {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastVel)), null},
+            {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastExactVel)), null},
             {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerVel)), null},
+            {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerExactVel)), null},
             {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.WatchingInfo)), null},
             {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.CustomInfo)), null},
             {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPos)), null},

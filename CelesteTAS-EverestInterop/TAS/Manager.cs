@@ -88,7 +88,8 @@ namespace TAS {
                 Controller.Inputs.Count,
                 Savestates.StudioHighlightLine,
                 State,
-                GameInfo.StudioInfo,
+                GameInfo.GetStudioInfo(false),
+                GameInfo.GetStudioInfo(true),
                 GameInfo.LevelName,
                 GameInfo.ChapterTime,
                 CelesteTasModule.Instance.Metadata.VersionString
