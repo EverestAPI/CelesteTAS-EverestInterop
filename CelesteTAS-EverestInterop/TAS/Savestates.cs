@@ -31,6 +31,7 @@ namespace TAS {
         };
 
         private static bool savedByBreakpoint;
+        private static string savedTasFilePath;
 
         private static readonly Lazy<bool> SpeedrunToolInstalledLazy = new(() =>
             Type.GetType("Celeste.Mod.SpeedrunTool.SaveLoad.StateManager, SpeedrunTool") != null
@@ -50,7 +51,8 @@ namespace TAS {
             IsSaved() && savedByBreakpoint && Controller.FastForwards.GetValueOrDefault(SavedCurrentFrame)?.SaveState != true;
 
         public static bool IsSaved() {
-            return StateManager.Instance.IsSaved && StateManager.Instance.SavedByTas && savedController != null;
+            return StateManager.Instance.IsSaved && StateManager.Instance.SavedByTas && savedController != null &&
+                   savedTasFilePath == InputController.TasFilePath;
         }
 
         public static void HandleSaveStates() {
@@ -115,6 +117,7 @@ namespace TAS {
             }
 
             savedByBreakpoint = breakpoint;
+            savedTasFilePath = InputController.TasFilePath;
             SaveGameInfo();
             savedController = Controller.Clone();
             LoadStateRoutine();
@@ -157,6 +160,7 @@ namespace TAS {
             savedController = null;
             ClearGameInfo();
             savedByBreakpoint = false;
+            savedTasFilePath = null;
 
             UpdateStudio();
         }
