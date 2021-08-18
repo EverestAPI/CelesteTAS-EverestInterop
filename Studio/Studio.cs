@@ -1281,8 +1281,8 @@ namespace CelesteStudio {
             StudioCommunicationServer.Instance?.ToggleGameSetting("InfoGame");
         }
 
-        private void inspectEntityInfoToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.Instance?.ToggleGameSetting("InfoInspectEntity");
+        private void watchEntityInfoToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.Instance?.ToggleGameSetting("InfoWatchEntity");
         }
 
         private void customInfoToolStripMenuItem_Click(object sender, EventArgs e) {

@@ -22,13 +22,13 @@ namespace TAS.EverestInterop.InfoHUD {
             CenterCamera.Load();
 
             On.Celeste.Fonts.Prepare += FontsOnPrepare;
-            InfoInspectEntity.Load();
+            InfoWatchEntity.Load();
         }
 
         public static void Unload() {
             On.Celeste.Level.Render -= LevelOnRender;
             On.Celeste.Fonts.Prepare -= FontsOnPrepare;
-            InfoInspectEntity.Unload();
+            InfoWatchEntity.Unload();
         }
 
         private static void FontsOnPrepare(On.Celeste.Fonts.orig_Prepare orig) {
@@ -183,13 +183,13 @@ namespace TAS.EverestInterop.InfoHUD {
                     TasSettings.InfoCustomTemplate = TextInput.GetClipboardText() ?? string.Empty;
                     CelesteTasModule.Instance.SaveSettings();
                 }));
-                subMenu.Add(new TextMenuExt.EnumerableSlider<HudOptions>("Info Inspect Entity".ToDialogText(), CreateHudOptions(),
-                    TasSettings.InfoInspectEntity).Change(value => TasSettings.InfoInspectEntity = value));
-                subMenu.Add(new TextMenuExt.EnumerableSlider<InspectEntityTypes>("Info Inspect Entity Type".ToDialogText(), new[] {
-                    new KeyValuePair<InspectEntityTypes, string>(InspectEntityTypes.Position, "Info Inspect Entity Position".ToDialogText()),
-                    new KeyValuePair<InspectEntityTypes, string>(InspectEntityTypes.DeclaredOnly, "Info Inspect Entity Declared Only".ToDialogText()),
-                    new KeyValuePair<InspectEntityTypes, string>(InspectEntityTypes.All, "Info Inspect Entity All".ToDialogText()),
-                }, TasSettings.InfoInspectEntityType).Change(value => TasSettings.InfoInspectEntityType = value));
+                subMenu.Add(new TextMenuExt.EnumerableSlider<HudOptions>("Info Watch Entity".ToDialogText(), CreateHudOptions(),
+                    TasSettings.InfoWatchEntity).Change(value => TasSettings.InfoWatchEntity = value));
+                subMenu.Add(new TextMenuExt.EnumerableSlider<WatchEntityTypes>("Info Watch Entity Type".ToDialogText(), new[] {
+                    new KeyValuePair<WatchEntityTypes, string>(WatchEntityTypes.Position, "Info Watch Entity Position".ToDialogText()),
+                    new KeyValuePair<WatchEntityTypes, string>(WatchEntityTypes.DeclaredOnly, "Info Watch Entity Declared Only".ToDialogText()),
+                    new KeyValuePair<WatchEntityTypes, string>(WatchEntityTypes.All, "Info Watch Entity All".ToDialogText()),
+                }, TasSettings.InfoWatchEntityType).Change(value => TasSettings.InfoWatchEntityType = value));
                 subMenu.Add(new TextMenu.OnOff("Info Ignore Trigger When Click Entity".ToDialogText(), TasSettings.InfoIgnoreTriggerWhenClickEntity)
                     .Change(value => TasSettings.InfoIgnoreTriggerWhenClickEntity = value));
                 subMenu.Add(new TextMenuExt.IntSlider("Info Text Size".ToDialogText(), 5, 20, TasSettings.InfoTextSize).Change(value =>

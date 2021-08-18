@@ -41,7 +41,7 @@ namespace TAS {
         public static string ChapterTime = string.Empty;
         public static string LastVel = string.Empty;
         public static string LastPlayerSeekerVel = string.Empty;
-        public static string InspectingInfo = string.Empty;
+        public static string WatchingInfo = string.Empty;
         public static string CustomInfo = string.Empty;
         public static Vector2Double LastPos;
         public static Vector2Double LastPlayerSeekerPos;
@@ -92,8 +92,8 @@ namespace TAS {
                     infos.Add(CustomInfo);
                 }
 
-                if ((TasSettings.InfoInspectEntity & HudOptions.StudioOnly) != 0 && InspectingInfo.IsNotNullOrWhiteSpace()) {
-                    infos.Add(InspectingInfo);
+                if ((TasSettings.InfoWatchEntity & HudOptions.StudioOnly) != 0 && WatchingInfo.IsNotNullOrWhiteSpace()) {
+                    infos.Add(WatchingInfo);
                 }
 
                 return string.Join("\n\n", infos);
@@ -111,8 +111,8 @@ namespace TAS {
                     infos.Add(CustomInfo);
                 }
 
-                if ((TasSettings.InfoInspectEntity & HudOptions.HudOnly) != 0 && InspectingInfo.IsNotNullOrWhiteSpace()) {
-                    infos.Add(InspectingInfo);
+                if ((TasSettings.InfoWatchEntity & HudOptions.HudOnly) != 0 && WatchingInfo.IsNotNullOrWhiteSpace()) {
+                    infos.Add(WatchingInfo);
                 }
 
                 return string.Join("\n\n", infos);
@@ -358,13 +358,13 @@ namespace TAS {
                 Status = StatusWithoutTime + $"[{LevelName}] Timer: {ChapterTime}";
 
                 if (Manager.FrameLoops == 1) {
-                    InspectingInfo = InfoInspectEntity.GetInspectingEntitiesInfo();
+                    WatchingInfo = InfoWatchEntity.GetWatchingEntitiesInfo();
                     CustomInfo = InfoCustom.Parse();
                 }
             } else {
                 LevelName = string.Empty;
                 ChapterTime = string.Empty;
-                InspectingInfo = string.Empty;
+                WatchingInfo = string.Empty;
                 CustomInfo = string.Empty;
                 if (Engine.Scene is SummitVignette summit) {
                     Status = "SummitVignette " + SummitVignetteReadyFieldInfo.GetValue(summit);
@@ -469,32 +469,32 @@ namespace TAS {
 
     public static class PlayerStates {
         private static readonly IDictionary<int, string> States = new Dictionary<int, string> {
-            {Player.StNormal, "StNormal"},
-            {Player.StClimb, "StClimb"},
-            {Player.StDash, "StDash"},
-            {Player.StSwim, "StSwim"},
-            {Player.StBoost, "StBoost"},
-            {Player.StRedDash, "StRedDash"},
-            {Player.StHitSquash, "StHitSquash"},
-            {Player.StLaunch, "StLaunch"},
-            {Player.StPickup, "StPickup"},
-            {Player.StDreamDash, "StDreamDash"},
-            {Player.StSummitLaunch, "StSummitLaunch"},
-            {Player.StDummy, "StDummy"},
-            {Player.StIntroWalk, "StIntroWalk"},
-            {Player.StIntroJump, "StIntroJump"},
-            {Player.StIntroRespawn, "StIntroRespawn"},
-            {Player.StIntroWakeUp, "StIntroWakeUp"},
-            {Player.StBirdDashTutorial, "StBirdDashTutorial"},
-            {Player.StFrozen, "StFrozen"},
-            {Player.StReflectionFall, "StReflectionFall"},
-            {Player.StStarFly, "StStarFly"},
-            {Player.StTempleFall, "StTempleFall"},
-            {Player.StCassetteFly, "StCassetteFly"},
-            {Player.StAttract, "StAttract"},
-            {Player.StIntroMoonJump, "StIntroMoonJump"},
-            {Player.StFlingBird, "StFlingBird"},
-            {Player.StIntroThinkForABit, "StIntroThinkForABit"},
+            {Player.StNormal, nameof(Player.StNormal)},
+            {Player.StClimb, nameof(Player.StClimb)},
+            {Player.StDash, nameof(Player.StDash)},
+            {Player.StSwim, nameof(Player.StSwim)},
+            {Player.StBoost, nameof(Player.StBoost)},
+            {Player.StRedDash, nameof(Player.StRedDash)},
+            {Player.StHitSquash, nameof(Player.StHitSquash)},
+            {Player.StLaunch, nameof(Player.StLaunch)},
+            {Player.StPickup, nameof(Player.StPickup)},
+            {Player.StDreamDash, nameof(Player.StDreamDash)},
+            {Player.StSummitLaunch, nameof(Player.StSummitLaunch)},
+            {Player.StDummy, nameof(Player.StDummy)},
+            {Player.StIntroWalk, nameof(Player.StIntroWalk)},
+            {Player.StIntroJump, nameof(Player.StIntroJump)},
+            {Player.StIntroRespawn, nameof(Player.StIntroRespawn)},
+            {Player.StIntroWakeUp, nameof(Player.StIntroWakeUp)},
+            {Player.StBirdDashTutorial, nameof(Player.StBirdDashTutorial)},
+            {Player.StFrozen, nameof(Player.StFrozen)},
+            {Player.StReflectionFall, nameof(Player.StReflectionFall)},
+            {Player.StStarFly, nameof(Player.StStarFly)},
+            {Player.StTempleFall, nameof(Player.StTempleFall)},
+            {Player.StCassetteFly, nameof(Player.StCassetteFly)},
+            {Player.StAttract, nameof(Player.StAttract)},
+            {Player.StIntroMoonJump, nameof(Player.StIntroMoonJump)},
+            {Player.StFlingBird, nameof(Player.StFlingBird)},
+            {Player.StIntroThinkForABit, nameof(Player.StIntroThinkForABit)},
         };
 
         public static string GetStateName(int state) {

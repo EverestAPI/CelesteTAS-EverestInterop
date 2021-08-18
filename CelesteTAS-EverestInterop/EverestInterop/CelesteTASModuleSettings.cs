@@ -154,8 +154,8 @@ namespace TAS.EverestInterop {
         public bool InfoTasInput { get; set; } = true;
         public bool InfoSubPixelIndicator { get; set; } = true;
         public HudOptions InfoCustom { get; set; } = HudOptions.Off;
-        public HudOptions InfoInspectEntity { get; set; } = HudOptions.Both;
-        public InspectEntityTypes InfoInspectEntityType { get; set; } = InspectEntityTypes.Position;
+        public HudOptions InfoWatchEntity { get; set; } = HudOptions.Both;
+        public WatchEntityTypes InfoWatchEntityType { get; set; } = WatchEntityTypes.Position;
         public bool InfoIgnoreTriggerWhenClickEntity { get; set; } = true;
 
         [SettingIgnore]

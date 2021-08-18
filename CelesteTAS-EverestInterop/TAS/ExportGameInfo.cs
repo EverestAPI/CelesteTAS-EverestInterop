@@ -150,8 +150,8 @@ namespace TAS {
                     output += $"\t{customInfo.ReplaceLineBreak(" ")}";
                 }
 
-                if (InfoInspectEntity.GetInspectingEntitiesInfo("\t", true) is { } inspectInfo && inspectInfo.IsNotEmpty()) {
-                    output += $"\t{inspectInfo}";
+                if (InfoWatchEntity.GetWatchingEntitiesInfo("\t", true) is { } watchInfo && watchInfo.IsNotEmpty()) {
+                    output += $"\t{watchInfo}";
                 }
             } else {
                 output = string.Join("\t", inputFrame.Line + 1, $"{controller.InputCurrentFrame}/{inputFrame}", controller.CurrentFrame,

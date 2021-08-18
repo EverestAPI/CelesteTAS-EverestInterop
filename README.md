@@ -83,9 +83,9 @@ While in game or in Studio:
 
 ## Misc
 
-### Inspect Entity
+### Watch Entity
 
-Enable `Info HUD`, holding left ctrl then left-click to add the entity to be inspected, right-click to clear the inspecting entities. Supports exporting inspecting entities info via
+Enable `Info HUD`, holding left ctrl then left-click to add the entity to be watched, right-click to clear the watching entities. Supports exporting watching entities info via
 the `StartExport` command.
 
 ### Custom Info

@@ -37,7 +37,7 @@ namespace TAS.EverestInterop {
                 MouseState mouseState = Mouse.GetState();
 
                 if (Engine.Instance.IsActive && mouseState.LeftButton == ButtonState.Pressed && lastButtonState == ButtonState.Released) {
-                    Entity clickedEntity = InfoInspectEntity.FindClickedEntity(mouseState);
+                    Entity clickedEntity = InfoWatchEntity.FindClickedEntity(mouseState);
                     if (clickedEntity != null) {
                         Type type = clickedEntity.GetType();
                         clickedEntityInfo = "\n entity type: ";

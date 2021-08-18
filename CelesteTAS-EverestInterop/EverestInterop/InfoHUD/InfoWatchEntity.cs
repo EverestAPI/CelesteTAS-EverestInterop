@@ -14,19 +14,19 @@ using TAS.EverestInterop.Hitboxes;
 using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD {
-    public enum InspectEntityTypes {
+    public enum WatchEntityTypes {
         Position,
         DeclaredOnly,
         All
     }
 
-    public static class InfoInspectEntity {
+    public static class InfoWatchEntity {
         private static readonly Dictionary<string, IEnumerable<MemberInfo>> CachedMemberInfos = new();
 
-        private static readonly List<WeakReference> RequireInspectEntities = new();
-        private static readonly HashSet<UniqueEntityId> RequireInspectUniqueEntityIds = new();
-        private static readonly HashSet<Entity> InspectingEntities = new();
-        private static AreaKey requireInspectAreaKey;
+        private static readonly List<WeakReference> RequireWatchEntities = new();
+        private static readonly HashSet<UniqueEntityId> RequireWatchUniqueEntityIds = new();
+        private static readonly HashSet<Entity> WatchingEntities = new();
+        private static AreaKey requireWatchAreaKey;
 
         private static ILHook origLoadLevelHook;
         private static ILHook loadCustomEntityHook;
@@ -59,12 +59,12 @@ namespace TAS.EverestInterop.InfoHUD {
             }
 
             if (mouseState.RightButton == ButtonState.Pressed && lastMouseData.RightButton == ButtonState.Released) {
-                ClearInspectEntities();
+                ClearWatchEntities();
             }
 
             if (mouseState.LeftButton == ButtonState.Pressed && lastMouseData.LeftButton == ButtonState.Released &&
                 !IsClickHud(mouseState) && FindClickedEntity(mouseState) is { } entity) {
-                InspectingEntity(entity);
+                WatchingEntity(entity);
                 PrintAllSimpleValues(entity);
             }
         }
@@ -176,20 +176,20 @@ namespace TAS.EverestInterop.InfoHUD {
             entity.SaveEntityData(data);
         }
 
-        private static void InspectingEntity(Entity clickedEntity) {
-            requireInspectAreaKey = clickedEntity.SceneAs<Level>().Session.Area;
+        private static void WatchingEntity(Entity clickedEntity) {
+            requireWatchAreaKey = clickedEntity.SceneAs<Level>().Session.Area;
             if (clickedEntity.LoadEntityData() is { } entityData) {
                 UniqueEntityId uniqueEntityId = new(clickedEntity, entityData);
-                if (RequireInspectUniqueEntityIds.Contains(uniqueEntityId)) {
-                    RequireInspectUniqueEntityIds.Remove(uniqueEntityId);
+                if (RequireWatchUniqueEntityIds.Contains(uniqueEntityId)) {
+                    RequireWatchUniqueEntityIds.Remove(uniqueEntityId);
                 } else {
-                    RequireInspectUniqueEntityIds.Add(uniqueEntityId);
+                    RequireWatchUniqueEntityIds.Add(uniqueEntityId);
                 }
             } else {
-                if (RequireInspectEntities.FirstOrDefault(reference => reference.Target == clickedEntity) is { } alreadyAdded) {
-                    RequireInspectEntities.Remove(alreadyAdded);
+                if (RequireWatchEntities.FirstOrDefault(reference => reference.Target == clickedEntity) is { } alreadyAdded) {
+                    RequireWatchEntities.Remove(alreadyAdded);
                 } else {
-                    RequireInspectEntities.Add(new WeakReference(clickedEntity));
+                    RequireWatchEntities.Add(new WeakReference(clickedEntity));
                 }
             }
 
@@ -201,7 +201,7 @@ namespace TAS.EverestInterop.InfoHUD {
 
             if (Settings.ShowHitboxes) {
                 foreach (Entity entity in Engine.Scene.Entities) {
-                    if (InspectingEntities.Contains(entity)) {
+                    if (WatchingEntities.Contains(entity)) {
                         Draw.Point(entity.Position, HitboxColor.EntityColorInversely);
                     }
                 }
@@ -211,84 +211,84 @@ namespace TAS.EverestInterop.InfoHUD {
         private static void LevelOnBegin(On.Celeste.Level.orig_Begin orig, Level self) {
             orig(self);
 
-            if (self.Session.Area != requireInspectAreaKey) {
-                ClearInspectEntities();
+            if (self.Session.Area != requireWatchAreaKey) {
+                ClearWatchEntities();
             }
         }
 
         private static void LevelOnEnd(On.Celeste.Level.orig_End orig, Level self) {
             orig(self);
-            InspectingEntities.Clear();
+            WatchingEntities.Clear();
         }
 
         private static void LevelOnLoadLevel(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader) {
             orig(self, playerIntro, isFromLoader);
 
-            RequireInspectEntities.ToList().ForEach(reference => {
+            RequireWatchEntities.ToList().ForEach(reference => {
                 if (reference.Target is Entity {Scene: null}) {
-                    RequireInspectEntities.Remove(reference);
+                    RequireWatchEntities.Remove(reference);
                 }
             });
         }
 
-        private static void ClearInspectEntities() {
-            RequireInspectEntities.Clear();
-            RequireInspectUniqueEntityIds.Clear();
-            InspectingEntities.Clear();
+        private static void ClearWatchEntities() {
+            RequireWatchEntities.Clear();
+            RequireWatchUniqueEntityIds.Clear();
+            WatchingEntities.Clear();
             GameInfo.Update();
         }
 
-        public static string GetInspectingEntitiesInfo(string separator = "\n", bool export = false) {
-            InspectingEntities.Clear();
-            string inspectingInfo = string.Empty;
-            if (Engine.Scene is not Level level || Settings.InfoInspectEntity == HudOptions.Off && !export) {
+        public static string GetWatchingEntitiesInfo(string separator = "\n", bool export = false) {
+            WatchingEntities.Clear();
+            string watchingInfo = string.Empty;
+            if (Engine.Scene is not Level level || Settings.InfoWatchEntity == HudOptions.Off && !export) {
                 return string.Empty;
             }
 
-            if (RequireInspectEntities.IsNotEmpty()) {
-                inspectingInfo = string.Join(separator, RequireInspectEntities.Where(reference => reference.IsAlive).Select(
+            if (RequireWatchEntities.IsNotEmpty()) {
+                watchingInfo = string.Join(separator, RequireWatchEntities.Where(reference => reference.IsAlive).Select(
                     reference => {
                         Entity entity = (Entity) reference.Target;
-                        InspectingEntities.Add(entity);
-                        return GetEntityValues(entity, Settings.InfoInspectEntityType, separator);
+                        WatchingEntities.Add(entity);
+                        return GetEntityValues(entity, Settings.InfoWatchEntityType, separator);
                     }
                 ));
             }
 
-            if (RequireInspectUniqueEntityIds.IsNotEmpty()) {
+            if (RequireWatchUniqueEntityIds.IsNotEmpty()) {
                 Dictionary<UniqueEntityId, Entity> matchEntities = GetMatchEntities(level);
                 if (matchEntities.IsNotEmpty()) {
-                    if (inspectingInfo.IsNotNullOrEmpty()) {
-                        inspectingInfo += separator;
+                    if (watchingInfo.IsNotNullOrEmpty()) {
+                        watchingInfo += separator;
                     }
 
-                    inspectingInfo += string.Join(separator, matchEntities.Select(pair => {
+                    watchingInfo += string.Join(separator, matchEntities.Select(pair => {
                         Entity entity = matchEntities[pair.Key];
-                        InspectingEntities.Add(entity);
-                        return GetEntityValues(entity, Settings.InfoInspectEntityType, separator);
+                        WatchingEntities.Add(entity);
+                        return GetEntityValues(entity, Settings.InfoWatchEntityType, separator);
                     }));
                 }
             }
 
-            return inspectingInfo;
+            return watchingInfo;
         }
 
         private static void PrintAllSimpleValues(Entity entity) {
-            ("Info of Clicked Entity:\n" + GetEntityValues(entity, InspectEntityTypes.All)).Log(true);
+            ("Info of Clicked Entity:\n" + GetEntityValues(entity, WatchEntityTypes.All)).Log(true);
         }
 
-        private static string GetEntityValues(Entity entity, InspectEntityTypes inspectEntityType, string separator = "\n") {
+        private static string GetEntityValues(Entity entity, WatchEntityTypes watchEntityType, string separator = "\n") {
             Type type = entity.GetType();
             string entityId = "";
             if (entity.LoadEntityData() is { } entityData) {
                 entityId = $"[{entityData.ToEntityId().ToString()}]";
             }
 
-            if (inspectEntityType == InspectEntityTypes.Position) {
+            if (watchEntityType == WatchEntityTypes.Position) {
                 return GetPositionInfo(entity, entityId);
             }
 
-            List<string> values = GetAllSimpleFields(type, inspectEntityType == InspectEntityTypes.DeclaredOnly).Select(info => {
+            List<string> values = GetAllSimpleFields(type, watchEntityType == WatchEntityTypes.DeclaredOnly).Select(info => {
                 object value = info switch {
                     FieldInfo fieldInfo => fieldInfo.GetValue(entity),
                     PropertyInfo propertyInfo => propertyInfo.GetValue(entity),
@@ -373,7 +373,7 @@ namespace TAS.EverestInterop.InfoHUD {
             HashSet<Type> possibleTypes = new();
 
             string currentRoom = level.Session.Level;
-            foreach (UniqueEntityId id in RequireInspectUniqueEntityIds.Where(id => id.GlobalOrPersistent || id.EntityId.Level == currentRoom)) {
+            foreach (UniqueEntityId id in RequireWatchUniqueEntityIds.Where(id => id.GlobalOrPersistent || id.EntityId.Level == currentRoom)) {
                 possibleTypes.Add(id.Type);
             }
 
@@ -395,10 +395,10 @@ namespace TAS.EverestInterop.InfoHUD {
                 }
 
                 UniqueEntityId uniqueEntityId = new(entity, entityData);
-                if (RequireInspectUniqueEntityIds.Contains(uniqueEntityId) && !result.ContainsKey(uniqueEntityId)) {
+                if (RequireWatchUniqueEntityIds.Contains(uniqueEntityId) && !result.ContainsKey(uniqueEntityId)) {
                     result[uniqueEntityId] = entity;
 
-                    if (result.Count == RequireInspectUniqueEntityIds.Count) {
+                    if (result.Count == RequireWatchUniqueEntityIds.Count) {
                         return result;
                     }
                 }

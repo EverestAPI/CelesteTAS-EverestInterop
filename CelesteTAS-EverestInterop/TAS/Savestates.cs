@@ -16,18 +16,18 @@ namespace TAS {
         private static InputController savedController;
 
         private static readonly Dictionary<FieldInfo, object> SavedGameInfo = new() {
-            {typeof(GameInfo).GetFieldInfo("Status"), null},
-            {typeof(GameInfo).GetFieldInfo("StatusWithoutTime"), null},
-            {typeof(GameInfo).GetFieldInfo("LevelName"), null},
-            {typeof(GameInfo).GetFieldInfo("ChapterTime"), null},
-            {typeof(GameInfo).GetFieldInfo("LastVel"), null},
-            {typeof(GameInfo).GetFieldInfo("LastPlayerSeekerVel"), null},
-            {typeof(GameInfo).GetFieldInfo("InspectingInfo"), null},
-            {typeof(GameInfo).GetFieldInfo("CustomInfo"), null},
-            {typeof(GameInfo).GetFieldInfo("LastPos"), null},
-            {typeof(GameInfo).GetFieldInfo("LastPlayerSeekerPos"), null},
-            {typeof(GameInfo).GetFieldInfo("DashTime"), null},
-            {typeof(GameInfo).GetFieldInfo("Frozen"), null}
+            {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.Status)), null},
+            {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.StatusWithoutTime)), null},
+            {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LevelName)), null},
+            {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.ChapterTime)), null},
+            {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastVel)), null},
+            {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerVel)), null},
+            {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.WatchingInfo)), null},
+            {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.CustomInfo)), null},
+            {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPos)), null},
+            {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerPos)), null},
+            {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.DashTime)), null},
+            {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.Frozen)), null}
         };
 
         private static bool savedByBreakpoint;
