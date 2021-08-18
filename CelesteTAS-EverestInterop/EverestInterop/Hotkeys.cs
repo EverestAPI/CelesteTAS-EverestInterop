@@ -264,6 +264,18 @@ namespace TAS.EverestInterop {
                         binding.Keys.Clear();
                         binding.Keys.Add(Keys.LeftAlt);
                         binding.Keys.Add(Keys.T);
+                    } else if (binding == Settings.KeyHitboxes) {
+                        binding.Keys.Clear();
+                        binding.Keys.Add(Keys.LeftControl);
+                        binding.Keys.Add(Keys.B);
+                    } else if (binding == Settings.KeyGraphics) {
+                        binding.Keys.Clear();
+                        binding.Keys.Add(Keys.LeftControl);
+                        binding.Keys.Add(Keys.N);
+                    } else if (binding == Settings.KeyCamera) {
+                        binding.Keys.Clear();
+                        binding.Keys.Add(Keys.LeftControl);
+                        binding.Keys.Add(Keys.M);
                     }
                 });
             }

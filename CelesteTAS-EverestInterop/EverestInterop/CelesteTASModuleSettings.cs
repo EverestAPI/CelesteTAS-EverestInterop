@@ -80,22 +80,25 @@ namespace TAS.EverestInterop {
         [DefaultButtonBinding(0, Keys.OemCloseBrackets)]
         public ButtonBinding KeyPause { get; set; } = new(0, Keys.OemCloseBrackets);
 
+        // Multiple default keys are not supported, handled by Hotkeys.ModReload()
         [SettingName("TAS_KEY_HITBOXES")]
         [DefaultButtonBinding(0, Keys.B)]
-        public ButtonBinding KeyHitboxes { get; set; } = new(0, Keys.B);
+        public ButtonBinding KeyHitboxes { get; set; } = new(0, Keys.LeftControl, Keys.B);
 
         // Multiple default keys are not supported, handled by Hotkeys.ModReload()
         [SettingName("TAS_KEY_TRIGGER_HITBOXES")]
         [DefaultButtonBinding(0, Keys.LeftAlt)]
         public ButtonBinding KeyTriggerHitboxes { get; set; } = new(0, Keys.LeftAlt, Keys.T);
 
+        // Multiple default keys are not supported, handled by Hotkeys.ModReload()
         [SettingName("TAS_KEY_GRAPHICS")]
         [DefaultButtonBinding(0, Keys.N)]
-        public ButtonBinding KeyGraphics { get; set; } = new(0, Keys.N);
+        public ButtonBinding KeyGraphics { get; set; } = new(0, Keys.LeftControl, Keys.N);
 
+        // Multiple default keys are not supported, handled by Hotkeys.ModReload()
         [SettingName("TAS_KEY_CAMERA")]
         [DefaultButtonBinding(0, Keys.M)]
-        public ButtonBinding KeyCamera { get; set; } = new(0, Keys.M);
+        public ButtonBinding KeyCamera { get; set; } = new(0, Keys.LeftControl, Keys.M);
 
         // Multiple default keys are not supported, handled by Hotkeys.ModReload()
         [SettingName("TAS_KEY_SAVE_STATE")]
