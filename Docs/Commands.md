@@ -84,10 +84,16 @@
   
 ### StartExportGameInfo and FinishExportGameInfo
 - `StartExportGameInfo (Optional File Path) (Optional Entities)`
-- `FinishExport`
+- `FinishExportGameInfo`
 - Dumps data to a file, which can be used to analyze desyncs.
-- Default filepath is dump.txt
+- Default filepath is `dump.txt`.
 - Keeps track of any additional entities specified - e.g. `StartExportGameInfo additional.txt TheoCrystal Glider FrostHelper.CustomSpinner@FrostTempleHelper` will keep track of Theo, Jellyfish, and custom spinners from the FrostHelper mod. You can get the name of the entity by opening the console and clicking on it, the entity name will be displayed in the top left corner and output to log.txt.
+
+### StartExportRoomInfo and FinishExportRoomInfo
+- `StartExportRoomInfo (Optional File Path)`
+- `FinishExportRoomInfo`
+- Dumps the elapsed time of each room to a file.
+- Default filepath is `dump_room_info.txt`.
 
 ### AnalogueMode
 - `AnalogueMode, (Type)`
@@ -107,3 +113,15 @@
 - `Add, (input line)` adds a line to the libTAS output.
 - `Skip, (frames)` skips the next however many frames.
 - Odds are you don't need to worry about this.
+
+### RecordCount
+- e.g. `RecordCount: 1`
+- Every time you run tas after modifying the current input file, the record count auto increases by one.
+
+### ChapterTime
+- e.g. `ChapterTime: 0:49.334(2902)`
+- After completing the whole level from the beginning, auto updating the chapter time.
+
+### FileTime
+- e.g. `FileTime: 0:51.170(3010)`
+- Auto update the file time when TAS has finished running, the file time is equal to the elapsed time during the TAS run.
