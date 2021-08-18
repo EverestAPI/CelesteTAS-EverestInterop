@@ -1096,6 +1096,14 @@ namespace CelesteStudio {
             InsertNewLine("FinishExportGameInfo");
         }
 
+        private void startExportRoomInfoToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertNewLine("StartExportRoomInfo dump_room_info.txt");
+        }
+
+        private void finishExportRoomInfoToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertNewLine("FinishExportRoomInfo");
+        }
+
         private void addToolStripMenuItem_Click(object sender, EventArgs e) {
             InsertNewLine("Add, (input line)");
         }

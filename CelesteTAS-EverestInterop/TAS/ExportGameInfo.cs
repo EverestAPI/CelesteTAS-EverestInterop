@@ -34,7 +34,6 @@ namespace TAS {
             }
 
             BeginExport(path, args);
-            exporting = true;
         }
 
         // ReSharper disable once UnusedMember.Local
@@ -44,6 +43,7 @@ namespace TAS {
         }
 
         private static void BeginExport(string path, string[] tracked) {
+            exporting = true;
             firstInputFrame = true;
             streamWriter?.Dispose();
             streamWriter = new StreamWriter(path);
@@ -98,7 +98,7 @@ namespace TAS {
 
         private static void ExportInfo(InputFrame inputFrame) {
             InputController controller = Manager.Controller;
-            string output = string.Empty;
+            string output;
             if (Engine.Scene is Level level) {
                 Player player = level.Tracker.GetEntity<Player>();
                 if (player == null) {
@@ -154,8 +154,14 @@ namespace TAS {
                     output += $"\t{watchInfo}";
                 }
             } else {
-                output = string.Join("\t", inputFrame.Line + 1, $"{controller.InputCurrentFrame}/{inputFrame}", controller.CurrentFrame,
-                    Engine.Scene.GetType().Name);
+                string sceneName;
+                if (Engine.Scene is Overworld overworld) {
+                    sceneName = $"Overworld {(overworld.Current ?? overworld.Next).GetType().Name}";
+                } else {
+                    sceneName = Engine.Scene.GetType().Name;
+                }
+
+                output = string.Join("\t", inputFrame.Line + 1, $"{controller.InputCurrentFrame}/{inputFrame}", controller.CurrentFrame, sceneName);
             }
 
             streamWriter.WriteLine(output);

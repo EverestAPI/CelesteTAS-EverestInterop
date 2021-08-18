@@ -158,7 +158,7 @@ namespace TAS.Input {
             }
         }
 
-        [TasCommand(Name = "EnforceLegal")]
+        [TasCommand(Name = "EnforceLegal", AliasNames = new[] {"EnforceMainGame"})]
         private static void EnforceLegalCommand(string[] args) {
             Manager.EnforceLegal = true;
         }

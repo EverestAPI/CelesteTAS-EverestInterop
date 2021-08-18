@@ -227,7 +227,8 @@ namespace TAS {
 
                     string retainedSpeed = string.Empty;
                     if (PlayerRetainedSpeedTimer(player) is float retainedSpeedTimer and > 0f) {
-                        retainedSpeed = $"Retained: {PlayerRetainedSpeed(player):F2} ({retainedSpeedTimer.ToCeilingFrames()})";
+                        retainedSpeed =
+                            $"Retained: {PlayerRetainedSpeed(player).ToString(TasSettings.RoundSpeed ? "F2" : "F12")} ({retainedSpeedTimer.ToCeilingFrames()})";
                     }
 
                     string liftBoost = string.Empty;
@@ -367,9 +368,9 @@ namespace TAS {
                 WatchingInfo = string.Empty;
                 CustomInfo = string.Empty;
                 if (Engine.Scene is SummitVignette summit) {
-                    Status = "SummitVignette " + SummitVignetteReadyFieldInfo.GetValue(summit);
+                    Status = $"SummitVignette {SummitVignetteReadyFieldInfo.GetValue(summit)}";
                 } else if (Engine.Scene is Overworld overworld) {
-                    Status = "Overworld " + overworld.ShowInputUI;
+                    Status = $"Overworld {(overworld.Current ?? overworld.Next).GetType().Name} {overworld.ShowInputUI}";
                 } else if (Engine.Scene != null) {
                     Status = Engine.Scene.GetType().Name;
                 }
