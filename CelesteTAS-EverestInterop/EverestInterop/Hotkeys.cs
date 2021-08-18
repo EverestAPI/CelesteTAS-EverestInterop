@@ -176,7 +176,7 @@ namespace TAS.EverestInterop {
                 hotkey?.Update();
             }
 
-            if (Engine.Scene is Level level && (!level.Paused || Manager.Running)) {
+            if (Engine.Scene is Level level && (!level.Paused || level.PauseMainMenuOpen || Manager.Running)) {
                 if (HotkeyHitboxes.Pressed && !HotkeyHitboxes.WasPressed) {
                     Settings.ShowHitboxes = !Settings.ShowHitboxes;
                 }
