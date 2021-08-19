@@ -238,6 +238,11 @@ namespace TAS.EverestInterop {
         }
 
         private static void ModReload(ILContext il) {
+            IEnumerable<PropertyInfo> bindingProperties = typeof(CelesteTasModuleSettings)
+                .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                .Where(info => info.PropertyType == typeof(ButtonBinding) &&
+                               info.GetCustomAttribute<ExtraDefaultKeyAttribute>() is { } extraDefaultKeyAttribute &&
+                               extraDefaultKeyAttribute.ExtraKey != Keys.None);
             ILCursor ilCursor = new(il);
             if (ilCursor.TryGotoNext(
                 MoveType.After,
@@ -252,30 +257,8 @@ namespace TAS.EverestInterop {
                         return;
                     }
 
-                    if (binding == Settings.KeySaveState) {
-                        binding.Keys.Clear();
-                        binding.Keys.Add(Keys.RightAlt);
-                        binding.Keys.Add(Keys.OemMinus);
-                    } else if (binding == Settings.KeyClearState) {
-                        binding.Keys.Clear();
-                        binding.Keys.Add(Keys.RightAlt);
-                        binding.Keys.Add(Keys.Back);
-                    } else if (binding == Settings.KeyTriggerHitboxes) {
-                        binding.Keys.Clear();
-                        binding.Keys.Add(Keys.LeftAlt);
-                        binding.Keys.Add(Keys.T);
-                    } else if (binding == Settings.KeyHitboxes) {
-                        binding.Keys.Clear();
-                        binding.Keys.Add(Keys.LeftControl);
-                        binding.Keys.Add(Keys.B);
-                    } else if (binding == Settings.KeyGraphics) {
-                        binding.Keys.Clear();
-                        binding.Keys.Add(Keys.LeftControl);
-                        binding.Keys.Add(Keys.N);
-                    } else if (binding == Settings.KeyCamera) {
-                        binding.Keys.Clear();
-                        binding.Keys.Add(Keys.LeftControl);
-                        binding.Keys.Add(Keys.M);
+                    if (bindingProperties.FirstOrDefault(info => info.GetValue(Settings) == binding) is { } propertyInfo) {
+                        binding.Keys.Insert(0, propertyInfo.GetCustomAttribute<ExtraDefaultKeyAttribute>().ExtraKey);
                     }
                 });
             }
@@ -310,6 +293,14 @@ namespace TAS.EverestInterop {
 
                 Pressed = IsKeyDown(keys, keyCombo) || IsButtonDown(buttons, keyCombo);
             }
+        }
+    }
+
+    public class ExtraDefaultKeyAttribute : Attribute {
+        public readonly Keys ExtraKey;
+
+        public ExtraDefaultKeyAttribute(Keys extraKey) {
+            ExtraKey = extraKey;
         }
     }
 }
