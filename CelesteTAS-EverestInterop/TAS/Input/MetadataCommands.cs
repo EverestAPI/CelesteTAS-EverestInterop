@@ -62,7 +62,7 @@ namespace TAS.Input {
             UpdateAllMetadata(
                 Manager.Controller,
                 command => command.Attribute.IsName("ChapterTime") && command.FilePath == InputController.TasFilePath,
-                command => GameInfo.ChapterTime
+                command => GameInfo.GetChapterTime(level)
             );
         }
 
