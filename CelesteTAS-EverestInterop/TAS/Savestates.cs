@@ -54,9 +54,13 @@ namespace TAS {
         private static bool BreakpointHasBeenDeleted =>
             IsSaved() && savedByBreakpoint && Controller.FastForwards.GetValueOrDefault(SavedCurrentFrame)?.SaveState != true;
 
-        public static bool IsSaved() {
+        private static bool IsSaved() {
             return StateManager.Instance.IsSaved && StateManager.Instance.SavedByTas && savedController != null &&
                    savedTasFilePath == InputController.TasFilePath;
+        }
+
+        public static bool IsSaved_Safe() {
+            return SpeedrunToolInstalled && IsSaved();
         }
 
         public static void HandleSaveStates() {

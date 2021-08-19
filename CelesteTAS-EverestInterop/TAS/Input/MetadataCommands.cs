@@ -24,7 +24,7 @@ namespace TAS.Input {
 
         [EnableRun]
         private static void StartFileTime() {
-            tasStartFileTime = Savestates.IsSaved() ? null : SaveData.Instance?.Time;
+            tasStartFileTime = Savestates.IsSaved_Safe() ? null : SaveData.Instance?.Time;
         }
 
         [DisableRun]
