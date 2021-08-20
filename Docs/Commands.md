@@ -95,11 +95,24 @@
 - Dumps the elapsed time of each room to a file.
 - Default filepath is `dump_room_info.txt`.
 
+### RecordCount
+- e.g. `RecordCount: 1`
+- Every time you run tas after modifying the current input file, the record count auto increases by one.
+
+### ChapterTime
+- e.g. `ChapterTime: 0:49.334(2902)`
+- After completing the whole level from the beginning, auto updating the chapter time.
+
+### FileTime
+- e.g. `FileTime: 0:51.170(3010)`
+- Auto update the file time when TAS has finished running, the file time is equal to the elapsed time during the TAS run.
+
 ### AnalogueMode
-- `AnalogueMode, (Type)`
-- `AnalogMode, (Type)` also works
-- Types are `Ignore` (no check), `Circle`, `Square` and `Precise`.
-- `Circle`, `Square` and `Precise` are make sure the analogue inputs sent to the game are actually possible, locking it to a circular or square deadzone with the maximum amplitude, or calculating the closest position possible on a controller within the possible amplitude. Odds are you don't need to worry about this.
+- `AnalogueMode, (Mode), (Optional upper limit of single axis, default value is 1, range is 0.5 to 1, only works in precise mode)`
+- `AnalogMode, (Mode)` also works
+- Modes are `Ignore` (no check), `Circle`, `Square` and `Precise`.
+- `Circle`, `Square` and `Precise` are make sure the analogue inputs sent to the game are actually possible, locking it to a circular or square deadzone with the maximum amplitude, or calculating the closest position possible on a controller within the possible amplitude.
+- Odds are you don't need to worry about this.
 
 ### StartExportLibTAS and FinishExportLibTAS
 - `StartExportLibTAS, (Optional File Path)`
@@ -113,15 +126,3 @@
 - `Add, (input line)` adds a line to the libTAS output.
 - `Skip, (frames)` skips the next however many frames.
 - Odds are you don't need to worry about this.
-
-### RecordCount
-- e.g. `RecordCount: 1`
-- Every time you run tas after modifying the current input file, the record count auto increases by one.
-
-### ChapterTime
-- e.g. `ChapterTime: 0:49.334(2902)`
-- After completing the whole level from the beginning, auto updating the chapter time.
-
-### FileTime
-- e.g. `FileTime: 0:51.170(3010)`
-- Auto update the file time when TAS has finished running, the file time is equal to the elapsed time during the TAS run.

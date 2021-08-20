@@ -32,12 +32,12 @@ e.g. 123,R,J (For 123 frames, hold Right and Jump)
 - K = Jump Bind 2
 - X = Dash / Talk / Cancel
 - C = Dash Bind 2 / Cancel
-- Z = Crouch Dash (Celeste beta versions only)
+- Z = Crouch Dash (Celeste v1.4+ only)
 - G = Grab
 - S = Pause
 - Q = Quick Reset
 - F = Feather Aim
-<br>Format: F, angle, optional upper limit of single axis (default value is 1, range is 0.5 - 1, only works in precise [AnalogMode](Docs/Commands.md#analoguemode)
+<br>Format: F, angle, optional upper limit of single axis (default value is 1, range is 0.5 to 1, only works in precise [AnalogMode](Docs/Commands.md#analoguemode)
 - O = Confirm
 - N = Journal (Used only for Cheat Code)
 
@@ -50,13 +50,13 @@ While in game or in Studio:
 - Fast Forward / Frame Advance Continuously: RightShift
 - Pause / Frame Advance: [
 - Unpause: ]
-- Toggle Hitboxes: B
-- Toggle Simplified Graphics: N
-- Toggle Center Camera: M
+- Toggle Hitboxes: LeftControl + B
+- Toggle Simplified Graphics: LeftControl + N
+- Toggle Center Camera: LeftControl + M
 - Save State: RightAlt + Minus ([Experimental](#savestate))
 - Clear State: RightAlt + Back ([Experimental](#savestate))
 
-- These can be rebound in Mod Options (Note that controller is not supported.)
+- These can be rebound in Mod Options (Note that controller is not supported)
     - You will have to rebind some of these if you are on a non-US keyboard layout.
     - Binding multiple keys to a control will cause those keys to act as a keycombo.
 
@@ -87,7 +87,7 @@ While in game or in Studio:
 ### Watch Entity
 
 Enable `Info HUD`, holding left ctrl then left-click to add the entity to be watched, right-click to clear the watching entities. Supports exporting watching entities info via
-the `StartExport` command.
+the `StartExportGameInfo` command.
 
 ### Custom Info
 
