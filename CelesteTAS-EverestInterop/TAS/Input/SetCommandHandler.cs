@@ -73,6 +73,7 @@ namespace TAS.Input {
 
                     if (settings is Assists variantAssists && !Equals(variantAssists, Assists.Default)) {
                         SaveData.Instance.VariantMode = true;
+                        SaveData.Instance.AssistMode = false;
                     }
                 }
             } catch (Exception e) {
