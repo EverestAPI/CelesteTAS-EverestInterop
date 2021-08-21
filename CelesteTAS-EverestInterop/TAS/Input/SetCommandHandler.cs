@@ -63,14 +63,16 @@ namespace TAS.Input {
 
                     object value = ConvertType(args[1], field.FieldType);
 
-                    if (SettingsSpecialCases(settingName, value)) {
-                        return;
+                    if (!SettingsSpecialCases(settingName, value)) {
+                        field.SetValue(settings, value);
+
+                        if (settings is Assists assists) {
+                            SaveData.Instance.Assists = assists;
+                        }
                     }
 
-                    field.SetValue(settings, value);
-
-                    if (settings is Assists assists) {
-                        SaveData.Instance.Assists = assists;
+                    if (settings is Assists variantAssists && !Equals(variantAssists, Assists.Default)) {
+                        SaveData.Instance.VariantMode = true;
                     }
                 }
             } catch (Exception e) {
