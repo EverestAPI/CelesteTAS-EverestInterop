@@ -46,6 +46,9 @@ namespace TAS {
             exporting = true;
             firstInputFrame = true;
             streamWriter?.Dispose();
+            if (Path.GetDirectoryName(path) is { } dir && dir.IsNotEmpty()) {
+                Directory.CreateDirectory(dir);
+            }
             streamWriter = new StreamWriter(path);
             streamWriter.WriteLine(string.Join("\t", "Line", "Inputs", "Frames", "Time", "Position", "Speed", "State", "Statuses", "Entities"));
             trackedEntities = new Dictionary<string, Func<Level, IList>>();

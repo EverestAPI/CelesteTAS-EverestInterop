@@ -94,6 +94,9 @@ namespace TAS {
             exporting = true;
             roomInfos.Clear();
             streamWriter?.Dispose();
+            if (Path.GetDirectoryName(path) is { } dir && dir.IsNotEmpty()) {
+                Directory.CreateDirectory(dir);
+            }
             streamWriter = new StreamWriter(path);
             streamWriter.WriteLine($"TAS File: {InputController.TasFilePath}");
             streamWriter.WriteLine(RoomInfo.GetTableHead());
