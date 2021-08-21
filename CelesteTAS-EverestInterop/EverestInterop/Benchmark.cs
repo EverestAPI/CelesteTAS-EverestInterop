@@ -1,19 +1,24 @@
+using System;
 using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Input;
 using TAS.Utils;
+using Celeste;
 
+#if DEBUG
 namespace TAS.EverestInterop {
     public static class Benchmark {
-        private static Stopwatch watch;
+        private static readonly Stopwatch watch = new Stopwatch();
         private static bool lastRunning;
         private static ulong lastFrameCounter;
 
+        [Load]
         public static void Load() {
             On.Monocle.Engine.Update += EngineOnUpdate;
         }
 
+        [Unload]
         public static void Unload() {
             On.Monocle.Engine.Update -= EngineOnUpdate;
         }
@@ -28,20 +33,29 @@ namespace TAS.EverestInterop {
                 }
             }
 
+            if (Manager.Running) {
+                if (Engine.Scene is LevelLoader && watch.IsRunning) {
+                    watch.Stop();
+                } else if (Engine.Scene is not LevelLoader && !watch.IsRunning) {
+                    watch.Start();
+                }
+            }
+
             lastRunning = Manager.Running;
         }
 
-        public static void Start() {
+        private static void Start() {
             lastFrameCounter = Engine.FrameCounter;
-            watch = new Stopwatch();
-            watch.Start();
+            watch.Restart();
             $"Benchmark Start: {InputController.TasFilePath}".Log();
         }
 
-        public static void Stop() {
+        private static void Stop() {
             ulong frames = Engine.FrameCounter - lastFrameCounter;
-            $"Benchmark Stop: frames={frames} time={watch.ElapsedMilliseconds}ms avg_speed={frames / 60f / watch.ElapsedMilliseconds * 1000f}".Log();
+            float framesPerSecond = (int) Math.Round(1 / Engine.RawDeltaTime);
+            $"Benchmark Stop: frames={frames} time={watch.ElapsedMilliseconds}ms avg_speed={frames / framesPerSecond / watch.ElapsedMilliseconds * 1000f}".Log();
             watch.Stop();
         }
     }
 }
+#endif

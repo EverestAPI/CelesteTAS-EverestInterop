@@ -18,6 +18,7 @@ namespace TAS.Input {
         public readonly Dictionary<string, DateTime> UsedFiles = new();
 
         private string checksum;
+        private string savestateChecksum;
         private int initializationFrameCount;
 
         public static string TasFilePath {
@@ -52,9 +53,11 @@ namespace TAS.Input {
         public int FastForwardSpeed => FastForwards.LastValueOrDefault()?.Speed ?? 1;
         public bool Break => FastForwards.LastValueOrDefault()?.Frame == CurrentFrame;
 
-        public string SavedChecksum {
-            get => string.IsNullOrEmpty(checksum) ? Checksum() : checksum;
-            private set => checksum = value;
+        private string Checksum => string.IsNullOrEmpty(checksum) ? checksum = CalcChecksum(Inputs.Count - 1) : checksum;
+
+        public string SavestateChecksum {
+            get => string.IsNullOrEmpty(savestateChecksum) ? savestateChecksum = CalcChecksum(CurrentFrame) : savestateChecksum;
+            private set => savestateChecksum = value;
         }
 
         public void RefreshInputs(bool enableRun) {
@@ -64,11 +67,13 @@ namespace TAS.Input {
             }
 
             bool needsReload = NeedsReload;
+            string lastChecksum = Checksum;
             if (needsReload || enableRun) {
                 int tryCount = 5;
                 while (tryCount > 0) {
                     initializationFrameCount = 0;
                     checksum = string.Empty;
+                    savestateChecksum = string.Empty;
                     Inputs.Clear();
                     FastForwards.Clear();
                     Commands.Clear();
@@ -76,7 +81,7 @@ namespace TAS.Input {
                     AnalogHelper.AnalogModeChange(AnalogueMode.Ignore);
                     if (ReadFile(TasFilePath)) {
                         LibTasHelper.FinishExport();
-                        if (needsReload) {
+                        if (needsReload && lastChecksum != Checksum) {
                             MetadataCommands.UpdateRecordCount(this);
                         }
 
@@ -197,7 +202,7 @@ namespace TAS.Input {
             clone.UsedFiles.AddRange(UsedFiles);
             clone.CurrentFrame = CurrentFrame;
             clone.InputCurrentFrame = InputCurrentFrame;
-            clone.SavedChecksum = clone.Checksum();
+            clone.SavestateChecksum = clone.CalcChecksum(CurrentFrame);
 
             return clone;
         }
@@ -207,35 +212,29 @@ namespace TAS.Input {
             CurrentFrame = controller.CurrentFrame;
         }
 
-        private string Checksum(int? toInputFrame = null) {
-            toInputFrame ??= CurrentFrame;
-
+        private string CalcChecksum(int toInputFrame) {
             StringBuilder result = new(TasFilePath);
             result.AppendLine();
 
-            try {
-                int checkInputFrame = 0;
+            int checkInputFrame = 0;
 
-                while (checkInputFrame < toInputFrame) {
-                    InputFrame currentInput = Inputs[checkInputFrame];
-                    result.AppendLine(currentInput.ToActionsString());
+            while (checkInputFrame < toInputFrame) {
+                InputFrame currentInput = Inputs[checkInputFrame];
+                result.AppendLine(currentInput.ToActionsString());
 
-                    if (Commands.GetValueOrDefault(checkInputFrame) is { } commands) {
-                        foreach (Command command in commands.Where(command => command.Attribute.SavestateChecksum)) {
-                            result.Append(command.LineText);
-                        }
+                if (Commands.GetValueOrDefault(checkInputFrame) is { } commands) {
+                    foreach (Command command in commands.Where(command => command.Attribute.CalcChecksum)) {
+                        result.Append(command.LineText);
                     }
-
-                    checkInputFrame++;
                 }
 
-                return SavedChecksum = HashHelper.ComputeHash(result.ToString());
-            } catch {
-                return SavedChecksum = HashHelper.ComputeHash(result.ToString());
+                checkInputFrame++;
             }
+
+            return HashHelper.ComputeHash(result.ToString());
         }
 
-        public string Checksum(InputController controller) => Checksum(controller.CurrentFrame);
+        public string CalcChecksum(InputController controller) => CalcChecksum(controller.CurrentFrame);
 
         // for hot loading
         // ReSharper disable once UnusedMember.Local

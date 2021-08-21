@@ -13,7 +13,7 @@ namespace TAS.Input {
         public bool LegalInMainGame = true;
         public string Name;
         public string[] AliasNames;
-        public bool SavestateChecksum = true;
+        public bool CalcChecksum = true;
 
         public bool IsName(string name) {
             bool result = Name.Equals(name, StringComparison.InvariantCultureIgnoreCase);

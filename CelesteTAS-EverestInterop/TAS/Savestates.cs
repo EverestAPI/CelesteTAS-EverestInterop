@@ -112,7 +112,7 @@ namespace TAS {
         private static void Save(bool breakpoint) {
             if (IsSaved()) {
                 if (Controller.CurrentFrame == savedController.CurrentFrame) {
-                    if (savedController.SavedChecksum == Controller.Checksum(savedController)) {
+                    if (savedController.SavestateChecksum == Controller.CalcChecksum(savedController)) {
                         State &= ~TasState.FrameStep;
                         NextState &= ~TasState.FrameStep;
                         return;
@@ -138,7 +138,7 @@ namespace TAS {
 
             if (IsSaved()) {
                 Controller.RefreshInputs(false);
-                if (!BreakpointHasBeenDeleted && savedController.SavedChecksum == Controller.Checksum(savedController)) {
+                if (!BreakpointHasBeenDeleted && savedController.SavestateChecksum == Controller.CalcChecksum(savedController)) {
                     if (Running && Controller.CurrentFrame == savedController.CurrentFrame) {
                         // Don't repeat load state, just play
                         State &= ~TasState.FrameStep;

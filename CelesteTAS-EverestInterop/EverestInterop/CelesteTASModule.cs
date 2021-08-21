@@ -44,10 +44,6 @@ namespace TAS.EverestInterop {
 
             // Open memory mapped file for interfacing with Windows Celeste Studio
             StudioCommunicationClient.Run();
-
-#if DEBUG
-            Benchmark.Load();
-#endif
         }
 
         public override void Unload() {

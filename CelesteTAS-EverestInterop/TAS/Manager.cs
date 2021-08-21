@@ -112,8 +112,7 @@ namespace TAS {
                 return overworld.Current is OuiFileSelect {SlotIndex: >= 0} slot && slot.Slots[slot.SlotIndex].StartingGame;
             }
 
-            bool isLoading = (Engine.Scene is LevelExit) || (Engine.Scene is LevelLoader) || (Engine.Scene is GameLoader) ||
-                             Engine.Scene.GetType().Name == "LevelExitToLobby";
+            bool isLoading = Engine.Scene is LevelExit or LevelLoader or GameLoader || Engine.Scene.GetType().Name == "LevelExitToLobby";
             return isLoading;
         }
 
