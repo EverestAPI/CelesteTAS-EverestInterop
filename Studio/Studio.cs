@@ -36,7 +36,7 @@ namespace CelesteStudio {
 
         private bool updating;
 
-        public Studio() {
+        public Studio(string[] args) {
             CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
             Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
@@ -44,7 +44,7 @@ namespace CelesteStudio {
                 Directory.SetCurrentDirectory(exeDir);
             }
 
-            InitSettings();
+            InitSettings(args);
             InitializeComponent();
             InitMenu();
             InitDragDrop();
@@ -80,12 +80,12 @@ namespace CelesteStudio {
         private static StringCollection RecentFiles => Settings.Default.RecentFiles ??= new StringCollection();
 
         [STAThread]
-        public static void Main() {
+        public static void Main(string[] args) {
             AppDomain.CurrentDomain.UnhandledException += UnhandledException;
             RunSingleton(() => {
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
-                Application.Run(new Studio());
+                Application.Run(new Studio(args));
             });
         }
 
@@ -145,10 +145,14 @@ namespace CelesteStudio {
             }
         }
 
-        private void InitSettings() {
+        private void InitSettings(string[] args) {
             if (Settings.Default.UpgradeTime < File.GetLastWriteTime(Assembly.GetEntryAssembly().Location)) {
                 Settings.Default.Upgrade();
                 Settings.Default.UpgradeTime = DateTime.Now;
+            }
+
+            if (args.Length > 0 && File.Exists(args[0]) && args[0].EndsWith(".tas", StringComparison.InvariantCultureIgnoreCase)) {
+                Settings.Default.LastFileName = args[0];
             }
         }
 

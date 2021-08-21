@@ -62,7 +62,9 @@ namespace TAS.Input {
         private static void ConsoleCommand(string[] arguments) {
             string commandName = arguments[0].ToLower();
             string[] args = arguments.Skip(1).ToArray();
-            if (commandName == "load" || commandName == "hard" || commandName == "rmx2") {
+            if (commandName.Equals("load", StringComparison.InvariantCultureIgnoreCase) ||
+                commandName.Equals("hard", StringComparison.InvariantCultureIgnoreCase) ||
+                commandName.Equals("rmx2", StringComparison.InvariantCultureIgnoreCase)) {
                 LoadCommand(commandName, args);
             } else {
                 Engine.Commands.ExecuteCommand(commandName, args);
@@ -72,8 +74,7 @@ namespace TAS.Input {
         private static void LoadCommand(string command, string[] args) {
             try {
                 if (SaveData.Instance == null || !Manager.AllowUnsafeInput && SaveData.Instance.FileSlot != -1) {
-                    int slot = SaveData.Instance == null ? -1 : SaveData.Instance.FileSlot;
-                    SaveData data = UserIO.Load<SaveData>(SaveData.GetFilename(slot)) ?? new SaveData();
+                    SaveData data = SaveData.Instance ?? UserIO.Load<SaveData>(SaveData.GetFilename(-1)) ?? new SaveData();
                     SaveData.Start(data, -1);
 
                     // Complete Prologue if incomplete
@@ -85,9 +86,9 @@ namespace TAS.Input {
                 }
 
                 AreaMode mode = AreaMode.Normal;
-                if (command == "hard") {
+                if (command.Equals("hard", StringComparison.InvariantCultureIgnoreCase)) {
                     mode = AreaMode.BSide;
-                } else if (command == "rmx2") {
+                } else if (command.Equals("hard", StringComparison.InvariantCultureIgnoreCase)) {
                     mode = AreaMode.CSide;
                 }
 
