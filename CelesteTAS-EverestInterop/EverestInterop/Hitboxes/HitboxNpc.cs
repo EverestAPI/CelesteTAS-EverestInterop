@@ -37,6 +37,9 @@ namespace TAS.EverestInterop.Hitboxes {
                 } else if (entity is NPC03_Oshiro_Hallway1 or NPC03_Oshiro_Hallway2 or NPC06_Granny) {
                     float x = entity.X - 55;
                     Draw.Line(x, top, x, bottom, color);
+                } else if (entity is NPC03_Oshiro_Cluttter) {
+                    float x = entity.X + 28;
+                    Draw.Line(x, top, x, entity.Y, color);
                 } else if (entity is NPC04_Granny) {
                     float x = entity.X - 35;
                     Draw.Line(x, top, x, bottom, color);
