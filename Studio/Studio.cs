@@ -915,7 +915,7 @@ namespace CelesteStudio {
                             }
 
                             if (old.Frames == input.Frames && old.ZeroPadding == input.ZeroPadding) {
-                                index = 4;
+                                index = input.HasActions(Actions.Feather) ? line.Length : 4;
                             }
 
                             place = new Place(index, start - 1);
