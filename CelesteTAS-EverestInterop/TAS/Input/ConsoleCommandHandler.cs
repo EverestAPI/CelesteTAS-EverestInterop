@@ -88,7 +88,7 @@ namespace TAS.Input {
                 AreaMode mode = AreaMode.Normal;
                 if (command.Equals("hard", StringComparison.InvariantCultureIgnoreCase)) {
                     mode = AreaMode.BSide;
-                } else if (command.Equals("hard", StringComparison.InvariantCultureIgnoreCase)) {
+                } else if (command.Equals("rmx2", StringComparison.InvariantCultureIgnoreCase)) {
                     mode = AreaMode.CSide;
                 }
 
