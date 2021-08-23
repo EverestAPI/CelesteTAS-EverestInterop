@@ -155,13 +155,13 @@ namespace CelesteStudio.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("2000-01-01")]
-        public global::System.DateTime UpgradeTime {
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string UpgradeVersion {
             get {
-                return ((global::System.DateTime)(this["UpgradeTime"]));
+                return ((string)(this["UpgradeVersion"]));
             }
             set {
-                this["UpgradeTime"] = value;
+                this["UpgradeVersion"] = value;
             }
         }
     }

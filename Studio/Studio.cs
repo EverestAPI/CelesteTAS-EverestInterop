@@ -70,9 +70,9 @@ namespace CelesteStudio {
         private static StringCollection RecentFiles => Settings.Default.RecentFiles ??= new StringCollection();
 
         private void UpgradeSettings() {
-            if (Settings.Default.UpgradeTime < File.GetLastWriteTime(Assembly.GetEntryAssembly().Location)) {
+            if (string.IsNullOrEmpty(Settings.Default.UpgradeVersion) || new Version(Settings.Default.UpgradeVersion) < Assembly.GetExecutingAssembly().GetName().Version) {
                 Settings.Default.Upgrade();
-                Settings.Default.UpgradeTime = DateTime.Now;
+                Settings.Default.UpgradeVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             }
         }
 
