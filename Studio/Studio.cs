@@ -3,13 +3,9 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Drawing;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Security.AccessControl;
-using System.Security.Principal;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -28,7 +24,6 @@ namespace CelesteStudio {
 
         private readonly List<InputRecord> lines = new();
 
-        //private GameMemory memory = new GameMemory();
         private DateTime lastChanged = DateTime.MinValue;
         private FormWindowState lastWindowState = FormWindowState.Normal;
         private State tasState;
@@ -37,14 +32,7 @@ namespace CelesteStudio {
         private bool updating;
 
         public Studio(string[] args) {
-            CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
-            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
-
-            if (Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) is string exeDir) {
-                Directory.SetCurrentDirectory(exeDir);
-            }
-
-            InitSettings(args);
+            UpgradeSettings();
             InitializeComponent();
             InitMenu();
             InitDragDrop();
@@ -63,6 +51,8 @@ namespace CelesteStudio {
             }
 
             Instance = this;
+
+            TryOpenFile(args);
         }
 
         private bool DisableTyping => tasState.HasFlag(State.Enable) && !tasState.HasFlag(State.FrameStep);
@@ -79,80 +69,10 @@ namespace CelesteStudio {
 
         private static StringCollection RecentFiles => Settings.Default.RecentFiles ??= new StringCollection();
 
-        [STAThread]
-        public static void Main(string[] args) {
-            AppDomain.CurrentDomain.UnhandledException += UnhandledException;
-            RunSingleton(() => {
-                Application.EnableVisualStyles();
-                Application.SetCompatibleTextRenderingDefault(false);
-                Application.Run(new Studio(args));
-            });
-        }
-
-        private static void UnhandledException(object sender, UnhandledExceptionEventArgs e) {
-            Exception exception = e.ExceptionObject as Exception ?? new Exception("Unknown unhandled exception");
-            if (exception.GetType().FullName == "System.Configuration.ConfigurationErrorsException") {
-                MessageBox.Show("Your configuration file is corrupted and will be deleted automatically, please try to launch celeste studio again.",
-                    "Configuration Errors Exception", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                string configFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Celeste_Studio");
-                if (Directory.Exists(configFolder)) {
-                    Directory.Delete(configFolder, true);
-                }
-
-                return;
-            }
-
-            ErrorLog.Write(exception);
-            ErrorLog.Open();
-            Application.Exit();
-        }
-
-        private static void RunSingleton(Action action) {
-            string appGuid =
-                ((GuidAttribute) Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(GuidAttribute), false).GetValue(0)).Value;
-
-            string mutexId = $"Global\\{{{appGuid}}}";
-
-            var allowEveryoneRule =
-                new MutexAccessRule(new SecurityIdentifier(WellKnownSidType.WorldSid
-                        , null)
-                    , MutexRights.FullControl
-                    , AccessControlType.Allow
-                );
-            var securitySettings = new MutexSecurity();
-            securitySettings.AddAccessRule(allowEveryoneRule);
-
-            using (var mutex = new Mutex(false, mutexId, out _, securitySettings)) {
-                var hasHandle = false;
-                try {
-                    try {
-                        hasHandle = mutex.WaitOne(TimeSpan.Zero, false);
-                        if (hasHandle == false) {
-                            MessageBox.Show("Studio already running", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                            return;
-                        }
-                    } catch (AbandonedMutexException) {
-                        hasHandle = true;
-                    }
-
-                    // Perform your work here.
-                    action();
-                } finally {
-                    if (hasHandle) {
-                        mutex.ReleaseMutex();
-                    }
-                }
-            }
-        }
-
-        private void InitSettings(string[] args) {
+        private void UpgradeSettings() {
             if (Settings.Default.UpgradeTime < File.GetLastWriteTime(Assembly.GetEntryAssembly().Location)) {
                 Settings.Default.Upgrade();
                 Settings.Default.UpgradeTime = DateTime.Now;
-            }
-
-            if (args.Length > 0 && File.Exists(args[0]) && args[0].EndsWith(".tas", StringComparison.InvariantCultureIgnoreCase)) {
-                Settings.Default.LastFileName = args[0];
             }
         }
 
@@ -416,6 +336,12 @@ namespace CelesteStudio {
         private void ToggleUpdatingHotkeys() {
             CommunicationWrapper.UpdatingHotkeys = !CommunicationWrapper.UpdatingHotkeys;
             Settings.Default.UpdatingHotkeys = CommunicationWrapper.UpdatingHotkeys;
+        }
+
+        public void TryOpenFile(string[] args) {
+            if (args.Length > 0 && File.Exists(args[0]) && args[0].EndsWith(".tas", StringComparison.InvariantCultureIgnoreCase)) {
+                OpenFile(args[0]);
+            }
         }
 
         private void OpenFile(string fileName = null, int startLine = 0) {

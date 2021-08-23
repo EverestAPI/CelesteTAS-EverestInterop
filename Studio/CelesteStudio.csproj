@@ -27,6 +27,7 @@
     </PropertyGroup>
     <Import Project="..\StudioCommunication\StudioCommunication.projitems" Label="Shared" />
     <ItemGroup>
+        <Reference Include="Microsoft.VisualBasic"/>
         <Reference Include="System.Deployment" />
         <Reference Include="System.Windows.Forms" />
     </ItemGroup>
