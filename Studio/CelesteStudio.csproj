@@ -11,6 +11,8 @@
         <AssemblyVersion>2.4.3.0</AssemblyVersion>
         <FileVersion>2.4.3.0</FileVersion>
         <OutputPath>..\CelesteTAS-EverestInterop\bin\</OutputPath>
+        <SignAssembly>true</SignAssembly>
+        <AssemblyOriginatorKeyFile>sgKey.snk</AssemblyOriginatorKeyFile>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
         <DebugType>portable</DebugType>
@@ -27,7 +29,7 @@
     </PropertyGroup>
     <Import Project="..\StudioCommunication\StudioCommunication.projitems" Label="Shared" />
     <ItemGroup>
-        <Reference Include="Microsoft.VisualBasic"/>
+        <Reference Include="Microsoft.VisualBasic" />
         <Reference Include="System.Deployment" />
         <Reference Include="System.Windows.Forms" />
     </ItemGroup>
