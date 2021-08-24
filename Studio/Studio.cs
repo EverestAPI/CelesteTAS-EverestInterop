@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -70,7 +71,8 @@ namespace CelesteStudio {
         private static StringCollection RecentFiles => Settings.Default.RecentFiles ??= new StringCollection();
 
         private void UpgradeSettings() {
-            if (string.IsNullOrEmpty(Settings.Default.UpgradeVersion) || new Version(Settings.Default.UpgradeVersion) < Assembly.GetExecutingAssembly().GetName().Version) {
+            if (string.IsNullOrEmpty(Settings.Default.UpgradeVersion) ||
+                new Version(Settings.Default.UpgradeVersion) < Assembly.GetExecutingAssembly().GetName().Version) {
                 Settings.Default.Upgrade();
                 Settings.Default.UpgradeVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             }
@@ -339,9 +341,47 @@ namespace CelesteStudio {
         }
 
         public void TryOpenFile(string[] args) {
-            if (args.Length > 0 && File.Exists(args[0]) && args[0].EndsWith(".tas", StringComparison.InvariantCultureIgnoreCase)) {
-                OpenFile(args[0]);
+            if (args.Length > 0 && args[0] is { } filePath && filePath.EndsWith(".tas", StringComparison.InvariantCultureIgnoreCase) &&
+                TryGetExactCasePath(filePath, out string exactPath)) {
+                OpenFile(exactPath);
             }
+        }
+
+        private static bool TryGetExactCasePath(string path, out string exactPath) {
+            bool result = false;
+            exactPath = null;
+
+            // DirectoryInfo accepts either a file path or a directory path, and most of its properties work for either.
+            // However, its Exists property only works for a directory path.
+            DirectoryInfo directory = new(path);
+            if (File.Exists(path) || directory.Exists) {
+                List<string> parts = new();
+
+                DirectoryInfo parentDirectory = directory.Parent;
+                while (parentDirectory != null) {
+                    FileSystemInfo entry = parentDirectory.EnumerateFileSystemInfos(directory.Name).First();
+                    parts.Add(entry.Name);
+
+                    directory = parentDirectory;
+                    parentDirectory = directory.Parent;
+                }
+
+                // Handle the root part (i.e., drive letter or UNC \\server\share).
+                string root = directory.FullName;
+                if (root.Contains(':')) {
+                    root = root.ToUpper();
+                } else {
+                    string[] rootParts = root.Split('\\');
+                    root = string.Join("\\", rootParts.Select(part => CultureInfo.CurrentCulture.TextInfo.ToTitleCase(part)));
+                }
+
+                parts.Add(root);
+                parts.Reverse();
+                exactPath = Path.Combine(parts.ToArray());
+                result = true;
+            }
+
+            return result;
         }
 
         private void OpenFile(string fileName = null, int startLine = 0) {
