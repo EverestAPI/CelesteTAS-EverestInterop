@@ -48,7 +48,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 return string.Empty;
             }
 
-            IDictionary<string, Entity> cachedEntities = new Dictionary<string, Entity>();
+            Dictionary<string, List<Entity>> cachedEntities = new();
 
             return BraceRegex.Replace(Settings.InfoCustomTemplate, match => {
                 string matchText = match.Groups[1].Value;
@@ -98,15 +98,31 @@ namespace TAS.EverestInterop.InfoHUD {
 
                 if (Engine.Scene is Level level) {
                     if (type.IsSameOrSubclassOf(typeof(Entity))) {
-                        Entity entity;
+                        List<Entity> entities;
                         if (cachedEntities.ContainsKey(firstText)) {
-                            entity = cachedEntities[firstText];
+                            entities = cachedEntities[firstText];
                         } else {
-                            entity = FindEntity(type, level, entityId);
-                            cachedEntities[firstText] = entity;
+                            entities = FindEntities(type, level, entityId)?.ToList();
+                            cachedEntities[firstText] = entities;
                         }
 
-                        return entity != null ? FormatValue(GetMemberValue(entity, memberNames), toFrame) : string.Empty;
+                        if (entities == null) {
+                            return string.Empty;
+                        } else {
+                            return string.Join("", entities.Select(entity => {
+                                string value = FormatValue(GetMemberValue(entity, memberNames), toFrame);
+
+                                if (entities.Count > 1) {
+                                    if (entity.LoadEntityData()?.ToEntityId().ToString() is { } id) {
+                                        value = $"\n[{id}]{value}";
+                                    } else {
+                                        value = $"\n{value}";
+                                    }
+                                }
+
+                                return value;
+                            }));
+                        }
                     } else if (type == typeof(Level)) {
                         return FormatValue(GetMemberValue(level, memberNames), toFrame);
                     }
@@ -197,7 +213,7 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-        private static Entity FindEntity(Type type, Level level, string entityId) {
+        private static IEnumerable<Entity> FindEntities(Type type, Level level, string entityId) {
             IEnumerable<Entity> entities;
             if (level.Tracker.Entities.ContainsKey(type)) {
                 entities = level.Tracker.Entities[type];
@@ -207,9 +223,9 @@ namespace TAS.EverestInterop.InfoHUD {
             }
 
             if (entityId.IsNullOrEmpty()) {
-                return entities?.FirstOrDefault();
+                return entities;
             } else {
-                return entities?.FirstOrDefault(entity => entity.LoadEntityData()?.ToEntityId().ToString() == entityId);
+                return entities?.Where(entity => entity.LoadEntityData()?.ToEntityId().ToString() == entityId);
             }
         }
     }
