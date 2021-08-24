@@ -97,6 +97,7 @@ namespace TAS {
             if (Path.GetDirectoryName(path) is { } dir && dir.IsNotEmpty()) {
                 Directory.CreateDirectory(dir);
             }
+
             streamWriter = new StreamWriter(path);
             streamWriter.WriteLine($"TAS File: {InputController.TasFilePath}");
             streamWriter.WriteLine(RoomInfo.GetTableHead());
@@ -179,14 +180,17 @@ namespace TAS {
                 if (EnterRoomChapterTime != null && LeaveRoomChapterTime != null) {
                     values.Add(FormatTime(LeaveRoomChapterTime - EnterRoomChapterTime));
                 } else {
-                    values.Add($"EnterRoomChapterTime={EnterRoomChapterTime} LeaveRoomChapterTime={LeaveRoomChapterTime}");
+                    values.Add(string.Empty);
                 }
 
                 if (EnterRoomFileTime != null && LeaveRoomFileTime != null) {
                     values.Add(FormatTime(LeaveRoomFileTime - EnterRoomFileTime));
                 } else {
-                    values.Add($"EnterRoomFileTime={EnterRoomFileTime} LeaveRoomFileTime={LeaveRoomFileTime}");
+                    values.Add(string.Empty);
                 }
+
+                values.Add(FormatTime(LeaveRoomChapterTime));
+                values.Add(FormatTime(LeaveRoomFileTime));
 
                 return string.Join("\t", values);
             }
@@ -196,7 +200,9 @@ namespace TAS {
                     "Chapter",
                     "Room",
                     "Elapsed Chapter Time",
-                    "Elapsed File Time"
+                    "Elapsed File Time",
+                    "Chapter Time",
+                    "File Time"
                 );
             }
 

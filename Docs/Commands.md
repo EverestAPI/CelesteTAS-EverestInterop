@@ -92,20 +92,20 @@
 ### StartExportRoomInfo and FinishExportRoomInfo
 - `StartExportRoomInfo (Optional File Path)`
 - `FinishExportRoomInfo`
-- Dumps the elapsed time of each room to a file.
+- Dumps the elapsed time of each room to a file. which can be used to compare improvements.
 - Default filepath is `dump_room_info.txt`.
 
 ### RecordCount
 - e.g. `RecordCount: 1`
 - Every time you run tas after modifying the current input file, the record count auto increases by one.
 
-### ChapterTime
-- e.g. `ChapterTime: 0:49.334(2902)`
-- After completing the whole level from the beginning, auto updating the chapter time.
-
 ### FileTime
 - e.g. `FileTime: 0:51.170(3010)`
 - Auto update the file time when TAS has finished running, the file time is equal to the elapsed time during the TAS run.
+
+### ChapterTime
+- e.g. `ChapterTime: 0:49.334(2902)`
+- After completing the whole level from the beginning, auto updating the chapter time.
 
 ### AnalogueMode
 - `AnalogueMode, (Mode), (Optional upper limit of single axis, default value is 1, range is 0.5 to 1, only works in precise mode)`
@@ -116,7 +116,7 @@
 
 ### StartExportLibTAS and FinishExportLibTAS
 - `StartExportLibTAS, (Optional File Path)`
-- Converts the TAS to the inputs portion of a .ltm.
+- Converts the TAS to the inputs portion of a LibTAS movie file.
 - Default filepath is `libTAS_inputs.txt`
 - Odds are you don't need to worry about this.
 

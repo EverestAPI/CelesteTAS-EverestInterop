@@ -678,6 +678,7 @@ namespace CelesteStudio {
             this.startExportRoomInfoToolStripMenuItem.Name = "startExportRoomInfoToolStripMenuItem";
             this.startExportRoomInfoToolStripMenuItem.Size = new System.Drawing.Size(204, 22);
             this.startExportRoomInfoToolStripMenuItem.Text = "StartExportRoomInfo";
+            this.startExportRoomInfoToolStripMenuItem.ToolTipText = "Dumps the elapsed time of each room to a file. which can be used to compare impro" + "vements.\r\n";
             this.startExportRoomInfoToolStripMenuItem.Click += new System.EventHandler(this.startExportRoomInfoToolStripMenuItem_Click);
             // 
             // finishExportRoomInfoToolStripMenuItem
@@ -685,6 +686,7 @@ namespace CelesteStudio {
             this.finishExportRoomInfoToolStripMenuItem.Name = "finishExportRoomInfoToolStripMenuItem";
             this.finishExportRoomInfoToolStripMenuItem.Size = new System.Drawing.Size(204, 22);
             this.finishExportRoomInfoToolStripMenuItem.Text = "FinishExportRoomInfo";
+            this.finishExportRoomInfoToolStripMenuItem.ToolTipText = "Dumps the elapsed time of each room to a file. which can be used to compare impro" + "vements.\r\n";
             this.finishExportRoomInfoToolStripMenuItem.Click += new System.EventHandler(this.finishExportRoomInfoToolStripMenuItem_Click);
             // 
             // toolStripSeparator5
@@ -713,6 +715,7 @@ namespace CelesteStudio {
             this.startExportLibTASToolStripMenuItem.Name = "startExportLibTASToolStripMenuItem";
             this.startExportLibTASToolStripMenuItem.Size = new System.Drawing.Size(204, 22);
             this.startExportLibTASToolStripMenuItem.Text = "StartExportLibTAS";
+            this.startExportLibTASToolStripMenuItem.ToolTipText = "Converts the TAS to the inputs portion of a LibTAS movie file.\r\n";
             this.startExportLibTASToolStripMenuItem.Click += new System.EventHandler(this.startExportLibTASToolStripMenuItem_Click);
             // 
             // finishExportLibTASToolStripMenuItem
@@ -720,6 +723,7 @@ namespace CelesteStudio {
             this.finishExportLibTASToolStripMenuItem.Name = "finishExportLibTASToolStripMenuItem";
             this.finishExportLibTASToolStripMenuItem.Size = new System.Drawing.Size(204, 22);
             this.finishExportLibTASToolStripMenuItem.Text = "FinishExportLibTAS";
+            this.finishExportLibTASToolStripMenuItem.ToolTipText = "Converts the TAS to the inputs portion of a LibTAS movie file.\r\n";
             this.finishExportLibTASToolStripMenuItem.Click += new System.EventHandler(this.finishExportLibTASToolStripMenuItem_Click);
             // 
             // toolStripSeparator13
@@ -732,6 +736,7 @@ namespace CelesteStudio {
             this.recordCountToolStripMenuItem.Name = "recordCountToolStripMenuItem";
             this.recordCountToolStripMenuItem.Size = new System.Drawing.Size(204, 22);
             this.recordCountToolStripMenuItem.Text = "Record Count";
+            this.recordCountToolStripMenuItem.ToolTipText = "Every time you run tas after modifying the current input file, the record count a" + "uto increases by one.";
             this.recordCountToolStripMenuItem.Click += new System.EventHandler(this.recordCountToolStripMenuItem_Click);
             // 
             // fileTimeToolStripMenuItem
@@ -739,6 +744,7 @@ namespace CelesteStudio {
             this.fileTimeToolStripMenuItem.Name = "fileTimeToolStripMenuItem";
             this.fileTimeToolStripMenuItem.Size = new System.Drawing.Size(204, 22);
             this.fileTimeToolStripMenuItem.Text = "File Time";
+            this.fileTimeToolStripMenuItem.ToolTipText = "Auto update the file time when TAS has finished running, the file time is equal t" + "o the elapsed time during the TAS run.\r\n";
             this.fileTimeToolStripMenuItem.Click += new System.EventHandler(this.fileTimeToolStripMenuItem_Click);
             // 
             // chapterTimeToolStripMenuItem
@@ -746,6 +752,7 @@ namespace CelesteStudio {
             this.chapterTimeToolStripMenuItem.Name = "chapterTimeToolStripMenuItem";
             this.chapterTimeToolStripMenuItem.Size = new System.Drawing.Size(204, 22);
             this.chapterTimeToolStripMenuItem.Text = "Chapter Time";
+            this.chapterTimeToolStripMenuItem.ToolTipText = "After completing the whole level from the beginning, auto updating the chapter ti" + "me.\r\n";
             this.chapterTimeToolStripMenuItem.Click += new System.EventHandler(this.chapterTimeToolStripMenuItem_Click);
             // 
             // toolStripSeparator6
