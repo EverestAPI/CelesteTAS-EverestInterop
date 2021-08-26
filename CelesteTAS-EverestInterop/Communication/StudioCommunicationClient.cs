@@ -138,7 +138,7 @@ namespace TAS.Communication {
             }
 
             List<EverestModuleMetadata> metas = Everest.Modules
-                .Where(module => module.Metadata.Name != "UpdateChecker" && module.Metadata.Name != "DialogCutscene")
+                .Where(module => module.GetType().Name != "NullModule" || module.Metadata.Name == "Celeste")
                 .Select(module => module.Metadata).ToList();
             metas.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
 
@@ -150,31 +150,31 @@ namespace TAS.Communication {
                 mapMeta = metas.FirstOrDefault(meta => meta.Name == moduleName);
             }
 
-            string gameData = "";
+            string modInfo = "";
 
             EverestModuleMetadata celesteMeta = metas.First(metadata => metadata.Name == "Celeste");
             EverestModuleMetadata everestMeta = metas.First(metadata => metadata.Name == "Everest");
             EverestModuleMetadata tasMeta = metas.First(metadata => metadata.Name == "CelesteTAS");
-            gameData += MetaToString(celesteMeta);
-            gameData += MetaToString(everestMeta);
-            gameData += MetaToString(tasMeta);
+            modInfo += MetaToString(celesteMeta);
+            modInfo += MetaToString(everestMeta);
+            modInfo += MetaToString(tasMeta);
             metas.Remove(celesteMeta);
             metas.Remove(everestMeta);
             metas.Remove(tasMeta);
 
             EverestModuleMetadata speedrunToolMeta = metas.FirstOrDefault(metadata => metadata.Name == "SpeedrunTool");
             if (speedrunToolMeta != null) {
-                gameData += MetaToString(speedrunToolMeta);
+                modInfo += MetaToString(speedrunToolMeta);
                 metas.Remove(speedrunToolMeta);
             }
 
-            gameData += "\n# Map:\n";
+            modInfo += "\n# Map:\n";
             if (mapMeta != null) {
-                gameData += MetaToString(mapMeta, 2);
+                modInfo += MetaToString(mapMeta, 2);
             }
 
             string mode = level.Session.Area.Mode == AreaMode.Normal ? "ASide" : level.Session.Area.Mode.ToString();
-            gameData += $"#   {areaData.SID} {mode}\n";
+            modInfo += $"#   {areaData.SID} {mode}\n";
 
             if (!string.IsNullOrEmpty(moduleName) && mapMeta != null) {
                 List<EverestModuleMetadata> dependencies = mapMeta.Dependencies.Where(metadata =>
@@ -182,21 +182,21 @@ namespace TAS.Communication {
                     metadata.Name != "DialogCutscene" && metadata.Name != "CelesteTAS").ToList();
                 dependencies.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
                 if (dependencies.Count > 0) {
-                    gameData += "\n# Dependencies:\n";
-                    gameData += string.Join(string.Empty,
+                    modInfo += "\n# Dependencies:\n";
+                    modInfo += string.Join(string.Empty,
                         dependencies.Select(meta => metas.First(metadata => metadata.Name == meta.Name)).Select(meta => MetaToString(meta, 2)));
                 }
 
-                gameData += "\n# Other Installed Mods:\n";
-                gameData += string.Join(string.Empty,
+                modInfo += "\n# Other Installed Mods:\n";
+                modInfo += string.Join(string.Empty,
                     metas.Where(meta => meta.Name != moduleName && dependencies.All(metadata => metadata.Name != meta.Name))
                         .Select(meta => MetaToString(meta, 2)));
             } else if (metas.IsNotEmpty()) {
-                gameData += "\n# Other Installed Mods:\n";
-                gameData += string.Join(string.Empty, metas.Select(meta => MetaToString(meta, 2)));
+                modInfo += "\n# Other Installed Mods:\n";
+                modInfo += string.Join(string.Empty, metas.Select(meta => MetaToString(meta, 2)));
             }
 
-            return gameData;
+            return modInfo;
         }
 
         private void ProcessSendPath(byte[] data) {
