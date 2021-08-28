@@ -68,12 +68,24 @@ namespace TAS {
             } else {
                 Running = false;
                 if (!Engine.Instance.IsActive) {
-                    UpdateVirtualInputs();
+                    // MInput.Mouse.UpdateNull();
+                    MInput.Keyboard.PreviousState = MInput.Keyboard.CurrentState;
+                    MInput.Keyboard.CurrentState = default;
+                    MInput.Keyboard.CurrentState.GetPressedKeys();
+                    
+                    // MInput.Mouse.UpdateNull();
+                    MInput.Mouse.PreviousState = MInput.Mouse.CurrentState;
+                    MInput.Mouse.CurrentState = default;
+                    
                     for (int i = 0; i < 4; i++) {
-                        if (MInput.GamePads[i].Attached) {
-                            MInput.GamePads[i].CurrentState = GamePad.GetState((PlayerIndex) i);
+                        if (MInput.Active) {
+                            MInput.GamePads[i].Update();
+                        } else {
+                            MInput.GamePads[i].UpdateNull();
                         }
                     }
+
+                    UpdateVirtualInputs();
                 }
             }
 

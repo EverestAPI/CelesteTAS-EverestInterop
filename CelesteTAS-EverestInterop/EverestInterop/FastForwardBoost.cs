@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Celeste;
+using Celeste.Mod;
 using Monocle;
 using StudioCommunication;
 
@@ -26,10 +27,11 @@ namespace TAS.EverestInterop {
 
         private static void TrackerOnInitialize(On.Monocle.Tracker.orig_Initialize orig) {
             orig();
-            AddToTracker(typeof(PlayerSeeker));
+            AddTypeToTracker(typeof(PlayerSeeker));
+            AddTypeToTracker(typeof(KeyboardConfigUI), typeof(ModuleSettingsKeyboardConfigUI));
         }
 
-        private static void AddToTracker(Type type) {
+        private static void AddTypeToTracker(Type type, params Type[] subTypes) {
             if (!Tracker.StoredEntityTypes.Contains(type)) {
                 Tracker.StoredEntityTypes.Add(type);
             }
@@ -38,6 +40,14 @@ namespace TAS.EverestInterop {
                 Tracker.TrackedEntityTypes[type] = new List<Type> {type};
             } else if (!Tracker.TrackedEntityTypes[type].Contains(type)) {
                 Tracker.TrackedEntityTypes[type].Add(type);
+            }
+
+            foreach (Type subType in subTypes) {
+                if (!Tracker.TrackedEntityTypes.ContainsKey(subType)) {
+                    Tracker.TrackedEntityTypes[subType] = new List<Type> {type};
+                } else if (!Tracker.TrackedEntityTypes[subType].Contains(type)) {
+                    Tracker.TrackedEntityTypes[subType].Add(type);
+                }
             }
         }
 

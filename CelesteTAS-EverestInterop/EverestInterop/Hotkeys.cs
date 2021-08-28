@@ -172,6 +172,10 @@ namespace TAS.EverestInterop {
                 return;
             }
 
+            if (!Manager.Running && Engine.Scene?.Tracker.GetEntity<KeyboardConfigUI>() != null) {
+                return;
+            }
+
             foreach (Hotkey hotkey in HotkeyList) {
                 hotkey?.Update();
             }

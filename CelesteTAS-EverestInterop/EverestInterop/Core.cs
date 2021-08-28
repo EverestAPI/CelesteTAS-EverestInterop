@@ -121,13 +121,11 @@ namespace TAS.EverestInterop {
                 return;
             }
 
-            if (!Manager.Running || Manager.Recording) {
+            if ((!Manager.Running || Manager.Recording) && Engine.Instance.IsActive) {
                 orig();
             }
 
-            if (Manager.Running || Engine.Scene?.Entities.Any(entity => entity.GetType().IsSubclassOf(typeof(KeyboardConfigUI))) != true) {
-                Manager.Update();
-            }
+            Manager.Update();
 
             // Hacky, but this works just good enough.
             // The original code executes base.Update(); return; instead.
