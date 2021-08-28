@@ -56,7 +56,7 @@ While in game or in Studio:
 - Save State: RightAlt + Minus ([Experimental](#savestate))
 - Clear State: RightAlt + Back ([Experimental](#savestate))
 
-- These can be rebound in Mod Options (Note that controller is not supported)
+- These can be rebound in Mod Options
     - You will have to rebind some of these if you are on a non-US keyboard layout.
     - Binding multiple keys to a control will cause those keys to act as a keycombo.
 

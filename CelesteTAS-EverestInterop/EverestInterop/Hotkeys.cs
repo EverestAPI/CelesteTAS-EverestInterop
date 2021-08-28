@@ -101,67 +101,19 @@ namespace TAS.EverestInterop {
         }
 
         private static Hotkey BindingToHotkey(ButtonBinding binding) {
-            return new(binding.Keys, null, true, ReferenceEquals(binding, Settings.KeyFastForward));
+            return new(binding.Keys, binding.Buttons, true, ReferenceEquals(binding, Settings.KeyFastForward));
         }
-
-        public static bool IsKeyDown(List<Keys> keys, bool keyCombo = true) {
-            if (keys == null || keys.Count == 0 || !Engine.Instance.IsActive) {
-                return false;
-            }
-
-            if (keyCombo) {
-                foreach (Keys key in keys) {
-                    if (!kbState.IsKeyDown(key)) {
-                        return false;
-                    }
-                }
-
-                return true;
-            } else {
-                foreach (Keys key in keys) {
-                    if (kbState.IsKeyDown(key)) {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-        }
-
-        private static bool IsButtonDown(List<Buttons> buttons, bool keyCombo = true) {
-            if (buttons == null || buttons.Count == 0) {
-                return false;
-            }
-
-            if (keyCombo) {
-                foreach (Buttons button in buttons) {
-                    if (!padState.IsButtonDown(button)) {
-                        return false;
-                    }
-                }
-
-                return true;
-            } else {
-                foreach (Buttons button in buttons) {
-                    if (padState.IsButtonDown(button)) {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-        }
-
+        
         private static GamePadState GetGamePadState() {
-            GamePadState padState = MInput.GamePads[0].CurrentState;
+            GamePadState currentState = MInput.GamePads[0].CurrentState;
             for (int i = 0; i < 4; i++) {
-                padState = GamePad.GetState((PlayerIndex) i);
-                if (padState.IsConnected) {
+                currentState = GamePad.GetState((PlayerIndex) i);
+                if (currentState.IsConnected) {
                     break;
                 }
             }
 
-            return padState;
+            return currentState;
         }
 
         public static void Update() {
@@ -172,7 +124,7 @@ namespace TAS.EverestInterop {
                 return;
             }
 
-            if (!Manager.Running && Engine.Scene?.Tracker.GetEntity<KeyboardConfigUI>() != null) {
+            if (!Manager.Running && (Engine.Scene?.Tracker.GetEntity<KeyboardConfigUI>() != null || Engine.Scene?.Tracker.GetEntity<ButtonConfigUI>() != null)) {
                 return;
             }
 
@@ -295,7 +247,31 @@ namespace TAS.EverestInterop {
                     return;
                 }
 
-                Pressed = IsKeyDown(keys, keyCombo) || IsButtonDown(buttons, keyCombo);
+                Pressed = IsKeyDown() || IsButtonDown();
+            }
+            
+            private bool IsKeyDown() {
+                if (keys == null || keys.Count == 0 || !Engine.Instance.IsActive) {
+                    return false;
+                }
+
+                if (keyCombo) {
+                    return keys.All(key => kbState.IsKeyDown(key));
+                } else {
+                    return keys.Any(key => kbState.IsKeyDown(key));
+                }
+            }
+
+            private bool IsButtonDown() {
+                if (buttons == null || buttons.Count == 0) {
+                    return false;
+                }
+
+                if (keyCombo) {
+                    return buttons.All(button => padState.IsButtonDown(button));
+                } else {
+                    return buttons.Any(button => padState.IsButtonDown(button));
+                }
             }
         }
     }

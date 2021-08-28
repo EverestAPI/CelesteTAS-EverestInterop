@@ -29,6 +29,7 @@ namespace TAS.EverestInterop {
             orig();
             AddTypeToTracker(typeof(PlayerSeeker));
             AddTypeToTracker(typeof(KeyboardConfigUI), typeof(ModuleSettingsKeyboardConfigUI));
+            AddTypeToTracker(typeof(ButtonConfigUI), typeof(ModuleSettingsButtonConfigUI));
         }
 
         private static void AddTypeToTracker(Type type, params Type[] subTypes) {

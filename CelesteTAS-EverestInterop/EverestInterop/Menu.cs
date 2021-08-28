@@ -13,8 +13,10 @@ using TAS.Utils;
 namespace TAS.EverestInterop {
     internal static class Menu {
         private static readonly MethodInfo CreateKeyboardConfigUi = typeof(EverestModule).GetMethodInfo("CreateKeyboardConfigUI");
+        private static readonly MethodInfo CreateButtonConfigUI = typeof(EverestModule).GetMethodInfo("CreateButtonConfigUI");
         private static List<TextMenu.Item> options;
         private static TextMenu.Item keyConfigButton;
+        private static TextMenu.Item buttonConfigButton;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
         internal static string ToDialogText(this string input) => Dialog.Clean("TAS_" + input.Replace(" ", "_"));
@@ -67,7 +69,19 @@ namespace TAS.EverestInterop {
 
                     Engine.Scene.Add(keyboardConfig);
                     Engine.Scene.OnEndOfFrame += () => Engine.Scene.Entities.UpdateLists();
-                }).Apply(item => keyConfigButton = item)
+                }).Apply(item => keyConfigButton = item),
+                new TextMenu.Button(Dialog.Clean("options_btnconfig")).Pressed(() => {
+                    menu.Focused = false;
+                    Entity keyboardConfig;
+                    if (CreateButtonConfigUI != null) {
+                        keyboardConfig = CreateButtonConfigUI.Invoke(everestModule, new object[] { menu }) as Entity;
+                    } else {
+                        keyboardConfig = new ModuleSettingsButtonConfigUI(everestModule) { OnClose = () => menu.Focused = true };
+                    }
+
+                    Engine.Scene.Add(keyboardConfig);
+                    Engine.Scene.OnEndOfFrame += () => Engine.Scene.Entities.UpdateLists();
+                }).Apply(item => buttonConfigButton = item),
             };
         }
 
@@ -93,6 +107,7 @@ namespace TAS.EverestInterop {
 
             HitboxTweak.AddSubMenuDescription(menu, inGame);
             InfoHud.AddSubMenuDescription(menu);
+            buttonConfigButton.AddDescription(menu, "Key Config Description".ToDialogText());
             keyConfigButton.AddDescription(menu, "Key Config Description".ToDialogText());
         }
 

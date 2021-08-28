@@ -147,7 +147,7 @@ namespace TAS {
 
                 //q: but euni, why not just use the hotkey system you implemented?
                 //a: i have no fucking idea
-                if (Hotkeys.IsKeyDown(Settings.KeyFastForward.Keys) || Hotkeys.HotkeyFastForward.OverridePressed) {
+                if (Hotkeys.HotkeyFastForward.Pressed) {
                     FrameLoops = 10;
                     return;
                 }
