@@ -147,6 +147,7 @@ namespace TAS.EverestInterop {
         public bool SimplifiedDreamBlock { get; set; } = true;
         public bool SimplifiedLava { get; set; } = true;
         public bool SimplifiedLightning { get; set; } = true;
+        public bool SimplifiedLightningStrike { get; set; } = true;
 
         #endregion
 

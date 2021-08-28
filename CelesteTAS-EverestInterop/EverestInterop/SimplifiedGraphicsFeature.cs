@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Xml;
 using Celeste;
 using Celeste.Mod;
+using FMOD.Studio;
 using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
@@ -97,6 +98,10 @@ namespace TAS.EverestInterop {
                         .Change(value =>
                             Settings.SimplifiedMiniTextbox = value));
                 subMenu.Add(
+                    new TextMenuExt.EnumerableSlider<bool>("Lightning Strike".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.SimplifiedLightningStrike)
+                        .Change(value =>
+                            Settings.SimplifiedLightningStrike = value));
+                subMenu.Add(
                     new TextMenuExt.EnumerableSlider<bool>("Dream Block".ToDialogText(), Menu.CreateSimplifyOptions(), Settings.SimplifiedDreamBlock)
                         .Change(value =>
                             Settings.SimplifiedDreamBlock = value));
@@ -144,6 +149,8 @@ namespace TAS.EverestInterop {
             On.Celeste.SummitCloud.Render += SummitCloudOnRender;
             On.Celeste.SpotlightWipe.Render += SpotlightWipeOnRender;
             On.Celeste.ReflectionTentacles.Render += ReflectionTentacles_Render;
+            On.Celeste.Audio.Play_string += AudioOnPlay_string;
+            On.Celeste.LightningStrike.ctor += LightningStrikeOnCtor;
         }
 
         public static void Unload() {
@@ -167,7 +174,10 @@ namespace TAS.EverestInterop {
             On.Celeste.SummitCloud.Render -= SummitCloudOnRender;
             On.Celeste.SpotlightWipe.Render -= SpotlightWipeOnRender;
             On.Celeste.ReflectionTentacles.Render -= ReflectionTentacles_Render;
+            On.Celeste.Audio.Play_string -= AudioOnPlay_string;
+            On.Celeste.LightningStrike.ctor -= LightningStrikeOnCtor;
             IlHooks.ForEach(hook => hook.Dispose());
+            IlHooks.Clear();
         }
 
         private static void OnSimplifiedGraphicsChanged(bool simplifiedGraphics) {
@@ -418,6 +428,22 @@ namespace TAS.EverestInterop {
             if (!Settings.SimplifiedGraphics) {
                 orig(self);
             }
+        }
+        
+        private static void LightningStrikeOnCtor(On.Celeste.LightningStrike.orig_ctor orig, LightningStrike self, Vector2 position, int seed, float height, float delay) {
+            orig(self, position, seed, height, delay);
+            if (Settings.SimplifiedGraphics && Settings.SimplifiedLightningStrike) {
+                self.Add(new RemoveSelfComponent());
+            }
+        }
+
+        private static EventInstance AudioOnPlay_string(On.Celeste.Audio.orig_Play_string orig, string path) {
+            EventInstance result = orig(path);
+            if (Settings.SimplifiedGraphics && Settings.SimplifiedLightningStrike && path == "event:/new_content/game/10_farewell/lightning_strike") {
+                result?.setVolume(0);
+            }
+
+            return result;
         }
 
         private static void ModCustomSpinnerColor(ILContext il) {
