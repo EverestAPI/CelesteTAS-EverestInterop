@@ -68,22 +68,22 @@ namespace TAS {
                 return;
             }
 
-            if (!Running && IsSaved() && Engine.Scene is Level && Hotkeys.HotkeyStart.WasPressed && !Hotkeys.HotkeyStart.Pressed) {
+            if (!Running && IsSaved() && Engine.Scene is Level && Hotkeys.HotkeyStart.Released) {
                 Load();
                 return;
             }
 
-            if (Running && Hotkeys.HotkeySaveState.Pressed && !Hotkeys.HotkeySaveState.WasPressed) {
+            if (Running && Hotkeys.HotkeySaveState.Pressed) {
                 Save(false);
                 return;
             }
 
-            if (Hotkeys.HotkeyRestart.Pressed && !Hotkeys.HotkeyRestart.WasPressed && !Hotkeys.HotkeySaveState.Pressed) {
+            if (Hotkeys.HotkeyRestart.Pressed) {
                 Load();
                 return;
             }
 
-            if (Hotkeys.HotkeyClearState.Pressed && !Hotkeys.HotkeyClearState.WasPressed && !Hotkeys.HotkeySaveState.Pressed) {
+            if (Hotkeys.HotkeyClearState.Pressed) {
                 Clear();
                 DisableExternal();
                 return;

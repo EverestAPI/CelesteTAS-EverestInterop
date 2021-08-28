@@ -150,7 +150,7 @@ namespace TAS.EverestInterop {
             On.Celeste.SpotlightWipe.Render += SpotlightWipeOnRender;
             On.Celeste.ReflectionTentacles.Render += ReflectionTentacles_Render;
             On.Celeste.Audio.Play_string += AudioOnPlay_string;
-            On.Celeste.LightningStrike.ctor += LightningStrikeOnCtor;
+            On.Celeste.LightningStrike.Render += LightningStrikeOnRender;
         }
 
         public static void Unload() {
@@ -175,7 +175,7 @@ namespace TAS.EverestInterop {
             On.Celeste.SpotlightWipe.Render -= SpotlightWipeOnRender;
             On.Celeste.ReflectionTentacles.Render -= ReflectionTentacles_Render;
             On.Celeste.Audio.Play_string -= AudioOnPlay_string;
-            On.Celeste.LightningStrike.ctor -= LightningStrikeOnCtor;
+            On.Celeste.LightningStrike.Render -= LightningStrikeOnRender;
             IlHooks.ForEach(hook => hook.Dispose());
             IlHooks.Clear();
         }
@@ -430,11 +430,11 @@ namespace TAS.EverestInterop {
             }
         }
         
-        private static void LightningStrikeOnCtor(On.Celeste.LightningStrike.orig_ctor orig, LightningStrike self, Vector2 position, int seed, float height, float delay) {
-            orig(self, position, seed, height, delay);
+        private static void LightningStrikeOnRender(On.Celeste.LightningStrike.orig_Render orig, LightningStrike self) {
             if (Settings.SimplifiedGraphics && Settings.SimplifiedLightningStrike) {
-                self.Add(new RemoveSelfComponent());
+                return;
             }
+            orig(self);
         }
 
         private static EventInstance AudioOnPlay_string(On.Celeste.Audio.orig_Play_string orig, string path) {

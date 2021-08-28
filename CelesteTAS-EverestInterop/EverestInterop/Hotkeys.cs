@@ -133,19 +133,19 @@ namespace TAS.EverestInterop {
             }
 
             if (Engine.Scene is Level level && (!level.Paused || level.PauseMainMenuOpen || Manager.Running)) {
-                if (HotkeyHitboxes.Pressed && !HotkeyHitboxes.WasPressed) {
+                if (HotkeyHitboxes.Pressed) {
                     Settings.ShowHitboxes = !Settings.ShowHitboxes;
                 }
 
-                if (HotkeyTriggerHitboxes.Pressed && !HotkeyTriggerHitboxes.WasPressed) {
+                if (HotkeyTriggerHitboxes.Pressed) {
                     Settings.HideTriggerHitboxes = !Settings.HideTriggerHitboxes;
                 }
 
-                if (HotkeyGraphics.Pressed && !HotkeyGraphics.WasPressed) {
+                if (HotkeyGraphics.Pressed) {
                     Settings.SimplifiedGraphics = !Settings.SimplifiedGraphics;
                 }
 
-                if (HotkeyCamera.Pressed && !HotkeyCamera.WasPressed) {
+                if (HotkeyCamera.Pressed) {
                     Settings.CenterCamera = !Settings.CenterCamera;
                 }
             }
@@ -154,7 +154,7 @@ namespace TAS.EverestInterop {
         [DisableRun]
         private static void ReleaseAllKeys() {
             foreach (Hotkey hotkey in HotkeyList) {
-                hotkey.OverridePressed = false;
+                hotkey.OverrideCheck = false;
             }
         }
 
@@ -225,9 +225,12 @@ namespace TAS.EverestInterop {
             private readonly bool held;
             private readonly bool keyCombo;
             private readonly List<Keys> keys;
-            public bool OverridePressed;
-            public bool Pressed;
-            public bool WasPressed;
+            public bool OverrideCheck;
+            public bool Check { get; private set; }
+            public bool LastCheck { get; private set; }
+            public bool Pressed => !LastCheck && Check;
+            public bool Released => LastCheck && !Check;
+            public float Value { get; private set; }
 
             public Hotkey(List<Keys> keys, List<Buttons> buttons, bool keyCombo, bool held) {
                 this.keys = keys;
@@ -237,19 +240,51 @@ namespace TAS.EverestInterop {
             }
 
             public void Update() {
-                WasPressed = Pressed;
-                if (OverridePressed) {
-                    Pressed = true;
+                LastCheck = Check;
+                if (OverrideCheck) {
+                    Check = true;
                     if (!held) {
-                        OverridePressed = false;
+                        OverrideCheck = false;
                     }
 
                     return;
                 }
 
-                Pressed = IsKeyDown() || IsButtonDown();
+                bool keyCheck = IsKeyDown();
+                bool buttonCheck = IsButtonDown();
+                Check = keyCheck || buttonCheck;
+
+                CalcValue(keyCheck, buttonCheck);
             }
-            
+
+            private void CalcValue(bool keyCheck, bool buttonCheck) {
+                Value = 0f;
+
+                if (keyCheck) {
+                    Value = 1f;
+                } else if (buttonCheck) {
+                    if (buttons.Contains(Buttons.LeftThumbstickLeft) || buttons.Contains(Buttons.LeftThumbstickRight)) {
+                        Value = Math.Max(Value, Math.Abs(padState.ThumbSticks.Left.X));
+                    }
+
+                    if (buttons.Contains(Buttons.LeftThumbstickUp) || buttons.Contains(Buttons.LeftThumbstickDown)) {
+                        Value = Math.Max(Value, Math.Abs(padState.ThumbSticks.Left.Y));
+                    }
+
+                    if (buttons.Contains(Buttons.RightThumbstickLeft) || buttons.Contains(Buttons.RightThumbstickRight)) {
+                        Value = Math.Max(Value, Math.Abs(padState.ThumbSticks.Right.X));
+                    }
+
+                    if (buttons.Contains(Buttons.RightThumbstickUp) || buttons.Contains(Buttons.RightThumbstickDown)) {
+                        Value = Math.Max(Value, Math.Abs(padState.ThumbSticks.Right.Y));
+                    }
+
+                    if (Value == 0f) {
+                        Value = 1f;
+                    }
+                }
+            }
+
             private bool IsKeyDown() {
                 if (keys == null || keys.Count == 0 || !Engine.Instance.IsActive) {
                     return false;

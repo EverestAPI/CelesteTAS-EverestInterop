@@ -218,7 +218,7 @@ namespace TAS.Communication {
                 Log($"{hotkey.ToString()} pressed");
             }
 
-            Hotkeys.HotkeyList[data[0]].OverridePressed = !released;
+            Hotkeys.HotkeyList[data[0]].OverrideCheck = !released;
         }
 
         private void ProcessConvertToLibTas(byte[] data) {
