@@ -42,6 +42,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 if (DateTime.Now.Subtract(lastHotkeyPressedTime).TotalMilliseconds < 300 && !lastHotkeyPressedToggle) {
                     TasSettings.InfoHud = !TasSettings.InfoHud;
                     lastHotkeyPressedToggle = true;
+                    CelesteTasModule.Instance.SaveSettings();
                 } else {
                     lastHotkeyPressedToggle = false;
                 }
