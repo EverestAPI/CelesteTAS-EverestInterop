@@ -11,6 +11,7 @@ namespace TAS.EverestInterop.InfoHUD {
     public static class InfoMouse {
         private static KeyboardState lastKeyboardState;
         private static DateTime lastHotkeyPressedTime;
+        private static bool lastHotkeyPressedToggle;
         private static MouseState lastMouseState;
         private static Vector2? startDragPosition;
         private static CelesteTasModuleSettings TasSettings => CelesteTasModule.Settings;
@@ -38,8 +39,11 @@ namespace TAS.EverestInterop.InfoHUD {
 
         private static void Toggle(KeyboardState keyboardState) {
             if (IsKeyUp(lastKeyboardState)) {
-                if (DateTime.Now.Subtract(lastHotkeyPressedTime).TotalMilliseconds < 300) {
+                if (DateTime.Now.Subtract(lastHotkeyPressedTime).TotalMilliseconds < 300 && !lastHotkeyPressedToggle) {
                     TasSettings.InfoHud = !TasSettings.InfoHud;
+                    lastHotkeyPressedToggle = true;
+                } else {
+                    lastHotkeyPressedToggle = false;
                 }
 
                 lastHotkeyPressedTime = DateTime.Now;
