@@ -11,7 +11,7 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD {
     public static class InfoHud {
-        private static TextMenu.Item subMenuItem;
+        private static EaseInSubMenu subMenuItem;
         private static CelesteTasModuleSettings TasSettings => CelesteTasModule.Settings;
         public static Vector2 Size { get; private set; }
 
@@ -167,8 +167,8 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-        public static TextMenu.Item CreateSubMenu() {
-            subMenuItem = new TextMenuExt.SubMenu("Info HUD".ToDialogText(), false).Apply(subMenu => {
+        public static EaseInSubMenu CreateSubMenu() {
+            subMenuItem = new EaseInSubMenu("Info HUD".ToDialogText(), false).Apply(subMenu => {
                 subMenu.Add(new TextMenu.OnOff("Enabled".ToDialogText(), TasSettings.InfoHud).Change(value => TasSettings.InfoHud = value));
                 subMenu.Add(new TextMenu.OnOff("Info Game".ToDialogText(), TasSettings.InfoGame).Change(value => TasSettings.InfoGame = value));
                 subMenu.Add(new TextMenu.OnOff("Info TAS Input".ToDialogText(), TasSettings.InfoTasInput).Change(value =>

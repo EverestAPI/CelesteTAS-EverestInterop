@@ -1,5 +1,6 @@
 ﻿# ================================== Menu ==================================
 TAS_ENABLED=                  开关
+TAS_ENABLED_DESCRIPTION=      TAS 文件路径：
 TAS_SHOW_HITBOXES=            碰撞箱
 TAS_HITBOX_COLOR_DESCRIPTION_1= 请到标题页 Mod 菜单中修改碰撞箱颜色
 TAS_HITBOX_COLOR_DESCRIPTION_2= 或者在控制台中使用 entity/trigger/platform_hitbox_color 命令
@@ -9,7 +10,6 @@ TAS_INFO_HUD_DESCRIPTION_2=   双击信息面板快捷键开关信息面板
 TAS_ROUND_VALUES=             数值精度
 TAS_RELAUNCH_REQUIRED=        需要重启的选项
 TAS_MORE_OPTIONS=             更多选项
-TAS_KEY_CONFIG_DESCRIPTION=   绑定多个按键表示组合键，需要同时按下才能触发相应操作
 
 # ================================== Hitbox Submenu ==================================
 TAS_ACTUAL_COLLIDE_HITBOXES=  实际碰撞箱
@@ -72,6 +72,10 @@ TAS_ROUND_CUSTOM_INFO=        自定义数据保留两位小数
 # ================================== Relaunch Required Submenu ==================================
 TAS_LAUNCH_STUDIO_AT_BOOT=    启动 Celeste 时打开 Studio
 TAS_AUTO_EXTRACT_NEW_STUDIO=  自动解压新版 Studio
+
+# ================================== Hotkeys Submenu ==================================
+TAS_HOTKEYS=             快捷键
+TAS_HOTKEYS_DESCRIPTION= 绑定多个按键表示组合键，需要同时按下才能触发相应操作
 
 # ================================== More Options Submenu ==================================
 TAS_CENTER_CAMERA=            镜头居中

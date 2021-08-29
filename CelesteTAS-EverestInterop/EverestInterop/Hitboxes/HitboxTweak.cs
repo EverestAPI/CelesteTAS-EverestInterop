@@ -5,7 +5,7 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxTweak {
-        private static TextMenu.Item subMenuItem;
+        private static EaseInSubMenu subMenuItem;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
         public static void Load() {
@@ -34,8 +34,8 @@ namespace TAS.EverestInterop.Hitboxes {
             HitboxRoomBoundary.Unload();
         }
 
-        public static TextMenu.Item CreateSubMenu(TextMenu menu, bool inGame) {
-            subMenuItem = new TextMenuExt.SubMenu("Show Hitboxes".ToDialogText(), false).Apply(subMenu => {
+        public static EaseInSubMenu CreateSubMenu(TextMenu menu, bool inGame) {
+            subMenuItem = new EaseInSubMenu("Show Hitboxes".ToDialogText(), false).Apply(subMenu => {
                 subMenu.Add(new TextMenu.OnOff("Enabled".ToDialogText(), Settings.ShowHitboxes).Change(value => Settings.ShowHitboxes = value));
                 subMenu.Add(new TextMenu.Option<ActualCollideHitboxTypes>("Actual Collide Hitboxes".ToDialogText()).Apply(option => {
                     Array enumValues = Enum.GetValues(typeof(ActualCollideHitboxTypes));
