@@ -26,7 +26,6 @@ namespace TAS.EverestInterop.InfoHUD {
 
         private static void Toggle() {
             if (Hotkeys.HotkeyInfoHub.DoublePressed) {
-                Hotkeys.HotkeyInfoHub.ConsumeDoublePress();
                 TasSettings.InfoHud = !TasSettings.InfoHud;
                 CelesteTasModule.Instance.SaveSettings();
             }

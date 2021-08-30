@@ -217,7 +217,6 @@ namespace TAS.EverestInterop {
             public readonly List<Keys> Keys;
             private DateTime lastPressedTime;
             public bool OverrideCheck;
-            private DateTime pressedTime;
 
             public Hotkey(List<Keys> keys, List<Buttons> buttons, bool keyCombo, bool held) {
                 Keys = keys;
@@ -229,7 +228,7 @@ namespace TAS.EverestInterop {
             public bool Check { get; private set; }
             public bool LastCheck { get; private set; }
             public bool Pressed => !LastCheck && Check;
-            public bool DoublePressed => Pressed && pressedTime.Subtract(lastPressedTime).TotalMilliseconds < 300;
+            public bool DoublePressed { get; private set; }
             public bool Released => LastCheck && !Check;
             public float Value { get; private set; }
 
@@ -253,13 +252,12 @@ namespace TAS.EverestInterop {
                 UpdateValue(keyCheck, buttonCheck);
 
                 if (Pressed) {
-                    lastPressedTime = pressedTime;
-                    pressedTime = DateTime.Now;
+                    DateTime pressedTime = DateTime.Now;
+                    DoublePressed = pressedTime.Subtract(lastPressedTime).TotalMilliseconds < 300;
+                    lastPressedTime = DoublePressed ? default : pressedTime;
+                } else {
+                    DoublePressed = false;
                 }
-            }
-
-            public void ConsumeDoublePress() {
-                lastPressedTime = pressedTime = default;
             }
 
             private void UpdateValue(bool keyCheck, bool buttonCheck) {
