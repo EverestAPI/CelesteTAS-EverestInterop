@@ -210,15 +210,15 @@ namespace TAS.Communication {
         }
 
         private void ProcessHotkeyPressed(byte[] data) {
-            HotkeyIDs hotkey = (HotkeyIDs) data[0];
+            HotkeyIDs hotkeyIDs = (HotkeyIDs) data[0];
             bool released = Convert.ToBoolean(data[1]);
             if (released) {
-                Log($"{hotkey.ToString()} released");
+                Log($"{hotkeyIDs.ToString()} released");
             } else {
-                Log($"{hotkey.ToString()} pressed");
+                Log($"{hotkeyIDs.ToString()} pressed");
             }
 
-            Hotkeys.HotkeyList[data[0]].OverrideCheck = !released;
+            Hotkeys.KeysDict[hotkeyIDs].OverrideCheck = !released;
         }
 
         private void ProcessConvertToLibTas(byte[] data) {
@@ -329,7 +329,7 @@ namespace TAS.Communication {
 
         public void SendCurrentBindings(bool forceSend = false) {
             Dictionary<int, List<int>> nativeBindings =
-                Hotkeys.KeysDict.ToDictionary(pair => (int) pair.Key, pair => pair.Value.Cast<int>().ToList());
+                Hotkeys.KeysInteractWithStudio.ToDictionary(pair => (int) pair.Key, pair => pair.Value.Cast<int>().ToList());
             byte[] data = BinaryFormatterHelper.ToByteArray(nativeBindings);
             if (!forceSend && string.Join("", data) == string.Join("", lastBindingsData)) {
                 return;

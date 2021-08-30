@@ -13,6 +13,7 @@ using MonoMod.RuntimeDetour;
 using StudioCommunication;
 using TAS.Communication;
 using TAS.Utils;
+using InputButtons = Microsoft.Xna.Framework.Input.Buttons;
 
 namespace TAS.EverestInterop {
     public static class Hotkeys {
@@ -45,9 +46,10 @@ namespace TAS.EverestInterop {
         public static Hotkey HotkeyCamera;
         public static Hotkey HotkeySaveState;
         public static Hotkey HotkeyClearState;
+        public static Hotkey HotkeyInfoHub;
 
-        public static Hotkey[] HotkeyList;
-        public static readonly Dictionary<HotkeyIDs, List<Keys>> KeysDict = new();
+        public static readonly Dictionary<HotkeyIDs, Hotkey> KeysDict = new();
+        public static Dictionary<HotkeyIDs, List<Keys>> KeysInteractWithStudio = new();
 
         private static bool CelesteNetChatting {
             get {
@@ -71,39 +73,26 @@ namespace TAS.EverestInterop {
 
         private static void InputInitialize() {
             KeysDict.Clear();
-            KeysDict[HotkeyIDs.Start] = Settings.KeyStart.Keys;
-            KeysDict[HotkeyIDs.Restart] = Settings.KeyRestart.Keys;
-            KeysDict[HotkeyIDs.FastForward] = Settings.KeyFastForward.Keys;
-            KeysDict[HotkeyIDs.FrameAdvance] = Settings.KeyFrameAdvance.Keys;
-            KeysDict[HotkeyIDs.Pause] = Settings.KeyPause.Keys;
-            KeysDict[HotkeyIDs.Hitboxes] = Settings.KeyHitboxes.Keys;
-            KeysDict[HotkeyIDs.TriggerHitboxes] = Settings.KeyTriggerHitboxes.Keys;
-            KeysDict[HotkeyIDs.Graphics] = Settings.KeyGraphics.Keys;
-            KeysDict[HotkeyIDs.Camera] = Settings.KeyCamera.Keys;
-            KeysDict[HotkeyIDs.SaveState] = Settings.KeySaveState.Keys;
-            KeysDict[HotkeyIDs.ClearState] = Settings.KeyClearState.Keys;
+            KeysDict[HotkeyIDs.Start] = HotkeyStart = BindingToHotkey(Settings.KeyStart);
+            KeysDict[HotkeyIDs.Restart] = HotkeyRestart = BindingToHotkey(Settings.KeyRestart);
+            KeysDict[HotkeyIDs.FastForward] = HotkeyFastForward = BindingToHotkey(Settings.KeyFastForward);
+            KeysDict[HotkeyIDs.FrameAdvance] = HotkeyFrameAdvance = BindingToHotkey(Settings.KeyFrameAdvance);
+            KeysDict[HotkeyIDs.Pause] = HotkeyPause = BindingToHotkey(Settings.KeyPause);
+            KeysDict[HotkeyIDs.Hitboxes] = HotkeyHitboxes = BindingToHotkey(Settings.KeyHitboxes);
+            KeysDict[HotkeyIDs.TriggerHitboxes] = HotkeyTriggerHitboxes = BindingToHotkey(Settings.KeyTriggerHitboxes);
+            KeysDict[HotkeyIDs.Graphics] = HotkeyGraphics = BindingToHotkey(Settings.KeyGraphics);
+            KeysDict[HotkeyIDs.Camera] = HotkeyCamera = BindingToHotkey(Settings.KeyCamera);
+            KeysDict[HotkeyIDs.SaveState] = HotkeySaveState = BindingToHotkey(Settings.KeySaveState);
+            KeysDict[HotkeyIDs.ClearState] = HotkeyClearState = BindingToHotkey(Settings.KeyClearState);
+            KeysDict[HotkeyIDs.InfoHub] = HotkeyInfoHub = BindingToHotkey(Settings.KeyInfoHud);
 
-            HotkeyStart = BindingToHotkey(Settings.KeyStart);
-            HotkeyRestart = BindingToHotkey(Settings.KeyRestart);
-            HotkeyFastForward = BindingToHotkey(Settings.KeyFastForward);
-            HotkeyFrameAdvance = BindingToHotkey(Settings.KeyFrameAdvance);
-            HotkeyPause = BindingToHotkey(Settings.KeyPause);
-            HotkeyHitboxes = BindingToHotkey(Settings.KeyHitboxes);
-            HotkeyTriggerHitboxes = BindingToHotkey(Settings.KeyTriggerHitboxes);
-            HotkeyGraphics = BindingToHotkey(Settings.KeyGraphics);
-            HotkeyCamera = BindingToHotkey(Settings.KeyCamera);
-            HotkeySaveState = BindingToHotkey(Settings.KeySaveState);
-            HotkeyClearState = BindingToHotkey(Settings.KeyClearState);
-            HotkeyList = new[] {
-                HotkeyStart, HotkeyRestart, HotkeyFastForward, HotkeyFrameAdvance, HotkeyPause, HotkeyHitboxes, HotkeyTriggerHitboxes, HotkeyGraphics,
-                HotkeyCamera, HotkeySaveState, HotkeyClearState
-            };
+            KeysInteractWithStudio = KeysDict.Where(pair => pair.Key != HotkeyIDs.InfoHub).ToDictionary(pair => pair.Key, pair => pair.Value.Keys);
         }
 
         private static Hotkey BindingToHotkey(ButtonBinding binding) {
             return new(binding.Keys, binding.Buttons, true, ReferenceEquals(binding, Settings.KeyFastForward));
         }
-        
+
         private static GamePadState GetGamePadState() {
             GamePadState currentState = MInput.GamePads[0].CurrentState;
             for (int i = 0; i < 4; i++) {
@@ -124,11 +113,12 @@ namespace TAS.EverestInterop {
                 return;
             }
 
-            if (!Manager.Running && (Engine.Scene?.Tracker.GetEntity<KeyboardConfigUI>() != null || Engine.Scene?.Tracker.GetEntity<ButtonConfigUI>() != null)) {
+            if (!Manager.Running && (Engine.Scene?.Tracker.GetEntity<KeyboardConfigUI>() != null ||
+                                     Engine.Scene?.Tracker.GetEntity<ButtonConfigUI>() != null)) {
                 return;
             }
 
-            foreach (Hotkey hotkey in HotkeyList) {
+            foreach (Hotkey hotkey in KeysDict.Values) {
                 hotkey?.Update();
             }
 
@@ -153,7 +143,7 @@ namespace TAS.EverestInterop {
 
         [DisableRun]
         private static void ReleaseAllKeys() {
-            foreach (Hotkey hotkey in HotkeyList) {
+            foreach (Hotkey hotkey in KeysDict.Values) {
                 hotkey.OverrideCheck = false;
             }
         }
@@ -221,61 +211,80 @@ namespace TAS.EverestInterop {
         }
 
         public class Hotkey {
-            private readonly List<Buttons> buttons;
+            public readonly List<Buttons> Buttons;
             private readonly bool held;
             private readonly bool keyCombo;
-            private readonly List<Keys> keys;
+            public readonly List<Keys> Keys;
+            private DateTime lastPressedTime;
             public bool OverrideCheck;
-            public bool Check { get; private set; }
-            public bool LastCheck { get; private set; }
-            public bool Pressed => !LastCheck && Check;
-            public bool Released => LastCheck && !Check;
-            public float Value { get; private set; }
+            private DateTime pressedTime;
 
             public Hotkey(List<Keys> keys, List<Buttons> buttons, bool keyCombo, bool held) {
-                this.keys = keys;
-                this.buttons = buttons;
+                Keys = keys;
+                Buttons = buttons;
                 this.keyCombo = keyCombo;
                 this.held = held;
             }
 
+            public bool Check { get; private set; }
+            public bool LastCheck { get; private set; }
+            public bool Pressed => !LastCheck && Check;
+            public bool DoublePressed => Pressed && pressedTime.Subtract(lastPressedTime).TotalMilliseconds < 300;
+            public bool Released => LastCheck && !Check;
+            public float Value { get; private set; }
+
             public void Update() {
                 LastCheck = Check;
+                bool keyCheck;
+                bool buttonCheck;
+
                 if (OverrideCheck) {
-                    Check = true;
+                    keyCheck = buttonCheck = true;
                     if (!held) {
                         OverrideCheck = false;
                     }
-
-                    return;
+                } else {
+                    keyCheck = IsKeyDown();
+                    buttonCheck = IsButtonDown();
                 }
 
-                bool keyCheck = IsKeyDown();
-                bool buttonCheck = IsButtonDown();
                 Check = keyCheck || buttonCheck;
 
-                CalcValue(keyCheck, buttonCheck);
+                UpdateValue(keyCheck, buttonCheck);
+
+                if (Pressed) {
+                    lastPressedTime = pressedTime;
+                    pressedTime = DateTime.Now;
+                }
             }
 
-            private void CalcValue(bool keyCheck, bool buttonCheck) {
+            public void ConsumeDoublePress() {
+                lastPressedTime = pressedTime = default;
+            }
+
+            private void UpdateValue(bool keyCheck, bool buttonCheck) {
                 Value = 0f;
 
                 if (keyCheck) {
                     Value = 1f;
                 } else if (buttonCheck) {
-                    if (buttons.Contains(Buttons.LeftThumbstickLeft) || buttons.Contains(Buttons.LeftThumbstickRight)) {
+                    if (Buttons.Contains(InputButtons.LeftThumbstickLeft) ||
+                        Buttons.Contains(InputButtons.LeftThumbstickRight)) {
                         Value = Math.Max(Value, Math.Abs(padState.ThumbSticks.Left.X));
                     }
 
-                    if (buttons.Contains(Buttons.LeftThumbstickUp) || buttons.Contains(Buttons.LeftThumbstickDown)) {
+                    if (Buttons.Contains(InputButtons.LeftThumbstickUp) ||
+                        Buttons.Contains(InputButtons.LeftThumbstickDown)) {
                         Value = Math.Max(Value, Math.Abs(padState.ThumbSticks.Left.Y));
                     }
 
-                    if (buttons.Contains(Buttons.RightThumbstickLeft) || buttons.Contains(Buttons.RightThumbstickRight)) {
+                    if (Buttons.Contains(InputButtons.RightThumbstickLeft) ||
+                        Buttons.Contains(InputButtons.RightThumbstickRight)) {
                         Value = Math.Max(Value, Math.Abs(padState.ThumbSticks.Right.X));
                     }
 
-                    if (buttons.Contains(Buttons.RightThumbstickUp) || buttons.Contains(Buttons.RightThumbstickDown)) {
+                    if (Buttons.Contains(InputButtons.RightThumbstickUp) ||
+                        Buttons.Contains(InputButtons.RightThumbstickDown)) {
                         Value = Math.Max(Value, Math.Abs(padState.ThumbSticks.Right.Y));
                     }
 
@@ -286,27 +295,19 @@ namespace TAS.EverestInterop {
             }
 
             private bool IsKeyDown() {
-                if (keys == null || keys.Count == 0 || !Engine.Instance.IsActive) {
+                if (Keys == null || Keys.Count == 0 || !Engine.Instance.IsActive) {
                     return false;
                 }
 
-                if (keyCombo) {
-                    return keys.All(key => kbState.IsKeyDown(key));
-                } else {
-                    return keys.Any(key => kbState.IsKeyDown(key));
-                }
+                return keyCombo ? Keys.All(kbState.IsKeyDown) : Keys.Any(kbState.IsKeyDown);
             }
 
             private bool IsButtonDown() {
-                if (buttons == null || buttons.Count == 0) {
+                if (Buttons == null || Buttons.Count == 0) {
                     return false;
                 }
 
-                if (keyCombo) {
-                    return buttons.All(button => padState.IsButtonDown(button));
-                } else {
-                    return buttons.Any(button => padState.IsButtonDown(button));
-                }
+                return keyCombo ? Buttons.All(padState.IsButtonDown) : Buttons.Any(padState.IsButtonDown);
             }
         }
     }

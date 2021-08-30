@@ -11,5 +11,6 @@
         Camera,
         SaveState,
         ClearState,
+        InfoHub
     }
 }

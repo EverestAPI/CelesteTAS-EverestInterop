@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
@@ -9,8 +7,6 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD {
     public static class InfoMouse {
-        private static KeyboardState lastKeyboardState;
-        private static DateTime lastHotkeyPressedTime;
         private static MouseState lastMouseState;
         private static Vector2? startDragPosition;
         private static CelesteTasModuleSettings TasSettings => CelesteTasModule.Settings;
@@ -20,40 +16,28 @@ namespace TAS.EverestInterop.InfoHUD {
                 return;
             }
 
-            KeyboardState keyboardState = Keyboard.GetState();
-            if (IsKeyUp(keyboardState)) {
-                lastKeyboardState = keyboardState;
+            if (!Hotkeys.HotkeyInfoHub.Check) {
+                return;
+            }
+
+            Toggle();
+            DragAndDropHud();
+        }
+
+        private static void Toggle() {
+            if (Hotkeys.HotkeyInfoHub.DoublePressed) {
+                Hotkeys.HotkeyInfoHub.ConsumeDoublePress();
+                TasSettings.InfoHud = !TasSettings.InfoHud;
+                CelesteTasModule.Instance.SaveSettings();
+            }
+        }
+
+        private static void DragAndDropHud() {
+            if (!TasSettings.InfoHud && !InputController.StudioTasFilePath.IsNotNullOrEmpty()) {
                 return;
             }
 
             MouseState mouseState = Mouse.GetState();
-            Toggle(keyboardState);
-            DragAndDropHud(mouseState);
-        }
-
-        private static bool IsKeyUp(KeyboardState keyboardState) {
-            List<Keys> keys = TasSettings.KeyInfoHud.Keys;
-            return keys.IsEmpty() || keys.Any(keyboardState.IsKeyUp);
-        }
-
-        private static void Toggle(KeyboardState keyboardState) {
-            if (IsKeyUp(lastKeyboardState)) {
-                if (DateTime.Now.Subtract(lastHotkeyPressedTime).TotalMilliseconds < 300) {
-                    TasSettings.InfoHud = !TasSettings.InfoHud;
-                    CelesteTasModule.Instance.SaveSettings();
-                    lastHotkeyPressedTime = default;
-                } else {
-                    lastHotkeyPressedTime = DateTime.Now;
-                }
-            }
-
-            lastKeyboardState = keyboardState;
-        }
-
-        private static void DragAndDropHud(MouseState mouseState) {
-            if (!TasSettings.InfoHud && !InputController.StudioTasFilePath.IsNotNullOrEmpty()) {
-                return;
-            }
 
             Draw.SpriteBatch.Begin();
 
