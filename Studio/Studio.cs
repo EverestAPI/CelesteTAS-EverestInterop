@@ -28,8 +28,8 @@ namespace CelesteStudio {
         private DateTime lastChanged = DateTime.MinValue;
         private FormWindowState lastWindowState = FormWindowState.Normal;
         private State tasState;
+        private ToolTip tooltip;
         private int totalFrames, currentFrame;
-
         private bool updating;
 
         public Studio(string[] args) {
@@ -139,6 +139,8 @@ namespace CelesteStudio {
 
                 OpenFile(filePath);
             };
+
+            settingsToolStripMenuItem.DropDown.Opacity = 0f;
         }
 
         private void InitDragDrop() {
@@ -227,6 +229,13 @@ namespace CelesteStudio {
             Settings.Default.Save();
         }
 
+        private void ShowTooltip(string text) {
+            tooltip?.Hide(this);
+            tooltip = new ToolTip();
+            Size textSize = TextRenderer.MeasureText(text, Font);
+            tooltip.Show(text, this, Width / 2 - textSize.Width / 2, Height / 2 - textSize.Height / 2, 3000);
+        }
+
         private void TASStudio_FormClosed(object sender, FormClosedEventArgs e) {
             SaveSettings();
             StudioCommunicationServer.Instance?.SendPath(string.Empty);
@@ -278,8 +287,6 @@ namespace CelesteStudio {
                     InsertTime();
                 } else if (e.Modifiers == (Keys.Control | Keys.Shift) && e.KeyCode == Keys.C) {
                     CopyGameInfo();
-                } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.D) {
-                    ToggleUpdatingHotkeys();
                 } else if (e.Modifiers == (Keys.Shift | Keys.Control) && e.KeyCode == Keys.D) {
                     StudioCommunicationServer.Instance?.ExternalReset();
                 } else if (e.KeyCode == Keys.Down && (e.Modifiers == Keys.Control || e.Modifiers == (Keys.Control | Keys.Shift))) {
@@ -336,8 +343,7 @@ namespace CelesteStudio {
         }
 
         private void ToggleUpdatingHotkeys() {
-            CommunicationWrapper.UpdatingHotkeys = !CommunicationWrapper.UpdatingHotkeys;
-            Settings.Default.UpdatingHotkeys = CommunicationWrapper.UpdatingHotkeys;
+            Settings.Default.UpdatingHotkeys = !Settings.Default.UpdatingHotkeys;
         }
 
         public void TryOpenFile(string[] args) {
@@ -539,27 +545,27 @@ namespace CelesteStudio {
         private void InsertTime() => InsertNewLine($"#{CommunicationWrapper.StudioInfo?.ChapterTime}");
 
         private void InsertConsoleLoadCommand() {
-            CommunicationWrapper.Command = null;
+            CommunicationWrapper.ReturnData = null;
             StudioCommunicationServer.Instance.GetConsoleCommand();
             Thread.Sleep(100);
 
-            if (CommunicationWrapper.Command == null) {
+            if (CommunicationWrapper.ReturnData == null) {
                 return;
             }
 
-            InsertNewLine(CommunicationWrapper.Command);
+            InsertNewLine(CommunicationWrapper.ReturnData);
         }
 
         private void InsertModInfo() {
-            CommunicationWrapper.Command = null;
+            CommunicationWrapper.ReturnData = null;
             StudioCommunicationServer.Instance.GetModInfo();
             Thread.Sleep(100);
 
-            if (CommunicationWrapper.Command == null) {
+            if (CommunicationWrapper.ReturnData == null) {
                 return;
             }
 
-            InsertNewLine(CommunicationWrapper.Command);
+            InsertNewLine(CommunicationWrapper.ReturnData);
         }
 
         private void InsertNewLine(string text) {
@@ -959,6 +965,7 @@ namespace CelesteStudio {
         }
 
         private void settingsToolStripMenuItem_Opened(object sender, EventArgs e) {
+            settingsToolStripMenuItem.DropDown.Opacity = 1f;
             sendInputsToCelesteMenuItem.Checked = Settings.Default.UpdatingHotkeys;
             autoRemoveExclusiveActionsToolStripMenuItem.Checked = Settings.Default.AutoRemoveMutuallyExclusiveActions;
             showGameInfoToolStripMenuItem.Checked = Settings.Default.ShowGameInfo;
@@ -983,6 +990,11 @@ namespace CelesteStudio {
 
         private void sendInputsToCelesteMenuItem_Click(object sender, EventArgs e) {
             ToggleUpdatingHotkeys();
+            if (settingsToolStripMenuItem.DropDown.Opacity == 0f) {
+                ShowTooltip((Settings.Default.UpdatingHotkeys ? "Enable" : "Disable") + " Send Inputs to Celeste");
+            }
+
+            settingsToolStripMenuItem.DropDown.Opacity = 0f;
         }
 
         private void openFileMenuItem_Click(object sender, EventArgs e) {

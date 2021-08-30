@@ -11,10 +11,8 @@ using Char = CelesteStudio.RichText.Char;
 namespace CelesteStudio.Communication {
     static class CommunicationWrapper {
         public static StudioInfo StudioInfo;
-        public static string Command;
+        public static string ReturnData;
         private static Dictionary<HotkeyIDs, List<Keys>> bindings;
-
-        public static bool UpdatingHotkeys = Settings.Default.UpdatingHotkeys;
         public static bool FastForwarding;
 
         [DllImport("User32.dll")]
@@ -31,7 +29,7 @@ namespace CelesteStudio.Communication {
         //"wrapper"
         //This doesn't work in release build and i don't particularly care to figure out why.
         public static bool CheckControls(ref Message msg) {
-            if (!UpdatingHotkeys
+            if (!Settings.Default.UpdatingHotkeys
                 || Environment.OSVersion.Platform == PlatformID.Unix
                 || bindings == null
                 // check if key is repeated

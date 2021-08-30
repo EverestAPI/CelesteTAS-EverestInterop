@@ -501,7 +501,7 @@ namespace CelesteStudio {
             // 
             this.tasTextContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.insertRemoveBreakPointToolStripMenuItem, this.insertRemoveSavestateBreakPointToolStripMenuItem, this.removeAllUncommentedBreakpointsToolStripMenuItem, this.removeAllBreakpointsToolStripMenuItem, this.commentUncommentAllBreakpointsToolStripMenuItem, this.toolStripSeparator2, this.commentUncommentTextToolStripMenuItem, this.insertRoomNameToolStripMenuItem, this.insertCurrentInGameTimeToolStripMenuItem, this.insertModInfoStripMenuItem1, this.insertConsoleLoadCommandToolStripMenuItem, this.insertOtherCommandToolStripMenuItem, this.toolStripSeparator6, this.swapDashKeysStripMenuItem, this.swapJumpKeysToolStripMenuItem, this.toolStripSeparator12, this.openReadFileToolStripMenuItem});
             this.tasTextContextMenuStrip.Name = "tasTextContextMenuStrip";
-            this.tasTextContextMenuStrip.Size = new System.Drawing.Size(426, 352);
+            this.tasTextContextMenuStrip.Size = new System.Drawing.Size(426, 330);
             // 
             // insertRemoveBreakPointToolStripMenuItem
             // 

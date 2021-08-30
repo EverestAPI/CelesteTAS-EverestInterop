@@ -53,21 +53,19 @@ namespace TAS.EverestInterop.Hitboxes {
             ILCursor ilCursor = new(il);
             Instruction start = ilCursor.Next;
             ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Func<Entity, bool>>(entity => {
-                if (Settings.ShowHitboxes) {
-                    if (Settings.SimplifiedHitboxes) {
-                        Type type = entity.GetType();
-                        if (UselessTypes.Contains(type)) {
-                            return true;
-                        }
+                if (Settings.ShowHitboxes && Settings.SimplifiedHitboxes) {
+                    Type type = entity.GetType();
+                    if (UselessTypes.Contains(type)) {
+                        return true;
+                    }
 
-                        if (type.FullName == "Celeste.Mod.JungleHelper.Entities.Gecko" && false == GeckoHostile.Value?.Invoke(entity) as bool?) {
-                            return true;
-                        }
+                    if (type.FullName == "Celeste.Mod.JungleHelper.Entities.Gecko" && false == GeckoHostile.Value?.Invoke(entity) as bool?) {
+                        return true;
+                    }
 
-                        if (entity.Scene?.Tracker.GetEntity<Player>()?.Leader is { } leader &&
-                            leader.Followers.Any(follower => follower.Entity == entity)) {
-                            return true;
-                        }
+                    if (entity.Scene?.Tracker.GetEntity<Player>()?.Leader is { } leader &&
+                        leader.Followers.Any(follower => follower.Entity == entity)) {
+                        return true;
                     }
                 }
 

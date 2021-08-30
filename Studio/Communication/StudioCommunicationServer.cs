@@ -96,7 +96,7 @@ namespace CelesteStudio.Communication {
         }
 
         private void ProcessReturnData(byte[] data) {
-            CommunicationWrapper.Command = Encoding.Default.GetString(data);
+            CommunicationWrapper.ReturnData = Encoding.Default.GetString(data);
         }
 
         #endregion
