@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -11,7 +12,7 @@ using Microsoft.VisualBasic.ApplicationServices;
 namespace CelesteStudio {
     public class Program : WindowsFormsApplicationBase {
         private Program() {
-            IsSingleInstance = true;
+            IsSingleInstance = false;
             StartupNextInstance += OnStartupNextInstance;
         }
 
@@ -45,6 +46,19 @@ namespace CelesteStudio {
             }
 
             Application.Exit();
+        }
+
+        protected override bool OnStartup(StartupEventArgs eventArgs) {
+            // TODO fix this weird bug
+            // if IsSingleInstance = true and celeste launch before studio the connection will fail, idnw...
+            // so we just close the studio already launched
+            foreach (Process process in Process.GetProcessesByName("Celeste Studio")) {
+                if (process.Id != Process.GetCurrentProcess().Id) {
+                    process.Kill();
+                }
+            }
+
+            return base.OnStartup(eventArgs);
         }
 
         private void OnStartupNextInstance(object sender, StartupNextInstanceEventArgs e) {
