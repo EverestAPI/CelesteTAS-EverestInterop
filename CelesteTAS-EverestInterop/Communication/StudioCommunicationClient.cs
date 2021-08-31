@@ -283,12 +283,6 @@ namespace TAS.Communication {
                 throw new NeedsResetException("Invalid data recieved while establishing connection");
             }
 
-            celeste?.SendPath(Directory.GetCurrentDirectory());
-            lastMessage = studio?.ReadMessageGuaranteed();
-            //if (lastMessage?.ID != MessageIDs.SendPath)
-            //	throw new NeedsResetException();
-            studio?.ProcessSendPath(lastMessage?.Data);
-
             studio?.SendPath(null);
             lastMessage = celeste?.ReadMessageGuaranteed();
             if (lastMessage?.Id != MessageIDs.SendPath) {

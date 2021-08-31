@@ -113,12 +113,6 @@ namespace CelesteStudio.Communication {
             studio?.WriteMessageGuaranteed(new Message(MessageIDs.EstablishConnection, new byte[0]));
             celeste?.ReadMessageGuaranteed();
 
-            celeste?.SendPath(null);
-            lastMessage = studio?.ReadMessageGuaranteed();
-            if (lastMessage?.Id != MessageIDs.SendPath) {
-                throw new NeedsResetException("Invalid data recieved while establishing connection");
-            }
-
             studio?.SendPathNow(Studio.Instance.tasText.CurrentFileName, false);
             lastMessage = celeste?.ReadMessageGuaranteed();
 

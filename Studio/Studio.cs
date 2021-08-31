@@ -33,6 +33,8 @@ namespace CelesteStudio {
         private bool updating;
 
         public Studio(string[] args) {
+            Instance = this;
+
             UpgradeSettings();
             InitializeComponent();
             InitMenu();
@@ -50,8 +52,6 @@ namespace CelesteStudio {
             if (!IsTitleBarVisible()) {
                 DesktopLocation = new Point(0, 0);
             }
-
-            Instance = this;
 
             TryOpenFile(args);
         }
