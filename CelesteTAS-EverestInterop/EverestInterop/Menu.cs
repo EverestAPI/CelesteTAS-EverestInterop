@@ -44,31 +44,39 @@ namespace TAS.EverestInterop {
                     subMenu.Add(new TextMenu.OnOff("Auto Extract New Studio".ToDialogText(), Settings.AutoExtractNewStudio).Change(value =>
                         Settings.AutoExtractNewStudio = value));
                 }),
-                
+
                 new EaseInSubMenu("Hotkeys".ToDialogText(), false).Apply(subMenu => {
                     subMenu.Add(new TextMenu.Button(Dialog.Clean("options_keyconfig")).Pressed(() => {
-                        menu.Focused = false;
-                        Entity keyboardConfig;
+                        subMenu.Focused = false;
+                        KeyboardConfigUI keyboardConfig;
                         if (CreateKeyboardConfigUi != null) {
-                            keyboardConfig = CreateKeyboardConfigUi.Invoke(everestModule, new object[] { menu }) as Entity;
+                            keyboardConfig = (KeyboardConfigUI) CreateKeyboardConfigUi.Invoke(everestModule, new object[] {menu});
                         } else {
-                            keyboardConfig = new ModuleSettingsKeyboardConfigUI(everestModule) { OnClose = () => menu.Focused = true };
+                            keyboardConfig = new ModuleSettingsKeyboardConfigUI(everestModule);
                         }
+
+                        keyboardConfig.OnClose = () => {
+                            subMenu.Focused = true;
+                        };
 
                         Engine.Scene.Add(keyboardConfig);
                         Engine.Scene.OnEndOfFrame += () => Engine.Scene.Entities.UpdateLists();
                     }));
 
                     subMenu.Add(new TextMenu.Button(Dialog.Clean("options_btnconfig")).Pressed(() => {
-                        menu.Focused = false;
-                        Entity keyboardConfig;
+                        subMenu.Focused = false;
+                        ButtonConfigUI buttonConfig;
                         if (CreateButtonConfigUI != null) {
-                            keyboardConfig = CreateButtonConfigUI.Invoke(everestModule, new object[] { menu }) as Entity;
+                            buttonConfig = (ButtonConfigUI) CreateButtonConfigUI.Invoke(everestModule, new object[] {menu});
                         } else {
-                            keyboardConfig = new ModuleSettingsButtonConfigUI(everestModule) { OnClose = () => menu.Focused = true };
+                            buttonConfig = new ModuleSettingsButtonConfigUI(everestModule);
                         }
 
-                        Engine.Scene.Add(keyboardConfig);
+                        buttonConfig.OnClose = () => {
+                            subMenu.Focused = true;
+                        };
+
+                        Engine.Scene.Add(buttonConfig);
                         Engine.Scene.OnEndOfFrame += () => Engine.Scene.Entities.UpdateLists();
                     }));
                 }).Apply(subMenu => hotkeysSubMenu = subMenu),
@@ -91,7 +99,7 @@ namespace TAS.EverestInterop {
 
         public static void CreateMenu(EverestModule everestModule, TextMenu menu, bool inGame) {
             List<TextMenuExt.EaseInSubHeaderExt> enabledDescriptions = new();
-            
+
             TextMenuExt.EaseInSubHeaderExt AddEnabledDescription(TextMenu.Item enabledItem, TextMenu containingMenu, string description) {
                 TextMenuExt.EaseInSubHeaderExt descriptionText = new(description, false, containingMenu) {
                     TextColor = Color.Gray,
