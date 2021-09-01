@@ -109,13 +109,15 @@ namespace TAS.EverestInterop {
             kbState = Keyboard.GetState();
             padState = GetGamePadState();
 
-            if (!Manager.Running && (Engine.Commands.Open || CelesteNetChatting)) {
-                return;
-            }
+            if (!Manager.Running) {
+                if (Engine.Commands.Open || CelesteNetChatting) {
+                    return;
+                }
 
-            if (!Manager.Running && (Engine.Scene?.Tracker.GetEntity<KeyboardConfigUI>() != null ||
-                                     Engine.Scene?.Tracker.GetEntity<ButtonConfigUI>() != null)) {
-                return;
+                if (Engine.Scene?.Tracker is { } tracker &&
+                    (tracker.GetEntity<KeyboardConfigUI>() != null || tracker.GetEntity<ButtonConfigUI>() != null)) {
+                    return;
+                }
             }
 
             foreach (Hotkey hotkey in KeysDict.Values) {

@@ -48,7 +48,7 @@ namespace TAS {
 
         private static int SavedCurrentFrame => IsSaved() ? savedController.CurrentFrame : -1;
 
-        public static int StudioHighlightLine => SpeedrunToolInstalledLazy.Value && IsSaved() ? SavedLine : -1;
+        public static int StudioHighlightLine => IsSaved_Safe() ? SavedLine : -1;
         public static bool SpeedrunToolInstalled => SpeedrunToolInstalledLazy.Value;
 
         private static bool BreakpointHasBeenDeleted =>
@@ -220,7 +220,7 @@ namespace TAS {
         // ReSharper disable once UnusedMember.Local
         [Unload]
         private static void ClearStateWhenHotReload() {
-            if (SpeedrunToolInstalled && IsSaved()) {
+            if (IsSaved_Safe()) {
                 Clear();
             }
         }
