@@ -49,12 +49,18 @@ While in game or in Studio:
 - Restart Playback: Equals
 - Fast Forward / Frame Advance Continuously: RightShift
 - Pause / Frame Advance: [
-- Unpause: ]
+- Pause / Resume: ]
 - Toggle Hitboxes: LeftControl + B
 - Toggle Simplified Graphics: LeftControl + N
 - Toggle Center Camera: LeftControl + M
 - Save State: RightAlt + Minus ([Experimental](#savestate))
 - Clear State: RightAlt + Back ([Experimental](#savestate))
+- Info HUD:
+    - Holding info hud hotkey and left-click to drag & drop the HUD
+    - Double press the info hud hotkey to toggle HUD
+    - Holding info hub hotkey then left-click on entity to watch the entity
+- Watch Trigger:
+    - Holding hotkeys info hub and watch trigger then left-click on trigger to watch the trigger
 
 - These can be rebound in Mod Options
     - You will have to rebind some of these if you are on a non-US keyboard layout.

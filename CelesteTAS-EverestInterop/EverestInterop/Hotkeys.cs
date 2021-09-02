@@ -35,19 +35,19 @@ namespace TAS.EverestInterop {
         private static KeyboardState kbState;
         private static GamePadState padState;
 
-        public static Hotkey HotkeyStart;
-        public static Hotkey HotkeyRestart;
-        public static Hotkey HotkeyFastForward;
-        public static Hotkey HotkeyFrameAdvance;
-        public static Hotkey HotkeyPause;
-        public static Hotkey HotkeyHitboxes;
-        public static Hotkey HotkeyTriggerHitboxes;
-        public static Hotkey HotkeyGraphics;
-        public static Hotkey HotkeyCamera;
-        public static Hotkey HotkeySaveState;
-        public static Hotkey HotkeyClearState;
-        public static Hotkey HotkeyInfoHub;
-        public static Hotkey HotkeyWatchTrigger;
+        public static Hotkey StartStop;
+        public static Hotkey Restart;
+        public static Hotkey FastForward;
+        public static Hotkey FrameAdvance;
+        public static Hotkey PauseResume;
+        public static Hotkey Hitboxes;
+        public static Hotkey TriggerHitboxes;
+        public static Hotkey SimplifiedGraphic;
+        public static Hotkey CenterCamera;
+        public static Hotkey SaveState;
+        public static Hotkey ClearState;
+        public static Hotkey InfoHub;
+        public static Hotkey WatchTrigger;
 
         public static readonly Dictionary<HotkeyIDs, Hotkey> KeysDict = new();
         public static Dictionary<HotkeyIDs, List<Keys>> KeysInteractWithStudio = new();
@@ -74,19 +74,19 @@ namespace TAS.EverestInterop {
 
         private static void InputInitialize() {
             KeysDict.Clear();
-            KeysDict[HotkeyIDs.Start] = HotkeyStart = BindingToHotkey(Settings.KeyStart);
-            KeysDict[HotkeyIDs.Restart] = HotkeyRestart = BindingToHotkey(Settings.KeyRestart);
-            KeysDict[HotkeyIDs.FastForward] = HotkeyFastForward = BindingToHotkey(Settings.KeyFastForward);
-            KeysDict[HotkeyIDs.FrameAdvance] = HotkeyFrameAdvance = BindingToHotkey(Settings.KeyFrameAdvance);
-            KeysDict[HotkeyIDs.Pause] = HotkeyPause = BindingToHotkey(Settings.KeyPause);
-            KeysDict[HotkeyIDs.Hitboxes] = HotkeyHitboxes = BindingToHotkey(Settings.KeyHitboxes);
-            KeysDict[HotkeyIDs.TriggerHitboxes] = HotkeyTriggerHitboxes = BindingToHotkey(Settings.KeyTriggerHitboxes);
-            KeysDict[HotkeyIDs.Graphics] = HotkeyGraphics = BindingToHotkey(Settings.KeyGraphics);
-            KeysDict[HotkeyIDs.Camera] = HotkeyCamera = BindingToHotkey(Settings.KeyCamera);
-            KeysDict[HotkeyIDs.SaveState] = HotkeySaveState = BindingToHotkey(Settings.KeySaveState);
-            KeysDict[HotkeyIDs.ClearState] = HotkeyClearState = BindingToHotkey(Settings.KeyClearState);
-            KeysDict[HotkeyIDs.InfoHub] = HotkeyInfoHub = BindingToHotkey(Settings.KeyInfoHud);
-            KeysDict[HotkeyIDs.WatchTrigger] = HotkeyWatchTrigger = BindingToHotkey(Settings.KeyWatchTrigger);
+            KeysDict[HotkeyIDs.Start] = StartStop = BindingToHotkey(Settings.KeyStart);
+            KeysDict[HotkeyIDs.Restart] = Restart = BindingToHotkey(Settings.KeyRestart);
+            KeysDict[HotkeyIDs.FastForward] = FastForward = BindingToHotkey(Settings.KeyFastForward);
+            KeysDict[HotkeyIDs.FrameAdvance] = FrameAdvance = BindingToHotkey(Settings.KeyFrameAdvance);
+            KeysDict[HotkeyIDs.Pause] = PauseResume = BindingToHotkey(Settings.KeyPause);
+            KeysDict[HotkeyIDs.Hitboxes] = Hitboxes = BindingToHotkey(Settings.KeyHitboxes);
+            KeysDict[HotkeyIDs.TriggerHitboxes] = TriggerHitboxes = BindingToHotkey(Settings.KeyTriggerHitboxes);
+            KeysDict[HotkeyIDs.Graphics] = SimplifiedGraphic = BindingToHotkey(Settings.KeyGraphics);
+            KeysDict[HotkeyIDs.Camera] = CenterCamera = BindingToHotkey(Settings.KeyCamera);
+            KeysDict[HotkeyIDs.SaveState] = SaveState = BindingToHotkey(Settings.KeySaveState);
+            KeysDict[HotkeyIDs.ClearState] = ClearState = BindingToHotkey(Settings.KeyClearState);
+            KeysDict[HotkeyIDs.InfoHub] = InfoHub = BindingToHotkey(Settings.KeyInfoHud);
+            KeysDict[HotkeyIDs.WatchTrigger] = WatchTrigger = BindingToHotkey(Settings.KeyWatchTrigger);
 
             KeysInteractWithStudio = KeysDict.Where(pair => pair.Key != HotkeyIDs.InfoHub && pair.Key != HotkeyIDs.WatchTrigger)
                 .ToDictionary(pair => pair.Key, pair => pair.Value.Keys);
@@ -114,8 +114,8 @@ namespace TAS.EverestInterop {
 
             if (!Manager.Running) {
                 if (Engine.Commands.Open || CelesteNetChatting) {
-                    HotkeyInfoHub.Update();
-                    HotkeyWatchTrigger.Update();
+                    InfoHub.Update();
+                    WatchTrigger.Update();
                     return;
                 }
 
@@ -130,19 +130,19 @@ namespace TAS.EverestInterop {
             }
 
             if (Engine.Scene is Level level && (!level.Paused || level.PauseMainMenuOpen || Manager.Running)) {
-                if (HotkeyHitboxes.Pressed) {
+                if (Hitboxes.Pressed) {
                     Settings.ShowHitboxes = !Settings.ShowHitboxes;
                 }
 
-                if (HotkeyTriggerHitboxes.Pressed) {
+                if (TriggerHitboxes.Pressed) {
                     Settings.ShowTriggerHitboxes = !Settings.ShowTriggerHitboxes;
                 }
 
-                if (HotkeyGraphics.Pressed) {
+                if (SimplifiedGraphic.Pressed) {
                     Settings.SimplifiedGraphics = !Settings.SimplifiedGraphics;
                 }
 
-                if (HotkeyCamera.Pressed) {
+                if (CenterCamera.Pressed) {
                     Settings.CenterCamera = !Settings.CenterCamera;
                 }
             }

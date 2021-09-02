@@ -87,15 +87,15 @@ TAS_DISABLE_ACHIEVEMENTS=     Disable Achievements
 TAS_MOD_9D_LIGHTING=          Mod 9D Lighting
 
 # ================================== Hotkey Config ==================================
-TAS_KEY_START=                Start
+TAS_KEY_START_STOP=           Start/Stop
 TAS_KEY_RESTART=              Restart
 TAS_KEY_FAST_FORWARD=         Fast Forward
 TAS_KEY_FRAME_ADVANCE=        Frame Advance
-TAS_KEY_PAUSE=                Pause/Resume
+TAS_KEY_PAUSE_RESUME=         Pause/Resume
 TAS_KEY_HITBOXES=             Hitboxes
 TAS_KEY_TRIGGER_HITBOXES=     Trigger Hitboxes
-TAS_KEY_GRAPHICS=             Simplified Graphics
-TAS_KEY_CAMERA=               Center Camera
+TAS_KEY_SIMPLIFIED_GRAPHICS=  Simplified Graphics
+TAS_KEY_CENTER_CAMERA=        Center Camera
 TAS_KEY_SAVE_STATE=           Save State
 TAS_KEY_CLEAR_STATE=          Clear State
 TAS_KEY_INFO_HUD=             Info HUD

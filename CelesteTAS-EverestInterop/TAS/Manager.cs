@@ -33,7 +33,7 @@ namespace TAS {
         }
 
         public static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
-        private static bool ShouldForceState => NextState.HasFlag(State.FrameStep) && !Hotkeys.HotkeyFastForward.OverrideCheck;
+        private static bool ShouldForceState => NextState.HasFlag(State.FrameStep) && !Hotkeys.FastForward.OverrideCheck;
 
         public static void Update() {
             LastState = State;
@@ -72,11 +72,11 @@ namespace TAS {
                     MInput.Keyboard.PreviousState = MInput.Keyboard.CurrentState;
                     MInput.Keyboard.CurrentState = default;
                     MInput.Keyboard.CurrentState.GetPressedKeys();
-                    
+
                     // MInput.Mouse.UpdateNull();
                     MInput.Mouse.PreviousState = MInput.Mouse.CurrentState;
                     MInput.Mouse.CurrentState = default;
-                    
+
                     for (int i = 0; i < 4; i++) {
                         if (MInput.Active) {
                             MInput.GamePads[i].Update();
@@ -147,8 +147,8 @@ namespace TAS {
 
                 //q: but euni, why not just use the hotkey system you implemented?
                 //a: i have no fucking idea
-                if (Hotkeys.HotkeyFastForward.Check) {
-                    FrameLoops = Math.Max(1, (int) Math.Round(Hotkeys.HotkeyFastForward.Value * 10));
+                if (Hotkeys.FastForward.Check) {
+                    FrameLoops = Math.Max(1, (int) Math.Round(Hotkeys.FastForward.Value * 10));
                     return;
                 }
             }
@@ -157,8 +157,8 @@ namespace TAS {
         }
 
         private static void FrameStepping() {
-            bool frameAdvance = Hotkeys.HotkeyFrameAdvance.Check && !Hotkeys.HotkeyStart.Check;
-            bool pause = Hotkeys.HotkeyPause.Check && !Hotkeys.HotkeyStart.Check;
+            bool frameAdvance = Hotkeys.FrameAdvance.Check && !Hotkeys.StartStop.Check;
+            bool pause = Hotkeys.PauseResume.Check && !Hotkeys.StartStop.Check;
 
             if (State.HasFlag(State.Enable) && !State.HasFlag(State.Record)) {
                 if (NextState.HasFlag(State.FrameStep)) {
@@ -166,7 +166,7 @@ namespace TAS {
                     NextState &= ~State.FrameStep;
                 }
 
-                if (frameAdvance && !Hotkeys.HotkeyFrameAdvance.LastCheck) {
+                if (frameAdvance && !Hotkeys.FrameAdvance.LastCheck) {
                     if (!State.HasFlag(State.FrameStep)) {
                         State |= State.FrameStep;
                         NextState &= ~State.FrameStep;
@@ -174,7 +174,7 @@ namespace TAS {
                         State &= ~State.FrameStep;
                         NextState |= State.FrameStep;
                     }
-                } else if (pause && !Hotkeys.HotkeyPause.LastCheck) {
+                } else if (pause && !Hotkeys.PauseResume.LastCheck) {
                     if (!State.HasFlag(State.FrameStep)) {
                         State |= State.FrameStep;
                         NextState &= ~State.FrameStep;
@@ -182,7 +182,7 @@ namespace TAS {
                         State &= ~State.FrameStep;
                         NextState &= ~State.FrameStep;
                     }
-                } else if (LastState.HasFlag(State.FrameStep) && State.HasFlag(State.FrameStep) && Hotkeys.HotkeyFastForward.Check) {
+                } else if (LastState.HasFlag(State.FrameStep) && State.HasFlag(State.FrameStep) && Hotkeys.FastForward.Check) {
                     State &= ~State.FrameStep;
                     NextState |= State.FrameStep;
                 }
@@ -190,13 +190,13 @@ namespace TAS {
         }
 
         private static void CheckToEnable() {
-            if (!Savestates.SpeedrunToolInstalled && Hotkeys.HotkeyRestart.Pressed) {
+            if (!Savestates.SpeedrunToolInstalled && Hotkeys.Restart.Pressed) {
                 DisableRun();
                 EnableRun();
                 return;
             }
 
-            if (Hotkeys.HotkeyStart.Check) {
+            if (Hotkeys.StartStop.Check) {
                 if (!State.HasFlag(State.Enable)) {
                     NextState |= State.Enable;
                 } else {

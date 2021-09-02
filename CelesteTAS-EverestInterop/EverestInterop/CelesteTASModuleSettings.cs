@@ -60,7 +60,7 @@ namespace TAS.EverestInterop {
 
         #region HotKey
 
-        [SettingName("TAS_KEY_START")]
+        [SettingName("TAS_KEY_START_STOP")]
         [DefaultButtonBinding(0, Keys.RightControl)]
         public ButtonBinding KeyStart { get; set; } = new(0, Keys.RightControl);
 
@@ -76,7 +76,7 @@ namespace TAS.EverestInterop {
         [DefaultButtonBinding(0, Keys.OemOpenBrackets)]
         public ButtonBinding KeyFrameAdvance { get; set; } = new(0, Keys.OemOpenBrackets);
 
-        [SettingName("TAS_KEY_PAUSE")]
+        [SettingName("TAS_KEY_PAUSE_RESUME")]
         [DefaultButtonBinding(0, Keys.OemCloseBrackets)]
         public ButtonBinding KeyPause { get; set; } = new(0, Keys.OemCloseBrackets);
 
@@ -90,12 +90,12 @@ namespace TAS.EverestInterop {
         [DefaultButtonBinding(0, Keys.T)]
         public ButtonBinding KeyTriggerHitboxes { get; set; } = new(0, Keys.LeftAlt, Keys.T);
 
-        [SettingName("TAS_KEY_GRAPHICS")]
+        [SettingName("TAS_KEY_SIMPLIFIED_GRAPHICS")]
         [ExtraDefaultKey(Keys.LeftControl)]
         [DefaultButtonBinding(0, Keys.N)]
         public ButtonBinding KeyGraphics { get; set; } = new(0, Keys.LeftControl, Keys.N);
 
-        [SettingName("TAS_KEY_CAMERA")]
+        [SettingName("TAS_KEY_CENTER_CAMERA")]
         [ExtraDefaultKey(Keys.LeftControl)]
         [DefaultButtonBinding(0, Keys.M)]
         public ButtonBinding KeyCamera { get; set; } = new(0, Keys.LeftControl, Keys.M);
