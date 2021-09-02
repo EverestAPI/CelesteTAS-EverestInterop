@@ -16,7 +16,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 return;
             }
 
-            if (!Hotkeys.InfoHub.Check) {
+            if (!Hotkeys.InfoHud.Check) {
                 return;
             }
 
@@ -25,7 +25,7 @@ namespace TAS.EverestInterop.InfoHUD {
         }
 
         private static void Toggle() {
-            if (Hotkeys.InfoHub.DoublePressed) {
+            if (Hotkeys.InfoHud.DoublePressed) {
                 TasSettings.InfoHud = !TasSettings.InfoHud;
                 CelesteTasModule.Instance.SaveSettings();
             }

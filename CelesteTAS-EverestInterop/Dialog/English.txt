@@ -7,7 +7,7 @@ TAS_HITBOX_COLOR_DESCRIPTION_2= Or use the entity/trigger/platform_hitbox_color 
 TAS_SIMPLIFIED_GRAPHICS=        Simplified Graphics
 TAS_INFO_HUD_DESCRIPTION_1=     Holding info hud hotkey and left-click to drag & drop the HUD
 TAS_INFO_HUD_DESCRIPTION_2=     Double press the info hud hotkey to toggle HUD
-TAS_INFO_HUD_DESCRIPTION_3=     Holding info hub hotkey then left-click to watch the entity
+TAS_INFO_HUD_DESCRIPTION_3=     Holding info hud hotkey then left-click to watch the entity
 TAS_INFO_HUD_DESCRIPTION_4=     while holding watch trigger hotkey to watch the trigger
 TAS_ROUND_VALUES=               Round Values
 TAS_RELAUNCH_REQUIRED=          Relaunch Required
@@ -60,7 +60,7 @@ TAS_INFO_MASKED_OPACITY=                   Masked Opacity
 
 # ================================== Info HUD Options ==================================
 TAS_INFO_HUD_OPTIONS_OFF=         OFF
-TAS_INFO_HUD_OPTIONS_HUD_ONLY=    Hud Only
+TAS_INFO_HUD_OPTIONS_HUD_ONLY=    HUD Only
 TAS_INFO_HUD_OPTIONS_STUDIO_ONLY= Studio Only
 TAS_INFO_HUD_OPTIONS_BOTH=        Both
 

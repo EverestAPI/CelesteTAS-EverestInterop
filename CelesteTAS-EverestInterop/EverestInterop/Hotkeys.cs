@@ -46,7 +46,7 @@ namespace TAS.EverestInterop {
         public static Hotkey CenterCamera;
         public static Hotkey SaveState;
         public static Hotkey ClearState;
-        public static Hotkey InfoHub;
+        public static Hotkey InfoHud;
         public static Hotkey WatchTrigger;
 
         public static readonly Dictionary<HotkeyIDs, Hotkey> KeysDict = new();
@@ -85,10 +85,10 @@ namespace TAS.EverestInterop {
             KeysDict[HotkeyIDs.Camera] = CenterCamera = BindingToHotkey(Settings.KeyCamera);
             KeysDict[HotkeyIDs.SaveState] = SaveState = BindingToHotkey(Settings.KeySaveState);
             KeysDict[HotkeyIDs.ClearState] = ClearState = BindingToHotkey(Settings.KeyClearState);
-            KeysDict[HotkeyIDs.InfoHub] = InfoHub = BindingToHotkey(Settings.KeyInfoHud);
+            KeysDict[HotkeyIDs.InfoHud] = InfoHud = BindingToHotkey(Settings.KeyInfoHud);
             KeysDict[HotkeyIDs.WatchTrigger] = WatchTrigger = BindingToHotkey(Settings.KeyWatchTrigger);
 
-            KeysInteractWithStudio = KeysDict.Where(pair => pair.Key != HotkeyIDs.InfoHub && pair.Key != HotkeyIDs.WatchTrigger)
+            KeysInteractWithStudio = KeysDict.Where(pair => pair.Key != HotkeyIDs.InfoHud && pair.Key != HotkeyIDs.WatchTrigger)
                 .ToDictionary(pair => pair.Key, pair => pair.Value.Keys);
         }
 
@@ -114,7 +114,7 @@ namespace TAS.EverestInterop {
 
             if (!Manager.Running) {
                 if (Engine.Commands.Open || CelesteNetChatting) {
-                    InfoHub.Update();
+                    InfoHud.Update();
                     WatchTrigger.Update();
                     return;
                 }

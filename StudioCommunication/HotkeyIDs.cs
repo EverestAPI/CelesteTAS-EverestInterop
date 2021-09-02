@@ -13,7 +13,7 @@ namespace StudioCommunication {
         Camera,
         SaveState,
         ClearState,
-        InfoHub,
+        InfoHud,
         WatchTrigger
     }
 }
