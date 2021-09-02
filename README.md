@@ -86,7 +86,7 @@ While in game or in Studio:
 
 ### Watch Entity
 
-Enable `Info HUD`, holding left ctrl then left-click to add the entity to be watched, right-click to clear the watching entities. Supports exporting watching entities info via
+Enable `Info HUD`, holding info hub hotkey then left-click to add the entity to be watched, while holding watch trigger hotkey to watch trigger, right-click to clear the watching entities. Supports exporting watching entities info via
 the `StartExportGameInfo` command.
 
 ### Custom Info

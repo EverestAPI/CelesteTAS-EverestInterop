@@ -1,15 +1,17 @@
 ﻿# ================================== Menu ==================================
-TAS_ENABLED=                  Enabled
-TAS_ENABLED_DESCRIPTION=      Working TAS File Path:
-TAS_SHOW_HITBOXES=            Hitboxes
+TAS_ENABLED=                    Enabled
+TAS_ENABLED_DESCRIPTION=        Working TAS File Path:
+TAS_SHOW_HITBOXES=              Hitboxes
 TAS_HITBOX_COLOR_DESCRIPTION_1= Hitbox color can only be edited in the menu of the title screen
 TAS_HITBOX_COLOR_DESCRIPTION_2= Or use the entity/trigger/platform_hitbox_color command in the console
-TAS_SIMPLIFIED_GRAPHICS=      Simplified Graphics
-TAS_INFO_HUD_DESCRIPTION_1=   Hold down the info hud hotkey and use the mouse to drag & drop the HUD
-TAS_INFO_HUD_DESCRIPTION_2=   Double click the info hud hotkey to toggle HUD
-TAS_ROUND_VALUES=             Round Values
-TAS_RELAUNCH_REQUIRED=        Relaunch Required
-TAS_MORE_OPTIONS=             More Options
+TAS_SIMPLIFIED_GRAPHICS=        Simplified Graphics
+TAS_INFO_HUD_DESCRIPTION_1=     Holding info hud hotkey and left-click to drag & drop the HUD
+TAS_INFO_HUD_DESCRIPTION_2=     Double press the info hud hotkey to toggle HUD
+TAS_INFO_HUD_DESCRIPTION_3=     Holding info hub hotkey then left-click to watch the entity
+TAS_INFO_HUD_DESCRIPTION_4=     while holding watch trigger hotkey to watch the trigger
+TAS_ROUND_VALUES=               Round Values
+TAS_RELAUNCH_REQUIRED=          Relaunch Required
+TAS_MORE_OPTIONS=               More Options
 
 # ================================== Hitbox Submenu ==================================
 TAS_ACTUAL_COLLIDE_HITBOXES=  Actual Collide Hitboxes
@@ -84,7 +86,7 @@ TAS_RESTORE_SETTINGS=         Restore Settings After TAS Stop
 TAS_DISABLE_ACHIEVEMENTS=     Disable Achievements
 TAS_MOD_9D_LIGHTING=          Mod 9D Lighting
 
-# ================================== Keyboard Config ==================================
+# ================================== Hotkey Config ==================================
 TAS_KEY_START=                Start
 TAS_KEY_RESTART=              Restart
 TAS_KEY_FAST_FORWARD=         Fast Forward
@@ -97,6 +99,7 @@ TAS_KEY_CAMERA=               Center Camera
 TAS_KEY_SAVE_STATE=           Save State
 TAS_KEY_CLEAR_STATE=          Clear State
 TAS_KEY_INFO_HUD=             Info HUD
+TAS_KEY_WATCH_TRIGGER=        Watch Trigger
 
 # ================================== Option Values ==================================
 TAS_DEFAULT=                  Default

@@ -9,7 +9,7 @@ using TAS.Utils;
 namespace TAS.EverestInterop {
     public static class ConsoleEnhancements {
         private static string clickedEntityInfo = string.Empty;
-        private static ButtonState lastButtonState;
+        private static MouseState lastMouseState;
 
         public static void Load() {
             IL.Monocle.Commands.Render += Commands_Render;
@@ -36,31 +36,35 @@ namespace TAS.EverestInterop {
 
                 MouseState mouseState = Mouse.GetState();
 
-                if (Engine.Instance.IsActive && mouseState.LeftButton == ButtonState.Pressed && lastButtonState == ButtonState.Released) {
-                    Entity clickedEntity = InfoWatchEntity.FindClickedEntity(mouseState);
-                    if (clickedEntity != null) {
-                        Type type = clickedEntity.GetType();
-                        clickedEntityInfo = "\n entity type: ";
-                        if (type.Assembly == typeof(Celeste.Celeste).Assembly) {
-                            clickedEntityInfo += type.Name;
+                if (Engine.Instance.IsActive) {
+                    if (mouseState.LeftButton == ButtonState.Pressed && lastMouseState.LeftButton == ButtonState.Released) {
+                        Entity clickedEntity = InfoWatchEntity.FindClickedEntity(mouseState);
+                        if (clickedEntity != null) {
+                            Type type = clickedEntity.GetType();
+                            clickedEntityInfo = "\n entity type: ";
+                            if (type.Assembly == typeof(Celeste.Celeste).Assembly) {
+                                clickedEntityInfo += type.Name;
+                            } else {
+                                // StartExport uses a comma as a separator, so we can't use comma,
+                                // use @ to place it and replace it back with a comma when looking for the type
+                                clickedEntityInfo += type.FullName + "@" + type.Assembly.GetName().Name;
+                            }
+
+                            if (clickedEntity.LoadEntityData() is { } entityData) {
+                                clickedEntityInfo += $"\n entity name: {entityData.Name}";
+                                clickedEntityInfo += $"\n entity id  : {entityData.ToEntityId()}";
+                            }
+
+                            ("Info of clicked entity: " + clickedEntityInfo).Log();
                         } else {
-                            // StartExport uses a comma as a separator, so we can't use comma,
-                            // use @ to place it and replace it back with a comma when looking for the type
-                            clickedEntityInfo += type.FullName + "@" + type.Assembly.GetName().Name;
+                            clickedEntityInfo = string.Empty;
                         }
-
-                        if (clickedEntity.LoadEntityData() is { } entityData) {
-                            clickedEntityInfo += $"\n entity name: {entityData.Name}";
-                            clickedEntityInfo += $"\n entity id  : {entityData.ToEntityId()}";
-                        }
-
-                        ("Info of clicked entity: " + clickedEntityInfo).Log();
-                    } else {
+                    } else if (mouseState.RightButton == ButtonState.Pressed && lastMouseState.RightButton == ButtonState.Released) {
                         clickedEntityInfo = string.Empty;
                     }
                 }
 
-                lastButtonState = mouseState.LeftButton;
+                lastMouseState = mouseState;
 
                 return
                     (string.IsNullOrEmpty(clickedEntityInfo) ? string.Empty : clickedEntityInfo) +

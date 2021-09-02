@@ -190,8 +190,6 @@ namespace TAS.EverestInterop.InfoHUD {
                     new KeyValuePair<WatchEntityTypes, string>(WatchEntityTypes.DeclaredOnly, "Info Watch Entity Declared Only".ToDialogText()),
                     new KeyValuePair<WatchEntityTypes, string>(WatchEntityTypes.All, "Info Watch Entity All".ToDialogText()),
                 }, TasSettings.InfoWatchEntityType).Change(value => TasSettings.InfoWatchEntityType = value));
-                subMenu.Add(new TextMenu.OnOff("Info Ignore Trigger When Click Entity".ToDialogText(), TasSettings.InfoIgnoreTriggerWhenClickEntity)
-                    .Change(value => TasSettings.InfoIgnoreTriggerWhenClickEntity = value));
                 subMenu.Add(new TextMenuExt.IntSlider("Info Text Size".ToDialogText(), 5, 20, TasSettings.InfoTextSize).Change(value =>
                     TasSettings.InfoTextSize = value));
                 subMenu.Add(new TextMenuExt.IntSlider("Info Subpixel Indicator Size".ToDialogText(), 5, 20, TasSettings.InfoSubPixelIndicatorSize)
@@ -215,6 +213,8 @@ namespace TAS.EverestInterop.InfoHUD {
         }
 
         public static void AddSubMenuDescription(TextMenu menu) {
+            subMenuItem.AddDescription(menu, "Info HUD Description 4".ToDialogText());
+            subMenuItem.AddDescription(menu, "Info HUD Description 3".ToDialogText());
             subMenuItem.AddDescription(menu, "Info HUD Description 2".ToDialogText());
             subMenuItem.AddDescription(menu, "Info HUD Description 1".ToDialogText());
         }

@@ -47,6 +47,7 @@ namespace TAS.EverestInterop {
         public static Hotkey HotkeySaveState;
         public static Hotkey HotkeyClearState;
         public static Hotkey HotkeyInfoHub;
+        public static Hotkey HotkeyWatchTrigger;
 
         public static readonly Dictionary<HotkeyIDs, Hotkey> KeysDict = new();
         public static Dictionary<HotkeyIDs, List<Keys>> KeysInteractWithStudio = new();
@@ -85,8 +86,10 @@ namespace TAS.EverestInterop {
             KeysDict[HotkeyIDs.SaveState] = HotkeySaveState = BindingToHotkey(Settings.KeySaveState);
             KeysDict[HotkeyIDs.ClearState] = HotkeyClearState = BindingToHotkey(Settings.KeyClearState);
             KeysDict[HotkeyIDs.InfoHub] = HotkeyInfoHub = BindingToHotkey(Settings.KeyInfoHud);
+            KeysDict[HotkeyIDs.WatchTrigger] = HotkeyWatchTrigger = BindingToHotkey(Settings.KeyWatchTrigger);
 
-            KeysInteractWithStudio = KeysDict.Where(pair => pair.Key != HotkeyIDs.InfoHub).ToDictionary(pair => pair.Key, pair => pair.Value.Keys);
+            KeysInteractWithStudio = KeysDict.Where(pair => pair.Key != HotkeyIDs.InfoHub && pair.Key != HotkeyIDs.WatchTrigger)
+                .ToDictionary(pair => pair.Key, pair => pair.Value.Keys);
         }
 
         private static Hotkey BindingToHotkey(ButtonBinding binding) {
@@ -111,6 +114,8 @@ namespace TAS.EverestInterop {
 
             if (!Manager.Running) {
                 if (Engine.Commands.Open || CelesteNetChatting) {
+                    HotkeyInfoHub.Update();
+                    HotkeyWatchTrigger.Update();
                     return;
                 }
 

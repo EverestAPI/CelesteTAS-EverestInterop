@@ -114,6 +114,10 @@ namespace TAS.EverestInterop {
         [DefaultButtonBinding(0, Keys.LeftControl)]
         public ButtonBinding KeyInfoHud { get; set; } = new(0, Keys.LeftControl);
 
+        [SettingName("TAS_KEY_WATCH_TRIGGER")]
+        [DefaultButtonBinding(0, Keys.LeftAlt)]
+        public ButtonBinding KeyWatchTrigger { get; set; } = new(0, Keys.LeftAlt);
+
         #endregion
 
         #region SimplifiedGraphics
@@ -160,7 +164,6 @@ namespace TAS.EverestInterop {
         public HudOptions InfoCustom { get; set; } = HudOptions.Off;
         public HudOptions InfoWatchEntity { get; set; } = HudOptions.Both;
         public WatchEntityTypes InfoWatchEntityType { get; set; } = WatchEntityTypes.Position;
-        public bool InfoIgnoreTriggerWhenClickEntity { get; set; } = true;
 
         [SettingIgnore]
         public string InfoCustomTemplate { get; set; } =

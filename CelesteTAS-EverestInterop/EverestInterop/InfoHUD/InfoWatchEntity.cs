@@ -87,7 +87,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 Vector2 mouseWorldPosition = camera.ScreenToCamera((mousePosition / viewScale).Floor());
                 Entity tempEntity = new() {Position = mouseWorldPosition, Collider = new Hitbox(1, 1)};
                 Entity clickedEntity = level.Entities.Where(entity =>
-                        (!Settings.InfoIgnoreTriggerWhenClickEntity || entity is not Trigger)
+                        (Hotkeys.HotkeyWatchTrigger.Check || entity is not Trigger)
                         && entity.GetType() != typeof(Entity)
                         && entity is not RespawnTargetTrigger
                         && entity is not LookoutBlocker

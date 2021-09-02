@@ -1,15 +1,17 @@
 ﻿# ================================== Menu ==================================
-TAS_ENABLED=                  开关
-TAS_ENABLED_DESCRIPTION=      TAS 文件路径：
-TAS_SHOW_HITBOXES=            碰撞箱
+TAS_ENABLED=                    开关
+TAS_ENABLED_DESCRIPTION=        TAS 文件路径：
+TAS_SHOW_HITBOXES=              碰撞箱
 TAS_HITBOX_COLOR_DESCRIPTION_1= 请到标题页 Mod 菜单中修改碰撞箱颜色
 TAS_HITBOX_COLOR_DESCRIPTION_2= 或者在控制台中使用 entity/trigger/platform_hitbox_color 命令
-TAS_SIMPLIFIED_GRAPHICS=      简化图形
-TAS_INFO_HUD_DESCRIPTION_1=   按住信息面板快捷键和鼠标左键然后拖放信息面板
-TAS_INFO_HUD_DESCRIPTION_2=   双击信息面板快捷键开关信息面板
-TAS_ROUND_VALUES=             数值精度
-TAS_RELAUNCH_REQUIRED=        需要重启的选项
-TAS_MORE_OPTIONS=             更多选项
+TAS_SIMPLIFIED_GRAPHICS=        简化图形
+TAS_INFO_HUD_DESCRIPTION_1=     按住信息面板快捷键和鼠标左键然后拖放移动信息面板
+TAS_INFO_HUD_DESCRIPTION_2=     双击信息面板快捷键开关信息面板
+TAS_INFO_HUD_DESCRIPTION_3=     按住信息面板快捷键然后用鼠标左键点击监视实体
+TAS_INFO_HUD_DESCRIPTION_4=     同时按住监控触发区域快捷键则可点击监控触发区域
+TAS_ROUND_VALUES=               数值精度
+TAS_RELAUNCH_REQUIRED=          需要重启的选项
+TAS_MORE_OPTIONS=               更多选项
 
 # ================================== Hitbox Submenu ==================================
 TAS_ACTUAL_COLLIDE_HITBOXES=  实际碰撞箱
@@ -85,7 +87,7 @@ TAS_RESTORE_SETTINGS=         TAS 停止运行后恢复所有设置
 TAS_DISABLE_ACHIEVEMENTS=     禁止解锁成就
 TAS_MOD_9D_LIGHTING=          修改 9D 亮度
 
-# ================================== Keyboard Config ==================================
+# ================================== Hotkey Config ==================================
 TAS_KEY_START=                运行
 TAS_KEY_RESTART=              重新运行
 TAS_KEY_FAST_FORWARD=         快进
@@ -97,6 +99,8 @@ TAS_KEY_GRAPHICS=             简化图形
 TAS_KEY_CAMERA=               镜头居中
 TAS_KEY_SAVE_STATE=           保存状态
 TAS_KEY_CLEAR_STATE=          清除状态
+TAS_KEY_INFO_HUD=             信息面板
+TAS_KEY_WATCH_TRIGGER=        监视触发区域
 
 # ================================== Option Values ==================================
 TAS_DEFAULT=                  默认
