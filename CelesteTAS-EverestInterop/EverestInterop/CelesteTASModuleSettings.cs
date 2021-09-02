@@ -36,7 +36,7 @@ namespace TAS.EverestInterop {
         [SettingIgnore] public Color EntityHitboxColor { get; set; } = HitboxColor.DefaultEntityColor;
         [SettingIgnore] public Color TriggerHitboxColor { get; set; } = HitboxColor.DefaultTriggerColor;
         [SettingIgnore] public Color PlatformHitboxColor { get; set; } = HitboxColor.DefaultPlatformColor;
-        public bool HideTriggerHitboxes { get; set; } = false;
+        public bool ShowTriggerHitboxes { get; set; } = true;
         public bool SimplifiedHitboxes { get; set; } = true;
         public ActualCollideHitboxTypes ShowActualCollideHitboxes { get; set; } = ActualCollideHitboxTypes.Off;
         public bool PauseAfterLoadState { get; set; } = true;

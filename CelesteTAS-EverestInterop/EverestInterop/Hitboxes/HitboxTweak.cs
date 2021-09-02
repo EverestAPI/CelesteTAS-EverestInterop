@@ -45,8 +45,8 @@ namespace TAS.EverestInterop.Hitboxes {
 
                     option.Change(value => Settings.ShowActualCollideHitboxes = value);
                 }));
-                subMenu.Add(new TextMenu.OnOff("Hide Trigger Hitboxes".ToDialogText(), Settings.HideTriggerHitboxes).Change(value =>
-                    Settings.HideTriggerHitboxes = value));
+                subMenu.Add(new TextMenu.OnOff("Show Trigger Hitboxes".ToDialogText(), Settings.ShowTriggerHitboxes).Change(value =>
+                    Settings.ShowTriggerHitboxes = value));
                 subMenu.Add(new TextMenu.OnOff("Simplified Hitboxes".ToDialogText(), Settings.SimplifiedHitboxes).Change(value =>
                     Settings.SimplifiedHitboxes = value));
                 subMenu.Add(HitboxColor.CreateEntityHitboxColorButton(menu, inGame));

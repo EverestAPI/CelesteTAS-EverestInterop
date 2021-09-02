@@ -13,7 +13,7 @@ TAS_MORE_OPTIONS=             More Options
 
 # ================================== Hitbox Submenu ==================================
 TAS_ACTUAL_COLLIDE_HITBOXES=  Actual Collide Hitboxes
-TAS_HIDE_TRIGGER_HITBOXES=    Hide Trigger Hitboxes
+TAS_SHOW_TRIGGER_HITBOXES=    Trigger Hitboxes
 TAS_SIMPLIFIED_HITBOXES=      Simplified Hitboxes
 TAS_ENTITY_HITBOX_COLOR=      Entity Hitbox Color
 TAS_TRIGGER_HITBOX_COLOR=     Trigger Hitbox Color

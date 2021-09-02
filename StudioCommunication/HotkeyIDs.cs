@@ -1,4 +1,6 @@
-﻿namespace StudioCommunication {
+﻿// ReSharper disable UnusedMember.Global
+
+namespace StudioCommunication {
     public enum HotkeyIDs : byte {
         Start,
         Restart,

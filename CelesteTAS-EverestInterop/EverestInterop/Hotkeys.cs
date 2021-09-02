@@ -130,7 +130,7 @@ namespace TAS.EverestInterop {
                 }
 
                 if (HotkeyTriggerHitboxes.Pressed) {
-                    Settings.HideTriggerHitboxes = !Settings.HideTriggerHitboxes;
+                    Settings.ShowTriggerHitboxes = !Settings.ShowTriggerHitboxes;
                 }
 
                 if (HotkeyGraphics.Pressed) {

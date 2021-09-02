@@ -20,7 +20,7 @@ namespace TAS.EverestInterop.Hitboxes {
             ILCursor ilCursor = new(il);
             Instruction start = ilCursor.Next;
             ilCursor.Emit(OpCodes.Ldarg_0)
-                .EmitDelegate<Func<Entity, bool>>(entity => Settings.ShowHitboxes && Settings.HideTriggerHitboxes && entity is Trigger);
+                .EmitDelegate<Func<Entity, bool>>(entity => Settings.ShowHitboxes && !Settings.ShowTriggerHitboxes && entity is Trigger);
             ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ret);
         }
     }

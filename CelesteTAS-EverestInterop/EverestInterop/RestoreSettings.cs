@@ -69,7 +69,7 @@ namespace TAS.EverestInterop {
 
                             if (modSettings is CelesteTasModuleSettings backupTasSettings) {
                                 CelesteTasModuleSettings tasSettings = CelesteTasModule.Settings;
-                                backupTasSettings.HideTriggerHitboxes = tasSettings.HideTriggerHitboxes;
+                                backupTasSettings.ShowTriggerHitboxes = tasSettings.ShowTriggerHitboxes;
                                 backupTasSettings.ShowActualCollideHitboxes = tasSettings.ShowActualCollideHitboxes;
                                 backupTasSettings.SimplifiedGraphics = tasSettings.SimplifiedGraphics;
                                 backupTasSettings.HideGameplay = tasSettings.HideGameplay;
