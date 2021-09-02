@@ -23,6 +23,7 @@ namespace TAS.EverestInterop.InfoHUD {
     public static class InfoWatchEntity {
         private static readonly Dictionary<string, IEnumerable<MemberInfo>> CachedMemberInfos = new();
 
+        private static readonly WeakReference<Entity> LastClickedEntity = new(null);
         private static readonly List<WeakReference> RequireWatchEntities = new();
         private static readonly HashSet<UniqueEntityId> RequireWatchUniqueEntityIds = new();
         private static readonly HashSet<Entity> WatchingEntities = new();
@@ -74,7 +75,7 @@ namespace TAS.EverestInterop.InfoHUD {
             return rectangle.Contains(mouseState.X, mouseState.Y);
         }
 
-        public static Entity FindClickedEntity(MouseState mouseState) {
+        private static Entity FindClickedEntity(MouseState mouseState, Entity lastClickedEntity) {
             if (Engine.Scene is Level level) {
                 Vector2 mousePosition = new(mouseState.X, mouseState.Y);
                 if (SaveData.Instance?.Assists.MirrorMode == true) {
@@ -88,6 +89,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 Entity tempEntity = new() {Position = mouseWorldPosition, Collider = new Hitbox(1, 1)};
                 Entity clickedEntity = level.Entities.Where(entity =>
                         (Hotkeys.WatchTrigger.Check || entity is not Trigger)
+                        && entity != lastClickedEntity
                         && entity.GetType() != typeof(Entity)
                         && entity is not RespawnTargetTrigger
                         && entity is not LookoutBlocker
@@ -102,6 +104,19 @@ namespace TAS.EverestInterop.InfoHUD {
             } else {
                 return null;
             }
+        }
+
+        public static Entity FindClickedEntity(MouseState mouseState) {
+            Entity clicked = FindClickedEntity(mouseState, null);
+
+            if (clicked != null && LastClickedEntity.TryGetTarget(out Entity lastClicked) && clicked == lastClicked) {
+                if (FindClickedEntity(mouseState, lastClicked) is { } clicked2) {
+                    clicked = clicked2;
+                }
+            }
+
+            LastClickedEntity.SetTarget(clicked);
+            return clicked;
         }
 
         private static void ModOrigLoadLevel(ILContext il) {
@@ -232,6 +247,7 @@ namespace TAS.EverestInterop.InfoHUD {
         }
 
         private static void ClearWatchEntities() {
+            LastClickedEntity.SetTarget(null);
             RequireWatchEntities.Clear();
             RequireWatchUniqueEntityIds.Clear();
             WatchingEntities.Clear();
