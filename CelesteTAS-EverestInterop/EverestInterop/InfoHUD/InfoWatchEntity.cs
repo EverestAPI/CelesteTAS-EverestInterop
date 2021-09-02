@@ -75,7 +75,7 @@ namespace TAS.EverestInterop.InfoHUD {
             return rectangle.Contains(mouseState.X, mouseState.Y);
         }
 
-        private static Entity FindClickedEntity(MouseState mouseState, Entity lastClickedEntity) {
+        private static List<Entity> FindClickedEntities(MouseState mouseState) {
             if (Engine.Scene is Level level) {
                 Vector2 mousePosition = new(mouseState.X, mouseState.Y);
                 if (SaveData.Instance?.Assists.MirrorMode == true) {
@@ -87,36 +87,35 @@ namespace TAS.EverestInterop.InfoHUD {
                     (int) Math.Round(Engine.Instance.GraphicsDevice.PresentationParameters.BackBufferWidth / (float) camera.Viewport.Width);
                 Vector2 mouseWorldPosition = camera.ScreenToCamera((mousePosition / viewScale).Floor());
                 Entity tempEntity = new() {Position = mouseWorldPosition, Collider = new Hitbox(1, 1)};
-                Entity clickedEntity = level.Entities.Where(entity =>
-                        (Hotkeys.WatchTrigger.Check || entity is not Trigger)
-                        && entity != lastClickedEntity
-                        && entity.GetType() != typeof(Entity)
-                        && entity is not RespawnTargetTrigger
-                        && entity is not LookoutBlocker
-                        && entity is not Killbox
-                        && entity is not Water
-                        && entity is not WaterFall
-                        && entity is not BigWaterfall
-                        && entity is not PlaybackBillboard
-                        && entity is not ParticleSystem)
-                    .FirstOrDefault(entity => entity.CollideCheck(tempEntity));
-                return clickedEntity;
+                return level.Entities.Where(entity =>
+                    (Hotkeys.WatchTrigger.Check || entity is not Trigger)
+                    && entity.GetType() != typeof(Entity)
+                    && entity is not RespawnTargetTrigger
+                    && entity is not LookoutBlocker
+                    && entity is not Killbox
+                    && entity is not Water
+                    && entity is not WaterFall
+                    && entity is not BigWaterfall
+                    && entity is not PlaybackBillboard
+                    && entity is not ParticleSystem
+                    && entity.CollideCheck(tempEntity)).ToList();
             } else {
-                return null;
+                return new List<Entity>();
             }
         }
 
         public static Entity FindClickedEntity(MouseState mouseState) {
-            Entity clicked = FindClickedEntity(mouseState, null);
+            List<Entity> clickedEntities = FindClickedEntities(mouseState);
 
-            if (clicked != null && LastClickedEntity.TryGetTarget(out Entity lastClicked) && clicked == lastClicked) {
-                if (FindClickedEntity(mouseState, lastClicked) is { } clicked2) {
-                    clicked = clicked2;
-                }
+            Entity clickedEntity;
+            if (LastClickedEntity.TryGetTarget(out Entity lastClicked) && clickedEntities.IndexOf(lastClicked) is int index and >= 0) {
+                clickedEntity = clickedEntities[(index + 1) % clickedEntities.Count];
+            } else {
+                clickedEntity = clickedEntities.FirstOrDefault();
             }
 
-            LastClickedEntity.SetTarget(clicked);
-            return clicked;
+            LastClickedEntity.SetTarget(clickedEntity);
+            return clickedEntity;
         }
 
         private static void ModOrigLoadLevel(ILContext il) {
