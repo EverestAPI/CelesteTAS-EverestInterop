@@ -52,9 +52,11 @@ namespace CelesteStudio {
             // TODO fix this weird bug
             // if IsSingleInstance = true and celeste launch before studio the connection will fail, idnw...
             // so we just close the studio already launched
-            foreach (Process process in Process.GetProcessesByName("Celeste Studio")) {
-                if (process.Id != Process.GetCurrentProcess().Id) {
-                    process.Kill();
+            if (!IsSingleInstance) {
+                foreach (Process process in Process.GetProcessesByName("Celeste Studio")) {
+                    if (process.Id != Process.GetCurrentProcess().Id) {
+                        process.Kill();
+                    }
                 }
             }
 

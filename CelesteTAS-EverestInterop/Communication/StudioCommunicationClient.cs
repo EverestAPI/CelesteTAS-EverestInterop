@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -258,6 +257,8 @@ namespace TAS.Communication {
                 } else if (value is Enum) {
                     property.SetValue(settings, ((int) value + 1) % Enum.GetValues(property.PropertyType).Length);
                 }
+
+                CelesteTasModule.Instance.SaveSettings();
             }
         }
 
