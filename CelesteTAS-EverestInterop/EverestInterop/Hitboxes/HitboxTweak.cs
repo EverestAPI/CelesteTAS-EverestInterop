@@ -37,6 +37,8 @@ namespace TAS.EverestInterop.Hitboxes {
         public static EaseInSubMenu CreateSubMenu(TextMenu menu, bool inGame) {
             subMenuItem = new EaseInSubMenu("Show Hitboxes".ToDialogText(), false).Apply(subMenu => {
                 subMenu.Add(new TextMenu.OnOff("Enabled".ToDialogText(), Settings.ShowHitboxes).Change(value => Settings.ShowHitboxes = value));
+                subMenu.Add(new TextMenu.OnOff("Show Trigger Hitboxes".ToDialogText(), Settings.ShowTriggerHitboxes).Change(value =>
+                    Settings.ShowTriggerHitboxes = value));
                 subMenu.Add(new TextMenu.Option<ActualCollideHitboxTypes>("Actual Collide Hitboxes".ToDialogText()).Apply(option => {
                     Array enumValues = Enum.GetValues(typeof(ActualCollideHitboxTypes));
                     foreach (ActualCollideHitboxTypes value in enumValues) {
@@ -45,8 +47,6 @@ namespace TAS.EverestInterop.Hitboxes {
 
                     option.Change(value => Settings.ShowActualCollideHitboxes = value);
                 }));
-                subMenu.Add(new TextMenu.OnOff("Show Trigger Hitboxes".ToDialogText(), Settings.ShowTriggerHitboxes).Change(value =>
-                    Settings.ShowTriggerHitboxes = value));
                 subMenu.Add(new TextMenu.OnOff("Simplified Hitboxes".ToDialogText(), Settings.SimplifiedHitboxes).Change(value =>
                     Settings.SimplifiedHitboxes = value));
                 subMenu.Add(HitboxColor.CreateEntityHitboxColorButton(menu, inGame));
