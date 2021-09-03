@@ -64,8 +64,8 @@ namespace CelesteStudio {
             + Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
 
         private string CurrentFileName {
-            get => tasText.CurrentFileName;
-            set => tasText.CurrentFileName = value;
+            get => richText.CurrentFileName;
+            set => richText.CurrentFileName = value;
         }
 
         private static StringCollection RecentFiles => Settings.Default.RecentFiles ??= new StringCollection();
@@ -79,15 +79,15 @@ namespace CelesteStudio {
         }
 
         private void InitMenu() {
-            tasText.MouseClick += (sender, args) => {
+            richText.MouseClick += (sender, args) => {
                 if (DisableTyping) {
                     return;
                 }
 
                 if ((args.Button & MouseButtons.Right) == MouseButtons.Right) {
-                    if (tasText.Selection.IsEmpty) {
-                        tasText.Selection.Start = tasText.PointToPlace(args.Location);
-                        tasText.Invalidate();
+                    if (richText.Selection.IsEmpty) {
+                        richText.Selection.Start = richText.PointToPlace(args.Location);
+                        richText.Invalidate();
                     }
 
                     tasTextContextMenuStrip.Show(Cursor.Position);
@@ -119,7 +119,7 @@ namespace CelesteStudio {
 
             openBackupToolStripMenuItem.DropDownItemClicked += (sender, args) => {
                 ToolStripItem clickedItem = args.ClickedItem;
-                string backupFolder = tasText.BackupFolder;
+                string backupFolder = richText.BackupFolder;
                 if (clickedItem.Text == "Delete All Files") {
                     Directory.Delete(backupFolder, true);
                     return;
@@ -144,13 +144,13 @@ namespace CelesteStudio {
         }
 
         private void InitDragDrop() {
-            tasText.DragDrop += (sender, args) => {
+            richText.DragDrop += (sender, args) => {
                 string[] fileList = (string[]) args.Data.GetData(DataFormats.FileDrop, false);
                 if (fileList.Length > 0 && fileList[0].EndsWith(".tas")) {
                     OpenFile(fileList[0]);
                 }
             };
-            tasText.DragEnter += (sender, args) => {
+            richText.DragEnter += (sender, args) => {
                 string[] fileList = (string[]) args.Data.GetData(DataFormats.FileDrop, false);
                 if (fileList.Length > 0 && fileList[0].EndsWith(".tas")) {
                     args.Effect = DragDropEffects.Copy;
@@ -159,7 +159,7 @@ namespace CelesteStudio {
         }
 
         private void InitFont(Font font) {
-            tasText.Font = font;
+            richText.Font = font;
             lblStatus.Font = new Font(font.FontFamily, (font.Size - 1) * 0.8f, font.Style);
         }
 
@@ -187,7 +187,7 @@ namespace CelesteStudio {
 
         private void CreateBackupFilesMenu() {
             openBackupToolStripMenuItem.DropDownItems.Clear();
-            string backupFolder = tasText.BackupFolder;
+            string backupFolder = richText.BackupFolder;
             List<string> files = Directory.Exists(backupFolder) ? Directory.GetFiles(backupFolder).ToList() : new List<string>();
             if (files.Count == 0) {
                 openBackupToolStripMenuItem.DropDownItems.Add(new ToolStripMenuItem("Nothing") {
@@ -251,7 +251,7 @@ namespace CelesteStudio {
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData) {
             // if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN)
             if (msg.Msg is 0x100 or 0x104) {
-                if (!tasText.IsChanged && CommunicationWrapper.CheckControls(ref msg)) {
+                if (!richText.IsChanged && CommunicationWrapper.CheckControls(ref msg)) {
                     return true;
                 }
             }
@@ -264,7 +264,7 @@ namespace CelesteStudio {
                 if (e.Modifiers == (Keys.Shift | Keys.Control) && e.KeyCode == Keys.S) {
                     SaveAsFile();
                 } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.S) {
-                    tasText.SaveFile();
+                    richText.SaveFile();
                 } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.O) {
                     OpenFile();
                 } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.K) {
@@ -283,6 +283,8 @@ namespace CelesteStudio {
                     InsertConsoleLoadCommand();
                 } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.R) {
                     InsertRoomName();
+                } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.F) {
+                    ShowFindDialog();
                 } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.T) {
                     InsertTime();
                 } else if (e.Modifiers == (Keys.Control | Keys.Shift) && e.KeyCode == Keys.C) {
@@ -302,43 +304,43 @@ namespace CelesteStudio {
 
         private void SaveAsFile() {
             StudioCommunicationServer.Instance?.WriteWait();
-            tasText.SaveNewFile();
+            richText.SaveNewFile();
             StudioCommunicationServer.Instance?.SendPath(CurrentFileName);
             Text = TitleBarText;
             UpdateRecentFiles();
         }
 
         private void GoDownCommentAndBreakpoint(KeyEventArgs e) {
-            List<int> commentLine = tasText.FindLines(@"^\s*#|^\*\*\*");
+            List<int> commentLine = richText.FindLines(@"^\s*#|^\*\*\*");
             if (commentLine.Count > 0) {
-                int line = commentLine.FirstOrDefault(i => i > tasText.Selection.Start.iLine);
+                int line = commentLine.FirstOrDefault(i => i > richText.Selection.Start.iLine);
                 if (line == 0) {
-                    line = tasText.LinesCount - 1;
+                    line = richText.LinesCount - 1;
                 }
 
-                while (tasText.Selection.Start.iLine < line) {
-                    tasText.Selection.GoDown(e.Shift);
+                while (richText.Selection.Start.iLine < line) {
+                    richText.Selection.GoDown(e.Shift);
                 }
 
-                tasText.ScrollLeft();
+                richText.ScrollLeft();
             } else {
-                tasText.Selection.GoDown(e.Shift);
-                tasText.ScrollLeft();
+                richText.Selection.GoDown(e.Shift);
+                richText.ScrollLeft();
             }
         }
 
         private void GoUpCommentAndBreakpoint(KeyEventArgs e) {
-            List<int> commentLine = tasText.FindLines(@"^\s*#|^\*\*\*");
+            List<int> commentLine = richText.FindLines(@"^\s*#|^\*\*\*");
             if (commentLine.Count > 0) {
-                int line = commentLine.FindLast(i => i < tasText.Selection.Start.iLine);
-                while (tasText.Selection.Start.iLine > line) {
-                    tasText.Selection.GoUp(e.Shift);
+                int line = commentLine.FindLast(i => i < richText.Selection.Start.iLine);
+                while (richText.Selection.Start.iLine > line) {
+                    richText.Selection.GoUp(e.Shift);
                 }
 
-                tasText.ScrollLeft();
+                richText.ScrollLeft();
             } else {
-                tasText.Selection.GoUp(e.Shift);
-                tasText.ScrollLeft();
+                richText.Selection.GoUp(e.Shift);
+                richText.ScrollLeft();
             }
         }
 
@@ -396,13 +398,13 @@ namespace CelesteStudio {
             }
 
             StudioCommunicationServer.Instance?.WriteWait();
-            if (tasText.OpenFile(fileName)) {
+            if (richText.OpenFile(fileName)) {
                 UpdateRecentFiles();
-                tasText.GoHome();
+                richText.GoHome();
                 if (startLine > 0) {
-                    startLine = Math.Min(startLine, tasText.LinesCount - 1);
-                    tasText.Selection = new Range(tasText, 0, startLine, 0, startLine);
-                    tasText.DoSelectionVisible();
+                    startLine = Math.Min(startLine, richText.LinesCount - 1);
+                    richText.Selection = new Range(richText, 0, startLine, 0, startLine);
+                    richText.DoSelectionVisible();
                 }
             }
 
@@ -411,7 +413,7 @@ namespace CelesteStudio {
         }
 
         private void TryOpenReadFile() {
-            string lineText = tasText.Lines[tasText.Selection.Start.iLine].Trim();
+            string lineText = richText.Lines[richText.Selection.Start.iLine].Trim();
             if (lineText.StartsWith("read", StringComparison.OrdinalIgnoreCase)) {
                 Regex spaceRegex = new(@"^[^,]+?\s+[^,]", RegexOptions.Compiled);
 
@@ -481,63 +483,63 @@ namespace CelesteStudio {
         }
 
         private void ClearUncommentedBreakpoints() {
-            var line = Math.Min(tasText.Selection.Start.iLine, tasText.Selection.End.iLine);
-            List<int> breakpoints = tasText.FindLines(@"^\s*\*\*\*");
-            tasText.RemoveLines(breakpoints);
-            tasText.Selection.Start = new Place(0, Math.Min(line, tasText.LinesCount - 1));
+            var line = Math.Min(richText.Selection.Start.iLine, richText.Selection.End.iLine);
+            List<int> breakpoints = richText.FindLines(@"^\s*\*\*\*");
+            richText.RemoveLines(breakpoints);
+            richText.Selection.Start = new Place(0, Math.Min(line, richText.LinesCount - 1));
         }
 
         private void ClearBreakpoints() {
-            var line = Math.Min(tasText.Selection.Start.iLine, tasText.Selection.End.iLine);
-            List<int> breakpoints = tasText.FindLines(@"^\s*#*\s*\*\*\*");
-            tasText.RemoveLines(breakpoints);
-            tasText.Selection.Start = new Place(0, Math.Min(line, tasText.LinesCount - 1));
+            var line = Math.Min(richText.Selection.Start.iLine, richText.Selection.End.iLine);
+            List<int> breakpoints = richText.FindLines(@"^\s*#*\s*\*\*\*");
+            richText.RemoveLines(breakpoints);
+            richText.Selection.Start = new Place(0, Math.Min(line, richText.LinesCount - 1));
         }
 
         private void CommentUncommentAllBreakpoints() {
-            Range range = tasText.Selection.Clone();
+            Range range = richText.Selection.Clone();
 
-            List<int> uncommentedBreakpoints = tasText.FindLines(@"^\s*\*\*\*");
+            List<int> uncommentedBreakpoints = richText.FindLines(@"^\s*\*\*\*");
             if (uncommentedBreakpoints.Count > 0) {
                 foreach (int line in uncommentedBreakpoints) {
-                    tasText.Selection = new Range(tasText, 0, line, 0, line);
-                    tasText.InsertText("#");
+                    richText.Selection = new Range(richText, 0, line, 0, line);
+                    richText.InsertText("#");
                 }
             } else {
-                List<int> breakpoints = tasText.FindLines(@"^\s*#+\s*\*\*\*");
+                List<int> breakpoints = richText.FindLines(@"^\s*#+\s*\*\*\*");
                 foreach (int line in breakpoints) {
-                    tasText.Selection = new Range(tasText, 0, line, 0, line);
-                    tasText.RemoveLinePrefix("#");
+                    richText.Selection = new Range(richText, 0, line, 0, line);
+                    richText.RemoveLinePrefix("#");
                 }
             }
 
-            tasText.Selection = range;
-            tasText.ScrollLeft();
+            richText.Selection = range;
+            richText.ScrollLeft();
         }
 
         private void InsertOrRemoveText(Regex regex, string insertText) {
-            int currentLine = tasText.Selection.Start.iLine;
-            if (regex.IsMatch(tasText.Lines[currentLine])) {
-                tasText.RemoveLine(currentLine);
-                if (currentLine == tasText.LinesCount) {
+            int currentLine = richText.Selection.Start.iLine;
+            if (regex.IsMatch(richText.Lines[currentLine])) {
+                richText.RemoveLine(currentLine);
+                if (currentLine == richText.LinesCount) {
                     currentLine--;
                 }
-            } else if (currentLine >= 1 && regex.IsMatch(tasText.Lines[currentLine - 1])) {
+            } else if (currentLine >= 1 && regex.IsMatch(richText.Lines[currentLine - 1])) {
                 currentLine--;
-                tasText.RemoveLine(currentLine);
+                richText.RemoveLine(currentLine);
             } else {
                 InsertNewLine(insertText);
                 currentLine++;
             }
 
-            string text = tasText.Lines[currentLine];
+            string text = richText.Lines[currentLine];
             InputRecord input = new(text);
             int cursor = 4;
             if (input.Frames == 0 && input.Actions == Actions.None) {
                 cursor = text.Length;
             }
 
-            tasText.Selection = new Range(tasText, cursor, currentLine, cursor, currentLine);
+            richText.Selection = new Range(richText, cursor, currentLine, cursor, currentLine);
         }
 
         private void InsertRoomName() => InsertNewLine($"#lvl_{CommunicationWrapper.StudioInfo?.LevelName}");
@@ -570,10 +572,10 @@ namespace CelesteStudio {
 
         private void InsertNewLine(string text) {
             text = text.Trim();
-            int startLine = tasText.Selection.Start.iLine;
-            tasText.Selection = new Range(tasText, 0, startLine, 0, startLine);
-            tasText.InsertText(text + "\n");
-            tasText.Selection = new Range(tasText, text.Length, startLine, text.Length, startLine);
+            int startLine = richText.Selection.Start.iLine;
+            richText.Selection = new Range(richText, 0, startLine, 0, startLine);
+            richText.InsertText(text + "\n");
+            richText.Selection = new Range(richText, text.Length, startLine, text.Length, startLine);
         }
 
         private void CopyGameInfo() {
@@ -628,6 +630,148 @@ namespace CelesteStudio {
             return result;
         }
 
+        private void ShowFindDialog() {
+            const int padding = 10;
+            const int buttonWidth = 75;
+            const int buttonHeight = 25;
+
+            Size size = new(300, buttonHeight * 2 + padding * 3);
+            bool pressEnter = false;
+
+            using Form inputBox = new();
+            inputBox.FormBorderStyle = FormBorderStyle.FixedDialog;
+            inputBox.ClientSize = size;
+            inputBox.Text = "Find";
+            inputBox.StartPosition = FormStartPosition.CenterParent;
+            inputBox.MinimizeBox = false;
+            inputBox.MaximizeBox = false;
+            inputBox.KeyPreview = true;
+            inputBox.KeyDown += (sender, args) => {
+                if (args.KeyCode == Keys.Escape) {
+                    inputBox.Close();
+                } else {
+                    pressEnter = args.KeyCode == Keys.Enter;
+                }
+            };
+
+            TextBox textBox = new();
+            textBox.Size = new Size(size.Width - 3 * padding - buttonWidth, buttonHeight);
+            textBox.Location = new Point(padding, padding);
+            textBox.Font = new Font(FontFamily.GenericSansSerif, 11);
+            textBox.ForeColor = Color.FromArgb(50, 50, 50);
+            textBox.Text = richText.SelectedText;
+            textBox.SelectAll();
+            textBox.KeyDown += (sender, args) => pressEnter = args.KeyCode == Keys.Enter;
+            textBox.KeyPress += (sender, args) => {
+                if (pressEnter) {
+                    args.Handled = true;
+                    QuickFind(textBox.Text, true);
+                }
+            };
+            inputBox.KeyPress += (sender, args) => {
+                if (pressEnter) {
+                    args.Handled = true;
+                    QuickFind(textBox.Text, true);
+                }
+            };
+            inputBox.Controls.Add(textBox);
+
+            Button nextButton = new();
+            nextButton.Name = "nextButton";
+            nextButton.Size = new Size(buttonWidth, buttonHeight);
+            nextButton.Text = "&Next";
+            nextButton.Location = new Point(textBox.Right + padding, textBox.Top);
+            nextButton.Click += (sender, args) => QuickFind(textBox.Text, true);
+            inputBox.Controls.Add(nextButton);
+
+            Button previousButton = new();
+            previousButton.Name = "previouButton";
+            previousButton.Size = new Size(buttonWidth, buttonHeight);
+            previousButton.Text = "&Previous";
+            previousButton.Location = new Point(nextButton.Left, nextButton.Bottom + padding);
+            previousButton.Click += (sender, args) => QuickFind(textBox.Text, false);
+            inputBox.Controls.Add(previousButton);
+
+            CheckBox caseCheckbox = new();
+            caseCheckbox.Size = new Size(textBox.Width, buttonHeight);
+            caseCheckbox.Text = "&Match case";
+            caseCheckbox.Location = new Point(textBox.Left, textBox.Bottom + padding);
+            caseCheckbox.Checked = Settings.Default.FindMatchCase;
+            caseCheckbox.CheckedChanged += (sender, args) => Settings.Default.FindMatchCase = caseCheckbox.Checked;
+            inputBox.Controls.Add(caseCheckbox);
+
+            inputBox.ShowDialog(this);
+        }
+
+        private void QuickFind(string text, bool next, bool fromStart = false) {
+            if (string.IsNullOrEmpty(text)) {
+                return;
+            }
+
+            Range selection = richText.Selection;
+            selection.Normalize();
+
+            int startLine;
+            int? startIndex;
+            if (next) {
+                startLine = selection.Start.iLine;
+                startIndex = selection.Start.iChar + selection.Text.Length;
+            } else {
+                startLine = selection.End.iLine;
+                startIndex = selection.End.iChar - selection.Text.Length;
+            }
+
+            if (fromStart) {
+                startLine = next ? 0 : richText.LinesCount - 1;
+                startIndex = next ? 0 : richText.Lines.LastOrDefault()?.Length ?? 0;
+            }
+
+            int? resultLine = null;
+            int? resultIndex = null;
+            StringComparison comparison =
+                Settings.Default.FindMatchCase ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase;
+            if (next) {
+                for (int i = startLine; i < richText.LinesCount; i++) {
+                    startIndex ??= 0;
+                    string lineText = richText[i].Text;
+                    int textLength = lineText.Length;
+                    if (textLength >= startIndex.Value &&
+                        lineText.Substring(startIndex.Value, lineText.Length - startIndex.Value)
+                            .IndexOf(text, comparison) is var findIndex and >= 0) {
+                        resultLine = i;
+                        resultIndex = findIndex + startIndex;
+                        break;
+                    } else {
+                        startIndex = null;
+                    }
+                }
+            } else {
+                for (int i = startLine; i >= 0; i--) {
+                    startIndex ??= richText[i].Text.Length;
+                    if (startIndex.Value >= 0 &&
+                        richText[i].Text.Substring(0, startIndex.Value).LastIndexOf(text, StringComparison.InvariantCultureIgnoreCase) is var
+                            findIndex and >= 0) {
+                        resultLine = i;
+                        resultIndex = findIndex;
+                        break;
+                    } else {
+                        startIndex = null;
+                    }
+                }
+            }
+
+            if (resultLine is { } line && resultIndex is { } index) {
+                richText.Selection = new Range(richText, index, line, index + text.Length, line);
+                richText.DoSelectionVisible();
+            } else {
+                if (fromStart) {
+                    MessageBox.Show($"Can't find the text \"{text}\"", "Celeste Studio", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                } else {
+                    QuickFind(text, next, true);
+                }
+            }
+        }
+
         private void UpdateLoop() {
             bool lastHooked = false;
             while (true) {
@@ -641,8 +785,8 @@ namespace CelesteStudio {
                     if (lastChanged.AddSeconds(0.3f) < DateTime.Now) {
                         lastChanged = DateTime.Now;
                         Invoke((Action) delegate {
-                            if (!string.IsNullOrEmpty(CurrentFileName) && tasText.IsChanged) {
-                                tasText.SaveFile();
+                            if (!string.IsNullOrEmpty(CurrentFileName) && richText.IsChanged) {
+                                richText.SaveFile();
                             }
                         });
                     }
@@ -650,7 +794,7 @@ namespace CelesteStudio {
                     if (hooked) {
                         UpdateValues();
                         FixSomeBugsWhenOutOfMinimized();
-                        tasText.Invalidate();
+                        richText.Invalidate();
                         if (CommunicationWrapper.FastForwarding) {
                             CommunicationWrapper.CheckFastForward();
                         }
@@ -672,7 +816,7 @@ namespace CelesteStudio {
                         newFileToolStripMenuItem_Click(null, null);
                     }
 
-                    tasText.Focus();
+                    richText.Focus();
                 } catch (Exception e) {
                     Console.WriteLine(e);
                 }
@@ -683,7 +827,7 @@ namespace CelesteStudio {
                     && IsFileReadable(Settings.Default.LastFileName)
                     && string.IsNullOrEmpty(CurrentFileName)) {
                     CurrentFileName = Settings.Default.LastFileName;
-                    tasText.ReloadFile();
+                    richText.ReloadFile();
                 }
 
                 StudioCommunicationServer.Run();
@@ -696,33 +840,33 @@ namespace CelesteStudio {
             } else {
                 if (CommunicationWrapper.StudioInfo != null) {
                     StudioInfo studioInfo = CommunicationWrapper.StudioInfo;
-                    if (tasText.CurrentLine != studioInfo.CurrentLine) {
-                        tasText.CurrentLine = studioInfo.CurrentLine;
+                    if (richText.CurrentLine != studioInfo.CurrentLine) {
+                        richText.CurrentLine = studioInfo.CurrentLine;
                     }
 
-                    tasText.CurrentLineText = studioInfo.CurrentLineText;
+                    richText.CurrentLineText = studioInfo.CurrentLineText;
                     currentFrame = studioInfo.CurrentFrame;
                     totalFrames = studioInfo.TotalFrames;
-                    tasText.SaveStateLine = studioInfo.SaveStateLine;
+                    richText.SaveStateLine = studioInfo.SaveStateLine;
                     tasState = studioInfo.TasState;
                 } else {
                     currentFrame = 0;
-                    if (tasText.CurrentLine >= 0) {
-                        tasText.CurrentLine = -1;
+                    if (richText.CurrentLine >= 0) {
+                        richText.CurrentLine = -1;
                     }
 
-                    tasText.SaveStateLine = -1;
+                    richText.SaveStateLine = -1;
                     tasState = State.None;
                 }
 
-                tasText.ReadOnly = DisableTyping;
+                richText.ReadOnly = DisableTyping;
                 UpdateStatusBar();
             }
         }
 
         private void FixSomeBugsWhenOutOfMinimized() {
             if (lastWindowState == FormWindowState.Minimized && WindowState == FormWindowState.Normal) {
-                tasText.ScrollLeft();
+                richText.ScrollLeft();
                 StudioCommunicationServer.Instance?.ExternalReset();
             }
 
@@ -773,7 +917,7 @@ namespace CelesteStudio {
                 statusPanel.Height = 0;
             }
 
-            tasText.Height = ClientSize.Height - statusPanel.Height - menuStrip.Height;
+            richText.Height = ClientSize.Height - statusPanel.Height - menuStrip.Height;
         }
 
         private void tasText_TextChanged(object sender, TextChangedEventArgs e) {
@@ -782,7 +926,7 @@ namespace CelesteStudio {
         }
 
         private void CommentText() {
-            Range range = tasText.Selection.Clone();
+            Range range = richText.Selection.Clone();
 
             int start = range.Start.iLine;
             int end = range.End.iLine;
@@ -792,8 +936,8 @@ namespace CelesteStudio {
                 end = temp;
             }
 
-            tasText.Selection = new Range(tasText, 0, start, tasText[end].Count, end);
-            string text = tasText.SelectedText;
+            richText.Selection = new Range(richText, 0, start, richText[end].Count, end);
+            string text = richText.SelectedText;
 
             int i = 0;
             bool startLine = true;
@@ -818,18 +962,18 @@ namespace CelesteStudio {
                 }
             }
 
-            tasText.SelectedText = sb.ToString();
+            richText.SelectedText = sb.ToString();
             if (range.IsEmpty) {
-                if (start < tasText.LinesCount - 1) {
+                if (start < richText.LinesCount - 1) {
                     start++;
                 }
 
-                tasText.Selection = new Range(tasText, 0, start, 0, start);
+                richText.Selection = new Range(richText, 0, start, 0, start);
             } else {
-                tasText.Selection = new Range(tasText, 0, start, tasText[end].Count, end);
+                richText.Selection = new Range(richText, 0, start, richText[end].Count, end);
             }
 
-            tasText.ScrollLeft();
+            richText.ScrollLeft();
         }
 
         private void UpdateLines(RichText.RichText tas, Range range) {
@@ -1134,11 +1278,11 @@ namespace CelesteStudio {
         }
 
         private void SwapActionKeys(char key1, char key2) {
-            if (tasText.Selection.IsEmpty) {
+            if (richText.Selection.IsEmpty) {
                 return;
             }
 
-            Range range = tasText.Selection.Clone();
+            Range range = richText.Selection.Clone();
 
             int start = range.Start.iLine;
             int end = range.End.iLine;
@@ -1148,8 +1292,8 @@ namespace CelesteStudio {
                 end = temp;
             }
 
-            tasText.Selection = new Range(tasText, 0, start, tasText[end].Count, end);
-            string text = tasText.SelectedText;
+            richText.Selection = new Range(richText, 0, start, richText[end].Count, end);
+            string text = richText.SelectedText;
 
             StringBuilder sb = new();
             Regex swapKeyRegex = new($"{key1}|{key2}");
@@ -1161,9 +1305,9 @@ namespace CelesteStudio {
                 }
             }
 
-            tasText.SelectedText = sb.ToString().Substring(0, sb.Length - 2);
-            tasText.Selection = new Range(tasText, 0, start, tasText[end].Count, end);
-            tasText.ScrollLeft();
+            richText.SelectedText = sb.ToString().Substring(0, sb.Length - 2);
+            richText.Selection = new Range(richText, 0, start, richText[end].Count, end);
+            richText.ScrollLeft();
         }
 
         private void swapDashKeysStripMenuItem_Click(object sender, EventArgs e) {

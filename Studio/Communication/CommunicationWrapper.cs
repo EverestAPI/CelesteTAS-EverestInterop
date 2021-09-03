@@ -96,7 +96,7 @@ namespace CelesteStudio.Communication {
         }
 
         public static void UpdateLines(Dictionary<int, string> updateLines) {
-            RichText.RichText tasText = Studio.Instance.tasText;
+            RichText.RichText tasText = Studio.Instance.richText;
             foreach (int lineNumber in updateLines.Keys) {
                 string lineText = updateLines[lineNumber];
                 if (tasText.Lines.Count > lineNumber) {

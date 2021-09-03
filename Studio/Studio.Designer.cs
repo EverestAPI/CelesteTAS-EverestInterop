@@ -119,7 +119,7 @@ namespace CelesteStudio {
             this.swapJumpKeysToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator12 = new System.Windows.Forms.ToolStripSeparator();
             this.openReadFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.tasText = new CelesteStudio.RichText.RichText();
+            this.richText = new CelesteStudio.RichText.RichText();
             this.fontDialog = new System.Windows.Forms.FontDialog();
             this.statusPanel = new System.Windows.Forms.Panel();
             this.statusBar = new System.Windows.Forms.StatusStrip();
@@ -788,36 +788,36 @@ namespace CelesteStudio {
             // 
             // tasText
             // 
-            this.tasText.ActiveLineColor = System.Drawing.Color.Lime;
-            this.tasText.AllowDrop = true;
-            this.tasText.Anchor = ((System.Windows.Forms.AnchorStyles) ((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
-            this.tasText.AutoIndent = false;
-            this.tasText.AutoScrollMinSize = new System.Drawing.Size(33, 84);
-            this.tasText.BackBrush = null;
-            this.tasText.ChangedLineColor = System.Drawing.Color.DarkOrange;
-            this.tasText.CommentPrefix = "#";
-            this.tasText.CurrentFileName = null;
-            this.tasText.CurrentLineColor = System.Drawing.Color.FromArgb(((int) (((byte) (64)))), ((int) (((byte) (64)))), ((int) (((byte) (64)))));
-            this.tasText.CurrentLineText = null;
-            this.tasText.Cursor = System.Windows.Forms.Cursors.IBeam;
-            this.tasText.DisabledColor = System.Drawing.Color.FromArgb(((int) (((byte) (100)))), ((int) (((byte) (180)))), ((int) (((byte) (180)))), ((int) (((byte) (180)))));
-            this.tasText.Font = new System.Drawing.Font("Courier New", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte) (0)));
-            this.tasText.ForeColor = System.Drawing.Color.Black;
-            this.tasText.Language = CelesteStudio.RichText.Language.TAS;
-            this.tasText.LineNumberColor = System.Drawing.Color.Black;
-            this.tasText.Location = new System.Drawing.Point(0, 24);
-            this.tasText.Name = "tasText";
-            this.tasText.Paddings = new System.Windows.Forms.Padding(0);
-            this.tasText.SelectionColor = System.Drawing.Color.FromArgb(((int) (((byte) (50)))), ((int) (((byte) (0)))), ((int) (((byte) (0)))), ((int) (((byte) (0)))));
-            this.tasText.Size = new System.Drawing.Size(308, 567);
-            this.tasText.TabIndex = 0;
-            this.tasText.TabLength = 0;
-            this.tasText.TextChanged += new System.EventHandler<CelesteStudio.RichText.TextChangedEventArgs>(this.tasText_TextChanged);
-            this.tasText.NoChanges += new System.EventHandler(this.tasText_NoChanges);
-            this.tasText.FileOpening += new System.EventHandler(this.tasText_FileOpening);
-            this.tasText.LineInserted += new System.EventHandler<CelesteStudio.RichText.LineInsertedEventArgs>(this.tasText_LineInserted);
-            this.tasText.LineNeeded += new System.EventHandler<CelesteStudio.RichText.LineNeededEventArgs>(this.tasText_LineNeeded);
-            this.tasText.LineRemoved += new System.EventHandler<CelesteStudio.RichText.LineRemovedEventArgs>(this.tasText_LineRemoved);
+            this.richText.ActiveLineColor = System.Drawing.Color.Lime;
+            this.richText.AllowDrop = true;
+            this.richText.Anchor = ((System.Windows.Forms.AnchorStyles) ((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
+            this.richText.AutoIndent = false;
+            this.richText.AutoScrollMinSize = new System.Drawing.Size(33, 84);
+            this.richText.BackBrush = null;
+            this.richText.ChangedLineColor = System.Drawing.Color.DarkOrange;
+            this.richText.CommentPrefix = "#";
+            this.richText.CurrentFileName = null;
+            this.richText.CurrentLineColor = System.Drawing.Color.FromArgb(((int) (((byte) (64)))), ((int) (((byte) (64)))), ((int) (((byte) (64)))));
+            this.richText.CurrentLineText = null;
+            this.richText.Cursor = System.Windows.Forms.Cursors.IBeam;
+            this.richText.DisabledColor = System.Drawing.Color.FromArgb(((int) (((byte) (100)))), ((int) (((byte) (180)))), ((int) (((byte) (180)))), ((int) (((byte) (180)))));
+            this.richText.Font = new System.Drawing.Font("Courier New", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte) (0)));
+            this.richText.ForeColor = System.Drawing.Color.Black;
+            this.richText.Language = CelesteStudio.RichText.Language.TAS;
+            this.richText.LineNumberColor = System.Drawing.Color.Black;
+            this.richText.Location = new System.Drawing.Point(0, 24);
+            this.richText.Name = "richText";
+            this.richText.Paddings = new System.Windows.Forms.Padding(0);
+            this.richText.SelectionColor = System.Drawing.Color.FromArgb(((int) (((byte) (50)))), ((int) (((byte) (0)))), ((int) (((byte) (0)))), ((int) (((byte) (0)))));
+            this.richText.Size = new System.Drawing.Size(308, 567);
+            this.richText.TabIndex = 0;
+            this.richText.TabLength = 0;
+            this.richText.TextChanged += new System.EventHandler<CelesteStudio.RichText.TextChangedEventArgs>(this.tasText_TextChanged);
+            this.richText.NoChanges += new System.EventHandler(this.tasText_NoChanges);
+            this.richText.FileOpening += new System.EventHandler(this.tasText_FileOpening);
+            this.richText.LineInserted += new System.EventHandler<CelesteStudio.RichText.LineInsertedEventArgs>(this.tasText_LineInserted);
+            this.richText.LineNeeded += new System.EventHandler<CelesteStudio.RichText.LineNeededEventArgs>(this.tasText_LineNeeded);
+            this.richText.LineRemoved += new System.EventHandler<CelesteStudio.RichText.LineRemovedEventArgs>(this.tasText_LineRemoved);
             // 
             // fontDialog
             // 
@@ -864,7 +864,7 @@ namespace CelesteStudio {
             this.Controls.Add(this.statusPanel);
             this.Controls.Add(this.dividerLabel);
             this.Controls.Add(this.menuStrip);
-            this.Controls.Add(this.tasText);
+            this.Controls.Add(this.richText);
             this.Icon = ((System.Drawing.Icon) (resources.GetObject("$this.Icon")));
             this.KeyPreview = true;
             this.MainMenuStrip = this.menuStrip;
@@ -982,7 +982,7 @@ namespace CelesteStudio {
         private System.Windows.Forms.ToolStripMenuItem insertModInfoStripMenuItem1;
 
         #endregion
-		public CelesteStudio.RichText.RichText tasText;
+		public CelesteStudio.RichText.RichText richText;
         private System.Windows.Forms.ToolTip hotkeyToolTip;
         private System.Windows.Forms.ContextMenuStrip statusBarContextMenuStrip;
         private System.Windows.Forms.ToolStripMenuItem copyGameDataMenuItem;

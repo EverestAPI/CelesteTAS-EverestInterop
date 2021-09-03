@@ -30,7 +30,7 @@ namespace CelesteStudio.Communication {
         }
 
         protected override bool NeedsToWait() {
-            return base.NeedsToWait() || Studio.Instance.tasText.IsChanged;
+            return base.NeedsToWait() || Studio.Instance.richText.IsChanged;
         }
 
         protected override void WriteReset() {
@@ -113,7 +113,7 @@ namespace CelesteStudio.Communication {
             studio?.WriteMessageGuaranteed(new Message(MessageIDs.EstablishConnection, new byte[0]));
             celeste?.ReadMessageGuaranteed();
 
-            studio?.SendPathNow(Studio.Instance.tasText.CurrentFileName, false);
+            studio?.SendPathNow(Studio.Instance.richText.CurrentFileName, false);
             lastMessage = celeste?.ReadMessageGuaranteed();
 
             //celeste?.SendCurrentBindings(Hotkeys.listHotkeyKeys);

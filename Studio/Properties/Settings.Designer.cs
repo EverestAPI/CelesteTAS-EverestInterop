@@ -164,5 +164,17 @@ namespace CelesteStudio.Properties {
                 this["UpgradeVersion"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool FindMatchCase {
+            get {
+                return ((bool)(this["FindMatchCase"]));
+            }
+            set {
+                this["FindMatchCase"] = value;
+            }
+        }
     }
 }
