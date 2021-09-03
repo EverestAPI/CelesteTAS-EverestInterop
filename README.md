@@ -58,9 +58,7 @@ While in game or in Studio:
 - Info HUD:
     - Holding info hud hotkey and left-click to drag & drop the HUD
     - Double press the info hud hotkey to toggle HUD
-    - Holding info hub hotkey then left-click on entity to watch the entity
-- Watch Trigger:
-    - Holding hotkeys info hub and watch trigger then left-click on trigger to watch the trigger
+    - Holding info hud hotkey then left-click on entity to watch the entity
 
 - These can be rebound in Mod Options
     - You will have to rebind some of these if you are on a non-US keyboard layout.
@@ -92,7 +90,7 @@ While in game or in Studio:
 
 ### Watch Entity
 
-Enable `Info HUD`, holding info hub hotkey then left-click to add the entity to be watched, while holding watch trigger hotkey to watch trigger, right-click to clear the watching entities. Supports exporting watching entities info via
+Enable `Info HUD`, holding info hud hotkey then left-click to add the entity to be watched, while holding watch trigger hotkey to watch trigger, right-click to clear the watching entities. Supports exporting watching entities info via
 the `StartExportGameInfo` command.
 
 ### Custom Info

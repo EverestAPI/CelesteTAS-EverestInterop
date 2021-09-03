@@ -114,10 +114,6 @@ namespace TAS.EverestInterop {
         [DefaultButtonBinding(0, Keys.LeftControl)]
         public ButtonBinding KeyInfoHud { get; set; } = new(0, Keys.LeftControl);
 
-        [SettingName("TAS_KEY_WATCH_TRIGGER")]
-        [DefaultButtonBinding(0, Keys.LeftAlt)]
-        public ButtonBinding KeyWatchTrigger { get; set; } = new(0, Keys.LeftAlt);
-
         #endregion
 
         #region SimplifiedGraphics

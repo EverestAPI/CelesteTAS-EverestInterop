@@ -8,7 +8,6 @@ TAS_SIMPLIFIED_GRAPHICS=        Simplified Graphics
 TAS_INFO_HUD_DESCRIPTION_1=     Holding info hud hotkey and left-click to drag & drop the HUD
 TAS_INFO_HUD_DESCRIPTION_2=     Double press the info hud hotkey to toggle HUD
 TAS_INFO_HUD_DESCRIPTION_3=     Holding info hud hotkey then left-click to watch the entity
-TAS_INFO_HUD_DESCRIPTION_4=     while holding watch trigger hotkey to watch the trigger
 TAS_ROUND_VALUES=               Round Values
 TAS_RELAUNCH_REQUIRED=          Relaunch Required
 TAS_MORE_OPTIONS=               More Options
@@ -52,7 +51,6 @@ TAS_INFO_WATCH_ENTITY_TYPE=                Watch Entity Info
 TAS_INFO_WATCH_ENTITY_POSITION=            Position
 TAS_INFO_WATCH_ENTITY_DECLARED_ONLY=       Declared Only
 TAS_INFO_WATCH_ENTITY_ALL=                 All
-TAS_INFO_IGNORE_TRIGGER_WHEN_CLICK_ENTITY= Ignore Trigger When Click Entity
 TAS_INFO_TEXT_SIZE=                        Text Size
 TAS_INFO_SUBPIXEL_INDICATOR_SIZE=          Subpixel Indicator Size
 TAS_INFO_OPACITY=                          Opacity
@@ -99,7 +97,6 @@ TAS_KEY_CENTER_CAMERA=        Center Camera
 TAS_KEY_SAVE_STATE=           Save State
 TAS_KEY_CLEAR_STATE=          Clear State
 TAS_KEY_INFO_HUD=             Info HUD
-TAS_KEY_WATCH_TRIGGER=        Watch Trigger
 
 # ================================== Option Values ==================================
 TAS_DEFAULT=                  Default

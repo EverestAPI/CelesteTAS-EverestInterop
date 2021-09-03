@@ -13,7 +13,7 @@ namespace TAS.EverestInterop.Hitboxes {
             ActualEntityCollideHitbox.Load();
             HitboxFixer.Load();
             HitboxSimplified.Load();
-            HitboxHideTrigger.Load();
+            HitboxTrigger.Load();
             HitboxColor.Load();
             HitboxFinalBoss.Load();
             HitboxOptimized.Load();
@@ -26,7 +26,7 @@ namespace TAS.EverestInterop.Hitboxes {
             ActualEntityCollideHitbox.Unload();
             HitboxFixer.Unload();
             HitboxSimplified.Unload();
-            HitboxHideTrigger.Unload();
+            HitboxTrigger.Unload();
             HitboxColor.Unload();
             HitboxFinalBoss.Unload();
             HitboxOptimized.Unload();

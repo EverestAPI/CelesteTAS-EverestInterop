@@ -26,7 +26,7 @@ namespace TAS.EverestInterop.InfoHUD {
         private static readonly WeakReference<Entity> LastClickedEntity = new(null);
         private static readonly List<WeakReference> RequireWatchEntities = new();
         private static readonly HashSet<UniqueEntityId> RequireWatchUniqueEntityIds = new();
-        private static readonly HashSet<Entity> WatchingEntities = new();
+        public static readonly HashSet<Entity> WatchingEntities = new();
         private static AreaKey requireWatchAreaKey;
 
         private static ILHook origLoadLevelHook;
@@ -65,7 +65,7 @@ namespace TAS.EverestInterop.InfoHUD {
 
             if (mouseState.LeftButton == ButtonState.Pressed && lastMouseData.LeftButton == ButtonState.Released &&
                 !IsClickHud(mouseState) && FindClickedEntity(mouseState) is { } entity) {
-                WatchingEntity(entity);
+                AddOrRemoveWatching(entity);
                 PrintAllSimpleValues(entity);
             }
         }
@@ -87,18 +87,13 @@ namespace TAS.EverestInterop.InfoHUD {
                     (int) Math.Round(Engine.Instance.GraphicsDevice.PresentationParameters.BackBufferWidth / (float) camera.Viewport.Width);
                 Vector2 mouseWorldPosition = camera.ScreenToCamera((mousePosition / viewScale).Floor());
                 Entity tempEntity = new() {Position = mouseWorldPosition, Collider = new Hitbox(1, 1)};
-                return level.Entities.Where(entity =>
-                    (Hotkeys.WatchTrigger.Check || entity is not Trigger)
-                    && entity.GetType() != typeof(Entity)
-                    && entity is not RespawnTargetTrigger
-                    && entity is not LookoutBlocker
-                    && entity is not Killbox
-                    && entity is not Water
-                    && entity is not WaterFall
-                    && entity is not BigWaterfall
-                    && entity is not PlaybackBillboard
+                List<Entity> result = level.Entities.Where(entity =>
+                    entity.GetType() != typeof(Entity)
                     && entity is not ParticleSystem
                     && entity.CollideCheck(tempEntity)).ToList();
+                // put trigger after entity
+                result.Sort((entity1, entity2) => (entity1 is Trigger ? 1 : -1) - (entity2 is Trigger ? 1 : -1));
+                return result;
             } else {
                 return new List<Entity>();
             }
@@ -190,7 +185,7 @@ namespace TAS.EverestInterop.InfoHUD {
             entity.SaveEntityData(data);
         }
 
-        private static void WatchingEntity(Entity clickedEntity) {
+        private static void AddOrRemoveWatching(Entity clickedEntity) {
             requireWatchAreaKey = clickedEntity.SceneAs<Level>().Session.Area;
             if (clickedEntity.LoadEntityData() is { } entityData) {
                 UniqueEntityId uniqueEntityId = new(clickedEntity, entityData);

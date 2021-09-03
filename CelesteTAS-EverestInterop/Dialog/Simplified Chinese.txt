@@ -8,7 +8,6 @@ TAS_SIMPLIFIED_GRAPHICS=        简化图形
 TAS_INFO_HUD_DESCRIPTION_1=     按住信息面板快捷键和鼠标左键然后拖放移动信息面板
 TAS_INFO_HUD_DESCRIPTION_2=     双击信息面板快捷键开关信息面板
 TAS_INFO_HUD_DESCRIPTION_3=     按住信息面板快捷键然后用鼠标左键点击监视实体
-TAS_INFO_HUD_DESCRIPTION_4=     同时按住监控触发区域快捷键则可点击监控触发区域
 TAS_ROUND_VALUES=               数值精度
 TAS_RELAUNCH_REQUIRED=          需要重启的选项
 TAS_MORE_OPTIONS=               更多选项
@@ -52,7 +51,6 @@ TAS_INFO_WATCH_ENTITY_TYPE=                监视实体信息
 TAS_INFO_WATCH_ENTITY_POSITION=            位置
 TAS_INFO_WATCH_ENTITY_DECLARED_ONLY=       特有
 TAS_INFO_WATCH_ENTITY_ALL=                 所有
-TAS_INFO_IGNORE_TRIGGER_WHEN_CLICK_ENTITY= 点击实体时忽略触发器
 TAS_INFO_TEXT_SIZE=                        文字大小
 TAS_INFO_SUBPIXEL_INDICATOR_SIZE=          亚像素指示器大小
 TAS_INFO_OPACITY=                          不透明度
@@ -100,7 +98,6 @@ TAS_KEY_CENTER_CAMERA=        镜头居中
 TAS_KEY_SAVE_STATE=           保存状态
 TAS_KEY_CLEAR_STATE=          清除状态
 TAS_KEY_INFO_HUD=             信息面板
-TAS_KEY_WATCH_TRIGGER=        监视触发区域
 
 # ================================== Option Values ==================================
 TAS_DEFAULT=                  默认

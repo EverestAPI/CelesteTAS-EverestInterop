@@ -8,6 +8,7 @@ using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
+using TAS.EverestInterop.InfoHUD;
 using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes {
@@ -53,7 +54,7 @@ namespace TAS.EverestInterop.Hitboxes {
             ILCursor ilCursor = new(il);
             Instruction start = ilCursor.Next;
             ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Func<Entity, bool>>(entity => {
-                if (Settings.ShowHitboxes && Settings.SimplifiedHitboxes) {
+                if (Settings.ShowHitboxes && Settings.SimplifiedHitboxes && !InfoWatchEntity.WatchingEntities.Contains(entity)) {
                     Type type = entity.GetType();
                     if (UselessTypes.Contains(type)) {
                         return true;

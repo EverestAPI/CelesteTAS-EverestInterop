@@ -213,7 +213,6 @@ namespace TAS.EverestInterop.InfoHUD {
         }
 
         public static void AddSubMenuDescription(TextMenu menu) {
-            subMenuItem.AddDescription(menu, "Info HUD Description 4".ToDialogText());
             subMenuItem.AddDescription(menu, "Info HUD Description 3".ToDialogText());
             subMenuItem.AddDescription(menu, "Info HUD Description 2".ToDialogText());
             subMenuItem.AddDescription(menu, "Info HUD Description 1".ToDialogText());
