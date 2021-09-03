@@ -22,6 +22,7 @@ namespace TAS.EverestInterop.InfoHUD {
         private static readonly Regex ModTypeNameRegex = new(@"(.+@[^\.]+?)\.", RegexOptions.Compiled);
         private static readonly MethodInfo EntityListFindAll = typeof(EntityList).GetMethod("FindAll");
         private static readonly Dictionary<string, Type> AllTypes = new();
+        private static readonly Dictionary<string, string> CachedEntitiesFullName = new();
         private static readonly Dictionary<string, MethodInfo> CachedGetMethodInfos = new();
         private static readonly Dictionary<string, FieldInfo> CachedFieldInfos = new();
 
@@ -31,14 +32,10 @@ namespace TAS.EverestInterop.InfoHUD {
             AllTypes.Clear();
             CachedGetMethodInfos.Clear();
             CachedFieldInfos.Clear();
-            Assembly officialAssembly = typeof(Celeste.Celeste).Assembly;
+            CachedEntitiesFullName.Clear();
             foreach (Type type in Everest.Modules.SelectMany(module => module.GetType().Assembly.GetTypesSafe())) {
                 if (type.FullName != null) {
-                    if (type.Assembly == officialAssembly) {
-                        AllTypes[type.FullName] = type;
-                    } else {
-                        AllTypes[$"{type.FullName}@{type.Assembly.GetName().Name}"] = type;
-                    }
+                    AllTypes[$"{type.FullName}@{type.Assembly.GetName().Name}"] = type;
                 }
             }
         }
@@ -77,9 +74,18 @@ namespace TAS.EverestInterop.InfoHUD {
                     }
                 } else {
                     string typeSimpleName = TryParseTypeName(firstText, out entityId);
-                    typeFullName = $"Celeste.{typeSimpleName}";
-                    if (!AllTypes.ContainsKey(typeFullName)) {
-                        typeFullName = $"Monocle.{typeSimpleName}";
+                    if (CachedEntitiesFullName.Keys.Contains(typeSimpleName)) {
+                        typeFullName = CachedEntitiesFullName[typeSimpleName];
+                    } else {
+                        List<string> matchTypeNames = AllTypes.Keys.Where(typeName => typeName.Contains($".{typeSimpleName}@")).ToList();
+                        if (matchTypeNames.IsEmpty()) {
+                            return $"{typeSimpleName} not found";  
+                        } else if (matchTypeNames.Count > 1) {
+                            return $"type with the same name exists: {string.Join(", ", matchTypeNames)}";
+                        } else {
+                            typeFullName = matchTypeNames.First();
+                            CachedEntitiesFullName[typeSimpleName] = typeFullName;
+                        }
                     }
                 }
 
