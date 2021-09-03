@@ -93,6 +93,7 @@ namespace CelesteStudio {
                     tasTextContextMenuStrip.Show(Cursor.Position);
                 } else if (ModifierKeys == Keys.Control && (args.Button & MouseButtons.Left) == MouseButtons.Left) {
                     TryOpenReadFile();
+                    TryGoToPlayLine();
                 }
             };
             statusBar.MouseClick += (sender, args) => {
@@ -414,12 +415,12 @@ namespace CelesteStudio {
 
         private void TryOpenReadFile() {
             string lineText = richText.Lines[richText.Selection.Start.iLine].Trim();
-            if (lineText.StartsWith("read", StringComparison.OrdinalIgnoreCase)) {
-                Regex spaceRegex = new(@"^[^,]+?\s+[^,]", RegexOptions.Compiled);
+            if (lineText.StartsWith("read", StringComparison.InvariantCultureIgnoreCase)) {
+                Regex spaceRegex = new(@"^[^,]+?\s+[^,]");
 
                 string[] args = spaceRegex.IsMatch(lineText) ? lineText.Split() : lineText.Split(',');
                 args = args.Select(text => text.Trim()).ToArray();
-                if (args[0].Equals("read", StringComparison.OrdinalIgnoreCase) && args.Length >= 2) {
+                if (args[0].Equals("read", StringComparison.InvariantCultureIgnoreCase) && args.Length >= 2) {
                     string filePath = args[1];
                     string fileDirectory = Path.GetDirectoryName(CurrentFileName);
                     // Check for full and shortened Read versions
@@ -447,6 +448,36 @@ namespace CelesteStudio {
 
                     OpenFile(filePath, startLine);
                 }
+            }
+        }
+        
+        private void TryGoToPlayLine() {
+            string lineText = richText.Lines[richText.Selection.Start.iLine].Trim();
+            if (!new Regex(@"^#?play", RegexOptions.IgnoreCase).IsMatch(lineText)) {
+                return;
+            }
+
+            Regex spaceRegex = new(@"^[^,]+?\s+[^,]");
+
+            string[] args = spaceRegex.IsMatch(lineText) ? lineText.Split() : lineText.Split(',');
+            args = args.Select(text => text.Trim()).ToArray();
+            if (!new Regex(@"^#?play", RegexOptions.IgnoreCase).IsMatch(args[0]) || args.Length < 2) {
+                return;
+            }
+
+            string lineOrLabel = args[1];
+            int? lineNumber = null;
+            if (int.TryParse(lineOrLabel, out int parseLine)) {
+                lineNumber = parseLine;
+            } else {
+                List<int> findLines = richText.FindLines($"#{lineOrLabel}");
+                if (findLines.Count > 0) {
+                    lineNumber = findLines.First();
+                }
+            }
+
+            if (lineNumber.HasValue) {
+                richText.GoToLine(lineNumber.Value);
             }
         }
 
@@ -1320,6 +1351,7 @@ namespace CelesteStudio {
 
         private void openReadFileToolStripMenuItem_Click(object sender, EventArgs e) {
             TryOpenReadFile();
+            TryGoToPlayLine();
         }
 
         private void showGameInfoToolStripMenuItem_Click(object sender, EventArgs e) {

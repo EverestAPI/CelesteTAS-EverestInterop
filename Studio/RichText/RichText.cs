@@ -1658,6 +1658,12 @@ namespace CelesteStudio.RichText {
             Selection.SelectAll();
         }
 
+        public void GoToLine(int line) {
+            line = Math.Min(LinesCount - 1, Math.Max(0, line));
+            Selection = new Range(this, 0, line, 0, line);
+            DoSelectionVisible();
+        }
+
         /// <summary>
         /// Move caret to end of text
         /// </summary>
@@ -1670,7 +1676,7 @@ namespace CelesteStudio.RichText {
 
             DoCaretVisible();
         }
-
+        
         /// <summary>
         /// Move caret to first position
         /// </summary>

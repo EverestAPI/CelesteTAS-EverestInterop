@@ -19,6 +19,6 @@ Can be used instead of notepad or similar for easier editing of the TAS file. It
 - Ctrl + Shift + R: Insert Console Load Command at Current Location and Speed
 - Ctrl + T: Insert Current in-game Time
 - Ctrl + Down/Up: Go to Comment or Breakpoint
-- Ctrl + Left Click on Read Command: Open the read file
+- Ctrl + Left Click on Read/Play Command: Open the read file / Go to the Play Line
 - Right Click on Input Area: Show Input Context Menu
 - Right Click on Info Area: Show Info Context Menu
