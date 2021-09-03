@@ -959,16 +959,14 @@ namespace CelesteStudio {
         private void CommentText() {
             Range range = richText.Selection.Clone();
 
+            range.Normalize();
             int start = range.Start.iLine;
             int end = range.End.iLine;
-            if (start > end) {
-                int temp = start;
-                start = end;
-                end = temp;
-            }
 
             richText.Selection = new Range(richText, 0, start, richText[end].Count, end);
             string text = richText.SelectedText;
+
+            bool comment = new Regex(@"^[^\s#]", RegexOptions.Multiline).IsMatch(text);
 
             int i = 0;
             bool startLine = true;
@@ -976,7 +974,7 @@ namespace CelesteStudio {
             while (i < text.Length) {
                 char c = text[i++];
                 if (startLine) {
-                    if (c != '#') {
+                    if (c != '#' || comment) {
                         if (c != '\r') {
                             sb.Append('#');
                         }
