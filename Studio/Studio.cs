@@ -285,7 +285,9 @@ namespace CelesteStudio {
                 } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.R) {
                     InsertRoomName();
                 } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.F) {
-                    ShowFindDialog();
+                    DialogUtils.ShowFindDialog(richText);
+                } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.G) {
+                    DialogUtils.ShowGoToDialog(richText);
                 } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.T) {
                     InsertTime();
                 } else if (e.Modifiers == (Keys.Control | Keys.Shift) && e.KeyCode == Keys.C) {
@@ -450,7 +452,7 @@ namespace CelesteStudio {
                 }
             }
         }
-        
+
         private void TryGoToPlayLine() {
             string lineText = richText.Lines[richText.Selection.Start.iLine].Trim();
             if (!new Regex(@"^#?play", RegexOptions.IgnoreCase).IsMatch(lineText)) {
@@ -615,192 +617,6 @@ namespace CelesteStudio {
             }
 
             Clipboard.SetText(CommunicationWrapper.StudioInfo.ExactGameInfo);
-        }
-
-        private DialogResult ShowInputDialog(string title, ref string input) {
-            Size size = new(200, 70);
-            DialogResult result = DialogResult.Cancel;
-
-            using Form inputBox = new();
-            inputBox.FormBorderStyle = FormBorderStyle.FixedDialog;
-            inputBox.ClientSize = size;
-            inputBox.Text = title;
-            inputBox.StartPosition = FormStartPosition.CenterParent;
-            inputBox.MinimizeBox = false;
-            inputBox.MaximizeBox = false;
-
-            TextBox textBox = new();
-            textBox.Size = new Size(size.Width - 10, 20);
-            textBox.Location = new Point(5, 10);
-            textBox.Font = new Font(FontFamily.GenericSansSerif, 11);
-            textBox.Text = input;
-            inputBox.Controls.Add(textBox);
-
-            Button okButton = new();
-            okButton.DialogResult = DialogResult.OK;
-            okButton.Name = "okButton";
-            okButton.Size = new Size(75, 23);
-            okButton.Text = "&OK";
-            okButton.Location = new Point(size.Width - 80 - 80, 39);
-            inputBox.Controls.Add(okButton);
-
-            Button cancelButton = new();
-            cancelButton.DialogResult = DialogResult.Cancel;
-            cancelButton.Name = "cancelButton";
-            cancelButton.Size = new Size(75, 23);
-            cancelButton.Text = "&Cancel";
-            cancelButton.Location = new Point(size.Width - 80, 39);
-            inputBox.Controls.Add(cancelButton);
-
-            inputBox.AcceptButton = okButton;
-            inputBox.CancelButton = cancelButton;
-
-            result = inputBox.ShowDialog(this);
-            input = textBox.Text;
-
-            return result;
-        }
-
-        private void ShowFindDialog() {
-            const int padding = 10;
-            const int buttonWidth = 75;
-            const int buttonHeight = 25;
-
-            Size size = new(300, buttonHeight * 2 + padding * 3);
-            bool pressEnter = false;
-
-            using Form inputBox = new();
-            inputBox.FormBorderStyle = FormBorderStyle.FixedDialog;
-            inputBox.ClientSize = size;
-            inputBox.Text = "Find";
-            inputBox.StartPosition = FormStartPosition.CenterParent;
-            inputBox.MinimizeBox = false;
-            inputBox.MaximizeBox = false;
-            inputBox.KeyPreview = true;
-            inputBox.KeyDown += (sender, args) => {
-                if (args.KeyCode == Keys.Escape) {
-                    inputBox.Close();
-                } else {
-                    pressEnter = args.KeyCode == Keys.Enter;
-                }
-            };
-
-            TextBox textBox = new();
-            textBox.Size = new Size(size.Width - 3 * padding - buttonWidth, buttonHeight);
-            textBox.Location = new Point(padding, padding);
-            textBox.Font = new Font(FontFamily.GenericSansSerif, 11);
-            textBox.ForeColor = Color.FromArgb(50, 50, 50);
-            textBox.Text = richText.SelectedText;
-            textBox.SelectAll();
-            textBox.KeyDown += (sender, args) => pressEnter = args.KeyCode == Keys.Enter;
-            textBox.KeyPress += (sender, args) => {
-                if (pressEnter) {
-                    args.Handled = true;
-                    QuickFind(textBox.Text, true);
-                }
-            };
-            inputBox.KeyPress += (sender, args) => {
-                if (pressEnter) {
-                    args.Handled = true;
-                    QuickFind(textBox.Text, true);
-                }
-            };
-            inputBox.Controls.Add(textBox);
-
-            Button nextButton = new();
-            nextButton.Name = "nextButton";
-            nextButton.Size = new Size(buttonWidth, buttonHeight);
-            nextButton.Text = "&Next";
-            nextButton.Location = new Point(textBox.Right + padding, textBox.Top);
-            nextButton.Click += (sender, args) => QuickFind(textBox.Text, true);
-            inputBox.Controls.Add(nextButton);
-
-            Button previousButton = new();
-            previousButton.Name = "previouButton";
-            previousButton.Size = new Size(buttonWidth, buttonHeight);
-            previousButton.Text = "&Previous";
-            previousButton.Location = new Point(nextButton.Left, nextButton.Bottom + padding);
-            previousButton.Click += (sender, args) => QuickFind(textBox.Text, false);
-            inputBox.Controls.Add(previousButton);
-
-            CheckBox caseCheckbox = new();
-            caseCheckbox.Size = new Size(textBox.Width, buttonHeight);
-            caseCheckbox.Text = "&Match case";
-            caseCheckbox.Location = new Point(textBox.Left, textBox.Bottom + padding);
-            caseCheckbox.Checked = Settings.Default.FindMatchCase;
-            caseCheckbox.CheckedChanged += (sender, args) => Settings.Default.FindMatchCase = caseCheckbox.Checked;
-            inputBox.Controls.Add(caseCheckbox);
-
-            inputBox.ShowDialog(this);
-        }
-
-        private void QuickFind(string text, bool next, bool fromStart = false) {
-            if (string.IsNullOrEmpty(text)) {
-                return;
-            }
-
-            Range selection = richText.Selection;
-            selection.Normalize();
-
-            int startLine;
-            int? startIndex;
-            if (next) {
-                startLine = selection.Start.iLine;
-                startIndex = selection.Start.iChar + selection.Text.Length;
-            } else {
-                startLine = selection.End.iLine;
-                startIndex = selection.End.iChar - selection.Text.Length;
-            }
-
-            if (fromStart) {
-                startLine = next ? 0 : richText.LinesCount - 1;
-                startIndex = next ? 0 : richText.Lines.LastOrDefault()?.Length ?? 0;
-            }
-
-            int? resultLine = null;
-            int? resultIndex = null;
-            StringComparison comparison =
-                Settings.Default.FindMatchCase ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase;
-            if (next) {
-                for (int i = startLine; i < richText.LinesCount; i++) {
-                    startIndex ??= 0;
-                    string lineText = richText[i].Text;
-                    int textLength = lineText.Length;
-                    if (textLength >= startIndex.Value &&
-                        lineText.Substring(startIndex.Value, lineText.Length - startIndex.Value)
-                            .IndexOf(text, comparison) is var findIndex and >= 0) {
-                        resultLine = i;
-                        resultIndex = findIndex + startIndex;
-                        break;
-                    } else {
-                        startIndex = null;
-                    }
-                }
-            } else {
-                for (int i = startLine; i >= 0; i--) {
-                    startIndex ??= richText[i].Text.Length;
-                    if (startIndex.Value >= 0 &&
-                        richText[i].Text.Substring(0, startIndex.Value).LastIndexOf(text, StringComparison.InvariantCultureIgnoreCase) is var
-                            findIndex and >= 0) {
-                        resultLine = i;
-                        resultIndex = findIndex;
-                        break;
-                    } else {
-                        startIndex = null;
-                    }
-                }
-            }
-
-            if (resultLine is { } line && resultIndex is { } index) {
-                richText.Selection = new Range(richText, index, line, index + text.Length, line);
-                richText.DoSelectionVisible();
-            } else {
-                if (fromStart) {
-                    MessageBox.Show($"Can't find the text \"{text}\"", "Celeste Studio", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                } else {
-                    QuickFind(text, next, true);
-                }
-            }
         }
 
         private void UpdateLoop() {
@@ -1489,7 +1305,7 @@ namespace CelesteStudio {
 
         private void backupRateToolStripMenuItem_Click(object sender, EventArgs e) {
             string origRate = Settings.Default.AutoBackupRate.ToString();
-            if (ShowInputDialog("Backup Rate (minutes)", ref origRate) != DialogResult.OK) {
+            if (DialogUtils.ShowInputDialog("Backup Rate (minutes)", ref origRate) != DialogResult.OK) {
                 return;
             }
 
@@ -1504,7 +1320,7 @@ namespace CelesteStudio {
 
         private void backupFileCountsToolStripMenuItem_Click(object sender, EventArgs e) {
             string origCount = Settings.Default.AutoBackupCount.ToString();
-            if (ShowInputDialog("Backup File Count", ref origCount) != DialogResult.OK) {
+            if (DialogUtils.ShowInputDialog("Backup File Count", ref origCount) != DialogResult.OK) {
                 return;
             }
 

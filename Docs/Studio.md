@@ -6,7 +6,7 @@ Can be used instead of notepad or similar for easier editing of the TAS file. It
 - Alt + Left: Open Previous File
 - Ctrl + Shift + S: Save As
 - Ctrl + F: Find Text
-- Ctrl + G: Go to Line
+- Ctrl + G: Go to Line/Label
 - Ctrl + D: Toggle Sending Inputs to Celeste
 - Ctrl + Shift + D: Refresh Connection Between Studio and Celeste
 - Ctrl + Shift + C: Copy Player Data to Clipboard
