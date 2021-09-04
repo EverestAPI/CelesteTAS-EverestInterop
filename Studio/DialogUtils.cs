@@ -235,12 +235,15 @@ namespace CelesteStudio {
             lineNumberLabel.Text = "Line  ";
             inputBox.Controls.Add(lineNumberLabel);
 
+            richText.Selection.Normalize();
+            int currentLine = richText.Selection.Start.iLine;
+
             TextBox lineNumberTextBox = new();
             lineNumberTextBox.AutoSize = true;
             lineNumberTextBox.Location = new Point(lineNumberLabel.Right + padding, padding);
             lineNumberTextBox.Font = new Font(FontFamily.GenericSansSerif, 11);
             lineNumberTextBox.ForeColor = Color.FromArgb(50, 50, 50);
-            lineNumberTextBox.Text = (richText.Selection.Start.iLine + 1).ToString();
+            lineNumberTextBox.Text = (currentLine + 1).ToString();
             lineNumberTextBox.SelectAll();
             lineNumberTextBox.KeyDown += (sender, args) => pressEnter = args.KeyCode == Keys.Enter;
             lineNumberTextBox.KeyPress += (sender, args) => {
@@ -282,14 +285,14 @@ namespace CelesteStudio {
             ComboBox roomComboBox = new();
 
             Regex labelRegex = new(@"^\s*#[^\s#]");
-            Regex commentCommandRegex = new(@"^\s*#(play|read|console)", RegexOptions.IgnoreCase);
+            Regex commentCommandRegex = new(@"^\s*#(play|read|console|set)(\s|,)", RegexOptions.IgnoreCase);
             Regex roomRegex = new(@"^\s*#(lvl_)?");
             for (int i = 0; i < richText.Lines.Count; i++) {
                 string lineText = richText.Lines[i];
                 if (labelRegex.IsMatch(lineText) && !commentCommandRegex.IsMatch(lineText)) {
                     roomComboBox.Items.Add(new RoomNameItem(i, roomRegex.Replace(lineText, string.Empty)));
 
-                    if (i == richText.Selection.Start.iLine) {
+                    if (currentLine >= i) {
                         roomComboBox.SelectedIndex = roomComboBox.Items.Count - 1;
                     }
                 }
@@ -299,7 +302,18 @@ namespace CelesteStudio {
             roomComboBox.Location = new Point(commentLabel.Width + padding, lineNumberTextBox.Bottom + padding);
             roomComboBox.Font = new Font(FontFamily.GenericSansSerif, 11);
             roomComboBox.ForeColor = Color.FromArgb(50, 50, 50);
-            roomComboBox.SelectedIndexChanged += (sender, args) => { GoToLine(((RoomNameItem) roomComboBox.SelectedItem).LineNumber); };
+            roomComboBox.Click += (sender, args) => roomComboBox.DroppedDown = true;
+            roomComboBox.Enter += (sender, args) => roomComboBox.DroppedDown = true;
+            roomComboBox.KeyDown += (sender, args) => {
+                if (args.KeyCode == Keys.Enter && roomComboBox.SelectedItem is RoomNameItem roomNameItem) {
+                    GoToLine(roomNameItem.LineNumber);
+                }
+            };
+            roomComboBox.SelectedIndexChanged += (sender, args) => {
+                if (!roomComboBox.DroppedDown && roomComboBox.SelectedItem is RoomNameItem roomNameItem) {
+                    GoToLine(roomNameItem.LineNumber);
+                }
+            };
 
             inputBox.KeyPress += (sender, args) => {
                 if (pressEnter) {
