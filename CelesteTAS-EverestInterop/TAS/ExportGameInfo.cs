@@ -49,15 +49,27 @@ namespace TAS {
             if (Path.GetDirectoryName(path) is { } dir && dir.IsNotEmpty()) {
                 Directory.CreateDirectory(dir);
             }
+
             streamWriter = new StreamWriter(path);
             streamWriter.WriteLine(string.Join("\t", "Line", "Inputs", "Frames", "Time", "Position", "Speed", "State", "Statuses", "Entities"));
             trackedEntities = new Dictionary<string, Func<Level, IList>>();
             foreach (string typeName in tracked) {
-                string fullTypeName = typeName.Contains("@") ? typeName.Replace("@", ",") : $"Celeste.{typeName}, Celeste";
-                Type t = Type.GetType(fullTypeName);
+                Type t = TryParseType(typeName);
                 if (t != null && t.IsSameOrSubclassOf(typeof(Entity))) {
                     trackedEntities[t.Name] = level => FindEntity(t, level);
                 }
+            }
+        }
+
+        private static Type TryParseType(string typeName) {
+            if (!typeName.Contains("@")) {
+                typeName = InfoCustom.AllTypes.Keys.FirstOrDefault(typeFullName => typeFullName.Contains($".{typeName}@"));
+            }
+
+            if (typeName != null && InfoCustom.AllTypes.ContainsKey(typeName)) {
+                return InfoCustom.AllTypes[typeName];
+            } else {
+                return null;
             }
         }
 

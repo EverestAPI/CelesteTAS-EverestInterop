@@ -99,7 +99,7 @@ The contents of the curly brackets will be converted to actual data, here are so
 
 - `{EntityClassName.field...}` find the first entity. e.g. `{Strawberry.Position}`
 - `{EntityClassName[entityId].field...}` Find the entity with the specified entityId. e.g. `{Strawberry[1:12].Position}` means 1A gold berry. You can get the entityId by opening the console and clicking on the entity with the mouse
-- `{EntityClassFullName@AssemeblyName.field...}` Please use the full name, if the simple name exists in multiple helpers. e.g. `FrostHelper.CustomSpinner@FrostTempleHelper.Position}` You can get the full name by opening the console and left-clicking on the entity
+- `{EntityClassFullName@AssemblyName.field...}` Please use the full name, if the simple name exists in multiple helpers. e.g. `FrostHelper.CustomSpinner@FrostTempleHelper.Position}` You can get the full name by opening the console and left-clicking on the entity
 - `{Level.field...}` Get the value of level field. e.g. `Wind: {Level.Wind}`
 - `{ClassName.staticField.field...}` Non-entity and non-level types that can get the value of a static field.
 - `{Player.AutoJumpTimer.toFrame()}` add `toFrame()` to the end can change the float value to frames.

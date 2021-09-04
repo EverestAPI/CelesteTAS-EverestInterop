@@ -21,7 +21,7 @@ namespace TAS.EverestInterop.InfoHUD {
         private static readonly Regex EntityIdSuffixRegex = new(@"\[(.+?)\]$", RegexOptions.Compiled);
         private static readonly Regex ModTypeNameRegex = new(@"(.+@[^\.]+?)\.", RegexOptions.Compiled);
         private static readonly MethodInfo EntityListFindAll = typeof(EntityList).GetMethod("FindAll");
-        private static readonly Dictionary<string, Type> AllTypes = new();
+        public static readonly Dictionary<string, Type> AllTypes = new();
         private static readonly Dictionary<string, string> CachedEntitiesFullName = new();
         private static readonly Dictionary<string, MethodInfo> CachedGetMethodInfos = new();
         private static readonly Dictionary<string, FieldInfo> CachedFieldInfos = new();
@@ -79,7 +79,7 @@ namespace TAS.EverestInterop.InfoHUD {
                     } else {
                         List<string> matchTypeNames = AllTypes.Keys.Where(typeName => typeName.Contains($".{typeSimpleName}@")).ToList();
                         if (matchTypeNames.IsEmpty()) {
-                            return $"{typeSimpleName} not found";  
+                            return $"{typeSimpleName} not found";
                         } else if (matchTypeNames.Count > 1) {
                             return $"type with the same name exists: {string.Join(", ", matchTypeNames)}";
                         } else {
