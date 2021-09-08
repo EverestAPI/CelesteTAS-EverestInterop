@@ -12,10 +12,7 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD {
     public static class InfoCustom {
-        private const BindingFlags AllInstanceBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-
-        private const BindingFlags AllStaticBindingFlags = BindingFlags.Static | BindingFlags.FlattenHierarchy |
-                                                           BindingFlags.Public | BindingFlags.NonPublic;
+        private const BindingFlags AllBindingFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         private static readonly Regex BraceRegex = new(@"\{(.+?)\}", RegexOptions.Compiled);
         private static readonly Regex EntityIdSuffixRegex = new(@"\[(.+?)\]$", RegexOptions.Compiled);
@@ -102,6 +99,10 @@ namespace TAS.EverestInterop.InfoHUD {
                     toFrame = true;
                 }
 
+                if (GetGetMethod(type, memberNames.First()) is {IsStatic: true} || GetFieldInfo(type, memberNames.First()) is {IsStatic: true}) {
+                    return FormatValue(GetMemberValue(type, null, memberNames), toFrame);
+                }
+
                 if (Engine.Scene is Level level) {
                     if (type.IsSameOrSubclassOf(typeof(Entity))) {
                         List<Entity> entities;
@@ -113,28 +114,28 @@ namespace TAS.EverestInterop.InfoHUD {
                         }
 
                         if (entities == null) {
-                            return string.Empty;
-                        } else {
-                            return string.Join("", entities.Select(entity => {
-                                string value = FormatValue(GetMemberValue(entity, memberNames), toFrame);
-
-                                if (entities.Count > 1) {
-                                    if (entity.LoadEntityData()?.ToEntityId().ToString() is { } id) {
-                                        value = $"\n[{id}]{value}";
-                                    } else {
-                                        value = $"\n{value}";
-                                    }
-                                }
-
-                                return value;
-                            }));
+                            return $"Ignore NPE Warning";
                         }
+
+                        return string.Join("", entities.Select(entity => {
+                            string value = FormatValue(GetMemberValue(type, entity, memberNames), toFrame);
+
+                            if (entities.Count > 1) {
+                                if (entity.LoadEntityData()?.ToEntityId().ToString() is { } id) {
+                                    value = $"\n[{id}]{value}";
+                                } else {
+                                    value = $"\n{value}";
+                                }
+                            }
+
+                            return value;
+                        }));
                     } else if (type == typeof(Level)) {
-                        return FormatValue(GetMemberValue(level, memberNames), toFrame);
+                        return FormatValue(GetMemberValue(type, level, memberNames), toFrame);
                     }
                 }
 
-                return FormatValue(GetMemberValue(null, memberNames, type), toFrame);
+                return string.Empty;
             });
         }
 
@@ -168,35 +169,43 @@ namespace TAS.EverestInterop.InfoHUD {
             return obj.ToString();
         }
 
-        private static object GetMemberValue(object obj, IEnumerable<string> memberNames, Type type = null) {
-            object result = obj;
+        private static object GetMemberValue(Type type, object obj, IEnumerable<string> memberNames) {
             foreach (string memberName in memberNames) {
-                Type objType = result?.GetType() ?? type;
-                if (GetGetMethod(objType, memberName, result == null) is { } methodInfo) {
-                    result = methodInfo.Invoke(methodInfo.IsStatic ? null : result, null);
-                } else if (GetFieldInfo(objType, memberName, result == null) is { } fieldInfo) {
-                    result = fieldInfo.GetValue(fieldInfo.IsStatic ? null : result);
+                if (GetGetMethod(type, memberName) is { } methodInfo) {
+                    if (methodInfo.IsStatic) {
+                        obj = methodInfo.Invoke(null, null);
+                    } else if (obj != null) {
+                        obj = methodInfo.Invoke(obj, null);
+                    }
+                } else if (GetFieldInfo(type, memberName) is { } fieldInfo) {
+                    if (fieldInfo.IsStatic) {
+                        obj = fieldInfo.GetValue(null);
+                    } else if (obj != null) {
+                        obj = fieldInfo.GetValue(obj);
+                    }
                 } else {
                     return $"{memberName} not found";
                 }
 
-                if (result == null) {
+                if (obj == null) {
                     return null;
                 }
+
+                type = obj.GetType();
             }
 
-            return result;
+            return obj;
         }
 
-        private static MethodInfo GetGetMethod(Type type, string propertyName, bool isStatic) {
-            string key = $"{type.FullName}-${propertyName}-{isStatic}";
+        private static MethodInfo GetGetMethod(Type type, string propertyName) {
+            string key = $"{type.FullName}-${propertyName}";
             if (CachedGetMethodInfos.ContainsKey(key)) {
                 return CachedGetMethodInfos[key];
             } else {
-                MethodInfo methodInfo = type.GetProperty(propertyName, isStatic ? AllStaticBindingFlags : AllInstanceBindingFlags)
+                MethodInfo methodInfo = type.GetProperty(propertyName, AllBindingFlags)
                     ?.GetGetMethod(true);
                 if (methodInfo == null && type.BaseType != null) {
-                    methodInfo = GetGetMethod(type.BaseType, propertyName, isStatic);
+                    methodInfo = GetGetMethod(type.BaseType, propertyName);
                 }
 
                 CachedGetMethodInfos[key] = methodInfo;
@@ -204,14 +213,14 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-        private static FieldInfo GetFieldInfo(Type type, string fieldName, bool isStatic) {
-            string key = $"{type.FullName}-${fieldName}-{isStatic}";
+        private static FieldInfo GetFieldInfo(Type type, string fieldName) {
+            string key = $"{type.FullName}-${fieldName}";
             if (CachedFieldInfos.ContainsKey(key)) {
                 return CachedFieldInfos[key];
             } else {
-                FieldInfo fieldInfo = type.GetField(fieldName, isStatic ? AllStaticBindingFlags : AllInstanceBindingFlags);
+                FieldInfo fieldInfo = type.GetField(fieldName, AllBindingFlags);
                 if (fieldInfo == null && type.BaseType != null) {
-                    fieldInfo = GetFieldInfo(type.BaseType, fieldName, isStatic);
+                    fieldInfo = GetFieldInfo(type.BaseType, fieldName);
                 }
 
                 CachedFieldInfos[key] = fieldInfo;
@@ -224,14 +233,14 @@ namespace TAS.EverestInterop.InfoHUD {
             if (level.Tracker.Entities.ContainsKey(type)) {
                 entities = level.Tracker.Entities[type];
             } else {
-                IList list = EntityListFindAll.MakeGenericMethod(type).Invoke(level.Entities, null) as IList;
-                entities = list?.Cast<Entity>();
+                IList list = (IList) EntityListFindAll.MakeGenericMethod(type).Invoke(level.Entities, null);
+                entities = list.Cast<Entity>();
             }
 
             if (entityId.IsNullOrEmpty()) {
                 return entities;
             } else {
-                return entities?.Where(entity => entity.LoadEntityData()?.ToEntityId().ToString() == entityId);
+                return entities.Where(entity => entity.LoadEntityData()?.ToEntityId().ToString() == entityId);
             }
         }
     }
