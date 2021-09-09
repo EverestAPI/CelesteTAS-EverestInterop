@@ -1,23 +1,23 @@
 ﻿namespace StudioCommunication {
     public record StudioInfo {
         public readonly string ChapterTime;
-        public readonly int CurrentFrame;
+        public readonly int CurrentFrameInInput;
+        public readonly int CurrentFrameInTas;
         public readonly int CurrentLine;
-        public readonly string CurrentLineText;
-        public readonly string GameInfo;
         public readonly string ExactGameInfo;
+        public readonly string GameInfo;
         public readonly string LevelName;
+        public readonly string ModVersion;
         public readonly int SaveStateLine;
         public readonly State TasState;
         public readonly int TotalFrames;
-        public readonly string ModVersion;
 
         public StudioInfo(
-            int currentLine, string currentLineText, int currentFrame, int totalFrames, int saveStateLine, State tasState,
+            int currentLine, int currentFrameInInput, int currentFrameInTas, int totalFrames, int saveStateLine, State tasState,
             string gameInfo, string exactGameInfo, string levelName, string chapterTime, string modVersion) {
             CurrentLine = currentLine;
-            CurrentLineText = currentLineText;
-            CurrentFrame = currentFrame;
+            CurrentFrameInInput = currentFrameInInput;
+            CurrentFrameInTas = currentFrameInTas;
             TotalFrames = totalFrames;
             SaveStateLine = saveStateLine;
             TasState = tasState;
@@ -31,8 +31,8 @@
         public byte[] ToByteArray() {
             return BinaryFormatterHelper.ToByteArray(new object[] {
                 CurrentLine,
-                CurrentLineText,
-                CurrentFrame,
+                CurrentFrameInInput,
+                CurrentFrameInTas,
                 TotalFrames,
                 SaveStateLine,
                 (int) TasState,
@@ -48,7 +48,7 @@
             object[] values = BinaryFormatterHelper.FromByteArray<object[]>(data);
             return new StudioInfo(
                 (int) values[0],
-                values[1] as string,
+                (int) values[1],
                 (int) values[2],
                 (int) values[3],
                 (int) values[4],

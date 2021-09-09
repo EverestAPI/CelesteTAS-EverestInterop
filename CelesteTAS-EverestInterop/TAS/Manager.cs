@@ -55,13 +55,13 @@ namespace TAS {
                 if (!State.HasFlag(State.FrameStep)) {
                     Controller.AdvanceFrame();
                     canPlayback = canPlayback || Controller.CanPlayback;
-                    if (Controller.Break && Controller.CurrentFrame < Controller.Inputs.Count) {
+                    if (Controller.Break && Controller.CurrentFrameInTas < Controller.Inputs.Count) {
                         NextState |= State.FrameStep;
                         FrameLoops = 1;
                     }
 
                     if (!canPlayback || !AllowUnsafeInput &&
-                        !(Engine.Scene is Level or LevelLoader or LevelExit || Controller.CurrentFrame <= 1)) {
+                        !(Engine.Scene is Level or LevelLoader or LevelExit || Controller.CurrentFrameInTas <= 1)) {
                         DisableRun();
                     }
                 }
@@ -94,9 +94,9 @@ namespace TAS {
 
         public static void SendStateToStudio() {
             StudioInfo studioInfo = new(
-                (Controller.Previous?.Line ?? -1),
-                Controller.InputCurrentFrame.ToString(),
-                Controller.CurrentFrame,
+                Controller.Previous?.Line ?? -1,
+                Controller.CurrentFrameInInput,
+                Controller.CurrentFrameInTas,
                 Controller.Inputs.Count,
                 Savestates.StudioHighlightLine,
                 State,

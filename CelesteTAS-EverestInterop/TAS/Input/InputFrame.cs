@@ -33,6 +33,8 @@ namespace TAS.Input {
         public Vector2Short AngleVector2Short { get; private set; }
         public int Frames { get; private set; }
         public int Line { get; private set; }
+        public InputFrame Previous { get; private set; }
+        public InputFrame Next { get; private set; }
 
         public bool HasActions(Actions actions) =>
             (Actions & actions) != 0;
@@ -115,7 +117,7 @@ namespace TAS.Input {
             return sb.ToString();
         }
 
-        public static bool TryParse(string line, int studioLine, out InputFrame inputFrame) {
+        public static bool TryParse(string line, int studioLine, InputFrame prevInputFrame, out InputFrame inputFrame) {
             int index = line.IndexOf(",", StringComparison.Ordinal);
             string framesStr;
             if (index == -1) {
@@ -200,6 +202,11 @@ namespace TAS.Input {
                 }
 
                 index++;
+            }
+
+            if (prevInputFrame != null) {
+                prevInputFrame.Next = inputFrame;
+                inputFrame.Previous = prevInputFrame;
             }
 
             LibTasHelper.WriteLibTasFrame(inputFrame);

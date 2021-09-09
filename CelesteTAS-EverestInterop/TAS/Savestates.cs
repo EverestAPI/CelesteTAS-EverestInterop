@@ -46,7 +46,7 @@ namespace TAS {
                 ? Controller.FastForwards.GetValueOrDefault(SavedCurrentFrame)?.Line
                 : Controller.Inputs.GetValueOrDefault(SavedCurrentFrame)?.Line) ?? -1;
 
-        private static int SavedCurrentFrame => IsSaved() ? savedController.CurrentFrame : -1;
+        private static int SavedCurrentFrame => IsSaved() ? savedController.CurrentFrameInTas : -1;
 
         public static int StudioHighlightLine => IsSaved_Safe() ? SavedLine : -1;
         public static bool SpeedrunToolInstalled => SpeedrunToolInstalledLazy.Value;
@@ -95,7 +95,7 @@ namespace TAS {
 
             // save state when tas run to the last savestate breakpoint
             if (Running
-                && Controller.Inputs.Count > Controller.CurrentFrame
+                && Controller.Inputs.Count > Controller.CurrentFrameInTas
                 && Controller.CurrentFastForward is {SaveState: true} currentFastForward &&
                 Controller.FastForwards.Last(pair => pair.Value.SaveState).Value == currentFastForward &&
                 SavedCurrentFrame != currentFastForward.Frame) {
@@ -104,14 +104,14 @@ namespace TAS {
             }
 
             // auto load state after entering the level if tas is started from outside the level.
-            if (Running && IsSaved() && Engine.Scene is Level && Controller.CurrentFrame < savedController.CurrentFrame) {
+            if (Running && IsSaved() && Engine.Scene is Level && Controller.CurrentFrameInTas < savedController.CurrentFrameInTas) {
                 Load();
             }
         }
 
         private static void Save(bool breakpoint) {
             if (IsSaved()) {
-                if (Controller.CurrentFrame == savedController.CurrentFrame) {
+                if (Controller.CurrentFrameInTas == savedController.CurrentFrameInTas) {
                     if (savedController.SavestateChecksum == Controller.CalcChecksum(savedController)) {
                         State &= ~TasState.FrameStep;
                         NextState &= ~TasState.FrameStep;
@@ -139,7 +139,7 @@ namespace TAS {
             if (IsSaved()) {
                 Controller.RefreshInputs(false);
                 if (!BreakpointHasBeenDeleted && savedController.SavestateChecksum == Controller.CalcChecksum(savedController)) {
-                    if (Running && Controller.CurrentFrame == savedController.CurrentFrame) {
+                    if (Running && Controller.CurrentFrameInTas == savedController.CurrentFrameInTas) {
                         // Don't repeat load state, just play
                         State &= ~TasState.FrameStep;
                         NextState &= ~TasState.FrameStep;

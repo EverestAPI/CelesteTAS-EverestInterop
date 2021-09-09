@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using Celeste;
 using Celeste.Mod;
@@ -123,24 +122,14 @@ namespace TAS.EverestInterop.InfoHUD {
         private static void WriteTasInput(StringBuilder stringBuilder) {
             InputController controller = Manager.Controller;
             List<InputFrame> inputs = controller.Inputs;
-            if (Manager.Running && controller.CurrentFrame >= 0 && controller.CurrentFrame < inputs.Count) {
-                InputFrame previous = null;
-                InputFrame next = null;
-
+            if (Manager.Running && controller.CurrentFrameInTas >= 0 && controller.CurrentFrameInTas < inputs.Count) {
                 InputFrame current = controller.Current;
-                if (controller.CurrentFrame >= 1 && current != controller.Previous) {
+                if (controller.CurrentFrameInTas >= 1 && current != controller.Previous) {
                     current = controller.Previous;
                 }
 
-                int currentIndex = inputs.IndexOf(current);
-                if (currentIndex >= 1) {
-                    previous = inputs[currentIndex - 1];
-                }
-
-                currentIndex = inputs.LastIndexOf(current);
-                if (currentIndex < inputs.Count - 1) {
-                    next = inputs[currentIndex + 1];
-                }
+                InputFrame previous = current.Previous;
+                InputFrame next = current.Next;
 
                 int maxLine = Math.Max(current.Line, Math.Max(previous?.Line ?? 0, next?.Line ?? 0)) + 1;
                 int linePadLeft = maxLine.ToString().Length;
@@ -148,21 +137,23 @@ namespace TAS.EverestInterop.InfoHUD {
                 int maxFrames = Math.Max(current.Frames, Math.Max(previous?.Frames ?? 0, next?.Frames ?? 0));
                 int framesPadLeft = maxFrames.ToString().Length;
 
-                if (previous != null) {
-                    stringBuilder.AppendLine(
-                        $"{(previous.Line + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - previous.Frames.ToString().Length)}{previous}");
+                string FormatInputFrame(InputFrame inputFrame) {
+                    return
+                        $"{(inputFrame.Line + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - inputFrame.Frames.ToString().Length)}{inputFrame}";
                 }
 
-                string currentStr =
-                    $"{(current.Line + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - current.Frames.ToString().Length)}{current}";
-                int maxWidth = currentStr.Length + controller.InputCurrentFrame.ToString().Length + 1;
-                maxWidth = GameInfo.HudInfo.Split('\n').Select(s => s.Length).Concat(new[] {maxWidth}).Max();
-                maxWidth = Math.Max(20, maxWidth);
-                stringBuilder.AppendLine(
-                    $"{currentStr.PadRight(maxWidth - controller.InputCurrentFrame.ToString().Length - 1)}{controller.InputCurrentFrame}");
+                if (previous != null) {
+                    stringBuilder.AppendLine(FormatInputFrame(previous));
+                }
+
+                string currentStr = FormatInputFrame(current);
+                int currentFrameLength = controller.CurrentFrameInInput.ToString().Length;
+                int inputWidth = currentStr.Length + currentFrameLength + 2;
+                inputWidth = Math.Max(inputWidth, 20);
+                stringBuilder.AppendLine($"{currentStr.PadRight(inputWidth - currentFrameLength)}{controller.CurrentFrameInInput}");
+
                 if (next != null) {
-                    stringBuilder.AppendLine(
-                        $"{(next.Line + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - next.Frames.ToString().Length)}{next}");
+                    stringBuilder.AppendLine(FormatInputFrame(next));
                 }
             }
         }

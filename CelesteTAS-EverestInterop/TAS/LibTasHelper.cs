@@ -48,7 +48,7 @@ namespace TAS {
                 return;
             }
 
-            if (InputFrame.TryParse(inputText, 0, out InputFrame inputFrame)) {
+            if (InputFrame.TryParse(inputText, 0, null, out InputFrame inputFrame)) {
                 WriteLibTasFrame(inputFrame);
             }
         }

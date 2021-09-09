@@ -18,8 +18,8 @@ namespace TAS.Input {
         public readonly Dictionary<string, DateTime> UsedFiles = new();
 
         private string checksum;
-        private string savestateChecksum;
         private int initializationFrameCount;
+        private string savestateChecksum;
 
         public static string TasFilePath {
             get {
@@ -37,33 +37,36 @@ namespace TAS.Input {
             }
         }
 
-        public int InputCurrentFrame { get; private set; }
-        public int CurrentFrame { get; private set; }
+        // start from 1
+        public int CurrentFrameInInput { get; private set; }
 
-        public InputFrame Previous => Inputs.GetValueOrDefault(CurrentFrame - 1);
-        public InputFrame Current => Inputs.GetValueOrDefault(CurrentFrame);
-        public InputFrame Next => Inputs.GetValueOrDefault(CurrentFrame + 1);
-        public FastForward CurrentFastForward => FastForwards.GetValueOrDefault(CurrentFrame);
-        public List<Command> CurrentCommands => Commands.GetValueOrDefault(CurrentFrame);
+        // start from 0
+        public int CurrentFrameInTas { get; private set; }
+
+        public InputFrame Previous => Inputs.GetValueOrDefault(CurrentFrameInTas - 1);
+        public InputFrame Current => Inputs.GetValueOrDefault(CurrentFrameInTas);
+        public InputFrame Next => Inputs.GetValueOrDefault(CurrentFrameInTas + 1);
+        public FastForward CurrentFastForward => FastForwards.GetValueOrDefault(CurrentFrameInTas);
+        public List<Command> CurrentCommands => Commands.GetValueOrDefault(CurrentFrameInTas);
         private bool NeedsReload => UsedFiles.Any(file => File.GetLastWriteTime(file.Key) != file.Value);
-        public bool CanPlayback => CurrentFrame < Inputs.Count;
+        public bool CanPlayback => CurrentFrameInTas < Inputs.Count;
         public bool NeedsToWait => Manager.IsLoading();
 
-        public bool HasFastForward => (FastForwards.LastValueOrDefault()?.Frame ?? -1) > CurrentFrame;
+        public bool HasFastForward => (FastForwards.LastValueOrDefault()?.Frame ?? -1) > CurrentFrameInTas;
         public int FastForwardSpeed => FastForwards.LastValueOrDefault()?.Speed ?? 1;
-        public bool Break => FastForwards.LastValueOrDefault()?.Frame == CurrentFrame;
+        public bool Break => FastForwards.LastValueOrDefault()?.Frame == CurrentFrameInTas;
 
         private string Checksum => string.IsNullOrEmpty(checksum) ? checksum = CalcChecksum(Inputs.Count - 1) : checksum;
 
         public string SavestateChecksum {
-            get => string.IsNullOrEmpty(savestateChecksum) ? savestateChecksum = CalcChecksum(CurrentFrame) : savestateChecksum;
+            get => string.IsNullOrEmpty(savestateChecksum) ? savestateChecksum = CalcChecksum(CurrentFrameInTas) : savestateChecksum;
             private set => savestateChecksum = value;
         }
 
         public void RefreshInputs(bool enableRun) {
             if (enableRun) {
-                InputCurrentFrame = 0;
-                CurrentFrame = 0;
+                CurrentFrameInInput = 0;
+                CurrentFrameInTas = 0;
             }
 
             bool needsReload = NeedsReload;
@@ -95,13 +98,13 @@ namespace TAS.Input {
                     tryCount--;
                 }
 
-                CurrentFrame = Math.Min(Inputs.Count, CurrentFrame);
+                CurrentFrameInTas = Math.Min(Inputs.Count, CurrentFrameInTas);
             }
         }
 
         public void Stop() {
-            InputCurrentFrame = 0;
-            CurrentFrame = 0;
+            CurrentFrameInInput = 0;
+            CurrentFrameInTas = 0;
         }
 
         public void AdvanceFrame() {
@@ -121,13 +124,13 @@ namespace TAS.Input {
 
             Manager.SetInputs(Current);
 
-            if (InputCurrentFrame == 0 || Current.Line == Previous.Line) {
-                InputCurrentFrame++;
+            if (CurrentFrameInInput == 0 || Current.Line == Previous.Line) {
+                CurrentFrameInInput++;
             } else {
-                InputCurrentFrame = 1;
+                CurrentFrameInInput = 1;
             }
 
-            CurrentFrame++;
+            CurrentFrameInTas++;
         }
 
         public void InitializeRecording() { }
@@ -179,7 +182,7 @@ namespace TAS.Input {
         }
 
         public void AddFrames(string line, int studioLine) {
-            if (!InputFrame.TryParse(line, studioLine, out InputFrame inputFrame)) {
+            if (!InputFrame.TryParse(line, studioLine, Inputs.LastOrDefault(), out InputFrame inputFrame)) {
                 return;
             }
 
@@ -200,16 +203,16 @@ namespace TAS.Input {
             }
 
             clone.UsedFiles.AddRange(UsedFiles);
-            clone.CurrentFrame = CurrentFrame;
-            clone.InputCurrentFrame = InputCurrentFrame;
-            clone.SavestateChecksum = clone.CalcChecksum(CurrentFrame);
+            clone.CurrentFrameInTas = CurrentFrameInTas;
+            clone.CurrentFrameInInput = CurrentFrameInInput;
+            clone.SavestateChecksum = clone.CalcChecksum(CurrentFrameInTas);
 
             return clone;
         }
 
         public void CopyFrom(InputController controller) {
-            InputCurrentFrame = controller.InputCurrentFrame;
-            CurrentFrame = controller.CurrentFrame;
+            CurrentFrameInInput = controller.CurrentFrameInInput;
+            CurrentFrameInTas = controller.CurrentFrameInTas;
         }
 
         private string CalcChecksum(int toInputFrame) {
@@ -234,7 +237,7 @@ namespace TAS.Input {
             return HashHelper.ComputeHash(result.ToString());
         }
 
-        public string CalcChecksum(InputController controller) => CalcChecksum(controller.CurrentFrame);
+        public string CalcChecksum(InputController controller) => CalcChecksum(controller.CurrentFrameInTas);
 
         // for hot loading
         // ReSharper disable once UnusedMember.Local

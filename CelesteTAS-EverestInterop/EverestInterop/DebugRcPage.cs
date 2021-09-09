@@ -18,7 +18,7 @@ namespace TAS.EverestInterop {
                 WriteLine(builder, $"Running: {Manager.Running}");
                 WriteLine(builder, $"State: {Manager.State}");
                 WriteLine(builder, $"SaveState: {Savestates.IsSaved_Safe()}");
-                WriteLine(builder, $"CurrentFrame: {Manager.Controller.CurrentFrame}");
+                WriteLine(builder, $"CurrentFrame: {Manager.Controller.CurrentFrameInTas}");
                 WriteLine(builder, $"TotalFrames: {Manager.Controller.Inputs.Count}");
                 WriteLine(builder, $"RoomName: {GameInfo.LevelName}");
                 WriteLine(builder, $"ChapterTime: {GameInfo.ChapterTime}");

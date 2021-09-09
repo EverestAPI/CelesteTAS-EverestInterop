@@ -106,7 +106,7 @@ namespace TAS {
 
             ExportInfo(previousInput);
 
-            if (controller.Current is { } currentInput && controller.CurrentFrame == controller.Inputs.Count - 1) {
+            if (controller.Current is { } currentInput && controller.CurrentFrameInTas == controller.Inputs.Count - 1) {
                 Engine.Scene.OnEndOfFrame += () => ExportInfo(currentInput);
             }
         }
@@ -146,7 +146,7 @@ namespace TAS {
                 }
 
                 output = string.Join("\t",
-                    inputFrame.Line + 1, $"{controller.InputCurrentFrame}/{inputFrame}", controller.CurrentFrame, time, pos, speed,
+                    inputFrame.Line + 1, $"{controller.CurrentFrameInInput}/{inputFrame}", controller.CurrentFrameInTas, time, pos, speed,
                     PlayerStates.GetStateName(player.StateMachine.State),
                     statuses);
 
@@ -176,7 +176,8 @@ namespace TAS {
                     sceneName = Engine.Scene.GetType().Name;
                 }
 
-                output = string.Join("\t", inputFrame.Line + 1, $"{controller.InputCurrentFrame}/{inputFrame}", controller.CurrentFrame, sceneName);
+                output = string.Join("\t", inputFrame.Line + 1, $"{controller.CurrentFrameInInput}/{inputFrame}", controller.CurrentFrameInTas,
+                    sceneName);
             }
 
             streamWriter.WriteLine(output);
