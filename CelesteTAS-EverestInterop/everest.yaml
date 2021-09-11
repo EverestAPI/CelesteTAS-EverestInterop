@@ -1,5 +1,5 @@
 - Name: CelesteTAS
-  Version: 3.5.10
+  Version: 3.5.11
   DLL: CelesteTAS-EverestInterop.dll
   SupportsCodeReload: true
   Dependencies:
