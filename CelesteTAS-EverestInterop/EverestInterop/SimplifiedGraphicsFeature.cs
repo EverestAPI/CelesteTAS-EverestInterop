@@ -98,7 +98,8 @@ namespace TAS.EverestInterop {
                         .Change(value =>
                             Settings.SimplifiedMiniTextbox = value));
                 subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<bool>("Lightning Strike".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.SimplifiedLightningStrike)
+                    new TextMenuExt.EnumerableSlider<bool>("Lightning Strike".ToDialogText(), Menu.CreateDefaultHideOptions(),
+                            Settings.SimplifiedLightningStrike)
                         .Change(value =>
                             Settings.SimplifiedLightningStrike = value));
                 subMenu.Add(
@@ -123,6 +124,10 @@ namespace TAS.EverestInterop {
 
             if (Type.GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController, MaxHelpingHand") is { } rainbowSpinnerType) {
                 IlHooks.Add(new ILHook(rainbowSpinnerType.GetConstructors()[0], ModRainbowSpinnerColor));
+            }
+
+            if (Type.GetType("ContortHelper.BetterLightningStrike, ContortHelper") is { } lightningStrikeType) {
+                IlHooks.Add(new ILHook(lightningStrikeType.GetMethodInfo("Render"), ModLightningStrikeRender));
             }
         }
 
@@ -151,6 +156,10 @@ namespace TAS.EverestInterop {
             On.Celeste.ReflectionTentacles.Render += ReflectionTentacles_Render;
             On.Celeste.Audio.Play_string += AudioOnPlay_string;
             On.Celeste.LightningStrike.Render += LightningStrikeOnRender;
+            On.Celeste.HeightDisplay.Render += HeightDisplayOnRender;
+            if (typeof(Player).Assembly.GetType("Celeste.Mod.Entities.CustomHeightDisplay") is { } type) {
+                IlHooks.Add(new ILHook(type.GetMethodInfo("Render"), CustomHeightDisplayRender));
+            }
         }
 
         public static void Unload() {
@@ -176,6 +185,7 @@ namespace TAS.EverestInterop {
             On.Celeste.ReflectionTentacles.Render -= ReflectionTentacles_Render;
             On.Celeste.Audio.Play_string -= AudioOnPlay_string;
             On.Celeste.LightningStrike.Render -= LightningStrikeOnRender;
+            On.Celeste.HeightDisplay.Render -= HeightDisplayOnRender;
             IlHooks.ForEach(hook => hook.Dispose());
             IlHooks.Clear();
         }
@@ -429,12 +439,38 @@ namespace TAS.EverestInterop {
                 orig(self);
             }
         }
-        
+
         private static void LightningStrikeOnRender(On.Celeste.LightningStrike.orig_Render orig, LightningStrike self) {
             if (Settings.SimplifiedGraphics && Settings.SimplifiedLightningStrike) {
                 return;
             }
+
             orig(self);
+        }
+
+        private static void HeightDisplayOnRender(On.Celeste.HeightDisplay.orig_Render orig, HeightDisplay self) {
+            if (Settings.SimplifiedGraphics) {
+                return;
+            }
+
+            orig(self);
+        }
+
+        private static void CustomHeightDisplayRender(ILContext il) {
+            ILCursor c = new(il);
+            Instruction methodStart = c.Next;
+            c.EmitDelegate<Func<bool>>(() => Settings.SimplifiedGraphics);
+            c.Emit(OpCodes.Brfalse, methodStart);
+            c.Emit(OpCodes.Ret);
+        }
+
+
+        private static void ModLightningStrikeRender(ILContext il) {
+            ILCursor c = new(il);
+            Instruction methodStart = c.Next;
+            c.EmitDelegate<Func<bool>>(() => Settings.SimplifiedGraphics && Settings.SimplifiedLightningStrike);
+            c.Emit(OpCodes.Brfalse, methodStart);
+            c.Emit(OpCodes.Ret);
         }
 
         private static EventInstance AudioOnPlay_string(On.Celeste.Audio.orig_Play_string orig, string path) {
