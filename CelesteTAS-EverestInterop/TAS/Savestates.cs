@@ -200,7 +200,7 @@ namespace TAS {
         }
 
         private static void SetTasState() {
-            if ((CelesteTasModule.Settings.PauseAfterLoadState || savedByBreakpoint) && !(Controller.HasFastForward)) {
+            if ((CelesteTasModule.Settings.PauseAfterLoadState || savedByBreakpoint) && !Controller.HasFastForward) {
                 State |= TasState.FrameStep;
             } else {
                 State &= ~TasState.FrameStep;
@@ -210,6 +210,7 @@ namespace TAS {
         }
 
         private static void UpdateStudio() {
+            GameInfo.Update();
             SendStateToStudio();
         }
 

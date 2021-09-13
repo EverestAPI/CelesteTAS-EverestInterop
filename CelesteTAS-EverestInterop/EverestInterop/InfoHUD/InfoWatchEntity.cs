@@ -24,6 +24,8 @@ namespace TAS.EverestInterop.InfoHUD {
         private static readonly Dictionary<string, IEnumerable<MemberInfo>> CachedMemberInfos = new();
 
         private static readonly WeakReference<Entity> LastClickedEntity = new(null);
+
+        // TODO FIXME: entity w/o id not work properly after loading state
         private static readonly List<WeakReference> RequireWatchEntities = new();
         private static readonly HashSet<UniqueEntityId> RequireWatchUniqueEntityIds = new();
         public static readonly HashSet<Entity> WatchingEntities = new();
