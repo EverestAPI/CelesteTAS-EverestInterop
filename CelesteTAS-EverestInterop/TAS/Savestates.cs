@@ -132,10 +132,6 @@ namespace TAS {
         }
 
         private static void Load() {
-            if (Engine.Scene is LevelLoader) {
-                return;
-            }
-
             if (IsSaved()) {
                 Controller.RefreshInputs(false);
                 if (!BreakpointHasBeenDeleted && savedController.SavestateChecksum == Controller.CalcChecksum(savedController)) {
