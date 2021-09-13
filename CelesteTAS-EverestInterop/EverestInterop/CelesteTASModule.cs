@@ -5,7 +5,6 @@ using FMOD.Studio;
 using TAS.Communication;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
-using TAS.Input;
 using TAS.Utils;
 
 namespace TAS.EverestInterop {
@@ -15,12 +14,13 @@ namespace TAS.EverestInterop {
             Instance = this;
             AttributeUtils.CollectMethods<LoadAttribute>();
             AttributeUtils.CollectMethods<UnloadAttribute>();
+            AttributeUtils.CollectMethods<LoadContentAttribute>();
         }
 
         public static CelesteTasModule Instance { get; private set; }
 
         public override Type SettingsType => typeof(CelesteTasModuleSettings);
-        public static CelesteTasModuleSettings Settings => (CelesteTasModuleSettings)Instance?._Settings;
+        public static CelesteTasModuleSettings Settings => (CelesteTasModuleSettings) Instance?._Settings;
 
         public override void Initialize() {
             StudioHelper.Initialize();
@@ -70,9 +70,7 @@ namespace TAS.EverestInterop {
 
         public override void LoadContent(bool firstLoad) {
             if (firstLoad) {
-                TasCommandAttribute.CollectMethods();
-                InfoCustom.CollectAllTypeInfo();
-                SimplifiedGraphicsFeature.OnLoadContent();
+                AttributeUtils.Invoke<LoadContentAttribute>();
             }
         }
 
@@ -87,4 +85,7 @@ namespace TAS.EverestInterop {
 
     [AttributeUsage(AttributeTargets.Method)]
     internal class UnloadAttribute : Attribute { }
+
+    [AttributeUsage(AttributeTargets.Method)]
+    internal class LoadContentAttribute : Attribute { }
 }

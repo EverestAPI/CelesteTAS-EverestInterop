@@ -3,17 +3,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Celeste.Mod;
+using TAS.EverestInterop;
 using TAS.Utils;
 
 namespace TAS.Input {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public class TasCommandAttribute : Attribute {
         private static readonly IDictionary<TasCommandAttribute, MethodInfo> MethodInfos = new Dictionary<TasCommandAttribute, MethodInfo>();
+        public string[] AliasNames;
+        public bool CalcChecksum = true;
         public bool ExecuteAtStart;
         public bool LegalInMainGame = true;
         public string Name;
-        public string[] AliasNames;
-        public bool CalcChecksum = true;
 
         public bool IsName(string name) {
             bool result = Name.Equals(name, StringComparison.InvariantCultureIgnoreCase);
@@ -24,7 +25,8 @@ namespace TAS.Input {
             }
         }
 
-        public static void CollectMethods() {
+        [LoadContent]
+        private static void CollectMethods() {
             MethodInfos.Clear();
             IEnumerable<MethodInfo> methodInfos = Assembly.GetCallingAssembly().GetTypesSafe().SelectMany(type => type
                     .GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))

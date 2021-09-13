@@ -50,7 +50,7 @@ namespace TAS.EverestInterop {
                                 clickedEntityInfo += type.FullName + "@" + type.Assembly.GetName().Name;
                             }
 
-                            if (clickedEntity.LoadEntityData() is { } entityData) {
+                            if (clickedEntity.GetEntityData() is { } entityData) {
                                 clickedEntityInfo += $"\n entity name: {entityData.Name}";
                                 clickedEntityInfo += $"\n entity id  : {entityData.ToEntityId()}";
                             }

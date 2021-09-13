@@ -404,11 +404,11 @@ namespace TAS.Utils {
     internal static class EntityExtensions {
         private const string CelesteTasEntityDataKey = nameof(CelesteTasEntityDataKey);
 
-        public static void SaveEntityData(this Entity entity, EntityData data) {
+        public static void SetEntityData(this Entity entity, EntityData data) {
             entity.GetDynDataInstance().Set(CelesteTasEntityDataKey, data);
         }
 
-        public static EntityData LoadEntityData(this Entity entity) {
+        public static EntityData GetEntityData(this Entity entity) {
             return entity.GetDynDataInstance().Get<EntityData>(CelesteTasEntityDataKey);
         }
 

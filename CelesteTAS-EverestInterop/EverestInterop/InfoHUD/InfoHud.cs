@@ -27,6 +27,7 @@ namespace TAS.EverestInterop.InfoHUD {
         public static void Unload() {
             On.Celeste.Level.Render -= LevelOnRender;
             On.Celeste.Fonts.Prepare -= FontsOnPrepare;
+            CenterCamera.Unload();
             InfoWatchEntity.Unload();
         }
 

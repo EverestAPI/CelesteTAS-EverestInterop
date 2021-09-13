@@ -25,7 +25,8 @@ namespace TAS.EverestInterop.InfoHUD {
 
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
-        public static void CollectAllTypeInfo() {
+        [LoadContent]
+        private static void CollectAllTypeInfo() {
             AllTypes.Clear();
             CachedGetMethodInfos.Clear();
             CachedFieldInfos.Clear();
@@ -121,7 +122,7 @@ namespace TAS.EverestInterop.InfoHUD {
                             string value = FormatValue(GetMemberValue(type, entity, memberNames), toFrame);
 
                             if (entities.Count > 1) {
-                                if (entity.LoadEntityData()?.ToEntityId().ToString() is { } id) {
+                                if (entity.GetEntityData()?.ToEntityId().ToString() is { } id) {
                                     value = $"\n[{id}]{value}";
                                 } else {
                                     value = $"\n{value}";
@@ -240,7 +241,7 @@ namespace TAS.EverestInterop.InfoHUD {
             if (entityId.IsNullOrEmpty()) {
                 return entities;
             } else {
-                return entities.Where(entity => entity.LoadEntityData()?.ToEntityId().ToString() == entityId);
+                return entities.Where(entity => entity.GetEntityData()?.ToEntityId().ToString() == entityId);
             }
         }
     }

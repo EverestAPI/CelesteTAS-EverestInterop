@@ -117,7 +117,8 @@ namespace TAS.EverestInterop {
             });
         }
 
-        public static void OnLoadContent() {
+        [LoadContent]
+        private static void OnLoadContent() {
             if (Type.GetType("FrostHelper.CustomSpinner, FrostTempleHelper") is { } customSpinnerType) {
                 IlHooks.Add(new ILHook(customSpinnerType.GetConstructors()[0], ModCustomSpinnerColor));
             }

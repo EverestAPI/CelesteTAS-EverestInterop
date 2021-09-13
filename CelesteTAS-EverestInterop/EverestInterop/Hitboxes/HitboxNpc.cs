@@ -20,7 +20,7 @@ namespace TAS.EverestInterop.Hitboxes {
             orig(entity, camera);
 
             if (CelesteTasModule.Settings.ShowHitboxes && CelesteTasModule.Settings.ShowTriggerHitboxes && Engine.Scene is Level level) {
-                if (entity.LoadEntityData()?.Level.Name != level.Session.Level) {
+                if (entity.GetEntityData()?.Level?.Name != level.Session.Level) {
                     return;
                 }
 

@@ -31,8 +31,7 @@ namespace TAS.EverestInterop.InfoHUD {
         public static readonly HashSet<Entity> WatchingEntities = new();
         private static AreaKey requireWatchAreaKey;
 
-        private static ILHook origLoadLevelHook;
-        private static ILHook loadCustomEntityHook;
+        private static readonly List<ILHook> ilHooks = new();
 
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
@@ -41,8 +40,30 @@ namespace TAS.EverestInterop.InfoHUD {
             On.Celeste.Level.Begin += LevelOnBegin;
             On.Celeste.Level.End += LevelOnEnd;
             On.Celeste.Level.LoadLevel += LevelOnLoadLevel;
-            origLoadLevelHook = new ILHook(typeof(Level).GetMethod("orig_LoadLevel"), ModOrigLoadLevel);
-            loadCustomEntityHook = new ILHook(typeof(Level).GetMethod("LoadCustomEntity"), ModLoadCustomEntity);
+            IL.Celeste.Level.LoadCustomEntity += ModLoadCustomEntity;
+            IL.Celeste.WindAttackTrigger.OnEnter += ModSpawnEntity;
+            IL.Celeste.OshiroTrigger.OnEnter += ModSpawnEntity;
+            IL.Celeste.CS03_OshiroRooftop.OnEnd += ModSpawnEntity;
+            ilHooks.Add(new ILHook(typeof(Level).GetMethod("orig_LoadLevel"), ModOrigLoadLevel));
+        }
+
+        [LoadContent]
+        private static void LoadContent() {
+            Dictionary<string, string[]> typeMethodNames = new() {
+                {"Celeste.Mod.DJMapHelper.Triggers.OshiroRightTrigger, DJMapHelper", new[] {"OnEnter"}},
+                {"Celeste.Mod.DJMapHelper.Triggers.WindAttackLeftTrigger, DJMapHelper", new[] {"OnEnter"}},
+                {"Celeste.Mod.RubysEntities.FastOshiroTrigger, RubysEntities", new[] {"OnEnter"}},
+                {"FrostHelper.SnowballTrigger, FrostTempleHelper", new[] {"OnEnter"}},
+                {"OshiroCaller, FemtoHelper", new[] {"OnHoldable", "OnPlayer"}},
+            };
+
+            foreach (string typeName in typeMethodNames.Keys) {
+                foreach (string methodName in typeMethodNames[typeName]) {
+                    if (Type.GetType(typeName)?.GetMethodInfo(methodName) is { } methodInfo) {
+                        ilHooks.Add(new ILHook(methodInfo, ModSpawnEntity));
+                    }
+                }
+            }
         }
 
         public static void Unload() {
@@ -50,10 +71,12 @@ namespace TAS.EverestInterop.InfoHUD {
             On.Celeste.Level.Begin -= LevelOnBegin;
             On.Celeste.Level.End -= LevelOnEnd;
             On.Celeste.Level.LoadLevel -= LevelOnLoadLevel;
-            origLoadLevelHook?.Dispose();
-            loadCustomEntityHook?.Dispose();
-            origLoadLevelHook = null;
-            loadCustomEntityHook = null;
+            IL.Celeste.Level.LoadCustomEntity -= ModLoadCustomEntity;
+            IL.Celeste.OshiroTrigger.OnEnter -= ModSpawnEntity;
+            IL.Celeste.WindAttackTrigger.OnEnter -= ModSpawnEntity;
+            IL.Celeste.CS03_OshiroRooftop.OnEnd -= ModSpawnEntity;
+            ilHooks.ForEach(hook => hook.Dispose());
+            ilHooks.Clear();
         }
 
         public static void HandleMouseData(MouseState mouseState, MouseState lastMouseData) {
@@ -183,13 +206,32 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
+        private static void ModSpawnEntity(ILContext il) {
+            ILCursor cursor = new(il);
+
+            if (cursor.TryGotoNext(
+                i => (i.OpCode == OpCodes.Callvirt || i.OpCode == OpCodes.Call) &&
+                     i.Operand.ToString() == "System.Void Monocle.Scene::Add(Monocle.Entity)")) {
+                cursor.Emit(OpCodes.Dup).Emit(OpCodes.Ldarg_0);
+                cursor.EmitDelegate<Action<Entity, Entity>>((spawnedEntity, entity) => {
+                    if (entity.GetEntityData() is { } entityData) {
+                        spawnedEntity.SetEntityData(entityData);
+                    } else if (entity is CS03_OshiroRooftop && Engine.Scene is Level level) {
+                        spawnedEntity.SetEntityData(new EntityData {
+                            ID = 2, Name = "roof00", Level = level.Session.LevelData
+                        });
+                    }
+                });
+            }
+        }
+
         private static void CacheEntityData(Entity entity, EntityData data) {
-            entity.SaveEntityData(data);
+            entity.SetEntityData(data);
         }
 
         private static void AddOrRemoveWatching(Entity clickedEntity) {
             requireWatchAreaKey = clickedEntity.SceneAs<Level>().Session.Area;
-            if (clickedEntity.LoadEntityData() is { } entityData) {
+            if (clickedEntity.GetEntityData() is { } entityData) {
                 UniqueEntityId uniqueEntityId = new(clickedEntity, entityData);
                 if (RequireWatchUniqueEntityIds.Contains(uniqueEntityId)) {
                     RequireWatchUniqueEntityIds.Remove(uniqueEntityId);
@@ -292,7 +334,7 @@ namespace TAS.EverestInterop.InfoHUD {
         private static string GetEntityValues(Entity entity, WatchEntityTypes watchEntityType, string separator = "\n") {
             Type type = entity.GetType();
             string entityId = "";
-            if (entity.LoadEntityData() is { } entityData) {
+            if (entity.GetEntityData() is { } entityData) {
                 entityId = $"[{entityData.ToEntityId().ToString()}]";
             }
 
@@ -407,7 +449,7 @@ namespace TAS.EverestInterop.InfoHUD {
             }
 
             foreach (Entity entity in possibleEntities) {
-                if (entity.LoadEntityData() is not { } entityData) {
+                if (entity.GetEntityData() is not { } entityData) {
                     continue;
                 }
 
