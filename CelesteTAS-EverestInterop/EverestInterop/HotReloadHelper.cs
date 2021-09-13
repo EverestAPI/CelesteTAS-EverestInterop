@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 using Celeste.Mod;
-using MonoMod.Utils;
+using TAS.Utils;
 
 #if DEBUG
 namespace TAS.EverestInterop {
@@ -25,8 +25,7 @@ namespace TAS.EverestInterop {
 
                 watcher.EnableRaisingEvents = true;
             } catch (Exception e) {
-                Logger.Log(LogLevel.Warn, "CelesteTAS/HotReloadHelper", $"Failed watching folder: {Path.GetDirectoryName(meta.DLL)}");
-                e.LogDetailed();
+                e.LogException($"Failed watching folder: {Path.GetDirectoryName(meta.DLL)}");
                 Unload();
             }
         }

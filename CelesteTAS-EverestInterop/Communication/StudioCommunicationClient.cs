@@ -48,8 +48,7 @@ namespace TAS.Communication {
                 try {
                     Instance.UpdateLoop();
                 } catch (Exception e) when (e is not ThreadAbortException) {
-                    Logger.Log(LogLevel.Warn, "CelesteTAS", $"Studio Communication Thread Name: {threadName}");
-                    Logger.LogDetailed(e);
+                    e.LogException($"Studio Communication Thread Name: {threadName}");
                 }
             }) {
                 Name = threadName,
@@ -200,7 +199,7 @@ namespace TAS.Communication {
 
         private void ProcessSendPath(byte[] data) {
             string path = Encoding.Default.GetString(data);
-            Log("ProcessSendPath: " + path);
+            $"ProcessSendPath: {path}".DebugLog();
             if (Manager.Running && InputController.StudioTasFilePath != path) {
                 Manager.DisableExternal();
             }
@@ -211,24 +210,19 @@ namespace TAS.Communication {
         private void ProcessHotkeyPressed(byte[] data) {
             HotkeyIDs hotkeyIDs = (HotkeyIDs) data[0];
             bool released = Convert.ToBoolean(data[1]);
-            if (released) {
-                Log($"{hotkeyIDs.ToString()} released");
-            } else {
-                Log($"{hotkeyIDs.ToString()} pressed");
-            }
-
             Hotkeys.KeysDict[hotkeyIDs].OverrideCheck = !released;
+            $"{hotkeyIDs.ToString()} {(released ? "released" : "pressed")}".DebugLog();
         }
 
         private void ProcessConvertToLibTas(byte[] data) {
             string path = Encoding.Default.GetString(data);
-            Log("Convert to libTAS: " + path);
+            $"Convert to libTAS: {path}".DebugLog();
             LibTasHelper.ConvertToLibTas(path);
         }
 
         private void ProcessToggleGameSetting(byte[] data) {
             string settingName = Encoding.Default.GetString(data);
-            Log("Toggle game setting: " + settingName);
+            $"Toggle game setting: {settingName}".DebugLog();
             if (settingName.IsNullOrEmpty()) {
                 return;
             }

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Celeste.Mod;
 using Ionic.Zip;
+using TAS.Utils;
 
 namespace TAS.EverestInterop {
     public static class StudioHelper {
@@ -67,8 +68,7 @@ namespace TAS.EverestInterop {
                     CelesteTasModule.Settings.StudioLastModifiedTime = File.GetLastWriteTime(CopiedStudioExePath);
                     CelesteTasModule.Instance.SaveSettings();
                 } catch (UnauthorizedAccessException e) {
-                    Logger.Log("CelesteTASModule", "Failed to extract studio.");
-                    Logger.LogDetailed(e);
+                    e.LogException("Failed to extract studio.");
                 }
             } else {
                 foreach (string file in Directory.GetFiles(Everest.PathGame, "*.PendingOverwrite")) {
@@ -115,8 +115,7 @@ namespace TAS.EverestInterop {
                         Process.Start("Explorer", CopiedStudioExePath);
                     }
                 } catch (Exception e) {
-                    Logger.Log("CelesteTASModule", "Failed to launch studio at boot.");
-                    Logger.LogDetailed(e);
+                    e.LogException("Failed to launch studio at boot.");
                 }
             }
         }

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Celeste;
-using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
@@ -219,7 +218,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 ins => ins.OpCode == OpCodes.Conv_I4,
                 ins => ins.MatchStfld<Rectangle>("Height")
             )) {
-                Logger.Log("CelesteTAS", $"Injecting code to avoid redrawing hitbox corners in IL for {ilCursor.Method.FullName}");
+                $"Injecting code to avoid redrawing hitbox corners in IL for {ilCursor.Method.FullName}".Log();
 
                 ilCursor.Goto(0);
 
@@ -247,7 +246,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 ilCursor.Index--;
                 ilCursor.Emit(OpCodes.Ldc_I4_2).Emit(OpCodes.Sub);
             } else {
-                Logger.Log("CelesteTAS", $"Injecting code failed: {ilCursor.Method.FullName}");
+                $"Injecting code to avoid redrawing hitbox corners in IL failed: {ilCursor.Method.FullName}".Log();
             }
         }
     }

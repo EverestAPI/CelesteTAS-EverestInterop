@@ -83,7 +83,7 @@ namespace TAS.Input {
 
                 return false;
             } catch (Exception e) {
-                e.Log();
+                e.LogException("Failed to parse command.");
                 return false;
             }
         }
