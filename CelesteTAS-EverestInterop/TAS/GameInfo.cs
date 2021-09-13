@@ -89,19 +89,6 @@ namespace TAS {
 
         private static CelesteTasModuleSettings TasSettings => CelesteTasModule.Settings;
 
-        public static string GetStudioInfo(bool exact) {
-                List<string> infos = new() {exact ? ExactStatus : Status};
-                if ((TasSettings.InfoCustom & HudOptions.StudioOnly) != 0 && CustomInfo.IsNotNullOrWhiteSpace()) {
-                    infos.Add(CustomInfo);
-                }
-
-                if ((TasSettings.InfoWatchEntity & HudOptions.StudioOnly) != 0 && WatchingInfo.IsNotNullOrWhiteSpace()) {
-                    infos.Add(WatchingInfo);
-                }
-
-                return string.Join("\n\n", infos);
-        }
-
         public static string HudInfo {
             get {
                 List<string> infos = new();
@@ -122,6 +109,19 @@ namespace TAS {
         }
 
         private static int FramesPerSecond => (int) Math.Round(1 / Engine.RawDeltaTime);
+
+        public static string GetStudioInfo(bool exact) {
+            List<string> infos = new() {exact ? ExactStatus : Status};
+            if ((TasSettings.InfoCustom & HudOptions.StudioOnly) != 0 && CustomInfo.IsNotNullOrWhiteSpace()) {
+                infos.Add(CustomInfo);
+            }
+
+            if ((TasSettings.InfoWatchEntity & HudOptions.StudioOnly) != 0 && WatchingInfo.IsNotNullOrWhiteSpace()) {
+                infos.Add(WatchingInfo);
+            }
+
+            return string.Join("\n\n", infos);
+        }
 
         [Load]
         private static void Load() {
@@ -230,11 +230,7 @@ namespace TAS {
 
                     string retainedSpeed = GetAdjustedRetainedSpeed(player, out string exactRetainedSpeed);
 
-                    string liftBoost = string.Empty;
-                    if (PlayerLiftBoost(player) is var liftBoostVector2 && liftBoostVector2 != Vector2.Zero) {
-                        liftBoost =
-                            $"LiftBoost: {liftBoostVector2.X:F2}, {liftBoostVector2.Y:F2} ({ActorLiftSpeedTimer(player).ToCeilingFrames()})";
-                    }
+                    string liftBoost = GetAdjustedLiftBoost(player, out string exactLiftBoost);
 
                     string miscStats = $"Stamina: {player.Stamina:0} "
                                        + (WallJumpCheck(player, 1) ? "Wall-R " : string.Empty)
@@ -328,7 +324,7 @@ namespace TAS {
                         statuses,
                         timers
                     );
-                    
+
                     ExactStatusWithoutTime = GetStatusWithoutTime(
                         exactPos,
                         exactSpeed,
@@ -338,7 +334,7 @@ namespace TAS {
                         polarVel,
                         analog,
                         exactRetainedSpeed,
-                        liftBoost,
+                        exactLiftBoost,
                         miscStats,
                         statuses,
                         timers
@@ -486,10 +482,21 @@ namespace TAS {
 
         private static string GetAdjustedRetainedSpeed(Player player, out string exactRetainedSpeed) {
             if (PlayerRetainedSpeedTimer(player) is float retainedSpeedTimer and > 0f) {
-                exactRetainedSpeed = $"Retained: {PlayerRetainedSpeed(player):F12} ({retainedSpeedTimer.ToCeilingFrames()})";
-                return $"Retained: {PlayerRetainedSpeed(player).ToString(TasSettings.RoundSpeed ? "F2" : "F12")} ({retainedSpeedTimer.ToCeilingFrames()})";
+                int timer = retainedSpeedTimer.ToCeilingFrames();
+                exactRetainedSpeed = $"Retained({timer}): {PlayerRetainedSpeed(player):F12}";
+                return $"Retained({timer}): {PlayerRetainedSpeed(player).ToString(TasSettings.RoundSpeed ? "F2" : "F12")}";
             } else {
                 return exactRetainedSpeed = string.Empty;
+            }
+        }
+
+        private static string GetAdjustedLiftBoost(Player player, out string exactLiftBoost) {
+            if (PlayerLiftBoost(player) is var liftBoostVector2 && liftBoostVector2 != Vector2.Zero) {
+                int timer = ActorLiftSpeedTimer(player).ToCeilingFrames();
+                exactLiftBoost = $"LiftBoost({timer}): {liftBoostVector2.ToSimpleString(false)}";
+                return $"LiftBoost({timer}): {liftBoostVector2.ToSimpleString(TasSettings.RoundSpeed)}";
+            } else {
+                return exactLiftBoost = string.Empty;
             }
         }
 

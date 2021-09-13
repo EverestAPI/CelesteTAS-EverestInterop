@@ -32,6 +32,7 @@ namespace TAS.Utils {
                 if (result == null && type.BaseType != null && includeSuperClassPrivate) {
                     result = type.BaseType.GetFieldInfo(name, true);
                 }
+
                 return CachedFieldInfos[type][name] = result;
             } else {
                 return CachedFieldInfos[type][name];
@@ -48,6 +49,7 @@ namespace TAS.Utils {
                 if (result == null && type.BaseType != null && includeSuperClassPrivate) {
                     result = type.BaseType.GetPropertyInfo(name, true);
                 }
+
                 return CachedPropertyInfos[type][name] = result;
             } else {
                 return CachedPropertyInfos[type][name];
@@ -64,6 +66,7 @@ namespace TAS.Utils {
                 if (result == null && type.BaseType != null && includeSuperClassPrivate) {
                     result = type.BaseType.GetMethodInfo(name, true);
                 }
+
                 return CachedMethodInfos[type][name] = result;
             } else {
                 return CachedMethodInfos[type][name];
@@ -288,7 +291,7 @@ namespace TAS.Utils {
         public static bool IsEmpty<T>(this IEnumerable<T> enumerable) {
             return !enumerable.Any();
         }
-        
+
         public static bool IsNullOrEmpty<T>(this IEnumerable<T> enumerable) {
             return enumerable == null || !enumerable.Any();
         }
@@ -296,7 +299,7 @@ namespace TAS.Utils {
         public static bool IsNotEmpty<T>(this IEnumerable<T> enumerable) {
             return !enumerable.IsEmpty();
         }
-        
+
         public static bool IsNotNullOrEmpty<T>(this IEnumerable<T> enumerable) {
             return !enumerable.IsNullOrEmpty();
         }
@@ -416,7 +419,8 @@ namespace TAS.Utils {
 
     internal static class Vector2Extensions {
         public static string ToSimpleString(this Vector2 vector2, bool round) {
-            return $"{vector2.X.ToString(round ? "F2" : "F12")}, {vector2.Y.ToString(round ? "F2" : "F12")}";
+            string format = round ? "F2" : "F12";
+            return $"{vector2.X.ToString(format)}, {vector2.Y.ToString(format)}";
         }
     }
 
