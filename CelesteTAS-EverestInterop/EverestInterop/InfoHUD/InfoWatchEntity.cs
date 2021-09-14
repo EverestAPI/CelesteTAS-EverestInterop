@@ -25,7 +25,7 @@ namespace TAS.EverestInterop.InfoHUD {
 
         private static readonly WeakReference<Entity> LastClickedEntity = new(null);
 
-        // TODO FIXME: entity w/o id not work properly after loading state
+        // TODO FIXME: entity w/o id not work properly after retry or load state
         private static readonly List<WeakReference> RequireWatchEntities = new();
         private static readonly HashSet<UniqueEntityId> RequireWatchUniqueEntityIds = new();
         public static readonly HashSet<Entity> WatchingEntities = new();
@@ -40,21 +40,30 @@ namespace TAS.EverestInterop.InfoHUD {
             On.Celeste.Level.Begin += LevelOnBegin;
             On.Celeste.Level.End += LevelOnEnd;
             On.Celeste.Level.LoadLevel += LevelOnLoadLevel;
+            On.Celeste.Player.Added += PlayerOnAdded;
+            On.Celeste.Strawberry.ctor += StrawberryOnCtor;
+            On.Celeste.StrawberrySeed.ctor += StrawberrySeedOnCtor;
             IL.Celeste.Level.LoadCustomEntity += ModLoadCustomEntity;
-            IL.Celeste.WindAttackTrigger.OnEnter += ModSpawnEntity;
-            IL.Celeste.OshiroTrigger.OnEnter += ModSpawnEntity;
-            IL.Celeste.CS03_OshiroRooftop.OnEnd += ModSpawnEntity;
             ilHooks.Add(new ILHook(typeof(Level).GetMethod("orig_LoadLevel"), ModOrigLoadLevel));
         }
 
         [LoadContent]
         private static void LoadContent() {
             Dictionary<string, string[]> typeMethodNames = new() {
+                {"Celeste.SeekerStatue+<>c__DisplayClass3_0, Celeste", new[] {"<.ctor>b__0"}},
+                {"Celeste.FireBall, Celeste", new[] {"Added"}},
+                {"Celeste.WindAttackTrigger, Celeste", new[] {"OnEnter"}},
+                {"Celeste.OshiroTrigger, Celeste", new[] {"OnEnter"}},
+                {"Celeste.NPC03_Oshiro_Rooftop, Celeste", new[] {"Added"}},
+                {"Celeste.CS03_OshiroRooftop, Celeste", new[] {"OnEnd"}},
+                {"Celeste.NPC10_Gravestone, Celeste", new[] {"Added", "Interact"}},
+                {"Celeste.CS10_Gravestone, Celeste", new[] {"OnEnd"}},
                 {"Celeste.Mod.DJMapHelper.Triggers.OshiroRightTrigger, DJMapHelper", new[] {"OnEnter"}},
                 {"Celeste.Mod.DJMapHelper.Triggers.WindAttackLeftTrigger, DJMapHelper", new[] {"OnEnter"}},
                 {"Celeste.Mod.RubysEntities.FastOshiroTrigger, RubysEntities", new[] {"OnEnter"}},
                 {"FrostHelper.SnowballTrigger, FrostTempleHelper", new[] {"OnEnter"}},
                 {"OshiroCaller, FemtoHelper", new[] {"OnHoldable", "OnPlayer"}},
+                {"Celeste.Mod.PandorasBox.CloneSpawner, PandorasBox", new[] {"handleClone"}},
             };
 
             foreach (string typeName in typeMethodNames.Keys) {
@@ -71,10 +80,10 @@ namespace TAS.EverestInterop.InfoHUD {
             On.Celeste.Level.Begin -= LevelOnBegin;
             On.Celeste.Level.End -= LevelOnEnd;
             On.Celeste.Level.LoadLevel -= LevelOnLoadLevel;
+            On.Celeste.Player.Added -= PlayerOnAdded;
+            On.Celeste.Strawberry.ctor -= StrawberryOnCtor;
+            On.Celeste.StrawberrySeed.ctor -= StrawberrySeedOnCtor;
             IL.Celeste.Level.LoadCustomEntity -= ModLoadCustomEntity;
-            IL.Celeste.OshiroTrigger.OnEnter -= ModSpawnEntity;
-            IL.Celeste.WindAttackTrigger.OnEnter -= ModSpawnEntity;
-            IL.Celeste.CS03_OshiroRooftop.OnEnd -= ModSpawnEntity;
             ilHooks.ForEach(hook => hook.Dispose());
             ilHooks.Clear();
         }
@@ -206,20 +215,48 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
+        private static void PlayerOnAdded(On.Celeste.Player.orig_Added orig, Player self, Scene scene) {
+            orig(self, scene);
+
+            if (self.GetEntityData() == null && scene is Level level && level.Session.MapData.StartLevel() is { } levelData) {
+                self.SetEntityData(new EntityData {
+                    ID = 0, Level = levelData, Name = levelData.Name
+                });
+            }
+        }
+
+        private static void StrawberryOnCtor(On.Celeste.Strawberry.orig_ctor orig, Strawberry self, EntityData data, Vector2 offset, EntityID gid) {
+            self.SetEntityData(data);
+            orig(self, data, offset, gid);
+        }
+
+        private static void StrawberrySeedOnCtor(On.Celeste.StrawberrySeed.orig_ctor orig, StrawberrySeed self, Strawberry strawberry,
+            Vector2 position, int index, bool ghost) {
+            orig(self, strawberry, position, index, ghost);
+            if (strawberry.GetEntityData() is { } entityData) {
+                EntityData clonedEntityData = entityData.ShallowClone();
+                clonedEntityData.ID = clonedEntityData.ID * 100 + index;
+                self.SetEntityData(clonedEntityData);
+            }
+        }
+
         private static void ModSpawnEntity(ILContext il) {
             ILCursor cursor = new(il);
 
             if (cursor.TryGotoNext(
-                i => (i.OpCode == OpCodes.Callvirt || i.OpCode == OpCodes.Call) &&
-                     i.Operand.ToString() == "System.Void Monocle.Scene::Add(Monocle.Entity)")) {
+                i => i.OpCode == OpCodes.Callvirt && i.Operand.ToString() == "System.Void Monocle.Scene::Add(Monocle.Entity)")) {
+                $"Injecting code to attach entity data to entity in IL for {cursor.Method.FullName}".DebugLog();
                 cursor.Emit(OpCodes.Dup).Emit(OpCodes.Ldarg_0);
                 cursor.EmitDelegate<Action<Entity, Entity>>((spawnedEntity, entity) => {
                     if (entity.GetEntityData() is { } entityData) {
-                        spawnedEntity.SetEntityData(entityData);
-                    } else if (entity is CS03_OshiroRooftop && Engine.Scene is Level level) {
-                        spawnedEntity.SetEntityData(new EntityData {
-                            ID = 2, Name = "roof00", Level = level.Session.LevelData
-                        });
+                        EntityData clonedEntityData = entityData.ShallowClone();
+                        if (spawnedEntity is FireBall fireBall) {
+                            clonedEntityData.ID = clonedEntityData.ID * 100 + fireBall.GetFieldValue<int>("index");
+                        } else if (entity is CS03_OshiroRooftop) {
+                            clonedEntityData.ID = 2;
+                        }
+
+                        spawnedEntity.SetEntityData(clonedEntityData);
                     }
                 });
             }

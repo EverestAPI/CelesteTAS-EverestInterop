@@ -100,7 +100,7 @@ namespace TAS.EverestInterop.InfoHUD {
                     mirrorBgRect.X = (int) Math.Abs(x - viewWidth + Size.X + padding * 2);
                 }
 
-                if (level.Paused || playerRect.Intersects(mirrorBgRect)) {
+                if ((level.Paused || playerRect.Intersects(mirrorBgRect)) && !Hotkeys.InfoHud.Check) {
                     alpha *= TasSettings.InfoMaskedOpacity / 10f;
                     infoAlpha *= alpha;
                 }
