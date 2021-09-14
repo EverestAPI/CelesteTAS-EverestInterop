@@ -36,7 +36,7 @@ namespace TAS.Input {
             return args.Select(text => text.Trim()).ToArray();
         }
 
-        public static bool TryExecuteCommand(InputController inputController, string filePath, string lineText, int frame, int lineNumber) {
+        public static bool TryParseCommand(InputController inputController, string filePath, string lineText, int frame, int lineNumber) {
             try {
                 if (!string.IsNullOrEmpty(lineText) && char.IsLetter(lineText[0])) {
                     string[] args = Split(lineText);
@@ -63,19 +63,20 @@ namespace TAS.Input {
                         parameters = new object[] {commandArgs};
                     }
 
-                    Action commandCall;
-                    if (attribute.ExecuteAtStart) {
-                        commandCall = null;
-                        method.Invoke(null, parameters);
-                    } else {
-                        commandCall = () => method.Invoke(null, parameters);
+                    Command command = new(attribute, frame, () => method.Invoke(null, parameters), commandArgs, filePath, lineNumber);
+                    if (attribute.ExecuteAtParse || attribute.ExecuteAtStart) {
+                        command.Invoke();
+                    }
+
+                    if (attribute.ExecuteAtStart && !inputController.ExecuteAtStartCommands.Contains(command)) {
+                        inputController.ExecuteAtStartCommands.Add(command);
                     }
 
                     if (!inputController.Commands.ContainsKey(frame)) {
                         inputController.Commands[frame] = new List<Command>();
                     }
 
-                    inputController.Commands[frame].Add(new Command(attribute, frame, commandCall, commandArgs, filePath, lineNumber));
+                    inputController.Commands[frame].Add(command);
 
                     //the play command needs to stop reading the current file when it's done to prevent recursion
                     return commandName.Equals("play", StringComparison.InvariantCultureIgnoreCase);
@@ -91,7 +92,7 @@ namespace TAS.Input {
         // "Read, Path",
         // "Read, Path, StartLine",
         // "Read, Path, StartLine, EndLine"
-        [TasCommand(ExecuteAtStart = true, Name = "Read")]
+        [TasCommand(ExecuteAtParse = true, Name = "Read")]
         private static void ReadCommand(InputController state, string[] args, int studioLine) {
             string filePath = args[0];
             string fileDirectory = Path.GetDirectoryName(InputController.TasFilePath);
@@ -130,7 +131,7 @@ namespace TAS.Input {
 
         // "Play, StartLine",
         // "Play, StartLine, FramesToWait"
-        [TasCommand(ExecuteAtStart = true, Name = "Play")]
+        [TasCommand(ExecuteAtParse = true, Name = "Play")]
         private static void PlayCommand(InputController state, string[] args, int studioLine) {
             GetLine(args[0], InputController.TasFilePath, out int startLine);
             if (args.Length > 1 && int.TryParse(args[1], out _)) {

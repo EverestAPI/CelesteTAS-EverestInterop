@@ -2,8 +2,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
-using TAS.Input;
-using TAS.Utils;
+using StudioCommunication;
 
 namespace TAS.EverestInterop.InfoHUD {
     public static class InfoMouse {
@@ -32,7 +31,7 @@ namespace TAS.EverestInterop.InfoHUD {
         }
 
         private static void DragAndDropHud() {
-            if (!TasSettings.InfoHud && !InputController.StudioTasFilePath.IsNotNullOrEmpty()) {
+            if (!TasSettings.InfoHud && !StudioCommunicationBase.Initialized) {
                 return;
             }
 

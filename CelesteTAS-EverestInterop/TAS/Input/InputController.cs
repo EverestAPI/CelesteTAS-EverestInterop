@@ -11,8 +11,10 @@ using TAS.Utils;
 
 namespace TAS.Input {
     public class InputController {
-        public static string StudioTasFilePath = string.Empty;
+        private static string studioTasFilePath = string.Empty;
+
         public readonly SortedDictionary<int, List<Command>> Commands = new();
+        public readonly List<Command> ExecuteAtStartCommands = new();
         public readonly SortedDictionary<int, FastForward> FastForwards = new();
         public readonly List<InputFrame> Inputs = new();
         public readonly Dictionary<string, DateTime> UsedFiles = new();
@@ -20,6 +22,21 @@ namespace TAS.Input {
         private string checksum;
         private int initializationFrameCount;
         private string savestateChecksum;
+
+        public static string StudioTasFilePath {
+            get => studioTasFilePath;
+            set {
+                if (studioTasFilePath != value) {
+                    if (Manager.Running) {
+                        Manager.DisableExternal();
+                    }
+
+                    studioTasFilePath = value;
+                    Manager.Controller.Reset();
+                    Manager.Controller.RefreshInputs(true);
+                }
+            }
+        }
 
         public static string TasFilePath {
             get {
@@ -48,7 +65,7 @@ namespace TAS.Input {
         public InputFrame Next => Inputs.GetValueOrDefault(CurrentFrameInTas + 1);
         public FastForward CurrentFastForward => FastForwards.GetValueOrDefault(CurrentFrameInTas);
         public List<Command> CurrentCommands => Commands.GetValueOrDefault(CurrentFrameInTas);
-        private bool NeedsReload => UsedFiles.Any(file => File.GetLastWriteTime(file.Key) != file.Value);
+        private bool NeedsReload => UsedFiles.IsEmpty() || UsedFiles.Any(file => File.GetLastWriteTime(file.Key) != file.Value);
         public bool CanPlayback => CurrentFrameInTas < Inputs.Count;
         public bool NeedsToWait => Manager.IsLoading();
 
@@ -67,24 +84,21 @@ namespace TAS.Input {
             if (enableRun) {
                 CurrentFrameInInput = 0;
                 CurrentFrameInTas = 0;
+
+                if (!NeedsReload) {
+                    ExecuteAtStartCommands.ForEach(command => command.Invoke());
+                }
             }
 
-            bool needsReload = NeedsReload;
             string lastChecksum = Checksum;
-            if (needsReload || enableRun) {
+            bool firstRun = UsedFiles.IsEmpty();
+            if (NeedsReload) {
                 int tryCount = 5;
                 while (tryCount > 0) {
-                    initializationFrameCount = 0;
-                    checksum = string.Empty;
-                    savestateChecksum = string.Empty;
-                    Inputs.Clear();
-                    FastForwards.Clear();
-                    Commands.Clear();
-                    UsedFiles.Clear();
-                    AnalogHelper.AnalogModeChange(AnalogueMode.Ignore);
+                    Reset();
                     if (ReadFile(TasFilePath)) {
                         LibTasHelper.FinishExport();
-                        if (needsReload && lastChecksum != Checksum) {
+                        if (!firstRun && lastChecksum != Checksum) {
                             MetadataCommands.UpdateRecordCount(this);
                         }
 
@@ -105,6 +119,18 @@ namespace TAS.Input {
         public void Stop() {
             CurrentFrameInInput = 0;
             CurrentFrameInTas = 0;
+        }
+
+        private void Reset() {
+            initializationFrameCount = 0;
+            checksum = string.Empty;
+            savestateChecksum = string.Empty;
+            Inputs.Clear();
+            FastForwards.Clear();
+            Commands.Clear();
+            ExecuteAtStartCommands.Clear();
+            UsedFiles.Clear();
+            AnalogHelper.AnalogModeChange(AnalogueMode.Ignore);
         }
 
         public void AdvanceFrame() {
@@ -157,7 +183,7 @@ namespace TAS.Input {
                         break;
                     }
 
-                    if (InputCommands.TryExecuteCommand(this, filePath, lineText, initializationFrameCount, studioLine))
+                    if (InputCommands.TryParseCommand(this, filePath, lineText, initializationFrameCount, studioLine))
                         //workaround for the play command
                     {
                         return true;
@@ -198,6 +224,7 @@ namespace TAS.Input {
 
             clone.Inputs.AddRange(Inputs);
             clone.FastForwards.AddRange((IDictionary) FastForwards);
+            clone.ExecuteAtStartCommands.AddRange(ExecuteAtStartCommands);
             foreach (int frame in Commands.Keys) {
                 clone.Commands[frame] = new List<Command>(Commands[frame]);
             }
@@ -243,13 +270,13 @@ namespace TAS.Input {
         // ReSharper disable once UnusedMember.Local
         [Unload]
         private static void SaveStudioTasFilePath() {
-            Engine.Instance.GetDynDataInstance().Set(nameof(StudioTasFilePath), StudioTasFilePath);
+            Engine.Instance.GetDynDataInstance().Set(nameof(studioTasFilePath), studioTasFilePath);
         }
 
         // ReSharper disable once UnusedMember.Local
         [Load]
         private static void RestoreStudioTasFilePath() {
-            StudioTasFilePath = Engine.Instance.GetDynDataInstance().Get<string>(nameof(StudioTasFilePath));
+            studioTasFilePath = Engine.Instance.GetDynDataInstance().Get<string>(nameof(studioTasFilePath));
         }
 
         #region ignore

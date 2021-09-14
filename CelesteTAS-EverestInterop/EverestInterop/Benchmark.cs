@@ -1,10 +1,10 @@
 using System;
 using System.Diagnostics;
+using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Input;
 using TAS.Utils;
-using Celeste;
 
 #if DEBUG
 namespace TAS.EverestInterop {
@@ -25,7 +25,7 @@ namespace TAS.EverestInterop {
 
         private static void EngineOnUpdate(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
             orig(self, gameTime);
-            if (lastRunning != Manager.Running) {
+            if (lastRunning != Manager.Running && Manager.Controller.HasFastForward) {
                 if (Manager.Running) {
                     Start();
                 } else {
@@ -53,7 +53,8 @@ namespace TAS.EverestInterop {
         private static void Stop() {
             ulong frames = Engine.FrameCounter - lastFrameCounter;
             float framesPerSecond = (int) Math.Round(1 / Engine.RawDeltaTime);
-            $"Benchmark Stop: frames={frames} time={watch.ElapsedMilliseconds}ms avg_speed={frames / framesPerSecond / watch.ElapsedMilliseconds * 1000f}".Log();
+            $"Benchmark Stop: frames={frames} time={watch.ElapsedMilliseconds}ms avg_speed={frames / framesPerSecond / watch.ElapsedMilliseconds * 1000f}"
+                .Log();
             watch.Stop();
         }
     }

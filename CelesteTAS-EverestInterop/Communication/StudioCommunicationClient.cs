@@ -199,11 +199,7 @@ namespace TAS.Communication {
 
         private void ProcessSendPath(byte[] data) {
             string path = Encoding.Default.GetString(data);
-            $"ProcessSendPath: {path}".DebugLog();
-            if (Manager.Running && InputController.StudioTasFilePath != path) {
-                Manager.DisableExternal();
-            }
-
+            $"Studio TAS File Path: {path}".DebugLog();
             InputController.StudioTasFilePath = path;
         }
 

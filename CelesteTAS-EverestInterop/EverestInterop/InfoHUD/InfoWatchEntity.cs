@@ -245,7 +245,6 @@ namespace TAS.EverestInterop.InfoHUD {
 
             if (cursor.TryGotoNext(
                 i => i.OpCode == OpCodes.Callvirt && i.Operand.ToString() == "System.Void Monocle.Scene::Add(Monocle.Entity)")) {
-                $"Injecting code to attach entity data to entity in IL for {cursor.Method.FullName}".DebugLog();
                 cursor.Emit(OpCodes.Dup).Emit(OpCodes.Ldarg_0);
                 cursor.EmitDelegate<Action<Entity, Entity>>((spawnedEntity, entity) => {
                     if (entity.GetEntityData() is { } entityData) {
