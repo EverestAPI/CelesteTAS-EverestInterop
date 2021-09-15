@@ -234,6 +234,11 @@ namespace TAS.Communication {
                     CelesteTasModule.Instance.SaveSettings();
                     GameInfo.Update();
                     return;
+                case "Clear Custom Info Template":
+                    settings.InfoCustomTemplate = string.Empty;
+                    CelesteTasModule.Instance.SaveSettings();
+                    GameInfo.Update();
+                    return;
             }
 
             if (typeof(CelesteTasModuleSettings).GetProperty(settingName) is { } property) {

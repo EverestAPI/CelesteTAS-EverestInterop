@@ -1298,6 +1298,10 @@ namespace CelesteStudio {
             StudioCommunicationServer.Instance?.ToggleGameSetting("Set Custom Info Template From Clipboard");
         }
 
+        private void clearCustomInfoTemplateToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.Instance?.ToggleGameSetting("Clear Custom Info Template");
+        }
+
         private void enabledAutoBackupToolStripMenuItem_Click(object sender, EventArgs e) {
             Settings.Default.AutoBackupEnabled = !Settings.Default.AutoBackupEnabled;
             SaveSettings();
