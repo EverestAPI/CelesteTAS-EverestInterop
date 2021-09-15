@@ -106,11 +106,13 @@ namespace TAS.EverestInterop.Hitboxes {
             }
         }
 
-        public static void Load() {
+        [Load]
+        private static void Load() {
             IL.Monocle.Entity.DebugRender += EntityOnDebugRender;
         }
 
-        public static void Unload() {
+        [Unload]
+        private static void Unload() {
             IL.Monocle.Entity.DebugRender -= EntityOnDebugRender;
         }
 

@@ -16,24 +16,24 @@ namespace TAS.EverestInterop.Hitboxes {
         private static bool colliderListRendering;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
-        public static void Load() {
+        [Load]
+        private static void Load() {
             ilHookPlayerOrigUpdate = new ILHook(typeof(Player).GetMethod("orig_Update"), ModPlayerOrigUpdateEntity);
             On.Monocle.Hitbox.Render += HitboxOnRenderEntity;
             On.Monocle.Circle.Render += CircleOnRender;
             On.Monocle.ColliderList.Render += ColliderListOnRender;
             On.Celeste.Level.Update += LevelOnUpdate;
             On.Celeste.Level.End += LevelOnEnd;
-            LoadPlayerHook();
         }
 
-        public static void Unload() {
+        [Unload]
+        private static void Unload() {
             ilHookPlayerOrigUpdate?.Dispose();
             On.Monocle.Hitbox.Render -= HitboxOnRenderEntity;
             On.Monocle.Circle.Render -= CircleOnRender;
             On.Monocle.ColliderList.Render -= ColliderListOnRender;
             On.Celeste.Level.Update -= LevelOnUpdate;
             On.Celeste.Level.End -= LevelOnEnd;
-            UnloadPlayerHook();
         }
 
         private static void LevelOnUpdate(On.Celeste.Level.orig_Update orig, Level self) {

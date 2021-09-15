@@ -26,7 +26,8 @@ namespace TAS.EverestInterop {
 
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
-        public static void Load() {
+        [Load]
+        private static void Load() {
             // Relink RunThreadWithLogging to Celeste.RunThread.RunThreadWithLogging because reflection invoke is slow.
             HRunThreadWithLogging = new Detour(
                 typeof(Core).GetMethodInfo("RunThreadWithLogging"),
@@ -55,7 +56,8 @@ namespace TAS.EverestInterop {
             On.Monocle.Entity.Render += Entity_Render;
         }
 
-        public static void Unload() {
+        [Unload]
+        private static void Unload() {
             HRunThreadWithLogging.Dispose();
             On.Monocle.Engine.Update -= Engine_Update;
             On.Monocle.MInput.Update -= MInput_Update;

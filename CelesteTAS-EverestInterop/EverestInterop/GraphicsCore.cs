@@ -10,7 +10,8 @@ namespace TAS.EverestInterop {
     public static class GraphicsCore {
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
-        public static void Load() {
+        [Load]
+        private static void Load() {
             // Optional: Show the pathfinder.
             IL.Celeste.Level.Render += Level_Render;
             IL.Celeste.Pathfinder.Render += Pathfinder_Render;
@@ -19,7 +20,8 @@ namespace TAS.EverestInterop {
             On.Celeste.Distort.Render += Distort_Render;
         }
 
-        public static void Unload() {
+        [Unload]
+        private static void Unload() {
             IL.Celeste.Level.Render -= Level_Render;
             IL.Celeste.Pathfinder.Render -= Pathfinder_Render;
             On.Celeste.Distort.Render -= Distort_Render;

@@ -13,13 +13,15 @@ namespace TAS.EverestInterop {
                                           && !Settings.FastForwardCallBase
                                           && Manager.FrameLoops >= Settings.FastForwardThreshold;
 
-        public static void Load() {
+        [Load]
+        private static void Load() {
             On.Monocle.Tracker.Initialize += TrackerOnInitialize;
             On.Celeste.BackdropRenderer.Update += BackdropRendererOnUpdate;
             On.Celeste.ReflectionTentacles.UpdateVertices += ReflectionTentaclesOnUpdateVertices;
         }
 
-        public static void Unload() {
+        [Unload]
+        private static void Unload() {
             On.Monocle.Tracker.Initialize -= TrackerOnInitialize;
             On.Celeste.BackdropRenderer.Update -= BackdropRendererOnUpdate;
             On.Celeste.ReflectionTentacles.UpdateVertices -= ReflectionTentaclesOnUpdateVertices;

@@ -11,11 +11,13 @@ namespace TAS.EverestInterop {
         private static string clickedEntityInfo = string.Empty;
         private static MouseState lastMouseState;
 
-        public static void Load() {
+        [Load]
+        private static void Load() {
             IL.Monocle.Commands.Render += Commands_Render;
         }
 
-        public static void Unload() {
+        [Unload]
+        private static void Unload() {
             IL.Monocle.Commands.Render -= Commands_Render;
         }
 

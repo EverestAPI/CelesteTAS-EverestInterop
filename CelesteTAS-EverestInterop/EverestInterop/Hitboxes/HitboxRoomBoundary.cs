@@ -5,11 +5,13 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxRoomBoundary {
-        public static void Load() {
+        [Load]
+        private static void Load() {
             On.Monocle.EntityList.DebugRender += EntityListOnDebugRender;
         }
 
-        public static void Unload() {
+        [Unload]
+        private static void Unload() {
             On.Monocle.EntityList.DebugRender -= EntityListOnDebugRender;
         }
 

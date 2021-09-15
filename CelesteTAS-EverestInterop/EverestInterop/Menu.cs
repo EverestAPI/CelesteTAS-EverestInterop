@@ -23,78 +23,86 @@ namespace TAS.EverestInterop {
 
         private static void CreateOptions(EverestModule everestModule, TextMenu menu, bool inGame) {
             options = new List<EaseInSubMenu> {
-                HitboxTweak.CreateSubMenu(menu, inGame),
+                HitboxMenu.CreateSubMenu(menu, inGame),
                 SimplifiedGraphicsFeature.CreateSubMenu(),
                 InfoHud.CreateSubMenu(),
-
-                new EaseInSubMenu("Round Values".ToDialogText(), false).Apply(subMenu => {
-                    subMenu.Add(new TextMenu.OnOff("Round Position".ToDialogText(), Settings.RoundPosition).Change(value =>
-                        Settings.RoundPosition = value));
-                    subMenu.Add(new TextMenu.OnOff("Round Speed".ToDialogText(), Settings.RoundSpeed).Change(value =>
-                        Settings.RoundSpeed = value));
-                    subMenu.Add(new TextMenu.OnOff("Round Velocity".ToDialogText(), Settings.RoundVelocity).Change(value =>
-                        Settings.RoundVelocity = value));
-                    subMenu.Add(new TextMenu.OnOff("Round Custom Info".ToDialogText(), Settings.RoundCustomInfo).Change(value =>
-                        Settings.RoundCustomInfo = value));
-                }),
-
-                new EaseInSubMenu("Relaunch Required".ToDialogText(), false).Apply(subMenu => {
-                    subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), Settings.LaunchStudioAtBoot).Change(value =>
-                        Settings.LaunchStudioAtBoot = value));
-                    subMenu.Add(new TextMenu.OnOff("Auto Extract New Studio".ToDialogText(), Settings.AutoExtractNewStudio).Change(value =>
-                        Settings.AutoExtractNewStudio = value));
-                }),
-
-                new EaseInSubMenu("Hotkeys".ToDialogText(), false).Apply(subMenu => {
-                    subMenu.Add(new TextMenu.Button(Dialog.Clean("options_keyconfig")).Pressed(() => {
-                        subMenu.Focused = false;
-                        KeyboardConfigUI keyboardConfig;
-                        if (CreateKeyboardConfigUi != null) {
-                            keyboardConfig = (KeyboardConfigUI) CreateKeyboardConfigUi.Invoke(everestModule, new object[] {menu});
-                        } else {
-                            keyboardConfig = new ModuleSettingsKeyboardConfigUI(everestModule);
-                        }
-
-                        keyboardConfig.OnClose = () => {
-                            subMenu.Focused = true;
-                        };
-
-                        Engine.Scene.Add(keyboardConfig);
-                        Engine.Scene.OnEndOfFrame += () => Engine.Scene.Entities.UpdateLists();
-                    }));
-
-                    subMenu.Add(new TextMenu.Button(Dialog.Clean("options_btnconfig")).Pressed(() => {
-                        subMenu.Focused = false;
-                        ButtonConfigUI buttonConfig;
-                        if (CreateButtonConfigUI != null) {
-                            buttonConfig = (ButtonConfigUI) CreateButtonConfigUI.Invoke(everestModule, new object[] {menu});
-                        } else {
-                            buttonConfig = new ModuleSettingsButtonConfigUI(everestModule);
-                        }
-
-                        buttonConfig.OnClose = () => {
-                            subMenu.Focused = true;
-                        };
-
-                        Engine.Scene.Add(buttonConfig);
-                        Engine.Scene.OnEndOfFrame += () => Engine.Scene.Entities.UpdateLists();
-                    }));
-                }).Apply(subMenu => hotkeysSubMenu = subMenu),
-
-                new EaseInSubMenu("More Options".ToDialogText(), false).Apply(subMenu => {
-                    subMenu.Add(new TextMenu.OnOff("Center Camera".ToDialogText(), Settings.CenterCamera).Change(value =>
-                        Settings.CenterCamera = value));
-                    subMenu.Add(new TextMenu.OnOff("Pause After Load State".ToDialogText(), Settings.PauseAfterLoadState).Change(value =>
-                        Settings.PauseAfterLoadState = value));
-                    subMenu.Add(new TextMenu.OnOff("Restore Settings".ToDialogText(), Settings.RestoreSettings).Change(value =>
-                        Settings.RestoreSettings = value));
-                    subMenu.Add(
-                        new TextMenu.OnOff("Disable Achievements".ToDialogText(), Settings.DisableAchievements).Change(value =>
-                            Settings.DisableAchievements = value));
-                    subMenu.Add(new TextMenu.OnOff("Mod 9D Lighting".ToDialogText(), Settings.Mod9DLighting).Change(value =>
-                        Settings.Mod9DLighting = value));
-                }),
+                CreateRoundValuesSubMenu(),
+                CreateRelaunchSubMenu(),
+                CreateHotkeysSubMenu(everestModule, menu),
+                CreateMoreOptionsSubMenu(),
             };
+        }
+
+        private static EaseInSubMenu CreateMoreOptionsSubMenu() {
+            return new EaseInSubMenu("More Options".ToDialogText(), false).Apply(subMenu => {
+                subMenu.Add(new TextMenu.OnOff("Center Camera".ToDialogText(), Settings.CenterCamera).Change(value =>
+                    Settings.CenterCamera = value));
+                subMenu.Add(new TextMenu.OnOff("Pause After Load State".ToDialogText(), Settings.PauseAfterLoadState).Change(value =>
+                    Settings.PauseAfterLoadState = value));
+                subMenu.Add(new TextMenu.OnOff("Restore Settings".ToDialogText(), Settings.RestoreSettings).Change(value =>
+                    Settings.RestoreSettings = value));
+                subMenu.Add(
+                    new TextMenu.OnOff("Disable Achievements".ToDialogText(), Settings.DisableAchievements).Change(value =>
+                        Settings.DisableAchievements = value));
+                subMenu.Add(new TextMenu.OnOff("Mod 9D Lighting".ToDialogText(), Settings.Mod9DLighting).Change(value =>
+                    Settings.Mod9DLighting = value));
+            });
+        }
+
+        private static EaseInSubMenu CreateHotkeysSubMenu(EverestModule everestModule, TextMenu menu) {
+            return new EaseInSubMenu("Hotkeys".ToDialogText(), false).Apply(subMenu => {
+                subMenu.Add(new TextMenu.Button(Dialog.Clean("options_keyconfig")).Pressed(() => {
+                    subMenu.Focused = false;
+                    KeyboardConfigUI keyboardConfig;
+                    if (CreateKeyboardConfigUi != null) {
+                        keyboardConfig = (KeyboardConfigUI) CreateKeyboardConfigUi.Invoke(everestModule, new object[] {menu});
+                    } else {
+                        keyboardConfig = new ModuleSettingsKeyboardConfigUI(everestModule);
+                    }
+
+                    keyboardConfig.OnClose = () => { subMenu.Focused = true; };
+
+                    Engine.Scene.Add(keyboardConfig);
+                    Engine.Scene.OnEndOfFrame += () => Engine.Scene.Entities.UpdateLists();
+                }));
+
+                subMenu.Add(new TextMenu.Button(Dialog.Clean("options_btnconfig")).Pressed(() => {
+                    subMenu.Focused = false;
+                    ButtonConfigUI buttonConfig;
+                    if (CreateButtonConfigUI != null) {
+                        buttonConfig = (ButtonConfigUI) CreateButtonConfigUI.Invoke(everestModule, new object[] {menu});
+                    } else {
+                        buttonConfig = new ModuleSettingsButtonConfigUI(everestModule);
+                    }
+
+                    buttonConfig.OnClose = () => { subMenu.Focused = true; };
+
+                    Engine.Scene.Add(buttonConfig);
+                    Engine.Scene.OnEndOfFrame += () => Engine.Scene.Entities.UpdateLists();
+                }));
+            }).Apply(subMenu => hotkeysSubMenu = subMenu);
+        }
+
+        private static EaseInSubMenu CreateRelaunchSubMenu() {
+            return new EaseInSubMenu("Relaunch Required".ToDialogText(), false).Apply(subMenu => {
+                subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), Settings.LaunchStudioAtBoot).Change(value =>
+                    Settings.LaunchStudioAtBoot = value));
+                subMenu.Add(new TextMenu.OnOff("Auto Extract New Studio".ToDialogText(), Settings.AutoExtractNewStudio).Change(value =>
+                    Settings.AutoExtractNewStudio = value));
+            });
+        }
+
+        private static EaseInSubMenu CreateRoundValuesSubMenu() {
+            return new EaseInSubMenu("Round Values".ToDialogText(), false).Apply(subMenu => {
+                subMenu.Add(new TextMenu.OnOff("Round Position".ToDialogText(), Settings.RoundPosition).Change(value =>
+                    Settings.RoundPosition = value));
+                subMenu.Add(new TextMenu.OnOff("Round Speed".ToDialogText(), Settings.RoundSpeed).Change(value =>
+                    Settings.RoundSpeed = value));
+                subMenu.Add(new TextMenu.OnOff("Round Velocity".ToDialogText(), Settings.RoundVelocity).Change(value =>
+                    Settings.RoundVelocity = value));
+                subMenu.Add(new TextMenu.OnOff("Round Custom Info".ToDialogText(), Settings.RoundCustomInfo).Change(value =>
+                    Settings.RoundCustomInfo = value));
+            });
         }
 
         public static void CreateMenu(EverestModule everestModule, TextMenu menu, bool inGame) {
@@ -139,7 +147,7 @@ namespace TAS.EverestInterop {
 
             enabledDescriptions.Add(AddEnabledDescription(enabledItem, menu, "Enabled Description".ToDialogText()));
 
-            HitboxTweak.AddSubMenuDescription(menu, inGame);
+            HitboxMenu.AddSubMenuDescription(menu, inGame);
             InfoHud.AddSubMenuDescription(menu);
             hotkeysSubMenu.AddDescription(menu, "Hotkeys Description".ToDialogText());
         }
@@ -194,17 +202,18 @@ namespace TAS.EverestInterop {
     }
 
     public class EaseInSubMenu : TextMenuExt.SubMenu {
-        public bool FadeVisible { get; set; }
-        private float alpha;
-        private float unEasedAlpha;
-        private float ease;
         private readonly MTexture icon;
+        private float alpha;
+        private float ease;
+        private float unEasedAlpha;
 
         public EaseInSubMenu(string label, bool enterOnSelect) : base(label, enterOnSelect) {
             alpha = unEasedAlpha = CelesteTasModule.Settings.Enabled ? 1f : 0f;
             FadeVisible = Visible = CelesteTasModule.Settings.Enabled;
             icon = GFX.Gui["downarrow"];
         }
+
+        public bool FadeVisible { get; set; }
 
         public override float Height() => MathHelper.Lerp(-Container.ItemSpacing, base.Height(), alpha);
 

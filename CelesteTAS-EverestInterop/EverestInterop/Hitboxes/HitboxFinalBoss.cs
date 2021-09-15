@@ -6,12 +6,14 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxFinalBoss {
-        public static void Load() {
+        [Load]
+        private static void Load() {
             On.Monocle.Entity.DebugRender += ModHitbox;
             On.Monocle.Hitbox.Render += HitboxOnRender;
         }
 
-        public static void Unload() {
+        [Unload]
+        private static void Unload() {
             On.Monocle.Entity.DebugRender -= ModHitbox;
             On.Monocle.Hitbox.Render -= HitboxOnRender;
         }

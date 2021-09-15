@@ -35,14 +35,16 @@ namespace TAS.EverestInterop.Hitboxes {
 
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
-        public static void Load() {
+        [Load]
+        private static void Load() {
             IL.Monocle.Entity.DebugRender += HideHitbox;
             On.Monocle.Hitbox.Render += ModHitbox;
             On.Monocle.Grid.Render += CombineGridHitbox;
             IL.Monocle.Draw.HollowRect_float_float_float_float_Color += AvoidRedrawCorners;
         }
 
-        public static void Unload() {
+        [Unload]
+        private static void Unload() {
             IL.Monocle.Entity.DebugRender -= HideHitbox;
             On.Monocle.Hitbox.Render -= ModHitbox;
             On.Monocle.Grid.Render -= CombineGridHitbox;

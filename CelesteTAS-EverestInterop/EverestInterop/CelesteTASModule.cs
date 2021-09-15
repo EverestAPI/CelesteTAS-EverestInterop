@@ -3,8 +3,6 @@ using Celeste;
 using Celeste.Mod;
 using FMOD.Studio;
 using TAS.Communication;
-using TAS.EverestInterop.Hitboxes;
-using TAS.EverestInterop.InfoHUD;
 using TAS.Utils;
 
 namespace TAS.EverestInterop {
@@ -27,19 +25,6 @@ namespace TAS.EverestInterop {
         }
 
         public override void Load() {
-            Hotkeys.Load();
-            Core.Load();
-            FastForwardBoost.Load();
-            DisableAchievements.Load();
-            GraphicsCore.Load();
-            SimplifiedGraphicsFeature.Load();
-            CenterCamera.Load();
-            AutoMute.Load();
-            HideGameplay.Load();
-            HitboxTweak.Load();
-            InfoHud.Load();
-            ConsoleEnhancements.Load();
-
             AttributeUtils.Invoke<LoadAttribute>();
 
             // Open memory mapped file for interfacing with Windows Celeste Studio
@@ -47,25 +32,8 @@ namespace TAS.EverestInterop {
         }
 
         public override void Unload() {
-            Hotkeys.Unload();
-            Core.Unload();
-            FastForwardBoost.Unload();
-            DisableAchievements.Unload();
-            GraphicsCore.Unload();
-            SimplifiedGraphicsFeature.Unload();
-            CenterCamera.Unload();
-            AutoMute.Unload();
-            HideGameplay.Unload();
-            HitboxTweak.Unload();
-            InfoHud.Unload();
-            ConsoleEnhancements.Unload();
-            StudioCommunicationClient.Destroy();
-
             AttributeUtils.Invoke<UnloadAttribute>();
-
-#if DEBUG
-            Benchmark.Unload();
-#endif
+            StudioCommunicationClient.Destroy();
         }
 
         public override void LoadContent(bool firstLoad) {

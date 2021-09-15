@@ -51,6 +51,10 @@ namespace TAS.EverestInterop {
         public static readonly Dictionary<HotkeyIDs, Hotkey> KeysDict = new();
         public static Dictionary<HotkeyIDs, List<Keys>> KeysInteractWithStudio = new();
 
+        static Hotkeys() {
+            InputInitialize();
+        }
+
         private static bool CelesteNetChatting {
             get {
                 if (CelesteNetClientModuleInstance.Value?.GetValue(null) is not { } instance) {
@@ -86,7 +90,7 @@ namespace TAS.EverestInterop {
             KeysDict[HotkeyIDs.ClearState] = ClearState = BindingToHotkey(Settings.KeyClearState);
             KeysDict[HotkeyIDs.InfoHud] = InfoHud = BindingToHotkey(Settings.KeyInfoHud);
 
-            KeysInteractWithStudio = KeysDict.Where(pair => pair.Key != HotkeyIDs.InfoHud && pair.Key != HotkeyIDs.WatchTrigger)
+            KeysInteractWithStudio = KeysDict.Where(pair => pair.Key != HotkeyIDs.InfoHud)
                 .ToDictionary(pair => pair.Key, pair => pair.Value.Keys);
         }
 
@@ -152,8 +156,8 @@ namespace TAS.EverestInterop {
             }
         }
 
-        public static void Load() {
-            InputInitialize();
+        [Load]
+        private static void Load() {
             On.Celeste.Input.Initialize += InputOnInitialize;
             Type configUiType = typeof(ModuleSettingsKeyboardConfigUI);
             if (typeof(Everest).Assembly.GetTypesSafe()
@@ -172,7 +176,8 @@ namespace TAS.EverestInterop {
             }
         }
 
-        public static void Unload() {
+        [Unload]
+        private static void Unload() {
             On.Celeste.Input.Initialize -= InputOnInitialize;
 
             foreach (IDetour detour in Detours) {

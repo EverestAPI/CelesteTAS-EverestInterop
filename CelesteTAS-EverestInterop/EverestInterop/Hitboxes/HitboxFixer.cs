@@ -7,13 +7,15 @@ namespace TAS.EverestInterop.Hitboxes {
         private static bool drawingHitboxes;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
-        public static void Load() {
+        [Load]
+        private static void Load() {
             On.Monocle.EntityList.DebugRender += EntityListOnDebugRender;
             On.Monocle.Draw.HollowRect_float_float_float_float_Color += ModDrawHollowRect;
             On.Monocle.Draw.Circle_Vector2_float_Color_int += ModDrawCircle;
         }
 
-        public static void Unload() {
+        [Unload]
+        private static void Unload() {
             On.Monocle.EntityList.DebugRender -= EntityListOnDebugRender;
             On.Monocle.Draw.HollowRect_float_float_float_float_Color -= ModDrawHollowRect;
             On.Monocle.Draw.Circle_Vector2_float_Color_int -= ModDrawCircle;

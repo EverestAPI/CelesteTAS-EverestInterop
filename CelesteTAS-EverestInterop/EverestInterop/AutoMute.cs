@@ -58,7 +58,8 @@ namespace TAS.EverestInterop {
         private static bool ShouldBeMuted => Manager.FrameLoops >= 2 && !settingMusic;
         private static bool FrameStep => Manager.Running && (Manager.State & State.FrameStep) != 0;
 
-        public static void Load() {
+        [Load]
+        private static void Load() {
             On.Celeste.Audio.SetMusic += AudioOnSetMusic;
             On.Celeste.Audio.SetAltMusic += AudioOnSetAltMusic;
             On.FMOD.Studio.EventDescription.createInstance += EventDescriptionOnCreateInstance;
@@ -66,7 +67,8 @@ namespace TAS.EverestInterop {
             On.Celeste.Level.Render += LevelOnRender;
         }
 
-        public static void Unload() {
+        [Unload]
+        private static void Unload() {
             On.Celeste.Audio.SetMusic -= AudioOnSetMusic;
             On.Celeste.Audio.SetAltMusic -= AudioOnSetAltMusic;
             On.FMOD.Studio.EventDescription.createInstance -= EventDescriptionOnCreateInstance;

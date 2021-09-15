@@ -35,7 +35,8 @@ namespace TAS.EverestInterop.InfoHUD {
 
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
-        public static void Load() {
+        [Load]
+        private static void Load() {
             On.Monocle.EntityList.DebugRender += EntityListOnDebugRender;
             On.Celeste.Level.Begin += LevelOnBegin;
             On.Celeste.Level.End += LevelOnEnd;
@@ -75,7 +76,8 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-        public static void Unload() {
+        [Unload]
+        private static void Unload() {
             On.Monocle.EntityList.DebugRender -= EntityListOnDebugRender;
             On.Celeste.Level.Begin -= LevelOnBegin;
             On.Celeste.Level.End -= LevelOnEnd;

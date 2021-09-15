@@ -8,11 +8,13 @@ namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxNpc {
         private static readonly FieldInfo Npc05BadelineShadow = typeof(NPC05_Badeline).GetFieldInfo("shadow");
 
-        public static void Load() {
+        [Load]
+        private static void Load() {
             On.Monocle.Entity.DebugRender += EntityOnDebugRender;
         }
 
-        public static void Unload() {
+        [Unload]
+        private static void Unload() {
             On.Monocle.Entity.DebugRender -= EntityOnDebugRender;
         }
 

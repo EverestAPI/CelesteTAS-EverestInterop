@@ -16,11 +16,13 @@ namespace TAS.EverestInterop.Hitboxes {
         private static readonly Color HurtboxColor = Color.Lime.Invert();
         private static ILHook ilHookPlayerOrigUpdate;
 
+        [Load]
         private static void LoadPlayerHook() {
             On.Celeste.Player.DebugRender += PlayerOnDebugRender;
             ilHookPlayerOrigUpdate = new ILHook(typeof(Player).GetMethod("orig_Update"), ModPlayerOrigUpdate);
         }
 
+        [Unload]
         private static void UnloadPlayerHook() {
             On.Celeste.Player.DebugRender -= PlayerOnDebugRender;
             ilHookPlayerOrigUpdate?.Dispose();

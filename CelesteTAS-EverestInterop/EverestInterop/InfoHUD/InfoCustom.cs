@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using Celeste;
-using Celeste.Mod;
+using Celeste.Mod.Helpers;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Utils;
@@ -31,7 +31,7 @@ namespace TAS.EverestInterop.InfoHUD {
             CachedGetMethodInfos.Clear();
             CachedFieldInfos.Clear();
             CachedEntitiesFullName.Clear();
-            foreach (Type type in Everest.Modules.SelectMany(module => module.GetType().Assembly.GetTypesSafe())) {
+            foreach (Type type in FakeAssembly.GetFakeEntryAssembly().GetTypes()) {
                 if (type.FullName != null) {
                     AllTypes[$"{type.FullName}@{type.Assembly.GetName().Name}"] = type;
                 }

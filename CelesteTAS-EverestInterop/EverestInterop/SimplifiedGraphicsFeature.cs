@@ -132,7 +132,8 @@ namespace TAS.EverestInterop {
             }
         }
 
-        public static void Load() {
+        [Load]
+        private static void Load() {
             // Optional: Various graphical simplifications to cut down on visual noise.
             On.Celeste.Level.Update += Level_Update;
             IL.Celeste.LightingRenderer.Render += LightingRenderer_Render;
@@ -163,7 +164,8 @@ namespace TAS.EverestInterop {
             }
         }
 
-        public static void Unload() {
+        [Unload]
+        private static void Unload() {
             On.Celeste.Level.Update -= Level_Update;
             IL.Celeste.LightingRenderer.Render -= LightingRenderer_Render;
             On.Celeste.ColorGrade.Set_MTexture_MTexture_float -= ColorGradeOnSet_MTexture_MTexture_float;

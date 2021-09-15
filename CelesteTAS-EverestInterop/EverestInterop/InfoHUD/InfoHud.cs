@@ -14,21 +14,21 @@ namespace TAS.EverestInterop.InfoHUD {
         private static CelesteTasModuleSettings TasSettings => CelesteTasModule.Settings;
         public static Vector2 Size { get; private set; }
 
-        public static void Load() {
+        [Load]
+        private static void Load() {
             On.Celeste.Level.Render += LevelOnRender;
+            On.Celeste.Fonts.Prepare += FontsOnPrepare;
+
             // avoid issues if center camera is enabled
             CenterCamera.Unload();
             CenterCamera.Load();
-
-            On.Celeste.Fonts.Prepare += FontsOnPrepare;
-            InfoWatchEntity.Load();
         }
 
-        public static void Unload() {
+        [Unload]
+        private static void Unload() {
             On.Celeste.Level.Render -= LevelOnRender;
             On.Celeste.Fonts.Prepare -= FontsOnPrepare;
             CenterCamera.Unload();
-            InfoWatchEntity.Unload();
         }
 
         private static void FontsOnPrepare(On.Celeste.Fonts.orig_Prepare orig) {

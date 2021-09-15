@@ -8,11 +8,13 @@ namespace TAS.EverestInterop {
     public static class HideGameplay {
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
-        public static void Load() {
+        [Load]
+        private static void Load() {
             IL.Celeste.GameplayRenderer.Render += GameplayRenderer_Render;
         }
 
-        public static void Unload() {
+        [Unload]
+        private static void Unload() {
             IL.Celeste.GameplayRenderer.Render -= GameplayRenderer_Render;
         }
 

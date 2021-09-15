@@ -5,7 +5,8 @@ namespace TAS.EverestInterop {
     public static class DisableAchievements {
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
-        public static void Load() {
+        [Load]
+        private static void Load() {
             // Optional: Disable achievements, stats and terminal.
 
             // Before hooking Stats.Increment, check if the method is empty.
@@ -28,7 +29,8 @@ namespace TAS.EverestInterop {
             }
         }
 
-        public static void Unload() {
+        [Unload]
+        private static void Unload() {
             On.Celeste.Achievements.Register -= Achievements_Register;
             On.Celeste.Stats.Increment -= Stats_Increment;
         }

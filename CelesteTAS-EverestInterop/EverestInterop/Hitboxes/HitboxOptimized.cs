@@ -16,7 +16,8 @@ namespace TAS.EverestInterop.Hitboxes {
 
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
-        public static void Load() {
+        [Load]
+        private static void Load() {
             On.Monocle.Entity.DebugRender += ModDebugRender;
             IL.Celeste.PlayerCollider.DebugRender += PlayerColliderOnDebugRender;
             On.Celeste.PlayerCollider.DebugRender += AddFeatherHitbox;
@@ -25,7 +26,8 @@ namespace TAS.EverestInterop.Hitboxes {
             On.Celeste.Seeker.DebugRender += SeekerOnDebugRender;
         }
 
-        public static void Unload() {
+        [Unload]
+        private static void Unload() {
             On.Monocle.Entity.DebugRender -= ModDebugRender;
             IL.Celeste.PlayerCollider.DebugRender -= PlayerColliderOnDebugRender;
             On.Celeste.PlayerCollider.DebugRender -= AddFeatherHitbox;

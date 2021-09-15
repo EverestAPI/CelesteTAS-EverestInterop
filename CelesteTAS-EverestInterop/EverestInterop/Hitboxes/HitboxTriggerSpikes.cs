@@ -27,12 +27,14 @@ namespace TAS.EverestInterop.Hitboxes {
         private static FieldInfo triggerSpikesOriginalLerp;
         private static FieldInfo triggerSpikesOriginalPosition;
 
-        public static void Load() {
+        [Load]
+        private static void Load() {
             // Show the hitbox of the triggered TriggerSpikes.
             On.Monocle.Entity.DebugRender += Entity_DebugRender;
         }
 
-        public static void Unload() {
+        [Unload]
+        private static void Unload() {
             On.Monocle.Entity.DebugRender -= Entity_DebugRender;
         }
 

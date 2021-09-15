@@ -14,6 +14,5 @@ namespace StudioCommunication {
         SaveState,
         ClearState,
         InfoHud,
-        WatchTrigger
     }
 }

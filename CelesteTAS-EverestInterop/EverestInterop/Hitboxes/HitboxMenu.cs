@@ -4,35 +4,9 @@ using Celeste.Mod;
 using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes {
-    public static class HitboxTweak {
+    public static class HitboxMenu {
         private static EaseInSubMenu subMenuItem;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
-
-        public static void Load() {
-            HitboxTriggerSpikes.Load();
-            ActualEntityCollideHitbox.Load();
-            HitboxFixer.Load();
-            HitboxSimplified.Load();
-            HitboxTrigger.Load();
-            HitboxColor.Load();
-            HitboxFinalBoss.Load();
-            HitboxOptimized.Load();
-            HitboxNpc.Load();
-            HitboxRoomBoundary.Load();
-        }
-
-        public static void Unload() {
-            HitboxTriggerSpikes.Unload();
-            ActualEntityCollideHitbox.Unload();
-            HitboxFixer.Unload();
-            HitboxSimplified.Unload();
-            HitboxTrigger.Unload();
-            HitboxColor.Unload();
-            HitboxFinalBoss.Unload();
-            HitboxOptimized.Unload();
-            HitboxNpc.Unload();
-            HitboxRoomBoundary.Unload();
-        }
 
         public static EaseInSubMenu CreateSubMenu(TextMenu menu, bool inGame) {
             subMenuItem = new EaseInSubMenu("Show Hitboxes".ToDialogText(), false).Apply(subMenu => {

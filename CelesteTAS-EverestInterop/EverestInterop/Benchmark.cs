@@ -14,12 +14,12 @@ namespace TAS.EverestInterop {
         private static ulong lastFrameCounter;
 
         [Load]
-        public static void Load() {
+        private static void Load() {
             On.Monocle.Engine.Update += EngineOnUpdate;
         }
 
         [Unload]
-        public static void Unload() {
+        private static void Unload() {
             On.Monocle.Engine.Update -= EngineOnUpdate;
         }
 
