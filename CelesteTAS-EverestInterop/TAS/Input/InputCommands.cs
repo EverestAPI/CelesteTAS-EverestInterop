@@ -63,10 +63,17 @@ namespace TAS.Input {
                         parameters = new object[] {commandArgs};
                     }
 
-                    Command command = new(attribute, frame, () => method.Invoke(null, parameters), commandArgs, filePath, lineNumber);
+                    Action commandCall = () => method.Invoke(null, parameters);
                     if (attribute.ExecuteAtParse || attribute.ExecuteAtStart) {
-                        command.Invoke();
+                        commandCall.Invoke();
                     }
+
+                    // avoid being executed again in inputController.AdvanceFrame()
+                    if (attribute.ExecuteAtParse) {
+                        commandCall = null;
+                    }
+
+                    Command command = new(attribute, frame, commandCall, commandArgs, filePath, lineNumber);
 
                     if (attribute.ExecuteAtStart && !inputController.ExecuteAtStartCommands.Contains(command)) {
                         inputController.ExecuteAtStartCommands.Add(command);

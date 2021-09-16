@@ -55,7 +55,9 @@ namespace TAS {
                 if (!State.HasFlag(State.FrameStep)) {
                     Controller.AdvanceFrame();
                     canPlayback = canPlayback || Controller.CanPlayback;
-                    if (Controller.Break && Controller.CurrentFrameInTas < Controller.Inputs.Count) {
+
+                    // stop TAS if breakpoint is not placed at the end
+                    if (Controller.Break && canPlayback) {
                         NextState |= State.FrameStep;
                         FrameLoops = 1;
                     }
