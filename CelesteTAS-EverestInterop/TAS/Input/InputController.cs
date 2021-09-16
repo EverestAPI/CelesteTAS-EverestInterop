@@ -27,11 +27,12 @@ namespace TAS.Input {
             get => studioTasFilePath;
             set {
                 if (studioTasFilePath != value) {
+                    studioTasFilePath = value;
+
                     if (Manager.Running) {
                         Manager.DisableExternal();
                     }
 
-                    studioTasFilePath = value;
                     Manager.Controller.Reset();
                     Manager.Controller.RefreshInputs(true);
                 }

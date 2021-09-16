@@ -26,9 +26,6 @@ namespace TAS.EverestInterop {
 
         public override void Load() {
             AttributeUtils.Invoke<LoadAttribute>();
-
-            // Open memory mapped file for interfacing with Windows Celeste Studio
-            StudioCommunicationClient.Run();
         }
 
         public override void Unload() {
@@ -39,6 +36,9 @@ namespace TAS.EverestInterop {
         public override void LoadContent(bool firstLoad) {
             if (firstLoad) {
                 AttributeUtils.Invoke<LoadContentAttribute>();
+
+                // Open memory mapped file for interfacing with Windows Celeste Studio
+                StudioCommunicationClient.Run();
             }
         }
 
