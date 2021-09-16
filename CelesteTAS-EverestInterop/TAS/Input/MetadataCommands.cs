@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Celeste;
 using Celeste.Mod;
+using Microsoft.Xna.Framework;
 using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.Utils;
@@ -16,18 +17,28 @@ namespace TAS.Input {
         private static void Load() {
             Everest.Events.Level.OnComplete += UpdateChapterTime;
             On.Celeste.OuiFileSelectSlot.OnNewGameSelected += OuiFileSelectSlotOnOnNewGameSelected;
+            On.Celeste.LevelLoader.ctor += LevelLoaderOnCtor;
         }
 
         [Unload]
         private static void Unload() {
             Everest.Events.Level.OnComplete -= UpdateChapterTime;
             On.Celeste.OuiFileSelectSlot.OnNewGameSelected -= OuiFileSelectSlotOnOnNewGameSelected;
+            On.Celeste.LevelLoader.ctor -= LevelLoaderOnCtor;
         }
 
         private static void OuiFileSelectSlotOnOnNewGameSelected(On.Celeste.OuiFileSelectSlot.orig_OnNewGameSelected orig, OuiFileSelectSlot self) {
             orig(self);
             if (Manager.Running) {
                 tasStartFileTime = 0;
+            }
+        }
+
+        private static void LevelLoaderOnCtor(On.Celeste.LevelLoader.orig_ctor orig, LevelLoader self, Session session, Vector2? startPosition) {
+            orig(self, session, startPosition);
+
+            if (Manager.Running && !Savestates.IsSaved_Safe() && tasStartFileTime == null) {
+                tasStartFileTime = SaveData.Instance?.Time;
             }
         }
 
@@ -43,17 +54,17 @@ namespace TAS.Input {
             }
         }
 
-        [TasCommand(Name = "RecordCount", AliasNames = new[] {"RecordCount:"}, CalcChecksum = false)]
+        [TasCommand(Name = "RecordCount", AliasNames = new[] {"RecordCount:", "RecordCount："}, CalcChecksum = false)]
         private static void RecordCountCommand(string[] args) {
             // dummy
         }
 
-        [TasCommand(Name = "FileTime", AliasNames = new[] {"FileTime:"}, CalcChecksum = false)]
+        [TasCommand(Name = "FileTime", AliasNames = new[] {"FileTime:", "FileTime："}, CalcChecksum = false)]
         private static void FileTimeCommand(InputController inputController, string[] args, int lineNumber) {
             // dummy
         }
 
-        [TasCommand(Name = "ChapterTime", AliasNames = new[] {"ChapterTime:"}, CalcChecksum = false)]
+        [TasCommand(Name = "ChapterTime", AliasNames = new[] {"ChapterTime:", "ChapterTime："}, CalcChecksum = false)]
         private static void ChapterTimeCommand(InputController inputController, string[] args, int lineNumber) {
             // dummy
         }
