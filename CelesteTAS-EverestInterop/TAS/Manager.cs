@@ -70,10 +70,9 @@ namespace TAS {
             } else {
                 Running = false;
                 if (!Engine.Instance.IsActive) {
-                    // MInput.Mouse.UpdateNull();
+                    // MInput.Keyboard.UpdateNull();
                     MInput.Keyboard.PreviousState = MInput.Keyboard.CurrentState;
                     MInput.Keyboard.CurrentState = default;
-                    MInput.Keyboard.CurrentState.GetPressedKeys();
 
                     // MInput.Mouse.UpdateNull();
                     MInput.Mouse.PreviousState = MInput.Mouse.CurrentState;
