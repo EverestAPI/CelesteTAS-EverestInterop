@@ -91,25 +91,27 @@ namespace TAS.Input {
                 .Where(command => command.Attribute.IsName(commandName) && command.FilePath == InputController.TasFilePath)
                 .Where(predicate ?? (_ => true))
                 .ToList();
-            if (metadataCommands.IsEmpty()) {
-                return;
-            }
 
-            Dictionary<int, string> updateLines = new();
-            string[] allLines = File.ReadAllLines(tasFilePath);
-            foreach (Command command in metadataCommands) {
+            Dictionary<int, string> updateLines = metadataCommands.Where(command => {
                 string metadata = getMetadata(command);
                 if (metadata.IsNullOrEmpty()) {
-                    continue;
+                    return false;
                 }
 
                 if (command.Args.Length > 0 && command.Args[0] == metadata) {
-                    continue;
+                    return false;
                 }
 
-                int lineNumber = command.LineNumber;
-                allLines[lineNumber] = $"{command.Attribute.Name}: {getMetadata(command)}";
-                updateLines[lineNumber] = allLines[lineNumber];
+                return true;
+            }).ToDictionary(command => command.LineNumber, command => $"{command.Attribute.Name}: {getMetadata(command)}");
+
+            if (updateLines.IsEmpty()) {
+                return;
+            }
+
+            string[] allLines = File.ReadAllLines(tasFilePath);
+            foreach (int lineNumber in updateLines.Keys) {
+                allLines[lineNumber] = updateLines[lineNumber];
             }
 
             File.WriteAllLines(tasFilePath, allLines);
