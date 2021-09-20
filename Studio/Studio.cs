@@ -262,42 +262,80 @@ namespace CelesteStudio {
 
         private void Studio_KeyDown(object sender, KeyEventArgs e) {
             try {
-                if (e.Modifiers == (Keys.Shift | Keys.Control) && e.KeyCode == Keys.S) {
-                    SaveAsFile();
-                } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.S) {
-                    richText.SaveFile();
-                } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.O) {
-                    OpenFile();
-                } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.K) {
-                    CommentText();
-                } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.P) {
-                    ClearUncommentedBreakpoints();
-                } else if (e.Modifiers == (Keys.Control | Keys.Shift) && e.KeyCode == Keys.P) {
-                    ClearBreakpoints();
-                } else if (e.Modifiers == (Keys.Control | Keys.Alt) && e.KeyCode == Keys.P) {
-                    CommentUncommentAllBreakpoints();
-                } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.OemPeriod) {
-                    InsertOrRemoveText(SyntaxHighlighter.BreakPointRegex, "***");
-                } else if (e.Modifiers == (Keys.Control | Keys.Shift) && e.KeyCode == Keys.OemPeriod) {
-                    InsertOrRemoveText(SyntaxHighlighter.BreakPointRegex, "***S");
-                } else if (e.Modifiers == (Keys.Control | Keys.Shift) && e.KeyCode == Keys.R) {
-                    InsertConsoleLoadCommand();
-                } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.R) {
-                    InsertRoomName();
-                } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.F) {
-                    DialogUtils.ShowFindDialog(richText);
-                } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.G) {
-                    DialogUtils.ShowGoToDialog(richText);
-                } else if (e.Modifiers == Keys.Control && e.KeyCode == Keys.T) {
-                    InsertTime();
-                } else if (e.Modifiers == (Keys.Control | Keys.Shift) && e.KeyCode == Keys.C) {
-                    CopyGameInfo();
-                } else if (e.Modifiers == (Keys.Shift | Keys.Control) && e.KeyCode == Keys.D) {
-                    StudioCommunicationServer.Instance?.ExternalReset();
-                } else if (e.KeyCode == Keys.Down && (e.Modifiers == Keys.Control || e.Modifiers == (Keys.Control | Keys.Shift))) {
-                    GoDownCommentAndBreakpoint(e);
-                } else if (e.KeyCode == Keys.Up && (e.Modifiers == Keys.Control || e.Modifiers == (Keys.Control | Keys.Shift))) {
-                    GoUpCommentAndBreakpoint(e);
+                if ((e.Modifiers & Keys.Control) == Keys.Control) {
+                    // pressing ctrl
+                    if (e.Modifiers == Keys.Control) {
+                        // only ctrl
+                        switch (e.KeyCode) {
+                            case Keys.S: // ctrl + S
+                                richText.SaveFile();
+                                break;
+                            case Keys.O: // ctrl + O
+                                OpenFile();
+                                break;
+                            case Keys.K: // ctrl + K
+                                CommentText();
+                                break;
+                            case Keys.P: // ctrl + P
+                                ClearUncommentedBreakpoints();
+                                break;
+                            case Keys.OemPeriod: // ctrl + OemPeriod -> insert/remove breakpoint
+                                InsertOrRemoveText(SyntaxHighlighter.BreakPointRegex, "***");
+                                break;
+                            case Keys.R: // ctrl + R
+                                InsertRoomName();
+                                break;
+                            case Keys.F: // ctrl + F
+                                DialogUtils.ShowFindDialog(richText);
+                                break;
+                            case Keys.G: // ctrl + G
+                                DialogUtils.ShowGoToDialog(richText);
+                                break;
+                            case Keys.T: // ctrl + T
+                                InsertTime();
+                                break;
+                            case Keys.Down: // ctrl + Down
+                                GoDownCommentAndBreakpoint(e);
+                                break;
+                            case Keys.Up: // ctrl + Up
+                                GoUpCommentAndBreakpoint(e);
+                                break;
+                            case Keys.L: // ctrl + L
+                                CombineInputs(false);
+                                break;
+                        }
+                    } else if (e.Modifiers == (Keys.Control | Keys.Shift)) {
+                        // ctrl + shift:
+                        switch (e.KeyCode) {
+                            case Keys.S: // ctrl + shift + S
+                                SaveAsFile();
+                                break;
+                            case Keys.P: // ctrl + shift + P
+                                ClearBreakpoints();
+                                break;
+                            case Keys.OemPeriod: // ctrl + shift + OemPeriod -> insert/remove savestate
+                                InsertOrRemoveText(SyntaxHighlighter.BreakPointRegex, "***S");
+                                break;
+                            case Keys.R: // ctrl + shift + R
+                                InsertConsoleLoadCommand();
+                                break;
+                            case Keys.C: // ctrl + shift + C
+                                CopyGameInfo();
+                                break;
+                            case Keys.D: // ctrl + shift + D
+                                StudioCommunicationServer.Instance?.ExternalReset();
+                                break;
+                            case Keys.L: // ctrl + shift + L
+                                CombineInputs(true);
+                                break;
+                        }
+                    } else if (e.Modifiers == (Keys.Control | Keys.Alt)) {
+                        // ctrl + alt:
+                        if (e.KeyCode == Keys.P) {
+                            // ctrl + alt + P
+                            CommentUncommentAllBreakpoints();
+                        }
+                    }
                 }
             } catch (Exception ex) {
                 MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -819,6 +857,492 @@ namespace CelesteStudio {
             }
 
             richText.ScrollLeft();
+        }
+
+        private void CombineInputs(bool variationDeletionMode) {
+            // data setup
+            Range range = richText.Selection.Clone();
+            range.Normalize();
+
+            int start = range.Start.iLine;
+            int end = range.End.iLine;
+
+            Range originalSelection = richText.Selection.Clone();
+            richText.Selection = new Range(richText, 0, start, richText[end].Count, end);
+
+            string text = richText.SelectedText;
+            StringBuilder sb = new(text.Length);
+
+            // manipulation setup
+            int reader = 0;
+            char c;
+            string groupInputs;
+            int groupFramecount;
+            List<string> savedComments = new List<string>();
+
+            bool endsWithEmptyLine = false;
+
+            int currentLine;
+            if (start != end) {
+                // tracking the best place to put cursor after finished
+                currentLine = 0;
+                int latestInputLine = 0;
+                bool latestLineIsInput = false;
+
+                if (variationDeletionMode) {
+                    int emptyLineCount = 0;
+
+                    if (!SkipToInput()) {
+                        // happens if selection doesnt have inputs
+                        richText.Selection = originalSelection;
+                        return;
+                    }
+
+                    groupFramecount = EvaluateFramecount();
+                    groupInputs = EvaluateInputs();
+
+                    bool addingScreenTransition = false;
+                    while (NextLine()) {
+                        if ("0123456789".Contains(c = GetFirstLetter())) {
+                            int thisLineFrameCount = EvaluateFramecount();
+                            if (IsScreenTransition(thisLineFrameCount)) {
+                                addingScreenTransition = true;
+                                sb.AppendLine(groupFramecount + groupInputs);
+                                currentLine++;
+                                foreach (string comment in savedComments) {
+                                    sb.AppendLine(comment);
+                                    currentLine++;
+                                }
+
+                                savedComments.Clear();
+                                sb.AppendLine(thisLineFrameCount + EvaluateInputs());
+                                latestInputLine = currentLine;
+                                currentLine++;
+
+                                groupFramecount = 0;
+                            } else {
+                                if (groupFramecount == 0) {
+                                    sb.AppendLine();
+                                    currentLine++;
+                                }
+
+                                groupFramecount += thisLineFrameCount;
+                            }
+
+                            emptyLineCount = 0;
+                        } else if (c == '#') {
+                            if (addingScreenTransition) {
+                                sb.AppendLine();
+                                currentLine++;
+                                sb.Append(GetWholeLine());
+                                addingScreenTransition = false;
+                            } else
+                                savedComments.Add(GetWholeLine());
+
+                            emptyLineCount = 0;
+                        } else if (c != '\r') {
+                            if (groupFramecount != 0) {
+                                sb.Append(groupFramecount + groupInputs);
+                                latestInputLine = currentLine;
+                            }
+
+                            sb.AppendLine();
+                            currentLine++;
+                            groupFramecount = 0;
+
+                            foreach (string comment in savedComments) {
+                                sb.AppendLine(comment);
+                                currentLine++;
+                            }
+
+                            savedComments.Clear();
+
+                            sb.Append(GetWholeLine());
+                        } else {
+                            emptyLineCount++;
+                        }
+                    }
+
+                    if (groupFramecount != 0) {
+                        sb.Append(groupFramecount + groupInputs);
+                        latestInputLine = currentLine;
+                        latestLineIsInput = true;
+                    }
+
+                    foreach (string comment in savedComments) {
+                        sb.AppendLine();
+                        currentLine++;
+                        sb.Append(comment);
+                        latestLineIsInput = false;
+                    }
+
+                    for (int i = 0; i < emptyLineCount; i++) {
+                        sb.AppendLine();
+                        currentLine++;
+                    }
+
+                    if (endsWithEmptyLine) {
+                        sb.AppendLine();
+                        currentLine++;
+                    }
+                } else {
+                    if (!SkipToInput()) {
+                        // happens if selection doesnt have inputs
+                        richText.Selection = originalSelection;
+                        return;
+                    }
+
+                    // converting for example 4dx 11r/rx to 15rz
+                    bool DX11ThroughTransition = false;
+
+                    groupFramecount = EvaluateFramecount();
+                    groupInputs = EvaluateInputs();
+
+                    while (NextLine()) {
+                        if ("1234567890".Contains(c = GetFirstLetter())) {
+                            int thisLineFramecount = EvaluateFramecount();
+                            string thisLineInputs;
+                            if ((thisLineInputs = EvaluateInputs()) == groupInputs) {
+                                if (IsScreenTransition(thisLineFramecount)) {
+                                    sb.AppendLine(groupFramecount + groupInputs);
+                                    currentLine++;
+                                    foreach (string comment in savedComments) {
+                                        sb.AppendLine(comment);
+                                        currentLine++;
+                                    }
+
+                                    savedComments.Clear();
+                                    sb.Append(thisLineFramecount + thisLineInputs);
+                                    latestInputLine = currentLine;
+                                    latestLineIsInput = true;
+
+                                    groupFramecount = 0;
+                                    groupInputs = null;
+                                } else
+                                    groupFramecount += thisLineFramecount;
+                            } else {
+                                if (groupFramecount == 4 &&
+                                    (groupInputs.Contains(",D,X") || groupInputs.Contains(",D,C") || groupInputs.Contains('Z'))) {
+                                    // combining 4DX demos
+                                    if ((DX11ThroughTransition || thisLineInputs.Contains('J') || thisLineInputs.Contains('K') ||
+                                         thisLineInputs.Contains('S') || thisLineInputs.Contains('Q'))
+                                        && !thisLineInputs.Contains('Z')) {
+                                        if (groupInputs.Contains('X'))
+                                            sb.AppendLine("   4,D,X");
+                                        else if (groupInputs.Contains('C'))
+                                            sb.AppendLine("   4,D,C");
+                                        else
+                                            sb.AppendLine("   4,Z");
+
+                                        latestInputLine = currentLine;
+                                        latestLineIsInput = true;
+                                        currentLine++;
+
+                                        foreach (string comment in savedComments) {
+                                            sb.AppendLine(comment);
+                                            currentLine++;
+                                            latestLineIsInput = false;
+                                        }
+
+                                        savedComments.Clear();
+
+                                        groupFramecount = thisLineFramecount;
+                                        groupInputs = thisLineInputs;
+                                    } else {
+                                        groupFramecount += thisLineFramecount;
+                                        groupInputs = ",Z" + thisLineInputs.Replace(",X", "").Replace(",C", "").Replace(",Z", "");
+                                    }
+
+                                    DX11ThroughTransition = false;
+                                } else {
+                                    if (groupFramecount == 11 && IsScreenTransition(thisLineFramecount) &&
+                                        (groupInputs == ",D,X" || groupInputs == ",D,C"))
+                                        DX11ThroughTransition = true;
+                                    else if (groupInputs != null)
+                                        DX11ThroughTransition = false;
+
+                                    if (groupFramecount != 0) {
+                                        sb.Append(groupFramecount + groupInputs);
+                                        latestInputLine = currentLine;
+                                        latestLineIsInput = true;
+                                    }
+
+                                    sb.AppendLine();
+                                    currentLine++;
+
+                                    foreach (string comment in savedComments) {
+                                        sb.AppendLine(comment);
+                                        currentLine++;
+                                        latestLineIsInput = false;
+                                    }
+
+                                    savedComments.Clear();
+                                    groupFramecount = thisLineFramecount;
+                                    groupInputs = thisLineInputs;
+                                }
+                            }
+                        } else if (c == '#')
+                            savedComments.Add(GetWholeLine());
+                        else {
+                            if (groupFramecount != 0) {
+                                sb.Append(groupFramecount + groupInputs);
+                                latestInputLine = currentLine;
+                                latestLineIsInput = true;
+                            }
+
+                            groupInputs = null;
+                            sb.AppendLine();
+                            currentLine++;
+
+                            foreach (string comment in savedComments) {
+                                sb.AppendLine(comment);
+                                currentLine++;
+                                latestLineIsInput = false;
+                            }
+
+                            savedComments.Clear();
+
+                            if (c != '\r')
+                                latestLineIsInput = false;
+
+                            sb.Append(GetWholeLine());
+
+                            groupFramecount = 0;
+                        }
+                    }
+
+                    if (groupFramecount != 0) {
+                        sb.Append(groupFramecount + groupInputs);
+                        latestInputLine = currentLine;
+                        latestLineIsInput = true;
+                    }
+
+                    foreach (string comment in savedComments) {
+                        sb.AppendLine();
+                        currentLine++;
+                        sb.Append(comment);
+                        latestLineIsInput = false;
+                    }
+
+                    if (endsWithEmptyLine) {
+                        sb.AppendLine();
+                        currentLine++;
+                    }
+                }
+
+                richText.SelectedText = sb.ToString();
+
+                Place selectPos;
+                if (latestLineIsInput)
+                    selectPos = new(4, start + latestInputLine);
+                else {
+                    int selectLine = start + currentLine;
+                    selectPos = new(richText[selectLine].Count, selectLine);
+                }
+
+                richText.Selection = new Range(richText, selectPos, selectPos);
+
+
+                bool SkipToInput() {
+                    // returns false if the selection doesnt have any inputs
+                    while (!"0123456789 ".Contains(c = GetFirstLetter())) {
+                        while ((c = text[reader]) != '\r') {
+                            sb.Append(c);
+                            reader++;
+                            if (reader >= text.Length)
+                                return false;
+                        }
+
+                        sb.AppendLine();
+                        currentLine++;
+                        NextLine();
+                    }
+
+                    return c != ' ';
+                }
+            } else {
+                if (variationDeletionMode) {
+                    richText.Selection = originalSelection;
+                    return;
+                }
+
+                if ("1234567890".Contains(c = GetFirstLetter())) {
+                    groupFramecount = EvaluateFramecount();
+                    if (IsScreenTransition(groupFramecount)) {
+                        richText.Selection = originalSelection;
+                        return;
+                    } else
+                        groupInputs = EvaluateInputs();
+                } else {
+                    richText.Selection = originalSelection;
+                    return;
+                }
+
+                for (start--; start >= 0; start--) {
+                    text = richText.GetLineText(start) + "\r\n" + text;
+                    reader = 0;
+                    if ("1234567890".Contains(c = GetFirstLetter())) {
+                        int framecount = EvaluateFramecount();
+                        if (EvaluateInputs() == groupInputs) {
+                            groupFramecount += framecount;
+                            continue;
+                        }
+                    } else if (c == '#') {
+                        savedComments.Add(GetWholeLine());
+                        continue;
+                    }
+
+                    break; // if didnt 'continue;'
+                }
+
+                start++;
+
+                foreach (string comment in savedComments)
+                    sb.Insert(0, comment + "\r\n");
+                savedComments.Clear();
+
+                reader = text.Length;
+                for (end++; end < richText.LinesCount; end++) {
+                    text += "\r\n" + richText.GetLineText(end);
+                    NextLine();
+                    if ("1234567890".Contains(c = GetFirstLetter())) {
+                        int framecount = EvaluateFramecount();
+                        if (EvaluateInputs() == groupInputs && !IsScreenTransition(framecount)) {
+                            groupFramecount += framecount;
+                            continue;
+                        }
+                    } else if (c == '#') {
+                        savedComments.Add(GetWholeLine());
+                        continue;
+                    }
+
+                    break; // if didnt 'continue;'
+                }
+
+                end--;
+
+                sb.Append(groupFramecount + groupInputs);
+
+                foreach (string comment in savedComments)
+                    sb.Append("\r\n" + comment);
+                savedComments.Clear();
+
+                richText.Selection = new(richText, 0, start, richText[end].Count, end);
+                richText.SelectedText = sb.ToString();
+                richText.Selection = new(richText, 4, start, 4, start);
+            }
+
+            richText.ScrollLeft();
+
+
+            // local functions
+
+            char GetFirstLetter() {
+                if (reader >= text.Length)
+                    return ' ';
+                while (text[reader] == ' ') {
+                    reader++;
+                    if (reader >= text.Length)
+                        return ' ';
+                }
+
+                return text[reader];
+            }
+
+            string EvaluateInputs() {
+                string value = ""; // what's returned
+                while (true) {
+                    if (reader < text.Length) {
+                        if ((c = text[reader]) != '\r')
+                            value += c;
+                        else
+                            break;
+                    } else
+                        return value;
+
+                    reader++;
+                }
+
+                return value;
+            }
+
+            int EvaluateFramecount() {
+                string frameCountString = Convert.ToString(c);
+                reader++;
+                while (reader < text.Length && "0123456789".Contains(c = text[reader])) {
+                    frameCountString += c;
+                    reader++;
+                }
+
+                return Convert.ToInt32(frameCountString);
+            }
+
+            bool NextLine() {
+                // if return false -> end of selection; stop.
+                if (reader >= text.Length)
+                    return false;
+                while (text[reader] != '\r') {
+                    reader++;
+                    if (reader >= text.Length)
+                        return false;
+                }
+
+                reader += 2;
+                if (reader >= text.Length) {
+                    endsWithEmptyLine = true;
+                    return false;
+                }
+
+                return true;
+            }
+
+            string GetWholeLine() {
+                string value = "";
+                if (c == '\r')
+                    return value;
+                value += c;
+                for (reader++; reader < text.Length && (c = text[reader]) != '\r'; reader++)
+                    value += c;
+                return value;
+            }
+
+            bool IsScreenTransition(int frameCount) {
+                if (frameCount < 40)
+                    return false;
+                int i = reader + 1;
+                int lineCount = 0;
+                while (true) {
+                    if (i + 3 >= text.Length) {
+                        // see if theres a room label outside of `text`
+                        int targetLine;
+                        for (int a = 1; (targetLine = end + a) < richText.LinesCount; a++) {
+                            string line = richText.GetLineText(targetLine);
+                            foreach (char b in line)
+                                if (b != ' ') {
+                                    if (line.Length >= 4 && line.Substring(0, 4) == "#lvl")
+                                        return true;
+                                    return false;
+                                }
+                        }
+
+                        return false;
+                    }
+
+                    if (!" \n\r".Contains(c = text[i]))
+                        break;
+                    if (c == '\r') {
+                        if (lineCount >= 2)
+                            return false;
+                        lineCount++;
+                    }
+
+                    i++;
+                }
+
+                if (text.Substring(i, 4) == "#lvl")
+                    return true;
+                return false;
+            }
         }
 
         private void UpdateLines(RichText.RichText tas, Range range) {
