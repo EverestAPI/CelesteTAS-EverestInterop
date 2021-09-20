@@ -1725,6 +1725,14 @@ namespace CelesteStudio {
             SwapActionKeys('J', 'K');
         }
 
+        private void combineConsecutiveSameInputsToolStripMenuItem_Click(object sender, EventArgs e) {
+            CombineInputs(false);
+        }
+
+        private void forceCombineInputsToolStripMenuItem_Click(object sender, EventArgs e) {
+            CombineInputs(true);
+        }
+
         private void openReadFileToolStripMenuItem_Click(object sender, EventArgs e) {
             TryOpenReadFile();
             TryGoToPlayLine();
