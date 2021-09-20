@@ -876,9 +876,9 @@ namespace CelesteStudio {
             // manipulation setup
             int reader = 0;
             char c;
-            string groupInputs;
-            int groupFramecount;
-            List<string> savedComments = new List<string>();
+            string groupActions;
+            int groupFrameCount;
+            List<string> savedComments = new();
 
             bool endsWithEmptyLine = false;
 
@@ -898,16 +898,16 @@ namespace CelesteStudio {
                         return;
                     }
 
-                    groupFramecount = EvaluateFramecount();
-                    groupInputs = EvaluateInputs();
+                    groupFrameCount = EvaluateFrameCount();
+                    groupActions = EvaluateInputs();
 
                     bool addingScreenTransition = false;
                     while (NextLine()) {
                         if ("0123456789".Contains(c = GetFirstLetter())) {
-                            int thisLineFrameCount = EvaluateFramecount();
+                            int thisLineFrameCount = EvaluateFrameCount();
                             if (IsScreenTransition(thisLineFrameCount)) {
                                 addingScreenTransition = true;
-                                sb.AppendLine(groupFramecount + groupInputs);
+                                sb.AppendLine(FormattedInput(groupFrameCount, groupActions));
                                 currentLine++;
                                 foreach (string comment in savedComments) {
                                     sb.AppendLine(comment);
@@ -919,14 +919,14 @@ namespace CelesteStudio {
                                 latestInputLine = currentLine;
                                 currentLine++;
 
-                                groupFramecount = 0;
+                                groupFrameCount = 0;
                             } else {
-                                if (groupFramecount == 0) {
+                                if (groupFrameCount == 0) {
                                     sb.AppendLine();
                                     currentLine++;
                                 }
 
-                                groupFramecount += thisLineFrameCount;
+                                groupFrameCount += thisLineFrameCount;
                             }
 
                             emptyLineCount = 0;
@@ -936,19 +936,20 @@ namespace CelesteStudio {
                                 currentLine++;
                                 sb.Append(GetWholeLine());
                                 addingScreenTransition = false;
-                            } else
+                            } else {
                                 savedComments.Add(GetWholeLine());
+                            }
 
                             emptyLineCount = 0;
                         } else if (c != '\r') {
-                            if (groupFramecount != 0) {
-                                sb.Append(groupFramecount + groupInputs);
+                            if (groupFrameCount != 0) {
+                                sb.Append(FormattedInput(groupFrameCount, groupActions));
                                 latestInputLine = currentLine;
                             }
 
                             sb.AppendLine();
                             currentLine++;
-                            groupFramecount = 0;
+                            groupFrameCount = 0;
 
                             foreach (string comment in savedComments) {
                                 sb.AppendLine(comment);
@@ -963,8 +964,8 @@ namespace CelesteStudio {
                         }
                     }
 
-                    if (groupFramecount != 0) {
-                        sb.Append(groupFramecount + groupInputs);
+                    if (groupFrameCount != 0) {
+                        sb.Append(FormattedInput(groupFrameCount, groupActions));
                         latestInputLine = currentLine;
                         latestLineIsInput = true;
                     }
@@ -995,16 +996,16 @@ namespace CelesteStudio {
                     // converting for example 4dx 11r/rx to 15rz
                     bool DX11ThroughTransition = false;
 
-                    groupFramecount = EvaluateFramecount();
-                    groupInputs = EvaluateInputs();
+                    groupFrameCount = EvaluateFrameCount();
+                    groupActions = EvaluateInputs();
 
                     while (NextLine()) {
                         if ("1234567890".Contains(c = GetFirstLetter())) {
-                            int thisLineFramecount = EvaluateFramecount();
+                            int thisLineFrameCount = EvaluateFrameCount();
                             string thisLineInputs;
-                            if ((thisLineInputs = EvaluateInputs()) == groupInputs) {
-                                if (IsScreenTransition(thisLineFramecount)) {
-                                    sb.AppendLine(groupFramecount + groupInputs);
+                            if ((thisLineInputs = EvaluateInputs()) == groupActions) {
+                                if (IsScreenTransition(thisLineFrameCount)) {
+                                    sb.AppendLine(FormattedInput(groupFrameCount, groupActions));
                                     currentLine++;
                                     foreach (string comment in savedComments) {
                                         sb.AppendLine(comment);
@@ -1012,27 +1013,30 @@ namespace CelesteStudio {
                                     }
 
                                     savedComments.Clear();
-                                    sb.Append(thisLineFramecount + thisLineInputs);
+                                    sb.Append(thisLineFrameCount + thisLineInputs);
                                     latestInputLine = currentLine;
                                     latestLineIsInput = true;
 
-                                    groupFramecount = 0;
-                                    groupInputs = null;
-                                } else
-                                    groupFramecount += thisLineFramecount;
+                                    groupFrameCount = 0;
+                                    groupActions = null;
+                                } else {
+                                    groupFrameCount += thisLineFrameCount;
+                                }
                             } else {
-                                if (groupFramecount == 4 &&
-                                    (groupInputs.Contains(",D,X") || groupInputs.Contains(",D,C") || groupInputs.Contains('Z'))) {
+                                if (groupFrameCount == 4 &&
+                                    groupActions != null &&
+                                    (groupActions.Contains(",D,X") || groupActions.Contains(",D,C") || groupActions.Contains('Z'))) {
                                     // combining 4DX demos
                                     if ((DX11ThroughTransition || thisLineInputs.Contains('J') || thisLineInputs.Contains('K') ||
                                          thisLineInputs.Contains('S') || thisLineInputs.Contains('Q'))
                                         && !thisLineInputs.Contains('Z')) {
-                                        if (groupInputs.Contains('X'))
+                                        if (groupActions.Contains('X')) {
                                             sb.AppendLine("   4,D,X");
-                                        else if (groupInputs.Contains('C'))
+                                        } else if (groupActions.Contains('C')) {
                                             sb.AppendLine("   4,D,C");
-                                        else
+                                        } else {
                                             sb.AppendLine("   4,Z");
+                                        }
 
                                         latestInputLine = currentLine;
                                         latestLineIsInput = true;
@@ -1046,23 +1050,23 @@ namespace CelesteStudio {
 
                                         savedComments.Clear();
 
-                                        groupFramecount = thisLineFramecount;
-                                        groupInputs = thisLineInputs;
+                                        groupFrameCount = thisLineFrameCount;
+                                        groupActions = thisLineInputs;
                                     } else {
-                                        groupFramecount += thisLineFramecount;
-                                        groupInputs = ",Z" + thisLineInputs.Replace(",X", "").Replace(",C", "").Replace(",Z", "");
+                                        groupFrameCount += thisLineFrameCount;
+                                        groupActions = ",Z" + thisLineInputs.Replace(",X", "").Replace(",C", "").Replace(",Z", "");
                                     }
 
                                     DX11ThroughTransition = false;
                                 } else {
-                                    if (groupFramecount == 11 && IsScreenTransition(thisLineFramecount) &&
-                                        (groupInputs == ",D,X" || groupInputs == ",D,C"))
+                                    if (groupFrameCount == 11 && IsScreenTransition(thisLineFrameCount) && groupActions is ",D,X" or ",D,C") {
                                         DX11ThroughTransition = true;
-                                    else if (groupInputs != null)
+                                    } else if (groupActions != null) {
                                         DX11ThroughTransition = false;
+                                    }
 
-                                    if (groupFramecount != 0) {
-                                        sb.Append(groupFramecount + groupInputs);
+                                    if (groupFrameCount != 0) {
+                                        sb.Append(FormattedInput(groupFrameCount, groupActions));
                                         latestInputLine = currentLine;
                                         latestLineIsInput = true;
                                     }
@@ -1077,20 +1081,20 @@ namespace CelesteStudio {
                                     }
 
                                     savedComments.Clear();
-                                    groupFramecount = thisLineFramecount;
-                                    groupInputs = thisLineInputs;
+                                    groupFrameCount = thisLineFrameCount;
+                                    groupActions = thisLineInputs;
                                 }
                             }
-                        } else if (c == '#')
+                        } else if (c == '#') {
                             savedComments.Add(GetWholeLine());
-                        else {
-                            if (groupFramecount != 0) {
-                                sb.Append(groupFramecount + groupInputs);
+                        } else {
+                            if (groupFrameCount != 0) {
+                                sb.Append(FormattedInput(groupFrameCount, groupActions));
                                 latestInputLine = currentLine;
                                 latestLineIsInput = true;
                             }
 
-                            groupInputs = null;
+                            groupActions = null;
                             sb.AppendLine();
                             currentLine++;
 
@@ -1102,17 +1106,18 @@ namespace CelesteStudio {
 
                             savedComments.Clear();
 
-                            if (c != '\r')
+                            if (c != '\r') {
                                 latestLineIsInput = false;
+                            }
 
                             sb.Append(GetWholeLine());
 
-                            groupFramecount = 0;
+                            groupFrameCount = 0;
                         }
                     }
 
-                    if (groupFramecount != 0) {
-                        sb.Append(groupFramecount + groupInputs);
+                    if (groupFrameCount != 0) {
+                        sb.Append(FormattedInput(groupFrameCount, groupActions));
                         latestInputLine = currentLine;
                         latestLineIsInput = true;
                     }
@@ -1133,9 +1138,9 @@ namespace CelesteStudio {
                 richText.SelectedText = sb.ToString();
 
                 Place selectPos;
-                if (latestLineIsInput)
+                if (latestLineIsInput) {
                     selectPos = new(4, start + latestInputLine);
-                else {
+                } else {
                     int selectLine = start + currentLine;
                     selectPos = new(richText[selectLine].Count, selectLine);
                 }
@@ -1149,8 +1154,9 @@ namespace CelesteStudio {
                         while ((c = text[reader]) != '\r') {
                             sb.Append(c);
                             reader++;
-                            if (reader >= text.Length)
+                            if (reader >= text.Length) {
                                 return false;
+                            }
                         }
 
                         sb.AppendLine();
@@ -1167,12 +1173,13 @@ namespace CelesteStudio {
                 }
 
                 if ("1234567890".Contains(c = GetFirstLetter())) {
-                    groupFramecount = EvaluateFramecount();
-                    if (IsScreenTransition(groupFramecount)) {
+                    groupFrameCount = EvaluateFrameCount();
+                    if (IsScreenTransition(groupFrameCount)) {
                         richText.Selection = originalSelection;
                         return;
-                    } else
-                        groupInputs = EvaluateInputs();
+                    } else {
+                        groupActions = EvaluateInputs();
+                    }
                 } else {
                     richText.Selection = originalSelection;
                     return;
@@ -1182,9 +1189,9 @@ namespace CelesteStudio {
                     text = richText.GetLineText(start) + "\r\n" + text;
                     reader = 0;
                     if ("1234567890".Contains(c = GetFirstLetter())) {
-                        int framecount = EvaluateFramecount();
-                        if (EvaluateInputs() == groupInputs) {
-                            groupFramecount += framecount;
+                        int frameCount = EvaluateFrameCount();
+                        if (EvaluateInputs() == groupActions) {
+                            groupFrameCount += frameCount;
                             continue;
                         }
                     } else if (c == '#') {
@@ -1197,8 +1204,10 @@ namespace CelesteStudio {
 
                 start++;
 
-                foreach (string comment in savedComments)
+                foreach (string comment in savedComments) {
                     sb.Insert(0, comment + "\r\n");
+                }
+
                 savedComments.Clear();
 
                 reader = text.Length;
@@ -1206,9 +1215,9 @@ namespace CelesteStudio {
                     text += "\r\n" + richText.GetLineText(end);
                     NextLine();
                     if ("1234567890".Contains(c = GetFirstLetter())) {
-                        int framecount = EvaluateFramecount();
-                        if (EvaluateInputs() == groupInputs && !IsScreenTransition(framecount)) {
-                            groupFramecount += framecount;
+                        int frameCount = EvaluateFrameCount();
+                        if (EvaluateInputs() == groupActions && !IsScreenTransition(frameCount)) {
+                            groupFrameCount += frameCount;
                             continue;
                         }
                     } else if (c == '#') {
@@ -1221,10 +1230,12 @@ namespace CelesteStudio {
 
                 end--;
 
-                sb.Append(groupFramecount + groupInputs);
+                sb.Append(FormattedInput(groupFrameCount, groupActions));
 
-                foreach (string comment in savedComments)
+                foreach (string comment in savedComments) {
                     sb.Append("\r\n" + comment);
+                }
+
                 savedComments.Clear();
 
                 richText.Selection = new(richText, 0, start, richText[end].Count, end);
@@ -1237,13 +1248,20 @@ namespace CelesteStudio {
 
             // local functions
 
+            string FormattedInput(int frameCount, string action) {
+                return new InputRecord(frameCount + action).ToString();
+            }
+
             char GetFirstLetter() {
-                if (reader >= text.Length)
+                if (reader >= text.Length) {
                     return ' ';
+                }
+
                 while (text[reader] == ' ') {
                     reader++;
-                    if (reader >= text.Length)
+                    if (reader >= text.Length) {
                         return ' ';
+                    }
                 }
 
                 return text[reader];
@@ -1253,12 +1271,14 @@ namespace CelesteStudio {
                 string value = ""; // what's returned
                 while (true) {
                     if (reader < text.Length) {
-                        if ((c = text[reader]) != '\r')
+                        if ((c = text[reader]) != '\r') {
                             value += c;
-                        else
+                        } else {
                             break;
-                    } else
+                        }
+                    } else {
                         return value;
+                    }
 
                     reader++;
                 }
@@ -1266,7 +1286,7 @@ namespace CelesteStudio {
                 return value;
             }
 
-            int EvaluateFramecount() {
+            int EvaluateFrameCount() {
                 string frameCountString = Convert.ToString(c);
                 reader++;
                 while (reader < text.Length && "0123456789".Contains(c = text[reader])) {
@@ -1279,12 +1299,15 @@ namespace CelesteStudio {
 
             bool NextLine() {
                 // if return false -> end of selection; stop.
-                if (reader >= text.Length)
+                if (reader >= text.Length) {
                     return false;
+                }
+
                 while (text[reader] != '\r') {
                     reader++;
-                    if (reader >= text.Length)
+                    if (reader >= text.Length) {
                         return false;
+                    }
                 }
 
                 reader += 2;
@@ -1298,17 +1321,23 @@ namespace CelesteStudio {
 
             string GetWholeLine() {
                 string value = "";
-                if (c == '\r')
+                if (c == '\r') {
                     return value;
+                }
+
                 value += c;
-                for (reader++; reader < text.Length && (c = text[reader]) != '\r'; reader++)
+                for (reader++; reader < text.Length && (c = text[reader]) != '\r'; reader++) {
                     value += c;
+                }
+
                 return value;
             }
 
             bool IsScreenTransition(int frameCount) {
-                if (frameCount < 40)
+                if (frameCount < 40) {
                     return false;
+                }
+
                 int i = reader + 1;
                 int lineCount = 0;
                 while (true) {
@@ -1317,30 +1346,39 @@ namespace CelesteStudio {
                         int targetLine;
                         for (int a = 1; (targetLine = end + a) < richText.LinesCount; a++) {
                             string line = richText.GetLineText(targetLine);
-                            foreach (char b in line)
+                            foreach (char b in line) {
                                 if (b != ' ') {
-                                    if (line.Length >= 4 && line.Substring(0, 4) == "#lvl")
+                                    if (line.Length >= 4 && line.Substring(0, 4) == "#lvl") {
                                         return true;
+                                    }
+
                                     return false;
                                 }
+                            }
                         }
 
                         return false;
                     }
 
-                    if (!" \n\r".Contains(c = text[i]))
+                    if (!" \n\r".Contains(c = text[i])) {
                         break;
+                    }
+
                     if (c == '\r') {
-                        if (lineCount >= 2)
+                        if (lineCount >= 2) {
                             return false;
+                        }
+
                         lineCount++;
                     }
 
                     i++;
                 }
 
-                if (text.Substring(i, 4) == "#lvl")
+                if (text.Substring(i, 4) == "#lvl") {
                     return true;
+                }
+
                 return false;
             }
         }
