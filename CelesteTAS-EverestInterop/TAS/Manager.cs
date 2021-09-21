@@ -274,31 +274,32 @@ namespace TAS {
         public static void SetInputs(InputFrame input) {
             GamePadDPad pad = default;
             GamePadThumbSticks sticks = default;
-            GamePadState state = default;
+            GamePadState gamePadState = default;
             if (input.HasActions(Actions.Feather)) {
                 SetFeather(input, ref pad, ref sticks);
             } else {
                 SetDPad(input, ref pad, ref sticks);
             }
 
-            SetState(input, ref state, ref pad, ref sticks);
+            SetGamePadState(input, ref gamePadState, ref pad, ref sticks);
 
             bool found = false;
             for (int i = 0; i < 4; i++) {
                 MInput.GamePads[i].Update();
                 if (MInput.GamePads[i].Attached) {
                     found = true;
-                    MInput.GamePads[i].CurrentState = state;
+                    MInput.GamePads[i].CurrentState = gamePadState;
                 }
             }
 
             if (!found) {
-                MInput.GamePads[0].CurrentState = state;
+                MInput.GamePads[0].CurrentState = gamePadState;
                 MInput.GamePads[0].Attached = true;
             }
 
+            MInput.Keyboard.PreviousState = MInput.Keyboard.CurrentState;
             if (input.HasActions(Actions.Confirm)) {
-                MInput.Keyboard.CurrentState = new KeyboardState(Keys.Enter);
+                MInput.Keyboard.CurrentState = new KeyboardState(BindingHelper.Confirm2);
             } else {
                 MInput.Keyboard.CurrentState = new KeyboardState();
             }
@@ -321,7 +322,7 @@ namespace TAS {
             sticks = new GamePadThumbSticks(new Vector2(0, 0), new Vector2(0, 0));
         }
 
-        private static void SetState(InputFrame input, ref GamePadState state, ref GamePadDPad pad, ref GamePadThumbSticks sticks) {
+        private static void SetGamePadState(InputFrame input, ref GamePadState state, ref GamePadDPad pad, ref GamePadThumbSticks sticks) {
             state = new GamePadState(
                 sticks,
                 new GamePadTriggers(input.HasActions(Actions.Journal) ? 1f : 0f, 0),

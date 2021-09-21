@@ -75,14 +75,17 @@ namespace TAS {
         }
 
         private static string LibTasKeys(InputFrame inputFrame) {
+            // Keys.C
             if (inputFrame.HasActions(Actions.Confirm)) {
-                return "ff0d";
+                return "63";
             }
 
+            // Keys.R
             if (inputFrame.HasActions(Actions.Restart)) {
                 return "72";
             }
 
+            // Keys.Tab
             if (inputFrame.HasActions(Actions.Journal)) {
                 return "ff09";
             }

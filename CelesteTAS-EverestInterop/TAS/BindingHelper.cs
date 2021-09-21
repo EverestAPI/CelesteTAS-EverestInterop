@@ -34,6 +34,7 @@ namespace TAS {
         public static Buttons Right => Buttons.DPadRight;
         public static Buttons Journal => Buttons.LeftTrigger;
         public static Buttons DemoDash { get; } = Buttons.RightShoulder;
+        public static Keys Confirm2 => Keys.C;
 
         // ReSharper disable once UnusedMember.Local
         [EnableRun]
@@ -100,7 +101,7 @@ namespace TAS {
             SetBinding("Talk", DashAndTalkAndCancel);
 
             SetBinding("Pause", Pause);
-            SetBinding("Confirm", new[] {Keys.Enter}, JumpAndConfirm);
+            SetBinding("Confirm", new[] {Confirm2}, JumpAndConfirm);
             SetBinding("Cancel", DashAndTalkAndCancel, Dash2AndCancel);
 
             SetBinding("Journal", Journal);
