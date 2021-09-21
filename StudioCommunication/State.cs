@@ -7,11 +7,10 @@ namespace StudioCommunication {
         Enable = 1,
         Record = 2,
         FrameStep = 4,
-        Disable = 8,
-        Delay = 16
+        Disable = 8
     }
 
     internal static class StateExtension {
-        public static bool HasFlag(this State state,  State flag) => (state & flag) == flag;
+        public static bool HasFlag(this State state, State flag) => (state & flag) == flag;
     }
 }

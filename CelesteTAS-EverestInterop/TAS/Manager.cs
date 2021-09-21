@@ -204,16 +204,6 @@ namespace TAS {
                     NextState |= State.Disable;
                 }
             } else if (NextState.HasFlag(State.Enable)) {
-                if (Engine.Scene is Level level && (!level.CanPause || Engine.FreezeTimer > 0)) {
-                    Controller.RefreshInputs(true);
-                    if (Controller.Current != null &&
-                        (Controller.Current.HasActions(Actions.Restart) || Controller.Current.HasActions(Actions.Start))) {
-                        NextState |= State.Delay;
-                        FrameLoops = FastForward.DefaultSpeed;
-                        return;
-                    }
-                }
-
                 EnableRun();
             } else if (NextState.HasFlag(State.Disable)) {
                 DisableRun();
