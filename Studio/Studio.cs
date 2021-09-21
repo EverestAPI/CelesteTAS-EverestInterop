@@ -820,7 +820,7 @@ namespace CelesteStudio {
             richText.Selection = new Range(richText, 0, start, richText[end].Count, end);
             string text = richText.SelectedText;
 
-            bool comment = new Regex(@"^[^\s#]", RegexOptions.Multiline).IsMatch(text);
+            bool anyUncomment = new Regex(@"^[^#\n\r]", RegexOptions.Multiline).IsMatch(text);
 
             int i = 0;
             bool startLine = true;
@@ -828,7 +828,7 @@ namespace CelesteStudio {
             while (i < text.Length) {
                 char c = text[i++];
                 if (startLine) {
-                    if (c != '#' || comment) {
+                    if (c != '#' || anyUncomment) {
                         if (c != '\r') {
                             sb.Append('#');
                         }
