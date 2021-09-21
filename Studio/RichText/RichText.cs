@@ -10,6 +10,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
+using CelesteStudio.Entities;
 using CelesteStudio.Properties;
 
 namespace CelesteStudio.RichText {
@@ -1676,7 +1677,7 @@ namespace CelesteStudio.RichText {
 
             DoCaretVisible();
         }
-        
+
         /// <summary>
         /// Move caret to first position
         /// </summary>
@@ -3436,7 +3437,7 @@ namespace CelesteStudio.RichText {
 
         private void TryMoveCursorBehindFrame() {
             Place start = Selection.Start;
-            if (Selection.IsEmpty && SyntaxHighlighter.InputRecordRegex.IsMatch(Lines[start.iLine])) {
+            if (Selection.IsEmpty && InputRecord.InputFrameRegex.IsMatch(Lines[start.iLine])) {
                 Selection.Start = new Place(4, start.iLine);
             }
         }

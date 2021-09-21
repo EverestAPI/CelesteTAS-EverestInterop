@@ -4,17 +4,14 @@ using System.Drawing;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Xml;
+using CelesteStudio.Entities;
 
 namespace CelesteStudio.RichText {
     public class SyntaxHighlighter : IDisposable {
-        public static readonly Regex CommentRegex = new(@"^\s*#.*", RegexOptions.Compiled);
-        public static readonly Regex BreakPointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
-        public static readonly Regex InputRecordRegex = new(@"^( {3}\d| {2}\d{2}| \d{3}|\d{4})", RegexOptions.Compiled);
-
-        readonly Dictionary<string, SyntaxDescriptor> descByXMLfileNames = new();
-
         public static readonly Style AquaStyle = new TextStyle(Brushes.Aqua, null, FontStyle.Regular);
+
         public static readonly Style BlueBoldStyle = new TextStyle(Brushes.Blue, null, FontStyle.Bold);
+
         //styles
         public static readonly Style BlueStyle = new TextStyle(Brushes.Blue, null, FontStyle.Regular);
         public static readonly Style BoldStyle = new TextStyle(null, null, FontStyle.Bold);
@@ -30,6 +27,7 @@ namespace CelesteStudio.RichText {
         public static readonly Style RedBgStyle = new TextStyle(Brushes.White, new SolidBrush(Color.FromArgb(224, 64, 64)), FontStyle.Regular);
         public static readonly Style RedStyle = new TextStyle(Brushes.Red, null, FontStyle.Regular);
         public static readonly Style SteelBlueBgStyle = new TextStyle(Brushes.White, Brushes.SteelBlue, FontStyle.Regular);
+        readonly Dictionary<string, SyntaxDescriptor> descByXMLfileNames = new();
 
         public static RegexOptions RegexCompiledOption {
             get {
@@ -250,7 +248,7 @@ namespace CelesteStudio.RichText {
                 int charEnd = tb[start].Count;
                 Range line = new(tb, 0, start, charEnd, start);
 
-                if (InputRecordRegex.IsMatch(line.Text)) {
+                if (InputRecord.InputFrameRegex.IsMatch(line.Text)) {
                     Range sub = new(tb, 0, start, 4, start);
                     sub.SetStyle(RedStyle);
 
@@ -268,7 +266,7 @@ namespace CelesteStudio.RichText {
 
                         charStart++;
                     }
-                } else if (BreakPointRegex.IsMatch(line.Text)) {
+                } else if (InputRecord.BreakpointRegex.IsMatch(line.Text)) {
                     int index = line.Text.IndexOf("***", StringComparison.Ordinal);
                     Range sub = new(tb, index, start, index + 3, start);
                     sub.SetStyle(RedBgStyle);
@@ -289,7 +287,7 @@ namespace CelesteStudio.RichText {
                         sub.SetStyle(RedBgStyle);
                     }
                 } else {
-                    line.SetStyle(GreenStyle, CommentRegex);
+                    line.SetStyle(GreenStyle, InputRecord.CommentLineRegex);
                     line.SetStyle(ChocolateStyle);
                 }
 

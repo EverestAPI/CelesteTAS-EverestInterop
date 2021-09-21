@@ -280,7 +280,7 @@ namespace CelesteStudio {
                                 ClearUncommentedBreakpoints();
                                 break;
                             case Keys.OemPeriod: // ctrl + OemPeriod -> insert/remove breakpoint
-                                InsertOrRemoveText(SyntaxHighlighter.BreakPointRegex, "***");
+                                InsertOrRemoveText(InputRecord.BreakpointRegex, "***");
                                 break;
                             case Keys.R: // ctrl + R
                                 InsertRoomName();
@@ -314,7 +314,7 @@ namespace CelesteStudio {
                                 ClearBreakpoints();
                                 break;
                             case Keys.OemPeriod: // ctrl + shift + OemPeriod -> insert/remove savestate
-                                InsertOrRemoveText(SyntaxHighlighter.BreakPointRegex, "***S");
+                                InsertOrRemoveText(InputRecord.BreakpointRegex, "***S");
                                 break;
                             case Keys.R: // ctrl + shift + R
                                 InsertConsoleLoadCommand();
@@ -811,42 +811,36 @@ namespace CelesteStudio {
         }
 
         private void CommentText() {
-            Range range = richText.Selection.Clone();
+            Range origRange = richText.Selection.Clone();
 
-            range.Normalize();
-            int start = range.Start.iLine;
-            int end = range.End.iLine;
+            origRange.Normalize();
+            int start = origRange.Start.iLine;
+            int end = origRange.End.iLine;
 
-            richText.Selection = new Range(richText, 0, start, richText[end].Count, end);
-            string text = richText.SelectedText;
+            List<InputRecord> selection = lines.GetRange(start, end - start + 1);
 
-            bool anyUncomment = new Regex(@"^[^#\n\r]", RegexOptions.Multiline).IsMatch(text);
+            bool anyUncomment = selection.Any(record => !record.IsEmptyLine && !record.IsComment);
 
-            int i = 0;
-            bool startLine = true;
-            StringBuilder sb = new(text.Length + end - start);
-            while (i < text.Length) {
-                char c = text[i++];
-                if (startLine) {
-                    if (c != '#' || anyUncomment) {
-                        if (c != '\r') {
-                            sb.Append('#');
-                        }
-
-                        sb.Append(c);
+            StringBuilder result = new();
+            foreach (InputRecord record in selection) {
+                if (anyUncomment) {
+                    if (!record.IsEmptyLine) {
+                        result.Append("#");
                     }
 
-                    startLine = false;
-                } else if (c == '\n') {
-                    sb.AppendLine();
-                    startLine = true;
-                } else if (c != '\r') {
-                    sb.Append(c);
+                    result.AppendLine(record.ToString());
+                } else {
+                    result.AppendLine(InputRecord.CommentSymbolRegex.Replace(record.ToString(), string.Empty));
                 }
             }
 
-            richText.SelectedText = sb.ToString();
-            if (range.IsEmpty) {
+            // remove last line break
+            result.Length -= Environment.NewLine.Length;
+
+            richText.Selection = new Range(richText, 0, start, richText[end].Count, end);
+            richText.SelectedText = result.ToString();
+
+            if (origRange.IsEmpty) {
                 if (start < richText.LinesCount - 1) {
                     start++;
                 }
@@ -1559,11 +1553,11 @@ namespace CelesteStudio {
         }
 
         private void insertRemoveBreakPointToolStripMenuItem_Click(object sender, EventArgs e) {
-            InsertOrRemoveText(SyntaxHighlighter.BreakPointRegex, "***");
+            InsertOrRemoveText(InputRecord.BreakpointRegex, "***");
         }
 
         private void insertRemoveSavestateBreakPointToolStripMenuItem_Click(object sender, EventArgs e) {
-            InsertOrRemoveText(SyntaxHighlighter.BreakPointRegex, "***S");
+            InsertOrRemoveText(InputRecord.BreakpointRegex, "***S");
         }
 
         private void saveAsToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -1705,7 +1699,7 @@ namespace CelesteStudio {
             StringBuilder sb = new();
             Regex swapKeyRegex = new($"{key1}|{key2}");
             foreach (string lineText in text.Split('\n')) {
-                if (SyntaxHighlighter.InputRecordRegex.IsMatch(lineText)) {
+                if (InputRecord.InputFrameRegex.IsMatch(lineText)) {
                     sb.AppendLine(swapKeyRegex.Replace(lineText, match => match.Value == key1.ToString() ? key2.ToString() : key1.ToString()));
                 } else {
                     sb.AppendLine(lineText);

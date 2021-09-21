@@ -29,6 +29,11 @@ namespace CelesteStudio.Entities {
         private const char Delimiter = ',';
         private static readonly Regex DuplicateZeroRegex = new(@"^0+([^.])", RegexOptions.Compiled);
         private static readonly Regex FloatRegex = new(@"^,-?([0-9.]+)", RegexOptions.Compiled);
+        private static readonly Regex EmptyLineRegex = new(@"^\s*$", RegexOptions.Compiled);
+        public static readonly Regex CommentSymbolRegex = new(@"^\s*#", RegexOptions.Compiled);
+        public static readonly Regex CommentLineRegex = new(@"^\s*#.*", RegexOptions.Compiled);
+        public static readonly Regex BreakpointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
+        public static readonly Regex InputFrameRegex = new(@"^( {3}\d| {2}\d{2}| \d{3}|\d{4})", RegexOptions.Compiled);
 
         private static readonly Actions[][] ExclusiveActions = {
             new[] {Actions.Dash, Actions.Dash2, Actions.DemoDash, Actions.DemoDash2},
@@ -38,14 +43,27 @@ namespace CelesteStudio.Entities {
         };
 
         public InputRecord(string line) {
-            Notes = string.Empty;
+            Notes = line;
 
             int index = 0;
             Frames = ReadFrames(line, ref index);
             if (Frames == 0) {
-                Notes = line;
+                if (CommentSymbolRegex.IsMatch(line)) {
+                    IsComment = true;
+                } else if (BreakpointRegex.IsMatch(line)) {
+                    IsBreakpoint = true;
+                } else if (InputFrameRegex.IsMatch(line)) {
+                    IsInput = true;
+                } else if (EmptyLineRegex.IsMatch(line)) {
+                    IsEmptyLine = true;
+                } else {
+                    IsCommand = true;
+                }
+
                 return;
             }
+
+            IsInput = true;
 
             while (index < line.Length) {
                 char c = line[index];
@@ -122,7 +140,12 @@ namespace CelesteStudio.Entities {
         public Actions Actions { get; set; }
         public string AngleStr { get; set; }
         public string UpperLimitStr { get; set; }
-        public string Notes { get; set; }
+        public string Notes { get; }
+        public bool IsInput { get; }
+        public bool IsComment { get; }
+        public bool IsCommand { get; }
+        public bool IsBreakpoint { get; }
+        public bool IsEmptyLine { get; }
 
         private int ReadFrames(string line, ref int start) {
             bool foundFrames = false;
