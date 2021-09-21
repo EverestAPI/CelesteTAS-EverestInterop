@@ -22,7 +22,8 @@ namespace TAS.Input {
         Jump2 = 1 << 11,
         Dash2 = 1 << 12,
         Confirm = 1 << 13,
-        DemoDash = 1 << 14
+        DemoDash = 1 << 14,
+        DemoDash2 = 1 << 15
     }
 
     public record InputFrame {
@@ -77,6 +78,10 @@ namespace TAS.Input {
 
             if (HasActions(Actions.DemoDash)) {
                 sb.Append(",Z");
+            }
+
+            if (HasActions(Actions.DemoDash2)) {
+                sb.Append(",V");
             }
 
             if (HasActions(Actions.Dash)) {
@@ -179,6 +184,9 @@ namespace TAS.Input {
                         break;
                     case 'Z':
                         inputFrame.Actions ^= Actions.DemoDash;
+                        break;
+                    case 'V':
+                        inputFrame.Actions ^= Actions.DemoDash2;
                         break;
                     case 'F':
                         inputFrame.Actions ^= Actions.Feather;

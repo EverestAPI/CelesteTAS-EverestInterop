@@ -18,6 +18,7 @@ namespace TAS {
         static BindingHelper() {
             if (typeof(GameInput).GetFieldInfo("DemoDash") == null && typeof(GameInput).GetFieldInfo("CrouchDash") == null) {
                 DemoDash = 0;
+                DemoDash2 = 0;
             }
         }
 
@@ -34,6 +35,7 @@ namespace TAS {
         public static Buttons Right => Buttons.DPadRight;
         public static Buttons Journal => Buttons.LeftTrigger;
         public static Buttons DemoDash { get; } = Buttons.RightShoulder;
+        public static Buttons DemoDash2 { get; } = Buttons.RightStick;
         public static Keys Confirm2 => Keys.C;
 
         // ReSharper disable once UnusedMember.Local
@@ -68,7 +70,7 @@ namespace TAS {
             settings.Set("Dash", new List<Keys>());
             settings.Set("Talk", new List<Keys>());
             settings.Set("Pause", new List<Keys>());
-            settings.Set("Confirm", new List<Keys>());
+            settings.Set("Confirm", new[] {Confirm2});
             settings.Set("Cancel", new List<Keys>());
             settings.Set("Journal", new List<Keys>());
             settings.Set("QuickRestart", new List<Keys>());
@@ -107,7 +109,7 @@ namespace TAS {
             SetBinding("Journal", Journal);
             SetBinding("QuickRestart", QuickRestart);
 
-            SetBinding("DemoDash", DemoDash);
+            SetBinding("DemoDash", DemoDash, DemoDash2);
 
             SetBinding("RightMoveOnly");
             SetBinding("LeftMoveOnly");

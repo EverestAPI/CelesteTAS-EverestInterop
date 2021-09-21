@@ -21,7 +21,8 @@ namespace CelesteStudio.Entities {
         Jump2 = 1 << 11,
         Dash2 = 1 << 12,
         Confirm = 1 << 13,
-        DemoDash = 1 << 14
+        DemoDash = 1 << 14,
+        DemoDash2 = 1 << 15,
     }
 
     public class InputRecord {
@@ -30,7 +31,7 @@ namespace CelesteStudio.Entities {
         private static readonly Regex FloatRegex = new(@"^,-?([0-9.]+)", RegexOptions.Compiled);
 
         private static readonly Actions[][] ExclusiveActions = {
-            new[] {Actions.Dash, Actions.Dash2, Actions.DemoDash},
+            new[] {Actions.Dash, Actions.Dash2, Actions.DemoDash, Actions.DemoDash2},
             new[] {Actions.Jump, Actions.Jump2},
             new[] {Actions.Up, Actions.Down, Actions.Feather},
             new[] {Actions.Left, Actions.Right, Actions.Feather},
@@ -91,6 +92,9 @@ namespace CelesteStudio.Entities {
                         break;
                     case 'Z':
                         Actions ^= Actions.DemoDash;
+                        break;
+                    case 'V':
+                        Actions ^= Actions.DemoDash2;
                         break;
                     case 'F':
                         Actions ^= Actions.Feather;
@@ -228,6 +232,10 @@ namespace CelesteStudio.Entities {
 
             if (HasActions(Actions.DemoDash)) {
                 sb.Append($"{Delimiter}Z");
+            }
+
+            if (HasActions(Actions.DemoDash2)) {
+                sb.Append($"{Delimiter}V");
             }
 
             if (HasActions(Actions.Dash)) {

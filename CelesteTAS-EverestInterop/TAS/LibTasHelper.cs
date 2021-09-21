@@ -140,8 +140,13 @@ namespace TAS {
             }
 
             if (inputFrame.HasActions(Actions.DemoDash)) {
-                // Playback via libtas requires the right shoulder to be set to demodash
+                // Playback via libtas requires the right shoulder to be set to demodash in game settings
                 buttons[10] = ']';
+            }
+
+            if (inputFrame.HasActions(Actions.DemoDash2)) {
+                // Playback via libtas requires the right stick to be set to demodash in game settings
+                buttons[8] = ')';
             }
 
             if (inputFrame.HasActions(Actions.Dash)) {

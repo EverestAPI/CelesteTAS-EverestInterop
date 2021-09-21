@@ -330,6 +330,7 @@ namespace TAS {
                     (input.HasActions(Actions.Jump) ? BindingHelper.JumpAndConfirm : 0)
                     | (input.HasActions(Actions.Jump2) ? BindingHelper.Jump2 : 0)
                     | (input.HasActions(Actions.DemoDash) ? BindingHelper.DemoDash : 0)
+                    | (input.HasActions(Actions.DemoDash2) ? BindingHelper.DemoDash2 : 0)
                     | (input.HasActions(Actions.Dash) ? BindingHelper.DashAndTalkAndCancel : 0)
                     | (input.HasActions(Actions.Dash2) ? BindingHelper.Dash2AndCancel : 0)
                     | (input.HasActions(Actions.Grab) ? BindingHelper.Grab : 0)

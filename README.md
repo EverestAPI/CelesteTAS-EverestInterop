@@ -33,6 +33,7 @@ e.g. 123,R,J (For 123 frames, hold Right and Jump)
 - X = Dash / Talk / Cancel
 - C = Dash Bind 2 / Cancel
 - Z = Crouch Dash (Celeste v1.4+ only)
+- V = Crouch Dash 2 (Celeste v1.4+ only)
 - G = Grab
 - S = Pause
 - Q = Quick Reset
