@@ -1791,7 +1791,7 @@ namespace CelesteStudio {
         }
 
         private void toggleTriggerHitboxesToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.Instance?.ToggleGameSetting("HideTriggerHitboxes");
+            StudioCommunicationServer.Instance?.ToggleGameSetting("ShowTriggerHitboxes");
         }
 
         private void toggleSimplifiedHitboxesToolStripMenuItem_Click(object sender, EventArgs e) {
