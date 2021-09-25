@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -94,14 +95,13 @@ namespace TAS.EverestInterop.InfoHUD {
                 Type type = AllTypes[typeFullName];
 
                 IEnumerable<string> memberNames = splitText.Skip(1).ToArray();
-                bool toFrame = false;
-                if (memberNames.Last() == "toFrame()") {
+                string helperMethod = memberNames.Last();
+                if (helperMethod is "toFrame()" or "toPixelPerFrame()") {
                     memberNames = memberNames.SkipLast().ToArray();
-                    toFrame = true;
                 }
 
                 if (GetGetMethod(type, memberNames.First()) is {IsStatic: true} || GetFieldInfo(type, memberNames.First()) is {IsStatic: true}) {
-                    return FormatValue(GetMemberValue(type, null, memberNames), toFrame);
+                    return FormatValue(GetMemberValue(type, null, memberNames), helperMethod);
                 }
 
                 if (Engine.Scene is Level level) {
@@ -115,11 +115,11 @@ namespace TAS.EverestInterop.InfoHUD {
                         }
 
                         if (entities == null) {
-                            return $"Ignore NPE Warning";
+                            return "Ignore NPE Warning";
                         }
 
                         return string.Join("", entities.Select(entity => {
-                            string value = FormatValue(GetMemberValue(type, entity, memberNames), toFrame);
+                            string value = FormatValue(GetMemberValue(type, entity, memberNames), helperMethod);
 
                             if (entities.Count > 1) {
                                 if (entity.GetEntityData()?.ToEntityId().ToString() is { } id) {
@@ -132,7 +132,7 @@ namespace TAS.EverestInterop.InfoHUD {
                             return value;
                         }));
                     } else if (type == typeof(Level)) {
-                        return FormatValue(GetMemberValue(type, level, memberNames), toFrame);
+                        return FormatValue(GetMemberValue(type, level, memberNames), helperMethod);
                     }
                 }
 
@@ -150,18 +150,24 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-        private static string FormatValue(object obj, bool toFrame) {
+        private static string FormatValue(object obj, string helperMethod) {
             if (obj == null) {
                 return string.Empty;
             }
 
             if (obj is Vector2 vector2) {
+                if (helperMethod == "toPixelPerFrame()") {
+                    vector2 = GameInfo.ConvertSpeedUnit(vector2, SpeedUnit.PixelPerFrame);
+                }
+
                 return vector2.ToSimpleString(Settings.RoundCustomInfo);
             }
 
             if (obj is float floatValue) {
-                if (toFrame) {
+                if (helperMethod == "toFrame()") {
                     return GameInfo.ConvertToFrames(floatValue).ToString();
+                } else if (helperMethod == "toPixelPerFrame()") {
+                    return GameInfo.ConvertSpeedUnit(floatValue, SpeedUnit.PixelPerFrame).ToString(CultureInfo.InvariantCulture);
                 } else {
                     return Settings.RoundCustomInfo ? $"{floatValue:F2}" : $"{floatValue:F12}";
                 }

@@ -104,6 +104,7 @@ The contents of the curly brackets will be converted to actual data, here are so
 - `{Level.field...}` Get the value of level field. e.g. `Wind: {Level.Wind}`
 - `{ClassName.staticField.field...}` Non-entity and non-level types that can get the value of a static field.
 - `{Player.AutoJumpTimer.toFrame()}` add `toFrame()` to the end can change the float value to frames.
+- `{Player.Speed.toPixelPerFrame()}` add `toPixelPerFrame()` to the end can change the float/vector2 speed unit to pixel/frame.
 - `AutoJump: {Player.AutoJump} ({Player.AutoJumpTimer.toFrame()})`
 - `ForceMoveX: {Player.forceMoveX} ({Player.forceMoveXTimer.toFrame()})`
 - `Theo: {TheoCrystal.ExactPosition}`

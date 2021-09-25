@@ -183,6 +183,7 @@ namespace TAS.EverestInterop {
         private bool roundSpeed = true;
         private bool roundVelocity = true;
         private bool roundCustomInfo = true;
+        private SpeedUnit speedUnit = SpeedUnit.PixelPerSecond;
 
         public bool RoundPosition {
             get => roundPosition;
@@ -216,6 +217,19 @@ namespace TAS.EverestInterop {
             }
         }
 
+        public SpeedUnit SpeedUnit {
+            get => speedUnit;
+            set {
+                speedUnit = value;
+                GameInfo.Update();
+            }
+        }
+
         #endregion
+    }
+
+    public enum SpeedUnit {
+        PixelPerSecond,
+        PixelPerFrame
     }
 }

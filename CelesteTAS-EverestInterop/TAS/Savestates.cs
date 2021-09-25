@@ -22,14 +22,12 @@ namespace TAS {
             {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.ExactStatusWithoutTime)), null},
             {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LevelName)), null},
             {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.ChapterTime)), null},
-            {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastVel)), null},
-            {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastExactVel)), null},
-            {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerVel)), null},
-            {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerExactVel)), null},
             {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.WatchingInfo)), null},
             {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.CustomInfo)), null},
             {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPos)), null},
+            {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastDiff)), null},
             {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerPos)), null},
+            {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerDiff)), null},
             {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.DashTime)), null},
             {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.Frozen)), null}
         };

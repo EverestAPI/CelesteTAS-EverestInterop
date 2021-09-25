@@ -70,9 +70,10 @@ namespace TAS.Input {
         public bool CanPlayback => CurrentFrameInTas < Inputs.Count;
         public bool NeedsToWait => Manager.IsLoading();
 
-        public bool HasFastForward => (FastForwards.LastValueOrDefault()?.Frame ?? -1) > CurrentFrameInTas;
-        public int FastForwardSpeed => FastForwards.LastValueOrDefault()?.Speed ?? 1;
-        public bool Break => FastForwards.LastValueOrDefault()?.Frame == CurrentFrameInTas;
+        private FastForward LastFastForward => FastForwards.LastValueOrDefault();
+        public bool HasFastForward => LastFastForward != null && LastFastForward.Frame > CurrentFrameInTas;
+        public int FastForwardSpeed => LastFastForward == null ? 1 : Calc.Clamp(LastFastForward.Frame - CurrentFrameInTas, 1, LastFastForward.Speed);
+        public bool Break => LastFastForward?.Frame == CurrentFrameInTas;
 
         private string Checksum => string.IsNullOrEmpty(checksum) ? checksum = CalcChecksum(Inputs.Count - 1) : checksum;
 

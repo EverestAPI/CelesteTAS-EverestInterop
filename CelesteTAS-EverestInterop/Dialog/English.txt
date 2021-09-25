@@ -67,6 +67,9 @@ TAS_ROUND_POSITION=           Round Position
 TAS_ROUND_SPEED=              Round Speed
 TAS_ROUND_VELOCITY=           Round Velocity
 TAS_ROUND_CUSTOM_INFO=        Round Custom Info
+TAS_UNIT_OF_SPEED=            Unit of Speed
+TAS_PIXEL_PER_SECOND=         Pixel/Second
+TAS_PIXEL_PER_FRAME=          Pixel/Frame
 
 # ================================== Relaunch Required Submenu ==================================
 TAS_LAUNCH_STUDIO_AT_BOOT=    Launch Studio At Boot
@@ -113,16 +116,3 @@ TAS_TRANSPARENT=              Transparent
 TAS_OFF=                      OFF
 TAS_OVERRIDE=                 Override
 TAS_APPEND=                   Append
-
-
-
-
-
-
-
-
-
-
-
-
-

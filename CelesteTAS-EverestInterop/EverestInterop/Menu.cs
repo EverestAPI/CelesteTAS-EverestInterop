@@ -102,6 +102,11 @@ namespace TAS.EverestInterop {
                     Settings.RoundVelocity = value));
                 subMenu.Add(new TextMenu.OnOff("Round Custom Info".ToDialogText(), Settings.RoundCustomInfo).Change(value =>
                     Settings.RoundCustomInfo = value));
+                subMenu.Add(new TextMenuExt.EnumerableSlider<SpeedUnit>("Unit of Speed".ToDialogText(), new[] {
+                        new KeyValuePair<SpeedUnit, string>(SpeedUnit.PixelPerSecond, "Pixel Per Second".ToDialogText()),
+                        new KeyValuePair<SpeedUnit, string>(SpeedUnit.PixelPerFrame, "Pixel Per Frame".ToDialogText())
+                    }, Settings.SpeedUnit)
+                    .Change(value => Settings.SpeedUnit = value));
             });
         }
 

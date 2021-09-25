@@ -41,13 +41,11 @@ namespace TAS {
         public static string ExactStatusWithoutTime = string.Empty;
         public static string LevelName = string.Empty;
         public static string ChapterTime = string.Empty;
-        public static string LastVel = string.Empty;
-        public static string LastExactVel = string.Empty;
-        public static string LastPlayerSeekerVel = string.Empty;
-        public static string LastPlayerSeekerExactVel = string.Empty;
         public static string WatchingInfo = string.Empty;
         public static string CustomInfo = string.Empty;
+        public static Vector2Double LastDiff;
         public static Vector2Double LastPos;
+        public static Vector2Double LastPlayerSeekerDiff;
         public static Vector2Double LastPlayerSeekerPos;
         public static float DashTime;
         public static bool Frozen;
@@ -108,7 +106,8 @@ namespace TAS {
             }
         }
 
-        private static int FramesPerSecond => (int) Math.Round(1 / Engine.RawDeltaTime);
+        private static int FramesPerGameSecond => (int) Math.Round(1 / Engine.RawDeltaTime / Engine.TimeRateB);
+        private static int FramesPerRealSecond => (int) Math.Round(1 / Engine.RawDeltaTime);
 
         public static string GetStudioInfo(bool exact) {
             List<string> infos = new() {exact ? ExactStatus : Status};
@@ -209,15 +208,18 @@ namespace TAS {
                 if (player != null) {
                     string pos = GetAdjustedPos(player.Position, player.PositionRemainder, out string exactPos);
                     string speed = GetAdjustedSpeed(player.Speed, out string exactSpeed);
-                    Vector2Double diff = (player.GetMoreExactPosition() - LastPos) * FramesPerSecond;
-                    string velocity = GetAdjustedVelocity(diff, out string exactVelocity);
+                    Vector2Double diff = player.GetMoreExactPosition() - LastPos;
                     if (!Frozen && updateVel) {
-                        LastVel = velocity;
-                        LastExactVel = exactVelocity;
+                        LastDiff = diff;
                     } else {
-                        velocity = LastVel;
-                        exactVelocity = LastExactVel;
+                        diff = LastDiff;
                     }
+
+                    if (TasSettings.SpeedUnit == SpeedUnit.PixelPerSecond) {
+                        diff *= FramesPerRealSecond;
+                    }
+
+                    string velocity = GetAdjustedVelocity(diff, out string exactVelocity);
 
                     string polarVel = $"Fly:   {diff.Length():F2}, {diff.Angle():F5}°";
 
@@ -243,15 +245,18 @@ namespace TAS {
                     if (playerSeeker != null) {
                         pos = GetAdjustedPos(playerSeeker.Position, playerSeeker.PositionRemainder, out exactPos);
                         speed = GetAdjustedSpeed(PlayerSeekerSpeed(playerSeeker), out exactSpeed);
-                        diff = (playerSeeker.GetMoreExactPosition() - LastPlayerSeekerPos) * FramesPerSecond;
-                        velocity = GetAdjustedVelocity(diff, out exactVelocity);
+                        diff = playerSeeker.GetMoreExactPosition() - LastPlayerSeekerPos;
                         if (!Frozen && updateVel) {
-                            LastPlayerSeekerVel = velocity;
-                            LastPlayerSeekerExactVel = exactVelocity;
+                            LastPlayerSeekerDiff = diff;
                         } else {
-                            velocity = LastPlayerSeekerVel;
-                            exactVelocity = LastPlayerSeekerVel;
+                            diff = LastPlayerSeekerDiff;
                         }
+
+                        if (TasSettings.SpeedUnit == SpeedUnit.PixelPerSecond) {
+                            diff *= FramesPerRealSecond;
+                        }
+
+                        velocity = GetAdjustedVelocity(diff, out exactVelocity);
 
                         polarVel = $"Chase: {diff.Length():F2}, {diff.Angle():F5}°";
                         dashCooldown = PlayerSeekerDashTimer(playerSeeker).ToCeilingFrames();
@@ -300,7 +305,7 @@ namespace TAS {
                         timers += $"DashCD({dashCooldown}) ";
                     }
 
-                    if ((FramesPerSecond != 60 || Math.Abs(Engine.TimeRateB - 1f) > 0.000001f || SaveData.Instance.Assists.SuperDashing) &&
+                    if ((FramesPerGameSecond != 60 || SaveData.Instance.Assists.SuperDashing) &&
                         DashTime.ToCeilingFrames() >= 1 && player.StateMachine.State == Player.StDash) {
                         DashTime = CoroutineWaitTimer(StateMachineCurrentCoroutine(player.StateMachine));
                         timers += $"Dash({DashTime.ToCeilingFrames()}) ";
@@ -471,8 +476,29 @@ namespace TAS {
         }
 
         private static string GetAdjustedSpeed(Vector2 speed, out string exactSpeed) {
+            speed = ConvertSpeedUnit(speed, TasSettings.SpeedUnit);
             exactSpeed = $"Speed: {speed.ToSimpleString(false)}";
             return $"Speed: {speed.ToSimpleString(CelesteTasModule.Settings.RoundSpeed)}";
+        }
+
+        public static Vector2 ConvertSpeedUnit(Vector2 speed, SpeedUnit speedUnit) {
+            if (speedUnit == SpeedUnit.PixelPerFrame) {
+                speed /= FramesPerGameSecond;
+            } else {
+                speed *= Engine.TimeRateB;
+            }
+
+            return speed;
+        }
+
+        public static float ConvertSpeedUnit(float speed, SpeedUnit speedUnit) {
+            if (speedUnit == SpeedUnit.PixelPerFrame) {
+                speed /= FramesPerGameSecond;
+            } else {
+                speed *= Engine.TimeRateB;
+            }
+
+            return speed;
         }
 
         private static string GetAdjustedVelocity(Vector2Double diff, out string exactVelocity) {
@@ -483,18 +509,20 @@ namespace TAS {
         private static string GetAdjustedRetainedSpeed(Player player, out string exactRetainedSpeed) {
             if (PlayerRetainedSpeedTimer(player) is float retainedSpeedTimer and > 0f) {
                 int timer = retainedSpeedTimer.ToCeilingFrames();
-                exactRetainedSpeed = $"Retained({timer}): {PlayerRetainedSpeed(player):F12}";
-                return $"Retained({timer}): {PlayerRetainedSpeed(player).ToString(TasSettings.RoundSpeed ? "F2" : "F12")}";
+                float retainedSpeed = ConvertSpeedUnit(PlayerRetainedSpeed(player), TasSettings.SpeedUnit);
+                exactRetainedSpeed = $"Retained({timer}): {retainedSpeed:F12}";
+                return $"Retained({timer}): {retainedSpeed.ToString(TasSettings.RoundSpeed ? "F2" : "F12")}";
             } else {
                 return exactRetainedSpeed = string.Empty;
             }
         }
 
         private static string GetAdjustedLiftBoost(Player player, out string exactLiftBoost) {
-            if (PlayerLiftBoost(player) is var liftBoostVector2 && liftBoostVector2 != Vector2.Zero) {
+            if (PlayerLiftBoost(player) is var liftBoost && liftBoost != Vector2.Zero) {
+                liftBoost = ConvertSpeedUnit(liftBoost, TasSettings.SpeedUnit);
                 int timer = ActorLiftSpeedTimer(player).ToCeilingFrames();
-                exactLiftBoost = $"LiftBoost({timer}): {liftBoostVector2.ToSimpleString(false)}";
-                return $"LiftBoost({timer}): {liftBoostVector2.ToSimpleString(TasSettings.RoundSpeed)}";
+                exactLiftBoost = $"LiftBoost({timer}): {liftBoost.ToSimpleString(false)}";
+                return $"LiftBoost({timer}): {liftBoost.ToSimpleString(TasSettings.RoundSpeed)}";
             } else {
                 return exactLiftBoost = string.Empty;
             }

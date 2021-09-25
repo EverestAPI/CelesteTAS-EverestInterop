@@ -111,7 +111,6 @@ namespace TAS.EverestInterop {
 
             if (skipBaseUpdate) {
                 OrigGameUpdate(self, gameTime);
-                GameInfo.Update(true);
             }
         }
 

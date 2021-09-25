@@ -1854,6 +1854,10 @@ namespace CelesteStudio {
             StudioCommunicationServer.Instance?.ToggleGameSetting("RoundCustomInfo");
         }
 
+        private void unitOfSpeedToolStripMenuItem_Click(object sender, EventArgs e) {
+            StudioCommunicationServer.Instance?.ToggleGameSetting("SpeedUnit");
+        }
+
         private void copyCustomInfoTemplateToClipboardToolStripMenuItem_Click(object sender, EventArgs e) {
             StudioCommunicationServer.Instance?.ToggleGameSetting("Copy Custom Info Template to Clipboard");
         }
