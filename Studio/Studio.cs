@@ -932,6 +932,7 @@ namespace CelesteStudio {
                     }
                 }
             } else {
+                selection = selection.Where(record => !record.IsEmptyLine).ToList();
                 selection.Sort((a, b) => !a.IsInput && b.IsInput ? 1 : 0);
                 for (int i = 0; i < selection.Count; i++) {
                     InputRecord inputRecord = selection[i];
@@ -961,7 +962,9 @@ namespace CelesteStudio {
                         }
                     }
                 } else {
-                    result.AppendLine(groupInputs.First().ToString());
+                    foreach (InputRecord inputRecord in groupInputs) {
+                        result.AppendLine(inputRecord.ToString());
+                    }
                 }
             }
 
@@ -1030,8 +1033,8 @@ namespace CelesteStudio {
                         // #lvl_roomName
                         // 4,D,X <- dont convert this input
                         if (current.Previous(record => record.IsInput) is not { } previous || !previous.IsScreenTransition() ||
-                            previous.Previous(record => record.IsInput) is not { } previous2 || !previous2.HasActions(dash) ||
-                            previous2.Frames > 11) {
+                            previous.Previous(record => record.IsInput) is not { } previous2 || previous2.Actions != (dash | Actions.Down) ||
+                            previous2.Frames > 15 - current.Frames) {
                             current.Actions = GetDemoDashActions(current);
                         }
                     }
