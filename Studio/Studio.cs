@@ -1001,7 +1001,8 @@ namespace CelesteStudio {
             for (int i = start; i <= end; i++) {
                 InputRecord current = InputRecords[i];
 
-                if (current.IsInput && current.Actions is (Actions.Dash | Actions.Down) or (Actions.Dash2 | Actions.Down) && current.Frames <= 4) {
+                if (current.IsInput && current.Actions is (Actions.Dash | Actions.Down) or (Actions.Dash2 | Actions.Down) &&
+                    current.Frames is >= 1 and <= 4) {
                     Actions dash = current.HasActions(Actions.Dash) ? Actions.Dash : Actions.Dash2;
                     InputRecord next = i == end ? null : InputRecords[i + 1];
 
@@ -1093,11 +1094,6 @@ namespace CelesteStudio {
                                         && text[text.Length - 1] == ','
                                         && text.Substring(0, text.Length - 1) == line;
                     if (text != line && !featherAngle) {
-                        if (old.Frames == 0 && input.Frames == 0 && old.ZeroPadding == input.ZeroPadding && old.Equals(input) &&
-                            line.Length >= text.Length) {
-                            line = string.Empty;
-                        }
-
                         Range oldRange = tas.Selection;
                         if (!string.IsNullOrEmpty(line)) {
                             InputRecord.ProcessExclusiveActions(old, input);

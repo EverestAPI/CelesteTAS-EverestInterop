@@ -51,7 +51,7 @@ namespace CelesteStudio.Entities {
 
             int index = 0;
             Frames = ReadFrames(line, ref index);
-            if (Frames == 0) {
+            if (Frames <= 0) {
                 if (CommentSymbolRegex.IsMatch(line)) {
                     IsComment = true;
                     if (CommentRoomRegex.IsMatch(line)) {
@@ -66,11 +66,13 @@ namespace CelesteStudio.Entities {
                 } else {
                     IsCommand = true;
                 }
-
-                return;
+            } else {
+                IsInput = true;
             }
 
-            IsInput = true;
+            if (!IsInput) {
+                return;
+            }
 
             while (index < line.Length) {
                 char c = line[index];
