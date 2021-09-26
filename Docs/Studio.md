@@ -18,6 +18,8 @@ Can be used instead of notepad or similar for easier editing of the TAS file. It
 - Ctrl + R: Insert room name
 - Ctrl + Shift + R: Insert Console Load Command at Current Location and Speed
 - Ctrl + T: Insert Current in-game Time
+- Ctrl + L: Combine Consecutive Same Inputs
+- Ctrl + Shift + L: Force Combine Inputs Frames
 - Ctrl + Down/Up: Go to Comment or Breakpoint
 - Ctrl + Left Click on Read/Play Command: Open the read file / Go to the Play Line
 - Right Click on Input Area: Show Input Context Menu

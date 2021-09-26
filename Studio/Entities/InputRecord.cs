@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 using CelesteStudio.Properties;
@@ -30,6 +31,7 @@ namespace CelesteStudio.Entities {
         private static readonly Regex DuplicateZeroRegex = new(@"^0+([^.])", RegexOptions.Compiled);
         private static readonly Regex FloatRegex = new(@"^,-?([0-9.]+)", RegexOptions.Compiled);
         private static readonly Regex EmptyLineRegex = new(@"^\s*$", RegexOptions.Compiled);
+        private static readonly Regex CommentRoomRegex = new(@"^\s*#lvl_", RegexOptions.Compiled);
         public static readonly Regex CommentSymbolRegex = new(@"^\s*#", RegexOptions.Compiled);
         public static readonly Regex CommentLineRegex = new(@"^\s*#.*", RegexOptions.Compiled);
         public static readonly Regex BreakpointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
@@ -42,14 +44,19 @@ namespace CelesteStudio.Entities {
             new[] {Actions.Left, Actions.Right, Actions.Feather},
         };
 
+        public InputRecord(int frames, string actions) : this($"{frames},{actions}") { }
+
         public InputRecord(string line) {
-            Notes = line;
+            LineText = line;
 
             int index = 0;
             Frames = ReadFrames(line, ref index);
             if (Frames == 0) {
                 if (CommentSymbolRegex.IsMatch(line)) {
                     IsComment = true;
+                    if (CommentRoomRegex.IsMatch(line)) {
+                        IsRoomComment = true;
+                    }
                 } else if (BreakpointRegex.IsMatch(line)) {
                     IsBreakpoint = true;
                 } else if (InputFrameRegex.IsMatch(line)) {
@@ -140,9 +147,10 @@ namespace CelesteStudio.Entities {
         public Actions Actions { get; set; }
         public string AngleStr { get; set; }
         public string UpperLimitStr { get; set; }
-        public string Notes { get; }
+        public string LineText { get; }
         public bool IsInput { get; }
         public bool IsComment { get; }
+        public bool IsRoomComment { get; }
         public bool IsCommand { get; }
         public bool IsBreakpoint { get; }
         public bool IsEmptyLine { get; }
@@ -224,10 +232,10 @@ namespace CelesteStudio.Entities {
         }
 
         public override string ToString() {
-            return Frames == 0 ? Notes : Frames.ToString().PadLeft(ZeroPadding, '0').PadLeft(4, ' ') + ActionsToString();
+            return Frames == 0 ? LineText : Frames.ToString().PadLeft(ZeroPadding, '0').PadLeft(4, ' ') + ActionsToString();
         }
 
-        private string ActionsToString() {
+        public string ActionsToString() {
             StringBuilder sb = new();
             if (HasActions(Actions.Left)) {
                 sb.Append($"{Delimiter}L");
@@ -303,28 +311,63 @@ namespace CelesteStudio.Entities {
             return sb.ToString();
         }
 
-        public override bool Equals(object obj) {
-            return obj is InputRecord && (InputRecord) obj == this;
-        }
-
-        public override int GetHashCode() {
-            return Frames ^ (int) Actions + AngleStr.GetHashCode() + UpperLimitStr.GetHashCode();
-        }
-
-        public static bool operator ==(InputRecord one, InputRecord two) {
-            bool oneNull = (object) one == null;
-            bool twoNull = (object) two == null;
-            if (oneNull != twoNull) {
+        public bool IsScreenTransition() {
+            if (!IsInput || Actions != Actions.None) {
                 return false;
-            } else if (oneNull) {
-                return true;
             }
 
-            return one.Actions == two.Actions && one.AngleStr == two.AngleStr && one.UpperLimitStr == two.UpperLimitStr;
+            List<InputRecord> inputRecords = Studio.Instance.InputRecords;
+            int index = inputRecords.IndexOf(this);
+            if (index == -1) {
+                return false;
+            }
+
+            while (++index < inputRecords.Count) {
+                InputRecord next = inputRecords[index];
+                if (next.IsEmptyLine) {
+                    continue;
+                }
+
+                return next.IsRoomComment;
+            }
+
+            return false;
         }
 
-        public static bool operator !=(InputRecord one, InputRecord two) {
-            return !(one == two);
+        public InputRecord Previous(Func<InputRecord, bool> predicate = null) {
+            predicate ??= _ => true;
+            List<InputRecord> inputRecords = Studio.Instance.InputRecords;
+            int index = inputRecords.IndexOf(this);
+            if (index == -1) {
+                return null;
+            }
+
+            while (--index >= 0) {
+                InputRecord previous = inputRecords[index];
+                if (predicate(previous)) {
+                    return previous;
+                }
+            }
+
+            return null;
+        }
+
+        public InputRecord Next(Func<InputRecord, bool> predicate = null) {
+            predicate ??= _ => true;
+            List<InputRecord> inputRecords = Studio.Instance.InputRecords;
+            int index = inputRecords.IndexOf(this);
+            if (index == -1) {
+                return null;
+            }
+
+            while (++index < inputRecords.Count) {
+                InputRecord next = inputRecords[index];
+                if (predicate(next)) {
+                    return next;
+                }
+            }
+
+            return null;
         }
 
         public static void ProcessExclusiveActions(InputRecord oldInput, InputRecord newInput) {

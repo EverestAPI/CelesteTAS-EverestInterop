@@ -23,7 +23,7 @@ namespace CelesteStudio {
 
         public static Studio Instance;
 
-        private readonly List<InputRecord> lines = new();
+        public readonly List<InputRecord> InputRecords = new();
 
         private DateTime lastChanged = DateTime.MinValue;
         private FormWindowState lastWindowState = FormWindowState.Normal;
@@ -43,7 +43,7 @@ namespace CelesteStudio {
 
             Text = TitleBarText;
 
-            lines.Add(new InputRecord(""));
+            InputRecords.Add(new InputRecord(""));
             EnableStudio(false);
 
             DesktopLocation = Settings.Default.DesktopLocation;
@@ -267,72 +267,75 @@ namespace CelesteStudio {
                     if (e.Modifiers == Keys.Control) {
                         // only ctrl
                         switch (e.KeyCode) {
-                            case Keys.S: // ctrl + S
+                            case Keys.S: // Ctrl + S
                                 richText.SaveFile();
                                 break;
-                            case Keys.O: // ctrl + O
+                            case Keys.O: // Ctrl + O
                                 OpenFile();
                                 break;
-                            case Keys.K: // ctrl + K
+                            case Keys.K: // Ctrl + K
                                 CommentText();
                                 break;
-                            case Keys.P: // ctrl + P
+                            case Keys.P: // Ctrl + P
                                 ClearUncommentedBreakpoints();
                                 break;
-                            case Keys.OemPeriod: // ctrl + OemPeriod -> insert/remove breakpoint
+                            case Keys.OemPeriod: // Ctrl + OemPeriod -> insert/remove breakpoint
                                 InsertOrRemoveText(InputRecord.BreakpointRegex, "***");
                                 break;
-                            case Keys.R: // ctrl + R
+                            case Keys.R: // Ctrl + R
                                 InsertRoomName();
                                 break;
-                            case Keys.F: // ctrl + F
+                            case Keys.F: // Ctrl + F
                                 DialogUtils.ShowFindDialog(richText);
                                 break;
-                            case Keys.G: // ctrl + G
+                            case Keys.G: // Ctrl + G
                                 DialogUtils.ShowGoToDialog(richText);
                                 break;
-                            case Keys.T: // ctrl + T
+                            case Keys.T: // Ctrl + T
                                 InsertTime();
                                 break;
-                            case Keys.Down: // ctrl + Down
+                            case Keys.Down: // Ctrl + Down
                                 GoDownCommentAndBreakpoint(e);
                                 break;
-                            case Keys.Up: // ctrl + Up
+                            case Keys.Up: // Ctrl + Up
                                 GoUpCommentAndBreakpoint(e);
                                 break;
-                            case Keys.L: // ctrl + L
-                                CombineInputs(false);
+                            case Keys.L: // Ctrl + L
+                                CombineInputs(true);
+                                break;
+                            case Keys.I: // Ctrl + I
+                                ConvertDashToDemoDash();
                                 break;
                         }
                     } else if (e.Modifiers == (Keys.Control | Keys.Shift)) {
-                        // ctrl + shift:
+                        // Ctrl + Shift:
                         switch (e.KeyCode) {
-                            case Keys.S: // ctrl + shift + S
+                            case Keys.S: // Ctrl + Shift + S
                                 SaveAsFile();
                                 break;
-                            case Keys.P: // ctrl + shift + P
+                            case Keys.P: // Ctrl + Shift + P
                                 ClearBreakpoints();
                                 break;
-                            case Keys.OemPeriod: // ctrl + shift + OemPeriod -> insert/remove savestate
+                            case Keys.OemPeriod: // Ctrl + Shift + OemPeriod -> insert/remove savestate
                                 InsertOrRemoveText(InputRecord.BreakpointRegex, "***S");
                                 break;
-                            case Keys.R: // ctrl + shift + R
+                            case Keys.R: // Ctrl + Shift + R
                                 InsertConsoleLoadCommand();
                                 break;
-                            case Keys.C: // ctrl + shift + C
+                            case Keys.C: // Ctrl + Shift + C
                                 CopyGameInfo();
                                 break;
-                            case Keys.D: // ctrl + shift + D
+                            case Keys.D: // Ctrl + Shift + D
                                 StudioCommunicationServer.Instance?.ExternalReset();
                                 break;
-                            case Keys.L: // ctrl + shift + L
-                                CombineInputs(true);
+                            case Keys.L: // Ctrl + Shift + L
+                                CombineInputs(false);
                                 break;
                         }
                     } else if (e.Modifiers == (Keys.Control | Keys.Alt)) {
-                        // ctrl + alt:
+                        // Ctrl + Alt:
                         if (e.KeyCode == Keys.P) {
-                            // ctrl + alt + P
+                            // Ctrl + Alt + P
                             CommentUncommentAllBreakpoints();
                         }
                     }
@@ -761,9 +764,9 @@ namespace CelesteStudio {
         private void tasText_LineRemoved(object sender, LineRemovedEventArgs e) {
             int count = e.Count;
             while (count-- > 0) {
-                InputRecord input = lines[e.Index];
+                InputRecord input = InputRecords[e.Index];
                 totalFrames -= input.Frames;
-                lines.RemoveAt(e.Index);
+                InputRecords.RemoveAt(e.Index);
             }
 
             UpdateStatusBar();
@@ -774,7 +777,7 @@ namespace CelesteStudio {
             int count = e.Count;
             while (count-- > 0) {
                 InputRecord input = new(tas.GetLineText(e.Index + count));
-                lines.Insert(e.Index, input);
+                InputRecords.Insert(e.Index, input);
                 totalFrames += input.Frames;
             }
 
@@ -817,7 +820,7 @@ namespace CelesteStudio {
             int start = origRange.Start.iLine;
             int end = origRange.End.iLine;
 
-            List<InputRecord> selection = lines.GetRange(start, end - start + 1);
+            List<InputRecord> selection = InputRecords.GetRange(start, end - start + 1);
 
             bool anyUncomment = selection.Any(record => !record.IsEmptyLine && !record.IsComment);
 
@@ -853,527 +856,191 @@ namespace CelesteStudio {
             richText.ScrollLeft();
         }
 
-        private void CombineInputs(bool variationDeletionMode) {
-            // data setup
-            Range range = richText.Selection.Clone();
-            range.Normalize();
+        private void CombineInputs(bool sameActions) {
+            Range origRange = richText.Selection.Clone();
 
-            int start = range.Start.iLine;
-            int end = range.End.iLine;
+            origRange.Normalize();
+            int start = origRange.Start.iLine;
+            int end = origRange.End.iLine;
 
-            Range originalSelection = richText.Selection.Clone();
-            richText.Selection = new Range(richText, 0, start, richText[end].Count, end);
-
-            string text = richText.SelectedText;
-            StringBuilder sb = new(text.Length);
-
-            // manipulation setup
-            int reader = 0;
-            char c;
-            string groupActions;
-            int groupFrameCount;
-            List<string> savedComments = new();
-
-            bool endsWithEmptyLine = false;
-
-            int currentLine;
-            if (start != end) {
-                // tracking the best place to put cursor after finished
-                currentLine = 0;
-                int latestInputLine = 0;
-                bool latestLineIsInput = false;
-
-                if (variationDeletionMode) {
-                    int emptyLineCount = 0;
-
-                    if (!SkipToInput()) {
-                        // happens if selection doesnt have inputs
-                        richText.Selection = originalSelection;
-                        return;
-                    }
-
-                    groupFrameCount = EvaluateFrameCount();
-                    groupActions = EvaluateInputs();
-
-                    bool addingScreenTransition = false;
-                    while (NextLine()) {
-                        if ("0123456789".Contains(c = GetFirstLetter())) {
-                            int thisLineFrameCount = EvaluateFrameCount();
-                            if (IsScreenTransition(thisLineFrameCount)) {
-                                addingScreenTransition = true;
-                                sb.AppendLine(FormattedInput(groupFrameCount, groupActions));
-                                currentLine++;
-                                foreach (string comment in savedComments) {
-                                    sb.AppendLine(comment);
-                                    currentLine++;
-                                }
-
-                                savedComments.Clear();
-                                sb.AppendLine(thisLineFrameCount + EvaluateInputs());
-                                latestInputLine = currentLine;
-                                currentLine++;
-
-                                groupFrameCount = 0;
-                            } else {
-                                if (groupFrameCount == 0) {
-                                    sb.AppendLine();
-                                    currentLine++;
-                                }
-
-                                groupFrameCount += thisLineFrameCount;
-                            }
-
-                            emptyLineCount = 0;
-                        } else if (c == '#') {
-                            if (addingScreenTransition) {
-                                sb.AppendLine();
-                                currentLine++;
-                                sb.Append(GetWholeLine());
-                                addingScreenTransition = false;
-                            } else {
-                                savedComments.Add(GetWholeLine());
-                            }
-
-                            emptyLineCount = 0;
-                        } else if (c != '\r') {
-                            if (groupFrameCount != 0) {
-                                sb.Append(FormattedInput(groupFrameCount, groupActions));
-                                latestInputLine = currentLine;
-                            }
-
-                            sb.AppendLine();
-                            currentLine++;
-                            groupFrameCount = 0;
-
-                            foreach (string comment in savedComments) {
-                                sb.AppendLine(comment);
-                                currentLine++;
-                            }
-
-                            savedComments.Clear();
-
-                            sb.Append(GetWholeLine());
-                        } else {
-                            emptyLineCount++;
-                        }
-                    }
-
-                    if (groupFrameCount != 0) {
-                        sb.Append(FormattedInput(groupFrameCount, groupActions));
-                        latestInputLine = currentLine;
-                        latestLineIsInput = true;
-                    }
-
-                    foreach (string comment in savedComments) {
-                        sb.AppendLine();
-                        currentLine++;
-                        sb.Append(comment);
-                        latestLineIsInput = false;
-                    }
-
-                    for (int i = 0; i < emptyLineCount; i++) {
-                        sb.AppendLine();
-                        currentLine++;
-                    }
-
-                    if (endsWithEmptyLine) {
-                        sb.AppendLine();
-                        currentLine++;
-                    }
-                } else {
-                    if (!SkipToInput()) {
-                        // happens if selection doesnt have inputs
-                        richText.Selection = originalSelection;
-                        return;
-                    }
-
-                    // converting for example 4dx 11r/rx to 15rz
-                    bool DX11ThroughTransition = false;
-
-                    groupFrameCount = EvaluateFrameCount();
-                    groupActions = EvaluateInputs();
-
-                    while (NextLine()) {
-                        if ("1234567890".Contains(c = GetFirstLetter())) {
-                            int thisLineFrameCount = EvaluateFrameCount();
-                            string thisLineInputs;
-                            if ((thisLineInputs = EvaluateInputs()) == groupActions) {
-                                if (IsScreenTransition(thisLineFrameCount)) {
-                                    sb.AppendLine(FormattedInput(groupFrameCount, groupActions));
-                                    currentLine++;
-                                    foreach (string comment in savedComments) {
-                                        sb.AppendLine(comment);
-                                        currentLine++;
-                                    }
-
-                                    savedComments.Clear();
-                                    sb.Append(thisLineFrameCount + thisLineInputs);
-                                    latestInputLine = currentLine;
-                                    latestLineIsInput = true;
-
-                                    groupFrameCount = 0;
-                                    groupActions = null;
-                                } else {
-                                    groupFrameCount += thisLineFrameCount;
-                                }
-                            } else {
-                                if (groupFrameCount == 4 &&
-                                    groupActions != null &&
-                                    (groupActions.Contains(",D,X") || groupActions.Contains(",D,C") || groupActions.Contains('Z'))) {
-                                    // combining 4DX demos
-                                    if ((DX11ThroughTransition || thisLineInputs.Contains('J') || thisLineInputs.Contains('K') ||
-                                         thisLineInputs.Contains('S') || thisLineInputs.Contains('Q'))
-                                        && !thisLineInputs.Contains('Z')) {
-                                        if (groupActions.Contains('X')) {
-                                            sb.AppendLine("   4,D,X");
-                                        } else if (groupActions.Contains('C')) {
-                                            sb.AppendLine("   4,D,C");
-                                        } else {
-                                            sb.AppendLine("   4,Z");
-                                        }
-
-                                        latestInputLine = currentLine;
-                                        latestLineIsInput = true;
-                                        currentLine++;
-
-                                        foreach (string comment in savedComments) {
-                                            sb.AppendLine(comment);
-                                            currentLine++;
-                                            latestLineIsInput = false;
-                                        }
-
-                                        savedComments.Clear();
-
-                                        groupFrameCount = thisLineFrameCount;
-                                        groupActions = thisLineInputs;
-                                    } else {
-                                        groupFrameCount += thisLineFrameCount;
-                                        groupActions = ",Z" + thisLineInputs.Replace(",X", "").Replace(",C", "").Replace(",Z", "");
-                                    }
-
-                                    DX11ThroughTransition = false;
-                                } else {
-                                    if (groupFrameCount == 11 && IsScreenTransition(thisLineFrameCount) && groupActions is ",D,X" or ",D,C") {
-                                        DX11ThroughTransition = true;
-                                    } else if (groupActions != null) {
-                                        DX11ThroughTransition = false;
-                                    }
-
-                                    if (groupFrameCount != 0) {
-                                        sb.Append(FormattedInput(groupFrameCount, groupActions));
-                                        latestInputLine = currentLine;
-                                        latestLineIsInput = true;
-                                    }
-
-                                    sb.AppendLine();
-                                    currentLine++;
-
-                                    foreach (string comment in savedComments) {
-                                        sb.AppendLine(comment);
-                                        currentLine++;
-                                        latestLineIsInput = false;
-                                    }
-
-                                    savedComments.Clear();
-                                    groupFrameCount = thisLineFrameCount;
-                                    groupActions = thisLineInputs;
-                                }
-                            }
-                        } else if (c == '#') {
-                            savedComments.Add(GetWholeLine());
-                        } else {
-                            if (groupFrameCount != 0) {
-                                sb.Append(FormattedInput(groupFrameCount, groupActions));
-                                latestInputLine = currentLine;
-                                latestLineIsInput = true;
-                            }
-
-                            groupActions = null;
-                            sb.AppendLine();
-                            currentLine++;
-
-                            foreach (string comment in savedComments) {
-                                sb.AppendLine(comment);
-                                currentLine++;
-                                latestLineIsInput = false;
-                            }
-
-                            savedComments.Clear();
-
-                            if (c != '\r') {
-                                latestLineIsInput = false;
-                            }
-
-                            sb.Append(GetWholeLine());
-
-                            groupFrameCount = 0;
-                        }
-                    }
-
-                    if (groupFrameCount != 0) {
-                        sb.Append(FormattedInput(groupFrameCount, groupActions));
-                        latestInputLine = currentLine;
-                        latestLineIsInput = true;
-                    }
-
-                    foreach (string comment in savedComments) {
-                        sb.AppendLine();
-                        currentLine++;
-                        sb.Append(comment);
-                        latestLineIsInput = false;
-                    }
-
-                    if (endsWithEmptyLine) {
-                        sb.AppendLine();
-                        currentLine++;
-                    }
-                }
-
-                richText.SelectedText = sb.ToString();
-
-                Place selectPos;
-                if (latestLineIsInput) {
-                    selectPos = new(4, start + latestInputLine);
-                } else {
-                    int selectLine = start + currentLine;
-                    selectPos = new(richText[selectLine].Count, selectLine);
-                }
-
-                richText.Selection = new Range(richText, selectPos, selectPos);
-
-
-                bool SkipToInput() {
-                    // returns false if the selection doesnt have any inputs
-                    while (!"0123456789 ".Contains(c = GetFirstLetter())) {
-                        while ((c = text[reader]) != '\r') {
-                            sb.Append(c);
-                            reader++;
-                            if (reader >= text.Length) {
-                                return false;
-                            }
-                        }
-
-                        sb.AppendLine();
-                        currentLine++;
-                        NextLine();
-                    }
-
-                    return c != ' ';
-                }
-            } else {
-                if (variationDeletionMode) {
-                    richText.Selection = originalSelection;
+            if (start == end) {
+                if (!sameActions) {
                     return;
                 }
 
-                if ("1234567890".Contains(c = GetFirstLetter())) {
-                    groupFrameCount = EvaluateFrameCount();
-                    if (IsScreenTransition(groupFrameCount)) {
-                        richText.Selection = originalSelection;
-                        return;
-                    } else {
-                        groupActions = EvaluateInputs();
-                    }
-                } else {
-                    richText.Selection = originalSelection;
+                InputRecord currentRecord = InputRecords[start];
+                if (!currentRecord.IsInput) {
                     return;
                 }
 
-                for (start--; start >= 0; start--) {
-                    text = richText.GetLineText(start) + "\r\n" + text;
-                    reader = 0;
-                    if ("1234567890".Contains(c = GetFirstLetter())) {
-                        int frameCount = EvaluateFrameCount();
-                        if (EvaluateInputs() == groupActions) {
-                            groupFrameCount += frameCount;
-                            continue;
-                        }
-                    } else if (c == '#') {
-                        savedComments.Add(GetWholeLine());
-                        continue;
-                    }
-
-                    break; // if didnt 'continue;'
-                }
-
-                start++;
-
-                foreach (string comment in savedComments) {
-                    sb.Insert(0, comment + "\r\n");
-                }
-
-                savedComments.Clear();
-
-                reader = text.Length;
-                for (end++; end < richText.LinesCount; end++) {
-                    text += "\r\n" + richText.GetLineText(end);
-                    NextLine();
-                    if ("1234567890".Contains(c = GetFirstLetter())) {
-                        int frameCount = EvaluateFrameCount();
-                        if (EvaluateInputs() == groupActions && !IsScreenTransition(frameCount)) {
-                            groupFrameCount += frameCount;
-                            continue;
-                        }
-                    } else if (c == '#') {
-                        savedComments.Add(GetWholeLine());
-                        continue;
-                    }
-
-                    break; // if didnt 'continue;'
-                }
-
-                end--;
-
-                sb.Append(FormattedInput(groupFrameCount, groupActions));
-
-                foreach (string comment in savedComments) {
-                    sb.Append("\r\n" + comment);
-                }
-
-                savedComments.Clear();
-
-                richText.Selection = new(richText, 0, start, richText[end].Count, end);
-                richText.SelectedText = sb.ToString();
-                richText.Selection = new(richText, 4, start, 4, start);
-            }
-
-            richText.ScrollLeft();
-
-
-            // local functions
-
-            string FormattedInput(int frameCount, string action) {
-                return new InputRecord(frameCount + action).ToString();
-            }
-
-            char GetFirstLetter() {
-                if (reader >= text.Length) {
-                    return ' ';
-                }
-
-                while (text[reader] == ' ') {
-                    reader++;
-                    if (reader >= text.Length) {
-                        return ' ';
-                    }
-                }
-
-                return text[reader];
-            }
-
-            string EvaluateInputs() {
-                string value = ""; // what's returned
-                while (true) {
-                    if (reader < text.Length) {
-                        if ((c = text[reader]) != '\r') {
-                            value += c;
-                        } else {
-                            break;
-                        }
+                while (start > 1) {
+                    InputRecord prev = InputRecords[start - 1];
+                    if ((prev.IsInput || prev.IsEmptyLine) && prev.ActionsToString() == currentRecord.ActionsToString()) {
+                        start--;
                     } else {
-                        return value;
-                    }
-
-                    reader++;
-                }
-
-                return value;
-            }
-
-            int EvaluateFrameCount() {
-                string frameCountString = Convert.ToString(c);
-                reader++;
-                while (reader < text.Length && "0123456789".Contains(c = text[reader])) {
-                    frameCountString += c;
-                    reader++;
-                }
-
-                return Convert.ToInt32(frameCountString);
-            }
-
-            bool NextLine() {
-                // if return false -> end of selection; stop.
-                if (reader >= text.Length) {
-                    return false;
-                }
-
-                while (text[reader] != '\r') {
-                    reader++;
-                    if (reader >= text.Length) {
-                        return false;
-                    }
-                }
-
-                reader += 2;
-                if (reader >= text.Length) {
-                    endsWithEmptyLine = true;
-                    return false;
-                }
-
-                return true;
-            }
-
-            string GetWholeLine() {
-                string value = "";
-                if (c == '\r') {
-                    return value;
-                }
-
-                value += c;
-                for (reader++; reader < text.Length && (c = text[reader]) != '\r'; reader++) {
-                    value += c;
-                }
-
-                return value;
-            }
-
-            bool IsScreenTransition(int frameCount) {
-                if (frameCount < 40) {
-                    return false;
-                }
-
-                int i = reader + 1;
-                int lineCount = 0;
-                while (true) {
-                    if (i + 3 >= text.Length) {
-                        // see if theres a room label outside of `text`
-                        int targetLine;
-                        for (int a = 1; (targetLine = end + a) < richText.LinesCount; a++) {
-                            string line = richText.GetLineText(targetLine);
-                            foreach (char b in line) {
-                                if (b != ' ') {
-                                    if (line.Length >= 4 && line.Substring(0, 4) == "#lvl") {
-                                        return true;
-                                    }
-
-                                    return false;
-                                }
-                            }
-                        }
-
-                        return false;
-                    }
-
-                    if (!" \n\r".Contains(c = text[i])) {
                         break;
                     }
+                }
 
-                    if (c == '\r') {
-                        if (lineCount >= 2) {
-                            return false;
+                while (end < InputRecords.Count - 1) {
+                    InputRecord next = InputRecords[end + 1];
+                    if ((next.IsInput || next.IsEmptyLine) && next.Actions == currentRecord.Actions) {
+                        end++;
+                    } else {
+                        break;
+                    }
+                }
+            } else if (!sameActions) {
+                // skip non input line
+                while (start < end) {
+                    InputRecord current = InputRecords[start];
+                    if (!current.IsInput) {
+                        start++;
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            if (start == end) {
+                return;
+            }
+
+            List<InputRecord> selection = InputRecords.GetRange(start, end - start + 1);
+            SortedDictionary<int, List<InputRecord>> groups = new();
+
+            if (sameActions) {
+                int index = start;
+                InputRecord current = InputRecords[index];
+                int currentIndex = index;
+                groups[currentIndex] = new List<InputRecord> {current};
+                while (++index <= end) {
+                    InputRecord next = InputRecords[index];
+                    int nextIndex = index;
+
+                    // ignore empty line if combine succeeds
+                    if (next.IsEmptyLine && next.Next(record => !record.IsEmptyLine) is {IsInput: true} nextInput) {
+                        nextIndex = InputRecords.IndexOf(nextInput);
+                        if (nextIndex <= end) {
+                            next = nextInput;
+                        } else {
+                            nextIndex = index;
                         }
-
-                        lineCount++;
                     }
 
-                    i++;
+                    if (current.IsInput && next.IsInput && current.ActionsToString() == next.ActionsToString() && !next.IsScreenTransition()) {
+                        groups[currentIndex].Add(next);
+                        index = nextIndex;
+                    } else {
+                        current = InputRecords[index];
+                        currentIndex = index;
+                        groups[currentIndex] = new List<InputRecord> {current};
+                    }
+                }
+            } else {
+                selection.Sort((a, b) => !a.IsInput && b.IsInput ? 1 : 0);
+                for (int i = 0; i < selection.Count; i++) {
+                    InputRecord inputRecord = selection[i];
+                    int groupIndex = inputRecord.IsInput ? 0 : i;
+                    if (!groups.ContainsKey(groupIndex)) {
+                        groups[groupIndex] = new List<InputRecord>();
+                    }
+
+                    groups[groupIndex].Add(inputRecord);
+                }
+            }
+
+            StringBuilder result = new();
+            foreach (List<InputRecord> groupInputs in groups.Values) {
+                if (groupInputs.Count > 1 && groupInputs.First().IsInput) {
+                    int combinedFrames = groupInputs.Sum(record => record.Frames);
+                    if (combinedFrames < 10000) {
+                        result.AppendLine(new InputRecord(combinedFrames, groupInputs.First().ActionsToString()).ToString());
+                    } else {
+                        ShowTooltip("Combine failed because the combined frames were greater than 9999");
+                        if (sameActions) {
+                            foreach (InputRecord inputRecord in groupInputs) {
+                                result.AppendLine(inputRecord.ToString());
+                            }
+                        } else {
+                            return;
+                        }
+                    }
+                } else {
+                    result.AppendLine(groupInputs.First().ToString());
+                }
+            }
+
+            // remove last line break
+            result.Length -= Environment.NewLine.Length;
+
+            richText.Selection = new Range(richText, 0, start, richText[end].Count, end);
+            richText.SelectedText = result.ToString();
+            richText.ScrollLeft();
+        }
+
+        private void ConvertDashToDemoDash() {
+            Range origRange = richText.Selection.Clone();
+
+            origRange.Normalize();
+            int start = origRange.Start.iLine;
+            int end = origRange.End.iLine;
+
+            while (start < end) {
+                InputRecord startRecord = InputRecords[start];
+                if (!startRecord.IsInput) {
+                    start++;
+                } else {
+                    break;
+                }
+            }
+
+            if (start == end) {
+                return;
+            }
+
+            List<InputRecord> result = new();
+
+            for (int i = start; i <= end; i++) {
+                InputRecord current = InputRecords[i];
+
+                if (current.IsInput && current.Actions is (Actions.Dash | Actions.Down) or (Actions.Dash2 | Actions.Down) && current.Frames <= 4) {
+                    Actions dash = current.HasActions(Actions.Dash) ? Actions.Dash : Actions.Dash2;
+                    InputRecord next = i == end ? null : InputRecords[i + 1];
+                    if (next is {IsInput: true} && next.HasActions(dash)) {
+                        next.Frames += current.Frames;
+                        next.Actions = next.Actions & ~Actions.Dash & ~Actions.Dash2 | GetDemoDashActions(current);
+                        result.Add(next);
+                        i++;
+                        continue;
+                    } else {
+                        // 11,D,X
+                        // 40
+                        // #lvl_roomName
+                        // 4,D,X <- dont convert this input
+                        if (current.Previous(record => record.IsInput) is not { } previous || !previous.IsScreenTransition() ||
+                            previous.Previous(record => record.IsInput) is not { } previous2 || !previous2.HasActions(dash) ||
+                            previous2.Frames > 11) {
+                            current.Actions = GetDemoDashActions(current);
+                        }
+                    }
                 }
 
-                if (text.Substring(i, 4) == "#lvl") {
-                    return true;
+                result.Add(current);
+            }
+
+            richText.Selection = new Range(richText, 0, start, richText[end].Count, end);
+            richText.SelectedText = string.Join(Environment.NewLine, result);
+            richText.ScrollLeft();
+
+            Actions GetDemoDashActions(InputRecord current) {
+                Actions demoDash = Actions.DemoDash;
+                InputRecord neighboringInput = current.Previous(record => record.IsInput) ?? current.Next(record => record.IsInput);
+                if (neighboringInput?.HasActions(demoDash) == true) {
+                    demoDash = Actions.DemoDash2;
                 }
 
-                return false;
+                return demoDash;
             }
         }
 
@@ -1398,7 +1065,7 @@ namespace CelesteStudio {
             StringBuilder sb = new();
             Place place = new(0, end);
             while (start <= end) {
-                InputRecord old = lines.Count > start ? lines[start] : null;
+                InputRecord old = InputRecords.Count > start ? InputRecords[start] : null;
                 string text = tas[start++].Text;
                 InputRecord input = new(text);
                 if (old != null) {
@@ -1444,7 +1111,7 @@ namespace CelesteStudio {
                     }
 
                     text = line;
-                    lines[start - 1] = input;
+                    InputRecords[start - 1] = input;
                 } else {
                     place = new Place(text.Length, start - 1);
                 }
@@ -1478,7 +1145,7 @@ namespace CelesteStudio {
         }
 
         private void tasText_FileOpening(object sender, EventArgs e) {
-            lines.Clear();
+            InputRecords.Clear();
             totalFrames = 0;
             UpdateStatusBar();
         }
@@ -1684,14 +1351,10 @@ namespace CelesteStudio {
             }
 
             Range range = richText.Selection.Clone();
+            range.Normalize();
 
             int start = range.Start.iLine;
             int end = range.End.iLine;
-            if (start > end) {
-                int temp = start;
-                start = end;
-                end = temp;
-            }
 
             richText.Selection = new Range(richText, 0, start, richText[end].Count, end);
             string text = richText.SelectedText;
@@ -1720,11 +1383,15 @@ namespace CelesteStudio {
         }
 
         private void combineConsecutiveSameInputsToolStripMenuItem_Click(object sender, EventArgs e) {
-            CombineInputs(false);
+            CombineInputs(true);
         }
 
         private void forceCombineInputsToolStripMenuItem_Click(object sender, EventArgs e) {
-            CombineInputs(true);
+            CombineInputs(false);
+        }
+
+        private void convertDashToDemoDashToolStripMenuItem_Click(object sender, EventArgs e) {
+            ConvertDashToDemoDash();
         }
 
         private void openReadFileToolStripMenuItem_Click(object sender, EventArgs e) {
