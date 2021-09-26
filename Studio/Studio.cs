@@ -908,21 +908,23 @@ namespace CelesteStudio {
                 groups[currentIndex] = new List<InputRecord> {current};
                 while (++index <= end) {
                     InputRecord next = InputRecords[index];
-                    int nextIndex = index;
 
                     // ignore empty line if combine succeeds
+                    int? nextIndex = null;
                     if (next.IsEmptyLine && next.Next(record => !record.IsEmptyLine) is {IsInput: true} nextInput) {
                         nextIndex = InputRecords.IndexOf(nextInput);
                         if (nextIndex <= end) {
                             next = nextInput;
                         } else {
-                            nextIndex = index;
+                            nextIndex = null;
                         }
                     }
 
                     if (current.IsInput && next.IsInput && current.ActionsToString() == next.ActionsToString() && !next.IsScreenTransition()) {
                         groups[currentIndex].Add(next);
-                        index = nextIndex;
+                        if (nextIndex.HasValue) {
+                            index = nextIndex.Value;
+                        }
                     } else {
                         current = InputRecords[index];
                         currentIndex = index;
@@ -999,11 +1001,28 @@ namespace CelesteStudio {
                 if (current.IsInput && current.Actions is (Actions.Dash | Actions.Down) or (Actions.Dash2 | Actions.Down) && current.Frames <= 4) {
                     Actions dash = current.HasActions(Actions.Dash) ? Actions.Dash : Actions.Dash2;
                     InputRecord next = i == end ? null : InputRecords[i + 1];
+
+                    // ignore empty line if convert succeeds
+                    int? nextIndex = null;
+                    if (next?.IsEmptyLine == true && next.Next(record => !record.IsEmptyLine) is {IsInput: true} nextInput) {
+                        nextIndex = InputRecords.IndexOf(nextInput);
+                        if (nextIndex <= end) {
+                            next = nextInput;
+                        } else {
+                            nextIndex = null;
+                        }
+                    }
+
                     if (next is {IsInput: true} && next.HasActions(dash)) {
                         next.Frames += current.Frames;
                         next.Actions = next.Actions & ~Actions.Dash & ~Actions.Dash2 | GetDemoDashActions(current);
                         result.Add(next);
-                        i++;
+                        if (nextIndex.HasValue) {
+                            i = nextIndex.Value;
+                        } else {
+                            i++;
+                        }
+
                         continue;
                     } else {
                         // 11,D,X
