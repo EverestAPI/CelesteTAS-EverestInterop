@@ -82,6 +82,7 @@ namespace StudioCommunication {
 
     public enum GameDataTypes : byte {
         ConsoleCommand,
+        SimpleConsoleCommand,
         ModInfo
     }
 }

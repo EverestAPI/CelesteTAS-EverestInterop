@@ -111,7 +111,8 @@ namespace TAS.Communication {
         private void ProcessGetData(byte[] data) {
             GameDataTypes gameDataTypes = (GameDataTypes) data[0];
             string gameData = gameDataTypes switch {
-                GameDataTypes.ConsoleCommand => GetConsoleCommand(),
+                GameDataTypes.ConsoleCommand => GetConsoleCommand(false),
+                GameDataTypes.SimpleConsoleCommand => GetConsoleCommand(true),
                 GameDataTypes.ModInfo => GetModInfo(),
                 _ => string.Empty
             };
@@ -122,8 +123,8 @@ namespace TAS.Communication {
             }
         }
 
-        private string GetConsoleCommand() {
-            return ConsoleCommandHandler.CreateConsoleCommand();
+        private string GetConsoleCommand(bool simple) {
+            return ConsoleCommandHandler.CreateConsoleCommand(simple);
         }
 
         private string GetModInfo() {

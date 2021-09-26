@@ -131,9 +131,7 @@ namespace CelesteStudio.Communication {
         public void ConvertToLibTas(string path) => PendingWrite = () => ConvertToLibTasNow(path);
         public void SendHotkeyPressed(HotkeyIDs hotkey, bool released = false) => PendingWrite = () => SendHotkeyPressedNow(hotkey, released);
         public void ToggleGameSetting(string settingName) => PendingWrite = () => ToggleGameSettingNow(settingName);
-        public void GetConsoleCommand() => PendingWrite = () => GetGameDataNow(GameDataTypes.ConsoleCommand);
-        public void GetModInfo() => PendingWrite = () => GetGameDataNow(GameDataTypes.ModInfo);
-
+        public void GetDataFromGame(GameDataTypes gameDataTypes) => PendingWrite = () => GetGameDataNow(gameDataTypes);
 
         private void SendPathNow(string path, bool canFail) {
             if (Initialized || !canFail) {

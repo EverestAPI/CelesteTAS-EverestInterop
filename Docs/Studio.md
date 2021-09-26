@@ -17,6 +17,7 @@ Can be used instead of notepad or similar for easier editing of the TAS file. It
 - Ctrl + Shift + .: Insert/Remove Savestate Breakpoint
 - Ctrl + R: Insert room name
 - Ctrl + Shift + R: Insert Console Load Command at Current Location and Speed
+- Ctrl + Alt + R: Insert Console Load Command at Current Level
 - Ctrl + T: Insert Current in-game Time
 - Ctrl + L: Combine Consecutive Same Inputs
 - Ctrl + Shift + L: Force Combine Inputs Frames

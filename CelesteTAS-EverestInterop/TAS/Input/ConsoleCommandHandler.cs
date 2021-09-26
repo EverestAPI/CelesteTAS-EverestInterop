@@ -173,7 +173,7 @@ namespace TAS.Input {
             Engine.Scene = new LevelLoader(session);
         }
 
-        public static string CreateConsoleCommand() {
+        public static string CreateConsoleCommand(bool simple) {
             if (Engine.Scene is not Level level) {
                 return null;
             }
@@ -195,20 +195,23 @@ namespace TAS.Input {
             string id = area.ID <= 10 ? area.ID.ToString() : area.GetSID();
             string separator = id.Contains(" ") ? ", " : " ";
             List<string> values = new() {"console", mode, id};
-            Player player = level.Tracker.GetEntity<Player>();
-            if (player == null) {
-                values.Add(level.Session.Level);
-            } else {
-                double x = player.X;
-                double y = player.Y;
-                double subX = player.PositionRemainder.X;
-                double subY = player.PositionRemainder.Y;
-                values.Add((x + subX).ToString("0.############", CultureInfo.InvariantCulture));
-                values.Add((y + subY).ToString("0.############", CultureInfo.InvariantCulture));
 
-                if (player.Speed != Vector2.Zero) {
-                    values.Add(player.Speed.X.ToString(CultureInfo.InvariantCulture));
-                    values.Add(player.Speed.Y.ToString(CultureInfo.InvariantCulture));
+            if (!simple) {
+                Player player = level.Tracker.GetEntity<Player>();
+                if (player == null) {
+                    values.Add(level.Session.Level);
+                } else {
+                    double x = player.X;
+                    double y = player.Y;
+                    double subX = player.PositionRemainder.X;
+                    double subY = player.PositionRemainder.Y;
+                    values.Add((x + subX).ToString("0.############", CultureInfo.InvariantCulture));
+                    values.Add((y + subY).ToString("0.############", CultureInfo.InvariantCulture));
+
+                    if (player.Speed != Vector2.Zero) {
+                        values.Add(player.Speed.X.ToString(CultureInfo.InvariantCulture));
+                        values.Add(player.Speed.Y.ToString(CultureInfo.InvariantCulture));
+                    }
                 }
             }
 

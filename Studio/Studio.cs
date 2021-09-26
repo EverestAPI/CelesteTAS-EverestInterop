@@ -320,7 +320,7 @@ namespace CelesteStudio {
                                 InsertOrRemoveText(InputRecord.BreakpointRegex, "***S");
                                 break;
                             case Keys.R: // Ctrl + Shift + R
-                                InsertConsoleLoadCommand();
+                                InsertDataFromGame(GameDataTypes.ConsoleCommand);
                                 break;
                             case Keys.C: // Ctrl + Shift + C
                                 CopyGameInfo();
@@ -337,6 +337,9 @@ namespace CelesteStudio {
                         if (e.KeyCode == Keys.P) {
                             // Ctrl + Alt + P
                             CommentUncommentAllBreakpoints();
+                        } else if (e.KeyCode == Keys.R) {
+                            // Ctrl + Alt + R
+                            InsertDataFromGame(GameDataTypes.SimpleConsoleCommand);
                         }
                     }
                 }
@@ -620,28 +623,17 @@ namespace CelesteStudio {
 
         private void InsertTime() => InsertNewLine($"#{CommunicationWrapper.StudioInfo?.ChapterTime}");
 
-        private void InsertConsoleLoadCommand() {
-            CommunicationWrapper.ReturnData = null;
-            StudioCommunicationServer.Instance.GetConsoleCommand();
-            Thread.Sleep(100);
-
-            if (CommunicationWrapper.ReturnData == null) {
-                return;
+        private void InsertDataFromGame(GameDataTypes gameDataTypes) {
+            if (GetDataFromGame(gameDataTypes) is { } gameData) {
+                InsertNewLine(gameData);
             }
-
-            InsertNewLine(CommunicationWrapper.ReturnData);
         }
 
-        private void InsertModInfo() {
+        private string GetDataFromGame(GameDataTypes gameDataTypes) {
             CommunicationWrapper.ReturnData = null;
-            StudioCommunicationServer.Instance.GetModInfo();
+            StudioCommunicationServer.Instance.GetDataFromGame(gameDataTypes);
             Thread.Sleep(100);
-
-            if (CommunicationWrapper.ReturnData == null) {
-                return;
-            }
-
-            InsertNewLine(CommunicationWrapper.ReturnData);
+            return CommunicationWrapper.ReturnData;
         }
 
         private void InsertNewLine(string text) {
@@ -1256,7 +1248,11 @@ namespace CelesteStudio {
         }
 
         private void insertConsoleLoadCommandToolStripMenuItem_Click(object sender, EventArgs e) {
-            InsertConsoleLoadCommand();
+            InsertDataFromGame(GameDataTypes.ConsoleCommand);
+        }
+
+        private void insertSimpleConsoleLoadCommandToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertDataFromGame(GameDataTypes.SimpleConsoleCommand);
         }
 
         private void enforceLegalToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -1342,7 +1338,7 @@ namespace CelesteStudio {
         }
 
         private void insertModInfoStripMenuItem1_Click(object sender, EventArgs e) {
-            InsertModInfo();
+            InsertDataFromGame(GameDataTypes.ModInfo);
         }
 
         private void SwapActionKeys(char key1, char key2) {
@@ -1442,13 +1438,22 @@ namespace CelesteStudio {
                 Directory.CreateDirectory(gamePath);
             }
 
+            string initText = $"RecordCount: 1{Environment.NewLine}";
+            if (StudioCommunicationBase.Initialized && Process.GetProcessesByName("Celeste").Length > 0) {
+                if (GetDataFromGame(GameDataTypes.SimpleConsoleCommand) is { } simpleConsoleCommand) {
+                    initText += $"{Environment.NewLine}{simpleConsoleCommand}{Environment.NewLine}   1{Environment.NewLine}";
+                }
+            }
+
+            initText += $"{Environment.NewLine}#Start{Environment.NewLine}";
+
             string fileName = Path.Combine(gamePath, $"Untitled-{index}.tas");
-            while (File.Exists(fileName) && new FileInfo(fileName).Length != 14) {
+            while (File.Exists(fileName) && File.ReadAllText(fileName) != initText) {
                 index++;
                 fileName = Path.Combine(gamePath, $"Untitled-{index}.tas");
             }
 
-            File.WriteAllText(fileName, "RecordCount: 1");
+            File.WriteAllText(fileName, initText);
 
             OpenFile(fileName);
         }

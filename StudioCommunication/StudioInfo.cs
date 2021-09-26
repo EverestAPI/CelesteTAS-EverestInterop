@@ -1,17 +1,18 @@
 ﻿namespace StudioCommunication {
     public record StudioInfo {
-        public readonly string ChapterTime;
+        public readonly int CurrentLine;
         public readonly int CurrentFrameInInput;
         public readonly int CurrentFrameInTas;
-        public readonly int CurrentLine;
-        public readonly string ExactGameInfo;
-        public readonly string GameInfo;
-        public readonly string LevelName;
-        public readonly string ModVersion;
+        public readonly int TotalFrames;
         public readonly int SaveStateLine;
         public readonly State TasState;
-        public readonly int TotalFrames;
+        public readonly string GameInfo;
+        public readonly string ExactGameInfo;
+        public readonly string LevelName;
+        public readonly string ChapterTime;
+        public readonly string ModVersion;
 
+        // ReSharper disable once MemberCanBePrivate.Global
         public StudioInfo(
             int currentLine, int currentFrameInInput, int currentFrameInTas, int totalFrames, int saveStateLine, State tasState,
             string gameInfo, string exactGameInfo, string levelName, string chapterTime, string modVersion) {
@@ -28,6 +29,7 @@
             ModVersion = modVersion;
         }
 
+        // ReSharper disable once UnusedMember.Global
         public byte[] ToByteArray() {
             return BinaryFormatterHelper.ToByteArray(new object[] {
                 CurrentLine,
