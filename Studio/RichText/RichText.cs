@@ -6,6 +6,7 @@ using System.Drawing.Design;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -1577,8 +1578,14 @@ namespace CelesteStudio.RichText {
                 var data = new DataObject();
                 data.SetData(DataFormats.UnicodeText, true, Selection.Text);
                 data.SetData(DataFormats.Html, PrepareHtmlForClipboard(html));
-                //
-                var thread = new Thread(() => Clipboard.SetDataObject(data, true));
+                Thread thread = new(() => {
+                    try {
+                        Clipboard.SetDataObject(data, true);
+                    } catch (ExternalException) {
+                        Win32Api.UnlockClipboard();
+                        Clipboard.SetDataObject(data, true);
+                    }
+                });
                 thread.SetApartmentState(ApartmentState.STA);
                 thread.Start();
                 thread.Join();
