@@ -415,6 +415,16 @@ namespace TAS.Utils {
         public static EntityID ToEntityId(this EntityData entityData) {
             return new(entityData.Level.Name, entityData.ID);
         }
+
+        public static float DistanceSquared(this Entity entity, Entity otherEntity) {
+            return Vector2.DistanceSquared(entity.Center, otherEntity.Center);
+        }
+    }
+
+    internal static class TrackerExtensions {
+        public static List<T> GetCastComponents<T>(this Tracker tracker) where T : Component {
+            return tracker.GetComponents<T>().Cast<T>().ToList();
+        }
     }
 
     internal static class Vector2Extensions {
