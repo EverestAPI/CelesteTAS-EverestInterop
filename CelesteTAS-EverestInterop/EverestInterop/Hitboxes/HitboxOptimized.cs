@@ -25,6 +25,7 @@ namespace TAS.EverestInterop.Hitboxes {
         private static void Load() {
             On.Monocle.Entity.DebugRender += ModDebugRender;
             On.Monocle.EntityList.DebugRender += AddHoldableColliderHitbox;
+            IL.Celeste.Seeker.DebugRender += SeekerOnDebugRender;
             IL.Celeste.PlayerCollider.DebugRender += PlayerColliderOnDebugRender;
             On.Celeste.PlayerCollider.DebugRender += AddFeatherHitbox;
             On.Monocle.Circle.Render += CircleOnRender;
@@ -36,6 +37,7 @@ namespace TAS.EverestInterop.Hitboxes {
         private static void Unload() {
             On.Monocle.Entity.DebugRender -= ModDebugRender;
             On.Monocle.EntityList.DebugRender -= AddHoldableColliderHitbox;
+            IL.Celeste.Seeker.DebugRender -= SeekerOnDebugRender;
             IL.Celeste.PlayerCollider.DebugRender -= PlayerColliderOnDebugRender;
             On.Celeste.PlayerCollider.DebugRender -= AddFeatherHitbox;
             On.Monocle.Circle.Render -= CircleOnRender;
@@ -100,7 +102,7 @@ namespace TAS.EverestInterop.Hitboxes {
             }
 
             foreach (HoldableCollider component in level.Tracker.GetCastComponents<HoldableCollider>()) {
-                if (HoldableColliderCollider(component) is not { } collider) {
+                if (HoldableColliderCollider(component) is not { } collider || component.Entity is Seeker) {
                     continue;
                 }
 
@@ -119,6 +121,39 @@ namespace TAS.EverestInterop.Hitboxes {
                 entity.Collider = collider;
                 collider.Render(camera, color * (entity.Collidable ? 1f : 0.5f));
                 entity.Collider = origCollider;
+            }
+        }
+
+        private static void SeekerOnDebugRender(ILContext il) {
+            ILCursor ilCursor = new(il);
+            if (ilCursor.TryGotoNext(
+                MoveType.After,
+                ins => ins.MatchCall<Color>("get_Red")
+            )) {
+                ilCursor
+                    .Emit(OpCodes.Ldarg_0)
+                    .EmitDelegate<Func<Color, Entity, Color>>((color, entity) => {
+                        if (!Settings.ShowHitboxes) {
+                            return color;
+                        }
+
+                        return entity.Collidable ? HitboxColor.EntityColor : HitboxColor.EntityColor * 0.5f;
+                    });
+            }
+
+            if (ilCursor.TryGotoNext(
+                MoveType.After,
+                ins => ins.MatchCall<Color>("get_Aqua")
+            )) {
+                ilCursor
+                    .Emit(OpCodes.Ldarg_0)
+                    .EmitDelegate<Func<Color, Entity, Color>>((color, entity) => {
+                        if (!Settings.ShowHitboxes) {
+                            return color;
+                        }
+
+                        return entity.Collidable ? Color.HotPink : Color.HotPink * 0.5f;
+                    });
             }
         }
 
