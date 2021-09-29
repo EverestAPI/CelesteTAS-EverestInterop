@@ -303,9 +303,6 @@ namespace CelesteStudio {
                             case Keys.L: // Ctrl + L
                                 CombineInputs(true);
                                 break;
-                            case Keys.I: // Ctrl + I
-                                ConvertDashToDemoDash();
-                                break;
                         }
                     } else if (e.Modifiers == (Keys.Control | Keys.Shift)) {
                         // Ctrl + Shift:
