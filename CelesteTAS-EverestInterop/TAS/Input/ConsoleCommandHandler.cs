@@ -77,11 +77,11 @@ namespace TAS.Input {
                     SaveData data = SaveData.Instance ?? UserIO.Load<SaveData>(SaveData.GetFilename(-1)) ?? new SaveData();
                     SaveData.Start(data, -1);
 
-                    // Complete Prologue if incomplete
+                    // Complete Prologue if incomplete and make sure the return to map menu item will be shown
                     LevelSetStats stats = SaveData.Instance.GetLevelSetStatsFor("Celeste");
-                    if (stats.UnlockedAreas == 0) {
-                        stats.UnlockedAreas = 1;
-                        stats.AreasIncludingCeleste[0].Modes[0].Completed = true;
+                    if (!SaveData.Instance.Areas[0].Modes[0].Completed) {
+                        SaveData.Instance.Areas[0].Modes[0].Completed = true;
+                        stats.UnlockedAreas++;
                     }
                 }
 
