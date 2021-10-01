@@ -751,6 +751,10 @@ namespace CelesteStudio {
         }
 
         private void tasText_LineRemoved(object sender, LineRemovedEventArgs e) {
+            if (updating) {
+                return;
+            }
+
             int count = e.Count;
             while (count-- > 0) {
                 InputRecord input = InputRecords[e.Index];
@@ -762,6 +766,10 @@ namespace CelesteStudio {
         }
 
         private void tasText_LineInserted(object sender, LineInsertedEventArgs e) {
+            if (updating) {
+                return;
+            }
+
             RichText.RichText tas = (RichText.RichText) sender;
             int count = e.Count;
             while (count-- > 0) {
