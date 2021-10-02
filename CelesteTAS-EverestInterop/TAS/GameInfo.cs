@@ -111,11 +111,11 @@ namespace TAS {
 
         public static string GetStudioInfo(bool exact) {
             List<string> infos = new() {exact ? ExactStatus : Status};
-            if ((TasSettings.InfoCustom & HudOptions.StudioOnly) != 0 && CustomInfo.IsNotNullOrWhiteSpace()) {
+            if ((exact || (TasSettings.InfoCustom & HudOptions.StudioOnly) != 0) && CustomInfo.IsNotNullOrWhiteSpace()) {
                 infos.Add(CustomInfo);
             }
 
-            if ((TasSettings.InfoWatchEntity & HudOptions.StudioOnly) != 0 && WatchingInfo.IsNotNullOrWhiteSpace()) {
+            if ((exact || (TasSettings.InfoWatchEntity & HudOptions.StudioOnly) != 0) && WatchingInfo.IsNotNullOrWhiteSpace()) {
                 infos.Add(WatchingInfo);
             }
 
