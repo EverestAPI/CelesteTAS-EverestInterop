@@ -223,13 +223,6 @@ namespace CelesteStudio.RichText {
             set {
                 currentLine = value;
                 if (currentLine >= 0) {
-                    LineInfo lineInfo;
-                    if (currentLine - 8 >= 0) {
-                        lineInfo = lineInfos[currentLine - 8];
-                    } else {
-                        lineInfo = lineInfos[0];
-                    }
-
                     Selection = new Range(this, 4, currentLine, 4, currentLine);
                     DoSelectionVisible();
                 }

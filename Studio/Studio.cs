@@ -723,9 +723,11 @@ namespace CelesteStudio {
 
                     richText.CurrentLineText = studioInfo.CurrentFrameInInput.ToString();
                     currentFrame = studioInfo.CurrentFrameInTas;
-                    totalFrames = studioInfo.TotalFrames;
                     richText.SaveStateLine = studioInfo.SaveStateLine;
                     tasState = studioInfo.TasState;
+                    if ((tasState & State.Enable) != 0 && (tasState & State.FrameStep) == 0) {
+                        totalFrames = studioInfo.TotalFrames;
+                    }
                 } else {
                     currentFrame = 0;
                     if (richText.CurrentLine >= 0) {
