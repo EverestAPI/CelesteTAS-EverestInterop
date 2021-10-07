@@ -109,6 +109,10 @@ namespace CelesteStudio.Communication {
                     }
                 }
             }
+
+            if (updateLines.Count > 0) {
+                tasText.NeedRecalc();
+            }
         }
     }
 }
