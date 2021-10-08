@@ -3505,7 +3505,11 @@ namespace CelesteStudio.RichText {
                         if (!hasTextStyle || !isTextStyle || AllowSeveralTextStyleDrawing)
                             //cancelling secondary rendering by TextStyle
                         {
-                            style.Draw(gr, pos, range); //rendering
+                            try {
+                                style.Draw(gr, pos, range); //rendering
+                            } catch (ArgumentOutOfRangeException) {
+                                // ignore
+                            }
                         }
 
                         hasTextStyle |= isTextStyle;
@@ -3516,7 +3520,11 @@ namespace CelesteStudio.RichText {
 
                 //draw by default renderer
                 if (!hasTextStyle) {
-                    DefaultStyle.Draw(gr, pos, range);
+                    try {
+                        DefaultStyle.Draw(gr, pos, range);
+                    } catch (ArgumentOutOfRangeException) {
+                        // ignore
+                    }
                 }
             }
         }
