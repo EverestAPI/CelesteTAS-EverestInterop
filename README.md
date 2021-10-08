@@ -31,16 +31,16 @@ e.g. 123,R,J (For 123 frames, hold Right and Jump)
 - J = Jump / Confirm
 - K = Jump Bind 2
 - X = Dash / Talk / Cancel
-- C = Dash Bind 2 / Cancel
+- C = Dash Bind 2 / Cancel Bind 2
 - Z = Crouch Dash (Celeste v1.4+ only)
-- V = Crouch Dash 2 (Celeste v1.4+ only)
+- V = Crouch Dash Bind 2 (Celeste v1.4+ only)
 - G = Grab
 - S = Pause
 - Q = Quick Reset
 - F = Feather Aim
 <br>Format: F, angle, optional upper limit of single axis (default value is 1, range is 0.5 to 1, only works in precise [AnalogMode](Docs/Commands.md#analoguemode)
-- O = Confirm
-- N = Journal (Used only for Cheat Code)
+- O = Confirm Bind 2
+- N = Journal (Used Only for Cheat Code)
 
 ## Controls
 
