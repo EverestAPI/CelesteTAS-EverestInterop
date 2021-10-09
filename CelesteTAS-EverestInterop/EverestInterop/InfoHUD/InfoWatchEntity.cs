@@ -237,7 +237,7 @@ namespace TAS.EverestInterop.InfoHUD {
             orig(self, strawberry, position, index, ghost);
             if (strawberry.GetEntityData() is { } entityData) {
                 EntityData clonedEntityData = entityData.ShallowClone();
-                clonedEntityData.ID = clonedEntityData.ID * 100 + index;
+                clonedEntityData.ID = clonedEntityData.ID * -100 - index;
                 self.SetEntityData(clonedEntityData);
             }
         }
@@ -248,13 +248,21 @@ namespace TAS.EverestInterop.InfoHUD {
             if (cursor.TryGotoNext(
                 i => i.OpCode == OpCodes.Callvirt && i.Operand.ToString() == "System.Void Monocle.Scene::Add(Monocle.Entity)")) {
                 cursor.Emit(OpCodes.Dup).Emit(OpCodes.Ldarg_0);
+                if (il.ToString().Contains("ldfld Celeste.SeekerStatue Celeste.SeekerStatue/<>c__DisplayClass3_0::<>4__this")
+                    && Type.GetType("Celeste.SeekerStatue+<>c__DisplayClass3_0, Celeste")?.GetFieldInfo("<>4__this") is { } seekerStatue
+                ) {
+                    cursor.Emit(OpCodes.Ldfld, seekerStatue);
+                }
+
                 cursor.EmitDelegate<Action<Entity, Entity>>((spawnedEntity, entity) => {
                     if (entity.GetEntityData() is { } entityData) {
                         EntityData clonedEntityData = entityData.ShallowClone();
                         if (spawnedEntity is FireBall fireBall) {
-                            clonedEntityData.ID = clonedEntityData.ID * 100 + fireBall.GetFieldValue<int>("index");
+                            clonedEntityData.ID = clonedEntityData.ID * -100 - fireBall.GetFieldValue<int>("index");
                         } else if (entity is CS03_OshiroRooftop) {
                             clonedEntityData.ID = 2;
+                        } else {
+                            clonedEntityData.ID *= -1;
                         }
 
                         spawnedEntity.SetEntityData(clonedEntityData);
