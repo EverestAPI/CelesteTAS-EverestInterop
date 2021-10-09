@@ -388,6 +388,20 @@ namespace TAS.EverestInterop {
 
         private static void LightningRenderer_RenderIL(ILContext il) {
             ILCursor c = new(il);
+            if (c.TryGotoNext(i => i.MatchLdfld<Entity>("Visible"))) {
+                Instruction lightningIns = c.Prev;
+                c.Index++;
+                c.Emit(lightningIns.OpCode, lightningIns.Operand).EmitDelegate<Func<bool, Lightning, bool>>((visible, item) => {
+                    if (Settings.SimplifiedGraphics && Settings.SimplifiedLightning) {
+                        Rectangle rectangle = new((int) item.X + 1, (int) item.Y + 1, (int) item.Width, (int) item.Height);
+                        Draw.SpriteBatch.Draw(GameplayBuffers.Lightning, item.Position + Vector2.One, rectangle, Color.Yellow);
+                        Draw.HollowRect(rectangle, Color.LightGoldenrodYellow);
+                        return false;
+                    }
+
+                    return visible;
+                });
+            }
 
             if (c.TryGotoNext(
                 MoveType.After,
@@ -395,21 +409,7 @@ namespace TAS.EverestInterop {
                 ins => ins.MatchLdfld<LightningRenderer>("DrawEdges")
             )) {
                 c.EmitDelegate<Func<bool, bool>>(drawEdges => (!Settings.SimplifiedGraphics || !Settings.SimplifiedLightning) && drawEdges);
-                c.Goto(0);
             }
-
-            for (int j = 0; j < 2; j++) {
-                c.GotoNext(i => i.MatchNewobj(out _));
-            }
-
-            c.GotoNext();
-            Instruction cont = c.Next;
-
-            c.EmitDelegate<Func<bool>>(() => Settings.SimplifiedGraphics && Settings.SimplifiedLightning);
-            c.Emit(OpCodes.Brfalse, cont);
-            c.Emit(OpCodes.Dup);
-            c.Emit(OpCodes.Call, (typeof(Color).GetMethod("get_LightGoldenrodYellow")));
-            c.Emit(OpCodes.Call, typeof(Draw).GetMethod("HollowRect", new[] {typeof(Rectangle), typeof(Color)}));
         }
 
         private static void Bolt_Render(On.Celeste.LightningRenderer.Bolt.orig_Render orig, object self) {
