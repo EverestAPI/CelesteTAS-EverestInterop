@@ -8,6 +8,7 @@ using Celeste.Mod;
 using Monocle;
 using StudioCommunication;
 using TAS.EverestInterop;
+using TAS.EverestInterop.InfoHUD;
 using TAS.Input;
 using TAS.Utils;
 
@@ -218,10 +219,11 @@ namespace TAS.Communication {
 
         private void ProcessToggleGameSetting(byte[] data) {
             string settingName = Encoding.Default.GetString(data);
-            $"Toggle game setting: {settingName}".DebugLog();
             if (settingName.IsNullOrEmpty()) {
                 return;
             }
+
+            $"Toggle game setting: {settingName}".DebugLog();
 
             CelesteTasModuleSettings settings = CelesteTasModule.Settings;
 
@@ -249,8 +251,12 @@ namespace TAS.Communication {
                 object value = property.GetValue(settings);
                 if (value is bool boolValue) {
                     property.SetValue(settings, !boolValue);
+                } else if (value is HudOptions hudOptions) {
+                    property.SetValue(settings, (hudOptions & HudOptions.StudioOnly) == 0 ? HudOptions.Both : HudOptions.Off);
                 } else if (value is Enum) {
                     property.SetValue(settings, ((int) value + 1) % Enum.GetValues(property.PropertyType).Length);
+                } else {
+                    return;
                 }
 
                 CelesteTasModule.Instance.SaveSettings();
