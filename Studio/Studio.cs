@@ -1087,26 +1087,27 @@ namespace CelesteStudio {
             StringBuilder sb = new();
             Place place = new(0, end);
             while (start <= end) {
-                InputRecord old = InputRecords.Count > start ? InputRecords[start] : null;
+                InputRecord oldInput = InputRecords.Count > start ? InputRecords[start] : null;
                 string text = tas[start++].Text;
-                InputRecord input = new(text);
-                if (old != null) {
-                    totalFrames -= old.Frames;
+                InputRecord newInput = new(text);
+                if (oldInput != null) {
+                    totalFrames -= oldInput.Frames;
 
-                    string line = input.ToString();
+                    string formattedText = newInput.ToString();
 
-                    bool featherAngle = old.HasActions(Actions.Feather)
-                                        && !string.IsNullOrEmpty(input.AngleStr)
-                                        && string.IsNullOrEmpty(input.UpperLimitStr)
+                    bool featherAngle = oldInput.HasActions(Actions.Feather)
+                                        && !string.IsNullOrEmpty(newInput.AngleStr)
+                                        && string.IsNullOrEmpty(newInput.UpperLimitStr)
                                         && text[text.Length - 1] == ','
-                                        && text.Substring(0, text.Length - 1) == line;
-                    if (text != line && !featherAngle) {
-                        Range oldRange = tas.Selection;
-                        if (!string.IsNullOrEmpty(line)) {
-                            InputRecord.ProcessExclusiveActions(old, input);
-                            line = input.ToString();
+                                        && text.Substring(0, text.Length - 1) == formattedText;
 
-                            int index = oldRange.Start.iChar + line.Length - text.Length;
+                    if (text != formattedText && !featherAngle) {
+                        Range oldRange = tas.Selection;
+                        if (!string.IsNullOrEmpty(formattedText)) {
+                            InputRecord.ProcessExclusiveActions(oldInput, newInput);
+                            formattedText = newInput.ToString();
+
+                            int index = oldRange.Start.iChar + formattedText.Length - text.Length;
                             if (index < 0) {
                                 index = 0;
                             }
@@ -1115,8 +1116,8 @@ namespace CelesteStudio {
                                 index = 4;
                             }
 
-                            if (old.Frames == input.Frames && old.ZeroPadding == input.ZeroPadding) {
-                                index = input.HasActions(Actions.Feather) ? line.Length : 4;
+                            if (oldInput.Frames == newInput.Frames) {
+                                index = newInput.HasActions(Actions.Feather) ? formattedText.Length : 4;
                             }
 
                             place = new Place(index, start - 1);
@@ -1127,8 +1128,8 @@ namespace CelesteStudio {
                         place = new Place(4, start - 1);
                     }
 
-                    text = line;
-                    InputRecords[start - 1] = input;
+                    text = formattedText;
+                    InputRecords[start - 1] = newInput;
                 } else {
                     place = new Place(text.Length, start - 1);
                 }
@@ -1139,7 +1140,7 @@ namespace CelesteStudio {
                     sb.Append(text);
                 }
 
-                totalFrames += input.Frames;
+                totalFrames += newInput.Frames;
             }
 
             if (modified) {

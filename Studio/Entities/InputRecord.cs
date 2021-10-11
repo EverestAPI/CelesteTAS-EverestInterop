@@ -35,7 +35,7 @@ namespace CelesteStudio.Entities {
         public static readonly Regex CommentSymbolRegex = new(@"^\s*#", RegexOptions.Compiled);
         public static readonly Regex CommentLineRegex = new(@"^\s*#.*", RegexOptions.Compiled);
         public static readonly Regex BreakpointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
-        public static readonly Regex InputFrameRegex = new(@"^( {3}\d| {2}\d{2}| \d{3}|\d{4})", RegexOptions.Compiled);
+        public static readonly Regex InputFrameRegex = new(@"^(\s*\d+)", RegexOptions.Compiled);
 
         private static readonly Actions[][] ExclusiveActions = {
             new[] {Actions.Dash, Actions.Dash2, Actions.DemoDash, Actions.DemoDash2},
@@ -61,6 +61,7 @@ namespace CelesteStudio.Entities {
                     IsBreakpoint = true;
                 } else if (InputFrameRegex.IsMatch(line)) {
                     IsInput = true;
+                    IsEmptyLine = true;
                 } else if (EmptyLineRegex.IsMatch(line)) {
                     IsEmptyLine = true;
                 } else {
@@ -144,7 +145,6 @@ namespace CelesteStudio.Entities {
             }
         }
 
-        public int ZeroPadding { get; set; }
         public int Frames { get; set; }
         public Actions Actions { get; set; }
         public string AngleStr { get; set; }
@@ -168,18 +168,12 @@ namespace CelesteStudio.Entities {
                     if (char.IsDigit(c)) {
                         foundFrames = true;
                         frames = c ^ 0x30;
-                        if (c == '0') {
-                            ZeroPadding = 1;
-                        }
                     } else if (c != ' ') {
                         return frames;
                     }
                 } else if (char.IsDigit(c)) {
                     if (frames < 9999) {
                         frames = frames * 10 + (c ^ 0x30);
-                        if (c == '0' && frames == 0) {
-                            ZeroPadding++;
-                        }
                     } else {
                         frames = 9999;
                     }
@@ -234,7 +228,7 @@ namespace CelesteStudio.Entities {
         }
 
         public override string ToString() {
-            return Frames == 0 ? LineText : Frames.ToString().PadLeft(ZeroPadding, '0').PadLeft(4, ' ') + ActionsToString();
+            return !IsInput ? LineText : Frames.ToString().PadLeft(4, ' ') + ActionsToString();
         }
 
         public string ActionsToString() {
