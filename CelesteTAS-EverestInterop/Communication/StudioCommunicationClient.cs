@@ -117,10 +117,8 @@ namespace TAS.Communication {
                 _ => string.Empty
             };
 
-            if (gameData.IsNotNullOrEmpty()) {
-                byte[] gameDataBytes = Encoding.Default.GetBytes(gameData);
-                WriteMessageGuaranteed(new Message(MessageIDs.ReturnData, gameDataBytes));
-            }
+            byte[] gameDataBytes = Encoding.Default.GetBytes(gameData ?? string.Empty);
+            WriteMessageGuaranteed(new Message(MessageIDs.ReturnData, gameDataBytes));
         }
 
         private string GetConsoleCommand(bool simple) {

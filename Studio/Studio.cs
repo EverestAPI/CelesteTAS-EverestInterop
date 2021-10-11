@@ -629,8 +629,13 @@ namespace CelesteStudio {
         private string GetDataFromGame(GameDataTypes gameDataTypes) {
             CommunicationWrapper.ReturnData = null;
             StudioCommunicationServer.Instance.GetDataFromGame(gameDataTypes);
-            Thread.Sleep(100);
-            return CommunicationWrapper.ReturnData;
+            int sleepTimeout = 100;
+            while (CommunicationWrapper.ReturnData == null && sleepTimeout > 0) {
+                Thread.Sleep(10);
+                sleepTimeout -= 10;
+            }
+
+            return CommunicationWrapper.ReturnData == string.Empty ? null : CommunicationWrapper.ReturnData;
         }
 
         private void InsertNewLine(string text) {
