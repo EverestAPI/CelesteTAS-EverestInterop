@@ -2421,7 +2421,14 @@ namespace CelesteStudio.RichText {
                         if (!Selection.IsEmpty) {
                             ClearSelected();
                         } else {
-                            InsertChar('\b');
+                            Place start = Selection.Start;
+                            List<InputRecord> inputRecords = Studio.Instance.InputRecords;
+                            if (start.iChar == 0 && start.iLine > 0 && inputRecords[start.iLine - 1].IsInput &&
+                                inputRecords[start.iLine].ToString().Trim() != string.Empty) {
+                                Selection.GoLeft(false);
+                            } else {
+                                InsertChar('\b');
+                            }
                         }
 
                         OnKeyPressed('\b');
@@ -2456,12 +2463,18 @@ namespace CelesteStudio.RichText {
                         if (!Selection.IsEmpty) {
                             ClearSelected();
                         } else {
+                            Place start = Selection.Start;
+
                             //if line contains only spaces then delete line
-                            if (this[Selection.Start.iLine].StartSpacesCount == this[Selection.Start.iLine].Count) {
+                            if (this[start.iLine].StartSpacesCount == this[start.iLine].Count) {
                                 RemoveSpacesAfterCaret();
                             }
 
-                            if (Selection.GoRightThroughFolded()) {
+                            List<InputRecord> inputRecords = Studio.Instance.InputRecords;
+                            if (start.iChar == this[start.iLine].Count && start.iLine < lines.Count - 1 && inputRecords[start.iLine].IsInput &&
+                                inputRecords[start.iLine + 1].ToString().Trim() != string.Empty) {
+                                // ignore
+                            } else if (Selection.GoRightThroughFolded()) {
                                 int iLine = Selection.Start.iLine;
                                 InsertChar((char) 1);
 
@@ -2972,7 +2985,6 @@ namespace CelesteStudio.RichText {
                 return;
             }
 
-            Place end = Selection.Start;
             while (Selection.CharAfterStart == ' ') {
                 Selection.GoRight(true);
             }
