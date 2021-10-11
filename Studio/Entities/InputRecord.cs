@@ -169,7 +169,7 @@ namespace CelesteStudio.Entities {
                         foundFrames = true;
                         frames = c ^ 0x30;
                     } else if (c != ' ') {
-                        return frames;
+                        break;
                     }
                 } else if (char.IsDigit(c)) {
                     if (frames < 9999) {
@@ -178,13 +178,17 @@ namespace CelesteStudio.Entities {
                         frames = 9999;
                     }
                 } else if (c != ' ') {
-                    return frames;
+                    break;
                 }
 
                 start++;
             }
 
-            return frames;
+            return frames switch {
+                < 0 => 0,
+                > 9999 => 9999,
+                _ => frames
+            };
         }
 
         private float ReadAngle(string line, ref int start) {
