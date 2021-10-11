@@ -23,7 +23,7 @@ namespace TAS.EverestInterop {
                 WriteLine(builder, $"RoomName: {GameInfo.LevelName}");
                 WriteLine(builder, $"ChapterTime: {GameInfo.ChapterTime}");
                 WriteLine(builder, $"Game Info: ");
-                builder.Append($@"<pre>{GameInfo.GetStudioInfo(true)}</pre>");
+                builder.Append($@"<pre>{GameInfo.ExactStudioInfo}</pre>");
                 Everest.DebugRC.WriteHTMLEnd(c, builder);
                 Everest.DebugRC.Write(c, builder.ToString());
             }

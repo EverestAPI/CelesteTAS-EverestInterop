@@ -345,12 +345,13 @@ namespace TAS.EverestInterop.InfoHUD {
                 return string.Empty;
             }
 
+            bool round = Settings.RoundCustomInfo && !export;
             if (RequireWatchEntities.IsNotEmpty()) {
                 watchingInfo = string.Join(separator, RequireWatchEntities.Where(reference => reference.IsAlive).Select(
                     reference => {
                         Entity entity = (Entity) reference.Target;
                         WatchingEntities.Add(entity);
-                        return GetEntityValues(entity, Settings.InfoWatchEntityType, separator);
+                        return GetEntityValues(entity, Settings.InfoWatchEntityType, separator, round);
                     }
                 ));
             }
@@ -365,7 +366,7 @@ namespace TAS.EverestInterop.InfoHUD {
                     watchingInfo += string.Join(separator, matchEntities.Select(pair => {
                         Entity entity = matchEntities[pair.Key];
                         WatchingEntities.Add(entity);
-                        return GetEntityValues(entity, Settings.InfoWatchEntityType, separator);
+                        return GetEntityValues(entity, Settings.InfoWatchEntityType, separator, round);
                     }));
                 }
             }
@@ -377,7 +378,7 @@ namespace TAS.EverestInterop.InfoHUD {
             ("Info of Clicked Entity:\n" + GetEntityValues(entity, WatchEntityTypes.All)).Log(true);
         }
 
-        private static string GetEntityValues(Entity entity, WatchEntityTypes watchEntityType, string separator = "\n") {
+        private static string GetEntityValues(Entity entity, WatchEntityTypes watchEntityType, string separator = "\n", bool round = true) {
             Type type = entity.GetType();
             string entityId = "";
             if (entity.GetEntityData() is { } entityData) {
@@ -385,7 +386,7 @@ namespace TAS.EverestInterop.InfoHUD {
             }
 
             if (watchEntityType == WatchEntityTypes.Position) {
-                return GetPositionInfo(entity, entityId);
+                return GetPositionInfo(entity, entityId, round);
             }
 
             List<string> values = GetAllSimpleFields(type, watchEntityType == WatchEntityTypes.DeclaredOnly).Select(info => {
@@ -404,10 +405,10 @@ namespace TAS.EverestInterop.InfoHUD {
                     if (info.Name.EndsWith("Timer")) {
                         value = GameInfo.ConvertToFrames(floatValue);
                     } else {
-                        value = Settings.RoundCustomInfo ? $"{floatValue:F2}" : $"{floatValue:F12}";
+                        value = round ? $"{floatValue:F2}" : $"{floatValue:F12}";
                     }
                 } else if (value is Vector2 vector2) {
-                    value = vector2.ToSimpleString(Settings.RoundCustomInfo);
+                    value = vector2.ToSimpleString(round);
                 }
 
                 if (separator == "\t" && value != null) {
@@ -417,13 +418,13 @@ namespace TAS.EverestInterop.InfoHUD {
                 return $"{type.Name}{entityId}.{info.Name}: {value}";
             }).ToList();
 
-            values.Insert(0, GetPositionInfo(entity, entityId));
+            values.Insert(0, GetPositionInfo(entity, entityId, round));
 
             return string.Join(separator, values);
         }
 
-        private static string GetPositionInfo(Entity entity, string entityId) {
-            return $"{entity.GetType().Name}{entityId}: {entity.ToSimplePositionString(Settings.RoundCustomInfo)}";
+        private static string GetPositionInfo(Entity entity, string entityId, bool round) {
+            return $"{entity.GetType().Name}{entityId}: {entity.ToSimplePositionString(round)}";
         }
 
         private static IEnumerable<MemberInfo> GetAllSimpleFields(Type type, bool declaredOnly = false) {

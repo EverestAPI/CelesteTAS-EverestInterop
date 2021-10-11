@@ -647,11 +647,9 @@ namespace CelesteStudio {
         }
 
         private void CopyGameInfo() {
-            if (string.IsNullOrEmpty(CommunicationWrapper.StudioInfo?.ExactGameInfo)) {
-                return;
+            if (GetDataFromGame(GameDataTypes.ExactGameInfo) is { } exactGameInfo) {
+                Clipboard.SetText(exactGameInfo);
             }
-
-            Clipboard.SetText(CommunicationWrapper.StudioInfo.ExactGameInfo);
         }
 
         private void UpdateLoop() {

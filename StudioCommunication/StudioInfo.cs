@@ -7,7 +7,6 @@
         public readonly int SaveStateLine;
         public readonly State TasState;
         public readonly string GameInfo;
-        public readonly string ExactGameInfo;
         public readonly string LevelName;
         public readonly string ChapterTime;
         public readonly string ModVersion;
@@ -15,7 +14,7 @@
         // ReSharper disable once MemberCanBePrivate.Global
         public StudioInfo(
             int currentLine, int currentFrameInInput, int currentFrameInTas, int totalFrames, int saveStateLine, State tasState,
-            string gameInfo, string exactGameInfo, string levelName, string chapterTime, string modVersion) {
+            string gameInfo, string levelName, string chapterTime, string modVersion) {
             CurrentLine = currentLine;
             CurrentFrameInInput = currentFrameInInput;
             CurrentFrameInTas = currentFrameInTas;
@@ -23,7 +22,6 @@
             SaveStateLine = saveStateLine;
             TasState = tasState;
             GameInfo = gameInfo;
-            ExactGameInfo = exactGameInfo;
             LevelName = levelName;
             ChapterTime = chapterTime;
             ModVersion = modVersion;
@@ -39,7 +37,6 @@
                 SaveStateLine,
                 (int) TasState,
                 GameInfo,
-                ExactGameInfo,
                 LevelName,
                 ChapterTime,
                 ModVersion
@@ -58,8 +55,7 @@
                 values[6] as string,
                 values[7] as string,
                 values[8] as string,
-                values[9] as string,
-                values[10] as string
+                values[9] as string
             );
         }
     }

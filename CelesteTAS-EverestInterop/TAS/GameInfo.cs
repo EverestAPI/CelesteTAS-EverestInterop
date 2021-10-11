@@ -109,17 +109,38 @@ namespace TAS {
         private static int FramesPerGameSecond => (int) Math.Round(1 / Engine.RawDeltaTime / Engine.TimeRateB);
         private static int FramesPerRealSecond => (int) Math.Round(1 / Engine.RawDeltaTime);
 
-        public static string GetStudioInfo(bool exact) {
-            List<string> infos = new() {exact ? ExactStatus : Status};
-            if ((exact || (TasSettings.InfoCustom & HudOptions.StudioOnly) != 0) && CustomInfo.IsNotNullOrWhiteSpace()) {
-                infos.Add(CustomInfo);
-            }
+        public static string StudioInfo {
+            get {
+                List<string> infos = new() {Status};
+                if ((TasSettings.InfoCustom & HudOptions.StudioOnly) != 0 && CustomInfo.IsNotNullOrWhiteSpace()) {
+                    infos.Add(CustomInfo);
+                }
 
-            if ((exact || (TasSettings.InfoWatchEntity & HudOptions.StudioOnly) != 0) && WatchingInfo.IsNotNullOrWhiteSpace()) {
-                infos.Add(WatchingInfo);
-            }
+                if ((TasSettings.InfoWatchEntity & HudOptions.StudioOnly) != 0 && WatchingInfo.IsNotNullOrWhiteSpace()) {
+                    infos.Add(WatchingInfo);
+                }
 
-            return string.Join("\n\n", infos);
+                return string.Join("\n\n", infos);
+            }
+        }
+
+        public static string ExactStudioInfo {
+            get {
+                List<string> infos = new() {ExactStatus};
+
+                WatchingInfo = InfoWatchEntity.GetWatchingEntitiesInfo(export: true);
+                CustomInfo = InfoCustom.Parse(true);
+
+                if (CustomInfo.IsNotNullOrWhiteSpace()) {
+                    infos.Add(CustomInfo);
+                }
+
+                if (WatchingInfo.IsNotNullOrWhiteSpace()) {
+                    infos.Add(WatchingInfo);
+                }
+
+                return string.Join("\n\n", infos);
+            }
         }
 
         [Load]

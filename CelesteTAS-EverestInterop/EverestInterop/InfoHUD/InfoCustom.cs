@@ -44,6 +44,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 return string.Empty;
             }
 
+            bool round = Settings.RoundCustomInfo && !export;
             Dictionary<string, List<Entity>> cachedEntities = new();
 
             return BraceRegex.Replace(Settings.InfoCustomTemplate, match => {
@@ -101,7 +102,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 }
 
                 if (GetGetMethod(type, memberNames.First()) is {IsStatic: true} || GetFieldInfo(type, memberNames.First()) is {IsStatic: true}) {
-                    return FormatValue(GetMemberValue(type, null, memberNames), helperMethod);
+                    return FormatValue(GetMemberValue(type, null, memberNames), helperMethod, round);
                 }
 
                 if (Engine.Scene is Level level) {
@@ -119,7 +120,7 @@ namespace TAS.EverestInterop.InfoHUD {
                         }
 
                         return string.Join("", entities.Select(entity => {
-                            string value = FormatValue(GetMemberValue(type, entity, memberNames), helperMethod);
+                            string value = FormatValue(GetMemberValue(type, entity, memberNames), helperMethod, round);
 
                             if (entities.Count > 1) {
                                 if (entity.GetEntityData()?.ToEntityId().ToString() is { } id) {
@@ -132,7 +133,7 @@ namespace TAS.EverestInterop.InfoHUD {
                             return value;
                         }));
                     } else if (type == typeof(Level)) {
-                        return FormatValue(GetMemberValue(type, level, memberNames), helperMethod);
+                        return FormatValue(GetMemberValue(type, level, memberNames), helperMethod, round);
                     }
                 }
 
@@ -150,7 +151,7 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-        private static string FormatValue(object obj, string helperMethod) {
+        private static string FormatValue(object obj, string helperMethod, bool round) {
             if (obj == null) {
                 return string.Empty;
             }
@@ -160,7 +161,7 @@ namespace TAS.EverestInterop.InfoHUD {
                     vector2 = GameInfo.ConvertSpeedUnit(vector2, SpeedUnit.PixelPerFrame);
                 }
 
-                return vector2.ToSimpleString(Settings.RoundCustomInfo);
+                return vector2.ToSimpleString(round);
             }
 
             if (obj is float floatValue) {
@@ -169,7 +170,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 } else if (helperMethod == "toPixelPerFrame()") {
                     return GameInfo.ConvertSpeedUnit(floatValue, SpeedUnit.PixelPerFrame).ToString(CultureInfo.InvariantCulture);
                 } else {
-                    return Settings.RoundCustomInfo ? $"{floatValue:F2}" : $"{floatValue:F12}";
+                    return round ? $"{floatValue:F2}" : $"{floatValue:F12}";
                 }
             }
 

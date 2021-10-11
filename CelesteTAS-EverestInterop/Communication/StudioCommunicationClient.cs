@@ -114,6 +114,7 @@ namespace TAS.Communication {
                 GameDataTypes.ConsoleCommand => GetConsoleCommand(false),
                 GameDataTypes.SimpleConsoleCommand => GetConsoleCommand(true),
                 GameDataTypes.ModInfo => GetModInfo(),
+                GameDataTypes.ExactGameInfo => GameInfo.ExactStudioInfo,
                 _ => string.Empty
             };
 
