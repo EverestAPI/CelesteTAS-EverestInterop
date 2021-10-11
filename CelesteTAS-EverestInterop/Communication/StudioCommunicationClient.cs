@@ -119,6 +119,10 @@ namespace TAS.Communication {
                 _ => string.Empty
             };
 
+            ReturnData(gameData);
+        }
+
+        private void ReturnData(string gameData) {
             byte[] gameDataBytes = Encoding.Default.GetBytes(gameData ?? string.Empty);
             WriteMessageGuaranteed(new Message(MessageIDs.ReturnData, gameDataBytes));
         }
@@ -259,6 +263,7 @@ namespace TAS.Communication {
                     return;
                 }
 
+                ReturnData($"{settingName}: {property.GetValue(settings)}");
                 CelesteTasModule.Instance.SaveSettings();
             }
         }

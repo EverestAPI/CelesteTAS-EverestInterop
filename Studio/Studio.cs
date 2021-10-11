@@ -234,7 +234,7 @@ namespace CelesteStudio {
             tooltip?.Hide(this);
             tooltip = new ToolTip();
             Size textSize = TextRenderer.MeasureText(text, Font);
-            tooltip.Show(text, this, Width / 2 - textSize.Width / 2, Height / 2 - textSize.Height / 2, 3000);
+            tooltip.Show(text, this, Width / 2 - textSize.Width / 2, Height / 2 - textSize.Height / 2, 2000);
         }
 
         private void TASStudio_FormClosed(object sender, FormClosedEventArgs e) {
@@ -626,9 +626,12 @@ namespace CelesteStudio {
             }
         }
 
-        private string GetDataFromGame(GameDataTypes gameDataTypes) {
+        private string GetDataFromGame(GameDataTypes? gameDataTypes = null) {
             CommunicationWrapper.ReturnData = null;
-            StudioCommunicationServer.Instance.GetDataFromGame(gameDataTypes);
+            if (gameDataTypes.HasValue) {
+                StudioCommunicationServer.Instance.GetDataFromGame(gameDataTypes.Value);
+            }
+
             int sleepTimeout = 100;
             while (CommunicationWrapper.ReturnData == null && sleepTimeout > 0) {
                 Thread.Sleep(10);
@@ -636,6 +639,17 @@ namespace CelesteStudio {
             }
 
             return CommunicationWrapper.ReturnData == string.Empty ? null : CommunicationWrapper.ReturnData;
+        }
+
+        private void ToggleGameSetting(string settingName) {
+            if (StudioCommunicationServer.Instance == null) {
+                return;
+            }
+
+            StudioCommunicationServer.Instance.ToggleGameSetting(settingName);
+            if (GetDataFromGame() is { } settingStatus) {
+                ShowTooltip(settingStatus);
+            }
         }
 
         private void InsertNewLine(string text) {
@@ -1488,87 +1502,87 @@ namespace CelesteStudio {
         }
 
         private void toggleHitboxesToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.Instance?.ToggleGameSetting("ShowHitboxes");
+            ToggleGameSetting("ShowHitboxes");
         }
 
         private void toggleTriggerHitboxesToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.Instance?.ToggleGameSetting("ShowTriggerHitboxes");
+            ToggleGameSetting("ShowTriggerHitboxes");
         }
 
         private void toggleSimplifiedHitboxesToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.Instance?.ToggleGameSetting("SimplifiedHitboxes");
+            ToggleGameSetting("SimplifiedHitboxes");
         }
 
         private void switchActualCollideHitboxesToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.Instance?.ToggleGameSetting("ShowActualCollideHitboxes");
+            ToggleGameSetting("ShowActualCollideHitboxes");
         }
 
         private void toggleSimplifiedGraphicsToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.Instance?.ToggleGameSetting("SimplifiedGraphics");
+            ToggleGameSetting("SimplifiedGraphics");
         }
 
         private void toggleGameplayToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.Instance?.ToggleGameSetting("HideGameplay");
+            ToggleGameSetting("HideGameplay");
         }
 
         private void toggleCenterCameraToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.Instance?.ToggleGameSetting("CenterCamera");
+            ToggleGameSetting("CenterCamera");
         }
 
         private void switchInfoHUDToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.Instance?.ToggleGameSetting("InfoHud");
+            ToggleGameSetting("InfoHud");
         }
 
         private void tASInputInfoToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.Instance?.ToggleGameSetting("InfoTasInput");
+            ToggleGameSetting("InfoTasInput");
         }
 
         private void gameInfoToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.Instance?.ToggleGameSetting("InfoGame");
+            ToggleGameSetting("InfoGame");
         }
 
         private void watchEntityInfoToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.Instance?.ToggleGameSetting("InfoWatchEntity");
+            ToggleGameSetting("InfoWatchEntity");
         }
 
         private void customInfoToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.Instance?.ToggleGameSetting("InfoCustom");
+            ToggleGameSetting("InfoCustom");
         }
 
         private void subpixelIndicatorToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.Instance?.ToggleGameSetting("InfoSubPixelIndicator");
+            ToggleGameSetting("InfoSubPixelIndicator");
         }
 
         private void toggleRoundPositionToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.Instance?.ToggleGameSetting("RoundPosition");
+            ToggleGameSetting("RoundPosition");
         }
 
         private void toggleRoundSpeedToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.Instance?.ToggleGameSetting("RoundSpeed");
+            ToggleGameSetting("RoundSpeed");
         }
 
         private void roundVelocityToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.Instance?.ToggleGameSetting("RoundVelocity");
+            ToggleGameSetting("RoundVelocity");
         }
 
         private void roundCustomInfoToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.Instance?.ToggleGameSetting("RoundCustomInfo");
+            ToggleGameSetting("RoundCustomInfo");
         }
 
         private void unitOfSpeedToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.Instance?.ToggleGameSetting("SpeedUnit");
+            ToggleGameSetting("SpeedUnit");
         }
 
         private void copyCustomInfoTemplateToClipboardToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.Instance?.ToggleGameSetting("Copy Custom Info Template to Clipboard");
+            ToggleGameSetting("Copy Custom Info Template to Clipboard");
         }
 
         private void setCustomInfoTemplateFromClipboardToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.Instance?.ToggleGameSetting("Set Custom Info Template From Clipboard");
+            ToggleGameSetting("Set Custom Info Template From Clipboard");
         }
 
         private void clearCustomInfoTemplateToolStripMenuItem_Click(object sender, EventArgs e) {
-            StudioCommunicationServer.Instance?.ToggleGameSetting("Clear Custom Info Template");
+            ToggleGameSetting("Clear Custom Info Template");
         }
 
         private void enabledAutoBackupToolStripMenuItem_Click(object sender, EventArgs e) {
