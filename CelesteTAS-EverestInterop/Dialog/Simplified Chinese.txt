@@ -55,7 +55,6 @@ TAS_INFO_TEXT_SIZE=                        文字大小
 TAS_INFO_SUBPIXEL_INDICATOR_SIZE=          亚像素指示器大小
 TAS_INFO_OPACITY=                          不透明度
 TAS_INFO_MASKED_OPACITY=                   遮挡人物时的不透明度
-TAS_KEY_INFO_HUD=                          信息面板
 
 # ================================== Info HUD Options ==================================
 TAS_INFO_HUD_OPTIONS_OFF=         关
