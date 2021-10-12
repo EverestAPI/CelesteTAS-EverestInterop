@@ -39,12 +39,12 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-        public static string Parse(bool export = false) {
-            if (Settings.InfoCustom == HudOptions.Off && !export) {
+        public static string Parse(bool alwaysUpdate = false, bool round = true) {
+            if (Settings.InfoCustom == HudOptions.Off && !alwaysUpdate) {
                 return string.Empty;
             }
 
-            bool round = Settings.RoundCustomInfo && !export;
+            round = round && Settings.RoundCustomInfo;
             Dictionary<string, List<Entity>> cachedEntities = new();
 
             return BraceRegex.Replace(Settings.InfoCustomTemplate, match => {

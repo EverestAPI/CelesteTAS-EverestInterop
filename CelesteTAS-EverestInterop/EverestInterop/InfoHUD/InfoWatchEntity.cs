@@ -338,14 +338,14 @@ namespace TAS.EverestInterop.InfoHUD {
             GameInfo.Update();
         }
 
-        public static string GetWatchingEntitiesInfo(string separator = "\n", bool export = false) {
+        public static string GetWatchingEntitiesInfo(string separator = "\n", bool alwaysUpdate = false, bool round = true) {
             WatchingEntities.Clear();
             string watchingInfo = string.Empty;
-            if (Engine.Scene is not Level level || Settings.InfoWatchEntity == HudOptions.Off && !export) {
+            if (Engine.Scene is not Level level || Settings.InfoWatchEntity == HudOptions.Off && !alwaysUpdate) {
                 return string.Empty;
             }
 
-            bool round = Settings.RoundCustomInfo && !export;
+            round = round && Settings.RoundCustomInfo;
             if (RequireWatchEntities.IsNotEmpty()) {
                 watchingInfo = string.Join(separator, RequireWatchEntities.Where(reference => reference.IsAlive).Select(
                     reference => {

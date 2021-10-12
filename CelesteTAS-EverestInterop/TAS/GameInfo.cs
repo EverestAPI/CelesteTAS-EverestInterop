@@ -106,9 +106,6 @@ namespace TAS {
             }
         }
 
-        private static int FramesPerGameSecond => (int) Math.Round(1 / Engine.RawDeltaTime / Engine.TimeRateB);
-        private static int FramesPerRealSecond => (int) Math.Round(1 / Engine.RawDeltaTime);
-
         public static string StudioInfo {
             get {
                 List<string> infos = new() {Status};
@@ -128,8 +125,8 @@ namespace TAS {
             get {
                 List<string> infos = new() {ExactStatus};
 
-                WatchingInfo = InfoWatchEntity.GetWatchingEntitiesInfo(export: true);
-                CustomInfo = InfoCustom.Parse(true);
+                WatchingInfo = InfoWatchEntity.GetWatchingEntitiesInfo(alwaysUpdate: true, round: false);
+                CustomInfo = InfoCustom.Parse(true, false);
 
                 if (CustomInfo.IsNotNullOrWhiteSpace()) {
                     infos.Add(CustomInfo);
@@ -142,6 +139,9 @@ namespace TAS {
                 return string.Join("\n\n", infos);
             }
         }
+
+        private static int FramesPerGameSecond => (int) Math.Round(1 / Engine.RawDeltaTime / Engine.TimeRateB);
+        private static int FramesPerRealSecond => (int) Math.Round(1 / Engine.RawDeltaTime);
 
         [Load]
         private static void Load() {
