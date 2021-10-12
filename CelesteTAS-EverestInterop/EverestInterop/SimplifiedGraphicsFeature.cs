@@ -43,9 +43,9 @@ namespace TAS.EverestInterop {
                 subMenu.Add(new TextMenu.OnOff("Enabled".ToDialogText(), Settings.SimplifiedGraphics).Change(value =>
                     Settings.SimplifiedGraphics = value));
                 subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<bool>("Gameplay".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.HideGameplay).Change(
+                    new TextMenuExt.EnumerableSlider<bool>("Gameplay".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.ShowGameplay).Change(
                         value =>
-                            Settings.HideGameplay = value));
+                            Settings.ShowGameplay = value));
                 subMenu.Add(
                     new TextMenuExt.EnumerableSlider<int?>("Lighting".ToDialogText(), Menu.CreateSliderOptions(10, 0, i => $"{i * 10}%"),
                         Settings.SimplifiedLighting).Change(value =>

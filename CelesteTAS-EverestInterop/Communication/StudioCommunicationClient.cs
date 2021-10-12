@@ -273,7 +273,7 @@ namespace TAS.Communication {
                 }
 
                 if (modified) {
-                    ReturnData($"{settingName}: {property.GetValue(settings)}");
+                    ReturnData((property.GetValue(settings)?.ToString() ?? string.Empty).SpacedPascalCase());
                     CelesteTasModule.Instance.SaveSettings();
                 } else {
                     ReturnData(string.Empty);

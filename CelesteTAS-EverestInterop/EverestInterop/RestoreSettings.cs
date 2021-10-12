@@ -72,7 +72,7 @@ namespace TAS.EverestInterop {
                                 backupTasSettings.ShowTriggerHitboxes = tasSettings.ShowTriggerHitboxes;
                                 backupTasSettings.ShowActualCollideHitboxes = tasSettings.ShowActualCollideHitboxes;
                                 backupTasSettings.SimplifiedGraphics = tasSettings.SimplifiedGraphics;
-                                backupTasSettings.HideGameplay = tasSettings.HideGameplay;
+                                backupTasSettings.ShowGameplay = tasSettings.ShowGameplay;
                                 backupTasSettings.CenterCamera = tasSettings.CenterCamera;
                                 backupTasSettings.InfoHud = tasSettings.InfoHud;
                                 backupTasSettings.InfoCustomTemplate = tasSettings.InfoCustomTemplate;

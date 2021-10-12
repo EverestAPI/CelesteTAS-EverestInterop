@@ -125,11 +125,14 @@ namespace TAS.EverestInterop {
             set => simplifiedGraphics = value;
         }
 
-        private bool hideGamePlay;
+        private bool showGameplay = true;
 
-        public bool HideGameplay {
-            get => hideGamePlay;
-            set => hideGamePlay = ShowHitboxes = value;
+        public bool ShowGameplay {
+            get => showGameplay;
+            set {
+                showGameplay = value;
+                ShowHitboxes = !value;
+            }
         }
 
         public int? SimplifiedLighting { get; set; } = 10;
