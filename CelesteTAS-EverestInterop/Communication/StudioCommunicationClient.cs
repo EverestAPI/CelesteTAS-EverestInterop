@@ -229,22 +229,30 @@ namespace TAS.Communication {
 
             $"Toggle game setting: {settingName}".DebugLog();
 
+            bool modified = false;
             CelesteTasModuleSettings settings = CelesteTasModule.Settings;
 
             switch (settingName) {
                 case "Copy Custom Info Template to Clipboard":
-                    TextInput.SetClipboardText(settings.InfoCustomTemplate);
-                    return;
+                    TextInput.SetClipboardText(string.IsNullOrEmpty(settings.InfoCustomTemplate) ? " " : settings.InfoCustomTemplate);
+                    modified = true;
+                    break;
                 case "Set Custom Info Template From Clipboard":
                     settings.InfoCustomTemplate = TextInput.GetClipboardText();
-                    CelesteTasModule.Instance.SaveSettings();
                     GameInfo.Update();
-                    return;
+                    modified = true;
+                    break;
                 case "Clear Custom Info Template":
                     settings.InfoCustomTemplate = string.Empty;
-                    CelesteTasModule.Instance.SaveSettings();
                     GameInfo.Update();
-                    return;
+                    modified = true;
+                    break;
+            }
+
+            if (modified) {
+                ReturnData(string.Empty);
+                CelesteTasModule.Instance.SaveSettings();
+                return;
             }
 
             if (typeof(CelesteTasModuleSettings).GetProperty(settingName) is { } property) {
@@ -255,16 +263,21 @@ namespace TAS.Communication {
                 object value = property.GetValue(settings);
                 if (value is bool boolValue) {
                     property.SetValue(settings, !boolValue);
+                    modified = true;
                 } else if (value is HudOptions hudOptions) {
                     property.SetValue(settings, (hudOptions & HudOptions.StudioOnly) == 0 ? HudOptions.Both : HudOptions.Off);
+                    modified = true;
                 } else if (value is Enum) {
                     property.SetValue(settings, ((int) value + 1) % Enum.GetValues(property.PropertyType).Length);
-                } else {
-                    return;
+                    modified = true;
                 }
 
-                ReturnData($"{settingName}: {property.GetValue(settings)}");
-                CelesteTasModule.Instance.SaveSettings();
+                if (modified) {
+                    ReturnData($"{settingName}: {property.GetValue(settings)}");
+                    CelesteTasModule.Instance.SaveSettings();
+                } else {
+                    ReturnData(string.Empty);
+                }
             }
         }
 
