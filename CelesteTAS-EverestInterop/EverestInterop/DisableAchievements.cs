@@ -36,7 +36,7 @@ namespace TAS.EverestInterop {
         }
 
         private static void Achievements_Register(On.Celeste.Achievements.orig_Register orig, Achievement achievement) {
-            if (Settings.DisableAchievements) {
+            if (Settings.Enabled && Settings.DisableAchievements) {
                 return;
             }
 
@@ -44,7 +44,7 @@ namespace TAS.EverestInterop {
         }
 
         private static void Stats_Increment(On.Celeste.Stats.orig_Increment orig, Stat stat, int increment) {
-            if (Settings.DisableAchievements) {
+            if (Settings.Enabled && Settings.DisableAchievements) {
                 return;
             }
 

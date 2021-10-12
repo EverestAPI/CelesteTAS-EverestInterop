@@ -1,62 +1,38 @@
 ﻿using System;
-using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
-using Monocle;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
-using TAS.Utils;
 
 namespace TAS.EverestInterop {
     public class CelesteTasModuleSettings : EverestModuleSettings {
-        private bool centerCamera;
+        private static bool initialize;
+
+        [Load]
+        private static void Load() {
+            initialize = true;
+        }
+
         public bool Enabled { get; set; } = true;
 
+        #region Hitboxes
+
+        private bool showHitboxes;
+
         public bool ShowHitboxes {
-            get => GameplayRenderer.RenderDebug;
-            set => GameplayRenderer.RenderDebug = value;
+            get => Enabled && showHitboxes;
+            set => showHitboxes = value;
         }
 
-        public bool CenterCamera {
-            get => Enabled && centerCamera;
-            set => centerCamera = value;
-        }
-
-        public bool DisableAchievements { get; set; } = false;
-
-        [SettingNeedsRelaunch] public bool LaunchStudioAtBoot { get; set; } = false;
-
-        public bool Mod9DLighting { get; set; } = false;
-
-        [SettingIgnore] public bool FastForwardCallBase { get; set; } = false;
-        [SettingIgnore] public int FastForwardThreshold { get; set; } = 10;
-        [SettingIgnore] public DateTime StudioLastModifiedTime { get; set; } = new();
-        public bool AutoExtractNewStudio { get; set; } = true;
         [SettingIgnore] public Color EntityHitboxColor { get; set; } = HitboxColor.DefaultEntityColor;
         [SettingIgnore] public Color TriggerHitboxColor { get; set; } = HitboxColor.DefaultTriggerColor;
         [SettingIgnore] public Color PlatformHitboxColor { get; set; } = HitboxColor.DefaultPlatformColor;
         public bool ShowTriggerHitboxes { get; set; } = true;
         public bool SimplifiedHitboxes { get; set; } = true;
         public ActualCollideHitboxTypes ShowActualCollideHitboxes { get; set; } = ActualCollideHitboxTypes.Off;
-        public bool PauseAfterLoadState { get; set; } = true;
 
-        public bool RestoreSettings { get; set; } = false;
-
-        // for hot reloading
-        // ReSharper disable once UnusedMember.Local
-        [Load]
-        private static void RestoreHitboxSetting() {
-            GameplayRenderer.RenderDebug =
-                Engine.Instance.GetDynDataInstance().Get<bool?>(nameof(CelesteTasModule.Settings.ShowHitboxes)) ?? false;
-        }
-
-        // for hot reloading
-        // ReSharper disable once UnusedMember.Local
-        [Unload]
-        private static void SaveHitboxSetting() {
-            Engine.Instance.GetDynDataInstance().Set(nameof(CelesteTasModule.Settings.ShowHitboxes), CelesteTasModule.Settings.ShowHitboxes);
-        }
+        #endregion
 
         #region HotKey
 
@@ -118,7 +94,7 @@ namespace TAS.EverestInterop {
 
         #region SimplifiedGraphics
 
-        private bool simplifiedGraphics = false;
+        private bool simplifiedGraphics;
 
         public bool SimplifiedGraphics {
             get => Enabled && simplifiedGraphics;
@@ -131,7 +107,9 @@ namespace TAS.EverestInterop {
             get => showGameplay;
             set {
                 showGameplay = value;
-                ShowHitboxes = !value;
+                if (initialize) {
+                    ShowHitboxes = !value;
+                }
             }
         }
 
@@ -227,6 +205,37 @@ namespace TAS.EverestInterop {
                 GameInfo.Update();
             }
         }
+
+        #endregion
+
+        #region Relaunch Required
+
+        [SettingNeedsRelaunch] public bool LaunchStudioAtBoot { get; set; } = false;
+        public bool AutoExtractNewStudio { get; set; } = true;
+
+        #endregion
+
+        #region More Options
+
+        private bool centerCamera;
+
+        public bool CenterCamera {
+            get => Enabled && centerCamera;
+            set => centerCamera = value;
+        }
+
+        public bool PauseAfterLoadState { get; set; } = true;
+        public bool RestoreSettings { get; set; } = false;
+        public bool DisableAchievements { get; set; } = false;
+        public bool Mod9DLighting { get; set; } = false;
+
+        #endregion
+
+        # region Ignore
+
+        [SettingIgnore] public bool FastForwardCallBase { get; set; } = false;
+        [SettingIgnore] public int FastForwardThreshold { get; set; } = 10;
+        [SettingIgnore] public DateTime StudioLastModifiedTime { get; set; } = new();
 
         #endregion
     }

@@ -133,18 +133,22 @@ namespace TAS.EverestInterop {
             if (Engine.Scene is Level level && (!level.Paused || level.PauseMainMenuOpen || Manager.Running)) {
                 if (Hitboxes.Pressed) {
                     Settings.ShowHitboxes = !Settings.ShowHitboxes;
+                    CelesteTasModule.Instance.SaveSettings();
                 }
 
                 if (TriggerHitboxes.Pressed) {
                     Settings.ShowTriggerHitboxes = !Settings.ShowTriggerHitboxes;
+                    CelesteTasModule.Instance.SaveSettings();
                 }
 
                 if (SimplifiedGraphic.Pressed) {
                     Settings.SimplifiedGraphics = !Settings.SimplifiedGraphics;
+                    CelesteTasModule.Instance.SaveSettings();
                 }
 
                 if (CenterCamera.Pressed) {
                     Settings.CenterCamera = !Settings.CenterCamera;
+                    CelesteTasModule.Instance.SaveSettings();
                 }
             }
         }

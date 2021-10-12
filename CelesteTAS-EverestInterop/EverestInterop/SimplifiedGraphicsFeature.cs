@@ -309,7 +309,7 @@ namespace TAS.EverestInterop {
             c.GotoNext(i => i.MatchLdloc(2));
             c.Emit(OpCodes.Ldloc_2);
             c.EmitDelegate<Action<Backdrop>>(backdrop => {
-                if (Settings.Mod9DLighting && backdrop.Visible && Engine.Scene is Level level) {
+                if (Settings.Enabled && Settings.Mod9DLighting && backdrop.Visible && Engine.Scene is Level level) {
                     bool hideBackdrop =
                         (level.Session.Level.StartsWith("g") || level.Session.Level.StartsWith("h"))
                         && level.Session.Level != "hh-08"
