@@ -170,7 +170,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 subMenu.Add(new TextMenuExt.EnumerableSlider<HudOptions>("Info Custom".ToDialogText(), CreateHudOptions(), TasSettings.InfoCustom)
                     .Change(value => TasSettings.InfoCustom = value));
                 subMenu.Add(new TextMenu.Button("Info Copy Custom Template".ToDialogText()).Pressed(() =>
-                    TextInput.SetClipboardText(string.IsNullOrEmpty(TasSettings.InfoCustomTemplate) ? " " : TasSettings.InfoCustomTemplate)));
+                    TextInput.SetClipboardText(string.IsNullOrEmpty(TasSettings.InfoCustomTemplate) ? "\0" : TasSettings.InfoCustomTemplate)));
                 subMenu.Add(new TextMenu.Button("Info Set Custom Template".ToDialogText()).Pressed(() => {
                     TasSettings.InfoCustomTemplate = TextInput.GetClipboardText() ?? string.Empty;
                     CelesteTasModule.Instance.SaveSettings();

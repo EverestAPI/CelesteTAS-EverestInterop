@@ -234,7 +234,7 @@ namespace TAS.Communication {
 
             switch (settingName) {
                 case "Copy Custom Info Template to Clipboard":
-                    TextInput.SetClipboardText(string.IsNullOrEmpty(settings.InfoCustomTemplate) ? " " : settings.InfoCustomTemplate);
+                    TextInput.SetClipboardText(string.IsNullOrEmpty(settings.InfoCustomTemplate) ? "\0" : settings.InfoCustomTemplate);
                     modified = true;
                     break;
                 case "Set Custom Info Template From Clipboard":
