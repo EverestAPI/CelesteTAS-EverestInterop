@@ -638,6 +638,10 @@ namespace CelesteStudio {
                 sleepTimeout -= 10;
             }
 
+            if (CommunicationWrapper.ReturnData == null && sleepTimeout <= 0) {
+                ShowTooltip("Getting data from the game timed out.");
+            }
+
             return CommunicationWrapper.ReturnData == string.Empty ? null : CommunicationWrapper.ReturnData;
         }
 
