@@ -17,7 +17,8 @@ namespace TAS.EverestInterop.Hitboxes {
         private static void GameplayRendererOnRender(ILContext il) {
             ILCursor ilCursor = new(il);
             if (ilCursor.TryGotoNext(MoveType.After, i => i.MatchLdsfld<GameplayRenderer>("RenderDebug"))) {
-                ilCursor.EmitDelegate<Func<bool, bool>>(renderDebug => renderDebug || CelesteTasModule.Settings.ShowHitboxes);
+                ilCursor.EmitDelegate<Func<bool, bool>>(renderDebug =>
+                    renderDebug || CelesteTasModule.Settings.ShowHitboxes || !CelesteTasModule.Settings.ShowGameplay);
             }
         }
     }

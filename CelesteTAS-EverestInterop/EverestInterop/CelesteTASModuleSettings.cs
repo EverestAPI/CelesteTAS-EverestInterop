@@ -21,7 +21,7 @@ namespace TAS.EverestInterop {
         private bool showHitboxes;
 
         public bool ShowHitboxes {
-            get => Enabled && showHitboxes;
+            get => Enabled && showHitboxes || !ShowGameplay;
             set => showHitboxes = value;
         }
 
@@ -104,13 +104,8 @@ namespace TAS.EverestInterop {
         private bool showGameplay = true;
 
         public bool ShowGameplay {
-            get => showGameplay;
-            set {
-                showGameplay = value;
-                if (initialize) {
-                    ShowHitboxes = !value;
-                }
-            }
+            get => showGameplay || !SimplifiedGraphics;
+            set => showGameplay = value;
         }
 
         public int? SimplifiedLighting { get; set; } = 10;

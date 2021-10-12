@@ -38,7 +38,7 @@ namespace TAS.EverestInterop {
             }
 
             c.Index++;
-            c.EmitDelegate<Func<bool>>(() => Settings.SimplifiedGraphics && !Settings.ShowGameplay);
+            c.EmitDelegate<Func<bool>>(() => !Settings.ShowGameplay);
             // c.Emit(OpCodes.Call, typeof(CelesteTASModule).GetMethod("get_Settings"));
             // c.Emit(OpCodes.Callvirt, typeof(CelesteTASModuleSettings).GetMethod("get_HideGameplay"));
             c.Emit(OpCodes.Brtrue, lblAfterEntities);
