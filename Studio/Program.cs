@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -53,10 +54,15 @@ namespace CelesteStudio {
             // if IsSingleInstance = true and celeste launch before studio the connection will fail, idnw...
             // so we just close the studio already launched
             if (!IsSingleInstance) {
-                foreach (Process process in Process.GetProcessesByName("Celeste Studio")) {
-                    if (process.Id != Process.GetCurrentProcess().Id) {
-                        process.Kill();
+                try {
+                    foreach (Process process in Process.GetProcessesByName("Celeste Studio")) {
+                        if (process.Id != Process.GetCurrentProcess().Id) {
+                            process.Kill();
+                        }
                     }
+                } catch (Win32Exception) {
+                    MessageBox.Show("Celeste Studio does not support multiple instances, please close other instances manually.",
+                        "Failure to close other studio", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             }
 
