@@ -20,6 +20,9 @@ namespace TAS.EverestInterop.Hitboxes {
         private static readonly Func<HoldableCollider, Collider> HoldableColliderCollider =
             typeof(HoldableCollider).GetFieldInfo("collider").CreateDelegate_Get<Func<HoldableCollider, Collider>>();
 
+        private static readonly Func<LockBlock, bool> LockBlockOpening =
+            typeof(LockBlock).GetFieldInfo("opening").CreateDelegate_Get<Func<LockBlock, bool>>();
+
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
         [Load]
@@ -67,23 +70,61 @@ namespace TAS.EverestInterop.Hitboxes {
                 }
             }
 
-            if (self is Puffer) {
-                Vector2 bottomCenter = self.BottomCenter - Vector2.UnitY * 1;
-                if (self.Scene.Tracker.GetEntity<Player>() is {Ducking: true}) {
-                    bottomCenter -= Vector2.UnitY * 3;
-                }
-
-                Color hitboxColor = HitboxColor.EntityColor;
-                if (!self.Collidable) {
-                    hitboxColor *= 0.5f;
-                }
-
-                Draw.Circle(self.Position, 32f, hitboxColor, 32);
-                Draw.Line(bottomCenter - Vector2.UnitX * 32, bottomCenter - Vector2.UnitX * 6, hitboxColor);
-                Draw.Line(bottomCenter + Vector2.UnitX * 6, bottomCenter + Vector2.UnitX * 32, hitboxColor);
+            switch (self) {
+                case Puffer puffer:
+                    DrawPufferHitbox(puffer);
+                    break;
+                case LockBlock lockBlock:
+                    DrawLockBlockHitbox(lockBlock);
+                    break;
             }
 
             orig(self, camera);
+        }
+
+        private static void DrawPufferHitbox(Puffer puffer) {
+            Vector2 bottomCenter = puffer.BottomCenter - Vector2.UnitY * 1;
+            if (puffer.Scene.Tracker.GetEntity<Player>() is {Ducking: true}) {
+                bottomCenter -= Vector2.UnitY * 3;
+            }
+
+            Color hitboxColor = HitboxColor.EntityColor;
+            if (!puffer.Collidable) {
+                hitboxColor *= 0.5f;
+            }
+
+            Draw.Circle(puffer.Position, 32f, hitboxColor, 32);
+            Draw.Line(bottomCenter - Vector2.UnitX * 32, bottomCenter - Vector2.UnitX * 6, hitboxColor);
+            Draw.Line(bottomCenter + Vector2.UnitX * 6, bottomCenter + Vector2.UnitX * 32, hitboxColor);
+        }
+
+        private static void DrawLockBlockHitbox(LockBlock lockBlock) {
+            if (Engine.Scene.GetPlayer() is not { } player) {
+                return;
+            }
+
+            if (lockBlock.Get<PlayerCollider>() is not {Collider: Circle circle}) {
+                return;
+            }
+
+            if (Vector2.Distance(player.Center, lockBlock.Center) > circle.Radius * 1.5) {
+                return;
+            }
+
+            Color color = Color.HotPink;
+            if (LockBlockOpening(lockBlock)) {
+                color = Color.Aqua;
+            }
+
+            bool origCollidable = lockBlock.Collidable;
+            lockBlock.Collidable = false;
+            if (Engine.Scene.CollideCheck<Solid>(player.Center, lockBlock.Center)) {
+                color *= 0.5f;
+            }
+
+            lockBlock.Collidable = origCollidable;
+
+            Draw.Line(player.Center, lockBlock.Center, color);
         }
 
         private static void AddHoldableColliderHitbox(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
