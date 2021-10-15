@@ -1,9 +1,13 @@
 ﻿using System;
+using System.Linq;
+using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
+using Monocle;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
+using TAS.Utils;
 
 namespace TAS.EverestInterop {
     public class CelesteTasModuleSettings : EverestModuleSettings {
@@ -215,7 +219,10 @@ namespace TAS.EverestInterop {
         private bool centerCamera;
 
         public bool CenterCamera {
-            get => Enabled && centerCamera;
+            get => Enabled
+                   && centerCamera
+                   && Engine.Scene?.Tracker != null
+                   && Engine.Scene.Tracker.GetEntities<Lookout>().All(lookout => !lookout.GetFieldValue<bool>("interacting"));
             set => centerCamera = value;
         }
 

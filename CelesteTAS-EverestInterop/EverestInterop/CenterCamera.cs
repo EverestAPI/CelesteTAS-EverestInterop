@@ -14,12 +14,16 @@ namespace TAS.EverestInterop {
             // note: change the camera.position before level.BeforeRender will cause desync 3A-roof04
             On.Celeste.Level.Render += LevelOnRender;
             On.Celeste.LightingRenderer.BeforeRender += LightingRendererOnRender;
+            On.Celeste.TalkComponent.TalkComponentUI.Render += TalkComponentUIOnRender;
+            On.Celeste.BirdTutorialGui.Render += BirdTutorialGuiOnRender;
             On.Celeste.DustEdges.Render += DustEdgesOnRender;
         }
 
         public static void Unload() {
             On.Celeste.Level.Render -= LevelOnRender;
             On.Celeste.LightingRenderer.BeforeRender -= LightingRendererOnRender;
+            On.Celeste.TalkComponent.TalkComponentUI.Render -= TalkComponentUIOnRender;
+            On.Celeste.BirdTutorialGui.Render += BirdTutorialGuiOnRender;
             On.Celeste.DustEdges.Render -= DustEdgesOnRender;
         }
 
@@ -50,6 +54,14 @@ namespace TAS.EverestInterop {
 
         private static void LightingRendererOnRender(On.Celeste.LightingRenderer.orig_BeforeRender orig, LightingRenderer self, Scene scene) {
             CenterTheCamera(() => orig(self, scene));
+        }
+
+        private static void TalkComponentUIOnRender(On.Celeste.TalkComponent.TalkComponentUI.orig_Render orig, TalkComponent.TalkComponentUI self) {
+            CenterTheCamera(() => orig(self));
+        }
+
+        private static void BirdTutorialGuiOnRender(On.Celeste.BirdTutorialGui.orig_Render orig, BirdTutorialGui self) {
+            CenterTheCamera(() => orig(self));
         }
 
         private static void DustEdgesOnRender(On.Celeste.DustEdges.orig_Render orig, DustEdges self) {
