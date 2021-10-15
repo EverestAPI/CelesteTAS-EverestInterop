@@ -70,7 +70,7 @@ namespace TAS {
             settings.Set("Dash", new List<Keys>());
             settings.Set("Talk", new List<Keys>());
             settings.Set("Pause", new List<Keys>());
-            settings.Set("Confirm", new[] {Confirm2});
+            settings.Set("Confirm", new List<Keys> {Confirm2});
             settings.Set("Cancel", new List<Keys>());
             settings.Set("Journal", new List<Keys>());
             settings.Set("QuickRestart", new List<Keys>());
