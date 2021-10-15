@@ -37,6 +37,7 @@ namespace TAS {
         public static Buttons DemoDash { get; } = Buttons.RightShoulder;
         public static Buttons DemoDash2 { get; } = Buttons.RightStick;
         public static Keys Confirm2 => Keys.C;
+        private static bool origControllerHasFocus;
 
         // ReSharper disable once UnusedMember.Local
         [EnableRun]
@@ -50,12 +51,15 @@ namespace TAS {
             }
 
             Settings.Instance.CopyAllFields(settingsBackup);
+            origControllerHasFocus = MInput.ControllerHasFocus;
+            MInput.ControllerHasFocus = true;
         }
 
         // ReSharper disable once UnusedMember.Local
         [DisableRun]
         private static void RestorePlayerBindings() {
             GameInput.Initialize();
+            MInput.ControllerHasFocus = origControllerHasFocus;
         }
 
         private static void SetTasBindingsV1312() {
