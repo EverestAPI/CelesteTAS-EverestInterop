@@ -31,15 +31,16 @@ namespace CelesteStudio.RichText {
 
         FileStream fs {
             get {
-                try {
-                    if (_fs == null) {
-                        _fs = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+                int retry = 0;
+                while (retry++ < 10) {
+                    try {
+                        return _fs ??= new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+                    } catch (IOException) {
+                        Thread.Sleep(50);
                     }
-
-                    return _fs;
-                } catch (Exception) {
-                    return null;
                 }
+
+                return _fs;
             }
         }
 
