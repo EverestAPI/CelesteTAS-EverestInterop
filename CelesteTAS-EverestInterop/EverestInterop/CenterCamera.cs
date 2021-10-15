@@ -1,5 +1,6 @@
 ﻿using System;
 using Celeste;
+using Celeste.Mod.UI;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Utils;
@@ -15,18 +16,18 @@ namespace TAS.EverestInterop {
             On.Celeste.Level.Render += LevelOnRender;
             On.Celeste.LightingRenderer.BeforeRender += LightingRendererOnRender;
             On.Celeste.DisplacementRenderer.BeforeRender += DisplacementRendererOnBeforeRender;
-            On.Celeste.TalkComponent.TalkComponentUI.Render += TalkComponentUIOnRender;
-            On.Celeste.BirdTutorialGui.Render += BirdTutorialGuiOnRender;
             On.Celeste.DustEdges.Render += DustEdgesOnRender;
+            On.Celeste.HudRenderer.RenderContent += HudRendererOnRenderContent;
+            On.Celeste.Mod.UI.SubHudRenderer.RenderContent += SubHudRendererOnRenderContent;
         }
 
         public static void Unload() {
             On.Celeste.Level.Render -= LevelOnRender;
             On.Celeste.LightingRenderer.BeforeRender -= LightingRendererOnRender;
             On.Celeste.DisplacementRenderer.BeforeRender += DisplacementRendererOnBeforeRender;
-            On.Celeste.TalkComponent.TalkComponentUI.Render -= TalkComponentUIOnRender;
-            On.Celeste.BirdTutorialGui.Render += BirdTutorialGuiOnRender;
             On.Celeste.DustEdges.Render -= DustEdgesOnRender;
+            On.Celeste.HudRenderer.RenderContent -= HudRendererOnRenderContent;
+            On.Celeste.Mod.UI.SubHudRenderer.RenderContent -= SubHudRendererOnRenderContent;
         }
 
         private static void CenterTheCamera(Action action) {
@@ -63,14 +64,6 @@ namespace TAS.EverestInterop {
             CenterTheCamera(() => orig(self, scene));
         }
 
-        private static void TalkComponentUIOnRender(On.Celeste.TalkComponent.TalkComponentUI.orig_Render orig, TalkComponent.TalkComponentUI self) {
-            CenterTheCamera(() => orig(self));
-        }
-
-        private static void BirdTutorialGuiOnRender(On.Celeste.BirdTutorialGui.orig_Render orig, BirdTutorialGui self) {
-            CenterTheCamera(() => orig(self));
-        }
-
         private static void DustEdgesOnRender(On.Celeste.DustEdges.orig_Render orig, DustEdges self) {
             Vector2? origCameraPosition = null;
             Camera camera = self.SceneAs<Level>()?.Camera;
@@ -84,6 +77,14 @@ namespace TAS.EverestInterop {
             if (origCameraPosition != null) {
                 camera.Position = origCameraPosition.Value;
             }
+        }
+
+        private static void SubHudRendererOnRenderContent(On.Celeste.Mod.UI.SubHudRenderer.orig_RenderContent orig, SubHudRenderer self, Scene scene) {
+            CenterTheCamera(() => orig(self, scene));
+        }
+
+        private static void HudRendererOnRenderContent(On.Celeste.HudRenderer.orig_RenderContent orig, HudRenderer self, Scene scene) {
+            CenterTheCamera(() => orig(self, scene));
         }
     }
 }
