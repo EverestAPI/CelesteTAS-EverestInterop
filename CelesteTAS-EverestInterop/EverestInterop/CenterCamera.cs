@@ -24,7 +24,7 @@ namespace TAS.EverestInterop {
         public static void Unload() {
             On.Celeste.Level.Render -= LevelOnRender;
             On.Celeste.LightingRenderer.BeforeRender -= LightingRendererOnRender;
-            On.Celeste.DisplacementRenderer.BeforeRender += DisplacementRendererOnBeforeRender;
+            On.Celeste.DisplacementRenderer.BeforeRender -= DisplacementRendererOnBeforeRender;
             On.Celeste.DustEdges.Render -= DustEdgesOnRender;
             On.Celeste.HudRenderer.RenderContent -= HudRendererOnRenderContent;
             On.Celeste.Mod.UI.SubHudRenderer.RenderContent -= SubHudRendererOnRenderContent;
