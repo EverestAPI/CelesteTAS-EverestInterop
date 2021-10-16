@@ -11,12 +11,8 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop {
     public class CelesteTasModuleSettings : EverestModuleSettings {
-        private static bool initialize;
-
-        [Load]
-        private static void Load() {
-            initialize = true;
-        }
+        private static readonly Func<Lookout, bool> LookoutInteracting =
+            typeof(Lookout).GetFieldInfo("interacting").CreateDelegate_Get<Func<Lookout, bool>>();
 
         public bool Enabled { get; set; } = true;
 
@@ -222,7 +218,7 @@ namespace TAS.EverestInterop {
             get => Enabled
                    && centerCamera
                    && Engine.Scene?.Tracker != null
-                   && Engine.Scene.Tracker.GetEntities<Lookout>().All(lookout => !lookout.GetFieldValue<bool>("interacting"));
+                   && Engine.Scene.Tracker.GetEntities<Lookout>().All(lookout => !LookoutInteracting((Lookout) lookout));
             set => centerCamera = value;
         }
 
