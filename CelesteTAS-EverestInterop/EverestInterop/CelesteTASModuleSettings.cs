@@ -1,19 +1,12 @@
 ﻿using System;
-using System.Linq;
-using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
-using Monocle;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
-using TAS.Utils;
 
 namespace TAS.EverestInterop {
     public class CelesteTasModuleSettings : EverestModuleSettings {
-        private static readonly Func<Lookout, bool> LookoutInteracting =
-            typeof(Lookout).GetFieldInfo("interacting").CreateDelegate_Get<Func<Lookout, bool>>();
-
         public bool Enabled { get; set; } = true;
 
         #region Hitboxes
@@ -215,10 +208,7 @@ namespace TAS.EverestInterop {
         private bool centerCamera;
 
         public bool CenterCamera {
-            get => Enabled
-                   && centerCamera
-                   && Engine.Scene?.Tracker != null
-                   && Engine.Scene.Tracker.GetEntities<Lookout>().All(lookout => !LookoutInteracting((Lookout) lookout));
+            get => Enabled && centerCamera;
             set => centerCamera = value;
         }
 
