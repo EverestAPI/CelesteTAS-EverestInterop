@@ -1,4 +1,5 @@
-﻿using Celeste;
+﻿using System;
+using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Utils;
@@ -20,7 +21,7 @@ namespace TAS.EverestInterop.Hitboxes {
             if (CelesteTasModule.Settings.ShowHitboxes && CelesteTasModule.Settings.CenterCamera && self.Scene is Level level &&
                 level.GetPlayer() is { } player) {
                 Rectangle bounds = level.Bounds;
-                float topExtra = player.CenterY - player.Top + 1;
+                float topExtra = (float) (Math.Floor(player.CenterY - player.Top) + 1);
                 Draw.HollowRect(bounds.X - 1, bounds.Y - topExtra, bounds.Width + 2, bounds.Height + topExtra + 1, HitboxColor.TriggerColor);
             }
         }

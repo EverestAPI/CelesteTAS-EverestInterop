@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.Xna.Framework;
 using Monocle;
+using MonoMod.Cil;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxFixer {
@@ -9,22 +10,25 @@ namespace TAS.EverestInterop.Hitboxes {
 
         [Load]
         private static void Load() {
-            On.Monocle.EntityList.DebugRender += EntityListOnDebugRender;
+            IL.Celeste.GameplayRenderer.Render += GameplayRendererOnRender;
             On.Monocle.Draw.HollowRect_float_float_float_float_Color += ModDrawHollowRect;
             On.Monocle.Draw.Circle_Vector2_float_Color_int += ModDrawCircle;
         }
 
         [Unload]
         private static void Unload() {
-            On.Monocle.EntityList.DebugRender -= EntityListOnDebugRender;
+            IL.Celeste.GameplayRenderer.Render -= GameplayRendererOnRender;
             On.Monocle.Draw.HollowRect_float_float_float_float_Color -= ModDrawHollowRect;
             On.Monocle.Draw.Circle_Vector2_float_Color_int -= ModDrawCircle;
         }
 
-        private static void EntityListOnDebugRender(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
-            drawingHitboxes = true;
-            orig(self, camera);
-            drawingHitboxes = false;
+        private static void GameplayRendererOnRender(ILContext il) {
+            ILCursor ilCursor = new(il);
+            if (ilCursor.TryGotoNext(i => i.MatchCallvirt<EntityList>("DebugRender"))) {
+                ilCursor.EmitDelegate<Action>(() => drawingHitboxes = true);
+                ilCursor.Index++;
+                ilCursor.EmitDelegate<Action>(() => drawingHitboxes = false);
+            }
         }
 
         private static void ModDrawHollowRect(On.Monocle.Draw.orig_HollowRect_float_float_float_float_Color orig, float x, float y, float width,
