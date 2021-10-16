@@ -211,7 +211,7 @@ namespace TAS.Utils {
 
         public static T CreateDelegate_Get<T>(this FieldInfo field) where T : Delegate {
             bool isStatic = field.IsStatic;
-            Type[] param = isStatic ? new Type[0] : new[] {field.DeclaringType};
+            Type[] param = isStatic ? Type.EmptyTypes : new[] {field.DeclaringType};
 
             DynamicMethod dyn = new($"{field.DeclaringType?.FullName}_{field.Name}_FastAccess", field.FieldType, param, field.DeclaringType);
             ILGenerator ilGen = dyn.GetILGenerator();
@@ -224,6 +224,11 @@ namespace TAS.Utils {
 
             ilGen.Emit(OpCodes.Ret);
             return dyn.CreateDelegate(typeof(T)) as T;
+        }
+
+        public static Func<T, TResult> CreateDelegate_Get<T, TResult>(this string fieldName) {
+            FieldInfo field = typeof(T).GetFieldInfo(fieldName);
+            return CreateDelegate_Get<Func<T, TResult>>(field);
         }
 
         public static Func<object, object> CreateDelegate_GetInstance(this FieldInfo field) {

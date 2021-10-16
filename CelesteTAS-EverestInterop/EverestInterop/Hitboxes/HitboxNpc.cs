@@ -1,4 +1,4 @@
-using System.Reflection;
+using System;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
@@ -6,7 +6,11 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxNpc {
-        private static readonly FieldInfo Npc05BadelineShadow = typeof(NPC05_Badeline).GetFieldInfo("shadow");
+        private static readonly Func<NPC05_Badeline, BadelineDummy> Npc05BadelineShadow =
+            "shadow".CreateDelegate_Get<NPC05_Badeline, BadelineDummy>();
+
+        private static readonly Func<NPC03_Oshiro_Cluttter, int> Npc03OshiroSectionsComplete =
+            "sectionsComplete".CreateDelegate_Get<NPC03_Oshiro_Cluttter, int>();
 
         [Load]
         private static void Load() {
@@ -39,7 +43,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 } else if (entity is NPC03_Oshiro_Hallway1 or NPC03_Oshiro_Hallway2 or NPC06_Granny) {
                     float x = entity.X - 55;
                     Draw.Line(x, top, x, bottom, color);
-                } else if (entity is NPC03_Oshiro_Cluttter) {
+                } else if (entity is NPC03_Oshiro_Cluttter oshiro && Npc03OshiroSectionsComplete(oshiro) == 3) {
                     float x = entity.X + 28;
                     Draw.Line(x, top, x, entity.Y, color);
                 } else if (entity is NPC04_Granny) {
@@ -60,13 +64,13 @@ namespace TAS.EverestInterop.Hitboxes {
                 } else if (level.Session.Area.ID == 4 && entity is Gondola) {
                     float x = entity.Left - 11;
                     Draw.Line(x, top, x, bottom, color);
-                } else if (entity is NPC05_Badeline) {
+                } else if (entity is NPC05_Badeline badelineNpc) {
                     if (levelName == "c-00") {
-                        float x = entity.X - 57;
+                        float x = entity.X - 59;
                         Draw.Line(x, top, x, bottom, color);
-                    } else if (levelName == "c-01" && Npc05BadelineShadow.GetValue(entity) is BadelineDummy badelineDummy) {
-                        Draw.Circle(badelineDummy.Position, 69, color, 4);
-                        if (level.GetPlayer() is { } player) {
+                    } else if (levelName == "c-01" && Npc05BadelineShadow(badelineNpc) is { } badelineDummy) {
+                        Draw.Circle(badelineDummy.Position, 70, color, 4);
+                        if (level.GetPlayer() is { } player && Vector2.Distance(player.Position, badelineDummy.Position) <= 150) {
                             Draw.Line(player.Position, badelineDummy.Position, Color.Aqua);
                         }
                     }
