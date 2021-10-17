@@ -18,17 +18,12 @@ namespace TAS.EverestInterop.InfoHUD {
         private static void Load() {
             On.Celeste.Level.Render += LevelOnRender;
             On.Celeste.Fonts.Prepare += FontsOnPrepare;
-
-            // avoid issues if center camera is enabled
-            CenterCamera.Unload();
-            CenterCamera.Load();
         }
 
         [Unload]
         private static void Unload() {
             On.Celeste.Level.Render -= LevelOnRender;
             On.Celeste.Fonts.Prepare -= FontsOnPrepare;
-            CenterCamera.Unload();
         }
 
         private static void FontsOnPrepare(On.Celeste.Fonts.orig_Prepare orig) {

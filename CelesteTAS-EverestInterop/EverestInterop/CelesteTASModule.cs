@@ -26,10 +26,13 @@ namespace TAS.EverestInterop {
 
         public override void Load() {
             AttributeUtils.Invoke<LoadAttribute>();
+            // avoid issues if center camera is enabled, hook at he end
+            CenterCamera.Load();
         }
 
         public override void Unload() {
             AttributeUtils.Invoke<UnloadAttribute>();
+            CenterCamera.Unload();
             StudioCommunicationClient.Destroy();
         }
 

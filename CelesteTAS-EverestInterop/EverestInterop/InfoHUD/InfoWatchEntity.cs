@@ -114,14 +114,8 @@ namespace TAS.EverestInterop.InfoHUD {
         private static List<Entity> FindClickedEntities(MouseState mouseState) {
             if (Engine.Scene is Level level) {
                 Vector2 mousePosition = new(mouseState.X, mouseState.Y);
-                if (SaveData.Instance?.Assists.MirrorMode == true) {
-                    mousePosition.X = Engine.ViewWidth - mousePosition.X;
-                }
-
-                Camera camera = level.Camera;
-                int viewScale =
-                    (int) Math.Round(Engine.Instance.GraphicsDevice.PresentationParameters.BackBufferWidth / (float) camera.Viewport.Width);
-                Vector2 mouseWorldPosition = camera.ScreenToCamera((mousePosition / viewScale).Floor());
+                float viewScale = (float) Engine.ViewWidth / Engine.Width;
+                Vector2 mouseWorldPosition = level.ScreenToWorld(mousePosition / viewScale).Floor();
                 Entity tempEntity = new() {Position = mouseWorldPosition, Collider = new Hitbox(1, 1)};
                 List<Entity> result = level.Entities.Where(entity =>
                     entity.GetType() != typeof(Entity)
