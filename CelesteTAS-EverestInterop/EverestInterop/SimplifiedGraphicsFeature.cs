@@ -8,6 +8,7 @@ using Celeste;
 using Celeste.Mod;
 using FMOD.Studio;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
@@ -141,6 +142,7 @@ namespace TAS.EverestInterop {
             IL.Celeste.BloomRenderer.Apply += BloomRendererOnApply;
             On.Celeste.Decal.Render += Decal_Render;
             On.Monocle.Particle.Render += Particle_Render;
+            On.Celeste.Distort.Render += Distort_Render;
             On.Celeste.MiniTextbox.Render += MiniTextbox_Render;
             IL.Celeste.BackdropRenderer.Render += BackdropRenderer_Render;
             On.Celeste.CrystalStaticSpinner.CreateSprites += CrystalStaticSpinner_CreateSprites;
@@ -172,6 +174,7 @@ namespace TAS.EverestInterop {
             IL.Celeste.BloomRenderer.Apply -= BloomRendererOnApply;
             On.Celeste.Decal.Render -= Decal_Render;
             On.Monocle.Particle.Render -= Particle_Render;
+            On.Celeste.Distort.Render -= Distort_Render;
             On.Celeste.MiniTextbox.Render -= MiniTextbox_Render;
             IL.Celeste.BackdropRenderer.Render -= BackdropRenderer_Render;
             On.Celeste.CrystalStaticSpinner.CreateSprites -= CrystalStaticSpinner_CreateSprites;
@@ -289,6 +292,16 @@ namespace TAS.EverestInterop {
             }
 
             orig(ref self);
+        }
+
+        private static void Distort_Render(On.Celeste.Distort.orig_Render orig, Texture2D source, Texture2D map, bool hasDistortion) {
+            if (Settings.SimplifiedGraphics && Settings.SimplifiedDistort) {
+                Distort.Anxiety = 0f;
+                Distort.GameRate = 1f;
+                hasDistortion = false;
+            }
+
+            orig(source, map, hasDistortion);
         }
 
         private static void MiniTextbox_Render(On.Celeste.MiniTextbox.orig_Render orig, MiniTextbox self) {

@@ -28,7 +28,7 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void Distort_Render(On.Celeste.Distort.orig_Render orig, Texture2D source, Texture2D map, bool hasDistortion) {
-            if (Settings.ShowHitboxes || Settings.SimplifiedGraphics && Settings.SimplifiedDistort) {
+            if (Settings.ShowHitboxes) {
                 Distort.Anxiety = 0f;
                 Distort.GameRate = 1f;
                 hasDistortion = false;
