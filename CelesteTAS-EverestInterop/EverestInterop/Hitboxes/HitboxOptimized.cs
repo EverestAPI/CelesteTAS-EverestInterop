@@ -29,6 +29,7 @@ namespace TAS.EverestInterop.Hitboxes {
         private static void Load() {
             On.Monocle.Entity.DebugRender += ModDebugRender;
             On.Monocle.EntityList.DebugRender += AddHoldableColliderHitbox;
+            On.Monocle.EntityList.DebugRender += AddLockBlockColliderHitbox;
             IL.Celeste.Seeker.DebugRender += SeekerOnDebugRender;
             IL.Celeste.PlayerCollider.DebugRender += PlayerColliderOnDebugRender;
             On.Celeste.PlayerCollider.DebugRender += AddFeatherHitbox;
@@ -43,6 +44,7 @@ namespace TAS.EverestInterop.Hitboxes {
         private static void Unload() {
             On.Monocle.Entity.DebugRender -= ModDebugRender;
             On.Monocle.EntityList.DebugRender -= AddHoldableColliderHitbox;
+            On.Monocle.EntityList.DebugRender -= AddLockBlockColliderHitbox;
             IL.Celeste.Seeker.DebugRender -= SeekerOnDebugRender;
             IL.Celeste.PlayerCollider.DebugRender -= PlayerColliderOnDebugRender;
             On.Celeste.PlayerCollider.DebugRender -= AddFeatherHitbox;
@@ -74,9 +76,6 @@ namespace TAS.EverestInterop.Hitboxes {
                 case Puffer puffer:
                     DrawPufferHitbox(puffer);
                     break;
-                case LockBlock lockBlock:
-                    DrawLockBlockHitbox(lockBlock);
-                    break;
             }
 
             orig(self, camera);
@@ -96,35 +95,6 @@ namespace TAS.EverestInterop.Hitboxes {
             Draw.Circle(puffer.Position, 32f, hitboxColor, 32);
             Draw.Line(bottomCenter - Vector2.UnitX * 32, bottomCenter - Vector2.UnitX * 6, hitboxColor);
             Draw.Line(bottomCenter + Vector2.UnitX * 6, bottomCenter + Vector2.UnitX * 32, hitboxColor);
-        }
-
-        private static void DrawLockBlockHitbox(LockBlock lockBlock) {
-            if (Engine.Scene.GetPlayer() is not { } player) {
-                return;
-            }
-
-            if (lockBlock.Get<PlayerCollider>() is not {Collider: Circle circle}) {
-                return;
-            }
-
-            if (Vector2.Distance(player.Center, lockBlock.Center) > circle.Radius * 1.5) {
-                return;
-            }
-
-            Color color = Color.HotPink;
-            if (LockBlockOpening(lockBlock)) {
-                color = Color.Aqua;
-            }
-
-            bool origCollidable = lockBlock.Collidable;
-            lockBlock.Collidable = false;
-            if (Engine.Scene.CollideCheck<Solid>(player.Center, lockBlock.Center)) {
-                color *= 0.5f;
-            }
-
-            lockBlock.Collidable = origCollidable;
-
-            Draw.Line(player.Center, lockBlock.Center, color);
         }
 
         private static void AddHoldableColliderHitbox(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
@@ -167,6 +137,73 @@ namespace TAS.EverestInterop.Hitboxes {
                 entity.Collider = collider;
                 collider.Render(camera, color * (entity.Collidable ? 1f : 0.5f));
                 entity.Collider = origCollider;
+            }
+        }
+
+        private static void AddLockBlockColliderHitbox(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
+            orig(self, camera);
+
+            if (!Settings.ShowHitboxes) {
+                return;
+            }
+            if (self.Scene is not Level level) {
+                return;
+            }
+
+            List<LockBlock> lockBlocks = level.Tracker.GetCastEntities<LockBlock>();
+            if (lockBlocks.IsEmpty()) {
+                return;
+            }
+
+            foreach (LockBlock lockBlock in lockBlocks) {
+                if (Engine.Scene.GetPlayer() is not { } player) {
+                    continue;
+                }
+                if (lockBlock.Get<PlayerCollider>() is not {Collider: Circle circle}) {
+                    continue;
+                }
+                if (Vector2.Distance(player.Center, lockBlock.Center) > circle.Radius * 1.5) {
+                    continue;
+                }
+
+                Color color = Color.HotPink;
+                if (LockBlockOpening(lockBlock)) {
+                    color = Color.Aqua;
+                }
+
+                bool origCollidable = lockBlock.Collidable;
+                lockBlock.Collidable = false;
+
+                List<Entity> solidTilesList = Engine.Scene.Tracker.GetEntities<SolidTiles>();
+                Dictionary<Entity, bool> solidTilesCollidableDict = solidTilesList.ToDictionary(entity => entity, entity => entity.Collidable);
+
+                // check if the line collides with any solid except solid tiles
+                solidTilesList.ForEach(entity => entity.Collidable = false);
+                bool collideSolid = Engine.Scene.CollideCheck<Solid>(player.Center, lockBlock.Center);
+
+                // check if the line collides with solid tiles
+                solidTilesList.ForEach(entity => entity.Collidable = solidTilesCollidableDict[entity]);
+                bool collideSolidTiles = Engine.Scene.CollideCheck<SolidTiles>(player.Center, lockBlock.Center);
+
+                lockBlock.Collidable = origCollidable;
+
+                if (collideSolid || collideSolidTiles) {
+                    color *= 0.5f;
+                }
+
+                if (!collideSolid) {
+                    // draw actual checked tiles when checking collision between line and solid tiles
+                    solidTilesList.ForEach(entity => {
+                        if (entity is SolidTiles {Collidable: true} solidTiles) {
+                            Grid grid = solidTiles.Grid;
+                            grid.GetCheckedTilesInLineCollision(player.Center, lockBlock.Center)
+                                .ForEach(tuple => Draw.HollowRect(tuple.Item1, grid.CellWidth, grid.CellHeight,
+                                    Color.HotPink * (tuple.Item2 ? 1f : 0.5f)));
+                        }
+                    });
+                }
+
+                Draw.Line(player.Center, lockBlock.Center, color);
             }
         }
 

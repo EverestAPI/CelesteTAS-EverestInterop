@@ -30,6 +30,7 @@ namespace TAS.EverestInterop {
         private static void TrackerOnInitialize(On.Monocle.Tracker.orig_Initialize orig) {
             orig();
             AddTypeToTracker(typeof(PlayerSeeker));
+            AddTypeToTracker(typeof(LockBlock));
             AddTypeToTracker(typeof(KeyboardConfigUI), typeof(ModuleSettingsKeyboardConfigUI));
             AddTypeToTracker(typeof(ButtonConfigUI), typeof(ModuleSettingsButtonConfigUI));
         }
