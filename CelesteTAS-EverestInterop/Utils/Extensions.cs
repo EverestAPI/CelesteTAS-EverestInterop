@@ -427,8 +427,12 @@ namespace TAS.Utils {
     }
 
     internal static class TrackerExtensions {
+        public static List<T> GetCastEntities<T>(this Tracker tracker) where T : Entity {
+            return tracker.GetEntities<T>().Where(entity => entity is T).Cast<T>().ToList();
+        }
+
         public static List<T> GetCastComponents<T>(this Tracker tracker) where T : Component {
-            return tracker.GetComponents<T>().Cast<T>().ToList();
+            return tracker.GetComponents<T>().Where(component => component is T).Cast<T>().ToList();
         }
     }
 

@@ -136,8 +136,7 @@ namespace TAS {
                            + (GameInfo.AdditionalStatusInfo ?? string.Empty);
 
                 if (player.Holding == null) {
-                    foreach (Component component in level.Tracker.GetComponents<Holdable>()) {
-                        Holdable holdable = (Holdable) component;
+                    foreach (Holdable holdable in level.Tracker.GetCastComponents<Holdable>()) {
                         if (holdable.Check(player)) {
                             statuses += "Grab ";
                             break;

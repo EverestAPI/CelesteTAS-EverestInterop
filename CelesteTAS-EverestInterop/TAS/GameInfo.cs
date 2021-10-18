@@ -303,7 +303,7 @@ namespace TAS {
                                + (AdditionalStatusInfo ?? string.Empty);
 
                     if (player.Holding == null
-                        && level.Tracker.GetComponents<Holdable>().Any(holdable => ((Holdable) holdable).Check(player))) {
+                        && level.Tracker.GetCastComponents<Holdable>().Any(holdable => holdable.Check(player))) {
                         statuses += "Grab ";
                     }
 
