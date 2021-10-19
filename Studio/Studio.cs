@@ -273,8 +273,9 @@ namespace CelesteStudio {
                             case Keys.O: // Ctrl + O
                                 OpenFile();
                                 break;
+                            case Keys.OemQuestion: // Ctrl + /
                             case Keys.K: // Ctrl + K
-                                CommentText();
+                                CommentText(false);
                                 break;
                             case Keys.P: // Ctrl + P
                                 ClearUncommentedBreakpoints();
@@ -307,6 +308,10 @@ namespace CelesteStudio {
                     } else if (e.Modifiers == (Keys.Control | Keys.Shift)) {
                         // Ctrl + Shift:
                         switch (e.KeyCode) {
+                            case Keys.OemQuestion: // Ctrl + Shift + /
+                            case Keys.K: // Ctrl + Shift + K
+                                CommentText(true);
+                                break;
                             case Keys.S: // Ctrl + Shift + S
                                 SaveAsFile();
                                 break;
@@ -833,7 +838,7 @@ namespace CelesteStudio {
             UpdateLines((RichText.RichText) sender, e.ChangedRange);
         }
 
-        private void CommentText() {
+        private void CommentText(bool toggle) {
             Range origRange = richText.Selection.Clone();
 
             origRange.Normalize();
@@ -842,12 +847,12 @@ namespace CelesteStudio {
 
             List<InputRecord> selection = InputRecords.GetRange(start, end - start + 1);
 
-            bool anyUncomment = selection.Any(record => !record.IsEmptyLine && !record.IsComment);
+            bool anyUncomment = selection.Any(record => !record.IsEmpty && !record.IsComment);
 
             StringBuilder result = new();
             foreach (InputRecord record in selection) {
-                if (anyUncomment) {
-                    if (!record.IsEmptyLine) {
+                if (!toggle && anyUncomment || toggle && !record.IsComment) {
+                    if (!record.IsEmpty) {
                         result.Append("#");
                     }
 
@@ -895,7 +900,7 @@ namespace CelesteStudio {
 
                 while (start > 1) {
                     InputRecord prev = InputRecords[start - 1];
-                    if ((prev.IsInput || prev.IsEmptyLine) && prev.ActionsToString() == currentRecord.ActionsToString()) {
+                    if ((prev.IsInput || prev.IsEmpty) && prev.ActionsToString() == currentRecord.ActionsToString()) {
                         start--;
                     } else {
                         break;
@@ -904,7 +909,7 @@ namespace CelesteStudio {
 
                 while (end < InputRecords.Count - 1) {
                     InputRecord next = InputRecords[end + 1];
-                    if ((next.IsInput || next.IsEmptyLine) && next.Actions == currentRecord.Actions) {
+                    if ((next.IsInput || next.IsEmpty) && next.Actions == currentRecord.Actions) {
                         end++;
                     } else {
                         break;
@@ -939,7 +944,7 @@ namespace CelesteStudio {
 
                     // ignore empty line if combine succeeds
                     int? nextIndex = null;
-                    if (next.IsEmptyLine && next.Next(record => !record.IsEmptyLine) is {IsInput: true} nextInput) {
+                    if (next.IsEmptyOrZeroFrameInput && next.Next(record => !record.IsEmptyOrZeroFrameInput) is {IsInput: true} nextInput) {
                         nextIndex = InputRecords.IndexOf(nextInput);
                         if (nextIndex <= end) {
                             next = nextInput;
@@ -960,7 +965,7 @@ namespace CelesteStudio {
                     }
                 }
             } else {
-                selection = selection.Where(record => !record.IsEmptyLine).ToList();
+                selection = selection.Where(record => !record.IsEmptyOrZeroFrameInput).ToList();
                 selection.Sort((a, b) => !a.IsInput && b.IsInput ? 1 : 0);
                 for (int i = 0; i < selection.Count; i++) {
                     InputRecord inputRecord = selection[i];
@@ -1036,7 +1041,7 @@ namespace CelesteStudio {
 
                     // ignore empty line if convert succeeds
                     int? nextIndex = null;
-                    if (next?.IsEmptyLine == true && next.Next(record => !record.IsEmptyLine) is {IsInput: true} nextInput) {
+                    if (next?.IsEmptyOrZeroFrameInput == true && next.Next(record => !record.IsEmptyOrZeroFrameInput) is {IsInput: true} nextInput) {
                         nextIndex = InputRecords.IndexOf(nextInput);
                         if (nextIndex <= end) {
                             next = nextInput;
@@ -1271,7 +1276,7 @@ namespace CelesteStudio {
         }
 
         private void commentUncommentTextToolStripMenuItem_Click(object sender, EventArgs e) {
-            CommentText();
+            CommentText(false);
         }
 
         private void removeAllUncommentedBreakpointsToolStripMenuItem_Click(object sender, EventArgs e) {

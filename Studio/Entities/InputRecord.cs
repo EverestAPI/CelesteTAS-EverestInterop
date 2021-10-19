@@ -61,9 +61,8 @@ namespace CelesteStudio.Entities {
                     IsBreakpoint = true;
                 } else if (InputFrameRegex.IsMatch(line)) {
                     IsInput = true;
-                    IsEmptyLine = true;
                 } else if (EmptyLineRegex.IsMatch(line)) {
-                    IsEmptyLine = true;
+                    IsEmpty = true;
                 } else {
                     IsCommand = true;
                 }
@@ -155,7 +154,8 @@ namespace CelesteStudio.Entities {
         public bool IsRoomComment { get; }
         public bool IsCommand { get; }
         public bool IsBreakpoint { get; }
-        public bool IsEmptyLine { get; }
+        public bool IsEmpty { get; }
+        public bool IsEmptyOrZeroFrameInput => IsEmpty || IsInput && Frames == 0;
 
         private int ReadFrames(string line, ref int start) {
             bool foundFrames = false;
@@ -324,7 +324,7 @@ namespace CelesteStudio.Entities {
 
             while (++index < inputRecords.Count) {
                 InputRecord next = inputRecords[index];
-                if (next.IsEmptyLine) {
+                if (next.IsEmptyOrZeroFrameInput) {
                     continue;
                 }
 
