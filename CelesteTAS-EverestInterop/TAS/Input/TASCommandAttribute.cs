@@ -7,6 +7,12 @@ using TAS.EverestInterop;
 using TAS.Utils;
 
 namespace TAS.Input {
+    /* Additional commands can be added by giving them the TASCommand attribute and naming them (CommandName)Command.
+     * The execute at start field indicates whether a command should be executed while building the input list (read, play)
+     * or when playing the file (console).
+     * The args field should list formats the command takes. This is not currently used but may be implemented into Studio in the future.
+     * Commands that execute can be void Command(string[], InputController, int) or void Command(string[]) or void Command().
+     */
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public class TasCommandAttribute : Attribute {
         private static readonly IDictionary<TasCommandAttribute, MethodInfo> MethodInfos = new Dictionary<TasCommandAttribute, MethodInfo>();

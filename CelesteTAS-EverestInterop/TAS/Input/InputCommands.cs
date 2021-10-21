@@ -13,14 +13,7 @@ using TAS.Utils;
 
 namespace TAS.Input {
     public static class InputCommands {
-        /* Additional commands can be added by giving them the TASCommand attribute and naming them (CommandName)Command.
-         * The execute at start field indicates whether a command should be executed while building the input list (read, play)
-         * or when playing the file (console).
-         * The args field should list formats the command takes. This is not currently used but may be implemented into Studio
-         * in the future.
-         * Commands that execute can be void Command(InputController, string[], int) or void Command(string[]).
-         */
-
+        private static readonly object[] EmptyParameters = { };
         private static readonly Regex CheckSpaceRegex = new(@"^[^,]+?\s+[^,]", RegexOptions.Compiled);
         private static readonly Regex SpaceRegex = new(@"\s+", RegexOptions.Compiled);
 
@@ -56,12 +49,12 @@ namespace TAS.Input {
 
                     string[] commandArgs = args.Skip(1).ToArray();
 
-                    object[] parameters;
-                    if (method.GetParameters().Length == 3) {
-                        parameters = new object[] {inputController, commandArgs, lineNumber};
-                    } else {
-                        parameters = new object[] {commandArgs};
-                    }
+                    object[] parameters = method.GetParameters().Length switch {
+                        3 => new object[] {commandArgs, inputController, lineNumber},
+                        1 => new object[] {commandArgs},
+                        0 => EmptyParameters,
+                        _ => throw new ArgumentException()
+                    };
 
                     Action commandCall = () => method.Invoke(null, parameters);
                     if (attribute.ExecuteAtParse || attribute.ExecuteAtStart) {
@@ -100,7 +93,7 @@ namespace TAS.Input {
         // "Read, Path, StartLine",
         // "Read, Path, StartLine, EndLine"
         [TasCommand(ExecuteAtParse = true, Name = "Read")]
-        private static void ReadCommand(InputController state, string[] args, int studioLine) {
+        private static void ReadCommand(string[] args, InputController state, int studioLine) {
             string filePath = args[0];
             string fileDirectory = Path.GetDirectoryName(InputController.TasFilePath);
             // Check for full and shortened Read versions
@@ -139,7 +132,7 @@ namespace TAS.Input {
         // "Play, StartLine",
         // "Play, StartLine, FramesToWait"
         [TasCommand(ExecuteAtParse = true, Name = "Play")]
-        private static void PlayCommand(InputController state, string[] args, int studioLine) {
+        private static void PlayCommand(string[] args, InputController state, int studioLine) {
             GetLine(args[0], InputController.TasFilePath, out int startLine);
             if (args.Length > 1 && int.TryParse(args[1], out _)) {
                 state.AddFrames(args[1], studioLine);
@@ -165,12 +158,12 @@ namespace TAS.Input {
         }
 
         [TasCommand(Name = "EnforceLegal", AliasNames = new[] {"EnforceMainGame"})]
-        private static void EnforceLegalCommand(string[] args) {
+        private static void EnforceLegalCommand() {
             Manager.EnforceLegal = true;
         }
 
         [TasCommand(ExecuteAtStart = true, Name = "Unsafe")]
-        private static void UnsafeCommand(InputController state, string[] args, int studioLine) {
+        private static void UnsafeCommand() {
             Manager.AllowUnsafeInput = true;
         }
 

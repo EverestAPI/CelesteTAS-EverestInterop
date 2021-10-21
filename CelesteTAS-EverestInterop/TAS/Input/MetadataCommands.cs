@@ -55,17 +55,17 @@ namespace TAS.Input {
         }
 
         [TasCommand(Name = "RecordCount", AliasNames = new[] {"RecordCount:", "RecordCount："}, CalcChecksum = false)]
-        private static void RecordCountCommand(string[] args) {
+        private static void RecordCountCommand() {
             // dummy
         }
 
         [TasCommand(Name = "FileTime", AliasNames = new[] {"FileTime:", "FileTime："}, CalcChecksum = false)]
-        private static void FileTimeCommand(InputController inputController, string[] args, int lineNumber) {
+        private static void FileTimeCommand() {
             // dummy
         }
 
         [TasCommand(Name = "ChapterTime", AliasNames = new[] {"ChapterTime:", "ChapterTime："}, CalcChecksum = false)]
-        private static void ChapterTimeCommand(InputController inputController, string[] args, int lineNumber) {
+        private static void ChapterTimeCommand() {
             // dummy
         }
 

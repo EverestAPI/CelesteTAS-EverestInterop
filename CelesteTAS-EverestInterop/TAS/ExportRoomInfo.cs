@@ -86,7 +86,7 @@ namespace TAS {
 
         // ReSharper disable once UnusedMember.Local
         [TasCommand(Name = "FinishExportRoomInfo", CalcChecksum = false)]
-        private static void FinishExportCommand(string[] args) {
+        private static void FinishExportCommand() {
             EndExport();
         }
 

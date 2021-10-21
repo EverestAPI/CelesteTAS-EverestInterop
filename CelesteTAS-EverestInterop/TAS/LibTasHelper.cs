@@ -180,7 +180,7 @@ namespace TAS {
         }
 
         [TasCommand(Name = "FinishExportLibTAS", ExecuteAtParse = true)]
-        private static void FinishExportLibTasCommand(string[] args) {
+        private static void FinishExportLibTasCommand() {
             FinishExport();
         }
 
@@ -193,7 +193,7 @@ namespace TAS {
         }
 
         [TasCommand(Name = "Skip", ExecuteAtParse = true)]
-        private static void SkipCommand(string[] args) {
+        private static void SkipCommand() {
             SkipNextInput();
         }
     }
