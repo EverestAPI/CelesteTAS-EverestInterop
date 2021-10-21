@@ -86,7 +86,7 @@ namespace TAS.Input {
                     inputController.Commands[frame].Add(command);
 
                     //the play command needs to stop reading the current file when it's done to prevent recursion
-                    return commandName.Equals("play", StringComparison.InvariantCultureIgnoreCase);
+                    return command.Attribute.IsName("Play");
                 }
 
                 return false;
@@ -151,18 +151,16 @@ namespace TAS.Input {
         private static void GetLine(string labelOrLineNumber, string path, out int lineNumber) {
             if (!int.TryParse(labelOrLineNumber, out lineNumber)) {
                 int curLine = 0;
-                using (StreamReader sr = new(path)) {
-                    while (!sr.EndOfStream) {
-                        curLine++;
-                        string line = sr.ReadLine().TrimEnd();
-                        if (line == ("#" + labelOrLineNumber)) {
-                            lineNumber = curLine;
-                            return;
-                        }
+                foreach (string readLine in File.ReadLines(path)) {
+                    curLine++;
+                    string line = readLine.TrimEnd();
+                    if (line == $"#{labelOrLineNumber}") {
+                        lineNumber = curLine;
+                        return;
                     }
-
-                    lineNumber = int.MaxValue;
                 }
+
+                lineNumber = int.MaxValue;
             }
         }
 

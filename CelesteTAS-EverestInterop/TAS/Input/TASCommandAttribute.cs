@@ -11,7 +11,6 @@ namespace TAS.Input {
     public class TasCommandAttribute : Attribute {
         private static readonly IDictionary<TasCommandAttribute, MethodInfo> MethodInfos = new Dictionary<TasCommandAttribute, MethodInfo>();
         public string[] AliasNames;
-        public bool AlwaysExecuteAtStart;
         public bool CalcChecksum = true;
         public bool ExecuteAtParse;
         public bool ExecuteAtStart;

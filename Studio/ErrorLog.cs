@@ -25,9 +25,7 @@ namespace CelesteStudio {
             }
 
             if (File.Exists(Filename)) {
-                StreamReader streamReader = new(Filename);
-                text = streamReader.ReadToEnd();
-                streamReader.Close();
+                text = File.ReadAllText(Filename);
                 if (!text.Contains(Marker)) {
                     text = "";
                 }

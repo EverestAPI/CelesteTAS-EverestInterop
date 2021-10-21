@@ -172,9 +172,8 @@ namespace TAS.Input {
                 UsedFiles[filePath] = File.GetLastWriteTime(filePath);
 
                 int subLine = 0;
-                using StreamReader sr = new(filePath);
-                while (!sr.EndOfStream) {
-                    string lineText = sr.ReadLine().Trim();
+                foreach (string readLine in File.ReadLines(filePath)) {
+                    string lineText = readLine.Trim();
 
                     subLine++;
                     if (subLine < startLine) {
@@ -185,9 +184,8 @@ namespace TAS.Input {
                         break;
                     }
 
-                    if (InputCommands.TryParseCommand(this, filePath, lineText, initializationFrameCount, studioLine))
+                    if (InputCommands.TryParseCommand(this, filePath, lineText, initializationFrameCount, studioLine)) {
                         //workaround for the play command
-                    {
                         return true;
                     }
 

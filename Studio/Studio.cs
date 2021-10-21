@@ -535,11 +535,10 @@ namespace CelesteStudio {
             }
 
             int curLine = 0;
-            using StreamReader sr = new(path);
-            while (!sr.EndOfStream) {
+            foreach (string readLine in File.ReadLines(path)) {
                 curLine++;
-                string line = sr.ReadLine()?.TrimEnd();
-                if (line == "#" + labelOrLineNumber) {
+                string line = readLine.TrimEnd();
+                if (line == $"#{labelOrLineNumber}") {
                     return curLine - 1;
                 }
             }
