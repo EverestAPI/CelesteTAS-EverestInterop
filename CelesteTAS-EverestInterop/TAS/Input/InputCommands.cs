@@ -57,19 +57,15 @@ namespace TAS.Input {
                     };
 
                     Action commandCall = () => method.Invoke(null, parameters);
-                    if (attribute.ExecuteAtParse || attribute.ExecuteAtStart) {
-                        commandCall.Invoke();
-                    }
-
-                    // avoid being executed again in inputController.AdvanceFrame()
-                    if (attribute.ExecuteAtParse) {
-                        commandCall = null;
-                    }
-
                     Command command = new(attribute, frame, commandCall, commandArgs, filePath, lineNumber);
 
-                    if (attribute.ExecuteAtStart && !inputController.ExecuteAtStartCommands.Contains(command)) {
-                        inputController.ExecuteAtStartCommands.Add(command);
+                    switch (attribute.ExecuteTiming) {
+                        case ExecuteTiming.Parse:
+                            commandCall.Invoke();
+                            break;
+                        case ExecuteTiming.Start:
+                            inputController.ExecuteAtStartCommands.Add(command);
+                            break;
                     }
 
                     if (!inputController.Commands.ContainsKey(frame)) {
@@ -92,7 +88,7 @@ namespace TAS.Input {
         // "Read, Path",
         // "Read, Path, StartLine",
         // "Read, Path, StartLine, EndLine"
-        [TasCommand(ExecuteAtParse = true, Name = "Read")]
+        [TasCommand("Read", ExecuteTiming = ExecuteTiming.Parse)]
         private static void ReadCommand(string[] args, InputController state, int studioLine) {
             string filePath = args[0];
             string fileDirectory = Path.GetDirectoryName(InputController.TasFilePath);
@@ -131,7 +127,7 @@ namespace TAS.Input {
 
         // "Play, StartLine",
         // "Play, StartLine, FramesToWait"
-        [TasCommand(ExecuteAtParse = true, Name = "Play")]
+        [TasCommand("Play", ExecuteTiming = ExecuteTiming.Parse)]
         private static void PlayCommand(string[] args, InputController state, int studioLine) {
             GetLine(args[0], InputController.TasFilePath, out int startLine);
             if (args.Length > 1 && int.TryParse(args[1], out _)) {
@@ -157,18 +153,18 @@ namespace TAS.Input {
             }
         }
 
-        [TasCommand(Name = "EnforceLegal", AliasNames = new[] {"EnforceMainGame"})]
+        [TasCommand("EnforceLegal", AliasNames = new[] {"EnforceMainGame"})]
         private static void EnforceLegalCommand() {
             Manager.EnforceLegal = true;
         }
 
-        [TasCommand(ExecuteAtStart = true, Name = "Unsafe")]
+        [TasCommand("Unsafe", ExecuteTiming = ExecuteTiming.Start)]
         private static void UnsafeCommand() {
             Manager.AllowUnsafeInput = true;
         }
 
         // Gun, x, y
-        [TasCommand(LegalInMainGame = false, Name = "Gun")]
+        [TasCommand("Gun", LegalInMainGame = false)]
         private static void GunCommand(string[] args) {
             if (args.Length < 2) {
                 return;

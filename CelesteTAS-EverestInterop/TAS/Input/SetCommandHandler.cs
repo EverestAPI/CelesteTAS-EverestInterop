@@ -16,7 +16,7 @@ namespace TAS.Input {
         // Set, Setting, Value
         // Set, Mod.Setting, Value
         // Set, Player.Field, Value
-        [TasCommand(LegalInMainGame = false, Name = "Set")]
+        [TasCommand("Set", LegalInMainGame = false)]
         private static void SetCommand(string[] args) {
             if (args.Length < 2) {
                 return;

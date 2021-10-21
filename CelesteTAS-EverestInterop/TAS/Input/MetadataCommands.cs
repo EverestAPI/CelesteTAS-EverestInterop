@@ -50,21 +50,21 @@ namespace TAS.Input {
         [DisableRun]
         private static void UpdateFileTime() {
             if (tasStartFileTime != null && SaveData.Instance != null && !Manager.Controller.CanPlayback) {
-                UpdateAllMetadata("FileTime", command => GameInfo.FormatTime(SaveData.Instance.Time - tasStartFileTime.Value));
+                UpdateAllMetadata("FileTime", _ => GameInfo.FormatTime(SaveData.Instance.Time - tasStartFileTime.Value));
             }
         }
 
-        [TasCommand(Name = "RecordCount", AliasNames = new[] {"RecordCount:", "RecordCount："}, CalcChecksum = false)]
+        [TasCommand("RecordCount", AliasNames = new[] {"RecordCount:", "RecordCount："}, CalcChecksum = false)]
         private static void RecordCountCommand() {
             // dummy
         }
 
-        [TasCommand(Name = "FileTime", AliasNames = new[] {"FileTime:", "FileTime："}, CalcChecksum = false)]
+        [TasCommand("FileTime", AliasNames = new[] {"FileTime:", "FileTime："}, CalcChecksum = false)]
         private static void FileTimeCommand() {
             // dummy
         }
 
-        [TasCommand(Name = "ChapterTime", AliasNames = new[] {"ChapterTime:", "ChapterTime："}, CalcChecksum = false)]
+        [TasCommand("ChapterTime", AliasNames = new[] {"ChapterTime:", "ChapterTime："}, CalcChecksum = false)]
         private static void ChapterTimeCommand() {
             // dummy
         }

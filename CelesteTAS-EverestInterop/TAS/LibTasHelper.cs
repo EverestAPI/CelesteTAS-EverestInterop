@@ -169,7 +169,7 @@ namespace TAS {
         }
 
         // StartExportLibTAS (Optional Path)
-        [TasCommand(Name = "StartExportLibTAS", ExecuteAtParse = true)]
+        [TasCommand("StartExportLibTAS", ExecuteTiming = ExecuteTiming.Parse)]
         private static void StartExportLibTasCommand(string[] args) {
             string path = "libTAS_inputs.txt";
             if (args.Length > 0) {
@@ -179,20 +179,20 @@ namespace TAS {
             StartExport(path);
         }
 
-        [TasCommand(Name = "FinishExportLibTAS", ExecuteAtParse = true)]
+        [TasCommand("FinishExportLibTAS", ExecuteTiming = ExecuteTiming.Parse)]
         private static void FinishExportLibTasCommand() {
             FinishExport();
         }
 
         // Add, input
-        [TasCommand(Name = "Add", ExecuteAtParse = true)]
+        [TasCommand("Add", ExecuteTiming = ExecuteTiming.Parse)]
         private static void AddCommand(string[] args) {
             if (args.Length > 0) {
                 AddInputFrame(string.Join(",", args));
             }
         }
 
-        [TasCommand(Name = "Skip", ExecuteAtParse = true)]
+        [TasCommand("Skip", ExecuteTiming = ExecuteTiming.Parse)]
         private static void SkipCommand() {
             SkipNextInput();
         }

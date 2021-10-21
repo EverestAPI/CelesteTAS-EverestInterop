@@ -18,10 +18,13 @@ namespace TAS.Input {
         private static readonly IDictionary<TasCommandAttribute, MethodInfo> MethodInfos = new Dictionary<TasCommandAttribute, MethodInfo>();
         public string[] AliasNames;
         public bool CalcChecksum = true;
-        public bool ExecuteAtParse;
-        public bool ExecuteAtStart;
+        public ExecuteTiming ExecuteTiming = ExecuteTiming.Runtime;
         public bool LegalInMainGame = true;
-        public string Name;
+        public readonly string Name;
+
+        public TasCommandAttribute(string name) {
+            Name = name;
+        }
 
         public bool IsName(string name) {
             bool result = Name.Equals(name, StringComparison.InvariantCultureIgnoreCase);
@@ -49,5 +52,11 @@ namespace TAS.Input {
         public static KeyValuePair<TasCommandAttribute, MethodInfo> FindMethod(string commandName) {
             return MethodInfos.FirstOrDefault(pair => pair.Key.IsName(commandName));
         }
+    }
+
+    public enum ExecuteTiming {
+        Parse,
+        Start,
+        Runtime
     }
 }

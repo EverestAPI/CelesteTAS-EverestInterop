@@ -58,7 +58,7 @@ namespace TAS.Input {
         // "Console LoadCommand IDorSID Screen Spawnpoint",
         // "Console LoadCommand IDorSID PositionX PositionY"
         // "Console LoadCommand IDorSID PositionX PositionY SpeedX SpeedY"
-        [TasCommand(LegalInMainGame = false, Name = "Console")]
+        [TasCommand("Console", LegalInMainGame = false)]
         private static void ConsoleCommand(string[] arguments) {
             string commandName = arguments[0].ToLower();
             string[] args = arguments.Skip(1).ToArray();

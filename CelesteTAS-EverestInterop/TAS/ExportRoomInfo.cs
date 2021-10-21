@@ -78,14 +78,14 @@ namespace TAS {
 
         // ReSharper disable once UnusedMember.Local
         // "StartExportRoomInfo [Path = dump_room_info.txt]"
-        [TasCommand(Name = "StartExportRoomInfo", CalcChecksum = false)]
+        [TasCommand("StartExportRoomInfo", CalcChecksum = false)]
         private static void StartExportCommand(string[] args) {
             string path = args.Length > 0 ? args[0] : "dump_room_info.txt";
             BeginExport(path);
         }
 
         // ReSharper disable once UnusedMember.Local
-        [TasCommand(Name = "FinishExportRoomInfo", CalcChecksum = false)]
+        [TasCommand("FinishExportRoomInfo", CalcChecksum = false)]
         private static void FinishExportCommand() {
             EndExport();
         }

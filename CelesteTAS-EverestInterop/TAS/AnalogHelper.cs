@@ -166,7 +166,7 @@ namespace TAS {
 
         // AnalogMode, Mode
         // AnalogueMode, Mode
-        [TasCommand(Name = "AnalogueMode", AliasNames = new[] {"AnalogMode"}, ExecuteAtParse = true)]
+        [TasCommand("AnalogueMode", AliasNames = new[] {"AnalogMode"}, ExecuteTiming = ExecuteTiming.Parse)]
         private static void AnalogueModeCommand(string[] args) {
             if (args.Length > 0 && Enum.TryParse(args[0], true, out AnalogueMode mode)) {
                 AnalogModeChange(mode);

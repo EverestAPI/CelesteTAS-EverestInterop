@@ -23,7 +23,7 @@ namespace TAS {
         // "StartExportGameInfo"
         // "StartExportGameInfo Path"
         // "StartExportGameInfo Path EntitiesToTrack"
-        [TasCommand(Name = "StartExportGameInfo", CalcChecksum = false)]
+        [TasCommand("StartExportGameInfo", CalcChecksum = false)]
         private static void StartExportCommand(string[] args) {
             string path = "dump.txt";
             if (args.Length > 0) {
@@ -37,7 +37,7 @@ namespace TAS {
         }
 
         // ReSharper disable once UnusedMember.Local
-        [TasCommand(Name = "FinishExportGameInfo", CalcChecksum = false)]
+        [TasCommand("FinishExportGameInfo", CalcChecksum = false)]
         private static void FinishExportCommand() {
             EndExport();
         }

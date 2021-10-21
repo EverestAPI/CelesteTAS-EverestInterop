@@ -86,10 +86,6 @@ namespace TAS.Input {
             if (enableRun) {
                 CurrentFrameInInput = 0;
                 CurrentFrameInTas = 0;
-
-                if (!NeedsReload) {
-                    ExecuteAtStartCommands.ForEach(command => command.Invoke());
-                }
             }
 
             string lastChecksum = Checksum;
@@ -115,6 +111,10 @@ namespace TAS.Input {
                 }
 
                 CurrentFrameInTas = Math.Min(Inputs.Count, CurrentFrameInTas);
+            }
+
+            if (enableRun) {
+                ExecuteAtStartCommands.ForEach(command => command.Invoke());
             }
         }
 
@@ -142,7 +142,11 @@ namespace TAS.Input {
                 return;
             }
 
-            CurrentCommands?.ForEach(command => command.Invoke());
+            CurrentCommands?.ForEach(command => {
+                if (command.Attribute.ExecuteTiming == ExecuteTiming.Runtime) {
+                    command.Invoke();
+                }
+            });
 
             if (!CanPlayback) {
                 return;
