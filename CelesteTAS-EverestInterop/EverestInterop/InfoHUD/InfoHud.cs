@@ -88,14 +88,15 @@ namespace TAS.EverestInterop.InfoHUD {
             Rectangle bgRect = new((int) x, (int) y, (int) (Size.X + padding * 2), (int) (Size.Y + padding * 2));
 
             if (level.GetPlayer() is { } player) {
-                Vector2 playerPosition = level.Camera.CameraToScreen(player.TopLeft) * pixelScale;
-                Rectangle playerRect = new((int) playerPosition.X, (int) playerPosition.Y, (int) (8 * pixelScale), (int) (11 * pixelScale));
-                Rectangle mirrorBgRect = bgRect;
+                Vector2 playerPosition = level.WorldToScreen(player.TopLeft) / Engine.Width * viewWidth;
+                float zoomTarget = level.ZoomTarget;
+                Rectangle playerRect = new((int) playerPosition.X, (int) playerPosition.Y, (int) (player.Width * pixelScale * zoomTarget),
+                    (int) (player.Height * pixelScale * zoomTarget));
                 if (SaveData.Instance?.Assists.MirrorMode == true) {
-                    mirrorBgRect.X = (int) Math.Abs(x - viewWidth + Size.X + padding * 2);
+                    playerRect.X -= playerRect.Width;
                 }
 
-                if ((level.Paused || playerRect.Intersects(mirrorBgRect)) && !Hotkeys.InfoHud.Check) {
+                if ((level.Paused || playerRect.Intersects(bgRect)) && !Hotkeys.InfoHud.Check) {
                     alpha *= TasSettings.InfoMaskedOpacity / 10f;
                     infoAlpha *= alpha;
                 }
