@@ -29,8 +29,16 @@ namespace TAS.Input {
                 if (index != -1) {
                     string moduleName = args[0].Substring(0, index);
                     settingName = args[0].Substring(index + 1);
-                    if (moduleName == "Player" && Engine.Scene.Tracker.GetEntity<Player>() is { } player) {
-                        SetPlayer(player, settingName, args.Skip(1).ToArray());
+                    string[] parameters = args.Skip(1).ToArray();
+                    // TODO Use the same syntax as custom info
+                    if (moduleName == "Player" && Engine.Scene.GetPlayer() is { } player) {
+                        SetObject(player, settingName, parameters);
+                    } else if (moduleName is "Theo" or "TheoCrystal" && Engine.Scene.Tracker.GetEntity<TheoCrystal>() is { } theo) {
+                        SetObject(theo, settingName, parameters);
+                    } else if (moduleName == "Level" && Engine.Scene is Level level) {
+                        SetObject(level, settingName, parameters);
+                    } else if (moduleName == "Session" && Engine.Scene.GetSession() is { } session) {
+                        SetObject(session, settingName, parameters);
                     } else {
                         foreach (EverestModule module in Everest.Modules) {
                             if (module.Metadata.Name == moduleName) {
@@ -81,25 +89,27 @@ namespace TAS.Input {
             }
         }
 
-        private static void SetPlayer(Player player, string name, string[] values) {
+        private static void SetObject(object obj, string name, string[] values) {
             if (values.Length == 0) {
                 return;
             }
 
-            if (typeof(Player).GetPropertyInfo(name, true) is { } property && property.GetSetMethod(true) != null) {
+            Type type = obj.GetType();
+
+            if (type.GetPropertyInfo(name, true) is { } property && property.GetSetMethod(true) is {IsStatic: false} setMethod) {
                 object value = ConvertType(values, property.PropertyType);
-                property.SetValue(player, value);
-            } else if (typeof(Player).GetFieldInfo(name, true) is { } field) {
-                if (name == "Position" && values.Length == 2) {
+                setMethod.Invoke(obj, new[] {value});
+            } else if (type.GetFieldInfo(name, true) is {IsStatic: false} field) {
+                if (obj is Actor actor && name == "Position" && values.Length == 2) {
                     double.TryParse(values[0], out double x);
                     double.TryParse(values[1], out double y);
                     Vector2 position = new((int) Math.Round(x), (int) Math.Round(y));
                     Vector2 remainder = new((float) (x - position.X), (float) (y - position.Y));
-                    player.Position = position;
-                    ActorMovementCounter.SetValue(player, remainder);
+                    actor.Position = position;
+                    ActorMovementCounter.SetValue(obj, remainder);
                 } else {
                     object value = ConvertType(values, field.FieldType);
-                    field.SetValue(player, value);
+                    field.SetValue(obj, value);
                 }
             }
         }

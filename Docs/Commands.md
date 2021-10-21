@@ -55,7 +55,7 @@
 - `Set, (Optional Mod).Setting, Value`
 - Sets the specified setting to the specified value.
 - Defaults to Celeste if no mod specified.
-- Player statuses use the mod name `Player`.
+- Player/Theo/Level/Session statuses use the corresponding class name.
 - Everest settings use the mod name `Everest`.
 - Note that setting names/values may be unintuitive.
 - To find the mod and setting names, go to the saves folder in your Celeste directory. The mod name should be `modsettings-(name).celeste`.

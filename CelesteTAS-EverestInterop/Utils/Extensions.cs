@@ -445,6 +445,13 @@ namespace TAS.Utils {
 
     internal static class SceneExtensions {
         public static Player GetPlayer(this Scene scene) => scene.Tracker.GetEntity<Player>();
+
+        public static Session GetSession(this Scene scene) =>
+            scene switch {
+                Level level => level.Session,
+                LevelLoader levelLoader => levelLoader.Level.Session,
+                _ => null
+            };
     }
 
     internal static class LevelExtensions {
@@ -501,6 +508,7 @@ namespace TAS.Utils {
                 to.X = to.Y;
                 to.Y = temp;
             }
+
             if (from.X > to.X) {
                 Vector2 temp = from;
                 from = to;
@@ -510,11 +518,11 @@ namespace TAS.Utils {
             List<Tuple<Vector2, bool>> positions = new();
 
             float offset = 0f;
-            int y = (int)from.Y;
-            for (int i = (int)from.X; i <= (int)to.X; i++) {
+            int y = (int) from.Y;
+            for (int i = (int) from.X; i <= (int) to.X; i++) {
                 Vector2 position = needsSwapXY ? new Vector2(y, i) : new Vector2(i, y);
                 Vector2 absolutePosition = position * new Vector2(grid.CellWidth, grid.CellHeight) + grid.AbsolutePosition;
-                bool hasTile = grid[(int)position.X, (int)position.Y];
+                bool hasTile = grid[(int) position.X, (int) position.Y];
                 positions.Add(new(absolutePosition, hasTile));
 
                 offset += Math.Abs(to.Y - from.Y) / (to.X - from.X);
@@ -523,6 +531,7 @@ namespace TAS.Utils {
                     offset -= 1f;
                 }
             }
+
             return positions;
         }
     }
