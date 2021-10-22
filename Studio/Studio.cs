@@ -471,18 +471,13 @@ namespace CelesteStudio {
                 if (args[0].Equals("read", StringComparison.InvariantCultureIgnoreCase) && args.Length >= 2) {
                     string filePath = args[1];
                     string fileDirectory = Path.GetDirectoryName(CurrentFileName);
-                    // Check for full and shortened Read versions
-                    if (fileDirectory != null) {
-                        // Path.Combine can handle the case when filePath is an absolute path
-                        string absoluteOrRelativePath = Path.Combine(fileDirectory, filePath);
-                        if (File.Exists(absoluteOrRelativePath) && absoluteOrRelativePath != CurrentFileName) {
-                            filePath = absoluteOrRelativePath;
-                        } else {
-                            string[] files = Directory.GetFiles(fileDirectory, $"{filePath}*.tas");
-                            if (files.FirstOrDefault(path => path != CurrentFileName) is { } shortenedFilePath) {
-                                filePath = shortenedFilePath;
-                            }
-                        }
+                    filePath = FindTheFile(fileDirectory, filePath);
+
+                    if (!File.Exists(filePath)) {
+                        // for compatibility with tas files downloaded from discord
+                        // discord will replace spaces in the file name with underscores
+                        filePath = args[1].Replace(" ", "_");
+                        filePath = FindTheFile(fileDirectory, filePath);
                     }
 
                     if (!File.Exists(filePath)) {
@@ -496,6 +491,24 @@ namespace CelesteStudio {
 
                     OpenFile(filePath, startLine);
                 }
+            }
+
+            string FindTheFile(string fileDirectory, string filePath) {
+                // Check for full and shortened Read versions
+                if (fileDirectory != null) {
+                    // Path.Combine can handle the case when filePath is an absolute path
+                    string absoluteOrRelativePath = Path.Combine(fileDirectory, filePath);
+                    if (File.Exists(absoluteOrRelativePath) && absoluteOrRelativePath != CurrentFileName) {
+                        filePath = absoluteOrRelativePath;
+                    } else {
+                        string[] files = Directory.GetFiles(fileDirectory, $"{filePath}*.tas");
+                        if (files.FirstOrDefault(path => path != CurrentFileName) is { } shortenedFilePath) {
+                            filePath = shortenedFilePath;
+                        }
+                    }
+                }
+
+                return filePath;
             }
         }
 

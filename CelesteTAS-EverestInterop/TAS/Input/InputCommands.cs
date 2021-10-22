@@ -92,18 +92,13 @@ namespace TAS.Input {
         private static void ReadCommand(string[] args, InputController state, int studioLine) {
             string filePath = args[0];
             string fileDirectory = Path.GetDirectoryName(InputController.TasFilePath);
-            // Check for full and shortened Read versions
-            if (fileDirectory != null) {
-                // Path.Combine can handle the case when filePath is an absolute path
-                string absoluteOrRelativePath = Path.Combine(fileDirectory, filePath);
-                if (File.Exists(absoluteOrRelativePath) && absoluteOrRelativePath != InputController.TasFilePath) {
-                    filePath = absoluteOrRelativePath;
-                } else {
-                    string[] files = Directory.GetFiles(fileDirectory, $"{filePath}*.tas");
-                    if (files.FirstOrDefault(path => path != InputController.TasFilePath) is { } shortenedFilePath) {
-                        filePath = shortenedFilePath;
-                    }
-                }
+            filePath = FindTheFile();
+
+            if (!File.Exists(filePath)) {
+                // for compatibility with tas files downloaded from discord
+                // discord will replace spaces in the file name with underscores
+                filePath = args[0].Replace(" ", "_");
+                FindTheFile();
             }
 
             if (!File.Exists(filePath)) {
@@ -123,6 +118,24 @@ namespace TAS.Input {
             }
 
             state.ReadFile(filePath, skipLines, lineLen, studioLine);
+
+            string FindTheFile() {
+                // Check for full and shortened Read versions
+                if (fileDirectory != null) {
+                    // Path.Combine can handle the case when filePath is an absolute path
+                    string absoluteOrRelativePath = Path.Combine(fileDirectory, filePath);
+                    if (File.Exists(absoluteOrRelativePath) && absoluteOrRelativePath != InputController.TasFilePath) {
+                        filePath = absoluteOrRelativePath;
+                    } else {
+                        string[] files = Directory.GetFiles(fileDirectory, $"{filePath}*.tas");
+                        if (files.FirstOrDefault(path => path != InputController.TasFilePath) is { } shortenedFilePath) {
+                            filePath = shortenedFilePath;
+                        }
+                    }
+                }
+
+                return filePath;
+            }
         }
 
         // "Play, StartLine",
