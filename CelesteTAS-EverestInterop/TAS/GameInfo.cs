@@ -407,6 +407,7 @@ namespace TAS {
             builder.AppendLine(velocity);
 
             if (player.StateMachine.State == Player.StStarFly
+                || PlayerStates.GetStateName(player.StateMachine.State) == "Custom Feather"
                 || playerSeeker != null
                 || SaveData.Instance.Assists.ThreeSixtyDashing
                 || SaveData.Instance.Assists.SuperDashing) {
