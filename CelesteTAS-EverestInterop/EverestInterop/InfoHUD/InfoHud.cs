@@ -96,6 +96,10 @@ namespace TAS.EverestInterop.InfoHUD {
                     playerRect.X -= playerRect.Width;
                 }
 
+                if (ExtendedVariantsUtils.UpsideDown) {
+                    playerRect.Y -= playerRect.Height;
+                }
+
                 if ((level.Paused || playerRect.Intersects(bgRect)) && !Hotkeys.InfoHud.Check) {
                     alpha *= TasSettings.InfoMaskedOpacity / 10f;
                     infoAlpha *= alpha;

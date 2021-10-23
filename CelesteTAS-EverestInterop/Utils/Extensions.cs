@@ -466,6 +466,10 @@ namespace TAS.Utils {
                 position.X = 1920f - position.X;
             }
 
+            if (ExtendedVariantsUtils.UpsideDown) {
+                position.Y = 1080f - position.Y;
+            }
+
             position /= 1920f / 320f;
             position -= paddingOffset;
             position = (position - offset) / scale + offset;
@@ -484,8 +488,13 @@ namespace TAS.Utils {
             position = (position - offset) * scale + offset;
             position += paddingOffset;
             position *= 1920f / 320f;
+
             if (SaveData.Instance?.Assists.MirrorMode ?? false) {
                 position.X = 1920f - position.X;
+            }
+
+            if (ExtendedVariantsUtils.UpsideDown) {
+                position.Y = 1080f - position.Y;
             }
 
             return position;
