@@ -87,23 +87,9 @@ namespace TAS.EverestInterop.InfoHUD {
 
             Rectangle bgRect = new((int) x, (int) y, (int) (Size.X + padding * 2), (int) (Size.Y + padding * 2));
 
-            if (level.GetPlayer() is { } player) {
-                Vector2 playerPosition = level.WorldToScreen(player.TopLeft) / Engine.Width * viewWidth;
-                float zoomTarget = level.ZoomTarget;
-                Rectangle playerRect = new((int) playerPosition.X, (int) playerPosition.Y, (int) (player.Width * pixelScale * zoomTarget),
-                    (int) (player.Height * pixelScale * zoomTarget));
-                if (SaveData.Instance?.Assists.MirrorMode == true) {
-                    playerRect.X -= playerRect.Width;
-                }
-
-                if (ExtendedVariantsUtils.UpsideDown) {
-                    playerRect.Y -= playerRect.Height;
-                }
-
-                if ((level.Paused || playerRect.Intersects(bgRect)) && !Hotkeys.InfoHud.Check) {
-                    alpha *= TasSettings.InfoMaskedOpacity / 10f;
-                    infoAlpha *= alpha;
-                }
+            if (!Hotkeys.InfoHud.Check && (level.Paused || CollidePlayer(level, bgRect))) {
+                alpha *= TasSettings.InfoMaskedOpacity / 10f;
+                infoAlpha *= alpha;
             }
 
             Draw.SpriteBatch.Begin();
@@ -118,6 +104,23 @@ namespace TAS.EverestInterop.InfoHUD {
             JetBrainsMonoFont.Draw(text, textPosition, Vector2.Zero, scale, Color.White * infoAlpha);
 
             Draw.SpriteBatch.End();
+        }
+
+        private static bool CollidePlayer(Level level, Rectangle bgRect) {
+            if (level.GetPlayer() is not { } player) {
+                return false;
+            }
+
+            Vector2 playerTopLeft = level.WorldToScreen(player.TopLeft) / Engine.Width * Engine.ViewWidth;
+            Vector2 playerBottomRight = level.WorldToScreen(player.BottomRight) / Engine.Width * Engine.ViewWidth;
+            Rectangle playerRect = new(
+                (int) Math.Min(playerTopLeft.X, playerBottomRight.X),
+                (int) Math.Min(playerTopLeft.Y, playerBottomRight.Y),
+                (int) Math.Abs(playerTopLeft.X - playerBottomRight.X),
+                (int) Math.Abs(playerTopLeft.Y - playerBottomRight.Y)
+            );
+
+            return playerRect.Intersects(bgRect);
         }
 
         private static void WriteTasInput(StringBuilder stringBuilder) {
