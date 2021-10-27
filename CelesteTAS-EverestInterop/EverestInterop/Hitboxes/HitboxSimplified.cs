@@ -89,7 +89,9 @@ namespace TAS.EverestInterop.Hitboxes {
             }
 
             if (entity is WallBooster
-                || entity.GetType().FullName is "Celeste.Mod.ShroomHelper.Entities.SlippyWall" or "Celeste.Mod.JungleHelper.Entities.MossyWall"
+                || entity.GetType().FullName is "Celeste.Mod.ShroomHelper.Entities.SlippyWall"
+                    or "Celeste.Mod.ShroomHelper.Entities.AttachedIceWall"
+                    or "Celeste.Mod.JungleHelper.Entities.MossyWall"
             ) {
                 color = HitboxColor.EntityColorInverselyLessAlpha;
             }
