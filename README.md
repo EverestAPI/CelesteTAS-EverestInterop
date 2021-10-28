@@ -54,8 +54,8 @@ While in game or in Studio:
 - Toggle Hitboxes: LeftControl + B
 - Toggle Simplified Graphics: LeftControl + N
 - Toggle Center Camera: LeftControl + M
-- Save State: RightAlt + Minus ([Experimental](#savestate))
-- Clear State: RightAlt + Back ([Experimental](#savestate))
+- Save State: RightAlt + Minus
+- Clear State: RightAlt + Back
 - Info HUD:
     - Holding info hud hotkey and left-click to drag & drop the HUD
     - Double press the info hud hotkey to toggle HUD
@@ -71,7 +71,7 @@ While in game or in Studio:
 
 - You can create a breakpoint in the input file by typing `***` by itself on a single line
 - The program when played back from the start will fast forward until it reaches that line and then go into frame stepping mode
-- `***S` will make a savestate, which can reduce TAS playback time. ([Experimental](#savestate))
+- `***S` will make a [savestate](#savestate), which can reduce TAS playback time. 
 - You can specify the speed with `***X`, where `X` is the speedup factor. e.g. `***10` will go at 10x speed
 
 ### Commands
@@ -81,10 +81,10 @@ While in game or in Studio:
 
 ## Savestate
 
-- Savestates are experimental and require the [SpeedrunTool](https://gamebanana.com/tools/6597) mod.
+- Savestates require the [SpeedrunTool](https://gamebanana.com/tools/6597) mod.
 - Reliable in vanilla maps.
 - Savestates may not work properly in custom maps that use code mods. Placing a savestate right before leaving a room can help with this.
-- Currently cannot savestate while skipping a cutscene or during the death animation.
+- Currently cannot savestate when paused.
 - Crashes due to running out of memory are possible, although uncommon.
 
 ## Misc
