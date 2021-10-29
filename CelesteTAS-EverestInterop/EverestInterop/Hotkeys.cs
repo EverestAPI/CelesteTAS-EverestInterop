@@ -266,7 +266,7 @@ namespace TAS.EverestInterop {
 
                 if (Pressed) {
                     DateTime pressedTime = DateTime.Now;
-                    DoublePressed = pressedTime.Subtract(lastPressedTime).TotalMilliseconds < 300;
+                    DoublePressed = pressedTime.Subtract(lastPressedTime).TotalMilliseconds < 200;
                     lastPressedTime = DoublePressed ? default : pressedTime;
                 } else {
                     DoublePressed = false;
