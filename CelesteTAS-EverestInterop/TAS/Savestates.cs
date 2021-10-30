@@ -126,7 +126,7 @@ namespace TAS {
             savedTasFilePath = InputController.TasFilePath;
             SaveGameInfo();
             savedController = Controller.Clone();
-            LoadStateRoutine();
+            SetTasState();
         }
 
         private static void Load() {
