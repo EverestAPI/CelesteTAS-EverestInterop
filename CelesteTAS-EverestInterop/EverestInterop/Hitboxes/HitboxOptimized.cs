@@ -30,6 +30,8 @@ namespace TAS.EverestInterop.Hitboxes {
             On.Monocle.Entity.DebugRender += ModDebugRender;
             On.Monocle.EntityList.DebugRender += AddHoldableColliderHitbox;
             On.Monocle.EntityList.DebugRender += AddLockBlockColliderHitbox;
+            On.Monocle.EntityList.DebugRender += AddSpawnPointHitbox;
+            On.Monocle.Hitbox.Render += ChangeRespawnTriggerColor;
             IL.Celeste.Seeker.DebugRender += SeekerOnDebugRender;
             IL.Celeste.PlayerCollider.DebugRender += PlayerColliderOnDebugRender;
             On.Celeste.PlayerCollider.DebugRender += AddFeatherHitbox;
@@ -45,6 +47,8 @@ namespace TAS.EverestInterop.Hitboxes {
             On.Monocle.Entity.DebugRender -= ModDebugRender;
             On.Monocle.EntityList.DebugRender -= AddHoldableColliderHitbox;
             On.Monocle.EntityList.DebugRender -= AddLockBlockColliderHitbox;
+            On.Monocle.EntityList.DebugRender -= AddSpawnPointHitbox;
+            On.Monocle.Hitbox.Render -= ChangeRespawnTriggerColor;
             IL.Celeste.Seeker.DebugRender -= SeekerOnDebugRender;
             IL.Celeste.PlayerCollider.DebugRender -= PlayerColliderOnDebugRender;
             On.Celeste.PlayerCollider.DebugRender -= AddFeatherHitbox;
@@ -146,6 +150,7 @@ namespace TAS.EverestInterop.Hitboxes {
             if (!Settings.ShowHitboxes) {
                 return;
             }
+
             if (self.Scene is not Level level) {
                 return;
             }
@@ -159,9 +164,11 @@ namespace TAS.EverestInterop.Hitboxes {
                 if (Engine.Scene.GetPlayer() is not { } player) {
                     continue;
                 }
+
                 if (lockBlock.Get<PlayerCollider>() is not {Collider: Circle circle}) {
                     continue;
                 }
+
                 if (Vector2.Distance(player.Center, lockBlock.Center) > circle.Radius * 1.5) {
                     continue;
                 }
@@ -205,6 +212,31 @@ namespace TAS.EverestInterop.Hitboxes {
 
                 Draw.Line(player.Center, lockBlock.Center, color);
             }
+        }
+
+        private static void AddSpawnPointHitbox(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
+            orig(self, camera);
+
+            if (!Settings.ShowHitboxes || self.Scene is not Level level) {
+                return;
+            }
+
+            foreach (Vector2 spawn in level.Session.LevelData.Spawns) {
+                Draw.HollowRect(spawn - new Vector2(4, 11), 8, 11, Color.YellowGreen * 0.5f);
+            }
+        }
+
+        private static void ChangeRespawnTriggerColor(On.Monocle.Hitbox.orig_Render orig, Hitbox self, Camera camera, Color color) {
+            if (!Settings.ShowHitboxes) {
+                orig(self, camera, color);
+                return;
+            }
+
+            if (self.Entity is ChangeRespawnTrigger) {
+                color = Color.YellowGreen * (self.Entity.Collidable ? 1 : 0.5f);
+            }
+
+            orig(self, camera, color);
         }
 
         private static void SeekerOnDebugRender(ILContext il) {
