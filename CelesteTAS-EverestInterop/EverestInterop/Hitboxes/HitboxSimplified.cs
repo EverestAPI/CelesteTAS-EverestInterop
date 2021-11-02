@@ -61,6 +61,12 @@ namespace TAS.EverestInterop.Hitboxes {
                         return true;
                     }
 
+                    if (type.FullName is "ExtendedVariants.Entities.DashCountIndicator"
+                        or "ExtendedVariants.Entities.JumpIndicator"
+                        or "ExtendedVariants.Entities.Speedometer") {
+                        return true;
+                    }
+
                     if (type.FullName == "Celeste.Mod.JungleHelper.Entities.Gecko" && false == GeckoHostile.Value?.Invoke(entity) as bool?) {
                         return true;
                     }
