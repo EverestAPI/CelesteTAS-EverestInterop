@@ -515,7 +515,7 @@ namespace TAS.EverestInterop.InfoHUD {
 
         public UniqueEntityId(Entity entity, EntityData entityData) {
             Type = entity.GetType();
-            GlobalOrPersistent = entity.TagCheck(Tags.Global) || entity.TagCheck(Tags.Persistent);
+            GlobalOrPersistent = entity.TagCheck(Tags.Global) || entity.TagCheck(Tags.Persistent) || entity.Get<Holdable>() != null;
             EntityId = entityData.ToEntityId();
         }
     }
