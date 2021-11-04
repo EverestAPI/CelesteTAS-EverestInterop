@@ -187,17 +187,17 @@ namespace TAS.EverestInterop.InfoHUD {
                     if (methodInfo.IsStatic) {
                         obj = methodInfo.Invoke(null, null);
                     } else if (obj != null) {
-                        obj = methodInfo.Invoke(obj, null);
+                        if (obj is Actor actor && memberName == "ExactPosition") {
+                            obj = actor.GetMoreExactPosition(true);
+                        } else {
+                            obj = methodInfo.Invoke(obj, null);
+                        }
                     }
                 } else if (GetFieldInfo(type, memberName) is { } fieldInfo) {
                     if (fieldInfo.IsStatic) {
                         obj = fieldInfo.GetValue(null);
                     } else if (obj != null) {
-                        if (obj is Actor actor && obj != Engine.Scene.GetPlayer() && memberName == "Position") {
-                            obj = actor.GetMoreExactPosition(true);
-                        } else {
-                            obj = fieldInfo.GetValue(obj);
-                        }
+                        obj = fieldInfo.GetValue(obj);
                     }
                 } else {
                     return $"{memberName} not found";

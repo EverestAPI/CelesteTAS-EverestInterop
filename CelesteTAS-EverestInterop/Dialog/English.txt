@@ -63,13 +63,14 @@ TAS_INFO_HUD_OPTIONS_STUDIO_ONLY= Studio Only
 TAS_INFO_HUD_OPTIONS_BOTH=        Both
 
 # ================================== Round Values ==================================
-TAS_POSITION_DECIMALS=        Position Decimals
-TAS_SPEED_DECIMALS=           Speed Decimals
-TAS_VELOCITY_DECIMALS=        Velocity Decimals
-TAS_CUSTOM_INFO_DECIMALS=     Custom Info Decimals
-TAS_SPEED_UNIT=               Speed Unit
-TAS_PIXEL_PER_SECOND=         Pixel/Second
-TAS_PIXEL_PER_FRAME=          Pixel/Frame
+TAS_POSITION_DECIMALS=            Position Decimals
+TAS_SPEED_DECIMALS=               Speed Decimals
+TAS_VELOCITY_DECIMALS=            Velocity Decimals
+TAS_CUSTOM_INFO_DECIMALS=         Custom Info Decimals
+TAS_SUBPIXEL_INDICATOR_DECIMALS=  Subpixel Indicator Decimals
+TAS_SPEED_UNIT=                   Speed Unit
+TAS_PIXEL_PER_SECOND=             Pixel/Second
+TAS_PIXEL_PER_FRAME=              Pixel/Frame
 
 # ================================== Relaunch Required Submenu ==================================
 TAS_LAUNCH_STUDIO_AT_BOOT=    Launch Studio At Boot

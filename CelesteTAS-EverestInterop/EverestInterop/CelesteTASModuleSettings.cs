@@ -129,7 +129,7 @@ namespace TAS.EverestInterop {
         public bool InfoHud { get; set; } = false;
         public bool InfoGame { get; set; } = true;
         public bool InfoTasInput { get; set; } = true;
-        public bool InfoSubPixelIndicator { get; set; } = true;
+        public bool InfoSubpixelIndicator { get; set; } = true;
         public HudOptions InfoCustom { get; set; } = HudOptions.Off;
         public HudOptions InfoWatchEntity { get; set; } = HudOptions.Both;
         public WatchEntityTypes InfoWatchEntityType { get; set; } = WatchEntityTypes.Position;
@@ -144,7 +144,7 @@ namespace TAS.EverestInterop {
 
         [SettingIgnore] public Vector2 InfoPosition { get; set; } = Vector2.Zero;
         [SettingIgnore] public int InfoTextSize { get; set; } = 10;
-        [SettingIgnore] public int InfoSubPixelIndicatorSize { get; set; } = 10;
+        [SettingIgnore] public int InfoSubpixelIndicatorSize { get; set; } = 10;
         [SettingIgnore] public int InfoOpacity { get; set; } = 6;
         [SettingIgnore] public int InfoMaskedOpacity { get; set; } = 4;
 
@@ -156,6 +156,7 @@ namespace TAS.EverestInterop {
         private int speedDecimals = MinDecimals;
         private int velocityDecimals = MinDecimals;
         private int customInfoDecimals = MinDecimals;
+        private int subpixelIndicatorDecimals = MinDecimals;
         private SpeedUnit speedUnit = SpeedUnit.PixelPerSecond;
 
         public int PositionDecimals {
@@ -186,6 +187,14 @@ namespace TAS.EverestInterop {
             get => customInfoDecimals;
             set {
                 customInfoDecimals = Calc.Clamp(value, MinDecimals, MaxDecimals);
+                GameInfo.Update();
+            }
+        }
+
+        public int SubpixelIndicatorDecimals {
+            get => subpixelIndicatorDecimals;
+            set {
+                subpixelIndicatorDecimals = Calc.Clamp(value, MinDecimals, MaxDecimals);
                 GameInfo.Update();
             }
         }

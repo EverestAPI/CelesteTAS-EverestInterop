@@ -59,7 +59,7 @@ namespace TAS.EverestInterop.InfoHUD {
             }
 
             string text = stringBuilder.ToString().Trim();
-            if (string.IsNullOrEmpty(text) && !TasSettings.InfoSubPixelIndicator) {
+            if (string.IsNullOrEmpty(text) && !TasSettings.InfoSubpixelIndicator) {
                 return;
             }
 
@@ -168,8 +168,8 @@ namespace TAS.EverestInterop.InfoHUD {
                 subMenu.Add(new TextMenu.OnOff("Info Game".ToDialogText(), TasSettings.InfoGame).Change(value => TasSettings.InfoGame = value));
                 subMenu.Add(new TextMenu.OnOff("Info TAS Input".ToDialogText(), TasSettings.InfoTasInput).Change(value =>
                     TasSettings.InfoTasInput = value));
-                subMenu.Add(new TextMenu.OnOff("Info Subpixel Indicator".ToDialogText(), TasSettings.InfoSubPixelIndicator).Change(value =>
-                    TasSettings.InfoSubPixelIndicator = value));
+                subMenu.Add(new TextMenu.OnOff("Info Subpixel Indicator".ToDialogText(), TasSettings.InfoSubpixelIndicator).Change(value =>
+                    TasSettings.InfoSubpixelIndicator = value));
                 subMenu.Add(new TextMenuExt.EnumerableSlider<HudOptions>("Info Custom".ToDialogText(), CreateHudOptions(), TasSettings.InfoCustom)
                     .Change(value => TasSettings.InfoCustom = value));
                 subMenu.Add(new TextMenu.Button("Info Copy Custom Template".ToDialogText()).Pressed(() =>
@@ -187,9 +187,9 @@ namespace TAS.EverestInterop.InfoHUD {
                 }, TasSettings.InfoWatchEntityType).Change(value => TasSettings.InfoWatchEntityType = value));
                 subMenu.Add(new TextMenuExt.IntSlider("Info Text Size".ToDialogText(), 5, 20, TasSettings.InfoTextSize).Change(value =>
                     TasSettings.InfoTextSize = value));
-                subMenu.Add(new TextMenuExt.IntSlider("Info Subpixel Indicator Size".ToDialogText(), 5, 20, TasSettings.InfoSubPixelIndicatorSize)
+                subMenu.Add(new TextMenuExt.IntSlider("Info Subpixel Indicator Size".ToDialogText(), 5, 20, TasSettings.InfoSubpixelIndicatorSize)
                     .Change(value =>
-                        TasSettings.InfoSubPixelIndicatorSize = value));
+                        TasSettings.InfoSubpixelIndicatorSize = value));
                 subMenu.Add(new TextMenuExt.IntSlider("Info Opacity".ToDialogText(), 1, 10, TasSettings.InfoOpacity).Change(value =>
                     TasSettings.InfoOpacity = value));
                 subMenu.Add(new TextMenuExt.IntSlider("Info Masked Opacity".ToDialogText(), 0, 10, TasSettings.InfoMaskedOpacity).Change(value =>

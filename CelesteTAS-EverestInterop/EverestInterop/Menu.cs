@@ -106,6 +106,9 @@ namespace TAS.EverestInterop {
                 subMenu.Add(new TextMenuExt.IntSlider("Custom Info Decimals".ToDialogText(), CelesteTasModuleSettings.MinDecimals,
                     CelesteTasModuleSettings.MaxDecimals, Settings.CustomInfoDecimals).Change(value =>
                     Settings.CustomInfoDecimals = value));
+                subMenu.Add(new TextMenuExt.IntSlider("Subpixel Indicator Decimals".ToDialogText(), CelesteTasModuleSettings.MinDecimals,
+                    CelesteTasModuleSettings.MaxDecimals, Settings.SubpixelIndicatorDecimals).Change(value =>
+                    Settings.SubpixelIndicatorDecimals = value));
                 subMenu.Add(new TextMenuExt.EnumerableSlider<SpeedUnit>("Speed Unit".ToDialogText(), new[] {
                         new KeyValuePair<SpeedUnit, string>(SpeedUnit.PixelPerSecond, "Pixel Per Second".ToDialogText()),
                         new KeyValuePair<SpeedUnit, string>(SpeedUnit.PixelPerFrame, "Pixel Per Frame".ToDialogText())

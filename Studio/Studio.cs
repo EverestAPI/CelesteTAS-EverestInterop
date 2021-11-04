@@ -1601,6 +1601,10 @@ namespace CelesteStudio {
             SetDecimals("Custom Info Decimals", sender);
         }
 
+        private void subpixelIndicatorDecimalsToolStripMenuItem_Click(object sender, EventArgs e) {
+            SetDecimals("Subpixel Indicator Decimals", sender);
+        }
+
         private void unitOfSpeedToolStripMenuItem_Click(object sender, EventArgs e) {
             ToggleGameSetting("SpeedUnit", null, sender);
         }
