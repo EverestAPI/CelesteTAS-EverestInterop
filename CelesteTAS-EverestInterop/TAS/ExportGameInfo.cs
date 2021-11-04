@@ -18,6 +18,7 @@ namespace TAS {
         private static readonly MethodInfo EntityListFindAll = typeof(EntityList).GetMethod("FindAll");
         private static bool exporting;
         private static bool firstInputFrame;
+        private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
         // ReSharper disable once UnusedMember.Local
         // "StartExportGameInfo"
@@ -121,8 +122,8 @@ namespace TAS {
                 }
 
                 string time = GameInfo.GetChapterTime(level);
-                string pos = player.ToSimplePositionString(CelesteTasModule.Settings.RoundPosition);
-                string speed = player.Speed.X + ", " + player.Speed.Y;
+                string pos = player.ToSimplePositionString(CelesteTasModuleSettings.MaxDecimals);
+                string speed = player.Speed.ToSimpleString(Settings.SpeedDecimals);
 
                 int dashCooldown = (int) GameInfo.GetDashCooldownTimer(player);
                 string statuses = (dashCooldown < 1 && player.Dashes > 0 ? "CanDash " : string.Empty)
@@ -156,7 +157,7 @@ namespace TAS {
                     }
 
                     foreach (Entity entity in entities) {
-                        output += $"\t{typeName}: {entity.ToSimplePositionString(CelesteTasModule.Settings.RoundCustomInfo)}";
+                        output += $"\t{typeName}: {entity.ToSimplePositionString(Settings.CustomInfoDecimals)}";
                     }
                 }
 

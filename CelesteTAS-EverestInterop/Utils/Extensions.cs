@@ -424,6 +424,24 @@ namespace TAS.Utils {
         public static float DistanceSquared(this Entity entity, Entity otherEntity) {
             return Vector2.DistanceSquared(entity.Center, otherEntity.Center);
         }
+
+        public static string ToSimplePositionString(this Entity entity, int decimals) {
+            if (entity is Actor actor) {
+                return ToSimplePositionString(actor, decimals);
+            } else {
+                return entity.Position.ToSimpleString(decimals);
+            }
+        }
+
+        private static string ToSimplePositionString(Actor actor, int decimals) {
+            return actor.GetMoreExactPosition(true).ToSimpleString(decimals);
+        }
+    }
+
+    internal static class Vector2DoubleExtension {
+        public static Vector2Double GetMoreExactPosition(this Actor actor, bool subpixelRounding) {
+            return new(actor.Position, actor.PositionRemainder, subpixelRounding);
+        }
     }
 
     internal static class TrackerExtensions {
@@ -437,8 +455,8 @@ namespace TAS.Utils {
     }
 
     internal static class Vector2Extensions {
-        public static string ToSimpleString(this Vector2 vector2, bool round) {
-            string format = round ? "F2" : "F12";
+        public static string ToSimpleString(this Vector2 vector2, int decimals) {
+            string format = $"F{decimals}";
             return $"{vector2.X.ToString(format)}, {vector2.Y.ToString(format)}";
         }
     }

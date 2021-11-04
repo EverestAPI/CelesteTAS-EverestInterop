@@ -8,13 +8,12 @@ using CelesteStudio.RichText;
 
 namespace CelesteStudio {
     public static class DialogUtils {
-        public static DialogResult ShowInputDialog(string title, ref string input) {
+        public static bool ShowInputDialog(string title, ref string input) {
             const int padding = 10;
             const int buttonWidth = 75;
             const int buttonHeight = 30;
 
             Size size = new(200, buttonHeight * 2 + padding * 3);
-            DialogResult result = DialogResult.Cancel;
 
             using Form inputBox = new();
             inputBox.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -52,10 +51,10 @@ namespace CelesteStudio {
             inputBox.AcceptButton = okButton;
             inputBox.CancelButton = cancelButton;
 
-            result = inputBox.ShowDialog();
+            DialogResult result = inputBox.ShowDialog();
             input = textBox.Text;
 
-            return result;
+            return result == DialogResult.OK;
         }
 
         public static void ShowFindDialog(RichText.RichText richText) {

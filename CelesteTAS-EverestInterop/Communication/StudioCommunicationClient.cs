@@ -222,7 +222,10 @@ namespace TAS.Communication {
         }
 
         private void ProcessToggleGameSetting(byte[] data) {
-            string settingName = Encoding.Default.GetString(data);
+            object[] values = BinaryFormatterHelper.FromByteArray<object[]>(data);
+            string settingName = values[0] as string;
+            object settingValue = values[1];
+
             if (settingName.IsNullOrEmpty()) {
                 return;
             }
@@ -269,6 +272,9 @@ namespace TAS.Communication {
                     modified = true;
                 } else if (value is Enum) {
                     property.SetValue(settings, ((int) value + 1) % Enum.GetValues(property.PropertyType).Length);
+                    modified = true;
+                } else if (value != null && settingValue != null && value.GetType() == settingValue.GetType()) {
+                    property.SetValue(settings, settingValue);
                     modified = true;
                 }
 

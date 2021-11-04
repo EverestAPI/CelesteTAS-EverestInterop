@@ -2,11 +2,15 @@
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
+using Monocle;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
 
 namespace TAS.EverestInterop {
     public class CelesteTasModuleSettings : EverestModuleSettings {
+        public const int MinDecimals = 2;
+        public const int MaxDecimals = 12;
+
         public bool Enabled { get; set; } = true;
 
         #region Hitboxes
@@ -148,40 +152,40 @@ namespace TAS.EverestInterop {
 
         #region Round Values
 
-        private bool roundPosition = true;
-        private bool roundSpeed = true;
-        private bool roundVelocity = true;
-        private bool roundCustomInfo = true;
+        private int positionDecimals = MinDecimals;
+        private int speedDecimals = MinDecimals;
+        private int velocityDecimals = MinDecimals;
+        private int customInfoDecimals = MinDecimals;
         private SpeedUnit speedUnit = SpeedUnit.PixelPerSecond;
 
-        public bool RoundPosition {
-            get => roundPosition;
+        public int PositionDecimals {
+            get => positionDecimals;
             set {
-                roundPosition = value;
+                positionDecimals = Calc.Clamp(value, MinDecimals, MaxDecimals);
                 GameInfo.Update();
             }
         }
 
-        public bool RoundSpeed {
-            get => roundSpeed;
+        public int SpeedDecimals {
+            get => speedDecimals;
             set {
-                roundSpeed = value;
+                speedDecimals = Calc.Clamp(value, MinDecimals, MaxDecimals);
                 GameInfo.Update();
             }
         }
 
-        public bool RoundVelocity {
-            get => roundVelocity;
+        public int VelocityDecimals {
+            get => velocityDecimals;
             set {
-                roundVelocity = value;
+                velocityDecimals = Calc.Clamp(value, MinDecimals, MaxDecimals);
                 GameInfo.Update();
             }
         }
 
-        public bool RoundCustomInfo {
-            get => roundCustomInfo;
+        public int CustomInfoDecimals {
+            get => customInfoDecimals;
             set {
-                roundCustomInfo = value;
+                customInfoDecimals = Calc.Clamp(value, MinDecimals, MaxDecimals);
                 GameInfo.Update();
             }
         }

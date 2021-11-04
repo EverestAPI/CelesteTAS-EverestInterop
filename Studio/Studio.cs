@@ -662,12 +662,12 @@ namespace CelesteStudio {
             return CommunicationWrapper.ReturnData == string.Empty ? null : CommunicationWrapper.ReturnData;
         }
 
-        private void ToggleGameSetting(string settingName, object sender) {
+        private void ToggleGameSetting(string settingName, object value, object sender) {
             if (StudioCommunicationServer.Instance == null) {
                 return;
             }
 
-            StudioCommunicationServer.Instance.ToggleGameSetting(settingName);
+            StudioCommunicationServer.Instance.ToggleGameSetting(settingName, value);
             if (GetDataFromGame() is { } settingStatus) {
                 ShowTooltip($"{sender.ToString().Replace("&", "")}: {settingStatus}");
             }
@@ -1523,87 +1523,98 @@ namespace CelesteStudio {
         }
 
         private void toggleHitboxesToolStripMenuItem_Click(object sender, EventArgs e) {
-            ToggleGameSetting("ShowHitboxes", sender);
+            ToggleGameSetting("ShowHitboxes", null, sender);
         }
 
         private void toggleTriggerHitboxesToolStripMenuItem_Click(object sender, EventArgs e) {
-            ToggleGameSetting("ShowTriggerHitboxes", sender);
+            ToggleGameSetting("ShowTriggerHitboxes", null, sender);
         }
 
         private void toggleSimplifiedHitboxesToolStripMenuItem_Click(object sender, EventArgs e) {
-            ToggleGameSetting("SimplifiedHitboxes", sender);
+            ToggleGameSetting("SimplifiedHitboxes", null, sender);
         }
 
         private void switchActualCollideHitboxesToolStripMenuItem_Click(object sender, EventArgs e) {
-            ToggleGameSetting("ShowActualCollideHitboxes", sender);
+            ToggleGameSetting("ShowActualCollideHitboxes", null, sender);
         }
 
         private void toggleSimplifiedGraphicsToolStripMenuItem_Click(object sender, EventArgs e) {
-            ToggleGameSetting("SimplifiedGraphics", sender);
+            ToggleGameSetting("SimplifiedGraphics", null, sender);
         }
 
         private void toggleGameplayToolStripMenuItem_Click(object sender, EventArgs e) {
-            ToggleGameSetting("ShowGameplay", sender);
+            ToggleGameSetting("ShowGameplay", null, sender);
         }
 
         private void toggleCenterCameraToolStripMenuItem_Click(object sender, EventArgs e) {
-            ToggleGameSetting("CenterCamera", sender);
+            ToggleGameSetting("CenterCamera", null, sender);
         }
 
         private void switchInfoHUDToolStripMenuItem_Click(object sender, EventArgs e) {
-            ToggleGameSetting("InfoHud", sender);
+            ToggleGameSetting("InfoHud", null, sender);
         }
 
         private void tASInputInfoToolStripMenuItem_Click(object sender, EventArgs e) {
-            ToggleGameSetting("InfoTasInput", sender);
+            ToggleGameSetting("InfoTasInput", null, sender);
         }
 
         private void gameInfoToolStripMenuItem_Click(object sender, EventArgs e) {
-            ToggleGameSetting("InfoGame", sender);
+            ToggleGameSetting("InfoGame", null, sender);
         }
 
         private void watchEntityInfoToolStripMenuItem_Click(object sender, EventArgs e) {
-            ToggleGameSetting("InfoWatchEntity", sender);
+            ToggleGameSetting("InfoWatchEntity", null, sender);
         }
 
         private void customInfoToolStripMenuItem_Click(object sender, EventArgs e) {
-            ToggleGameSetting("InfoCustom", sender);
+            ToggleGameSetting("InfoCustom", null, sender);
         }
 
         private void subpixelIndicatorToolStripMenuItem_Click(object sender, EventArgs e) {
-            ToggleGameSetting("InfoSubPixelIndicator", sender);
+            ToggleGameSetting("InfoSubPixelIndicator", null, sender);
         }
 
-        private void toggleRoundPositionToolStripMenuItem_Click(object sender, EventArgs e) {
-            ToggleGameSetting("RoundPosition", sender);
+        private void SetDecimals(string settingName, object sender) {
+            string decimals = "2";
+            if (!DialogUtils.ShowInputDialog(settingName, ref decimals)) {
+                return;
+            }
+
+            if (int.TryParse(decimals, out int d)) {
+                ToggleGameSetting(settingName.Replace(" ", ""), d, sender);
+            }
         }
 
-        private void toggleRoundSpeedToolStripMenuItem_Click(object sender, EventArgs e) {
-            ToggleGameSetting("RoundSpeed", sender);
+        private void positionDecimalsToolStripMenuItem_Click(object sender, EventArgs e) {
+            SetDecimals("Position Decimals", sender);
         }
 
-        private void roundVelocityToolStripMenuItem_Click(object sender, EventArgs e) {
-            ToggleGameSetting("RoundVelocity", sender);
+        private void speedDecimalsToolStripMenuItem_Click(object sender, EventArgs e) {
+            SetDecimals("Speed Decimals", sender);
         }
 
-        private void roundCustomInfoToolStripMenuItem_Click(object sender, EventArgs e) {
-            ToggleGameSetting("RoundCustomInfo", sender);
+        private void velocityDecimalsToolStripMenuItem_Click(object sender, EventArgs e) {
+            SetDecimals("Velocity Decimals", sender);
+        }
+
+        private void customInfoDecimalsToolStripMenuItem_Click(object sender, EventArgs e) {
+            SetDecimals("Custom Info Decimals", sender);
         }
 
         private void unitOfSpeedToolStripMenuItem_Click(object sender, EventArgs e) {
-            ToggleGameSetting("SpeedUnit", sender);
+            ToggleGameSetting("SpeedUnit", null, sender);
         }
 
         private void copyCustomInfoTemplateToClipboardToolStripMenuItem_Click(object sender, EventArgs e) {
-            ToggleGameSetting("Copy Custom Info Template to Clipboard", sender);
+            ToggleGameSetting("Copy Custom Info Template to Clipboard", null, sender);
         }
 
         private void setCustomInfoTemplateFromClipboardToolStripMenuItem_Click(object sender, EventArgs e) {
-            ToggleGameSetting("Set Custom Info Template From Clipboard", sender);
+            ToggleGameSetting("Set Custom Info Template From Clipboard", null, sender);
         }
 
         private void clearCustomInfoTemplateToolStripMenuItem_Click(object sender, EventArgs e) {
-            ToggleGameSetting("Clear Custom Info Template", sender);
+            ToggleGameSetting("Clear Custom Info Template", null, sender);
         }
 
         private void enabledAutoBackupToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -1613,7 +1624,7 @@ namespace CelesteStudio {
 
         private void backupRateToolStripMenuItem_Click(object sender, EventArgs e) {
             string origRate = Settings.Default.AutoBackupRate.ToString();
-            if (DialogUtils.ShowInputDialog("Backup Rate (minutes)", ref origRate) != DialogResult.OK) {
+            if (!DialogUtils.ShowInputDialog("Backup Rate (minutes)", ref origRate)) {
                 return;
             }
 
@@ -1628,7 +1639,7 @@ namespace CelesteStudio {
 
         private void backupFileCountsToolStripMenuItem_Click(object sender, EventArgs e) {
             string origCount = Settings.Default.AutoBackupCount.ToString();
-            if (DialogUtils.ShowInputDialog("Backup File Count", ref origCount) != DialogResult.OK) {
+            if (!DialogUtils.ShowInputDialog("Backup File Count", ref origCount)) {
                 return;
             }
 

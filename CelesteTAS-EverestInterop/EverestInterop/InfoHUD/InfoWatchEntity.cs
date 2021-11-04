@@ -332,20 +332,20 @@ namespace TAS.EverestInterop.InfoHUD {
             GameInfo.Update();
         }
 
-        public static string GetWatchingEntitiesInfo(string separator = "\n", bool alwaysUpdate = false, bool round = true) {
+        public static string GetWatchingEntitiesInfo(string separator = "\n", bool alwaysUpdate = false, int? decimals = null) {
             WatchingEntities.Clear();
             string watchingInfo = string.Empty;
             if (Engine.Scene is not Level level || Settings.InfoWatchEntity == HudOptions.Off && !alwaysUpdate) {
                 return string.Empty;
             }
 
-            round = round && Settings.RoundCustomInfo;
+            decimals ??= Settings.CustomInfoDecimals;
             if (RequireWatchEntities.IsNotEmpty()) {
                 watchingInfo = string.Join(separator, RequireWatchEntities.Where(reference => reference.IsAlive).Select(
                     reference => {
                         Entity entity = (Entity) reference.Target;
                         WatchingEntities.Add(entity);
-                        return GetEntityValues(entity, Settings.InfoWatchEntityType, separator, round);
+                        return GetEntityValues(entity, Settings.InfoWatchEntityType, separator, decimals.Value);
                     }
                 ));
             }
@@ -360,7 +360,7 @@ namespace TAS.EverestInterop.InfoHUD {
                     watchingInfo += string.Join(separator, matchEntities.Select(pair => {
                         Entity entity = matchEntities[pair.Key];
                         WatchingEntities.Add(entity);
-                        return GetEntityValues(entity, Settings.InfoWatchEntityType, separator, round);
+                        return GetEntityValues(entity, Settings.InfoWatchEntityType, separator, decimals.Value);
                     }));
                 }
             }
@@ -372,7 +372,7 @@ namespace TAS.EverestInterop.InfoHUD {
             ("Info of Clicked Entity:\n" + GetEntityValues(entity, WatchEntityTypes.All)).Log(true);
         }
 
-        private static string GetEntityValues(Entity entity, WatchEntityTypes watchEntityType, string separator = "\n", bool round = true) {
+        private static string GetEntityValues(Entity entity, WatchEntityTypes watchEntityType, string separator = "\n", int decimals = 2) {
             Type type = entity.GetType();
             string entityId = "";
             if (entity.GetEntityData() is { } entityData) {
@@ -380,7 +380,7 @@ namespace TAS.EverestInterop.InfoHUD {
             }
 
             if (watchEntityType == WatchEntityTypes.Position) {
-                return GetPositionInfo(entity, entityId, round);
+                return GetPositionInfo(entity, entityId, decimals);
             }
 
             List<string> values = GetAllSimpleFields(type, watchEntityType == WatchEntityTypes.DeclaredOnly).Select(info => {
@@ -399,10 +399,10 @@ namespace TAS.EverestInterop.InfoHUD {
                     if (info.Name.EndsWith("Timer")) {
                         value = GameInfo.ConvertToFrames(floatValue);
                     } else {
-                        value = round ? $"{floatValue:F2}" : $"{floatValue:F12}";
+                        value = floatValue.ToString($"F{decimals}");
                     }
                 } else if (value is Vector2 vector2) {
-                    value = vector2.ToSimpleString(round);
+                    value = vector2.ToSimpleString(decimals);
                 }
 
                 if (separator == "\t" && value != null) {
@@ -412,13 +412,13 @@ namespace TAS.EverestInterop.InfoHUD {
                 return $"{type.Name}{entityId}.{info.Name}: {value}";
             }).ToList();
 
-            values.Insert(0, GetPositionInfo(entity, entityId, round));
+            values.Insert(0, GetPositionInfo(entity, entityId, decimals));
 
             return string.Join(separator, values);
         }
 
-        private static string GetPositionInfo(Entity entity, string entityId, bool round) {
-            return $"{entity.GetType().Name}{entityId}: {entity.ToSimplePositionString(round)}";
+        private static string GetPositionInfo(Entity entity, string entityId, int decimals) {
+            return $"{entity.GetType().Name}{entityId}: {entity.ToSimplePositionString(decimals)}";
         }
 
         private static IEnumerable<MemberInfo> GetAllSimpleFields(Type type, bool declaredOnly = false) {

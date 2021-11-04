@@ -73,10 +73,10 @@ namespace CelesteStudio {
             this.customInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.subpixelIndicatorToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-            this.toggleRoundPositionToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toggleRoundSpeedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.roundVelocityToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.roundCustomInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.positionDecimalsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.speedDecimalsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.velocityDecimalsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.customInfoDecimalsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.unitOfSpeedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.homeMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -93,6 +93,7 @@ namespace CelesteStudio {
             this.insertCurrentInGameTimeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.insertModInfoStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.insertConsoleLoadCommandToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.insertSimpleConsoleLoadCommandToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.insertOtherCommandToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.enforceLegalToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.unsafeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -129,7 +130,6 @@ namespace CelesteStudio {
             this.statusPanel = new System.Windows.Forms.Panel();
             this.statusBar = new System.Windows.Forms.StatusStrip();
             this.lblStatus = new System.Windows.Forms.ToolStripStatusLabel();
-            this.insertSimpleConsoleLoadCommandToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusBarContextMenuStrip.SuspendLayout();
             this.menuStrip.SuspendLayout();
             this.tasTextContextMenuStrip.SuspendLayout();
@@ -343,7 +343,7 @@ namespace CelesteStudio {
             // 
             // toggleToolStripMenuItem
             // 
-            this.toggleToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.toggleHitboxesToolStripMenuItem, this.toggleTriggerHitboxesToolStripMenuItem, this.toggleSimplifiedHitboxesToolStripMenuItem, this.switchActualCollideHitboxesToolStripMenuItem, this.toolStripSeparator8, this.toggleSimplifiedGraphicsToolStripMenuItem, this.toggleGameplayToolStripMenuItem, this.toolStripSeparator10, this.toggleCenterCameraToolStripMenuItem, this.toolStripSeparator9, this.switchInfoHUDToolStripMenuItem, this.tASInputInfoToolStripMenuItem, this.gameInfoToolStripMenuItem, this.watchEntityInfoToolStripMenuItem, this.customInfoToolStripMenuItem, this.subpixelIndicatorToolStripMenuItem, this.toolStripSeparator1, this.toggleRoundPositionToolStripMenuItem, this.toggleRoundSpeedToolStripMenuItem, this.roundVelocityToolStripMenuItem, this.roundCustomInfoToolStripMenuItem, this.unitOfSpeedToolStripMenuItem});
+            this.toggleToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.toggleHitboxesToolStripMenuItem, this.toggleTriggerHitboxesToolStripMenuItem, this.toggleSimplifiedHitboxesToolStripMenuItem, this.switchActualCollideHitboxesToolStripMenuItem, this.toolStripSeparator8, this.toggleSimplifiedGraphicsToolStripMenuItem, this.toggleGameplayToolStripMenuItem, this.toolStripSeparator10, this.toggleCenterCameraToolStripMenuItem, this.toolStripSeparator9, this.switchInfoHUDToolStripMenuItem, this.tASInputInfoToolStripMenuItem, this.gameInfoToolStripMenuItem, this.watchEntityInfoToolStripMenuItem, this.customInfoToolStripMenuItem, this.subpixelIndicatorToolStripMenuItem, this.toolStripSeparator1, this.positionDecimalsToolStripMenuItem, this.speedDecimalsToolStripMenuItem, this.velocityDecimalsToolStripMenuItem, this.customInfoDecimalsToolStripMenuItem, this.unitOfSpeedToolStripMenuItem});
             this.toggleToolStripMenuItem.Name = "toggleToolStripMenuItem";
             this.toggleToolStripMenuItem.Size = new System.Drawing.Size(76, 20);
             this.toggleToolStripMenuItem.Text = "&Toggles";
@@ -459,33 +459,33 @@ namespace CelesteStudio {
             this.toolStripSeparator1.Name = "toolStripSeparator1";
             this.toolStripSeparator1.Size = new System.Drawing.Size(257, 6);
             // 
-            // toggleRoundPositionToolStripMenuItem
+            // positionDecimalsToolStripMenuItem
             // 
-            this.toggleRoundPositionToolStripMenuItem.Name = "toggleRoundPositionToolStripMenuItem";
-            this.toggleRoundPositionToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
-            this.toggleRoundPositionToolStripMenuItem.Text = "&Round Position";
-            this.toggleRoundPositionToolStripMenuItem.Click += new System.EventHandler(this.toggleRoundPositionToolStripMenuItem_Click);
+            this.positionDecimalsToolStripMenuItem.Name = "positionDecimalsToolStripMenuItem";
+            this.positionDecimalsToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
+            this.positionDecimalsToolStripMenuItem.Text = "Position Decimals";
+            this.positionDecimalsToolStripMenuItem.Click += new System.EventHandler(this.positionDecimalsToolStripMenuItem_Click);
             // 
-            // toggleRoundSpeedToolStripMenuItem
+            // speedDecimalsToolStripMenuItem
             // 
-            this.toggleRoundSpeedToolStripMenuItem.Name = "toggleRoundSpeedToolStripMenuItem";
-            this.toggleRoundSpeedToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
-            this.toggleRoundSpeedToolStripMenuItem.Text = "R&ound Speed";
-            this.toggleRoundSpeedToolStripMenuItem.Click += new System.EventHandler(this.toggleRoundSpeedToolStripMenuItem_Click);
+            this.speedDecimalsToolStripMenuItem.Name = "speedDecimalsToolStripMenuItem";
+            this.speedDecimalsToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
+            this.speedDecimalsToolStripMenuItem.Text = "Speed Decimals";
+            this.speedDecimalsToolStripMenuItem.Click += new System.EventHandler(this.speedDecimalsToolStripMenuItem_Click);
             // 
-            // roundVelocityToolStripMenuItem
+            // velocityDecimalsToolStripMenuItem
             // 
-            this.roundVelocityToolStripMenuItem.Name = "roundVelocityToolStripMenuItem";
-            this.roundVelocityToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
-            this.roundVelocityToolStripMenuItem.Text = "Ro&und Velocity";
-            this.roundVelocityToolStripMenuItem.Click += new System.EventHandler(this.roundVelocityToolStripMenuItem_Click);
+            this.velocityDecimalsToolStripMenuItem.Name = "velocityDecimalsToolStripMenuItem";
+            this.velocityDecimalsToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
+            this.velocityDecimalsToolStripMenuItem.Text = "Velocity Decimals";
+            this.velocityDecimalsToolStripMenuItem.Click += new System.EventHandler(this.velocityDecimalsToolStripMenuItem_Click);
             // 
-            // roundCustomInfoToolStripMenuItem
+            // customInfoDecimalsToolStripMenuItem
             // 
-            this.roundCustomInfoToolStripMenuItem.Name = "roundCustomInfoToolStripMenuItem";
-            this.roundCustomInfoToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
-            this.roundCustomInfoToolStripMenuItem.Text = "Rou&nd Custom Info";
-            this.roundCustomInfoToolStripMenuItem.Click += new System.EventHandler(this.roundCustomInfoToolStripMenuItem_Click);
+            this.customInfoDecimalsToolStripMenuItem.Name = "customInfoDecimalsToolStripMenuItem";
+            this.customInfoDecimalsToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
+            this.customInfoDecimalsToolStripMenuItem.Text = "Custom Info Decimals";
+            this.customInfoDecimalsToolStripMenuItem.Click += new System.EventHandler(this.customInfoDecimalsToolStripMenuItem_Click);
             // 
             // unitOfSpeedToolStripMenuItem
             // 
@@ -521,7 +521,7 @@ namespace CelesteStudio {
             // 
             this.tasTextContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.insertRemoveBreakPointToolStripMenuItem, this.insertRemoveSavestateBreakPointToolStripMenuItem, this.removeAllUncommentedBreakpointsToolStripMenuItem, this.removeAllBreakpointsToolStripMenuItem, this.commentUncommentAllBreakpointsToolStripMenuItem, this.toolStripSeparator2, this.commentUncommentTextToolStripMenuItem, this.insertRoomNameToolStripMenuItem, this.insertCurrentInGameTimeToolStripMenuItem, this.insertModInfoStripMenuItem1, this.insertConsoleLoadCommandToolStripMenuItem, this.insertSimpleConsoleLoadCommandToolStripMenuItem, this.insertOtherCommandToolStripMenuItem, this.toolStripSeparator6, this.swapDashKeysStripMenuItem, this.swapJumpKeysToolStripMenuItem, this.combineConsecutiveSameInputsToolStripMenuItem, this.forceCombineInputsToolStripMenuItem, this.convertDashToDemoDashToolStripMenuItem, this.toolStripSeparator12, this.openReadFileToolStripMenuItem});
             this.tasTextContextMenuStrip.Name = "tasTextContextMenuStrip";
-            this.tasTextContextMenuStrip.Size = new System.Drawing.Size(426, 440);
+            this.tasTextContextMenuStrip.Size = new System.Drawing.Size(426, 418);
             // 
             // insertRemoveBreakPointToolStripMenuItem
             // 
@@ -606,6 +606,14 @@ namespace CelesteStudio {
             this.insertConsoleLoadCommandToolStripMenuItem.Size = new System.Drawing.Size(425, 22);
             this.insertConsoleLoadCommandToolStripMenuItem.Text = "Insert Console Load Command";
             this.insertConsoleLoadCommandToolStripMenuItem.Click += new System.EventHandler(this.insertConsoleLoadCommandToolStripMenuItem_Click);
+            // 
+            // insertSimpleConsoleLoadCommandToolStripMenuItem
+            // 
+            this.insertSimpleConsoleLoadCommandToolStripMenuItem.Name = "insertSimpleConsoleLoadCommandToolStripMenuItem";
+            this.insertSimpleConsoleLoadCommandToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys) (((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Alt) | System.Windows.Forms.Keys.R)));
+            this.insertSimpleConsoleLoadCommandToolStripMenuItem.Size = new System.Drawing.Size(425, 22);
+            this.insertSimpleConsoleLoadCommandToolStripMenuItem.Text = "Insert Simple Console Load Command";
+            this.insertSimpleConsoleLoadCommandToolStripMenuItem.Click += new System.EventHandler(this.insertSimpleConsoleLoadCommandToolStripMenuItem_Click);
             // 
             // insertOtherCommandToolStripMenuItem
             // 
@@ -898,14 +906,6 @@ namespace CelesteStudio {
             this.lblStatus.Text = "Searching...";
             this.lblStatus.TextAlign = System.Drawing.ContentAlignment.TopLeft;
             // 
-            // insertSimpleConsoleLoadCommandToolStripMenuItem
-            // 
-            this.insertSimpleConsoleLoadCommandToolStripMenuItem.Name = "insertSimpleConsoleLoadCommandToolStripMenuItem";
-            this.insertSimpleConsoleLoadCommandToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys) (((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Alt) | System.Windows.Forms.Keys.R)));
-            this.insertSimpleConsoleLoadCommandToolStripMenuItem.Size = new System.Drawing.Size(425, 22);
-            this.insertSimpleConsoleLoadCommandToolStripMenuItem.Text = "Insert Simple Console Load Command";
-            this.insertSimpleConsoleLoadCommandToolStripMenuItem.Click += new System.EventHandler(this.insertSimpleConsoleLoadCommandToolStripMenuItem_Click);
-            // 
             // Studio
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -936,6 +936,12 @@ namespace CelesteStudio {
             this.ResumeLayout(false);
             this.PerformLayout();
         }
+
+        private System.Windows.Forms.ToolStripMenuItem velocityDecimalsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem speedDecimalsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem customInfoDecimalsToolStripMenuItem;
+
+        private System.Windows.Forms.ToolStripMenuItem positionDecimalsToolStripMenuItem;
 
         private System.Windows.Forms.ToolStripMenuItem insertSimpleConsoleLoadCommandToolStripMenuItem;
 
@@ -990,17 +996,11 @@ namespace CelesteStudio {
 
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator11;
 
-        private System.Windows.Forms.ToolStripMenuItem roundCustomInfoToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator10;
-
-        private System.Windows.Forms.ToolStripMenuItem roundVelocityToolStripMenuItem;
 
         private System.Windows.Forms.ToolStripMenuItem switchInfoHUDToolStripMenuItem;
 
         private System.Windows.Forms.ToolStripMenuItem toggleCenterCameraToolStripMenuItem;
-
-        private System.Windows.Forms.ToolStripMenuItem toggleRoundPositionToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem toggleRoundSpeedToolStripMenuItem;
 
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator9;
 

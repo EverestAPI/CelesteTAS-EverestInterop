@@ -63,11 +63,11 @@ TAS_INFO_HUD_OPTIONS_STUDIO_ONLY= Studio Only
 TAS_INFO_HUD_OPTIONS_BOTH=        Both
 
 # ================================== Round Values ==================================
-TAS_ROUND_POSITION=           Round Position
-TAS_ROUND_SPEED=              Round Speed
-TAS_ROUND_VELOCITY=           Round Velocity
-TAS_ROUND_CUSTOM_INFO=        Round Custom Info
-TAS_UNIT_OF_SPEED=            Unit of Speed
+TAS_POSITION_DECIMALS=        Position Decimals
+TAS_SPEED_DECIMALS=           Speed Decimals
+TAS_VELOCITY_DECIMALS=        Velocity Decimals
+TAS_CUSTOM_INFO_DECIMALS=     Custom Info Decimals
+TAS_SPEED_UNIT=               Speed Unit
 TAS_PIXEL_PER_SECOND=         Pixel/Second
 TAS_PIXEL_PER_FRAME=          Pixel/Frame
 

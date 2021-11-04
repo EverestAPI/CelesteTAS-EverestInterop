@@ -76,10 +76,10 @@ namespace TAS.EverestInterop {
                                 backupTasSettings.CenterCamera = tasSettings.CenterCamera;
                                 backupTasSettings.InfoHud = tasSettings.InfoHud;
                                 backupTasSettings.InfoCustomTemplate = tasSettings.InfoCustomTemplate;
-                                backupTasSettings.RoundPosition = tasSettings.RoundPosition;
-                                backupTasSettings.RoundSpeed = tasSettings.RoundSpeed;
-                                backupTasSettings.RoundVelocity = tasSettings.RoundVelocity;
-                                backupTasSettings.RoundCustomInfo = tasSettings.RoundCustomInfo;
+                                backupTasSettings.PositionDecimals = tasSettings.PositionDecimals;
+                                backupTasSettings.SpeedDecimals = tasSettings.SpeedDecimals;
+                                backupTasSettings.VelocityDecimals = tasSettings.VelocityDecimals;
+                                backupTasSettings.CustomInfoDecimals = tasSettings.CustomInfoDecimals;
                             }
 
                             module._Settings.CopyAllProperties(modSettings);

@@ -63,11 +63,11 @@ TAS_INFO_HUD_OPTIONS_STUDIO_ONLY= Studio
 TAS_INFO_HUD_OPTIONS_BOTH=        同时显示
 
 # ================================== Round Values ==================================
-TAS_ROUND_POSITION=           坐标保留两位小数
-TAS_ROUND_SPEED=              速度保留两位小数
-TAS_ROUND_VELOCITY=           位移速度保留两位小数
-TAS_ROUND_CUSTOM_INFO=        自定义数据保留两位小数
-TAS_UNIT_OF_SPEED=            速度单位
+TAS_POSITION_DECIMALS=        坐标小数位数
+TAS_SPEED_DECIMALS=           速度小数位数
+TAS_VELOCITY_DECIMALS=        位移速度小数位数
+TAS_CUSTOM_INFO_DECIMALS=     自定义数据小数位数
+TAS_SPEED_UNIT=               速度单位
 TAS_PIXELS_PER_SECOND=        像素/秒
 TAS_PIXELS_PER_FRAME=         像素/帧
 

@@ -125,8 +125,8 @@ namespace TAS {
             get {
                 List<string> infos = new() {ExactStatus};
 
-                WatchingInfo = InfoWatchEntity.GetWatchingEntitiesInfo(alwaysUpdate: true, round: false);
-                CustomInfo = InfoCustom.Parse(true, false);
+                WatchingInfo = InfoWatchEntity.GetWatchingEntitiesInfo(alwaysUpdate: true, decimals: CelesteTasModuleSettings.MaxDecimals);
+                CustomInfo = InfoCustom.Parse(true, CelesteTasModuleSettings.MaxDecimals);
 
                 if (CustomInfo.IsNotNullOrWhiteSpace()) {
                     infos.Add(CustomInfo);
@@ -227,9 +227,9 @@ namespace TAS {
             if (Engine.Scene is Level level) {
                 Player player = level.Tracker.GetEntity<Player>();
                 if (player != null) {
-                    string pos = GetAdjustedPos(player.Position, player.PositionRemainder, out string exactPos);
+                    string pos = GetAdjustedPos(player, out string exactPos);
                     string speed = GetAdjustedSpeed(player.Speed, out string exactSpeed);
-                    Vector2Double diff = player.GetMoreExactPosition() - LastPos;
+                    Vector2Double diff = player.GetMoreExactPosition(false) - LastPos;
                     if (!Frozen && updateVel) {
                         LastDiff = diff;
                     } else {
@@ -264,9 +264,9 @@ namespace TAS {
 
                     PlayerSeeker playerSeeker = level.Tracker.GetEntity<PlayerSeeker>();
                     if (playerSeeker != null) {
-                        pos = GetAdjustedPos(playerSeeker.Position, playerSeeker.PositionRemainder, out exactPos);
+                        pos = GetAdjustedPos(playerSeeker, out exactPos);
                         speed = GetAdjustedSpeed(PlayerSeekerSpeed(playerSeeker), out exactSpeed);
-                        diff = playerSeeker.GetMoreExactPosition() - LastPlayerSeekerPos;
+                        diff = playerSeeker.GetMoreExactPosition(false) - LastPlayerSeekerPos;
                         if (!Frozen && updateVel) {
                             LastPlayerSeekerDiff = diff;
                         } else {
@@ -367,8 +367,8 @@ namespace TAS {
                     );
 
                     if (Engine.FreezeTimer <= 0f) {
-                        LastPos = player.GetMoreExactPosition();
-                        LastPlayerSeekerPos = playerSeeker?.GetMoreExactPosition() ?? default;
+                        LastPos = player.GetMoreExactPosition(false);
+                        LastPlayerSeekerPos = playerSeeker?.GetMoreExactPosition(false) ?? default;
                     }
                 } else if (level.InCutscene) {
                     StatusWithoutTime = "Cutscene";
@@ -462,45 +462,53 @@ namespace TAS {
             return seconds.ToCeilingFrames();
         }
 
-        private static string GetAdjustedPos(Vector2 intPos, Vector2 subpixelPos, out string exactPos) {
-            double x = intPos.X;
-            double y = intPos.Y;
-            double subX = subpixelPos.X;
-            double subY = subpixelPos.Y;
+        private static string GetAdjustedPos(Actor actor, out string exactPos) {
+            string result;
 
-            exactPos = $"Pos:   {x + subX:F12}, {y + subY:F12}";
-            if (!CelesteTasModule.Settings.RoundPosition) {
-                return exactPos;
-            }
-
-            if (Math.Abs(subX) % 0.25 < 0.01 || Math.Abs(subX) % 0.25 > 0.24) {
-                if (x > 0 || x == 0 && subX > 0) {
-                    x += Math.Floor(subX * 100) / 100;
-                } else {
-                    x += Math.Ceiling(subX * 100) / 100;
-                }
+            if (TasSettings.PositionDecimals > 2) {
+                result = actor.ToSimplePositionString(TasSettings.PositionDecimals);
             } else {
-                x += subX;
-            }
+                Vector2 intPos = actor.Position;
+                Vector2 subpixelPos = actor.PositionRemainder;
+                double x = intPos.X;
+                double y = intPos.Y;
+                double subX = subpixelPos.X;
+                double subY = subpixelPos.Y;
 
-            if (Math.Abs(subY) % 0.25 < 0.01 || Math.Abs(subY) % 0.25 > 0.24) {
-                if (y > 0 || y == 0 && subY > 0) {
-                    y += Math.Floor(subY * 100) / 100;
+                // euni: ensure .999/.249 round away from .0/.25
+                // .00/.25/.75 let you distinguish which 8th of a pixel you're on, quite handy when doing subpixel manip
+                if (Math.Abs(subX) % 0.25 < 0.01 || Math.Abs(subX) % 0.25 > 0.24) {
+                    if (x > 0 || x == 0 && subX > 0) {
+                        x += Math.Floor(subX * 100) / 100;
+                    } else {
+                        x += Math.Ceiling(subX * 100) / 100;
+                    }
                 } else {
-                    y += Math.Ceiling(subY * 100) / 100;
+                    x += subX;
                 }
-            } else {
-                y += subY;
+
+                if (Math.Abs(subY) % 0.25 < 0.01 || Math.Abs(subY) % 0.25 > 0.24) {
+                    if (y > 0 || y == 0 && subY > 0) {
+                        y += Math.Floor(subY * 100) / 100;
+                    } else {
+                        y += Math.Ceiling(subY * 100) / 100;
+                    }
+                } else {
+                    y += subY;
+                }
+
+                result = $"{x:F2}, {y:F2}";
             }
 
-            string pos = $"Pos:   {x:F2}, {y:F2}";
-            return pos;
+            const string prefix = "Pos:   ";
+            exactPos = $"{prefix}{actor.ToSimplePositionString(CelesteTasModuleSettings.MaxDecimals)}";
+            return $"{prefix}{result}";
         }
 
         private static string GetAdjustedSpeed(Vector2 speed, out string exactSpeed) {
             speed = ConvertSpeedUnit(speed, TasSettings.SpeedUnit);
-            exactSpeed = $"Speed: {speed.ToSimpleString(false)}";
-            return $"Speed: {speed.ToSimpleString(CelesteTasModule.Settings.RoundSpeed)}";
+            exactSpeed = $"Speed: {speed.ToSimpleString(CelesteTasModuleSettings.MaxDecimals)}";
+            return $"Speed: {speed.ToSimpleString(TasSettings.SpeedDecimals)}";
         }
 
         public static Vector2 ConvertSpeedUnit(Vector2 speed, SpeedUnit speedUnit) {
@@ -524,16 +532,16 @@ namespace TAS {
         }
 
         private static string GetAdjustedVelocity(Vector2Double diff, out string exactVelocity) {
-            exactVelocity = $"Vel:   {diff.ToSimpleString(false)}";
-            return $"Vel:   {diff.ToSimpleString(CelesteTasModule.Settings.RoundVelocity)}";
+            exactVelocity = $"Vel:   {diff.ToSimpleString(CelesteTasModuleSettings.MaxDecimals)}";
+            return $"Vel:   {diff.ToSimpleString(TasSettings.VelocityDecimals)}";
         }
 
         private static string GetAdjustedRetainedSpeed(Player player, out string exactRetainedSpeed) {
             if (PlayerRetainedSpeedTimer(player) is float retainedSpeedTimer and > 0f) {
                 int timer = retainedSpeedTimer.ToCeilingFrames();
                 float retainedSpeed = ConvertSpeedUnit(PlayerRetainedSpeed(player), TasSettings.SpeedUnit);
-                exactRetainedSpeed = $"Retained({timer}): {retainedSpeed:F12}";
-                return $"Retained({timer}): {retainedSpeed.ToString(TasSettings.RoundSpeed ? "F2" : "F12")}";
+                exactRetainedSpeed = $"Retained({timer}): {retainedSpeed.ToString($"F{CelesteTasModuleSettings.MaxDecimals}")}";
+                return $"Retained({timer}): {retainedSpeed.ToString($"F{TasSettings.SpeedDecimals}")}";
             } else {
                 return exactRetainedSpeed = string.Empty;
             }
@@ -543,8 +551,8 @@ namespace TAS {
             if (PlayerLiftBoost(player) is var liftBoost && liftBoost != Vector2.Zero) {
                 liftBoost = ConvertSpeedUnit(liftBoost, TasSettings.SpeedUnit);
                 int timer = ActorLiftSpeedTimer(player).ToCeilingFrames();
-                exactLiftBoost = $"LiftBoost({timer}): {liftBoost.ToSimpleString(false)}";
-                return $"LiftBoost({timer}): {liftBoost.ToSimpleString(TasSettings.RoundSpeed)}";
+                exactLiftBoost = $"LiftBoost({timer}): {liftBoost.ToSimpleString(CelesteTasModuleSettings.MaxDecimals)}";
+                return $"LiftBoost({timer}): {liftBoost.ToSimpleString(TasSettings.SpeedDecimals)}";
             } else {
                 return exactLiftBoost = string.Empty;
             }
@@ -622,21 +630,60 @@ namespace TAS {
 
     // ReSharper disable once StructCanBeMadeReadOnly
     public struct Vector2Double {
-        public readonly double X;
-        public readonly double Y;
+        public Vector2 Position;
+        public Vector2 PositionRemainder;
+        public bool SubpixelRounding;
+        public double X => (double) Position.X + PositionRemainder.X;
+        public double Y => (double) Position.Y + PositionRemainder.Y;
 
-        public Vector2Double(double x = 0, double y = 0) {
-            X = x;
-            Y = y;
+        public Vector2Double(Vector2 position, Vector2 positionRemainder, bool subpixelRounding) {
+            Position = position;
+            PositionRemainder = positionRemainder;
+            SubpixelRounding = subpixelRounding;
         }
 
-        public override bool Equals(object obj) => obj is Vector2Double other && X == other.X && Y == other.Y;
+        public override bool Equals(object obj) =>
+            obj is Vector2Double other && Position == other.Position && PositionRemainder == other.PositionRemainder;
 
         public override int GetHashCode() => ToString().GetHashCode();
 
         public override string ToString() => "{X:" + X + " Y:" + Y + "}";
 
-        public string ToSimpleString(bool round) => $"{X.ToString(round ? "F2" : "F12")}, {Y.ToString(round ? "F2" : "F12")}";
+        public string ToSimpleString(int decimals) {
+            if (SubpixelRounding) {
+                return ToSimplePositionString(decimals);
+            } else {
+                string format = $"F{decimals}";
+                return $"{X.ToString(format)}, {Y.ToString(format)}";
+            }
+        }
+
+        private string ToSimplePositionString(int decimals) {
+            string format = $"F{decimals}";
+            double roundX = Math.Round(X, decimals);
+            double roundY = Math.Round(Y, decimals);
+
+            // make 0.495 round away from 0.50
+            if (Math.Abs(PositionRemainder.X) < 0.5f) {
+                int diffX = (int) Position.X - (int) Math.Round(roundX);
+                if (diffX != 0) {
+                    roundX += diffX * Math.Pow(10, -decimals);
+                }
+            }
+
+            if (Math.Abs(PositionRemainder.Y) < 0.5f) {
+                int diffY = (int) Position.Y - (int) Math.Round(roundY);
+                if (diffY != 0) {
+                    roundY += diffY * Math.Pow(10, -decimals);
+                }
+            }
+
+            // if a number ends in .5 it means it is exactly equal to that number, not approximately equal to
+            string resultX = roundX.ToString(Math.Abs(PositionRemainder.X) == 0.5f ? "F1" : format);
+            string resultY = roundY.ToString(Math.Abs(PositionRemainder.Y) == 0.5f ? "F1" : format);
+
+            return $"{resultX}, {resultY}";
+        }
 
         public double Length() => Math.Sqrt(X * X + Y * Y);
 
@@ -654,33 +701,19 @@ namespace TAS {
         public static bool operator !=(Vector2Double value1, Vector2Double value2) => !(value1 == value2);
 
         public static Vector2Double operator +(Vector2Double value1, Vector2Double value2) {
-            return new(value1.X + value2.X, value1.Y + value2.Y);
+            return new(value1.Position + value2.Position, value1.PositionRemainder + value2.PositionRemainder, value1.SubpixelRounding);
         }
 
         public static Vector2Double operator -(Vector2Double value1, Vector2Double value2) {
-            return new(value1.X - value2.X, value1.Y - value2.Y);
+            return new(value1.Position - value2.Position, value1.PositionRemainder - value2.PositionRemainder, value1.SubpixelRounding);
         }
 
-        public static Vector2Double operator *(Vector2Double value, double scaleFactor) {
-            return new(value.X * scaleFactor, value.Y * scaleFactor);
+        public static Vector2Double operator *(Vector2Double value, float scaleFactor) {
+            return new(value.Position * scaleFactor, value.PositionRemainder * scaleFactor, value.SubpixelRounding);
         }
 
-        public static Vector2Double operator /(Vector2Double value, double scaleFactor) {
+        public static Vector2Double operator /(Vector2Double value, float scaleFactor) {
             return value * (1 / scaleFactor);
-        }
-    }
-
-    internal static class Vector2DoubleExtension {
-        public static Vector2Double GetMoreExactPosition(this Actor actor) {
-            return new(actor.Position.X + actor.PositionRemainder.X, actor.Position.Y + actor.PositionRemainder.Y);
-        }
-
-        public static string ToSimplePositionString(this Entity entity, bool round) {
-            if (entity is Actor actor) {
-                return actor.GetMoreExactPosition().ToSimpleString(round);
-            } else {
-                return entity.Position.ToSimpleString(round);
-            }
         }
     }
 }

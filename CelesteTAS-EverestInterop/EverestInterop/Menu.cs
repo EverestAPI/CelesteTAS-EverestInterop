@@ -94,15 +94,19 @@ namespace TAS.EverestInterop {
 
         private static EaseInSubMenu CreateRoundValuesSubMenu() {
             return new EaseInSubMenu("Round Values".ToDialogText(), false).Apply(subMenu => {
-                subMenu.Add(new TextMenu.OnOff("Round Position".ToDialogText(), Settings.RoundPosition).Change(value =>
-                    Settings.RoundPosition = value));
-                subMenu.Add(new TextMenu.OnOff("Round Speed".ToDialogText(), Settings.RoundSpeed).Change(value =>
-                    Settings.RoundSpeed = value));
-                subMenu.Add(new TextMenu.OnOff("Round Velocity".ToDialogText(), Settings.RoundVelocity).Change(value =>
-                    Settings.RoundVelocity = value));
-                subMenu.Add(new TextMenu.OnOff("Round Custom Info".ToDialogText(), Settings.RoundCustomInfo).Change(value =>
-                    Settings.RoundCustomInfo = value));
-                subMenu.Add(new TextMenuExt.EnumerableSlider<SpeedUnit>("Unit of Speed".ToDialogText(), new[] {
+                subMenu.Add(new TextMenuExt.IntSlider("Position Decimals".ToDialogText(), CelesteTasModuleSettings.MinDecimals,
+                    CelesteTasModuleSettings.MaxDecimals, Settings.PositionDecimals).Change(value =>
+                    Settings.PositionDecimals = value));
+                subMenu.Add(new TextMenuExt.IntSlider("Speed Decimals".ToDialogText(), CelesteTasModuleSettings.MinDecimals,
+                    CelesteTasModuleSettings.MaxDecimals, Settings.SpeedDecimals).Change(value =>
+                    Settings.SpeedDecimals = value));
+                subMenu.Add(new TextMenuExt.IntSlider("Velocity Decimals".ToDialogText(), CelesteTasModuleSettings.MinDecimals,
+                    CelesteTasModuleSettings.MaxDecimals, Settings.VelocityDecimals).Change(value =>
+                    Settings.VelocityDecimals = value));
+                subMenu.Add(new TextMenuExt.IntSlider("Custom Info Decimals".ToDialogText(), CelesteTasModuleSettings.MinDecimals,
+                    CelesteTasModuleSettings.MaxDecimals, Settings.CustomInfoDecimals).Change(value =>
+                    Settings.CustomInfoDecimals = value));
+                subMenu.Add(new TextMenuExt.EnumerableSlider<SpeedUnit>("Speed Unit".ToDialogText(), new[] {
                         new KeyValuePair<SpeedUnit, string>(SpeedUnit.PixelPerSecond, "Pixel Per Second".ToDialogText()),
                         new KeyValuePair<SpeedUnit, string>(SpeedUnit.PixelPerFrame, "Pixel Per Frame".ToDialogText())
                     }, Settings.SpeedUnit)

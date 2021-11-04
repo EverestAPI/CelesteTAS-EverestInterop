@@ -39,12 +39,12 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-        public static string Parse(bool alwaysUpdate = false, bool round = true) {
+        public static string Parse(bool alwaysUpdate = false, int? decimals = null) {
             if (Settings.InfoCustom == HudOptions.Off && !alwaysUpdate) {
                 return string.Empty;
             }
 
-            round = round && Settings.RoundCustomInfo;
+            decimals ??= Settings.CustomInfoDecimals;
             Dictionary<string, List<Entity>> cachedEntities = new();
 
             return BraceRegex.Replace(Settings.InfoCustomTemplate, match => {
@@ -102,7 +102,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 }
 
                 if (GetGetMethod(type, memberNames.First()) is {IsStatic: true} || GetFieldInfo(type, memberNames.First()) is {IsStatic: true}) {
-                    return FormatValue(GetMemberValue(type, null, memberNames), helperMethod, round);
+                    return FormatValue(GetMemberValue(type, null, memberNames), helperMethod, decimals.Value);
                 }
 
                 if (Engine.Scene is Level level) {
@@ -120,7 +120,7 @@ namespace TAS.EverestInterop.InfoHUD {
                         }
 
                         return string.Join("", entities.Select(entity => {
-                            string value = FormatValue(GetMemberValue(type, entity, memberNames), helperMethod, round);
+                            string value = FormatValue(GetMemberValue(type, entity, memberNames), helperMethod, decimals.Value);
 
                             if (entities.Count > 1) {
                                 if (entity.GetEntityData()?.ToEntityId().ToString() is { } id) {
@@ -133,7 +133,7 @@ namespace TAS.EverestInterop.InfoHUD {
                             return value;
                         }));
                     } else if (type == typeof(Level)) {
-                        return FormatValue(GetMemberValue(type, level, memberNames), helperMethod, round);
+                        return FormatValue(GetMemberValue(type, level, memberNames), helperMethod, decimals.Value);
                     }
                 }
 
@@ -151,7 +151,7 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-        private static string FormatValue(object obj, string helperMethod, bool round) {
+        private static string FormatValue(object obj, string helperMethod, int decimals) {
             if (obj == null) {
                 return string.Empty;
             }
@@ -161,7 +161,11 @@ namespace TAS.EverestInterop.InfoHUD {
                     vector2 = GameInfo.ConvertSpeedUnit(vector2, SpeedUnit.PixelPerFrame);
                 }
 
-                return vector2.ToSimpleString(round);
+                return vector2.ToSimpleString(decimals);
+            }
+
+            if (obj is Vector2Double vector2Double) {
+                return vector2Double.ToSimpleString(decimals);
             }
 
             if (obj is float floatValue) {
@@ -170,7 +174,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 } else if (helperMethod == "toPixelPerFrame()") {
                     return GameInfo.ConvertSpeedUnit(floatValue, SpeedUnit.PixelPerFrame).ToString(CultureInfo.InvariantCulture);
                 } else {
-                    return round ? $"{floatValue:F2}" : $"{floatValue:F12}";
+                    return floatValue.ToString($"F{decimals}");
                 }
             }
 
@@ -189,7 +193,11 @@ namespace TAS.EverestInterop.InfoHUD {
                     if (fieldInfo.IsStatic) {
                         obj = fieldInfo.GetValue(null);
                     } else if (obj != null) {
-                        obj = fieldInfo.GetValue(obj);
+                        if (obj is Actor actor && obj != Engine.Scene.GetPlayer() && memberName == "Position") {
+                            obj = actor.GetMoreExactPosition(true);
+                        } else {
+                            obj = fieldInfo.GetValue(obj);
+                        }
                     }
                 } else {
                     return $"{memberName} not found";

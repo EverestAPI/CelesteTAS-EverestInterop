@@ -205,8 +205,10 @@ namespace TAS.Input {
                     double y = player.Y;
                     double subX = player.PositionRemainder.X;
                     double subY = player.PositionRemainder.Y;
-                    values.Add((x + subX).ToString("0.############", CultureInfo.InvariantCulture));
-                    values.Add((y + subY).ToString("0.############", CultureInfo.InvariantCulture));
+
+                    string format = "0.".PadRight(CelesteTasModuleSettings.MaxDecimals + 2, '#');
+                    values.Add((x + subX).ToString(format, CultureInfo.InvariantCulture));
+                    values.Add((y + subY).ToString(format, CultureInfo.InvariantCulture));
 
                     if (player.Speed != Vector2.Zero) {
                         values.Add(player.Speed.X.ToString(CultureInfo.InvariantCulture));
