@@ -659,26 +659,26 @@ namespace TAS {
         }
 
         private string ToSimplePositionString(int decimals) {
-            string format = $"F{decimals}";
             double roundX = Math.Round(X, decimals);
             double roundY = Math.Round(Y, decimals);
 
             // make 0.495 round away from 0.50
             if (Math.Abs(PositionRemainder.X) < 0.5f) {
-                int diffX = (int) Position.X - (int) Math.Round(roundX);
+                int diffX = (int) Position.X - (int) Math.Round(roundX, MidpointRounding.AwayFromZero);
                 if (diffX != 0) {
                     roundX += diffX * Math.Pow(10, -decimals);
                 }
             }
 
             if (Math.Abs(PositionRemainder.Y) < 0.5f) {
-                int diffY = (int) Position.Y - (int) Math.Round(roundY);
+                int diffY = (int) Position.Y - (int) Math.Round(roundY, MidpointRounding.AwayFromZero);
                 if (diffY != 0) {
                     roundY += diffY * Math.Pow(10, -decimals);
                 }
             }
 
             // if a number ends in .5 it means it is exactly equal to that number, not approximately equal to
+            string format = $"F{decimals}";
             string resultX = roundX.ToString(Math.Abs(PositionRemainder.X) == 0.5f ? "F1" : format);
             string resultY = roundY.ToString(Math.Abs(PositionRemainder.Y) == 0.5f ? "F1" : format);
 
