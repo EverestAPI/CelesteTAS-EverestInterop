@@ -23,6 +23,8 @@ namespace TAS.EverestInterop.Hitboxes {
         private static readonly Func<LockBlock, bool> LockBlockOpening =
             typeof(LockBlock).GetFieldInfo("opening").CreateDelegate_Get<Func<LockBlock, bool>>();
 
+        private static readonly Func<Player, Hitbox> PlayerHurtbox = "hurtbox".CreateDelegate_Get<Player, Hitbox>();
+
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
         [Load]
@@ -151,7 +153,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 return;
             }
 
-            if (self.Scene is not Level level) {
+            if (self.Scene is not Level level || level.GetPlayer() is not { } player) {
                 return;
             }
 
@@ -160,16 +162,17 @@ namespace TAS.EverestInterop.Hitboxes {
                 return;
             }
 
-            foreach (LockBlock lockBlock in lockBlocks) {
-                if (Engine.Scene.GetPlayer() is not { } player) {
-                    continue;
-                }
+            Collider origCollider = player.Collider;
+            player.Collider = PlayerHurtbox(player);
+            Vector2 playerCenter = player.Center;
+            player.Collider = origCollider;
 
+            foreach (LockBlock lockBlock in lockBlocks) {
                 if (lockBlock.Get<PlayerCollider>() is not {Collider: Circle circle}) {
                     continue;
                 }
 
-                if (Vector2.Distance(player.Center, lockBlock.Center) > circle.Radius * 1.5) {
+                if (Vector2.Distance(playerCenter, lockBlock.Center) > circle.Radius * 1.5) {
                     continue;
                 }
 
@@ -186,11 +189,11 @@ namespace TAS.EverestInterop.Hitboxes {
 
                 // check if the line collides with any solid except solid tiles
                 solidTilesList.ForEach(entity => entity.Collidable = false);
-                bool collideSolid = Engine.Scene.CollideCheck<Solid>(player.Center, lockBlock.Center);
+                bool collideSolid = Engine.Scene.CollideCheck<Solid>(playerCenter, lockBlock.Center);
 
                 // check if the line collides with solid tiles
                 solidTilesList.ForEach(entity => entity.Collidable = solidTilesCollidableDict[entity]);
-                bool collideSolidTiles = Engine.Scene.CollideCheck<SolidTiles>(player.Center, lockBlock.Center);
+                bool collideSolidTiles = Engine.Scene.CollideCheck<SolidTiles>(playerCenter, lockBlock.Center);
 
                 lockBlock.Collidable = origCollidable;
 
@@ -203,14 +206,14 @@ namespace TAS.EverestInterop.Hitboxes {
                     solidTilesList.ForEach(entity => {
                         if (entity is SolidTiles {Collidable: true} solidTiles) {
                             Grid grid = solidTiles.Grid;
-                            grid.GetCheckedTilesInLineCollision(player.Center, lockBlock.Center)
+                            grid.GetCheckedTilesInLineCollision(playerCenter, lockBlock.Center)
                                 .ForEach(tuple => Draw.HollowRect(tuple.Item1, grid.CellWidth, grid.CellHeight,
                                     Color.HotPink * (tuple.Item2 ? 1f : 0.5f)));
                         }
                     });
                 }
 
-                Draw.Line(player.Center, lockBlock.Center, color);
+                Draw.Line(playerCenter, lockBlock.Center, color);
             }
         }
 
