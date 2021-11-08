@@ -21,27 +21,9 @@ namespace TAS.EverestInterop.InfoHUD {
 
             Player player = Engine.Scene.Tracker.GetEntity<Player>();
             if (player != null) {
-                Vector2 positionRemainder = player.PositionRemainder;
-                subPixelLeft = (float) Math.Round(positionRemainder.X + 0.5f, decimals);
-                if (Math.Abs(player.PositionRemainder.X) < 0.5f) {
-                    if (subPixelLeft == 0f) {
-                        subPixelLeft += (float) Math.Pow(10, -decimals);
-                    } else {
-                        subPixelLeft -= (float) Math.Pow(10, -decimals);
-                    }
-                }
-
+                subPixelLeft = (float) Math.Round(player.PositionRemainder.X + 0.5f, decimals, MidpointRounding.AwayFromZero);
+                subPixelTop = (float) Math.Round(player.PositionRemainder.Y + 0.5f, decimals, MidpointRounding.AwayFromZero);
                 subPixelRight = 1f - subPixelLeft;
-
-                subPixelTop = (float) Math.Round(positionRemainder.Y + 0.5f, decimals);
-                if (Math.Abs(player.PositionRemainder.Y) < 0.5f) {
-                    if (subPixelTop == 0f) {
-                        subPixelTop += (float) Math.Pow(10, -decimals);
-                    } else {
-                        subPixelTop -= (float) Math.Pow(10, -decimals);
-                    }
-                }
-
                 subPixelBottom = 1f - subPixelTop;
             }
 
@@ -58,14 +40,20 @@ namespace TAS.EverestInterop.InfoHUD {
             Draw.Rect(x + (rectSide - pointSize) * subPixelLeft, y + (rectSide - pointSize) * subPixelTop, pointSize, pointSize,
                 Color.Red * alpha);
 
-            string format = $"F{decimals}";
-            string left = subPixelLeft.ToString(Math.Abs(player?.PositionRemainder.X ?? 0) == 0.5f ? "F0" : format)
-                .PadLeft(TasSettings.SubpixelIndicatorDecimals + 2, ' ');
-            string right = subPixelRight.ToString(Math.Abs(player?.PositionRemainder.X ?? 0) == 0.5f ? "F0" : format);
-            string top = subPixelTop.ToString(Math.Abs(player?.PositionRemainder.Y ?? 0) == 0.5f ? "F0" : format)
-                .PadLeft(TasSettings.SubpixelIndicatorDecimals / 2 + 2, ' ');
-            string bottom = subPixelBottom.ToString(Math.Abs(player?.PositionRemainder.Y ?? 0) == 0.5f ? "F0" : format)
-                .PadLeft(TasSettings.SubpixelIndicatorDecimals / 2 + 2, ' ');
+            Vector2 remainder = player?.PositionRemainder ?? Vector2.One;
+            string hFormat = Math.Abs(remainder.X) switch {
+                0.5f => "F0",
+                _ => $"F{decimals}"
+            };
+            string vFormat = Math.Abs(remainder.Y) switch {
+                0.5f => "F0",
+                _ => $"F{decimals}"
+            };
+
+            string left = subPixelLeft.ToString(hFormat).PadLeft(TasSettings.SubpixelIndicatorDecimals + 2, ' ');
+            string right = subPixelRight.ToString(hFormat);
+            string top = subPixelTop.ToString(vFormat).PadLeft(TasSettings.SubpixelIndicatorDecimals / 2 + 2, ' ');
+            string bottom = subPixelBottom.ToString(vFormat).PadLeft(TasSettings.SubpixelIndicatorDecimals / 2 + 2, ' ');
 
             JetBrainsMonoFont.Draw(left, new Vector2(x - textWidth - padding / 2f, y + (rectSide - textHeight) / 2f),
                 Vector2.Zero, new Vector2(GetSubPixelFontSize()), Color.White * alpha);
