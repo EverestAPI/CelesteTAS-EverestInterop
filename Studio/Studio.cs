@@ -863,7 +863,9 @@ namespace CelesteStudio {
 
             StringBuilder result = new();
             foreach (InputRecord record in selection) {
-                if (!toggle && anyUncomment || toggle && !record.IsComment) {
+                if (record.IsCommentRoom || record.IsCommentTime) {
+                    result.AppendLine(record.ToString());
+                } else if (!toggle && anyUncomment || toggle && !record.IsComment) {
                     if (!record.IsEmpty) {
                         result.Append("#");
                     }

@@ -31,8 +31,9 @@ namespace CelesteStudio.Entities {
         private static readonly Regex DuplicateZeroRegex = new(@"^0+([^.])", RegexOptions.Compiled);
         private static readonly Regex FloatRegex = new(@"^,-?([0-9.]+)", RegexOptions.Compiled);
         private static readonly Regex EmptyLineRegex = new(@"^\s*$", RegexOptions.Compiled);
-        private static readonly Regex CommentRoomRegex = new(@"^\s*#lvl_", RegexOptions.Compiled);
         public static readonly Regex CommentSymbolRegex = new(@"^\s*#", RegexOptions.Compiled);
+        private static readonly Regex CommentRoomRegex = new(@"^\s*#lvl_", RegexOptions.Compiled);
+        private static readonly Regex CommentTimeRegex = new(@"^\s*#(\d{1,2}:)?\d{1,2}:\d{2}\.\d{3}", RegexOptions.Compiled);
         public static readonly Regex CommentLineRegex = new(@"^\s*#.*", RegexOptions.Compiled);
         public static readonly Regex BreakpointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
         public static readonly Regex InputFrameRegex = new(@"^(\s*\d+)", RegexOptions.Compiled);
@@ -55,7 +56,9 @@ namespace CelesteStudio.Entities {
                 if (CommentSymbolRegex.IsMatch(line)) {
                     IsComment = true;
                     if (CommentRoomRegex.IsMatch(line)) {
-                        IsRoomComment = true;
+                        IsCommentRoom = true;
+                    } else if (CommentTimeRegex.IsMatch(line)) {
+                        IsCommentTime = true;
                     }
                 } else if (BreakpointRegex.IsMatch(line)) {
                     IsBreakpoint = true;
@@ -151,7 +154,8 @@ namespace CelesteStudio.Entities {
         public string LineText { get; }
         public bool IsInput { get; }
         public bool IsComment { get; }
-        public bool IsRoomComment { get; }
+        public bool IsCommentRoom { get; }
+        public bool IsCommentTime { get; }
         public bool IsCommand { get; }
         public bool IsBreakpoint { get; }
         public bool IsEmpty { get; }
@@ -328,7 +332,7 @@ namespace CelesteStudio.Entities {
                     continue;
                 }
 
-                return next.IsRoomComment;
+                return next.IsCommentRoom;
             }
 
             return false;
