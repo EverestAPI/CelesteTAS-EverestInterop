@@ -131,7 +131,7 @@ namespace CelesteStudio.Communication {
         public void ConvertToLibTas(string path) => PendingWrite = () => ConvertToLibTasNow(path);
         public void SendHotkeyPressed(HotkeyIDs hotkey, bool released = false) => PendingWrite = () => SendHotkeyPressedNow(hotkey, released);
         public void ToggleGameSetting(string settingName, object value) => PendingWrite = () => ToggleGameSettingNow(settingName, value);
-        public void GetDataFromGame(GameDataTypes gameDataTypes) => PendingWrite = () => GetGameDataNow(gameDataTypes);
+        public void GetDataFromGame(GameDataTypes gameDataTypes, object arg) => PendingWrite = () => GetGameDataNow(gameDataTypes, arg);
 
         private void SendPathNow(string path, bool canFail) {
             if (Initialized || !canFail) {
@@ -171,12 +171,15 @@ namespace CelesteStudio.Communication {
             WriteMessageGuaranteed(new Message(MessageIDs.ToggleGameSetting, bytes));
         }
 
-        private void GetGameDataNow(GameDataTypes gameDataType) {
+        private void GetGameDataNow(GameDataTypes gameDataType, object arg) {
             if (!Initialized) {
                 return;
             }
 
-            WriteMessageGuaranteed(new Message(MessageIDs.GetData, new[] {(byte) gameDataType}));
+            byte[] bytes = BinaryFormatterHelper.ToByteArray(new[] {
+                gameDataType, arg
+            });
+            WriteMessageGuaranteed(new Message(MessageIDs.GetData, bytes));
         }
 
         #endregion

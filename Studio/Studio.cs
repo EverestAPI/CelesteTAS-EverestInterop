@@ -322,7 +322,7 @@ namespace CelesteStudio {
                                 InsertOrRemoveText(InputRecord.BreakpointRegex, "***S");
                                 break;
                             case Keys.R: // Ctrl + Shift + R
-                                InsertDataFromGame(GameDataTypes.ConsoleCommand);
+                                InsertDataFromGame(GameDataTypes.ConsoleCommand, false);
                                 break;
                             case Keys.C: // Ctrl + Shift + C
                                 CopyGameInfo();
@@ -341,7 +341,7 @@ namespace CelesteStudio {
                             CommentUncommentAllBreakpoints();
                         } else if (e.KeyCode == Keys.R) {
                             // Ctrl + Alt + R
-                            InsertDataFromGame(GameDataTypes.SimpleConsoleCommand);
+                            InsertDataFromGame(GameDataTypes.ConsoleCommand, true);
                         }
                     }
                 }
@@ -637,16 +637,16 @@ namespace CelesteStudio {
 
         private void InsertTime() => InsertNewLine($"#{CommunicationWrapper.StudioInfo?.ChapterTime}");
 
-        private void InsertDataFromGame(GameDataTypes gameDataTypes) {
-            if (GetDataFromGame(gameDataTypes) is { } gameData) {
+        private void InsertDataFromGame(GameDataTypes gameDataTypes, object arg = null) {
+            if (GetDataFromGame(gameDataTypes, arg) is { } gameData) {
                 InsertNewLine(gameData);
             }
         }
 
-        private string GetDataFromGame(GameDataTypes? gameDataTypes = null) {
+        private string GetDataFromGame(GameDataTypes? gameDataTypes, object arg = null) {
             CommunicationWrapper.ReturnData = null;
             if (gameDataTypes.HasValue) {
-                StudioCommunicationServer.Instance.GetDataFromGame(gameDataTypes.Value);
+                StudioCommunicationServer.Instance.GetDataFromGame(gameDataTypes.Value, arg);
             }
 
             int sleepTimeout = 100;
@@ -662,13 +662,13 @@ namespace CelesteStudio {
             return CommunicationWrapper.ReturnData == string.Empty ? null : CommunicationWrapper.ReturnData;
         }
 
-        private void ToggleGameSetting(string settingName, object value, object sender) {
+        private void ToggleGameSetting(string settingName, object value, object sender, bool showResult = true) {
             if (StudioCommunicationServer.Instance == null) {
                 return;
             }
 
             StudioCommunicationServer.Instance.ToggleGameSetting(settingName, value);
-            if (GetDataFromGame() is { } settingStatus) {
+            if (showResult && GetDataFromGame(null) is { } settingStatus) {
                 ShowTooltip($"{sender.ToString().Replace("&", "")}: {settingStatus}");
             }
         }
@@ -1314,11 +1314,11 @@ namespace CelesteStudio {
         }
 
         private void insertConsoleLoadCommandToolStripMenuItem_Click(object sender, EventArgs e) {
-            InsertDataFromGame(GameDataTypes.ConsoleCommand);
+            InsertDataFromGame(GameDataTypes.ConsoleCommand, false);
         }
 
         private void insertSimpleConsoleLoadCommandToolStripMenuItem_Click(object sender, EventArgs e) {
-            InsertDataFromGame(GameDataTypes.SimpleConsoleCommand);
+            InsertDataFromGame(GameDataTypes.ConsoleCommand, true);
         }
 
         private void enforceLegalToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -1506,7 +1506,7 @@ namespace CelesteStudio {
 
             string initText = $"RecordCount: 1{Environment.NewLine}";
             if (StudioCommunicationBase.Initialized && Process.GetProcessesByName("Celeste").Length > 0) {
-                if (GetDataFromGame(GameDataTypes.SimpleConsoleCommand) is { } simpleConsoleCommand) {
+                if (GetDataFromGame(GameDataTypes.ConsoleCommand, true) is { } simpleConsoleCommand) {
                     initText += $"{Environment.NewLine}{simpleConsoleCommand}{Environment.NewLine}   1{Environment.NewLine}";
                 }
             }
@@ -1577,13 +1577,23 @@ namespace CelesteStudio {
         }
 
         private void SetDecimals(string settingName, object sender) {
+            if (StudioCommunicationServer.Instance == null) {
+                return;
+            }
+
+            string settingNameValid = settingName.Replace(" ", "");
+
             string decimals = "2";
+            if (GetDataFromGame(GameDataTypes.SettingValue, settingNameValid) is { } settingValue) {
+                decimals = settingValue;
+            }
+
             if (!DialogUtils.ShowInputDialog(settingName, ref decimals)) {
                 return;
             }
 
             if (int.TryParse(decimals, out int d)) {
-                ToggleGameSetting(settingName.Replace(" ", ""), d, sender);
+                ToggleGameSetting(settingNameValid, d, sender, false);
             }
         }
 

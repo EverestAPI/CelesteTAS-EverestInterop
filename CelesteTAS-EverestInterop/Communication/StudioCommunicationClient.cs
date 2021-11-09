@@ -110,12 +110,13 @@ namespace TAS.Communication {
         }
 
         private void ProcessGetData(byte[] data) {
-            GameDataTypes gameDataTypes = (GameDataTypes) data[0];
+            object[] objects = BinaryFormatterHelper.FromByteArray<object[]>(data);
+            GameDataTypes gameDataTypes = (GameDataTypes) objects[0];
             string gameData = gameDataTypes switch {
-                GameDataTypes.ConsoleCommand => GetConsoleCommand(false),
-                GameDataTypes.SimpleConsoleCommand => GetConsoleCommand(true),
+                GameDataTypes.ConsoleCommand => GetConsoleCommand((bool) objects[1]),
                 GameDataTypes.ModInfo => GetModInfo(),
                 GameDataTypes.ExactGameInfo => GameInfo.ExactStudioInfo,
+                GameDataTypes.SettingValue => GetSettingValue((string) objects[1]),
                 _ => string.Empty
             };
 
@@ -200,6 +201,14 @@ namespace TAS.Communication {
             }
 
             return modInfo;
+        }
+
+        private string GetSettingValue(string settingName) {
+            if (typeof(CelesteTasModuleSettings).GetProperty(settingName) is { } property) {
+                return property.GetValue(CelesteTasModule.Settings).ToString();
+            } else {
+                return string.Empty;
+            }
         }
 
         private void ProcessSendPath(byte[] data) {

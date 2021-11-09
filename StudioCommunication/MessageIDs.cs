@@ -11,7 +11,7 @@ namespace StudioCommunication {
         Default = 0x00,
 
         /// <summary>
-        /// Structure: GameDataTypes
+        /// Structure: [GameDataTypes, Argument]
         /// </summary>
         [HighPriority] GetData = 0x08,
 
@@ -82,8 +82,8 @@ namespace StudioCommunication {
 
     public enum GameDataTypes : byte {
         ConsoleCommand,
-        SimpleConsoleCommand,
         ModInfo,
-        ExactGameInfo
+        ExactGameInfo,
+        SettingValue,
     }
 }
