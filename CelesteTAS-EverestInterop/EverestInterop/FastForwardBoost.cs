@@ -9,7 +9,7 @@ namespace TAS.EverestInterop {
     public static class FastForwardBoost {
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
-        private static bool SkipUpdate => Manager.State == State.Enable
+        private static bool SkipUpdate => Manager.States == States.Enable
                                           && !Settings.FastForwardCallBase
                                           && Manager.FrameLoops >= Settings.FastForwardThreshold;
 

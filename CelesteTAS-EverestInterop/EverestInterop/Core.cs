@@ -128,7 +128,7 @@ namespace TAS.EverestInterop {
 
             // Hacky, but this works just good enough.
             // The original code executes base.Update(); return; instead.
-            if ((Manager.State & State.FrameStep) == State.FrameStep) {
+            if ((Manager.States & States.FrameStep) == States.FrameStep) {
                 PreviousGameLoop = Engine.OverloadGameLoop;
                 Engine.OverloadGameLoop = FrameStepGameLoop;
             }

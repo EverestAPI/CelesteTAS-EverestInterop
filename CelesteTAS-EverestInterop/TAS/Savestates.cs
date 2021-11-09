@@ -9,7 +9,7 @@ using TAS.EverestInterop;
 using TAS.Input;
 using TAS.Utils;
 using static TAS.Manager;
-using TasState = StudioCommunication.State;
+using TasStates = TAS.States;
 
 namespace TAS {
     public static class Savestates {
@@ -111,8 +111,8 @@ namespace TAS {
             if (IsSaved()) {
                 if (Controller.CurrentFrameInTas == savedController.CurrentFrameInTas) {
                     if (savedController.SavestateChecksum == Controller.CalcChecksum(savedController)) {
-                        State &= ~TasState.FrameStep;
-                        NextState &= ~TasState.FrameStep;
+                        Manager.States &= ~TasStates.FrameStep;
+                        NextStates &= ~TasStates.FrameStep;
                         return;
                     }
                 }
@@ -135,8 +135,8 @@ namespace TAS {
                 if (!BreakpointHasBeenDeleted && savedController.SavestateChecksum == Controller.CalcChecksum(savedController)) {
                     if (Running && Controller.CurrentFrameInTas == savedController.CurrentFrameInTas) {
                         // Don't repeat load state, just play
-                        State &= ~TasState.FrameStep;
-                        NextState &= ~TasState.FrameStep;
+                        Manager.States &= ~TasStates.FrameStep;
+                        NextStates &= ~TasStates.FrameStep;
                         return;
                     }
 
@@ -199,12 +199,12 @@ namespace TAS {
 
         private static void SetTasState() {
             if ((CelesteTasModule.Settings.PauseAfterLoadState || savedByBreakpoint) && !Controller.HasFastForward) {
-                State |= TasState.FrameStep;
+                Manager.States |= TasStates.FrameStep;
             } else {
-                State &= ~TasState.FrameStep;
+                Manager.States &= ~TasStates.FrameStep;
             }
 
-            NextState &= ~TasState.FrameStep;
+            NextStates &= ~TasStates.FrameStep;
         }
 
         private static void UpdateStudio() {

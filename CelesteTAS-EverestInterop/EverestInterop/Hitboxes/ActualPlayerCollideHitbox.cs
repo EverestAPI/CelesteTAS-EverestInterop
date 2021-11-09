@@ -34,7 +34,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 ins => ins.OpCode == OpCodes.Callvirt &&
                        ins.Operand.ToString().Contains("Monocle.Tracker::GetComponents<Celeste.PlayerCollider>()"))) {
                 ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Action<Player>>(player => {
-                    if (!Settings.ShowHitboxes || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Off || Manager.FrameLoops > 1) {
+                    if (!Settings.ShowHitboxes || Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off || Manager.FrameLoops > 1) {
                         return;
                     }
 
@@ -44,7 +44,7 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void PlayerOnDebugRender(On.Celeste.Player.orig_DebugRender orig, Player player, Camera camera) {
-            if (!Settings.ShowHitboxes || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Off
+            if (!Settings.ShowHitboxes || Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off
                                        || Manager.FrameLoops > 1
                                        || player.Scene is Level {Transitioning: true} || player.LoadActualCollidePosition() == null
                                        || player.LoadActualCollidePosition().Value == player.Position
@@ -54,12 +54,12 @@ namespace TAS.EverestInterop.Hitboxes {
             }
 
             Vector2 actualCollidePosition = player.LoadActualCollidePosition().Value;
-            if (Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Override) {
+            if (Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Override) {
                 DrawAssistedHitbox(orig, player, camera, actualCollidePosition);
             }
 
             orig(player, camera);
-            if (Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Append) {
+            if (Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Append) {
                 DrawAssistedHitbox(orig, player, camera, actualCollidePosition);
             }
         }

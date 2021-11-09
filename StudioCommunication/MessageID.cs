@@ -3,7 +3,7 @@
 namespace StudioCommunication {
     public class HighPriorityAttribute : Attribute { }
 
-    public enum MessageIDs : byte {
+    public enum MessageID : byte {
         //Connection
         /// <summary>
         /// Unused
@@ -80,7 +80,7 @@ namespace StudioCommunication {
         [HighPriority] ExternHigh2 = 0x43,
     }
 
-    public enum GameDataTypes : byte {
+    public enum GameDataType : byte {
         ConsoleCommand,
         ModInfo,
         ExactGameInfo,

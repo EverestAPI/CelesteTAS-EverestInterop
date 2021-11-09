@@ -56,7 +56,7 @@ namespace TAS.EverestInterop {
         private static bool settingMusic;
         private static bool hasMuted;
         private static bool ShouldBeMuted => Manager.FrameLoops >= 2 && !settingMusic;
-        private static bool FrameStep => Manager.Running && (Manager.State & State.FrameStep) != 0;
+        private static bool FrameStep => Manager.Running && (Manager.States & States.FrameStep) != 0;
 
         [Load]
         private static void Load() {

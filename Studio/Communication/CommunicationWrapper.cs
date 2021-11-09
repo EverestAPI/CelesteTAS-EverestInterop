@@ -12,7 +12,7 @@ namespace CelesteStudio.Communication {
     static class CommunicationWrapper {
         public static StudioInfo StudioInfo;
         public static string ReturnData;
-        private static Dictionary<HotkeyIDs, List<Keys>> bindings;
+        private static Dictionary<HotkeyID, List<Keys>> bindings;
         public static bool FastForwarding;
 
         [DllImport("User32.dll")]
@@ -22,7 +22,7 @@ namespace CelesteStudio.Communication {
             return (GetAsyncKeyState(keys) & 0x8000) == 0x8000;
         }
 
-        public static void SetBindings(Dictionary<HotkeyIDs, List<Keys>> newBindings) {
+        public static void SetBindings(Dictionary<HotkeyID, List<Keys>> newBindings) {
             bindings = newBindings;
         }
 
@@ -38,7 +38,7 @@ namespace CelesteStudio.Communication {
             }
 
             bool anyPressed = false;
-            foreach (HotkeyIDs hotkeyIDs in bindings.Keys) {
+            foreach (HotkeyID hotkeyIDs in bindings.Keys) {
                 List<Keys> keys = bindings[hotkeyIDs];
 
                 bool pressed = keys.Count > 0 && keys.All(IsKeyDown);
@@ -62,7 +62,7 @@ namespace CelesteStudio.Communication {
                 }
 
                 if (pressed) {
-                    if (hotkeyIDs == HotkeyIDs.FastForward) {
+                    if (hotkeyIDs == HotkeyID.FastForward) {
                         FastForwarding = true;
                     }
 
@@ -80,15 +80,15 @@ namespace CelesteStudio.Communication {
             }
 
             bool pressed;
-            if (bindings.ContainsKey(HotkeyIDs.FastForward)) {
-                List<Keys> keys = bindings[HotkeyIDs.FastForward];
+            if (bindings.ContainsKey(HotkeyID.FastForward)) {
+                List<Keys> keys = bindings[HotkeyID.FastForward];
                 pressed = keys.Count > 0 && keys.All(IsKeyDown);
             } else {
                 pressed = false;
             }
 
             if (!pressed) {
-                StudioCommunicationServer.Instance.SendHotkeyPressed(HotkeyIDs.FastForward, true);
+                StudioCommunicationServer.Instance.SendHotkeyPressed(HotkeyID.FastForward, true);
                 FastForwarding = false;
             }
 

@@ -38,10 +38,10 @@ namespace CommunicationTesting {
 
         protected override void ReadData(Message message) {
             switch (message.Id) {
-                case MessageIDs.SendState:
+                case MessageID.SendState:
                     ProcessSendState(message.Data);
                     break;
-                case MessageIDs.SendCurrentBindings:
+                case MessageID.SendCurrentBindings:
                     ProcessSendCurrentBindings(message.Data);
                     break;
                 default:
@@ -76,7 +76,7 @@ namespace CommunicationTesting {
 
             Message? lastMessage;
 
-            studio?.WriteMessageGuaranteed(new Message(MessageIDs.EstablishConnection, new byte[0]));
+            studio?.WriteMessageGuaranteed(new Message(MessageID.EstablishConnection, new byte[0]));
             celeste?.ReadMessageGuaranteed();
 
             studio?.SendPath(this.studio.path);
@@ -92,17 +92,17 @@ namespace CommunicationTesting {
 
         public void SendPath(string path) {
             byte[] pathBytes = Encoding.Default.GetBytes(path);
-            WriteMessageGuaranteed(new Message(MessageIDs.SendPath, pathBytes));
+            WriteMessageGuaranteed(new Message(MessageID.SendPath, pathBytes));
         }
 
-        public void SendHotkeyPressed(HotkeyIDs hotkey) {
+        public void SendHotkeyPressed(HotkeyID hotkey) {
             byte[] hotkeyByte = new byte[] {(byte) hotkey};
-            WriteMessageGuaranteed(new Message(MessageIDs.SendHotkeyPressed, hotkeyByte));
+            WriteMessageGuaranteed(new Message(MessageID.SendHotkeyPressed, hotkeyByte));
         }
 
         public void ConvertToLibTas(string path) {
             byte[] pathBytes = Encoding.Default.GetBytes(path);
-            WriteMessageGuaranteed(new Message(MessageIDs.SendPath, pathBytes));
+            WriteMessageGuaranteed(new Message(MessageID.SendPath, pathBytes));
         }
 
         #endregion

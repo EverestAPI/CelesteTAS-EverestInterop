@@ -19,7 +19,7 @@ namespace TAS {
 
         public static bool Running, Recording;
         public static readonly InputController Controller = new();
-        public static State LastState, State, NextState;
+        public static States LastStates, States, NextStates;
         public static int FrameLoops = 1;
         public static bool EnforceLegal, AllowUnsafeInput;
         private static bool kbTextInput;
@@ -33,17 +33,17 @@ namespace TAS {
         }
 
         public static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
-        private static bool ShouldForceState => NextState.HasFlag(State.FrameStep) && !Hotkeys.FastForward.OverrideCheck;
+        private static bool ShouldForceState => NextStates.HasFlag(States.FrameStep) && !Hotkeys.FastForward.OverrideCheck;
 
         public static void Update() {
-            LastState = State;
+            LastStates = States;
             Hotkeys.Update();
             Savestates.HandleSaveStates();
             HandleFrameRates();
             CheckToEnable();
             FrameStepping();
 
-            if (State.HasFlag(State.Enable)) {
+            if (States.HasFlag(States.Enable)) {
                 bool canPlayback = Controller.CanPlayback;
                 Running = true;
 
@@ -52,13 +52,13 @@ namespace TAS {
                     controller.RecordPlayer();
                 }
                 */
-                if (!State.HasFlag(State.FrameStep)) {
+                if (!States.HasFlag(States.FrameStep)) {
                     Controller.AdvanceFrame();
                     canPlayback = canPlayback || Controller.CanPlayback;
 
                     // stop TAS if breakpoint is not placed at the end
                     if (Controller.Break && Controller.CanPlayback) {
-                        NextState |= State.FrameStep;
+                        NextStates |= States.FrameStep;
                         FrameLoops = 1;
                     }
 
@@ -100,7 +100,7 @@ namespace TAS {
                 Controller.CurrentFrameInTas,
                 Controller.Inputs.Count,
                 Savestates.StudioHighlightLine,
-                State,
+                (int) States,
                 GameInfo.StudioInfo,
                 GameInfo.LevelName,
                 GameInfo.ChapterTime,
@@ -138,8 +138,8 @@ namespace TAS {
         }
 
         private static void HandleFrameRates() {
-            if (State.HasFlag(State.Enable) && !State.HasFlag(State.FrameStep) && !NextState.HasFlag(State.FrameStep) &&
-                !State.HasFlag(State.Record)) {
+            if (States.HasFlag(States.Enable) && !States.HasFlag(States.FrameStep) && !NextStates.HasFlag(States.FrameStep) &&
+                !States.HasFlag(States.Record)) {
                 if (Controller.HasFastForward) {
                     FrameLoops = Controller.FastForwardSpeed;
                     return;
@@ -160,31 +160,31 @@ namespace TAS {
             bool frameAdvance = Hotkeys.FrameAdvance.Check && !Hotkeys.StartStop.Check;
             bool pause = Hotkeys.PauseResume.Check && !Hotkeys.StartStop.Check;
 
-            if (State.HasFlag(State.Enable) && !State.HasFlag(State.Record)) {
-                if (NextState.HasFlag(State.FrameStep)) {
-                    State |= State.FrameStep;
-                    NextState &= ~State.FrameStep;
+            if (States.HasFlag(States.Enable) && !States.HasFlag(States.Record)) {
+                if (NextStates.HasFlag(States.FrameStep)) {
+                    States |= States.FrameStep;
+                    NextStates &= ~States.FrameStep;
                 }
 
                 if (frameAdvance && !Hotkeys.FrameAdvance.LastCheck) {
-                    if (!State.HasFlag(State.FrameStep)) {
-                        State |= State.FrameStep;
-                        NextState &= ~State.FrameStep;
+                    if (!States.HasFlag(States.FrameStep)) {
+                        States |= States.FrameStep;
+                        NextStates &= ~States.FrameStep;
                     } else {
-                        State &= ~State.FrameStep;
-                        NextState |= State.FrameStep;
+                        States &= ~States.FrameStep;
+                        NextStates |= States.FrameStep;
                     }
                 } else if (pause && !Hotkeys.PauseResume.LastCheck) {
-                    if (!State.HasFlag(State.FrameStep)) {
-                        State |= State.FrameStep;
-                        NextState &= ~State.FrameStep;
+                    if (!States.HasFlag(States.FrameStep)) {
+                        States |= States.FrameStep;
+                        NextStates &= ~States.FrameStep;
                     } else {
-                        State &= ~State.FrameStep;
-                        NextState &= ~State.FrameStep;
+                        States &= ~States.FrameStep;
+                        NextStates &= ~States.FrameStep;
                     }
-                } else if (LastState.HasFlag(State.FrameStep) && State.HasFlag(State.FrameStep) && Hotkeys.FastForward.Check) {
-                    State &= ~State.FrameStep;
-                    NextState |= State.FrameStep;
+                } else if (LastStates.HasFlag(States.FrameStep) && States.HasFlag(States.FrameStep) && Hotkeys.FastForward.Check) {
+                    States &= ~States.FrameStep;
+                    NextStates |= States.FrameStep;
                 }
             }
         }
@@ -197,20 +197,20 @@ namespace TAS {
             }
 
             if (Hotkeys.StartStop.Check) {
-                if (!State.HasFlag(State.Enable)) {
-                    NextState |= State.Enable;
+                if (!States.HasFlag(States.Enable)) {
+                    NextStates |= States.Enable;
                 } else {
-                    NextState |= State.Disable;
+                    NextStates |= States.Disable;
                 }
-            } else if (NextState.HasFlag(State.Enable)) {
+            } else if (NextStates.HasFlag(States.Enable)) {
                 EnableRun();
-            } else if (NextState.HasFlag(State.Disable)) {
+            } else if (NextStates.HasFlag(States.Disable)) {
                 DisableRun();
             }
         }
 
         private static void EnableRun() {
-            NextState &= ~State.Enable;
+            NextStates &= ~States.Enable;
             InitializeRun(false);
             kbTextInput = Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput;
             Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = false;
@@ -225,8 +225,8 @@ namespace TAS {
             }
             */
             Recording = false;
-            State = State.None;
-            NextState = State.None;
+            States = States.None;
+            NextStates = States.None;
 
             Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = kbTextInput;
 
@@ -247,14 +247,14 @@ namespace TAS {
         public static void DisableExternal() => DisableRun();
 
         private static void InitializeRun(bool recording) {
-            State |= State.Enable;
-            State &= ~State.FrameStep;
+            States |= States.Enable;
+            States &= ~States.FrameStep;
             if (recording) {
                 Recording = recording;
-                State |= State.Record;
+                States |= States.Record;
                 Controller.InitializeRecording();
             } else {
-                State &= ~State.Record;
+                States &= ~States.Record;
                 Controller.RefreshInputs(true);
                 Running = true;
             }

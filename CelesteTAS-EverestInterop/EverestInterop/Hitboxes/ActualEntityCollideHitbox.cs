@@ -54,7 +54,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 ilCursor.Emit(OpCodes.Dup).EmitDelegate<Action<PlayerCollider>>(playerCollider => {
                     Entity entity = playerCollider.Entity;
 
-                    if (entity == null || !Settings.ShowHitboxes || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Off
+                    if (entity == null || !Settings.ShowHitboxes || Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off
                         || Manager.FrameLoops > 1) {
                         return;
                     }
@@ -83,13 +83,13 @@ namespace TAS.EverestInterop.Hitboxes {
             Entity entity = self.Entity;
 
             if (!Settings.ShowHitboxes
-                || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Off
+                || Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off
                 || Manager.FrameLoops > 1
                 || colliderListRendering && self is not ColliderList
                 || entity.Get<PlayerCollider>() == null
                 || entity.Scene?.Tracker.GetEntity<Player>() == null
                 || entity.LoadActualCollidePosition() == null
-                || Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Append && entity.Position == entity.LoadActualCollidePosition() &&
+                || Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Append && entity.Position == entity.LoadActualCollidePosition() &&
                 entity.Collidable == entity.LoadActualCollidable()
             ) {
                 invokeOrig(color);
@@ -97,7 +97,7 @@ namespace TAS.EverestInterop.Hitboxes {
             }
 
             Color lastFrameColor =
-                Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Append && entity.Position != entity.LoadActualCollidePosition()
+                Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Append && entity.Position != entity.LoadActualCollidePosition()
                     ? color.Invert()
                     : color;
 
@@ -107,7 +107,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 lastFrameColor *= 2f;
             }
 
-            if (Settings.ShowActualCollideHitboxes == ActualCollideHitboxTypes.Append) {
+            if (Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Append) {
                 if (entity.Position == entity.LoadActualCollidePosition()) {
                     invokeOrig(lastFrameColor);
                     return;
@@ -157,7 +157,7 @@ namespace TAS.EverestInterop.Hitboxes {
     }
 
     // ReSharper disable once UnusedMember.Global
-    public enum ActualCollideHitboxTypes {
+    public enum ActualCollideHitboxType {
         Off,
         Override,
         Append

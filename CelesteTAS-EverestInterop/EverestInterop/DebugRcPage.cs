@@ -16,7 +16,7 @@ namespace TAS.EverestInterop {
                 StringBuilder builder = new();
                 Everest.DebugRC.WriteHTMLStart(c, builder);
                 WriteLine(builder, $"Running: {Manager.Running}");
-                WriteLine(builder, $"State: {Manager.State}");
+                WriteLine(builder, $"State: {Manager.States}");
                 WriteLine(builder, $"SaveState: {Savestates.IsSaved_Safe()}");
                 WriteLine(builder, $"CurrentFrame: {Manager.Controller.CurrentFrameInTas}");
                 WriteLine(builder, $"TotalFrames: {Manager.Controller.Inputs.Count}");
@@ -34,7 +34,7 @@ namespace TAS.EverestInterop {
             PathHelp = "/tas/sendhotkey?id={HotkeyIds}&action={press(default)|release} (Example: ?id=Start&action=press)",
             PathExample = "/tas/sendhotkey?id=Start&action=press",
             Name = "CelesteTAS Send Hotkey",
-            InfoHTML = $"Press/Release the specified hotkey.<br />Available id: {string.Join(", ", Enum.GetNames(typeof(HotkeyIDs)))}",
+            InfoHTML = $"Press/Release the specified hotkey.<br />Available id: {string.Join(", ", Enum.GetNames(typeof(HotkeyID)))}",
             Handle = c => {
                 void WriteIdErrorPage(string message) {
                     StringBuilder builder = new();
@@ -42,7 +42,7 @@ namespace TAS.EverestInterop {
                     WriteLine(builder, $"<h2>ERROR: {message}</h2>");
                     WriteLine(builder, $"Example: <a href='/tas/sendhotkey?id=Start&action=press'>/tas/sendhotkey?id=Start&action=press</a>");
                     WriteLine(builder,
-                        $"Available id: {string.Join(", ", Enum.GetNames(typeof(HotkeyIDs)).Select(id => $"<a href='/tas/sendhotkey?id={id}'>{id}</a>"))}");
+                        $"Available id: {string.Join(", ", Enum.GetNames(typeof(HotkeyID)).Select(id => $"<a href='/tas/sendhotkey?id={id}'>{id}</a>"))}");
                     WriteLine(builder, $"Available action: press, release");
                     Everest.DebugRC.WriteHTMLEnd(c, builder);
                     Everest.DebugRC.Write(c, builder.ToString());
@@ -55,7 +55,7 @@ namespace TAS.EverestInterop {
                 if (idValue.IsNullOrEmpty()) {
                     WriteIdErrorPage("No id given.");
                 } else {
-                    if (Enum.TryParse(idValue, true, out HotkeyIDs id) && (int) id < Enum.GetNames(typeof(HotkeyIDs)).Length) {
+                    if (Enum.TryParse(idValue, true, out HotkeyID id) && (int) id < Enum.GetNames(typeof(HotkeyID)).Length) {
                         if (Hotkeys.KeysDict.ContainsKey(id)) {
                             bool press = !"release".Equals(pressValue, StringComparison.InvariantCultureIgnoreCase);
                             Hotkeys.KeysDict[id].OverrideCheck = press;

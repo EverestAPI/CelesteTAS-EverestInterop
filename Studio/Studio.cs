@@ -27,7 +27,7 @@ namespace CelesteStudio {
 
         private DateTime lastChanged = DateTime.MinValue;
         private FormWindowState lastWindowState = FormWindowState.Normal;
-        private State tasState;
+        private States tasStates;
         private ToolTip tooltip;
         private int totalFrames, currentFrame;
         private bool updating;
@@ -56,7 +56,7 @@ namespace CelesteStudio {
             TryOpenFile(args);
         }
 
-        private bool DisableTyping => tasState.HasFlag(State.Enable) && !tasState.HasFlag(State.FrameStep);
+        private bool DisableTyping => tasStates.HasFlag(States.Enable) && !tasStates.HasFlag(States.FrameStep);
 
         private string TitleBarText =>
             (string.IsNullOrEmpty(CurrentFileName) ? "Celeste.tas" : Path.GetFileName(CurrentFileName))
@@ -322,7 +322,7 @@ namespace CelesteStudio {
                                 InsertOrRemoveText(InputRecord.BreakpointRegex, "***S");
                                 break;
                             case Keys.R: // Ctrl + Shift + R
-                                InsertDataFromGame(GameDataTypes.ConsoleCommand, false);
+                                InsertDataFromGame(GameDataType.ConsoleCommand, false);
                                 break;
                             case Keys.C: // Ctrl + Shift + C
                                 CopyGameInfo();
@@ -341,7 +341,7 @@ namespace CelesteStudio {
                             CommentUncommentAllBreakpoints();
                         } else if (e.KeyCode == Keys.R) {
                             // Ctrl + Alt + R
-                            InsertDataFromGame(GameDataTypes.ConsoleCommand, true);
+                            InsertDataFromGame(GameDataType.ConsoleCommand, true);
                         }
                     }
                 }
@@ -637,13 +637,13 @@ namespace CelesteStudio {
 
         private void InsertTime() => InsertNewLine($"#{CommunicationWrapper.StudioInfo?.ChapterTime}");
 
-        private void InsertDataFromGame(GameDataTypes gameDataTypes, object arg = null) {
-            if (GetDataFromGame(gameDataTypes, arg) is { } gameData) {
+        private void InsertDataFromGame(GameDataType gameDataType, object arg = null) {
+            if (GetDataFromGame(gameDataType, arg) is { } gameData) {
                 InsertNewLine(gameData);
             }
         }
 
-        private string GetDataFromGame(GameDataTypes? gameDataTypes, object arg = null) {
+        private string GetDataFromGame(GameDataType? gameDataTypes, object arg = null) {
             CommunicationWrapper.ReturnData = null;
             if (gameDataTypes.HasValue) {
                 StudioCommunicationServer.Instance.GetDataFromGame(gameDataTypes.Value, arg);
@@ -682,7 +682,7 @@ namespace CelesteStudio {
         }
 
         private void CopyGameInfo() {
-            if (GetDataFromGame(GameDataTypes.ExactGameInfo) is { } exactGameInfo) {
+            if (GetDataFromGame(GameDataType.ExactGameInfo) is { } exactGameInfo) {
                 Clipboard.SetText(exactGameInfo);
             }
         }
@@ -762,8 +762,8 @@ namespace CelesteStudio {
                     richText.CurrentLineText = studioInfo.CurrentFrameInInput.ToString();
                     currentFrame = studioInfo.CurrentFrameInTas;
                     richText.SaveStateLine = studioInfo.SaveStateLine;
-                    tasState = studioInfo.TasState;
-                    if ((tasState & State.Enable) != 0 && (tasState & State.FrameStep) == 0) {
+                    tasStates = (States) studioInfo.tasStates;
+                    if (tasStates.HasFlag(States.Enable) && !tasStates.HasFlag(States.FrameStep)) {
                         totalFrames = studioInfo.TotalFrames;
                     }
                 } else {
@@ -773,7 +773,7 @@ namespace CelesteStudio {
                     }
 
                     richText.SaveStateLine = -1;
-                    tasState = State.None;
+                    tasStates = States.None;
                 }
 
                 richText.ReadOnly = DisableTyping;
@@ -1314,11 +1314,11 @@ namespace CelesteStudio {
         }
 
         private void insertConsoleLoadCommandToolStripMenuItem_Click(object sender, EventArgs e) {
-            InsertDataFromGame(GameDataTypes.ConsoleCommand, false);
+            InsertDataFromGame(GameDataType.ConsoleCommand, false);
         }
 
         private void insertSimpleConsoleLoadCommandToolStripMenuItem_Click(object sender, EventArgs e) {
-            InsertDataFromGame(GameDataTypes.ConsoleCommand, true);
+            InsertDataFromGame(GameDataType.ConsoleCommand, true);
         }
 
         private void enforceLegalToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -1404,7 +1404,7 @@ namespace CelesteStudio {
         }
 
         private void insertModInfoStripMenuItem1_Click(object sender, EventArgs e) {
-            InsertDataFromGame(GameDataTypes.ModInfo);
+            InsertDataFromGame(GameDataType.ModInfo);
         }
 
         private void SwapActionKeys(char key1, char key2) {
@@ -1506,7 +1506,7 @@ namespace CelesteStudio {
 
             string initText = $"RecordCount: 1{Environment.NewLine}";
             if (StudioCommunicationBase.Initialized && Process.GetProcessesByName("Celeste").Length > 0) {
-                if (GetDataFromGame(GameDataTypes.ConsoleCommand, true) is { } simpleConsoleCommand) {
+                if (GetDataFromGame(GameDataType.ConsoleCommand, true) is { } simpleConsoleCommand) {
                     initText += $"{Environment.NewLine}{simpleConsoleCommand}{Environment.NewLine}   1{Environment.NewLine}";
                 }
             }
@@ -1584,7 +1584,7 @@ namespace CelesteStudio {
             string settingNameValid = settingName.Replace(" ", "");
 
             string decimals = "2";
-            if (GetDataFromGame(GameDataTypes.SettingValue, settingNameValid) is { } settingValue) {
+            if (GetDataFromGame(GameDataType.SettingValue, settingNameValid) is { } settingValue) {
                 decimals = settingValue;
             }
 

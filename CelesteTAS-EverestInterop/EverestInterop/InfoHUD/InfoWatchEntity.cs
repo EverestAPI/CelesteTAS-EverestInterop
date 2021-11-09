@@ -14,7 +14,7 @@ using TAS.EverestInterop.Hitboxes;
 using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD {
-    public enum WatchEntityTypes {
+    public enum WatchEntityType {
         Position,
         DeclaredOnly,
         All
@@ -369,21 +369,21 @@ namespace TAS.EverestInterop.InfoHUD {
         }
 
         private static void PrintAllSimpleValues(Entity entity) {
-            ("Info of Clicked Entity:\n" + GetEntityValues(entity, WatchEntityTypes.All)).Log(true);
+            ("Info of Clicked Entity:\n" + GetEntityValues(entity, WatchEntityType.All)).Log(true);
         }
 
-        private static string GetEntityValues(Entity entity, WatchEntityTypes watchEntityType, string separator = "\n", int decimals = 2) {
+        private static string GetEntityValues(Entity entity, WatchEntityType watchEntityType, string separator = "\n", int decimals = 2) {
             Type type = entity.GetType();
             string entityId = "";
             if (entity.GetEntityData() is { } entityData) {
                 entityId = $"[{entityData.ToEntityId().ToString()}]";
             }
 
-            if (watchEntityType == WatchEntityTypes.Position) {
+            if (watchEntityType == WatchEntityType.Position) {
                 return GetPositionInfo(entity, entityId, decimals);
             }
 
-            List<string> values = GetAllSimpleFields(type, watchEntityType == WatchEntityTypes.DeclaredOnly).Select(info => {
+            List<string> values = GetAllSimpleFields(type, watchEntityType == WatchEntityType.DeclaredOnly).Select(info => {
                 object value;
                 try {
                     value = info switch {

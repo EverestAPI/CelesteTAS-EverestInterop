@@ -80,24 +80,24 @@ namespace TAS.Communication {
 
         protected override void ReadData(Message message) {
             switch (message.Id) {
-                case MessageIDs.EstablishConnection:
+                case MessageID.EstablishConnection:
                     throw new NeedsResetException("Initialization data recieved in main loop");
-                case MessageIDs.Wait:
+                case MessageID.Wait:
                     ProcessWait();
                     break;
-                case MessageIDs.GetData:
+                case MessageID.GetData:
                     ProcessGetData(message.Data);
                     break;
-                case MessageIDs.SendPath:
+                case MessageID.SendPath:
                     ProcessSendPath(message.Data);
                     break;
-                case MessageIDs.SendHotkeyPressed:
+                case MessageID.SendHotkeyPressed:
                     ProcessHotkeyPressed(message.Data);
                     break;
-                case MessageIDs.ConvertToLibTas:
+                case MessageID.ConvertToLibTas:
                     ProcessConvertToLibTas(message.Data);
                     break;
-                case MessageIDs.ToggleGameSetting:
+                case MessageID.ToggleGameSetting:
                     ProcessToggleGameSetting(message.Data);
                     break;
                 default:
@@ -111,12 +111,12 @@ namespace TAS.Communication {
 
         private void ProcessGetData(byte[] data) {
             object[] objects = BinaryFormatterHelper.FromByteArray<object[]>(data);
-            GameDataTypes gameDataTypes = (GameDataTypes) objects[0];
-            string gameData = gameDataTypes switch {
-                GameDataTypes.ConsoleCommand => GetConsoleCommand((bool) objects[1]),
-                GameDataTypes.ModInfo => GetModInfo(),
-                GameDataTypes.ExactGameInfo => GameInfo.ExactStudioInfo,
-                GameDataTypes.SettingValue => GetSettingValue((string) objects[1]),
+            GameDataType gameDataType = (GameDataType) objects[0];
+            string gameData = gameDataType switch {
+                GameDataType.ConsoleCommand => GetConsoleCommand((bool) objects[1]),
+                GameDataType.ModInfo => GetModInfo(),
+                GameDataType.ExactGameInfo => GameInfo.ExactStudioInfo,
+                GameDataType.SettingValue => GetSettingValue((string) objects[1]),
                 _ => string.Empty
             };
 
@@ -125,7 +125,7 @@ namespace TAS.Communication {
 
         private void ReturnData(string gameData) {
             byte[] gameDataBytes = Encoding.Default.GetBytes(gameData ?? string.Empty);
-            WriteMessageGuaranteed(new Message(MessageIDs.ReturnData, gameDataBytes));
+            WriteMessageGuaranteed(new Message(MessageID.ReturnData, gameDataBytes));
         }
 
         private string GetConsoleCommand(bool simple) {
@@ -218,10 +218,10 @@ namespace TAS.Communication {
         }
 
         private void ProcessHotkeyPressed(byte[] data) {
-            HotkeyIDs hotkeyIDs = (HotkeyIDs) data[0];
+            HotkeyID hotkeyId = (HotkeyID) data[0];
             bool released = Convert.ToBoolean(data[1]);
-            Hotkeys.KeysDict[hotkeyIDs].OverrideCheck = !released;
-            $"{hotkeyIDs.ToString()} {(released ? "released" : "pressed")}".DebugLog();
+            Hotkeys.KeysDict[hotkeyId].OverrideCheck = !released;
+            $"{hotkeyId.ToString()} {(released ? "released" : "pressed")}".DebugLog();
         }
 
         private void ProcessConvertToLibTas(byte[] data) {
@@ -277,7 +277,7 @@ namespace TAS.Communication {
                     property.SetValue(settings, !boolValue);
                     modified = true;
                 } else if (value is HudOptions hudOptions) {
-                    property.SetValue(settings, (hudOptions & HudOptions.StudioOnly) == 0 ? HudOptions.Both : HudOptions.Off);
+                    property.SetValue(settings, hudOptions.HasFlag(HudOptions.StudioOnly) ? HudOptions.Off : HudOptions.Both);
                     modified = true;
                 } else if (value is Enum) {
                     property.SetValue(settings, ((int) value + 1) % Enum.GetValues(property.PropertyType).Length);
@@ -312,15 +312,15 @@ namespace TAS.Communication {
                 Thread.Sleep(Timeout);
             }
 
-            studio?.WriteMessageGuaranteed(new Message(MessageIDs.EstablishConnection, new byte[0]));
+            studio?.WriteMessageGuaranteed(new Message(MessageID.EstablishConnection, new byte[0]));
             lastMessage = celeste?.ReadMessageGuaranteed();
-            if (lastMessage?.Id != MessageIDs.EstablishConnection) {
+            if (lastMessage?.Id != MessageID.EstablishConnection) {
                 throw new NeedsResetException("Invalid data recieved while establishing connection");
             }
 
             studio?.SendPath(null);
             lastMessage = celeste?.ReadMessageGuaranteed();
-            if (lastMessage?.Id != MessageIDs.SendPath) {
+            if (lastMessage?.Id != MessageID.SendPath) {
                 throw new NeedsResetException("Invalid data recieved while establishing connection");
             }
 
@@ -337,13 +337,13 @@ namespace TAS.Communication {
 
         private void SendPath(string path) {
             byte[] pathBytes = Encoding.Default.GetBytes(path);
-            WriteMessageGuaranteed(new Message(MessageIDs.SendPath, pathBytes));
+            WriteMessageGuaranteed(new Message(MessageID.SendPath, pathBytes));
         }
 
         private void SendStateNow(StudioInfo studioInfo, bool canFail) {
             if (Initialized) {
                 byte[] data = studioInfo.ToByteArray();
-                Message message = new(MessageIDs.SendState, data);
+                Message message = new(MessageID.SendState, data);
                 if (canFail) {
                     WriteMessage(message);
                 } else {
@@ -364,13 +364,13 @@ namespace TAS.Communication {
                 return;
             }
 
-            WriteMessageGuaranteed(new Message(MessageIDs.SendCurrentBindings, data));
+            WriteMessageGuaranteed(new Message(MessageID.SendCurrentBindings, data));
             lastBindingsData = data;
         }
 
         public void UpdateLines(Dictionary<int, string> lines) {
             byte[] data = BinaryFormatterHelper.ToByteArray(lines);
-            WriteMessageGuaranteed(new Message(MessageIDs.UpdateLines, data));
+            WriteMessageGuaranteed(new Message(MessageID.UpdateLines, data));
         }
 
         #endregion

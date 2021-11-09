@@ -44,25 +44,25 @@ namespace CelesteStudio.Communication {
 
         protected override void ReadData(Message message) {
             switch (message.Id) {
-                case MessageIDs.EstablishConnection:
+                case MessageID.EstablishConnection:
                     throw new NeedsResetException("Recieved initialization message (EstablishConnection) from main loop");
-                case MessageIDs.Reset:
+                case MessageID.Reset:
                     throw new NeedsResetException("Recieved reset message from main loop");
-                case MessageIDs.Wait:
+                case MessageID.Wait:
                     ProcessWait();
                     break;
-                case MessageIDs.SendState:
+                case MessageID.SendState:
                     ProcessSendState(message.Data);
                     break;
-                case MessageIDs.SendCurrentBindings:
+                case MessageID.SendCurrentBindings:
                     ProcessSendCurrentBindings(message.Data);
                     break;
-                case MessageIDs.UpdateLines:
+                case MessageID.UpdateLines:
                     ProcessUpdateLines(message.Data);
                     break;
-                case MessageIDs.SendPath:
+                case MessageID.SendPath:
                     throw new NeedsResetException("Recieved initialization message (SendPath) from main loop");
-                case MessageIDs.ReturnData:
+                case MessageID.ReturnData:
                     ProcessReturnData(message.Data);
                     break;
                 default:
@@ -78,8 +78,8 @@ namespace CelesteStudio.Communication {
 
         private void ProcessSendCurrentBindings(byte[] data) {
             Dictionary<int, List<int>> nativeBindings = BinaryFormatterHelper.FromByteArray<Dictionary<int, List<int>>>(data);
-            Dictionary<HotkeyIDs, List<Keys>> bindings =
-                nativeBindings.ToDictionary(pair => (HotkeyIDs) pair.Key, pair => pair.Value.Cast<Keys>().ToList());
+            Dictionary<HotkeyID, List<Keys>> bindings =
+                nativeBindings.ToDictionary(pair => (HotkeyID) pair.Key, pair => pair.Value.Cast<Keys>().ToList());
             foreach (var pair in bindings) {
                 Log(pair.ToString());
             }
@@ -110,7 +110,7 @@ namespace CelesteStudio.Communication {
             Message? lastMessage;
 
             studio?.ReadMessage();
-            studio?.WriteMessageGuaranteed(new Message(MessageIDs.EstablishConnection, new byte[0]));
+            studio?.WriteMessageGuaranteed(new Message(MessageID.EstablishConnection, new byte[0]));
             celeste?.ReadMessageGuaranteed();
 
             studio?.SendPathNow(Studio.Instance.richText.CurrentFileName, false);
@@ -118,7 +118,7 @@ namespace CelesteStudio.Communication {
 
             //celeste?.SendCurrentBindings(Hotkeys.listHotkeyKeys);
             lastMessage = studio?.ReadMessageGuaranteed();
-            if (lastMessage?.Id != MessageIDs.SendCurrentBindings) {
+            if (lastMessage?.Id != MessageID.SendCurrentBindings) {
                 throw new NeedsResetException("Invalid data recieved while establishing connection");
             }
 
@@ -129,15 +129,15 @@ namespace CelesteStudio.Communication {
 
         public void SendPath(string path) => PendingWrite = () => SendPathNow(path, false);
         public void ConvertToLibTas(string path) => PendingWrite = () => ConvertToLibTasNow(path);
-        public void SendHotkeyPressed(HotkeyIDs hotkey, bool released = false) => PendingWrite = () => SendHotkeyPressedNow(hotkey, released);
+        public void SendHotkeyPressed(HotkeyID hotkey, bool released = false) => PendingWrite = () => SendHotkeyPressedNow(hotkey, released);
         public void ToggleGameSetting(string settingName, object value) => PendingWrite = () => ToggleGameSettingNow(settingName, value);
-        public void GetDataFromGame(GameDataTypes gameDataTypes, object arg) => PendingWrite = () => GetGameDataNow(gameDataTypes, arg);
+        public void GetDataFromGame(GameDataType gameDataType, object arg) => PendingWrite = () => GetGameDataNow(gameDataType, arg);
 
         private void SendPathNow(string path, bool canFail) {
             if (Initialized || !canFail) {
                 byte[] pathBytes = path != null ? Encoding.Default.GetBytes(path) : new byte[0];
 
-                WriteMessageGuaranteed(new Message(MessageIDs.SendPath, pathBytes));
+                WriteMessageGuaranteed(new Message(MessageID.SendPath, pathBytes));
             }
         }
 
@@ -148,16 +148,16 @@ namespace CelesteStudio.Communication {
 
             byte[] pathBytes = string.IsNullOrEmpty(path) ? new byte[0] : Encoding.Default.GetBytes(path);
 
-            WriteMessageGuaranteed(new Message(MessageIDs.ConvertToLibTas, pathBytes));
+            WriteMessageGuaranteed(new Message(MessageID.ConvertToLibTas, pathBytes));
         }
 
-        private void SendHotkeyPressedNow(HotkeyIDs hotkey, bool released) {
+        private void SendHotkeyPressedNow(HotkeyID hotkey, bool released) {
             if (!Initialized) {
                 return;
             }
 
             byte[] hotkeyBytes = {(byte) hotkey, Convert.ToByte(released)};
-            WriteMessageGuaranteed(new Message(MessageIDs.SendHotkeyPressed, hotkeyBytes));
+            WriteMessageGuaranteed(new Message(MessageID.SendHotkeyPressed, hotkeyBytes));
         }
 
         private void ToggleGameSettingNow(string settingName, object value) {
@@ -168,10 +168,10 @@ namespace CelesteStudio.Communication {
             byte[] bytes = BinaryFormatterHelper.ToByteArray(new[] {
                 settingName, value
             });
-            WriteMessageGuaranteed(new Message(MessageIDs.ToggleGameSetting, bytes));
+            WriteMessageGuaranteed(new Message(MessageID.ToggleGameSetting, bytes));
         }
 
-        private void GetGameDataNow(GameDataTypes gameDataType, object arg) {
+        private void GetGameDataNow(GameDataType gameDataType, object arg) {
             if (!Initialized) {
                 return;
             }
@@ -179,7 +179,7 @@ namespace CelesteStudio.Communication {
             byte[] bytes = BinaryFormatterHelper.ToByteArray(new[] {
                 gameDataType, arg
             });
-            WriteMessageGuaranteed(new Message(MessageIDs.GetData, bytes));
+            WriteMessageGuaranteed(new Message(MessageID.GetData, bytes));
         }
 
         #endregion

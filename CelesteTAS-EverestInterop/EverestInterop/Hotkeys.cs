@@ -48,8 +48,8 @@ namespace TAS.EverestInterop {
         public static Hotkey ClearState;
         public static Hotkey InfoHud;
 
-        public static readonly Dictionary<HotkeyIDs, Hotkey> KeysDict = new();
-        public static Dictionary<HotkeyIDs, List<Keys>> KeysInteractWithStudio = new();
+        public static readonly Dictionary<HotkeyID, Hotkey> KeysDict = new();
+        public static Dictionary<HotkeyID, List<Keys>> KeysInteractWithStudio = new();
 
         static Hotkeys() {
             InputInitialize();
@@ -77,20 +77,20 @@ namespace TAS.EverestInterop {
 
         private static void InputInitialize() {
             KeysDict.Clear();
-            KeysDict[HotkeyIDs.Start] = StartStop = BindingToHotkey(Settings.KeyStart);
-            KeysDict[HotkeyIDs.Restart] = Restart = BindingToHotkey(Settings.KeyRestart);
-            KeysDict[HotkeyIDs.FastForward] = FastForward = BindingToHotkey(Settings.KeyFastForward);
-            KeysDict[HotkeyIDs.FrameAdvance] = FrameAdvance = BindingToHotkey(Settings.KeyFrameAdvance);
-            KeysDict[HotkeyIDs.Pause] = PauseResume = BindingToHotkey(Settings.KeyPause);
-            KeysDict[HotkeyIDs.Hitboxes] = Hitboxes = BindingToHotkey(Settings.KeyHitboxes);
-            KeysDict[HotkeyIDs.TriggerHitboxes] = TriggerHitboxes = BindingToHotkey(Settings.KeyTriggerHitboxes);
-            KeysDict[HotkeyIDs.Graphics] = SimplifiedGraphic = BindingToHotkey(Settings.KeyGraphics);
-            KeysDict[HotkeyIDs.Camera] = CenterCamera = BindingToHotkey(Settings.KeyCamera);
-            KeysDict[HotkeyIDs.SaveState] = SaveState = BindingToHotkey(Settings.KeySaveState);
-            KeysDict[HotkeyIDs.ClearState] = ClearState = BindingToHotkey(Settings.KeyClearState);
-            KeysDict[HotkeyIDs.InfoHud] = InfoHud = BindingToHotkey(Settings.KeyInfoHud);
+            KeysDict[HotkeyID.Start] = StartStop = BindingToHotkey(Settings.KeyStart);
+            KeysDict[HotkeyID.Restart] = Restart = BindingToHotkey(Settings.KeyRestart);
+            KeysDict[HotkeyID.FastForward] = FastForward = BindingToHotkey(Settings.KeyFastForward);
+            KeysDict[HotkeyID.FrameAdvance] = FrameAdvance = BindingToHotkey(Settings.KeyFrameAdvance);
+            KeysDict[HotkeyID.Pause] = PauseResume = BindingToHotkey(Settings.KeyPause);
+            KeysDict[HotkeyID.Hitboxes] = Hitboxes = BindingToHotkey(Settings.KeyHitboxes);
+            KeysDict[HotkeyID.TriggerHitboxes] = TriggerHitboxes = BindingToHotkey(Settings.KeyTriggerHitboxes);
+            KeysDict[HotkeyID.Graphics] = SimplifiedGraphic = BindingToHotkey(Settings.KeyGraphics);
+            KeysDict[HotkeyID.Camera] = CenterCamera = BindingToHotkey(Settings.KeyCamera);
+            KeysDict[HotkeyID.SaveState] = SaveState = BindingToHotkey(Settings.KeySaveState);
+            KeysDict[HotkeyID.ClearState] = ClearState = BindingToHotkey(Settings.KeyClearState);
+            KeysDict[HotkeyID.InfoHud] = InfoHud = BindingToHotkey(Settings.KeyInfoHud);
 
-            KeysInteractWithStudio = KeysDict.Where(pair => pair.Key != HotkeyIDs.InfoHud)
+            KeysInteractWithStudio = KeysDict.Where(pair => pair.Key != HotkeyID.InfoHud)
                 .ToDictionary(pair => pair.Key, pair => pair.Value.Keys);
         }
 

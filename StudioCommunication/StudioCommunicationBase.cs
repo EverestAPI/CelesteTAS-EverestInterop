@@ -83,11 +83,11 @@ namespace StudioCommunication {
 
         protected virtual bool NeedsToWait() => waiting;
 
-        private bool IsHighPriority(MessageIDs id) =>
-            Attribute.IsDefined(typeof(MessageIDs).GetField(Enum.GetName(typeof(MessageIDs), id)), typeof(HighPriorityAttribute));
+        private bool IsHighPriority(MessageID id) =>
+            Attribute.IsDefined(typeof(MessageID).GetField(Enum.GetName(typeof(MessageID), id)), typeof(HighPriorityAttribute));
 
         protected Message? ReadMessage() {
-            MessageIDs id = default;
+            MessageID id = default;
             int signature;
             int size;
             byte[] data;
@@ -99,8 +99,8 @@ namespace StudioCommunication {
                 BinaryReader reader = new(stream);
                 BinaryWriter writer = new(stream);
 
-                id = (MessageIDs) reader.ReadByte();
-                if (id == MessageIDs.Default) {
+                id = (MessageID) reader.ReadByte();
+                if (id == MessageID.Default) {
                     mutex.ReleaseMutex();
                     return null;
                 }
@@ -124,7 +124,7 @@ namespace StudioCommunication {
 
 
             Message message = new(id, data);
-            if (message.Id != MessageIDs.SendState && message.Id != MessageIDs.SendHotkeyPressed) {
+            if (message.Id != MessageID.SendState && message.Id != MessageID.SendHotkeyPressed) {
                 Log($"{this} received {message.Id} with length {message.Length}");
             }
 
@@ -166,7 +166,7 @@ namespace StudioCommunication {
 
                 //Check that there isn't a message waiting to be read
                 byte firstByte = reader.ReadByte();
-                if (firstByte != 0 && (!IsHighPriority(message.Id) || IsHighPriority((MessageIDs) firstByte))) {
+                if (firstByte != 0 && (!IsHighPriority(message.Id) || IsHighPriority((MessageID) firstByte))) {
                     mutex.ReleaseMutex();
                     if ( /*Initialized &&*/ ++failedWrites > 100) {
                         throw new NeedsResetException("Write timed out");
@@ -175,7 +175,7 @@ namespace StudioCommunication {
                     return false;
                 }
 
-                if (message.Id != MessageIDs.SendState && message.Id != MessageIDs.SendHotkeyPressed) {
+                if (message.Id != MessageID.SendState && message.Id != MessageID.SendHotkeyPressed) {
                     Log($"{this} writing {message.Id} with length {message.Length}");
                 }
 
@@ -199,7 +199,7 @@ namespace StudioCommunication {
                 }
             }
 
-            if (message.Id != MessageIDs.SendState) {
+            if (message.Id != MessageID.SendState) {
                 Log($"{this} forcing write of {message.Id} with length {message.Length}");
             }
 
@@ -236,14 +236,14 @@ namespace StudioCommunication {
             using (MemoryMappedViewStream stream = sharedMemory.CreateViewStream()) {
                 mutex.WaitOne();
                 BinaryWriter writer = new(stream);
-                Message reset = new(MessageIDs.Reset, new byte[0]);
+                Message reset = new(MessageID.Reset, new byte[0]);
                 writer.Write(reset.GetBytes());
                 mutex.ReleaseMutex();
             }
         }
 
         public void WriteWait() {
-            PendingWrite = () => WriteMessageGuaranteed(new Message(MessageIDs.Wait, new byte[0]));
+            PendingWrite = () => WriteMessageGuaranteed(new Message(MessageID.Wait, new byte[0]));
         }
 
         protected void ProcessWait() {
@@ -281,13 +281,13 @@ namespace StudioCommunication {
         // Apologies in advance to anyone else working on this
 
         public struct Message {
-            public MessageIDs Id { get; private set; }
+            public MessageID Id { get; private set; }
             public int Length { get; private set; }
             public byte[] Data { get; private set; }
 
             public static readonly int Signature = Thread.CurrentThread.GetHashCode();
 
-            public Message(MessageIDs id, byte[] data) {
+            public Message(MessageID id, byte[] data) {
                 Id = id;
                 Data = data;
                 Length = data.Length;

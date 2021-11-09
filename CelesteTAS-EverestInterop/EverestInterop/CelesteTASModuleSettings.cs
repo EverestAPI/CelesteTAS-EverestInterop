@@ -27,7 +27,7 @@ namespace TAS.EverestInterop {
         [SettingIgnore] public Color PlatformHitboxColor { get; set; } = HitboxColor.DefaultPlatformColor;
         public bool ShowTriggerHitboxes { get; set; } = true;
         public bool SimplifiedHitboxes { get; set; } = true;
-        public ActualCollideHitboxTypes ShowActualCollideHitboxes { get; set; } = ActualCollideHitboxTypes.Off;
+        public ActualCollideHitboxType ShowActualCollideHitboxes { get; set; } = ActualCollideHitboxType.Off;
 
         #endregion
 
@@ -132,7 +132,7 @@ namespace TAS.EverestInterop {
         public bool InfoSubpixelIndicator { get; set; } = true;
         public HudOptions InfoCustom { get; set; } = HudOptions.Off;
         public HudOptions InfoWatchEntity { get; set; } = HudOptions.Both;
-        public WatchEntityTypes InfoWatchEntityType { get; set; } = WatchEntityTypes.Position;
+        public WatchEntityType InfoWatchEntityType { get; set; } = WatchEntityType.Position;
 
         [SettingIgnore]
         public string InfoCustomTemplate { get; set; } =
