@@ -29,6 +29,8 @@
   - `summitgem (string)` (gives summit gem, either 0-6 or "all")
   - `sd_clearflags` (clears all save data flags)
   - `unlock_doors` (unlocks all key doors)
+  - `flag (string)` (set/remove a session flag)
+  - e.g. `flag oshiro_clutter_cleared_0/1/2` (clear towels/books/chests)
   
 ### Console load
 - `load` (for A-Sides) is used in these examples, but this also applies to `hard` (B-Sides) and `rmx2` (C-Sides).
