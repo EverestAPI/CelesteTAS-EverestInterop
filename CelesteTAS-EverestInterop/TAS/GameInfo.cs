@@ -651,37 +651,37 @@ namespace TAS {
 
         public string ToSimpleString(int decimals) {
             if (SubpixelRounding) {
-                return ToSimplePositionString(decimals);
+                return ToExactPositionString(decimals);
             } else {
                 string format = $"F{decimals}";
                 return $"{X.ToString(format)}, {Y.ToString(format)}";
             }
         }
 
-        private string ToSimplePositionString(int decimals) {
-            double roundX = Math.Round(X, decimals);
-            double roundY = Math.Round(Y, decimals);
+        private string ToExactPositionString(int decimals) {
+            string RoundPosition(double exactPosition, float position, float remainder) {
+                double round = Math.Round(exactPosition, decimals);
 
-            // make 0.495 round away from 0.50
-            if (Math.Abs(PositionRemainder.X) < 0.5f) {
-                int diffX = (int) Position.X - (int) Math.Round(roundX, MidpointRounding.AwayFromZero);
-                if (diffX != 0) {
-                    roundX += diffX * Math.Pow(10, -decimals);
+                switch (Math.Abs(remainder)) {
+                    case 0.5f:
+                        // don't show subsequent zeros when subpixel is exactly equal to 0.5
+                        return round.ToString("F1");
+                    case < 0.5f: {
+                        // make 0.495 round away from 0.50
+                        int diffX = (int) position - (int) Math.Round(round, MidpointRounding.AwayFromZero);
+                        if (diffX != 0) {
+                            round += diffX * Math.Pow(10, -decimals);
+                        }
+
+                        break;
+                    }
                 }
+
+                return round.ToString($"F{decimals}");
             }
 
-            if (Math.Abs(PositionRemainder.Y) < 0.5f) {
-                int diffY = (int) Position.Y - (int) Math.Round(roundY, MidpointRounding.AwayFromZero);
-                if (diffY != 0) {
-                    roundY += diffY * Math.Pow(10, -decimals);
-                }
-            }
-
-            // if a number ends in .5 it means it is exactly equal to that number, not approximately equal to
-            string format = $"F{decimals}";
-            string resultX = roundX.ToString(Math.Abs(PositionRemainder.X) == 0.5f ? "F1" : format);
-            string resultY = roundY.ToString(Math.Abs(PositionRemainder.Y) == 0.5f ? "F1" : format);
-
+            string resultX = RoundPosition(X, Position.X, PositionRemainder.X);
+            string resultY = RoundPosition(Y, Position.Y, PositionRemainder.Y);
             return $"{resultX}, {resultY}";
         }
 
