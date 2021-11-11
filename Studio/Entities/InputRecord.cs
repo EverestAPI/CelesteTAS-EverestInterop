@@ -33,7 +33,7 @@ namespace CelesteStudio.Entities {
         private static readonly Regex EmptyLineRegex = new(@"^\s*$", RegexOptions.Compiled);
         public static readonly Regex CommentSymbolRegex = new(@"^\s*#", RegexOptions.Compiled);
         private static readonly Regex CommentRoomRegex = new(@"^\s*#lvl_", RegexOptions.Compiled);
-        private static readonly Regex CommentTimeRegex = new(@"^\s*#(\d{1,2}:)?\d{1,2}:\d{2}\.\d{3}", RegexOptions.Compiled);
+        private static readonly Regex CommentTimeRegex = new(@"^\s*#(\d+:)?\d{1,2}:\d{2}\.\d{3}", RegexOptions.Compiled);
         public static readonly Regex CommentLineRegex = new(@"^\s*#.*", RegexOptions.Compiled);
         public static readonly Regex BreakpointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
         public static readonly Regex InputFrameRegex = new(@"^(\s*\d+)", RegexOptions.Compiled);
