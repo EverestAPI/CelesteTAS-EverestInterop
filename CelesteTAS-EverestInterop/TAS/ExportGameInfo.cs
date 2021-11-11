@@ -55,22 +55,9 @@ namespace TAS {
             streamWriter.WriteLine(string.Join("\t", "Line", "Inputs", "Frames", "Time", "Position", "Speed", "State", "Statuses", "Entities"));
             trackedEntities = new Dictionary<string, Func<Level, IList>>();
             foreach (string typeName in tracked) {
-                Type t = TryParseType(typeName);
-                if (t != null && t.IsSameOrSubclassOf(typeof(Entity))) {
+                if (InfoCustom.TryParseType(typeName, out Type t, out _, out _) && t.IsSameOrSubclassOf(typeof(Entity))) {
                     trackedEntities[t.Name] = level => FindEntity(t, level);
                 }
-            }
-        }
-
-        private static Type TryParseType(string typeName) {
-            if (!typeName.Contains("@")) {
-                typeName = InfoCustom.AllTypes.Keys.FirstOrDefault(typeFullName => typeFullName.Contains($".{typeName}@"));
-            }
-
-            if (typeName != null && InfoCustom.AllTypes.ContainsKey(typeName)) {
-                return InfoCustom.AllTypes[typeName];
-            } else {
-                return null;
             }
         }
 

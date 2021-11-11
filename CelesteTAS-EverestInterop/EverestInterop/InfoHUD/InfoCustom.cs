@@ -16,10 +16,9 @@ namespace TAS.EverestInterop.InfoHUD {
         private const BindingFlags AllBindingFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         private static readonly Regex BraceRegex = new(@"\{(.+?)\}", RegexOptions.Compiled);
-        private static readonly Regex EntityIdSuffixRegex = new(@"\[(.+?)\]$", RegexOptions.Compiled);
-        private static readonly Regex ModTypeNameRegex = new(@"(.+@[^\.]+?)\.", RegexOptions.Compiled);
+        private static readonly Regex TypeNameRegex = new(@"^([.\w=+<>]+)(\[(.+?)\])?(@([^.]*))?$", RegexOptions.Compiled);
         private static readonly MethodInfo EntityListFindAll = typeof(EntityList).GetMethod("FindAll");
-        public static readonly Dictionary<string, Type> AllTypes = new();
+        private static readonly Dictionary<string, Type> AllTypes = new();
         private static readonly Dictionary<string, string> CachedEntitiesFullName = new();
         private static readonly Dictionary<string, MethodInfo> CachedGetMethodInfos = new();
         private static readonly Dictionary<string, FieldInfo> CachedFieldInfos = new();
@@ -29,9 +28,9 @@ namespace TAS.EverestInterop.InfoHUD {
         [LoadContent]
         private static void CollectAllTypeInfo() {
             AllTypes.Clear();
+            CachedEntitiesFullName.Clear();
             CachedGetMethodInfos.Clear();
             CachedFieldInfos.Clear();
-            CachedEntitiesFullName.Clear();
             foreach (Type type in FakeAssembly.GetFakeEntryAssembly().GetTypes()) {
                 if (type.FullName != null) {
                     AllTypes[$"{type.FullName}@{type.Assembly.GetName().Name}"] = type;
@@ -50,55 +49,34 @@ namespace TAS.EverestInterop.InfoHUD {
             return BraceRegex.Replace(Settings.InfoCustomTemplate, match => {
                 string matchText = match.Groups[1].Value;
 
-                string[] splitText = matchText.Split('.').Select(s => s.Trim()).ToArray();
-                if (splitText.Length <= 1) {
-                    return "invalid template";
+                List<string> splitText = matchText.Split('.').Select(s => s.Trim()).Where(s => s.IsNotEmpty()).ToList();
+                if (splitText.Count <= 1) {
+                    return "missing member";
                 }
 
-                string typeFullName;
-                string entityId;
-                string firstText = splitText[0];
+                string firstText;
+                List<string> memberNames;
 
                 if (matchText.Contains("@")) {
-                    if (ModTypeNameRegex.Match(matchText) is { } matchTypeName) {
-                        firstText = matchTypeName.Groups[1].Value;
-                        typeFullName = TryParseTypeName(firstText, out entityId);
-                        List<string> modTypeSplitText = ModTypeNameRegex.Replace(matchText, string.Empty).Split('.').ToList();
-                        modTypeSplitText.Insert(0, typeFullName);
-                        splitText = modTypeSplitText.ToArray();
-                        if (splitText.Length <= 1) {
-                            return "invalid template";
-                        }
-                    } else {
-                        return "invalid template";
-                    }
+                    int assemblyIndex = splitText.FindIndex(s => s.Contains("@"));
+                    firstText = string.Join(".", splitText.Take(assemblyIndex + 1));
+                    memberNames = splitText.Skip(assemblyIndex + 1).ToList();
                 } else {
-                    string typeSimpleName = TryParseTypeName(firstText, out entityId);
-                    if (CachedEntitiesFullName.Keys.Contains(typeSimpleName)) {
-                        typeFullName = CachedEntitiesFullName[typeSimpleName];
-                    } else {
-                        List<string> matchTypeNames = AllTypes.Keys.Where(typeName => typeName.Contains($".{typeSimpleName}@")).ToList();
-                        if (matchTypeNames.IsEmpty()) {
-                            return $"{typeSimpleName} not found";
-                        } else if (matchTypeNames.Count > 1) {
-                            return $"type with the same name exists: {string.Join(", ", matchTypeNames)}";
-                        } else {
-                            typeFullName = matchTypeNames.First();
-                            CachedEntitiesFullName[typeSimpleName] = typeFullName;
-                        }
-                    }
+                    firstText = splitText[0];
+                    memberNames = splitText.Skip(1).ToList();
                 }
 
-                if (!AllTypes.ContainsKey(typeFullName)) {
-                    return $"{typeFullName} not found";
+                if (memberNames.Count <= 0) {
+                    return "missing member";
                 }
 
-                Type type = AllTypes[typeFullName];
+                if (!TryParseType(firstText, out Type type, out string entityId, out string errorMessage)) {
+                    return errorMessage;
+                }
 
-                IEnumerable<string> memberNames = splitText.Skip(1).ToArray();
                 string helperMethod = memberNames.Last();
                 if (helperMethod is "toFrame()" or "toPixelPerFrame()") {
-                    memberNames = memberNames.SkipLast().ToArray();
+                    memberNames = memberNames.SkipLast().ToList();
                 }
 
                 if (GetGetMethod(type, memberNames.First()) is {IsStatic: true} || GetFieldInfo(type, memberNames.First()) is {IsStatic: true}) {
@@ -141,13 +119,62 @@ namespace TAS.EverestInterop.InfoHUD {
             });
         }
 
-        private static string TryParseTypeName(string firstText, out string entityId) {
-            if (EntityIdSuffixRegex.IsMatch(firstText)) {
-                entityId = EntityIdSuffixRegex.Match(firstText).Groups[1].Value;
-                return EntityIdSuffixRegex.Replace(firstText, "");
+        public static bool TryParseType(string text, out Type type, out string entityId, out string errorMessage) {
+            type = null;
+            entityId = "";
+            errorMessage = "";
+
+            if (!TryParseTypeName(text, out string typeNameMatched, out string typeNameWithAssembly, out entityId)) {
+                errorMessage = "paring type name failed";
+                return false;
+            }
+
+            if (CachedEntitiesFullName.Keys.Contains(typeNameWithAssembly)) {
+                typeNameWithAssembly = CachedEntitiesFullName[typeNameWithAssembly];
             } else {
-                entityId = string.Empty;
-                return firstText;
+                // find the full type name
+                List<string> matchTypeNames = AllTypes.Keys.Where(name => name.StartsWith(typeNameWithAssembly)).ToList();
+                if (matchTypeNames.IsEmpty() && !typeNameWithAssembly.StartsWith(".")) {
+                    // find the part of type name
+                    matchTypeNames = AllTypes.Keys.Where(name => name.Contains($".{typeNameWithAssembly}")).ToList();
+                }
+
+                switch (matchTypeNames.Count) {
+                    case 0: {
+                        errorMessage = $"{typeNameMatched} not found";
+                        return false;
+                    }
+                    case > 1: {
+                        errorMessage = $"type with the same name exists:\n{string.Join("\n", matchTypeNames)}";
+                        return false;
+                    }
+                    case 1:
+                        typeNameWithAssembly = matchTypeNames.First();
+                        CachedEntitiesFullName[typeNameMatched] = typeNameWithAssembly;
+                        break;
+                }
+            }
+
+            if (AllTypes.ContainsKey(typeNameWithAssembly)) {
+                type = AllTypes[typeNameWithAssembly];
+                return true;
+            } else {
+                errorMessage = $"{typeNameWithAssembly} not found";
+                return false;
+            }
+        }
+
+        private static bool TryParseTypeName(string text, out string typeNameMatched, out string typeNameWithAssembly, out string entityId) {
+            typeNameMatched = "";
+            typeNameWithAssembly = "";
+            entityId = "";
+            if (TypeNameRegex.Match(text) is {Success: true} match) {
+                typeNameMatched = match.Groups[1].Value;
+                typeNameWithAssembly = $"{typeNameMatched}@{match.Groups[5].Value}";
+                entityId = match.Groups[3].Value;
+                return true;
+            } else {
+                return false;
             }
         }
 

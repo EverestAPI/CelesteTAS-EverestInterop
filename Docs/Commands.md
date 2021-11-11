@@ -85,11 +85,12 @@
 - It prevents the use of commands which would not be legal in a run.
   
 ### StartExportGameInfo and FinishExportGameInfo
-- `StartExportGameInfo (Optional File Path) (Optional Entities Type.Name or Type.FullName@AssemblyName)`
+- `StartExportGameInfo (Optional File Path) (Optional Entities Names)`
 - `FinishExportGameInfo`
 - Dumps data to a file, which can be used to analyze desyncs.
 - Default filepath is `dump.txt`.
-- Keeps track of any additional entities specified - e.g. `StartExportGameInfo additional.txt TheoCrystal Glider CustomSpinner` will keep track of Theo, Jellyfish, and custom spinners from the FrostHelper mod. You can get the name of the entity by opening the console and clicking on it, the entity name will be displayed in the top left corner and output to log.txt.
+- Keeps track of any additional entities specified - e.g. `StartExportGameInfo additional.txt TheoCrystal Glider CustomSpinner@FrostTempleHelper` will keep track of Theo, Jellyfish, and custom spinners from the FrostHelper mod.
+- You can get the name of the entity by opening the console and clicking on it, the entity name will be displayed in the top left corner and output to log.txt.
 
 ### StartExportRoomInfo and FinishExportRoomInfo
 - `StartExportRoomInfo (Optional File Path)`
