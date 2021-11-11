@@ -53,6 +53,8 @@ namespace TAS {
             Settings.Instance.CopyAllFields(settingsBackup);
             origControllerHasFocus = MInput.ControllerHasFocus;
             MInput.ControllerHasFocus = true;
+            MInput.Active = true;
+            MInput.Disabled = false;
         }
 
         // ReSharper disable once UnusedMember.Local
