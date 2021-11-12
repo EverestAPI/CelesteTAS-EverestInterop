@@ -30,7 +30,7 @@ namespace TAS.Input {
                     studioTasFilePath = value;
 
                     if (Manager.Running) {
-                        Manager.DisableExternal();
+                        Manager.NextStates |= States.Disable;
                     }
 
                     Manager.Controller.Reset();
