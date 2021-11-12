@@ -27,19 +27,16 @@ namespace TAS.Input {
 
             try {
                 object settings = null;
-                int index = args[0].IndexOf(".", StringComparison.Ordinal);
-                if (index != -1) {
+                if (args[0].Contains(".")) {
                     string[] parameters = args.Skip(1).ToArray();
+                    if (TrySetModSetting(args[0], parameters)) {
+                        return;
+                    }
+
                     if (InfoCustom.TryParseMemberNames(args[0], out string typeText, out List<string> memberNames, out string errorMessage)
                         && InfoCustom.TryParseType(typeText, out Type type, out string entityId, out errorMessage)) {
                         SetObject(type, entityId, memberNames, parameters);
                     } else {
-                        string moduleName = args[0].Substring(0, index);
-                        string settingName = args[0].Substring(index + 1);
-                        SetModSetting(moduleName, settingName, parameters);
-                    }
-
-                    if (errorMessage.IsNotNullOrEmpty()) {
                         errorMessage.Log();
                     }
                 } else {
@@ -84,7 +81,10 @@ namespace TAS.Input {
             }
         }
 
-        private static void SetModSetting(string moduleName, string settingName, string[] value) {
+        private static bool TrySetModSetting(string moduleSetting, string[] value) {
+            int index = moduleSetting.IndexOf(".", StringComparison.Ordinal);
+            string moduleName = moduleSetting.Substring(0, index);
+            string settingName = moduleSetting.Substring(index + 1);
             foreach (EverestModule module in Everest.Modules) {
                 if (module.Metadata.Name == moduleName && module.SettingsType is { } settingsType) {
                     PropertyInfo property = settingsType.GetProperty(settingName);
@@ -92,9 +92,11 @@ namespace TAS.Input {
                         property.SetValue(module._Settings, ConvertType(value, property.PropertyType));
                     }
 
-                    return;
+                    return true;
                 }
             }
+
+            return false;
         }
 
         private static void SetObject(Type type, string entityId, List<string> memberNames, string[] values) {
