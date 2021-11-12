@@ -54,10 +54,12 @@
   - `console load 2 376 -176 0 0`
   
 ### Set
-- `Set, (Optional Mod).Setting, Value`
+- `Set, (Optional Mod).Setting, Values`
+- `Set, Entity.Field..., Values`
+- `Set, Level.Field..., Values`
+- `Set, Session.Field..., Values`
 - Sets the specified setting to the specified value.
 - Defaults to Celeste if no mod specified.
-- Player/Theo/Level/Session statuses use the corresponding class name.
 - Everest settings use the mod name `Everest`.
 - Note that setting names/values may be unintuitive.
 - To find the mod and setting names, go to the saves folder in your Celeste directory. The mod name should be `modsettings-(name).celeste`.
@@ -69,6 +71,7 @@
   - `Set, CheatMode, true`
   - `Set, DashMode, Infinite` or `Set, DashMode, 2`
   - `Set, Player.Position, 123.123, -1028`
+  - `Set, Player.Position.X, 123.123`
   - `Set, Player.Speed, 325, -52.5`
   - `Set, Player.Ducking, true`
   - `Set, Everest.ShowModOptionsInGame, false`

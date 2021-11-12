@@ -464,12 +464,17 @@ namespace TAS.Utils {
     internal static class SceneExtensions {
         public static Player GetPlayer(this Scene scene) => scene.Tracker.GetEntity<Player>();
 
-        public static Session GetSession(this Scene scene) =>
-            scene switch {
-                Level level => level.Session,
-                LevelLoader levelLoader => levelLoader.Level.Session,
+        public static Level GetLevel(this Scene scene) {
+            return scene switch {
+                Level level => level,
+                LevelLoader levelLoader => levelLoader.Level,
                 _ => null
             };
+        }
+
+        public static Session GetSession(this Scene scene) {
+            return scene.GetLevel()?.Session;
+        }
     }
 
     internal static class LevelExtensions {

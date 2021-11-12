@@ -107,6 +107,6 @@ The contents of the curly brackets will be converted to actual data, here are so
 - `{Player.Speed.toPixelPerFrame()}` add `toPixelPerFrame()` to the end can change the float/vector2 speed unit to pixel/frame.
 - `AutoJump: {Player.AutoJump} ({Player.AutoJumpTimer.toFrame()})`
 - `ForceMoveX: {Player.forceMoveX} ({Player.forceMoveXTimer.toFrame()})`
-- `Theo: {TheoCrystal.ExactPosition}`
+- `Theo: {TheoCrystal.Position}`
 - `TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}`
 - `CustomSpinner: {CustomSpinner.Position}` or `CustomSpinner: {FrostHelper.CustomSpinner@FrostTempleHelper.Position}`

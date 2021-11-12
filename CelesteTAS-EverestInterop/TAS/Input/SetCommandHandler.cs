@@ -1,10 +1,13 @@
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
+using TAS.EverestInterop.InfoHUD;
 using TAS.Utils;
 
 namespace TAS.Input {
@@ -15,7 +18,7 @@ namespace TAS.Input {
 
         // Set, Setting, Value
         // Set, Mod.Setting, Value
-        // Set, Player.Field, Value
+        // Set, Entity.Field, Value
         [TasCommand("Set", LegalInMainGame = false)]
         private static void SetCommand(string[] args) {
             if (args.Length < 2) {
@@ -24,83 +27,106 @@ namespace TAS.Input {
 
             try {
                 object settings = null;
-                string settingName;
                 int index = args[0].IndexOf(".", StringComparison.Ordinal);
                 if (index != -1) {
-                    string moduleName = args[0].Substring(0, index);
-                    settingName = args[0].Substring(index + 1);
                     string[] parameters = args.Skip(1).ToArray();
-                    // TODO Use the same syntax as custom info
-                    if (moduleName == "Player" && Engine.Scene.GetPlayer() is { } player) {
-                        SetObject(player, settingName, parameters);
-                    } else if (moduleName is "Theo" or "TheoCrystal" && Engine.Scene.Tracker.GetEntity<TheoCrystal>() is { } theo) {
-                        SetObject(theo, settingName, parameters);
-                    } else if (moduleName == "Level" && Engine.Scene is Level level) {
-                        SetObject(level, settingName, parameters);
-                    } else if (moduleName == "Session" && Engine.Scene.GetSession() is { } session) {
-                        SetObject(session, settingName, parameters);
+                    if (InfoCustom.TryParseMemberNames(args[0], out string typeText, out List<string> memberNames, out string errorMessage)
+                        && InfoCustom.TryParseType(typeText, out Type type, out string entityId, out errorMessage)) {
+                        SetObject(type, entityId, memberNames, parameters);
                     } else {
-                        foreach (EverestModule module in Everest.Modules) {
-                            if (module.Metadata.Name == moduleName) {
-                                Type settingsType = module.SettingsType;
-                                settings = module._Settings;
-                                PropertyInfo property = settingsType.GetProperty(settingName);
-                                if (property != null) {
-                                    property.SetValue(settings, ConvertType(args[1], property.PropertyType));
-                                }
+                        string moduleName = args[0].Substring(0, index);
+                        string settingName = args[0].Substring(index + 1);
+                        SetModSetting(moduleName, settingName, parameters);
+                    }
 
-                                return;
-                            }
-                        }
+                    if (errorMessage.IsNotNullOrEmpty()) {
+                        errorMessage.Log();
                     }
                 } else {
-                    settingName = args[0];
-
-                    FieldInfo field;
-                    if ((field = typeof(Settings).GetField(settingName)) != null) {
-                        settings = Settings.Instance;
-                    } else if ((field = typeof(SaveData).GetField(settingName)) != null) {
-                        settings = SaveData.Instance;
-                    } else if ((field = typeof(Assists).GetField(settingName)) != null) {
-                        settings = SaveData.Instance.Assists;
-                    }
-
-                    if (settings == null) {
-                        return;
-                    }
-
-                    object value = ConvertType(args[1], field.FieldType);
-
-                    if (!SettingsSpecialCases(settingName, value)) {
-                        field.SetValue(settings, value);
-
-                        if (settings is Assists assists) {
-                            SaveData.Instance.Assists = assists;
-                        }
-                    }
-
-                    if (settings is Assists variantAssists && !Equals(variantAssists, Assists.Default)) {
-                        SaveData.Instance.VariantMode = true;
-                        SaveData.Instance.AssistMode = false;
-                    }
+                    SetGameSetting(args);
                 }
             } catch (Exception e) {
                 e.Log();
             }
         }
 
-        private static void SetObject(object obj, string name, string[] values) {
-            if (values.Length == 0) {
+        private static void SetGameSetting(string[] args) {
+            object settings = null;
+            string settingName = args[0];
+            string[] parameters = args.Skip(1).ToArray();
+
+            FieldInfo field;
+            if ((field = typeof(Settings).GetField(settingName)) != null) {
+                settings = Settings.Instance;
+            } else if ((field = typeof(SaveData).GetField(settingName)) != null) {
+                settings = SaveData.Instance;
+            } else if ((field = typeof(Assists).GetField(settingName)) != null) {
+                settings = SaveData.Instance.Assists;
+            }
+
+            if (settings == null) {
                 return;
             }
 
-            Type type = obj.GetType();
+            object value = ConvertType(parameters, field.FieldType);
 
-            if (type.GetPropertyInfo(name, true) is { } property && property.GetSetMethod(true) is {IsStatic: false} setMethod) {
+            if (!SettingsSpecialCases(settingName, value)) {
+                field.SetValue(settings, value);
+
+                if (settings is Assists assists) {
+                    SaveData.Instance.Assists = assists;
+                }
+            }
+
+            if (settings is Assists variantAssists && !Equals(variantAssists, Assists.Default)) {
+                SaveData.Instance.VariantMode = true;
+                SaveData.Instance.AssistMode = false;
+            }
+        }
+
+        private static void SetModSetting(string moduleName, string settingName, string[] value) {
+            foreach (EverestModule module in Everest.Modules) {
+                if (module.Metadata.Name == moduleName && module.SettingsType is { } settingsType) {
+                    PropertyInfo property = settingsType.GetProperty(settingName);
+                    if (property != null) {
+                        property.SetValue(module._Settings, ConvertType(value, property.PropertyType));
+                    }
+
+                    return;
+                }
+            }
+        }
+
+        private static void SetObject(Type type, string entityId, List<string> memberNames, string[] values) {
+            if (memberNames.IsEmpty() || values.IsEmpty()) {
+                return;
+            }
+
+            string lastMemberName = memberNames.Last();
+            memberNames = memberNames.SkipLast().ToList();
+
+            Type memberType = null;
+            object obj;
+            if (memberNames.IsNotEmpty() &&
+                (InfoCustom.GetGetMethod(type, memberNames.First()) is {IsStatic: true} ||
+                 InfoCustom.GetFieldInfo(type, memberNames.First()) is {IsStatic: true})) {
+                obj = InfoCustom.GetMemberValue(type, null, memberNames);
+            } else {
+                obj = FindObject(type, entityId);
+                obj = InfoCustom.GetMemberValue(type, obj, memberNames);
+                if (obj == null) {
+                    $"Set Command Failed: {type.FullName}{entityId} object is not found".Log();
+                    return;
+                } else {
+                    memberType = obj.GetType();
+                }
+            }
+
+            if (memberType.GetPropertyInfo(lastMemberName, true) is { } property && property.GetSetMethod(true) is { } setMethod) {
                 object value = ConvertType(values, property.PropertyType);
                 setMethod.Invoke(obj, new[] {value});
-            } else if (type.GetFieldInfo(name, true) is {IsStatic: false} field) {
-                if (obj is Actor actor && name == "Position" && values.Length == 2) {
+            } else if (memberType.GetFieldInfo(lastMemberName, true) is { } field) {
+                if (obj is Actor actor && lastMemberName == "Position" && values.Length == 2) {
                     double.TryParse(values[0], out double x);
                     double.TryParse(values[1], out double y);
                     Vector2 position = new((int) Math.Round(x), (int) Math.Round(y));
@@ -111,6 +137,37 @@ namespace TAS.Input {
                     object value = ConvertType(values, field.FieldType);
                     field.SetValue(obj, value);
                 }
+            }
+
+            // after modifying the struct
+            // we also need to update the object own the struct, here only the Vector2 type is handled
+            if (memberNames.IsNotEmpty()) {
+                string[] position = obj switch {
+                    Vector2 vector2 => new[] {vector2.X.ToString(CultureInfo.InvariantCulture), vector2.Y.ToString(CultureInfo.InvariantCulture)},
+                    Vector2Double vector2Double => new[] {
+                        vector2Double.X.ToString(CultureInfo.InvariantCulture), vector2Double.Y.ToString(CultureInfo.InvariantCulture)
+                    },
+                    _ => new string[] { }
+                };
+
+                SetObject(
+                    type,
+                    entityId,
+                    memberNames,
+                    position
+                );
+            }
+        }
+
+        private static object FindObject(Type type, string entityId) {
+            if (type.IsSameOrSubclassOf(typeof(Entity))) {
+                return InfoCustom.FindEntities(type, entityId).FirstOrDefault();
+            } else if (type == typeof(Level)) {
+                return Engine.Scene.GetLevel();
+            } else if (type == typeof(Session)) {
+                return Engine.Scene.GetSession();
+            } else {
+                return null;
             }
         }
 

@@ -33,12 +33,7 @@ namespace TAS {
                 return;
             }
 
-            Session session = Engine.Scene switch {
-                LevelLoader levelLoader => levelLoader.Level.Session,
-                Level lvl => lvl.Session,
-                _ => null
-            };
-
+            Session session = Engine.Scene.GetSession();
             string roomName = session?.Level;
 
             if (Engine.Scene is Level {Completed: true} level) {

@@ -21,6 +21,7 @@ namespace TAS.EverestInterop.InfoHUD {
         private static readonly Dictionary<string, Type> AllTypes = new();
         private static readonly Dictionary<string, string> CachedEntitiesFullName = new();
         private static readonly Dictionary<string, MethodInfo> CachedGetMethodInfos = new();
+        private static readonly Dictionary<string, MethodInfo> CachedSetMethodInfos = new();
         private static readonly Dictionary<string, FieldInfo> CachedFieldInfos = new();
 
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
@@ -30,6 +31,7 @@ namespace TAS.EverestInterop.InfoHUD {
             AllTypes.Clear();
             CachedEntitiesFullName.Clear();
             CachedGetMethodInfos.Clear();
+            CachedSetMethodInfos.Clear();
             CachedFieldInfos.Clear();
             foreach (Type type in FakeAssembly.GetFakeEntryAssembly().GetTypes()) {
                 if (type.FullName != null) {
@@ -49,28 +51,11 @@ namespace TAS.EverestInterop.InfoHUD {
             return BraceRegex.Replace(Settings.InfoCustomTemplate, match => {
                 string matchText = match.Groups[1].Value;
 
-                List<string> splitText = matchText.Split('.').Select(s => s.Trim()).Where(s => s.IsNotEmpty()).ToList();
-                if (splitText.Count <= 1) {
-                    return "missing member";
+                if (!TryParseMemberNames(matchText, out string typeText, out List<string> memberNames, out string errorMessage)) {
+                    return errorMessage;
                 }
 
-                string firstText;
-                List<string> memberNames;
-
-                if (matchText.Contains("@")) {
-                    int assemblyIndex = splitText.FindIndex(s => s.Contains("@"));
-                    firstText = string.Join(".", splitText.Take(assemblyIndex + 1));
-                    memberNames = splitText.Skip(assemblyIndex + 1).ToList();
-                } else {
-                    firstText = splitText[0];
-                    memberNames = splitText.Skip(1).ToList();
-                }
-
-                if (memberNames.Count <= 0) {
-                    return "missing member";
-                }
-
-                if (!TryParseType(firstText, out Type type, out string entityId, out string errorMessage)) {
+                if (!TryParseType(typeText, out Type type, out string entityId, out errorMessage)) {
                     return errorMessage;
                 }
 
@@ -86,11 +71,11 @@ namespace TAS.EverestInterop.InfoHUD {
                 if (Engine.Scene is Level level) {
                     if (type.IsSameOrSubclassOf(typeof(Entity))) {
                         List<Entity> entities;
-                        if (cachedEntities.ContainsKey(firstText)) {
-                            entities = cachedEntities[firstText];
+                        if (cachedEntities.ContainsKey(typeText)) {
+                            entities = cachedEntities[typeText];
                         } else {
-                            entities = FindEntities(type, level, entityId)?.ToList();
-                            cachedEntities[firstText] = entities;
+                            entities = FindEntities(type, entityId)?.ToList();
+                            cachedEntities[typeText] = entities;
                         }
 
                         if (entities == null) {
@@ -117,6 +102,33 @@ namespace TAS.EverestInterop.InfoHUD {
 
                 return string.Empty;
             });
+        }
+
+        public static bool TryParseMemberNames(string matchText, out string typeText, out List<string> memberNames, out string errorMessage) {
+            typeText = errorMessage = "";
+            memberNames = new List<string>();
+
+            List<string> splitText = matchText.Split('.').Select(s => s.Trim()).Where(s => s.IsNotEmpty()).ToList();
+            if (splitText.Count <= 1) {
+                errorMessage = "missing member";
+                return false;
+            }
+
+            if (matchText.Contains("@")) {
+                int assemblyIndex = splitText.FindIndex(s => s.Contains("@"));
+                typeText = string.Join(".", splitText.Take(assemblyIndex + 1));
+                memberNames = splitText.Skip(assemblyIndex + 1).ToList();
+            } else {
+                typeText = splitText[0];
+                memberNames = splitText.Skip(1).ToList();
+            }
+
+            if (memberNames.Count <= 0) {
+                errorMessage = "missing member";
+                return false;
+            }
+
+            return true;
         }
 
         public static bool TryParseType(string text, out Type type, out string entityId, out string errorMessage) {
@@ -211,7 +223,7 @@ namespace TAS.EverestInterop.InfoHUD {
             return obj.ToString();
         }
 
-        private static object GetMemberValue(Type type, object obj, IEnumerable<string> memberNames) {
+        public static object GetMemberValue(Type type, object obj, List<string> memberNames) {
             foreach (string memberName in memberNames) {
                 if (GetGetMethod(type, memberName) is { } methodInfo) {
                     if (methodInfo.IsStatic) {
@@ -227,7 +239,11 @@ namespace TAS.EverestInterop.InfoHUD {
                     if (fieldInfo.IsStatic) {
                         obj = fieldInfo.GetValue(null);
                     } else if (obj != null) {
-                        obj = fieldInfo.GetValue(obj);
+                        if (obj is Actor actor && memberName == "Position") {
+                            obj = actor.GetMoreExactPosition(true);
+                        } else {
+                            obj = fieldInfo.GetValue(obj);
+                        }
                     }
                 } else {
                     return $"{memberName} not found";
@@ -243,13 +259,12 @@ namespace TAS.EverestInterop.InfoHUD {
             return obj;
         }
 
-        private static MethodInfo GetGetMethod(Type type, string propertyName) {
-            string key = $"{type.FullName}-${propertyName}";
+        public static MethodInfo GetGetMethod(Type type, string propertyName) {
+            string key = $"{type.FullName}.get_{propertyName}";
             if (CachedGetMethodInfos.ContainsKey(key)) {
                 return CachedGetMethodInfos[key];
             } else {
-                MethodInfo methodInfo = type.GetProperty(propertyName, AllBindingFlags)
-                    ?.GetGetMethod(true);
+                MethodInfo methodInfo = type.GetProperty(propertyName, AllBindingFlags)?.GetGetMethod(true);
                 if (methodInfo == null && type.BaseType != null) {
                     methodInfo = GetGetMethod(type.BaseType, propertyName);
                 }
@@ -259,8 +274,23 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-        private static FieldInfo GetFieldInfo(Type type, string fieldName) {
-            string key = $"{type.FullName}-${fieldName}";
+        public static MethodInfo GetSetMethod(Type type, string propertyName) {
+            string key = $"{type.FullName}.set_{propertyName}";
+            if (CachedSetMethodInfos.ContainsKey(key)) {
+                return CachedSetMethodInfos[key];
+            } else {
+                MethodInfo methodInfo = type.GetProperty(propertyName, AllBindingFlags)?.GetSetMethod(true);
+                if (methodInfo == null && type.BaseType != null) {
+                    methodInfo = GetSetMethod(type.BaseType, propertyName);
+                }
+
+                CachedSetMethodInfos[key] = methodInfo;
+                return methodInfo;
+            }
+        }
+
+        public static FieldInfo GetFieldInfo(Type type, string fieldName) {
+            string key = $"{type.FullName}.{fieldName}";
             if (CachedFieldInfos.ContainsKey(key)) {
                 return CachedFieldInfos[key];
             } else {
@@ -274,12 +304,12 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-        private static IEnumerable<Entity> FindEntities(Type type, Level level, string entityId) {
+        public static IEnumerable<Entity> FindEntities(Type type, string entityId) {
             IEnumerable<Entity> entities;
-            if (level.Tracker.Entities.ContainsKey(type)) {
-                entities = level.Tracker.Entities[type];
+            if (Engine.Scene.Tracker.Entities.ContainsKey(type)) {
+                entities = Engine.Scene.Tracker.Entities[type];
             } else {
-                IList list = (IList) EntityListFindAll.MakeGenericMethod(type).Invoke(level.Entities, null);
+                IList list = (IList) EntityListFindAll.MakeGenericMethod(type).Invoke(Engine.Scene.Entities, null);
                 entities = list.Cast<Entity>();
             }
 

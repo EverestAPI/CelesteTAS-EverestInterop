@@ -633,8 +633,22 @@ namespace TAS {
         public Vector2 Position;
         public Vector2 PositionRemainder;
         public bool SubpixelRounding;
-        public double X => (double) Position.X + PositionRemainder.X;
-        public double Y => (double) Position.Y + PositionRemainder.Y;
+
+        public double X {
+            get => (double) Position.X + PositionRemainder.X;
+            set {
+                Position.X = (int) Math.Round(value);
+                PositionRemainder.X = (float) (value - Position.X);
+            }
+        }
+
+        public double Y {
+            get => (double) Position.Y + PositionRemainder.Y;
+            set {
+                Position.Y = (int) Math.Round(value);
+                PositionRemainder.Y = (float) (value - Position.Y);
+            }
+        }
 
         public Vector2Double(Vector2 position, Vector2 positionRemainder, bool subpixelRounding) {
             Position = position;
