@@ -194,7 +194,13 @@ namespace TAS.Input {
                     }
 
                     if (lineText.StartsWith("***")) {
-                        FastForwards[initializationFrameCount] = new FastForward(initializationFrameCount, lineText.Substring(3), studioLine);
+                        FastForward fastForward = new(initializationFrameCount, lineText.Substring(3), studioLine);
+                        if (FastForwards.TryGetValue(initializationFrameCount, out FastForward oldFastForward) && oldFastForward.SaveState &&
+                            !fastForward.SaveState) {
+                            // ignore 
+                        } else {
+                            FastForwards[initializationFrameCount] = fastForward;
+                        }
                     } else {
                         AddFrames(lineText, studioLine);
                     }

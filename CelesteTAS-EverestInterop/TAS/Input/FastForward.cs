@@ -2,7 +2,7 @@ using System;
 
 namespace TAS.Input {
     public record FastForward {
-        public const int DefaultSpeed = 400;
+        private const int DefaultSpeed = 400;
         public readonly int Frame;
         public readonly int Line;
         public readonly bool SaveState;
