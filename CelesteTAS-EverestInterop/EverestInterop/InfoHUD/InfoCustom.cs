@@ -140,14 +140,12 @@ namespace TAS.EverestInterop.InfoHUD {
                 }
 
                 switch (matchTypeNames.Count) {
-                    case 0: {
+                    case 0:
                         errorMessage = $"{typeNameMatched} not found";
                         return false;
-                    }
-                    case > 1: {
+                    case > 1:
                         errorMessage = $"type with the same name exists:\n{string.Join("\n", matchTypeNames)}";
                         return false;
-                    }
                     case 1:
                         typeNameWithAssembly = matchTypeNames.First();
                         CachedEntitiesFullName[typeNameMatched] = typeNameWithAssembly;
@@ -171,6 +169,11 @@ namespace TAS.EverestInterop.InfoHUD {
             if (TypeNameRegex.Match(text) is {Success: true} match) {
                 typeNameMatched = match.Groups[1].Value;
                 typeNameWithAssembly = $"{typeNameMatched}@{match.Groups[5].Value}";
+                typeNameWithAssembly = typeNameWithAssembly switch {
+                    "Theo@" => "TheoCrystal@",
+                    "Jellyfish@" => "Glider@",
+                    _ => typeNameWithAssembly
+                };
                 entityId = match.Groups[3].Value;
                 return true;
             } else {
