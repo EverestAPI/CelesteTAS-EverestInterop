@@ -125,8 +125,22 @@ namespace TAS.Input {
             }
 
             if (memberType.GetPropertyInfo(lastMemberName, true) is { } property && property.GetSetMethod(true) is { } setMethod) {
-                object value = ConvertType(values, property.PropertyType);
-                setMethod.Invoke(obj, new[] {value});
+                if (obj is Actor actor && lastMemberName is "X" or "Y") {
+                    double.TryParse(values[0], out double value);
+                    Vector2 remainder = actor.PositionRemainder;
+                    if (lastMemberName == "X") {
+                        actor.Position.X = (int) Math.Round(value);
+                        remainder.X = (float) (value - actor.Position.X);
+                    } else {
+                        actor.Position.Y = (int) Math.Round(value);
+                        remainder.Y = (float) (value - actor.Position.Y);
+                    }
+
+                    ActorMovementCounter.SetValue(obj, remainder);
+                } else {
+                    object value = ConvertType(values, property.PropertyType);
+                    setMethod.Invoke(obj, new[] {value});
+                }
             } else if (memberType.GetFieldInfo(lastMemberName, true) is { } field) {
                 if (obj is Actor actor && lastMemberName == "Position" && values.Length == 2) {
                     double.TryParse(values[0], out double x);
