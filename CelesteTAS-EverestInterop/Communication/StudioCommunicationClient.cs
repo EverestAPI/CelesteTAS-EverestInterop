@@ -21,6 +21,18 @@ namespace TAS.Communication {
         private StudioCommunicationClient(string target) : base(target) { }
         public static StudioCommunicationClient Instance { get; private set; }
 
+        [Load]
+        private static void Load() {
+            Everest.Events.Celeste.OnExiting += Destroy;
+        }
+
+        [Unload]
+        private static void Unload() {
+            Everest.Events.Celeste.OnExiting -= Destroy;
+            Destroy();
+        }
+
+        [Initialize]
         public static bool Run() {
             if (Environment.OSVersion.Platform != PlatformID.Win32NT) {
                 return false;
@@ -40,7 +52,8 @@ namespace TAS.Communication {
             return true;
         }
 
-        public static void Destroy() {
+        private static void Destroy() {
+            Instance?.WriteReset();
             Instance?.threads?.ForEach(thread => thread.Abort());
             Instance = null;
         }

@@ -2,7 +2,6 @@
 using Celeste;
 using Celeste.Mod;
 using FMOD.Studio;
-using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.Utils;
 
@@ -14,6 +13,7 @@ namespace TAS.Module {
             AttributeUtils.CollectMethods<LoadAttribute>();
             AttributeUtils.CollectMethods<UnloadAttribute>();
             AttributeUtils.CollectMethods<LoadContentAttribute>();
+            AttributeUtils.CollectMethods<InitializeAttribute>();
         }
 
         public static CelesteTasModule Instance { get; private set; }
@@ -22,7 +22,7 @@ namespace TAS.Module {
         public static CelesteTasModuleSettings Settings => (CelesteTasModuleSettings) Instance?._Settings;
 
         public override void Initialize() {
-            StudioHelper.Initialize();
+            AttributeUtils.Invoke<InitializeAttribute>();
         }
 
         public override void Load() {
@@ -34,15 +34,11 @@ namespace TAS.Module {
         public override void Unload() {
             AttributeUtils.Invoke<UnloadAttribute>();
             CenterCamera.Unload();
-            StudioCommunicationClient.Destroy();
         }
 
         public override void LoadContent(bool firstLoad) {
             if (firstLoad) {
                 AttributeUtils.Invoke<LoadContentAttribute>();
-
-                // Open memory mapped file for interfacing with Windows Celeste Studio
-                StudioCommunicationClient.Run();
             }
         }
 
@@ -60,4 +56,7 @@ namespace TAS.Module {
 
     [AttributeUsage(AttributeTargets.Method)]
     internal class LoadContentAttribute : Attribute { }
+
+    [AttributeUsage(AttributeTargets.Method)]
+    internal class InitializeAttribute : Attribute { }
 }

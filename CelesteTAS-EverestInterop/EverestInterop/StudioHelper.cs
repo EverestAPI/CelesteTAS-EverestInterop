@@ -14,7 +14,8 @@ namespace TAS.EverestInterop {
         private static string StudioNameWithExe => StudioName + ".exe";
         private static string CopiedStudioExePath => Path.Combine(Everest.PathGame, StudioNameWithExe);
 
-        public static void Initialize() {
+        [Initialize]
+        private static void Initialize() {
             if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
                 ExtractStudio(out bool studioProcessWasKilled);
                 LaunchStudioAtBoot(studioProcessWasKilled);
