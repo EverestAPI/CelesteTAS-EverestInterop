@@ -9,6 +9,7 @@ using StudioCommunication;
 using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.Input;
+using TAS.Module;
 using TAS.Utils;
 
 namespace TAS {

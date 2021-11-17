@@ -1,5 +1,6 @@
 ﻿using Celeste;
 using MonoMod.Utils;
+using TAS.Module;
 
 namespace TAS.EverestInterop {
     public static class DisableAchievements {

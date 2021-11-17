@@ -4,8 +4,8 @@ using System.IO;
 using System.Linq;
 using Celeste;
 using Monocle;
-using TAS.EverestInterop;
 using TAS.Input;
+using TAS.Module;
 using TAS.Utils;
 
 namespace TAS {

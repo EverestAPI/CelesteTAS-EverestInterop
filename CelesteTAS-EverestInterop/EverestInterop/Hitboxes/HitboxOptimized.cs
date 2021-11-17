@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
+using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes {

@@ -6,7 +6,7 @@ using System.Reflection;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
-using TAS.EverestInterop;
+using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.Input {

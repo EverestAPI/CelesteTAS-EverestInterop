@@ -7,6 +7,7 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
+using TAS.Module;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static partial class ActualEntityCollideHitbox {

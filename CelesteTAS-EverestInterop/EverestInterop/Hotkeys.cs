@@ -12,6 +12,7 @@ using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using StudioCommunication;
 using TAS.Communication;
+using TAS.Module;
 using TAS.Utils;
 using InputButtons = Microsoft.Xna.Framework.Input.Buttons;
 

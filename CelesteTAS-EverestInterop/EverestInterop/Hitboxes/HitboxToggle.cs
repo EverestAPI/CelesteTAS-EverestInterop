@@ -2,6 +2,7 @@
 using Celeste;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
+using TAS.Module;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxToggle {

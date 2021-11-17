@@ -9,6 +9,7 @@ using Celeste;
 using Celeste.Mod.Helpers;
 using Microsoft.Xna.Framework;
 using Monocle;
+using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD {

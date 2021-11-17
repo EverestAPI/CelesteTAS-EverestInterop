@@ -6,7 +6,7 @@ using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using TAS.Communication;
-using TAS.EverestInterop;
+using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.Input {

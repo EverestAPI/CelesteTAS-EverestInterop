@@ -11,9 +11,9 @@ using Monocle;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using MonoMod.Utils;
-using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Input;
+using TAS.Module;
 using TAS.Utils;
 
 namespace TAS {

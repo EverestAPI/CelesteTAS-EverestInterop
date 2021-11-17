@@ -4,6 +4,7 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 using TAS.EverestInterop.InfoHUD;
+using TAS.Module;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxTrigger {

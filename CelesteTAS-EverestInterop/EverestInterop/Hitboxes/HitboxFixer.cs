@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.Cil;
+using TAS.Module;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxFixer {

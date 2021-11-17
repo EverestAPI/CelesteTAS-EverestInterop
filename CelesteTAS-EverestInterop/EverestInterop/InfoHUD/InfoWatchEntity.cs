@@ -11,6 +11,7 @@ using Monocle;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using TAS.EverestInterop.Hitboxes;
+using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD {

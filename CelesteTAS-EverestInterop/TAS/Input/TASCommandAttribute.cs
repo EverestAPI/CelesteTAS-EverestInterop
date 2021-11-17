@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Celeste.Mod;
-using TAS.EverestInterop;
+using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.Input {

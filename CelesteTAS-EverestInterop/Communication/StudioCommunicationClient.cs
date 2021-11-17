@@ -10,6 +10,7 @@ using StudioCommunication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Input;
+using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.Communication {

@@ -3,6 +3,7 @@ using Celeste;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
+using TAS.Module;
 
 namespace TAS.EverestInterop {
     public static class HideGameplay {

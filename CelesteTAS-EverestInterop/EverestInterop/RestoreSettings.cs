@@ -4,6 +4,7 @@ using Celeste;
 using Celeste.Mod;
 using Monocle;
 using TAS.Input;
+using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.EverestInterop {

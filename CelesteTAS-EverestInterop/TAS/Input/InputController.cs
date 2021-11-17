@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using Monocle;
 using MonoMod.Utils;
-using TAS.EverestInterop;
+using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.Input {

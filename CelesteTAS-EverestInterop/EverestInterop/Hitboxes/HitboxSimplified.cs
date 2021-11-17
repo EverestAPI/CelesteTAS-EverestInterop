@@ -8,6 +8,7 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 using TAS.EverestInterop.InfoHUD;
+using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes {

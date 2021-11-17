@@ -3,9 +3,10 @@ using Celeste;
 using Celeste.Mod;
 using FMOD.Studio;
 using TAS.Communication;
+using TAS.EverestInterop;
 using TAS.Utils;
 
-namespace TAS.EverestInterop {
+namespace TAS.Module {
     // ReSharper disable once ClassNeverInstantiated.Global
     public class CelesteTasModule : EverestModule {
         public CelesteTasModule() {

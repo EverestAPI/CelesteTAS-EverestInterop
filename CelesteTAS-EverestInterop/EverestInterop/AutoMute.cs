@@ -5,7 +5,7 @@ using System.Linq;
 using Celeste;
 using FMOD;
 using FMOD.Studio;
-using StudioCommunication;
+using TAS.Module;
 
 namespace TAS.EverestInterop {
     public static class AutoMute {

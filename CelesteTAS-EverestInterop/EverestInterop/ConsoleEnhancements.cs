@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Input;
 using Monocle;
 using MonoMod.Cil;
 using TAS.EverestInterop.InfoHUD;
+using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.EverestInterop {

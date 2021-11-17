@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
 using StudioCommunication;
+using TAS.Module;
 
 namespace TAS.EverestInterop.InfoHUD {
     public static class InfoMouse {

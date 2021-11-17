@@ -7,6 +7,7 @@ using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Monocle;
 using TAS.EverestInterop;
 using TAS.Input;
+using TAS.Module;
 using TAS.Utils;
 using static TAS.Manager;
 using TasStates = TAS.States;

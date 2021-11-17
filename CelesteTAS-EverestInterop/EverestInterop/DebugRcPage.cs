@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using Celeste.Mod;
 using StudioCommunication;
+using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.EverestInterop {

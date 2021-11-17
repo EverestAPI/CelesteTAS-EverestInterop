@@ -1,6 +1,6 @@
 ﻿using System;
 using ExtendedVariants.Module;
-using TAS.EverestInterop;
+using TAS.Module;
 
 namespace TAS.Utils {
     public static class ExtendedVariantsUtils {

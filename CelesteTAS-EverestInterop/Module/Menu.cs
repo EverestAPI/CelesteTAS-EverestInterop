@@ -6,12 +6,13 @@ using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
+using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Input;
 using TAS.Utils;
 
-namespace TAS.EverestInterop {
+namespace TAS.Module {
     internal static class Menu {
         private static readonly MethodInfo CreateKeyboardConfigUi = typeof(EverestModule).GetMethodInfo("CreateKeyboardConfigUI");
         private static readonly MethodInfo CreateButtonConfigUI = typeof(EverestModule).GetMethodInfo("CreateButtonConfigUI");

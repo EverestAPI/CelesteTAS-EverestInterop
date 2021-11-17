@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Celeste;
 using Celeste.Mod;
 using Monocle;
-using StudioCommunication;
+using TAS.Module;
 
 namespace TAS.EverestInterop {
     public static class FastForwardBoost {

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Celeste.Mod;
 using Ionic.Zip;
+using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.EverestInterop {

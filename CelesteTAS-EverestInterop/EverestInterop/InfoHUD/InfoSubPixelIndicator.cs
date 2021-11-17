@@ -2,6 +2,7 @@
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
+using TAS.Module;
 
 namespace TAS.EverestInterop.InfoHUD {
     public static class InfoSubPixelIndicator {

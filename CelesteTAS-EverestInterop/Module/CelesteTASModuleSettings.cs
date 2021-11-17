@@ -3,10 +3,11 @@ using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
+using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
 
-namespace TAS.EverestInterop {
+namespace TAS.Module {
     public class CelesteTasModuleSettings : EverestModuleSettings {
         public const int MinDecimals = 2;
         public const int MaxDecimals = 12;

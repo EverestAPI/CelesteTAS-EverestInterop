@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using Celeste.Mod;
+using TAS.Module;
 using TAS.Utils;
 
 #if DEBUG
