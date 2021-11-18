@@ -400,7 +400,7 @@ namespace TAS.EverestInterop.InfoHUD {
                     if (info.Name.EndsWith("Timer")) {
                         value = GameInfo.ConvertToFrames(floatValue);
                     } else {
-                        value = floatValue.ToString($"F{decimals}");
+                        value = floatValue.ToFormattedString(decimals);
                     }
                 } else if (value is Vector2 vector2) {
                     value = vector2.ToSimpleString(decimals);

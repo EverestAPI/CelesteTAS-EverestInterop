@@ -444,6 +444,16 @@ namespace TAS.Utils {
         }
     }
 
+    internal static class NumberExtensions {
+        public static string ToFormattedString(this float value, int decimals) {
+            return ((double) value).ToFormattedString(decimals);
+        }
+
+        public static string ToFormattedString(this double value, int decimals) {
+            return value.ToString($"F{decimals}");
+        }
+    }
+
     internal static class TrackerExtensions {
         public static List<T> GetCastEntities<T>(this Tracker tracker) where T : Entity {
             return tracker.GetEntities<T>().Where(entity => entity is T).Cast<T>().ToList();
@@ -456,8 +466,7 @@ namespace TAS.Utils {
 
     internal static class Vector2Extensions {
         public static string ToSimpleString(this Vector2 vector2, int decimals) {
-            string format = $"F{decimals}";
-            return $"{vector2.X.ToString(format)}, {vector2.Y.ToString(format)}";
+            return $"{vector2.X.ToFormattedString(decimals)}, {vector2.Y.ToFormattedString(decimals)}";
         }
     }
 

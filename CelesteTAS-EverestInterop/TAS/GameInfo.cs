@@ -667,8 +667,7 @@ namespace TAS {
             if (SubpixelRounding) {
                 return ToExactPositionString(decimals);
             } else {
-                string format = $"F{decimals}";
-                return $"{X.ToString(format)}, {Y.ToString(format)}";
+                return $"{X.ToFormattedString(decimals)}, {Y.ToFormattedString(decimals)}";
             }
         }
 
@@ -691,7 +690,7 @@ namespace TAS {
                     }
                 }
 
-                return round.ToString($"F{decimals}");
+                return round.ToFormattedString(decimals);
             }
 
             string resultX = RoundPosition(X, Position.X, PositionRemainder.X);

@@ -3,6 +3,7 @@ using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Module;
+using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD {
     public static class InfoSubPixelIndicator {
@@ -42,19 +43,19 @@ namespace TAS.EverestInterop.InfoHUD {
                 Color.Red * alpha);
 
             Vector2 remainder = player?.PositionRemainder ?? Vector2.One;
-            string hFormat = Math.Abs(remainder.X) switch {
-                0.5f => "F0",
-                _ => $"F{decimals}"
+            int hDecimals = Math.Abs(remainder.X) switch {
+                0.5f => 0,
+                _ => decimals
             };
-            string vFormat = Math.Abs(remainder.Y) switch {
-                0.5f => "F0",
-                _ => $"F{decimals}"
+            int vDecimals = Math.Abs(remainder.Y) switch {
+                0.5f => 0,
+                _ => decimals
             };
 
-            string left = subPixelLeft.ToString(hFormat).PadLeft(TasSettings.SubpixelIndicatorDecimals + 2, ' ');
-            string right = subPixelRight.ToString(hFormat);
-            string top = subPixelTop.ToString(vFormat).PadLeft(TasSettings.SubpixelIndicatorDecimals / 2 + 2, ' ');
-            string bottom = subPixelBottom.ToString(vFormat).PadLeft(TasSettings.SubpixelIndicatorDecimals / 2 + 2, ' ');
+            string left = subPixelLeft.ToFormattedString(hDecimals).PadLeft(TasSettings.SubpixelIndicatorDecimals + 2, ' ');
+            string right = subPixelRight.ToFormattedString(hDecimals);
+            string top = subPixelTop.ToFormattedString(vDecimals).PadLeft(TasSettings.SubpixelIndicatorDecimals / 2 + 2, ' ');
+            string bottom = subPixelBottom.ToFormattedString(vDecimals).PadLeft(TasSettings.SubpixelIndicatorDecimals / 2 + 2, ' ');
 
             JetBrainsMonoFont.Draw(left, new Vector2(x - textWidth - padding / 2f, y + (rectSide - textHeight) / 2f),
                 Vector2.Zero, new Vector2(GetSubPixelFontSize()), Color.White * alpha);

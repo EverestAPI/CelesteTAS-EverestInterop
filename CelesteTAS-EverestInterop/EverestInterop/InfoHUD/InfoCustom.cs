@@ -217,7 +217,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 } else if (helperMethod == "toPixelPerFrame()") {
                     return GameInfo.ConvertSpeedUnit(floatValue, SpeedUnit.PixelPerFrame).ToString(CultureInfo.InvariantCulture);
                 } else {
-                    return floatValue.ToString($"F{decimals}");
+                    return floatValue.ToFormattedString(decimals);
                 }
             }
 
