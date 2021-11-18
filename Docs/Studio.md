@@ -10,8 +10,8 @@ Can be used instead of notepad or similar for easier editing of the TAS file. It
 - Ctrl + D: Toggle Sending Inputs to Celeste
 - Ctrl + Shift + D: Refresh Connection Between Studio and Celeste
 - Ctrl + Shift + C: Copy Player Data to Clipboard
-- Ctrl + K: Block Comment/Uncomment
-- Ctrl + Shift + K: Block Comment/Uncomment (line by line processing)
+- Ctrl + K: Block Comment/Uncomment (line by line processing)
+- Ctrl + Shift + K: Block Comment/Uncomment
 - Ctrl + P: Remove All Uncommented Breakpoints
 - Ctrl + Shift + P: Remove All Breakpoints
 - Ctrl + .: Insert/Remove Breakpoint

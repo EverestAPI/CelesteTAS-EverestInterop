@@ -274,7 +274,7 @@ namespace CelesteStudio {
                                 break;
                             case Keys.OemQuestion: // Ctrl + /
                             case Keys.K: // Ctrl + K
-                                CommentText(false);
+                                CommentText(true);
                                 break;
                             case Keys.P: // Ctrl + P
                                 ClearUncommentedBreakpoints();
@@ -309,7 +309,7 @@ namespace CelesteStudio {
                         switch (e.KeyCode) {
                             case Keys.OemQuestion: // Ctrl + Shift + /
                             case Keys.K: // Ctrl + Shift + K
-                                CommentText(true);
+                                CommentText(false);
                                 break;
                             case Keys.S: // Ctrl + Shift + S
                                 SaveAsFile();
@@ -1289,7 +1289,7 @@ namespace CelesteStudio {
         }
 
         private void commentUncommentTextToolStripMenuItem_Click(object sender, EventArgs e) {
-            CommentText(false);
+            CommentText(true);
         }
 
         private void removeAllUncommentedBreakpointsToolStripMenuItem_Click(object sender, EventArgs e) {
