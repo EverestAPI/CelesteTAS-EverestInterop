@@ -152,6 +152,11 @@ namespace TAS.EverestInterop.InfoHUD {
                     matchTypeNames = AllTypes.Keys.Where(name => name.Contains($".{typeNameWithAssembly}")).ToList();
                 }
 
+                if (matchTypeNames.IsEmpty() && !typeNameWithAssembly.StartsWith("+")) {
+                    // find the nested type name
+                    matchTypeNames = AllTypes.Keys.Where(name => name.Contains($"+{typeNameWithAssembly}")).ToList();
+                }
+
                 switch (matchTypeNames.Count) {
                     case 0:
                         errorMessage = $"{typeNameMatched} not found";
