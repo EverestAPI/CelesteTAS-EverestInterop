@@ -226,7 +226,6 @@ namespace CelesteStudio {
         private void SaveSettings() {
             Settings.Default.DesktopLocation = DesktopLocation;
             Settings.Default.Size = Size;
-            Settings.Default.Font = fontDialog.Font;
             Settings.Default.Save();
         }
 
@@ -1396,6 +1395,7 @@ namespace CelesteStudio {
         private void fontToolStripMenuItem_Click(object sender, EventArgs e) {
             if (fontDialog.ShowDialog() != DialogResult.Cancel) {
                 InitFont(fontDialog.Font);
+                Settings.Default.Font = fontDialog.Font;
             }
         }
 
