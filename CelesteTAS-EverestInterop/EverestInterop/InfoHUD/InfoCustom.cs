@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -18,7 +17,7 @@ namespace TAS.EverestInterop.InfoHUD {
 
         private static readonly Regex BraceRegex = new(@"\{(.+?)\}", RegexOptions.Compiled);
         private static readonly Regex TypeNameRegex = new(@"^([.\w=+<>]+)(\[(.+?)\])?(@([^.]*))?$", RegexOptions.Compiled);
-        private static readonly MethodInfo EntityListFindAll = typeof(EntityList).GetMethod("FindAll");
+        private static readonly Regex TypeNameSeparatorRegex = new(@"^[.+]", RegexOptions.Compiled);
         private static readonly Dictionary<string, Type> AllTypes = new();
         private static readonly Dictionary<string, string> CachedEntitiesFullName = new();
         private static readonly Dictionary<string, MethodInfo> CachedGetMethodInfos = new();
@@ -147,14 +146,16 @@ namespace TAS.EverestInterop.InfoHUD {
             } else {
                 // find the full type name
                 List<string> matchTypeNames = AllTypes.Keys.Where(name => name.StartsWith(typeNameWithAssembly)).ToList();
-                if (matchTypeNames.IsEmpty() && !typeNameWithAssembly.StartsWith(".")) {
+
+                string typeName = TypeNameSeparatorRegex.Replace(typeNameWithAssembly, "");
+                if (matchTypeNames.IsEmpty()) {
                     // find the part of type name
-                    matchTypeNames = AllTypes.Keys.Where(name => name.Contains($".{typeNameWithAssembly}")).ToList();
+                    matchTypeNames = AllTypes.Keys.Where(name => name.Contains($".{typeName}")).ToList();
                 }
 
-                if (matchTypeNames.IsEmpty() && !typeNameWithAssembly.StartsWith("+")) {
+                if (matchTypeNames.IsEmpty()) {
                     // find the nested type name
-                    matchTypeNames = AllTypes.Keys.Where(name => name.Contains($"+{typeNameWithAssembly}")).ToList();
+                    matchTypeNames = AllTypes.Keys.Where(name => name.Contains($"+{typeName}")).ToList();
                 }
 
                 switch (matchTypeNames.Count) {
@@ -310,19 +311,18 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-        public static IEnumerable<Entity> FindEntities(Type type, string entityId) {
-            IEnumerable<Entity> entities;
+        public static List<Entity> FindEntities(Type type, string entityId) {
+            List<Entity> entities;
             if (Engine.Scene.Tracker.Entities.ContainsKey(type)) {
-                entities = Engine.Scene.Tracker.Entities[type];
+                entities = Engine.Scene.Tracker.Entities[type].ToList();
             } else {
-                IList list = (IList) EntityListFindAll.MakeGenericMethod(type).Invoke(Engine.Scene.Entities, null);
-                entities = list.Cast<Entity>();
+                entities = Engine.Scene.Entities.Where(entity => entity.GetType().IsSameOrSubclassOf(type)).ToList();
             }
 
             if (entityId.IsNullOrEmpty()) {
                 return entities;
             } else {
-                return entities.Where(entity => entity.GetEntityData()?.ToEntityId().ToString() == entityId);
+                return entities.Where(entity => entity.GetEntityData()?.ToEntityId().ToString() == entityId).ToList();
             }
         }
     }
