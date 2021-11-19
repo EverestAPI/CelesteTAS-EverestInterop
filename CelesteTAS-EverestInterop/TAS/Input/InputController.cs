@@ -16,6 +16,7 @@ namespace TAS.Input {
         public readonly SortedDictionary<int, List<Command>> Commands = new();
         public readonly List<Command> ExecuteAtStartCommands = new();
         public readonly SortedDictionary<int, FastForward> FastForwards = new();
+        public readonly SortedDictionary<int, FastForward> FastForwardComments = new();
         public readonly List<InputFrame> Inputs = new();
         public readonly Dictionary<string, DateTime> UsedFiles = new();
 
@@ -70,7 +71,8 @@ namespace TAS.Input {
         public bool CanPlayback => CurrentFrameInTas < Inputs.Count;
         public bool NeedsToWait => Manager.IsLoading();
 
-        private FastForward LastFastForward => FastForwards.LastValueOrDefault();
+        public FastForward NextCommentFastForward;
+        private FastForward LastFastForward => NextCommentFastForward ?? FastForwards.LastValueOrDefault();
         public bool HasFastForward => LastFastForward != null && LastFastForward.Frame > CurrentFrameInTas;
         public int FastForwardSpeed => LastFastForward == null ? 1 : Calc.Clamp(LastFastForward.Frame - CurrentFrameInTas, 1, LastFastForward.Speed);
         public bool Break => LastFastForward?.Frame == CurrentFrameInTas;
@@ -84,8 +86,7 @@ namespace TAS.Input {
 
         public void RefreshInputs(bool enableRun) {
             if (enableRun) {
-                CurrentFrameInInput = 0;
-                CurrentFrameInTas = 0;
+                Stop();
             }
 
             string lastChecksum = Checksum;
@@ -121,6 +122,7 @@ namespace TAS.Input {
         public void Stop() {
             CurrentFrameInInput = 0;
             CurrentFrameInTas = 0;
+            NextCommentFastForward = null;
         }
 
         private void Reset() {
@@ -129,6 +131,7 @@ namespace TAS.Input {
             savestateChecksum = string.Empty;
             Inputs.Clear();
             FastForwards.Clear();
+            FastForwardComments.Clear();
             Commands.Clear();
             ExecuteAtStartCommands.Clear();
             UsedFiles.Clear();
@@ -201,6 +204,8 @@ namespace TAS.Input {
                         } else {
                             FastForwards[initializationFrameCount] = fastForward;
                         }
+                    } else if (lineText.StartsWith("#")) {
+                        FastForwardComments[initializationFrameCount] = new FastForward(initializationFrameCount, "", studioLine);
                     } else {
                         AddFrames(lineText, studioLine);
                     }
@@ -208,6 +213,10 @@ namespace TAS.Input {
                     if (filePath == TasFilePath) {
                         studioLine++;
                     }
+                }
+
+                if (filePath == TasFilePath) {
+                    FastForwardComments[initializationFrameCount] = new FastForward(initializationFrameCount, "", studioLine);
                 }
 
                 return true;
@@ -234,6 +243,7 @@ namespace TAS.Input {
 
             clone.Inputs.AddRange(Inputs);
             clone.FastForwards.AddRange((IDictionary) FastForwards);
+            clone.FastForwardComments.AddRange((IDictionary) FastForwardComments);
             clone.ExecuteAtStartCommands.AddRange(ExecuteAtStartCommands);
             foreach (int frame in Commands.Keys) {
                 clone.Commands[frame] = new List<Command>(Commands[frame]);
@@ -245,6 +255,20 @@ namespace TAS.Input {
             clone.SavestateChecksum = clone.CalcChecksum(CurrentFrameInTas);
 
             return clone;
+        }
+
+        public void FastForwardToNextComment() {
+            NextCommentFastForward = null;
+            RefreshInputs(false);
+            FastForward next = FastForwardComments.FirstOrDefault(pair => pair.Key > CurrentFrameInTas).Value;
+            if (next != null && LastFastForward is { } last && HasFastForward && next.Frame > last.Frame) {
+                // NextCommentFastForward = last;
+            } else {
+                NextCommentFastForward = next;
+            }
+
+            Manager.States &= ~States.FrameStep;
+            Manager.NextStates &= ~States.FrameStep;
         }
 
         public void CopyFrom(InputController controller) {
@@ -264,7 +288,7 @@ namespace TAS.Input {
 
                 if (Commands.GetValueOrDefault(checkInputFrame) is { } commands) {
                     foreach (Command command in commands.Where(command => command.Attribute.CalcChecksum)) {
-                        result.Append(command.LineText);
+                        result.AppendLine(command.LineText);
                     }
                 }
 

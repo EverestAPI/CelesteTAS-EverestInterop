@@ -5,6 +5,7 @@ namespace StudioCommunication {
         Start,
         Restart,
         FastForward,
+        FastForwardComment,
         FrameAdvance,
         Pause,
         Hitboxes,

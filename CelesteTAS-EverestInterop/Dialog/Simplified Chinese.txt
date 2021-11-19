@@ -92,6 +92,7 @@ TAS_MOD_9D_LIGHTING=          修改 9D 亮度
 TAS_KEY_START_STOP=           运行/停止
 TAS_KEY_RESTART=              重新运行
 TAS_KEY_FAST_FORWARD=         快进
+TAS_KEY_FAST_FORWARD_COMMENT= 快进到下一注释
 TAS_KEY_FRAME_ADVANCE=        步进
 TAS_KEY_PAUSE_RESUME=         暂停/继续
 TAS_KEY_HITBOXES=             碰撞箱

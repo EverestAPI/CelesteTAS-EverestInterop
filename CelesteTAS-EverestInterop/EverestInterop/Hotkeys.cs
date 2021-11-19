@@ -39,6 +39,7 @@ namespace TAS.EverestInterop {
         public static Hotkey StartStop;
         public static Hotkey Restart;
         public static Hotkey FastForward;
+        public static Hotkey FastForwardComment;
         public static Hotkey FrameAdvance;
         public static Hotkey PauseResume;
         public static Hotkey Hitboxes;
@@ -81,6 +82,7 @@ namespace TAS.EverestInterop {
             KeysDict[HotkeyID.Start] = StartStop = BindingToHotkey(Settings.KeyStart);
             KeysDict[HotkeyID.Restart] = Restart = BindingToHotkey(Settings.KeyRestart);
             KeysDict[HotkeyID.FastForward] = FastForward = BindingToHotkey(Settings.KeyFastForward);
+            KeysDict[HotkeyID.FastForwardComment] = FastForwardComment = BindingToHotkey(Settings.KeyFastForwardComment);
             KeysDict[HotkeyID.FrameAdvance] = FrameAdvance = BindingToHotkey(Settings.KeyFrameAdvance);
             KeysDict[HotkeyID.Pause] = PauseResume = BindingToHotkey(Settings.KeyPause);
             KeysDict[HotkeyID.Hitboxes] = Hitboxes = BindingToHotkey(Settings.KeyHitboxes);
@@ -129,6 +131,10 @@ namespace TAS.EverestInterop {
 
             foreach (Hotkey hotkey in KeysDict.Values) {
                 hotkey?.Update();
+            }
+
+            if (Manager.Running && FastForwardComment.Pressed) {
+                Manager.Controller.FastForwardToNextComment();
             }
 
             if (Engine.Scene is Level level && (!level.Paused || level.PauseMainMenuOpen || Manager.Running)) {

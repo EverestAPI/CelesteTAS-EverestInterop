@@ -46,6 +46,11 @@ namespace TAS.Module {
         [DefaultButtonBinding(0, Keys.RightShift)]
         public ButtonBinding KeyFastForward { get; set; } = new(0, Keys.RightShift);
 
+        [SettingName("TAS_KEY_FAST_FORWARD_COMMENT")]
+        [ExtraDefaultKey(Keys.RightAlt)]
+        [DefaultButtonBinding(0, Keys.RightShift)]
+        public ButtonBinding KeyFastForwardComment { get; set; } = new(0, Keys.RightAlt, Keys.RightShift);
+
         [SettingName("TAS_KEY_FRAME_ADVANCE")]
         [DefaultButtonBinding(0, Keys.OemOpenBrackets)]
         public ButtonBinding KeyFrameAdvance { get; set; } = new(0, Keys.OemOpenBrackets);

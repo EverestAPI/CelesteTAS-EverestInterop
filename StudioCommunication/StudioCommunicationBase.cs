@@ -7,8 +7,7 @@ using System.Threading;
 
 namespace StudioCommunication {
     public class StudioCommunicationBase {
-        protected const int BufferSize = 0x100000;
-        protected const int HeaderLength = 9;
+        private const int BufferSize = 0x100000;
 
         private static readonly List<StudioCommunicationBase> AttachedCom = new();
         private readonly Mutex mutex;
@@ -280,17 +279,18 @@ namespace StudioCommunication {
         // This is literally the first thing I have ever written with threading
         // Apologies in advance to anyone else working on this
 
+        // ReSharper disable once StructCanBeMadeReadOnly
         public struct Message {
-            public MessageID Id { get; private set; }
-            public int Length { get; private set; }
-            public byte[] Data { get; private set; }
+            public MessageID Id { get; }
+            public byte[] Data { get; }
+            public int Length => Data.Length;
 
             public static readonly int Signature = Thread.CurrentThread.GetHashCode();
+            private const int HeaderLength = 9;
 
             public Message(MessageID id, byte[] data) {
                 Id = id;
                 Data = data;
-                Length = data.Length;
             }
 
             public byte[] GetBytes() {
