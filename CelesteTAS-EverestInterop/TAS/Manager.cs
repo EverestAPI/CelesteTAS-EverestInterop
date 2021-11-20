@@ -184,7 +184,8 @@ namespace TAS {
                         States &= ~States.FrameStep;
                         NextStates &= ~States.FrameStep;
                     }
-                } else if (LastStates.HasFlag(States.FrameStep) && States.HasFlag(States.FrameStep) && Hotkeys.FastForward.Check) {
+                } else if (LastStates.HasFlag(States.FrameStep) && States.HasFlag(States.FrameStep) && Hotkeys.FastForward.Check &&
+                           !Hotkeys.FastForwardComment.Check) {
                     States &= ~States.FrameStep;
                     NextStates |= States.FrameStep;
                 }
