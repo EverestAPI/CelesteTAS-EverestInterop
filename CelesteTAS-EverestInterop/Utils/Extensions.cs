@@ -261,6 +261,12 @@ namespace TAS.Utils {
         }
     }
 
+    internal static class TypeExtensions {
+        public static bool IsSimpleType(this Type type) {
+            return type.IsPrimitive || type.IsEnum || type == typeof(string) || type == typeof(decimal) || type == typeof(Vector2);
+        }
+    }
+
     internal static class CommonExtensions {
         public static T Apply<T>(this T obj, Action<T> action) {
             action(obj);

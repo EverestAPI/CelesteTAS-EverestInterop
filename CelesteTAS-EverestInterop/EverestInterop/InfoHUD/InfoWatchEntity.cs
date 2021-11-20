@@ -118,10 +118,26 @@ namespace TAS.EverestInterop.InfoHUD {
                 float viewScale = (float) Engine.ViewWidth / Engine.Width;
                 Vector2 mouseWorldPosition = level.ScreenToWorld(mousePosition / viewScale).Floor();
                 Entity tempEntity = new() {Position = mouseWorldPosition, Collider = new Hitbox(1, 1)};
-                List<Entity> result = level.Entities.Where(entity =>
+                List<Entity> allEntities = level.Entities.Where(entity =>
                     entity.GetType() != typeof(Entity)
-                    && entity is not ParticleSystem
-                    && entity.CollideCheck(tempEntity)).ToList();
+                    && entity is not ParticleSystem).ToList();
+
+                List<Entity> noColliderEntities = allEntities.Where(entity =>
+                    entity.Collider == null
+                    && entity.GetEntityData() != null
+                ).ToList();
+
+                foreach (Entity entity in noColliderEntities) {
+                    EntityData data = entity.GetEntityData();
+                    entity.Collider = new Hitbox(data.Width, data.Height);
+                }
+
+                List<Entity> result = allEntities.Where(entity => entity.CollideCheck(tempEntity)).ToList();
+
+                foreach (Entity entity in noColliderEntities) {
+                    entity.Collider = null;
+                }
+
                 // put trigger after entity
                 result.Sort((entity1, entity2) => (entity1 is Trigger ? 1 : -1) - (entity2 is Trigger ? 1 : -1));
                 return result;
@@ -440,16 +456,9 @@ namespace TAS.EverestInterop.InfoHUD {
                     properties = type.GetAllProperties().ToArray();
                 }
 
-                List<MemberInfo> memberInfos = fields.Where(info => {
-                    Type t = info.FieldType;
-                    return (t.IsPrimitive || t.IsEnum || t == typeof(Vector2)) && !info.Name.EndsWith("k__BackingField");
-                }).Cast<MemberInfo>().ToList();
-
-                List<MemberInfo> propertyInfos = properties.Where(
-                    info => {
-                        Type t = info.PropertyType;
-                        return t.IsPrimitive || t.IsEnum || t == typeof(Vector2);
-                    }).Cast<MemberInfo>().ToList();
+                List<MemberInfo> memberInfos = fields.Where(info => info.FieldType.IsSimpleType() && !info.Name.EndsWith("k__BackingField"))
+                    .Cast<MemberInfo>().ToList();
+                List<MemberInfo> propertyInfos = properties.Where(info => info.PropertyType.IsSimpleType()).Cast<MemberInfo>().ToList();
                 memberInfos.AddRange(propertyInfos);
 
                 List<MemberInfo> result = new();
