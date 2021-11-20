@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using Celeste;
+using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Module;
@@ -75,7 +76,25 @@ namespace TAS.Input {
             try {
                 if (SaveData.Instance == null || !Manager.AllowUnsafeInput && SaveData.Instance.FileSlot != -1) {
                     SaveData data = SaveData.Instance ?? UserIO.Load<SaveData>(SaveData.GetFilename(-1)) ?? new SaveData();
-                    SaveData.Start(data, -1);
+                    if (SaveData.Instance?.FileSlot is { } slot && slot != -1) {
+                        SaveData.TryDelete(-1);
+                        SaveData.LoadedModSaveDataIndex = -1;
+                        foreach (EverestModule module in Everest.Modules) {
+                            if (module._Session != null) {
+                                module._Session.Index = -1;
+                            }
+
+                            if (module._SaveData != null) {
+                                module._SaveData.Index = -1;
+                            }
+                        }
+
+                        SaveData.Instance = data;
+                        SaveData.Instance.FileSlot = -1;
+                        UserIO.SaveHandler(true, true);
+                    } else {
+                        SaveData.Start(data, -1);
+                    }
 
                     // Complete Prologue if incomplete and make sure the return to map menu item will be shown
                     LevelSetStats stats = data.GetLevelSetStatsFor("Celeste");
