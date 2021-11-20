@@ -1572,12 +1572,16 @@ namespace CelesteStudio.RichText {
                 data.SetData(DataFormats.UnicodeText, true, Selection.Text);
                 data.SetData(DataFormats.Html, PrepareHtmlForClipboard(html));
                 Thread thread = new(() => {
-                    try {
-                        Clipboard.SetDataObject(data, true);
-                    } catch (ExternalException) {
-                        Win32Api.UnlockClipboard();
-                        Clipboard.SetDataObject(data, true);
+                    for (int i = 0; i < 5; i++) {
+                        try {
+                            Clipboard.SetDataObject(data, true);
+                            return;
+                        } catch (ExternalException) {
+                            Win32Api.UnlockClipboard();
+                        }
                     }
+
+                    MessageBox.Show("Failed to copy text.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 });
                 thread.SetApartmentState(ApartmentState.STA);
                 thread.Start();
