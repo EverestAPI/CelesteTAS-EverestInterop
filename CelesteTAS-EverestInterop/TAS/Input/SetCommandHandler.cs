@@ -151,7 +151,12 @@ namespace TAS.Input {
                     ActorMovementCounter.SetValue(obj, remainder);
                 } else {
                     object value = ConvertType(values, field.FieldType);
-                    field.SetValue(obj, value);
+                    if (lastMemberName.Equals("Speed", StringComparison.OrdinalIgnoreCase) && value is Vector2 speed &&
+                        Math.Abs(Engine.TimeRateB - 1f) > 1e-10) {
+                        field.SetValue(obj, speed / Engine.TimeRateB);
+                    } else {
+                        field.SetValue(obj, value);
+                    }
                 }
             }
 
