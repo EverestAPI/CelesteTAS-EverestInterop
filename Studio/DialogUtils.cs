@@ -8,6 +8,8 @@ using CelesteStudio.RichText;
 
 namespace CelesteStudio {
     public static class DialogUtils {
+        private static string lastFindText = "";
+
         public static bool ShowInputDialog(string title, ref string input) {
             const int padding = 10;
             const int buttonWidth = 75;
@@ -86,7 +88,7 @@ namespace CelesteStudio {
             textBox.Location = new Point(padding, padding);
             textBox.Font = new Font(FontFamily.GenericSansSerif, 12);
             textBox.ForeColor = Color.FromArgb(50, 50, 50);
-            textBox.Text = richText.SelectedText;
+            textBox.Text = richText.SelectedText.Length == 0 ? lastFindText : richText.SelectedText;
             textBox.SelectAll();
             textBox.KeyDown += (sender, args) => pressEnter = args.KeyCode == Keys.Enter;
             textBox.KeyPress += (sender, args) => {
@@ -95,6 +97,8 @@ namespace CelesteStudio {
                     QuickFind(richText, textBox.Text, true);
                 }
             };
+            textBox.KeyUp += (sender, args) => lastFindText = textBox.Text;
+
             inputBox.KeyPress += (sender, args) => {
                 if (pressEnter) {
                     args.Handled = true;
@@ -103,21 +107,21 @@ namespace CelesteStudio {
             };
             inputBox.Controls.Add(textBox);
 
-            Button nextButton = new();
-            nextButton.Name = "nextButton";
-            nextButton.Size = new Size(buttonWidth, buttonHeight);
-            nextButton.Text = "&Next";
-            nextButton.Location = new Point(textBox.Right + padding, textBox.Top);
-            nextButton.Click += (sender, args) => QuickFind(richText, textBox.Text, true);
-            inputBox.Controls.Add(nextButton);
-
             Button previousButton = new();
             previousButton.Name = "previouButton";
             previousButton.Size = new Size(buttonWidth, buttonHeight);
             previousButton.Text = "&Previous";
-            previousButton.Location = new Point(nextButton.Left, nextButton.Bottom + padding);
+            previousButton.Location = new Point(textBox.Right + padding, textBox.Top);
             previousButton.Click += (sender, args) => QuickFind(richText, textBox.Text, false);
             inputBox.Controls.Add(previousButton);
+
+            Button nextButton = new();
+            nextButton.Name = "nextButton";
+            nextButton.Size = new Size(buttonWidth, buttonHeight);
+            nextButton.Text = "&Next";
+            nextButton.Location = new Point(previousButton.Left, previousButton.Bottom + padding);
+            nextButton.Click += (sender, args) => QuickFind(richText, textBox.Text, true);
+            inputBox.Controls.Add(nextButton);
 
             CheckBox caseCheckbox = new();
             caseCheckbox.Size = new Size(textBox.Width, buttonHeight);
