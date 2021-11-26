@@ -549,7 +549,7 @@ namespace CelesteStudio {
             int curLine = 0;
             foreach (string readLine in File.ReadLines(path)) {
                 curLine++;
-                string line = readLine.TrimEnd();
+                string line = readLine.Trim();
                 if (line == $"#{labelOrLineNumber}") {
                     return curLine - 1;
                 }
