@@ -7,9 +7,9 @@
 - It's recommended to use labels instead of line numbers, so `Read, 1A, lvl_1` would be the preferred format for this example.
 
 ### Play
-- `Play, Starting Line`
-- A simplified Read command which skips to the starting line in the current file.
-- Useful for splitting a large level into larger chunks.
+- `Play, Starting Line, (Optional Frames to Wait)`
+- A simplified `Read` command which skips to the starting line in the current file.
+- Useful for splitting a large level into smaller chunks.
 
 ### Labels
 - Prefixing a line with `#` will comment out the line

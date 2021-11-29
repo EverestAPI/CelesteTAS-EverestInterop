@@ -49,6 +49,7 @@ While in game or in Studio:
 - Start/Stop Playback: RightControl
 - Restart Playback: Equals
 - Fast Forward / Frame Advance Continuously: RightShift
+- Fast Forward to Next Comment: RightAlt + RightShift
 - Pause / Frame Advance: [
 - Pause / Resume: ]
 - Toggle Hitboxes: LeftControl + B
