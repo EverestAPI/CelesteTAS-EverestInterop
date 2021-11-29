@@ -45,7 +45,7 @@ TAS_INFO_TAS_INPUT=                        TAS Input
 TAS_INFO_SUBPIXEL_INDICATOR=               Subpixel Indicator
 TAS_INFO_CUSTOM=                           Custom Info
 TAS_INFO_COPY_CUSTOM_TEMPLATE=             Copy Custom Info Template to Clipboard
-TAS_INFO_SET_CUSTOM_TEMPLATE=              Set Custom Info Template From Clipboard
+TAS_INFO_SET_CUSTOM_TEMPLATE=              Set Custom Info Template from Clipboard
 TAS_INFO_WATCH_ENTITY=                     Watch Entity
 TAS_INFO_WATCH_ENTITY_TYPE=                Watch Entity Info
 TAS_INFO_WATCH_ENTITY_POSITION=            Position
@@ -73,7 +73,7 @@ TAS_PIXEL_PER_SECOND=             Pixel/Second
 TAS_PIXEL_PER_FRAME=              Pixel/Frame
 
 # ================================== Relaunch Required Submenu ==================================
-TAS_LAUNCH_STUDIO_AT_BOOT=    Launch Studio At Boot
+TAS_LAUNCH_STUDIO_AT_BOOT=    Launch Studio at Boot
 TAS_AUTO_EXTRACT_NEW_STUDIO=  Auto Extract New Studio
 
 # ================================== Hotkeys Submenu ==================================
@@ -83,8 +83,8 @@ TAS_HOTKEYS_DESCRIPTION= Binding multiple keys to a control will cause those key
 # ================================== More Options Submenu ==================================
 TAS_CENTER_CAMERA=            Center Camera
 TAS_INFO_HUD=                 Info HUD
-TAS_PAUSE_AFTER_LOAD_STATE=   Pause After Load State
-TAS_RESTORE_SETTINGS=         Restore Settings After TAS Stop
+TAS_PAUSE_AFTER_LOAD_STATE=   Pause after Load State
+TAS_RESTORE_SETTINGS=         Restore Settings after TAS Stop
 TAS_DISABLE_ACHIEVEMENTS=     Disable Achievements
 TAS_MOD_9D_LIGHTING=          Mod 9D Lighting
 
@@ -92,7 +92,7 @@ TAS_MOD_9D_LIGHTING=          Mod 9D Lighting
 TAS_KEY_START_STOP=           Start/Stop
 TAS_KEY_RESTART=              Restart
 TAS_KEY_FAST_FORWARD=         Fast Forward
-TAS_KEY_FAST_FORWARD_COMMENT= Fast Forward To Next Comment
+TAS_KEY_FAST_FORWARD_COMMENT= Fast Forward to Next Comment
 TAS_KEY_FRAME_ADVANCE=        Frame Advance
 TAS_KEY_PAUSE_RESUME=         Pause/Resume
 TAS_KEY_HITBOXES=             Hitboxes
