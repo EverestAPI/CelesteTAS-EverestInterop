@@ -76,7 +76,7 @@ namespace TAS.EverestInterop {
             SkipBaseUpdate = false;
             InUpdate = false;
 
-            if (!Settings.Enabled) {
+            if (!Settings.Enabled || !Manager.Running) {
                 orig(self, gameTime);
                 return;
             }

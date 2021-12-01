@@ -33,7 +33,6 @@ namespace TAS {
             AttributeUtils.CollectMethods<DisableRunAttribute>();
         }
 
-        public static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
         private static bool ShouldForceState => NextStates.HasFlag(States.FrameStep) && !Hotkeys.FastForward.OverrideCheck;
 
         public static void Update() {
