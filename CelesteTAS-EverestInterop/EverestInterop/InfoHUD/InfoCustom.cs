@@ -141,8 +141,9 @@ namespace TAS.EverestInterop.InfoHUD {
                 return false;
             }
 
+            string typeFullName;
             if (CachedEntitiesFullName.Keys.Contains(typeNameWithAssembly)) {
-                typeNameWithAssembly = CachedEntitiesFullName[typeNameWithAssembly];
+                typeFullName = CachedEntitiesFullName[typeNameWithAssembly];
             } else {
                 // find the full type name
                 List<string> matchTypeNames = AllTypes.Keys.Where(name => name.StartsWith(typeNameWithAssembly)).ToList();
@@ -165,15 +166,14 @@ namespace TAS.EverestInterop.InfoHUD {
                     case > 1:
                         errorMessage = $"type with the same name exists:\n{string.Join("\n", matchTypeNames)}";
                         return false;
-                    case 1:
-                        typeNameWithAssembly = matchTypeNames.First();
-                        CachedEntitiesFullName[typeNameMatched] = typeNameWithAssembly;
+                    default:
+                        CachedEntitiesFullName[typeNameWithAssembly] = typeFullName = matchTypeNames.First();
                         break;
                 }
             }
 
-            if (AllTypes.ContainsKey(typeNameWithAssembly)) {
-                type = AllTypes[typeNameWithAssembly];
+            if (AllTypes.ContainsKey(typeFullName)) {
+                type = AllTypes[typeFullName];
                 return true;
             } else {
                 errorMessage = $"{typeNameWithAssembly} not found";
