@@ -2591,30 +2591,28 @@ namespace CelesteStudio.RichText {
 
                     break;
                 case Keys.Up:
-                    if (e.Modifiers == Keys.None || e.Modifiers == Keys.Shift) {
+                    if (e.Modifiers is Keys.None or Keys.Shift) {
                         Selection.GoUp(e.Shift);
                         ScrollLeft();
                         if (e.Modifiers == Keys.None) {
                             TryMoveCursorBehindFrame();
                         }
-                    }
-
-                    if (e.Modifiers == AltShift) {
+                    } else if (e.Modifiers == AltShift) {
                         CheckAndChangeSelectionType();
                         if (Selection.ColumnSelectionMode) {
                             Selection.GoUp_ColumnSelectionMode();
                         }
-                    }
-
-                    if (e.Modifiers == Keys.Alt) {
+                    } else if (e.Modifiers == Keys.Alt) {
                         if (!ReadOnly && !Selection.ColumnSelectionMode) {
                             MoveSelectedLinesUp();
                         }
+                    } else if (e.Modifiers == (Keys.Control | Keys.Shift)) {
+                        TweakFrames(true);
                     }
 
                     break;
                 case Keys.Down:
-                    if (e.Modifiers == Keys.None || e.Modifiers == Keys.Shift) {
+                    if (e.Modifiers is Keys.None or Keys.Shift) {
                         Selection.GoDown(e.Shift);
                         ScrollLeft();
                         if (e.Modifiers == Keys.None) {
@@ -2625,12 +2623,12 @@ namespace CelesteStudio.RichText {
                         if (Selection.ColumnSelectionMode) {
                             Selection.GoDown_ColumnSelectionMode();
                         }
-                    }
-
-                    if (e.Modifiers == Keys.Alt) {
+                    } else if (e.Modifiers == Keys.Alt) {
                         if (!ReadOnly && !Selection.ColumnSelectionMode) {
                             MoveSelectedLinesDown();
                         }
+                    } else if (e.Modifiers == (Keys.Control | Keys.Shift)) {
+                        TweakFrames(false);
                     }
 
                     break;
@@ -3602,16 +3600,83 @@ namespace CelesteStudio.RichText {
         }
 
         protected override void OnMouseWheel(MouseEventArgs e) {
-            if ((lastModifiers & Keys.Control) == Keys.Control) {
+            if (lastModifiers == Keys.Control) {
                 if ((e.Delta < 0 && Font.Size > 6) || (Font.Size < 300 && e.Delta > 0)) {
                     Font = new Font(Font.FontFamily, Font.Size + (e.Delta > 0 ? 1 : -1), Font.Style);
                     Invalidate();
                 }
+            } else if ((lastModifiers & Keys.Shift) == Keys.Shift) {
+                TweakFrames(e.Delta > 0, e);
             } else {
                 Invalidate();
                 base.OnMouseWheel(e);
                 OnVisibleRangeChanged();
             }
+        }
+
+        private void TweakFrames(bool up, MouseEventArgs e = null) {
+            if (selection.Start.iLine != selection.End.iLine) {
+                e = null;
+            }
+
+            Range origSelection = selection.Clone();
+
+            int startLine = selection.Start.iLine;
+            int endLine = e == null ? selection.End.iLine : PointToPlace(e.Location).iLine;
+            if (startLine > endLine) {
+                int temp = startLine;
+                startLine = endLine;
+                endLine = temp;
+            }
+
+            InputRecord startRecord = Studio.Instance.InputRecords[startLine];
+            InputRecord endRecord = Studio.Instance.InputRecords[endLine];
+
+            if (!startRecord.IsInput && !endRecord.IsInput) {
+                return;
+            }
+
+            if (!startRecord.IsInput) {
+                startRecord = endRecord;
+            } else if (!endRecord.IsInput) {
+                endRecord = startRecord;
+            }
+
+            if (startRecord == endRecord) {
+                if (up) {
+                    startRecord.Frames++;
+                } else if (startRecord.Frames > 0) {
+                    startRecord.Frames--;
+                }
+            } else {
+                if (up) {
+                    if (endRecord.Frames <= 0) {
+                        return;
+                    }
+
+                    startRecord.Frames++;
+                    endRecord.Frames--;
+                } else {
+                    if (startRecord.Frames <= 0) {
+                        return;
+                    }
+
+                    startRecord.Frames--;
+                    endRecord.Frames++;
+                }
+            }
+
+
+            List<string> result = new();
+            for (int i = startLine; i <= endLine; i++) {
+                result.Add(Studio.Instance.InputRecords[i].ToString());
+            }
+
+            Selection = new Range(this, 0, startLine, GetLineLength(endLine), endLine);
+            SelectedText = string.Join("\n", result);
+            Selection = origSelection;
+
+            Invalidate();
         }
 
         protected override void OnMouseMove(MouseEventArgs e) {

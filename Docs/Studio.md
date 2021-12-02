@@ -2,6 +2,8 @@
 Can be used instead of notepad or similar for easier editing of the TAS file. It is bundled with the TAS tools, and should automatically appear in the main Celeste directory.
 
 ### Controls
+- Ctrl + Z: Undo
+- Ctrl + Shift + Z: Redo
 - Ctrl + O: Open File
 - Alt + Left: Open Previous File
 - Ctrl + Shift + S: Save As
@@ -26,3 +28,5 @@ Can be used instead of notepad or similar for easier editing of the TAS file. It
 - Ctrl + Left Click on Read/Play Command: Open the read file / Go to the Play Line
 - Right Click on Input Area: Show Input Context Menu
 - Right Click on Info Area: Show Info Context Menu
+- Shift + Mouse Wheel: Tweak Frames Between Selected Input and Mouse Pointed Input
+- Ctrl + Shift + Up/Down: Tweak Frames Between Selected Inputs
