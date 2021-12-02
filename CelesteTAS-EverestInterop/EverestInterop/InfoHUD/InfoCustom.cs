@@ -40,11 +40,7 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-        public static string Parse(bool alwaysUpdate = false, int? decimals = null) {
-            if (Settings.InfoCustom == HudOptions.Off && !alwaysUpdate) {
-                return string.Empty;
-            }
-
+        public static string Parse(int? decimals = null) {
             decimals ??= Settings.CustomInfoDecimals;
             Dictionary<string, List<Entity>> cachedEntities = new();
 

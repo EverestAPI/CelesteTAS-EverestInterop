@@ -11,6 +11,7 @@ using Monocle;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using MonoMod.Utils;
+using StudioCommunication;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Input;
 using TAS.Module;
@@ -126,7 +127,7 @@ namespace TAS {
                 List<string> infos = new() {ExactStatus};
 
                 WatchingInfo = InfoWatchEntity.GetWatchingEntitiesInfo(alwaysUpdate: true, decimals: CelesteTasModuleSettings.MaxDecimals);
-                CustomInfo = InfoCustom.Parse(true, CelesteTasModuleSettings.MaxDecimals);
+                CustomInfo = InfoCustom.Parse(CelesteTasModuleSettings.MaxDecimals);
 
                 if (CustomInfo.IsNotNullOrWhiteSpace()) {
                     infos.Add(CustomInfo);
@@ -381,8 +382,19 @@ namespace TAS {
                 ExactStatus = ExactStatusWithoutTime + $"[{LevelName}] Timer: {ChapterTime}";
 
                 if (Manager.FrameLoops == 1) {
-                    WatchingInfo = InfoWatchEntity.GetWatchingEntitiesInfo();
-                    CustomInfo = InfoCustom.Parse();
+                    if (TasSettings.InfoHud && (TasSettings.InfoWatchEntity & HudOptions.HudOnly) != 0 ||
+                        (TasSettings.InfoWatchEntity & HudOptions.StudioOnly) != 0 && StudioCommunicationBase.Initialized) {
+                        WatchingInfo = InfoWatchEntity.GetWatchingEntitiesInfo();
+                    } else {
+                        WatchingInfo = string.Empty;
+                    }
+
+                    if (TasSettings.InfoHud && (TasSettings.InfoCustom & HudOptions.HudOnly) != 0 ||
+                        (TasSettings.InfoCustom & HudOptions.StudioOnly) != 0 && StudioCommunicationBase.Initialized) {
+                        CustomInfo = InfoCustom.Parse();
+                    } else {
+                        CustomInfo = string.Empty;
+                    }
                 }
             } else {
                 LevelName = string.Empty;

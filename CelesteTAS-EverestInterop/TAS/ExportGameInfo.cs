@@ -148,7 +148,7 @@ namespace TAS {
                     }
                 }
 
-                if (InfoCustom.Parse(true) is { } customInfo && customInfo.IsNotEmpty()) {
+                if (InfoCustom.Parse() is { } customInfo && customInfo.IsNotEmpty()) {
                     output += $"\t{customInfo.ReplaceLineBreak(" ")}";
                 }
 
