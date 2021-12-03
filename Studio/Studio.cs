@@ -1394,8 +1394,15 @@ namespace CelesteStudio {
 
         private void fontToolStripMenuItem_Click(object sender, EventArgs e) {
             if (fontDialog.ShowDialog() != DialogResult.Cancel) {
-                InitFont(fontDialog.Font);
-                Settings.Default.Font = fontDialog.Font;
+                //check monospace font
+                SizeF sizeM = RichText.RichText.GetCharSize(fontDialog.Font, 'M');
+                SizeF sizeDot = RichText.RichText.GetCharSize(fontDialog.Font, '.');
+                if (sizeM == sizeDot) {
+                    InitFont(fontDialog.Font);
+                    Settings.Default.Font = fontDialog.Font;
+                } else {
+                    ShowTooltip("Only monospaced font is allowed");
+                }
             }
         }
 
