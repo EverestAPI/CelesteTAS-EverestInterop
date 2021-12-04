@@ -19,7 +19,7 @@ namespace TAS.EverestInterop.InfoHUD {
         private static readonly Regex TypeNameRegex = new(@"^([.\w=+<>]+)(\[(.+?)\])?(@([^.]*))?$", RegexOptions.Compiled);
         private static readonly Regex TypeNameSeparatorRegex = new(@"^[.+]", RegexOptions.Compiled);
         private static readonly Dictionary<string, Type> AllTypes = new();
-        private static readonly Dictionary<string, string> CachedEntitiesFullName = new();
+        private static readonly Dictionary<string, Type> CachedParsedTypes = new();
         private static readonly Dictionary<string, MethodInfo> CachedGetMethodInfos = new();
         private static readonly Dictionary<string, MethodInfo> CachedSetMethodInfos = new();
         private static readonly Dictionary<string, FieldInfo> CachedFieldInfos = new();
@@ -29,7 +29,7 @@ namespace TAS.EverestInterop.InfoHUD {
         [LoadContent]
         private static void CollectAllTypeInfo() {
             AllTypes.Clear();
-            CachedEntitiesFullName.Clear();
+            CachedParsedTypes.Clear();
             CachedGetMethodInfos.Clear();
             CachedSetMethodInfos.Clear();
             CachedFieldInfos.Clear();
@@ -137,9 +137,9 @@ namespace TAS.EverestInterop.InfoHUD {
                 return false;
             }
 
-            string typeFullName;
-            if (CachedEntitiesFullName.Keys.Contains(typeNameWithAssembly)) {
-                typeFullName = CachedEntitiesFullName[typeNameWithAssembly];
+            if (CachedParsedTypes.Keys.Contains(typeNameWithAssembly)) {
+                type = CachedParsedTypes[typeNameWithAssembly];
+                return true;
             } else {
                 // find the full type name
                 List<string> matchTypeNames = AllTypes.Keys.Where(name => name.StartsWith(typeNameWithAssembly)).ToList();
@@ -163,17 +163,9 @@ namespace TAS.EverestInterop.InfoHUD {
                         errorMessage = $"type with the same name exists:\n{string.Join("\n", matchTypeNames)}";
                         return false;
                     default:
-                        CachedEntitiesFullName[typeNameWithAssembly] = typeFullName = matchTypeNames.First();
-                        break;
+                        CachedParsedTypes[typeNameWithAssembly] = type = AllTypes[matchTypeNames.First()];
+                        return true;
                 }
-            }
-
-            if (AllTypes.ContainsKey(typeFullName)) {
-                type = AllTypes[typeFullName];
-                return true;
-            } else {
-                errorMessage = $"{typeNameWithAssembly} not found";
-                return false;
             }
         }
 
