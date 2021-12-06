@@ -14,7 +14,7 @@ using TAS.Utils;
 
 namespace TAS {
     public static class Manager {
-        private static readonly FieldInfo SummitVignetteReadyFieldInfo = typeof(SummitVignette).GetFieldInfo("ready");
+        private static readonly Func<SummitVignette, bool> SummitVignetteReady = "ready".CreateDelegate_Get<SummitVignette, bool>();
 
         private static readonly DUpdateVirtualInputs UpdateVirtualInputs;
 
@@ -111,22 +111,17 @@ namespace TAS {
         }
 
         public static bool IsLoading() {
-            if (Engine.Scene is Level level) {
-                if (!level.IsAutoSaving()) {
-                    return false;
-                }
-
-                return level.Session.Level == "end-cinematic";
+            switch (Engine.Scene) {
+                case Level level:
+                    return level.IsAutoSaving() && level.Session.Level == "end-cinematic";
+                case SummitVignette summit:
+                    return !SummitVignetteReady(summit);
+                case Overworld overworld:
+                    return overworld.Current is OuiFileSelect {SlotIndex: >= 0} slot && slot.Slots[slot.SlotIndex].StartingGame;
+                default:
+                    bool isLoading = Engine.Scene is LevelExit or LevelLoader or GameLoader || Engine.Scene.GetType().Name == "LevelExitToLobby";
+                    return isLoading;
             }
-
-            if (Engine.Scene is SummitVignette summit) {
-                return !(bool) SummitVignetteReadyFieldInfo.GetValue(summit);
-            } else if (Engine.Scene is Overworld overworld) {
-                return overworld.Current is OuiFileSelect {SlotIndex: >= 0} slot && slot.Slots[slot.SlotIndex].StartingGame;
-            }
-
-            bool isLoading = Engine.Scene is LevelExit or LevelLoader or GameLoader || Engine.Scene.GetType().Name == "LevelExitToLobby";
-            return isLoading;
         }
 
         public static double GetAngle(Vector2 vector) {

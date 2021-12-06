@@ -19,7 +19,7 @@ using TAS.Utils;
 
 namespace TAS {
     public static class GameInfo {
-        private static readonly FieldInfo SummitVignetteReadyFieldInfo = typeof(SummitVignette).GetFieldInfo("ready");
+        private static readonly Func<SummitVignette, bool> SummitVignetteReady = "ready".CreateDelegate_Get<SummitVignette, bool>();
         private static readonly DWallJumpCheck WallJumpCheck;
         private static readonly GetBerryFloat StrawberryCollectTimer;
         private static readonly GetFloat DashCooldownTimer;
@@ -402,7 +402,7 @@ namespace TAS {
                 WatchingInfo = string.Empty;
                 CustomInfo = string.Empty;
                 if (Engine.Scene is SummitVignette summit) {
-                    Status = ExactStatus = $"SummitVignette {SummitVignetteReadyFieldInfo.GetValue(summit)}";
+                    Status = ExactStatus = $"SummitVignette {SummitVignetteReady(summit)}";
                 } else if (Engine.Scene is Overworld overworld) {
                     Status = ExactStatus = $"Overworld {(overworld.Current ?? overworld.Next).GetType().Name} {overworld.ShowInputUI}";
                 } else if (Engine.Scene != null) {
