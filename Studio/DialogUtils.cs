@@ -126,7 +126,7 @@ namespace CelesteStudio {
             CheckBox caseCheckbox = new();
             caseCheckbox.Size = new Size(textBox.Width, buttonHeight);
             caseCheckbox.Text = "&Match case";
-            caseCheckbox.Location = new Point(textBox.Left, previousButton.Top);
+            caseCheckbox.Location = new Point(textBox.Left, nextButton.Top);
             caseCheckbox.Checked = Settings.Default.FindMatchCase;
             caseCheckbox.CheckedChanged += (sender, args) => Settings.Default.FindMatchCase = caseCheckbox.Checked;
             inputBox.Controls.Add(caseCheckbox);
