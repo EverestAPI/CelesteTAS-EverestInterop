@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using Celeste;
 using Monocle;
 using TAS.EverestInterop.InfoHUD;
@@ -14,10 +12,8 @@ using TAS.Utils;
 namespace TAS {
     public static class ExportGameInfo {
         private static StreamWriter streamWriter;
-        private static IDictionary<string, Func<Level, IList>> trackedEntities;
-        private static readonly MethodInfo EntityListFindAll = typeof(EntityList).GetMethod("FindAll");
+        private static IDictionary<string, Func<List<Entity>>> trackedEntities;
         private static bool exporting;
-        private static bool firstInputFrame;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
         // ReSharper disable once UnusedMember.Local
@@ -38,63 +34,34 @@ namespace TAS {
         }
 
         // ReSharper disable once UnusedMember.Local
+        [DisableRun]
         [TasCommand("FinishExportGameInfo", CalcChecksum = false)]
         private static void FinishExportCommand() {
-            EndExport();
+            exporting = false;
+            streamWriter?.Dispose();
+            streamWriter = null;
         }
 
         private static void BeginExport(string path, string[] tracked) {
-            exporting = true;
-            firstInputFrame = true;
             streamWriter?.Dispose();
+
+            exporting = true;
             if (Path.GetDirectoryName(path) is { } dir && dir.IsNotEmpty()) {
                 Directory.CreateDirectory(dir);
             }
 
             streamWriter = new StreamWriter(path);
             streamWriter.WriteLine(string.Join("\t", "Line", "Inputs", "Frames", "Time", "Position", "Speed", "State", "Statuses", "Entities"));
-            trackedEntities = new Dictionary<string, Func<Level, IList>>();
+            trackedEntities = new Dictionary<string, Func<List<Entity>>>();
             foreach (string typeName in tracked) {
                 if (InfoCustom.TryParseType(typeName, out Type t, out _, out _) && t.IsSameOrSubclassOf(typeof(Entity))) {
-                    trackedEntities[t.Name] = level => FindEntity(t, level);
+                    trackedEntities[t.Name] = () => InfoCustom.FindEntities(t, string.Empty);
                 }
             }
         }
 
-        private static IList FindEntity(Type type, Level level) {
-            if (level.Tracker.Entities.ContainsKey(type)) {
-                return level.Tracker.Entities[type];
-            } else {
-                return EntityListFindAll.MakeGenericMethod(type).Invoke(level.Entities, null) as IList;
-            }
-        }
-
-        [DisableRun]
-        private static void EndExport() {
-            exporting = false;
-            firstInputFrame = false;
-            streamWriter?.Dispose();
-        }
-
         public static void ExportInfo() {
-            if (!exporting) {
-                return;
-            }
-
-            if (firstInputFrame) {
-                firstInputFrame = false;
-                return;
-            }
-
-            InputController controller = Manager.Controller;
-            InputFrame previousInput = controller.Previous;
-            if (previousInput == null) {
-                return;
-            }
-
-            ExportInfo(previousInput);
-
-            if (controller.Current is { } currentInput && controller.CurrentFrameInTas == controller.Inputs.Count - 1) {
+            if (exporting && Manager.Controller.Current is { } currentInput) {
                 Engine.Scene.OnEndOfFrame += () => ExportInfo(currentInput);
             }
         }
@@ -138,7 +105,7 @@ namespace TAS {
                     statuses);
 
                 foreach (string typeName in trackedEntities.Keys) {
-                    IList entities = trackedEntities[typeName].Invoke(level);
+                    List<Entity> entities = trackedEntities[typeName].Invoke();
                     if (entities == null) {
                         continue;
                     }
@@ -168,6 +135,7 @@ namespace TAS {
             }
 
             streamWriter.WriteLine(output);
+            streamWriter.Flush();
         }
     }
 }
