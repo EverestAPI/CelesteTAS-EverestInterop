@@ -1,12 +1,15 @@
 ﻿using System;
+using Celeste;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
 using StudioCommunication;
 using TAS.Module;
+using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD {
     public static class InfoMouse {
+        public static Vector2? MouseWorldPosition { get; private set; }
         private static MouseState lastMouseState;
         private static Vector2? startDragPosition;
         private static CelesteTasModuleSettings TasSettings => CelesteTasModule.Settings;
@@ -17,6 +20,7 @@ namespace TAS.EverestInterop.InfoHUD {
             }
 
             if (!Hotkeys.InfoHud.Check) {
+                MouseWorldPosition = null;
                 return;
             }
 
@@ -37,13 +41,19 @@ namespace TAS.EverestInterop.InfoHUD {
             }
 
             MouseState mouseState = Mouse.GetState();
+            Vector2 mousePosition = new(mouseState.X, mouseState.Y);
+            if (Engine.Scene is Level level) {
+                float viewScale = (float) Engine.ViewWidth / Engine.Width;
+                MouseWorldPosition = level.ScreenToWorld(mousePosition / viewScale).Floor();
+            } else {
+                MouseWorldPosition = null;
+            }
 
             Draw.SpriteBatch.Begin();
 
             InfoWatchEntity.HandleMouseData(mouseState, lastMouseState);
 
-            Draw.Line(mouseState.X - 13f, mouseState.Y, mouseState.X + 12f, mouseState.Y, Color.Red, 5f);
-            Draw.Line(mouseState.X, mouseState.Y - 13f, mouseState.X, mouseState.Y + 12f, Color.Red, 5f);
+            DrawCursor(mousePosition);
 
             if (lastMouseState.LeftButton == ButtonState.Released && mouseState.LeftButton == ButtonState.Pressed) {
                 startDragPosition = new Vector2(mouseState.X, mouseState.Y);
@@ -65,6 +75,21 @@ namespace TAS.EverestInterop.InfoHUD {
             lastMouseState = mouseState;
 
             Draw.SpriteBatch.End();
+        }
+
+        private static void DrawCursor(Vector2 position) {
+            int scale = Settings.Instance.Fullscreen ? 6 : Math.Min(6, Engine.ViewWidth / 320);
+            Color color = Color.Yellow;
+
+            for (int i = -scale / 2; i <= scale / 2; i++) {
+                Draw.Line(position.X - 4f * scale, position.Y + i, position.X - 2f * scale, position.Y + i, color);
+                Draw.Line(position.X + 2f * scale - 1f, position.Y + i, position.X + 4f * scale - 1f, position.Y + i, color);
+                Draw.Line(position.X + i, position.Y - 4f * scale + 1f, position.X + i, position.Y - 2f * scale + 1f, color);
+                Draw.Line(position.X + i, position.Y + 2f * scale, position.X + i, position.Y + 4f * scale, color);
+            }
+
+            Draw.Line(position.X - 3f, position.Y, position.X + 2f, position.Y, color);
+            Draw.Line(position.X, position.Y - 2f, position.X, position.Y + 3f, color);
         }
     }
 }

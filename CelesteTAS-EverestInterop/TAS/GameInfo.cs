@@ -103,6 +103,10 @@ namespace TAS {
                     infos.Add(WatchingInfo);
                 }
 
+                if (InfoMouse.MouseWorldPosition.HasValue) {
+                    infos.Add($"Cursor: {InfoMouse.MouseWorldPosition.Value.ToSimpleString(0)}");
+                }
+
                 return string.Join("\n\n", infos);
             }
         }
@@ -116,6 +120,10 @@ namespace TAS {
 
                 if ((TasSettings.InfoWatchEntity & HudOptions.StudioOnly) != 0 && WatchingInfo.IsNotNullOrWhiteSpace()) {
                     infos.Add(WatchingInfo);
+                }
+
+                if (InfoMouse.MouseWorldPosition.HasValue) {
+                    infos.Add($"Cursor: {InfoMouse.MouseWorldPosition.Value.ToSimpleString(0)}");
                 }
 
                 return string.Join("\n\n", infos);
@@ -135,6 +143,10 @@ namespace TAS {
 
                 if (WatchingInfo.IsNotNullOrWhiteSpace()) {
                     infos.Add(WatchingInfo);
+                }
+
+                if (InfoMouse.MouseWorldPosition.HasValue) {
+                    infos.Add($"Cursor: {InfoMouse.MouseWorldPosition.Value.ToSimpleString(0)}");
                 }
 
                 return string.Join("\n\n", infos);
@@ -166,9 +178,9 @@ namespace TAS {
         private static void PlayerOnDashCoroutine(ILContext il) {
             ILCursor ilCursor = new(il);
             while (ilCursor.TryGotoNext(
-                ins => ins.MatchBox<float>(),
-                ins => ins.OpCode == OpCodes.Stfld && ins.Operand.ToString().EndsWith("::<>2__current")
-            )) {
+                       ins => ins.MatchBox<float>(),
+                       ins => ins.OpCode == OpCodes.Stfld && ins.Operand.ToString().EndsWith("::<>2__current")
+                   )) {
                 ilCursor.EmitDelegate<Func<float, float>>(dashTime => {
                     DashTime = dashTime;
                     return dashTime;
