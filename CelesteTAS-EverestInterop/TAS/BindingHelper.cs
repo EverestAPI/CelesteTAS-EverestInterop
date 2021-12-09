@@ -14,6 +14,7 @@ namespace TAS {
         private static readonly Type BindingType = typeof(Engine).Assembly.GetType("Monocle.Binding");
         private static readonly MethodInfo BindingAddKeys = BindingType?.GetMethod("Add", new[] {typeof(Keys[])});
         private static readonly MethodInfo BindingAddButtons = BindingType?.GetMethod("Add", new[] {typeof(Buttons[])});
+        private static readonly FieldInfo MInputControllerHasFocus = typeof(MInput).GetFieldInfo("ControllerHasFocus");
 
         static BindingHelper() {
             if (typeof(GameInput).GetFieldInfo("DemoDash") == null && typeof(GameInput).GetFieldInfo("CrouchDash") == null) {
@@ -37,7 +38,7 @@ namespace TAS {
         public static Buttons DemoDash { get; } = Buttons.RightShoulder;
         public static Buttons DemoDash2 { get; } = Buttons.RightStick;
         public static Keys Confirm2 => Keys.C;
-        private static bool origControllerHasFocus;
+        private static bool? origControllerHasFocus;
 
         // ReSharper disable once UnusedMember.Local
         [EnableRun]
@@ -48,11 +49,13 @@ namespace TAS {
                 SetTasBindingsV1312();
             } else {
                 SetTasBindingsNew();
+                if (MInputControllerHasFocus != null) {
+                    origControllerHasFocus = (bool?) MInputControllerHasFocus.GetValue(null);
+                    MInputControllerHasFocus.SetValue(null, true);
+                }
             }
 
             Settings.Instance.CopyAllFields(settingsBackup);
-            origControllerHasFocus = MInput.ControllerHasFocus;
-            MInput.ControllerHasFocus = true;
             MInput.Active = true;
             MInput.Disabled = false;
         }
@@ -61,7 +64,10 @@ namespace TAS {
         [DisableRun]
         private static void RestorePlayerBindings() {
             GameInput.Initialize();
-            MInput.ControllerHasFocus = origControllerHasFocus;
+            if (origControllerHasFocus.HasValue) {
+                MInputControllerHasFocus?.SetValue(null, origControllerHasFocus.Value);
+                origControllerHasFocus = null;
+            }
         }
 
         private static void SetTasBindingsV1312() {
