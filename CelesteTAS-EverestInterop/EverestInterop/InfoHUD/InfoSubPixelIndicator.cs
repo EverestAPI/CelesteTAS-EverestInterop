@@ -61,9 +61,11 @@ namespace TAS.EverestInterop.InfoHUD {
                 Vector2.Zero, new Vector2(GetSubPixelFontSize()), Color.White * alpha);
             JetBrainsMonoFont.Draw(right, new Vector2(x + rectSide + padding / 2f, y + (rectSide - textHeight) / 2f),
                 Vector2.Zero, new Vector2(GetSubPixelFontSize()), Color.White * alpha);
-            JetBrainsMonoFont.Draw(top, new Vector2(x + (rectSide - textWidth) / 2f, y - textHeight - padding / 2f),
+
+            float tweakX = vDecimals == 0 && decimals % 2 == 0 ? padding / 2 : 0;
+            JetBrainsMonoFont.Draw(top, new Vector2(x + (rectSide - textWidth) / 2f - tweakX, y - textHeight - padding / 2f),
                 Vector2.Zero, new Vector2(GetSubPixelFontSize()), Color.White * alpha);
-            JetBrainsMonoFont.Draw(bottom, new Vector2(x + (rectSide - textWidth) / 2f, y + rectSide + padding / 2f),
+            JetBrainsMonoFont.Draw(bottom, new Vector2(x + (rectSide - textWidth) / 2f - tweakX, y + rectSide + padding / 2f),
                 Vector2.Zero, new Vector2(GetSubPixelFontSize()), Color.White * alpha);
         }
 
