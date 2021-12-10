@@ -15,22 +15,24 @@ namespace TAS.EverestInterop {
         public static void Load() {
             // note: change the camera.position before level.BeforeRender will cause desync 3A-roof04
             On.Celeste.Level.Render += LevelOnRender;
+            On.Celeste.DustEdges.BeforeRender += DustEdgesOnBeforeRender;
+            On.Celeste.MirrorSurfaces.BeforeRender += MirrorSurfacesOnBeforeRender;
             On.Celeste.LightingRenderer.BeforeRender += LightingRendererOnRender;
             On.Celeste.DisplacementRenderer.BeforeRender += DisplacementRendererOnBeforeRender;
             On.Celeste.HudRenderer.RenderContent += HudRendererOnRenderContent;
             On.Celeste.Mod.UI.SubHudRenderer.RenderContent += SubHudRendererOnRenderContent;
             On.Monocle.Commands.Render += CommandsOnRender;
-            On.Celeste.DustEdges.Render += DustEdgesOnRender;
         }
 
         public static void Unload() {
             On.Celeste.Level.Render -= LevelOnRender;
+            On.Celeste.DustEdges.BeforeRender -= DustEdgesOnBeforeRender;
+            On.Celeste.MirrorSurfaces.BeforeRender -= MirrorSurfacesOnBeforeRender;
             On.Celeste.LightingRenderer.BeforeRender -= LightingRendererOnRender;
             On.Celeste.DisplacementRenderer.BeforeRender -= DisplacementRendererOnBeforeRender;
             On.Celeste.HudRenderer.RenderContent -= HudRendererOnRenderContent;
             On.Celeste.Mod.UI.SubHudRenderer.RenderContent -= SubHudRendererOnRenderContent;
             On.Monocle.Commands.Render -= CommandsOnRender;
-            On.Celeste.DustEdges.Render -= DustEdgesOnRender;
         }
 
         private static void CenterTheCamera(Action action) {
@@ -58,6 +60,14 @@ namespace TAS.EverestInterop {
             CenterTheCamera(() => orig(self));
         }
 
+        private static void DustEdgesOnBeforeRender(On.Celeste.DustEdges.orig_BeforeRender orig, DustEdges self) {
+            CenterTheCamera(() => orig(self));
+        }
+
+        private static void MirrorSurfacesOnBeforeRender(On.Celeste.MirrorSurfaces.orig_BeforeRender orig, MirrorSurfaces self) {
+            CenterTheCamera(() => orig(self));
+        }
+
         private static void LightingRendererOnRender(On.Celeste.LightingRenderer.orig_BeforeRender orig, LightingRenderer self, Scene scene) {
             CenterTheCamera(() => orig(self, scene));
         }
@@ -78,21 +88,6 @@ namespace TAS.EverestInterop {
 
         private static void CommandsOnRender(On.Monocle.Commands.orig_Render orig, Monocle.Commands self) {
             CenterTheCamera(() => orig(self));
-        }
-
-        private static void DustEdgesOnRender(On.Celeste.DustEdges.orig_Render orig, DustEdges self) {
-            Vector2? origCameraPosition = null;
-            Camera camera = self.SceneAs<Level>()?.Camera;
-            if (Settings.CenterCamera && savedCameraPosition != null && camera != null) {
-                origCameraPosition = camera.Position;
-                camera.Position = savedCameraPosition.Value;
-            }
-
-            orig(self);
-
-            if (origCameraPosition != null) {
-                camera.Position = origCameraPosition.Value;
-            }
         }
     }
 }
