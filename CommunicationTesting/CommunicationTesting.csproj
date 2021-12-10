@@ -10,6 +10,7 @@
         <OutputPath>bin\$(Configuration)\</OutputPath>
         <Prefer32bit>false</Prefer32bit>
         <LangVersion>9</LangVersion>
+        <MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB3270</MSBuildWarningsAsMessages>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
         <DebugType>portable</DebugType>
