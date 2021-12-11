@@ -23,7 +23,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 level.GetPlayer() is { } player) {
                 Rectangle bounds = level.Bounds;
                 float topExtra = (float) (Math.Floor(player.CenterY - player.Top) + 1);
-                Draw.HollowRect(bounds.X - 1, bounds.Y - topExtra, bounds.Width + 2, bounds.Height + topExtra + 1, HitboxColor.TriggerColor);
+                Draw.HollowRect(bounds.X - 1, bounds.Y - topExtra, bounds.Width + 2, bounds.Height + topExtra + 1, Color.YellowGreen);
             }
         }
     }
