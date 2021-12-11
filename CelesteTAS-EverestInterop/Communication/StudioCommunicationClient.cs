@@ -235,7 +235,7 @@ namespace TAS.Communication {
             HotkeyID hotkeyId = (HotkeyID) data[0];
             bool released = Convert.ToBoolean(data[1]);
             Hotkeys.KeysDict[hotkeyId].OverrideCheck = !released;
-            $"{hotkeyId.ToString()} {(released ? "released" : "pressed")}".DebugLog();
+            // $"{hotkeyId.ToString()} {(released ? "released" : "pressed")}".DebugLog();
         }
 
         private void ProcessConvertToLibTas(byte[] data) {

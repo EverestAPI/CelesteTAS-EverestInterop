@@ -43,10 +43,6 @@ namespace TAS.Input {
                     MethodInfo method = pair.Value;
                     TasCommandAttribute attribute = pair.Key;
 
-                    if (Manager.EnforceLegal && !attribute.LegalInMainGame) {
-                        return false;
-                    }
-
                     string[] commandArgs = args.Skip(1).ToArray();
 
                     object[] parameters = method.GetParameters().Length switch {
@@ -188,7 +184,7 @@ namespace TAS.Input {
                 && Engine.Scene.Tracker.GetEntity<Player>() is { } player
                 && GunInputCursorPosition.Value != null
                 && GunlineGunshot.Value != null
-            ) {
+               ) {
                 Vector2 pos = new(x, y);
                 GunInputCursorPosition.Value.SetValue(null, pos);
                 GunlineGunshot.Value.Invoke(null, new object[] {player, pos, Facings.Left});

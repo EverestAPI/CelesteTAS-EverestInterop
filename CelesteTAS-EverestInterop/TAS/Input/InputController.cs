@@ -146,7 +146,7 @@ namespace TAS.Input {
             }
 
             CurrentCommands?.ForEach(command => {
-                if (command.Attribute.ExecuteTiming == ExecuteTiming.Runtime) {
+                if (command.Attribute.ExecuteTiming == ExecuteTiming.Runtime && (!Manager.EnforceLegal || command.Attribute.LegalInMainGame)) {
                     command.Invoke();
                 }
             });
