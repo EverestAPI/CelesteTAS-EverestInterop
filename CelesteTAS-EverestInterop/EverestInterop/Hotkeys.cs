@@ -114,6 +114,7 @@ namespace TAS.EverestInterop {
         }
 
         public static void Update() {
+            MouseButtons.Update();
             kbState = Keyboard.GetState();
             padState = GetGamePadState();
 
@@ -173,7 +174,7 @@ namespace TAS.EverestInterop {
             Type configUiType = typeof(ModuleSettingsKeyboardConfigUI);
             if (typeof(Everest).Assembly.GetTypesSafe()
                     .FirstOrDefault(t => t.FullName == "Celeste.Mod.ModuleSettingsKeyboardConfigUIV2") is { } typeV2
-            ) {
+               ) {
                 // Celeste v1.4: before Everest drop support v1.3.1.2
                 if (typeV2.GetMethodInfo("Reset") is { } resetMethodV2) {
                     Detours.Add(new ILHook(resetMethodV2, ModReload));
@@ -211,9 +212,9 @@ namespace TAS.EverestInterop {
                                extraDefaultKeyAttribute.ExtraKey != Keys.None);
             ILCursor ilCursor = new(il);
             if (ilCursor.TryGotoNext(
-                MoveType.After,
-                ins => ins.OpCode == OpCodes.Callvirt && ins.Operand.ToString().Contains("<Microsoft.Xna.Framework.Input.Keys>::Add(T)")
-            )) {
+                    MoveType.After,
+                    ins => ins.OpCode == OpCodes.Callvirt && ins.Operand.ToString().Contains("<Microsoft.Xna.Framework.Input.Keys>::Add(T)")
+                )) {
                 ilCursor.Emit(OpCodes.Ldloc_1).EmitDelegate<Action<object>>(bindingEntry => {
                     if (bindingFieldInfo == null) {
                         bindingFieldInfo = bindingEntry.GetType().GetFieldInfo("Binding");
@@ -326,6 +327,45 @@ namespace TAS.EverestInterop {
                 }
 
                 return keyCombo ? Buttons.All(padState.IsButtonDown) : Buttons.Any(padState.IsButtonDown);
+            }
+        }
+    }
+
+    public static class MouseButtons {
+        public static Vector2 Position { get; private set; }
+        public static Vector2 LastPosition { get; private set; }
+        public static readonly Button Left = new();
+        public static readonly Button Middle = new();
+        public static readonly Button Right = new();
+
+        public static void Update() {
+            MouseState mouseState = Mouse.GetState();
+            LastPosition = Position;
+            Position = new Vector2(mouseState.X, mouseState.Y);
+            Left.Update(mouseState.LeftButton == ButtonState.Pressed);
+            Middle.Update(mouseState.MiddleButton == ButtonState.Pressed);
+            Right.Update(mouseState.RightButton == ButtonState.Pressed);
+        }
+
+        public class Button {
+            private DateTime lastPressedTime;
+            public bool Check { get; private set; }
+            public bool LastCheck { get; private set; }
+            public bool Pressed => !LastCheck && Check;
+            public bool DoublePressed { get; private set; }
+            public bool Released => LastCheck && !Check;
+
+            public void Update(bool buttonDown) {
+                LastCheck = Check;
+                Check = buttonDown;
+
+                if (Pressed) {
+                    DateTime pressedTime = DateTime.Now;
+                    DoublePressed = pressedTime.Subtract(lastPressedTime).TotalMilliseconds < 200;
+                    lastPressedTime = DoublePressed ? default : pressedTime;
+                } else {
+                    DoublePressed = false;
+                }
             }
         }
     }

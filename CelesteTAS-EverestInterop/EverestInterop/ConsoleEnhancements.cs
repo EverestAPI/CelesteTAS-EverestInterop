@@ -1,6 +1,5 @@
 ﻿using System;
 using Celeste;
-using Microsoft.Xna.Framework.Input;
 using Monocle;
 using MonoMod.Cil;
 using TAS.EverestInterop.InfoHUD;
@@ -10,7 +9,6 @@ using TAS.Utils;
 namespace TAS.EverestInterop {
     public static class ConsoleEnhancements {
         private static string clickedEntityInfo = string.Empty;
-        private static MouseState lastMouseState;
 
         [Load]
         private static void Load() {
@@ -37,11 +35,9 @@ namespace TAS.EverestInterop {
                 int worldX = (int) Math.Round(x + level.LevelOffset.X);
                 int worldY = (int) Math.Round(y + level.LevelOffset.Y);
 
-                MouseState mouseState = Mouse.GetState();
-
                 if (Engine.Instance.IsActive) {
-                    if (mouseState.LeftButton == ButtonState.Pressed && lastMouseState.LeftButton == ButtonState.Released) {
-                        Entity clickedEntity = InfoWatchEntity.FindClickedEntity(mouseState);
+                    if (MouseButtons.Left.Pressed) {
+                        Entity clickedEntity = InfoWatchEntity.FindClickedEntity();
                         if (clickedEntity != null) {
                             Type type = clickedEntity.GetType();
                             clickedEntityInfo = "\n entity type: ";
@@ -62,12 +58,10 @@ namespace TAS.EverestInterop {
                         } else {
                             clickedEntityInfo = string.Empty;
                         }
-                    } else if (mouseState.RightButton == ButtonState.Pressed && lastMouseState.RightButton == ButtonState.Released) {
+                    } else if (MouseButtons.Right.Pressed) {
                         clickedEntityInfo = string.Empty;
                     }
                 }
-
-                lastMouseState = mouseState;
 
                 return
                     (string.IsNullOrEmpty(clickedEntityInfo) ? string.Empty : clickedEntityInfo) +

@@ -4,7 +4,6 @@ using System.Linq;
 using System.Reflection;
 using Celeste;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Input;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Monocle;
@@ -91,30 +90,29 @@ namespace TAS.EverestInterop.InfoHUD {
             ilHooks.Clear();
         }
 
-        public static void HandleMouseData(MouseState mouseState, MouseState lastMouseData) {
+        public static void CheckMouseButtons() {
             if (!Engine.Instance.IsActive) {
                 return;
             }
 
-            if (mouseState.RightButton == ButtonState.Pressed && lastMouseData.RightButton == ButtonState.Released) {
+            if (MouseButtons.Right.Pressed) {
                 ClearWatchEntities();
             }
 
-            if (mouseState.LeftButton == ButtonState.Pressed && lastMouseData.LeftButton == ButtonState.Released &&
-                !IsClickHud(mouseState) && FindClickedEntity(mouseState) is { } entity) {
+            if (MouseButtons.Left.Pressed && !IsClickHud() && FindClickedEntity() is { } entity) {
                 AddOrRemoveWatching(entity);
                 PrintAllSimpleValues(entity);
             }
         }
 
-        private static bool IsClickHud(MouseState mouseState) {
+        private static bool IsClickHud() {
             Rectangle rectangle = new((int) Settings.InfoPosition.X, (int) Settings.InfoPosition.Y, (int) InfoHud.Size.X, (int) InfoHud.Size.Y);
-            return rectangle.Contains(mouseState.X, mouseState.Y);
+            return rectangle.Contains((int) MouseButtons.Position.X, (int) MouseButtons.Position.Y);
         }
 
-        private static List<Entity> FindClickedEntities(MouseState mouseState) {
+        private static List<Entity> FindClickedEntities() {
             if (Engine.Scene is Level level) {
-                Vector2 mousePosition = new(mouseState.X, mouseState.Y);
+                Vector2 mousePosition = MouseButtons.Position;
                 float viewScale = (float) Engine.ViewWidth / Engine.Width;
                 Vector2 mouseWorldPosition = level.ScreenToWorld(mousePosition / viewScale).Floor();
                 Entity tempEntity = new() {Position = mouseWorldPosition, Collider = new Hitbox(1, 1)};
@@ -146,8 +144,8 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-        public static Entity FindClickedEntity(MouseState mouseState) {
-            List<Entity> clickedEntities = FindClickedEntities(mouseState);
+        public static Entity FindClickedEntity() {
+            List<Entity> clickedEntities = FindClickedEntities();
 
             Entity clickedEntity;
             if (LastClickedEntity.TryGetTarget(out Entity lastClicked) && clickedEntities.IndexOf(lastClicked) is int index and >= 0) {
@@ -165,16 +163,16 @@ namespace TAS.EverestInterop.InfoHUD {
 
             // NPC
             if (cursor.TryGotoNext(MoveType.Before,
-                ins => ins.OpCode == OpCodes.Call &&
-                       ins.Operand.ToString() == "T System.Collections.Generic.List`1/Enumerator<Celeste.EntityData>::get_Current()",
-                ins => ins.OpCode == OpCodes.Stloc_S
-            )) {
+                    ins => ins.OpCode == OpCodes.Call &&
+                           ins.Operand.ToString() == "T System.Collections.Generic.List`1/Enumerator<Celeste.EntityData>::get_Current()",
+                    ins => ins.OpCode == OpCodes.Stloc_S
+                )) {
                 cursor.Index++;
                 object entityDataOperand = cursor.Next.Operand;
                 while (cursor.TryGotoNext(MoveType.Before,
-                    i => i.OpCode == OpCodes.Newobj && i.Operand is MethodReference {HasParameters: true} m && m.Parameters.Count == 1 &&
-                         m.Parameters[0].ParameterType.Name == "Vector2",
-                    i => i.OpCode == OpCodes.Call && i.Operand.ToString() == "System.Void Monocle.Scene::Add(Monocle.Entity)")) {
+                           i => i.OpCode == OpCodes.Newobj && i.Operand is MethodReference {HasParameters: true} m && m.Parameters.Count == 1 &&
+                                m.Parameters[0].ParameterType.Name == "Vector2",
+                           i => i.OpCode == OpCodes.Call && i.Operand.ToString() == "System.Void Monocle.Scene::Add(Monocle.Entity)")) {
                     cursor.Index++;
                     cursor.Emit(OpCodes.Dup).Emit(OpCodes.Ldloc_S, entityDataOperand);
                     cursor.EmitDelegate<Action<Entity, EntityData>>(CacheEntityData);
@@ -184,15 +182,15 @@ namespace TAS.EverestInterop.InfoHUD {
             // DashSwitch.Create and FallingBlock.Create
             cursor.Goto(0);
             if (cursor.TryGotoNext(MoveType.Before,
-                ins => ins.OpCode == OpCodes.Call &&
-                       ins.Operand.ToString() == "T System.Collections.Generic.List`1/Enumerator<Celeste.EntityData>::get_Current()",
-                ins => ins.OpCode == OpCodes.Stloc_S
-            )) {
+                    ins => ins.OpCode == OpCodes.Call &&
+                           ins.Operand.ToString() == "T System.Collections.Generic.List`1/Enumerator<Celeste.EntityData>::get_Current()",
+                    ins => ins.OpCode == OpCodes.Stloc_S
+                )) {
                 cursor.Index++;
                 object entityDataOperand = cursor.Next.Operand;
                 while (cursor.TryGotoNext(MoveType.Before,
-                    i => i.OpCode == OpCodes.Call && i.Operand.ToString().Contains("::Create"),
-                    i => i.OpCode == OpCodes.Call && i.Operand.ToString() == "System.Void Monocle.Scene::Add(Monocle.Entity)")) {
+                           i => i.OpCode == OpCodes.Call && i.Operand.ToString().Contains("::Create"),
+                           i => i.OpCode == OpCodes.Call && i.Operand.ToString() == "System.Void Monocle.Scene::Add(Monocle.Entity)")) {
                     cursor.Index++;
                     cursor.Emit(OpCodes.Dup).Emit(OpCodes.Ldloc_S, entityDataOperand);
                     cursor.EmitDelegate<Action<Entity, EntityData>>(CacheEntityData);
@@ -202,10 +200,10 @@ namespace TAS.EverestInterop.InfoHUD {
             // General
             cursor.Goto(0);
             while (cursor.TryGotoNext(MoveType.After,
-                i => (i.OpCode == OpCodes.Newobj) && i.Operand is MethodReference {HasParameters: true} m &&
-                     m.Parameters.Any(parameter => parameter.ParameterType.Name == "EntityData"))) {
+                       i => (i.OpCode == OpCodes.Newobj) && i.Operand is MethodReference {HasParameters: true} m &&
+                            m.Parameters.Any(parameter => parameter.ParameterType.Name == "EntityData"))) {
                 if (cursor.TryFindPrev(out ILCursor[] results,
-                    i => i.OpCode == OpCodes.Ldloc_S && i.Operand is VariableDefinition v && v.VariableType.Name == "EntityData")) {
+                        i => i.OpCode == OpCodes.Ldloc_S && i.Operand is VariableDefinition v && v.VariableType.Name == "EntityData")) {
                     cursor.Emit(OpCodes.Dup).Emit(OpCodes.Ldloc_S, results[0].Next.Operand);
                     cursor.EmitDelegate<Action<Entity, EntityData>>(CacheEntityData);
                 }
@@ -222,7 +220,7 @@ namespace TAS.EverestInterop.InfoHUD {
 
             cursor.Goto(0);
             while (cursor.TryGotoNext(MoveType.After,
-                i => i.OpCode == OpCodes.Newobj && i.Operand.ToString().Contains("::.ctor(Celeste.EntityData"))) {
+                       i => i.OpCode == OpCodes.Newobj && i.Operand.ToString().Contains("::.ctor(Celeste.EntityData"))) {
                 cursor.Emit(OpCodes.Dup).Emit(OpCodes.Ldarg_0);
                 cursor.EmitDelegate<Action<Entity, EntityData>>(CacheEntityData);
             }
@@ -257,11 +255,11 @@ namespace TAS.EverestInterop.InfoHUD {
             ILCursor cursor = new(il);
 
             if (cursor.TryGotoNext(
-                i => i.OpCode == OpCodes.Callvirt && i.Operand.ToString() == "System.Void Monocle.Scene::Add(Monocle.Entity)")) {
+                    i => i.OpCode == OpCodes.Callvirt && i.Operand.ToString() == "System.Void Monocle.Scene::Add(Monocle.Entity)")) {
                 cursor.Emit(OpCodes.Dup).Emit(OpCodes.Ldarg_0);
                 if (il.ToString().Contains("ldfld Celeste.SeekerStatue Celeste.SeekerStatue/<>c__DisplayClass3_0::<>4__this")
                     && Type.GetType("Celeste.SeekerStatue+<>c__DisplayClass3_0, Celeste")?.GetFieldInfo("<>4__this") is { } seekerStatue
-                ) {
+                   ) {
                     cursor.Emit(OpCodes.Ldfld, seekerStatue);
                 }
 

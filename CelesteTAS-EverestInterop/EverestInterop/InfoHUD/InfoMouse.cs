@@ -1,7 +1,6 @@
 ﻿using System;
 using Celeste;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Input;
 using Monocle;
 using StudioCommunication;
 using TAS.Module;
@@ -10,7 +9,6 @@ using TAS.Utils;
 namespace TAS.EverestInterop.InfoHUD {
     public static class InfoMouse {
         public static Vector2? MouseWorldPosition { get; private set; }
-        private static MouseState lastMouseState;
         private static Vector2? startDragPosition;
         private static CelesteTasModuleSettings TasSettings => CelesteTasModule.Settings;
 
@@ -40,39 +38,35 @@ namespace TAS.EverestInterop.InfoHUD {
                 return;
             }
 
-            MouseState mouseState = Mouse.GetState();
-            Vector2 mousePosition = new(mouseState.X, mouseState.Y);
             if (Engine.Scene is Level level) {
                 float viewScale = (float) Engine.ViewWidth / Engine.Width;
-                MouseWorldPosition = level.ScreenToWorld(mousePosition / viewScale).Floor();
+                MouseWorldPosition = level.ScreenToWorld(MouseButtons.Position / viewScale).Floor();
             } else {
                 MouseWorldPosition = null;
             }
 
             Draw.SpriteBatch.Begin();
 
-            InfoWatchEntity.HandleMouseData(mouseState, lastMouseState);
+            InfoWatchEntity.CheckMouseButtons();
 
-            DrawCursor(mousePosition);
+            DrawCursor(MouseButtons.Position);
 
-            if (lastMouseState.LeftButton == ButtonState.Released && mouseState.LeftButton == ButtonState.Pressed) {
-                startDragPosition = new Vector2(mouseState.X, mouseState.Y);
+            if (MouseButtons.Left.Pressed) {
+                startDragPosition = MouseButtons.Position;
             }
 
-            if (startDragPosition != null && mouseState.LeftButton == ButtonState.Released) {
-                if (Math.Abs((int) (mouseState.X - startDragPosition.Value.X)) > 0.1f ||
-                    Math.Abs((int) (mouseState.Y - startDragPosition.Value.Y)) > 0.1f) {
+            if (startDragPosition != null && !MouseButtons.Left.Check) {
+                if (Math.Abs((int) (MouseButtons.Position.X - startDragPosition.Value.X)) > 0.1f ||
+                    Math.Abs((int) (MouseButtons.Position.Y - startDragPosition.Value.Y)) > 0.1f) {
                     CelesteTasModule.Instance.SaveSettings();
                 }
 
                 startDragPosition = null;
             }
 
-            if (startDragPosition != null && mouseState.LeftButton == ButtonState.Pressed) {
-                TasSettings.InfoPosition += new Vector2(mouseState.X - lastMouseState.X, mouseState.Y - lastMouseState.Y);
+            if (startDragPosition != null && MouseButtons.Left.Check) {
+                TasSettings.InfoPosition += MouseButtons.Position - MouseButtons.LastPosition;
             }
-
-            lastMouseState = mouseState;
 
             Draw.SpriteBatch.End();
         }
