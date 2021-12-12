@@ -10,6 +10,7 @@ namespace TAS.EverestInterop {
     public static class CenterCamera {
         private static Vector2? savedCameraPosition;
         private static Vector2? lastPlayerPosition;
+        private static Vector2 offset;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
         public static void Load() {
@@ -44,7 +45,7 @@ namespace TAS.EverestInterop {
 
                 if (lastPlayerPosition != null) {
                     savedCameraPosition = camera.Position;
-                    camera.Position = lastPlayerPosition.Value - new Vector2(camera.Viewport.Width / 2f, camera.Viewport.Height / 2f);
+                    camera.Position = lastPlayerPosition.Value + offset - new Vector2(camera.Viewport.Width / 2f, camera.Viewport.Height / 2f);
                 }
             }
 
@@ -58,6 +59,15 @@ namespace TAS.EverestInterop {
 
         private static void LevelOnRender(On.Celeste.Level.orig_Render orig, Level self) {
             CenterTheCamera(() => orig(self));
+            if (Settings.CenterCamera) {
+                if (MouseButtons.Middle.LastCheck && MouseButtons.Middle.Check) {
+                    offset -= MouseButtons.Position - MouseButtons.LastPosition;
+                }
+
+                if (MouseButtons.Middle.DoublePressed) {
+                    offset = Vector2.Zero;
+                }
+            }
         }
 
         private static void DustEdgesOnBeforeRender(On.Celeste.DustEdges.orig_BeforeRender orig, DustEdges self) {
