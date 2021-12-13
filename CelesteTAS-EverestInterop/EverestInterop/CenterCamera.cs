@@ -60,18 +60,14 @@ namespace TAS.EverestInterop {
         private static void LevelOnRender(On.Celeste.Level.orig_Render orig, Level self) {
             CenterTheCamera(() => orig(self));
 
-            if (Settings.CenterCamera) {
-                if (MouseButtons.Middle.LastCheck && MouseButtons.Middle.Check || Hotkeys.CenterCamera.LastCheck && Hotkeys.CenterCamera.Check) {
-                    offset -= MouseButtons.Position - MouseButtons.LastPosition;
+            if (Settings.CenterCamera && !Hotkeys.InfoHud.Check) {
+                if (MouseButtons.Right.LastCheck && MouseButtons.Right.Check) {
+                    offset -= (MouseButtons.Position - MouseButtons.LastPosition) / 2;
                 }
 
-                if (MouseButtons.Middle.DoublePressed) {
+                if (MouseButtons.Right.DoublePressed) {
                     offset = Vector2.Zero;
                 }
-            }
-
-            if (Hotkeys.CenterCamera.DoublePressed) {
-                offset = Vector2.Zero;
             }
         }
 
