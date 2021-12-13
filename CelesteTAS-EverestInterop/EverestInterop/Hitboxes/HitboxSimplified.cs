@@ -19,7 +19,7 @@ namespace TAS.EverestInterop.Hitboxes {
         private static readonly Lazy<Func<object, object>> GeckoHostile = new(() =>
             Type.GetType("Celeste.Mod.JungleHelper.Entities.Gecko, JungleHelper")?.GetFieldInfo("hostile")?.CreateDelegate_GetInstance());
 
-        private static readonly List<Type> UselessTypes = new() {
+        private static readonly HashSet<Type> UselessTypes = new() {
             typeof(ClutterBlockBase),
             typeof(CrystalDebris),
             typeof(Debris),
@@ -99,7 +99,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 || entity.GetType().FullName is "Celeste.Mod.ShroomHelper.Entities.SlippyWall"
                     or "Celeste.Mod.ShroomHelper.Entities.AttachedIceWall"
                     or "Celeste.Mod.JungleHelper.Entities.MossyWall"
-            ) {
+               ) {
                 color = HitboxColor.EntityColorInverselyLessAlpha;
             }
 
@@ -218,17 +218,17 @@ namespace TAS.EverestInterop.Hitboxes {
         private static void AvoidRedrawCorners(ILContext il) {
             ILCursor ilCursor = new(il);
             if (ilCursor.TryGotoNext(
-                ins => ins.OpCode == OpCodes.Ldc_I4_1,
-                ins => ins.OpCode == OpCodes.Sub,
-                ins => ins.OpCode == OpCodes.Sub,
-                ins => ins.OpCode == OpCodes.Stind_I4
-            ) && ilCursor.TryGotoNext(
-                MoveType.After,
-                ins => ins.MatchLdsflda(typeof(Draw), "rect"),
-                ins => ins.OpCode == OpCodes.Ldarg_3,
-                ins => ins.OpCode == OpCodes.Conv_I4,
-                ins => ins.MatchStfld<Rectangle>("Height")
-            )) {
+                    ins => ins.OpCode == OpCodes.Ldc_I4_1,
+                    ins => ins.OpCode == OpCodes.Sub,
+                    ins => ins.OpCode == OpCodes.Sub,
+                    ins => ins.OpCode == OpCodes.Stind_I4
+                ) && ilCursor.TryGotoNext(
+                    MoveType.After,
+                    ins => ins.MatchLdsflda(typeof(Draw), "rect"),
+                    ins => ins.OpCode == OpCodes.Ldarg_3,
+                    ins => ins.OpCode == OpCodes.Conv_I4,
+                    ins => ins.MatchStfld<Rectangle>("Height")
+                )) {
                 $"Injecting code to avoid redrawing hitbox corners in IL for {ilCursor.Method.FullName}".Log();
 
                 ilCursor.Goto(0);
