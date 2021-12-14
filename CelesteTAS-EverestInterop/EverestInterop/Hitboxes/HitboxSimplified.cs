@@ -20,7 +20,7 @@ namespace TAS.EverestInterop.Hitboxes {
             Type.GetType("Celeste.Mod.JungleHelper.Entities.Gecko, JungleHelper")?.GetFieldInfo("hostile")?.CreateDelegate_GetInstance());
 
         private static readonly HashSet<Type> UselessTypes = new() {
-            typeof(ClutterBlockBase),
+            typeof(ClutterBlock),
             typeof(CrystalDebris),
             typeof(Debris),
             typeof(Door),
@@ -60,6 +60,10 @@ namespace TAS.EverestInterop.Hitboxes {
                     Type type = entity.GetType();
                     if (UselessTypes.Contains(type)) {
                         return true;
+                    }
+
+                    if (entity is ClutterBlockBase) {
+                        return !entity.Collidable;
                     }
 
                     if (type.FullName is "ExtendedVariants.Entities.DashCountIndicator"
