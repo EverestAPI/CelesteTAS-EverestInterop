@@ -114,7 +114,11 @@ namespace TAS.EverestInterop {
         }
 
         public static void Update() {
-            if (!Manager.Running || Manager.FrameLoops <= 20) {
+            if (Manager.Running && Manager.FrameLoops >= 100) {
+                MouseButtons.UpdateNull();
+                kbState = default;
+                padState = default;
+            } else {
                 MouseButtons.Update();
                 kbState = Keyboard.GetState();
                 padState = GetGamePadState();
@@ -347,6 +351,12 @@ namespace TAS.EverestInterop {
             Left.Update(mouseState.LeftButton);
             Middle.Update(mouseState.MiddleButton);
             Right.Update(mouseState.RightButton);
+        }
+
+        public static void UpdateNull() {
+            Left.Update(ButtonState.Released);
+            Middle.Update(ButtonState.Released);
+            Right.Update(ButtonState.Released);
         }
 
         public class Button {
