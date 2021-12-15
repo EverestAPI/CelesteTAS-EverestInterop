@@ -114,9 +114,11 @@ namespace TAS.EverestInterop {
         }
 
         public static void Update() {
-            MouseButtons.Update();
-            kbState = Keyboard.GetState();
-            padState = GetGamePadState();
+            if (!Manager.Running || Manager.FrameLoops <= 20) {
+                MouseButtons.Update();
+                kbState = Keyboard.GetState();
+                padState = GetGamePadState();
+            }
 
             if (!Manager.Running) {
                 if (Engine.Commands.Open || CelesteNetChatting) {
