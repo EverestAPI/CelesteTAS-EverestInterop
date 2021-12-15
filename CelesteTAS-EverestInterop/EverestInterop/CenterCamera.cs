@@ -3,6 +3,8 @@ using Celeste;
 using Celeste.Mod.UI;
 using Microsoft.Xna.Framework;
 using Monocle;
+using MonoMod.Utils;
+using TAS.EverestInterop.InfoHUD;
 using TAS.Module;
 using TAS.Utils;
 
@@ -23,6 +25,7 @@ namespace TAS.EverestInterop {
             On.Celeste.HudRenderer.RenderContent += HudRendererOnRenderContent;
             On.Celeste.Mod.UI.SubHudRenderer.RenderContent += SubHudRendererOnRenderContent;
             On.Monocle.Commands.Render += CommandsOnRender;
+            offset = new DynamicData(Engine.Instance).Get<Vector2?>("CelesteTAS_Offset") ?? Vector2.Zero;
         }
 
         public static void Unload() {
@@ -34,6 +37,7 @@ namespace TAS.EverestInterop {
             On.Celeste.HudRenderer.RenderContent -= HudRendererOnRenderContent;
             On.Celeste.Mod.UI.SubHudRenderer.RenderContent -= SubHudRendererOnRenderContent;
             On.Monocle.Commands.Render -= CommandsOnRender;
+            new DynamicData(Engine.Instance).Set("CelesteTAS_Offset", offset);
         }
 
         private static void CenterTheCamera(Action action) {
@@ -62,7 +66,20 @@ namespace TAS.EverestInterop {
 
             if (Settings.CenterCamera && !Hotkeys.InfoHud.Check) {
                 if (MouseButtons.Right.LastCheck && MouseButtons.Right.Check) {
+                    Draw.SpriteBatch.Begin();
+                    InfoMouse.DrawCursor(MouseButtons.Position);
+                    Draw.SpriteBatch.End();
+
+#if DEBUG
+                    offset -= MouseButtons.Position - MouseButtons.LastPosition;
+#else
                     offset -= (MouseButtons.Position - MouseButtons.LastPosition) / 2;
+#endif
+
+                    if (lastPlayerPosition is { } playerPosition && Engine.Scene.GetSession()?.MapData.Bounds is { } bounds) {
+                        Vector2 result = (playerPosition + offset).Clamp(bounds.X, bounds.Y, bounds.Right, bounds.Bottom);
+                        offset = result - playerPosition;
+                    }
                 }
 
                 if (MouseButtons.Right.DoublePressed) {
