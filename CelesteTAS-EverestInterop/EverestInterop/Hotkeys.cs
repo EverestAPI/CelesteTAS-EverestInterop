@@ -344,9 +344,9 @@ namespace TAS.EverestInterop {
             MouseState mouseState = Mouse.GetState();
             LastPosition = Position;
             Position = new Vector2(mouseState.X, mouseState.Y);
-            Left.Update(mouseState.LeftButton == ButtonState.Pressed);
-            Middle.Update(mouseState.MiddleButton == ButtonState.Pressed);
-            Right.Update(mouseState.RightButton == ButtonState.Pressed);
+            Left.Update(mouseState.LeftButton);
+            Middle.Update(mouseState.MiddleButton);
+            Right.Update(mouseState.RightButton);
         }
 
         public class Button {
@@ -357,9 +357,9 @@ namespace TAS.EverestInterop {
             public bool DoublePressed { get; private set; }
             public bool Released => LastCheck && !Check;
 
-            public void Update(bool buttonDown) {
+            public void Update(ButtonState buttonState) {
                 LastCheck = Check;
-                Check = buttonDown;
+                Check = buttonState == ButtonState.Pressed;
 
                 if (Pressed) {
                     DateTime pressedTime = DateTime.Now;

@@ -11,7 +11,7 @@ using TAS.Utils;
 namespace TAS.EverestInterop {
     public static class CenterCamera {
         private static Vector2? savedCameraPosition;
-        private static Vector2? lastPlayerPosition;
+        public static Vector2? lastPlayerPosition;
         private static Vector2 offset;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 

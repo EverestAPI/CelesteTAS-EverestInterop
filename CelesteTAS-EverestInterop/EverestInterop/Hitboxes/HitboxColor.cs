@@ -14,6 +14,7 @@ namespace TAS.EverestInterop.Hitboxes {
         public static readonly Color DefaultEntityColor = Color.Red;
         public static readonly Color DefaultTriggerColor = Color.MediumPurple;
         public static readonly Color DefaultPlatformColor = Color.Coral;
+        public static readonly Color RespawnTriggerColor = Color.YellowGreen;
 
         private static readonly Regex HexChar = new(@"^[0-9a-f]*$", RegexOptions.IgnoreCase);
 

@@ -209,6 +209,10 @@ namespace TAS.Utils {
             return potentialDescendant.IsSubclassOf(potentialBase) || potentialDescendant == potentialBase;
         }
 
+        public static bool IsSameOrSubclassOf(this Type potentialDescendant, params Type[] potentialBases) {
+            return potentialBases.Any(potentialDescendant.IsSameOrSubclassOf);
+        }
+
         public static T CreateDelegate_Get<T>(this FieldInfo field) where T : Delegate {
             bool isStatic = field.IsStatic;
             Type[] param = isStatic ? Type.EmptyTypes : new[] {field.DeclaringType};

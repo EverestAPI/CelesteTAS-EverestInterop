@@ -226,7 +226,7 @@ namespace TAS.EverestInterop.Hitboxes {
             }
 
             foreach (Vector2 spawn in level.Session.LevelData.Spawns) {
-                Draw.HollowRect(spawn - new Vector2(4, 11), 8, 11, Color.YellowGreen * 0.5f);
+                Draw.HollowRect(spawn - new Vector2(4, 11), 8, 11, HitboxColor.RespawnTriggerColor * 0.5f);
             }
         }
 
@@ -237,7 +237,7 @@ namespace TAS.EverestInterop.Hitboxes {
             }
 
             if (self.Entity is ChangeRespawnTrigger) {
-                color = Color.YellowGreen * (self.Entity.Collidable ? 1 : 0.5f);
+                color = HitboxColor.RespawnTriggerColor * (self.Entity.Collidable ? 1 : 0.5f);
             }
 
             orig(self, camera, color);
@@ -246,9 +246,9 @@ namespace TAS.EverestInterop.Hitboxes {
         private static void SeekerOnDebugRender(ILContext il) {
             ILCursor ilCursor = new(il);
             if (ilCursor.TryGotoNext(
-                MoveType.After,
-                ins => ins.MatchCall<Color>("get_Red")
-            )) {
+                    MoveType.After,
+                    ins => ins.MatchCall<Color>("get_Red")
+                )) {
                 ilCursor
                     .Emit(OpCodes.Ldarg_0)
                     .EmitDelegate<Func<Color, Entity, Color>>((color, entity) => {
@@ -261,9 +261,9 @@ namespace TAS.EverestInterop.Hitboxes {
             }
 
             if (ilCursor.TryGotoNext(
-                MoveType.After,
-                ins => ins.MatchCall<Color>("get_Aqua")
-            )) {
+                    MoveType.After,
+                    ins => ins.MatchCall<Color>("get_Aqua")
+                )) {
                 ilCursor
                     .Emit(OpCodes.Ldarg_0)
                     .EmitDelegate<Func<Color, Entity, Color>>((color, entity) => {
@@ -279,9 +279,9 @@ namespace TAS.EverestInterop.Hitboxes {
         private static void PlayerColliderOnDebugRender(ILContext il) {
             ILCursor ilCursor = new(il);
             if (ilCursor.TryGotoNext(
-                MoveType.After,
-                ins => ins.MatchCall<Color>("get_HotPink")
-            )) {
+                    MoveType.After,
+                    ins => ins.MatchCall<Color>("get_HotPink")
+                )) {
                 ilCursor
                     .Emit(OpCodes.Ldarg_0)
                     .EmitDelegate<Func<Color, Component, Color>>((color, component) => component.Entity.Collidable ? color : color * 0.5f);

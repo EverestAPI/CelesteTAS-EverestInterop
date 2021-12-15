@@ -71,7 +71,7 @@ namespace TAS.EverestInterop.InfoHUD {
             Draw.SpriteBatch.End();
         }
 
-        private static void DrawCursor(Vector2 position) {
+        public static void DrawCursor(Vector2 position) {
             int scale = Settings.Instance.Fullscreen ? 6 : Math.Min(6, Engine.ViewWidth / 320);
             Color color = Color.Yellow;
 
