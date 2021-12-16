@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using Celeste;
 using Microsoft.Xna.Framework;
@@ -13,8 +12,8 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxSimplified {
-        private static readonly Func<FireBall, bool> FireBallIceMode =
-            typeof(FireBall).GetFieldInfo("iceMode").CreateDelegate_Get<Func<FireBall, bool>>();
+        private static readonly Func<FireBall, bool> FireBallIceMode = "iceMode".CreateDelegate_Get<FireBall, bool>();
+        private static readonly Func<Strawberry, bool> StrawberryCollected = "collected".CreateDelegate_Get<Strawberry, bool>();
 
         private static readonly Lazy<Func<object, object>> GeckoHostile = new(() =>
             Type.GetType("Celeste.Mod.JungleHelper.Entities.Gecko, JungleHelper")?.GetFieldInfo("hostile")?.CreateDelegate_GetInstance());
@@ -76,8 +75,11 @@ namespace TAS.EverestInterop.Hitboxes {
                         return true;
                     }
 
-                    if (entity.Scene?.Tracker.GetEntity<Player>()?.Leader is { } leader &&
-                        leader.Followers.Any(follower => follower.Entity == entity)) {
+                    if (entity.Get<Follower>() is {Leader: { }}) {
+                        return true;
+                    }
+
+                    if (entity is Strawberry strawberry && StrawberryCollected(strawberry)) {
                         return true;
                     }
                 }
