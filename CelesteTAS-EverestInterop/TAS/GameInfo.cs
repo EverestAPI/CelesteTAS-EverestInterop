@@ -199,6 +199,11 @@ namespace TAS {
 
         private static void SceneOnAfterUpdate(On.Monocle.Scene.orig_AfterUpdate orig, Scene self) {
             orig(self);
+
+            if (Manager.Running && Manager.FrameLoops >= 100 && Manager.Controller.FastForwardRemainingFrames >= 100) {
+                return;
+            }
+
             Update(true);
         }
 
