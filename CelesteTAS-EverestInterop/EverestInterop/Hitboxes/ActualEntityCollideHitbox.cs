@@ -56,7 +56,7 @@ namespace TAS.EverestInterop.Hitboxes {
                     Entity entity = playerCollider.Entity;
 
                     if (entity == null || !Settings.ShowHitboxes || Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off
-                        || Manager.FrameLoops > 1) {
+                        || Manager.FrameLoops > 2) {
                         return;
                     }
 
@@ -85,14 +85,14 @@ namespace TAS.EverestInterop.Hitboxes {
 
             if (!Settings.ShowHitboxes
                 || Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off
-                || Manager.FrameLoops > 1
+                || Manager.FrameLoops > 2
                 || colliderListRendering && self is not ColliderList
                 || entity.Get<PlayerCollider>() == null
                 || entity.Scene?.Tracker.GetEntity<Player>() == null
                 || entity.LoadActualCollidePosition() == null
                 || Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Append && entity.Position == entity.LoadActualCollidePosition() &&
                 entity.Collidable == entity.LoadActualCollidable()
-            ) {
+               ) {
                 invokeOrig(color);
                 return;
             }
