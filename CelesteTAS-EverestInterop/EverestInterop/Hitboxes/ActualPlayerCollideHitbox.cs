@@ -35,7 +35,7 @@ namespace TAS.EverestInterop.Hitboxes {
                     ins => ins.OpCode == OpCodes.Callvirt &&
                            ins.Operand.ToString().Contains("Monocle.Tracker::GetComponents<Celeste.PlayerCollider>()"))) {
                 ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Action<Player>>(player => {
-                    if (Manager.FrameLoops > 2 || !Settings.ShowHitboxes || Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off) {
+                    if (Manager.UltraFastForwarding || !Settings.ShowHitboxes || Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off) {
                         return;
                     }
 
@@ -45,10 +45,10 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void PlayerOnDebugRender(On.Celeste.Player.orig_DebugRender orig, Player player, Camera camera) {
-            if (Manager.FrameLoops > 2 || !Settings.ShowHitboxes
-                                       || Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off
-                                       || player.Scene is Level {Transitioning: true} || player.LoadActualCollidePosition() == null
-                                       || player.LoadActualCollidePosition().Value == player.Position
+            if (Manager.UltraFastForwarding || !Settings.ShowHitboxes
+                                            || Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off
+                                            || player.Scene is Level {Transitioning: true} || player.LoadActualCollidePosition() == null
+                                            || player.LoadActualCollidePosition().Value == player.Position
                ) {
                 orig(player, camera);
                 return;

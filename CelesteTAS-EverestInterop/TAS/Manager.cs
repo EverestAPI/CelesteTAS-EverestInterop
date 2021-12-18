@@ -21,7 +21,8 @@ namespace TAS {
         public static bool Running, Recording;
         public static readonly InputController Controller = new();
         public static States LastStates, States, NextStates;
-        public static int FrameLoops = 1;
+        public static int FrameLoops { get; private set; } = 1;
+        public static bool UltraFastForwarding => FrameLoops >= 100 && Running;
         public static bool EnforceLegal, AllowUnsafeInput;
         private static bool kbTextInput;
 

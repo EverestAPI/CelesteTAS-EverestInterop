@@ -7,7 +7,7 @@ using TAS.Module;
 
 namespace TAS.EverestInterop {
     public static class FastForwardBoost {
-        private static bool SkipUpdate => Manager.FrameLoops >= 100 && Manager.Running;
+        private static bool SkipUpdate => Manager.UltraFastForwarding;
 
         [Load]
         private static void Load() {

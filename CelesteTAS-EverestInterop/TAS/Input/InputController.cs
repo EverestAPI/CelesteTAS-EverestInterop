@@ -75,7 +75,6 @@ namespace TAS.Input {
         private FastForward LastFastForward => NextCommentFastForward ?? FastForwards.LastValueOrDefault();
         public bool HasFastForward => LastFastForward != null && LastFastForward.Frame > CurrentFrameInTas;
         public int FastForwardSpeed => LastFastForward == null ? 1 : Calc.Clamp(LastFastForward.Frame - CurrentFrameInTas, 1, LastFastForward.Speed);
-        public int FastForwardRemainingFrames => LastFastForward?.Frame - CurrentFrameInTas ?? -1;
         public bool Break => LastFastForward?.Frame == CurrentFrameInTas;
 
         private string Checksum => string.IsNullOrEmpty(checksum) ? checksum = CalcChecksum(Inputs.Count - 1) : checksum;
@@ -140,7 +139,7 @@ namespace TAS.Input {
         }
 
         public void AdvanceFrame() {
-            if (Manager.FrameLoops < 100) {
+            if (!Manager.UltraFastForwarding) {
                 RefreshInputs(false);
             }
 

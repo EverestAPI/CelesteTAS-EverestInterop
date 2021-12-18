@@ -55,7 +55,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 ilCursor.Emit(OpCodes.Dup).EmitDelegate<Action<PlayerCollider>>(playerCollider => {
                     Entity entity = playerCollider.Entity;
 
-                    if (Manager.FrameLoops > 2 || entity == null || !Settings.ShowHitboxes ||
+                    if (Manager.UltraFastForwarding || entity == null || !Settings.ShowHitboxes ||
                         Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off) {
                         return;
                     }
@@ -83,7 +83,7 @@ namespace TAS.EverestInterop.Hitboxes {
         private static void DrawLastFrameHitbox(Collider self, Color color, Action<Color> invokeOrig) {
             Entity entity = self.Entity;
 
-            if (Manager.FrameLoops > 2
+            if (Manager.UltraFastForwarding
                 || !Settings.ShowHitboxes
                 || Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off
                 || colliderListRendering && self is not ColliderList

@@ -200,7 +200,7 @@ namespace TAS {
         private static void SceneOnAfterUpdate(On.Monocle.Scene.orig_AfterUpdate orig, Scene self) {
             orig(self);
 
-            if (Manager.Running && Manager.FrameLoops >= 100 && Manager.Controller.FastForwardRemainingFrames >= 100) {
+            if (Manager.UltraFastForwarding) {
                 return;
             }
 
@@ -398,20 +398,18 @@ namespace TAS {
                 Status = StatusWithoutTime + $"[{LevelName}] Timer: {ChapterTime}";
                 ExactStatus = ExactStatusWithoutTime + $"[{LevelName}] Timer: {ChapterTime}";
 
-                if (Manager.FrameLoops == 1) {
-                    if (TasSettings.InfoHud && (TasSettings.InfoWatchEntity & HudOptions.HudOnly) != 0 ||
-                        (TasSettings.InfoWatchEntity & HudOptions.StudioOnly) != 0 && StudioCommunicationBase.Initialized) {
-                        WatchingInfo = InfoWatchEntity.GetWatchingEntitiesInfo();
-                    } else {
-                        WatchingInfo = string.Empty;
-                    }
+                if (TasSettings.InfoHud && (TasSettings.InfoWatchEntity & HudOptions.HudOnly) != 0 ||
+                    (TasSettings.InfoWatchEntity & HudOptions.StudioOnly) != 0 && StudioCommunicationBase.Initialized) {
+                    WatchingInfo = InfoWatchEntity.GetWatchingEntitiesInfo();
+                } else {
+                    WatchingInfo = string.Empty;
+                }
 
-                    if (TasSettings.InfoHud && (TasSettings.InfoCustom & HudOptions.HudOnly) != 0 ||
-                        (TasSettings.InfoCustom & HudOptions.StudioOnly) != 0 && StudioCommunicationBase.Initialized) {
-                        CustomInfo = InfoCustom.Parse();
-                    } else {
-                        CustomInfo = string.Empty;
-                    }
+                if (TasSettings.InfoHud && (TasSettings.InfoCustom & HudOptions.HudOnly) != 0 ||
+                    (TasSettings.InfoCustom & HudOptions.StudioOnly) != 0 && StudioCommunicationBase.Initialized) {
+                    CustomInfo = InfoCustom.Parse();
+                } else {
+                    CustomInfo = string.Empty;
                 }
             } else {
                 LevelName = string.Empty;

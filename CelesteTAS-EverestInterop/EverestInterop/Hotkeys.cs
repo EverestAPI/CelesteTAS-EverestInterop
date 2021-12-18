@@ -114,7 +114,7 @@ namespace TAS.EverestInterop {
         }
 
         public static void Update() {
-            if (Manager.Running && Manager.FrameLoops >= 100) {
+            if (Manager.UltraFastForwarding) {
                 MouseButtons.UpdateNull();
                 kbState = default;
                 padState = default;
