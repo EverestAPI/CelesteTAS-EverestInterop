@@ -140,7 +140,9 @@ namespace TAS.Input {
         }
 
         public void AdvanceFrame() {
-            RefreshInputs(false);
+            if (Manager.FrameLoops < 100) {
+                RefreshInputs(false);
+            }
 
             if (NeedsToWait) {
                 return;
