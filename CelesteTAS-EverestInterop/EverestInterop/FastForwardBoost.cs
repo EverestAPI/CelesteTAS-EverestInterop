@@ -14,7 +14,7 @@ namespace TAS.EverestInterop {
             On.Monocle.Tracker.Initialize += TrackerOnInitialize;
             On.Celeste.BackdropRenderer.Update += BackdropRendererOnUpdate;
             On.Celeste.ReflectionTentacles.UpdateVertices += ReflectionTentaclesOnUpdateVertices;
-            On.Monocle.Particle.Update += ParticleOnUpdate;
+            On.Monocle.ParticleSystem.Update += ParticleSystemOnUpdate;
             On.Celeste.Decal.Update += DecalOnUpdate;
             On.Celeste.FloatingDebris.Update += FloatingDebrisOnUpdate;
             On.Celeste.AnimatedTiles.Update += AnimatedTilesOnUpdate;
@@ -25,7 +25,7 @@ namespace TAS.EverestInterop {
             On.Monocle.Tracker.Initialize -= TrackerOnInitialize;
             On.Celeste.BackdropRenderer.Update -= BackdropRendererOnUpdate;
             On.Celeste.ReflectionTentacles.UpdateVertices -= ReflectionTentaclesOnUpdateVertices;
-            On.Monocle.Particle.Update -= ParticleOnUpdate;
+            On.Monocle.ParticleSystem.Update -= ParticleSystemOnUpdate;
             On.Celeste.Decal.Update -= DecalOnUpdate;
             On.Celeste.FloatingDebris.Update -= FloatingDebrisOnUpdate;
             On.Celeste.AnimatedTiles.Update -= AnimatedTilesOnUpdate;
@@ -75,12 +75,12 @@ namespace TAS.EverestInterop {
             orig(self);
         }
 
-        private static void ParticleOnUpdate(On.Monocle.Particle.orig_Update orig, ref Particle self, float? delta) {
+        private static void ParticleSystemOnUpdate(On.Monocle.ParticleSystem.orig_Update orig, ParticleSystem self) {
             if (SkipUpdate) {
                 return;
             }
 
-            orig(ref self, delta);
+            orig(self);
         }
 
         private static void DecalOnUpdate(On.Celeste.Decal.orig_Update orig, Decal self) {
