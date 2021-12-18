@@ -11,6 +11,11 @@ namespace TAS.Module {
     public class CelesteTasModuleSettings : EverestModuleSettings {
         public const int MinDecimals = 2;
         public const int MaxDecimals = 12;
+        public static CelesteTasModuleSettings Instance { get; private set; }
+
+        public CelesteTasModuleSettings() {
+            Instance = this;
+        }
 
         public bool Enabled { get; set; } = true;
 

@@ -17,9 +17,9 @@ namespace TAS.Module {
         }
 
         public static CelesteTasModule Instance { get; private set; }
+        public static CelesteTasModuleSettings Settings => CelesteTasModuleSettings.Instance;
 
         public override Type SettingsType => typeof(CelesteTasModuleSettings);
-        public static CelesteTasModuleSettings Settings => (CelesteTasModuleSettings) Instance?._Settings;
 
         public override void Initialize() {
             AttributeUtils.Invoke<InitializeAttribute>();

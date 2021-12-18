@@ -7,17 +7,17 @@ using TAS.Module;
 
 namespace TAS.EverestInterop {
     public static class FastForwardBoost {
-        private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
-
-        private static bool SkipUpdate => Manager.States == States.Enable
-                                          && !Settings.FastForwardCallBase
-                                          && Manager.FrameLoops >= Settings.FastForwardThreshold;
+        private static bool SkipUpdate => Manager.FrameLoops >= 100 && Manager.Running;
 
         [Load]
         private static void Load() {
             On.Monocle.Tracker.Initialize += TrackerOnInitialize;
             On.Celeste.BackdropRenderer.Update += BackdropRendererOnUpdate;
             On.Celeste.ReflectionTentacles.UpdateVertices += ReflectionTentaclesOnUpdateVertices;
+            On.Monocle.Particle.Update += ParticleOnUpdate;
+            On.Celeste.Decal.Update += DecalOnUpdate;
+            On.Celeste.FloatingDebris.Update += FloatingDebrisOnUpdate;
+            On.Celeste.AnimatedTiles.Update += AnimatedTilesOnUpdate;
         }
 
         [Unload]
@@ -25,6 +25,10 @@ namespace TAS.EverestInterop {
             On.Monocle.Tracker.Initialize -= TrackerOnInitialize;
             On.Celeste.BackdropRenderer.Update -= BackdropRendererOnUpdate;
             On.Celeste.ReflectionTentacles.UpdateVertices -= ReflectionTentaclesOnUpdateVertices;
+            On.Monocle.Particle.Update -= ParticleOnUpdate;
+            On.Celeste.Decal.Update -= DecalOnUpdate;
+            On.Celeste.FloatingDebris.Update -= FloatingDebrisOnUpdate;
+            On.Celeste.AnimatedTiles.Update -= AnimatedTilesOnUpdate;
         }
 
         private static void TrackerOnInitialize(On.Monocle.Tracker.orig_Initialize orig) {
@@ -64,6 +68,38 @@ namespace TAS.EverestInterop {
         }
 
         private static void ReflectionTentaclesOnUpdateVertices(On.Celeste.ReflectionTentacles.orig_UpdateVertices orig, ReflectionTentacles self) {
+            if (SkipUpdate) {
+                return;
+            }
+
+            orig(self);
+        }
+
+        private static void ParticleOnUpdate(On.Monocle.Particle.orig_Update orig, ref Particle self, float? delta) {
+            if (SkipUpdate) {
+                return;
+            }
+
+            orig(ref self, delta);
+        }
+
+        private static void DecalOnUpdate(On.Celeste.Decal.orig_Update orig, Decal self) {
+            if (SkipUpdate) {
+                return;
+            }
+
+            orig(self);
+        }
+
+        private static void FloatingDebrisOnUpdate(On.Celeste.FloatingDebris.orig_Update orig, FloatingDebris self) {
+            if (SkipUpdate) {
+                return;
+            }
+
+            orig(self);
+        }
+
+        private static void AnimatedTilesOnUpdate(On.Celeste.AnimatedTiles.orig_Update orig, AnimatedTiles self) {
             if (SkipUpdate) {
                 return;
             }
