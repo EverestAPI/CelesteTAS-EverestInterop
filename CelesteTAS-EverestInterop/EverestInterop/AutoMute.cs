@@ -5,6 +5,8 @@ using System.Linq;
 using Celeste;
 using FMOD;
 using FMOD.Studio;
+using Mono.Cecil.Cil;
+using MonoMod.Cil;
 using TAS.Module;
 
 namespace TAS.EverestInterop {
@@ -63,6 +65,7 @@ namespace TAS.EverestInterop {
             On.Celeste.Audio.SetMusic += AudioOnSetMusic;
             On.Celeste.Audio.SetAltMusic += AudioOnSetAltMusic;
             On.FMOD.Studio.EventDescription.createInstance += EventDescriptionOnCreateInstance;
+            IL.Celeste.CassetteBlockManager.AdvanceMusic += CassetteBlockManagerOnAdvanceMusic;
             On.Monocle.Scene.Update += SceneOnUpdate;
             On.Celeste.Level.Render += LevelOnRender;
         }
@@ -72,6 +75,7 @@ namespace TAS.EverestInterop {
             On.Celeste.Audio.SetMusic -= AudioOnSetMusic;
             On.Celeste.Audio.SetAltMusic -= AudioOnSetAltMusic;
             On.FMOD.Studio.EventDescription.createInstance -= EventDescriptionOnCreateInstance;
+            IL.Celeste.CassetteBlockManager.AdvanceMusic -= CassetteBlockManagerOnAdvanceMusic;
             On.Monocle.Scene.Update -= SceneOnUpdate;
             On.Celeste.Level.Render -= LevelOnRender;
         }
@@ -112,6 +116,15 @@ namespace TAS.EverestInterop {
             }
 
             return result;
+        }
+
+        private static void CassetteBlockManagerOnAdvanceMusic(ILContext il) {
+            ILCursor ilCursor = new(il);
+            ilCursor.Goto(ilCursor.Instrs.Count - 1);
+            if (ilCursor.TryGotoPrev(ins => ins.MatchLdfld<CassetteBlockManager>("leadBeats"), ins => ins.OpCode == OpCodes.Ldc_I4_0)) {
+                ilCursor.Index++;
+                ilCursor.EmitDelegate<Func<int, int>>(leadBeats => ShouldBeMuted ? 1 : leadBeats);
+            }
         }
 
         private static void SceneOnUpdate(On.Monocle.Scene.orig_Update orig, Monocle.Scene self) {
