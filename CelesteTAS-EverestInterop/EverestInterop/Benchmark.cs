@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics;
-using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Input;
@@ -35,9 +34,9 @@ namespace TAS.EverestInterop {
             }
 
             if (Manager.Running) {
-                if (Engine.Scene is LevelLoader && watch.IsRunning) {
+                if (watch.IsRunning && Manager.IsLoading()) {
                     watch.Stop();
-                } else if (Engine.Scene is not LevelLoader && !watch.IsRunning) {
+                } else if (!watch.IsRunning && !Manager.IsLoading()) {
                     watch.Start();
                 }
             }

@@ -13,22 +13,26 @@ namespace TAS.EverestInterop {
         private static void Load() {
             On.Monocle.Tracker.Initialize += TrackerOnInitialize;
             On.Celeste.BackdropRenderer.Update += BackdropRendererOnUpdate;
-            On.Celeste.ReflectionTentacles.UpdateVertices += ReflectionTentaclesOnUpdateVertices;
+            On.Celeste.ReflectionTentacles.Update += ReflectionTentaclesOnUpdate;
             On.Monocle.ParticleSystem.Update += ParticleSystemOnUpdate;
             On.Celeste.Decal.Update += DecalOnUpdate;
             On.Celeste.FloatingDebris.Update += FloatingDebrisOnUpdate;
             On.Celeste.AnimatedTiles.Update += AnimatedTilesOnUpdate;
+            On.Celeste.Water.Surface.Update += WaterSurfaceOnUpdate;
+            On.Celeste.Debris.Update += DebrisOnUpdate;
         }
 
         [Unload]
         private static void Unload() {
             On.Monocle.Tracker.Initialize -= TrackerOnInitialize;
             On.Celeste.BackdropRenderer.Update -= BackdropRendererOnUpdate;
-            On.Celeste.ReflectionTentacles.UpdateVertices -= ReflectionTentaclesOnUpdateVertices;
+            On.Celeste.ReflectionTentacles.Update -= ReflectionTentaclesOnUpdate;
             On.Monocle.ParticleSystem.Update -= ParticleSystemOnUpdate;
             On.Celeste.Decal.Update -= DecalOnUpdate;
             On.Celeste.FloatingDebris.Update -= FloatingDebrisOnUpdate;
             On.Celeste.AnimatedTiles.Update -= AnimatedTilesOnUpdate;
+            On.Celeste.Water.Surface.Update -= WaterSurfaceOnUpdate;
+            On.Celeste.Debris.Update -= DebrisOnUpdate;
         }
 
         private static void TrackerOnInitialize(On.Monocle.Tracker.orig_Initialize orig) {
@@ -67,44 +71,48 @@ namespace TAS.EverestInterop {
             orig(self, scene);
         }
 
-        private static void ReflectionTentaclesOnUpdateVertices(On.Celeste.ReflectionTentacles.orig_UpdateVertices orig, ReflectionTentacles self) {
-            if (SkipUpdate) {
-                return;
+        private static void ReflectionTentaclesOnUpdate(On.Celeste.ReflectionTentacles.orig_Update orig, ReflectionTentacles self) {
+            if (!SkipUpdate) {
+                orig(self);
             }
-
-            orig(self);
         }
 
         private static void ParticleSystemOnUpdate(On.Monocle.ParticleSystem.orig_Update orig, ParticleSystem self) {
-            if (SkipUpdate) {
-                return;
+            if (!SkipUpdate) {
+                orig(self);
             }
-
-            orig(self);
         }
 
         private static void DecalOnUpdate(On.Celeste.Decal.orig_Update orig, Decal self) {
-            if (SkipUpdate) {
-                return;
+            if (!SkipUpdate) {
+                orig(self);
             }
-
-            orig(self);
         }
 
         private static void FloatingDebrisOnUpdate(On.Celeste.FloatingDebris.orig_Update orig, FloatingDebris self) {
-            if (SkipUpdate) {
-                return;
+            if (!SkipUpdate) {
+                orig(self);
             }
-
-            orig(self);
         }
 
         private static void AnimatedTilesOnUpdate(On.Celeste.AnimatedTiles.orig_Update orig, AnimatedTiles self) {
-            if (SkipUpdate) {
-                return;
+            if (!SkipUpdate) {
+                orig(self);
             }
+        }
 
-            orig(self);
+        private static void WaterSurfaceOnUpdate(On.Celeste.Water.Surface.orig_Update orig, Water.Surface self) {
+            if (!SkipUpdate) {
+                orig(self);
+            }
+        }
+
+        private static void DebrisOnUpdate(On.Celeste.Debris.orig_Update orig, Debris self) {
+            if (SkipUpdate) {
+                orig(self);
+            } else {
+                self.RemoveSelf();
+            }
         }
     }
 }
