@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using Celeste;
 using Celeste.Mod;
+using Mono.Cecil.Cil;
 using Monocle;
+using MonoMod.Cil;
 using TAS.Module;
 
 namespace TAS.EverestInterop {
@@ -20,6 +22,13 @@ namespace TAS.EverestInterop {
             On.Celeste.AnimatedTiles.Update += AnimatedTilesOnUpdate;
             On.Celeste.Water.Surface.Update += WaterSurfaceOnUpdate;
             On.Celeste.Debris.Update += DebrisOnUpdate;
+            On.Celeste.SoundEmitter.Update += SoundEmitterOnUpdate;
+            On.Celeste.LightningRenderer.Update += LightningRendererOnUpdate;
+            On.Celeste.DustGraphic.Update += DustGraphicOnUpdate;
+            On.Celeste.LavaRect.Update += LavaRectOnUpdate;
+            On.Celeste.CliffsideWindFlag.Update += CliffsideWindFlagOnUpdate;
+            On.Celeste.SeekerBarrierRenderer.Update += SeekerBarrierRendererOnUpdate;
+            IL.Celeste.SeekerBarrier.Update += SeekerBarrierOnUpdate;
         }
 
         [Unload]
@@ -33,6 +42,13 @@ namespace TAS.EverestInterop {
             On.Celeste.AnimatedTiles.Update -= AnimatedTilesOnUpdate;
             On.Celeste.Water.Surface.Update -= WaterSurfaceOnUpdate;
             On.Celeste.Debris.Update -= DebrisOnUpdate;
+            On.Celeste.SoundEmitter.Update -= SoundEmitterOnUpdate;
+            On.Celeste.LightningRenderer.Update -= LightningRendererOnUpdate;
+            On.Celeste.DustGraphic.Update -= DustGraphicOnUpdate;
+            On.Celeste.LavaRect.Update -= LavaRectOnUpdate;
+            On.Celeste.CliffsideWindFlag.Update -= CliffsideWindFlagOnUpdate;
+            On.Celeste.SeekerBarrierRenderer.Update -= SeekerBarrierRendererOnUpdate;
+            IL.Celeste.SeekerBarrier.Update -= SeekerBarrierOnUpdate;
         }
 
         private static void TrackerOnInitialize(On.Monocle.Tracker.orig_Initialize orig) {
@@ -114,5 +130,68 @@ namespace TAS.EverestInterop {
                 self.RemoveSelf();
             }
         }
+
+        private static void SoundEmitterOnUpdate(On.Celeste.SoundEmitter.orig_Update orig, SoundEmitter self) {
+            if (!SkipUpdate) {
+                orig(self);
+            } else {
+                self.RemoveSelf();
+            }
+        }
+
+        private static void LightningRendererOnUpdate(On.Celeste.LightningRenderer.orig_Update orig, LightningRenderer self) {
+            if (!SkipUpdate) {
+                orig(self);
+            }
+        }
+
+        private static void DustGraphicOnUpdate(On.Celeste.DustGraphic.orig_Update orig, DustGraphic self) {
+            if (!SkipUpdate) {
+                orig(self);
+            }
+        }
+
+        private static void LavaRectOnUpdate(On.Celeste.LavaRect.orig_Update orig, LavaRect self) {
+            if (!SkipUpdate) {
+                orig(self);
+            }
+        }
+
+        private static void CliffsideWindFlagOnUpdate(On.Celeste.CliffsideWindFlag.orig_Update orig, CliffsideWindFlag self) {
+            if (!SkipUpdate) {
+                orig(self);
+            }
+        }
+
+        private static void SeekerBarrierRendererOnUpdate(On.Celeste.SeekerBarrierRenderer.orig_Update orig, SeekerBarrierRenderer self) {
+            if (!SkipUpdate) {
+                orig(self);
+            }
+        }
+
+        private static void SeekerBarrierOnUpdate(ILContext il) {
+            ILCursor cursor = new(il);
+
+            if (!cursor.TryGotoNext(MoveType.AfterLabel,
+                instr => instr.MatchLdarg(0),
+                instr => instr.MatchLdfld<SeekerBarrier>("speeds"),
+                instr => instr.MatchLdlen())
+            ) {
+                return;
+            }
+
+            ILLabel target = cursor.DefineLabel();
+            cursor.EmitDelegate<Func<bool>>(() => SkipUpdate);
+            cursor.Emit(OpCodes.Brtrue, target);
+
+            if (!cursor.TryGotoNext(instr => instr.MatchLdarg(0),
+                instr => instr.MatchCall<Solid>("Update"))
+            ) {
+                return;
+            }
+
+            cursor.MarkLabel(target);
+        }
+
     }
 }
