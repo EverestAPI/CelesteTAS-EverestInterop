@@ -108,7 +108,7 @@ namespace TAS.EverestInterop {
         }
 
         private static void DebrisOnUpdate(On.Celeste.Debris.orig_Update orig, Debris self) {
-            if (SkipUpdate) {
+            if (!SkipUpdate) {
                 orig(self);
             } else {
                 self.RemoveSelf();
