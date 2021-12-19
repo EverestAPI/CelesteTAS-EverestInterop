@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
@@ -12,18 +11,15 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxOptimized {
-        private static readonly Func<FireBall, bool> FireBallIceMode =
-            typeof(FireBall).GetFieldInfo("iceMode").CreateDelegate_Get<Func<FireBall, bool>>();
-
-        private static readonly Func<Seeker, Circle> SeekerPushRadius =
-            typeof(Seeker).GetFieldInfo("pushRadius").CreateDelegate_Get<Func<Seeker, Circle>>();
+        private static readonly Func<FireBall, bool> FireBallIceMode = "iceMode".CreateDelegate_Get<FireBall, bool>();
+        private static readonly Func<Seeker, Hitbox> SeekerPhysicsHitbox = "physicsHitbox".CreateDelegate_Get<Seeker, Hitbox>();
+        private static readonly Func<Seeker, Circle> SeekerPushRadius = "pushRadius".CreateDelegate_Get<Seeker, Circle>();
+        private static readonly Func<Pathfinder, List<Vector2>> PathfinderLastPath = "lastPath".CreateDelegate_Get<Pathfinder, List<Vector2>>();
 
         private static readonly Func<HoldableCollider, Collider> HoldableColliderCollider =
-            typeof(HoldableCollider).GetFieldInfo("collider").CreateDelegate_Get<Func<HoldableCollider, Collider>>();
+            "collider".CreateDelegate_Get<HoldableCollider, Collider>();
 
-        private static readonly Func<LockBlock, bool> LockBlockOpening =
-            typeof(LockBlock).GetFieldInfo("opening").CreateDelegate_Get<Func<LockBlock, bool>>();
-
+        private static readonly Func<LockBlock, bool> LockBlockOpening = "opening".CreateDelegate_Get<LockBlock, bool>();
         private static readonly Func<Player, Hitbox> PlayerHurtbox = "hurtbox".CreateDelegate_Get<Player, Hitbox>();
 
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
@@ -35,14 +31,13 @@ namespace TAS.EverestInterop.Hitboxes {
             On.Monocle.EntityList.DebugRender += AddLockBlockColliderHitbox;
             On.Monocle.EntityList.DebugRender += AddSpawnPointHitbox;
             On.Monocle.Hitbox.Render += ChangeRespawnTriggerColor;
-            IL.Celeste.Seeker.DebugRender += SeekerOnDebugRender;
             IL.Celeste.PlayerCollider.DebugRender += PlayerColliderOnDebugRender;
             On.Celeste.PlayerCollider.DebugRender += AddFeatherHitbox;
             On.Monocle.Circle.Render += CircleOnRender;
             On.Celeste.SoundSource.DebugRender += SoundSource_DebugRender;
+            IL.Celeste.Seeker.DebugRender += SeekerOnDebugRender;
             On.Celeste.Seeker.DebugRender += SeekerOnDebugRender;
-            IL.Celeste.Level.Render += Level_Render;
-            IL.Celeste.Pathfinder.Render += Pathfinder_Render;
+            On.Celeste.Level.LoadLevel += LevelOnLoadLevel;
         }
 
         [Unload]
@@ -52,14 +47,13 @@ namespace TAS.EverestInterop.Hitboxes {
             On.Monocle.EntityList.DebugRender -= AddLockBlockColliderHitbox;
             On.Monocle.EntityList.DebugRender -= AddSpawnPointHitbox;
             On.Monocle.Hitbox.Render -= ChangeRespawnTriggerColor;
-            IL.Celeste.Seeker.DebugRender -= SeekerOnDebugRender;
             IL.Celeste.PlayerCollider.DebugRender -= PlayerColliderOnDebugRender;
             On.Celeste.PlayerCollider.DebugRender -= AddFeatherHitbox;
             On.Monocle.Circle.Render -= CircleOnRender;
             On.Celeste.SoundSource.DebugRender -= SoundSource_DebugRender;
+            IL.Celeste.Seeker.DebugRender -= SeekerOnDebugRender;
             On.Celeste.Seeker.DebugRender -= SeekerOnDebugRender;
-            IL.Celeste.Level.Render -= Level_Render;
-            IL.Celeste.Pathfinder.Render -= Pathfinder_Render;
+            On.Celeste.Level.LoadLevel -= LevelOnLoadLevel;
         }
 
         private static void ModDebugRender(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {
@@ -243,39 +237,6 @@ namespace TAS.EverestInterop.Hitboxes {
             orig(self, camera, color);
         }
 
-        private static void SeekerOnDebugRender(ILContext il) {
-            ILCursor ilCursor = new(il);
-            if (ilCursor.TryGotoNext(
-                    MoveType.After,
-                    ins => ins.MatchCall<Color>("get_Red")
-                )) {
-                ilCursor
-                    .Emit(OpCodes.Ldarg_0)
-                    .EmitDelegate<Func<Color, Entity, Color>>((color, entity) => {
-                        if (!Settings.ShowHitboxes) {
-                            return color;
-                        }
-
-                        return entity.Collidable ? HitboxColor.EntityColor : HitboxColor.EntityColor * 0.5f;
-                    });
-            }
-
-            if (ilCursor.TryGotoNext(
-                    MoveType.After,
-                    ins => ins.MatchCall<Color>("get_Aqua")
-                )) {
-                ilCursor
-                    .Emit(OpCodes.Ldarg_0)
-                    .EmitDelegate<Func<Color, Entity, Color>>((color, entity) => {
-                        if (!Settings.ShowHitboxes) {
-                            return color;
-                        }
-
-                        return entity.Collidable ? Color.HotPink : Color.HotPink * 0.5f;
-                    });
-            }
-        }
-
         private static void PlayerColliderOnDebugRender(ILContext il) {
             ILCursor ilCursor = new(il);
             if (ilCursor.TryGotoNext(
@@ -318,52 +279,76 @@ namespace TAS.EverestInterop.Hitboxes {
             }
         }
 
-        private static void SeekerOnDebugRender(On.Celeste.Seeker.orig_DebugRender orig, Seeker self, Camera camera) {
-            orig(self, camera);
+        private static void SeekerOnDebugRender(ILContext il) {
+            ILCursor ilCursor = new(il);
+            if (ilCursor.TryGotoNext(
+                    MoveType.After,
+                    ins => ins.MatchCall<Color>("get_Red")
+                )) {
+                ilCursor
+                    .Emit(OpCodes.Ldarg_0)
+                    .EmitDelegate<Func<Color, Entity, Color>>((color, entity) => {
+                        if (!Settings.ShowHitboxes) {
+                            return color;
+                        }
 
-            if (self.Regenerating && SeekerPushRadius(self) is { } pushRadius) {
-                Collider origCollider = self.Collider;
-                self.Collider = pushRadius;
-                pushRadius.Render(camera, HitboxColor.EntityColor);
-                self.Collider = origCollider;
+                        return entity.Collidable ? HitboxColor.EntityColor : HitboxColor.EntityColor * 0.5f;
+                    });
+            }
+
+            if (ilCursor.TryGotoNext(
+                    MoveType.After,
+                    ins => ins.MatchCall<Color>("get_Aqua")
+                )) {
+                ilCursor
+                    .Emit(OpCodes.Ldarg_0)
+                    .EmitDelegate<Func<Color, Entity, Color>>((color, entity) => {
+                        if (!Settings.ShowHitboxes) {
+                            return color;
+                        }
+
+                        return entity.Collidable ? Color.HotPink : Color.HotPink * 0.5f;
+                    });
             }
         }
 
-        private static void Level_Render(ILContext il) {
-            ILCursor c;
-            new ILCursor(il).FindNext(out ILCursor[] found,
-                i => i.MatchLdfld(typeof(Pathfinder), "DebugRenderEnabled"),
-                i => i.MatchCall(typeof(Draw), "get_SpriteBatch"),
-                i => i.MatchLdarg(0),
-                i => i.MatchLdarg(0),
-                i => i.MatchLdarg(0)
-            );
+        private static void SeekerOnDebugRender(On.Celeste.Seeker.orig_DebugRender orig, Seeker self, Camera camera) {
+            orig(self, camera);
 
-            // Place labels at and after pathfinder rendering code
-            ILLabel render = il.DefineLabel();
-            ILLabel skipRender = il.DefineLabel();
-            c = found[1];
-            c.MarkLabel(render);
-            c = found[4];
-            c.MarkLabel(skipRender);
+            if (!Settings.ShowHitboxes) {
+                return;
+            }
 
-            // || the value of DebugRenderEnabled with Debug rendering being enabled, && with seekers being present.
-            c = found[0];
-            c.Index++;
-            c.Emit(OpCodes.Brtrue_S, render.Target);
-            c.EmitDelegate<Func<bool>>(() => Settings.ShowHitboxes);
-            c.Emit(OpCodes.Brfalse_S, skipRender.Target);
-            c.Emit(OpCodes.Ldarg_0);
-            c.Emit(OpCodes.Callvirt, typeof(Scene).GetMethod("get_Tracker"));
-            MethodInfo getEntity = typeof(Tracker).GetMethod("GetEntity");
-            c.Emit(OpCodes.Callvirt, getEntity.MakeGenericMethod(new Type[] {typeof(Seeker)}));
+            Collider origCollider = self.Collider;
+
+            if (SeekerPhysicsHitbox(self) is { } physicsHitbox) {
+                self.Collider = physicsHitbox;
+                physicsHitbox.Render(camera, Color.Goldenrod);
+            }
+
+            if (self.Regenerating && SeekerPushRadius(self) is { } pushRadius) {
+                self.Collider = pushRadius;
+                pushRadius.Render(camera, HitboxColor.EntityColor);
+            }
+
+            self.Collider = origCollider;
+
+            if (self.SceneAs<Level>() is {Pathfinder: { } pathfinder} && PathfinderLastPath(pathfinder) is { } lastPath && lastPath.IsNotEmpty()) {
+                Vector2 start = lastPath[0];
+                for (int i = 1; i < lastPath.Count; i++) {
+                    Vector2 vector = lastPath[i];
+                    Draw.Line(start, vector, Color.Goldenrod * 0.5f);
+                    start = vector;
+                }
+            }
         }
 
-        private static void Pathfinder_Render(ILContext il) {
-            // Remove the for loop which draws pathfinder tiles
-            ILCursor c = new(il);
-            c.FindNext(out ILCursor[] found, i => i.MatchLdfld(typeof(Pathfinder), "lastPath"));
-            c.RemoveRange(found[0].Index - 1);
+        private static void LevelOnLoadLevel(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader) {
+            orig(self, playerIntro, isFromLoader);
+
+            if (Settings.ShowHitboxes && self.Pathfinder is { } pathfinder && PathfinderLastPath(pathfinder) != null) {
+                pathfinder.SetFieldValue("lastPath", null);
+            }
         }
     }
 }
