@@ -138,10 +138,12 @@ namespace TAS.Input {
             AnalogHelper.AnalogModeChange(AnalogueMode.Ignore);
         }
 
-        public void AdvanceFrame() {
+        public void AdvanceFrame(out bool canPlayback) {
             if (!Manager.UltraFastForwarding) {
                 RefreshInputs(false);
             }
+
+            canPlayback = CanPlayback;
 
             if (NeedsToWait) {
                 return;
