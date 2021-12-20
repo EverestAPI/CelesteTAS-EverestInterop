@@ -114,10 +114,14 @@ namespace TAS.EverestInterop {
         }
 
         public static void Update() {
-            if (Manager.UltraFastForwarding || !Engine.Instance.IsActive) {
+            if (Manager.UltraFastForwarding) {
                 MouseButtons.UpdateNull();
                 kbState = default;
                 padState = default;
+            } else if (!Engine.Instance.IsActive) {
+                MouseButtons.UpdateNull();
+                kbState = default;
+                padState = GetGamePadState();
             } else {
                 MouseButtons.Update();
                 kbState = Keyboard.GetState();
