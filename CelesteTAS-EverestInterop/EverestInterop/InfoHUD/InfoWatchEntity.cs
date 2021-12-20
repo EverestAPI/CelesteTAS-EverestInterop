@@ -91,10 +91,6 @@ namespace TAS.EverestInterop.InfoHUD {
         }
 
         public static void CheckMouseButtons() {
-            if (!Engine.Instance.IsActive) {
-                return;
-            }
-
             if (MouseButtons.Right.Pressed) {
                 ClearWatchEntities();
             }

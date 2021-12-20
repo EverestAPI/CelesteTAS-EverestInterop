@@ -114,7 +114,7 @@ namespace TAS.EverestInterop {
         }
 
         public static void Update() {
-            if (Manager.UltraFastForwarding) {
+            if (Manager.UltraFastForwarding || !Engine.Instance.IsActive) {
                 MouseButtons.UpdateNull();
                 kbState = default;
                 padState = default;
@@ -320,7 +320,7 @@ namespace TAS.EverestInterop {
             }
 
             private bool IsKeyDown() {
-                if (Keys == null || Keys.Count == 0 || !Engine.Instance.IsActive) {
+                if (Keys == null || Keys.Count == 0) {
                     return false;
                 }
 
