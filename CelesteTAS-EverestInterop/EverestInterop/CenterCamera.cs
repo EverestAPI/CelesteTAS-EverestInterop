@@ -70,11 +70,8 @@ namespace TAS.EverestInterop {
                     InfoMouse.DrawCursor(MouseButtons.Position);
                     Draw.SpriteBatch.End();
 
-#if DEBUG
-                    offset -= MouseButtons.Position - MouseButtons.LastPosition;
-#else
-                    offset -= (MouseButtons.Position - MouseButtons.LastPosition) / 2;
-#endif
+                    float scale = self.Zoom * ((320f - self.ScreenPadding * 2f) / 320f) * self.Camera.Zoom * 6f * Engine.ViewWidth / Engine.Width;
+                    offset -= (MouseButtons.Position - MouseButtons.LastPosition) / scale;
 
                     if (lastPlayerPosition is { } playerPosition && Engine.Scene.GetSession()?.MapData.Bounds is { } bounds) {
                         Vector2 result = (playerPosition + offset).Clamp(bounds.X, bounds.Y, bounds.Right, bounds.Bottom);
