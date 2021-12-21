@@ -85,7 +85,7 @@
 
 ### EnforceLegal
 - This is used at the start of fullgame files.
-- It prevents the use of commands which would not be legal in a run.
+- It prevents the use of [Console](#console) and [Set](#set) commands which would not be legal in a run.
   
 ### StartExportGameInfo and FinishExportGameInfo
 - `StartExportGameInfo (Optional File Path) (Optional Entities Names)`
