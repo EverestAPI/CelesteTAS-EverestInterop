@@ -324,7 +324,7 @@ namespace TAS.EverestInterop {
             }
 
             private bool IsKeyDown() {
-                if (Keys == null || Keys.Count == 0) {
+                if (Keys == null || Keys.Count == 0 || kbState == default) {
                     return false;
                 }
 
@@ -332,7 +332,7 @@ namespace TAS.EverestInterop {
             }
 
             private bool IsButtonDown() {
-                if (Buttons == null || Buttons.Count == 0) {
+                if (Buttons == null || Buttons.Count == 0 || padState == default) {
                     return false;
                 }
 

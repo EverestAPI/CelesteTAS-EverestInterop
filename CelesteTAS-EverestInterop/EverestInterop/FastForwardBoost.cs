@@ -2,32 +2,45 @@
 using System.Collections.Generic;
 using Celeste;
 using Celeste.Mod;
+using Celeste.Mod.Helpers;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
+using MonoMod.RuntimeDetour;
 using TAS.Module;
+using TAS.Utils;
 
 namespace TAS.EverestInterop {
     public static class FastForwardBoost {
         private static bool SkipUpdate => Manager.UltraFastForwarding;
+        private static readonly List<ILHook> IlHooks = new();
+
+        [Initialize]
+        private static void Initialize() {
+            if (FakeAssembly.GetFakeEntryAssembly().GetType("Celeste.Mod.IsaGrabBag.DreamSpinnerBorder")?.GetMethodInfo("Update") is
+                { } updateMethod) {
+                IlHooks.Add(new ILHook(updateMethod, SkipUpdateMethod));
+            }
+        }
 
         [Load]
         private static void Load() {
             On.Monocle.Tracker.Initialize += TrackerOnInitialize;
             On.Celeste.BackdropRenderer.Update += BackdropRendererOnUpdate;
-            On.Celeste.ReflectionTentacles.Update += ReflectionTentaclesOnUpdate;
-            On.Monocle.ParticleSystem.Update += ParticleSystemOnUpdate;
-            On.Celeste.Decal.Update += DecalOnUpdate;
-            On.Celeste.FloatingDebris.Update += FloatingDebrisOnUpdate;
-            On.Celeste.AnimatedTiles.Update += AnimatedTilesOnUpdate;
-            On.Celeste.Water.Surface.Update += WaterSurfaceOnUpdate;
             On.Celeste.Debris.Update += DebrisOnUpdate;
             On.Celeste.SoundEmitter.Update += SoundEmitterOnUpdate;
-            On.Celeste.LightningRenderer.Update += LightningRendererOnUpdate;
-            On.Celeste.DustGraphic.Update += DustGraphicOnUpdate;
-            On.Celeste.LavaRect.Update += LavaRectOnUpdate;
-            On.Celeste.CliffsideWindFlag.Update += CliffsideWindFlagOnUpdate;
-            On.Celeste.SeekerBarrierRenderer.Update += SeekerBarrierRendererOnUpdate;
+            IL.Celeste.ReflectionTentacles.Update += SkipUpdateMethod;
+            IL.Monocle.ParticleSystem.Update += SkipUpdateMethod;
+            IL.Celeste.Decal.Update += SkipUpdateMethod;
+            IL.Celeste.FloatingDebris.Update += SkipUpdateMethod;
+            IL.Celeste.AnimatedTiles.Update += SkipUpdateMethod;
+            IL.Celeste.Water.Surface.Update += SkipUpdateMethod;
+            IL.Celeste.LightningRenderer.Update += SkipUpdateMethod;
+            IL.Celeste.DustGraphic.Update += SkipUpdateMethod;
+            IL.Celeste.LavaRect.Update += SkipUpdateMethod;
+            IL.Celeste.CliffsideWindFlag.Update += SkipUpdateMethod;
+            IL.Celeste.CrystalStaticSpinner.UpdateHue += SkipUpdateMethod;
+            IL.Celeste.SeekerBarrierRenderer.Update += SkipUpdateMethod;
             IL.Celeste.SeekerBarrier.Update += SeekerBarrierOnUpdate;
         }
 
@@ -35,20 +48,23 @@ namespace TAS.EverestInterop {
         private static void Unload() {
             On.Monocle.Tracker.Initialize -= TrackerOnInitialize;
             On.Celeste.BackdropRenderer.Update -= BackdropRendererOnUpdate;
-            On.Celeste.ReflectionTentacles.Update -= ReflectionTentaclesOnUpdate;
-            On.Monocle.ParticleSystem.Update -= ParticleSystemOnUpdate;
-            On.Celeste.Decal.Update -= DecalOnUpdate;
-            On.Celeste.FloatingDebris.Update -= FloatingDebrisOnUpdate;
-            On.Celeste.AnimatedTiles.Update -= AnimatedTilesOnUpdate;
-            On.Celeste.Water.Surface.Update -= WaterSurfaceOnUpdate;
             On.Celeste.Debris.Update -= DebrisOnUpdate;
             On.Celeste.SoundEmitter.Update -= SoundEmitterOnUpdate;
-            On.Celeste.LightningRenderer.Update -= LightningRendererOnUpdate;
-            On.Celeste.DustGraphic.Update -= DustGraphicOnUpdate;
-            On.Celeste.LavaRect.Update -= LavaRectOnUpdate;
-            On.Celeste.CliffsideWindFlag.Update -= CliffsideWindFlagOnUpdate;
-            On.Celeste.SeekerBarrierRenderer.Update -= SeekerBarrierRendererOnUpdate;
+            IL.Celeste.ReflectionTentacles.Update -= SkipUpdateMethod;
+            IL.Monocle.ParticleSystem.Update -= SkipUpdateMethod;
+            IL.Celeste.Decal.Update -= SkipUpdateMethod;
+            IL.Celeste.FloatingDebris.Update -= SkipUpdateMethod;
+            IL.Celeste.AnimatedTiles.Update -= SkipUpdateMethod;
+            IL.Celeste.Water.Surface.Update -= SkipUpdateMethod;
+            IL.Celeste.LightningRenderer.Update -= SkipUpdateMethod;
+            IL.Celeste.DustGraphic.Update -= SkipUpdateMethod;
+            IL.Celeste.LavaRect.Update -= SkipUpdateMethod;
+            IL.Celeste.CliffsideWindFlag.Update -= SkipUpdateMethod;
+            IL.Celeste.CrystalStaticSpinner.UpdateHue -= SkipUpdateMethod;
+            IL.Celeste.SeekerBarrierRenderer.Update -= SkipUpdateMethod;
             IL.Celeste.SeekerBarrier.Update -= SeekerBarrierOnUpdate;
+            IlHooks.ForEach(hook => hook.Dispose());
+            IlHooks.Clear();
         }
 
         private static void TrackerOnInitialize(On.Monocle.Tracker.orig_Initialize orig) {
@@ -87,96 +103,37 @@ namespace TAS.EverestInterop {
             orig(self, scene);
         }
 
-        private static void ReflectionTentaclesOnUpdate(On.Celeste.ReflectionTentacles.orig_Update orig, ReflectionTentacles self) {
-            if (!SkipUpdate) {
-                orig(self);
-            }
-        }
-
-        private static void ParticleSystemOnUpdate(On.Monocle.ParticleSystem.orig_Update orig, ParticleSystem self) {
-            if (!SkipUpdate) {
-                orig(self);
-            }
-        }
-
-        private static void DecalOnUpdate(On.Celeste.Decal.orig_Update orig, Decal self) {
-            if (!SkipUpdate) {
-                orig(self);
-            }
-        }
-
-        private static void FloatingDebrisOnUpdate(On.Celeste.FloatingDebris.orig_Update orig, FloatingDebris self) {
-            if (!SkipUpdate) {
-                orig(self);
-            }
-        }
-
-        private static void AnimatedTilesOnUpdate(On.Celeste.AnimatedTiles.orig_Update orig, AnimatedTiles self) {
-            if (!SkipUpdate) {
-                orig(self);
-            }
-        }
-
-        private static void WaterSurfaceOnUpdate(On.Celeste.Water.Surface.orig_Update orig, Water.Surface self) {
-            if (!SkipUpdate) {
-                orig(self);
-            }
-        }
-
         private static void DebrisOnUpdate(On.Celeste.Debris.orig_Update orig, Debris self) {
-            if (!SkipUpdate) {
-                orig(self);
-            } else {
+            if (SkipUpdate) {
                 self.RemoveSelf();
+            } else {
+                orig(self);
             }
         }
 
         private static void SoundEmitterOnUpdate(On.Celeste.SoundEmitter.orig_Update orig, SoundEmitter self) {
-            if (!SkipUpdate) {
-                orig(self);
-            } else {
+            if (SkipUpdate) {
                 self.RemoveSelf();
-            }
-        }
-
-        private static void LightningRendererOnUpdate(On.Celeste.LightningRenderer.orig_Update orig, LightningRenderer self) {
-            if (!SkipUpdate) {
+            } else {
                 orig(self);
             }
         }
 
-        private static void DustGraphicOnUpdate(On.Celeste.DustGraphic.orig_Update orig, DustGraphic self) {
-            if (!SkipUpdate) {
-                orig(self);
-            }
-        }
-
-        private static void LavaRectOnUpdate(On.Celeste.LavaRect.orig_Update orig, LavaRect self) {
-            if (!SkipUpdate) {
-                orig(self);
-            }
-        }
-
-        private static void CliffsideWindFlagOnUpdate(On.Celeste.CliffsideWindFlag.orig_Update orig, CliffsideWindFlag self) {
-            if (!SkipUpdate) {
-                orig(self);
-            }
-        }
-
-        private static void SeekerBarrierRendererOnUpdate(On.Celeste.SeekerBarrierRenderer.orig_Update orig, SeekerBarrierRenderer self) {
-            if (!SkipUpdate) {
-                orig(self);
-            }
+        private static void SkipUpdateMethod(ILContext il) {
+            ILCursor ilCursor = new(il);
+            Instruction start = ilCursor.Next;
+            ilCursor.Emit(OpCodes.Call, typeof(Manager).GetProperty(nameof(Manager.UltraFastForwarding)).GetMethod);
+            ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ret);
         }
 
         private static void SeekerBarrierOnUpdate(ILContext il) {
             ILCursor cursor = new(il);
 
             if (!cursor.TryGotoNext(MoveType.AfterLabel,
-                instr => instr.MatchLdarg(0),
-                instr => instr.MatchLdfld<SeekerBarrier>("speeds"),
-                instr => instr.MatchLdlen())
-            ) {
+                    instr => instr.MatchLdarg(0),
+                    instr => instr.MatchLdfld<SeekerBarrier>("speeds"),
+                    instr => instr.MatchLdlen())
+               ) {
                 return;
             }
 
@@ -185,13 +142,12 @@ namespace TAS.EverestInterop {
             cursor.Emit(OpCodes.Brtrue, target);
 
             if (!cursor.TryGotoNext(instr => instr.MatchLdarg(0),
-                instr => instr.MatchCall<Solid>("Update"))
-            ) {
+                    instr => instr.MatchCall<Solid>("Update"))
+               ) {
                 return;
             }
 
             cursor.MarkLabel(target);
         }
-
     }
 }
