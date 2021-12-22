@@ -464,9 +464,11 @@ namespace TAS.EverestInterop.Hitboxes {
                     color *= colorAlpha;
                 }
 
+#if REALESE
                 if (rect.Width == 0 || rect.Height == 0) {
-                    // continue;
+                    continue;
                 }
+#endif
 
                 if (textureId.IsNotEmpty()) {
                     MTexture texture = GFX.Game[textureId];
