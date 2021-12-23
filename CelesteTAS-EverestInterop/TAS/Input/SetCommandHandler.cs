@@ -26,7 +26,6 @@ namespace TAS.Input {
             }
 
             try {
-                object settings = null;
                 if (args[0].Contains(".")) {
                     string[] parameters = args.Skip(1).ToArray();
                     if (TrySetModSetting(args[0], parameters)) {
@@ -107,19 +106,32 @@ namespace TAS.Input {
             string lastMemberName = memberNames.Last();
             memberNames = memberNames.SkipLast().ToList();
 
-            Type memberType = null;
-            object obj;
-            if (memberNames.IsNotEmpty() &&
-                (InfoCustom.GetGetMethod(type, memberNames.First()) is {IsStatic: true} ||
-                 InfoCustom.GetFieldInfo(type, memberNames.First()) is {IsStatic: true})) {
+            Type memberType;
+            object obj = null;
+            if (memberNames.IsEmpty() &&
+                (InfoCustom.GetGetMethod(type, lastMemberName) is {IsStatic: true} ||
+                 InfoCustom.GetFieldInfo(type, lastMemberName) is {IsStatic: true})) {
+                memberType = type;
+            } else if (memberNames.IsNotEmpty() &&
+                       (InfoCustom.GetGetMethod(type, memberNames.First()) is {IsStatic: true} ||
+                        InfoCustom.GetFieldInfo(type, memberNames.First()) is {IsStatic: true})) {
                 obj = InfoCustom.GetMemberValue(type, null, memberNames);
+                if (TryOutputErrorLog()) {
+                    return;
+                }
+
+                memberType = obj.GetType();
             } else {
                 obj = FindObject(type, entityId);
-                obj = InfoCustom.GetMemberValue(type, obj, memberNames);
                 if (obj == null) {
-                    $"Set Command Failed: {type.FullName}{entityId} object is not found".Log();
+                    $"Set Command Failed: {type.FullName}{entityId} object is not found".Log(LogLevel.Warn);
                     return;
                 } else {
+                    obj = InfoCustom.GetMemberValue(type, obj, memberNames);
+                    if (TryOutputErrorLog()) {
+                        return;
+                    }
+
                     memberType = obj.GetType();
                 }
             }
@@ -158,6 +170,8 @@ namespace TAS.Input {
                         field.SetValue(obj, value);
                     }
                 }
+            } else {
+                $"Set Command Failed: {memberType.FullName}.{lastMemberName} member not found".Log(LogLevel.Warn);
             }
 
             // after modifying the struct
@@ -177,6 +191,18 @@ namespace TAS.Input {
                     memberNames,
                     position
                 );
+            }
+
+            bool TryOutputErrorLog() {
+                if (obj == null) {
+                    $"Set Command Failed: {type.FullName} member value is null".Log(LogLevel.Warn);
+                    return true;
+                } else if (obj is string errorMsg && errorMsg.EndsWith(" not found")) {
+                    $"Set Command Failed: {errorMsg}".Log(LogLevel.Warn);
+                    return true;
+                }
+
+                return false;
             }
         }
 

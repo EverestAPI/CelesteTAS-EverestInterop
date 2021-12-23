@@ -58,6 +58,7 @@
 - `Set, Entity.Field..., Values`
 - `Set, Level.Field..., Values`
 - `Set, Session.Field..., Values`
+- `Set, Type.StaticField..., Values`
 - Sets the specified setting to the specified value.
 - Defaults to Celeste if no mod specified.
 - Everest settings use the mod name `Everest`.

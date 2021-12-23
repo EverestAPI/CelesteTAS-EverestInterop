@@ -19,7 +19,7 @@ namespace TAS.EverestInterop.InfoHUD {
         private static readonly Regex TypeNameRegex = new(@"^([.\w=+<>]+)(\[(.+?)\])?(@([^.]*))?$", RegexOptions.Compiled);
         private static readonly Regex TypeNameSeparatorRegex = new(@"^[.+]", RegexOptions.Compiled);
         private static readonly Dictionary<string, Type> AllTypes = new();
-        private static readonly Dictionary<string, Type> CachedParsedTypes = new();
+        private static readonly Dictionary<string, List<Type>> CachedParsedTypes = new();
         private static readonly Dictionary<string, MethodInfo> CachedGetMethodInfos = new();
         private static readonly Dictionary<string, MethodInfo> CachedSetMethodInfos = new();
         private static readonly Dictionary<string, FieldInfo> CachedFieldInfos = new();
@@ -51,7 +51,7 @@ namespace TAS.EverestInterop.InfoHUD {
                     return errorMessage;
                 }
 
-                if (!TryParseType(typeText, out Type type, out string entityId, out errorMessage)) {
+                if (!TryParseTypes(typeText, out List<Type> types, out string entityId, out errorMessage)) {
                     return errorMessage;
                 }
 
@@ -60,44 +60,67 @@ namespace TAS.EverestInterop.InfoHUD {
                     memberNames = memberNames.SkipLast().ToList();
                 }
 
-                if (GetGetMethod(type, memberNames.First()) is {IsStatic: true} || GetFieldInfo(type, memberNames.First()) is {IsStatic: true}) {
-                    return FormatValue(GetMemberValue(type, null, memberNames), helperMethod, decimals.Value);
+                bool existEntities = false;
+                if (types.Count > 1) {
+                    existEntities = types.Where(type => type.IsSameOrSubclassOf(typeof(Entity)))
+                        .SelectMany(type => GetCachedOrFindEntities(type, entityId, cachedEntities)).Count() > 1;
                 }
 
-                if (Engine.Scene is Level level) {
-                    if (type.IsSameOrSubclassOf(typeof(Entity))) {
-                        List<Entity> entities;
-                        if (cachedEntities.ContainsKey(typeText)) {
-                            entities = cachedEntities[typeText];
-                        } else {
-                            entities = FindEntities(type, entityId)?.ToList();
-                            cachedEntities[typeText] = entities;
-                        }
+                List<string> result = types.Select(type => {
+                    if (GetGetMethod(type, memberNames.First()) is {IsStatic: true} || GetFieldInfo(type, memberNames.First()) is {IsStatic: true}) {
+                        return FormatValue(GetMemberValue(type, null, memberNames), helperMethod, decimals.Value);
+                    }
 
-                        if (entities == null) {
-                            return "Ignore NPE Warning";
-                        }
+                    if (Engine.Scene is Level level) {
+                        if (type.IsSameOrSubclassOf(typeof(Entity))) {
+                            List<Entity> entities = GetCachedOrFindEntities(type, entityId, cachedEntities);
 
-                        return string.Join("", entities.Select(entity => {
-                            string value = FormatValue(GetMemberValue(type, entity, memberNames), helperMethod, decimals.Value);
-
-                            if (entities.Count > 1) {
-                                if (entity.GetEntityData()?.ToEntityId().ToString() is { } id) {
-                                    value = $"\n[{id}]{value}";
-                                } else {
-                                    value = $"\n{value}";
-                                }
+                            if (entities == null) {
+                                return "Ignore NPE Warning";
                             }
 
-                            return value;
-                        }));
-                    } else if (type == typeof(Level)) {
-                        return FormatValue(GetMemberValue(type, level, memberNames), helperMethod, decimals.Value);
+                            return string.Join("", entities.Select(entity => {
+                                string value = FormatValue(GetMemberValue(type, entity, memberNames), helperMethod, decimals.Value);
+
+                                if (existEntities) {
+                                    if (entity.GetEntityData()?.ToEntityId().ToString() is { } id) {
+                                        value = $"\n[{id}] {value}";
+                                    } else {
+                                        value = $"\n{value}";
+                                    }
+                                }
+
+                                return value;
+                            }));
+                        } else if (type == typeof(Level)) {
+                            return FormatValue(GetMemberValue(type, level, memberNames), helperMethod, decimals.Value);
+                        } else if (type == typeof(Session)) {
+                            return FormatValue(GetMemberValue(type, level.Session, memberNames), helperMethod, decimals.Value);
+                        }
                     }
+
+                    return string.Empty;
+                }).Where(s => s.IsNotNullOrWhiteSpace()).Select(s => s.Trim()).ToList();
+
+                if (result.Count > 1) {
+                    result.Insert(0, string.Empty);
                 }
 
-                return string.Empty;
+                return string.Join("\n", result);
             });
+
+            List<Entity> GetCachedOrFindEntities(Type type, string entityId, Dictionary<string, List<Entity>> dictionary) {
+                string entityText = $"{type.FullName}{entityId}";
+                List<Entity> entities;
+                if (dictionary.ContainsKey(entityText)) {
+                    entities = dictionary[entityText];
+                } else {
+                    entities = FindEntities(type, entityId).ToList();
+                    dictionary[entityText] = entities;
+                }
+
+                return entities;
+            }
         }
 
         public static bool TryParseMemberNames(string matchText, out string typeText, out List<string> memberNames, out string errorMessage) {
@@ -128,7 +151,23 @@ namespace TAS.EverestInterop.InfoHUD {
         }
 
         public static bool TryParseType(string text, out Type type, out string entityId, out string errorMessage) {
-            type = null;
+            TryParseTypes(text, out List<Type> types, out entityId, out errorMessage);
+
+            if (types.IsEmpty()) {
+                type = null;
+                return false;
+            } else {
+                type = types.First();
+                return true;
+            }
+        }
+
+        public static bool TryParseTypes(string text, out List<Type> types) {
+            return TryParseTypes(text, out types, out _, out _);
+        }
+
+        private static bool TryParseTypes(string text, out List<Type> types, out string entityId, out string errorMessage) {
+            types = new List<Type>();
             entityId = "";
             errorMessage = "";
 
@@ -138,7 +177,7 @@ namespace TAS.EverestInterop.InfoHUD {
             }
 
             if (CachedParsedTypes.Keys.Contains(typeNameWithAssembly)) {
-                type = CachedParsedTypes[typeNameWithAssembly];
+                types = CachedParsedTypes[typeNameWithAssembly];
                 return true;
             } else {
                 // find the full type name
@@ -155,17 +194,15 @@ namespace TAS.EverestInterop.InfoHUD {
                     matchTypeNames = AllTypes.Keys.Where(name => name.Contains($"+{typeName}")).ToList();
                 }
 
-                switch (matchTypeNames.Count) {
-                    case 0:
-                        errorMessage = $"{typeNameMatched} not found";
-                        return false;
-                    case > 1:
-                        errorMessage = $"type with the same name exists:\n{string.Join("\n", matchTypeNames)}";
-                        return false;
-                    default:
-                        CachedParsedTypes[typeNameWithAssembly] = type = AllTypes[matchTypeNames.First()];
-                        return true;
-                }
+                types = matchTypeNames.Select(name => AllTypes[name]).ToList();
+                CachedParsedTypes[typeNameWithAssembly] = types;
+            }
+
+            if (types.IsEmpty()) {
+                errorMessage = $"{typeNameMatched} not found";
+                return false;
+            } else {
+                return true;
             }
         }
 
@@ -241,7 +278,11 @@ namespace TAS.EverestInterop.InfoHUD {
                         }
                     }
                 } else {
-                    return $"{memberName} not found";
+                    if (obj == null) {
+                        return $"{type.FullName}.{memberName} member not found";
+                    } else {
+                        return $"{obj.GetType().FullName}.{memberName} member not found";
+                    }
                 }
 
                 if (obj == null) {

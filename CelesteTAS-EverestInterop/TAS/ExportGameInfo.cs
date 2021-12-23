@@ -54,8 +54,14 @@ namespace TAS {
             streamWriter.WriteLine(string.Join("\t", "Line", "Inputs", "Frames", "Time", "Position", "Speed", "State", "Statuses", "Entities"));
             trackedEntities = new Dictionary<string, Func<List<Entity>>>();
             foreach (string typeName in tracked) {
-                if (InfoCustom.TryParseType(typeName, out Type t, out _, out _) && t.IsSameOrSubclassOf(typeof(Entity))) {
-                    trackedEntities[t.Name] = () => InfoCustom.FindEntities(t, string.Empty);
+                if (!InfoCustom.TryParseTypes(typeName, out List<Type> types)) {
+                    continue;
+                }
+
+                foreach (Type type in types) {
+                    if (type.IsSameOrSubclassOf(typeof(Entity)) && type.FullName != null) {
+                        trackedEntities[type.FullName] = () => InfoCustom.FindEntities(type, string.Empty);
+                    }
                 }
             }
         }
