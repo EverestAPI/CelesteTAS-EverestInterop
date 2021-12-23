@@ -113,7 +113,7 @@ namespace TAS.EverestInterop {
             return currentState;
         }
 
-        public static void Update() {
+        private static void UpdateState() {
             if (Manager.UltraFastForwarding) {
                 MouseButtons.UpdateNull();
                 kbState = default;
@@ -127,7 +127,9 @@ namespace TAS.EverestInterop {
                 kbState = Keyboard.GetState();
                 padState = GetGamePadState();
             }
+        }
 
+        private static void UpdateHotkey() {
             if (!Manager.Running) {
                 if (Engine.Commands.Open || CelesteNetChatting) {
                     InfoHud.Update();
@@ -180,7 +182,10 @@ namespace TAS.EverestInterop {
 
         [Load]
         private static void Load() {
+            On.Monocle.Engine.RenderCore += EngineOnRenderCore;
+            On.Monocle.MInput.Update += MInputOnUpdate;
             On.Celeste.Input.Initialize += InputOnInitialize;
+
             Type configUiType = typeof(ModuleSettingsKeyboardConfigUI);
             if (typeof(Everest).Assembly.GetTypesSafe()
                     .FirstOrDefault(t => t.FullName == "Celeste.Mod.ModuleSettingsKeyboardConfigUIV2") is { } typeV2
@@ -200,6 +205,8 @@ namespace TAS.EverestInterop {
 
         [Unload]
         private static void Unload() {
+            On.Monocle.Engine.RenderCore -= EngineOnRenderCore;
+            On.Monocle.MInput.Update -= MInputOnUpdate;
             On.Celeste.Input.Initialize -= InputOnInitialize;
 
             foreach (IDetour detour in Detours) {
@@ -207,6 +214,25 @@ namespace TAS.EverestInterop {
             }
 
             Detours.Clear();
+        }
+
+        private static void EngineOnRenderCore(On.Monocle.Engine.orig_RenderCore orig, Engine self) {
+            if (Settings.Enabled) {
+                UpdateState();
+                if (!Manager.UltraFastForwarding) {
+                    UpdateHotkey();
+                }
+            }
+
+            orig(self);
+        }
+
+        private static void MInputOnUpdate(On.Monocle.MInput.orig_Update orig) {
+            if (Settings.Enabled && Manager.UltraFastForwarding) {
+                UpdateHotkey();
+            }
+
+            orig();
         }
 
         private static void InputOnInitialize(On.Celeste.Input.orig_Initialize orig) {

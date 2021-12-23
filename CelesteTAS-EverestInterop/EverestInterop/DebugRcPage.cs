@@ -58,9 +58,13 @@ namespace TAS.EverestInterop {
                 } else {
                     if (Enum.TryParse(idValue, true, out HotkeyID id) && (int) id < Enum.GetNames(typeof(HotkeyID)).Length) {
                         if (Hotkeys.KeysDict.ContainsKey(id)) {
-                            bool press = !"release".Equals(pressValue, StringComparison.InvariantCultureIgnoreCase);
-                            Hotkeys.KeysDict[id].OverrideCheck = press;
-                            Everest.DebugRC.Write(c, "OK");
+                            if (CelesteTasModule.Settings.Enabled) {
+                                bool press = !"release".Equals(pressValue, StringComparison.InvariantCultureIgnoreCase);
+                                Hotkeys.KeysDict[id].OverrideCheck = press;
+                                Everest.DebugRC.Write(c, "OK");
+                            } else {
+                                WriteIdErrorPage("TAS mod is not enabled.");
+                            }
                         } else {
                             WriteIdErrorPage($"Hotkeys.KeysDict doesn't have id {id}, please report to the developer.");
                         }

@@ -38,7 +38,6 @@ namespace TAS {
 
         public static void Update() {
             LastStates = States;
-            Hotkeys.Update();
             Savestates.HandleSaveStates();
             HandleFrameRates();
             CheckToEnable();

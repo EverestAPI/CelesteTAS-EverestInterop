@@ -93,6 +93,10 @@ namespace TAS.Communication {
         #region Read
 
         protected override void ReadData(Message message) {
+            if (!CelesteTasModule.Settings.Enabled) {
+                return;
+            }
+
             switch (message.Id) {
                 case MessageID.EstablishConnection:
                     throw new NeedsResetException("Initialization data recieved in main loop");
