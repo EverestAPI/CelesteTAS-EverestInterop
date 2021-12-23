@@ -93,45 +93,6 @@ namespace TAS {
             SendStateToStudio();
         }
 
-        public static void SendStateToStudio() {
-            StudioInfo studioInfo = new(
-                Controller.Previous?.Line ?? -1,
-                Controller.CurrentFrameInInput,
-                Controller.CurrentFrameInTas,
-                Controller.Inputs.Count,
-                Savestates.StudioHighlightLine,
-                (int) States,
-                GameInfo.StudioInfo,
-                GameInfo.LevelName,
-                GameInfo.ChapterTime,
-                CelesteTasModule.Instance.Metadata.VersionString
-            );
-            StudioCommunicationClient.Instance?.SendState(studioInfo, !ShouldForceState);
-        }
-
-        public static bool IsLoading() {
-            switch (Engine.Scene) {
-                case Level level:
-                    return level.IsAutoSaving() && level.Session.Level == "end-cinematic";
-                case SummitVignette summit:
-                    return !SummitVignetteReady(summit);
-                case Overworld overworld:
-                    return overworld.Current is OuiFileSelect {SlotIndex: >= 0} slot && slot.Slots[slot.SlotIndex].StartingGame;
-                default:
-                    bool isLoading = Engine.Scene is LevelExit or LevelLoader or GameLoader || Engine.Scene.GetType().Name == "LevelExitToLobby";
-                    return isLoading;
-            }
-        }
-
-        public static double GetAngle(Vector2 vector) {
-            double angle = 180 / Math.PI * Math.Atan2(vector.Y, vector.X);
-            if (angle < -90.01f) {
-                return 450 + angle;
-            } else {
-                return 90 + angle;
-            }
-        }
-
         private static void HandleFrameRates() {
             if (States.HasFlag(States.Enable) && !States.HasFlag(States.FrameStep) && !NextStates.HasFlag(States.FrameStep) &&
                 !States.HasFlag(States.Record)) {
@@ -193,10 +154,10 @@ namespace TAS {
             }
 
             if (Hotkeys.StartStop.Check) {
-                if (!States.HasFlag(States.Enable)) {
-                    NextStates |= States.Enable;
-                } else {
+                if (States.HasFlag(States.Enable)) {
                     NextStates |= States.Disable;
+                } else {
+                    NextStates |= States.Enable;
                 }
             } else if (NextStates.HasFlag(States.Enable)) {
                 EnableRun();
@@ -205,15 +166,13 @@ namespace TAS {
             }
         }
 
-        private static void EnableRun() {
+        public static void EnableRun() {
             NextStates &= ~States.Enable;
             InitializeRun(false);
-            kbTextInput = Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput;
-            Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = false;
             AttributeUtils.Invoke<EnableRunAttribute>();
         }
 
-        private static void DisableRun() {
+        public static void DisableRun() {
             Running = false;
             /*
             if (Recording) {
@@ -238,10 +197,6 @@ namespace TAS {
             Controller.Stop();
         }
 
-        public static void EnableExternal() => EnableRun();
-
-        public static void DisableExternal() => DisableRun();
-
         private static void InitializeRun(bool recording) {
             States |= States.Enable;
             States &= ~States.FrameStep;
@@ -253,6 +208,36 @@ namespace TAS {
                 States &= ~States.Record;
                 Controller.RefreshInputs(true);
                 Running = true;
+            }
+        }
+
+        public static void SendStateToStudio() {
+            StudioInfo studioInfo = new(
+                Controller.Previous?.Line ?? -1,
+                Controller.CurrentFrameInInput,
+                Controller.CurrentFrameInTas,
+                Controller.Inputs.Count,
+                Savestates.StudioHighlightLine,
+                (int) States,
+                GameInfo.StudioInfo,
+                GameInfo.LevelName,
+                GameInfo.ChapterTime,
+                CelesteTasModule.Instance.Metadata.VersionString
+            );
+            StudioCommunicationClient.Instance?.SendState(studioInfo, !ShouldForceState);
+        }
+
+        public static bool IsLoading() {
+            switch (Engine.Scene) {
+                case Level level:
+                    return level.IsAutoSaving() && level.Session.Level == "end-cinematic";
+                case SummitVignette summit:
+                    return !SummitVignetteReady(summit);
+                case Overworld overworld:
+                    return overworld.Current is OuiFileSelect {SlotIndex: >= 0} slot && slot.Slots[slot.SlotIndex].StartingGame;
+                default:
+                    bool isLoading = Engine.Scene is LevelExit or LevelLoader or GameLoader || Engine.Scene.GetType().Name == "LevelExitToLobby";
+                    return isLoading;
             }
         }
 

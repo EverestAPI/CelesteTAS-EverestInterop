@@ -20,7 +20,7 @@ namespace TAS.EverestInterop {
 
                 watcher.Changed += (s, e) => {
                     if (e.FullPath == meta.DLL && Manager.Running) {
-                        Manager.DisableExternal();
+                        Manager.DisableRun();
                     }
                 };
 

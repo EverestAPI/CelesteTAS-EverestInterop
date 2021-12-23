@@ -64,10 +64,10 @@ namespace TAS {
                 path = "libTAS_inputs.txt";
             }
 
-            Manager.DisableExternal();
+            Manager.DisableRun();
             StartExport(path);
             Manager.Controller.RefreshInputs(true);
-            Manager.DisableExternal();
+            Manager.DisableRun();
         }
 
         private static void WriteLibTasFrame(string outputKeys, string outputAxes, string outputButtons) {

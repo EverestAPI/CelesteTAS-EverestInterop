@@ -266,7 +266,7 @@ namespace TAS {
                     if (Manager.Running && Manager.Controller.Previous is { } inputFrame && inputFrame.HasActions(Actions.Feather)) {
                         Vector2 angleVector2 = inputFrame.AngleVector2;
                         analog =
-                            $"Analog: {angleVector2.X:F5}, {angleVector2.Y:F5}, {Manager.GetAngle(new Vector2(angleVector2.X, -angleVector2.Y)):F5}°";
+                            $"Analog: {angleVector2.X:F5}, {angleVector2.Y:F5}, {GetAngle(new Vector2(angleVector2.X, -angleVector2.Y)):F5}°";
                     }
 
                     string retainedSpeed = GetAdjustedRetainedSpeed(player, out string exactRetainedSpeed);
@@ -596,6 +596,15 @@ namespace TAS {
 
         private static long ConvertMicroSecondToFrames(long time) {
             return time / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks;
+        }
+
+        private static double GetAngle(Vector2 vector) {
+            double angle = 180 / Math.PI * Math.Atan2(vector.Y, vector.X);
+            if (angle < -90.01f) {
+                return 450 + angle;
+            } else {
+                return 90 + angle;
+            }
         }
 
         //The things we do for faster replay times

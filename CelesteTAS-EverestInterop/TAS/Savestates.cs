@@ -84,7 +84,7 @@ namespace TAS {
 
             if (Hotkeys.ClearState.Pressed) {
                 Clear();
-                DisableExternal();
+                DisableRun();
                 return;
             }
 
@@ -143,7 +143,7 @@ namespace TAS {
 
                     if (StateManager.Instance.LoadState()) {
                         if (!Running) {
-                            EnableExternal();
+                            EnableRun();
                         }
 
                         LoadStateRoutine();
@@ -187,8 +187,8 @@ namespace TAS {
         }
 
         private static void PlayTas() {
-            DisableExternal();
-            EnableExternal();
+            DisableRun();
+            EnableRun();
         }
 
         private static void LoadStateRoutine() {
