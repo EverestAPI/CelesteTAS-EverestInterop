@@ -27,7 +27,6 @@ namespace TAS.EverestInterop {
         private static void Load() {
             On.Monocle.Tracker.Initialize += TrackerOnInitialize;
             On.Celeste.BackdropRenderer.Update += BackdropRendererOnUpdate;
-            On.Celeste.Debris.Update += DebrisOnUpdate;
             On.Celeste.SoundEmitter.Update += SoundEmitterOnUpdate;
             IL.Celeste.ReflectionTentacles.Update += SkipUpdateMethod;
             IL.Monocle.ParticleSystem.Update += SkipUpdateMethod;
@@ -48,7 +47,6 @@ namespace TAS.EverestInterop {
         private static void Unload() {
             On.Monocle.Tracker.Initialize -= TrackerOnInitialize;
             On.Celeste.BackdropRenderer.Update -= BackdropRendererOnUpdate;
-            On.Celeste.Debris.Update -= DebrisOnUpdate;
             On.Celeste.SoundEmitter.Update -= SoundEmitterOnUpdate;
             IL.Celeste.ReflectionTentacles.Update -= SkipUpdateMethod;
             IL.Monocle.ParticleSystem.Update -= SkipUpdateMethod;
@@ -101,14 +99,6 @@ namespace TAS.EverestInterop {
             }
 
             orig(self, scene);
-        }
-
-        private static void DebrisOnUpdate(On.Celeste.Debris.orig_Update orig, Debris self) {
-            if (SkipUpdate) {
-                self.RemoveSelf();
-            } else {
-                orig(self);
-            }
         }
 
         private static void SoundEmitterOnUpdate(On.Celeste.SoundEmitter.orig_Update orig, SoundEmitter self) {
