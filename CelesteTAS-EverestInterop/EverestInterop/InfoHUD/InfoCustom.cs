@@ -60,11 +60,8 @@ namespace TAS.EverestInterop.InfoHUD {
                     memberNames = memberNames.SkipLast().ToList();
                 }
 
-                bool existEntities = false;
-                if (types.Count > 1) {
-                    existEntities = types.Where(type => type.IsSameOrSubclassOf(typeof(Entity)))
-                        .SelectMany(type => GetCachedOrFindEntities(type, entityId, cachedEntities)).Count() > 1;
-                }
+                bool moreThanOneEntity = types.Where(type => type.IsSameOrSubclassOf(typeof(Entity)))
+                    .SelectMany(type => GetCachedOrFindEntities(type, entityId, cachedEntities)).Count() > 1;
 
                 List<string> result = types.Select(type => {
                     if (GetGetMethod(type, memberNames.First()) is {IsStatic: true} || GetFieldInfo(type, memberNames.First()) is {IsStatic: true}) {
@@ -82,7 +79,7 @@ namespace TAS.EverestInterop.InfoHUD {
                             return string.Join("", entities.Select(entity => {
                                 string value = FormatValue(GetMemberValue(type, entity, memberNames), helperMethod, decimals.Value);
 
-                                if (existEntities) {
+                                if (moreThanOneEntity) {
                                     if (entity.GetEntityData()?.ToEntityId().ToString() is { } id) {
                                         value = $"\n[{id}] {value}";
                                     } else {
