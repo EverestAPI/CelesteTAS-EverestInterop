@@ -32,6 +32,7 @@ namespace TAS.Module {
         [SettingIgnore] public Color TriggerHitboxColor { get; set; } = HitboxColor.DefaultTriggerColor;
         [SettingIgnore] public Color PlatformHitboxColor { get; set; } = HitboxColor.DefaultPlatformColor;
         public bool ShowTriggerHitboxes { get; set; } = true;
+        public bool ShowUnloadedRoomsHitboxes { get; set; } = true;
         public bool SimplifiedHitboxes { get; set; } = true;
         public ActualCollideHitboxType ShowActualCollideHitboxes { get; set; } = ActualCollideHitboxType.Off;
 

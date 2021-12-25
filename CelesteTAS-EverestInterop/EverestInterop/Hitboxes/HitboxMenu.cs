@@ -14,6 +14,8 @@ namespace TAS.EverestInterop.Hitboxes {
                 subMenu.Add(new TextMenu.OnOff("Enabled".ToDialogText(), Settings.ShowHitboxes).Change(value => Settings.ShowHitboxes = value));
                 subMenu.Add(new TextMenu.OnOff("Show Trigger Hitboxes".ToDialogText(), Settings.ShowTriggerHitboxes).Change(value =>
                     Settings.ShowTriggerHitboxes = value));
+                subMenu.Add(new TextMenu.OnOff("Show Unloaded Rooms Hitboxes".ToDialogText(), Settings.ShowUnloadedRoomsHitboxes).Change(value =>
+                    Settings.ShowUnloadedRoomsHitboxes = value));
                 subMenu.Add(new TextMenu.Option<ActualCollideHitboxType>("Actual Collide Hitboxes".ToDialogText()).Apply(option => {
                     Array enumValues = Enum.GetValues(typeof(ActualCollideHitboxType));
                     foreach (ActualCollideHitboxType value in enumValues) {

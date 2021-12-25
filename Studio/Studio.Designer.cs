@@ -58,6 +58,7 @@ namespace CelesteStudio {
             this.toggleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toggleHitboxesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toggleTriggerHitboxesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.unloadedRoomsHitboxesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toggleSimplifiedHitboxesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.switchActualCollideHitboxesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator8 = new System.Windows.Forms.ToolStripSeparator();
@@ -77,6 +78,7 @@ namespace CelesteStudio {
             this.speedDecimalsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.velocityDecimalsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.customInfoDecimalsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.subpixelIndicatorDecimalsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.unitOfSpeedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.homeMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -130,7 +132,6 @@ namespace CelesteStudio {
             this.statusPanel = new System.Windows.Forms.Panel();
             this.statusBar = new System.Windows.Forms.StatusStrip();
             this.lblStatus = new System.Windows.Forms.ToolStripStatusLabel();
-            this.subpixelIndicatorDecimalsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusBarContextMenuStrip.SuspendLayout();
             this.menuStrip.SuspendLayout();
             this.tasTextContextMenuStrip.SuspendLayout();
@@ -345,7 +346,7 @@ namespace CelesteStudio {
             // 
             // toggleToolStripMenuItem
             // 
-            this.toggleToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.toggleHitboxesToolStripMenuItem, this.toggleTriggerHitboxesToolStripMenuItem, this.toggleSimplifiedHitboxesToolStripMenuItem, this.switchActualCollideHitboxesToolStripMenuItem, this.toolStripSeparator8, this.toggleSimplifiedGraphicsToolStripMenuItem, this.toggleGameplayToolStripMenuItem, this.toolStripSeparator10, this.toggleCenterCameraToolStripMenuItem, this.toolStripSeparator9, this.switchInfoHUDToolStripMenuItem, this.tASInputInfoToolStripMenuItem, this.gameInfoToolStripMenuItem, this.watchEntityInfoToolStripMenuItem, this.customInfoToolStripMenuItem, this.subpixelIndicatorToolStripMenuItem, this.toolStripSeparator1, this.positionDecimalsToolStripMenuItem, this.speedDecimalsToolStripMenuItem, this.velocityDecimalsToolStripMenuItem, this.customInfoDecimalsToolStripMenuItem, this.subpixelIndicatorDecimalsToolStripMenuItem, this.unitOfSpeedToolStripMenuItem});
+            this.toggleToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.toggleHitboxesToolStripMenuItem, this.toggleTriggerHitboxesToolStripMenuItem, this.unloadedRoomsHitboxesToolStripMenuItem, this.toggleSimplifiedHitboxesToolStripMenuItem, this.switchActualCollideHitboxesToolStripMenuItem, this.toolStripSeparator8, this.toggleSimplifiedGraphicsToolStripMenuItem, this.toggleGameplayToolStripMenuItem, this.toolStripSeparator10, this.toggleCenterCameraToolStripMenuItem, this.toolStripSeparator9, this.switchInfoHUDToolStripMenuItem, this.tASInputInfoToolStripMenuItem, this.gameInfoToolStripMenuItem, this.watchEntityInfoToolStripMenuItem, this.customInfoToolStripMenuItem, this.subpixelIndicatorToolStripMenuItem, this.toolStripSeparator1, this.positionDecimalsToolStripMenuItem, this.speedDecimalsToolStripMenuItem, this.velocityDecimalsToolStripMenuItem, this.customInfoDecimalsToolStripMenuItem, this.subpixelIndicatorDecimalsToolStripMenuItem, this.unitOfSpeedToolStripMenuItem});
             this.toggleToolStripMenuItem.Name = "toggleToolStripMenuItem";
             this.toggleToolStripMenuItem.Size = new System.Drawing.Size(91, 24);
             this.toggleToolStripMenuItem.Text = "&Toggles";
@@ -363,6 +364,13 @@ namespace CelesteStudio {
             this.toggleTriggerHitboxesToolStripMenuItem.Size = new System.Drawing.Size(348, 24);
             this.toggleTriggerHitboxesToolStripMenuItem.Text = "&Trigger Hitboxes";
             this.toggleTriggerHitboxesToolStripMenuItem.Click += new System.EventHandler(this.toggleTriggerHitboxesToolStripMenuItem_Click);
+            // 
+            // unloadedRoomsHitboxesToolStripMenuItem
+            // 
+            this.unloadedRoomsHitboxesToolStripMenuItem.Name = "unloadedRoomsHitboxesToolStripMenuItem";
+            this.unloadedRoomsHitboxesToolStripMenuItem.Size = new System.Drawing.Size(348, 24);
+            this.unloadedRoomsHitboxesToolStripMenuItem.Text = "Unloaded Rooms Hitboxes";
+            this.unloadedRoomsHitboxesToolStripMenuItem.Click += new System.EventHandler(this.unloadedRoomsHitboxesToolStripMenuItem_Click);
             // 
             // toggleSimplifiedHitboxesToolStripMenuItem
             // 
@@ -488,6 +496,13 @@ namespace CelesteStudio {
             this.customInfoDecimalsToolStripMenuItem.Size = new System.Drawing.Size(348, 24);
             this.customInfoDecimalsToolStripMenuItem.Text = "Custom Info Decimals";
             this.customInfoDecimalsToolStripMenuItem.Click += new System.EventHandler(this.customInfoDecimalsToolStripMenuItem_Click);
+            // 
+            // subpixelIndicatorDecimalsToolStripMenuItem
+            // 
+            this.subpixelIndicatorDecimalsToolStripMenuItem.Name = "subpixelIndicatorDecimalsToolStripMenuItem";
+            this.subpixelIndicatorDecimalsToolStripMenuItem.Size = new System.Drawing.Size(348, 24);
+            this.subpixelIndicatorDecimalsToolStripMenuItem.Text = "Subpixel Indicator Decimals";
+            this.subpixelIndicatorDecimalsToolStripMenuItem.Click += new System.EventHandler(this.subpixelIndicatorDecimalsToolStripMenuItem_Click);
             // 
             // unitOfSpeedToolStripMenuItem
             // 
@@ -860,7 +875,7 @@ namespace CelesteStudio {
             this.richText.Language = CelesteStudio.RichText.Language.TAS;
             this.richText.LineNumberColor = System.Drawing.Color.Black;
             this.richText.Location = new System.Drawing.Point(0, 30);
-            this.richText.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.richText.Margin = new System.Windows.Forms.Padding(4);
             this.richText.Name = "richText";
             this.richText.Paddings = new System.Windows.Forms.Padding(0);
             this.richText.SelectionColor = System.Drawing.Color.FromArgb(((int) (((byte) (50)))), ((int) (((byte) (0)))), ((int) (((byte) (0)))), ((int) (((byte) (0)))));
@@ -884,7 +899,7 @@ namespace CelesteStudio {
             this.statusPanel.Controls.Add(this.statusBar);
             this.statusPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.statusPanel.Location = new System.Drawing.Point(0, 717);
-            this.statusPanel.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.statusPanel.Margin = new System.Windows.Forms.Padding(4);
             this.statusPanel.Name = "statusPanel";
             this.statusPanel.Size = new System.Drawing.Size(411, 125);
             this.statusPanel.TabIndex = 5;
@@ -912,13 +927,6 @@ namespace CelesteStudio {
             this.lblStatus.Text = "Searching...";
             this.lblStatus.TextAlign = System.Drawing.ContentAlignment.TopLeft;
             // 
-            // subpixelIndicatorDecimalsToolStripMenuItem
-            // 
-            this.subpixelIndicatorDecimalsToolStripMenuItem.Name = "subpixelIndicatorDecimalsToolStripMenuItem";
-            this.subpixelIndicatorDecimalsToolStripMenuItem.Size = new System.Drawing.Size(348, 24);
-            this.subpixelIndicatorDecimalsToolStripMenuItem.Text = "Subpixel Indicator Decimals";
-            this.subpixelIndicatorDecimalsToolStripMenuItem.Click += new System.EventHandler(this.subpixelIndicatorDecimalsToolStripMenuItem_Click);
-            // 
             // Studio
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
@@ -932,7 +940,7 @@ namespace CelesteStudio {
             this.Icon = ((System.Drawing.Icon) (resources.GetObject("$this.Icon")));
             this.KeyPreview = true;
             this.MainMenuStrip = this.menuStrip;
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.MinimumSize = new System.Drawing.Size(261, 215);
             this.Name = "Studio";
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
@@ -950,6 +958,8 @@ namespace CelesteStudio {
             this.ResumeLayout(false);
             this.PerformLayout();
         }
+
+        private System.Windows.Forms.ToolStripMenuItem unloadedRoomsHitboxesToolStripMenuItem;
 
         private System.Windows.Forms.ToolStripMenuItem subpixelIndicatorDecimalsToolStripMenuItem;
 

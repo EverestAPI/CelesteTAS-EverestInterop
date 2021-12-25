@@ -1539,6 +1539,10 @@ namespace CelesteStudio {
             ToggleGameSetting("ShowTriggerHitboxes", null, sender);
         }
 
+        private void unloadedRoomsHitboxesToolStripMenuItem_Click(object sender, EventArgs e) {
+            ToggleGameSetting("ShowUnloadedRoomsHitboxes", null, sender);
+        }
+
         private void toggleSimplifiedHitboxesToolStripMenuItem_Click(object sender, EventArgs e) {
             ToggleGameSetting("SimplifiedHitboxes", null, sender);
         }

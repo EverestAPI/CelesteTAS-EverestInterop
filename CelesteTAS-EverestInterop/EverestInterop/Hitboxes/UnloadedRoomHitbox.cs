@@ -54,7 +54,7 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void EntityListOnDebugRender(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
-            if (!Settings.Enabled || !Settings.CenterCamera || Engine.Scene is not Level level) {
+            if (!Settings.Enabled || !Settings.CenterCamera || !Settings.ShowUnloadedRoomsHitboxes || Engine.Scene is not Level level) {
                 orig(self, camera);
                 return;
             }
