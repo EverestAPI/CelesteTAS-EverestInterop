@@ -115,15 +115,12 @@ namespace TAS.EverestInterop {
 
         public static void Update() {
             if (Manager.UltraFastForwarding) {
-                MouseButtons.UpdateNull();
                 kbState = default;
                 padState = default;
             } else if (!Engine.Instance.IsActive) {
-                MouseButtons.UpdateNull();
                 kbState = default;
                 padState = GetGamePadState();
             } else {
-                MouseButtons.Update();
                 kbState = Keyboard.GetState();
                 padState = GetGamePadState();
             }
@@ -258,7 +255,10 @@ namespace TAS.EverestInterop {
 
             public bool Check { get; private set; }
             public bool LastCheck { get; private set; }
+
             public bool Pressed => !LastCheck && Check;
+
+            // TODO FIX: unstable DoublePressed response during frame drops
             public bool DoublePressed { get; private set; }
             public bool Released => LastCheck && !Check;
             public float Value { get; private set; }
@@ -348,7 +348,27 @@ namespace TAS.EverestInterop {
         public static readonly Button Middle = new();
         public static readonly Button Right = new();
 
-        public static void Update() {
+        [Load]
+        private static void Load() {
+            On.Celeste.Celeste.RenderCore += CelesteOnRenderCore;
+        }
+
+        [Unload]
+        private static void Unload() {
+            On.Celeste.Celeste.RenderCore -= CelesteOnRenderCore;
+        }
+
+        private static void CelesteOnRenderCore(On.Celeste.Celeste.orig_RenderCore orig, Celeste.Celeste self) {
+            if (Manager.UltraFastForwarding || !Engine.Instance.IsActive) {
+                UpdateNull();
+            } else {
+                Update();
+            }
+
+            orig(self);
+        }
+
+        private static void Update() {
             MouseState mouseState = Mouse.GetState();
             LastPosition = Position;
             Position = new Vector2(mouseState.X, mouseState.Y);
@@ -357,7 +377,7 @@ namespace TAS.EverestInterop {
             Right.Update(mouseState.RightButton);
         }
 
-        public static void UpdateNull() {
+        private static void UpdateNull() {
             Left.Update(ButtonState.Released);
             Middle.Update(ButtonState.Released);
             Right.Update(ButtonState.Released);
