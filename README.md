@@ -110,6 +110,7 @@ The contents of the curly brackets will be converted to actual data, here are so
 - `{ClassName.staticField.field...}` Non-entity and non-level types that can get the value of a static field.
 - `{Player.AutoJumpTimer.toFrame()}` add `toFrame()` to the end can change the float value to frames.
 - `{Player.Speed.toPixelPerFrame()}` add `toPixelPerFrame()` to the end can change the float/vector2 speed unit to pixel/frame.
+- `{Player.Position:}` add `:` or `=` to the end will add label before the value. e.g. `{Player.Position:}` is the same as `Player.Position: {Player.Position}`.
 - `AutoJump: {Player.AutoJump} ({Player.AutoJumpTimer.toFrame()})`
 - `ForceMoveX: {Player.forceMoveX} ({Player.forceMoveXTimer.toFrame()})`
 - `Theo: {TheoCrystal.Position}`

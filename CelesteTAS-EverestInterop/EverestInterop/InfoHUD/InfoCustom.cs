@@ -55,8 +55,16 @@ namespace TAS.EverestInterop.InfoHUD {
                     return errorMessage;
                 }
 
-                string helperMethod = memberNames.Last();
+                string lastMemberName = memberNames.Last();
+                string lastCharacter = lastMemberName.Substring(lastMemberName.Length - 1, 1);
+                if (lastCharacter is ":" or "=") {
+                    lastMemberName = lastMemberName.Substring(0, lastMemberName.Length - 1);
+                    memberNames[memberNames.Count - 1] = lastMemberName;
+                }
+
+                string helperMethod = "";
                 if (helperMethod is "toFrame()" or "toPixelPerFrame()") {
+                    helperMethod = lastMemberName;
                     memberNames = memberNames.SkipLast().ToList();
                 }
 
@@ -99,11 +107,17 @@ namespace TAS.EverestInterop.InfoHUD {
                     return string.Empty;
                 }).Where(s => s.IsNotNullOrWhiteSpace()).Select(s => s.Trim()).ToList();
 
-                if (result.Count > 1) {
-                    result.Insert(0, string.Empty);
+                string prefix = lastCharacter switch {
+                    "=" => matchText,
+                    ":" => $"{matchText} ",
+                    _ => ""
+                };
+
+                if (result.Any(s => s.Contains("\n"))) {
+                    prefix += "\n";
                 }
 
-                return string.Join("\n", result);
+                return $"{prefix}{string.Join("\n", result)}";
             });
 
             List<Entity> GetCachedOrFindEntities(Type type, string entityId, Dictionary<string, List<Entity>> dictionary) {
