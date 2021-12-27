@@ -18,7 +18,7 @@ namespace TAS.Input {
                 SaveState = false;
             }
 
-            Speed = int.TryParse(modifiers, out int speed) ? speed : DefaultSpeed;
+            Speed = int.TryParse(modifiers, out int speed) ? Math.Max(1, speed) : DefaultSpeed;
         }
 
         public override string ToString() {
