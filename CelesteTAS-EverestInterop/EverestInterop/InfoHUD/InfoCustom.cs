@@ -63,7 +63,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 }
 
                 string helperMethod = "";
-                if (helperMethod is "toFrame()" or "toPixelPerFrame()") {
+                if (lastMemberName is "toFrame()" or "toPixelPerFrame()") {
                     helperMethod = lastMemberName;
                     memberNames = memberNames.SkipLast().ToList();
                 }
