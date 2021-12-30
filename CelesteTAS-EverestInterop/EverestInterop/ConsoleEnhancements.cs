@@ -20,6 +20,11 @@ namespace TAS.EverestInterop {
             IL.Monocle.Commands.Render -= Commands_Render;
         }
 
+        [EnableRun]
+        private static void CloseCommand() {
+            Engine.Commands.Open = false;
+        }
+
         private static void Commands_Render(ILContext il) {
             // Hijack string.Format("\n level:       {0}, {1}", xObj, yObj)
             new ILCursor(il).FindNext(out ILCursor[] found,

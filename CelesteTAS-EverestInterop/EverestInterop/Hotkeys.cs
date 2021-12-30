@@ -125,20 +125,31 @@ namespace TAS.EverestInterop {
                 padState = GetGamePadState();
             }
 
+            bool updateKey = true;
+            bool updateButton = true;
+
             if (!Manager.Running) {
                 if (Engine.Commands.Open || CelesteNetChatting) {
-                    InfoHud.Update();
-                    return;
+                    updateKey = false;
                 }
 
-                if (Engine.Scene?.Tracker is { } tracker &&
-                    (tracker.GetEntity<KeyboardConfigUI>() != null || tracker.GetEntity<ButtonConfigUI>() != null)) {
-                    return;
+                if (Engine.Scene?.Tracker is { } tracker) {
+                    if (tracker.GetEntity<KeyboardConfigUI>() != null) {
+                        updateKey = false;
+                    }
+
+                    if (tracker.GetEntity<ButtonConfigUI>() != null) {
+                        updateButton = false;
+                    }
                 }
             }
 
             foreach (Hotkey hotkey in KeysDict.Values) {
-                hotkey?.Update();
+                if (hotkey == InfoHud) {
+                    hotkey.Update();
+                } else {
+                    hotkey.Update(updateKey, updateButton);
+                }
             }
 
             if (Manager.Running && FastForwardComment.Pressed) {
@@ -255,7 +266,6 @@ namespace TAS.EverestInterop {
 
             public bool Check { get; private set; }
             public bool LastCheck { get; private set; }
-
             public bool Pressed => !LastCheck && Check;
 
             // TODO FIX: unstable DoublePressed response during frame drops
@@ -263,7 +273,7 @@ namespace TAS.EverestInterop {
             public bool Released => LastCheck && !Check;
             public float Value { get; private set; }
 
-            public void Update() {
+            public void Update(bool updateKey = true, bool updateButton = true) {
                 LastCheck = Check;
                 bool keyCheck;
                 bool buttonCheck;
@@ -274,8 +284,8 @@ namespace TAS.EverestInterop {
                         OverrideCheck = false;
                     }
                 } else {
-                    keyCheck = IsKeyDown();
-                    buttonCheck = IsButtonDown();
+                    keyCheck = updateKey && IsKeyDown();
+                    buttonCheck = updateButton && IsButtonDown();
                 }
 
                 Check = keyCheck || buttonCheck;
