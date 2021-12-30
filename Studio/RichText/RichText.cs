@@ -51,6 +51,7 @@ namespace CelesteStudio.RichText {
         private int currentLine;
         private string currentLineText;
         private string descriptionFile;
+        private int saveStateLine = -1;
 
         protected Dictionary<int, int> foldingPairs = new();
         public bool InsertLocked = false;
@@ -80,7 +81,17 @@ namespace CelesteStudio.RichText {
             leftBracketPosition2,
             delayedTextChangedRange;
 
-        public int SaveStateLine = -1;
+        public int SaveStateLine {
+            get => saveStateLine;
+            set {
+                if (saveStateLine == value) {
+                    return;
+                }
+
+                saveStateLine = value;
+                Invalidate();
+            }
+        }
 
         private int startFoldingLine = -1,
             updating,
@@ -221,6 +232,10 @@ namespace CelesteStudio.RichText {
         public int CurrentLine {
             get => currentLine;
             set {
+                if (currentLine == value) {
+                    return;
+                }
+
                 currentLine = value;
                 if (currentLine >= 0) {
                     Selection = new Range(this, 4, currentLine, 4, currentLine);
@@ -235,6 +250,10 @@ namespace CelesteStudio.RichText {
         public string CurrentLineText {
             get => currentLineText;
             set {
+                if (currentLineText == value) {
+                    return;
+                }
+
                 currentLineText = value;
                 Invalidate();
             }
@@ -2876,7 +2895,7 @@ namespace CelesteStudio.RichText {
                 lastModifiers != (Keys.Control | Keys.Alt) && //ALT+CTRL is special chars (AltGr)
                 lastModifiers != (Keys.Shift | Keys.Control | Keys.Alt) && //SHIFT + ALT + CTRL is special chars (AltGr)
                 (lastModifiers != (Keys.Alt) || char.IsLetterOrDigit(c)) //may be ALT+LetterOrDigit is mnemonic code
-            ) {
+               ) {
                 return false; //do not process Ctrl+? and Alt+? keys
             }
 

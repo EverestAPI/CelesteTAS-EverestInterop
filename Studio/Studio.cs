@@ -708,7 +708,6 @@ namespace CelesteStudio {
                     if (hooked) {
                         UpdateValues();
                         FixSomeBugsWhenOutOfMinimized();
-                        richText.Invalidate();
                         if (CommunicationWrapper.FastForwarding) {
                             CommunicationWrapper.CheckFastForward();
                         }
@@ -754,23 +753,18 @@ namespace CelesteStudio {
             } else {
                 if (CommunicationWrapper.StudioInfo != null) {
                     StudioInfo studioInfo = CommunicationWrapper.StudioInfo;
-                    if (richText.CurrentLine != studioInfo.CurrentLine) {
-                        richText.CurrentLine = studioInfo.CurrentLine;
-                    }
-
+                    richText.CurrentLine = studioInfo.CurrentLine;
                     richText.CurrentLineText = studioInfo.CurrentFrameInInput.ToString();
-                    currentFrame = studioInfo.CurrentFrameInTas;
                     richText.SaveStateLine = studioInfo.SaveStateLine;
+                    currentFrame = studioInfo.CurrentFrameInTas;
                     tasStates = (States) studioInfo.tasStates;
                     if (tasStates.HasFlag(States.Enable) && !tasStates.HasFlag(States.FrameStep)) {
                         totalFrames = studioInfo.TotalFrames;
                     }
                 } else {
                     currentFrame = 0;
-                    if (richText.CurrentLine >= 0) {
-                        richText.CurrentLine = -1;
-                    }
-
+                    richText.CurrentLine = -1;
+                    richText.CurrentLineText = string.Empty;
                     richText.SaveStateLine = -1;
                     tasStates = States.None;
                 }
