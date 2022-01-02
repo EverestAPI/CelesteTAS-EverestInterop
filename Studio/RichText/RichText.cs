@@ -2966,10 +2966,13 @@ namespace CelesteStudio.RichText {
 
                 //insert char
                 if (c == '\n') {
-                    if (Selection.Start.iChar > 0 && AllSpaceRegex.IsMatch(Lines[Selection.Start.iLine].Substring(0, Selection.Start.iChar))) {
-                        Selection.GoHome(false);
-                    } else if (Selection.Start.iChar > 0) {
-                        Selection.GoEnd(false);
+                    string line = Lines[Selection.Start.iLine];
+                    if (Selection.Start.iChar > 0) {
+                        if (AllSpaceRegex.IsMatch(line.Substring(0, Math.Max(line.Length, Selection.Start.iChar)))) {
+                            Selection.GoHome(false);
+                        } else {
+                            Selection.GoEnd(false);
+                        }
                     }
                 }
 
