@@ -6,7 +6,9 @@ using System.Reflection;
 using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
+using Mono.Cecil.Cil;
 using Monocle;
+using MonoMod.Cil;
 using TAS.Module;
 using TAS.Utils;
 
@@ -21,6 +23,7 @@ namespace TAS.Input {
         private static void Load() {
             On.Celeste.Level.LoadNewPlayer += LevelOnLoadNewPlayer;
             On.Celeste.Player.IntroRespawnEnd += PlayerOnIntroRespawnEnd;
+            IL.Celeste.NPC06_Theo_Plateau.Awake += NPC06_Theo_PlateauOnAwake;
         }
 
         // ReSharper disable once UnusedMember.Local
@@ -28,6 +31,7 @@ namespace TAS.Input {
         private static void Unload() {
             On.Celeste.Level.LoadNewPlayer -= LevelOnLoadNewPlayer;
             On.Celeste.Player.IntroRespawnEnd -= PlayerOnIntroRespawnEnd;
+            IL.Celeste.NPC06_Theo_Plateau.Awake -= NPC06_Theo_PlateauOnAwake;
         }
 
         private static Player LevelOnLoadNewPlayer(On.Celeste.Level.orig_LoadNewPlayer orig, Vector2 position, PlayerSpriteMode spriteMode) {
@@ -50,6 +54,46 @@ namespace TAS.Input {
                     initSpeed = Vector2.Zero;
                 };
             }
+        }
+
+        private static void NPC06_Theo_PlateauOnAwake(ILContext il) {
+            ILCursor ilCursor = new(il);
+            if (!ilCursor.TryGotoNext(ins => ins.MatchCallvirt<Scene>("Add"))) {
+                return;
+            }
+
+            Instruction skipCs06Campfire = ilCursor.Next.Next;
+            if (!ilCursor.TryGotoPrev(MoveType.After, ins => ins.MatchCall<Entity>("Awake"))) {
+                return;
+            }
+
+            Vector2 startPoint = new(-176, 312);
+            ilCursor.EmitDelegate<Func<bool>>(() => {
+                Session session = Engine.Scene.GetSession();
+                bool skip = CelesteTasModule.Settings.Enabled && (session.GetFlag("campfire_chat") || session.RespawnPoint != startPoint);
+                if (skip && Engine.Scene.GetLevel() is { } level && level.GetPlayer() is { } player
+                    && level.Entities.FindFirst<NPC06_Theo_Plateau>() is { } theo && level.Tracker.GetEntity<Bonfire>() is { } bonfire) {
+                    session.SetFlag("campfire_chat");
+                    level.Session.BloomBaseAdd = 1f;
+                    level.Bloom.Base = AreaData.Get(level).BloomBase + 1f;
+                    level.Session.Dreaming = true;
+                    level.Add(new StarJumpController());
+                    level.Add(new CS06_StarJumpEnd(theo, player, new Vector2(-4, 312), new Vector2(-184, 177.6818f)));
+                    level.Add(new FlyFeather(new Vector2(88, 256), shielded: false, singleUse: false));
+                    bonfire.Activated = false;
+                    bonfire.SetMode(Bonfire.Mode.Lit);
+                    theo.Position = new Vector2(-40, 312);
+                    theo.Sprite.Play("sleep");
+                    theo.Sprite.SetAnimationFrame(theo.Sprite.CurrentAnimationTotalFrames - 1);
+                    if (level.Session.RespawnPoint == startPoint) {
+                        player.Position = new Vector2(-4, 312);
+                        player.Facing = Facings.Left;
+                    }
+                }
+
+                return skip;
+            });
+            ilCursor.Emit(OpCodes.Brtrue, skipCs06Campfire);
         }
 
         // "Console CommandType",
