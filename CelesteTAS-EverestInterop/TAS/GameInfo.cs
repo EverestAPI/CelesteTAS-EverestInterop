@@ -95,16 +95,16 @@ namespace TAS {
                     infos.Add(Status);
                 }
 
+                if (InfoMouse.MouseWorldPosition.HasValue) {
+                    infos.Add($"Cursor: {InfoMouse.MouseWorldPosition.Value.ToSimpleString(0)}");
+                }
+
                 if ((TasSettings.InfoCustom & HudOptions.HudOnly) != 0 && CustomInfo.IsNotNullOrWhiteSpace()) {
                     infos.Add(CustomInfo);
                 }
 
                 if ((TasSettings.InfoWatchEntity & HudOptions.HudOnly) != 0 && WatchingInfo.IsNotNullOrWhiteSpace()) {
                     infos.Add(WatchingInfo);
-                }
-
-                if (InfoMouse.MouseWorldPosition.HasValue) {
-                    infos.Add($"Cursor: {InfoMouse.MouseWorldPosition.Value.ToSimpleString(0)}");
                 }
 
                 return string.Join("\n\n", infos);
@@ -114,16 +114,17 @@ namespace TAS {
         public static string StudioInfo {
             get {
                 List<string> infos = new() {Status};
+
+                if (InfoMouse.MouseWorldPosition.HasValue) {
+                    infos.Add($"Cursor: {InfoMouse.MouseWorldPosition.Value.ToSimpleString(0)}");
+                }
+
                 if ((TasSettings.InfoCustom & HudOptions.StudioOnly) != 0 && CustomInfo.IsNotNullOrWhiteSpace()) {
                     infos.Add(CustomInfo);
                 }
 
                 if ((TasSettings.InfoWatchEntity & HudOptions.StudioOnly) != 0 && WatchingInfo.IsNotNullOrWhiteSpace()) {
                     infos.Add(WatchingInfo);
-                }
-
-                if (InfoMouse.MouseWorldPosition.HasValue) {
-                    infos.Add($"Cursor: {InfoMouse.MouseWorldPosition.Value.ToSimpleString(0)}");
                 }
 
                 return string.Join("\n\n", infos);
@@ -134,6 +135,10 @@ namespace TAS {
             get {
                 List<string> infos = new() {ExactStatus};
 
+                if (InfoMouse.MouseWorldPosition.HasValue) {
+                    infos.Add($"Cursor: {InfoMouse.MouseWorldPosition.Value.ToSimpleString(0)}");
+                }
+
                 WatchingInfo = InfoWatchEntity.GetWatchingEntitiesInfo(alwaysUpdate: true, decimals: CelesteTasModuleSettings.MaxDecimals);
                 CustomInfo = InfoCustom.Parse(CelesteTasModuleSettings.MaxDecimals);
 
@@ -143,10 +148,6 @@ namespace TAS {
 
                 if (WatchingInfo.IsNotNullOrWhiteSpace()) {
                     infos.Add(WatchingInfo);
-                }
-
-                if (InfoMouse.MouseWorldPosition.HasValue) {
-                    infos.Add($"Cursor: {InfoMouse.MouseWorldPosition.Value.ToSimpleString(0)}");
                 }
 
                 return string.Join("\n\n", infos);
