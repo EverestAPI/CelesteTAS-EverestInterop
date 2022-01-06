@@ -66,9 +66,7 @@ namespace TAS.EverestInterop {
 
             if (Settings.CenterCamera && !Hotkeys.InfoHud.Check) {
                 if (MouseButtons.Right.LastCheck && MouseButtons.Right.Check) {
-                    Draw.SpriteBatch.Begin();
                     InfoMouse.DrawCursor(MouseButtons.Position);
-                    Draw.SpriteBatch.End();
 
                     float scale = self.Zoom * ((320f - self.ScreenPadding * 2f) / 320f) * self.Camera.Zoom * 6f * Engine.ViewWidth / Engine.Width;
                     offset -= (MouseButtons.Position - MouseButtons.LastPosition) / scale;

@@ -541,6 +541,11 @@ namespace TAS.Utils {
 
             return position;
         }
+
+        public static Vector2 MouseToWorld(this Level level, Vector2 mousePosition) {
+            float viewScale = (float) Engine.ViewWidth / Engine.Width;
+            return level.ScreenToWorld(mousePosition / viewScale).Floor();
+        }
     }
 
     internal static class GridExtensions {

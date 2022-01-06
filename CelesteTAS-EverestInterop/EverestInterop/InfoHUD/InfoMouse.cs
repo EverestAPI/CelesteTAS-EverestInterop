@@ -1,5 +1,6 @@
 ﻿using System;
 using Celeste;
+using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
 using StudioCommunication;
@@ -8,7 +9,23 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD {
     public static class InfoMouse {
-        public static Vector2? MouseWorldPosition { get; private set; }
+        public static string MouseInfo {
+            get {
+                if (mouseWorldPosition == null) {
+                    return string.Empty;
+                }
+
+                string result = $"Cursor: {mouseWorldPosition.Value.ToSimpleString(0)}";
+
+                if (SelectedAreaEntity.Info is { } selectedAreaInfo && selectedAreaInfo.IsNotEmpty()) {
+                    result += $"\nSelected Area: {selectedAreaInfo}";
+                }
+
+                return result;
+            }
+        }
+
+        private static Vector2? mouseWorldPosition;
         private static Vector2? startDragPosition;
         private static CelesteTasModuleSettings TasSettings => CelesteTasModule.Settings;
 
@@ -18,7 +35,7 @@ namespace TAS.EverestInterop.InfoHUD {
             }
 
             if (!Hotkeys.InfoHud.Check) {
-                MouseWorldPosition = null;
+                mouseWorldPosition = null;
                 return;
             }
 
@@ -39,18 +56,18 @@ namespace TAS.EverestInterop.InfoHUD {
             }
 
             if (Engine.Scene is Level level) {
-                float viewScale = (float) Engine.ViewWidth / Engine.Width;
-                MouseWorldPosition = level.ScreenToWorld(MouseButtons.Position / viewScale).Floor();
+                mouseWorldPosition = level.MouseToWorld(MouseButtons.Position);
             } else {
-                MouseWorldPosition = null;
+                mouseWorldPosition = null;
             }
-
-            Draw.SpriteBatch.Begin();
 
             InfoWatchEntity.CheckMouseButtons();
 
             DrawCursor(MouseButtons.Position);
+            MoveInfoHub();
+        }
 
+        private static void MoveInfoHub() {
             if (MouseButtons.Left.Pressed) {
                 startDragPosition = MouseButtons.Position;
             }
@@ -67,11 +84,11 @@ namespace TAS.EverestInterop.InfoHUD {
             if (startDragPosition != null && MouseButtons.Left.Check) {
                 TasSettings.InfoPosition += MouseButtons.Position - MouseButtons.LastPosition;
             }
-
-            Draw.SpriteBatch.End();
         }
 
         public static void DrawCursor(Vector2 position) {
+            Draw.SpriteBatch.Begin();
+
             int scale = Settings.Instance.Fullscreen ? 6 : Math.Min(6, Engine.ViewWidth / 320);
             Color color = Color.Yellow;
 
@@ -84,6 +101,80 @@ namespace TAS.EverestInterop.InfoHUD {
 
             Draw.Line(position.X - 3f, position.Y, position.X + 2f, position.Y, color);
             Draw.Line(position.X, position.Y - 2f, position.X, position.Y + 3f, color);
+
+            Draw.SpriteBatch.End();
+        }
+    }
+
+    // ReSharper disable once UnusedType.Global
+    [Tracked]
+    internal class SelectedAreaEntity : Entity {
+        [Load]
+        private static void Load() {
+            On.Celeste.Level.LoadLevel += LevelOnLoadLevel;
+        }
+
+        [Unload]
+        private static void Unload() {
+            On.Celeste.Level.LoadLevel -= LevelOnLoadLevel;
+        }
+
+        private static void LevelOnLoadLevel(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader) {
+            orig(self, playerIntro, isFromLoader);
+            if (self.Tracker.GetEntity<SelectedAreaEntity>() == null) {
+                self.Add(new SelectedAreaEntity());
+            }
+        }
+
+        public static string Info {
+            get {
+                if (Engine.Scene is Level level && level.Tracker.GetEntity<SelectedAreaEntity>() is {start: { }} entity) {
+                    return entity.ToString();
+                } else {
+                    return string.Empty;
+                }
+            }
+        }
+
+        private Vector2? start;
+        private int left;
+        private int right;
+        private int top;
+        private int bottom;
+
+        private SelectedAreaEntity() {
+            Depth = Depths.Top;
+            Tag = Tags.Global;
+        }
+
+        public override void Render() {
+            if (SceneAs<Level>() is not { } level || !Hotkeys.InfoHud.Check) {
+                start = null;
+                return;
+            }
+
+            if (MouseButtons.Right.Pressed) {
+                start = level.MouseToWorld(MouseButtons.Position);
+            }
+
+            if (start != null) {
+                Vector2 end = level.MouseToWorld(MouseButtons.Position);
+                left = (int) Math.Min(start.Value.X, end.X);
+                right = (int) Math.Max(start.Value.X, end.X);
+                top = (int) Math.Min(start.Value.Y, end.Y);
+                bottom = (int) Math.Max(start.Value.Y, end.Y);
+
+                if (MouseButtons.Right.Check) {
+                    Draw.HollowRect(left, top, right - left, bottom - top, Color.Yellow);
+                } else {
+                    TextInput.SetClipboardText(ToString());
+                    start = null;
+                }
+            }
+        }
+
+        public override string ToString() {
+            return start == null ? string.Empty : $"{left}, {top}, {right}, {bottom}";
         }
     }
 }

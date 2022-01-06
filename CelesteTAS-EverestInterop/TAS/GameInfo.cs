@@ -95,8 +95,8 @@ namespace TAS {
                     infos.Add(Status);
                 }
 
-                if (InfoMouse.MouseWorldPosition.HasValue) {
-                    infos.Add($"Cursor: {InfoMouse.MouseWorldPosition.Value.ToSimpleString(0)}");
+                if (InfoMouse.MouseInfo.IsNotEmpty()) {
+                    infos.Add(InfoMouse.MouseInfo);
                 }
 
                 if ((TasSettings.InfoCustom & HudOptions.HudOnly) != 0 && CustomInfo.IsNotNullOrWhiteSpace()) {
@@ -115,8 +115,8 @@ namespace TAS {
             get {
                 List<string> infos = new() {Status};
 
-                if (InfoMouse.MouseWorldPosition.HasValue) {
-                    infos.Add($"Cursor: {InfoMouse.MouseWorldPosition.Value.ToSimpleString(0)}");
+                if (InfoMouse.MouseInfo.IsNotEmpty()) {
+                    infos.Add(InfoMouse.MouseInfo);
                 }
 
                 if ((TasSettings.InfoCustom & HudOptions.StudioOnly) != 0 && CustomInfo.IsNotNullOrWhiteSpace()) {
@@ -135,8 +135,8 @@ namespace TAS {
             get {
                 List<string> infos = new() {ExactStatus};
 
-                if (InfoMouse.MouseWorldPosition.HasValue) {
-                    infos.Add($"Cursor: {InfoMouse.MouseWorldPosition.Value.ToSimpleString(0)}");
+                if (InfoMouse.MouseInfo.IsNotEmpty()) {
+                    infos.Add(InfoMouse.MouseInfo);
                 }
 
                 WatchingInfo = InfoWatchEntity.GetWatchingEntitiesInfo(alwaysUpdate: true, decimals: CelesteTasModuleSettings.MaxDecimals);
