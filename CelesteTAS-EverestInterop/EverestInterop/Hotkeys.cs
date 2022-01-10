@@ -49,9 +49,17 @@ namespace TAS.EverestInterop {
         public static Hotkey SaveState;
         public static Hotkey ClearState;
         public static Hotkey InfoHud;
+        public static Hotkey CameraUp;
+        public static Hotkey CameraDown;
+        public static Hotkey CameraLeft;
+        public static Hotkey CameraRight;
 
         public static readonly Dictionary<HotkeyID, Hotkey> KeysDict = new();
         public static Dictionary<HotkeyID, List<Keys>> KeysInteractWithStudio = new();
+
+        private static readonly List<HotkeyID> HotkeysIgnoreOnStudio = new() {
+            HotkeyID.InfoHud, HotkeyID.CameraUp, HotkeyID.CameraDown, HotkeyID.CameraLeft, HotkeyID.CameraRight
+        };
 
         static Hotkeys() {
             InputInitialize();
@@ -92,8 +100,12 @@ namespace TAS.EverestInterop {
             KeysDict[HotkeyID.SaveState] = SaveState = BindingToHotkey(Settings.KeySaveState);
             KeysDict[HotkeyID.ClearState] = ClearState = BindingToHotkey(Settings.KeyClearState);
             KeysDict[HotkeyID.InfoHud] = InfoHud = BindingToHotkey(Settings.KeyInfoHud);
+            KeysDict[HotkeyID.CameraUp] = CameraUp = BindingToHotkey(new ButtonBinding(0, Keys.Up));
+            KeysDict[HotkeyID.CameraDown] = CameraDown = BindingToHotkey(new ButtonBinding(0, Keys.Down));
+            KeysDict[HotkeyID.CameraLeft] = CameraLeft = BindingToHotkey(new ButtonBinding(0, Keys.Left));
+            KeysDict[HotkeyID.CameraRight] = CameraRight = BindingToHotkey(new ButtonBinding(0, Keys.Right));
 
-            KeysInteractWithStudio = KeysDict.Where(pair => pair.Key != HotkeyID.InfoHud)
+            KeysInteractWithStudio = KeysDict.Where(pair => !HotkeysIgnoreOnStudio.Contains(pair.Key))
                 .ToDictionary(pair => pair.Key, pair => pair.Value.Keys);
         }
 

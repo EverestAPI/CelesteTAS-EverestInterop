@@ -15,5 +15,9 @@ namespace StudioCommunication {
         SaveState,
         ClearState,
         InfoHud,
+        CameraUp,
+        CameraDown,
+        CameraLeft,
+        CameraRight,
     }
 }

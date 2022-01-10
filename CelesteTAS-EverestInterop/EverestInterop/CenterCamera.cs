@@ -11,8 +11,10 @@ using TAS.Utils;
 namespace TAS.EverestInterop {
     public static class CenterCamera {
         private static Vector2? savedCameraPosition;
-        public static Vector2? lastPlayerPosition;
+        private static Vector2? lastPlayerPosition;
         private static Vector2 offset;
+        private static DateTime? arrowKeyPressTime;
+        private static bool waitForAllResetKeysRelease;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
         public static void Load() {
@@ -63,12 +65,66 @@ namespace TAS.EverestInterop {
 
         private static void LevelOnRender(On.Celeste.Level.orig_Render orig, Level self) {
             CenterTheCamera(() => orig(self));
+            MoveCamera(self);
+        }
 
-            if (Settings.CenterCamera && !Hotkeys.InfoHud.Check) {
+        private static float ArrowKeySensitivity {
+            get {
+                if (arrowKeyPressTime == null) {
+                    return 1;
+                }
+
+                float sensitivity = (float) ((DateTime.Now - arrowKeyPressTime.Value).TotalMilliseconds / 200f);
+                Calc.Clamp(sensitivity, 1, 6).DebugLog();
+                return Calc.Clamp(sensitivity, 1, 6);
+            }
+        }
+
+        private static void MoveCamera(Level level) {
+            if (!Settings.CenterCamera) {
+                return;
+            }
+
+            if (Hotkeys.InfoHud.Check) {
+                // info hub hotkey + arrow key
+                if (waitForAllResetKeysRelease) {
+                    if (!Hotkeys.CameraUp.Check && !Hotkeys.CameraDown.Check) {
+                        waitForAllResetKeysRelease = false;
+                    }
+                } else {
+                    if (!Hotkeys.CameraUp.Check && !Hotkeys.CameraDown.Check && !Hotkeys.CameraLeft.Check && !Hotkeys.CameraRight.Check) {
+                        arrowKeyPressTime = null;
+                    } else if (arrowKeyPressTime == null) {
+                        arrowKeyPressTime = DateTime.Now;
+                    }
+
+                    if (Hotkeys.CameraUp.Check) {
+                        offset += new Vector2(0, -ArrowKeySensitivity);
+                    }
+
+                    if (Hotkeys.CameraDown.Check) {
+                        offset += new Vector2(0, ArrowKeySensitivity);
+                    }
+
+                    if (Hotkeys.CameraLeft.Check) {
+                        offset += new Vector2(-ArrowKeySensitivity, 0);
+                    }
+
+                    if (Hotkeys.CameraRight.Check) {
+                        offset += new Vector2(ArrowKeySensitivity, 0);
+                    }
+
+                    if (Hotkeys.CameraUp.Check && Hotkeys.CameraDown.Check) {
+                        offset = Vector2.Zero;
+                        waitForAllResetKeysRelease = true;
+                    }
+                }
+            } else {
+                // mouse right button
                 if (MouseButtons.Right.LastCheck && MouseButtons.Right.Check) {
                     InfoMouse.DrawCursor(MouseButtons.Position);
 
-                    float scale = self.Zoom * ((320f - self.ScreenPadding * 2f) / 320f) * self.Camera.Zoom * 6f * Engine.ViewWidth / Engine.Width;
+                    float scale = level.Zoom * ((320f - level.ScreenPadding * 2f) / 320f) * level.Camera.Zoom * 6f * Engine.ViewWidth / Engine.Width;
                     offset -= (MouseButtons.Position - MouseButtons.LastPosition) / scale;
 
                     if (lastPlayerPosition is { } playerPosition && Engine.Scene.GetSession()?.MapData.Bounds is { } bounds) {
