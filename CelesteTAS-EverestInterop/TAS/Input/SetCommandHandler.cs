@@ -232,7 +232,11 @@ namespace TAS.Input {
                 float.TryParse(values[1], out float y);
                 return new Vector2(x, y);
             } else if (values.Length == 1) {
-                return ConvertType(values[0], type);
+                if (type == typeof(Random) && int.TryParse(values[0], out int seed)) {
+                    return new Random(seed);
+                } else {
+                    return ConvertType(values[0], type);
+                }
             }
 
             return default;
