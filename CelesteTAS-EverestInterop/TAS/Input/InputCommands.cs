@@ -55,13 +55,8 @@ namespace TAS.Input {
                     Action commandCall = () => method.Invoke(null, parameters);
                     Command command = new(attribute, frame, commandCall, commandArgs, filePath, lineNumber);
 
-                    switch (attribute.ExecuteTiming) {
-                        case ExecuteTiming.Parse:
-                            commandCall.Invoke();
-                            break;
-                        case ExecuteTiming.Start:
-                            inputController.ExecuteAtStartCommands.Add(command);
-                            break;
+                    if (attribute.ExecuteTiming == ExecuteTiming.Parse) {
+                        commandCall.Invoke();
                     }
 
                     if (!inputController.Commands.ContainsKey(frame)) {
@@ -167,7 +162,12 @@ namespace TAS.Input {
             Manager.EnforceLegal = true;
         }
 
-        [TasCommand("Unsafe", ExecuteTiming = ExecuteTiming.Start)]
+        [TasCommand("Safe")]
+        private static void SafeCommand() {
+            Manager.AllowUnsafeInput = false;
+        }
+
+        [TasCommand("Unsafe")]
         private static void UnsafeCommand() {
             Manager.AllowUnsafeInput = true;
         }

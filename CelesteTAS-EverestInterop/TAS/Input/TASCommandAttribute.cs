@@ -56,7 +56,6 @@ namespace TAS.Input {
 
     public enum ExecuteTiming {
         Parse,
-        Start,
         Runtime
     }
 }

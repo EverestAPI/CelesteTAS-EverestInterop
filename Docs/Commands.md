@@ -80,10 +80,11 @@
   - `Set, ExtendedVariantMode.Dashcount, 3`
   - `Set, CelesteTAS.CenterCamera, true`
 
-### Unsafe
+### Unsafe and Safe
 - The TAS will normally only run inside levels.
 - Console load normally forces the TAS to load the debug save.
-- Unsafe allows the TAS to run anywhere, on any save.
+- `Unsafe` allows the TAS to run anywhere, on any save.
+- `Safe` makes the TAS only run inside levels and debug save.
 
 ### EnforceLegal
 - This is used at the start of fullgame files.

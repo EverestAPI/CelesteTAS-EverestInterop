@@ -1322,6 +1322,10 @@ namespace CelesteStudio {
             InsertNewLine("Unsafe");
         }
 
+        private void safeToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertNewLine("Safe");
+        }
+
         private void readToolStripMenuItem_Click(object sender, EventArgs e) {
             InsertNewLine("Read, File Name, Starting Line, (Ending Line)");
         }
