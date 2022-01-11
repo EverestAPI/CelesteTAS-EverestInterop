@@ -24,6 +24,7 @@ namespace TAS {
         private static readonly GetBerryFloat StrawberryCollectTimer;
         private static readonly GetFloat DashCooldownTimer;
         private static readonly GetFloat JumpGraceTimer;
+        private static readonly GetFloat VarJumpTimer;
         private static readonly GetPlayerSeekerSpeed PlayerSeekerSpeed;
         private static readonly GetPlayerSeekerDashTimer PlayerSeekerDashTimer;
         private static readonly Func<Player, Vector2> PlayerLiftBoost;
@@ -61,6 +62,7 @@ namespace TAS {
             FieldInfo strawberryCollectTimer = typeof(Strawberry).GetFieldInfo("collectTimer");
             FieldInfo dashCooldownTimer = typeof(Player).GetFieldInfo("dashCooldownTimer");
             FieldInfo jumpGraceTimer = typeof(Player).GetFieldInfo("jumpGraceTimer");
+            FieldInfo varJumpTimer = typeof(Player).GetFieldInfo("varJumpTimer");
             FieldInfo playerSeekerSpeed = typeof(PlayerSeeker).GetFieldInfo("speed");
             FieldInfo playerSeekerDashTimer = typeof(PlayerSeeker).GetFieldInfo("dashTimer");
             MethodInfo playerLiftSpeed = typeof(Player).GetPropertyInfo("LiftBoost").GetGetMethod(true);
@@ -75,6 +77,7 @@ namespace TAS {
             StrawberryCollectTimer = strawberryCollectTimer.CreateDelegate_Get<GetBerryFloat>();
             DashCooldownTimer = dashCooldownTimer.CreateDelegate_Get<GetFloat>();
             JumpGraceTimer = jumpGraceTimer.CreateDelegate_Get<GetFloat>();
+            VarJumpTimer = varJumpTimer.CreateDelegate_Get<GetFloat>();
             PlayerSeekerSpeed = playerSeekerSpeed.CreateDelegate_Get<GetPlayerSeekerSpeed>();
             PlayerSeekerDashTimer = playerSeekerDashTimer.CreateDelegate_Get<GetPlayerSeekerDashTimer>();
             PlayerLiftBoost = (Func<Player, Vector2>) playerLiftSpeed.CreateDelegate(typeof(Func<Player, Vector2>));
@@ -306,7 +309,8 @@ namespace TAS {
                                       + (player.LoseShards ? "Ground " : string.Empty)
                                       + (!player.LoseShards && JumpGraceTimer(player).ToFloorFrames() is int coyote and > 0
                                           ? $"Coyote({coyote}) "
-                                          : string.Empty);
+                                          : string.Empty)
+                                      + (VarJumpTimer(player).ToFloorFrames() is int jumpTimer and > 0 ? $"Jump({jumpTimer})" : string.Empty);
 
                     string noControlFrames = transitionFrames > 0 ? $"({transitionFrames})" : string.Empty;
                     float unpauseTimer = LevelUnpauseTimer?.Invoke(level) ?? 0f;
