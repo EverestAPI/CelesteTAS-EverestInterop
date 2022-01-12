@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
@@ -17,8 +18,11 @@ namespace TAS.EverestInterop.InfoHUD {
 
                 string result = $"Cursor: {mouseWorldPosition.Value.ToSimpleString(0)}";
 
-                if (SelectedAreaEntity.Info is { } selectedAreaInfo && selectedAreaInfo.IsNotEmpty()) {
-                    result += $"\nSelected Area: {selectedAreaInfo}";
+                if (SelectedAreaEntity.Rect is { } selectedAreaRect && selectedAreaRect.IsNotEmpty()) {
+                    result += $"\nSelected Area: {selectedAreaRect}";
+                    result += $"\nSelected Width: {SelectedAreaEntity.Width}";
+                    result += $"\nSelected Height: {SelectedAreaEntity.Height}";
+                    result += $"\nSelected Diagonal: {SelectedAreaEntity.Diagonal}";
                 }
 
                 return result;
@@ -126,21 +130,57 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-        public static string Info {
+        private static SelectedAreaEntity Instance => Engine.Scene.Tracker.GetEntity<SelectedAreaEntity>();
+
+        public static string Rect {
             get {
-                if (Engine.Scene is Level level && level.Tracker.GetEntity<SelectedAreaEntity>() is {start: { }} entity) {
-                    return entity.ToString();
+                if (IsDragging) {
+                    return Instance.ToString();
                 } else {
                     return string.Empty;
                 }
             }
         }
 
+        public static string Width {
+            get {
+                if (IsDragging) {
+                    return Instance.width.ToString();
+                } else {
+                    return string.Empty;
+                }
+            }
+        }
+
+        public static string Height {
+            get {
+                if (IsDragging) {
+                    return Instance.height.ToString();
+                } else {
+                    return string.Empty;
+                }
+            }
+        }
+
+        public static string Diagonal {
+            get {
+                if (IsDragging) {
+                    return Math.Sqrt(Instance.width * Instance.width + Instance.height * Instance.height).ToString(CultureInfo.InvariantCulture);
+                } else {
+                    return string.Empty;
+                }
+            }
+        }
+
+        private static bool IsDragging => Instance?.start != null;
+
         private Vector2? start;
         private int left;
         private int right;
         private int top;
         private int bottom;
+        private int width;
+        private int height;
 
         private SelectedAreaEntity() {
             Depth = Depths.Top;
@@ -148,6 +188,16 @@ namespace TAS.EverestInterop.InfoHUD {
         }
 
         public override void Render() {
+            if (!CelesteTasModule.Settings.ShowHitboxes) {
+                DrawSelectedArea();
+            }
+        }
+
+        public override void DebugRender(Camera camera) {
+            DrawSelectedArea();
+        }
+
+        private void DrawSelectedArea() {
             if (SceneAs<Level>() is not { } level || !Hotkeys.InfoHud.Check) {
                 start = null;
                 return;
@@ -163,9 +213,11 @@ namespace TAS.EverestInterop.InfoHUD {
                 right = (int) Math.Max(start.Value.X, end.X);
                 top = (int) Math.Min(start.Value.Y, end.Y);
                 bottom = (int) Math.Max(start.Value.Y, end.Y);
+                width = right - left;
+                height = bottom - top;
 
                 if (MouseButtons.Right.Check) {
-                    Draw.HollowRect(left, top, right - left, bottom - top, Color.Yellow);
+                    Draw.HollowRect(left, top, Math.Max(1, right - left), Math.Max(1, bottom - top), Color.Yellow);
                 } else {
                     TextInput.SetClipboardText(ToString());
                     start = null;
