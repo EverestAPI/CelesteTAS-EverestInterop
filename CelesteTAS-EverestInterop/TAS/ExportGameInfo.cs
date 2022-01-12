@@ -86,24 +86,7 @@ namespace TAS {
                 string speed = player.Speed.ToSimpleString(Settings.SpeedDecimals);
 
                 int dashCooldown = (int) GameInfo.GetDashCooldownTimer(player);
-                string statuses = (dashCooldown < 1 && player.Dashes > 0 ? "CanDash " : string.Empty)
-                                  + (player.LoseShards ? "Ground " : string.Empty)
-                                  + (GameInfo.GetWallJumpCheck(player, 1) ? "Wall-R " : string.Empty)
-                                  + (GameInfo.GetWallJumpCheck(player, -1) ? "Wall-L " : string.Empty)
-                                  + (!player.LoseShards && GameInfo.GetJumpGraceTimer(player) > 0 ? "Coyote " : string.Empty);
-                statuses = (player.InControl && !level.Transitioning ? statuses : "NoControl ")
-                           + (player.TimePaused ? "Paused " : string.Empty)
-                           + (level.InCutscene ? "Cutscene " : string.Empty)
-                           + (GameInfo.AdditionalStatusInfo ?? string.Empty);
-
-                if (player.Holding == null) {
-                    foreach (Holdable holdable in level.Tracker.GetCastComponents<Holdable>()) {
-                        if (holdable.Check(player)) {
-                            statuses += "Grab ";
-                            break;
-                        }
-                    }
-                }
+                string statuses = GameInfo.GetStatuses(level, player, dashCooldown);
 
                 output = string.Join("\t",
                     inputFrame.Line + 1, $"{controller.CurrentFrameInInput}/{inputFrame}", controller.CurrentFrameInTas, time, pos, speed,

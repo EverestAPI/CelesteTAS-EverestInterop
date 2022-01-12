@@ -25,6 +25,7 @@ namespace TAS {
         private static readonly GetFloat DashCooldownTimer;
         private static readonly GetFloat JumpGraceTimer;
         private static readonly GetFloat VarJumpTimer;
+        private static readonly GetFloat MaxFall;
         private static readonly GetPlayerSeekerSpeed PlayerSeekerSpeed;
         private static readonly GetPlayerSeekerDashTimer PlayerSeekerDashTimer;
         private static readonly Func<Player, Vector2> PlayerLiftBoost;
@@ -54,15 +55,13 @@ namespace TAS {
 
         private static int transitionFrames;
 
-        //for debugging
-        public static string AdditionalStatusInfo;
-
         static GameInfo() {
             MethodInfo wallJumpCheck = typeof(Player).GetMethodInfo("WallJumpCheck");
             FieldInfo strawberryCollectTimer = typeof(Strawberry).GetFieldInfo("collectTimer");
             FieldInfo dashCooldownTimer = typeof(Player).GetFieldInfo("dashCooldownTimer");
             FieldInfo jumpGraceTimer = typeof(Player).GetFieldInfo("jumpGraceTimer");
             FieldInfo varJumpTimer = typeof(Player).GetFieldInfo("varJumpTimer");
+            FieldInfo maxFall = typeof(Player).GetFieldInfo("maxFall");
             FieldInfo playerSeekerSpeed = typeof(PlayerSeeker).GetFieldInfo("speed");
             FieldInfo playerSeekerDashTimer = typeof(PlayerSeeker).GetFieldInfo("dashTimer");
             MethodInfo playerLiftSpeed = typeof(Player).GetPropertyInfo("LiftBoost").GetGetMethod(true);
@@ -78,6 +77,7 @@ namespace TAS {
             DashCooldownTimer = dashCooldownTimer.CreateDelegate_Get<GetFloat>();
             JumpGraceTimer = jumpGraceTimer.CreateDelegate_Get<GetFloat>();
             VarJumpTimer = varJumpTimer.CreateDelegate_Get<GetFloat>();
+            MaxFall = maxFall.CreateDelegate_Get<GetFloat>();
             PlayerSeekerSpeed = playerSeekerSpeed.CreateDelegate_Get<GetPlayerSeekerSpeed>();
             PlayerSeekerDashTimer = playerSeekerDashTimer.CreateDelegate_Get<GetPlayerSeekerDashTimer>();
             PlayerLiftBoost = (Func<Player, Vector2>) playerLiftSpeed.CreateDelegate(typeof(Func<Player, Vector2>));
@@ -305,30 +305,7 @@ namespace TAS {
                         dashCooldown = PlayerSeekerDashTimer(playerSeeker).ToCeilingFrames();
                     }
 
-                    string statuses = (dashCooldown <= 0 && player.Dashes > 0 ? "CanDash " : string.Empty)
-                                      + (player.LoseShards ? "Ground " : string.Empty)
-                                      + (!player.LoseShards && JumpGraceTimer(player).ToFloorFrames() is int coyote and > 0
-                                          ? $"Coyote({coyote}) "
-                                          : string.Empty)
-                                      + (VarJumpTimer(player).ToFloorFrames() is int jumpTimer and > 0 ? $"Jump({jumpTimer})" : string.Empty);
-
-                    string noControlFrames = transitionFrames > 0 ? $"({transitionFrames})" : string.Empty;
-                    float unpauseTimer = LevelUnpauseTimer?.Invoke(level) ?? 0f;
-                    if (unpauseTimer > 0f) {
-                        noControlFrames = $"({unpauseTimer.ToCeilingFrames()})";
-                    }
-
-                    statuses = (Engine.FreezeTimer > 0f ? $"Frozen({Engine.FreezeTimer.ToCeilingFrames()}) " : string.Empty)
-                               + (player.InControl && !level.Transitioning && unpauseTimer <= 0f ? statuses : $"NoControl{noControlFrames} ")
-                               + (level.Wipe != null && !level.InCutscene && player.InControl ? "CantPause " : string.Empty)
-                               + (player.Dead ? "Dead " : string.Empty)
-                               + (level.InCutscene ? "Cutscene " : string.Empty)
-                               + (AdditionalStatusInfo ?? string.Empty);
-
-                    if (player.Holding == null
-                        && level.Tracker.GetCastComponents<Holdable>().Any(holdable => holdable.Check(player))) {
-                        statuses += "Grab ";
-                    }
+                    string statuses = GetStatuses(level, player, dashCooldown);
 
                     string timers = string.Empty;
                     Follower firstRedBerryFollower = player.Leader.Followers.Find(follower => follower.Entity is Strawberry {Golden: false});
@@ -429,6 +406,62 @@ namespace TAS {
                     Status = ExactStatus = Engine.Scene.GetType().Name;
                 }
             }
+        }
+
+        public static string GetStatuses(Level level, Player player, int dashCooldown) {
+            List<string> statuses = new();
+
+            string noControlFrames = transitionFrames > 0 ? $"({transitionFrames})" : string.Empty;
+            float unpauseTimer = LevelUnpauseTimer?.Invoke(level) ?? 0f;
+            if (unpauseTimer > 0f) {
+                noControlFrames = $"({unpauseTimer.ToCeilingFrames()})";
+            }
+
+            if (Engine.FreezeTimer > 0f) {
+                statuses.Add($"Frozen({Engine.FreezeTimer.ToCeilingFrames()})");
+            }
+
+            if (player.InControl && !level.Transitioning && unpauseTimer <= 0f) {
+                if (dashCooldown <= 0 && player.Dashes > 0) {
+                    statuses.Add("CanDash");
+                }
+
+                if (player.LoseShards) {
+                    statuses.Add("Ground");
+                } else {
+                    if (JumpGraceTimer(player).ToFloorFrames() is var coyote and > 0) {
+                        statuses.Add($"Coyote({coyote})");
+                    }
+
+                    if (VarJumpTimer(player).ToFloorFrames() is var jumpTimer and > 0) {
+                        statuses.Add($"Jump({jumpTimer})");
+                    }
+
+                    if (player.StateMachine.State == Player.StNormal && player.Speed.Y > 0f && MaxFall(player) is var maxFall) {
+                        statuses.Add($"MaxFall({maxFall:0})");
+                    }
+                }
+            } else {
+                statuses.Add($"NoControl{noControlFrames}");
+            }
+
+            if (level.Wipe != null && !level.InCutscene && player.InControl) {
+                statuses.Add("CantPause");
+            }
+
+            if (player.Dead) {
+                statuses.Add("Dead");
+            }
+
+            if (level.InCutscene) {
+                statuses.Add("Cutscene");
+            }
+
+            if (player.Holding == null && level.Tracker.GetCastComponents<Holdable>().Any(holdable => holdable.Check(player))) {
+                statuses.Add("Grab");
+            }
+
+            return string.Join(" ", statuses);
         }
 
         private static string GetStatusWithoutTime(string pos, string speed, string velocity, Player player, PlayerSeeker playerSeeker,
