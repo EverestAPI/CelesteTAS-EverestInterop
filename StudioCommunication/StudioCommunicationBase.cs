@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
@@ -27,7 +27,12 @@ namespace StudioCommunication {
         private bool waiting;
 
         protected StudioCommunicationBase() {
-            sharedMemory = MemoryMappedFile.CreateOrOpen("CelesteTAS", BufferSize);
+            // CreateFromFile works inter-process on Linux, unlike any of the other MemoryMappedFile.* methods.
+            if (!File.Exists("./CelesteTAS.share")) {
+                FileStream f = File.Create("./CelesteTAS.share");
+                f.Write(new byte[BufferSize], 0, BufferSize);
+            }
+            sharedMemory = MemoryMappedFile.CreateFromFile("./CelesteTAS.share", FileMode.Open);
             mutex = new Mutex(false, "CelesteTASCOM", out bool created);
             if (!created) {
                 mutex = Mutex.OpenExisting("CelesteTASCOM");
@@ -37,7 +42,11 @@ namespace StudioCommunication {
         }
 
         protected StudioCommunicationBase(string target) {
-            sharedMemory = MemoryMappedFile.CreateOrOpen(target, BufferSize);
+            if (!File.Exists(target)) {
+                FileStream f = File.Create(target);
+                f.Write(new byte[BufferSize], 0, BufferSize);
+            }
+            sharedMemory = MemoryMappedFile.CreateFromFile(target, FileMode.Open);
             mutex = new Mutex(false, target, out bool created);
             if (!created) {
                 mutex = Mutex.OpenExisting(target);
