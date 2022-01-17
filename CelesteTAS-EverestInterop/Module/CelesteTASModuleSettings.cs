@@ -122,7 +122,7 @@ namespace TAS.Module {
         public int? SimplifiedBloomStrength { get; set; } = 1;
         public SimplifiedGraphicsFeature.SpinnerColor SimplifiedSpinnerColor { get; set; } = SimplifiedGraphicsFeature.SpinnerColor.All[1];
         public bool SimplifiedDustSpriteEdge { get; set; } = true;
-        public bool SimplifiedSpotlightWipe { get; set; } = true;
+        public bool SimplifiedScreenWipe { get; set; } = true;
         public bool SimplifiedColorGrade { get; set; } = true;
         public bool SimplifiedBackdrop { get; set; } = true;
         public bool SimplifiedDecal { get; set; } = true;

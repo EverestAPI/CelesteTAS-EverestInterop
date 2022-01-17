@@ -71,9 +71,9 @@ namespace TAS.EverestInterop {
                         Settings.SimplifiedDustSpriteEdge).Change(value =>
                         Settings.SimplifiedDustSpriteEdge = value));
                 subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<bool>("Spotlight Wipe".ToDialogText(), Menu.CreateDefaultHideOptions(),
-                        Settings.SimplifiedSpotlightWipe).Change(value =>
-                        Settings.SimplifiedSpotlightWipe = value));
+                    new TextMenuExt.EnumerableSlider<bool>("Screen Wipe".ToDialogText(), Menu.CreateDefaultHideOptions(),
+                        Settings.SimplifiedScreenWipe).Change(value =>
+                        Settings.SimplifiedScreenWipe = value));
                 subMenu.Add(
                     new TextMenuExt.EnumerableSlider<bool>("Color Grade".ToDialogText(), Menu.CreateDefaultHideOptions(),
                         Settings.SimplifiedColorGrade).Change(value =>
@@ -158,7 +158,8 @@ namespace TAS.EverestInterop {
             IL.Celeste.LightningRenderer.Render += LightningRenderer_RenderIL;
             On.Celeste.LightningRenderer.Bolt.Render += Bolt_Render;
             On.Celeste.SummitCloud.Render += SummitCloudOnRender;
-            On.Celeste.SpotlightWipe.Render += SpotlightWipeOnRender;
+            IL.Celeste.SpotlightWipe.Render += HideScreenWipe;
+            IL.Celeste.FadeWipe.Render += HideScreenWipe;
             On.Celeste.ReflectionTentacles.Render += ReflectionTentacles_Render;
             On.Celeste.Audio.Play_string += AudioOnPlay_string;
             On.Celeste.LightningStrike.Render += LightningStrikeOnRender;
@@ -190,7 +191,8 @@ namespace TAS.EverestInterop {
             IL.Celeste.LightningRenderer.Render -= LightningRenderer_RenderIL;
             On.Celeste.LightningRenderer.Bolt.Render -= Bolt_Render;
             On.Celeste.SummitCloud.Render -= SummitCloudOnRender;
-            On.Celeste.SpotlightWipe.Render -= SpotlightWipeOnRender;
+            IL.Celeste.SpotlightWipe.Render -= HideScreenWipe;
+            IL.Celeste.FadeWipe.Render -= HideScreenWipe;
             On.Celeste.ReflectionTentacles.Render -= ReflectionTentacles_Render;
             On.Celeste.Audio.Play_string -= AudioOnPlay_string;
             On.Celeste.LightningStrike.Render -= LightningStrikeOnRender;
@@ -223,9 +225,9 @@ namespace TAS.EverestInterop {
         private static void LightingRenderer_Render(ILContext il) {
             ILCursor ilCursor = new(il);
             if (ilCursor.TryGotoNext(
-                MoveType.After,
-                ins => ins.MatchCall(typeof(MathHelper), "Clamp")
-            )) {
+                    MoveType.After,
+                    ins => ins.MatchCall(typeof(MathHelper), "Clamp")
+                )) {
                 ilCursor.EmitDelegate<Func<float, float>>(alpha =>
                     Settings.SimplifiedGraphics && Settings.SimplifiedLighting != null ? (10 - Settings.SimplifiedLighting.Value) / 10f : alpha);
             }
@@ -248,19 +250,19 @@ namespace TAS.EverestInterop {
         private static void BloomRendererOnApply(ILContext il) {
             ILCursor ilCursor = new(il);
             while (ilCursor.TryGotoNext(
-                MoveType.After,
-                ins => ins.OpCode == OpCodes.Ldarg_0,
-                ins => ins.MatchLdfld<BloomRenderer>("Base")
-            )) {
+                       MoveType.After,
+                       ins => ins.OpCode == OpCodes.Ldarg_0,
+                       ins => ins.MatchLdfld<BloomRenderer>("Base")
+                   )) {
                 ilCursor.EmitDelegate<Func<float, float>>(bloomValue =>
                     Settings.SimplifiedGraphics && Settings.SimplifiedBloomBase.HasValue ? Settings.SimplifiedBloomBase.Value / 10f : bloomValue);
             }
 
             while (ilCursor.TryGotoNext(
-                MoveType.After,
-                ins => ins.OpCode == OpCodes.Ldarg_0,
-                ins => ins.MatchLdfld<BloomRenderer>("Strength")
-            )) {
+                       MoveType.After,
+                       ins => ins.OpCode == OpCodes.Ldarg_0,
+                       ins => ins.MatchLdfld<BloomRenderer>("Strength")
+                   )) {
                 ilCursor.EmitDelegate<Func<float, float>>(bloomValue =>
                     Settings.SimplifiedGraphics && Settings.SimplifiedBloomStrength.HasValue
                         ? Settings.SimplifiedBloomStrength.Value / 10f
@@ -424,10 +426,10 @@ namespace TAS.EverestInterop {
             }
 
             if (c.TryGotoNext(
-                MoveType.After,
-                ins => ins.OpCode == OpCodes.Ldarg_0,
-                ins => ins.MatchLdfld<LightningRenderer>("DrawEdges")
-            )) {
+                    MoveType.After,
+                    ins => ins.OpCode == OpCodes.Ldarg_0,
+                    ins => ins.MatchLdfld<LightningRenderer>("DrawEdges")
+                )) {
                 c.EmitDelegate<Func<bool, bool>>(drawEdges => (!Settings.SimplifiedGraphics || !Settings.SimplifiedLightning) && drawEdges);
             }
         }
@@ -448,14 +450,13 @@ namespace TAS.EverestInterop {
             orig(self);
         }
 
-        // Hide screen wipe when beginning level
-        private static void SpotlightWipeOnRender(On.Celeste.SpotlightWipe.orig_Render orig, SpotlightWipe self, Scene scene) {
-            if (Settings.SimplifiedGraphics && Settings.SimplifiedSpotlightWipe) {
-                return;
-            }
-
-            orig(self, scene);
+        private static void HideScreenWipe(ILContext il) {
+            ILCursor ilCursor = new(il);
+            Instruction start = ilCursor.Next;
+            ilCursor.EmitDelegate<Func<bool>>(() => Settings.SimplifiedGraphics && Settings.SimplifiedScreenWipe);
+            ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ret);
         }
+
 
         private static void ReflectionTentacles_Render(On.Celeste.ReflectionTentacles.orig_Render orig, ReflectionTentacles self) {
             if (!Settings.SimplifiedGraphics) {
@@ -508,11 +509,11 @@ namespace TAS.EverestInterop {
         private static void ModCustomSpinnerColor(ILContext il) {
             ILCursor ilCursor = new(il);
             if (ilCursor.TryGotoNext(
-                i => i.OpCode == OpCodes.Ldarg_0,
-                i => i.OpCode == OpCodes.Ldarg_S && i.Operand.ToString() == "tint",
-                i => i.OpCode == OpCodes.Call && i.Operand.ToString() == "Microsoft.Xna.Framework.Color Monocle.Calc::HexToColor(System.String)",
-                i => i.OpCode == OpCodes.Stfld && i.Operand.ToString() == "Microsoft.Xna.Framework.Color FrostHelper.CustomSpinner::Tint"
-            )) {
+                    i => i.OpCode == OpCodes.Ldarg_0,
+                    i => i.OpCode == OpCodes.Ldarg_S && i.Operand.ToString() == "tint",
+                    i => i.OpCode == OpCodes.Call && i.Operand.ToString() == "Microsoft.Xna.Framework.Color Monocle.Calc::HexToColor(System.String)",
+                    i => i.OpCode == OpCodes.Stfld && i.Operand.ToString() == "Microsoft.Xna.Framework.Color FrostHelper.CustomSpinner::Tint"
+                )) {
                 ilCursor.Index += 2;
                 ilCursor.EmitDelegate<Func<string, string>>(color =>
                     Settings.SimplifiedGraphics && Settings.SimplifiedSpinnerColor.Value != null ? Settings.SimplifiedSpinnerColor.Value : color);
