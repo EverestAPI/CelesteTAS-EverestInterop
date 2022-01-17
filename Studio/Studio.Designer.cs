@@ -100,8 +100,13 @@ namespace CelesteStudio {
             this.enforceLegalToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.unsafeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.safeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator18 = new System.Windows.Forms.ToolStripSeparator();
             this.readToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.playToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator17 = new System.Windows.Forms.ToolStripSeparator();
+            this.repeatToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.endRepeatToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator16 = new System.Windows.Forms.ToolStripSeparator();
             this.setToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             this.analogueModeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -634,7 +639,7 @@ namespace CelesteStudio {
             // 
             // insertOtherCommandToolStripMenuItem
             // 
-            this.insertOtherCommandToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.enforceLegalToolStripMenuItem, this.unsafeToolStripMenuItem, this.safeToolStripMenuItem, this.readToolStripMenuItem, this.playToolStripMenuItem, this.setToolStripMenuItem, this.toolStripSeparator3, this.analogueModeToolStripMenuItem, this.toolStripSeparator4, this.startExportToolStripMenuItem, this.finishExportToolStripMenuItem, this.toolStripSeparator14, this.startExportRoomInfoToolStripMenuItem, this.finishExportRoomInfoToolStripMenuItem, this.toolStripSeparator5, this.addToolStripMenuItem, this.skipToolStripMenuItem, this.startExportLibTASToolStripMenuItem, this.finishExportLibTASToolStripMenuItem, this.toolStripSeparator13, this.recordCountToolStripMenuItem, this.fileTimeToolStripMenuItem, this.chapterTimeToolStripMenuItem});
+            this.insertOtherCommandToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.enforceLegalToolStripMenuItem, this.unsafeToolStripMenuItem, this.safeToolStripMenuItem, this.toolStripSeparator18, this.readToolStripMenuItem, this.playToolStripMenuItem, this.toolStripSeparator17, this.repeatToolStripMenuItem, this.endRepeatToolStripMenuItem, this.toolStripSeparator16, this.setToolStripMenuItem, this.toolStripSeparator3, this.analogueModeToolStripMenuItem, this.toolStripSeparator4, this.startExportToolStripMenuItem, this.finishExportToolStripMenuItem, this.toolStripSeparator14, this.startExportRoomInfoToolStripMenuItem, this.finishExportRoomInfoToolStripMenuItem, this.toolStripSeparator5, this.addToolStripMenuItem, this.skipToolStripMenuItem, this.startExportLibTASToolStripMenuItem, this.finishExportLibTASToolStripMenuItem, this.toolStripSeparator13, this.recordCountToolStripMenuItem, this.fileTimeToolStripMenuItem, this.chapterTimeToolStripMenuItem});
             this.insertOtherCommandToolStripMenuItem.Name = "insertOtherCommandToolStripMenuItem";
             this.insertOtherCommandToolStripMenuItem.Size = new System.Drawing.Size(425, 22);
             this.insertOtherCommandToolStripMenuItem.Text = "Insert Other Command";
@@ -663,6 +668,11 @@ namespace CelesteStudio {
             this.safeToolStripMenuItem.ToolTipText = "The TAS will only run inside levels.\r\nConsole load forces the TAS to load the deb" + "ug save.";
             this.safeToolStripMenuItem.Click += new System.EventHandler(this.safeToolStripMenuItem_Click);
             // 
+            // toolStripSeparator18
+            // 
+            this.toolStripSeparator18.Name = "toolStripSeparator18";
+            this.toolStripSeparator18.Size = new System.Drawing.Size(201, 6);
+            // 
             // readToolStripMenuItem
             // 
             this.readToolStripMenuItem.Name = "readToolStripMenuItem";
@@ -678,6 +688,32 @@ namespace CelesteStudio {
             this.playToolStripMenuItem.Text = "Play";
             this.playToolStripMenuItem.ToolTipText = "A simplified Read command which skips to the starting line in the current file.\r\n" + "Useful for splitting a large level into larger chunks.";
             this.playToolStripMenuItem.Click += new System.EventHandler(this.playToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator17
+            // 
+            this.toolStripSeparator17.Name = "toolStripSeparator17";
+            this.toolStripSeparator17.Size = new System.Drawing.Size(201, 6);
+            // 
+            // repeatToolStripMenuItem
+            // 
+            this.repeatToolStripMenuItem.Name = "repeatToolStripMenuItem";
+            this.repeatToolStripMenuItem.Size = new System.Drawing.Size(204, 22);
+            this.repeatToolStripMenuItem.Text = "Repeat";
+            this.repeatToolStripMenuItem.ToolTipText = "Repeat the inputs between \"Repeat\" and \"EndRepeat\" several times, nesting is not " + "supported.";
+            this.repeatToolStripMenuItem.Click += new System.EventHandler(this.repeatToolStripMenuItem_Click);
+            // 
+            // endRepeatToolStripMenuItem
+            // 
+            this.endRepeatToolStripMenuItem.Name = "endRepeatToolStripMenuItem";
+            this.endRepeatToolStripMenuItem.Size = new System.Drawing.Size(204, 22);
+            this.endRepeatToolStripMenuItem.Text = "EndRepeat";
+            this.endRepeatToolStripMenuItem.ToolTipText = "Repeat the inputs between \"Repeat\" and \"EndRepeat\" several times, nesting is not " + "supported.";
+            this.endRepeatToolStripMenuItem.Click += new System.EventHandler(this.endRepeatToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator16
+            // 
+            this.toolStripSeparator16.Name = "toolStripSeparator16";
+            this.toolStripSeparator16.Size = new System.Drawing.Size(201, 6);
             // 
             // setToolStripMenuItem
             // 
@@ -962,6 +998,13 @@ namespace CelesteStudio {
             this.ResumeLayout(false);
             this.PerformLayout();
         }
+
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator17;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator18;
+
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator16;
+        private System.Windows.Forms.ToolStripMenuItem repeatToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem endRepeatToolStripMenuItem;
 
         private System.Windows.Forms.ToolStripMenuItem safeToolStripMenuItem;
 

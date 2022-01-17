@@ -155,7 +155,8 @@ namespace TAS.EverestInterop.InfoHUD {
                 int currentFrameLength = controller.CurrentFrameInInput.ToString().Length;
                 int inputWidth = currentStr.Length + currentFrameLength + 2;
                 inputWidth = Math.Max(inputWidth, 20);
-                stringBuilder.AppendLine($"{currentStr.PadRight(inputWidth - currentFrameLength)}{controller.CurrentFrameInInput}");
+                stringBuilder.AppendLine(
+                    $"{currentStr.PadRight(inputWidth - currentFrameLength)}{controller.CurrentFrameInInput}{current.RepeatString}");
 
                 if (next != null) {
                     stringBuilder.AppendLine(FormatInputFrame(next));

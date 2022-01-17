@@ -7,15 +7,15 @@ namespace TAS.Input {
         private readonly Action commandCall; // null if ExecuteAtStart = true
         public readonly string FilePath;
         public readonly int Frame;
-        public readonly int LineNumber; // form zero
+        public readonly int StudioLineNumber; // form zero
 
-        public Command(TasCommandAttribute attribute, int frame, Action commandCall, string[] args, string filePath, int lineNumber) {
+        public Command(TasCommandAttribute attribute, int frame, Action commandCall, string[] args, string filePath, int studioLineNumber) {
             Attribute = attribute;
             Frame = frame;
             this.commandCall = commandCall;
             Args = args;
             FilePath = filePath;
-            LineNumber = lineNumber;
+            StudioLineNumber = studioLineNumber;
         }
 
         public string LineText => Args.Length == 0 ? Attribute.Name : $"{Attribute.Name}, {string.Join(", ", Args)}";

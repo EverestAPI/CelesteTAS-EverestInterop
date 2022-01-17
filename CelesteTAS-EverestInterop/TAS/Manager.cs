@@ -218,7 +218,7 @@ namespace TAS {
         public static void SendStateToStudio() {
             StudioInfo studioInfo = new(
                 Controller.Previous?.Line ?? -1,
-                Controller.CurrentFrameInInput,
+                $"{Controller.CurrentFrameInInput}{Controller.Previous?.RepeatString ?? ""}",
                 Controller.CurrentFrameInTas,
                 Controller.Inputs.Count,
                 Savestates.StudioHighlightLine,

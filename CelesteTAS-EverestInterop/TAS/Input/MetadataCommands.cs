@@ -103,7 +103,7 @@ namespace TAS.Input {
                 }
 
                 return true;
-            }).ToDictionary(command => command.LineNumber, command => $"{command.Attribute.Name}: {getMetadata(command)}");
+            }).ToDictionary(command => command.StudioLineNumber, command => $"{command.Attribute.Name}: {getMetadata(command)}");
 
             if (updateLines.IsEmpty()) {
                 return;

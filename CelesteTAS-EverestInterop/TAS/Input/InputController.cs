@@ -24,11 +24,22 @@ namespace TAS.Input {
         private int initializationFrameCount;
         private string savestateChecksum;
 
+        private static readonly string DefaultTasFilePath = Path.Combine(Directory.GetCurrentDirectory(), "Celeste.tas");
+
         public static string StudioTasFilePath {
             get => studioTasFilePath;
             set {
                 if (studioTasFilePath != value) {
                     studioTasFilePath = value;
+
+                    string path = string.IsNullOrEmpty(value) ? DefaultTasFilePath : value;
+                    try {
+                        if (!File.Exists(path)) {
+                            File.WriteAllText(path, string.Empty);
+                        }
+                    } catch {
+                        studioTasFilePath = DefaultTasFilePath;
+                    }
 
                     if (Manager.Running) {
                         Manager.NextStates |= States.Disable;
@@ -40,21 +51,7 @@ namespace TAS.Input {
             }
         }
 
-        public static string TasFilePath {
-            get {
-                string defaultPath = Path.Combine(Directory.GetCurrentDirectory(), "Celeste.tas");
-                string path = string.IsNullOrEmpty(StudioTasFilePath) ? defaultPath : StudioTasFilePath;
-                try {
-                    if (!File.Exists(path)) {
-                        File.WriteAllText(path, string.Empty);
-                    }
-                } catch {
-                    return defaultPath;
-                }
-
-                return path;
-            }
-        }
+        public static string TasFilePath => string.IsNullOrEmpty(StudioTasFilePath) ? DefaultTasFilePath : StudioTasFilePath;
 
         // start from 1
         public int CurrentFrameInInput { get; private set; }
@@ -136,6 +133,7 @@ namespace TAS.Input {
             ExecuteAtStartCommands.Clear();
             UsedFiles.Clear();
             AnalogHelper.AnalogModeChange(AnalogueMode.Ignore);
+            RepeatCommand.Clear();
         }
 
         public void AdvanceFrame(out bool canPlayback) {
@@ -163,7 +161,7 @@ namespace TAS.Input {
 
             Manager.SetInputs(Current);
 
-            if (CurrentFrameInInput == 0 || Current.Line == Previous.Line) {
+            if (CurrentFrameInInput == 0 || Current.Line == Previous.Line && Current.RepeatIndex == Previous.RepeatIndex) {
                 CurrentFrameInInput++;
             } else {
                 CurrentFrameInInput = 1;
@@ -174,53 +172,19 @@ namespace TAS.Input {
 
         public void InitializeRecording() { }
 
-        public bool ReadFile(string filePath, int startLine = 0, int endLine = int.MaxValue, int studioLine = 0) {
+        // studioLine start from 0, startLine start from 1;
+        public bool ReadFile(string filePath, int startLine = 0, int endLine = int.MaxValue, int studioLine = 0, int repeatIndex = 0,
+            int repeatCount = 0) {
             try {
-                if (filePath == TasFilePath && startLine == 0 && !File.Exists(filePath)) {
+                if (!File.Exists(filePath)) {
                     return false;
                 }
 
                 UsedFiles[filePath] = File.GetLastWriteTime(filePath);
 
-                int subLine = 0;
-                foreach (string readLine in File.ReadLines(filePath)) {
-                    string lineText = readLine.Trim();
-
-                    subLine++;
-                    if (subLine < startLine) {
-                        continue;
-                    }
-
-                    if (subLine > endLine) {
-                        break;
-                    }
-
-                    if (InputCommands.TryParseCommand(this, filePath, lineText, initializationFrameCount, studioLine)) {
-                        //workaround for the play command
-                        return true;
-                    }
-
-                    if (lineText.StartsWith("***")) {
-                        FastForward fastForward = new(initializationFrameCount, lineText.Substring(3), studioLine);
-                        if (FastForwards.TryGetValue(initializationFrameCount, out FastForward oldFastForward) && oldFastForward.SaveState &&
-                            !fastForward.SaveState) {
-                            // ignore 
-                        } else {
-                            FastForwards[initializationFrameCount] = fastForward;
-                        }
-                    } else if (lineText.StartsWith("#")) {
-                        FastForwardComments[initializationFrameCount] = new FastForward(initializationFrameCount, "", studioLine);
-                    } else {
-                        AddFrames(lineText, studioLine);
-                    }
-
-                    if (filePath == TasFilePath) {
-                        studioLine++;
-                    }
-                }
-
-                if (filePath == TasFilePath) {
-                    FastForwardComments[initializationFrameCount] = new FastForward(initializationFrameCount, "", studioLine);
+                IEnumerable<string> lines = File.ReadLines(filePath).Take(endLine);
+                if (ReadLines(lines, filePath, startLine, studioLine, repeatIndex, repeatCount)) {
+                    return true;
                 }
 
                 return true;
@@ -230,8 +194,49 @@ namespace TAS.Input {
             }
         }
 
-        public void AddFrames(string line, int studioLine) {
-            if (!InputFrame.TryParse(line, studioLine, Inputs.LastOrDefault(), out InputFrame inputFrame)) {
+        public bool ReadLines(IEnumerable<string> lines, string filePath, int startLine, int studioLine, int repeatIndex, int repeatCount) {
+            int subLine = 0;
+            foreach (string readLine in lines) {
+                string lineText = readLine.Trim();
+
+                subLine++;
+                if (subLine < startLine) {
+                    continue;
+                }
+
+                if (InputCommands.TryParseCommand(this, filePath, subLine, lineText, initializationFrameCount, studioLine)) {
+                    //workaround for the play command
+                    return true;
+                }
+
+                if (lineText.StartsWith("***")) {
+                    FastForward fastForward = new(initializationFrameCount, lineText.Substring(3), studioLine);
+                    if (FastForwards.TryGetValue(initializationFrameCount, out FastForward oldFastForward) && oldFastForward.SaveState &&
+                        !fastForward.SaveState) {
+                        // ignore 
+                    } else {
+                        FastForwards[initializationFrameCount] = fastForward;
+                    }
+                } else if (lineText.StartsWith("#")) {
+                    FastForwardComments[initializationFrameCount] = new FastForward(initializationFrameCount, "", studioLine);
+                } else {
+                    AddFrames(lineText, studioLine, repeatIndex, repeatCount);
+                }
+
+                if (filePath == TasFilePath) {
+                    studioLine++;
+                }
+            }
+
+            if (filePath == TasFilePath) {
+                FastForwardComments[initializationFrameCount] = new FastForward(initializationFrameCount, "", studioLine);
+            }
+
+            return false;
+        }
+
+        public void AddFrames(string line, int studioLine, int repeatIndex = 0, int repeatCount = 0) {
+            if (!InputFrame.TryParse(line, studioLine, Inputs.LastOrDefault(), out InputFrame inputFrame, repeatIndex, repeatCount)) {
                 return;
             }
 

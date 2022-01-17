@@ -11,6 +11,11 @@
 - A simplified `Read` command which skips to the starting line in the current file.
 - Useful for splitting a large level into smaller chunks.
 
+### Repeat and EndRepeat
+- Repeat the inputs between `Repeat` and `EndRepeat` several times, nesting is not supported.
+- `Repeat, Count`
+- `EndRepeat`
+
 ### Labels
 - Prefixing a line with `#` will comment out the line
 - A line beginning with `#` can be also be used as the starting point or ending point of a Read instruction.

@@ -754,7 +754,7 @@ namespace CelesteStudio {
                 if (CommunicationWrapper.StudioInfo != null) {
                     StudioInfo studioInfo = CommunicationWrapper.StudioInfo;
                     richText.CurrentLine = studioInfo.CurrentLine;
-                    richText.CurrentLineText = studioInfo.CurrentFrameInInput.ToString();
+                    richText.CurrentLineText = studioInfo.CurrentLineSuffix;
                     richText.SaveStateLine = studioInfo.SaveStateLine;
                     currentFrame = studioInfo.CurrentFrameInTas;
                     tasStates = (States) studioInfo.tasStates;
@@ -1384,6 +1384,14 @@ namespace CelesteStudio {
 
         private void chapterTimeToolStripMenuItem_Click(object sender, EventArgs e) {
             InsertNewLine("ChapterTime:");
+        }
+
+        private void repeatToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertNewLine("Repeat Count");
+        }
+
+        private void endRepeatToolStripMenuItem_Click(object sender, EventArgs e) {
+            InsertNewLine("EndRepeat");
         }
 
         private void copyGamerDataMenuItem_Click(object sender, EventArgs e) {
