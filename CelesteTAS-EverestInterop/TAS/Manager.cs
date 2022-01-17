@@ -167,6 +167,10 @@ namespace TAS {
         }
 
         public static void EnableRun() {
+            if (Engine.Scene is GameLoader) {
+                return;
+            }
+
             NextStates &= ~States.Enable;
             InitializeRun(false);
             AttributeUtils.Invoke<EnableRunAttribute>();
