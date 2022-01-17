@@ -59,6 +59,23 @@ namespace TAS.EverestInterop {
         private static bool hasMuted;
         private static bool ShouldBeMuted => Manager.FrameLoops >= 2 && !settingMusic;
         private static bool FrameStep => Manager.Running && (Manager.States & States.FrameStep) != 0;
+        private static WeakReference<EventInstance> dummy;
+
+        private static EventInstance DummyEventInstance {
+            get {
+                if (dummy == null || !dummy.TryGetTarget(out EventInstance dummyInstance)) {
+                    // this sound does exist, but is silent if we don't set any audio param to it.
+                    bool temp = settingMusic;
+                    settingMusic = true;
+                    dummyInstance = Audio.CreateInstance("event:/char/madeline/footstep");
+                    settingMusic = temp;
+                    dummyInstance.setVolume(0);
+                    dummy = new WeakReference<EventInstance>(dummyInstance);
+                }
+
+                return dummyInstance;
+            }
+        }
 
         [Load]
         private static void Load() {
@@ -95,13 +112,15 @@ namespace TAS.EverestInterop {
 
         private static RESULT EventDescriptionOnCreateInstance(On.FMOD.Studio.EventDescription.orig_createInstance orig, EventDescription self,
             out EventInstance instance) {
-            RESULT result = orig(self, out instance);
+            RESULT result;
+            if (ShouldBeMuted && self.getPath(out string p) == RESULT.OK && p != null) {
+                result = RESULT.OK;
+                instance = DummyEventInstance;
+            } else {
+                result = orig(self, out instance);
+            }
 
-            if (instance != null && self.getPath(out string path) == RESULT.OK && path != null) {
-                if (ShouldBeMuted) {
-                    instance.setVolume(0);
-                }
-
+            if (!ShouldBeMuted && instance != null && self.getPath(out string path) == RESULT.OK && path != null) {
                 int delayFrames = -1;
                 if (LoopAudioPaths.Contains(path)) {
                     delayFrames = 10;

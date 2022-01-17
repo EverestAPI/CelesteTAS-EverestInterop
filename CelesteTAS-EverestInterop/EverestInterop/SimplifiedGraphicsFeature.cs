@@ -488,7 +488,6 @@ namespace TAS.EverestInterop {
             c.Emit(OpCodes.Ret);
         }
 
-
         private static void ModLightningStrikeRender(ILContext il) {
             ILCursor c = new(il);
             Instruction methodStart = c.Next;
