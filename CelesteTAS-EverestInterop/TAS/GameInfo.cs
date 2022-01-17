@@ -437,7 +437,8 @@ namespace TAS {
                         statuses.Add($"Jump({jumpTimer})");
                     }
 
-                    if (player.StateMachine.State == Player.StNormal && player.Speed.Y > 0f && MaxFall(player) is var maxFall) {
+                    if (player.StateMachine.State == Player.StNormal && MaxFall(player) is var maxFall &&
+                        (player.Speed.Y > 0f || player.Holding is {SlowFall: true})) {
                         statuses.Add($"MaxFall({maxFall:0})");
                     }
                 }
