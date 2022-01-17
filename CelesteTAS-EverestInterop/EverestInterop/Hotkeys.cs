@@ -369,6 +369,8 @@ namespace TAS.EverestInterop {
         public static readonly Button Left = new();
         public static readonly Button Middle = new();
         public static readonly Button Right = new();
+        public static int Wheel { get; private set; }
+        public static int lastWheel;
 
         [Load]
         private static void Load() {
@@ -397,12 +399,16 @@ namespace TAS.EverestInterop {
             Left.Update(mouseState.LeftButton);
             Middle.Update(mouseState.MiddleButton);
             Right.Update(mouseState.RightButton);
+            Wheel = mouseState.ScrollWheelValue - lastWheel;
+            lastWheel = mouseState.ScrollWheelValue;
         }
 
         private static void UpdateNull() {
+            LastPosition = Position;
             Left.Update(ButtonState.Released);
             Middle.Update(ButtonState.Released);
             Right.Update(ButtonState.Released);
+            Wheel = 0;
         }
 
         public class Button {

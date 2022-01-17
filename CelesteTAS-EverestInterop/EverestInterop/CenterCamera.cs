@@ -11,8 +11,10 @@ using TAS.Utils;
 namespace TAS.EverestInterop {
     public static class CenterCamera {
         private static Vector2? savedCameraPosition;
+        private static float? savedLevelZoom;
         private static Vector2? lastPlayerPosition;
         private static Vector2 offset;
+        private static float levelZoom = 1f;
         private static DateTime? arrowKeyPressTime;
         private static bool waitForAllResetKeysRelease;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
@@ -28,6 +30,7 @@ namespace TAS.EverestInterop {
             On.Celeste.Mod.UI.SubHudRenderer.RenderContent += SubHudRendererOnRenderContent;
             On.Monocle.Commands.Render += CommandsOnRender;
             offset = new DynamicData(Engine.Instance).Get<Vector2?>("CelesteTAS_Offset") ?? Vector2.Zero;
+            levelZoom = new DynamicData(Engine.Instance).Get<float?>("CelesteTAS_LevelZoom") ?? 1f;
         }
 
         public static void Unload() {
@@ -40,32 +43,46 @@ namespace TAS.EverestInterop {
             On.Celeste.Mod.UI.SubHudRenderer.RenderContent -= SubHudRendererOnRenderContent;
             On.Monocle.Commands.Render -= CommandsOnRender;
             new DynamicData(Engine.Instance).Set("CelesteTAS_Offset", offset);
+            new DynamicData(Engine.Instance).Set("CelesteTAS_LevelZoom", levelZoom);
         }
 
         private static void CenterTheCamera(Action action) {
-            Camera camera = (Engine.Scene as Level)?.Camera;
-            if (Settings.CenterCamera && camera != null) {
+            if (Engine.Scene is not Level level) {
+                action();
+                return;
+            }
+
+            Camera camera = level.Camera;
+            if (Settings.CenterCamera) {
                 if (Engine.Scene.GetPlayer() is { } player) {
                     lastPlayerPosition = player.Position;
                 }
 
                 if (lastPlayerPosition != null) {
                     savedCameraPosition = camera.Position;
+                    savedLevelZoom = level.Zoom;
                     camera.Position = lastPlayerPosition.Value + offset - new Vector2(camera.Viewport.Width / 2f, camera.Viewport.Height / 2f);
+                    level.Zoom = levelZoom;
                 }
             }
 
             action();
 
-            if (savedCameraPosition != null && camera != null) {
+            if (savedCameraPosition != null) {
                 camera.Position = savedCameraPosition.Value;
                 savedCameraPosition = null;
+            }
+
+            if (savedLevelZoom != null) {
+                level.Zoom = savedLevelZoom.Value;
+                savedLevelZoom = null;
             }
         }
 
         private static void LevelOnRender(On.Celeste.Level.orig_Render orig, Level self) {
             CenterTheCamera(() => orig(self));
             MoveCamera(self);
+            ZoomCamera();
         }
 
         private static float ArrowKeySensitivity {
@@ -127,7 +144,7 @@ namespace TAS.EverestInterop {
                     float scale = level.Zoom * ((320f - level.ScreenPadding * 2f) / 320f) * level.Camera.Zoom * 6f * Engine.ViewWidth / Engine.Width;
                     offset -= (MouseButtons.Position - MouseButtons.LastPosition) / scale;
 
-                    if (lastPlayerPosition is { } playerPosition && Engine.Scene.GetSession()?.MapData.Bounds is { } bounds) {
+                    if (lastPlayerPosition is { } playerPosition && level.Session.MapData.Bounds is var bounds) {
                         Vector2 result = (playerPosition + offset).Clamp(bounds.X, bounds.Y, bounds.Right, bounds.Bottom);
                         offset = result - playerPosition;
                     }
@@ -136,6 +153,21 @@ namespace TAS.EverestInterop {
                 if (MouseButtons.Right.DoublePressed) {
                     offset = Vector2.Zero;
                 }
+            }
+        }
+
+        private static void ZoomCamera() {
+            if (!Settings.CenterCamera) {
+                return;
+            }
+
+            levelZoom += Math.Sign(MouseButtons.Wheel) * 0.1f;
+            if (levelZoom < 1f) {
+                levelZoom = 1f;
+            }
+
+            if (MouseButtons.Right.DoublePressed) {
+                levelZoom = 1;
             }
         }
 
