@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using JetBrains.Profiler.Api;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Input;
@@ -48,9 +49,11 @@ namespace TAS.EverestInterop {
             lastFrameCounter = Engine.FrameCounter;
             watch.Restart();
             $"Benchmark Start: {InputController.TasFilePath}".Log();
+            MeasureProfiler.StartCollectingData();
         }
 
         private static void Stop() {
+            MeasureProfiler.SaveData();
             ulong frames = Engine.FrameCounter - lastFrameCounter;
             float framesPerSecond = (int) Math.Round(1 / Engine.RawDeltaTime);
             $"Benchmark Stop: frames={frames} time={watch.ElapsedMilliseconds}ms avg_speed={frames / framesPerSecond / watch.ElapsedMilliseconds * 1000f}"
