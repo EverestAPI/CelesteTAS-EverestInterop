@@ -80,11 +80,22 @@ namespace TAS.Input {
             }
         }
 
+
+        private static readonly List<string> readCommandStack = new();
+
+        public static void ClearReadCommandStack() {
+            readCommandStack.Clear();
+        }
+
         // "Read, Path",
         // "Read, Path, StartLine",
         // "Read, Path, StartLine, EndLine"
         [TasCommand("Read", ExecuteTiming = ExecuteTiming.Parse)]
-        private static void ReadCommand(string[] args, int studioLine) {
+        private static void ReadCommand(string[] args, int studioLine, string currentFilePath, int fileLine) {
+            if (args.Length == 0) {
+                return;
+            }
+
             string filePath = args[0];
             string fileDirectory = Path.GetDirectoryName(InputController.TasFilePath);
             filePath = FindTheFile();
@@ -110,7 +121,14 @@ namespace TAS.Input {
                 }
             }
 
+            readCommandStack.Add($"Read, {string.Join(", ", args)}: line {fileLine} of the file \"{currentFilePath}\"");
+            if (readCommandStack.Count > 233) {
+                $"Multiple read commands lead to dead loops:\n{string.Join("\n", readCommandStack)}".Log(LogLevel.Warn);
+                return;
+            }
+
             Manager.Controller.ReadFile(filePath, startLine, endLine, studioLine);
+            ClearReadCommandStack();
 
             string FindTheFile() {
                 // Check for full and shortened Read versions
@@ -141,7 +159,7 @@ namespace TAS.Input {
             }
 
             if (startLine <= studioLine + 1) {
-                "Play command does not allow playback from before the current line".DebugLog(LogLevel.Warn);
+                "Play command does not allow playback from before the current line".Log(LogLevel.Warn);
                 return;
             }
 

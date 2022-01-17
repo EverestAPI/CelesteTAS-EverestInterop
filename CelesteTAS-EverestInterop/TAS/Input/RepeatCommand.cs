@@ -19,7 +19,7 @@ namespace TAS.Input {
         private static void Repeat(string[] args, int _, string filePath, int fileLine) {
             if (args.Length > 0 && int.TryParse(args[0], out int count)) {
                 if (RepeatArgs.ContainsKey(filePath)) {
-                    $"The Repeat command on line {fileLine} of the {filePath} file does not have a paired EndRepeat command".DebugLog(LogLevel.Warn);
+                    $"The Repeat command on line {fileLine} of the {filePath} file does not have a paired EndRepeat command".Log(LogLevel.Warn);
                 }
 
                 RepeatArgs[filePath] = Tuple.Create(fileLine, count, Manager.Controller.Inputs.Count);
@@ -30,7 +30,7 @@ namespace TAS.Input {
         [TasCommand("EndRepeat", ExecuteTiming = ExecuteTiming.Parse)]
         private static void EndRepeat(string[] args, int studioLine, string filePath, int fileLine) {
             if (!RepeatArgs.ContainsKey(filePath)) {
-                $"The EndRepeat command on line {fileLine} of the {filePath} file does not have a paired Repeat command".DebugLog(LogLevel.Warn);
+                $"The EndRepeat command on line {fileLine} of the {filePath} file does not have a paired Repeat command".Log(LogLevel.Warn);
                 return;
             }
 

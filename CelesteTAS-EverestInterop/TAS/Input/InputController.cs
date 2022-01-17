@@ -134,6 +134,7 @@ namespace TAS.Input {
             UsedFiles.Clear();
             AnalogHelper.AnalogModeChange(AnalogueMode.Ignore);
             RepeatCommand.Clear();
+            InputCommands.ClearReadCommandStack();
         }
 
         public void AdvanceFrame(out bool canPlayback) {
@@ -181,12 +182,8 @@ namespace TAS.Input {
                 }
 
                 UsedFiles[filePath] = File.GetLastWriteTime(filePath);
-
                 IEnumerable<string> lines = File.ReadLines(filePath).Take(endLine);
-                if (ReadLines(lines, filePath, startLine, studioLine, repeatIndex, repeatCount)) {
-                    return true;
-                }
-
+                ReadLines(lines, filePath, startLine, studioLine, repeatIndex, repeatCount);
                 return true;
             } catch (Exception e) {
                 e.Log();
@@ -194,7 +191,7 @@ namespace TAS.Input {
             }
         }
 
-        public bool ReadLines(IEnumerable<string> lines, string filePath, int startLine, int studioLine, int repeatIndex, int repeatCount) {
+        public void ReadLines(IEnumerable<string> lines, string filePath, int startLine, int studioLine, int repeatIndex, int repeatCount) {
             int subLine = 0;
             foreach (string readLine in lines) {
                 string lineText = readLine.Trim();
@@ -206,7 +203,7 @@ namespace TAS.Input {
 
                 if (InputCommands.TryParseCommand(this, filePath, subLine, lineText, initializationFrameCount, studioLine)) {
                     //workaround for the play command
-                    return true;
+                    return;
                 }
 
                 if (lineText.StartsWith("***")) {
@@ -231,8 +228,6 @@ namespace TAS.Input {
             if (filePath == TasFilePath) {
                 FastForwardComments[initializationFrameCount] = new FastForward(initializationFrameCount, "", studioLine);
             }
-
-            return false;
         }
 
         public void AddFrames(string line, int studioLine, int repeatIndex = 0, int repeatCount = 0) {
