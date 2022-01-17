@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using Celeste;
+using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Utils;
@@ -136,6 +137,11 @@ namespace TAS.Input {
             GetLine(args[0], InputController.TasFilePath, out int startLine);
             if (args.Length > 1 && int.TryParse(args[1], out _)) {
                 state.AddFrames(args[1], studioLine);
+            }
+
+            if (startLine <= studioLine + 1) {
+                "Play command does not allow playback from before the current line".DebugLog(LogLevel.Warn);
+                return;
             }
 
             state.ReadFile(InputController.TasFilePath, startLine, int.MaxValue, startLine - 1);
