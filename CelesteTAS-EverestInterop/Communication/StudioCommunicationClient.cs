@@ -34,9 +34,9 @@ namespace TAS.Communication {
 
         [Initialize]
         public static bool Run() {
-            if (Environment.OSVersion.Platform != PlatformID.Win32NT) {
-                return false;
-            }
+            //if (Environment.OSVersion.Platform != PlatformID.Win32NT) {
+            //    return false;
+            //}
 
             if (Instance != null) {
                 return false;
@@ -79,9 +79,9 @@ namespace TAS.Communication {
         /// <param name="target"></param>
         /// <returns></returns>
         public static StudioCommunicationClient RunExternal(string target) {
-            if (Environment.OSVersion.Platform != PlatformID.Win32NT) {
-                return null;
-            }
+            //if (Environment.OSVersion.Platform != PlatformID.Win32NT) {
+            //    return null;
+            //}
 
             var client = new StudioCommunicationClient(target);
 
