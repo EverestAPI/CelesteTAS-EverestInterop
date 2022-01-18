@@ -100,7 +100,6 @@ namespace TAS.EverestInterop.Hitboxes {
                 Vector2 position = levelData.Position + data.Position;
                 Rectangle rect = position.CreateRect(data.Width, data.Height, 0, 0);
                 Color color = HitboxColor.EntityColor;
-                float colorAlpha = 1f;
                 string textureId = "";
                 Vector2 textureOffset = Vector2.Zero;
                 Vector2 scale = Vector2.One;
@@ -123,8 +122,7 @@ namespace TAS.EverestInterop.Hitboxes {
                                 textureId = "objects/Bumper/idle00";
                             }
                         } else {
-                            colorAlpha = 0.5f;
-                            Color spinnerColor = HitboxColor.EntityColor * colorAlpha;
+                            Color spinnerColor = HitboxColor.EntityColor * 0.5f;
                             actions.Add(() => Draw.Circle(position, 6, spinnerColor, 4));
                             rect = position.CreateRect(16, 4, -8, -3);
 
