@@ -103,7 +103,7 @@ namespace TAS.EverestInterop {
             }
 
             if (Hotkeys.InfoHud.Check) {
-                // info hub hotkey + arrow key
+                // info hud hotkey + arrow key
                 if (waitForAllResetKeysRelease) {
                     if (!Hotkeys.CameraUp.Check && !Hotkeys.CameraDown.Check) {
                         waitForAllResetKeysRelease = false;
@@ -133,6 +133,7 @@ namespace TAS.EverestInterop {
 
                     if (Hotkeys.CameraUp.Check && Hotkeys.CameraDown.Check) {
                         offset = Vector2.Zero;
+                        levelZoom = 1f;
                         waitForAllResetKeysRelease = true;
                     }
                 }
@@ -152,6 +153,7 @@ namespace TAS.EverestInterop {
 
                 if (MouseButtons.Right.DoublePressed) {
                     offset = Vector2.Zero;
+                    levelZoom = 1;
                 }
             }
         }
@@ -161,13 +163,20 @@ namespace TAS.EverestInterop {
                 return;
             }
 
-            levelZoom += Math.Sign(MouseButtons.Wheel) * 0.1f;
-            if (levelZoom < 1f) {
-                levelZoom = 1f;
+            if (Hotkeys.InfoHud.Check) {
+                if (Hotkeys.CameraZoomIn.Check) {
+                    levelZoom += 0.05f;
+                }
+
+                if (Hotkeys.CameraZoomOut.Check) {
+                    levelZoom -= 0.05f;
+                }
+            } else {
+                levelZoom += Math.Sign(MouseButtons.Wheel) * 0.05f;
             }
 
-            if (MouseButtons.Right.DoublePressed) {
-                levelZoom = 1;
+            if (levelZoom < 1f) {
+                levelZoom = 1f;
             }
         }
 

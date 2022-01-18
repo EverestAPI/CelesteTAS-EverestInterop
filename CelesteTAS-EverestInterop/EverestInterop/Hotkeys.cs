@@ -36,29 +36,32 @@ namespace TAS.EverestInterop {
         private static KeyboardState kbState;
         private static GamePadState padState;
 
-        public static Hotkey StartStop;
-        public static Hotkey Restart;
-        public static Hotkey FastForward;
-        public static Hotkey FastForwardComment;
-        public static Hotkey FrameAdvance;
-        public static Hotkey PauseResume;
-        public static Hotkey Hitboxes;
-        public static Hotkey TriggerHitboxes;
-        public static Hotkey SimplifiedGraphic;
-        public static Hotkey CenterCamera;
-        public static Hotkey SaveState;
-        public static Hotkey ClearState;
-        public static Hotkey InfoHud;
-        public static Hotkey CameraUp;
-        public static Hotkey CameraDown;
-        public static Hotkey CameraLeft;
-        public static Hotkey CameraRight;
+        public static Hotkey StartStop { get; private set; }
+        public static Hotkey Restart { get; private set; }
+        public static Hotkey FastForward { get; private set; }
+        public static Hotkey FastForwardComment { get; private set; }
+        public static Hotkey FrameAdvance { get; private set; }
+        public static Hotkey PauseResume { get; private set; }
+        public static Hotkey Hitboxes { get; private set; }
+        public static Hotkey TriggerHitboxes { get; private set; }
+        public static Hotkey SimplifiedGraphic { get; private set; }
+        public static Hotkey CenterCamera { get; private set; }
+        public static Hotkey SaveState { get; private set; }
+        public static Hotkey ClearState { get; private set; }
+        public static Hotkey InfoHud { get; private set; }
+        public static Hotkey CameraUp { get; private set; }
+        public static Hotkey CameraDown { get; private set; }
+        public static Hotkey CameraLeft { get; private set; }
+        public static Hotkey CameraRight { get; private set; }
+        public static Hotkey CameraZoomIn { get; private set; }
+        public static Hotkey CameraZoomOut { get; private set; }
 
         public static readonly Dictionary<HotkeyID, Hotkey> KeysDict = new();
         public static Dictionary<HotkeyID, List<Keys>> KeysInteractWithStudio = new();
 
         private static readonly List<HotkeyID> HotkeysIgnoreOnStudio = new() {
-            HotkeyID.InfoHud, HotkeyID.CameraUp, HotkeyID.CameraDown, HotkeyID.CameraLeft, HotkeyID.CameraRight
+            HotkeyID.InfoHud, HotkeyID.CameraUp, HotkeyID.CameraDown, HotkeyID.CameraLeft, HotkeyID.CameraRight, HotkeyID.CameraZoomIn,
+            HotkeyID.CameraZoomOut
         };
 
         static Hotkeys() {
@@ -104,6 +107,8 @@ namespace TAS.EverestInterop {
             KeysDict[HotkeyID.CameraDown] = CameraDown = BindingToHotkey(new ButtonBinding(0, Keys.Down));
             KeysDict[HotkeyID.CameraLeft] = CameraLeft = BindingToHotkey(new ButtonBinding(0, Keys.Left));
             KeysDict[HotkeyID.CameraRight] = CameraRight = BindingToHotkey(new ButtonBinding(0, Keys.Right));
+            KeysDict[HotkeyID.CameraZoomIn] = CameraZoomIn = BindingToHotkey(new ButtonBinding(0, Keys.Home));
+            KeysDict[HotkeyID.CameraZoomOut] = CameraZoomOut = BindingToHotkey(new ButtonBinding(0, Keys.End));
 
             KeysInteractWithStudio = KeysDict.Where(pair => !HotkeysIgnoreOnStudio.Contains(pair.Key))
                 .ToDictionary(pair => pair.Key, pair => pair.Value.Keys);

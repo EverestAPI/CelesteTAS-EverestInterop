@@ -19,5 +19,7 @@ namespace StudioCommunication {
         CameraDown,
         CameraLeft,
         CameraRight,
+        CameraZoomIn,
+        CameraZoomOut
     }
 }

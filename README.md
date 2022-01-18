@@ -83,13 +83,13 @@ While in game or in Studio:
 ## Misc
 
 ### Move Camera
-When center camera is enabled, holding mouse right button drag camera, double press mouse right button reset camera.
+When center camera is enabled, holding mouse right button or info hud hotkey+arrow move camera, double press mouse right button or info hud hotkey+up+down reset camera.
 
 ### Zoom Camera
-When center camera is enabled, scroll wheel zoom camera. Zooming out to show more game play is not supported.
+When center camera is enabled, scroll wheel or info hud hotkey+home/end zoom camera, double press mouse right button or info hud hotkey+up+down reset camera. Zooming out to show more game play is not supported.
 
 ### Rectangle Selection Info
-Holding info hub hotkey and mouse right down to select a rectangle. Copies the position of the top left and bottom right corners when the mouse button is released. It helps to define checkpoints for [featherline](https://github.com/tntfalle/featherline).
+Holding info hud hotkey and mouse right down to select a rectangle. Copies the position of the top left and bottom right corners when the mouse button is released. It helps to define checkpoints for [featherline](https://github.com/tntfalle/featherline).
 
 ### Watch Entity
 Enable `Info HUD`, holding info hud hotkey then left-click to add the entity to be watched, while holding watch trigger hotkey to watch trigger, right-click to clear the watching entities. Supports exporting watching entities info via
