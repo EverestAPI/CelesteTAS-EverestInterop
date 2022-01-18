@@ -85,6 +85,9 @@ While in game or in Studio:
 ### Move Camera
 When center camera is enabled, holding mouse right button drag camera, double press mouse right button reset camera.
 
+### Zoom Camera
+When center camera is enabled, scroll wheel zoom camera. Zooming out to show more game play is not supported.
+
 ### Rectangle Selection Info
 Holding info hub hotkey and mouse right down to select a rectangle. Copies the position of the top left and bottom right corners when the mouse button is released. It helps to define checkpoints for [featherline](https://github.com/tntfalle/featherline).
 
