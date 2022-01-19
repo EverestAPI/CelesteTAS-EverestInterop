@@ -15,8 +15,8 @@ namespace TAS.EverestInterop.Hitboxes {
         private static readonly Func<FireBall, bool> FireBallIceMode = "iceMode".CreateDelegate_Get<FireBall, bool>();
         private static readonly Func<Strawberry, bool> StrawberryCollected = "collected".CreateDelegate_Get<Strawberry, bool>();
 
-        private static readonly Lazy<Func<object, object>> GeckoHostile = new(() =>
-            Type.GetType("Celeste.Mod.JungleHelper.Entities.Gecko, JungleHelper")?.GetFieldInfo("hostile")?.CreateDelegate_GetInstance());
+        private static readonly Lazy<Func<object, bool>> GeckoHostile = new(() =>
+            Type.GetType("Celeste.Mod.JungleHelper.Entities.Gecko, JungleHelper")?.CreateDelegate_Get<object, bool>("hostile"));
 
         private static readonly HashSet<Type> UselessTypes = new() {
             typeof(ClutterBlock),
@@ -71,7 +71,7 @@ namespace TAS.EverestInterop.Hitboxes {
                         return true;
                     }
 
-                    if (type.FullName == "Celeste.Mod.JungleHelper.Entities.Gecko" && false == GeckoHostile.Value?.Invoke(entity) as bool?) {
+                    if (type.FullName == "Celeste.Mod.JungleHelper.Entities.Gecko" && false == GeckoHostile.Value?.Invoke(entity)) {
                         return true;
                     }
 

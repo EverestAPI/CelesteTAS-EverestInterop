@@ -215,7 +215,14 @@ namespace TAS.Utils {
 
         public static T CreateDelegate_Get<T>(this FieldInfo field) where T : Delegate {
             bool isStatic = field.IsStatic;
-            Type[] param = isStatic ? Type.EmptyTypes : new[] {field.DeclaringType};
+            Type[] param;
+            if (isStatic) {
+                param = Type.EmptyTypes;
+            } else if (typeof(T) is {IsGenericType: true} t && t.GetGenericTypeDefinition() == typeof(Func<,>)) {
+                param = new[] {t.GetGenericArguments()[0]};
+            } else {
+                param = new[] {field.DeclaringType};
+            }
 
             DynamicMethod dyn = new($"{field.DeclaringType?.FullName}_{field.Name}_FastAccess", field.FieldType, param, field.DeclaringType);
             ILGenerator ilGen = dyn.GetILGenerator();
@@ -230,38 +237,14 @@ namespace TAS.Utils {
             return dyn.CreateDelegate(typeof(T)) as T;
         }
 
+        public static Func<T, TResult> CreateDelegate_Get<T, TResult>(this Type type, string fieldName) {
+            FieldInfo field = type.GetFieldInfo(fieldName);
+            return field == null ? null : CreateDelegate_Get<Func<T, TResult>>(field);
+        }
+
         public static Func<T, TResult> CreateDelegate_Get<T, TResult>(this string fieldName) {
             FieldInfo field = typeof(T).GetFieldInfo(fieldName);
-            return CreateDelegate_Get<Func<T, TResult>>(field);
-        }
-
-        public static Func<object, object> CreateDelegate_GetInstance(this FieldInfo field) {
-            if (field.IsStatic) {
-                throw new Exception("Not support static field.");
-            }
-
-            DynamicMethod dyn =
-                new($"{field.DeclaringType?.FullName}_{field.Name}_FastAccess", typeof(object), new Type[] {typeof(object)}, field.DeclaringType);
-            ILGenerator ilGen = dyn.GetILGenerator();
-            ilGen.Emit(OpCodes.Ldarg_0);
-            ilGen.Emit(OpCodes.Castclass, field.DeclaringType);
-            ilGen.Emit(OpCodes.Ldfld, field);
-            ilGen.Emit(field.FieldType.IsClass ? OpCodes.Castclass : OpCodes.Box, field.FieldType);
-            ilGen.Emit(OpCodes.Ret);
-            return dyn.CreateDelegate(typeof(Func<object, object>)) as Func<object, object>;
-        }
-
-        public static Func<object> CreateDelegate_GetStatic(this FieldInfo field) {
-            if (!field.IsStatic) {
-                throw new Exception("Not support non static field.");
-            }
-
-            DynamicMethod dyn = new($"{field.DeclaringType?.FullName}_{field.Name}_FastAccess", typeof(object), new Type[0]);
-            ILGenerator ilGen = dyn.GetILGenerator();
-            ilGen.Emit(OpCodes.Ldsfld, field);
-            ilGen.Emit(field.FieldType.IsClass ? OpCodes.Castclass : OpCodes.Box, field.FieldType);
-            ilGen.Emit(OpCodes.Ret);
-            return dyn.CreateDelegate(typeof(Func<object>)) as Func<object>;
+            return field == null ? null : CreateDelegate_Get<Func<T, TResult>>(field);
         }
     }
 
