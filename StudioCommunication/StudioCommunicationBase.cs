@@ -9,6 +9,9 @@ namespace StudioCommunication {
     public class StudioCommunicationBase {
         private const int BufferSize = 0x100000;
 
+        // ReSharper disable once MemberCanBePrivate.Global
+        protected const int Timeout = 16;
+
         private static readonly List<StudioCommunicationBase> AttachedCom = new();
         private readonly Mutex mutex;
 
@@ -21,37 +24,42 @@ namespace StudioCommunication {
         private int failedWrites;
         private int lastSignature;
 
-        public Action PendingWrite;
-        protected int Timeout = 16;
+        protected Action PendingWrite;
         private int timeoutCount;
         private bool waiting;
+        private readonly string sharedFilePath;
 
-        protected StudioCommunicationBase() {
-            // CreateFromFile works inter-process on Linux, unlike any of the other MemoryMappedFile.* methods.
-            if (!File.Exists("./CelesteTAS.share")) {
-                using (FileStream f = File.Create("./CelesteTAS.share")) {
-                    f.Write(new byte[BufferSize], 0, BufferSize);
+        protected StudioCommunicationBase(string target = "CelesteTAS") {
+            string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CelesteTAS");
+            try {
+                if (!Directory.Exists(folder)) {
+                    Directory.CreateDirectory(folder);
                 }
-            }
-            sharedMemory = MemoryMappedFile.CreateFromFile("./CelesteTAS.share", FileMode.Open);
-            mutex = new Mutex(false, "CelesteTASCOM", out bool created);
-            if (!created) {
-                mutex = Mutex.OpenExisting("CelesteTASCOM");
+            } catch {
+                folder = Path.GetTempPath();
             }
 
-            AttachedCom.Add(this);
-        }
-
-        protected StudioCommunicationBase(string target) {
-            if (!File.Exists(target)) {
-                using (FileStream f = File.Create(target)) {
-                    f.Write(new byte[BufferSize], 0, BufferSize);
+            try {
+                sharedFilePath = Path.Combine(folder, $"{target}.share");
+                FileStream fs;
+                if (File.Exists(sharedFilePath)) {
+                    fs = new FileStream(sharedFilePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+                } else {
+                    fs = new FileStream(sharedFilePath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+                    fs.SetLength(BufferSize);
                 }
+
+                sharedMemory = MemoryMappedFile.CreateFromFile(fs, null, fs.Length, MemoryMappedFileAccess.ReadWrite, null, HandleInheritability.None,
+                    true);
+            } catch {
+                sharedFilePath = null;
+                sharedMemory = MemoryMappedFile.CreateOrOpen(target, BufferSize);
             }
-            sharedMemory = MemoryMappedFile.CreateFromFile(target, FileMode.Open);
-            mutex = new Mutex(false, target, out bool created);
+
+            string mutexName = $"{target}_Mutex";
+            mutex = new Mutex(false, mutexName, out bool created);
             if (!created) {
-                mutex = Mutex.OpenExisting(target);
+                mutex = Mutex.OpenExisting(mutexName);
             }
 
             AttachedCom.Add(this);
@@ -59,9 +67,21 @@ namespace StudioCommunication {
 
         public static bool Initialized { get; protected set; }
 
+        // ReSharper disable once MemberCanBePrivate.Global
+        protected void DeleteShareFile() {
+            if (sharedFilePath != null) {
+                try {
+                    File.Delete(sharedFilePath);
+                } catch {
+                    // ignored
+                }
+            }
+        }
+
         ~StudioCommunicationBase() {
             sharedMemory.Dispose();
             mutex.Dispose();
+            DeleteShareFile();
         }
 
         protected void UpdateLoop() {
