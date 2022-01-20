@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Reflection;
@@ -29,17 +30,20 @@ namespace StudioCommunication {
         private bool waiting;
         private readonly string sharedFilePath;
 
-        protected StudioCommunicationBase(string target = "CelesteTAS") {
-            string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CelesteTAS");
-            try {
-                if (!Directory.Exists(folder)) {
-                    Directory.CreateDirectory(folder);
-                }
-            } catch {
-                folder = Path.GetTempPath();
-            }
+        private static readonly bool runningOnMono = Type.GetType("Mono.Runtime") != null;
 
-            try {
+        protected StudioCommunicationBase(string target = "CelesteTAS") {
+            if (runningOnMono) {
+                string folder = Directory.GetCurrentDirectory();
+                if (Process.GetCurrentProcess().ProcessName != "Celeste") {
+                    // now studio needs to be placed in "celeste.exe_path/Celeste Studio" or "Mods/CelesteTAS" folder
+                    // TODO: allows studio to select the location of Celeste.exe
+                    folder = Directory.GetParent(folder).FullName;
+                    if (!File.Exists(Path.Combine(folder, "Celeste.exe"))) {
+                        folder = Directory.GetParent(folder).FullName;
+                    }
+                }
+
                 sharedFilePath = Path.Combine(folder, $"{target}.share");
                 FileStream fs;
                 if (File.Exists(sharedFilePath)) {
@@ -51,7 +55,7 @@ namespace StudioCommunication {
 
                 sharedMemory = MemoryMappedFile.CreateFromFile(fs, null, fs.Length, MemoryMappedFileAccess.ReadWrite, null, HandleInheritability.None,
                     true);
-            } catch {
+            } else {
                 sharedFilePath = null;
                 sharedMemory = MemoryMappedFile.CreateOrOpen(target, BufferSize);
             }

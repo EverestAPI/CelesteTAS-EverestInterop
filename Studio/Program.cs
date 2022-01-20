@@ -13,7 +13,7 @@ using Microsoft.VisualBasic.ApplicationServices;
 namespace CelesteStudio {
     public class Program : WindowsFormsApplicationBase {
         private Program() {
-            IsSingleInstance = true;
+            IsSingleInstance = false;
             StartupNextInstance += OnStartupNextInstance;
         }
 
