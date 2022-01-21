@@ -9,6 +9,9 @@ namespace StudioCommunication {
     public class StudioCommunicationBase {
         private const int BufferSize = 0x100000;
 
+        // ReSharper disable once MemberCanBePrivate.Global
+        protected const int Timeout = 16;
+
         private static readonly List<StudioCommunicationBase> AttachedCom = new();
         private readonly Mutex mutex;
 
@@ -21,26 +24,34 @@ namespace StudioCommunication {
         private int failedWrites;
         private int lastSignature;
 
-        public Action PendingWrite;
-        protected int Timeout = 16;
+        protected Action PendingWrite;
         private int timeoutCount;
         private bool waiting;
 
-        protected StudioCommunicationBase() {
-            sharedMemory = MemoryMappedFile.CreateOrOpen("CelesteTAS", BufferSize);
-            mutex = new Mutex(false, "CelesteTASCOM", out bool created);
-            if (!created) {
-                mutex = Mutex.OpenExisting("CelesteTASCOM");
+        private static readonly bool runningOnMono = Type.GetType("Mono.Runtime") != null;
+
+        protected StudioCommunicationBase(string target = "CelesteTAS") {
+            if (PlatformUtils.Wine || PlatformUtils.NonWindows) {
+                string sharedFilePath = Path.Combine(PlatformUtils.Wine ? "Z:\\tmp" : "/tmp", $"{target}.share");
+
+                FileStream fs;
+                if (File.Exists(sharedFilePath)) {
+                    fs = new FileStream(sharedFilePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+                } else {
+                    fs = new FileStream(sharedFilePath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+                    fs.SetLength(BufferSize);
+                }
+
+                sharedMemory = MemoryMappedFile.CreateFromFile(fs, null, fs.Length, MemoryMappedFileAccess.ReadWrite, null, HandleInheritability.None,
+                    true);
+            } else {
+                sharedMemory = MemoryMappedFile.CreateOrOpen(target, BufferSize);
             }
 
-            AttachedCom.Add(this);
-        }
-
-        protected StudioCommunicationBase(string target) {
-            sharedMemory = MemoryMappedFile.CreateOrOpen(target, BufferSize);
-            mutex = new Mutex(false, target, out bool created);
+            string mutexName = $"{target}_Mutex";
+            mutex = new Mutex(false, mutexName, out bool created);
             if (!created) {
-                mutex = Mutex.OpenExisting(target);
+                mutex = Mutex.OpenExisting(mutexName);
             }
 
             AttachedCom.Add(this);

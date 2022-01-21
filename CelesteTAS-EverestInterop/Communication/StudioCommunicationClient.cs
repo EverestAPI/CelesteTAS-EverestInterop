@@ -16,7 +16,7 @@ using TAS.Utils;
 namespace TAS.Communication {
     public sealed class StudioCommunicationClient : StudioCommunicationBase {
         private byte[] lastBindingsData = new byte[0];
-        private List<Thread> threads = new();
+        private readonly List<Thread> threads = new();
         private StudioCommunicationClient() { }
         private StudioCommunicationClient(string target) : base(target) { }
         public static StudioCommunicationClient Instance { get; private set; }
@@ -34,10 +34,6 @@ namespace TAS.Communication {
 
         [Initialize]
         public static bool Run() {
-            if (Environment.OSVersion.Platform != PlatformID.Win32NT) {
-                return false;
-            }
-
             if (Instance != null) {
                 return false;
             }
@@ -79,14 +75,8 @@ namespace TAS.Communication {
         /// <param name="target"></param>
         /// <returns></returns>
         public static StudioCommunicationClient RunExternal(string target) {
-            if (Environment.OSVersion.Platform != PlatformID.Win32NT) {
-                return null;
-            }
-
-            var client = new StudioCommunicationClient(target);
-
+            StudioCommunicationClient client = new StudioCommunicationClient(target);
             RunThread($"StudioCom Client_{target}");
-
             return client;
         }
 
@@ -227,6 +217,10 @@ namespace TAS.Communication {
 
         private void ProcessSendPath(byte[] data) {
             string path = Encoding.Default.GetString(data);
+            if (PlatformUtils.NonWindows && path.StartsWith("Z:\\", StringComparison.InvariantCultureIgnoreCase)) {
+                path = path.Substring(2, path.Length - 2).Replace("\\", "/");
+            }
+
             $"Studio TAS File Path: {path}".DebugLog();
             InputController.StudioTasFilePath = path;
         }

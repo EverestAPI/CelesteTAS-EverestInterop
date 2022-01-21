@@ -13,6 +13,7 @@ using System.Threading;
 using System.Windows.Forms;
 using CelesteStudio.Entities;
 using CelesteStudio.Properties;
+using StudioCommunication;
 
 namespace CelesteStudio.RichText {
     public class RichText : UserControl {
@@ -3319,7 +3320,7 @@ namespace CelesteStudio.RichText {
                 //draw line number
                 if (ShowLineNumbers) {
                     using (var lineNumberBrush = new SolidBrush(LineNumberColor)) {
-                        if (WineUtils.RunningOnWine) {
+                        if (PlatformUtils.Wine) {
                             e.Graphics.DrawString((iLine + lineNumberStartValue).ToString().PadLeft(LinesCount.ToString().Length, ' '), Font,
                                 lineNumberBrush,
                                 new RectangleF(4, y, LeftIndent + 8, CharHeight),
