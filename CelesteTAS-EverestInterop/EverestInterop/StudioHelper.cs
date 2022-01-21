@@ -26,21 +26,23 @@ namespace TAS.EverestInterop {
             studioProcessWasKilled = false;
             if (!File.Exists(CopiedStudioExePath) || CheckNewerStudio()) {
                 try {
-                    Process studioProcess = Process.GetProcesses().FirstOrDefault(process =>
-                        process.ProcessName.StartsWith("Celeste") &&
-                        process.ProcessName.Contains("Studio"));
+                    if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
+                        Process studioProcess = Process.GetProcesses().FirstOrDefault(process =>
+                            process.ProcessName.StartsWith("Celeste") &&
+                            process.ProcessName.Contains("Studio"));
 
-                    if (studioProcess != null) {
-                        studioProcess.Kill();
-                        studioProcess.WaitForExit(50000);
-                    }
+                        if (studioProcess != null) {
+                            studioProcess.Kill();
+                            studioProcess.WaitForExit(50000);
+                        }
 
-                    if (studioProcess?.HasExited == false) {
-                        return;
-                    }
+                        if (studioProcess?.HasExited == false) {
+                            return;
+                        }
 
-                    if (studioProcess?.HasExited == true) {
-                        studioProcessWasKilled = true;
+                        if (studioProcess?.HasExited == true) {
+                            studioProcessWasKilled = true;
+                        }
                     }
 
                     if (!string.IsNullOrEmpty(Metadata.PathArchive)) {
