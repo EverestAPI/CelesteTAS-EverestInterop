@@ -3319,9 +3319,16 @@ namespace CelesteStudio.RichText {
                 //draw line number
                 if (ShowLineNumbers) {
                     using (var lineNumberBrush = new SolidBrush(LineNumberColor)) {
-                        e.Graphics.DrawString((iLine + lineNumberStartValue).ToString(), Font, lineNumberBrush,
-                            new RectangleF(-10, y, LeftIndent - minLeftIndent - 2 + 10, CharHeight),
-                            new StringFormat(StringFormatFlags.DirectionRightToLeft));
+                        if (WineUtils.RunningOnWine) {
+                            e.Graphics.DrawString((iLine + lineNumberStartValue).ToString().PadLeft(LinesCount.ToString().Length, ' '), Font,
+                                lineNumberBrush,
+                                new RectangleF(4, y, LeftIndent + 8, CharHeight),
+                                new StringFormat(StringFormatFlags.DirectionRightToLeft));
+                        } else {
+                            e.Graphics.DrawString((iLine + lineNumberStartValue).ToString(), Font, lineNumberBrush,
+                                new RectangleF(-10, y, LeftIndent - minLeftIndent - 2 + 10, CharHeight),
+                                new StringFormat(StringFormatFlags.DirectionRightToLeft));
+                        }
                     }
                 }
 
