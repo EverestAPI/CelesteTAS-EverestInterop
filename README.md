@@ -11,7 +11,7 @@
   and put it in the game_path/mods folder.
 - Enable the mod in the in-game mod options.
 - Open `Celeste Studio.exe`, our input editor. It should be in your main Celeste directory, if not please extract it from the `Mods/CelesteTAS.zip` yourself. (Note that Studio only works on Windows) [Studio documentation can be found here.](https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/master/Docs/Studio.md)
-- If on Linux or macOS, check the working TAS file path in the `Mod Options -> Enabled` menu item, edit it with your favorite text editor, and enable `Info HUD` to show the auxiliary information
+- If on Linux or macOS, check the working TAS file path in the `Mod Options -> Enabled` menu item, edit it with your favorite text editor, and enable `Info HUD` to show the auxiliary information. If you want to use studio, try running studio and celeste(windows version) via wine, [here is the tutorial for installing wine](#running-studio-via-wine).
 - You can find the most up-to-date input files [here](https://github.com/EuniverseCat/CelesteTAS).
 
 ## Input File
@@ -110,6 +110,12 @@ The contents of the curly brackets will be converted to actual data, here are so
 - `Theo: {TheoCrystal.Position}`
 - `TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}`
 - `CustomSpinner: {CustomSpinner.Position}` or `CustomSpinner: {FrostHelper.CustomSpinner@FrostTempleHelper.Position}`
+
+## Running Studio via Wine
+1. Install Wine: https://wiki.winehq.org/Download_zhcn
+2. Install .NET Framework 4.8: https://appdb.winehq.org/objectManager.php?sClass=version&iId=25478#notes
+3. Run Studio via command `env WINEPREFIX=$HOME/winedotnet wine "Celeste Studio.exe"`
+4. Run Celeste directly or run the windows version of celeste via wine `env WINEPREFIX=$HOME/winedotnet wine "Celeste.exe"`. If the error `X Error of failed request: GLXBadFBConfig` is reported when running celeste via wine, then you need to run `export MESA_GL_VERSION_OVERRIDE=4.5` first and then rerun the wine command.
 
 ## Other Useful Tools
 - [Radeline](https://github.com/Kataiser/radeline): Chaos monkey that optimizes a Celeste TAS by randomly (or sequentially) changing inputs.
