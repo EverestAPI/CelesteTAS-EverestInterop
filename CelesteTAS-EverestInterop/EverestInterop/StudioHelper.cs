@@ -16,8 +16,8 @@ namespace TAS.EverestInterop {
 
         [Initialize]
         private static void Initialize() {
+            ExtractStudio(out bool studioProcessWasKilled);
             if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
-                ExtractStudio(out bool studioProcessWasKilled);
                 LaunchStudioAtBoot(studioProcessWasKilled);
             }
         }
