@@ -11,7 +11,7 @@
   and put it in the game_path/mods folder.
 - Enable the mod in the in-game mod options.
 - Open `Celeste Studio.exe`, our input editor. It should be in your main Celeste directory, if not please extract it from the `Mods/CelesteTAS.zip` yourself. (Note that Studio only works on Windows) [Studio documentation can be found here.](https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/master/Docs/Studio.md)
-- If on Linux or macOS, check the working TAS file path in the `Mod Options -> Enabled` menu item, edit it with your favorite text editor, and enable `Info HUD` to show the auxiliary information. If you want to use studio, try running studio and celeste(windows version) via wine, [here is the tutorial for installing wine](#running-studio-via-wine).
+- If on Linux or macOS, try running celeste studio via wine, [here is the tutorial for installing wine](#running-studio-via-wine). If celeste studio not work, check the working TAS file path in the `Mod Options -> Enabled` menu item, edit it with your favorite text editor, and enable `Info HUD` to show the auxiliary information.
 - You can find the most up-to-date input files [here](https://github.com/EuniverseCat/CelesteTAS).
 
 ## Input File
