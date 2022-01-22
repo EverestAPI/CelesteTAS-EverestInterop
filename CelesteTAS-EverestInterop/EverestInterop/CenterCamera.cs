@@ -142,7 +142,7 @@ namespace TAS.EverestInterop {
                 if (MouseButtons.Right.LastCheck && MouseButtons.Right.Check) {
                     InfoMouse.DrawCursor(MouseButtons.Position);
 
-                    float scale = level.Zoom * ((320f - level.ScreenPadding * 2f) / 320f) * level.Camera.Zoom * 6f * Engine.ViewWidth / Engine.Width;
+                    float scale = level.Zoom * levelZoom * ((320f - level.ScreenPadding * 2f) / 320f) * level.Camera.Zoom * 6f * Engine.ViewWidth / Engine.Width;
                     offset -= (MouseButtons.Position - MouseButtons.LastPosition) / scale;
 
                     if (lastPlayerPosition is { } playerPosition && level.Session.MapData.Bounds is var bounds) {
