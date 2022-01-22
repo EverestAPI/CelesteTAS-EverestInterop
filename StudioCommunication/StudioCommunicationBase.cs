@@ -32,7 +32,7 @@ namespace StudioCommunication {
 
         protected StudioCommunicationBase(string target = "CelesteTAS") {
             if (PlatformUtils.Wine || PlatformUtils.NonWindows) {
-                string sharedFilePath = Path.Combine(PlatformUtils.Wine ? "Z:\\tmp" : "/tmp", $"{target}.share");
+                string sharedFilePath = Path.Combine("/tmp", $"{target}.share");
 
                 FileStream fs;
                 if (File.Exists(sharedFilePath)) {
