@@ -144,17 +144,17 @@ namespace TAS.EverestInterop {
 
                     float scale = level.Zoom * levelZoom * ((320f - level.ScreenPadding * 2f) / 320f) * level.Camera.Zoom * 6f * Engine.ViewWidth / Engine.Width;
                     offset -= (MouseButtons.Position - MouseButtons.LastPosition) / scale;
-
-                    if (lastPlayerPosition is { } playerPosition && level.Session.MapData.Bounds is var bounds) {
-                        Vector2 result = (playerPosition + offset).Clamp(bounds.X, bounds.Y, bounds.Right, bounds.Bottom);
-                        offset = result - playerPosition;
-                    }
                 }
 
                 if (MouseButtons.Right.DoublePressed) {
                     offset = Vector2.Zero;
                     levelZoom = 1;
                 }
+            }
+
+            if (lastPlayerPosition is { } playerPosition && level.Session.MapData.Bounds is var bounds) {
+                Vector2 result = (playerPosition + offset).Clamp(bounds.X, bounds.Y, bounds.Right, bounds.Bottom);
+                offset = result - playerPosition;
             }
         }
 
