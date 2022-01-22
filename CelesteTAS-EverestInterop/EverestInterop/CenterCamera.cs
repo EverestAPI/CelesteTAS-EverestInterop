@@ -12,6 +12,8 @@ namespace TAS.EverestInterop {
     public static class CenterCamera {
         private static Vector2? savedCameraPosition;
         private static float? savedLevelZoom;
+        private static float? savedLevelZoomTarget;
+        private static Vector2? savedLevelZoomFocusPoint;
         private static Vector2? lastPlayerPosition;
         private static Vector2 offset;
         private static float levelZoom = 1f;
@@ -61,8 +63,13 @@ namespace TAS.EverestInterop {
                 if (lastPlayerPosition != null) {
                     savedCameraPosition = camera.Position;
                     savedLevelZoom = level.Zoom;
+                    savedLevelZoomTarget = level.ZoomTarget;
+                    savedLevelZoomFocusPoint = level.ZoomFocusPoint;
+
                     camera.Position = lastPlayerPosition.Value + offset - new Vector2(camera.Viewport.Width / 2f, camera.Viewport.Height / 2f);
                     level.Zoom = levelZoom;
+                    level.ZoomTarget = levelZoom;
+                    level.ZoomFocusPoint = new Vector2(320f, 180f) / 2f;
                 }
             }
 
@@ -75,7 +82,18 @@ namespace TAS.EverestInterop {
 
             if (savedLevelZoom != null) {
                 level.Zoom = savedLevelZoom.Value;
+                level.ZoomTarget = savedLevelZoom.Value;
                 savedLevelZoom = null;
+            }
+
+            if (savedLevelZoomTarget != null) {
+                level.ZoomTarget = savedLevelZoomTarget.Value;
+                savedLevelZoom = null;
+            }
+
+            if (savedLevelZoomFocusPoint != null) {
+                level.ZoomFocusPoint = savedLevelZoomFocusPoint.Value;
+                savedLevelZoomFocusPoint = null;
             }
         }
 
