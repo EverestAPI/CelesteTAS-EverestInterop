@@ -110,7 +110,6 @@ namespace TAS.EverestInterop {
                 }
 
                 float sensitivity = (float) ((DateTime.Now - arrowKeyPressTime.Value).TotalMilliseconds / 200f);
-                Calc.Clamp(sensitivity, 1, 6).DebugLog();
                 return Calc.Clamp(sensitivity, 1, 6);
             }
         }
@@ -160,7 +159,8 @@ namespace TAS.EverestInterop {
                 if (MouseButtons.Right.LastCheck && MouseButtons.Right.Check) {
                     InfoMouse.DrawCursor(MouseButtons.Position);
 
-                    float scale = level.Zoom * levelZoom * ((320f - level.ScreenPadding * 2f) / 320f) * level.Camera.Zoom * 6f * Engine.ViewWidth / Engine.Width;
+                    float scale = level.Zoom * levelZoom * ((320f - level.ScreenPadding * 2f) / 320f) * level.Camera.Zoom * 6f * Engine.ViewWidth /
+                                  Engine.Width;
                     offset -= (MouseButtons.Position - MouseButtons.LastPosition) / scale;
                 }
 
