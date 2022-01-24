@@ -121,14 +121,15 @@ namespace TAS.Input {
                 }
             }
 
-            readCommandStack.Add($"Read, {string.Join(", ", args)}: line {fileLine} of the file \"{currentFilePath}\"");
-            if (readCommandStack.Count > 233) {
+            string readCommandDetail = $"Read, {string.Join(", ", args)}: line {fileLine} of the file \"{currentFilePath}\"";
+            if (readCommandStack.Contains(readCommandDetail)) {
                 $"Multiple read commands lead to dead loops:\n{string.Join("\n", readCommandStack)}".Log(LogLevel.Warn);
                 return;
             }
 
+            readCommandStack.Add(readCommandDetail);
             Manager.Controller.ReadFile(filePath, startLine, endLine, studioLine);
-            ClearReadCommandStack();
+            readCommandStack.RemoveAt(readCommandStack.Count - 1);
 
             string FindTheFile() {
                 // Check for full and shortened Read versions
