@@ -1,5 +1,4 @@
-﻿using System;
-using Celeste.Mod;
+﻿using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
@@ -248,7 +247,6 @@ namespace TAS.Module {
 
         [SettingIgnore] public bool FastForwardCallBase { get; set; } = false;
         [SettingIgnore] public int FastForwardThreshold { get; set; } = 10;
-        [SettingIgnore] public DateTime StudioLastModifiedTime { get; set; } = new();
 
         #endregion
     }

@@ -12,7 +12,10 @@ namespace TAS.EverestInterop {
         private const string StudioName = "Celeste Studio";
         private static EverestModuleMetadata Metadata => CelesteTasModule.Instance.Metadata;
         private static string StudioNameWithExe => StudioName + ".exe";
-        private static string CopiedStudioExePath => Path.Combine(Everest.PathGame, StudioNameWithExe);
+        private static string ExtractedStudioExePath => Path.Combine(Everest.PathGame, StudioNameWithExe);
+        private static string TempExtractPath => Path.Combine(Everest.PathGame, "TAS Files");
+        private static string TempExtractStudio => Path.Combine(TempExtractPath, StudioNameWithExe);
+
 
         [Initialize]
         private static void Initialize() {
@@ -24,7 +27,7 @@ namespace TAS.EverestInterop {
 
         private static void ExtractStudio(out bool studioProcessWasKilled) {
             studioProcessWasKilled = false;
-            if (!File.Exists(CopiedStudioExePath) || CheckNewerStudio()) {
+            if (!File.Exists(ExtractedStudioExePath) || CheckNewerStudio()) {
                 try {
                     if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
                         Process studioProcess = Process.GetProcesses().FirstOrDefault(process =>
@@ -46,12 +49,11 @@ namespace TAS.EverestInterop {
                     }
 
                     if (!string.IsNullOrEmpty(Metadata.PathArchive)) {
-                        using (ZipFile zip = ZipFile.Read(Metadata.PathArchive)) {
-                            if (zip.EntryFileNames.Contains(StudioNameWithExe)) {
-                                foreach (ZipEntry entry in zip.Entries) {
-                                    if (entry.FileName.StartsWith(StudioName)) {
-                                        entry.Extract(Everest.PathGame, ExtractExistingFileAction.OverwriteSilently);
-                                    }
+                        using ZipFile zip = ZipFile.Read(Metadata.PathArchive);
+                        if (zip.EntryFileNames.Contains(StudioNameWithExe)) {
+                            foreach (ZipEntry entry in zip.Entries) {
+                                if (entry.FileName.StartsWith(StudioName)) {
+                                    entry.Extract(Everest.PathGame, ExtractExistingFileAction.OverwriteSilently);
                                 }
                             }
                         }
@@ -68,9 +70,6 @@ namespace TAS.EverestInterop {
                             }
                         }
                     }
-
-                    CelesteTasModule.Settings.StudioLastModifiedTime = File.GetLastWriteTime(CopiedStudioExePath);
-                    CelesteTasModule.Instance.SaveSettings();
                 } catch (UnauthorizedAccessException e) {
                     e.LogException("Failed to extract studio.");
                 }
@@ -86,23 +85,43 @@ namespace TAS.EverestInterop {
                 return false;
             }
 
-            DateTime modifiedTime = new();
+#if DEBUG
+            DateTime zipFileModifiedTime = new();
 
             if (!string.IsNullOrEmpty(Metadata.PathArchive)) {
-                using (ZipFile zip = ZipFile.Read(Metadata.PathArchive)) {
-                    if (zip.Entries.FirstOrDefault(zipEntry => zipEntry.FileName == StudioNameWithExe) is { } studioZipEntry) {
-                        modifiedTime = studioZipEntry.LastModified;
-                    }
+                using ZipFile zip = ZipFile.Read(Metadata.PathArchive);
+                if (zip.Entries.FirstOrDefault(zipEntry => zipEntry.FileName == StudioNameWithExe) is { } studioZipEntry) {
+                    zipFileModifiedTime = studioZipEntry.LastModified;
                 }
             } else if (!string.IsNullOrEmpty(Metadata.PathDirectory)) {
                 string[] files = Directory.GetFiles(Metadata.PathDirectory);
-
                 if (files.FirstOrDefault(filePath => filePath.EndsWith(StudioNameWithExe)) is { } studioFilePath) {
-                    modifiedTime = File.GetLastWriteTime(studioFilePath);
+                    zipFileModifiedTime = File.GetLastWriteTime(studioFilePath);
                 }
             }
 
-            return modifiedTime.CompareTo(CelesteTasModule.Settings.StudioLastModifiedTime) > 0;
+            DateTime existFileModifiedTime = File.GetLastWriteTime(ExtractedStudioExePath);
+            return existFileModifiedTime != zipFileModifiedTime;
+#else
+                string zipFileVersion = null;
+
+                if (!string.IsNullOrEmpty(Metadata.PathArchive)) {
+                    using ZipFile zip = ZipFile.Read(Metadata.PathArchive);
+                    if (zip.Entries.FirstOrDefault(zipEntry => zipEntry.FileName == StudioNameWithExe) is { } studioZipEntry) {
+                        studioZipEntry.Extract(TempExtractPath, ExtractExistingFileAction.OverwriteSilently);
+                        zipFileVersion = FileVersionInfo.GetVersionInfo(TempExtractStudio).FileVersion;
+                        File.Delete(TempExtractStudio);
+                    }
+                } else if (!string.IsNullOrEmpty(Metadata.PathDirectory)) {
+                    string[] files = Directory.GetFiles(Metadata.PathDirectory);
+                    if (files.FirstOrDefault(filePath => filePath.EndsWith(StudioNameWithExe)) is { } studioFilePath) {
+                        zipFileVersion = FileVersionInfo.GetVersionInfo(studioFilePath).FileVersion;
+                    }
+                }
+
+                string existFileVersion = FileVersionInfo.GetVersionInfo(ExtractedStudioExePath).FileVersion;
+                return existFileVersion != zipFileVersion;
+#endif
         }
 
         private static void LaunchStudioAtBoot(bool studioProcessWasKilled) {
@@ -115,8 +134,8 @@ namespace TAS.EverestInterop {
                         }
                     }
 
-                    if (File.Exists(CopiedStudioExePath)) {
-                        Process.Start("Explorer", CopiedStudioExePath);
+                    if (File.Exists(ExtractedStudioExePath)) {
+                        Process.Start("Explorer", ExtractedStudioExePath);
                     }
                 } catch (Exception e) {
                     e.LogException("Failed to launch studio at boot.");
