@@ -1,3 +1,4 @@
+#if DEBUG
 using System;
 using System.Diagnostics;
 using JetBrains.Profiler.Api;
@@ -7,7 +8,6 @@ using TAS.Input;
 using TAS.Module;
 using TAS.Utils;
 
-#if DEBUG
 namespace TAS.EverestInterop {
     public static class Benchmark {
         private static readonly Stopwatch watch = new Stopwatch();

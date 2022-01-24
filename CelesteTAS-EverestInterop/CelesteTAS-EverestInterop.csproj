@@ -41,9 +41,7 @@
         <PackageReference Include="MonoMod" Version="21.4.29.1" />
         <PackageReference Include="MonoMod.RuntimeDetour" Version="21.4.29.1" />
         <PackageReference Include="MonoMod.Utils" Version="21.4.29.1" />
-        <PackageReference Include="JetBrains.Profiler.Api" Version="1.1.8">
-            <IncludeAssets Condition="'$(Configuration)' == 'Debug'">all</IncludeAssets>
-        </PackageReference>
+        <PackageReference Include="JetBrains.Profiler.Api" Version="1.1.8" IncludeAssets="all" Condition="'$(Configuration)' == 'Debug'"/>
     </ItemGroup>
     <ItemGroup>
         <Reference Include="Celeste">
