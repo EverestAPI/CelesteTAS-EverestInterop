@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -71,9 +72,18 @@ namespace CelesteStudio.Communication {
         }
 
         private void ProcessSendState(byte[] data) {
-            StudioInfo studioInfo = StudioInfo.FromByteArray(data);
-            // Log(studioInfo.ToString());
-            CommunicationWrapper.StudioInfo = studioInfo;
+            try {
+                StudioInfo studioInfo = StudioInfo.FromByteArray(data);
+                CommunicationWrapper.StudioInfo = studioInfo;
+            } catch (InvalidCastException) {
+                string studioVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
+                object[] objects = BinaryFormatterHelper.FromByteArray<object[]>(data);
+                string modVersion = objects.Length >= 10 ? objects[9].ToString() : "Unknown";
+                MessageBox.Show(
+                    $"Studio v{studioVersion} and CelesteTAS v{modVersion} do not match. Please manually extract the studio from the \"game_path\\Mods\\CelesteTAS.zip\" file.",
+                    "Communication Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Application.Exit();
+            }
         }
 
         private void ProcessSendCurrentBindings(byte[] data) {
