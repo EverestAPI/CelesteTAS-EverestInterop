@@ -217,6 +217,10 @@ namespace TAS {
         }
 
         public static void SendStateToStudio() {
+            if (UltraFastForwarding && Engine.FrameCounter % 100 > 0) {
+                return;
+            }
+
             StudioInfo studioInfo = new(
                 Controller.Previous?.Line ?? -1,
                 $"{Controller.CurrentFrameInInput}{Controller.Previous?.RepeatString ?? ""}",
