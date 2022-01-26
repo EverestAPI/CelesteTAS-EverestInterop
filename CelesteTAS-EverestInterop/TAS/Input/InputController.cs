@@ -45,7 +45,7 @@ namespace TAS.Input {
                         Manager.NextStates |= States.Disable;
                     }
 
-                    Manager.Controller.Reset();
+                    Manager.Controller.ParseFileBegin();
                     Manager.Controller.RefreshInputs(true);
                 }
             }
@@ -63,13 +63,16 @@ namespace TAS.Input {
         public InputFrame Current => Inputs.GetValueOrDefault(CurrentFrameInTas);
         public InputFrame Next => Inputs.GetValueOrDefault(CurrentFrameInTas + 1);
         public FastForward CurrentFastForward => FastForwards.GetValueOrDefault(CurrentFrameInTas);
+        private FastForward lastFastForward;
         public List<Command> CurrentCommands => Commands.GetValueOrDefault(CurrentFrameInTas);
         private bool NeedsReload => UsedFiles.IsEmpty() || UsedFiles.Any(file => File.GetLastWriteTime(file.Key) != file.Value);
         public bool CanPlayback => CurrentFrameInTas < Inputs.Count;
         public bool NeedsToWait => Manager.IsLoading();
 
         public FastForward NextCommentFastForward;
-        private FastForward LastFastForward => NextCommentFastForward ?? FastForwards.LastValueOrDefault();
+
+        private FastForward LastFastForward => NextCommentFastForward ?? lastFastForward;
+
         public bool HasFastForward => LastFastForward != null && LastFastForward.Frame > CurrentFrameInTas;
         public int FastForwardSpeed => LastFastForward == null ? 1 : Calc.Clamp(LastFastForward.Frame - CurrentFrameInTas, 1, LastFastForward.Speed);
         public bool Break => LastFastForward?.Frame == CurrentFrameInTas;
@@ -91,9 +94,9 @@ namespace TAS.Input {
             if (NeedsReload) {
                 int tryCount = 5;
                 while (tryCount > 0) {
-                    Reset();
+                    ParseFileBegin();
                     if (ReadFile(TasFilePath)) {
-                        LibTasHelper.FinishExport();
+                        ParseFileEnd();
                         if (!firstRun && lastChecksum != Checksum) {
                             MetadataCommands.UpdateRecordCount(this);
                         }
@@ -122,11 +125,12 @@ namespace TAS.Input {
             NextCommentFastForward = null;
         }
 
-        private void Reset() {
+        private void ParseFileBegin() {
             initializationFrameCount = 0;
             checksum = string.Empty;
             savestateChecksum = string.Empty;
             Inputs.Clear();
+            lastFastForward = null;
             FastForwards.Clear();
             FastForwardComments.Clear();
             Commands.Clear();
@@ -135,6 +139,11 @@ namespace TAS.Input {
             AnalogHelper.AnalogModeChange(AnalogueMode.Ignore);
             RepeatCommand.Clear();
             InputCommands.ClearReadCommandStack();
+        }
+
+        private void ParseFileEnd() {
+            LibTasHelper.FinishExport();
+            lastFastForward = FastForwards.Values.LastOrDefault();
         }
 
         public void AdvanceFrame(out bool canPlayback) {

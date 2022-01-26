@@ -217,7 +217,7 @@ namespace TAS {
         }
 
         public static void SendStateToStudio() {
-            if (UltraFastForwarding && Engine.FrameCounter % 100 > 0) {
+            if (UltraFastForwarding && Engine.FrameCounter % 23 > 0) {
                 return;
             }
 
