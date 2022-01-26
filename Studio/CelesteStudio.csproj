@@ -16,12 +16,12 @@
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
         <DebugType>portable</DebugType>
-        <DefineConstants>TRACE;DEBUG;STUDIO</DefineConstants>
+        <DefineConstants>TRACE</DefineConstants>
         <PlatformTarget>AnyCPU</PlatformTarget>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
         <DebugType>portable</DebugType>
-        <DefineConstants>TRACE;STUDIO</DefineConstants>
+        <DefineConstants>TRACE</DefineConstants>
         <PlatformTarget>AnyCPU</PlatformTarget>
     </PropertyGroup>
     <PropertyGroup>

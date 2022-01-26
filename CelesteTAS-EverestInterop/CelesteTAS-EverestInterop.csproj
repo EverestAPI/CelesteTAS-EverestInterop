@@ -17,13 +17,13 @@
     </ItemDefinitionGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
         <DebugType>portable</DebugType>
-        <DefineConstants>TRACE;DEBUG;CELESTETAS</DefineConstants>
+        <DefineConstants>TRACE</DefineConstants>
         <WarningLevel>0</WarningLevel>
         <UseVSHostingProcess>true</UseVSHostingProcess>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
         <DebugType>portable</DebugType>
-        <DefineConstants>TRACE;CELESTETAS</DefineConstants>
+        <DefineConstants>TRACE</DefineConstants>
         <DocumentationFile />
         <NoWarn>CS1591</NoWarn>
         <PlatformTarget>AnyCPU</PlatformTarget>
