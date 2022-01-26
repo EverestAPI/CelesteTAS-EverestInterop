@@ -57,9 +57,10 @@ namespace TAS.EverestInterop {
         public static Hotkey CameraZoomOut { get; private set; }
 
         public static readonly Dictionary<HotkeyID, Hotkey> KeysDict = new();
+        private static List<Hotkey> hotKeysInteractWithStudio;
         public static Dictionary<HotkeyID, List<Keys>> KeysInteractWithStudio = new();
 
-        private static readonly List<HotkeyID> HotkeysIgnoreOnStudio = new() {
+        private static readonly List<HotkeyID> HotkeyIDsIgnoreOnStudio = new() {
             HotkeyID.InfoHud, HotkeyID.CameraUp, HotkeyID.CameraDown, HotkeyID.CameraLeft, HotkeyID.CameraRight, HotkeyID.CameraZoomIn,
             HotkeyID.CameraZoomOut
         };
@@ -110,7 +111,8 @@ namespace TAS.EverestInterop {
             KeysDict[HotkeyID.CameraZoomIn] = CameraZoomIn = BindingToHotkey(new ButtonBinding(0, Keys.Home));
             KeysDict[HotkeyID.CameraZoomOut] = CameraZoomOut = BindingToHotkey(new ButtonBinding(0, Keys.End));
 
-            KeysInteractWithStudio = KeysDict.Where(pair => !HotkeysIgnoreOnStudio.Contains(pair.Key))
+            hotKeysInteractWithStudio = KeysDict.Where(pair => !HotkeyIDsIgnoreOnStudio.Contains(pair.Key)).Select(pair => pair.Value).ToList();
+            KeysInteractWithStudio = KeysDict.Where(pair => !HotkeyIDsIgnoreOnStudio.Contains(pair.Key))
                 .ToDictionary(pair => pair.Key, pair => pair.Value.Keys);
         }
 
@@ -161,11 +163,21 @@ namespace TAS.EverestInterop {
                 }
             }
 
-            foreach (Hotkey hotkey in KeysDict.Values) {
-                if (hotkey == InfoHud) {
-                    hotkey.Update();
-                } else {
-                    hotkey.Update(updateKey, updateButton);
+            if (Manager.UltraFastForwarding) {
+                updateButton = false;
+            }
+
+            if (Manager.UltraFastForwarding) {
+                foreach (Hotkey hotkey in hotKeysInteractWithStudio) {
+                    hotkey.Update(updateKey, false);
+                }
+            } else {
+                foreach (Hotkey hotkey in KeysDict.Values) {
+                    if (hotkey == InfoHud) {
+                        hotkey.Update();
+                    } else {
+                        hotkey.Update(updateKey, updateButton);
+                    }
                 }
             }
 
