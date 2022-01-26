@@ -11,6 +11,7 @@ using TAS.EverestInterop;
 using TAS.Input;
 using TAS.Module;
 using TAS.Utils;
+using GameInput = Celeste.Input;
 
 namespace TAS {
     public static class Manager {
@@ -257,19 +258,9 @@ namespace TAS {
 
             SetGamePadState(input, ref gamePadState, ref pad, ref sticks);
 
-            bool found = false;
-            for (int i = 0; i < 4; i++) {
-                MInput.GamePads[i].Update();
-                if (MInput.GamePads[i].Attached) {
-                    found = true;
-                    MInput.GamePads[i].CurrentState = gamePadState;
-                }
-            }
-
-            if (!found) {
-                MInput.GamePads[0].CurrentState = gamePadState;
-                MInput.GamePads[0].Attached = true;
-            }
+            MInput.GamePadData gamePadData = MInput.GamePads[GameInput.Gamepad];
+            gamePadData.PreviousState = gamePadData.CurrentState;
+            gamePadData.CurrentState = gamePadState;
 
             MInput.Keyboard.PreviousState = MInput.Keyboard.CurrentState;
             if (input.HasActions(Actions.Confirm)) {
