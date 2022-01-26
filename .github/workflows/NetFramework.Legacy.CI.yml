@@ -13,17 +13,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Setup Nuget.exe
-        uses: nuget/setup-nuget@v1
-
-      - name: Restore packages
-        run: nuget restore $env:Solution_Name
-
       - name: Setup MSBuild.exe
         uses: microsoft/setup-msbuild@v1
 
       - name: Build with MSBuild
-        run: msbuild $env:Solution_Name -p:Configuration=Release
+        run: msbuild $env:Solution_Name -t:build -restore -p:Configuration=Release -m
         
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
