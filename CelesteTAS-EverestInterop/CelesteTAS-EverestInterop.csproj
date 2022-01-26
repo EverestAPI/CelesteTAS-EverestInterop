@@ -8,6 +8,8 @@
         <Copyright>Copyright © 2018</Copyright>
         <OutputPath>bin\</OutputPath>
         <MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB3270</MSBuildWarningsAsMessages>
+        <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+        <RestoreLockedMode>true</RestoreLockedMode>
     </PropertyGroup>
     <ItemDefinitionGroup>
         <PackageReference IncludeAssets="compile" />
@@ -27,12 +29,6 @@
         <DocumentationFile />
         <NoWarn>CS1591</NoWarn>
         <PlatformTarget>AnyCPU</PlatformTarget>
-    </PropertyGroup>
-    <PropertyGroup>
-        <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
-    </PropertyGroup>
-    <PropertyGroup>
-        <PostBuildEvent />
     </PropertyGroup>
     <Import Project="..\StudioCommunication\StudioCommunication.projitems" Label="Shared" />
     <ItemGroup>
