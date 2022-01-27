@@ -1125,7 +1125,7 @@ namespace CelesteStudio.RichText {
                     return string.Empty;
                 }
 
-                string validDir = $"{Path.GetFileName(CurrentFileName)}-{CurrentFileName.GetHashCode()}";
+                string validDir = $"{Path.GetFileName(CurrentFileName)}_{CurrentFileName.GetHashCode()}";
                 return Path.Combine(Directory.GetCurrentDirectory(), "TAS Files", "Backups", validDir);
             }
         }

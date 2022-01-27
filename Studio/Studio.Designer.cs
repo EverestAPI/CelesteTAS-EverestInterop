@@ -333,6 +333,7 @@ namespace CelesteStudio {
             this.backupRateToolStripMenuItem.Name = "backupRateToolStripMenuItem";
             this.backupRateToolStripMenuItem.Size = new System.Drawing.Size(244, 22);
             this.backupRateToolStripMenuItem.Text = "Backup Rate (minutes)";
+            this.backupRateToolStripMenuItem.ToolTipText = "0 means the file will be backed up every time it is modified";
             this.backupRateToolStripMenuItem.Click += new System.EventHandler(this.backupRateToolStripMenuItem_Click);
             // 
             // backupFileCountsToolStripMenuItem
@@ -340,6 +341,7 @@ namespace CelesteStudio {
             this.backupFileCountsToolStripMenuItem.Name = "backupFileCountsToolStripMenuItem";
             this.backupFileCountsToolStripMenuItem.Size = new System.Drawing.Size(244, 22);
             this.backupFileCountsToolStripMenuItem.Text = "Backup File Count";
+            this.backupFileCountsToolStripMenuItem.ToolTipText = "0 means no limit";
             this.backupFileCountsToolStripMenuItem.Click += new System.EventHandler(this.backupFileCountsToolStripMenuItem_Click);
             // 
             // fontToolStripMenuItem
@@ -543,7 +545,7 @@ namespace CelesteStudio {
             // 
             this.tasTextContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.insertRemoveBreakPointToolStripMenuItem, this.insertRemoveSavestateBreakPointToolStripMenuItem, this.removeAllUncommentedBreakpointsToolStripMenuItem, this.removeAllBreakpointsToolStripMenuItem, this.commentUncommentAllBreakpointsToolStripMenuItem, this.toolStripSeparator2, this.commentUncommentTextToolStripMenuItem, this.insertRoomNameToolStripMenuItem, this.insertCurrentInGameTimeToolStripMenuItem, this.insertModInfoStripMenuItem1, this.insertConsoleLoadCommandToolStripMenuItem, this.insertSimpleConsoleLoadCommandToolStripMenuItem, this.insertOtherCommandToolStripMenuItem, this.toolStripSeparator6, this.swapDashKeysStripMenuItem, this.swapJumpKeysToolStripMenuItem, this.combineConsecutiveSameInputsToolStripMenuItem, this.forceCombineInputsToolStripMenuItem, this.convertDashToDemoDashToolStripMenuItem, this.toolStripSeparator12, this.openReadFileToolStripMenuItem});
             this.tasTextContextMenuStrip.Name = "tasTextContextMenuStrip";
-            this.tasTextContextMenuStrip.Size = new System.Drawing.Size(426, 440);
+            this.tasTextContextMenuStrip.Size = new System.Drawing.Size(426, 418);
             // 
             // insertRemoveBreakPointToolStripMenuItem
             // 
