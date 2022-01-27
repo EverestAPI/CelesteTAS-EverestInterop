@@ -1,12 +1,22 @@
 ﻿using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
+using TAS.Module;
 
 namespace TAS.EverestInterop.InfoHUD {
     // Copy of ActiveFont that always uses the JetBrains Mono font.
     public static class JetBrainsMonoFont {
         private const string FontFace = "JetBrains Mono";
-        public static PixelFont Font => Fonts.Get(FontFace) ?? LoadFont();
+
+        public static PixelFont Font {
+            get {
+                if (Engine.Scene is Overworld) {
+                    return null;
+                } else {
+                    return Fonts.Get(FontFace) ?? Fonts.Load(FontFace);
+                }
+            }
+        }
 
         public static PixelFontSize FontSize => Font.Get(BaseSize);
 
@@ -14,8 +24,24 @@ namespace TAS.EverestInterop.InfoHUD {
 
         public static float LineHeight => FontSize.LineHeight;
 
-        public static PixelFont LoadFont() {
-            return Fonts.Load(FontFace);
+        [Load]
+        private static void Load() {
+            On.Celeste.Overworld.Begin += OverworldOnBegin;
+        }
+
+        [Unload]
+        private static void Unload() {
+            On.Celeste.Overworld.Begin -= OverworldOnBegin;
+            Fonts.Unload(FontFace);
+        }
+
+        private static void OverworldOnBegin(On.Celeste.Overworld.orig_Begin orig, Overworld self) {
+            orig(self);
+
+            // fix: game crash when auto install dependencies
+            if (Fonts.Get(FontFace) != null) {
+                Fonts.Unload(FontFace);
+            }
         }
 
         public static Vector2 Measure(char text)
