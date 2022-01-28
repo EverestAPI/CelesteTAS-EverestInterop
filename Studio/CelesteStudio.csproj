@@ -14,7 +14,6 @@
         <SignAssembly>true</SignAssembly>
         <AssemblyOriginatorKeyFile>sgKey.snk</AssemblyOriginatorKeyFile>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
-        <RestoreLockedMode>true</RestoreLockedMode>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
         <DebugType>portable</DebugType>

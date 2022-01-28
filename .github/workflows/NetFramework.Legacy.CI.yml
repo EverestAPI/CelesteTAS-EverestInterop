@@ -23,7 +23,7 @@ jobs:
         uses: microsoft/setup-msbuild@v1
 
       - name: Build with MSBuild
-        run: msbuild $env:Solution_Name -t:build -restore -p:Configuration=Release -m
+        run: msbuild $env:Solution_Name -t:build -restore -p:Configuration=Release,RestoreLockedMode=true -m
         
       - name: Upload Artifact
         uses: actions/upload-artifact@v2

@@ -9,7 +9,6 @@
         <OutputPath>bin\</OutputPath>
         <MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB3270</MSBuildWarningsAsMessages>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
-        <RestoreLockedMode>true</RestoreLockedMode>
     </PropertyGroup>
     <ItemDefinitionGroup>
         <PackageReference IncludeAssets="compile" />
@@ -32,12 +31,14 @@
     </PropertyGroup>
     <Import Project="..\StudioCommunication\StudioCommunication.projitems" Label="Shared" />
     <ItemGroup>
-        <PackageReference Include="DotNetZip" Version="1.13.8" />
-        <PackageReference Include="Mono.Cecil" Version="0.11.3" />
-        <PackageReference Include="MonoMod" Version="21.4.29.1" />
-        <PackageReference Include="MonoMod.RuntimeDetour" Version="21.4.29.1" />
-        <PackageReference Include="MonoMod.Utils" Version="21.4.29.1" />
-        <PackageReference Include="JetBrains.Profiler.Api" Version="1.1.8" IncludeAssets="all" Condition="'$(Configuration)' == 'Debug'"/>
+        <PackageReference Include="DotNetZip" Version="1.13.8"/>
+        <PackageReference Include="Mono.Cecil" Version="0.11.3"/>
+        <PackageReference Include="MonoMod" Version="21.4.29.1"/>
+        <PackageReference Include="MonoMod.RuntimeDetour" Version="21.4.29.1"/>
+        <PackageReference Include="MonoMod.Utils" Version="21.4.29.1"/>
+        <PackageReference Include="JetBrains.Profiler.Api" Version="1.1.8">
+            <IncludeAssets Condition="'$(Configuration)' == 'Debug'">all</IncludeAssets>
+        </PackageReference>
     </ItemGroup>
     <ItemGroup>
         <Reference Include="Celeste">
