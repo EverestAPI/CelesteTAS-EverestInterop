@@ -40,6 +40,10 @@ namespace TAS.EverestInterop {
                 } else if (!watch.IsRunning && !Manager.IsLoading()) {
                     watch.Start();
                 }
+
+                if (!watch.IsRunning) {
+                    lastFrameCounter++;
+                }
             }
 
             lastRunning = Manager.Running;
