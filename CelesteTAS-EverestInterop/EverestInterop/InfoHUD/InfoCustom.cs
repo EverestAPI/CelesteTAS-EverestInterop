@@ -265,7 +265,7 @@ namespace TAS.EverestInterop.InfoHUD {
                 }
             }
 
-            if (obj is IEnumerable enumerable) {
+            if (obj is IEnumerable enumerable and not IEnumerable<char>) {
                 StringBuilder sb = new();
                 foreach (object o in enumerable) {
                     if (sb.Length > 0) {
