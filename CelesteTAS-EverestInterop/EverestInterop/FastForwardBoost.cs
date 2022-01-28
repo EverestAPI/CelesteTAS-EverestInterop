@@ -65,6 +65,7 @@ namespace TAS.EverestInterop {
             IlHooks.Clear();
         }
 
+#pragma warning disable CS0612
         private static void TrackerOnInitialize(On.Monocle.Tracker.orig_Initialize orig) {
             orig();
             AddTypeToTracker(typeof(PlayerSeeker));
@@ -72,6 +73,7 @@ namespace TAS.EverestInterop {
             AddTypeToTracker(typeof(KeyboardConfigUI), typeof(ModuleSettingsKeyboardConfigUI));
             AddTypeToTracker(typeof(ButtonConfigUI), typeof(ModuleSettingsButtonConfigUI));
         }
+#pragma warning restore CS0612
 
         private static void AddTypeToTracker(Type type, params Type[] subTypes) {
             if (!Tracker.StoredEntityTypes.Contains(type)) {

@@ -215,6 +215,7 @@ namespace TAS.EverestInterop {
             }
         }
 
+#pragma warning disable CS0612
         [Load]
         private static void Load() {
             On.Celeste.Input.Initialize += InputOnInitialize;
@@ -234,6 +235,7 @@ namespace TAS.EverestInterop {
                 Detours.Add(new ILHook(reloadMethod, ModReload));
             }
         }
+#pragma warning restore CS0612
 
         [Unload]
         private static void Unload() {

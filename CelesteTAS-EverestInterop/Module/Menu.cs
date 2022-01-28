@@ -50,6 +50,7 @@ namespace TAS.Module {
             });
         }
 
+#pragma warning disable CS0612
         private static EaseInSubMenu CreateHotkeysSubMenu(EverestModule everestModule, TextMenu menu) {
             return new EaseInSubMenu("Hotkeys".ToDialogText(), false).Apply(subMenu => {
                 subMenu.Add(new TextMenu.Button(Dialog.Clean("options_keyconfig")).Pressed(() => {
@@ -83,6 +84,7 @@ namespace TAS.Module {
                 }));
             }).Apply(subMenu => hotkeysSubMenu = subMenu);
         }
+#pragma warning restore CS0612
 
         private static EaseInSubMenu CreateRelaunchSubMenu() {
             return new EaseInSubMenu("Relaunch Required".ToDialogText(), false).Apply(subMenu => {

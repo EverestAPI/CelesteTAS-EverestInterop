@@ -142,7 +142,7 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-        public static string Width {
+        public new static string Width {
             get {
                 if (IsDragging) {
                     return Instance.width.ToString();
@@ -152,7 +152,7 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-        public static string Height {
+        public new static string Height {
             get {
                 if (IsDragging) {
                     return Instance.height.ToString();

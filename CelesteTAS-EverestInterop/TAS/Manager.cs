@@ -25,7 +25,6 @@ namespace TAS {
         public static int FrameLoops { get; private set; } = 1;
         public static bool UltraFastForwarding => FrameLoops >= 100 && Running;
         public static bool EnforceLegal, AllowUnsafeInput;
-        private static bool kbTextInput;
 
         static Manager() {
             MethodInfo updateVirtualInputs = typeof(MInput).GetMethodInfo("UpdateVirtualInputs");
@@ -187,8 +186,6 @@ namespace TAS {
             Recording = false;
             States = States.None;
             NextStates = States.None;
-
-            Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = kbTextInput;
 
             EnforceLegal = false;
             AllowUnsafeInput = false;
