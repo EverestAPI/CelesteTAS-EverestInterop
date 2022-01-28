@@ -4,7 +4,7 @@
   SupportsCodeReload: true
   Dependencies:
     - Name: Everest
-      Version: 1.2593.0
+      Version: 1.2781.0
   OptionalDependencies:
     - Name: SpeedrunTool
       Version: 3.5.0

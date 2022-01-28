@@ -1,4 +1,7 @@
-﻿using Celeste;
+﻿using System.Collections;
+using Celeste;
+using Celeste.Mod;
+using Celeste.Mod.UI;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Module;
@@ -26,22 +29,22 @@ namespace TAS.EverestInterop.InfoHUD {
 
         [Load]
         private static void Load() {
-            On.Celeste.Overworld.Begin += OverworldOnBegin;
+            On.Celeste.Overworld.GotoRoutine += OverworldOnGotoRoutine;
         }
 
         [Unload]
         private static void Unload() {
-            On.Celeste.Overworld.Begin -= OverworldOnBegin;
+            On.Celeste.Overworld.GotoRoutine -= OverworldOnGotoRoutine;
             Fonts.Unload(FontFace);
         }
 
-        private static void OverworldOnBegin(On.Celeste.Overworld.orig_Begin orig, Overworld self) {
-            orig(self);
-
+        private static IEnumerator OverworldOnGotoRoutine(On.Celeste.Overworld.orig_GotoRoutine orig, Overworld self, Oui next) {
             // fix: game crash when auto install dependencies
-            if (Fonts.Get(FontFace) != null) {
+            if (next is OuiLoggedProgress && Fonts.Get(FontFace) != null) {
                 Fonts.Unload(FontFace);
             }
+
+            yield return new SwapImmediately(orig(self, next));
         }
 
         public static Vector2 Measure(char text)
