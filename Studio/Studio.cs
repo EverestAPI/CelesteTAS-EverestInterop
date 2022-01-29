@@ -61,7 +61,8 @@ namespace CelesteStudio {
         private string TitleBarText =>
             (string.IsNullOrEmpty(CurrentFileName) ? "Celeste.tas" : Path.GetFileName(CurrentFileName))
             + " - Studio v"
-            + Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
+            + Assembly.GetExecutingAssembly().GetName().Version.ToString(3)
+            + (string.IsNullOrEmpty(CurrentFileName) ? string.Empty : "   " + CurrentFileName);
 
         private string CurrentFileName {
             get => richText.CurrentFileName;
