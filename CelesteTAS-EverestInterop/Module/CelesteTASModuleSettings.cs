@@ -236,6 +236,7 @@ namespace TAS.Module {
             set => centerCamera = value;
         }
 
+        public bool IgnoreGcCollect { get; set; } = true;
         public bool PauseAfterLoadState { get; set; } = true;
         public bool RestoreSettings { get; set; } = false;
         public bool DisableAchievements { get; set; } = false;

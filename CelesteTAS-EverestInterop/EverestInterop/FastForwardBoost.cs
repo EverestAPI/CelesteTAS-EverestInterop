@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Celeste;
 using Celeste.Mod;
 using Celeste.Mod.Helpers;
+using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
@@ -12,8 +14,10 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop {
     public static class FastForwardBoost {
-        private static bool SkipUpdate => Manager.UltraFastForwarding;
+        private static bool UltraFastForwarding => Manager.UltraFastForwarding;
         private static readonly List<ILHook> IlHooks = new();
+        private static bool ignoredGc;
+        private static Process celesteProcess;
 
         [Initialize]
         private static void Initialize() {
@@ -41,6 +45,9 @@ namespace TAS.EverestInterop {
             IL.Celeste.CrystalStaticSpinner.UpdateHue += SkipUpdateMethod;
             IL.Celeste.SeekerBarrierRenderer.Update += SkipUpdateMethod;
             IL.Celeste.SeekerBarrier.Update += SeekerBarrierOnUpdate;
+            IL.Monocle.Engine.OnSceneTransition += IgnoreGcCollect;
+            IL.Celeste.Level.Reload += IgnoreGcCollect;
+            On.Monocle.Engine.Update += EngineOnUpdate;
         }
 
         [Unload]
@@ -61,6 +68,9 @@ namespace TAS.EverestInterop {
             IL.Celeste.CrystalStaticSpinner.UpdateHue -= SkipUpdateMethod;
             IL.Celeste.SeekerBarrierRenderer.Update -= SkipUpdateMethod;
             IL.Celeste.SeekerBarrier.Update -= SeekerBarrierOnUpdate;
+            IL.Monocle.Engine.OnSceneTransition -= IgnoreGcCollect;
+            IL.Celeste.Level.Reload -= IgnoreGcCollect;
+            On.Monocle.Engine.Update -= EngineOnUpdate;
             IlHooks.ForEach(hook => hook.Dispose());
             IlHooks.Clear();
         }
@@ -96,7 +106,7 @@ namespace TAS.EverestInterop {
         }
 
         private static void BackdropRendererOnUpdate(On.Celeste.BackdropRenderer.orig_Update orig, BackdropRenderer self, Scene scene) {
-            if (SkipUpdate && Engine.FrameCounter % 1000 > 0) {
+            if (UltraFastForwarding && Engine.FrameCounter % 1000 > 0) {
                 return;
             }
 
@@ -104,7 +114,7 @@ namespace TAS.EverestInterop {
         }
 
         private static void SoundEmitterOnUpdate(On.Celeste.SoundEmitter.orig_Update orig, SoundEmitter self) {
-            if (SkipUpdate) {
+            if (UltraFastForwarding) {
                 self.RemoveSelf();
             } else {
                 orig(self);
@@ -130,7 +140,7 @@ namespace TAS.EverestInterop {
             }
 
             ILLabel target = cursor.DefineLabel();
-            cursor.EmitDelegate<Func<bool>>(() => SkipUpdate);
+            cursor.EmitDelegate<Func<bool>>(() => UltraFastForwarding);
             cursor.Emit(OpCodes.Brtrue, target);
 
             if (!cursor.TryGotoNext(instr => instr.MatchLdarg(0),
@@ -140,6 +150,54 @@ namespace TAS.EverestInterop {
             }
 
             cursor.MarkLabel(target);
+        }
+
+        private static void IgnoreGcCollect(ILContext il) {
+            ILCursor ilCursor = new(il);
+            if (ilCursor.TryGotoNext(ins => ins.MatchCall(typeof(GC), "Collect"),
+                    ins => ins.MatchCall(typeof(GC), "WaitForPendingFinalizers"))) {
+                Instruction afterGc = ilCursor.Next.Next.Next;
+                ilCursor.EmitDelegate<Func<bool>>(() => {
+                    bool result = !Environment.Is64BitProcess && CelesteTasModule.Settings.IgnoreGcCollect && UltraFastForwarding;
+                    if (celesteProcess == null && result) {
+                        celesteProcess = Process.GetCurrentProcess();
+                    }
+
+                    if (celesteProcess != null) {
+                        celesteProcess.Refresh();
+                        // 2.5GB
+                        if (celesteProcess.PrivateMemorySize64 > 1024L * 1024L * 1024L * 2.5) {
+                            result = false;
+                        }
+                    }
+
+                    if (!ignoredGc && result) {
+                        ignoredGc = true;
+                    }
+
+                    return result;
+                });
+                ilCursor.Emit(OpCodes.Brtrue, afterGc);
+            }
+        }
+
+        private static void EngineOnUpdate(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
+            orig(self, gameTime);
+
+            if (UltraFastForwarding) {
+                return;
+            }
+
+            if (celesteProcess != null) {
+                celesteProcess.Dispose();
+                celesteProcess = null;
+            }
+
+            if (ignoredGc) {
+                ignoredGc = false;
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
         }
     }
 }

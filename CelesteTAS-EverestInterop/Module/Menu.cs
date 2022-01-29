@@ -30,14 +30,21 @@ namespace TAS.Module {
                 CreateRoundValuesSubMenu(),
                 CreateRelaunchSubMenu(),
                 CreateHotkeysSubMenu(everestModule, menu),
-                CreateMoreOptionsSubMenu(),
+                CreateMoreOptionsSubMenu(menu),
             };
         }
 
-        private static EaseInSubMenu CreateMoreOptionsSubMenu() {
+        private static EaseInSubMenu CreateMoreOptionsSubMenu(TextMenu menu) {
             return new EaseInSubMenu("More Options".ToDialogText(), false).Apply(subMenu => {
                 subMenu.Add(new TextMenu.OnOff("Center Camera".ToDialogText(), Settings.CenterCamera).Change(value =>
                     Settings.CenterCamera = value));
+
+                TextMenu.Item ignoreGcItem;
+                subMenu.Add(ignoreGcItem = new TextMenu.OnOff("Ignore GC Collect".ToDialogText(), Settings.IgnoreGcCollect).Change(value =>
+                    Settings.IgnoreGcCollect = value));
+                AddDescription(ignoreGcItem, subMenu, menu, "Ignore GC Collect DESCRIPTION 1".ToDialogText());
+                AddDescription(ignoreGcItem, subMenu, menu, "Ignore GC Collect DESCRIPTION 2".ToDialogText());
+
                 subMenu.Add(new TextMenu.OnOff("Pause After Load State".ToDialogText(), Settings.PauseAfterLoadState).Change(value =>
                     Settings.PauseAfterLoadState = value));
                 subMenu.Add(new TextMenu.OnOff("Restore Settings".ToDialogText(), Settings.RestoreSettings).Change(value =>
@@ -48,6 +55,18 @@ namespace TAS.Module {
                 subMenu.Add(new TextMenu.OnOff("Mod 9D Lighting".ToDialogText(), Settings.Mod9DLighting).Change(value =>
                     Settings.Mod9DLighting = value));
             });
+        }
+
+        private static void AddDescription(TextMenu.Item subMenuItem, TextMenuExt.SubMenu subMenu, TextMenu containingMenu, string description) {
+            TextMenuExt.EaseInSubHeaderExt descriptionText = new(description, false, containingMenu) {
+                TextColor = Color.Gray,
+                HeightExtra = 0f
+            };
+
+            subMenu.Add(descriptionText);
+
+            subMenuItem.OnEnter += () => descriptionText.FadeVisible = true;
+            subMenuItem.OnLeave += () => descriptionText.FadeVisible = false;
         }
 
 #pragma warning disable CS0612

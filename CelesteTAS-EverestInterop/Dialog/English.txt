@@ -5,6 +5,7 @@ TAS_SHOW_HITBOXES=              Hitboxes
 TAS_HITBOX_COLOR_DESCRIPTION_1= Hitbox color can only be edited in the menu of the title screen
 TAS_HITBOX_COLOR_DESCRIPTION_2= Or use the entity/trigger/platform_hitbox_color command in the console
 TAS_SIMPLIFIED_GRAPHICS=        Simplified Graphics
+TAS_INFO_HUD=                   Info HUD
 TAS_INFO_HUD_DESCRIPTION_1=     Holding info hud hotkey and left-click to drag & drop the HUD
 TAS_INFO_HUD_DESCRIPTION_2=     Double press the info hud hotkey to toggle HUD
 TAS_INFO_HUD_DESCRIPTION_3=     Holding info hud hotkey then left-click to watch the entity
@@ -82,12 +83,14 @@ TAS_HOTKEYS=             Hotkeys
 TAS_HOTKEYS_DESCRIPTION= Binding multiple keys to a control will cause those keys to act as a keycombo
 
 # ================================== More Options Submenu ==================================
-TAS_CENTER_CAMERA=            Center Camera
-TAS_INFO_HUD=                 Info HUD
-TAS_PAUSE_AFTER_LOAD_STATE=   Pause after Load State
-TAS_RESTORE_SETTINGS=         Restore Settings after TAS Stop
-TAS_DISABLE_ACHIEVEMENTS=     Disable Achievements
-TAS_MOD_9D_LIGHTING=          Mod 9D Lighting
+TAS_CENTER_CAMERA=                   Center Camera
+TAS_IGNORE_GC_COLLECT=               Ignore GC Collect during Fast Forward
+TAS_IGNORE_GC_COLLECT_DESCRIPTION_1= Benefits of fast forwarding multiple chapter length TAS
+TAS_IGNORE_GC_COLLECT_DESCRIPTION_2= but will increase memory usage and may cause out of memory exception
+TAS_PAUSE_AFTER_LOAD_STATE=          Pause after Load State
+TAS_RESTORE_SETTINGS=                Restore Settings after TAS Stop
+TAS_DISABLE_ACHIEVEMENTS=            Disable Achievements
+TAS_MOD_9D_LIGHTING=                 Mod 9D Lighting
 
 # ================================== Hotkey Config ==================================
 TAS_KEY_START_STOP=           Start/Stop
