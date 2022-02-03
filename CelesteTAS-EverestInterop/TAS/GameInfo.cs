@@ -439,7 +439,7 @@ namespace TAS {
 
                     if (player.StateMachine.State == Player.StNormal && MaxFall(player) is var maxFall &&
                         (player.Speed.Y > 0f || player.Holding is {SlowFall: true})) {
-                        statuses.Add($"MaxFall({maxFall:0})");
+                        statuses.Add($"MaxFall({ConvertSpeedUnit(maxFall, TasSettings.SpeedUnit):0.##})");
                     }
                 }
             } else {
