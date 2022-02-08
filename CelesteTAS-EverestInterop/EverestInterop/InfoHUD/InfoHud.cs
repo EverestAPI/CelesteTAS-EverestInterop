@@ -29,7 +29,14 @@ namespace TAS.EverestInterop.InfoHUD {
             orig(self);
 
             DrawInfo(self);
-            InfoMouse.ToggleAndDrag();
+            InfoMouse.DragAndDropHud();
+        }
+
+        public static void Toggle() {
+            if (Hotkeys.InfoHud.DoublePressed) {
+                TasSettings.InfoHud = !TasSettings.InfoHud;
+                CelesteTasModule.Instance.SaveSettings();
+            }
         }
 
         private static void DrawInfo(Level level) {

@@ -15,6 +15,7 @@ using TAS.Communication;
 using TAS.Module;
 using TAS.Utils;
 using InputButtons = Microsoft.Xna.Framework.Input.Buttons;
+using Hud = TAS.EverestInterop.InfoHUD.InfoHud;
 
 namespace TAS.EverestInterop {
     public static class Hotkeys {
@@ -181,10 +182,10 @@ namespace TAS.EverestInterop {
                 }
             }
 
-            if (Manager.Running && FastForwardComment.Pressed) {
-                Manager.Controller.FastForwardToNextComment();
-            }
+            AfterUpdate();
+        }
 
+        private static void AfterUpdate() {
             if (Engine.Scene is Level level && (!level.Paused || level.PauseMainMenuOpen || Manager.Running)) {
                 if (Hitboxes.Pressed) {
                     Settings.ShowHitboxes = !Settings.ShowHitboxes;
@@ -206,6 +207,9 @@ namespace TAS.EverestInterop {
                     CelesteTasModule.Instance.SaveSettings();
                 }
             }
+
+            Manager.Controller.FastForwardToNextComment();
+            Hud.Toggle();
         }
 
         [DisableRun]
@@ -299,7 +303,7 @@ namespace TAS.EverestInterop {
             public bool LastCheck { get; private set; }
             public bool Pressed => !LastCheck && Check;
 
-            // TODO FIX: unstable DoublePressed response during frame drops
+            // note: dont check DoublePressed on render, since unstable DoublePressed response during frame drops
             public bool DoublePressed { get; private set; }
             public bool Released => LastCheck && !Check;
             public float Value { get; private set; }

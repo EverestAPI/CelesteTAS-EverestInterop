@@ -33,7 +33,7 @@ namespace TAS.EverestInterop.InfoHUD {
         private static Vector2? startDragPosition;
         private static CelesteTasModuleSettings TasSettings => CelesteTasModule.Settings;
 
-        public static void ToggleAndDrag() {
+        public static void DragAndDropHud() {
             if (!TasSettings.Enabled || !Engine.Instance.IsActive) {
                 return;
             }
@@ -43,18 +43,6 @@ namespace TAS.EverestInterop.InfoHUD {
                 return;
             }
 
-            Toggle();
-            DragAndDropHud();
-        }
-
-        private static void Toggle() {
-            if (Hotkeys.InfoHud.DoublePressed) {
-                TasSettings.InfoHud = !TasSettings.InfoHud;
-                CelesteTasModule.Instance.SaveSettings();
-            }
-        }
-
-        private static void DragAndDropHud() {
             if (!TasSettings.InfoHud && !StudioCommunicationBase.Initialized) {
                 return;
             }

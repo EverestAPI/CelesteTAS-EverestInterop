@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using Monocle;
 using MonoMod.Utils;
+using TAS.EverestInterop;
 using TAS.Module;
 using TAS.Utils;
 
@@ -271,17 +272,19 @@ namespace TAS.Input {
         }
 
         public void FastForwardToNextComment() {
-            NextCommentFastForward = null;
-            RefreshInputs(false);
-            FastForward next = FastForwardComments.FirstOrDefault(pair => pair.Key > CurrentFrameInTas).Value;
-            if (next != null && LastFastForward is { } last && HasFastForward && next.Frame > last.Frame) {
-                // NextCommentFastForward = last;
-            } else {
-                NextCommentFastForward = next;
-            }
+            if (Manager.Running && Hotkeys.FastForwardComment.Pressed) {
+                NextCommentFastForward = null;
+                RefreshInputs(false);
+                FastForward next = FastForwardComments.FirstOrDefault(pair => pair.Key > CurrentFrameInTas).Value;
+                if (next != null && LastFastForward is { } last && HasFastForward && next.Frame > last.Frame) {
+                    // NextCommentFastForward = last;
+                } else {
+                    NextCommentFastForward = next;
+                }
 
-            Manager.States &= ~States.FrameStep;
-            Manager.NextStates &= ~States.FrameStep;
+                Manager.States &= ~States.FrameStep;
+                Manager.NextStates &= ~States.FrameStep;
+            }
         }
 
         public void CopyFrom(InputController controller) {
