@@ -105,6 +105,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 || entity.GetType().FullName is "Celeste.Mod.ShroomHelper.Entities.SlippyWall"
                     or "Celeste.Mod.ShroomHelper.Entities.AttachedIceWall"
                     or "Celeste.Mod.JungleHelper.Entities.MossyWall"
+                    or "Celeste.Mod.CavernHelper.IcyFloor"
                ) {
                 color = HitboxColor.EntityColorInverselyLessAlpha;
             }
