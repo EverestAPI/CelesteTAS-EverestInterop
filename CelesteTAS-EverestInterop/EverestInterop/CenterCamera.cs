@@ -1,8 +1,8 @@
 ﻿using System;
 using Celeste;
-using Celeste.Mod.UI;
 using Microsoft.Xna.Framework;
 using Monocle;
+using MonoMod.Cil;
 using MonoMod.Utils;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Module;
@@ -22,67 +22,83 @@ namespace TAS.EverestInterop {
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
         public static void Load() {
-            // note: change the camera.position before level.BeforeRender will cause desync 3A-roof04
+            IL.Celeste.Level.BeforeRender += LevelOnBeforeRender;
+            On.Monocle.Scene.AfterRender += SceneOnAfterRender;
             On.Celeste.Level.Render += LevelOnRender;
-            On.Celeste.DustEdges.BeforeRender += DustEdgesOnBeforeRender;
-            On.Celeste.MirrorSurfaces.BeforeRender += MirrorSurfacesOnBeforeRender;
-            On.Celeste.LightingRenderer.BeforeRender += LightingRendererOnRender;
-            On.Celeste.DisplacementRenderer.BeforeRender += DisplacementRendererOnBeforeRender;
-            On.Celeste.HudRenderer.RenderContent += HudRendererOnRenderContent;
-            On.Celeste.Mod.UI.SubHudRenderer.RenderContent += SubHudRendererOnRenderContent;
             On.Monocle.Commands.Render += CommandsOnRender;
             offset = new DynamicData(Engine.Instance).Get<Vector2?>("CelesteTAS_Offset") ?? Vector2.Zero;
             levelZoom = new DynamicData(Engine.Instance).Get<float?>("CelesteTAS_LevelZoom") ?? 1f;
         }
 
         public static void Unload() {
+            IL.Celeste.Level.BeforeRender -= LevelOnBeforeRender;
+            On.Monocle.Scene.AfterRender -= SceneOnAfterRender;
             On.Celeste.Level.Render -= LevelOnRender;
-            On.Celeste.DustEdges.BeforeRender -= DustEdgesOnBeforeRender;
-            On.Celeste.MirrorSurfaces.BeforeRender -= MirrorSurfacesOnBeforeRender;
-            On.Celeste.LightingRenderer.BeforeRender -= LightingRendererOnRender;
-            On.Celeste.DisplacementRenderer.BeforeRender -= DisplacementRendererOnBeforeRender;
-            On.Celeste.HudRenderer.RenderContent -= HudRendererOnRenderContent;
-            On.Celeste.Mod.UI.SubHudRenderer.RenderContent -= SubHudRendererOnRenderContent;
             On.Monocle.Commands.Render -= CommandsOnRender;
             new DynamicData(Engine.Instance).Set("CelesteTAS_Offset", offset);
             new DynamicData(Engine.Instance).Set("CelesteTAS_LevelZoom", levelZoom);
         }
 
-        private static void CenterTheCamera(Action action) {
-            if (Engine.Scene is not Level level) {
-                action();
+        private static void LevelOnBeforeRender(ILContext il) {
+            ILCursor ilCursor = new(il);
+            if (!ilCursor.TryGotoNext(MoveType.After, ins => ins.MatchCallvirt<Camera>("set_Position"))) {
+                return;
+            }
+
+            if (!ilCursor.TryGotoNext(MoveType.After, ins => ins.MatchCallvirt<Camera>("set_Position"))) {
+                return;
+            }
+
+            ilCursor.EmitDelegate<Action>(CenterTheCamera);
+        }
+
+        private static void SceneOnAfterRender(On.Monocle.Scene.orig_AfterRender orig, Scene self) {
+            orig(self);
+            RestoreTheCamera();
+        }
+
+        // fix: clicked entity error when console and center camera are enabled
+        private static void CommandsOnRender(On.Monocle.Commands.orig_Render orig, Monocle.Commands self) {
+            CenterTheCamera();
+            orig(self);
+            RestoreTheCamera();
+        }
+
+        private static void CenterTheCamera() {
+            if (Engine.Scene is not Level level || !Settings.CenterCamera) {
                 return;
             }
 
             Camera camera = level.Camera;
-            if (Settings.CenterCamera) {
-                if (Engine.Scene.GetPlayer() is { } player) {
-                    lastPlayerPosition = player.Position;
-                }
-
-                if (lastPlayerPosition != null) {
-                    savedCameraPosition = camera.Position;
-                    savedLevelZoom = level.Zoom;
-                    savedLevelZoomTarget = level.ZoomTarget;
-                    savedLevelZoomFocusPoint = level.ZoomFocusPoint;
-
-                    camera.Position = lastPlayerPosition.Value + offset - new Vector2(camera.Viewport.Width / 2f, camera.Viewport.Height / 2f);
-                    level.Zoom = levelZoom;
-                    level.ZoomTarget = levelZoom;
-                    level.ZoomFocusPoint = new Vector2(320f, 180f) / 2f;
-                }
+            if (Engine.Scene.GetPlayer() is { } player) {
+                lastPlayerPosition = player.Position;
             }
 
-            action();
+            if (lastPlayerPosition != null) {
+                savedCameraPosition = camera.Position;
+                savedLevelZoom = level.Zoom;
+                savedLevelZoomTarget = level.ZoomTarget;
+                savedLevelZoomFocusPoint = level.ZoomFocusPoint;
+
+                camera.Position = lastPlayerPosition.Value + offset - new Vector2(camera.Viewport.Width / 2f, camera.Viewport.Height / 2f);
+                level.Zoom = levelZoom;
+                level.ZoomTarget = levelZoom;
+                level.ZoomFocusPoint = new Vector2(320f, 180f) / 2f;
+            }
+        }
+
+        private static void RestoreTheCamera() {
+            if (Engine.Scene is not Level level) {
+                return;
+            }
 
             if (savedCameraPosition != null) {
-                camera.Position = savedCameraPosition.Value;
+                level.Camera.Position = savedCameraPosition.Value;
                 savedCameraPosition = null;
             }
 
             if (savedLevelZoom != null) {
                 level.Zoom = savedLevelZoom.Value;
-                level.ZoomTarget = savedLevelZoom.Value;
                 savedLevelZoom = null;
             }
 
@@ -98,7 +114,7 @@ namespace TAS.EverestInterop {
         }
 
         private static void LevelOnRender(On.Celeste.Level.orig_Render orig, Level self) {
-            CenterTheCamera(() => orig(self));
+            orig(self);
             MoveCamera(self);
             ZoomCamera();
         }
@@ -196,36 +212,6 @@ namespace TAS.EverestInterop {
             if (levelZoom < 1f) {
                 levelZoom = 1f;
             }
-        }
-
-        private static void DustEdgesOnBeforeRender(On.Celeste.DustEdges.orig_BeforeRender orig, DustEdges self) {
-            CenterTheCamera(() => orig(self));
-        }
-
-        private static void MirrorSurfacesOnBeforeRender(On.Celeste.MirrorSurfaces.orig_BeforeRender orig, MirrorSurfaces self) {
-            CenterTheCamera(() => orig(self));
-        }
-
-        private static void LightingRendererOnRender(On.Celeste.LightingRenderer.orig_BeforeRender orig, LightingRenderer self, Scene scene) {
-            CenterTheCamera(() => orig(self, scene));
-        }
-
-        private static void DisplacementRendererOnBeforeRender(On.Celeste.DisplacementRenderer.orig_BeforeRender orig, DisplacementRenderer self,
-            Scene scene) {
-            CenterTheCamera(() => orig(self, scene));
-        }
-
-        private static void SubHudRendererOnRenderContent(On.Celeste.Mod.UI.SubHudRenderer.orig_RenderContent orig, SubHudRenderer self,
-            Scene scene) {
-            CenterTheCamera(() => orig(self, scene));
-        }
-
-        private static void HudRendererOnRenderContent(On.Celeste.HudRenderer.orig_RenderContent orig, HudRenderer self, Scene scene) {
-            CenterTheCamera(() => orig(self, scene));
-        }
-
-        private static void CommandsOnRender(On.Monocle.Commands.orig_Render orig, Monocle.Commands self) {
-            CenterTheCamera(() => orig(self));
         }
     }
 }
