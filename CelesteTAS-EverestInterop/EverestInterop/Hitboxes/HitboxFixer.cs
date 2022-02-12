@@ -6,7 +6,7 @@ using TAS.Module;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxFixer {
-        private static bool drawingHitboxes;
+        public static bool DrawingHitboxes { get; set; }
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
         [Load]
@@ -26,15 +26,15 @@ namespace TAS.EverestInterop.Hitboxes {
         private static void GameplayRendererOnRender(ILContext il) {
             ILCursor ilCursor = new(il);
             if (ilCursor.TryGotoNext(i => i.MatchCallvirt<EntityList>("DebugRender"))) {
-                ilCursor.EmitDelegate<Action>(() => drawingHitboxes = true);
+                ilCursor.EmitDelegate<Action>(() => DrawingHitboxes = true);
                 ilCursor.Index++;
-                ilCursor.EmitDelegate<Action>(() => drawingHitboxes = false);
+                ilCursor.EmitDelegate<Action>(() => DrawingHitboxes = false);
             }
         }
 
         private static void ModDrawHollowRect(On.Monocle.Draw.orig_HollowRect_float_float_float_float_Color orig, float x, float y, float width,
             float height, Color color) {
-            if (!Settings.ShowHitboxes || !drawingHitboxes) {
+            if (!Settings.ShowHitboxes || !DrawingHitboxes) {
                 orig(x, y, width, height, color);
                 return;
             }
@@ -55,7 +55,7 @@ namespace TAS.EverestInterop.Hitboxes {
             // For similar reasons, we can't just assume the circle has 8-fold symmetry.
             // Modified so that instead of minimizing error, we include exactly those pixels which intersect the circle.
 
-            if (!Settings.ShowHitboxes || !drawingHitboxes) {
+            if (!Settings.ShowHitboxes || !DrawingHitboxes) {
                 orig(center, radius, color, resolution);
                 return;
             }

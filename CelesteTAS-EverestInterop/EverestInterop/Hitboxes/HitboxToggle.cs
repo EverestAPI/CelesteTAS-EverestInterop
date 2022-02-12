@@ -9,6 +9,10 @@ namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxToggle {
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
+        private static bool origDrawHitboxes = false;
+
+        public static bool DrawHitboxes => origDrawHitboxes || Settings.ShowHitboxes || !Settings.ShowGameplay;
+
         [Load]
         private static void Load() {
             IL.Celeste.GameplayRenderer.Render += GameplayRendererOnRender;
@@ -25,10 +29,18 @@ namespace TAS.EverestInterop.Hitboxes {
 
         private static void GameplayRendererOnRender(ILContext il) {
             ILCursor ilCursor = new(il);
-            if (ilCursor.TryGotoNext(MoveType.After, i => i.MatchLdsfld<GameplayRenderer>("RenderDebug"))) {
-                ilCursor.EmitDelegate<Func<bool, bool>>(renderDebug =>
-                    renderDebug || Settings.ShowHitboxes || !Settings.ShowGameplay);
+            if (!ilCursor.TryGotoNext(MoveType.After, i => i.MatchLdsfld<GameplayRenderer>("RenderDebug"))) {
+                return;
             }
+            ilCursor.Remove();
+            if (!ilCursor.TryGotoNext(MoveType.After, i => i.MatchLdfld<Monocle.Commands>("Open"))) {
+                return;
+            }
+            ilCursor.Emit(OpCodes.Or);
+            ilCursor.EmitDelegate<Func<bool, bool>>(orig => {
+                origDrawHitboxes = orig;
+                return DrawHitboxes && !FreeCameraHitbox.DrawFreeCameraHitboxes;
+            });
         }
 
         private static void DistortOnRender(ILContext il) {
