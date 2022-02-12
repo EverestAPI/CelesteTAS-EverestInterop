@@ -148,8 +148,8 @@ namespace TAS.Module {
         [SettingIgnore]
         public string InfoCustomTemplate { get; set; } =
             "Wind: {Level.Wind}\n" +
-            "AutoJump: {Player.AutoJump} ({Player.AutoJumpTimer.toFrame()})\n" +
-            "ForceMoveX: {Player.forceMoveX} ({Player.forceMoveXTimer.toFrame()})\n" +
+            "AutoJump: {Player.AutoJump} {Player.AutoJumpTimer.toFrame()}\n" +
+            "ForceMoveX: {Player.forceMoveX} {Player.forceMoveXTimer.toFrame()}\n" +
             "Theo: {TheoCrystal.ExactPosition}\n" +
             "TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}";
 
