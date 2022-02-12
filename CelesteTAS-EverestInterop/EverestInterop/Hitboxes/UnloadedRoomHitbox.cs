@@ -38,7 +38,7 @@ namespace TAS.EverestInterop.Hitboxes {
         };
 
         private static readonly Dictionary<LevelData, List<Action>> DecalActions = new();
-        private static readonly Dictionary<LevelData, List<Action>> EntityActions = new();
+        private static readonly Dictionary<LevelData, List<Action<Level>>> EntityActions = new();
 
         private static string lastRoom = "";
         private static string currentRoom = "";
@@ -81,19 +81,19 @@ namespace TAS.EverestInterop.Hitboxes {
 
                 decalActions.ForEach(action => action());
 
-                if (!EntityActions.TryGetValue(levelData, out List<Action> entityActions)) {
-                    EntityActions.Add(levelData, entityActions = new List<Action>());
+                if (!EntityActions.TryGetValue(levelData, out List<Action<Level>> entityActions)) {
+                    EntityActions.Add(levelData, entityActions = new List<Action<Level>>());
                     DrawEntityHitbox(levelData, entityActions);
                     DrawTriggerHitbox(levelData, entityActions);
                 }
 
-                entityActions.ForEach(action => action());
+                entityActions.ForEach(action => action(level));
             }
 
             orig(self, camera);
         }
 
-        private static void DrawEntityHitbox(LevelData levelData, List<Action> actions) {
+        private static void DrawEntityHitbox(LevelData levelData, List<Action<Level>> actions) {
             foreach (EntityData data in levelData.Entities) {
                 string dataName = data.Name ?? "";
                 Vector2 levelPosition = levelData.Position;
@@ -114,7 +114,7 @@ namespace TAS.EverestInterop.Hitboxes {
                     if (dataName.Contains("Spinner") || dataName.Contains("spinner")) {
                         if (type.IsSameOrSubclassOf(typeof(Bumper))) {
                             rect = Rectangle.Empty;
-                            actions.Add(() => Draw.Circle(position, 12, HitboxColor.EntityColor, 4));
+                            actions.Add((level) => Draw.Circle(position, 12, HitboxColor.EntityColor, 4));
 
                             if (Engine.Scene.GetSession() is {CoreMode: > 0}) {
                                 textureId = "objects/Bumper/Evil00";
@@ -123,8 +123,8 @@ namespace TAS.EverestInterop.Hitboxes {
                             }
                         } else {
                             Color spinnerColor = HitboxColor.EntityColor * 0.5f;
-                            actions.Add(() => Draw.Circle(position, 6, spinnerColor, 4));
-                            rect = position.CreateRect(16, 4, -8, -3);
+                            actions.Add((level) => Draw.Circle(position, 6, spinnerColor, 4));
+                            rect = dataName == "rotateSpinner" ? Rectangle.Empty : position.CreateRect(16, 4, -8, -3);
 
                             if (type.IsSameOrSubclassOf(typeof(TrackSpinner), typeof(RotateSpinner))) {
                                 textureId = "danger/blade00";
@@ -192,7 +192,7 @@ namespace TAS.EverestInterop.Hitboxes {
                                     offset = new(-4, 4 + i * 8);
                                 }
 
-                                actions.Insert(0, () => texture.DrawCentered(position + offset));
+                                actions.Insert(0, (level) => texture.DrawCentered(position + offset));
                             }
                         }
                     } else if (type.IsSameOrSubclassOf(typeof(Spring))) {
@@ -233,15 +233,16 @@ namespace TAS.EverestInterop.Hitboxes {
                         rect = position.CreateRect(16, 16, -8, -8);
                         textureId = "objects/touchswitch/container";
                         MTexture texture = GFX.Game["objects/touchswitch/icon00"];
-                        actions.Insert(0, () => texture.DrawCentered(position));
+                        actions.Insert(0, (level) => texture.DrawCentered(position));
                     } else if (typeof(IStrawberry).IsAssignableFrom(type)) {
                         rect = position.CreateRect(14, 14, -7, -7);
 
                         if (data.Nodes != null && data.Nodes.Length != 0) {
                             MTexture texture = GFX.Game["collectables/strawberry/seed00"];
                             foreach (Vector2 node in data.Nodes) {
-                                actions.Add(() => Draw.HollowRect(levelPosition + node - new Vector2(6, 6), 12, 12, HitboxColor.EntityColor * 0.5f));
-                                actions.Add(() => texture.DrawCentered(levelPosition + node));
+                                actions.Add((level) =>
+                                    Draw.HollowRect(levelPosition + node - new Vector2(6, 6), 12, 12, HitboxColor.EntityColor * 0.5f));
+                                actions.Add((level) => texture.DrawCentered(levelPosition + node));
                             }
                         }
 
@@ -257,7 +258,7 @@ namespace TAS.EverestInterop.Hitboxes {
                     } else if (type.IsSameOrSubclassOf(typeof(Lookout))) {
                         rect = position.CreateRect(4, 4, -2, -4);
                         Vector2 talkPosition = position - new Vector2(24, 8);
-                        actions.Add(() => Draw.HollowRect(talkPosition, 48, 8, Color.Green * 0.5f));
+                        actions.Add((level) => Draw.HollowRect(talkPosition, 48, 8, Color.Green * 0.5f));
                         textureId = "objects/lookout/lookout05";
                         textureOffset = new Vector2(0, -16);
                     } else if (type == typeof(BadelineOldsite)) {
@@ -281,14 +282,14 @@ namespace TAS.EverestInterop.Hitboxes {
                     } else if (type.IsSameOrSubclassOf(typeof(MrOshiroDoor))) {
                         rect = position.CreateRect(32, 32, 0, 0);
                     } else if (type.IsSameOrSubclassOf(typeof(AngryOshiro))) {
-                        actions.Add(() => Draw.Circle(position + new Vector2(3, 4), 14, HitboxColor.EntityColor * 0.5f, 4));
+                        actions.Add((level) => Draw.Circle(position + new Vector2(3, 4), 14, HitboxColor.EntityColor * 0.5f, 4));
                         rect = position.CreateRect(28, 6, -11, -11);
                         color = Color.HotPink;
 
                         textureId = "characters/oshiro/boss12";
                     } else if (type.IsSameOrSubclassOf(typeof(Booster))) {
                         rect = Rectangle.Empty;
-                        actions.Add(() => Draw.Circle(position + new Vector2(0, 2), 10, HitboxColor.EntityColor * 0.5f, 4));
+                        actions.Add((level) => Draw.Circle(position + new Vector2(0, 2), 10, HitboxColor.EntityColor * 0.5f, 4));
                         if (data.Bool("red")) {
                             textureId = "objects/booster/boosterRed00";
                         } else {
@@ -306,12 +307,12 @@ namespace TAS.EverestInterop.Hitboxes {
                         }
                     } else if (type.IsSameOrSubclassOf(typeof(IntroCar))) {
                         rect = position.CreateRect(25, 4, -15, -17);
-                        actions.Add(() => Draw.HollowRect(position.CreateRect(19, 4, 8, -11), HitboxColor.PlatformColor * 0.5f));
+                        actions.Add((level) => Draw.HollowRect(position.CreateRect(19, 4, 8, -11), HitboxColor.PlatformColor * 0.5f));
                         textureId = "scenery/car/wheels";
                         textureOffset = new Vector2(0, -9);
 
                         MTexture carBody = GFX.Game["scenery/car/body"];
-                        actions.Add(() => carBody.DrawCentered(position + textureOffset));
+                        actions.Add((level) => carBody.DrawCentered(position + textureOffset));
                     } else if (type.IsSameOrSubclassOf(typeof(Bridge))) {
                         rect.Height = 5;
                         color = HitboxColor.PlatformColor;
@@ -361,13 +362,13 @@ namespace TAS.EverestInterop.Hitboxes {
                         }
                     } else if (type.IsSameOrSubclassOf(typeof(Seeker))) {
                         rect = position.CreateRect(12, 8, -6, -2);
-                        actions.Add(() => Draw.HollowRect(position.CreateRect(12, 6, -6, -8), Color.HotPink * 0.5f));
+                        actions.Add((level) => Draw.HollowRect(position.CreateRect(12, 6, -6, -8), Color.HotPink * 0.5f));
                         textureId = "characters/monsters/predator00";
                     } else if (type.IsSameOrSubclassOf(typeof(SeekerBarrier))) {
-                        actions.Add(() => Draw.Rect(rect, Color.LightBlue * 0.2f));
+                        actions.Add((level) => Draw.Rect(rect, Color.LightBlue * 0.2f));
                     } else if (type.IsSameOrSubclassOf(typeof(TheoCrystal))) {
                         rect = position.CreateRect(8, 10, -4, -10);
-                        actions.Add(() => Draw.HollowRect(position.CreateRect(16, 22, -8, -16), Color.Pink * 0.5f));
+                        actions.Add((level) => Draw.HollowRect(position.CreateRect(16, 22, -8, -16), Color.Pink * 0.5f));
                         textureId = "characters/theoCrystal/idle00";
                         textureOffset = new Vector2(0, -10);
                     } else if (type.IsSameOrSubclassOf(typeof(TempleBigEyeball))) {
@@ -377,24 +378,24 @@ namespace TAS.EverestInterop.Hitboxes {
                         rect = position.CreateRect(20, 20, -10, -10);
                         textureId = "objects/flyFeather/idle00";
                         if (data.Bool("shielded")) {
-                            actions.Add(() => Draw.Circle(position, 10f, Color.White, 3));
+                            actions.Add((level) => Draw.Circle(position, 10f, Color.White, 3));
                         }
                     } else if (type.IsSameOrSubclassOf(typeof(FinalBoss))) {
                         rect = Rectangle.Empty;
-                        actions.Add(() => Draw.Circle(position - new Vector2(0, 6), 14, HitboxColor.EntityColor * 0.5f, 4));
+                        actions.Add((level) => Draw.Circle(position - new Vector2(0, 6), 14, HitboxColor.EntityColor * 0.5f, 4));
                         textureId = "characters/badelineBoss/boss00";
                         textureOffset = new Vector2(0, -14);
                         scale = new Vector2(-1, 1);
                     } else if (type.IsSameOrSubclassOf(typeof(BadelineBoost))) {
                         rect = Rectangle.Empty;
-                        actions.Add(() => Draw.Circle(position, 16, HitboxColor.EntityColor, 4));
+                        actions.Add((level) => Draw.Circle(position, 16, HitboxColor.EntityColor, 4));
                         textureId = "objects/badelineboost/idle00";
 
                         if (data.Nodes != null && data.Nodes.Length != 0) {
                             MTexture texture = GFX.Game[textureId];
                             foreach (Vector2 node in data.Nodes) {
-                                actions.Insert(0, () => texture.DrawCentered(levelPosition + node));
-                                actions.Add(() => Draw.Circle(levelPosition + node, 16, HitboxColor.EntityColor * 0.5f, 4));
+                                actions.Insert(0, (level) => texture.DrawCentered(levelPosition + node));
+                                actions.Add((level) => Draw.Circle(levelPosition + node, 16, HitboxColor.EntityColor * 0.5f, 4));
                             }
                         }
                     } else if (type.IsSameOrSubclassOf(typeof(SummitGem))) {
@@ -406,7 +407,7 @@ namespace TAS.EverestInterop.Hitboxes {
                         color = HitboxColor.EntityColorInverselyLessAlpha;
                     } else if (type.IsSameOrSubclassOf(typeof(FireBall))) {
                         rect = Rectangle.Empty;
-                        actions.Add(() => Draw.Circle(position, 6, Color.Goldenrod * 0.5f, 4));
+                        actions.Add((level) => Draw.Circle(position, 6, Color.Goldenrod * 0.5f, 4));
                         textureId = "objects/fireball/fireball00";
                     } else if (type.IsSameOrSubclassOf(typeof(CoreModeToggle))) {
                         rect = position.CreateRect(16, 24, -8, -12);
@@ -418,35 +419,38 @@ namespace TAS.EverestInterop.Hitboxes {
                             3 => Calc.HexToColor("38e04e"),
                             _ => Calc.HexToColor("49aaf0")
                         };
-                        actions.Insert(0, () => Draw.Rect(rect, cassetteColor));
+                        actions.Insert(0, (level) => Draw.Rect(rect, cassetteColor));
                     } else if (type.IsSameOrSubclassOf(typeof(Lightning))) {
                         rect.X += 1;
                         rect.Y += 1;
                         rect.Width -= 2;
                         rect.Height -= 2;
-                        actions.Insert(0, () => Draw.Rect(rect, Color.Yellow * 0.1f));
+                        actions.Insert(0, (level) => Draw.Rect(rect, Color.Yellow * 0.1f));
                     } else if (type.IsSameOrSubclassOf(typeof(Puffer))) {
                         rect = position.CreateRect(14, 12, -7, -7);
                         color = Color.HotPink;
-                        actions.Add(() => Draw.HollowRect(position.CreateRect(12, 10, -6, -5), HitboxColor.EntityColor * 0.5f));
+                        actions.Add((level) => Draw.HollowRect(position.CreateRect(12, 10, -6, -5), HitboxColor.EntityColor * 0.5f));
                         textureId = "objects/puffer/idle00";
                         if (!data.Bool("right")) {
                             scale = new Vector2(-1, 1);
                         }
                     } else if (type.IsSameOrSubclassOf(typeof(Glider))) {
                         rect = position.CreateRect(8, 10, -4, -10);
-                        actions.Add(() => Draw.HollowRect(position.CreateRect(20, 22, -10, -16), Color.Pink * 0.5f));
+                        actions.Add((level) => Draw.HollowRect(position.CreateRect(20, 22, -10, -16), Color.Pink * 0.5f));
                         textureId = "objects/glider/idle0";
                         textureOffset = new Vector2(0, -4);
                     } else if (type.IsSameOrSubclassOf(typeof(FlingBird))) {
                         rect = Rectangle.Empty;
-                        actions.Add(() => Draw.Circle(position, 16, HitboxColor.EntityColor * 0.5f, 4));
+                        actions.Add((level) => Draw.Circle(position, 16, HitboxColor.EntityColor * 0.5f, 4));
                         textureId = "characters/bird/fly03";
                         scale = new Vector2(-1, 1);
                     } else if (type.IsSameOrSubclassOf(typeof(LightningBreakerBox))) {
                         rect.Width = rect.Height = 32;
                         textureId = "objects/breakerBox/idle00";
                         textureOffset = new(16, 16);
+                    } else if (type == typeof(ClutterSwitch)) {
+                        rect.Width = 32;
+                        rect.Height = 16;
                     }
 
                     if (type.IsSubclassOf(typeof(Platform))) {
@@ -458,7 +462,22 @@ namespace TAS.EverestInterop.Hitboxes {
                     if (color.A == 255) {
                         color *= 0.5f;
                     }
+
+                    if (type == typeof(ClutterBlockBase)) {
+                        color *= 0.5f;
+                        actions.Add((level) => {
+                            switch (dataName) {
+                                case "redBlocks" when !level.Session.GetFlag("oshiro_clutter_cleared_0"):
+                                case "greenBlocks" when !level.Session.GetFlag("oshiro_clutter_cleared_1"):
+                                case "yellowBlocks" when !level.Session.GetFlag("oshiro_clutter_cleared_2"):
+                                    Draw.HollowRect(rect, color);
+                                    break;
+                            }
+                        });
+                        continue;
+                    }
                 }
+
 #if REALESE
                 if (rect.Width == 0 || rect.Height == 0) {
                     continue;
@@ -468,17 +487,17 @@ namespace TAS.EverestInterop.Hitboxes {
                 if (textureId.IsNotEmpty()) {
                     MTexture texture = GFX.Game[textureId];
                     if (outline) {
-                        actions.Insert(0, () => texture.DrawOutlineCentered(position + textureOffset, Color.White, scale, (float) rotation));
+                        actions.Insert(0, (level) => texture.DrawOutlineCentered(position + textureOffset, Color.White, scale, (float) rotation));
                     } else {
-                        actions.Insert(0, () => texture.DrawCentered(position + textureOffset, Color.White, scale, (float) rotation));
+                        actions.Insert(0, (level) => texture.DrawCentered(position + textureOffset, Color.White, scale, (float) rotation));
                     }
                 }
 
-                actions.Add(() => { Draw.HollowRect(rect, color); });
+                actions.Add((level) => { Draw.HollowRect(rect, color); });
             }
         }
 
-        private static void DrawTriggerHitbox(LevelData levelData, List<Action> actions) {
+        private static void DrawTriggerHitbox(LevelData levelData, List<Action<Level>> actions) {
             Color respawnTriggerColor = HitboxColor.RespawnTriggerColor * 0.5f;
 
             foreach (EntityData data in levelData.Triggers) {
@@ -490,7 +509,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 float width = data.Width;
                 float height = data.Height;
 
-                actions.Add(() => {
+                actions.Add((level) => {
                     if (Settings.ShowTriggerHitboxes) {
                         Draw.HollowRect(levelData.Position + data.Position, width, height, triggerColor);
                     }
@@ -498,7 +517,7 @@ namespace TAS.EverestInterop.Hitboxes {
             }
 
             foreach (Vector2 spawn in levelData.Spawns) {
-                actions.Add(() => {
+                actions.Add((level) => {
                     if (Settings.ShowTriggerHitboxes) {
                         Draw.HollowRect(spawn - new Vector2(4, 11), 8, 11, respawnTriggerColor);
                     }
