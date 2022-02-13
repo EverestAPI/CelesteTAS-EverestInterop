@@ -13,19 +13,30 @@ namespace TAS.EverestInterop {
         private static float? savedLevelZoom;
         private static float? savedLevelZoomTarget;
         private static Vector2? savedLevelZoomFocusPoint;
+        private static float? savedLevelScreenPadding;
         private static Vector2? lastPlayerPosition;
         private static Vector2 offset;
-        private static float levelZoom = 1f;
         private static DateTime? arrowKeyPressTime;
         private static bool waitForAllResetKeysRelease;
+        private static float viewportScale = 1f;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
+
+        // this must be <= 4096 / 320 = 12.8, it's used in FreeCameraHitbox and 4096 is the maximum texture size
+        public const float MaximumViewportScale = 12f;
+
+        public static float LevelZoom {
+            get => 1 / viewportScale;
+            set => viewportScale = 1 / value;
+        }
+
+        public static Camera ScreenCamera { get; private set; } = new Camera();
 
         public static void Load() {
             On.Monocle.Engine.RenderCore += EngineOnRenderCore;
             On.Monocle.Commands.Render += CommandsOnRender;
             On.Celeste.Level.Render += LevelOnRender;
             offset = new DynamicData(Engine.Instance).Get<Vector2?>("CelesteTAS_Offset") ?? Vector2.Zero;
-            levelZoom = new DynamicData(Engine.Instance).Get<float?>("CelesteTAS_LevelZoom") ?? 1f;
+            LevelZoom = new DynamicData(Engine.Instance).Get<float?>("CelesteTAS_LevelZoom") ?? 1f;
         }
 
         public static void Unload() {
@@ -33,7 +44,7 @@ namespace TAS.EverestInterop {
             On.Monocle.Commands.Render -= CommandsOnRender;
             On.Celeste.Level.Render -= LevelOnRender;
             new DynamicData(Engine.Instance).Set("CelesteTAS_Offset", offset);
-            new DynamicData(Engine.Instance).Set("CelesteTAS_LevelZoom", levelZoom);
+            new DynamicData(Engine.Instance).Set("CelesteTAS_LevelZoom", LevelZoom);
         }
 
         private static void EngineOnRenderCore(On.Monocle.Engine.orig_RenderCore orig, Engine self) {
@@ -70,11 +81,17 @@ namespace TAS.EverestInterop {
                 savedLevelZoom = level.Zoom;
                 savedLevelZoomTarget = level.ZoomTarget;
                 savedLevelZoomFocusPoint = level.ZoomFocusPoint;
+                savedLevelScreenPadding = level.ScreenPadding;
 
                 camera.Position = lastPlayerPosition.Value + offset - new Vector2(camera.Viewport.Width / 2f, camera.Viewport.Height / 2f);
-                level.Zoom = levelZoom;
-                level.ZoomTarget = levelZoom;
+
+                level.Zoom = LevelZoom;
+                level.ZoomTarget = LevelZoom;
                 level.ZoomFocusPoint = new Vector2(320f, 180f) / 2f;
+                level.ScreenPadding = 0;
+
+                ScreenCamera = new((int)Math.Round(320 * viewportScale), (int)Math.Round(180 * viewportScale));
+                ScreenCamera.Position = lastPlayerPosition.Value + offset - new Vector2(ScreenCamera.Viewport.Width / 2f, ScreenCamera.Viewport.Height / 2f);
             }
         }
 
@@ -95,12 +112,17 @@ namespace TAS.EverestInterop {
 
             if (savedLevelZoomTarget != null) {
                 level.ZoomTarget = savedLevelZoomTarget.Value;
-                savedLevelZoom = null;
+                savedLevelZoomTarget = null;
             }
 
             if (savedLevelZoomFocusPoint != null) {
                 level.ZoomFocusPoint = savedLevelZoomFocusPoint.Value;
                 savedLevelZoomFocusPoint = null;
+            }
+
+            if (savedLevelScreenPadding != null) {
+                level.ScreenPadding = savedLevelScreenPadding.Value;
+                savedLevelScreenPadding = null;
             }
         }
 
@@ -151,7 +173,7 @@ namespace TAS.EverestInterop {
 
                     if (Hotkeys.CameraUp.Check && Hotkeys.CameraDown.Check) {
                         offset = Vector2.Zero;
-                        levelZoom = 1f;
+                        LevelZoom = 1f;
                         waitForAllResetKeysRelease = true;
                     }
                 }
@@ -160,14 +182,13 @@ namespace TAS.EverestInterop {
                 if (MouseButtons.Right.LastCheck && MouseButtons.Right.Check) {
                     InfoMouse.DrawCursor(MouseButtons.Position);
 
-                    float scale = level.Zoom * levelZoom * ((320f - level.ScreenPadding * 2f) / 320f) * level.Camera.Zoom * 6f * Engine.ViewWidth /
-                                  Engine.Width;
+                    float scale = LevelZoom * level.Camera.Zoom * 6f * Engine.ViewWidth / Engine.Width;
                     offset -= (MouseButtons.Position - MouseButtons.LastPosition) / scale;
                 }
 
                 if (MouseButtons.Right.DoublePressed) {
                     offset = Vector2.Zero;
-                    levelZoom = 1;
+                    LevelZoom = 1;
                 }
             }
 
@@ -182,21 +203,26 @@ namespace TAS.EverestInterop {
                 return;
             }
 
+            int direction = 0;
             if (Hotkeys.InfoHud.Check) {
                 if (Hotkeys.CameraZoomIn.Check) {
-                    levelZoom += 0.05f;
+                    direction = -1;
                 }
 
                 if (Hotkeys.CameraZoomOut.Check) {
-                    levelZoom -= 0.05f;
+                    direction = 1;
                 }
             } else {
-                levelZoom += Math.Sign(MouseButtons.Wheel) * 0.05f;
+                direction = -Math.Sign(MouseButtons.Wheel);
             }
 
-            if (levelZoom < 1f) {
-                levelZoom = 1f;
-            }
+            // delta must be a multiple of 0.1 to let free camera hitboxes align properly
+            float delta = (viewportScale + direction * 0.01f) switch {
+                > 1 => direction * 0.2f, 
+                _ => direction * 0.1f
+            };
+
+            viewportScale = Calc.Clamp(viewportScale + delta, 0.2f, MaximumViewportScale);
         }
     }
 }
