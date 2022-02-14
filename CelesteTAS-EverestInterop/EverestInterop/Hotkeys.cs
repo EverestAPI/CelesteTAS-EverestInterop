@@ -16,6 +16,7 @@ using TAS.Module;
 using TAS.Utils;
 using InputButtons = Microsoft.Xna.Framework.Input.Buttons;
 using Hud = TAS.EverestInterop.InfoHUD.InfoHud;
+using Camera = TAS.EverestInterop.CenterCamera;
 
 namespace TAS.EverestInterop {
     public static class Hotkeys {
@@ -50,6 +51,7 @@ namespace TAS.EverestInterop {
         public static Hotkey SaveState { get; private set; }
         public static Hotkey ClearState { get; private set; }
         public static Hotkey InfoHud { get; private set; }
+        public static Hotkey FreeCamera { get; private set; }
         public static Hotkey CameraUp { get; private set; }
         public static Hotkey CameraDown { get; private set; }
         public static Hotkey CameraLeft { get; private set; }
@@ -62,7 +64,8 @@ namespace TAS.EverestInterop {
         public static Dictionary<HotkeyID, List<Keys>> KeysInteractWithStudio = new();
 
         private static readonly List<HotkeyID> HotkeyIDsIgnoreOnStudio = new() {
-            HotkeyID.InfoHud, HotkeyID.CameraUp, HotkeyID.CameraDown, HotkeyID.CameraLeft, HotkeyID.CameraRight, HotkeyID.CameraZoomIn,
+            HotkeyID.InfoHud, HotkeyID.FreeCamera, HotkeyID.CameraUp, HotkeyID.CameraDown, HotkeyID.CameraLeft, HotkeyID.CameraRight,
+            HotkeyID.CameraZoomIn,
             HotkeyID.CameraZoomOut
         };
 
@@ -105,6 +108,7 @@ namespace TAS.EverestInterop {
             KeysDict[HotkeyID.SaveState] = SaveState = BindingToHotkey(Settings.KeySaveState);
             KeysDict[HotkeyID.ClearState] = ClearState = BindingToHotkey(Settings.KeyClearState);
             KeysDict[HotkeyID.InfoHud] = InfoHud = BindingToHotkey(Settings.KeyInfoHud);
+            KeysDict[HotkeyID.FreeCamera] = FreeCamera = BindingToHotkey(Settings.KeyFreeCamera);
             KeysDict[HotkeyID.CameraUp] = CameraUp = BindingToHotkey(new ButtonBinding(0, Keys.Up));
             KeysDict[HotkeyID.CameraDown] = CameraDown = BindingToHotkey(new ButtonBinding(0, Keys.Down));
             KeysDict[HotkeyID.CameraLeft] = CameraLeft = BindingToHotkey(new ButtonBinding(0, Keys.Left));
@@ -210,6 +214,7 @@ namespace TAS.EverestInterop {
 
             Manager.Controller.FastForwardToNextComment();
             Hud.Toggle();
+            Camera.ResetCamera();
         }
 
         [DisableRun]
@@ -393,7 +398,7 @@ namespace TAS.EverestInterop {
         public static readonly Button Middle = new();
         public static readonly Button Right = new();
         public static int Wheel { get; private set; }
-        public static int lastWheel;
+        private static int lastWheel;
 
         [Load]
         private static void Load() {

@@ -98,6 +98,10 @@ namespace TAS.Module {
         [DefaultButtonBinding(0, Keys.LeftControl)]
         public ButtonBinding KeyInfoHud { get; set; } = new(0, Keys.LeftControl);
 
+        [SettingName("TAS_KEY_FREE_CAMERA")]
+        [DefaultButtonBinding(0, Keys.LeftAlt)]
+        public ButtonBinding KeyFreeCamera { get; set; } = new(0, Keys.LeftAlt);
+
         #endregion
 
         #region SimplifiedGraphics

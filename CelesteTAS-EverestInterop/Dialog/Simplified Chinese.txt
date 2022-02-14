@@ -106,6 +106,7 @@ TAS_KEY_CENTER_CAMERA=        镜头居中
 TAS_KEY_SAVE_STATE=           保存状态
 TAS_KEY_CLEAR_STATE=          清除状态
 TAS_KEY_INFO_HUD=             信息面板
+TAS_KEY_FREE_CAMERA=          镜头控制
 
 # ================================== Option Values ==================================
 TAS_DEFAULT=                  默认

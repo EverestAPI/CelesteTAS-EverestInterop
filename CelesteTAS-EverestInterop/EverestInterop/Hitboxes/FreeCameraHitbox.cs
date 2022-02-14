@@ -9,12 +9,9 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static class FreeCameraHitbox {
-
         private static VirtualRenderTarget hitboxCanvas;
-
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
-
-        public static bool DrawFreeCameraHitboxes => Settings.CenterCamera && CenterCamera.LevelZoom < 0.999f;
+        public static bool DrawFreeCameraHitboxes => Settings.CenterCamera && CenterCamera.LevelZoomOut;
 
         [Load]
         private static void Load() {
@@ -29,12 +26,14 @@ namespace TAS.EverestInterop.Hitboxes {
         }
 
         private static void SubHudRendererOnBeforeRender(On.Celeste.Mod.UI.SubHudRenderer.orig_BeforeRender orig, SubHudRenderer self, Scene scene) {
-            hitboxCanvas ??= VirtualContent.CreateRenderTarget("freecamera-hitbox", (int)Math.Round(320 * CenterCamera.MaximumViewportScale), (int)Math.Round(180 * CenterCamera.MaximumViewportScale));
-            if (scene is Level level && HitboxToggle.DrawHitboxes && DrawFreeCameraHitboxes) {
+            hitboxCanvas ??= VirtualContent.CreateRenderTarget("freecamera-hitbox", (int) Math.Round(320 * CenterCamera.MaximumViewportScale),
+                (int) Math.Round(180 * CenterCamera.MaximumViewportScale));
+            if (scene is Level && HitboxToggle.DrawHitboxes && DrawFreeCameraHitboxes) {
                 Engine.Graphics.GraphicsDevice.SetRenderTarget(hitboxCanvas);
                 Engine.Graphics.GraphicsDevice.Clear(Color.Transparent);
 
-                Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.Default, RasterizerState.CullNone, null, CenterCamera.ScreenCamera.Matrix);
+                Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.Default,
+                    RasterizerState.CullNone, null, CenterCamera.ScreenCamera.Matrix);
 
                 HitboxFixer.DrawingHitboxes = true;
                 scene.Entities.DebugRender(CenterCamera.ScreenCamera);
@@ -42,11 +41,13 @@ namespace TAS.EverestInterop.Hitboxes {
 
                 Draw.SpriteBatch.End();
             }
+
             orig(self, scene);
         }
 
-        private static void SubHudRendererOnRenderContent(On.Celeste.Mod.UI.SubHudRenderer.orig_RenderContent orig, SubHudRenderer self, Scene scene) {
-            if (scene is Level level && HitboxToggle.DrawHitboxes && DrawFreeCameraHitboxes) {
+        private static void SubHudRendererOnRenderContent(On.Celeste.Mod.UI.SubHudRenderer.orig_RenderContent orig, SubHudRenderer self,
+            Scene scene) {
+            if (scene is Level && HitboxToggle.DrawHitboxes && DrawFreeCameraHitboxes) {
                 SubHudRenderer.BeginRender(sampler: SamplerState.PointWrap);
 
                 // buffer draws at (-1, -1) to screen so we need to draw at (1, 1) to buffer
@@ -56,16 +57,19 @@ namespace TAS.EverestInterop.Hitboxes {
                 if (SaveData.Instance?.Assists.MirrorMode ?? false) {
                     spriteEffects |= SpriteEffects.FlipHorizontally;
                 }
+
                 if (ExtendedVariantsUtils.UpsideDown) {
                     spriteEffects |= SpriteEffects.FlipVertically;
                 }
 
-                Draw.SpriteBatch.Draw(hitboxCanvas, position, new Rectangle(0, 0, CenterCamera.ScreenCamera.Viewport.Width, CenterCamera.ScreenCamera.Viewport.Height), Color.White, 0f, Vector2.Zero, CenterCamera.LevelZoom * 6f, spriteEffects, 0f);
+                Draw.SpriteBatch.Draw(hitboxCanvas, position,
+                    new Rectangle(0, 0, CenterCamera.ScreenCamera.Viewport.Width, CenterCamera.ScreenCamera.Viewport.Height), Color.White, 0f,
+                    Vector2.Zero, CenterCamera.LevelZoom * 6f, spriteEffects, 0f);
 
                 SubHudRenderer.EndRender();
             }
+
             orig(self, scene);
         }
-
     }
 }

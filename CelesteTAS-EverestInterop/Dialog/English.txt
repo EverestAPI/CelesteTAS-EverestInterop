@@ -106,6 +106,7 @@ TAS_KEY_CENTER_CAMERA=        Center Camera
 TAS_KEY_SAVE_STATE=           Save State
 TAS_KEY_CLEAR_STATE=          Clear State
 TAS_KEY_INFO_HUD=             Info HUD
+TAS_KEY_FREE_CAMERA=          Free Camera
 
 # ================================== Option Values ==================================
 TAS_DEFAULT=                  Default

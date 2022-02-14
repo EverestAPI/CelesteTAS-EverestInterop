@@ -16,8 +16,8 @@ namespace TAS.EverestInterop {
         private static float? savedLevelScreenPadding;
         private static Vector2? lastPlayerPosition;
         private static Vector2 offset;
+        private static Vector2 screenOffset;
         private static DateTime? arrowKeyPressTime;
-        private static bool waitForAllResetKeysRelease;
         private static float viewportScale = 1f;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
@@ -26,16 +26,19 @@ namespace TAS.EverestInterop {
 
         public static float LevelZoom {
             get => 1 / viewportScale;
-            set => viewportScale = 1 / value;
+            private set => viewportScale = 1 / value;
         }
 
-        public static Camera ScreenCamera { get; private set; } = new Camera();
+        public static bool LevelZoomOut => LevelZoom < 0.999f;
+
+        public static Camera ScreenCamera { get; private set; } = new();
 
         public static void Load() {
             On.Monocle.Engine.RenderCore += EngineOnRenderCore;
             On.Monocle.Commands.Render += CommandsOnRender;
             On.Celeste.Level.Render += LevelOnRender;
             offset = new DynamicData(Engine.Instance).Get<Vector2?>("CelesteTAS_Offset") ?? Vector2.Zero;
+            screenOffset = new DynamicData(Engine.Instance).Get<Vector2?>("CelesteTAS_Screen_Offset") ?? Vector2.Zero;
             LevelZoom = new DynamicData(Engine.Instance).Get<float?>("CelesteTAS_LevelZoom") ?? 1f;
         }
 
@@ -44,6 +47,7 @@ namespace TAS.EverestInterop {
             On.Monocle.Commands.Render -= CommandsOnRender;
             On.Celeste.Level.Render -= LevelOnRender;
             new DynamicData(Engine.Instance).Set("CelesteTAS_Offset", offset);
+            new DynamicData(Engine.Instance).Set("CelesteTAS_Screen_Offset", screenOffset);
             new DynamicData(Engine.Instance).Set("CelesteTAS_LevelZoom", LevelZoom);
         }
 
@@ -88,10 +92,18 @@ namespace TAS.EverestInterop {
                 level.Zoom = LevelZoom;
                 level.ZoomTarget = LevelZoom;
                 level.ZoomFocusPoint = new Vector2(320f, 180f) / 2f;
+                if (LevelZoomOut) {
+                    level.ZoomFocusPoint += screenOffset;
+                }
+
                 level.ScreenPadding = 0;
 
-                ScreenCamera = new((int)Math.Round(320 * viewportScale), (int)Math.Round(180 * viewportScale));
-                ScreenCamera.Position = lastPlayerPosition.Value + offset - new Vector2(ScreenCamera.Viewport.Width / 2f, ScreenCamera.Viewport.Height / 2f);
+                ScreenCamera = new((int) Math.Round(320 * viewportScale), (int) Math.Round(180 * viewportScale));
+                ScreenCamera.Position = lastPlayerPosition.Value + offset -
+                                        new Vector2(ScreenCamera.Viewport.Width / 2f, ScreenCamera.Viewport.Height / 2f);
+                if (LevelZoomOut) {
+                    ScreenCamera.Position += screenOffset;
+                }
             }
         }
 
@@ -137,64 +149,87 @@ namespace TAS.EverestInterop {
             }
         }
 
+        public static void ResetCamera() {
+            if (Hotkeys.FreeCamera.DoublePressed || MouseButtons.Right.DoublePressed) {
+                offset = Vector2.Zero;
+                screenOffset = Vector2.Zero;
+                LevelZoom = 1;
+            }
+        }
+
         private static void MoveCamera(Level level) {
             if (!Settings.CenterCamera) {
                 return;
             }
 
+            bool moveCamera = false;
+            bool moveScreenCamera = false;
+
+            // info hud hotkey + arrow key
+            if (!Hotkeys.CameraUp.Check && !Hotkeys.CameraDown.Check && !Hotkeys.CameraLeft.Check && !Hotkeys.CameraRight.Check) {
+                arrowKeyPressTime = null;
+            } else if (arrowKeyPressTime == null) {
+                arrowKeyPressTime = DateTime.Now;
+            }
+
+            int moveY = 0;
+            int moveX = 0;
+
+            if (Hotkeys.CameraUp.Check) {
+                moveY -= 1;
+            }
+
+            if (Hotkeys.CameraDown.Check) {
+                moveY += 1;
+            }
+
+            if (Hotkeys.CameraLeft.Check) {
+                moveX -= 1;
+            }
+
+            if (Hotkeys.CameraRight.Check) {
+                moveX += 1;
+            }
+
             if (Hotkeys.InfoHud.Check) {
-                // info hud hotkey + arrow key
-                if (waitForAllResetKeysRelease) {
-                    if (!Hotkeys.CameraUp.Check && !Hotkeys.CameraDown.Check) {
-                        waitForAllResetKeysRelease = false;
-                    }
+                offset += new Vector2(ArrowKeySensitivity * moveX, ArrowKeySensitivity * moveY);
+                moveCamera = moveX != 0 || moveY != 0;
+            }
+
+            if (Hotkeys.FreeCamera.Check) {
+                if (LevelZoomOut) {
+                    screenOffset += new Vector2(ArrowKeySensitivity * moveX, ArrowKeySensitivity * moveY);
+                    moveScreenCamera = moveX != 0 || moveY != 0;
                 } else {
-                    if (!Hotkeys.CameraUp.Check && !Hotkeys.CameraDown.Check && !Hotkeys.CameraLeft.Check && !Hotkeys.CameraRight.Check) {
-                        arrowKeyPressTime = null;
-                    } else if (arrowKeyPressTime == null) {
-                        arrowKeyPressTime = DateTime.Now;
-                    }
-
-                    if (Hotkeys.CameraUp.Check) {
-                        offset += new Vector2(0, -ArrowKeySensitivity);
-                    }
-
-                    if (Hotkeys.CameraDown.Check) {
-                        offset += new Vector2(0, ArrowKeySensitivity);
-                    }
-
-                    if (Hotkeys.CameraLeft.Check) {
-                        offset += new Vector2(-ArrowKeySensitivity, 0);
-                    }
-
-                    if (Hotkeys.CameraRight.Check) {
-                        offset += new Vector2(ArrowKeySensitivity, 0);
-                    }
-
-                    if (Hotkeys.CameraUp.Check && Hotkeys.CameraDown.Check) {
-                        offset = Vector2.Zero;
-                        LevelZoom = 1f;
-                        waitForAllResetKeysRelease = true;
-                    }
+                    offset += new Vector2(ArrowKeySensitivity * moveX, ArrowKeySensitivity * moveY);
+                    moveCamera = moveX != 0 || moveY != 0;
                 }
-            } else {
-                // mouse right button
-                if (MouseButtons.Right.LastCheck && MouseButtons.Right.Check) {
-                    InfoMouse.DrawCursor(MouseButtons.Position);
+            }
 
-                    float scale = LevelZoom * level.Camera.Zoom * 6f * Engine.ViewWidth / Engine.Width;
+            // mouse right button
+            if (!Hotkeys.InfoHud.Check && MouseButtons.Right.LastCheck && MouseButtons.Right.Check) {
+                InfoMouse.DrawCursor(MouseButtons.Position);
+
+                float scale = LevelZoom * level.Camera.Zoom * 6f * Engine.ViewWidth / Engine.Width;
+                if (Hotkeys.FreeCamera.Check && LevelZoomOut) {
+                    screenOffset -= (MouseButtons.Position - MouseButtons.LastPosition) / scale;
+                    moveScreenCamera = true;
+                } else {
                     offset -= (MouseButtons.Position - MouseButtons.LastPosition) / scale;
-                }
-
-                if (MouseButtons.Right.DoublePressed) {
-                    offset = Vector2.Zero;
-                    LevelZoom = 1;
+                    moveCamera = true;
                 }
             }
 
             if (lastPlayerPosition is { } playerPosition && level.Session.MapData.Bounds is var bounds) {
-                Vector2 result = (playerPosition + offset).Clamp(bounds.X, bounds.Y, bounds.Right, bounds.Bottom);
-                offset = result - playerPosition;
+                if (moveCamera) {
+                    Vector2 result = (playerPosition + offset).Clamp(bounds.X, bounds.Y, bounds.Right, bounds.Bottom);
+                    offset = result - playerPosition;
+                }
+
+                if (moveScreenCamera) {
+                    Vector2 result = (playerPosition + offset + screenOffset).Clamp(bounds.X, bounds.Y, bounds.Right, bounds.Bottom);
+                    screenOffset = result - playerPosition - offset;
+                }
             }
         }
 
@@ -204,7 +239,7 @@ namespace TAS.EverestInterop {
             }
 
             int direction = 0;
-            if (Hotkeys.InfoHud.Check) {
+            if (Hotkeys.FreeCamera.Check) {
                 if (Hotkeys.CameraZoomIn.Check) {
                     direction = -1;
                 }
@@ -218,7 +253,7 @@ namespace TAS.EverestInterop {
 
             // delta must be a multiple of 0.1 to let free camera hitboxes align properly
             float delta = (viewportScale + direction * 0.01f) switch {
-                > 1 => direction * 0.2f, 
+                > 1 => direction * 0.2f,
                 _ => direction * 0.1f
             };
 
