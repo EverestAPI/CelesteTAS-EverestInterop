@@ -23,7 +23,7 @@ namespace TAS.EverestInterop.Hitboxes {
             On.Monocle.Hitbox.Render += HitboxOnRenderEntity;
             On.Monocle.Circle.Render += CircleOnRender;
             On.Monocle.ColliderList.Render += ColliderListOnRender;
-            On.Celeste.Level.Update += LevelOnUpdate;
+            On.Monocle.EntityList.Update += EntityListOnUpdate;
             On.Celeste.Level.End += LevelOnEnd;
         }
 
@@ -33,11 +33,11 @@ namespace TAS.EverestInterop.Hitboxes {
             On.Monocle.Hitbox.Render -= HitboxOnRenderEntity;
             On.Monocle.Circle.Render -= CircleOnRender;
             On.Monocle.ColliderList.Render -= ColliderListOnRender;
-            On.Celeste.Level.Update -= LevelOnUpdate;
+            On.Monocle.EntityList.Update -= EntityListOnUpdate;
             On.Celeste.Level.End -= LevelOnEnd;
         }
 
-        private static void LevelOnUpdate(On.Celeste.Level.orig_Update orig, Level self) {
+        private static void EntityListOnUpdate(On.Monocle.EntityList.orig_Update orig, EntityList self) {
             LastPositions.Clear();
             LastColldables.Clear();
             orig(self);
