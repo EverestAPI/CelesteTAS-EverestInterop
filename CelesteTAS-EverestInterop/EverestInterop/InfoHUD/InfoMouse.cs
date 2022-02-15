@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Celeste;
 using Celeste.Mod;
@@ -113,7 +114,9 @@ namespace TAS.EverestInterop.InfoHUD {
 
         private static void LevelOnLoadLevel(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader) {
             orig(self, playerIntro, isFromLoader);
-            if (self.Tracker.GetEntity<SelectedAreaEntity>() == null) {
+            if (self.Tracker.Entities.TryGetValue(typeof(SelectedAreaEntity), out List<Entity> entities) && entities.IsEmpty()) {
+                self.Add(new SelectedAreaEntity());
+            } else if (self.Entities.FindFirst<SelectedAreaEntity>() == null) {
                 self.Add(new SelectedAreaEntity());
             }
         }
