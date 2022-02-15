@@ -160,7 +160,7 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-        private static bool IsDragging => Instance?.start != null;
+        private static bool IsDragging => Instance?.start != null && (Instance.width > 0 || Instance.height > 0);
 
         private Vector2? start;
         private int left;
@@ -204,10 +204,15 @@ namespace TAS.EverestInterop.InfoHUD {
                 width = right - left;
                 height = bottom - top;
 
-                if (MouseButtons.Right.Check) {
+                if (IsDragging && MouseButtons.Right.Check) {
                     Draw.HollowRect(left, top, Math.Max(1, right - left), Math.Max(1, bottom - top), Color.Yellow);
-                } else {
-                    TextInput.SetClipboardText(ToString());
+                }
+
+                if (MouseButtons.Right.Released) {
+                    if (IsDragging) {
+                        TextInput.SetClipboardText(ToString());
+                    }
+
                     start = null;
                 }
             }
