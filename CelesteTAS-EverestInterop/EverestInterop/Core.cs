@@ -8,6 +8,7 @@ using Monocle;
 using MonoMod.RuntimeDetour;
 using TAS.Module;
 using TAS.Utils;
+using GameInput = Celeste.Input;
 
 namespace TAS.EverestInterop {
     public static class Core {
@@ -16,13 +17,12 @@ namespace TAS.EverestInterop {
         private static bool InUpdate;
 
         private static Detour HRunThreadWithLogging;
-
         private static Detour HGameUpdate;
-
         private static DGameUpdate OrigGameUpdate;
 
         private static Action PreviousGameLoop;
         private static readonly Lazy<bool> CantPauseWhileSaving = new(() => Everest.Version < new Version(1, 2865));
+        private static bool updateGrab = typeof(GameInput).GetMethod("UpdateGrab") != null;
 
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
@@ -91,6 +91,9 @@ namespace TAS.EverestInterop {
             for (int i = 0; i < loops; i++) {
                 // Anything happening early on runs in the MInput.Update hook.
                 orig(self, gameTime);
+                if (updateGrab) {
+                    UpdateGrab();
+                }
 
                 // Badeline does some dirty stuff in Render.
                 if (i < loops - 1) {
@@ -100,7 +103,7 @@ namespace TAS.EverestInterop {
                 // Autosaving prevents opening the menu to skip cutscenes during fast forward.
                 if (CantPauseWhileSaving.Value && Engine.Scene is Level level && UserIO.Saving
                     && level.Entities.Any(entity => entity is EventTrigger or NPC or FlingBirdIntro)
-                ) {
+                   ) {
                     skipBaseUpdate = false;
                     loops = 1;
                 }
@@ -162,6 +165,11 @@ namespace TAS.EverestInterop {
             }
 
             orig(self);
+        }
+
+        private static void UpdateGrab() {
+            // this method needs to be isolated for compatibility with Celeste v1.3+
+            GameInput.UpdateGrab();
         }
 
         private delegate void DGameUpdate(Game self, GameTime gameTime);
