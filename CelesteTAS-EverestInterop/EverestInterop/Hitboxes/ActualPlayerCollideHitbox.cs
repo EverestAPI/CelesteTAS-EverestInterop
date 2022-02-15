@@ -35,7 +35,8 @@ namespace TAS.EverestInterop.Hitboxes {
                     ins => ins.OpCode == OpCodes.Callvirt &&
                            ins.Operand.ToString().Contains("Monocle.Tracker::GetComponents<Celeste.PlayerCollider>()"))) {
                 ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Action<Player>>(player => {
-                    if (Manager.UltraFastForwarding || !Settings.ShowHitboxes || Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off) {
+                    if (Manager.UltraFastForwarding || !Settings.ShowHitboxes || Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off ||
+                        playerUpdated) {
                         return;
                     }
 

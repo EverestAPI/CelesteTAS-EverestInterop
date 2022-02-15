@@ -14,12 +14,15 @@ namespace TAS.EverestInterop.Hitboxes {
         private static readonly Dictionary<Entity, Vector2> LastPositions = new();
         private static readonly Dictionary<Entity, bool> LastColldables = new();
 
+        private static bool playerUpdated;
+        private static bool dontSaveLastPosition;
         private static bool colliderListRendering;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
         [Load]
         private static void Load() {
             ilHookPlayerOrigUpdate = new ILHook(typeof(Player).GetMethod("orig_Update"), ModPlayerOrigUpdateEntity);
+            On.Celeste.Player.Update += PlayerOnUpdate;
             On.Monocle.Hitbox.Render += HitboxOnRenderEntity;
             On.Monocle.Circle.Render += CircleOnRender;
             On.Monocle.ColliderList.Render += ColliderListOnRender;
@@ -30,6 +33,7 @@ namespace TAS.EverestInterop.Hitboxes {
         [Unload]
         private static void Unload() {
             ilHookPlayerOrigUpdate?.Dispose();
+            On.Celeste.Player.Update -= PlayerOnUpdate;
             On.Monocle.Hitbox.Render -= HitboxOnRenderEntity;
             On.Monocle.Circle.Render -= CircleOnRender;
             On.Monocle.ColliderList.Render -= ColliderListOnRender;
@@ -37,7 +41,15 @@ namespace TAS.EverestInterop.Hitboxes {
             On.Celeste.Level.End -= LevelOnEnd;
         }
 
+        private static void PlayerOnUpdate(On.Celeste.Player.orig_Update orig, Player self) {
+            dontSaveLastPosition = Manager.UltraFastForwarding || !Settings.ShowHitboxes ||
+                                   Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off || playerUpdated;
+            orig(self);
+            playerUpdated = true;
+        }
+
         private static void EntityListOnUpdate(On.Monocle.EntityList.orig_Update orig, EntityList self) {
+            playerUpdated = false;
             LastPositions.Clear();
             LastColldables.Clear();
             orig(self);
@@ -55,8 +67,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 ilCursor.Emit(OpCodes.Dup).EmitDelegate<Action<PlayerCollider>>(playerCollider => {
                     Entity entity = playerCollider.Entity;
 
-                    if (Manager.UltraFastForwarding || entity == null || !Settings.ShowHitboxes ||
-                        Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off) {
+                    if (dontSaveLastPosition || entity == null) {
                         return;
                     }
 
