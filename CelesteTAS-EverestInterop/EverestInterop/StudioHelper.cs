@@ -70,7 +70,7 @@ namespace TAS.EverestInterop {
                             }
                         }
                     }
-                } catch (UnauthorizedAccessException e) {
+                } catch (Exception e) {
                     e.LogException("Failed to extract studio.");
                 }
             } else {
