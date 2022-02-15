@@ -18,25 +18,38 @@ using CelesteStudio.RichText;
 using StudioCommunication;
 
 namespace CelesteStudio {
-    public partial class Studio : Form {
+    public partial class Studio : BaseForm {
         private const string MaxStatusHeight20Line = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
-
         public static Studio Instance;
-
+        private static StringCollection RecentFiles => Settings.Default.RecentFiles ??= new StringCollection();
         public readonly List<InputRecord> InputRecords = new();
 
         private DateTime lastChanged = DateTime.MinValue;
         private FormWindowState lastWindowState = FormWindowState.Normal;
         private States tasStates;
         private ToolTip tooltip;
+        private ToolTip titleBarTooltip;
         private int totalFrames, currentFrame;
         private bool updating;
+        private bool DisableTyping => tasStates.HasFlag(States.Enable) && !tasStates.HasFlag(States.FrameStep);
+
+        private string TitleBarText =>
+            (string.IsNullOrEmpty(CurrentFileName) ? "Celeste.tas" : Path.GetFileName(CurrentFileName))
+            + " - Studio v"
+            + Assembly.GetExecutingAssembly().GetName().Version.ToString(3)
+            + (string.IsNullOrEmpty(CurrentFileName) ? string.Empty : "   " + CurrentFileName);
+
+        private string CurrentFileName {
+            get => richText.CurrentFileName;
+            set => richText.CurrentFileName = value;
+        }
 
         public Studio(string[] args) {
             Instance = this;
 
             UpgradeSettings();
             InitializeComponent();
+            InitTitleBarTooltip();
             InitMenu();
             InitDragDrop();
             InitFont(Settings.Default.Font ?? fontDialog.Font);
@@ -56,27 +69,29 @@ namespace CelesteStudio {
             TryOpenFile(args);
         }
 
-        private bool DisableTyping => tasStates.HasFlag(States.Enable) && !tasStates.HasFlag(States.FrameStep);
-
-        private string TitleBarText =>
-            (string.IsNullOrEmpty(CurrentFileName) ? "Celeste.tas" : Path.GetFileName(CurrentFileName))
-            + " - Studio v"
-            + Assembly.GetExecutingAssembly().GetName().Version.ToString(3)
-            + (string.IsNullOrEmpty(CurrentFileName) ? string.Empty : "   " + CurrentFileName);
-
-        private string CurrentFileName {
-            get => richText.CurrentFileName;
-            set => richText.CurrentFileName = value;
-        }
-
-        private static StringCollection RecentFiles => Settings.Default.RecentFiles ??= new StringCollection();
-
         private void UpgradeSettings() {
             if (string.IsNullOrEmpty(Settings.Default.UpgradeVersion) ||
                 new Version(Settings.Default.UpgradeVersion) < Assembly.GetExecutingAssembly().GetName().Version) {
                 Settings.Default.Upgrade();
                 Settings.Default.UpgradeVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             }
+        }
+
+        private void InitTitleBarTooltip() {
+            NonClientMouseHover += (_, _) => {
+                if (TitleRectangle.Contains(Cursor.Position)) {
+                    titleBarTooltip ??= new ToolTip();
+                    titleBarTooltip.Show(Text, this, TitleRectangle.Left - Left + 1, TitleRectangle.Bottom - Top, int.MaxValue);
+                }
+            };
+
+            NonClientMouseLeave += (_, _) => {
+                if (!TitleRectangle.Contains(Cursor.Position)) {
+                    titleBarTooltip?.Hide(this);
+                }
+            };
+
+            richText.MouseHover += (_, _) => titleBarTooltip?.Hide(this);
         }
 
         private void InitMenu() {
@@ -231,8 +246,12 @@ namespace CelesteStudio {
         }
 
         private void ShowTooltip(string text) {
-            tooltip?.Hide(this);
-            tooltip = new ToolTip();
+            if (tooltip == null) {
+                tooltip = new ToolTip();
+            } else {
+                tooltip.Hide(this);
+            }
+
             Size textSize = TextRenderer.MeasureText(text, Font);
             tooltip.Show(text, this, Width / 2 - textSize.Width / 2, Height / 2 - textSize.Height / 2, 2000);
         }
