@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Xml;
 using Celeste;
 using Celeste.Mod;
-using Celeste.Mod.Helpers;
 using FMOD.Studio;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -122,21 +121,21 @@ namespace TAS.EverestInterop {
 
         [LoadContent]
         private static void OnLoadContent() {
-            if (FakeAssembly.GetFakeEntryAssembly().GetType("FrostHelper.CustomSpinner") is { } customSpinnerType) {
+            if (TypeUtils.GetType("FrostHelper.CustomSpinner") is { } customSpinnerType) {
                 IlHooks.Add(new ILHook(customSpinnerType.GetConstructors()[0], ModCustomSpinnerColor));
             }
 
-            if (FakeAssembly.GetFakeEntryAssembly().GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController") is
+            if (TypeUtils.GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController") is
                 { } rainbowSpinnerType) {
                 IlHooks.Add(new ILHook(rainbowSpinnerType.GetConstructors()[0], ModRainbowSpinnerColor));
             }
 
-            if (FakeAssembly.GetFakeEntryAssembly().GetType("VivHelper.Entities.CustomSpinner")?.GetMethodInfo("CreateSprites") is
+            if (TypeUtils.GetType("VivHelper.Entities.CustomSpinner")?.GetMethodInfo("CreateSprites") is
                 { } customSpinnerCreateSprites) {
                 IlHooks.Add(new ILHook(customSpinnerCreateSprites, ModVivCustomSpinnerColor));
             }
 
-            if (FakeAssembly.GetFakeEntryAssembly().GetType("ContortHelper.BetterLightningStrike") is { } lightningStrikeType) {
+            if (TypeUtils.GetType("ContortHelper.BetterLightningStrike") is { } lightningStrikeType) {
                 IlHooks.Add(new ILHook(lightningStrikeType.GetMethodInfo("Render"), ModLightningStrikeRender));
             }
         }
@@ -566,7 +565,7 @@ namespace TAS.EverestInterop {
             ilCursor.EmitDelegate<Func<bool>>(() => Settings.SimplifiedGraphics && Settings.SimplifiedSpinnerColor.Value != null);
             ilCursor.Emit(OpCodes.Brfalse, start);
 
-            Type type = FakeAssembly.GetFakeEntryAssembly().GetType("VivHelper.Entities.CustomSpinner");
+            Type type = TypeUtils.GetType("VivHelper.Entities.CustomSpinner");
             if (type.GetFieldInfo("color") is { } colorField) {
                 ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Func<Color>>(() => Settings.SimplifiedSpinnerColor.Color);
                 ilCursor.Emit(OpCodes.Stfld, colorField);

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Celeste;
 using Celeste.Mod;
-using Celeste.Mod.Helpers;
 using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
@@ -21,7 +20,7 @@ namespace TAS.EverestInterop {
 
         [Initialize]
         private static void Initialize() {
-            if (FakeAssembly.GetFakeEntryAssembly().GetType("Celeste.Mod.IsaGrabBag.DreamSpinnerBorder")?.GetMethodInfo("Update") is
+            if (TypeUtils.GetType("Celeste.Mod.IsaGrabBag.DreamSpinnerBorder")?.GetMethodInfo("Update") is
                 { } updateMethod) {
                 IlHooks.Add(new ILHook(updateMethod, SkipUpdateMethod));
             }

@@ -1,9 +1,9 @@
 using System;
-using Celeste.Mod.Helpers;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.Utils;
 using TAS.Module;
+using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxConquerorBeam {
@@ -11,7 +11,7 @@ namespace TAS.EverestInterop.Hitboxes {
 
         [Initialize]
         private static void Initialize() {
-            conquerorBeamType = FakeAssembly.GetFakeEntryAssembly().GetType("Celeste.Mod.ricky06ModPack.Entities.ConquerorBeam");
+            conquerorBeamType = TypeUtils.GetType("Celeste.Mod.ricky06ModPack.Entities.ConquerorBeam");
 
             if (conquerorBeamType != null) {
                 On.Monocle.Entity.DebugRender += ModHitbox;

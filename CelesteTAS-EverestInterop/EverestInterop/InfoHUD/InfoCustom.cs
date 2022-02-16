@@ -7,7 +7,6 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Celeste;
-using Celeste.Mod.Helpers;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Module;
@@ -35,7 +34,7 @@ namespace TAS.EverestInterop.InfoHUD {
             CachedGetMethodInfos.Clear();
             CachedSetMethodInfos.Clear();
             CachedFieldInfos.Clear();
-            foreach (Type type in FakeAssembly.GetFakeEntryAssembly().GetTypes()) {
+            foreach (Type type in TypeUtils.GetTypes()) {
                 if (type.FullName != null) {
                     AllTypes[$"{type.FullName}@{type.Assembly.GetName().Name}"] = type;
                 }

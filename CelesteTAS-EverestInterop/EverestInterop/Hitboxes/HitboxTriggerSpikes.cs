@@ -2,7 +2,6 @@
 using System.Reflection;
 using Celeste;
 using Celeste.Mod.Entities;
-using Celeste.Mod.Helpers;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Module;
@@ -37,7 +36,7 @@ namespace TAS.EverestInterop.Hitboxes {
 
         [Initialize]
         private static void Initialize() {
-            groupedTriggerSpikesType = FakeAssembly.GetFakeEntryAssembly().GetType("Celeste.Mod.MaxHelpingHand.Entities.GroupedTriggerSpikes");
+            groupedTriggerSpikesType = TypeUtils.GetType("Celeste.Mod.MaxHelpingHand.Entities.GroupedTriggerSpikes");
             groupedTriggerSpikesTriggered = groupedTriggerSpikesType?.CreateDelegate_Get<object, bool>("Triggered");
             groupedTriggerSpikesLerp = groupedTriggerSpikesType?.CreateDelegate_Get<object, float>("Lerp");
             if (groupedTriggerSpikesType != null && groupedTriggerSpikesTriggered != null && groupedTriggerSpikesLerp != null) {
