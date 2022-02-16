@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Xml;
 using Celeste;
 using Celeste.Mod;
+using Celeste.Mod.Helpers;
 using FMOD.Studio;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -121,15 +122,21 @@ namespace TAS.EverestInterop {
 
         [LoadContent]
         private static void OnLoadContent() {
-            if (Type.GetType("FrostHelper.CustomSpinner, FrostTempleHelper") is { } customSpinnerType) {
+            if (FakeAssembly.GetFakeEntryAssembly().GetType("FrostHelper.CustomSpinner") is { } customSpinnerType) {
                 IlHooks.Add(new ILHook(customSpinnerType.GetConstructors()[0], ModCustomSpinnerColor));
             }
 
-            if (Type.GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController, MaxHelpingHand") is { } rainbowSpinnerType) {
+            if (FakeAssembly.GetFakeEntryAssembly().GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController") is
+                { } rainbowSpinnerType) {
                 IlHooks.Add(new ILHook(rainbowSpinnerType.GetConstructors()[0], ModRainbowSpinnerColor));
             }
 
-            if (Type.GetType("ContortHelper.BetterLightningStrike, ContortHelper") is { } lightningStrikeType) {
+            if (FakeAssembly.GetFakeEntryAssembly().GetType("VivHelper.Entities.CustomSpinner")?.GetMethodInfo("CreateSprites") is
+                { } customSpinnerCreateSprites) {
+                IlHooks.Add(new ILHook(customSpinnerCreateSprites, ModVivCustomSpinnerColor));
+            }
+
+            if (FakeAssembly.GetFakeEntryAssembly().GetType("ContortHelper.BetterLightningStrike") is { } lightningStrikeType) {
                 IlHooks.Add(new ILHook(lightningStrikeType.GetMethodInfo("Render"), ModLightningStrikeRender));
             }
         }
@@ -553,6 +560,24 @@ namespace TAS.EverestInterop {
             }
         }
 
+        private static void ModVivCustomSpinnerColor(ILContext il) {
+            ILCursor ilCursor = new(il);
+            Instruction start = ilCursor.Next;
+            ilCursor.EmitDelegate<Func<bool>>(() => Settings.SimplifiedGraphics && Settings.SimplifiedSpinnerColor.Value != null);
+            ilCursor.Emit(OpCodes.Brfalse, start);
+
+            Type type = FakeAssembly.GetFakeEntryAssembly().GetType("VivHelper.Entities.CustomSpinner");
+            if (type.GetFieldInfo("color") is { } colorField) {
+                ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Func<Color>>(() => Settings.SimplifiedSpinnerColor.Color);
+                ilCursor.Emit(OpCodes.Stfld, colorField);
+            }
+
+            if (type.GetFieldInfo("borderColor") is { } borderColorField) {
+                ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Func<Color>>(() => Color.Transparent);
+                ilCursor.Emit(OpCodes.Stfld, borderColorField);
+            }
+        }
+
         // ReSharper disable FieldCanBeMadeReadOnly.Global
         public struct SpinnerColor {
             public static readonly List<SpinnerColor> All = new() {
@@ -565,10 +590,12 @@ namespace TAS.EverestInterop {
 
             public CrystalColor Name;
             public string Value;
+            public Color Color;
 
             private SpinnerColor(CrystalColor name, string value) {
                 Name = name;
                 Value = value;
+                Color = value == null ? default : Calc.HexToColor(value);
             }
 
             public override string ToString() {
