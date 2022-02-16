@@ -38,6 +38,7 @@ TAS_DISTORT=                  Distort
 TAS_MINI_TEXT_BOX=            Mini Text Box
 TAS_LIGHTNING_STRIKE=         Lightning Strike
 TAS_WAVED_BLOCK=              Waved Block
+TAS_HUD=                      HUD
 
 # ================================== Info HUD ==================================
 TAS_INFO_GAME=                             Game Info

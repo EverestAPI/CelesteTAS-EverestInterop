@@ -38,6 +38,7 @@ TAS_DISTORT=                  扭曲特效
 TAS_MINI_TEXT_BOX=            迷你对话框
 TAS_LIGHTNING_STRIKE=         闪电
 TAS_WAVED_BLOCK=              波浪形块
+TAS_HUD=                      HUD
 
 # ================================== Info HUD ==================================
 TAS_INFO_GAME=                             游戏数据

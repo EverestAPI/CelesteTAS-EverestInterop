@@ -15,6 +15,7 @@ using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using TAS.Module;
 using TAS.Utils;
+using BirdTutorialGui = On.Celeste.BirdTutorialGui;
 
 namespace TAS.EverestInterop {
     public static class SimplifiedGraphicsFeature {
@@ -42,72 +43,55 @@ namespace TAS.EverestInterop {
 
         public static EaseInSubMenu CreateSubMenu() {
             return new EaseInSubMenu("Simplified Graphics".ToDialogText(), false).Apply(subMenu => {
-                subMenu.Add(new TextMenu.OnOff("Enabled".ToDialogText(), Settings.SimplifiedGraphics).Change(value =>
-                    Settings.SimplifiedGraphics = value));
+                subMenu.Add(new TextMenu.OnOff("Enabled".ToDialogText(), Settings.SimplifiedGraphics)
+                    .Change(value => Settings.SimplifiedGraphics = value));
                 subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<bool>("Gameplay".ToDialogText(), Menu.CreateDefaultHideOptions(), !Settings.ShowGameplay).Change(
-                        value =>
-                            Settings.ShowGameplay = !value));
+                    new TextMenuExt.EnumerableSlider<bool>("Gameplay".ToDialogText(), Menu.CreateDefaultHideOptions(), !Settings.ShowGameplay)
+                        .Change(value => Settings.ShowGameplay = !value));
                 subMenu.Add(
                     new TextMenuExt.EnumerableSlider<int?>("Lighting".ToDialogText(), Menu.CreateSliderOptions(10, 0, i => $"{i * 10}%"),
-                        Settings.SimplifiedLighting).Change(value =>
-                        Settings.SimplifiedLighting = value));
+                        Settings.SimplifiedLighting).Change(value => Settings.SimplifiedLighting = value));
                 subMenu.Add(
                     new TextMenuExt.EnumerableSlider<int?>("Bloom Base".ToDialogText(),
                         Menu.CreateSliderOptions(0, 10, i => (i / 10f).ToString(CultureInfo.InvariantCulture)), Settings.SimplifiedBloomBase).Change(
-                        value =>
-                            Settings.SimplifiedBloomBase = value));
+                        value => Settings.SimplifiedBloomBase = value));
                 subMenu.Add(
                     new TextMenuExt.EnumerableSlider<int?>("Bloom Strength".ToDialogText(), Menu.CreateSliderOptions(1, 10),
-                            Settings.SimplifiedBloomStrength)
-                        .Change(
-                            value => Settings.SimplifiedBloomStrength = value));
+                        Settings.SimplifiedBloomStrength).Change(value => Settings.SimplifiedBloomStrength = value));
                 subMenu.Add(
                     new TextMenuExt.EnumerableSlider<SpinnerColor>("Spinner Color".ToDialogText(), SpinnerColor.All,
-                        Settings.SimplifiedSpinnerColor).Change(value =>
-                        Settings.SimplifiedSpinnerColor = value));
+                        Settings.SimplifiedSpinnerColor).Change(value => Settings.SimplifiedSpinnerColor = value));
                 subMenu.Add(
                     new TextMenuExt.EnumerableSlider<bool>("Dust Sprite Edge".ToDialogText(), Menu.CreateDefaultHideOptions(),
-                        Settings.SimplifiedDustSpriteEdge).Change(value =>
-                        Settings.SimplifiedDustSpriteEdge = value));
+                        Settings.SimplifiedDustSpriteEdge).Change(value => Settings.SimplifiedDustSpriteEdge = value));
                 subMenu.Add(
                     new TextMenuExt.EnumerableSlider<bool>("Screen Wipe".ToDialogText(), Menu.CreateDefaultHideOptions(),
-                        Settings.SimplifiedScreenWipe).Change(value =>
-                        Settings.SimplifiedScreenWipe = value));
+                        Settings.SimplifiedScreenWipe).Change(value => Settings.SimplifiedScreenWipe = value));
                 subMenu.Add(
                     new TextMenuExt.EnumerableSlider<bool>("Color Grade".ToDialogText(), Menu.CreateDefaultHideOptions(),
-                        Settings.SimplifiedColorGrade).Change(value =>
-                        Settings.SimplifiedColorGrade = value));
+                        Settings.SimplifiedColorGrade).Change(value => Settings.SimplifiedColorGrade = value));
                 subMenu.Add(
                     new TextMenuExt.EnumerableSlider<bool>("Backdrop".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.SimplifiedBackdrop)
-                        .Change(value =>
-                            Settings.SimplifiedBackdrop = value));
+                        .Change(value => Settings.SimplifiedBackdrop = value));
                 subMenu.Add(
                     new TextMenuExt.EnumerableSlider<bool>("Decal".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.SimplifiedDecal).Change(
-                        value =>
-                            Settings.SimplifiedDecal = value));
+                        value => Settings.SimplifiedDecal = value));
                 subMenu.Add(
                     new TextMenuExt.EnumerableSlider<bool>("Particle".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.SimplifiedParticle)
-                        .Change(value =>
-                            Settings.SimplifiedParticle = value));
-                subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<bool>("Distort".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.SimplifiedDistort)
-                        .Change(value =>
-                            Settings.SimplifiedDistort = value));
-                subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<bool>("Mini Text Box".ToDialogText(), Menu.CreateDefaultHideOptions(),
-                            Settings.SimplifiedMiniTextbox)
-                        .Change(value =>
-                            Settings.SimplifiedMiniTextbox = value));
+                        .Change(value => Settings.SimplifiedParticle = value));
+                subMenu.Add(new TextMenuExt.EnumerableSlider<bool>("Distort".ToDialogText(), Menu.CreateDefaultHideOptions(),
+                    Settings.SimplifiedDistort).Change(value => Settings.SimplifiedDistort = value));
+                subMenu.Add(new TextMenuExt.EnumerableSlider<bool>("Mini Text Box".ToDialogText(), Menu.CreateDefaultHideOptions(),
+                    Settings.SimplifiedMiniTextbox).Change(value => Settings.SimplifiedMiniTextbox = value));
                 subMenu.Add(
                     new TextMenuExt.EnumerableSlider<bool>("Lightning Strike".ToDialogText(), Menu.CreateDefaultHideOptions(),
-                            Settings.SimplifiedLightningStrike)
-                        .Change(value =>
-                            Settings.SimplifiedLightningStrike = value));
+                        Settings.SimplifiedLightningStrike).Change(value => Settings.SimplifiedLightningStrike = value));
+                subMenu.Add(
+                    new TextMenuExt.EnumerableSlider<bool>("HUD".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.SimplifiedHud)
+                        .Change(value => Settings.SimplifiedHud = value));
                 subMenu.Add(
                     new TextMenuExt.EnumerableSlider<bool>("Waved Block".ToDialogText(), Menu.CreateSimplifyOptions(), Settings.SimplifiedWavedBlock)
-                        .Change(value =>
-                            Settings.SimplifiedWavedBlock = value));
+                        .Change(value => Settings.SimplifiedWavedBlock = value));
             });
         }
 
@@ -163,6 +147,8 @@ namespace TAS.EverestInterop {
             On.Celeste.Audio.Play_string += AudioOnPlay_string;
             On.Celeste.LightningStrike.Render += LightningStrikeOnRender;
             On.Celeste.HeightDisplay.Render += HeightDisplayOnRender;
+            On.Celeste.TalkComponent.TalkComponentUI.Render += TalkComponentUIOnRender;
+            On.Celeste.BirdTutorialGui.Render += BirdTutorialGuiOnRender;
             if (typeof(Player).Assembly.GetType("Celeste.Mod.Entities.CustomHeightDisplay") is { } type) {
                 IlHooks.Add(new ILHook(type.GetMethodInfo("Render"), CustomHeightDisplayRender));
             }
@@ -197,6 +183,7 @@ namespace TAS.EverestInterop {
             On.Celeste.Audio.Play_string -= AudioOnPlay_string;
             On.Celeste.LightningStrike.Render -= LightningStrikeOnRender;
             On.Celeste.HeightDisplay.Render -= HeightDisplayOnRender;
+            On.Celeste.TalkComponent.TalkComponentUI.Render -= TalkComponentUIOnRender;
             IlHooks.ForEach(hook => hook.Dispose());
             IlHooks.Clear();
         }
@@ -478,7 +465,23 @@ namespace TAS.EverestInterop {
         }
 
         private static void HeightDisplayOnRender(On.Celeste.HeightDisplay.orig_Render orig, HeightDisplay self) {
-            if (Settings.SimplifiedGraphics) {
+            if (Settings.SimplifiedGraphics && Settings.SimplifiedHud) {
+                return;
+            }
+
+            orig(self);
+        }
+
+        private static void TalkComponentUIOnRender(On.Celeste.TalkComponent.TalkComponentUI.orig_Render orig, TalkComponent.TalkComponentUI self) {
+            if (Settings.SimplifiedGraphics && Settings.SimplifiedHud) {
+                return;
+            }
+
+            orig(self);
+        }
+
+        private static void BirdTutorialGuiOnRender(BirdTutorialGui.orig_Render orig, Celeste.BirdTutorialGui self) {
+            if (Settings.SimplifiedGraphics && Settings.SimplifiedHud) {
                 return;
             }
 
