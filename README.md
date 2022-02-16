@@ -83,10 +83,13 @@ While in game or in Studio:
 ## Misc
 
 ### Move Camera
-When center camera is enabled, holding mouse right button or info hud hotkey+arrow move camera, double press mouse right button or info hud hotkey+up+down reset camera.
+When center camera is enabled, free camera hotkey + holding mouse right button or free camera hotkey + arrow move canvas, when zooming out holding mouse right button or info hud hotkey + arrow move camera.
 
 ### Zoom Camera
-When center camera is enabled, scroll wheel or info hud hotkey+home/end zoom camera, double press mouse right button or info hud hotkey+up+down reset camera. Zooming out to show more game play is not supported.
+When center camera is enabled, scroll wheel or free camera hotkey + home/end zoom camera.
+
+### Reset Camera
+When center camera is enabled, double press mouse right button or double press free camera hotkey reset camera.
 
 ### Rectangle Selection Info
 Holding info hud hotkey and mouse right down to select a rectangle. Copies the position of the top left and bottom right corners when the mouse button is released. It helps to define checkpoints for [featherline](https://github.com/tntfalle/featherline).
@@ -112,7 +115,7 @@ The contents of the curly brackets will be converted to actual data, here are so
 - `CustomSpinner: {CustomSpinner.Position}` or `CustomSpinner: {FrostHelper.CustomSpinner@FrostTempleHelper.Position}`
 
 ## Running Studio via Wine
-1. Install Wine: https://wiki.winehq.org/Download_zhcn
+1. Install Wine: https://wiki.winehq.org/Download
 2. Install .NET Framework 4.8: https://appdb.winehq.org/objectManager.php?sClass=version&iId=25478#notes
 3. Run Studio via command `env WINEPREFIX=$HOME/winedotnet wine "Celeste Studio.exe"`
 4. Run Celeste directly or run the windows version of celeste via wine `env WINEPREFIX=$HOME/winedotnet wine "Celeste.exe"`. If the error `X Error of failed request: GLXBadFBConfig` is reported when running celeste via wine, then you need to run `export MESA_GL_VERSION_OVERRIDE=4.5` first and then rerun the wine command.
