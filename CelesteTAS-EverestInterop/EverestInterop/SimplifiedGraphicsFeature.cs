@@ -15,7 +15,6 @@ using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using TAS.Module;
 using TAS.Utils;
-using BirdTutorialGui = On.Celeste.BirdTutorialGui;
 
 namespace TAS.EverestInterop {
     public static class SimplifiedGraphicsFeature {
@@ -97,6 +96,14 @@ namespace TAS.EverestInterop {
 
         [LoadContent]
         private static void OnLoadContent() {
+            // Optional: Various graphical simplifications to cut down on visual noise.
+            On.Celeste.Level.Update += Level_Update;
+
+            SkipMethod(() => Settings.SimplifiedGraphics, "Render",
+                typeof(ReflectionTentacles), typeof(SummitCloud),
+                typeof(DustGraphic).GetNestedType("Eyeballs", BindingFlags.NonPublic)
+            );
+
             if (TypeUtils.GetType("FrostHelper.CustomSpinner") is { } customSpinnerType) {
                 IlHooks.Add(new ILHook(customSpinnerType.GetConstructors()[0], ModCustomSpinnerColor));
             }
@@ -111,81 +118,110 @@ namespace TAS.EverestInterop {
                 IlHooks.Add(new ILHook(customSpinnerCreateSprites, ModVivCustomSpinnerColor));
             }
 
-            if (TypeUtils.GetType("ContortHelper.BetterLightningStrike") is { } lightningStrikeType) {
-                IlHooks.Add(new ILHook(lightningStrikeType.GetMethodInfo("Render"), ModLightningStrikeRender));
-            }
-        }
+            On.Celeste.CrystalStaticSpinner.CreateSprites += CrystalStaticSpinner_CreateSprites;
+            IL.Celeste.CrystalStaticSpinner.GetHue += CrystalStaticSpinnerOnGetHue;
 
-        [Load]
-        private static void Load() {
-            // Optional: Various graphical simplifications to cut down on visual noise.
-            On.Celeste.Level.Update += Level_Update;
+            On.Celeste.FloatingDebris.ctor_Vector2 += FloatingDebris_ctor;
+            On.Celeste.MoonCreature.ctor_Vector2 += MoonCreature_ctor;
+
             IL.Celeste.LightingRenderer.Render += LightingRenderer_Render;
             On.Celeste.ColorGrade.Set_MTexture_MTexture_float += ColorGradeOnSet_MTexture_MTexture_float;
             IL.Celeste.BloomRenderer.Apply += BloomRendererOnApply;
             On.Celeste.Decal.Render += Decal_Render;
-            On.Monocle.Particle.Render += Particle_Render;
+
+            SkipMethod(() => Settings.SimplifiedGraphics && Settings.SimplifiedParticle,
+                typeof(Particle).GetMethod("Render", new Type[] { }),
+                typeof(Particle).GetMethod("Render", new[] {typeof(float)})
+            );
+            SkipMethod(() => Settings.SimplifiedGraphics && Settings.SimplifiedDistort, "Apply", typeof(Glitch));
+            SkipMethod(() => Settings.SimplifiedGraphics && Settings.SimplifiedMiniTextbox, "Render", typeof(MiniTextbox));
+
             IL.Celeste.Distort.Render += DistortOnRender;
-            IL.Celeste.Glitch.Apply += GlitchOnApply;
-            On.Celeste.MiniTextbox.Render += MiniTextbox_Render;
             IL.Celeste.BackdropRenderer.Render += BackdropRenderer_Render;
-            On.Celeste.CrystalStaticSpinner.CreateSprites += CrystalStaticSpinner_CreateSprites;
-            IL.Celeste.CrystalStaticSpinner.GetHue += CrystalStaticSpinnerOnGetHue;
-            IlHooks.Add(new ILHook(typeof(DustGraphic).GetNestedType("Eyeballs", BindingFlags.NonPublic).GetMethod("Render"), ModDustEyes));
             On.Celeste.DustStyles.Get_Session += DustStyles_Get_Session;
-            On.Celeste.DreamBlock.Lerp += DreamBlock_Lerp;
-            On.Celeste.LavaRect.Wave += LavaRect_Wave;
-            On.Celeste.SeekerBarrierRenderer.Edge.GetWaveAt += EdgeOnGetWaveAt;
-            On.Celeste.FloatingDebris.ctor_Vector2 += FloatingDebris_ctor;
-            On.Celeste.MoonCreature.ctor_Vector2 += MoonCreature_ctor;
+
             IL.Celeste.LightningRenderer.Render += LightningRenderer_RenderIL;
-            On.Celeste.LightningRenderer.Bolt.Render += Bolt_Render;
-            On.Celeste.SummitCloud.Render += SummitCloudOnRender;
-            IL.Celeste.SpotlightWipe.Render += HideScreenWipe;
-            IL.Celeste.FadeWipe.Render += HideScreenWipe;
-            On.Celeste.ReflectionTentacles.Render += ReflectionTentacles_Render;
+
+            bool SimplifiedWavedBlock() => Settings.SimplifiedGraphics && Settings.SimplifiedWavedBlock;
+            ReturnZeroMethod(SimplifiedWavedBlock,
+                Tuple.Create(typeof(DreamBlock), "Lerp"),
+                Tuple.Create(typeof(LavaRect), "Wave"),
+                Tuple.Create(typeof(SeekerBarrierRenderer).GetNestedType("Edge", BindingFlags.NonPublic), "GetWaveAt")
+            );
+
+            SkipMethod(SimplifiedWavedBlock, "Render",
+                typeof(LightningRenderer), typeof(LightningRenderer).GetNestedType("Bolt", BindingFlags.NonPublic)
+            );
+
+            SkipMethod(() => Settings.SimplifiedGraphics && Settings.SimplifiedScreenWipe, "Render",
+                typeof(SpotlightWipe), typeof(FadeWipe)
+            );
+
             On.Celeste.Audio.Play_string += AudioOnPlay_string;
-            On.Celeste.LightningStrike.Render += LightningStrikeOnRender;
-            On.Celeste.HeightDisplay.Render += HeightDisplayOnRender;
-            On.Celeste.TalkComponent.TalkComponentUI.Render += TalkComponentUIOnRender;
-            On.Celeste.BirdTutorialGui.Render += BirdTutorialGuiOnRender;
-            if (typeof(Player).Assembly.GetType("Celeste.Mod.Entities.CustomHeightDisplay") is { } type) {
-                IlHooks.Add(new ILHook(type.GetMethodInfo("Render"), CustomHeightDisplayRender));
-            }
+            SkipMethod(() => Settings.SimplifiedGraphics && Settings.SimplifiedLightningStrike, "Render",
+                typeof(LightningStrike),
+                TypeUtils.GetType("ContortHelper.BetterLightningStrike")
+            );
+
+            SkipMethod(
+                () => Settings.SimplifiedGraphics && Settings.SimplifiedHud || Settings.CenterCamera && Math.Abs(CenterCamera.LevelZoom - 1f) > 1e-3,
+                "Render",
+                typeof(HeightDisplay), typeof(TalkComponent.TalkComponentUI), typeof(BirdTutorialGui),
+                typeof(Player).Assembly.GetType("Celeste.Mod.Entities.CustomHeightDisplay")
+            );
         }
 
         [Unload]
         private static void Unload() {
             On.Celeste.Level.Update -= Level_Update;
+            On.Celeste.CrystalStaticSpinner.CreateSprites -= CrystalStaticSpinner_CreateSprites;
+            IL.Celeste.CrystalStaticSpinner.GetHue -= CrystalStaticSpinnerOnGetHue;
+            On.Celeste.FloatingDebris.ctor_Vector2 -= FloatingDebris_ctor;
+            On.Celeste.MoonCreature.ctor_Vector2 -= MoonCreature_ctor;
             IL.Celeste.LightingRenderer.Render -= LightingRenderer_Render;
             On.Celeste.ColorGrade.Set_MTexture_MTexture_float -= ColorGradeOnSet_MTexture_MTexture_float;
             IL.Celeste.BloomRenderer.Apply -= BloomRendererOnApply;
             On.Celeste.Decal.Render -= Decal_Render;
-            On.Monocle.Particle.Render -= Particle_Render;
             IL.Celeste.Distort.Render -= DistortOnRender;
-            IL.Celeste.Glitch.Apply -= GlitchOnApply;
-            On.Celeste.MiniTextbox.Render -= MiniTextbox_Render;
             IL.Celeste.BackdropRenderer.Render -= BackdropRenderer_Render;
-            On.Celeste.CrystalStaticSpinner.CreateSprites -= CrystalStaticSpinner_CreateSprites;
-            IL.Celeste.CrystalStaticSpinner.GetHue -= CrystalStaticSpinnerOnGetHue;
             On.Celeste.DustStyles.Get_Session -= DustStyles_Get_Session;
-            On.Celeste.DreamBlock.Lerp -= DreamBlock_Lerp;
-            On.Celeste.LavaRect.Wave -= LavaRect_Wave;
-            On.Celeste.SeekerBarrierRenderer.Edge.GetWaveAt -= EdgeOnGetWaveAt;
-            On.Celeste.FloatingDebris.ctor_Vector2 -= FloatingDebris_ctor;
-            On.Celeste.MoonCreature.ctor_Vector2 -= MoonCreature_ctor;
             IL.Celeste.LightningRenderer.Render -= LightningRenderer_RenderIL;
-            On.Celeste.LightningRenderer.Bolt.Render -= Bolt_Render;
-            On.Celeste.SummitCloud.Render -= SummitCloudOnRender;
-            IL.Celeste.SpotlightWipe.Render -= HideScreenWipe;
-            IL.Celeste.FadeWipe.Render -= HideScreenWipe;
-            On.Celeste.ReflectionTentacles.Render -= ReflectionTentacles_Render;
             On.Celeste.Audio.Play_string -= AudioOnPlay_string;
-            On.Celeste.LightningStrike.Render -= LightningStrikeOnRender;
-            On.Celeste.HeightDisplay.Render -= HeightDisplayOnRender;
-            On.Celeste.TalkComponent.TalkComponentUI.Render -= TalkComponentUIOnRender;
+
             IlHooks.ForEach(hook => hook.Dispose());
             IlHooks.Clear();
+        }
+
+        private static void SkipMethod(Func<bool> condition, string methodName, params Type[] types) {
+            foreach (Type type in types) {
+                if (type?.GetMethodInfo(methodName) is { } method) {
+                    SkipMethod(condition, method);
+                }
+            }
+        }
+
+        private static void SkipMethod(Func<bool> condition, params MethodInfo[] methodInfos) {
+            foreach (MethodInfo methodInfo in methodInfos) {
+                IlHooks.Add(new ILHook(methodInfo, il => {
+                    ILCursor ilCursor = new(il);
+                    Instruction start = ilCursor.Next;
+                    ilCursor.EmitDelegate(condition);
+                    ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ret);
+                }));
+            }
+        }
+
+        private static void ReturnZeroMethod(Func<bool> condition, params Tuple<Type, string>[] methods) {
+            foreach (Tuple<Type, string> tuple in methods) {
+                if (tuple.Item1?.GetMethodInfo(tuple.Item2) is { } method) {
+                    IlHooks.Add(new ILHook(method, il => {
+                        ILCursor ilCursor = new(il);
+                        Instruction start = ilCursor.Next;
+                        ilCursor.EmitDelegate(condition);
+                        ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ldc_R4, 0f).Emit(OpCodes.Ret);
+                    }));
+                }
+            }
         }
 
         private static void OnSimplifiedGraphicsChanged(bool simplifiedGraphics) {
@@ -278,34 +314,11 @@ namespace TAS.EverestInterop {
             orig(self);
         }
 
-        private static void Particle_Render(On.Monocle.Particle.orig_Render orig, ref Particle self) {
-            if (Settings.SimplifiedGraphics && Settings.SimplifiedParticle) {
-                return;
-            }
-
-            orig(ref self);
-        }
-
         private static void DistortOnRender(ILContext il) {
             ILCursor ilCursor = new(il);
             if (ilCursor.TryGotoNext(MoveType.After, i => i.MatchLdsfld(typeof(GFX), "FxDistort"))) {
                 ilCursor.EmitDelegate<Func<Effect, Effect>>(effect => Settings.SimplifiedGraphics && Settings.SimplifiedDistort ? null : effect);
             }
-        }
-
-        private static void GlitchOnApply(ILContext il) {
-            ILCursor ilCursor = new(il);
-            Instruction start = ilCursor.Next;
-            ilCursor.EmitDelegate<Func<bool>>(() => Settings.SimplifiedGraphics && Settings.SimplifiedDistort);
-            ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ret);
-        }
-
-        private static void MiniTextbox_Render(On.Celeste.MiniTextbox.orig_Render orig, MiniTextbox self) {
-            if (Settings.SimplifiedGraphics && Settings.SimplifiedMiniTextbox) {
-                return;
-            }
-
-            orig(self);
         }
 
         private static void BackdropRenderer_Render(ILContext il) {
@@ -344,14 +357,6 @@ namespace TAS.EverestInterop {
             }
         }
 
-        private static void ModDustEyes(ILContext il) {
-            ILCursor ilCursor = new(il);
-            Instruction start = ilCursor.Next;
-            ilCursor.EmitDelegate<Func<bool>>(() => Settings.SimplifiedGraphics);
-            ilCursor.Emit(OpCodes.Brfalse, start);
-            ilCursor.Emit(OpCodes.Ret);
-        }
-
         private static DustStyles.DustStyle DustStyles_Get_Session(On.Celeste.DustStyles.orig_Get_Session orig, Session session) {
             if (Settings.SimplifiedGraphics && Settings.SimplifiedDustSpriteEdge) {
                 Color color = Color.Transparent;
@@ -363,27 +368,6 @@ namespace TAS.EverestInterop {
             }
 
             return orig(session);
-        }
-
-        private static float DreamBlock_Lerp(On.Celeste.DreamBlock.orig_Lerp orig, DreamBlock self, float a, float b, float percent) {
-            if (Settings.SimplifiedGraphics && Settings.SimplifiedWavedBlock) {
-                return 0f;
-            }
-
-            return orig(self, a, b, percent);
-        }
-
-        private static float LavaRect_Wave(On.Celeste.LavaRect.orig_Wave orig, LavaRect self, int step, float length) {
-            if (Settings.SimplifiedGraphics && Settings.SimplifiedWavedBlock) {
-                return 0f;
-            }
-
-            return orig(self, step, length);
-        }
-
-        private static float EdgeOnGetWaveAt(On.Celeste.SeekerBarrierRenderer.Edge.orig_GetWaveAt orig, object self, float offset, float along,
-            float length) {
-            return Settings.SimplifiedGraphics && Settings.SimplifiedWavedBlock ? 0f : orig(self, offset, along, length);
         }
 
         private static void FloatingDebris_ctor(On.Celeste.FloatingDebris.orig_ctor_Vector2 orig, FloatingDebris self, Vector2 position) {
@@ -424,84 +408,6 @@ namespace TAS.EverestInterop {
                 )) {
                 c.EmitDelegate<Func<bool, bool>>(drawEdges => (!Settings.SimplifiedGraphics || !Settings.SimplifiedWavedBlock) && drawEdges);
             }
-        }
-
-        private static void Bolt_Render(On.Celeste.LightningRenderer.Bolt.orig_Render orig, object self) {
-            if (Settings.SimplifiedGraphics && Settings.SimplifiedWavedBlock) {
-                return;
-            }
-
-            orig.Invoke(self);
-        }
-
-        private static void SummitCloudOnRender(On.Celeste.SummitCloud.orig_Render orig, SummitCloud self) {
-            if (Settings.SimplifiedGraphics) {
-                return;
-            }
-
-            orig(self);
-        }
-
-        private static void HideScreenWipe(ILContext il) {
-            ILCursor ilCursor = new(il);
-            Instruction start = ilCursor.Next;
-            ilCursor.EmitDelegate<Func<bool>>(() => Settings.SimplifiedGraphics && Settings.SimplifiedScreenWipe);
-            ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ret);
-        }
-
-
-        private static void ReflectionTentacles_Render(On.Celeste.ReflectionTentacles.orig_Render orig, ReflectionTentacles self) {
-            if (!Settings.SimplifiedGraphics) {
-                orig(self);
-            }
-        }
-
-        private static void LightningStrikeOnRender(On.Celeste.LightningStrike.orig_Render orig, LightningStrike self) {
-            if (Settings.SimplifiedGraphics && Settings.SimplifiedLightningStrike) {
-                return;
-            }
-
-            orig(self);
-        }
-
-        private static void HeightDisplayOnRender(On.Celeste.HeightDisplay.orig_Render orig, HeightDisplay self) {
-            if (Settings.SimplifiedGraphics && Settings.SimplifiedHud || Settings.CenterCamera && Math.Abs(CenterCamera.LevelZoom - 1f) > 1e-3) {
-                return;
-            }
-
-            orig(self);
-        }
-
-        private static void TalkComponentUIOnRender(On.Celeste.TalkComponent.TalkComponentUI.orig_Render orig, TalkComponent.TalkComponentUI self) {
-            if (Settings.SimplifiedGraphics && Settings.SimplifiedHud || Settings.CenterCamera && Math.Abs(CenterCamera.LevelZoom - 1f) > 1e-3) {
-                return;
-            }
-
-            orig(self);
-        }
-
-        private static void BirdTutorialGuiOnRender(BirdTutorialGui.orig_Render orig, Celeste.BirdTutorialGui self) {
-            if (Settings.SimplifiedGraphics && Settings.SimplifiedHud || Settings.CenterCamera && Math.Abs(CenterCamera.LevelZoom - 1f) > 1e-3) {
-                return;
-            }
-
-            orig(self);
-        }
-
-        private static void CustomHeightDisplayRender(ILContext il) {
-            ILCursor c = new(il);
-            Instruction methodStart = c.Next;
-            c.EmitDelegate<Func<bool>>(() => Settings.SimplifiedGraphics);
-            c.Emit(OpCodes.Brfalse, methodStart);
-            c.Emit(OpCodes.Ret);
-        }
-
-        private static void ModLightningStrikeRender(ILContext il) {
-            ILCursor c = new(il);
-            Instruction methodStart = c.Next;
-            c.EmitDelegate<Func<bool>>(() => Settings.SimplifiedGraphics && Settings.SimplifiedLightningStrike);
-            c.Emit(OpCodes.Brfalse, methodStart);
-            c.Emit(OpCodes.Ret);
         }
 
         private static EventInstance AudioOnPlay_string(On.Celeste.Audio.orig_Play_string orig, string path) {
