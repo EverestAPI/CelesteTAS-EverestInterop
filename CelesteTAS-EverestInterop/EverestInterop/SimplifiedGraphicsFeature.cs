@@ -465,7 +465,7 @@ namespace TAS.EverestInterop {
         }
 
         private static void HeightDisplayOnRender(On.Celeste.HeightDisplay.orig_Render orig, HeightDisplay self) {
-            if (Settings.SimplifiedGraphics && Settings.SimplifiedHud) {
+            if (Settings.SimplifiedGraphics && Settings.SimplifiedHud || Settings.CenterCamera && Math.Abs(CenterCamera.LevelZoom - 1f) > 1e-3) {
                 return;
             }
 
@@ -473,7 +473,7 @@ namespace TAS.EverestInterop {
         }
 
         private static void TalkComponentUIOnRender(On.Celeste.TalkComponent.TalkComponentUI.orig_Render orig, TalkComponent.TalkComponentUI self) {
-            if (Settings.SimplifiedGraphics && Settings.SimplifiedHud) {
+            if (Settings.SimplifiedGraphics && Settings.SimplifiedHud || Settings.CenterCamera && Math.Abs(CenterCamera.LevelZoom - 1f) > 1e-3) {
                 return;
             }
 
@@ -481,7 +481,7 @@ namespace TAS.EverestInterop {
         }
 
         private static void BirdTutorialGuiOnRender(BirdTutorialGui.orig_Render orig, Celeste.BirdTutorialGui self) {
-            if (Settings.SimplifiedGraphics && Settings.SimplifiedHud) {
+            if (Settings.SimplifiedGraphics && Settings.SimplifiedHud || Settings.CenterCamera && Math.Abs(CenterCamera.LevelZoom - 1f) > 1e-3) {
                 return;
             }
 
