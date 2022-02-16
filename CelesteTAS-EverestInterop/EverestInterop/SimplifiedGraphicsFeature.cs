@@ -105,17 +105,9 @@ namespace TAS.EverestInterop {
                         .Change(value =>
                             Settings.SimplifiedLightningStrike = value));
                 subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<bool>("Dream Block".ToDialogText(), Menu.CreateSimplifyOptions(), Settings.SimplifiedDreamBlock)
+                    new TextMenuExt.EnumerableSlider<bool>("Waved Block".ToDialogText(), Menu.CreateSimplifyOptions(), Settings.SimplifiedWavedBlock)
                         .Change(value =>
-                            Settings.SimplifiedDreamBlock = value));
-                subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<bool>("Lava".ToDialogText(), Menu.CreateSimplifyOptions(), Settings.SimplifiedLava).Change(
-                        value =>
-                            Settings.SimplifiedLava = value));
-                subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<bool>("Lightning".ToDialogText(), Menu.CreateSimplifyOptions(), Settings.SimplifiedLightning)
-                        .Change(value =>
-                            Settings.SimplifiedLightning = value));
+                            Settings.SimplifiedWavedBlock = value));
             });
         }
 
@@ -159,6 +151,7 @@ namespace TAS.EverestInterop {
             On.Celeste.DustStyles.Get_Session += DustStyles_Get_Session;
             On.Celeste.DreamBlock.Lerp += DreamBlock_Lerp;
             On.Celeste.LavaRect.Wave += LavaRect_Wave;
+            On.Celeste.SeekerBarrierRenderer.Edge.GetWaveAt += EdgeOnGetWaveAt;
             On.Celeste.FloatingDebris.ctor_Vector2 += FloatingDebris_ctor;
             On.Celeste.MoonCreature.ctor_Vector2 += MoonCreature_ctor;
             IL.Celeste.LightningRenderer.Render += LightningRenderer_RenderIL;
@@ -192,6 +185,7 @@ namespace TAS.EverestInterop {
             On.Celeste.DustStyles.Get_Session -= DustStyles_Get_Session;
             On.Celeste.DreamBlock.Lerp -= DreamBlock_Lerp;
             On.Celeste.LavaRect.Wave -= LavaRect_Wave;
+            On.Celeste.SeekerBarrierRenderer.Edge.GetWaveAt -= EdgeOnGetWaveAt;
             On.Celeste.FloatingDebris.ctor_Vector2 -= FloatingDebris_ctor;
             On.Celeste.MoonCreature.ctor_Vector2 -= MoonCreature_ctor;
             IL.Celeste.LightningRenderer.Render -= LightningRenderer_RenderIL;
@@ -385,7 +379,7 @@ namespace TAS.EverestInterop {
         }
 
         private static float DreamBlock_Lerp(On.Celeste.DreamBlock.orig_Lerp orig, DreamBlock self, float a, float b, float percent) {
-            if (Settings.SimplifiedGraphics && Settings.SimplifiedDreamBlock) {
+            if (Settings.SimplifiedGraphics && Settings.SimplifiedWavedBlock) {
                 return 0f;
             }
 
@@ -393,11 +387,16 @@ namespace TAS.EverestInterop {
         }
 
         private static float LavaRect_Wave(On.Celeste.LavaRect.orig_Wave orig, LavaRect self, int step, float length) {
-            if (Settings.SimplifiedGraphics && Settings.SimplifiedLava) {
+            if (Settings.SimplifiedGraphics && Settings.SimplifiedWavedBlock) {
                 return 0f;
             }
 
             return orig(self, step, length);
+        }
+
+        private static float EdgeOnGetWaveAt(On.Celeste.SeekerBarrierRenderer.Edge.orig_GetWaveAt orig, object self, float offset, float along,
+            float length) {
+            return Settings.SimplifiedGraphics && Settings.SimplifiedWavedBlock ? 0f : orig(self, offset, along, length);
         }
 
         private static void FloatingDebris_ctor(On.Celeste.FloatingDebris.orig_ctor_Vector2 orig, FloatingDebris self, Vector2 position) {
@@ -420,7 +419,7 @@ namespace TAS.EverestInterop {
                 Instruction lightningIns = c.Prev;
                 c.Index++;
                 c.Emit(lightningIns.OpCode, lightningIns.Operand).EmitDelegate<Func<bool, Lightning, bool>>((visible, item) => {
-                    if (Settings.SimplifiedGraphics && Settings.SimplifiedLightning) {
+                    if (Settings.SimplifiedGraphics && Settings.SimplifiedWavedBlock) {
                         Rectangle rectangle = new((int) item.X + 1, (int) item.Y + 1, (int) item.Width, (int) item.Height);
                         Draw.SpriteBatch.Draw(GameplayBuffers.Lightning, item.Position + Vector2.One, rectangle, Color.Yellow);
                         Draw.HollowRect(rectangle, Color.LightGoldenrodYellow);
@@ -436,12 +435,12 @@ namespace TAS.EverestInterop {
                     ins => ins.OpCode == OpCodes.Ldarg_0,
                     ins => ins.MatchLdfld<LightningRenderer>("DrawEdges")
                 )) {
-                c.EmitDelegate<Func<bool, bool>>(drawEdges => (!Settings.SimplifiedGraphics || !Settings.SimplifiedLightning) && drawEdges);
+                c.EmitDelegate<Func<bool, bool>>(drawEdges => (!Settings.SimplifiedGraphics || !Settings.SimplifiedWavedBlock) && drawEdges);
             }
         }
 
         private static void Bolt_Render(On.Celeste.LightningRenderer.Bolt.orig_Render orig, object self) {
-            if (Settings.SimplifiedGraphics && Settings.SimplifiedLightning) {
+            if (Settings.SimplifiedGraphics && Settings.SimplifiedWavedBlock) {
                 return;
             }
 

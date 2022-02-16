@@ -37,9 +37,7 @@ TAS_PARTICLE=                 粒子
 TAS_DISTORT=                  扭曲特效
 TAS_MINI_TEXT_BOX=            迷你对话框
 TAS_LIGHTNING_STRIKE=         闪电
-TAS_DREAM_BLOCK=              果冻
-TAS_LAVA=                     岩浆
-TAS_LIGHTNING=                电网
+TAS_WAVED_BLOCK=              波浪形块
 
 # ================================== Info HUD ==================================
 TAS_INFO_GAME=                             游戏数据

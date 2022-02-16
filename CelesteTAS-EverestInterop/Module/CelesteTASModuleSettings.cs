@@ -132,10 +132,8 @@ namespace TAS.Module {
         public bool SimplifiedParticle { get; set; } = true;
         public bool SimplifiedDistort { get; set; } = true;
         public bool SimplifiedMiniTextbox { get; set; } = true;
-        public bool SimplifiedDreamBlock { get; set; } = true;
-        public bool SimplifiedLava { get; set; } = true;
-        public bool SimplifiedLightning { get; set; } = true;
         public bool SimplifiedLightningStrike { get; set; } = true;
+        public bool SimplifiedWavedBlock { get; set; } = true;
 
         #endregion
 
