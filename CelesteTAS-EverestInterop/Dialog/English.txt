@@ -37,7 +37,7 @@ TAS_PARTICLE=                 Particle
 TAS_DISTORT=                  Distort
 TAS_MINI_TEXT_BOX=            Mini Text Box
 TAS_LIGHTNING_STRIKE=         Lightning Strike
-TAS_WAVED_BLOCK=              Waved Block
+TAS_WAVED_EDGE=               Waved Edge
 TAS_HUD=                      HUD
 
 # ================================== Info HUD ==================================

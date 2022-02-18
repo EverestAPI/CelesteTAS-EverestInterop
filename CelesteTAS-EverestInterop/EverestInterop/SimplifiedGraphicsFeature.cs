@@ -89,8 +89,8 @@ namespace TAS.EverestInterop {
                     new TextMenuExt.EnumerableSlider<bool>("HUD".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.SimplifiedHud)
                         .Change(value => Settings.SimplifiedHud = value));
                 subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<bool>("Waved Block".ToDialogText(), Menu.CreateSimplifyOptions(), Settings.SimplifiedWavedBlock)
-                        .Change(value => Settings.SimplifiedWavedBlock = value));
+                    new TextMenuExt.EnumerableSlider<bool>("Waved Edge".ToDialogText(), Menu.CreateSimplifyOptions(), Settings.SimplifiedWavedEdge)
+                        .Change(value => Settings.SimplifiedWavedEdge = value));
             });
         }
 
@@ -104,16 +104,16 @@ namespace TAS.EverestInterop {
                 typeof(DustGraphic).GetNestedType("Eyeballs", BindingFlags.NonPublic)
             );
 
-            if (TypeUtils.GetType("FrostHelper.CustomSpinner") is { } customSpinnerType) {
+            if (ModTypeUtils.GetType("FrostHelper.CustomSpinner") is { } customSpinnerType) {
                 IlHooks.Add(new ILHook(customSpinnerType.GetConstructors()[0], ModCustomSpinnerColor));
             }
 
-            if (TypeUtils.GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController") is
+            if (ModTypeUtils.GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController") is
                 { } rainbowSpinnerType) {
                 IlHooks.Add(new ILHook(rainbowSpinnerType.GetConstructors()[0], ModRainbowSpinnerColor));
             }
 
-            if (TypeUtils.GetType("VivHelper.Entities.CustomSpinner")?.GetMethodInfo("CreateSprites") is
+            if (ModTypeUtils.GetType("VivHelper.Entities.CustomSpinner")?.GetMethodInfo("CreateSprites") is
                 { } customSpinnerCreateSprites) {
                 IlHooks.Add(new ILHook(customSpinnerCreateSprites, ModVivCustomSpinnerColor));
             }
@@ -142,11 +142,15 @@ namespace TAS.EverestInterop {
 
             IL.Celeste.LightningRenderer.Render += LightningRenderer_RenderIL;
 
-            bool SimplifiedWavedBlock() => Settings.SimplifiedGraphics && Settings.SimplifiedWavedBlock;
+            bool SimplifiedWavedBlock() => Settings.SimplifiedGraphics && Settings.SimplifiedWavedEdge;
             ReturnZeroMethod(SimplifiedWavedBlock,
-                Tuple.Create(typeof(DreamBlock), "Lerp"),
-                Tuple.Create(typeof(LavaRect), "Wave"),
-                Tuple.Create(typeof(SeekerBarrierRenderer).GetNestedType("Edge", BindingFlags.NonPublic), "GetWaveAt")
+                typeof(DreamBlock).GetMethodInfo("Lerp"),
+                typeof(LavaRect).GetMethodInfo("Wave")
+            );
+            ReturnZeroMethod(
+                SimplifiedWavedBlock,
+                ModTypeUtils.GetTypes().Where(type => type.FullName?.EndsWith("Renderer+Edge") == true)
+                    .Select(type => type.GetMethodInfo("GetWaveAt")).ToArray()
             );
 
             SkipMethod(SimplifiedWavedBlock, "Render",
@@ -160,7 +164,7 @@ namespace TAS.EverestInterop {
             On.Celeste.Audio.Play_string += AudioOnPlay_string;
             SkipMethod(() => Settings.SimplifiedGraphics && Settings.SimplifiedLightningStrike, "Render",
                 typeof(LightningStrike),
-                TypeUtils.GetType("ContortHelper.BetterLightningStrike")
+                ModTypeUtils.GetType("ContortHelper.BetterLightningStrike")
             );
 
             SkipMethod(
@@ -211,10 +215,10 @@ namespace TAS.EverestInterop {
             }
         }
 
-        private static void ReturnZeroMethod(Func<bool> condition, params Tuple<Type, string>[] methods) {
-            foreach (Tuple<Type, string> tuple in methods) {
-                if (tuple.Item1?.GetMethodInfo(tuple.Item2) is { } method) {
-                    IlHooks.Add(new ILHook(method, il => {
+        private static void ReturnZeroMethod(Func<bool> condition, params MethodInfo[] methods) {
+            foreach (MethodInfo methodInfo in methods) {
+                if (methodInfo != null) {
+                    IlHooks.Add(new ILHook(methodInfo, il => {
                         ILCursor ilCursor = new(il);
                         Instruction start = ilCursor.Next;
                         ilCursor.EmitDelegate(condition);
@@ -390,7 +394,7 @@ namespace TAS.EverestInterop {
                 Instruction lightningIns = c.Prev;
                 c.Index++;
                 c.Emit(lightningIns.OpCode, lightningIns.Operand).EmitDelegate<Func<bool, Lightning, bool>>((visible, item) => {
-                    if (Settings.SimplifiedGraphics && Settings.SimplifiedWavedBlock) {
+                    if (Settings.SimplifiedGraphics && Settings.SimplifiedWavedEdge) {
                         Rectangle rectangle = new((int) item.X + 1, (int) item.Y + 1, (int) item.Width, (int) item.Height);
                         Draw.SpriteBatch.Draw(GameplayBuffers.Lightning, item.Position + Vector2.One, rectangle, Color.Yellow);
                         Draw.HollowRect(rectangle, Color.LightGoldenrodYellow);
@@ -406,7 +410,7 @@ namespace TAS.EverestInterop {
                     ins => ins.OpCode == OpCodes.Ldarg_0,
                     ins => ins.MatchLdfld<LightningRenderer>("DrawEdges")
                 )) {
-                c.EmitDelegate<Func<bool, bool>>(drawEdges => (!Settings.SimplifiedGraphics || !Settings.SimplifiedWavedBlock) && drawEdges);
+                c.EmitDelegate<Func<bool, bool>>(drawEdges => (!Settings.SimplifiedGraphics || !Settings.SimplifiedWavedEdge) && drawEdges);
             }
         }
 
@@ -473,7 +477,7 @@ namespace TAS.EverestInterop {
             ilCursor.EmitDelegate<Func<bool>>(() => Settings.SimplifiedGraphics && Settings.SimplifiedSpinnerColor.Value != null);
             ilCursor.Emit(OpCodes.Brfalse, start);
 
-            Type type = TypeUtils.GetType("VivHelper.Entities.CustomSpinner");
+            Type type = ModTypeUtils.GetType("VivHelper.Entities.CustomSpinner");
             if (type.GetFieldInfo("color") is { } colorField) {
                 ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Func<Color>>(() => Settings.SimplifiedSpinnerColor.Color);
                 ilCursor.Emit(OpCodes.Stfld, colorField);

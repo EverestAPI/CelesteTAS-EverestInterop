@@ -106,7 +106,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 double rotation = 0;
                 bool outline = false;
 
-                if (TypeHelper.EntityNameToType(dataName) is { } type) {
+                if (EntityTypeHelper.NameToType(dataName) is { } type) {
                     if (IgnoreTypes.Contains(type)) {
                         continue;
                     }

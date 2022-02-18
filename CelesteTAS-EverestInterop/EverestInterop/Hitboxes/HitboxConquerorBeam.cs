@@ -11,7 +11,7 @@ namespace TAS.EverestInterop.Hitboxes {
 
         [Initialize]
         private static void Initialize() {
-            conquerorBeamType = TypeUtils.GetType("Celeste.Mod.ricky06ModPack.Entities.ConquerorBeam");
+            conquerorBeamType = ModTypeUtils.GetType("Celeste.Mod.ricky06ModPack.Entities.ConquerorBeam");
 
             if (conquerorBeamType != null) {
                 On.Monocle.Entity.DebugRender += ModHitbox;

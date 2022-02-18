@@ -37,7 +37,7 @@ TAS_PARTICLE=                 粒子
 TAS_DISTORT=                  扭曲特效
 TAS_MINI_TEXT_BOX=            迷你对话框
 TAS_LIGHTNING_STRIKE=         闪电
-TAS_WAVED_BLOCK=              波浪形块
+TAS_WAVED_EDGE=               波状边缘
 TAS_HUD=                      HUD
 
 # ================================== Info HUD ==================================

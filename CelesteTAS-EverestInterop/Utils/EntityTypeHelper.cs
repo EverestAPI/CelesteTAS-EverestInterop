@@ -8,11 +8,11 @@ using Celeste.Mod.Helpers;
 
 namespace TAS.Utils {
     // thanks JaThePlayer, copy from frost helper: https://github.com/JaThePlayer/FrostHelper/blob/master/Code/FrostHelper/TypeHelper.cs
-    internal static class TypeHelper {
+    internal static class EntityTypeHelper {
         private static readonly Dictionary<string, Type> vanillaEntityNameToType = new();
         private static readonly Dictionary<string, Type> modEntityNameToType = new();
 
-        public static Type EntityNameToType(string entityName) {
+        public static Type NameToType(string entityName) {
             if (vanillaEntityNameToType.IsEmpty()) {
                 CreateCache();
             }
@@ -222,7 +222,7 @@ namespace TAS.Utils {
                 ["detachFollowersTrigger"] = typeof(DetachStrawberryTrigger),
             });
 
-            foreach (Type type in Extensions.GetTypesSafe(FakeAssembly.GetFakeEntryAssembly())) {
+            foreach (Type type in FakeAssembly.GetFakeEntryAssembly().GetTypesSafe()) {
                 CheckType(type);
             }
 
