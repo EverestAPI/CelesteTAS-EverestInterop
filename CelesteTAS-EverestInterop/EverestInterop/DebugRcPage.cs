@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Specialized;
 using System.Linq;
+using System.Net;
 using System.Text;
 using Celeste.Mod;
 using StudioCommunication;
@@ -71,16 +72,50 @@ namespace TAS.EverestInterop {
             }
         };
 
+        private const string defaultCustomInfoTemplate = @"
+Wind: {Level.Wind}\n
+AutoJump: {Player.AutoJump} {Player.AutoJumpTimer.toFrame()}\n
+ForceMoveX: {Player.forceMoveX} {Player.forceMoveXTimer.toFrame()}\n
+Theo: {TheoCrystal.ExactPosition}\n
+TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}
+";
+
+        private static readonly RCEndPoint CustomInfoPoint = new() {
+            Path = "/tas/custominfo",
+            PathHelp = "/tas/custominfo?template={content} (Example: ?template=" + defaultCustomInfoTemplate,
+            PathExample = $"/tas/custominfo?template={defaultCustomInfoTemplate}",
+            Name = "CelesteTAS Custom Info Template",
+            InfoHTML = "Get/Set custom info template. Please use \n for linebreaks.",
+            Handle = c => {
+                StringBuilder builder = new();
+                Everest.DebugRC.WriteHTMLStart(c, builder);
+
+                NameValueCollection args = Everest.DebugRC.ParseQueryString(c.Request.RawUrl);
+                string template = args["template"];
+                if (template != null) {
+                    CelesteTasModule.Settings.InfoCustomTemplate = WebUtility.UrlDecode(template).Replace("\\n", "\n");
+                }
+
+                WriteLine(builder, $"<h2>Custom Info Template</h2>");
+                builder.Append($@"<pre>{CelesteTasModule.Settings.InfoCustomTemplate}</pre>");
+
+                Everest.DebugRC.WriteHTMLEnd(c, builder);
+                Everest.DebugRC.Write(c, builder.ToString());
+            }
+        };
+
         [Load]
         private static void Load() {
             Everest.DebugRC.EndPoints.Add(InfoEndPoint);
             Everest.DebugRC.EndPoints.Add(HotkeyEndPoint);
+            Everest.DebugRC.EndPoints.Add(CustomInfoPoint);
         }
 
         [Unload]
         private static void Unload() {
             Everest.DebugRC.EndPoints.Remove(InfoEndPoint);
             Everest.DebugRC.EndPoints.Remove(HotkeyEndPoint);
+            Everest.DebugRC.EndPoints.Remove(CustomInfoPoint);
         }
 
         private static void WriteLine(StringBuilder builder, string text) {
