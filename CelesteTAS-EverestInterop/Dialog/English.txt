@@ -37,8 +37,9 @@ TAS_PARTICLE=                 Particle
 TAS_DISTORT=                  Distort
 TAS_MINI_TEXT_BOX=            Mini Text Box
 TAS_LIGHTNING_STRIKE=         Lightning Strike
-TAS_WAVED_EDGE=               Waved Edge
 TAS_HUD=                      HUD
+TAS_HUD_DESCRIPTION=          Talking icon, bird tutorial and some text
+TAS_WAVED_EDGE=               Waved Edge
 
 # ================================== Info HUD ==================================
 TAS_INFO_GAME=                             Game Info

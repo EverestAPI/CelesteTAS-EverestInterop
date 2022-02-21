@@ -25,7 +25,7 @@ namespace TAS.Module {
         private static void CreateOptions(EverestModule everestModule, TextMenu menu, bool inGame) {
             options = new List<EaseInSubMenu> {
                 HitboxMenu.CreateSubMenu(menu, inGame),
-                SimplifiedGraphicsFeature.CreateSubMenu(),
+                SimplifiedGraphicsFeature.CreateSubMenu(menu),
                 InfoHud.CreateSubMenu(),
                 CreateRoundValuesSubMenu(),
                 CreateRelaunchSubMenu(),
@@ -42,8 +42,8 @@ namespace TAS.Module {
                 TextMenu.Item ignoreGcItem;
                 subMenu.Add(ignoreGcItem = new TextMenu.OnOff("Ignore GC Collect".ToDialogText(), Settings.IgnoreGcCollect).Change(value =>
                     Settings.IgnoreGcCollect = value));
-                AddDescription(ignoreGcItem, subMenu, menu, "Ignore GC Collect DESCRIPTION 1".ToDialogText());
-                AddDescription(ignoreGcItem, subMenu, menu, "Ignore GC Collect DESCRIPTION 2".ToDialogText());
+                subMenu.AddDescription(menu, ignoreGcItem, "Ignore GC Collect DESCRIPTION 1".ToDialogText());
+                subMenu.AddDescription(menu, ignoreGcItem, "Ignore GC Collect DESCRIPTION 2".ToDialogText());
 
                 subMenu.Add(new TextMenu.OnOff("Pause After Load State".ToDialogText(), Settings.PauseAfterLoadState).Change(value =>
                     Settings.PauseAfterLoadState = value));
@@ -57,7 +57,7 @@ namespace TAS.Module {
             });
         }
 
-        private static void AddDescription(TextMenu.Item subMenuItem, TextMenuExt.SubMenu subMenu, TextMenu containingMenu, string description) {
+        public static void AddDescription(this TextMenuExt.SubMenu subMenu, TextMenu containingMenu, TextMenu.Item subMenuItem, string description) {
             TextMenuExt.EaseInSubHeaderExt descriptionText = new(description, false, containingMenu) {
                 TextColor = Color.Gray,
                 HeightExtra = 0f

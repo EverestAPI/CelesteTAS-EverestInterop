@@ -40,7 +40,7 @@ namespace TAS.EverestInterop {
         private static bool lastSimplifiedGraphics = Settings.SimplifiedGraphics;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
-        public static EaseInSubMenu CreateSubMenu() {
+        public static EaseInSubMenu CreateSubMenu(TextMenu menu) {
             return new EaseInSubMenu("Simplified Graphics".ToDialogText(), false).Apply(subMenu => {
                 subMenu.Add(new TextMenu.OnOff("Enabled".ToDialogText(), Settings.SimplifiedGraphics)
                     .Change(value => Settings.SimplifiedGraphics = value));
@@ -85,9 +85,13 @@ namespace TAS.EverestInterop {
                 subMenu.Add(
                     new TextMenuExt.EnumerableSlider<bool>("Lightning Strike".ToDialogText(), Menu.CreateDefaultHideOptions(),
                         Settings.SimplifiedLightningStrike).Change(value => Settings.SimplifiedLightningStrike = value));
+
+                TextMenu.Item hudItem;
                 subMenu.Add(
-                    new TextMenuExt.EnumerableSlider<bool>("HUD".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.SimplifiedHud)
+                    hudItem = new TextMenuExt.EnumerableSlider<bool>("HUD".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.SimplifiedHud)
                         .Change(value => Settings.SimplifiedHud = value));
+                subMenu.AddDescription(menu, hudItem, "HUD DESCRIPTION".ToDialogText());
+
                 subMenu.Add(
                     new TextMenuExt.EnumerableSlider<bool>("Waved Edge".ToDialogText(), Menu.CreateSimplifyOptions(), Settings.SimplifiedWavedEdge)
                         .Change(value => Settings.SimplifiedWavedEdge = value));
@@ -170,7 +174,7 @@ namespace TAS.EverestInterop {
             SkipMethod(
                 () => Settings.SimplifiedGraphics && Settings.SimplifiedHud || Settings.CenterCamera && Math.Abs(CenterCamera.LevelZoom - 1f) > 1e-3,
                 "Render",
-                typeof(HeightDisplay), typeof(TalkComponent.TalkComponentUI), typeof(BirdTutorialGui),
+                typeof(HeightDisplay), typeof(TalkComponent.TalkComponentUI), typeof(BirdTutorialGui), typeof(CoreMessage), typeof(MemorialText),
                 typeof(Player).Assembly.GetType("Celeste.Mod.Entities.CustomHeightDisplay")
             );
         }
