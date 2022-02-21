@@ -42,8 +42,8 @@ namespace TAS.Module {
                 TextMenu.Item ignoreGcItem;
                 subMenu.Add(ignoreGcItem = new TextMenu.OnOff("Ignore GC Collect".ToDialogText(), Settings.IgnoreGcCollect).Change(value =>
                     Settings.IgnoreGcCollect = value));
-                subMenu.AddDescription(menu, ignoreGcItem, "Ignore GC Collect DESCRIPTION 1".ToDialogText());
-                subMenu.AddDescription(menu, ignoreGcItem, "Ignore GC Collect DESCRIPTION 2".ToDialogText());
+                subMenu.AddDescription(menu, ignoreGcItem, "Ignore GC Collect Description 1".ToDialogText());
+                subMenu.AddDescription(menu, ignoreGcItem, "Ignore GC Collect Description 2".ToDialogText());
 
                 subMenu.Add(new TextMenu.OnOff("Pause After Load State".ToDialogText(), Settings.PauseAfterLoadState).Change(value =>
                     Settings.PauseAfterLoadState = value));

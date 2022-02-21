@@ -23,23 +23,25 @@ TAS_TRIGGER_HITBOX_COLOR=         触发区域碰撞箱颜色
 TAS_PLATFORM_HITBOX_COLOR=        平台碰撞箱颜色
 
 # ================================== Simplified Graphics Submenu ==================================
-TAS_GAMEPLAY=                 游戏内容
-TAS_LIGHTING=                 亮度
-TAS_BLOOM_BASE=               泛光基本值
-TAS_BLOOM_STRENGTH=           泛光强度
-TAS_SPINNER_COLOR=            圆刺颜色
-TAS_DUST_SPRITE_EDGE=         煤球红边
-TAS_SCREEN_WIPE=              转场黑屏
-TAS_COLOR_GRADE=              颜色滤镜
-TAS_BACKDROP=                 背景图
-TAS_DECAL=                    贴图
-TAS_PARTICLE=                 粒子
-TAS_DISTORT=                  扭曲特效
-TAS_MINI_TEXT_BOX=            迷你对话框
-TAS_LIGHTNING_STRIKE=         闪电
-TAS_HUD=                      HUD
-TAS_HUD_DESCRIPTION=          交谈图标、鸟的教程和一些文字
-TAS_WAVED_EDGE=               波状边缘
+TAS_GAMEPLAY=                     游戏内容
+TAS_LIGHTING=                     亮度
+TAS_BLOOM_BASE=                   泛光基本值
+TAS_BLOOM_STRENGTH=               泛光强度
+TAS_SPINNER_COLOR=                圆刺颜色
+TAS_DUST_SPRITE_EDGE=             煤球红边
+TAS_SCREEN_WIPE=                  转场黑屏
+TAS_COLOR_GRADE=                  颜色滤镜
+TAS_BACKDROP=                     背景图
+TAS_DECAL=                        贴图
+TAS_PARTICLE=                     粒子
+TAS_DISTORT=                      扭曲特效
+TAS_MINI_TEXT_BOX=                迷你对话框
+TAS_LIGHTNING_STRIKE=             闪电
+TAS_CLUTTERED_ENTITY=             杂乱的实体
+TAS_CLUTTERED_ENTITY_DESCRIPTION= 触手、山顶云朵和眼球
+TAS_HUD=                          HUD
+TAS_HUD_DESCRIPTION=              交谈图标、鸟的教程和一些文字
+TAS_WAVED_EDGE=                   波状边缘
 
 # ================================== Info HUD ==================================
 TAS_INFO_GAME=                             游戏数据

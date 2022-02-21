@@ -23,23 +23,25 @@ TAS_TRIGGER_HITBOX_COLOR=         Trigger Hitbox Color
 TAS_PLATFORM_HITBOX_COLOR=        Platform Hitbox Color
 
 # ================================== Simplified Graphics Submenu ==================================
-TAS_GAMEPLAY=                 Gameplay
-TAS_LIGHTING=                 Lighting
-TAS_BLOOM_BASE=               Bloom Base
-TAS_BLOOM_STRENGTH=           Bloom Strength
-TAS_SPINNER_COLOR=            Spinner Color
-TAS_DUST_SPRITE_EDGE=         Dust Sprite Edge
-TAS_SCREEN_WIPE=              Screen Wipe
-TAS_COLOR_GRADE=              Color Grade
-TAS_BACKDROP=                 Backdrop
-TAS_DECAL=                    Decal
-TAS_PARTICLE=                 Particle
-TAS_DISTORT=                  Distort
-TAS_MINI_TEXT_BOX=            Mini Text Box
-TAS_LIGHTNING_STRIKE=         Lightning Strike
-TAS_HUD=                      HUD
-TAS_HUD_DESCRIPTION=          Talking icon, bird tutorial and some text
-TAS_WAVED_EDGE=               Waved Edge
+TAS_GAMEPLAY=                     Gameplay
+TAS_LIGHTING=                     Lighting
+TAS_BLOOM_BASE=                   Bloom Base
+TAS_BLOOM_STRENGTH=               Bloom Strength
+TAS_SPINNER_COLOR=                Spinner Color
+TAS_DUST_SPRITE_EDGE=             Dust Sprite Edge
+TAS_SCREEN_WIPE=                  Screen Wipe
+TAS_COLOR_GRADE=                  Color Grade
+TAS_BACKDROP=                     Backdrop
+TAS_DECAL=                        Decal
+TAS_PARTICLE=                     Particle
+TAS_DISTORT=                      Distort
+TAS_MINI_TEXT_BOX=                Mini Text Box
+TAS_LIGHTNING_STRIKE=             Lightning Strike
+TAS_CLUTTERED_ENTITY=             Cluttered Entity
+TAS_CLUTTERED_ENTITY_DESCRIPTION= Tentacles, summit cloud, eyeball
+TAS_HUD=                          HUD
+TAS_HUD_DESCRIPTION=              Talking icon, bird tutorial and some text
+TAS_WAVED_EDGE=                   Waved Edge
 
 # ================================== Info HUD ==================================
 TAS_INFO_GAME=                             Game Info

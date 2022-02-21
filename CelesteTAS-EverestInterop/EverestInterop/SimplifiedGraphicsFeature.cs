@@ -86,11 +86,18 @@ namespace TAS.EverestInterop {
                     new TextMenuExt.EnumerableSlider<bool>("Lightning Strike".ToDialogText(), Menu.CreateDefaultHideOptions(),
                         Settings.SimplifiedLightningStrike).Change(value => Settings.SimplifiedLightningStrike = value));
 
+                TextMenu.Item clutteredItem;
+                subMenu.Add(
+                    clutteredItem = new TextMenuExt.EnumerableSlider<bool>("Cluttered Entity".ToDialogText(), Menu.CreateDefaultHideOptions(),
+                            Settings.SimplifiedClutteredEntity)
+                        .Change(value => Settings.SimplifiedClutteredEntity = value));
+                subMenu.AddDescription(menu, clutteredItem, "Cluttered Entity Description".ToDialogText());
+
                 TextMenu.Item hudItem;
                 subMenu.Add(
                     hudItem = new TextMenuExt.EnumerableSlider<bool>("HUD".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.SimplifiedHud)
                         .Change(value => Settings.SimplifiedHud = value));
-                subMenu.AddDescription(menu, hudItem, "HUD DESCRIPTION".ToDialogText());
+                subMenu.AddDescription(menu, hudItem, "HUD Description".ToDialogText());
 
                 subMenu.Add(
                     new TextMenuExt.EnumerableSlider<bool>("Waved Edge".ToDialogText(), Menu.CreateSimplifyOptions(), Settings.SimplifiedWavedEdge)
@@ -102,11 +109,6 @@ namespace TAS.EverestInterop {
         private static void OnLoadContent() {
             // Optional: Various graphical simplifications to cut down on visual noise.
             On.Celeste.Level.Update += Level_Update;
-
-            SkipMethod(() => Settings.SimplifiedGraphics, "Render",
-                typeof(ReflectionTentacles), typeof(SummitCloud),
-                typeof(DustGraphic).GetNestedType("Eyeballs", BindingFlags.NonPublic)
-            );
 
             if (ModTypeUtils.GetType("FrostHelper.CustomSpinner") is { } customSpinnerType) {
                 IlHooks.Add(new ILHook(customSpinnerType.GetConstructors()[0], ModCustomSpinnerColor));
@@ -169,6 +171,11 @@ namespace TAS.EverestInterop {
             SkipMethod(() => Settings.SimplifiedGraphics && Settings.SimplifiedLightningStrike, "Render",
                 typeof(LightningStrike),
                 ModTypeUtils.GetType("ContortHelper.BetterLightningStrike")
+            );
+
+            SkipMethod(() => Settings.SimplifiedGraphics && Settings.SimplifiedClutteredEntity, "Render",
+                typeof(ReflectionTentacles), typeof(SummitCloud), typeof(TempleEye),
+                typeof(DustGraphic).GetNestedType("Eyeballs", BindingFlags.NonPublic)
             );
 
             SkipMethod(
