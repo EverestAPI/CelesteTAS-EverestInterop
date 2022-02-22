@@ -39,7 +39,8 @@ namespace TAS {
         public static Buttons DemoDash2 { get; } = Buttons.RightStick;
         public static Keys Confirm2 => Keys.C;
         private static bool? origControllerHasFocus;
-        private static bool kbTextInput;
+        private static bool origKbTextInput;
+        private static bool origAttached;
 
         // ReSharper disable once UnusedMember.Local
         [EnableRun]
@@ -60,8 +61,11 @@ namespace TAS {
             MInput.Active = true;
             MInput.Disabled = false;
 
-            kbTextInput = Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput;
+            origKbTextInput = Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput;
             Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = false;
+
+            origAttached = MInput.GamePads[GameInput.Gamepad].Attached;
+            MInput.GamePads[GameInput.Gamepad].Attached = true;
         }
 
         // ReSharper disable once UnusedMember.Local
@@ -73,7 +77,8 @@ namespace TAS {
                 origControllerHasFocus = null;
             }
 
-            Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = kbTextInput;
+            Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = origKbTextInput;
+            MInput.GamePads[GameInput.Gamepad].Attached = origAttached;
         }
 
         private static void SetTasBindingsV1312() {

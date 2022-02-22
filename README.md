@@ -34,7 +34,7 @@ e.g. 123,R,J (For 123 frames, hold Right and Jump)
 - V = Crouch Dash Bind 2 (Celeste v1.4+ only)
 - G = Grab
 - S = Pause
-- Q = Quick Reset
+- Q = Quick Restart
 - F = Feather Aim
 <br>Format: F, angle, optional upper limit of single axis (default value is 1, range is 0.5 to 1, only works in precise [AnalogMode](Docs/Commands.md#analoguemode)
 - O = Confirm Bind 2
