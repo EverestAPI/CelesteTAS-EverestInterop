@@ -83,7 +83,7 @@ namespace TAS {
 
                 string time = GameInfo.GetChapterTime(level);
                 string pos = player.ToSimplePositionString(CelesteTasModuleSettings.MaxDecimals);
-                string speed = player.Speed.ToSimpleString(Settings.SpeedDecimals);
+                string speed = player.Speed.ToSimpleString(CelesteTasModuleSettings.MaxDecimals);
 
                 int dashCooldown = (int) GameInfo.GetDashCooldownTimer(player);
                 string statuses = GameInfo.GetStatuses(level, player, dashCooldown);
@@ -100,15 +100,16 @@ namespace TAS {
                     }
 
                     foreach (Entity entity in entities) {
-                        output += $"\t{typeName}: {entity.ToSimplePositionString(Settings.CustomInfoDecimals)}";
+                        output += $"\t{typeName}: {entity.ToSimplePositionString(CelesteTasModuleSettings.MaxDecimals)}";
                     }
                 }
 
-                if (InfoCustom.Parse() is { } customInfo && customInfo.IsNotEmpty()) {
+                if (InfoCustom.Parse(CelesteTasModuleSettings.MaxDecimals) is { } customInfo && customInfo.IsNotEmpty()) {
                     output += $"\t{customInfo.ReplaceLineBreak(" ")}";
                 }
 
-                if (InfoWatchEntity.GetWatchingEntitiesInfo("\t", true) is { } watchInfo && watchInfo.IsNotEmpty()) {
+                if (InfoWatchEntity.GetWatchingEntitiesInfo("\t", true, CelesteTasModuleSettings.MaxDecimals) is { } watchInfo &&
+                    watchInfo.IsNotEmpty()) {
                     output += $"\t{watchInfo}";
                 }
             } else {

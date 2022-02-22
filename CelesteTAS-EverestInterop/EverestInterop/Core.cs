@@ -22,7 +22,7 @@ namespace TAS.EverestInterop {
 
         private static Action PreviousGameLoop;
         private static readonly Lazy<bool> CantPauseWhileSaving = new(() => Everest.Version < new Version(1, 2865));
-        private static bool updateGrab = typeof(GameInput).GetMethod("UpdateGrab") != null;
+        private static readonly bool updateGrab = typeof(GameInput).GetMethod("UpdateGrab") != null;
 
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
