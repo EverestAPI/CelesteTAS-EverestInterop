@@ -163,7 +163,7 @@ namespace TAS.EverestInterop.InfoHUD {
             }
         }
 
-        private static bool IsDragging => Instance?.start != null && (Instance.width > 0 || Instance.height > 0);
+        private static bool IsDragging => Instance?.start != null && Instance.width > 0 && Instance.height > 0;
 
         private Vector2? start;
         private int left;
