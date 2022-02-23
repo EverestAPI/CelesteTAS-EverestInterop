@@ -19,6 +19,7 @@ namespace TAS.EverestInterop {
         private static Vector2 screenOffset;
         private static DateTime? arrowKeyPressTime;
         private static float viewportScale = 1f;
+        private static int zoomInterval;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
         // this must be <= 4096 / 320 = 12.8, it's used in FreeCameraHitbox and 4096 is the maximum texture size
@@ -238,16 +239,26 @@ namespace TAS.EverestInterop {
                 return;
             }
 
+            if (zoomInterval > 0) {
+                zoomInterval--;
+            }
+
             int direction = 0;
             if (Hotkeys.FreeCamera.Check) {
-                if (Hotkeys.CameraZoomIn.Check) {
+                if (Hotkeys.CameraZoomIn.Check && zoomInterval <= 0) {
                     direction = -1;
                 }
 
-                if (Hotkeys.CameraZoomOut.Check) {
+                if (Hotkeys.CameraZoomOut.Check && zoomInterval <= 0) {
                     direction = 1;
                 }
-            } else {
+
+                if (direction != 0) {
+                    zoomInterval = 10;
+                }
+            }
+
+            if (direction == 0) {
                 direction = -Math.Sign(MouseButtons.Wheel);
             }
 
