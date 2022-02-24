@@ -19,7 +19,7 @@ namespace TAS.Entities {
             this.duration = duration;
             Vector2 messageSize = ActiveFont.Measure(message);
             Position = new(Padding, Engine.Height - messageSize.Y - Padding / 2f);
-            Tag = Tags.HUD | Tags.Global | Tags.FrozenUpdate | Tags.TransitionUpdate;
+            Tag = Tags.HUD | Tags.Global | Tags.FrozenUpdate | Tags.PauseUpdate | Tags.TransitionUpdate;
             Depth = Depths.Top;
             Add(new Coroutine(Show()));
             Add(new IgnoreSaveLoadComponent());
