@@ -8,6 +8,7 @@ using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
+using TAS.Entities;
 using TAS.Utils;
 
 // ReSharper disable UnusedMember.Local
@@ -98,7 +99,7 @@ namespace TAS.Input {
 
             string filePath = args[0];
             string fileDirectory = Path.GetDirectoryName(InputController.TasFilePath);
-            filePath = FindTheFile();
+            FindTheFile();
 
             if (!File.Exists(filePath)) {
                 // for compatibility with tas files downloaded from discord
@@ -108,6 +109,12 @@ namespace TAS.Input {
             }
 
             if (!File.Exists(filePath)) {
+                Toast.Show($"\"Read, {string.Join(", ", args)}\" failed\nFile not found");
+                Manager.DisableRun(true);
+                return;
+            } else if (Path.GetFullPath(filePath) == Path.GetFullPath(currentFilePath)) {
+                Toast.Show($"\"Read, {string.Join(", ", args)}\" failed\nDo not allow reading the file itself");
+                Manager.DisableRun(true);
                 return;
             }
 
@@ -124,29 +131,31 @@ namespace TAS.Input {
             string readCommandDetail = $"Read, {string.Join(", ", args)}: line {fileLine} of the file \"{currentFilePath}\"";
             if (readCommandStack.Contains(readCommandDetail)) {
                 $"Multiple read commands lead to dead loops:\n{string.Join("\n", readCommandStack)}".Log(LogLevel.Warn);
+                Toast.Show("Multiple read commands lead to dead loops\nPlease check log.txt for more details");
+                Manager.DisableRun(true);
                 return;
             }
 
             readCommandStack.Add(readCommandDetail);
             Manager.Controller.ReadFile(filePath, startLine, endLine, studioLine);
-            readCommandStack.RemoveAt(readCommandStack.Count - 1);
+            if (readCommandStack.Count > 0) {
+                readCommandStack.RemoveAt(readCommandStack.Count - 1);
+            }
 
-            string FindTheFile() {
+            void FindTheFile() {
                 // Check for full and shortened Read versions
                 if (fileDirectory != null) {
                     // Path.Combine can handle the case when filePath is an absolute path
                     string absoluteOrRelativePath = Path.Combine(fileDirectory, filePath);
-                    if (File.Exists(absoluteOrRelativePath) && absoluteOrRelativePath != InputController.TasFilePath) {
+                    if (File.Exists(absoluteOrRelativePath)) {
                         filePath = absoluteOrRelativePath;
                     } else {
                         string[] files = Directory.GetFiles(fileDirectory, $"{filePath}*.tas");
-                        if (files.FirstOrDefault(path => path != InputController.TasFilePath) is { } shortenedFilePath) {
+                        if (files.FirstOrDefault() is { } shortenedFilePath) {
                             filePath = shortenedFilePath;
                         }
                     }
                 }
-
-                return filePath;
             }
         }
 

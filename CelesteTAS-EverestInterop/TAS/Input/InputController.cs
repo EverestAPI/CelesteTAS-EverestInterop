@@ -47,7 +47,7 @@ namespace TAS.Input {
                         Manager.NextStates |= States.Disable;
                     }
 
-                    Manager.Controller.ParseFileBegin();
+                    Manager.Controller.Clear();
                     Manager.Controller.RefreshInputs(true);
                 }
             }
@@ -96,7 +96,7 @@ namespace TAS.Input {
             if (NeedsReload) {
                 int tryCount = 5;
                 while (tryCount > 0) {
-                    ParseFileBegin();
+                    Clear();
                     if (ReadFile(TasFilePath)) {
                         ParseFileEnd();
                         if (!firstRun && lastChecksum != Checksum) {
@@ -127,7 +127,7 @@ namespace TAS.Input {
             NextCommentFastForward = null;
         }
 
-        private void ParseFileBegin() {
+        public void Clear() {
             initializationFrameCount = 0;
             checksum = string.Empty;
             savestateChecksum = string.Empty;

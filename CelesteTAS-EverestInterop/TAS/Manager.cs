@@ -172,11 +172,11 @@ namespace TAS {
             }
 
             NextStates &= ~States.Enable;
-            InitializeRun(false);
             AttributeUtils.Invoke<EnableRunAttribute>();
+            InitializeRun(false);
         }
 
-        public static void DisableRun() {
+        public static void DisableRun(bool clear = false) {
             Running = false;
             /*
             if (Recording) {
@@ -197,6 +197,9 @@ namespace TAS {
 
             AttributeUtils.Invoke<DisableRunAttribute>();
             Controller.Stop();
+            if (clear) {
+                Controller.Clear();
+            }
         }
 
         private static void InitializeRun(bool recording) {
