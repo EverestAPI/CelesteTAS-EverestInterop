@@ -140,7 +140,7 @@ namespace CelesteStudio {
                 if (clickedItem.Text == "Delete All Files") {
                     Directory.Delete(backupFolder, true);
                     return;
-                } else if (clickedItem.Text == "Open Backup Folder") {
+                } else if (clickedItem.Text == "Show Older Files...") {
                     if (!Directory.Exists(backupFolder)) {
                         Directory.CreateDirectory(backupFolder);
                     }
@@ -211,19 +211,21 @@ namespace CelesteStudio {
                     Enabled = false
                 });
             } else {
-                for (int i = files.Count - 1; i >= 20; i--) {
-                    files.Remove(files[i]);
-                }
+                files.Sort();
+                files.Reverse();
 
-                foreach (string filePath in files) {
+                foreach (string filePath in files.Take(20)) {
                     openBackupToolStripMenuItem.DropDownItems.Add(new ToolStripMenuItem(Path.GetFileName(filePath)) {
                         Checked = CurrentFileName == filePath
                     });
                 }
 
+                if (files.Count > 20) {
+                    openBackupToolStripMenuItem.DropDownItems.Add(new ToolStripMenuItem("Show Older Files..."));
+                }
+
                 openBackupToolStripMenuItem.DropDownItems.Add(new ToolStripSeparator());
                 openBackupToolStripMenuItem.DropDownItems.Add(new ToolStripMenuItem("Delete All Files"));
-                openBackupToolStripMenuItem.DropDownItems.Add(new ToolStripMenuItem("Open Backup Folder"));
             }
         }
 
