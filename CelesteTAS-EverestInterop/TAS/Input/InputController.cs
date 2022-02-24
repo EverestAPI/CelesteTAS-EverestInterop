@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -19,7 +20,7 @@ namespace TAS.Input {
         public readonly SortedDictionary<int, FastForward> FastForwards = new();
         public readonly SortedDictionary<int, FastForward> FastForwardComments = new();
         public readonly List<InputFrame> Inputs = new();
-        public readonly Dictionary<string, DateTime> UsedFiles = new();
+        public readonly ConcurrentDictionary<string, DateTime> UsedFiles = new();
 
         private string checksum;
         private int initializationFrameCount;
@@ -263,7 +264,7 @@ namespace TAS.Input {
                 clone.Commands[frame] = new List<Command>(Commands[frame]);
             }
 
-            clone.UsedFiles.AddRange(UsedFiles);
+            clone.UsedFiles.AddRange((IDictionary) UsedFiles);
             clone.CurrentFrameInTas = CurrentFrameInTas;
             clone.CurrentFrameInInput = CurrentFrameInInput;
             clone.SavestateChecksum = clone.CalcChecksum(CurrentFrameInTas);
