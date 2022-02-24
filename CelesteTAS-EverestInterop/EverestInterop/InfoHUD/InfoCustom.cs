@@ -106,7 +106,7 @@ namespace TAS.EverestInterop.InfoHUD {
                     }
 
                     return string.Empty;
-                }).Where(s => s.IsNotNullOrWhiteSpace()).Select(s => s.Trim()).ToList();
+                }).Where(s => s.IsNotNullOrEmpty()).ToList();
 
                 string prefix = lastCharacter switch {
                     "=" => matchText,
@@ -114,11 +114,8 @@ namespace TAS.EverestInterop.InfoHUD {
                     _ => ""
                 };
 
-                if (result.Any(s => s.Contains("\n"))) {
-                    prefix += "\n";
-                }
-
-                return $"{prefix}{string.Join("\n", result)}";
+                string separator = types.First().IsSameOrSubclassOf(typeof(Entity)) ? "" : " ";
+                return $"{prefix}{string.Join(separator, result)}";
             });
 
             List<Entity> GetCachedOrFindEntities(Type type, string entityId, Dictionary<string, List<Entity>> dictionary) {
