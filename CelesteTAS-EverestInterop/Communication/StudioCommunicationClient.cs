@@ -145,8 +145,16 @@ namespace TAS.Communication {
                 return (comment ? "# " : string.Empty) + string.Empty.PadLeft(indentation) + $"{metadata.Name} {metadata.VersionString}\n";
             }
 
+            HashSet<string> ignoreMetaNames = new() {
+                "DialogCutscene",
+                "UpdateChecker",
+                "InfiniteSaves",
+                "DebugRebind",
+                "RebindPeriod"
+            };
+
             List<EverestModuleMetadata> metas = Everest.Modules
-                .Where(module => module.GetType().Name != "NullModule" || module.Metadata.Name == "Celeste")
+                .Where(module => !ignoreMetaNames.Contains(module.Metadata.Name) && module.Metadata.VersionString != "0.0.0-dummy")
                 .Select(module => module.Metadata).ToList();
             metas.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
 
@@ -176,6 +184,13 @@ namespace TAS.Communication {
                 metas.Remove(speedrunToolMeta);
             }
 
+            ignoreMetaNames.UnionWith(new HashSet<string> {
+                "Celeste",
+                "Everest",
+                "CelesteTAS",
+                "SpeedrunTool"
+            });
+
             modInfo += "\n# Map:\n";
             if (mapMeta != null) {
                 modInfo += MetaToString(mapMeta, 2);
@@ -185,9 +200,9 @@ namespace TAS.Communication {
             modInfo += $"#   {areaData.SID} {mode}\n";
 
             if (!string.IsNullOrEmpty(moduleName) && mapMeta != null) {
-                List<EverestModuleMetadata> dependencies = mapMeta.Dependencies.Where(metadata =>
-                    metadata.Name != "Celeste" && metadata.Name != "Everest" && metadata.Name != "UpdateChecker" &&
-                    metadata.Name != "DialogCutscene" && metadata.Name != "CelesteTAS").ToList();
+                List<EverestModuleMetadata> dependencies = mapMeta.Dependencies
+                    .Where(metadata => !ignoreMetaNames.Contains(metadata.Name) && metadata.VersionString != "0.0.0-dummy")
+                    .ToList();
                 dependencies.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
                 if (dependencies.Count > 0) {
                     modInfo += "\n# Dependencies:\n";
