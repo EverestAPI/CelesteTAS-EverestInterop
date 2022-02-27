@@ -187,7 +187,6 @@ namespace TAS.EverestInterop.InfoHUD {
 
             if (CachedParsedTypes.Keys.Contains(typeNameWithAssembly)) {
                 types = CachedParsedTypes[typeNameWithAssembly];
-                return true;
             } else {
                 // find the full type name
                 List<string> matchTypeNames = AllTypes.Keys.Where(name => name.StartsWith(typeNameWithAssembly)).ToList();
