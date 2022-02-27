@@ -228,7 +228,8 @@ namespace TAS.EverestInterop {
 
         private static void ReturnZeroMethod(Func<bool> condition, params MethodInfo[] methods) {
             foreach (MethodInfo methodInfo in methods) {
-                if (methodInfo != null) {
+                if (methodInfo != null && !methodInfo.IsGenericMethod && methodInfo.DeclaringType?.IsGenericType != true &&
+                    methodInfo.ReturnType == typeof(float)) {
                     IlHooks.Add(new ILHook(methodInfo, il => {
                         ILCursor ilCursor = new(il);
                         Instruction start = ilCursor.Next;
