@@ -142,6 +142,7 @@ namespace TAS.Module {
         #region Info HUD
 
         public bool InfoHud { get; set; } = false;
+        public bool EnableInfoHudFirstTime = true;
         public bool InfoGame { get; set; } = true;
         public bool InfoTasInput { get; set; } = true;
         public bool InfoSubpixelIndicator { get; set; } = true;

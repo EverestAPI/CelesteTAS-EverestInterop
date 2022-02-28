@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
@@ -290,6 +291,8 @@ namespace TAS.EverestInterop {
         }
 
         public class Hotkey {
+            private static readonly Regex keysNameFixRegex = new(@"^D(\d)$", RegexOptions.Compiled);
+
             public readonly List<Buttons> Buttons;
             private readonly bool held;
             private readonly bool keyCombo;
@@ -387,6 +390,19 @@ namespace TAS.EverestInterop {
                 }
 
                 return keyCombo ? Buttons.All(padState.IsButtonDown) : Buttons.Any(padState.IsButtonDown);
+            }
+
+            public override string ToString() {
+                List<string> result = new();
+                if (Keys.IsNotEmpty()) {
+                    result.Add(string.Join("+", Keys.Select(key => keysNameFixRegex.Replace(key.ToString(), "$1"))));
+                }
+
+                if (Buttons.IsNotEmpty()) {
+                    result.Add(string.Join("+", Buttons));
+                }
+
+                return string.Join("/", result);
             }
         }
     }
