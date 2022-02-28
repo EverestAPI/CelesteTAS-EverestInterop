@@ -224,7 +224,7 @@ namespace TAS {
         }
 
         [EnableRun]
-        private static void EnableRun() {
+        private static void OnEnableRun() {
             if (SpeedrunToolInstalled) {
                 DisableSpeedrunTool();
             }
@@ -236,7 +236,7 @@ namespace TAS {
         }
 
         [DisableRun]
-        private static void DisableRun() {
+        private static void OnDisableRun() {
             if (SpeedrunToolInstalled) {
                 RestoreSpeedrunTool();
             }
