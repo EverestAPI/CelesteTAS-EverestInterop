@@ -21,6 +21,8 @@ namespace TAS.EverestInterop.Hitboxes {
 
         private static readonly Func<LockBlock, bool> LockBlockOpening = "opening".CreateDelegate_Get<LockBlock, bool>();
         private static readonly Func<Player, Hitbox> PlayerHurtbox = "hurtbox".CreateDelegate_Get<Player, Hitbox>();
+        private static Func<Solid> bgModeToggleBgSolidTiles;
+        private static readonly Dictionary<LevelData, bool> ExistBgModeToggle = new();
 
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
@@ -38,6 +40,7 @@ namespace TAS.EverestInterop.Hitboxes {
             IL.Celeste.Seeker.DebugRender += SeekerOnDebugRender;
             On.Celeste.Seeker.DebugRender += SeekerOnDebugRender;
             On.Celeste.Level.LoadLevel += LevelOnLoadLevel;
+            bgModeToggleBgSolidTiles = ModTypeUtils.GetType("Celeste.BGModeToggle")?.GetFieldInfo("bgSolidTiles")?.CreateDelegate_Get<Func<Solid>>();
         }
 
         [Unload]
@@ -54,6 +57,7 @@ namespace TAS.EverestInterop.Hitboxes {
             IL.Celeste.Seeker.DebugRender -= SeekerOnDebugRender;
             On.Celeste.Seeker.DebugRender -= SeekerOnDebugRender;
             On.Celeste.Level.LoadLevel -= LevelOnLoadLevel;
+            bgModeToggleBgSolidTiles = null;
         }
 
         private static void ModDebugRender(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {
@@ -69,6 +73,19 @@ namespace TAS.EverestInterop.Hitboxes {
                 Rectangle bounds = new((int) camera.Left - width / 2, (int) camera.Top - height / 2, width * 2, height * 2);
                 if (self.Right < bounds.Left || self.Left > bounds.Right || self.Top > bounds.Bottom ||
                     self.Bottom < bounds.Top) {
+                    return;
+                }
+            }
+
+            if (self is Solid && bgModeToggleBgSolidTiles?.Invoke() is { } bgSolid && bgSolid == self && !bgSolid.Collidable &&
+                self.Scene is Level level) {
+                LevelData levelData = level.Session.LevelData;
+                if (!ExistBgModeToggle.TryGetValue(levelData, out bool exist)) {
+                    exist = levelData.Entities.Any(data => data.Name?.StartsWith("bgSwitch/") == true);
+                    ExistBgModeToggle[levelData] = exist;
+                }
+
+                if (!exist) {
                     return;
                 }
             }
