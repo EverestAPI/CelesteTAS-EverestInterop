@@ -138,6 +138,7 @@ namespace TAS.Module {
         public bool SimplifiedClutteredEntity { get; set; } = true;
         public bool SimplifiedHud { get; set; } = true;
         public bool SimplifiedWavedEdge { get; set; } = true;
+        public bool SimplifiedSpikes { get; set; } = true;
 
         #endregion
 

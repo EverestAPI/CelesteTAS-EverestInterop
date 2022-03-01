@@ -116,6 +116,10 @@ namespace TAS.EverestInterop {
                 subMenu.Add(
                     new TextMenuExt.EnumerableSlider<bool>("Waved Edge".ToDialogText(), Menu.CreateSimplifyOptions(), Settings.SimplifiedWavedEdge)
                         .Change(value => Settings.SimplifiedWavedEdge = value));
+
+                subMenu.Add(
+                    new TextMenuExt.EnumerableSlider<bool>("Spikes".ToDialogText(), Menu.CreateSimplifyOptions(), Settings.SimplifiedSpikes)
+                        .Change(value => Settings.SimplifiedSpikes = value));
             });
         }
 
@@ -204,6 +208,8 @@ namespace TAS.EverestInterop {
                 typeof(HeightDisplay), typeof(TalkComponent.TalkComponentUI), typeof(BirdTutorialGui), typeof(CoreMessage), typeof(MemorialText),
                 typeof(Player).Assembly.GetType("Celeste.Mod.Entities.CustomHeightDisplay")
             );
+
+            On.Celeste.Spikes.ctor_Vector2_int_Directions_string += SpikesOnCtor_Vector2_int_Directions_string;
         }
 
         [Unload]
@@ -224,6 +230,7 @@ namespace TAS.EverestInterop {
             On.Celeste.DustStyles.Get_Session -= DustStyles_Get_Session;
             IL.Celeste.LightningRenderer.Render -= LightningRenderer_RenderIL;
             On.Celeste.Audio.Play_string -= AudioOnPlay_string;
+            On.Celeste.Spikes.ctor_Vector2_int_Directions_string -= SpikesOnCtor_Vector2_int_Directions_string;
 
             IlHooks.ForEach(hook => hook.Dispose());
             IlHooks.Clear();
@@ -495,6 +502,15 @@ namespace TAS.EverestInterop {
             return result;
         }
 
+        private static void SpikesOnCtor_Vector2_int_Directions_string(On.Celeste.Spikes.orig_ctor_Vector2_int_Directions_string orig, Spikes self,
+            Vector2 position, int size, Celeste.Spikes.Directions direction, string type) {
+            if (Settings.SimplifiedGraphics && Settings.SimplifiedSpikes) {
+                type = "outline";
+            }
+
+            orig(self, position, size, direction, type);
+        }
+
         private static void ModCustomSpinnerColor(ILContext il) {
             ILCursor ilCursor = new(il);
             if (ilCursor.TryGotoNext(
@@ -624,7 +640,7 @@ namespace TAS.EverestInterop {
             }
 
             public override string ToString() {
-                return default ? "Default".ToDialogText() : Name;
+                return this == default ? "Default".ToDialogText() : Name;
             }
 
             public static bool operator ==(SolidTilesStyle value1, SolidTilesStyle value2) {

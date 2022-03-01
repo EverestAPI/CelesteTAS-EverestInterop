@@ -44,6 +44,7 @@ TAS_CLUTTERED_ENTITY_DESCRIPTION= 触手、山顶云朵和眼球
 TAS_HUD=                          HUD
 TAS_HUD_DESCRIPTION=              交谈图标、鸟的教程和一些文字
 TAS_WAVED_EDGE=                   波状边缘
+TAS_SPIKES=                       尖刺
 
 # ================================== Info HUD ==================================
 TAS_INFO_GAME=                             游戏数据

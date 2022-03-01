@@ -44,6 +44,7 @@ TAS_CLUTTERED_ENTITY_DESCRIPTION= Tentacles, summit cloud, eyeball
 TAS_HUD=                          HUD
 TAS_HUD_DESCRIPTION=              Talking icon, bird tutorial and some text
 TAS_WAVED_EDGE=                   Waved Edge
+TAS_SPIKES=                       Spikes
 
 # ================================== Info HUD ==================================
 TAS_INFO_GAME=                             Game Info
