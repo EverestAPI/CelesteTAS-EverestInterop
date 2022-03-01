@@ -111,12 +111,16 @@ namespace TAS.EverestInterop {
             On.Celeste.Level.Update += Level_Update;
 
             if (ModTypeUtils.GetType("FrostHelper.CustomSpinner") is { } customSpinnerType) {
-                IlHooks.Add(new ILHook(customSpinnerType.GetConstructors()[0], ModCustomSpinnerColor));
+                foreach (ConstructorInfo constructorInfo in customSpinnerType.GetConstructors()) {
+                    IlHooks.Add(new ILHook(constructorInfo, ModCustomSpinnerColor));
+                }
             }
 
             if (ModTypeUtils.GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController") is
                 { } rainbowSpinnerType) {
-                IlHooks.Add(new ILHook(rainbowSpinnerType.GetConstructors()[0], ModRainbowSpinnerColor));
+                foreach (ConstructorInfo constructorInfo in rainbowSpinnerType.GetConstructors()) {
+                    IlHooks.Add(new ILHook(constructorInfo, ModRainbowSpinnerColor));
+                }
             }
 
             if (ModTypeUtils.GetType("VivHelper.Entities.CustomSpinner")?.GetMethodInfo("CreateSprites") is
@@ -440,8 +444,7 @@ namespace TAS.EverestInterop {
             if (ilCursor.TryGotoNext(
                     i => i.OpCode == OpCodes.Ldarg_0,
                     i => i.OpCode == OpCodes.Ldarg_S && i.Operand.ToString() == "tint",
-                    i => i.OpCode == OpCodes.Call && i.Operand.ToString() == "Microsoft.Xna.Framework.Color Monocle.Calc::HexToColor(System.String)",
-                    i => i.OpCode == OpCodes.Stfld && i.Operand.ToString() == "Microsoft.Xna.Framework.Color FrostHelper.CustomSpinner::Tint"
+                    i => i.OpCode == OpCodes.Call && i.Operand.ToString().StartsWith("Microsoft.Xna.Framework.Color")
                 )) {
                 ilCursor.Index += 2;
                 ilCursor.EmitDelegate<Func<string, string>>(color =>
