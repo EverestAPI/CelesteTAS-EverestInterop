@@ -31,6 +31,7 @@ TAS_SPINNER_COLOR=                Spinner Color
 TAS_DUST_SPRITE_EDGE=             Dust Sprite Edge
 TAS_SCREEN_WIPE=                  Screen Wipe
 TAS_COLOR_GRADE=                  Color Grade
+TAS_BACKGROUND_TILES=             Background Tiles
 TAS_BACKDROP=                     Backdrop
 TAS_DECAL=                        Decal
 TAS_PARTICLE=                     Particle

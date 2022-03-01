@@ -127,6 +127,7 @@ namespace TAS.Module {
         public bool SimplifiedDustSpriteEdge { get; set; } = true;
         public bool SimplifiedScreenWipe { get; set; } = true;
         public bool SimplifiedColorGrade { get; set; } = true;
+        public bool SimplifiedBackgroundTiles { get; set; } = false;
         public bool SimplifiedBackdrop { get; set; } = true;
         public bool SimplifiedDecal { get; set; } = true;
         public bool SimplifiedParticle { get; set; } = true;

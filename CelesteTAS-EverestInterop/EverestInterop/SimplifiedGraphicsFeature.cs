@@ -70,6 +70,10 @@ namespace TAS.EverestInterop {
                     new TextMenuExt.EnumerableSlider<bool>("Color Grade".ToDialogText(), Menu.CreateDefaultHideOptions(),
                         Settings.SimplifiedColorGrade).Change(value => Settings.SimplifiedColorGrade = value));
                 subMenu.Add(
+                    new TextMenuExt.EnumerableSlider<bool>("Background Tiles".ToDialogText(), Menu.CreateDefaultHideOptions(),
+                            Settings.SimplifiedBackgroundTiles)
+                        .Change(value => Settings.SimplifiedBackgroundTiles = value));
+                subMenu.Add(
                     new TextMenuExt.EnumerableSlider<bool>("Backdrop".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.SimplifiedBackdrop)
                         .Change(value => Settings.SimplifiedBackdrop = value));
                 subMenu.Add(
@@ -147,6 +151,7 @@ namespace TAS.EverestInterop {
             SkipMethod(() => Settings.SimplifiedGraphics && Settings.SimplifiedMiniTextbox, "Render", typeof(MiniTextbox));
 
             IL.Celeste.Distort.Render += DistortOnRender;
+            On.Monocle.Entity.Render += BackgroundTilesOnRender;
             IL.Celeste.BackdropRenderer.Render += BackdropRenderer_Render;
             On.Celeste.DustStyles.Get_Session += DustStyles_Get_Session;
 
@@ -202,6 +207,7 @@ namespace TAS.EverestInterop {
             IL.Celeste.BloomRenderer.Apply -= BloomRendererOnApply;
             On.Celeste.Decal.Render -= Decal_Render;
             IL.Celeste.Distort.Render -= DistortOnRender;
+            On.Monocle.Entity.Render -= BackgroundTilesOnRender;
             IL.Celeste.BackdropRenderer.Render -= BackdropRenderer_Render;
             On.Celeste.DustStyles.Get_Session -= DustStyles_Get_Session;
             IL.Celeste.LightningRenderer.Render -= LightningRenderer_RenderIL;
@@ -339,6 +345,14 @@ namespace TAS.EverestInterop {
             if (ilCursor.TryGotoNext(MoveType.After, i => i.MatchLdsfld(typeof(GFX), "FxDistort"))) {
                 ilCursor.EmitDelegate<Func<Effect, Effect>>(effect => Settings.SimplifiedGraphics && Settings.SimplifiedDistort ? null : effect);
             }
+        }
+
+        private static void BackgroundTilesOnRender(On.Monocle.Entity.orig_Render orig, Entity self) {
+            if (self is BackgroundTiles && Settings.SimplifiedGraphics && Settings.SimplifiedBackgroundTiles) {
+                return;
+            }
+
+            orig(self);
         }
 
         private static void BackdropRenderer_Render(ILContext il) {
