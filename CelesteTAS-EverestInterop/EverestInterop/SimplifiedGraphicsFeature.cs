@@ -38,6 +38,7 @@ namespace TAS.EverestInterop {
         private static readonly List<ILHook> IlHooks = new();
 
         private static bool lastSimplifiedGraphics = Settings.SimplifiedGraphics;
+        private static SolidTilesStyle currentSolidTilesStyle;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
         public static EaseInSubMenu CreateSubMenu(TextMenu menu) {
@@ -69,6 +70,15 @@ namespace TAS.EverestInterop {
                 subMenu.Add(
                     new TextMenuExt.EnumerableSlider<bool>("Color Grade".ToDialogText(), Menu.CreateDefaultHideOptions(),
                         Settings.SimplifiedColorGrade).Change(value => Settings.SimplifiedColorGrade = value));
+                subMenu.Add(
+                    new TextMenuExt.EnumerableSlider<SolidTilesStyle>("Solid Tiles Style".ToDialogText(), SolidTilesStyle.All,
+                        Settings.SimplifiedSolidTilesStyle).Change(value => {
+                        Settings.SimplifiedSolidTilesStyle = value;
+
+                        if (Settings.SimplifiedGraphics && Engine.Scene is Level level) {
+                            ReplaceSolidTilesStyle(level);
+                        }
+                    }));
                 subMenu.Add(
                     new TextMenuExt.EnumerableSlider<bool>("Background Tiles".ToDialogText(), Menu.CreateDefaultHideOptions(),
                             Settings.SimplifiedBackgroundTiles)
@@ -151,6 +161,7 @@ namespace TAS.EverestInterop {
             SkipMethod(() => Settings.SimplifiedGraphics && Settings.SimplifiedMiniTextbox, "Render", typeof(MiniTextbox));
 
             IL.Celeste.Distort.Render += DistortOnRender;
+            On.Celeste.SolidTiles.ctor += SolidTilesOnCtor;
             On.Monocle.Entity.Render += BackgroundTilesOnRender;
             IL.Celeste.BackdropRenderer.Render += BackdropRenderer_Render;
             On.Celeste.DustStyles.Get_Session += DustStyles_Get_Session;
@@ -207,6 +218,7 @@ namespace TAS.EverestInterop {
             IL.Celeste.BloomRenderer.Apply -= BloomRendererOnApply;
             On.Celeste.Decal.Render -= Decal_Render;
             IL.Celeste.Distort.Render -= DistortOnRender;
+            On.Celeste.SolidTiles.ctor -= SolidTilesOnCtor;
             On.Monocle.Entity.Render -= BackgroundTilesOnRender;
             IL.Celeste.BackdropRenderer.Render -= BackdropRenderer_Render;
             On.Celeste.DustStyles.Get_Session -= DustStyles_Get_Session;
@@ -259,6 +271,16 @@ namespace TAS.EverestInterop {
                 level.Tracker.GetEntities<FloatingDebris>().ForEach(debris => debris.RemoveSelf());
                 level.Entities.FindAll<MoonCreature>().ForEach(creature => creature.RemoveSelf());
             }
+
+            if (simplifiedGraphics && currentSolidTilesStyle != Settings.SimplifiedSolidTilesStyle ||
+                !simplifiedGraphics && currentSolidTilesStyle != default) {
+                ReplaceSolidTilesStyle(level);
+            }
+        }
+
+        private static void ReplaceSolidTilesStyle(Level level) {
+            level.SolidTiles?.RemoveSelf();
+            level.Add(level.SolidTiles = new SolidTiles(new Vector2(level.TileBounds.X, level.TileBounds.Y) * 8f, level.SolidsData));
         }
 
         private static void Level_Update(On.Celeste.Level.orig_Update orig, Level self) {
@@ -345,6 +367,26 @@ namespace TAS.EverestInterop {
             if (ilCursor.TryGotoNext(MoveType.After, i => i.MatchLdsfld(typeof(GFX), "FxDistort"))) {
                 ilCursor.EmitDelegate<Func<Effect, Effect>>(effect => Settings.SimplifiedGraphics && Settings.SimplifiedDistort ? null : effect);
             }
+        }
+
+        private static void SolidTilesOnCtor(On.Celeste.SolidTiles.orig_ctor orig, SolidTiles self, Vector2 position, VirtualMap<char> data) {
+            if (Settings.SimplifiedGraphics && Settings.SimplifiedSolidTilesStyle != default) {
+                data = data.Clone();
+                for (int column = 0; column < data.Columns; column++) {
+                    for (int row = 0; row < data.Rows; row++) {
+                        char c = data[column, row];
+                        if (!default(char).Equals(c) && c != '0') {
+                            data[column, row] = Settings.SimplifiedSolidTilesStyle.Value;
+                        }
+                    }
+                }
+
+                currentSolidTilesStyle = Settings.SimplifiedSolidTilesStyle;
+            } else {
+                currentSolidTilesStyle = SolidTilesStyle.All[0];
+            }
+
+            orig(self, position, data);
         }
 
         private static void BackgroundTilesOnRender(On.Monocle.Entity.orig_Render orig, Entity self) {
@@ -543,6 +585,57 @@ namespace TAS.EverestInterop {
                 return result.ToDialogText();
             }
         }
+
+        public struct SolidTilesStyle {
+            public static readonly List<SolidTilesStyle> All = new() {
+                default,
+                new SolidTilesStyle("Dirt", '1'),
+                new SolidTilesStyle("Snow", '3'),
+                new SolidTilesStyle("Girder", '4'),
+                new SolidTilesStyle("Tower", '5'),
+                new SolidTilesStyle("Stone", '6'),
+                new SolidTilesStyle("Cement", '7'),
+                new SolidTilesStyle("Rock", '8'),
+                new SolidTilesStyle("Wood", '9'),
+                new SolidTilesStyle("Wood Stone", 'a'),
+                new SolidTilesStyle("Cliffside", 'b'),
+                new SolidTilesStyle("Pool Edges", 'c'),
+                new SolidTilesStyle("Temple A", 'd'),
+                new SolidTilesStyle("Temple B", 'e'),
+                new SolidTilesStyle("Cliffside Alt", 'f'),
+                new SolidTilesStyle("Reflection", 'g'),
+                new SolidTilesStyle("Reflection Alt", 'G'),
+                new SolidTilesStyle("Grass", 'h'),
+                new SolidTilesStyle("Summit", 'i'),
+                new SolidTilesStyle("Summit No Snow", 'j'),
+                new SolidTilesStyle("Core", 'k'),
+                new SolidTilesStyle("Deadgrass", 'l'),
+                new SolidTilesStyle("Lost Levels", 'm'),
+                new SolidTilesStyle("Scifi", 'n'),
+                new SolidTilesStyle("Template", 'z')
+            };
+
+            public string Name;
+            public char Value;
+
+            public SolidTilesStyle(string name, char value) {
+                Name = name;
+                Value = value;
+            }
+
+            public override string ToString() {
+                return default ? "Default".ToDialogText() : Name;
+            }
+
+            public static bool operator ==(SolidTilesStyle value1, SolidTilesStyle value2) {
+                return value1.Equals(value2);
+            }
+
+            public static bool operator !=(SolidTilesStyle value1, SolidTilesStyle value2) {
+                return !(value1 == value2);
+            }
+        }
+
         // ReSharper restore FieldCanBeMadeReadOnly.Global
     }
 
