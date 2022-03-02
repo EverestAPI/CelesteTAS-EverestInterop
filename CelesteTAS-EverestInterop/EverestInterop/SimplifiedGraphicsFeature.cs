@@ -372,6 +372,12 @@ namespace TAS.EverestInterop {
         }
 
         private static void SolidTilesOnCtor(On.Celeste.SolidTiles.orig_ctor orig, SolidTiles self, Vector2 position, VirtualMap<char> data) {
+            if (Settings.SimplifiedGraphics && Settings.SimplifiedSolidTilesStyle != default) {
+                currentSolidTilesStyle = Settings.SimplifiedSolidTilesStyle;
+            } else {
+                currentSolidTilesStyle = SolidTilesStyle.All[0];
+            }
+
             creatingSolidTiles = true;
             orig(self, position, data);
             creatingSolidTiles = false;
