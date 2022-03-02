@@ -39,6 +39,7 @@ namespace TAS.EverestInterop {
 
         private static bool lastSimplifiedGraphics = Settings.SimplifiedGraphics;
         private static SolidTilesStyle currentSolidTilesStyle;
+        private static bool creatingSolidTiles;
         private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
 
         public static EaseInSubMenu CreateSubMenu(TextMenu menu) {
@@ -160,6 +161,7 @@ namespace TAS.EverestInterop {
 
             IL.Celeste.Distort.Render += DistortOnRender;
             On.Celeste.SolidTiles.ctor += SolidTilesOnCtor;
+            On.Celeste.Autotiler.GetTile += AutotilerOnGetTile;
             On.Monocle.Entity.Render += BackgroundTilesOnRender;
             IL.Celeste.BackdropRenderer.Render += BackdropRenderer_Render;
             On.Celeste.DustStyles.Get_Session += DustStyles_Get_Session;
@@ -219,6 +221,7 @@ namespace TAS.EverestInterop {
             On.Celeste.Decal.Render -= Decal_Render;
             IL.Celeste.Distort.Render -= DistortOnRender;
             On.Celeste.SolidTiles.ctor -= SolidTilesOnCtor;
+            On.Celeste.Autotiler.GetTile -= AutotilerOnGetTile;
             On.Monocle.Entity.Render -= BackgroundTilesOnRender;
             IL.Celeste.BackdropRenderer.Render -= BackdropRenderer_Render;
             On.Celeste.DustStyles.Get_Session -= DustStyles_Get_Session;
@@ -371,23 +374,20 @@ namespace TAS.EverestInterop {
         }
 
         private static void SolidTilesOnCtor(On.Celeste.SolidTiles.orig_ctor orig, SolidTiles self, Vector2 position, VirtualMap<char> data) {
-            if (Settings.SimplifiedGraphics && Settings.SimplifiedSolidTilesStyle != default) {
-                data = data.Clone();
-                for (int column = 0; column < data.Columns; column++) {
-                    for (int row = 0; row < data.Rows; row++) {
-                        char c = data[column, row];
-                        if (!default(char).Equals(c) && c != '0') {
-                            data[column, row] = Settings.SimplifiedSolidTilesStyle.Value;
-                        }
-                    }
-                }
-
-                currentSolidTilesStyle = Settings.SimplifiedSolidTilesStyle;
-            } else {
-                currentSolidTilesStyle = SolidTilesStyle.All[0];
-            }
-
+            creatingSolidTiles = true;
             orig(self, position, data);
+            creatingSolidTiles = false;
+        }
+
+        private static char AutotilerOnGetTile(On.Celeste.Autotiler.orig_GetTile orig, Autotiler self, VirtualMap<char> mapData, int x, int y,
+            Rectangle forceFill, char forceId, Autotiler.Behaviour behaviour) {
+            char tile = orig(self, mapData, x, y, forceFill, forceId, behaviour);
+            if (creatingSolidTiles && Settings.SimplifiedGraphics && Settings.SimplifiedSolidTilesStyle != default && !default(char).Equals(tile) &&
+                tile != '0') {
+                return Settings.SimplifiedSolidTilesStyle.Value;
+            } else {
+                return tile;
+            }
         }
 
         private static void BackgroundTilesOnRender(On.Monocle.Entity.orig_Render orig, Entity self) {
