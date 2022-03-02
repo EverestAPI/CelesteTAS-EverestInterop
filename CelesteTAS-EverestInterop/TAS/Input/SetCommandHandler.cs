@@ -34,7 +34,7 @@ namespace TAS.Input {
 
                     if (InfoCustom.TryParseMemberNames(args[0], out string typeText, out List<string> memberNames, out string errorMessage)
                         && InfoCustom.TryParseType(typeText, out Type type, out string entityId, out errorMessage)) {
-                        SetObject(type, entityId, memberNames, parameters);
+                        FindObjectAndSetMember(type, entityId, memberNames, parameters);
                     } else {
                         errorMessage.Log();
                     }
@@ -80,17 +80,13 @@ namespace TAS.Input {
             }
         }
 
-        private static bool TrySetModSetting(string moduleSetting, string[] value) {
+        private static bool TrySetModSetting(string moduleSetting, string[] values) {
             int index = moduleSetting.IndexOf(".", StringComparison.Ordinal);
             string moduleName = moduleSetting.Substring(0, index);
             string settingName = moduleSetting.Substring(index + 1);
             foreach (EverestModule module in Everest.Modules) {
                 if (module.Metadata.Name == moduleName && module.SettingsType is { } settingsType) {
-                    PropertyInfo property = settingsType.GetProperty(settingName);
-                    if (property != null) {
-                        property.SetValue(module._Settings, ConvertType(value, property.PropertyType));
-                    }
-
+                    TrySetMember(settingsType, module._Settings, settingName, values);
                     return true;
                 }
             }
@@ -98,20 +94,20 @@ namespace TAS.Input {
             return false;
         }
 
-        private static void SetObject(Type type, string entityId, List<string> memberNames, string[] values) {
-            if (memberNames.IsEmpty() || values.IsEmpty()) {
+        private static void FindObjectAndSetMember(Type type, string entityId, List<string> memberNames, string[] values, object structObj = null) {
+            if (memberNames.IsEmpty() || values.IsEmpty() && structObj == null) {
                 return;
             }
 
             string lastMemberName = memberNames.Last();
             memberNames = memberNames.SkipLast().ToList();
 
-            Type memberType;
+            Type objType;
             object obj = null;
             if (memberNames.IsEmpty() &&
                 (InfoCustom.GetGetMethod(type, lastMemberName) is {IsStatic: true} ||
                  InfoCustom.GetFieldInfo(type, lastMemberName) is {IsStatic: true})) {
-                memberType = type;
+                objType = type;
             } else if (memberNames.IsNotEmpty() &&
                        (InfoCustom.GetGetMethod(type, memberNames.First()) is {IsStatic: true} ||
                         InfoCustom.GetFieldInfo(type, memberNames.First()) is {IsStatic: true})) {
@@ -120,7 +116,7 @@ namespace TAS.Input {
                     return;
                 }
 
-                memberType = obj.GetType();
+                objType = obj.GetType();
             } else {
                 obj = FindObject(type, entityId);
                 if (obj == null) {
@@ -132,51 +128,17 @@ namespace TAS.Input {
                         return;
                     }
 
-                    memberType = obj.GetType();
+                    objType = obj.GetType();
                 }
             }
 
-            if (memberType.GetPropertyInfo(lastMemberName, true) is { } property && property.GetSetMethod(true) is { } setMethod) {
-                if (obj is Actor actor && lastMemberName is "X" or "Y") {
-                    double.TryParse(values[0], out double value);
-                    Vector2 remainder = actor.PositionRemainder;
-                    if (lastMemberName == "X") {
-                        actor.Position.X = (int) Math.Round(value);
-                        remainder.X = (float) (value - actor.Position.X);
-                    } else {
-                        actor.Position.Y = (int) Math.Round(value);
-                        remainder.Y = (float) (value - actor.Position.Y);
-                    }
-
-                    ActorMovementCounter.SetValue(obj, remainder);
-                } else {
-                    object value = ConvertType(values, property.PropertyType);
-                    setMethod.Invoke(obj, new[] {value});
-                }
-            } else if (memberType.GetFieldInfo(lastMemberName, true) is { } field) {
-                if (obj is Actor actor && lastMemberName == "Position" && values.Length == 2) {
-                    double.TryParse(values[0], out double x);
-                    double.TryParse(values[1], out double y);
-                    Vector2 position = new((int) Math.Round(x), (int) Math.Round(y));
-                    Vector2 remainder = new((float) (x - position.X), (float) (y - position.Y));
-                    actor.Position = position;
-                    ActorMovementCounter.SetValue(obj, remainder);
-                } else {
-                    object value = ConvertType(values, field.FieldType);
-                    if (lastMemberName.Equals("Speed", StringComparison.OrdinalIgnoreCase) && value is Vector2 speed &&
-                        Math.Abs(Engine.TimeRateB - 1f) > 1e-10) {
-                        field.SetValue(obj, speed / Engine.TimeRateB);
-                    } else {
-                        field.SetValue(obj, value);
-                    }
-                }
-            } else {
-                $"Set Command Failed: {memberType.FullName}.{lastMemberName} member not found".Log(LogLevel.Warn);
+            if (!TrySetMember(objType, obj, lastMemberName, values, structObj)) {
+                return;
             }
 
             // after modifying the struct
-            // we also need to update the object own the struct, here only the Vector2 type is handled
-            if (memberNames.IsNotEmpty()) {
+            // we also need to update the object own the struct
+            if (memberNames.IsNotEmpty() && objType.IsStructType()) {
                 string[] position = obj switch {
                     Vector2 vector2 => new[] {vector2.X.ToString(CultureInfo.InvariantCulture), vector2.Y.ToString(CultureInfo.InvariantCulture)},
                     Vector2Double vector2Double => new[] {
@@ -185,12 +147,7 @@ namespace TAS.Input {
                     _ => new string[] { }
                 };
 
-                SetObject(
-                    type,
-                    entityId,
-                    memberNames,
-                    position
-                );
+                FindObjectAndSetMember(type, entityId, memberNames, position, position.IsEmpty() ? obj : null);
             }
 
             bool TryOutputErrorLog() {
@@ -206,6 +163,49 @@ namespace TAS.Input {
             }
         }
 
+        private static bool TrySetMember(Type objType, object obj, string lastMemberName, string[] values, object structObj = null) {
+            if (objType.GetPropertyInfo(lastMemberName, true) is { } property && property.GetSetMethod(true) is { } setMethod) {
+                if (obj is Actor actor && lastMemberName is "X" or "Y") {
+                    double.TryParse(values[0], out double value);
+                    Vector2 remainder = actor.PositionRemainder;
+                    if (lastMemberName == "X") {
+                        actor.Position.X = (int) Math.Round(value);
+                        remainder.X = (float) (value - actor.Position.X);
+                    } else {
+                        actor.Position.Y = (int) Math.Round(value);
+                        remainder.Y = (float) (value - actor.Position.Y);
+                    }
+
+                    ActorMovementCounter.SetValue(obj, remainder);
+                } else {
+                    object value = structObj ?? ConvertType(values, property.PropertyType);
+                    setMethod.Invoke(obj, new[] {value});
+                }
+            } else if (objType.GetFieldInfo(lastMemberName, true) is { } field) {
+                if (obj is Actor actor && lastMemberName == "Position" && values.Length == 2) {
+                    double.TryParse(values[0], out double x);
+                    double.TryParse(values[1], out double y);
+                    Vector2 position = new((int) Math.Round(x), (int) Math.Round(y));
+                    Vector2 remainder = new((float) (x - position.X), (float) (y - position.Y));
+                    actor.Position = position;
+                    ActorMovementCounter.SetValue(obj, remainder);
+                } else {
+                    object value = structObj ?? ConvertType(values, field.FieldType);
+                    if (lastMemberName.Equals("Speed", StringComparison.OrdinalIgnoreCase) && value is Vector2 speed &&
+                        Math.Abs(Engine.TimeRateB - 1f) > 1e-10) {
+                        field.SetValue(obj, speed / Engine.TimeRateB);
+                    } else {
+                        field.SetValue(obj, value);
+                    }
+                }
+            } else {
+                $"Set Command Failed: {objType.FullName}.{lastMemberName} member not found".Log(LogLevel.Warn);
+                return false;
+            }
+
+            return true;
+        }
+
         private static object FindObject(Type type, string entityId) {
             if (type.IsSameOrSubclassOf(typeof(Entity))) {
                 return InfoCustom.FindEntities(type, entityId).FirstOrDefault();
@@ -218,15 +218,17 @@ namespace TAS.Input {
             }
         }
 
-        private static object ConvertType(string value, Type type) {
-            try {
-                return type.IsEnum ? Enum.Parse(type, value, true) : Convert.ChangeType(value, type);
-            } catch {
-                return value;
-            }
-        }
-
         private static object ConvertType(string[] values, Type type) {
+            object Convert(object value, Type objectType) {
+                try {
+                    return objectType.IsEnum && value is string enumName
+                        ? Enum.Parse(objectType, enumName, true)
+                        : System.Convert.ChangeType(value, objectType);
+                } catch {
+                    return value;
+                }
+            }
+
             if (values.Length == 2 && type == typeof(Vector2)) {
                 float.TryParse(values[0], out float x);
                 float.TryParse(values[1], out float y);
@@ -235,8 +237,22 @@ namespace TAS.Input {
                 if (type == typeof(Random) && int.TryParse(values[0], out int seed)) {
                     return new Random(seed);
                 } else {
-                    return ConvertType(values[0], type);
+                    return Convert(values[0], type);
                 }
+            } else if (values.Length >= 2 && type.IsStructType()) {
+                object instance = Activator.CreateInstance(type);
+                MemberInfo[] members = type.GetMembers().Where(info => (info.MemberType & (MemberTypes.Field | MemberTypes.Property)) != 0).ToArray();
+                for (int i = 0; i < members.Length && i < values.Length; i++) {
+                    string memberName = members[i].Name;
+                    memberName.DebugLog();
+                    if (type.GetField(memberName) is { } fieldInfo) {
+                        fieldInfo.SetValue(instance, Convert(values[i], fieldInfo.FieldType));
+                    } else if (type.GetProperty(memberName) is { } propertyInfo) {
+                        propertyInfo.SetValue(instance, Convert(values[i], propertyInfo.PropertyType));
+                    }
+                }
+
+                return instance;
             }
 
             return default;

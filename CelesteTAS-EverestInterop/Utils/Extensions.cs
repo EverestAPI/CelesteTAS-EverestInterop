@@ -252,6 +252,10 @@ namespace TAS.Utils {
         public static bool IsSimpleType(this Type type) {
             return type.IsPrimitive || type.IsEnum || type == typeof(string) || type == typeof(decimal) || type == typeof(Vector2);
         }
+
+        public static bool IsStructType(this Type type) {
+            return type.IsValueType && !type.IsEnum && !type.IsPrimitive && !type.IsEquivalentTo(typeof(decimal));
+        }
     }
 
     internal static class CommonExtensions {

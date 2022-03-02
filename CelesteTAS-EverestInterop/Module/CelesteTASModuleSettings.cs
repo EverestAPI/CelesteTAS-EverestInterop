@@ -1,4 +1,5 @@
-﻿using Celeste.Mod;
+﻿using Celeste;
+using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
@@ -127,7 +128,19 @@ namespace TAS.Module {
         public bool SimplifiedDustSpriteEdge { get; set; } = true;
         public bool SimplifiedScreenWipe { get; set; } = true;
         public bool SimplifiedColorGrade { get; set; } = true;
-        public SimplifiedGraphicsFeature.SolidTilesStyle SimplifiedSolidTilesStyle { get; set; } = SimplifiedGraphicsFeature.SolidTilesStyle.All[0];
+
+        private SimplifiedGraphicsFeature.SolidTilesStyle simplifiedSolidTilesStyle;
+
+        public SimplifiedGraphicsFeature.SolidTilesStyle SimplifiedSolidTilesStyle {
+            get => simplifiedSolidTilesStyle;
+            set {
+                simplifiedSolidTilesStyle = value;
+                if (SimplifiedGraphics && Engine.Scene is Level level) {
+                    SimplifiedGraphicsFeature.ReplaceSolidTilesStyle(level);
+                }
+            }
+        }
+
         public bool SimplifiedBackgroundTiles { get; set; } = false;
         public bool SimplifiedBackdrop { get; set; } = true;
         public bool SimplifiedDecal { get; set; } = true;

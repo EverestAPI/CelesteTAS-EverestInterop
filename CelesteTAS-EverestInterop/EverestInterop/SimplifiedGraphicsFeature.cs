@@ -72,13 +72,7 @@ namespace TAS.EverestInterop {
                         Settings.SimplifiedColorGrade).Change(value => Settings.SimplifiedColorGrade = value));
                 subMenu.Add(
                     new TextMenuExt.EnumerableSlider<SolidTilesStyle>("Solid Tiles Style".ToDialogText(), SolidTilesStyle.All,
-                        Settings.SimplifiedSolidTilesStyle).Change(value => {
-                        Settings.SimplifiedSolidTilesStyle = value;
-
-                        if (Settings.SimplifiedGraphics && Engine.Scene is Level level) {
-                            ReplaceSolidTilesStyle(level);
-                        }
-                    }));
+                        Settings.SimplifiedSolidTilesStyle).Change(value => Settings.SimplifiedSolidTilesStyle = value));
                 subMenu.Add(
                     new TextMenuExt.EnumerableSlider<bool>("Background Tiles".ToDialogText(), Menu.CreateDefaultHideOptions(),
                             Settings.SimplifiedBackgroundTiles)
@@ -285,7 +279,7 @@ namespace TAS.EverestInterop {
             }
         }
 
-        private static void ReplaceSolidTilesStyle(Level level) {
+        public static void ReplaceSolidTilesStyle(Level level) {
             level.SolidTiles?.RemoveSelf();
             level.Add(level.SolidTiles = new SolidTiles(new Vector2(level.TileBounds.X, level.TileBounds.Y) * 8f, level.SolidsData));
         }
