@@ -178,10 +178,7 @@ namespace TAS.EverestInterop {
                 ModTypeUtils.GetTypes().Where(type => type.FullName?.EndsWith("Renderer+Edge") == true)
                     .Select(type => type.GetMethodInfo("GetWaveAt")).ToArray()
             );
-
-            SkipMethod(SimplifiedWavedBlock, "Render",
-                typeof(LightningRenderer), typeof(LightningRenderer).GetNestedType("Bolt", BindingFlags.NonPublic)
-            );
+            On.Celeste.LightningRenderer.Bolt.Render += BoltOnRender;
 
             SkipMethod(() => Settings.SimplifiedGraphics && Settings.SimplifiedScreenWipe, "Render",
                 typeof(SpotlightWipe), typeof(FadeWipe)
@@ -216,6 +213,7 @@ namespace TAS.EverestInterop {
             On.Celeste.FloatingDebris.ctor_Vector2 -= FloatingDebris_ctor;
             On.Celeste.MoonCreature.ctor_Vector2 -= MoonCreature_ctor;
             IL.Celeste.LightingRenderer.Render -= LightingRenderer_Render;
+            On.Celeste.LightningRenderer.Bolt.Render -= BoltOnRender;
             On.Celeste.ColorGrade.Set_MTexture_MTexture_float -= ColorGradeOnSet_MTexture_MTexture_float;
             IL.Celeste.BloomRenderer.Apply -= BloomRendererOnApply;
             On.Celeste.Decal.Render -= Decal_Render;
@@ -485,6 +483,15 @@ namespace TAS.EverestInterop {
                 )) {
                 c.EmitDelegate<Func<bool, bool>>(drawEdges => (!Settings.SimplifiedGraphics || !Settings.SimplifiedWavedEdge) && drawEdges);
             }
+        }
+
+        private static void BoltOnRender(On.Celeste.LightningRenderer.Bolt.orig_Render orig, object self) {
+            if (Settings.SimplifiedGraphics && Settings.SimplifiedWavedEdge) {
+                return;
+                return;
+            }
+
+            orig(self);
         }
 
         private static EventInstance AudioOnPlay_string(On.Celeste.Audio.orig_Play_string orig, string path) {
