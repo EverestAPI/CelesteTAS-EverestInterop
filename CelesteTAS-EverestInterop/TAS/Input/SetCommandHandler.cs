@@ -246,7 +246,6 @@ namespace TAS.Input {
                 MemberInfo[] members = type.GetMembers().Where(info => (info.MemberType & (MemberTypes.Field | MemberTypes.Property)) != 0).ToArray();
                 for (int i = 0; i < members.Length && i < values.Length; i++) {
                     string memberName = members[i].Name;
-                    $"{memberName}={values[i]}".DebugLog();
                     if (type.GetField(memberName) is { } fieldInfo) {
                         fieldInfo.SetValue(instance, Convert(values[i], fieldInfo.FieldType));
                     } else if (type.GetProperty(memberName) is { } propertyInfo) {
