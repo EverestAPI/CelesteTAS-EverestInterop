@@ -281,12 +281,25 @@ namespace TAS.EverestInterop {
         }
 
         public static void ReplaceSolidTilesStyle() {
-            if (Engine.Scene is not Level level) {
+            if (Engine.Scene is not Level {SolidTiles: { } solidTiles} level) {
                 return;
             }
 
-            level.SolidTiles?.RemoveSelf();
-            level.Add(level.SolidTiles = new SolidTiles(new Vector2(level.TileBounds.X, level.TileBounds.Y) * 8f, level.SolidsData));
+            SolidTiles newSolidTiles = new(new Vector2(level.TileBounds.X, level.TileBounds.Y) * 8f, level.SolidsData);
+
+            if (solidTiles.Tiles is { } tiles) {
+                tiles.RemoveSelf();
+                newSolidTiles.Tiles.VisualExtend = tiles.VisualExtend;
+                newSolidTiles.Tiles.ClipCamera = tiles.ClipCamera;
+            }
+
+            if (solidTiles.AnimatedTiles is { } animatedTiles) {
+                animatedTiles.RemoveSelf();
+                newSolidTiles.AnimatedTiles.ClipCamera = animatedTiles.ClipCamera;
+            }
+
+            solidTiles.Add(solidTiles.Tiles = newSolidTiles.Tiles);
+            solidTiles.Add(solidTiles.AnimatedTiles = newSolidTiles.AnimatedTiles);
         }
 
         private static void Level_Update(On.Celeste.Level.orig_Update orig, Level self) {
