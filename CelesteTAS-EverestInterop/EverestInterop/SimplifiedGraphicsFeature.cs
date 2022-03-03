@@ -276,11 +276,15 @@ namespace TAS.EverestInterop {
 
             if (simplifiedGraphics && currentSolidTilesStyle != Settings.SimplifiedSolidTilesStyle ||
                 !simplifiedGraphics && currentSolidTilesStyle != default) {
-                ReplaceSolidTilesStyle(level);
+                ReplaceSolidTilesStyle();
             }
         }
 
-        public static void ReplaceSolidTilesStyle(Level level) {
+        public static void ReplaceSolidTilesStyle() {
+            if (Engine.Scene is not Level level) {
+                return;
+            }
+
             level.SolidTiles?.RemoveSelf();
             level.Add(level.SolidTiles = new SolidTiles(new Vector2(level.TileBounds.X, level.TileBounds.Y) * 8f, level.SolidsData));
         }
@@ -494,7 +498,6 @@ namespace TAS.EverestInterop {
         private static void BoltOnRender(On.Celeste.LightningRenderer.Bolt.orig_Render orig, object self) {
             if (Settings.SimplifiedGraphics && Settings.SimplifiedWavedEdge) {
                 return;
-                return;
             }
 
             orig(self);
@@ -510,7 +513,7 @@ namespace TAS.EverestInterop {
         }
 
         private static void SpikesOnCtor_Vector2_int_Directions_string(On.Celeste.Spikes.orig_ctor_Vector2_int_Directions_string orig, Spikes self,
-            Vector2 position, int size, Celeste.Spikes.Directions direction, string type) {
+            Vector2 position, int size, Spikes.Directions direction, string type) {
             if (Settings.SimplifiedGraphics && Settings.SimplifiedSpikes) {
                 type = "outline";
             }

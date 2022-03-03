@@ -218,17 +218,19 @@ namespace TAS.Input {
             }
         }
 
-        private static object ConvertType(string[] values, Type type) {
-            object Convert(object value, Type objectType) {
-                try {
-                    return objectType.IsEnum && value is string enumName
-                        ? Enum.Parse(objectType, enumName, true)
-                        : System.Convert.ChangeType(value, objectType);
-                } catch {
-                    return value;
+        private static object Convert(object value, Type type) {
+            try {
+                if (value is string s && s.IsEmpty()) {
+                    return type.IsValueType ? Activator.CreateInstance(type) : null;
+                } else {
+                    return type.IsEnum ? Enum.Parse(type, (string) value, true) : System.Convert.ChangeType(value, type);
                 }
+            } catch {
+                return value;
             }
+        }
 
+        private static object ConvertType(string[] values, Type type) {
             if (values.Length == 2 && type == typeof(Vector2)) {
                 float.TryParse(values[0], out float x);
                 float.TryParse(values[1], out float y);
@@ -239,12 +241,12 @@ namespace TAS.Input {
                 } else {
                     return Convert(values[0], type);
                 }
-            } else if (values.Length >= 2 && type.IsStructType()) {
+            } else if (values.Length >= 2) {
                 object instance = Activator.CreateInstance(type);
                 MemberInfo[] members = type.GetMembers().Where(info => (info.MemberType & (MemberTypes.Field | MemberTypes.Property)) != 0).ToArray();
                 for (int i = 0; i < members.Length && i < values.Length; i++) {
                     string memberName = members[i].Name;
-                    memberName.DebugLog();
+                    $"{memberName}={values[i]}".DebugLog();
                     if (type.GetField(memberName) is { } fieldInfo) {
                         fieldInfo.SetValue(instance, Convert(values[i], fieldInfo.FieldType));
                     } else if (type.GetProperty(memberName) is { } propertyInfo) {

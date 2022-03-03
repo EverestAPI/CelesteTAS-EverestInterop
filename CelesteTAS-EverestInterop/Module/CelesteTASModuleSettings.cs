@@ -1,4 +1,4 @@
-﻿using Celeste;
+﻿using System.Linq;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
@@ -134,9 +134,9 @@ namespace TAS.Module {
         public SimplifiedGraphicsFeature.SolidTilesStyle SimplifiedSolidTilesStyle {
             get => simplifiedSolidTilesStyle;
             set {
-                simplifiedSolidTilesStyle = value;
-                if (SimplifiedGraphics && Engine.Scene is Level level) {
-                    SimplifiedGraphicsFeature.ReplaceSolidTilesStyle(level);
+                if (simplifiedSolidTilesStyle != value && SimplifiedGraphicsFeature.SolidTilesStyle.All.Any(style => style.Value == value.Value)) {
+                    simplifiedSolidTilesStyle = value;
+                    SimplifiedGraphicsFeature.ReplaceSolidTilesStyle();
                 }
             }
         }
