@@ -34,7 +34,7 @@ namespace TAS.EverestInterop.InfoHUD {
             CachedGetMethodInfos.Clear();
             CachedSetMethodInfos.Clear();
             CachedFieldInfos.Clear();
-            foreach (Type type in ModTypeUtils.GetTypes()) {
+            foreach (Type type in ModUtils.GetTypes()) {
                 if (type.FullName != null) {
                     AllTypes[$"{type.FullName}@{type.Assembly.GetName().Name}"] = type;
                 }

@@ -40,7 +40,7 @@ namespace TAS.EverestInterop.Hitboxes {
             IL.Celeste.Seeker.DebugRender += SeekerOnDebugRender;
             On.Celeste.Seeker.DebugRender += SeekerOnDebugRender;
             On.Celeste.Level.LoadLevel += LevelOnLoadLevel;
-            bgModeToggleBgSolidTiles = ModTypeUtils.GetType("Celeste.BGModeToggle")?.GetFieldInfo("bgSolidTiles")?.CreateDelegate_Get<Func<Solid>>();
+            bgModeToggleBgSolidTiles = ModUtils.GetType("Celeste.BGModeToggle")?.GetFieldInfo("bgSolidTiles")?.CreateDelegate_Get<Func<Solid>>();
         }
 
         [Unload]

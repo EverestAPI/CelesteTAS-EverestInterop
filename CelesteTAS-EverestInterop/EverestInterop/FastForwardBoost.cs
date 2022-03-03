@@ -20,7 +20,7 @@ namespace TAS.EverestInterop {
 
         [Initialize]
         private static void Initialize() {
-            if (ModTypeUtils.GetType("Celeste.Mod.IsaGrabBag.DreamSpinnerBorder")?.GetMethodInfo("Update") is
+            if (ModUtils.GetType("Celeste.Mod.IsaGrabBag.DreamSpinnerBorder")?.GetMethodInfo("Update") is
                 { } updateMethod) {
                 IlHooks.Add(new ILHook(updateMethod, SkipUpdateMethod));
             }

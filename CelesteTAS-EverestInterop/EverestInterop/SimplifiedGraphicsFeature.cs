@@ -123,20 +123,20 @@ namespace TAS.EverestInterop {
             // Optional: Various graphical simplifications to cut down on visual noise.
             On.Celeste.Level.Update += Level_Update;
 
-            if (ModTypeUtils.GetType("FrostHelper.CustomSpinner") is { } customSpinnerType) {
+            if (ModUtils.GetType("FrostHelper.CustomSpinner") is { } customSpinnerType) {
                 foreach (ConstructorInfo constructorInfo in customSpinnerType.GetConstructors()) {
                     IlHooks.Add(new ILHook(constructorInfo, ModCustomSpinnerColor));
                 }
             }
 
-            if (ModTypeUtils.GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController") is
+            if (ModUtils.GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController") is
                 { } rainbowSpinnerType) {
                 foreach (ConstructorInfo constructorInfo in rainbowSpinnerType.GetConstructors()) {
                     IlHooks.Add(new ILHook(constructorInfo, ModRainbowSpinnerColor));
                 }
             }
 
-            if (ModTypeUtils.GetType("VivHelper.Entities.CustomSpinner")?.GetMethodInfo("CreateSprites") is
+            if (ModUtils.GetType("VivHelper.Entities.CustomSpinner")?.GetMethodInfo("CreateSprites") is
                 { } customSpinnerCreateSprites) {
                 IlHooks.Add(new ILHook(customSpinnerCreateSprites, ModVivCustomSpinnerColor));
             }
@@ -175,7 +175,7 @@ namespace TAS.EverestInterop {
             );
             ReturnZeroMethod(
                 SimplifiedWavedBlock,
-                ModTypeUtils.GetTypes().Where(type => type.FullName?.EndsWith("Renderer+Edge") == true)
+                ModUtils.GetTypes().Where(type => type.FullName?.EndsWith("Renderer+Edge") == true)
                     .Select(type => type.GetMethodInfo("GetWaveAt")).ToArray()
             );
             On.Celeste.LightningRenderer.Bolt.Render += BoltOnRender;
@@ -187,7 +187,7 @@ namespace TAS.EverestInterop {
             On.Celeste.Audio.Play_string += AudioOnPlay_string;
             SkipMethod(() => Settings.SimplifiedGraphics && Settings.SimplifiedLightningStrike, "Render",
                 typeof(LightningStrike),
-                ModTypeUtils.GetType("ContortHelper.BetterLightningStrike")
+                ModUtils.GetType("ContortHelper.BetterLightningStrike")
             );
 
             SkipMethod(() => Settings.SimplifiedGraphics && Settings.SimplifiedClutteredEntity, "Render",
@@ -574,7 +574,7 @@ namespace TAS.EverestInterop {
             ilCursor.EmitDelegate<Func<bool>>(() => Settings.SimplifiedGraphics && Settings.SimplifiedSpinnerColor.Value != null);
             ilCursor.Emit(OpCodes.Brfalse, start);
 
-            Type type = ModTypeUtils.GetType("VivHelper.Entities.CustomSpinner");
+            Type type = ModUtils.GetType("VivHelper.Entities.CustomSpinner");
             if (type.GetFieldInfo("color") is { } colorField) {
                 ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Func<Color>>(() => Settings.SimplifiedSpinnerColor.Color);
                 ilCursor.Emit(OpCodes.Stfld, colorField);

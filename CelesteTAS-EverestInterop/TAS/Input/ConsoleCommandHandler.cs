@@ -18,7 +18,6 @@ namespace TAS.Input {
         private static Vector2 resetRemainder;
         private static Vector2 initSpeed;
 
-        // ReSharper disable once UnusedMember.Local
         [Load]
         private static void Load() {
             On.Celeste.Level.LoadNewPlayer += LevelOnLoadNewPlayer;
@@ -26,7 +25,6 @@ namespace TAS.Input {
             IL.Celeste.NPC06_Theo_Plateau.Awake += NPC06_Theo_PlateauOnAwake;
         }
 
-        // ReSharper disable once UnusedMember.Local
         [Unload]
         private static void Unload() {
             On.Celeste.Level.LoadNewPlayer -= LevelOnLoadNewPlayer;
@@ -217,7 +215,7 @@ namespace TAS.Input {
             }
 
             session.StartedFromBeginning = spawnPoint == null && session.FirstLevel;
-            Engine.Scene = new LevelLoader(session, startPosition);
+            EnterLevel(new LevelLoader(session, startPosition));
         }
 
         private static void Load(AreaMode mode, int levelId, Vector2 spawnPoint, Vector2 remainder, Vector2 speed) {
@@ -233,7 +231,20 @@ namespace TAS.Input {
             session.RespawnPoint = spawnPoint;
             resetRemainder = remainder;
             initSpeed = speed;
-            Engine.Scene = new LevelLoader(session);
+            EnterLevel(new LevelLoader(session));
+        }
+
+        private static void EnterLevel(LevelLoader levelLoader) {
+            // fix game crash when leaving a map exist TileGlitcher
+            if (Engine.Scene is Level level && ModUtils.IsInstalled("PandorasBox")) {
+                foreach (Entity entity in level.Entities) {
+                    if (entity.GetType().FullName == "Celeste.Mod.PandorasBox.TileGlitcher") {
+                        entity.Active = false;
+                    }
+                }
+            }
+
+            Engine.Scene = levelLoader;
         }
 
         public static string CreateConsoleCommand(bool simple) {

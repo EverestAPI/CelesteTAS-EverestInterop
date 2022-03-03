@@ -36,7 +36,7 @@ namespace TAS.EverestInterop.Hitboxes {
 
         [Initialize]
         private static void Initialize() {
-            groupedTriggerSpikesType = ModTypeUtils.GetType("Celeste.Mod.MaxHelpingHand.Entities.GroupedTriggerSpikes");
+            groupedTriggerSpikesType = ModUtils.GetType("Celeste.Mod.MaxHelpingHand.Entities.GroupedTriggerSpikes");
             groupedTriggerSpikesTriggered = groupedTriggerSpikesType?.CreateDelegate_Get<object, bool>("Triggered");
             groupedTriggerSpikesLerp = groupedTriggerSpikesType?.CreateDelegate_Get<object, float>("Lerp");
             if (groupedTriggerSpikesType != null && groupedTriggerSpikesTriggered != null && groupedTriggerSpikesLerp != null) {
