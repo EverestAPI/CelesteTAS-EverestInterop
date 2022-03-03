@@ -136,7 +136,9 @@ namespace TAS.Module {
             set {
                 if (simplifiedSolidTilesStyle != value && SimplifiedGraphicsFeature.SolidTilesStyle.All.Any(style => style.Value == value.Value)) {
                     simplifiedSolidTilesStyle = value;
-                    SimplifiedGraphicsFeature.ReplaceSolidTilesStyle();
+                    if (SimplifiedGraphics) {
+                        SimplifiedGraphicsFeature.ReplaceSolidTilesStyle();
+                    }
                 }
             }
         }
