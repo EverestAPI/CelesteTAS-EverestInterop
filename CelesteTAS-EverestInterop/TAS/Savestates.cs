@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Celeste;
-using Celeste.Mod.SpeedrunTool;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Monocle;
 using TAS.EverestInterop;
@@ -15,7 +14,6 @@ using TasStates = TAS.States;
 
 namespace TAS {
     public static class Savestates {
-        private static bool origSpeedrunToolEnabled;
         private static InputController savedController;
 
         private static readonly Dictionary<FieldInfo, object> SavedGameInfo = new() {
@@ -220,29 +218,6 @@ namespace TAS {
         private static void ClearStateWhenHotReload() {
             if (IsSaved_Safe()) {
                 Clear();
-            }
-        }
-
-        [EnableRun]
-        private static void OnEnableRun() {
-            if (SpeedrunToolInstalled) {
-                DisableSpeedrunTool();
-            }
-
-            void DisableSpeedrunTool() {
-                origSpeedrunToolEnabled = SpeedrunToolModule.Settings.Enabled;
-                SpeedrunToolModule.Settings.Enabled = false;
-            }
-        }
-
-        [DisableRun]
-        private static void OnDisableRun() {
-            if (SpeedrunToolInstalled) {
-                RestoreSpeedrunTool();
-            }
-
-            void RestoreSpeedrunTool() {
-                SpeedrunToolModule.Settings.Enabled = origSpeedrunToolEnabled;
             }
         }
     }
