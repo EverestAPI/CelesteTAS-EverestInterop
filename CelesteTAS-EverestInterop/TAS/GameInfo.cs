@@ -19,7 +19,7 @@ using TAS.Utils;
 
 namespace TAS {
     public static class GameInfo {
-        private static readonly Func<SummitVignette, bool> SummitVignetteReady = "ready".CreateDelegate_Get<SummitVignette, bool>();
+        private static readonly Func<SummitVignette, bool> SummitVignetteReady = FastReflection.CreateGetDelegate<SummitVignette, bool>("ready");
         private static readonly DWallJumpCheck WallJumpCheck;
         private static readonly GetBerryFloat StrawberryCollectTimer;
         private static readonly GetFloat DashCooldownTimer;
@@ -73,20 +73,20 @@ namespace TAS {
             FieldInfo waitTimer = typeof(Coroutine).GetFieldInfo("waitTimer");
 
             WallJumpCheck = (DWallJumpCheck) wallJumpCheck.CreateDelegate(typeof(DWallJumpCheck));
-            StrawberryCollectTimer = strawberryCollectTimer.CreateDelegate_Get<GetBerryFloat>();
-            DashCooldownTimer = dashCooldownTimer.CreateDelegate_Get<GetFloat>();
-            JumpGraceTimer = jumpGraceTimer.CreateDelegate_Get<GetFloat>();
-            VarJumpTimer = varJumpTimer.CreateDelegate_Get<GetFloat>();
-            MaxFall = maxFall.CreateDelegate_Get<GetFloat>();
-            PlayerSeekerSpeed = playerSeekerSpeed.CreateDelegate_Get<GetPlayerSeekerSpeed>();
-            PlayerSeekerDashTimer = playerSeekerDashTimer.CreateDelegate_Get<GetPlayerSeekerDashTimer>();
+            StrawberryCollectTimer = strawberryCollectTimer.CreateGetDelegate<GetBerryFloat>();
+            DashCooldownTimer = dashCooldownTimer.CreateGetDelegate<GetFloat>();
+            JumpGraceTimer = jumpGraceTimer.CreateGetDelegate<GetFloat>();
+            VarJumpTimer = varJumpTimer.CreateGetDelegate<GetFloat>();
+            MaxFall = maxFall.CreateGetDelegate<GetFloat>();
+            PlayerSeekerSpeed = playerSeekerSpeed.CreateGetDelegate<GetPlayerSeekerSpeed>();
+            PlayerSeekerDashTimer = playerSeekerDashTimer.CreateGetDelegate<GetPlayerSeekerDashTimer>();
             PlayerLiftBoost = (Func<Player, Vector2>) playerLiftSpeed.CreateDelegate(typeof(Func<Player, Vector2>));
-            ActorLiftSpeedTimer = actorLiftSpeedTimer.CreateDelegate_Get<GetFloat>();
-            PlayerRetainedSpeed = playerRetainedSpeed.CreateDelegate_Get<GetFloat>();
-            PlayerRetainedSpeedTimer = playerRetainedSpeedTimer.CreateDelegate_Get<GetFloat>();
-            LevelUnpauseTimer = levelUnpauseTimer?.CreateDelegate_Get<Func<Level, float>>();
-            StateMachineCurrentCoroutine = currentCoroutine.CreateDelegate_Get<Func<StateMachine, Coroutine>>();
-            CoroutineWaitTimer = waitTimer.CreateDelegate_Get<Func<Coroutine, float>>();
+            ActorLiftSpeedTimer = actorLiftSpeedTimer.CreateGetDelegate<GetFloat>();
+            PlayerRetainedSpeed = playerRetainedSpeed.CreateGetDelegate<GetFloat>();
+            PlayerRetainedSpeedTimer = playerRetainedSpeedTimer.CreateGetDelegate<GetFloat>();
+            LevelUnpauseTimer = levelUnpauseTimer?.CreateGetDelegate<Func<Level, float>>();
+            StateMachineCurrentCoroutine = currentCoroutine.CreateGetDelegate<Func<StateMachine, Coroutine>>();
+            CoroutineWaitTimer = waitTimer.CreateGetDelegate<Func<Coroutine, float>>();
         }
 
         private static CelesteTasModuleSettings TasSettings => CelesteTasModule.Settings;

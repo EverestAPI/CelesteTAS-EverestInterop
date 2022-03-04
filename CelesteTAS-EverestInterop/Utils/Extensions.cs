@@ -11,6 +11,46 @@ using Monocle;
 using MonoMod.Utils;
 
 namespace TAS.Utils {
+    internal static class FastReflection {
+        public static T CreateGetDelegate<T>(this FieldInfo field) where T : Delegate {
+            bool isStatic = field.IsStatic;
+            Type[] param;
+            if (isStatic) {
+                param = Type.EmptyTypes;
+            } else if (typeof(T) is {IsGenericType: true} t && t.GetGenericTypeDefinition() == typeof(Func<,>)) {
+                param = new[] {t.GetGenericArguments()[0]};
+            } else {
+                param = new[] {field.DeclaringType};
+            }
+
+            DynamicMethod dyn = new($"{field.DeclaringType?.FullName}_{field.Name}_FastAccess", field.FieldType, param, field.DeclaringType);
+            ILGenerator ilGen = dyn.GetILGenerator();
+            if (isStatic) {
+                ilGen.Emit(OpCodes.Ldsfld, field);
+            } else {
+                ilGen.Emit(OpCodes.Ldarg_0);
+                if (field.DeclaringType.IsValueType) {
+                    ilGen.Emit(OpCodes.Unbox_Any, field.DeclaringType);
+                }
+
+                ilGen.Emit(OpCodes.Ldfld, field);
+            }
+
+            ilGen.Emit(OpCodes.Ret);
+            return dyn.CreateDelegate(typeof(T)) as T;
+        }
+
+        public static Func<T, TResult> CreateGetDelegate<T, TResult>(this Type type, string fieldName) {
+            FieldInfo field = type.GetFieldInfo(fieldName);
+            return field == null ? null : CreateGetDelegate<Func<T, TResult>>(field);
+        }
+
+        public static Func<T, TResult> CreateGetDelegate<T, TResult>(string fieldName) {
+            FieldInfo field = typeof(T).GetFieldInfo(fieldName);
+            return field == null ? null : CreateGetDelegate<Func<T, TResult>>(field);
+        }
+    }
+
     internal static class ReflectionExtensions {
         private const BindingFlags StaticInstanceAnyVisibility =
             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
@@ -205,40 +245,6 @@ namespace TAS.Utils {
 
         public static void InvokeMethod(this Type type, string name, params object[] parameters) {
             type.GetMethodInfo(name)?.Invoke(null, parameters);
-        }
-
-        public static T CreateDelegate_Get<T>(this FieldInfo field) where T : Delegate {
-            bool isStatic = field.IsStatic;
-            Type[] param;
-            if (isStatic) {
-                param = Type.EmptyTypes;
-            } else if (typeof(T) is {IsGenericType: true} t && t.GetGenericTypeDefinition() == typeof(Func<,>)) {
-                param = new[] {t.GetGenericArguments()[0]};
-            } else {
-                param = new[] {field.DeclaringType};
-            }
-
-            DynamicMethod dyn = new($"{field.DeclaringType?.FullName}_{field.Name}_FastAccess", field.FieldType, param, field.DeclaringType);
-            ILGenerator ilGen = dyn.GetILGenerator();
-            if (isStatic) {
-                ilGen.Emit(OpCodes.Ldsfld, field);
-            } else {
-                ilGen.Emit(OpCodes.Ldarg_0);
-                ilGen.Emit(OpCodes.Ldfld, field);
-            }
-
-            ilGen.Emit(OpCodes.Ret);
-            return dyn.CreateDelegate(typeof(T)) as T;
-        }
-
-        public static Func<T, TResult> CreateDelegate_Get<T, TResult>(this Type type, string fieldName) {
-            FieldInfo field = type.GetFieldInfo(fieldName);
-            return field == null ? null : CreateDelegate_Get<Func<T, TResult>>(field);
-        }
-
-        public static Func<T, TResult> CreateDelegate_Get<T, TResult>(this string fieldName) {
-            FieldInfo field = typeof(T).GetFieldInfo(fieldName);
-            return field == null ? null : CreateDelegate_Get<Func<T, TResult>>(field);
         }
     }
 

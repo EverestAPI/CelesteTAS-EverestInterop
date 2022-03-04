@@ -12,11 +12,11 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxSimplified {
-        private static readonly Func<FireBall, bool> FireBallIceMode = "iceMode".CreateDelegate_Get<FireBall, bool>();
-        private static readonly Func<Strawberry, bool> StrawberryCollected = "collected".CreateDelegate_Get<Strawberry, bool>();
+        private static readonly Func<FireBall, bool> FireBallIceMode = FastReflection.CreateGetDelegate<FireBall, bool>("iceMode");
+        private static readonly Func<Strawberry, bool> StrawberryCollected = FastReflection.CreateGetDelegate<Strawberry, bool>("collected");
 
         private static readonly Lazy<Func<object, bool>> GeckoHostile = new(() =>
-            Type.GetType("Celeste.Mod.JungleHelper.Entities.Gecko, JungleHelper")?.CreateDelegate_Get<object, bool>("hostile"));
+            Type.GetType("Celeste.Mod.JungleHelper.Entities.Gecko, JungleHelper")?.CreateGetDelegate<object, bool>("hostile"));
 
         private static readonly HashSet<Type> UselessTypes = new() {
             typeof(ClutterBlock),

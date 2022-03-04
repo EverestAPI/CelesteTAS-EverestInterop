@@ -8,10 +8,10 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxNpc {
         private static readonly Func<NPC05_Badeline, BadelineDummy> Npc05BadelineShadow =
-            "shadow".CreateDelegate_Get<NPC05_Badeline, BadelineDummy>();
+            FastReflection.CreateGetDelegate<NPC05_Badeline, BadelineDummy>("shadow");
 
         private static readonly Func<NPC03_Oshiro_Cluttter, int> Npc03OshiroSectionsComplete =
-            "sectionsComplete".CreateDelegate_Get<NPC03_Oshiro_Cluttter, int>();
+            FastReflection.CreateGetDelegate<NPC03_Oshiro_Cluttter, int>("sectionsComplete");
 
         [Load]
         private static void Load() {

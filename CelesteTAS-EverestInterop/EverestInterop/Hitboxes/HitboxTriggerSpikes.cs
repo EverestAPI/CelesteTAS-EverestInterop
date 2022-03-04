@@ -10,19 +10,19 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Hitboxes {
     public static class HitboxTriggerSpikes {
         private static readonly Func<TriggerSpikes, TriggerSpikes.Directions> TriggerSpikesDirection =
-            typeof(TriggerSpikes).GetFieldInfo("direction").CreateDelegate_Get<Func<TriggerSpikes, TriggerSpikes.Directions>>();
+            typeof(TriggerSpikes).GetFieldInfo("direction").CreateGetDelegate<Func<TriggerSpikes, TriggerSpikes.Directions>>();
 
-        private static readonly Func<object, Array> TriggerSpikesSpikes = typeof(TriggerSpikes).CreateDelegate_Get<object, Array>("spikes");
+        private static readonly Func<object, Array> TriggerSpikesSpikes = typeof(TriggerSpikes).CreateGetDelegate<object, Array>("spikes");
 
         private static FieldInfo triggerSpikesTriggered;
         private static FieldInfo triggerSpikesLerp;
 
         private static readonly Func<TriggerSpikesOriginal, TriggerSpikesOriginal.Directions> TriggerSpikesOriginalDirection =
             typeof(TriggerSpikesOriginal).GetFieldInfo("direction")
-                .CreateDelegate_Get<Func<TriggerSpikesOriginal, TriggerSpikesOriginal.Directions>>();
+                .CreateGetDelegate<Func<TriggerSpikesOriginal, TriggerSpikesOriginal.Directions>>();
 
         private static readonly Func<object, Array> TriggerSpikesOriginalSpikes =
-            typeof(TriggerSpikesOriginal).CreateDelegate_Get<object, Array>("spikes");
+            typeof(TriggerSpikesOriginal).CreateGetDelegate<object, Array>("spikes");
 
         private static FieldInfo triggerSpikesOriginalTriggered;
         private static FieldInfo triggerSpikesOriginalLerp;
@@ -37,8 +37,8 @@ namespace TAS.EverestInterop.Hitboxes {
         [Initialize]
         private static void Initialize() {
             groupedTriggerSpikesType = ModUtils.GetType("Celeste.Mod.MaxHelpingHand.Entities.GroupedTriggerSpikes");
-            groupedTriggerSpikesTriggered = groupedTriggerSpikesType?.CreateDelegate_Get<object, bool>("Triggered");
-            groupedTriggerSpikesLerp = groupedTriggerSpikesType?.CreateDelegate_Get<object, float>("Lerp");
+            groupedTriggerSpikesTriggered = groupedTriggerSpikesType?.CreateGetDelegate<object, bool>("Triggered");
+            groupedTriggerSpikesLerp = groupedTriggerSpikesType?.CreateGetDelegate<object, float>("Lerp");
             if (groupedTriggerSpikesType != null && groupedTriggerSpikesTriggered != null && groupedTriggerSpikesLerp != null) {
                 On.Monocle.Entity.DebugRender += ShowGroupedTriggerSpikesHitboxes;
             }
