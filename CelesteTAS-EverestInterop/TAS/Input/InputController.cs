@@ -321,13 +321,13 @@ namespace TAS.Input {
         // ReSharper disable once UnusedMember.Local
         [Unload]
         private static void SaveStudioTasFilePath() {
-            Engine.Instance.GetDynDataInstance().Set(nameof(studioTasFilePath), studioTasFilePath);
+            Engine.Instance.GetDynamicDataInstance().Set(nameof(studioTasFilePath), studioTasFilePath);
         }
 
         // ReSharper disable once UnusedMember.Local
         [Load]
         private static void RestoreStudioTasFilePath() {
-            studioTasFilePath = Engine.Instance.GetDynDataInstance().Get<string>(nameof(studioTasFilePath));
+            studioTasFilePath = Engine.Instance.GetDynamicDataInstance().Get<string>(nameof(studioTasFilePath));
         }
 
         #region ignore

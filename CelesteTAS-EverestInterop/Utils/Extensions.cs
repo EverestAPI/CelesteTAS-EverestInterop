@@ -207,14 +207,6 @@ namespace TAS.Utils {
             type.GetMethodInfo(name)?.Invoke(null, parameters);
         }
 
-        public static bool IsSameOrSubclassOf(this Type potentialDescendant, Type potentialBase) {
-            return potentialDescendant.IsSubclassOf(potentialBase) || potentialDescendant == potentialBase;
-        }
-
-        public static bool IsSameOrSubclassOf(this Type potentialDescendant, params Type[] potentialBases) {
-            return potentialBases.Any(potentialDescendant.IsSameOrSubclassOf);
-        }
-
         public static T CreateDelegate_Get<T>(this FieldInfo field) where T : Delegate {
             bool isStatic = field.IsStatic;
             Type[] param;
@@ -251,6 +243,14 @@ namespace TAS.Utils {
     }
 
     internal static class TypeExtensions {
+        public static bool IsSameOrSubclassOf(this Type potentialDescendant, Type potentialBase) {
+            return potentialDescendant.IsSubclassOf(potentialBase) || potentialDescendant == potentialBase;
+        }
+
+        public static bool IsSameOrSubclassOf(this Type potentialDescendant, params Type[] potentialBases) {
+            return potentialBases.Any(potentialDescendant.IsSameOrSubclassOf);
+        }
+
         public static bool IsSimpleType(this Type type) {
             return type.IsPrimitive || type.IsEnum || type == typeof(string) || type == typeof(decimal) || type == typeof(Vector2);
         }
@@ -387,21 +387,16 @@ namespace TAS.Utils {
         }
     }
 
-    internal static class DynDataExtensions {
-        public static DynData<T> GetDynDataInstance<T>(this T target) where T : class {
-            object obj = target;
-            if (target == null) {
-                obj = typeof(T);
+    internal static class DynamicDataExtensions {
+        public static DynamicData GetDynamicDataInstance(this object obj) {
+            string dynDataInstanceKey = $"{obj.GetType().FullName}_DynDataInstanceKey";
+            DynamicData dynamicData = obj.GetExtendedDataValue<DynamicData>(dynDataInstanceKey);
+            if (dynamicData == null) {
+                dynamicData = new DynamicData(obj);
+                obj.SetExtendedDataValue(dynDataInstanceKey, dynamicData);
             }
 
-            string dynDataInstanceKey = $"{typeof(T).FullName}_DynDataInstanceKey";
-            DynData<T> dynData = obj.GetExtendedDataValue<DynData<T>>(dynDataInstanceKey);
-            if (dynData == null) {
-                dynData = new DynData<T>(target);
-                obj.SetExtendedDataValue(dynDataInstanceKey, dynData);
-            }
-
-            return dynData;
+            return dynamicData;
         }
     }
 
@@ -409,11 +404,11 @@ namespace TAS.Utils {
         private const string CelesteTasEntityDataKey = nameof(CelesteTasEntityDataKey);
 
         public static void SetEntityData(this Entity entity, EntityData data) {
-            entity.GetDynDataInstance().Set(CelesteTasEntityDataKey, data);
+            entity.GetDynamicDataInstance().Set(CelesteTasEntityDataKey, data);
         }
 
         public static EntityData GetEntityData(this Entity entity) {
-            return entity.GetDynDataInstance().Get<EntityData>(CelesteTasEntityDataKey);
+            return entity.GetDynamicDataInstance().Get<EntityData>(CelesteTasEntityDataKey);
         }
 
         public static EntityID ToEntityId(this EntityData entityData) {

@@ -82,7 +82,7 @@ namespace TAS {
         }
 
         private static void SetTasBindingsV1312() {
-            DynData<Settings> settings = Settings.Instance.GetDynDataInstance();
+            DynamicData settings = Settings.Instance.GetDynamicDataInstance();
             settings.Set("Left", Keys.None);
             settings.Set("Right", Keys.None);
             settings.Set("Down", Keys.None);
@@ -150,14 +150,14 @@ namespace TAS {
         private static void SetBinding(string fieldName, params Buttons[] buttons) {
             object binding = Activator.CreateInstance(BindingType);
             BindingAddButtons.Invoke(binding, new object[] {buttons});
-            Settings.Instance.GetDynDataInstance().Set(fieldName, binding);
+            Settings.Instance.GetDynamicDataInstance().Set(fieldName, binding);
         }
 
         private static void SetBinding(string fieldName, Keys[] keys, params Buttons[] buttons) {
             object binding = Activator.CreateInstance(BindingType);
             BindingAddKeys.Invoke(binding, new object[] {keys});
             BindingAddButtons.Invoke(binding, new object[] {buttons});
-            Settings.Instance.GetDynDataInstance().Set(fieldName, binding);
+            Settings.Instance.GetDynamicDataInstance().Set(fieldName, binding);
         }
     }
 }

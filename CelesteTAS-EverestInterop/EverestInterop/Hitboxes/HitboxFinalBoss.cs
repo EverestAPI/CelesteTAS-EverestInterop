@@ -28,10 +28,10 @@ namespace TAS.EverestInterop.Hitboxes {
             orig(self, camera);
 
             if (self is FinalBossBeam finalBossBeam) {
-                DynData<FinalBossBeam> dynData = finalBossBeam.GetDynDataInstance();
-                if (dynData.Get<float>("chargeTimer") <= 0f && dynData.Get<float>("activeTimer") > 0f) {
-                    FinalBoss boss = dynData.Get<FinalBoss>("boss");
-                    float angle = dynData.Get<float>("angle");
+                DynamicData dynamicData = finalBossBeam.GetDynamicDataInstance();
+                if (dynamicData.Get<float>("chargeTimer") <= 0f && dynamicData.Get<float>("activeTimer") > 0f) {
+                    FinalBoss boss = dynamicData.Get<FinalBoss>("boss");
+                    float angle = dynamicData.Get<float>("angle");
                     Vector2 vector = boss.BeamOrigin + Calc.AngleToVector(angle, 12f);
                     Vector2 vector2 = boss.BeamOrigin + Calc.AngleToVector(angle, 2000f);
                     Vector2 value = (vector2 - vector).Perpendicular().SafeNormalize(2f);
