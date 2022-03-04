@@ -153,8 +153,8 @@ namespace TAS.EverestInterop {
             On.Celeste.Decal.Render += Decal_Render;
 
             SkipMethod(() => Settings.SimplifiedGraphics && Settings.SimplifiedParticle,
-                typeof(Particle).GetMethod("Render", new Type[] { }),
-                typeof(Particle).GetMethod("Render", new[] {typeof(float)})
+                typeof(ParticleSystem).GetMethod("Render", new Type[] { }),
+                typeof(ParticleSystem).GetMethod("Render", new[] {typeof(float)})
             );
             SkipMethod(() => Settings.SimplifiedGraphics && Settings.SimplifiedDistort, "Apply", typeof(Glitch));
             SkipMethod(() => Settings.SimplifiedGraphics && Settings.SimplifiedMiniTextbox, "Render", typeof(MiniTextbox));
@@ -191,7 +191,7 @@ namespace TAS.EverestInterop {
             );
 
             SkipMethod(() => Settings.SimplifiedGraphics && Settings.SimplifiedClutteredEntity, "Render",
-                typeof(ReflectionTentacles), typeof(SummitCloud), typeof(TempleEye),
+                typeof(ReflectionTentacles), typeof(SummitCloud), typeof(TempleEye), typeof(Wire),
                 typeof(DustGraphic).GetNestedType("Eyeballs", BindingFlags.NonPublic)
             );
 
