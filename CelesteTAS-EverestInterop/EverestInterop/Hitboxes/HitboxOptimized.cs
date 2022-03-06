@@ -83,7 +83,7 @@ namespace TAS.EverestInterop.Hitboxes {
                 self.Scene is Level level) {
                 LevelData levelData = level.Session.LevelData;
                 if (!ExistBgModeToggle.TryGetValue(levelData, out bool exist)) {
-                    exist = levelData.Entities.Any(data => data.Name?.StartsWith("bgSwitch/") == true);
+                    exist = levelData.Entities.Union(levelData.Triggers).Any(data => data.Name?.StartsWith("bgSwitch/") == true);
                     ExistBgModeToggle[levelData] = exist;
                 }
 
