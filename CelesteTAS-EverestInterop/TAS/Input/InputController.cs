@@ -76,7 +76,7 @@ namespace TAS.Input {
         private FastForward LastFastForward => NextCommentFastForward ?? lastFastForward;
 
         public bool HasFastForward => LastFastForward != null && LastFastForward.Frame > CurrentFrameInTas;
-        public float FastForwardSpeed => LastFastForward == null ? 1f : Math.Min(LastFastForward.Frame - CurrentFrameInTas, LastFastForward.Speed);
+        public float FastForwardSpeed => HasFastForward ? 1f : Math.Min(LastFastForward.Frame - CurrentFrameInTas, LastFastForward.Speed);
         public bool Break => LastFastForward?.Frame == CurrentFrameInTas;
 
         private string Checksum => string.IsNullOrEmpty(checksum) ? checksum = CalcChecksum(Inputs.Count - 1) : checksum;
