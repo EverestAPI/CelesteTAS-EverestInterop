@@ -111,11 +111,11 @@ namespace TAS {
 
                 if (Hotkeys.FastForward.Check) {
                     FrameLoops = 10;
-                } else if (Math.Round(Hotkeys.RightThumbSticksLength * 10) is var length) {
+                } else if (Math.Round(Hotkeys.RightThumbSticksX * 10) is var length) {
                     if (length >= 2) {
                         FrameLoops = (int) length;
                     } else if (length <= -2) {
-                        FrameLoops = Math.Max(1 + Hotkeys.RightThumbSticksLength, FastForward.MinSpeed);
+                        FrameLoops = Math.Max(1 + Hotkeys.RightThumbSticksX, FastForward.MinSpeed);
                     }
                 }
             }

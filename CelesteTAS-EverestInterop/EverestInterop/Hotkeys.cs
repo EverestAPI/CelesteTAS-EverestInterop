@@ -59,7 +59,7 @@ namespace TAS.EverestInterop {
         public static Hotkey CameraRight { get; private set; }
         public static Hotkey CameraZoomIn { get; private set; }
         public static Hotkey CameraZoomOut { get; private set; }
-        public static float RightThumbSticksLength => padState.ThumbSticks.Right.Length() * Math.Sign(padState.ThumbSticks.Right.X);
+        public static float RightThumbSticksX => padState.ThumbSticks.Right.X;
 
         public static readonly Dictionary<HotkeyID, Hotkey> KeysDict = new();
         private static List<Hotkey> hotKeysInteractWithStudio;
