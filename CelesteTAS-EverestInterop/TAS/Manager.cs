@@ -94,22 +94,18 @@ namespace TAS {
         }
 
         private static void HandleFrameRates() {
+            FrameLoops = 1;
+
             if (States.HasFlag(States.Enable) && !States.HasFlag(States.FrameStep) && !NextStates.HasFlag(States.FrameStep) &&
                 !States.HasFlag(States.Record)) {
                 if (Controller.HasFastForward) {
                     FrameLoops = Controller.FastForwardSpeed;
-                    return;
-                }
-
-                //q: but euni, why not just use the hotkey system you implemented?
-                //a: i have no fucking idea
-                if (Hotkeys.FastForward.Check) {
-                    FrameLoops = Math.Max(1, (int) Math.Round(Hotkeys.FastForward.Value * 10));
-                    return;
+                } else if (Hotkeys.FastForward.Check) {
+                    FrameLoops = 10;
+                } else if (Math.Round(Hotkeys.RightThumbSticksLength * 10) is var length and >= 2.0) {
+                    FrameLoops = (int) length;
                 }
             }
-
-            FrameLoops = 1;
         }
 
         private static void FrameStepping() {

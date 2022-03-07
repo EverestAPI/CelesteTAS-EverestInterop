@@ -59,6 +59,7 @@ namespace TAS.EverestInterop {
         public static Hotkey CameraRight { get; private set; }
         public static Hotkey CameraZoomIn { get; private set; }
         public static Hotkey CameraZoomOut { get; private set; }
+        public static float RightThumbSticksLength => padState.ThumbSticks.Right.Length();
 
         public static readonly Dictionary<HotkeyID, Hotkey> KeysDict = new();
         private static List<Hotkey> hotKeysInteractWithStudio;
@@ -314,7 +315,6 @@ namespace TAS.EverestInterop {
             // note: dont check DoublePressed on render, since unstable DoublePressed response during frame drops
             public bool DoublePressed { get; private set; }
             public bool Released => LastCheck && !Check;
-            public float Value { get; private set; }
 
             public void Update(bool updateKey = true, bool updateButton = true) {
                 LastCheck = Check;
@@ -333,46 +333,12 @@ namespace TAS.EverestInterop {
 
                 Check = keyCheck || buttonCheck;
 
-                UpdateValue(keyCheck, buttonCheck);
-
                 if (Pressed) {
                     DateTime pressedTime = DateTime.Now;
                     DoublePressed = pressedTime.Subtract(lastPressedTime).TotalMilliseconds < 200;
                     lastPressedTime = DoublePressed ? default : pressedTime;
                 } else {
                     DoublePressed = false;
-                }
-            }
-
-            private void UpdateValue(bool keyCheck, bool buttonCheck) {
-                Value = 0f;
-
-                if (keyCheck) {
-                    Value = 1f;
-                } else if (buttonCheck) {
-                    if (Buttons.Contains(InputButtons.LeftThumbstickLeft) ||
-                        Buttons.Contains(InputButtons.LeftThumbstickRight)) {
-                        Value = Math.Max(Value, Math.Abs(padState.ThumbSticks.Left.X));
-                    }
-
-                    if (Buttons.Contains(InputButtons.LeftThumbstickUp) ||
-                        Buttons.Contains(InputButtons.LeftThumbstickDown)) {
-                        Value = Math.Max(Value, Math.Abs(padState.ThumbSticks.Left.Y));
-                    }
-
-                    if (Buttons.Contains(InputButtons.RightThumbstickLeft) ||
-                        Buttons.Contains(InputButtons.RightThumbstickRight)) {
-                        Value = Math.Max(Value, Math.Abs(padState.ThumbSticks.Right.X));
-                    }
-
-                    if (Buttons.Contains(InputButtons.RightThumbstickUp) ||
-                        Buttons.Contains(InputButtons.RightThumbstickDown)) {
-                        Value = Math.Max(Value, Math.Abs(padState.ThumbSticks.Right.Y));
-                    }
-
-                    if (Value == 0f) {
-                        Value = 1f;
-                    }
                 }
             }
 
