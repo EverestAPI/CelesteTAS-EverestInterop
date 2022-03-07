@@ -5,6 +5,7 @@ using System.Linq;
 using Celeste;
 using FMOD;
 using FMOD.Studio;
+using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using TAS.Module;
@@ -84,7 +85,7 @@ namespace TAS.EverestInterop {
             On.FMOD.Studio.EventDescription.createInstance += EventDescriptionOnCreateInstance;
             IL.Celeste.CassetteBlockManager.AdvanceMusic += CassetteBlockManagerOnAdvanceMusic;
             On.Monocle.Scene.Update += SceneOnUpdate;
-            On.Celeste.Level.Render += LevelOnRender;
+            On.Celeste.Celeste.Update += CelesteOnUpdate;
         }
 
         [Unload]
@@ -94,7 +95,7 @@ namespace TAS.EverestInterop {
             On.FMOD.Studio.EventDescription.createInstance -= EventDescriptionOnCreateInstance;
             IL.Celeste.CassetteBlockManager.AdvanceMusic -= CassetteBlockManagerOnAdvanceMusic;
             On.Monocle.Scene.Update -= SceneOnUpdate;
-            On.Celeste.Level.Render -= LevelOnRender;
+            On.Celeste.Celeste.Update -= CelesteOnUpdate;
         }
 
         private static void AudioOnSetAltMusic(On.Celeste.Audio.orig_SetAltMusic orig, string path) {
@@ -158,8 +159,8 @@ namespace TAS.EverestInterop {
             }
         }
 
-        private static void LevelOnRender(On.Celeste.Level.orig_Render orig, Level self) {
-            orig(self);
+        private static void CelesteOnUpdate(On.Celeste.Celeste.orig_Update orig, Celeste.Celeste self, GameTime gameTime) {
+            orig(self, gameTime);
 
             if (FrameStep) {
                 Audio.CurrentAmbienceEventInstance?.setVolume(0);
