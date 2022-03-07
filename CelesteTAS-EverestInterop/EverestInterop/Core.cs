@@ -81,8 +81,13 @@ namespace TAS.EverestInterop {
                 return;
             }
 
+            if (Manager.SlowForwarding) {
+                orig(self, gameTime);
+                return;
+            }
+
             // The original patch doesn't store FrameLoops in a local variable, but it's only updated in UpdateInputs anyway.
-            int loops = Manager.FrameLoops;
+            int loops = (int) Manager.FrameLoops;
             bool skipBaseUpdate = !Settings.FastForwardCallBase && loops >= Settings.FastForwardThreshold;
 
             SkipBaseUpdate = skipBaseUpdate;
@@ -131,7 +136,7 @@ namespace TAS.EverestInterop {
 
             // Hacky, but this works just good enough.
             // The original code executes base.Update(); return; instead.
-            if (Manager.States.HasFlag(States.FrameStep) && !Manager.IsLoading()) {
+            if (Manager.SkipFrame && !Manager.IsLoading()) {
                 PreviousGameLoop = Engine.OverloadGameLoop;
                 Engine.OverloadGameLoop = FrameStepGameLoop;
             }

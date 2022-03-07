@@ -2,11 +2,12 @@ using System;
 
 namespace TAS.Input {
     public record FastForward {
-        private const int DefaultSpeed = 400;
+        private const float DefaultSpeed = 400f;
+        private const float MinSpeed = 0.01f;
         public readonly int Frame;
         public readonly int Line;
         public readonly bool SaveState;
-        public readonly int Speed;
+        public readonly float Speed;
 
         public FastForward(int frame, string modifiers, int line) {
             Frame = frame;
@@ -18,7 +19,12 @@ namespace TAS.Input {
                 SaveState = false;
             }
 
-            Speed = int.TryParse(modifiers, out int speed) ? Math.Max(1, speed) : DefaultSpeed;
+            Speed = float.TryParse(modifiers, out float speed) ? speed : DefaultSpeed;
+            if (Speed < MinSpeed) {
+                Speed = MinSpeed;
+            } else if (Speed > 1f) {
+                Speed = (int) Math.Round(Speed);
+            }
         }
 
         public override string ToString() {

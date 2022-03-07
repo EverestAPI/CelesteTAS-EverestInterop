@@ -22,8 +22,15 @@ namespace TAS {
         public static bool Running, Recording;
         public static readonly InputController Controller = new();
         public static States LastStates, States, NextStates;
-        public static int FrameLoops { get; private set; } = 1;
+        public static float FrameLoops { get; private set; } = 1f;
         public static bool UltraFastForwarding => FrameLoops >= 100 && Running;
+        public static bool SlowForwarding => FrameLoops < 1f;
+
+        private static bool SkipSlowForwardingFrame =>
+            FrameLoops < 1f && (int) ((Engine.FrameCounter + 1) * FrameLoops) == (int) (Engine.FrameCounter * FrameLoops);
+
+        public static bool SkipFrame => States.HasFlag(States.FrameStep) || SkipSlowForwardingFrame;
+
         public static bool EnforceLegal, AllowUnsafeInput;
 
         static Manager() {
@@ -52,7 +59,7 @@ namespace TAS {
                     controller.RecordPlayer();
                 }
                 */
-                if (!States.HasFlag(States.FrameStep)) {
+                if (!SkipFrame) {
                     Controller.AdvanceFrame(out bool canPlayback);
 
                     // stop TAS if breakpoint is not placed at the end
@@ -100,7 +107,9 @@ namespace TAS {
                 !States.HasFlag(States.Record)) {
                 if (Controller.HasFastForward) {
                     FrameLoops = Controller.FastForwardSpeed;
-                } else if (Hotkeys.FastForward.Check) {
+                }
+
+                if (Hotkeys.FastForward.Check) {
                     FrameLoops = 10;
                 } else if (Math.Round(Hotkeys.RightThumbSticksLength * 10) is var length and >= 2.0) {
                     FrameLoops = (int) length;
