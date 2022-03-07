@@ -97,22 +97,24 @@ namespace TAS.Utils {
         }
 
         public static MethodInfo GetMethodInfo(this Type type, string name, Type[] types = null, bool includeSuperClassPrivate = false) {
-            if (!CachedMethodInfos.ContainsKey(type)) {
-                CachedMethodInfos[type] = new Dictionary<string, MethodInfo>();
+            if (!CachedMethodInfos.TryGetValue(type, out Dictionary<string, MethodInfo> dictionary)) {
+                CachedMethodInfos[type] = dictionary = new Dictionary<string, MethodInfo>();
             }
 
-            if (!CachedMethodInfos[type].ContainsKey(name)) {
+            string key = name + (types == null ? "null" : string.Join(",", types.Select(t => t.FullName)));
+
+            if (!dictionary.TryGetValue(key, out MethodInfo result)) {
                 MethodInfo[] methodInfos = type.GetMethods(StaticInstanceAnyVisibility);
-                MethodInfo result = methodInfos.FirstOrDefault(info =>
+                result = methodInfos.FirstOrDefault(info =>
                     info.Name == name && types?.SequenceEqual(info.GetParameters().Select(i => i.ParameterType)) != false);
                 if (result == null && type.BaseType != null && includeSuperClassPrivate) {
                     result = type.BaseType.GetMethodInfo(name, types, true);
                 }
 
-                return CachedMethodInfos[type][name] = result;
-            } else {
-                return CachedMethodInfos[type][name];
+                dictionary[key] = result;
             }
+
+            return result;
         }
 
         public static IEnumerable<FieldInfo> GetAllFieldInfos(this Type type, bool includeStatic = false, bool filterBackingField = false) {
