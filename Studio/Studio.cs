@@ -31,7 +31,7 @@ namespace CelesteStudio {
         private ToolTip titleBarTooltip;
         private int totalFrames, currentFrame;
         private bool updating;
-        private bool DisableTyping => tasStates.HasFlag(States.Enable) && !tasStates.HasFlag(States.FrameStep);
+        private bool DisableTyping => tasStates.HasFlag(States.Enable) && !tasStates.HasFlag(States.FrameStep) && StudioCommunicationBase.Initialized;
 
         private string TitleBarText =>
             (string.IsNullOrEmpty(CurrentFileName) ? "Celeste.tas" : Path.GetFileName(CurrentFileName))
