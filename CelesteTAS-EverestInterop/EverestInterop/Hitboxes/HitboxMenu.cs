@@ -17,6 +17,8 @@ public static class HitboxMenu {
                 Settings.ShowTriggerHitboxes = value));
             subMenu.Add(new TextMenu.OnOff("Show Unloaded Rooms Hitboxes".ToDialogText(), Settings.ShowUnloadedRoomsHitboxes).Change(value =>
                 Settings.ShowUnloadedRoomsHitboxes = value));
+            subMenu.Add(new TextMenu.OnOff("Show Camera Hitboxes".ToDialogText(), Settings.ShowCameraHitboxes).Change(value =>
+                Settings.ShowCameraHitboxes = value));
             subMenu.Add(new TextMenu.Option<ActualCollideHitboxType>("Actual Collide Hitboxes".ToDialogText()).Apply(option => {
                 Array enumValues = Enum.GetValues(typeof(ActualCollideHitboxType));
                 foreach (ActualCollideHitboxType value in enumValues) {

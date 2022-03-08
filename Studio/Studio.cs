@@ -1572,6 +1572,10 @@ public partial class Studio : BaseForm {
         ToggleGameSetting("ShowUnloadedRoomsHitboxes", null, sender);
     }
 
+    private void cameraHitboxesToolStripMenuItem_Click(object sender, EventArgs e) {
+        ToggleGameSetting("ShowCameraHitboxes", null, sender);
+    }
+
     private void toggleSimplifiedHitboxesToolStripMenuItem_Click(object sender, EventArgs e) {
         ToggleGameSetting("SimplifiedHitboxes", null, sender);
     }

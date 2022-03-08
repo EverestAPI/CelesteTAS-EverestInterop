@@ -9,6 +9,39 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop;
 
+[Tracked]
+internal class CameraHitbox : Entity {
+    private static readonly Color color = Color.LightBlue * 0.75f;
+    private Vector2 cameraTopLeft;
+    private Vector2 cameraBottomRight;
+    private Level level;
+
+    private bool DrawCamera => CelesteTasModule.Settings.CenterCamera && CelesteTasModule.Settings.ShowCameraHitboxes;
+
+    public override void Added(Scene scene) {
+        base.Added(scene);
+        Tag = Tags.Global | Tags.FrozenUpdate | Tags.PauseUpdate | Tags.TransitionUpdate;
+        level = scene as Level;
+    }
+
+    public override void Update() {
+        if (!DrawCamera) {
+            return;
+        }
+
+        cameraTopLeft = level.MouseToWorld(Vector2.Zero);
+        cameraBottomRight = level.MouseToWorld(new Vector2(Engine.ViewWidth, Engine.ViewHeight));
+    }
+
+    public override void DebugRender(Camera camera) {
+        if (!DrawCamera) {
+            return;
+        }
+
+        Draw.HollowRect(cameraTopLeft, cameraBottomRight.X - cameraTopLeft.X, cameraBottomRight.Y - cameraTopLeft.Y, color);
+    }
+}
+
 public static class CenterCamera {
     private static Vector2? savedCameraPosition;
     private static float? savedLevelZoom;
@@ -39,6 +72,7 @@ public static class CenterCamera {
         On.Monocle.Engine.RenderCore += EngineOnRenderCore;
         On.Monocle.Commands.Render += CommandsOnRender;
         On.Celeste.Level.Render += LevelOnRender;
+        On.Celeste.Level.LoadLevel += LevelOnLoadLevel;
         offset = new DynamicData(Engine.Instance).Get<Vector2?>("CelesteTAS_Offset") ?? Vector2.Zero;
         screenOffset = new DynamicData(Engine.Instance).Get<Vector2?>("CelesteTAS_Screen_Offset") ?? Vector2.Zero;
         LevelZoom = new DynamicData(Engine.Instance).Get<float?>("CelesteTAS_LevelZoom") ?? 1f;
@@ -48,6 +82,7 @@ public static class CenterCamera {
         On.Monocle.Engine.RenderCore -= EngineOnRenderCore;
         On.Monocle.Commands.Render -= CommandsOnRender;
         On.Celeste.Level.Render -= LevelOnRender;
+        On.Celeste.Level.LoadLevel -= LevelOnLoadLevel;
         new DynamicData(Engine.Instance).Set("CelesteTAS_Offset", offset);
         new DynamicData(Engine.Instance).Set("CelesteTAS_Screen_Offset", screenOffset);
         new DynamicData(Engine.Instance).Set("CelesteTAS_LevelZoom", LevelZoom);
@@ -70,6 +105,13 @@ public static class CenterCamera {
         orig(self);
         MoveCamera(self);
         ZoomCamera();
+    }
+
+    private static void LevelOnLoadLevel(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerintro, bool isfromloader) {
+        orig(self, playerintro, isfromloader);
+        if (!self.Tracker.Entities.TryGetValue(typeof(CameraHitbox), out var entities) || entities.IsEmpty()) {
+            self.Add(new CameraHitbox());
+        }
     }
 
     private static void CenterTheCamera() {

@@ -138,6 +138,7 @@ namespace CelesteStudio {
             this.statusPanel = new System.Windows.Forms.Panel();
             this.statusBar = new System.Windows.Forms.StatusStrip();
             this.lblStatus = new System.Windows.Forms.ToolStripStatusLabel();
+            this.cameraHitboxesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusBarContextMenuStrip.SuspendLayout();
             this.menuStrip.SuspendLayout();
             this.tasTextContextMenuStrip.SuspendLayout();
@@ -353,7 +354,7 @@ namespace CelesteStudio {
             // 
             // toggleToolStripMenuItem
             // 
-            this.toggleToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.toggleHitboxesToolStripMenuItem, this.toggleTriggerHitboxesToolStripMenuItem, this.unloadedRoomsHitboxesToolStripMenuItem, this.toggleSimplifiedHitboxesToolStripMenuItem, this.switchActualCollideHitboxesToolStripMenuItem, this.toolStripSeparator8, this.toggleSimplifiedGraphicsToolStripMenuItem, this.toggleGameplayToolStripMenuItem, this.toolStripSeparator10, this.toggleCenterCameraToolStripMenuItem, this.toolStripSeparator9, this.switchInfoHUDToolStripMenuItem, this.tASInputInfoToolStripMenuItem, this.gameInfoToolStripMenuItem, this.watchEntityInfoToolStripMenuItem, this.customInfoToolStripMenuItem, this.subpixelIndicatorToolStripMenuItem, this.toolStripSeparator1, this.positionDecimalsToolStripMenuItem, this.speedDecimalsToolStripMenuItem, this.velocityDecimalsToolStripMenuItem, this.customInfoDecimalsToolStripMenuItem, this.subpixelIndicatorDecimalsToolStripMenuItem, this.unitOfSpeedToolStripMenuItem});
+            this.toggleToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.toggleHitboxesToolStripMenuItem, this.toggleTriggerHitboxesToolStripMenuItem, this.unloadedRoomsHitboxesToolStripMenuItem, this.cameraHitboxesToolStripMenuItem, this.toggleSimplifiedHitboxesToolStripMenuItem, this.switchActualCollideHitboxesToolStripMenuItem, this.toolStripSeparator8, this.toggleSimplifiedGraphicsToolStripMenuItem, this.toggleGameplayToolStripMenuItem, this.toolStripSeparator10, this.toggleCenterCameraToolStripMenuItem, this.toolStripSeparator9, this.switchInfoHUDToolStripMenuItem, this.tASInputInfoToolStripMenuItem, this.gameInfoToolStripMenuItem, this.watchEntityInfoToolStripMenuItem, this.customInfoToolStripMenuItem, this.subpixelIndicatorToolStripMenuItem, this.toolStripSeparator1, this.positionDecimalsToolStripMenuItem, this.speedDecimalsToolStripMenuItem, this.velocityDecimalsToolStripMenuItem, this.customInfoDecimalsToolStripMenuItem, this.subpixelIndicatorDecimalsToolStripMenuItem, this.unitOfSpeedToolStripMenuItem});
             this.toggleToolStripMenuItem.Name = "toggleToolStripMenuItem";
             this.toggleToolStripMenuItem.Size = new System.Drawing.Size(76, 20);
             this.toggleToolStripMenuItem.Text = "&Toggles";
@@ -970,6 +971,13 @@ namespace CelesteStudio {
             this.lblStatus.Text = "Searching...";
             this.lblStatus.TextAlign = System.Drawing.ContentAlignment.TopLeft;
             // 
+            // cameraHitboxesToolStripMenuItem
+            // 
+            this.cameraHitboxesToolStripMenuItem.Name = "cameraHitboxesToolStripMenuItem";
+            this.cameraHitboxesToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.cameraHitboxesToolStripMenuItem.Text = "Camera Hitboxes";
+            this.cameraHitboxesToolStripMenuItem.Click += new System.EventHandler(this.cameraHitboxesToolStripMenuItem_Click);
+            // 
             // Studio
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -982,6 +990,7 @@ namespace CelesteStudio {
             this.Controls.Add(this.richText);
             this.Icon = ((System.Drawing.Icon) (resources.GetObject("$this.Icon")));
             this.KeyPreview = true;
+            this.Location = new System.Drawing.Point(0, 0);
             this.MainMenuStrip = this.menuStrip;
             this.MinimumSize = new System.Drawing.Size(200, 180);
             this.Name = "Studio";
@@ -1000,6 +1009,8 @@ namespace CelesteStudio {
             this.ResumeLayout(false);
             this.PerformLayout();
         }
+
+        private System.Windows.Forms.ToolStripMenuItem cameraHitboxesToolStripMenuItem;
 
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator17;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator18;

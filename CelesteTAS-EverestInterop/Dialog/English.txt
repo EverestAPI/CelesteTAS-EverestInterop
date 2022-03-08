@@ -16,7 +16,8 @@ TAS_MORE_OPTIONS=               More Options
 # ================================== Hitbox Submenu ==================================
 TAS_ACTUAL_COLLIDE_HITBOXES=      Actual Collide Hitboxes
 TAS_SHOW_TRIGGER_HITBOXES=        Trigger Hitboxes
-TAS_SHOW_UNLOADED_ROOMS_HITBOXES= Show Unloaded Rooms Hitboxes
+TAS_SHOW_UNLOADED_ROOMS_HITBOXES= Unloaded Rooms Hitboxes
+TAS_SHOW_CAMERA_HITBOXES=         Camera Hitboxes
 TAS_SIMPLIFIED_HITBOXES=          Simplified Hitboxes
 TAS_ENTITY_HITBOX_COLOR=          Entity Hitbox Color
 TAS_TRIGGER_HITBOX_COLOR=         Trigger Hitbox Color
