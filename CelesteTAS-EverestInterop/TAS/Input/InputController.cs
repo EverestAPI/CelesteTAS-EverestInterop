@@ -77,7 +77,7 @@ public class InputController {
     private FastForward LastFastForward => NextCommentFastForward ?? lastFastForward;
 
     public bool HasFastForward => LastFastForward != null && LastFastForward.Frame > CurrentFrameInTas;
-    public float FastForwardSpeed => HasFastForward ? 1f : Math.Min(LastFastForward.Frame - CurrentFrameInTas, LastFastForward.Speed);
+    public float FastForwardSpeed => HasFastForward ? Math.Min(LastFastForward.Frame - CurrentFrameInTas, LastFastForward.Speed) : 1f;
     public bool Break => LastFastForward?.Frame == CurrentFrameInTas;
 
     private string Checksum => string.IsNullOrEmpty(checksum) ? checksum = CalcChecksum(Inputs.Count - 1) : checksum;
