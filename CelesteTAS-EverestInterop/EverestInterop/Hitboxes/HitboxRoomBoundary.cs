@@ -5,26 +5,26 @@ using Monocle;
 using TAS.Module;
 using TAS.Utils;
 
-namespace TAS.EverestInterop.Hitboxes {
-    public static class HitboxRoomBoundary {
-        [Load]
-        private static void Load() {
-            On.Monocle.EntityList.DebugRender += EntityListOnDebugRender;
-        }
+namespace TAS.EverestInterop.Hitboxes;
 
-        [Unload]
-        private static void Unload() {
-            On.Monocle.EntityList.DebugRender -= EntityListOnDebugRender;
-        }
+public static class HitboxRoomBoundary {
+    [Load]
+    private static void Load() {
+        On.Monocle.EntityList.DebugRender += EntityListOnDebugRender;
+    }
 
-        private static void EntityListOnDebugRender(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
-            orig(self, camera);
-            if (CelesteTasModule.Settings.ShowHitboxes && CelesteTasModule.Settings.CenterCamera && self.Scene is Level level &&
-                level.GetPlayer() is { } player) {
-                Rectangle bounds = level.Bounds;
-                float topExtra = (float) (Math.Floor(player.CenterY - player.Top) + 1);
-                Draw.HollowRect(bounds.X - 1, bounds.Y - topExtra, bounds.Width + 2, bounds.Height + topExtra + 1, HitboxColor.RespawnTriggerColor);
-            }
+    [Unload]
+    private static void Unload() {
+        On.Monocle.EntityList.DebugRender -= EntityListOnDebugRender;
+    }
+
+    private static void EntityListOnDebugRender(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
+        orig(self, camera);
+        if (CelesteTasModule.Settings.ShowHitboxes && CelesteTasModule.Settings.CenterCamera && self.Scene is Level level &&
+            level.GetPlayer() is { } player) {
+            Rectangle bounds = level.Bounds;
+            float topExtra = (float) (Math.Floor(player.CenterY - player.Top) + 1);
+            Draw.HollowRect(bounds.X - 1, bounds.Y - topExtra, bounds.Width + 2, bounds.Height + topExtra + 1, HitboxColor.RespawnTriggerColor);
         }
     }
 }

@@ -12,368 +12,368 @@ using Monocle;
 using TAS.Module;
 using TAS.Utils;
 
-namespace TAS.EverestInterop.InfoHUD {
-    public static class InfoCustom {
-        private const BindingFlags AllBindingFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+namespace TAS.EverestInterop.InfoHUD;
 
-        private static readonly Regex BraceRegex = new(@"\{(.+?)\}", RegexOptions.Compiled);
-        private static readonly Regex TypeNameRegex = new(@"^([.\w=+<>]+)(\[(.+?)\])?(@([^.]*))?$", RegexOptions.Compiled);
-        private static readonly Regex TypeNameSeparatorRegex = new(@"^[.+]", RegexOptions.Compiled);
-        private static readonly Dictionary<string, Type> AllTypes = new();
-        private static readonly Dictionary<string, List<Type>> CachedParsedTypes = new();
-        private static readonly Dictionary<string, MethodInfo> CachedGetMethodInfos = new();
-        private static readonly Dictionary<string, MethodInfo> CachedSetMethodInfos = new();
-        private static readonly Dictionary<string, FieldInfo> CachedFieldInfos = new();
+public static class InfoCustom {
+    private const BindingFlags AllBindingFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
-        private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
+    private static readonly Regex BraceRegex = new(@"\{(.+?)\}", RegexOptions.Compiled);
+    private static readonly Regex TypeNameRegex = new(@"^([.\w=+<>]+)(\[(.+?)\])?(@([^.]*))?$", RegexOptions.Compiled);
+    private static readonly Regex TypeNameSeparatorRegex = new(@"^[.+]", RegexOptions.Compiled);
+    private static readonly Dictionary<string, Type> AllTypes = new();
+    private static readonly Dictionary<string, List<Type>> CachedParsedTypes = new();
+    private static readonly Dictionary<string, MethodInfo> CachedGetMethodInfos = new();
+    private static readonly Dictionary<string, MethodInfo> CachedSetMethodInfos = new();
+    private static readonly Dictionary<string, FieldInfo> CachedFieldInfos = new();
 
-        [LoadContent]
-        private static void CollectAllTypeInfo() {
-            AllTypes.Clear();
-            CachedParsedTypes.Clear();
-            CachedGetMethodInfos.Clear();
-            CachedSetMethodInfos.Clear();
-            CachedFieldInfos.Clear();
-            foreach (Type type in ModUtils.GetTypes()) {
-                if (type.FullName != null) {
-                    AllTypes[$"{type.FullName}@{type.Assembly.GetName().Name}"] = type;
-                }
+    private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
+
+    [LoadContent]
+    private static void CollectAllTypeInfo() {
+        AllTypes.Clear();
+        CachedParsedTypes.Clear();
+        CachedGetMethodInfos.Clear();
+        CachedSetMethodInfos.Clear();
+        CachedFieldInfos.Clear();
+        foreach (Type type in ModUtils.GetTypes()) {
+            if (type.FullName != null) {
+                AllTypes[$"{type.FullName}@{type.Assembly.GetName().Name}"] = type;
             }
         }
+    }
 
-        public static string Parse(int? decimals = null) {
-            decimals ??= Settings.CustomInfoDecimals;
-            Dictionary<string, List<Entity>> cachedEntities = new();
+    public static string Parse(int? decimals = null) {
+        decimals ??= Settings.CustomInfoDecimals;
+        Dictionary<string, List<Entity>> cachedEntities = new();
 
-            return BraceRegex.Replace(Settings.InfoCustomTemplate, match => {
-                string matchText = match.Groups[1].Value;
+        return BraceRegex.Replace(Settings.InfoCustomTemplate, match => {
+            string matchText = match.Groups[1].Value;
 
-                if (!TryParseMemberNames(matchText, out string typeText, out List<string> memberNames, out string errorMessage)) {
-                    return errorMessage;
+            if (!TryParseMemberNames(matchText, out string typeText, out List<string> memberNames, out string errorMessage)) {
+                return errorMessage;
+            }
+
+            if (!TryParseTypes(typeText, out List<Type> types, out string entityId, out errorMessage)) {
+                return errorMessage;
+            }
+
+            string lastMemberName = memberNames.Last();
+            string lastCharacter = lastMemberName.Substring(lastMemberName.Length - 1, 1);
+            if (lastCharacter is ":" or "=") {
+                lastMemberName = lastMemberName.Substring(0, lastMemberName.Length - 1);
+                memberNames[memberNames.Count - 1] = lastMemberName;
+            }
+
+            string helperMethod = "";
+            if (lastMemberName is "toFrame()" or "toPixelPerFrame()") {
+                helperMethod = lastMemberName;
+                memberNames = memberNames.SkipLast().ToList();
+            }
+
+            bool moreThanOneEntity = types.Where(type => type.IsSameOrSubclassOf(typeof(Entity)))
+                .SelectMany(type => GetCachedOrFindEntities(type, entityId, cachedEntities)).Count() > 1;
+
+            List<string> result = types.Select(type => {
+                if (GetGetMethod(type, memberNames.First()) is {IsStatic: true} || GetFieldInfo(type, memberNames.First()) is {IsStatic: true}) {
+                    return FormatValue(GetMemberValue(type, null, memberNames), helperMethod, decimals.Value);
                 }
 
-                if (!TryParseTypes(typeText, out List<Type> types, out string entityId, out errorMessage)) {
-                    return errorMessage;
-                }
+                if (Engine.Scene is Level level) {
+                    if (type.IsSameOrSubclassOf(typeof(Entity))) {
+                        List<Entity> entities = GetCachedOrFindEntities(type, entityId, cachedEntities);
 
-                string lastMemberName = memberNames.Last();
-                string lastCharacter = lastMemberName.Substring(lastMemberName.Length - 1, 1);
-                if (lastCharacter is ":" or "=") {
-                    lastMemberName = lastMemberName.Substring(0, lastMemberName.Length - 1);
-                    memberNames[memberNames.Count - 1] = lastMemberName;
-                }
+                        if (entities == null) {
+                            return "Ignore NPE Warning";
+                        }
 
-                string helperMethod = "";
-                if (lastMemberName is "toFrame()" or "toPixelPerFrame()") {
-                    helperMethod = lastMemberName;
-                    memberNames = memberNames.SkipLast().ToList();
-                }
+                        return string.Join("", entities.Select(entity => {
+                            string value = FormatValue(GetMemberValue(type, entity, memberNames), helperMethod, decimals.Value);
 
-                bool moreThanOneEntity = types.Where(type => type.IsSameOrSubclassOf(typeof(Entity)))
-                    .SelectMany(type => GetCachedOrFindEntities(type, entityId, cachedEntities)).Count() > 1;
-
-                List<string> result = types.Select(type => {
-                    if (GetGetMethod(type, memberNames.First()) is {IsStatic: true} || GetFieldInfo(type, memberNames.First()) is {IsStatic: true}) {
-                        return FormatValue(GetMemberValue(type, null, memberNames), helperMethod, decimals.Value);
-                    }
-
-                    if (Engine.Scene is Level level) {
-                        if (type.IsSameOrSubclassOf(typeof(Entity))) {
-                            List<Entity> entities = GetCachedOrFindEntities(type, entityId, cachedEntities);
-
-                            if (entities == null) {
-                                return "Ignore NPE Warning";
+                            if (moreThanOneEntity) {
+                                if (entity.GetEntityData()?.ToEntityId().ToString() is { } id) {
+                                    value = $"\n[{id}] {value}";
+                                } else {
+                                    value = $"\n{value}";
+                                }
                             }
 
-                            return string.Join("", entities.Select(entity => {
-                                string value = FormatValue(GetMemberValue(type, entity, memberNames), helperMethod, decimals.Value);
-
-                                if (moreThanOneEntity) {
-                                    if (entity.GetEntityData()?.ToEntityId().ToString() is { } id) {
-                                        value = $"\n[{id}] {value}";
-                                    } else {
-                                        value = $"\n{value}";
-                                    }
-                                }
-
-                                return value;
-                            }));
-                        } else if (type == typeof(Level)) {
-                            return FormatValue(GetMemberValue(type, level, memberNames), helperMethod, decimals.Value);
-                        } else if (type == typeof(Session)) {
-                            return FormatValue(GetMemberValue(type, level.Session, memberNames), helperMethod, decimals.Value);
-                        }
+                            return value;
+                        }));
+                    } else if (type == typeof(Level)) {
+                        return FormatValue(GetMemberValue(type, level, memberNames), helperMethod, decimals.Value);
+                    } else if (type == typeof(Session)) {
+                        return FormatValue(GetMemberValue(type, level.Session, memberNames), helperMethod, decimals.Value);
                     }
-
-                    return string.Empty;
-                }).Where(s => s.IsNotNullOrEmpty()).ToList();
-
-                string prefix = lastCharacter switch {
-                    "=" => matchText,
-                    ":" => $"{matchText} ",
-                    _ => ""
-                };
-
-                string separator = types.First().IsSameOrSubclassOf(typeof(Entity)) ? "" : " ";
-                return $"{prefix}{string.Join(separator, result)}";
-            });
-
-            List<Entity> GetCachedOrFindEntities(Type type, string entityId, Dictionary<string, List<Entity>> dictionary) {
-                string entityText = $"{type.FullName}{entityId}";
-                List<Entity> entities;
-                if (dictionary.ContainsKey(entityText)) {
-                    entities = dictionary[entityText];
-                } else {
-                    entities = FindEntities(type, entityId).ToList();
-                    dictionary[entityText] = entities;
                 }
 
-                return entities;
+                return string.Empty;
+            }).Where(s => s.IsNotNullOrEmpty()).ToList();
+
+            string prefix = lastCharacter switch {
+                "=" => matchText,
+                ":" => $"{matchText} ",
+                _ => ""
+            };
+
+            string separator = types.First().IsSameOrSubclassOf(typeof(Entity)) ? "" : " ";
+            return $"{prefix}{string.Join(separator, result)}";
+        });
+
+        List<Entity> GetCachedOrFindEntities(Type type, string entityId, Dictionary<string, List<Entity>> dictionary) {
+            string entityText = $"{type.FullName}{entityId}";
+            List<Entity> entities;
+            if (dictionary.ContainsKey(entityText)) {
+                entities = dictionary[entityText];
+            } else {
+                entities = FindEntities(type, entityId).ToList();
+                dictionary[entityText] = entities;
             }
+
+            return entities;
+        }
+    }
+
+    public static bool TryParseMemberNames(string matchText, out string typeText, out List<string> memberNames, out string errorMessage) {
+        typeText = errorMessage = "";
+        memberNames = new List<string>();
+
+        List<string> splitText = matchText.Split('.').Select(s => s.Trim()).Where(s => s.IsNotEmpty()).ToList();
+        if (splitText.Count <= 1) {
+            errorMessage = "missing member";
+            return false;
         }
 
-        public static bool TryParseMemberNames(string matchText, out string typeText, out List<string> memberNames, out string errorMessage) {
-            typeText = errorMessage = "";
-            memberNames = new List<string>();
+        if (matchText.Contains("@")) {
+            int assemblyIndex = splitText.FindIndex(s => s.Contains("@"));
+            typeText = string.Join(".", splitText.Take(assemblyIndex + 1));
+            memberNames = splitText.Skip(assemblyIndex + 1).ToList();
+        } else {
+            typeText = splitText[0];
+            memberNames = splitText.Skip(1).ToList();
+        }
 
-            List<string> splitText = matchText.Split('.').Select(s => s.Trim()).Where(s => s.IsNotEmpty()).ToList();
-            if (splitText.Count <= 1) {
-                errorMessage = "missing member";
-                return false;
-            }
+        if (memberNames.Count <= 0) {
+            errorMessage = "missing member";
+            return false;
+        }
 
-            if (matchText.Contains("@")) {
-                int assemblyIndex = splitText.FindIndex(s => s.Contains("@"));
-                typeText = string.Join(".", splitText.Take(assemblyIndex + 1));
-                memberNames = splitText.Skip(assemblyIndex + 1).ToList();
-            } else {
-                typeText = splitText[0];
-                memberNames = splitText.Skip(1).ToList();
-            }
+        return true;
+    }
 
-            if (memberNames.Count <= 0) {
-                errorMessage = "missing member";
-                return false;
-            }
+    public static bool TryParseType(string text, out Type type, out string entityId, out string errorMessage) {
+        TryParseTypes(text, out List<Type> types, out entityId, out errorMessage);
 
+        if (types.IsEmpty()) {
+            type = null;
+            return false;
+        } else {
+            type = types.First();
             return true;
         }
+    }
 
-        public static bool TryParseType(string text, out Type type, out string entityId, out string errorMessage) {
-            TryParseTypes(text, out List<Type> types, out entityId, out errorMessage);
+    public static bool TryParseTypes(string text, out List<Type> types) {
+        return TryParseTypes(text, out types, out _, out _);
+    }
 
-            if (types.IsEmpty()) {
-                type = null;
-                return false;
+    private static bool TryParseTypes(string text, out List<Type> types, out string entityId, out string errorMessage) {
+        types = new List<Type>();
+        entityId = "";
+        errorMessage = "";
+
+        if (!TryParseTypeName(text, out string typeNameMatched, out string typeNameWithAssembly, out entityId)) {
+            errorMessage = "paring type name failed";
+            return false;
+        }
+
+        if (CachedParsedTypes.Keys.Contains(typeNameWithAssembly)) {
+            types = CachedParsedTypes[typeNameWithAssembly];
+        } else {
+            // find the full type name
+            List<string> matchTypeNames = AllTypes.Keys.Where(name => name.StartsWith(typeNameWithAssembly)).ToList();
+
+            string typeName = TypeNameSeparatorRegex.Replace(typeNameWithAssembly, "");
+            if (matchTypeNames.IsEmpty()) {
+                // find the part of type name
+                matchTypeNames = AllTypes.Keys.Where(name => name.Contains($".{typeName}")).ToList();
+            }
+
+            if (matchTypeNames.IsEmpty()) {
+                // find the nested type name
+                matchTypeNames = AllTypes.Keys.Where(name => name.Contains($"+{typeName}")).ToList();
+            }
+
+            types = matchTypeNames.Select(name => AllTypes[name]).ToList();
+            CachedParsedTypes[typeNameWithAssembly] = types;
+        }
+
+        if (types.IsEmpty()) {
+            errorMessage = $"{typeNameMatched} not found";
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    private static bool TryParseTypeName(string text, out string typeNameMatched, out string typeNameWithAssembly, out string entityId) {
+        typeNameMatched = "";
+        typeNameWithAssembly = "";
+        entityId = "";
+        if (TypeNameRegex.Match(text) is {Success: true} match) {
+            typeNameMatched = match.Groups[1].Value;
+            typeNameWithAssembly = $"{typeNameMatched}@{match.Groups[5].Value}";
+            typeNameWithAssembly = typeNameWithAssembly switch {
+                "Theo@" => "TheoCrystal@",
+                "Jellyfish@" => "Glider@",
+                _ => typeNameWithAssembly
+            };
+            entityId = match.Groups[3].Value;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private static string FormatValue(object obj, string helperMethod, int decimals) {
+        if (obj == null) {
+            return string.Empty;
+        }
+
+        if (obj is Vector2 vector2) {
+            if (helperMethod == "toPixelPerFrame()") {
+                vector2 = GameInfo.ConvertSpeedUnit(vector2, SpeedUnit.PixelPerFrame);
+            }
+
+            return vector2.ToSimpleString(decimals);
+        }
+
+        if (obj is Vector2Double vector2Double) {
+            return vector2Double.ToSimpleString(decimals);
+        }
+
+        if (obj is float floatValue) {
+            if (helperMethod == "toFrame()") {
+                return GameInfo.ConvertToFrames(floatValue).ToString();
+            } else if (helperMethod == "toPixelPerFrame()") {
+                return GameInfo.ConvertSpeedUnit(floatValue, SpeedUnit.PixelPerFrame).ToString(CultureInfo.InvariantCulture);
             } else {
-                type = types.First();
-                return true;
+                return floatValue.ToFormattedString(decimals);
             }
         }
 
-        public static bool TryParseTypes(string text, out List<Type> types) {
-            return TryParseTypes(text, out types, out _, out _);
+        if (obj is IEnumerable enumerable and not IEnumerable<char>) {
+            StringBuilder sb = new();
+            foreach (object o in enumerable) {
+                if (sb.Length > 0) {
+                    sb.Append(", ");
+                }
+
+                sb.Append(o);
+            }
+
+            return sb.ToString();
         }
 
-        private static bool TryParseTypes(string text, out List<Type> types, out string entityId, out string errorMessage) {
-            types = new List<Type>();
-            entityId = "";
-            errorMessage = "";
+        return obj.ToString();
+    }
 
-            if (!TryParseTypeName(text, out string typeNameMatched, out string typeNameWithAssembly, out entityId)) {
-                errorMessage = "paring type name failed";
-                return false;
-            }
-
-            if (CachedParsedTypes.Keys.Contains(typeNameWithAssembly)) {
-                types = CachedParsedTypes[typeNameWithAssembly];
-            } else {
-                // find the full type name
-                List<string> matchTypeNames = AllTypes.Keys.Where(name => name.StartsWith(typeNameWithAssembly)).ToList();
-
-                string typeName = TypeNameSeparatorRegex.Replace(typeNameWithAssembly, "");
-                if (matchTypeNames.IsEmpty()) {
-                    // find the part of type name
-                    matchTypeNames = AllTypes.Keys.Where(name => name.Contains($".{typeName}")).ToList();
-                }
-
-                if (matchTypeNames.IsEmpty()) {
-                    // find the nested type name
-                    matchTypeNames = AllTypes.Keys.Where(name => name.Contains($"+{typeName}")).ToList();
-                }
-
-                types = matchTypeNames.Select(name => AllTypes[name]).ToList();
-                CachedParsedTypes[typeNameWithAssembly] = types;
-            }
-
-            if (types.IsEmpty()) {
-                errorMessage = $"{typeNameMatched} not found";
-                return false;
-            } else {
-                return true;
-            }
-        }
-
-        private static bool TryParseTypeName(string text, out string typeNameMatched, out string typeNameWithAssembly, out string entityId) {
-            typeNameMatched = "";
-            typeNameWithAssembly = "";
-            entityId = "";
-            if (TypeNameRegex.Match(text) is {Success: true} match) {
-                typeNameMatched = match.Groups[1].Value;
-                typeNameWithAssembly = $"{typeNameMatched}@{match.Groups[5].Value}";
-                typeNameWithAssembly = typeNameWithAssembly switch {
-                    "Theo@" => "TheoCrystal@",
-                    "Jellyfish@" => "Glider@",
-                    _ => typeNameWithAssembly
-                };
-                entityId = match.Groups[3].Value;
-                return true;
-            } else {
-                return false;
-            }
-        }
-
-        private static string FormatValue(object obj, string helperMethod, int decimals) {
-            if (obj == null) {
-                return string.Empty;
-            }
-
-            if (obj is Vector2 vector2) {
-                if (helperMethod == "toPixelPerFrame()") {
-                    vector2 = GameInfo.ConvertSpeedUnit(vector2, SpeedUnit.PixelPerFrame);
-                }
-
-                return vector2.ToSimpleString(decimals);
-            }
-
-            if (obj is Vector2Double vector2Double) {
-                return vector2Double.ToSimpleString(decimals);
-            }
-
-            if (obj is float floatValue) {
-                if (helperMethod == "toFrame()") {
-                    return GameInfo.ConvertToFrames(floatValue).ToString();
-                } else if (helperMethod == "toPixelPerFrame()") {
-                    return GameInfo.ConvertSpeedUnit(floatValue, SpeedUnit.PixelPerFrame).ToString(CultureInfo.InvariantCulture);
-                } else {
-                    return floatValue.ToFormattedString(decimals);
-                }
-            }
-
-            if (obj is IEnumerable enumerable and not IEnumerable<char>) {
-                StringBuilder sb = new();
-                foreach (object o in enumerable) {
-                    if (sb.Length > 0) {
-                        sb.Append(", ");
-                    }
-
-                    sb.Append(o);
-                }
-
-                return sb.ToString();
-            }
-
-            return obj.ToString();
-        }
-
-        public static object GetMemberValue(Type type, object obj, List<string> memberNames) {
-            foreach (string memberName in memberNames) {
-                if (GetGetMethod(type, memberName) is { } methodInfo) {
-                    if (methodInfo.IsStatic) {
-                        obj = methodInfo.Invoke(null, null);
-                    } else if (obj != null) {
-                        if (obj is Actor actor && memberName == "ExactPosition") {
-                            obj = actor.GetMoreExactPosition(true);
-                        } else {
-                            obj = methodInfo.Invoke(obj, null);
-                        }
-                    }
-                } else if (GetFieldInfo(type, memberName) is { } fieldInfo) {
-                    if (fieldInfo.IsStatic) {
-                        obj = fieldInfo.GetValue(null);
-                    } else if (obj != null) {
-                        if (obj is Actor actor && memberName == "Position") {
-                            obj = actor.GetMoreExactPosition(true);
-                        } else {
-                            obj = fieldInfo.GetValue(obj);
-                        }
-                    }
-                } else {
-                    if (obj == null) {
-                        return $"{type.FullName}.{memberName} member not found";
+    public static object GetMemberValue(Type type, object obj, List<string> memberNames) {
+        foreach (string memberName in memberNames) {
+            if (GetGetMethod(type, memberName) is { } methodInfo) {
+                if (methodInfo.IsStatic) {
+                    obj = methodInfo.Invoke(null, null);
+                } else if (obj != null) {
+                    if (obj is Actor actor && memberName == "ExactPosition") {
+                        obj = actor.GetMoreExactPosition(true);
                     } else {
-                        return $"{obj.GetType().FullName}.{memberName} member not found";
+                        obj = methodInfo.Invoke(obj, null);
                     }
                 }
-
+            } else if (GetFieldInfo(type, memberName) is { } fieldInfo) {
+                if (fieldInfo.IsStatic) {
+                    obj = fieldInfo.GetValue(null);
+                } else if (obj != null) {
+                    if (obj is Actor actor && memberName == "Position") {
+                        obj = actor.GetMoreExactPosition(true);
+                    } else {
+                        obj = fieldInfo.GetValue(obj);
+                    }
+                }
+            } else {
                 if (obj == null) {
-                    return null;
+                    return $"{type.FullName}.{memberName} member not found";
+                } else {
+                    return $"{obj.GetType().FullName}.{memberName} member not found";
                 }
-
-                type = obj.GetType();
             }
 
-            return obj;
+            if (obj == null) {
+                return null;
+            }
+
+            type = obj.GetType();
         }
 
-        public static MethodInfo GetGetMethod(Type type, string propertyName) {
-            string key = $"{type.FullName}.get_{propertyName}";
-            if (CachedGetMethodInfos.ContainsKey(key)) {
-                return CachedGetMethodInfos[key];
-            } else {
-                MethodInfo methodInfo = type.GetProperty(propertyName, AllBindingFlags)?.GetGetMethod(true);
-                if (methodInfo == null && type.BaseType != null) {
-                    methodInfo = GetGetMethod(type.BaseType, propertyName);
-                }
+        return obj;
+    }
 
-                CachedGetMethodInfos[key] = methodInfo;
-                return methodInfo;
+    public static MethodInfo GetGetMethod(Type type, string propertyName) {
+        string key = $"{type.FullName}.get_{propertyName}";
+        if (CachedGetMethodInfos.ContainsKey(key)) {
+            return CachedGetMethodInfos[key];
+        } else {
+            MethodInfo methodInfo = type.GetProperty(propertyName, AllBindingFlags)?.GetGetMethod(true);
+            if (methodInfo == null && type.BaseType != null) {
+                methodInfo = GetGetMethod(type.BaseType, propertyName);
             }
+
+            CachedGetMethodInfos[key] = methodInfo;
+            return methodInfo;
+        }
+    }
+
+    public static MethodInfo GetSetMethod(Type type, string propertyName) {
+        string key = $"{type.FullName}.set_{propertyName}";
+        if (CachedSetMethodInfos.ContainsKey(key)) {
+            return CachedSetMethodInfos[key];
+        } else {
+            MethodInfo methodInfo = type.GetProperty(propertyName, AllBindingFlags)?.GetSetMethod(true);
+            if (methodInfo == null && type.BaseType != null) {
+                methodInfo = GetSetMethod(type.BaseType, propertyName);
+            }
+
+            CachedSetMethodInfos[key] = methodInfo;
+            return methodInfo;
+        }
+    }
+
+    public static FieldInfo GetFieldInfo(Type type, string fieldName) {
+        string key = $"{type.FullName}.{fieldName}";
+        if (CachedFieldInfos.ContainsKey(key)) {
+            return CachedFieldInfos[key];
+        } else {
+            FieldInfo fieldInfo = type.GetField(fieldName, AllBindingFlags);
+            if (fieldInfo == null && type.BaseType != null) {
+                fieldInfo = GetFieldInfo(type.BaseType, fieldName);
+            }
+
+            CachedFieldInfos[key] = fieldInfo;
+            return fieldInfo;
+        }
+    }
+
+    public static List<Entity> FindEntities(Type type, string entityId) {
+        List<Entity> entities;
+        if (Engine.Scene.Tracker.Entities.ContainsKey(type)) {
+            entities = Engine.Scene.Tracker.Entities[type].ToList();
+        } else {
+            entities = Engine.Scene.Entities.Where(entity => entity.GetType().IsSameOrSubclassOf(type)).ToList();
         }
 
-        public static MethodInfo GetSetMethod(Type type, string propertyName) {
-            string key = $"{type.FullName}.set_{propertyName}";
-            if (CachedSetMethodInfos.ContainsKey(key)) {
-                return CachedSetMethodInfos[key];
-            } else {
-                MethodInfo methodInfo = type.GetProperty(propertyName, AllBindingFlags)?.GetSetMethod(true);
-                if (methodInfo == null && type.BaseType != null) {
-                    methodInfo = GetSetMethod(type.BaseType, propertyName);
-                }
-
-                CachedSetMethodInfos[key] = methodInfo;
-                return methodInfo;
-            }
-        }
-
-        public static FieldInfo GetFieldInfo(Type type, string fieldName) {
-            string key = $"{type.FullName}.{fieldName}";
-            if (CachedFieldInfos.ContainsKey(key)) {
-                return CachedFieldInfos[key];
-            } else {
-                FieldInfo fieldInfo = type.GetField(fieldName, AllBindingFlags);
-                if (fieldInfo == null && type.BaseType != null) {
-                    fieldInfo = GetFieldInfo(type.BaseType, fieldName);
-                }
-
-                CachedFieldInfos[key] = fieldInfo;
-                return fieldInfo;
-            }
-        }
-
-        public static List<Entity> FindEntities(Type type, string entityId) {
-            List<Entity> entities;
-            if (Engine.Scene.Tracker.Entities.ContainsKey(type)) {
-                entities = Engine.Scene.Tracker.Entities[type].ToList();
-            } else {
-                entities = Engine.Scene.Entities.Where(entity => entity.GetType().IsSameOrSubclassOf(type)).ToList();
-            }
-
-            if (entityId.IsNullOrEmpty()) {
-                return entities;
-            } else {
-                return entities.Where(entity => entity.GetEntityData()?.ToEntityId().ToString() == entityId).ToList();
-            }
+        if (entityId.IsNullOrEmpty()) {
+            return entities;
+        } else {
+            return entities.Where(entity => entity.GetEntityData()?.ToEntityId().ToString() == entityId).ToList();
         }
     }
 }

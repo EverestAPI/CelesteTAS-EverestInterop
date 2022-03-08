@@ -1,89 +1,89 @@
 ﻿using System;
 
-namespace StudioCommunication {
-    public class HighPriorityAttribute : Attribute { }
+namespace StudioCommunication;
 
-    public enum MessageID : byte {
-        //Connection
-        /// <summary>
-        /// Unused
-        /// </summary>
-        Default = 0x00,
+public class HighPriorityAttribute : Attribute { }
 
-        /// <summary>
-        /// Structure: [GameDataTypes, Argument]
-        /// </summary>
-        [HighPriority] GetData = 0x08,
+public enum MessageID : byte {
+    //Connection
+    /// <summary>
+    /// Unused
+    /// </summary>
+    Default = 0x00,
 
-        /// <summary>
-        /// Structure:
-        /// </summary>
-        [HighPriority] EstablishConnection = 0x0D,
+    /// <summary>
+    /// Structure: [GameDataTypes, Argument]
+    /// </summary>
+    [HighPriority] GetData = 0x08,
 
-        /// <summary>
-        /// Structure:
-        /// </summary>
-        [HighPriority] Wait = 0x0E,
+    /// <summary>
+    /// Structure:
+    /// </summary>
+    [HighPriority] EstablishConnection = 0x0D,
 
-        /// <summary>
-        /// Structure:
-        /// </summary>
-        Reset = 0x0F,
+    /// <summary>
+    /// Structure:
+    /// </summary>
+    [HighPriority] Wait = 0x0E,
 
-        //Pure data transfer
-        /// <summary>
-        /// Structure: string[] = { state, gameData }
-        /// </summary>
-        SendState = 0x10,
+    /// <summary>
+    /// Structure:
+    /// </summary>
+    Reset = 0x0F,
 
-        //Data transfer from Studio
-        /// <summary>
-        /// Structure: string
-        /// </summary>
-        [HighPriority] SendPath = 0x20,
+    //Pure data transfer
+    /// <summary>
+    /// Structure: string[] = { state, gameData }
+    /// </summary>
+    SendState = 0x10,
 
-        /// <summary>
-        /// Structure: HotkeyIDs, bool released
-        /// </summary>
-        [HighPriority] SendHotkeyPressed = 0x21,
+    //Data transfer from Studio
+    /// <summary>
+    /// Structure: string
+    /// </summary>
+    [HighPriority] SendPath = 0x20,
 
-        /// <summary>
-        /// Structure:
-        /// </summary>
-        [HighPriority] ConvertToLibTas = 0x24,
+    /// <summary>
+    /// Structure: HotkeyIDs, bool released
+    /// </summary>
+    [HighPriority] SendHotkeyPressed = 0x21,
 
-        /// <summary>
-        /// Structure: string settingName
-        /// </summary>
-        [HighPriority] ToggleGameSetting = 0x25,
+    /// <summary>
+    /// Structure:
+    /// </summary>
+    [HighPriority] ConvertToLibTas = 0x24,
 
-        //Data transfer from CelesteTAS
-        /// <summary>
-        /// Structure: List&lt;Keys&gt;[];
-        /// </summary>
-        [HighPriority] SendCurrentBindings = 0x30,
+    /// <summary>
+    /// Structure: string settingName
+    /// </summary>
+    [HighPriority] ToggleGameSetting = 0x25,
 
-        /// <summary>
-        /// Structure: string
-        /// </summary>
-        [HighPriority] ReturnData = 0x31,
+    //Data transfer from CelesteTAS
+    /// <summary>
+    /// Structure: List&lt;Keys&gt;[];
+    /// </summary>
+    [HighPriority] SendCurrentBindings = 0x30,
 
-        /// <summary>
-        /// Structure: Dictonary<int(line number), string(line text)>
-        /// </summary>
-        [HighPriority] UpdateLines = 0x32,
+    /// <summary>
+    /// Structure: string
+    /// </summary>
+    [HighPriority] ReturnData = 0x31,
 
-        //External data transfer
-        ExternLow1 = 0x40,
-        ExternLow2 = 0x41,
-        [HighPriority] ExternHigh1 = 0x42,
-        [HighPriority] ExternHigh2 = 0x43,
-    }
+    /// <summary>
+    /// Structure: Dictonary<int(line number), string(line text)>
+    /// </summary>
+    [HighPriority] UpdateLines = 0x32,
 
-    public enum GameDataType : byte {
-        ConsoleCommand,
-        ModInfo,
-        ExactGameInfo,
-        SettingValue,
-    }
+    //External data transfer
+    ExternLow1 = 0x40,
+    ExternLow2 = 0x41,
+    [HighPriority] ExternHigh1 = 0x42,
+    [HighPriority] ExternHigh2 = 0x43,
+}
+
+public enum GameDataType : byte {
+    ConsoleCommand,
+    ModInfo,
+    ExactGameInfo,
+    SettingValue,
 }

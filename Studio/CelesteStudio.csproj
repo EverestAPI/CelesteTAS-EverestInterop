@@ -4,7 +4,7 @@
         <AssemblyName>Celeste Studio</AssemblyName>
         <TargetFramework>net452</TargetFramework>
         <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-        <LangVersion>9</LangVersion>
+        <LangVersion>10</LangVersion>
         <AssemblyTitle>Celeste Studio</AssemblyTitle>
         <Product>Celeste Studio</Product>
         <Copyright>Copyright © 2018</Copyright>

@@ -5,37 +5,37 @@ using TAS.Module;
 using TAS.Utils;
 
 #if DEBUG
-namespace TAS.EverestInterop {
-    public static class HotReloadHelper {
-        private static FileSystemWatcher watcher;
+namespace TAS.EverestInterop;
 
-        [Load]
-        private static void Load() {
-            EverestModuleMetadata meta = CelesteTasModule.Instance.Metadata;
-            try {
-                watcher = new FileSystemWatcher {
-                    Path = Path.GetDirectoryName(meta.DLL),
-                    NotifyFilter = NotifyFilters.LastWrite,
-                };
+public static class HotReloadHelper {
+    private static FileSystemWatcher watcher;
 
-                watcher.Changed += (s, e) => {
-                    if (e.FullPath == meta.DLL && Manager.Running) {
-                        Manager.DisableRun();
-                    }
-                };
+    [Load]
+    private static void Load() {
+        EverestModuleMetadata meta = CelesteTasModule.Instance.Metadata;
+        try {
+            watcher = new FileSystemWatcher {
+                Path = Path.GetDirectoryName(meta.DLL),
+                NotifyFilter = NotifyFilters.LastWrite,
+            };
 
-                watcher.EnableRaisingEvents = true;
-            } catch (Exception e) {
-                e.LogException($"Failed watching folder: {Path.GetDirectoryName(meta.DLL)}");
-                Unload();
-            }
+            watcher.Changed += (s, e) => {
+                if (e.FullPath == meta.DLL && Manager.Running) {
+                    Manager.DisableRun();
+                }
+            };
+
+            watcher.EnableRaisingEvents = true;
+        } catch (Exception e) {
+            e.LogException($"Failed watching folder: {Path.GetDirectoryName(meta.DLL)}");
+            Unload();
         }
+    }
 
-        [Unload]
-        private static void Unload() {
-            watcher?.Dispose();
-            watcher = null;
-        }
+    [Unload]
+    private static void Unload() {
+        watcher?.Dispose();
+        watcher = null;
     }
 }
 #endif

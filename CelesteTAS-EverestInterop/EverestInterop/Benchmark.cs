@@ -8,62 +8,62 @@ using TAS.Input;
 using TAS.Module;
 using TAS.Utils;
 
-namespace TAS.EverestInterop {
-    public static class Benchmark {
-        private static readonly Stopwatch watch = new Stopwatch();
-        private static bool lastRunning;
-        private static ulong lastFrameCounter;
+namespace TAS.EverestInterop;
 
-        [Load]
-        private static void Load() {
-            On.Monocle.Engine.Update += EngineOnUpdate;
-        }
+public static class Benchmark {
+    private static readonly Stopwatch watch = new Stopwatch();
+    private static bool lastRunning;
+    private static ulong lastFrameCounter;
 
-        [Unload]
-        private static void Unload() {
-            On.Monocle.Engine.Update -= EngineOnUpdate;
-        }
+    [Load]
+    private static void Load() {
+        On.Monocle.Engine.Update += EngineOnUpdate;
+    }
 
-        private static void EngineOnUpdate(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
-            orig(self, gameTime);
-            if (lastRunning != Manager.Running && Manager.Controller.HasFastForward) {
-                if (Manager.Running) {
-                    Start();
-                } else {
-                    Stop();
-                }
-            }
+    [Unload]
+    private static void Unload() {
+        On.Monocle.Engine.Update -= EngineOnUpdate;
+    }
 
+    private static void EngineOnUpdate(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
+        orig(self, gameTime);
+        if (lastRunning != Manager.Running && Manager.Controller.HasFastForward) {
             if (Manager.Running) {
-                if (watch.IsRunning && Manager.IsLoading()) {
-                    watch.Stop();
-                } else if (!watch.IsRunning && !Manager.IsLoading()) {
-                    watch.Start();
-                }
+                Start();
+            } else {
+                Stop();
+            }
+        }
 
-                if (!watch.IsRunning) {
-                    lastFrameCounter++;
-                }
+        if (Manager.Running) {
+            if (watch.IsRunning && Manager.IsLoading()) {
+                watch.Stop();
+            } else if (!watch.IsRunning && !Manager.IsLoading()) {
+                watch.Start();
             }
 
-            lastRunning = Manager.Running;
+            if (!watch.IsRunning) {
+                lastFrameCounter++;
+            }
         }
 
-        private static void Start() {
-            lastFrameCounter = Engine.FrameCounter;
-            watch.Restart();
-            $"Benchmark Start: {InputController.TasFilePath}".Log();
-            MeasureProfiler.StartCollectingData();
-        }
+        lastRunning = Manager.Running;
+    }
 
-        private static void Stop() {
-            MeasureProfiler.SaveData();
-            ulong frames = Engine.FrameCounter - lastFrameCounter;
-            float framesPerSecond = (int) Math.Round(1 / Engine.RawDeltaTime);
-            $"Benchmark Stop: frames={frames} time={watch.ElapsedMilliseconds}ms avg_speed={frames / framesPerSecond / watch.ElapsedMilliseconds * 1000f}"
-                .Log();
-            watch.Stop();
-        }
+    private static void Start() {
+        lastFrameCounter = Engine.FrameCounter;
+        watch.Restart();
+        $"Benchmark Start: {InputController.TasFilePath}".Log();
+        MeasureProfiler.StartCollectingData();
+    }
+
+    private static void Stop() {
+        MeasureProfiler.SaveData();
+        ulong frames = Engine.FrameCounter - lastFrameCounter;
+        float framesPerSecond = (int) Math.Round(1 / Engine.RawDeltaTime);
+        $"Benchmark Stop: frames={frames} time={watch.ElapsedMilliseconds}ms avg_speed={frames / framesPerSecond / watch.ElapsedMilliseconds * 1000f}"
+            .Log();
+        watch.Stop();
     }
 }
 #endif
