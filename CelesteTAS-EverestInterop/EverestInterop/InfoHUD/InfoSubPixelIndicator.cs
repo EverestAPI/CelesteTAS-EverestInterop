@@ -36,11 +36,9 @@ public static class InfoSubPixelIndicator {
         float rectSide = GetSubPixelRectSize();
         float x = TasSettings.InfoPosition.X + textWidth + padding * 2;
         y = y - rectSide - padding * 1.5f - textHeight;
-        float thickness = PixelScale * TasSettings.InfoSubpixelIndicatorSize / 20f;
+        int thickness = Math.Max(1, (int) Math.Round(PixelScale * TasSettings.InfoSubpixelIndicatorSize / 20f));
         DrawHollowRect(x, y, rectSide, rectSide, Color.Green * alpha, thickness);
-
-        float pointSize = thickness * 1.2f;
-        Draw.Rect(x + (rectSide - pointSize) * subPixelLeft, y + (rectSide - pointSize) * subPixelTop, pointSize, pointSize,
+        Draw.Rect(x + (rectSide - thickness) * subPixelLeft, y + (rectSide - thickness) * subPixelTop, thickness, thickness,
             Color.Red * alpha);
 
         Vector2 remainder = player?.PositionRemainder ?? Vector2.One;
@@ -104,8 +102,9 @@ public static class InfoSubPixelIndicator {
     }
 
     private static void DrawHollowRect(float left, float top, float width, float height, Color color, float thickness) {
-        for (int i = 0; i < thickness; i++) {
-            Draw.HollowRect(left + i, top + i, width - i * 2, height - i * 2, color);
-        }
+        Draw.Rect(left, top, width, thickness, color);
+        Draw.Rect(left, top, thickness, height, color);
+        Draw.Rect(left + width - thickness, top, thickness, height, color);
+        Draw.Rect(left, top + height - thickness, width, thickness, color);
     }
 }
