@@ -80,9 +80,9 @@ public partial class Studio : BaseForm {
 
     private void InitTitleBarTooltip() {
         NonClientMouseHover += (_, _) => {
-            if (TitleRectangle.Contains(Cursor.Position)) {
+            if (TitleRectangle.Contains(Cursor.Position) && !string.IsNullOrEmpty(CurrentFileName)) {
                 titleBarTooltip ??= new ToolTip();
-                titleBarTooltip.Show(Text, this, TitleRectangle.Left - Left + 1, TitleRectangle.Bottom - Top, int.MaxValue);
+                titleBarTooltip.Show(CurrentFileName, this, TitleRectangle.Left - Left + 1, TitleRectangle.Bottom - Top, int.MaxValue);
             }
         };
 
