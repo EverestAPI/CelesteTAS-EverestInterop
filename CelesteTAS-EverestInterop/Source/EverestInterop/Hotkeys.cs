@@ -271,7 +271,7 @@ public static class Hotkeys {
         IEnumerable<PropertyInfo> bindingProperties = typeof(CelesteTasSettings)
             .GetProperties(BindingFlags.Instance | BindingFlags.Public)
             .Where(info => info.PropertyType == typeof(ButtonBinding) &&
-                           info.GetCustomAttribute<ExtraDefaultKeyAttribute>() is { } extraDefaultKeyAttribute &&
+                           info.GetCustomAttribute<DefaultButtonBinding2Attribute>() is { } extraDefaultKeyAttribute &&
                            extraDefaultKeyAttribute.ExtraKey != Keys.None);
         ILCursor ilCursor = new(il);
         if (ilCursor.TryGotoNext(
@@ -288,7 +288,7 @@ public static class Hotkeys {
                 }
 
                 if (bindingProperties.FirstOrDefault(info => info.GetValue(Settings) == binding) is { } propertyInfo) {
-                    binding.Keys.Insert(0, propertyInfo.GetCustomAttribute<ExtraDefaultKeyAttribute>().ExtraKey);
+                    binding.Keys.Insert(0, propertyInfo.GetCustomAttribute<DefaultButtonBinding2Attribute>().ExtraKey);
                 }
             });
         }
@@ -447,10 +447,10 @@ public static class MouseButtons {
     }
 }
 
-public class ExtraDefaultKeyAttribute : Attribute {
+public class DefaultButtonBinding2Attribute : DefaultButtonBindingAttribute {
     public readonly Keys ExtraKey;
 
-    public ExtraDefaultKeyAttribute(Keys extraKey) {
+    public DefaultButtonBinding2Attribute(Buttons button, Keys key, Keys extraKey = Keys.None) : base(button, key) {
         ExtraKey = extraKey;
     }
 }

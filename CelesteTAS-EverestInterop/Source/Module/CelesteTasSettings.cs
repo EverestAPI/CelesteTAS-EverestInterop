@@ -56,8 +56,7 @@ public class CelesteTasSettings : EverestModuleSettings {
     public ButtonBinding KeyFastForward { get; set; } = new(0, Keys.RightShift);
 
     [SettingName("TAS_KEY_FAST_FORWARD_COMMENT")]
-    [ExtraDefaultKey(Keys.RightAlt)]
-    [DefaultButtonBinding(0, Keys.RightShift)]
+    [DefaultButtonBinding2(0, Keys.RightShift, Keys.RightAlt)]
     public ButtonBinding KeyFastForwardComment { get; set; } = new(0, Keys.RightAlt, Keys.RightShift);
 
     [SettingName("TAS_KEY_SLOW_FORWARD")]
@@ -73,33 +72,27 @@ public class CelesteTasSettings : EverestModuleSettings {
     public ButtonBinding KeyPause { get; set; } = new(0, Keys.OemCloseBrackets);
 
     [SettingName("TAS_KEY_HITBOXES")]
-    [ExtraDefaultKey(Keys.LeftControl)]
-    [DefaultButtonBinding(0, Keys.B)]
+    [DefaultButtonBinding2(0, Keys.B, Keys.LeftControl)]
     public ButtonBinding KeyHitboxes { get; set; } = new(0, Keys.LeftControl, Keys.B);
 
     [SettingName("TAS_KEY_TRIGGER_HITBOXES")]
-    [ExtraDefaultKey(Keys.LeftAlt)]
-    [DefaultButtonBinding(0, Keys.T)]
+    [DefaultButtonBinding2(0, Keys.T, Keys.LeftAlt)]
     public ButtonBinding KeyTriggerHitboxes { get; set; } = new(0, Keys.LeftAlt, Keys.T);
 
     [SettingName("TAS_KEY_SIMPLIFIED_GRAPHICS")]
-    [ExtraDefaultKey(Keys.LeftControl)]
-    [DefaultButtonBinding(0, Keys.N)]
+    [DefaultButtonBinding2(0, Keys.N, Keys.LeftControl)]
     public ButtonBinding KeyGraphics { get; set; } = new(0, Keys.LeftControl, Keys.N);
 
     [SettingName("TAS_KEY_CENTER_CAMERA")]
-    [ExtraDefaultKey(Keys.LeftControl)]
-    [DefaultButtonBinding(0, Keys.M)]
+    [DefaultButtonBinding2(0, Keys.M, Keys.LeftControl)]
     public ButtonBinding KeyCamera { get; set; } = new(0, Keys.LeftControl, Keys.M);
 
     [SettingName("TAS_KEY_SAVE_STATE")]
-    [ExtraDefaultKey(Keys.RightAlt)]
-    [DefaultButtonBinding(0, Keys.OemMinus)]
+    [DefaultButtonBinding2(0, Keys.OemMinus, Keys.RightAlt)]
     public ButtonBinding KeySaveState { get; set; } = new(0, Keys.RightAlt, Keys.OemMinus);
 
     [SettingName("TAS_KEY_CLEAR_STATE")]
-    [ExtraDefaultKey(Keys.RightAlt)]
-    [DefaultButtonBinding(0, Keys.Back)]
+    [DefaultButtonBinding2(0, Keys.Back, Keys.RightAlt)]
     public ButtonBinding KeyClearState { get; set; } = new(0, Keys.RightAlt, Keys.Back);
 
     [SettingName("TAS_KEY_INFO_HUD")]
