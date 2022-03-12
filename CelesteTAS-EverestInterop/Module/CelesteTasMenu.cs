@@ -45,8 +45,6 @@ internal static class CelesteTasMenu {
             subMenu.AddDescription(menu, ignoreGcItem, "Ignore GC Collect Description 1".ToDialogText());
             subMenu.AddDescription(menu, ignoreGcItem, "Ignore GC Collect Description 2".ToDialogText());
 
-            subMenu.Add(new TextMenu.OnOff("Pause After Load State".ToDialogText(), Settings.PauseAfterLoadState).Change(value =>
-                Settings.PauseAfterLoadState = value));
             subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), Settings.LaunchStudioAtBoot).Change(value =>
                 Settings.LaunchStudioAtBoot = value));
             subMenu.Add(new TextMenu.OnOff("Extract New Studio At Boot".ToDialogText(), Settings.ExtractNewStudioAtBoot).Change(value =>

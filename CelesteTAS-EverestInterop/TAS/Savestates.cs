@@ -200,10 +200,10 @@ public static class Savestates {
     }
 
     private static void SetTasState() {
-        if ((CelesteTasModule.Settings.PauseAfterLoadState || savedByBreakpoint) && !Controller.HasFastForward) {
-            Manager.States |= TasStates.FrameStep;
-        } else {
+        if (Controller.HasFastForward) {
             Manager.States &= ~TasStates.FrameStep;
+        } else {
+            Manager.States |= TasStates.FrameStep;
         }
 
         NextStates &= ~TasStates.FrameStep;
