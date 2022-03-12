@@ -89,7 +89,7 @@ public static class Core {
 
         // The original patch doesn't store FrameLoops in a local variable, but it's only updated in UpdateInputs anyway.
         int loops = (int) Manager.FrameLoops;
-        bool skipBaseUpdate = !Settings.FastForwardCallBase && loops >= Settings.FastForwardThreshold;
+        bool skipBaseUpdate = loops >= 2;
 
         SkipBaseUpdate = skipBaseUpdate;
         InUpdate = true;

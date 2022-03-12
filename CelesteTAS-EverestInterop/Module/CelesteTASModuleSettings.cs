@@ -268,13 +268,6 @@ public class CelesteTasModuleSettings : EverestModuleSettings {
     public bool Mod9DLighting { get; set; } = false;
 
     #endregion
-
-    # region Ignore
-
-    [SettingIgnore] public bool FastForwardCallBase { get; set; } = false;
-    [SettingIgnore] public int FastForwardThreshold { get; set; } = 10;
-
-    #endregion
 }
 
 public enum SpeedUnit {
