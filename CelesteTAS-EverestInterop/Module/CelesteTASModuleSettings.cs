@@ -59,6 +59,10 @@ public class CelesteTasModuleSettings : EverestModuleSettings {
     [DefaultButtonBinding(0, Keys.RightShift)]
     public ButtonBinding KeyFastForwardComment { get; set; } = new(0, Keys.RightAlt, Keys.RightShift);
 
+    [SettingName("TAS_KEY_SLOW_FORWARD")]
+    [DefaultButtonBinding(0, Keys.RightShift)]
+    public ButtonBinding KeySlowForward { get; set; } = new(0, Keys.OemPipe);
+
     [SettingName("TAS_KEY_FRAME_ADVANCE")]
     [DefaultButtonBinding(0, Keys.OemOpenBrackets)]
     public ButtonBinding KeyFrameAdvance { get; set; } = new(0, Keys.OemOpenBrackets);

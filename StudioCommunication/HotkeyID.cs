@@ -7,6 +7,7 @@ public enum HotkeyID : byte {
     Restart,
     FastForward,
     FastForwardComment,
+    SlowForward,
     FrameAdvance,
     Pause,
     Hitboxes,

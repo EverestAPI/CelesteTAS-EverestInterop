@@ -103,6 +103,7 @@ TAS_KEY_START_STOP=           Start/Stop
 TAS_KEY_RESTART=              Restart
 TAS_KEY_FAST_FORWARD=         Fast Forward
 TAS_KEY_FAST_FORWARD_COMMENT= Fast Forward to Next Comment
+TAS_KEY_SLOW_FORWARD=         Slow Forward
 TAS_KEY_FRAME_ADVANCE=        Frame Advance
 TAS_KEY_PAUSE_RESUME=         Pause/Resume
 TAS_KEY_HITBOXES=             Hitboxes

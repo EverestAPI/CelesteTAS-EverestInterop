@@ -32,7 +32,9 @@ public partial class Studio : BaseForm {
     private ToolTip titleBarTooltip;
     private int totalFrames, currentFrame;
     private bool updating;
-    private bool DisableTyping => tasStates.HasFlag(States.Enable) && !tasStates.HasFlag(States.FrameStep) && StudioCommunicationBase.Initialized;
+
+    private bool DisableTyping => tasStates.HasFlag(States.Enable) && !tasStates.HasFlag(States.FrameStep) && StudioCommunicationBase.Initialized ||
+                                  CommunicationWrapper.Forwarding;
 
     private string TitleBarText =>
         (string.IsNullOrEmpty(CurrentFileName) ? "Celeste.tas" : Path.GetFileName(CurrentFileName))
@@ -731,9 +733,7 @@ public partial class Studio : BaseForm {
                 if (hooked) {
                     UpdateValues();
                     FixSomeBugsWhenOutOfMinimized();
-                    if (CommunicationWrapper.FastForwarding) {
-                        CommunicationWrapper.CheckFastForward();
-                    }
+                    CommunicationWrapper.CheckForward();
                 }
 
                 Thread.Sleep(14);

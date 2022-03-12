@@ -42,7 +42,8 @@ public static class Manager {
         AttributeUtils.CollectMethods<DisableRunAttribute>();
     }
 
-    private static bool ShouldForceState => NextStates.HasFlag(States.FrameStep) && !Hotkeys.FastForward.OverrideCheck;
+    private static bool ShouldForceState =>
+        NextStates.HasFlag(States.FrameStep) && !Hotkeys.FastForward.OverrideCheck && !Hotkeys.SlowForward.OverrideCheck;
 
     public static void Update() {
         LastStates = States;
@@ -112,6 +113,8 @@ public static class Manager {
 
             if (Hotkeys.FastForward.Check) {
                 FrameLoops = 10;
+            } else if (Hotkeys.SlowForward.Check) {
+                FrameLoops = 0.1f;
             } else if (Math.Round(Hotkeys.RightThumbSticksX * 10) is var length) {
                 if (length >= 2) {
                     FrameLoops = (int) length;
@@ -148,7 +151,8 @@ public static class Manager {
                     States &= ~States.FrameStep;
                     NextStates &= ~States.FrameStep;
                 }
-            } else if (LastStates.HasFlag(States.FrameStep) && States.HasFlag(States.FrameStep) && Hotkeys.FastForward.Check &&
+            } else if (LastStates.HasFlag(States.FrameStep) && States.HasFlag(States.FrameStep) &&
+                       (Hotkeys.FastForward.Check || Hotkeys.SlowForward.Check && Engine.FrameCounter % 10 == 0) &&
                        !Hotkeys.FastForwardComment.Check) {
                 States &= ~States.FrameStep;
                 NextStates |= States.FrameStep;

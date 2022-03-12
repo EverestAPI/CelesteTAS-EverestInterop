@@ -44,6 +44,7 @@ public static class Hotkeys {
     public static Hotkey Restart { get; private set; }
     public static Hotkey FastForward { get; private set; }
     public static Hotkey FastForwardComment { get; private set; }
+    public static Hotkey SlowForward { get; private set; }
     public static Hotkey FrameAdvance { get; private set; }
     public static Hotkey PauseResume { get; private set; }
     public static Hotkey Hitboxes { get; private set; }
@@ -100,9 +101,10 @@ public static class Hotkeys {
         KeysDict.Clear();
         KeysDict[HotkeyID.Start] = StartStop = BindingToHotkey(Settings.KeyStart);
         KeysDict[HotkeyID.Restart] = Restart = BindingToHotkey(Settings.KeyRestart);
-        KeysDict[HotkeyID.FastForward] = FastForward = BindingToHotkey(Settings.KeyFastForward);
+        KeysDict[HotkeyID.FastForward] = FastForward = BindingToHotkey(Settings.KeyFastForward, true);
         KeysDict[HotkeyID.FastForwardComment] = FastForwardComment = BindingToHotkey(Settings.KeyFastForwardComment);
         KeysDict[HotkeyID.FrameAdvance] = FrameAdvance = BindingToHotkey(Settings.KeyFrameAdvance);
+        KeysDict[HotkeyID.SlowForward] = SlowForward = BindingToHotkey(Settings.KeySlowForward, true);
         KeysDict[HotkeyID.Pause] = PauseResume = BindingToHotkey(Settings.KeyPause);
         KeysDict[HotkeyID.Hitboxes] = Hitboxes = BindingToHotkey(Settings.KeyHitboxes);
         KeysDict[HotkeyID.TriggerHitboxes] = TriggerHitboxes = BindingToHotkey(Settings.KeyTriggerHitboxes);
@@ -124,8 +126,8 @@ public static class Hotkeys {
             .ToDictionary(pair => pair.Key, pair => pair.Value.Keys);
     }
 
-    private static Hotkey BindingToHotkey(ButtonBinding binding) {
-        return new(binding.Keys, binding.Buttons, true, ReferenceEquals(binding, Settings.KeyFastForward));
+    private static Hotkey BindingToHotkey(ButtonBinding binding, bool held = false) {
+        return new(binding.Keys, binding.Buttons, true, held);
     }
 
     private static GamePadState GetGamePadState() {
