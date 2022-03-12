@@ -19,7 +19,7 @@ internal static class CelesteTasMenu {
     private static readonly MethodInfo CreateButtonConfigUI = typeof(EverestModule).GetMethodInfo("CreateButtonConfigUI");
     private static List<EaseInSubMenu> options;
     private static TextMenu.Item hotkeysSubMenu;
-    private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
+    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
 
     internal static string ToDialogText(this string input) => Dialog.Clean("TAS_" + input.Replace(" ", "_"));
 
@@ -111,20 +111,20 @@ internal static class CelesteTasMenu {
 
     private static EaseInSubMenu CreateRoundValuesSubMenu() {
         return new EaseInSubMenu("Round Values".ToDialogText(), false).Apply(subMenu => {
-            subMenu.Add(new TextMenuExt.IntSlider("Position Decimals".ToDialogText(), CelesteTasModuleSettings.MinDecimals,
-                CelesteTasModuleSettings.MaxDecimals, Settings.PositionDecimals).Change(value =>
+            subMenu.Add(new TextMenuExt.IntSlider("Position Decimals".ToDialogText(), CelesteTasSettings.MinDecimals,
+                CelesteTasSettings.MaxDecimals, Settings.PositionDecimals).Change(value =>
                 Settings.PositionDecimals = value));
-            subMenu.Add(new TextMenuExt.IntSlider("Speed Decimals".ToDialogText(), CelesteTasModuleSettings.MinDecimals,
-                CelesteTasModuleSettings.MaxDecimals, Settings.SpeedDecimals).Change(value =>
+            subMenu.Add(new TextMenuExt.IntSlider("Speed Decimals".ToDialogText(), CelesteTasSettings.MinDecimals,
+                CelesteTasSettings.MaxDecimals, Settings.SpeedDecimals).Change(value =>
                 Settings.SpeedDecimals = value));
-            subMenu.Add(new TextMenuExt.IntSlider("Velocity Decimals".ToDialogText(), CelesteTasModuleSettings.MinDecimals,
-                CelesteTasModuleSettings.MaxDecimals, Settings.VelocityDecimals).Change(value =>
+            subMenu.Add(new TextMenuExt.IntSlider("Velocity Decimals".ToDialogText(), CelesteTasSettings.MinDecimals,
+                CelesteTasSettings.MaxDecimals, Settings.VelocityDecimals).Change(value =>
                 Settings.VelocityDecimals = value));
-            subMenu.Add(new TextMenuExt.IntSlider("Custom Info Decimals".ToDialogText(), CelesteTasModuleSettings.MinDecimals,
-                CelesteTasModuleSettings.MaxDecimals, Settings.CustomInfoDecimals).Change(value =>
+            subMenu.Add(new TextMenuExt.IntSlider("Custom Info Decimals".ToDialogText(), CelesteTasSettings.MinDecimals,
+                CelesteTasSettings.MaxDecimals, Settings.CustomInfoDecimals).Change(value =>
                 Settings.CustomInfoDecimals = value));
-            subMenu.Add(new TextMenuExt.IntSlider("Subpixel Indicator Decimals".ToDialogText(), CelesteTasModuleSettings.MinDecimals,
-                CelesteTasModuleSettings.MaxDecimals, Settings.SubpixelIndicatorDecimals).Change(value =>
+            subMenu.Add(new TextMenuExt.IntSlider("Subpixel Indicator Decimals".ToDialogText(), CelesteTasSettings.MinDecimals,
+                CelesteTasSettings.MaxDecimals, Settings.SubpixelIndicatorDecimals).Change(value =>
                 Settings.SubpixelIndicatorDecimals = value));
             subMenu.Add(new TextMenuExt.EnumerableSlider<SpeedUnit>("Speed Unit".ToDialogText(), new[] {
                     new KeyValuePair<SpeedUnit, string>(SpeedUnit.PixelPerSecond, "Pixel Per Second".ToDialogText()),

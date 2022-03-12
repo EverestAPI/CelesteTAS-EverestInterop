@@ -25,7 +25,7 @@ public static class HitboxColor {
     public static Color EntityColorInversely => EntityColor.Invert();
     public static Color EntityColorInverselyLessAlpha => EntityColorInversely * 0.6f;
 
-    private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
+    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
 
     public static TextMenu.Item CreateEntityHitboxColorButton(TextMenu textMenu, bool inGame) {
         TextMenu.Item item = new TextMenu.Button("Entity Hitbox Color".ToDialogText() + $": {ColorToHex(Settings.EntityHitboxColor)}").Pressed(

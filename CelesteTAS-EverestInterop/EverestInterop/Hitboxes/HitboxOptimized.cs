@@ -27,7 +27,7 @@ public static class HitboxOptimized {
     private static Func<Solid> bgModeToggleBgSolidTiles;
     private static readonly Dictionary<LevelData, bool> ExistBgModeToggle = new();
 
-    private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
+    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
 
     [Load]
     private static void Load() {

@@ -26,7 +26,7 @@ public static class InfoCustom {
     private static readonly Dictionary<string, MethodInfo> CachedSetMethodInfos = new();
     private static readonly Dictionary<string, FieldInfo> CachedFieldInfos = new();
 
-    private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
+    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
 
     [LoadContent]
     private static void CollectAllTypeInfo() {

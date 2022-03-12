@@ -8,7 +8,7 @@ namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxFixer {
     public static bool DrawingHitboxes { get; set; }
-    private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
+    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
 
     [Load]
     private static void Load() {

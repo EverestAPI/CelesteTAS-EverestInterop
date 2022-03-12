@@ -9,7 +9,7 @@ using TAS.Module;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxTrigger {
-    private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
+    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
 
     [Load]
     private static void Load() {

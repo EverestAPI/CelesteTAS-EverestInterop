@@ -95,7 +95,7 @@ public static class Hotkeys {
         }
     }
 
-    private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
+    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
 
     private static void InputInitialize() {
         KeysDict.Clear();
@@ -268,7 +268,7 @@ public static class Hotkeys {
     }
 
     private static void ModReload(ILContext il) {
-        IEnumerable<PropertyInfo> bindingProperties = typeof(CelesteTasModuleSettings)
+        IEnumerable<PropertyInfo> bindingProperties = typeof(CelesteTasSettings)
             .GetProperties(BindingFlags.Instance | BindingFlags.Public)
             .Where(info => info.PropertyType == typeof(ButtonBinding) &&
                            info.GetCustomAttribute<ExtraDefaultKeyAttribute>() is { } extraDefaultKeyAttribute &&

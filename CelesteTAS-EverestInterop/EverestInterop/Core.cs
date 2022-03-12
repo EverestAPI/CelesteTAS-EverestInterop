@@ -25,7 +25,7 @@ public static class Core {
     private static readonly Lazy<bool> CantPauseWhileSaving = new(() => Everest.Version < new Version(1, 2865));
     private static readonly bool updateGrab = typeof(GameInput).GetMethod("UpdateGrab") != null;
 
-    private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
+    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
 
     [Load]
     private static void Load() {

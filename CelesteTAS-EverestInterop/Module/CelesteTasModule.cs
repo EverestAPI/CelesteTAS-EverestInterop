@@ -18,9 +18,9 @@ public class CelesteTasModule : EverestModule {
     }
 
     public static CelesteTasModule Instance { get; private set; }
-    public static CelesteTasModuleSettings Settings => CelesteTasModuleSettings.Instance;
+    public static CelesteTasSettings Settings => CelesteTasSettings.Instance;
 
-    public override Type SettingsType => typeof(CelesteTasModuleSettings);
+    public override Type SettingsType => typeof(CelesteTasSettings);
 
     public override void Initialize() {
         AttributeUtils.Invoke<InitializeAttribute>();

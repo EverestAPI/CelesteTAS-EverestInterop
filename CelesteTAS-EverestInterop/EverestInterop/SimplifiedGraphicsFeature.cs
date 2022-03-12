@@ -41,7 +41,7 @@ public static class SimplifiedGraphicsFeature {
     private static bool lastSimplifiedGraphics = Settings.SimplifiedGraphics;
     private static SolidTilesStyle currentSolidTilesStyle;
     private static bool creatingSolidTiles;
-    private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
+    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
 
     public static EaseInSubMenu CreateSubMenu(TextMenu menu) {
         return new EaseInSubMenu("Simplified Graphics".ToDialogText(), false).Apply(subMenu => {

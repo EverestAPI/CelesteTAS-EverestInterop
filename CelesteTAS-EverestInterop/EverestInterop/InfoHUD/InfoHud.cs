@@ -14,7 +14,7 @@ namespace TAS.EverestInterop.InfoHUD;
 
 public static class InfoHud {
     private static EaseInSubMenu subMenuItem;
-    private static CelesteTasModuleSettings TasSettings => CelesteTasModule.Settings;
+    private static CelesteTasSettings TasSettings => CelesteTasModule.Settings;
     public static Vector2 Size { get; private set; }
 
     [Load]

@@ -9,12 +9,12 @@ using TAS.EverestInterop.InfoHUD;
 
 namespace TAS.Module;
 
-public class CelesteTasModuleSettings : EverestModuleSettings {
+public class CelesteTasSettings : EverestModuleSettings {
     public const int MinDecimals = 2;
     public const int MaxDecimals = 12;
-    public static CelesteTasModuleSettings Instance { get; private set; }
+    public static CelesteTasSettings Instance { get; private set; }
 
-    public CelesteTasModuleSettings() {
+    public CelesteTasSettings() {
         Instance = this;
     }
 

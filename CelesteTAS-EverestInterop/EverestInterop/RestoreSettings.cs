@@ -69,8 +69,8 @@ public static class RestoreSettings {
                     if (module?._Settings != null && origModSettings.TryGetValue(module, out object modSettings) && modSettings != null) {
                         bool showHitbox = CelesteTasModule.Settings.ShowHitboxes;
 
-                        if (modSettings is CelesteTasModuleSettings backupTasSettings) {
-                            CelesteTasModuleSettings tasSettings = CelesteTasModule.Settings;
+                        if (modSettings is CelesteTasSettings backupTasSettings) {
+                            CelesteTasSettings tasSettings = CelesteTasModule.Settings;
                             backupTasSettings.ShowTriggerHitboxes = tasSettings.ShowTriggerHitboxes;
                             backupTasSettings.ShowActualCollideHitboxes = tasSettings.ShowActualCollideHitboxes;
                             backupTasSettings.SimplifiedGraphics = tasSettings.SimplifiedGraphics;

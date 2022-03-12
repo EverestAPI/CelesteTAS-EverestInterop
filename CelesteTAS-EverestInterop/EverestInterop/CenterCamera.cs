@@ -54,7 +54,7 @@ public static class CenterCamera {
     private static DateTime? arrowKeyPressTime;
     private static float viewportScale = 1f;
     private static int zoomInterval;
-    private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
+    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
 
     // this must be <= 4096 / 320 = 12.8, it's used in FreeCameraHitbox and 4096 is the maximum texture size
     public const float MaximumViewportScale = 12f;

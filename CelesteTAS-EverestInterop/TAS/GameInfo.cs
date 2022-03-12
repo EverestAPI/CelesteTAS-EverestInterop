@@ -90,7 +90,7 @@ public static class GameInfo {
         CoroutineWaitTimer = waitTimer.CreateGetDelegate<Func<Coroutine, float>>();
     }
 
-    private static CelesteTasModuleSettings TasSettings => CelesteTasModule.Settings;
+    private static CelesteTasSettings TasSettings => CelesteTasModule.Settings;
 
     public static string HudInfo {
         get {
@@ -143,8 +143,8 @@ public static class GameInfo {
                 infos.Add(InfoMouse.MouseInfo);
             }
 
-            WatchingInfo = InfoWatchEntity.GetWatchingEntitiesInfo(alwaysUpdate: true, decimals: CelesteTasModuleSettings.MaxDecimals);
-            CustomInfo = InfoCustom.Parse(CelesteTasModuleSettings.MaxDecimals);
+            WatchingInfo = InfoWatchEntity.GetWatchingEntitiesInfo(alwaysUpdate: true, decimals: CelesteTasSettings.MaxDecimals);
+            CustomInfo = InfoCustom.Parse(CelesteTasSettings.MaxDecimals);
 
             if (CustomInfo.IsNotNullOrWhiteSpace()) {
                 infos.Add(CustomInfo);
@@ -568,13 +568,13 @@ public static class GameInfo {
         }
 
         const string prefix = "Pos:   ";
-        exactPos = $"{prefix}{actor.ToSimplePositionString(CelesteTasModuleSettings.MaxDecimals)}";
+        exactPos = $"{prefix}{actor.ToSimplePositionString(CelesteTasSettings.MaxDecimals)}";
         return $"{prefix}{result}";
     }
 
     private static string GetAdjustedSpeed(Vector2 speed, out string exactSpeed) {
         speed = ConvertSpeedUnit(speed, TasSettings.SpeedUnit);
-        exactSpeed = $"Speed: {speed.ToSimpleString(CelesteTasModuleSettings.MaxDecimals)}";
+        exactSpeed = $"Speed: {speed.ToSimpleString(CelesteTasSettings.MaxDecimals)}";
         return $"Speed: {speed.ToSimpleString(TasSettings.SpeedDecimals)}";
     }
 
@@ -599,7 +599,7 @@ public static class GameInfo {
     }
 
     private static string GetAdjustedVelocity(Vector2Double diff, out string exactVelocity) {
-        exactVelocity = $"Vel:   {diff.ToSimpleString(CelesteTasModuleSettings.MaxDecimals)}";
+        exactVelocity = $"Vel:   {diff.ToSimpleString(CelesteTasSettings.MaxDecimals)}";
         return $"Vel:   {diff.ToSimpleString(TasSettings.VelocityDecimals)}";
     }
 
@@ -607,7 +607,7 @@ public static class GameInfo {
         if (PlayerRetainedSpeedTimer(player) is float retainedSpeedTimer and > 0f) {
             int timer = retainedSpeedTimer.ToCeilingFrames();
             float retainedSpeed = ConvertSpeedUnit(PlayerRetainedSpeed(player), TasSettings.SpeedUnit);
-            exactRetainedSpeed = $"Retained({timer}): {retainedSpeed.ToString($"F{CelesteTasModuleSettings.MaxDecimals}")}";
+            exactRetainedSpeed = $"Retained({timer}): {retainedSpeed.ToString($"F{CelesteTasSettings.MaxDecimals}")}";
             return $"Retained({timer}): {retainedSpeed.ToString($"F{TasSettings.SpeedDecimals}")}";
         } else {
             return exactRetainedSpeed = string.Empty;
@@ -618,7 +618,7 @@ public static class GameInfo {
         if (PlayerLiftBoost(player) is var liftBoost && liftBoost != Vector2.Zero) {
             liftBoost = ConvertSpeedUnit(liftBoost, TasSettings.SpeedUnit);
             int timer = ActorLiftSpeedTimer(player).ToCeilingFrames();
-            exactLiftBoost = $"LiftBoost({timer}): {liftBoost.ToSimpleString(CelesteTasModuleSettings.MaxDecimals)}";
+            exactLiftBoost = $"LiftBoost({timer}): {liftBoost.ToSimpleString(CelesteTasSettings.MaxDecimals)}";
             return $"LiftBoost({timer}): {liftBoost.ToSimpleString(TasSettings.SpeedDecimals)}";
         } else {
             return exactLiftBoost = string.Empty;

@@ -18,7 +18,7 @@ public static partial class ActualEntityCollideHitbox {
     private static bool playerUpdated;
     private static bool dontSaveLastPosition;
     private static bool colliderListRendering;
-    private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
+    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
 
     [Load]
     private static void Load() {

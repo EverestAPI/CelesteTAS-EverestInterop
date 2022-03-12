@@ -11,7 +11,7 @@ namespace TAS.EverestInterop.Hitboxes;
 
 public static class FreeCameraHitbox {
     private static VirtualRenderTarget hitboxCanvas;
-    private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
+    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
     public static bool DrawFreeCameraHitboxes => Settings.CenterCamera && CenterCamera.LevelZoomOut;
 
     [Load]

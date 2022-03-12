@@ -5,7 +5,7 @@ using TAS.Module;
 namespace TAS.EverestInterop;
 
 public static class DisableAchievements {
-    private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
+    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
 
     [Load]
     private static void Load() {

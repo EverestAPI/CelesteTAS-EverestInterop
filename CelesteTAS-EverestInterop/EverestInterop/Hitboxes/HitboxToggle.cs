@@ -8,7 +8,7 @@ using TAS.Module;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxToggle {
-    private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
+    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
 
     private static bool origDrawHitboxes = false;
 

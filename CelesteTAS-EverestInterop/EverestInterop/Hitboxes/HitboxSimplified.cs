@@ -34,7 +34,7 @@ public static class HitboxSimplified {
         typeof(Trapdoor)
     };
 
-    private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
+    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
 
     [Load]
     private static void Load() {

@@ -33,7 +33,7 @@ public static class InfoMouse {
 
     private static Vector2? mouseWorldPosition;
     private static Vector2? startDragPosition;
-    private static CelesteTasModuleSettings TasSettings => CelesteTasModule.Settings;
+    private static CelesteTasSettings TasSettings => CelesteTasModule.Settings;
 
     public static void DragAndDropHud() {
         if (!TasSettings.Enabled || !Engine.Instance.IsActive) {

@@ -281,7 +281,7 @@ public static class ConsoleCommandHandler {
                 double subX = player.PositionRemainder.X;
                 double subY = player.PositionRemainder.Y;
 
-                string format = "0.".PadRight(CelesteTasModuleSettings.MaxDecimals + 2, '#');
+                string format = "0.".PadRight(CelesteTasSettings.MaxDecimals + 2, '#');
                 values.Add((x + subX).ToString(format, CultureInfo.InvariantCulture));
                 values.Add((y + subY).ToString(format, CultureInfo.InvariantCulture));
 

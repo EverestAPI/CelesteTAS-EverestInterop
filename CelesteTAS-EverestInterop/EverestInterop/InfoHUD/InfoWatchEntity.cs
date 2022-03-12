@@ -34,7 +34,7 @@ public static class InfoWatchEntity {
 
     private static readonly List<ILHook> ilHooks = new();
 
-    private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
+    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
 
     [Load]
     private static void Load() {

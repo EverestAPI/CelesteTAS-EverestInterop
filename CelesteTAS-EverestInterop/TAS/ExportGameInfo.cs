@@ -15,7 +15,7 @@ public static class ExportGameInfo {
     private static StreamWriter streamWriter;
     private static IDictionary<string, Func<List<Entity>>> trackedEntities;
     private static bool exporting;
-    private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
+    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
 
     // ReSharper disable once UnusedMember.Local
     // "StartExportGameInfo"
@@ -83,8 +83,8 @@ public static class ExportGameInfo {
             }
 
             string time = GameInfo.GetChapterTime(level);
-            string pos = player.ToSimplePositionString(CelesteTasModuleSettings.MaxDecimals);
-            string speed = player.Speed.ToSimpleString(CelesteTasModuleSettings.MaxDecimals);
+            string pos = player.ToSimplePositionString(CelesteTasSettings.MaxDecimals);
+            string speed = player.Speed.ToSimpleString(CelesteTasSettings.MaxDecimals);
 
             int dashCooldown = (int) GameInfo.GetDashCooldownTimer(player);
             string statuses = GameInfo.GetStatuses(level, player, dashCooldown);
@@ -101,15 +101,15 @@ public static class ExportGameInfo {
                 }
 
                 foreach (Entity entity in entities) {
-                    output += $"\t{typeName}: {entity.ToSimplePositionString(CelesteTasModuleSettings.MaxDecimals)}";
+                    output += $"\t{typeName}: {entity.ToSimplePositionString(CelesteTasSettings.MaxDecimals)}";
                 }
             }
 
-            if (InfoCustom.Parse(CelesteTasModuleSettings.MaxDecimals) is { } customInfo && customInfo.IsNotEmpty()) {
+            if (InfoCustom.Parse(CelesteTasSettings.MaxDecimals) is { } customInfo && customInfo.IsNotEmpty()) {
                 output += $"\t{customInfo.ReplaceLineBreak(" ")}";
             }
 
-            if (InfoWatchEntity.GetWatchingEntitiesInfo("\t", true, CelesteTasModuleSettings.MaxDecimals) is { } watchInfo &&
+            if (InfoWatchEntity.GetWatchingEntitiesInfo("\t", true, CelesteTasSettings.MaxDecimals) is { } watchInfo &&
                 watchInfo.IsNotEmpty()) {
                 output += $"\t{watchInfo}";
             }

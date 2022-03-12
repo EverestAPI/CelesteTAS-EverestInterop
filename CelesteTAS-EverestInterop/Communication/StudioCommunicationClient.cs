@@ -224,7 +224,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
     }
 
     private string GetSettingValue(string settingName) {
-        if (typeof(CelesteTasModuleSettings).GetProperty(settingName) is { } property) {
+        if (typeof(CelesteTasSettings).GetProperty(settingName) is { } property) {
             return property.GetValue(CelesteTasModule.Settings).ToString();
         } else {
             return string.Empty;
@@ -266,7 +266,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         $"Toggle game setting: {settingName}".DebugLog();
 
         bool modified = false;
-        CelesteTasModuleSettings settings = CelesteTasModule.Settings;
+        CelesteTasSettings settings = CelesteTasModule.Settings;
 
         switch (settingName) {
             case "Copy Custom Info Template to Clipboard":
@@ -291,7 +291,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
             return;
         }
 
-        if (typeof(CelesteTasModuleSettings).GetProperty(settingName) is { } property) {
+        if (typeof(CelesteTasSettings).GetProperty(settingName) is { } property) {
             if (property.GetSetMethod(true) == null) {
                 return;
             }

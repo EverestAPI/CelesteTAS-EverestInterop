@@ -14,7 +14,7 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class UnloadedRoomHitbox {
-    private static CelesteTasModuleSettings Settings => CelesteTasModule.Settings;
+    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
 
     private static readonly HashSet<Type> IgnoreTypes = new() {
         typeof(Bonfire),
