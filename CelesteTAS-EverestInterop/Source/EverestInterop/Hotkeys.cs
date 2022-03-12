@@ -286,7 +286,7 @@ public static class Hotkeys {
                 }
 
                 if (bindingProperties.FirstOrDefault(info => info.GetValue(TasSettings) == binding) is { } propertyInfo) {
-                    binding.Keys.Insert(0, propertyInfo.GetCustomAttribute<DefaultButtonBinding2Attribute>().ExtraKey);
+                    binding.Keys.Add(propertyInfo.GetCustomAttribute<DefaultButtonBinding2Attribute>().ExtraKey);
                 }
             });
         }
@@ -448,7 +448,7 @@ public static class MouseButtons {
 public class DefaultButtonBinding2Attribute : DefaultButtonBindingAttribute {
     public readonly Keys ExtraKey;
 
-    public DefaultButtonBinding2Attribute(Buttons button, Keys key, Keys extraKey = Keys.None) : base(button, key) {
-        ExtraKey = extraKey;
+    public DefaultButtonBinding2Attribute(Buttons button, params Keys[] keys) : base(button, keys.IsEmpty() ? Keys.None : keys[0]) {
+        ExtraKey = keys.Length > 1 ? keys[1] : Keys.None;
     }
 }

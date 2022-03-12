@@ -44,63 +44,63 @@ public class CelesteTasSettings : EverestModuleSettings {
     #region HotKey
 
     [SettingName("TAS_KEY_START_STOP")]
-    [DefaultButtonBinding(0, Keys.RightControl)]
+    [DefaultButtonBinding2(0, Keys.RightControl)]
     public ButtonBinding KeyStart { get; set; } = new(0, Keys.RightControl);
 
     [SettingName("TAS_KEY_RESTART")]
-    [DefaultButtonBinding(0, Keys.OemPlus)]
+    [DefaultButtonBinding2(0, Keys.OemPlus)]
     public ButtonBinding KeyRestart { get; set; } = new(0, Keys.OemPlus);
 
     [SettingName("TAS_KEY_FAST_FORWARD")]
-    [DefaultButtonBinding(0, Keys.RightShift)]
+    [DefaultButtonBinding2(0, Keys.RightShift)]
     public ButtonBinding KeyFastForward { get; set; } = new(0, Keys.RightShift);
 
     [SettingName("TAS_KEY_FAST_FORWARD_COMMENT")]
-    [DefaultButtonBinding2(0, Keys.RightShift, Keys.RightAlt)]
+    [DefaultButtonBinding2(0, Keys.RightAlt, Keys.RightShift)]
     public ButtonBinding KeyFastForwardComment { get; set; } = new(0, Keys.RightAlt, Keys.RightShift);
 
     [SettingName("TAS_KEY_SLOW_FORWARD")]
-    [DefaultButtonBinding(0, Keys.OemPipe)]
+    [DefaultButtonBinding2(0, Keys.OemPipe)]
     public ButtonBinding KeySlowForward { get; set; } = new(0, Keys.OemPipe);
 
     [SettingName("TAS_KEY_FRAME_ADVANCE")]
-    [DefaultButtonBinding(0, Keys.OemOpenBrackets)]
+    [DefaultButtonBinding2(0, Keys.OemOpenBrackets)]
     public ButtonBinding KeyFrameAdvance { get; set; } = new(0, Keys.OemOpenBrackets);
 
     [SettingName("TAS_KEY_PAUSE_RESUME")]
-    [DefaultButtonBinding(0, Keys.OemCloseBrackets)]
+    [DefaultButtonBinding2(0, Keys.OemCloseBrackets)]
     public ButtonBinding KeyPause { get; set; } = new(0, Keys.OemCloseBrackets);
 
     [SettingName("TAS_KEY_HITBOXES")]
-    [DefaultButtonBinding2(0, Keys.B, Keys.LeftControl)]
+    [DefaultButtonBinding2(0, Keys.LeftControl, Keys.B)]
     public ButtonBinding KeyHitboxes { get; set; } = new(0, Keys.LeftControl, Keys.B);
 
     [SettingName("TAS_KEY_TRIGGER_HITBOXES")]
-    [DefaultButtonBinding2(0, Keys.T, Keys.LeftAlt)]
+    [DefaultButtonBinding2(0, Keys.LeftAlt, Keys.T)]
     public ButtonBinding KeyTriggerHitboxes { get; set; } = new(0, Keys.LeftAlt, Keys.T);
 
     [SettingName("TAS_KEY_SIMPLIFIED_GRAPHICS")]
-    [DefaultButtonBinding2(0, Keys.N, Keys.LeftControl)]
+    [DefaultButtonBinding2(0, Keys.LeftControl, Keys.N)]
     public ButtonBinding KeyGraphics { get; set; } = new(0, Keys.LeftControl, Keys.N);
 
     [SettingName("TAS_KEY_CENTER_CAMERA")]
-    [DefaultButtonBinding2(0, Keys.M, Keys.LeftControl)]
+    [DefaultButtonBinding2(0, Keys.LeftControl, Keys.M)]
     public ButtonBinding KeyCamera { get; set; } = new(0, Keys.LeftControl, Keys.M);
 
     [SettingName("TAS_KEY_SAVE_STATE")]
-    [DefaultButtonBinding2(0, Keys.OemMinus, Keys.RightAlt)]
+    [DefaultButtonBinding2(0, Keys.RightAlt, Keys.OemMinus)]
     public ButtonBinding KeySaveState { get; set; } = new(0, Keys.RightAlt, Keys.OemMinus);
 
     [SettingName("TAS_KEY_CLEAR_STATE")]
-    [DefaultButtonBinding2(0, Keys.Back, Keys.RightAlt)]
+    [DefaultButtonBinding2(0, Keys.RightAlt, Keys.Back)]
     public ButtonBinding KeyClearState { get; set; } = new(0, Keys.RightAlt, Keys.Back);
 
     [SettingName("TAS_KEY_INFO_HUD")]
-    [DefaultButtonBinding(0, Keys.LeftControl)]
+    [DefaultButtonBinding2(0, Keys.LeftControl)]
     public ButtonBinding KeyInfoHud { get; set; } = new(0, Keys.LeftControl);
 
     [SettingName("TAS_KEY_FREE_CAMERA")]
-    [DefaultButtonBinding(0, Keys.LeftAlt)]
+    [DefaultButtonBinding2(0, Keys.LeftAlt)]
     public ButtonBinding KeyFreeCamera { get; set; } = new(0, Keys.LeftAlt);
 
     #endregion
