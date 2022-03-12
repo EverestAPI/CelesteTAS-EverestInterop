@@ -112,15 +112,14 @@ public static class Manager {
             }
 
             if (Hotkeys.FastForward.Check) {
-                FrameLoops = 10;
+                FrameLoops = CelesteTasModule.Settings.FastForwardSpeed;
             } else if (Hotkeys.SlowForward.Check) {
-                FrameLoops = 0.1f;
-            } else if (Math.Round(Hotkeys.RightThumbSticksX * 10) is var length) {
-                if (length >= 2) {
-                    FrameLoops = (int) length;
-                } else if (length <= -2) {
-                    FrameLoops = Math.Max(1 + Hotkeys.RightThumbSticksX, FastForward.MinSpeed);
-                }
+                FrameLoops = CelesteTasModule.Settings.SlowForwardSpeed;
+            } else if (Math.Round(Hotkeys.RightThumbSticksX * CelesteTasModule.Settings.FastForwardSpeed) is var fastForwardSpeed and >= 2) {
+                FrameLoops = (int) fastForwardSpeed;
+            } else if (Hotkeys.RightThumbSticksX < 0f &&
+                       (1 + Hotkeys.RightThumbSticksX) * CelesteTasModule.Settings.SlowForwardSpeed is var slowForwardSpeed and <= 0.9f) {
+                FrameLoops = Math.Max(slowForwardSpeed, FastForward.MinSpeed);
             }
         }
     }

@@ -29,6 +29,7 @@ internal static class CelesteTasMenu {
             SimplifiedGraphicsFeature.CreateSubMenu(menu),
             InfoHud.CreateSubMenu(),
             CreateRoundValuesSubMenu(),
+            CreateForwardSpeedSubMenu(),
             CreateHotkeysSubMenu(everestModule, menu),
             CreateMoreOptionsSubMenu(menu),
         };
@@ -70,6 +71,16 @@ internal static class CelesteTasMenu {
     }
 
 #pragma warning disable CS0612
+
+    private static EaseInSubMenu CreateForwardSpeedSubMenu() {
+        return new EaseInSubMenu("Forward Speed".ToDialogText(), false).Apply(subMenu => {
+            subMenu.Add(new TextMenuExt.IntSlider("Fast Forward Speed".ToDialogText(), 2,
+                30, Settings.FastForwardSpeed).Change(value => Settings.FastForwardSpeed = value));
+            subMenu.Add(new TextMenuExt.EnumerableSlider<float>("Slow Forward Speed".ToDialogText(), Settings.SlowForwardSpeeds,
+                Settings.SlowForwardSpeed).Change(value => Settings.SlowForwardSpeed = value));
+        });
+    }
+
     private static EaseInSubMenu CreateHotkeysSubMenu(EverestModule everestModule, TextMenu menu) {
         return new EaseInSubMenu("Hotkeys".ToDialogText(), false).Apply(subMenu => {
             subMenu.Add(new TextMenu.Button(Dialog.Clean("options_keyconfig")).Pressed(() => {

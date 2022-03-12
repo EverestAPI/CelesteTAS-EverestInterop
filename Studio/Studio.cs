@@ -1620,7 +1620,7 @@ public partial class Studio : BaseForm {
         ToggleGameSetting("InfoSubPixelIndicator", null, sender);
     }
 
-    private void SetDecimals(string settingName, object sender) {
+    private void SetDecimals(string settingName, object sender, bool floatNumber = false) {
         if (StudioCommunicationServer.Instance == null) {
             return;
         }
@@ -1636,8 +1636,10 @@ public partial class Studio : BaseForm {
             return;
         }
 
-        if (int.TryParse(decimals, out int d)) {
+        if (!floatNumber && int.TryParse(decimals, out int d)) {
             ToggleGameSetting(settingNameValid, d, sender, false);
+        } else if (floatNumber && float.TryParse(decimals, out float f)) {
+            ToggleGameSetting(settingNameValid, f, sender, false);
         }
     }
 
@@ -1663,6 +1665,14 @@ public partial class Studio : BaseForm {
 
     private void unitOfSpeedToolStripMenuItem_Click(object sender, EventArgs e) {
         ToggleGameSetting("SpeedUnit", null, sender);
+    }
+
+    private void fastForwardSpeedToolStripMenuItem_Click(object sender, EventArgs e) {
+        SetDecimals("Fast Forward Speed", sender);
+    }
+
+    private void slowForwardSpeedToolStripMenuItem_Click(object sender, EventArgs e) {
+        SetDecimals("Slow Forward Speed", sender, true);
     }
 
     private void copyCustomInfoTemplateToClipboardToolStripMenuItem_Click(object sender, EventArgs e) {

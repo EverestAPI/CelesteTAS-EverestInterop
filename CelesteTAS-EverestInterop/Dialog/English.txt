@@ -10,7 +10,7 @@ TAS_INFO_HUD_DESCRIPTION_1=     Holding info hud hotkey and left-click to drag &
 TAS_INFO_HUD_DESCRIPTION_2=     Double press the info hud hotkey to toggle HUD
 TAS_INFO_HUD_DESCRIPTION_3=     Holding info hud hotkey then left-click to watch the entity
 TAS_ROUND_VALUES=               Round Values
-TAS_RELAUNCH_REQUIRED=          Relaunch Required
+TAS_FORWARD_SPEED=              Forward Speed
 TAS_MORE_OPTIONS=               More Options
 
 # ================================== Hitbox Submenu ==================================
@@ -79,6 +79,10 @@ TAS_SUBPIXEL_INDICATOR_DECIMALS=  Subpixel Indicator Decimals
 TAS_SPEED_UNIT=                   Speed Unit
 TAS_PIXEL_PER_SECOND=             Pixel/Second
 TAS_PIXEL_PER_FRAME=              Pixel/Frame
+
+# ================================== Forward Speed Submenu ==================================
+TAS_FAST_FORWARD_SPEED=       Fast Forward Speed
+TAS_SLOW_FORWARD_SPEED=       Slow Forward Speed
 
 # ================================== Hotkeys Submenu ==================================
 TAS_HOTKEYS=             Hotkeys

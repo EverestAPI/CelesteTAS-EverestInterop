@@ -10,7 +10,7 @@ TAS_INFO_HUD_DESCRIPTION_1=     按住信息面板快捷键和鼠标左键然后
 TAS_INFO_HUD_DESCRIPTION_2=     双击信息面板快捷键开关信息面板
 TAS_INFO_HUD_DESCRIPTION_3=     按住信息面板快捷键然后用鼠标左键点击监视实体
 TAS_ROUND_VALUES=               数值精度
-TAS_RELAUNCH_REQUIRED=          需要重启的选项
+TAS_FORWARD_SPEED=              快进速度
 TAS_MORE_OPTIONS=               更多选项
 
 # ================================== Hitbox Submenu ==================================
@@ -79,6 +79,10 @@ TAS_SUBPIXEL_INDICATOR_DECIMALS= 亚像素指示器小数位数
 TAS_SPEED_UNIT=                  速度单位
 TAS_PIXELS_PER_SECOND=           像素/秒
 TAS_PIXELS_PER_FRAME=            像素/帧
+
+# ================================== Fast Forward Submenu ==================================
+TAS_FAST_FORWARD_SPEED=       快进速度
+TAS_SLOW_FORWARD_SPEED=       慢进速度
 
 # ================================== Hotkeys Submenu ==================================
 TAS_HOTKEYS=             快捷键
