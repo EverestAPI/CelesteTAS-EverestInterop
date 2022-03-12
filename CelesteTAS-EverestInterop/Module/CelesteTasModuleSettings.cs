@@ -249,13 +249,6 @@ public class CelesteTasModuleSettings : EverestModuleSettings {
 
     #endregion
 
-    #region Relaunch Required
-
-    [SettingNeedsRelaunch] public bool LaunchStudioAtBoot { get; set; } = false;
-    public bool AutoExtractNewStudio { get; set; } = true;
-
-    #endregion
-
     #region More Options
 
     private bool centerCamera;
@@ -268,6 +261,8 @@ public class CelesteTasModuleSettings : EverestModuleSettings {
     public bool IgnoreGcCollect { get; set; } = true;
     public bool PauseAfterLoadState { get; set; } = true;
     public bool RestoreSettings { get; set; } = false;
+    public bool LaunchStudioAtBoot { get; set; } = false;
+    public bool ExtractNewStudioAtBoot { get; set; } = true;
     public bool DisableAchievements { get; set; } = false;
     public bool Mod9DLighting { get; set; } = false;
 

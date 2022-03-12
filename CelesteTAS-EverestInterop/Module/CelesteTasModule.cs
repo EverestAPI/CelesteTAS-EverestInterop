@@ -45,7 +45,7 @@ public class CelesteTasModule : EverestModule {
 
     public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance snapshot) {
         CreateModMenuSectionHeader(menu, inGame, snapshot);
-        Menu.CreateMenu(this, menu, inGame);
+        CelesteTasMenu.CreateMenu(this, menu, inGame);
     }
 }
 

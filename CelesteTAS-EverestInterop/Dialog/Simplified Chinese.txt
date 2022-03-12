@@ -80,10 +80,6 @@ TAS_SPEED_UNIT=                  速度单位
 TAS_PIXELS_PER_SECOND=           像素/秒
 TAS_PIXELS_PER_FRAME=            像素/帧
 
-# ================================== Relaunch Required Submenu ==================================
-TAS_LAUNCH_STUDIO_AT_BOOT=    启动 Celeste 时打开 Studio
-TAS_AUTO_EXTRACT_NEW_STUDIO=  自动解压新版 Studio
-
 # ================================== Hotkeys Submenu ==================================
 TAS_HOTKEYS=             快捷键
 TAS_HOTKEYS_DESCRIPTION= 绑定多个按键表示组合键，需要同时按下才能触发相应操作
@@ -95,6 +91,8 @@ TAS_IGNORE_GC_COLLECT_DESCRIPTION_1= 加快多个章节长度TAS的快进
 TAS_IGNORE_GC_COLLECT_DESCRIPTION_2= 不过会增加内存使用量并可能造成内存不足异常
 TAS_PAUSE_AFTER_LOAD_STATE=          加载状态后暂停
 TAS_RESTORE_SETTINGS=                TAS 停止运行后恢复所有设置
+TAS_LAUNCH_STUDIO_AT_BOOT=           启动游戏时打开 Studio
+TAS_EXTRACT_NEW_STUDIO_AT_BOOT=      启动游戏时解压新版 Studio
 TAS_DISABLE_ACHIEVEMENTS=            禁止解锁成就
 TAS_MOD_9D_LIGHTING=                 修改 9D 亮度
 

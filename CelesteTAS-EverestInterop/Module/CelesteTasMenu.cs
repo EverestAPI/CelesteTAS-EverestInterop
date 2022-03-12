@@ -14,7 +14,7 @@ using TAS.Utils;
 
 namespace TAS.Module;
 
-internal static class Menu {
+internal static class CelesteTasMenu {
     private static readonly MethodInfo CreateKeyboardConfigUi = typeof(EverestModule).GetMethodInfo("CreateKeyboardConfigUI");
     private static readonly MethodInfo CreateButtonConfigUI = typeof(EverestModule).GetMethodInfo("CreateButtonConfigUI");
     private static List<EaseInSubMenu> options;
@@ -29,7 +29,6 @@ internal static class Menu {
             SimplifiedGraphicsFeature.CreateSubMenu(menu),
             InfoHud.CreateSubMenu(),
             CreateRoundValuesSubMenu(),
-            CreateRelaunchSubMenu(),
             CreateHotkeysSubMenu(everestModule, menu),
             CreateMoreOptionsSubMenu(menu),
         };
@@ -50,6 +49,10 @@ internal static class Menu {
                 Settings.PauseAfterLoadState = value));
             subMenu.Add(new TextMenu.OnOff("Restore Settings".ToDialogText(), Settings.RestoreSettings).Change(value =>
                 Settings.RestoreSettings = value));
+            subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), Settings.LaunchStudioAtBoot).Change(value =>
+                Settings.LaunchStudioAtBoot = value));
+            subMenu.Add(new TextMenu.OnOff("Extract New Studio At Boot".ToDialogText(), Settings.ExtractNewStudioAtBoot).Change(value =>
+                Settings.ExtractNewStudioAtBoot = value));
             subMenu.Add(
                 new TextMenu.OnOff("Disable Achievements".ToDialogText(), Settings.DisableAchievements).Change(value =>
                     Settings.DisableAchievements = value));
@@ -105,15 +108,6 @@ internal static class Menu {
         }).Apply(subMenu => hotkeysSubMenu = subMenu);
     }
 #pragma warning restore CS0612
-
-    private static EaseInSubMenu CreateRelaunchSubMenu() {
-        return new EaseInSubMenu("Relaunch Required".ToDialogText(), false).Apply(subMenu => {
-            subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), Settings.LaunchStudioAtBoot).Change(value =>
-                Settings.LaunchStudioAtBoot = value));
-            subMenu.Add(new TextMenu.OnOff("Auto Extract New Studio".ToDialogText(), Settings.AutoExtractNewStudio).Change(value =>
-                Settings.AutoExtractNewStudio = value));
-        });
-    }
 
     private static EaseInSubMenu CreateRoundValuesSubMenu() {
         return new EaseInSubMenu("Round Values".ToDialogText(), false).Apply(subMenu => {

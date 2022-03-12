@@ -82,7 +82,7 @@ public static class StudioHelper {
     }
 
     private static bool CheckNewerStudio() {
-        if (!CelesteTasModule.Settings.AutoExtractNewStudio) {
+        if (!CelesteTasModule.Settings.ExtractNewStudioAtBoot) {
             return false;
         }
 

@@ -48,73 +48,80 @@ public static class SimplifiedGraphicsFeature {
             subMenu.Add(new TextMenu.OnOff("Enabled".ToDialogText(), Settings.SimplifiedGraphics)
                 .Change(value => Settings.SimplifiedGraphics = value));
             subMenu.Add(
-                new TextMenuExt.EnumerableSlider<bool>("Gameplay".ToDialogText(), Menu.CreateDefaultHideOptions(), !Settings.ShowGameplay)
+                new TextMenuExt.EnumerableSlider<bool>("Gameplay".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(), !Settings.ShowGameplay)
                     .Change(value => Settings.ShowGameplay = !value));
             subMenu.Add(
-                new TextMenuExt.EnumerableSlider<int?>("Lighting".ToDialogText(), Menu.CreateSliderOptions(10, 0, i => $"{i * 10}%"),
+                new TextMenuExt.EnumerableSlider<int?>("Lighting".ToDialogText(), CelesteTasMenu.CreateSliderOptions(10, 0, i => $"{i * 10}%"),
                     Settings.SimplifiedLighting).Change(value => Settings.SimplifiedLighting = value));
             subMenu.Add(
                 new TextMenuExt.EnumerableSlider<int?>("Bloom Base".ToDialogText(),
-                    Menu.CreateSliderOptions(0, 10, i => (i / 10f).ToString(CultureInfo.InvariantCulture)), Settings.SimplifiedBloomBase).Change(
-                    value => Settings.SimplifiedBloomBase = value));
+                        CelesteTasMenu.CreateSliderOptions(0, 10, i => (i / 10f).ToString(CultureInfo.InvariantCulture)),
+                        Settings.SimplifiedBloomBase)
+                    .Change(
+                        value => Settings.SimplifiedBloomBase = value));
             subMenu.Add(
-                new TextMenuExt.EnumerableSlider<int?>("Bloom Strength".ToDialogText(), Menu.CreateSliderOptions(1, 10),
+                new TextMenuExt.EnumerableSlider<int?>("Bloom Strength".ToDialogText(), CelesteTasMenu.CreateSliderOptions(1, 10),
                     Settings.SimplifiedBloomStrength).Change(value => Settings.SimplifiedBloomStrength = value));
             subMenu.Add(
                 new TextMenuExt.EnumerableSlider<SpinnerColor>("Spinner Color".ToDialogText(), SpinnerColor.All,
                     Settings.SimplifiedSpinnerColor).Change(value => Settings.SimplifiedSpinnerColor = value));
             subMenu.Add(
-                new TextMenuExt.EnumerableSlider<bool>("Dust Sprite Edge".ToDialogText(), Menu.CreateDefaultHideOptions(),
+                new TextMenuExt.EnumerableSlider<bool>("Dust Sprite Edge".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(),
                     Settings.SimplifiedDustSpriteEdge).Change(value => Settings.SimplifiedDustSpriteEdge = value));
             subMenu.Add(
-                new TextMenuExt.EnumerableSlider<bool>("Screen Wipe".ToDialogText(), Menu.CreateDefaultHideOptions(),
+                new TextMenuExt.EnumerableSlider<bool>("Screen Wipe".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(),
                     Settings.SimplifiedScreenWipe).Change(value => Settings.SimplifiedScreenWipe = value));
             subMenu.Add(
-                new TextMenuExt.EnumerableSlider<bool>("Color Grade".ToDialogText(), Menu.CreateDefaultHideOptions(),
+                new TextMenuExt.EnumerableSlider<bool>("Color Grade".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(),
                     Settings.SimplifiedColorGrade).Change(value => Settings.SimplifiedColorGrade = value));
             subMenu.Add(
                 new TextMenuExt.EnumerableSlider<SolidTilesStyle>("Solid Tiles Style".ToDialogText(), SolidTilesStyle.All,
                     Settings.SimplifiedSolidTilesStyle).Change(value => Settings.SimplifiedSolidTilesStyle = value));
             subMenu.Add(
-                new TextMenuExt.EnumerableSlider<bool>("Background Tiles".ToDialogText(), Menu.CreateDefaultHideOptions(),
+                new TextMenuExt.EnumerableSlider<bool>("Background Tiles".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(),
                         Settings.SimplifiedBackgroundTiles)
                     .Change(value => Settings.SimplifiedBackgroundTiles = value));
             subMenu.Add(
-                new TextMenuExt.EnumerableSlider<bool>("Backdrop".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.SimplifiedBackdrop)
+                new TextMenuExt.EnumerableSlider<bool>("Backdrop".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(),
+                        Settings.SimplifiedBackdrop)
                     .Change(value => Settings.SimplifiedBackdrop = value));
             subMenu.Add(
-                new TextMenuExt.EnumerableSlider<bool>("Decal".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.SimplifiedDecal).Change(
-                    value => Settings.SimplifiedDecal = value));
+                new TextMenuExt.EnumerableSlider<bool>("Decal".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(), Settings.SimplifiedDecal)
+                    .Change(
+                        value => Settings.SimplifiedDecal = value));
             subMenu.Add(
-                new TextMenuExt.EnumerableSlider<bool>("Particle".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.SimplifiedParticle)
+                new TextMenuExt.EnumerableSlider<bool>("Particle".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(),
+                        Settings.SimplifiedParticle)
                     .Change(value => Settings.SimplifiedParticle = value));
-            subMenu.Add(new TextMenuExt.EnumerableSlider<bool>("Distort".ToDialogText(), Menu.CreateDefaultHideOptions(),
+            subMenu.Add(new TextMenuExt.EnumerableSlider<bool>("Distort".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(),
                 Settings.SimplifiedDistort).Change(value => Settings.SimplifiedDistort = value));
-            subMenu.Add(new TextMenuExt.EnumerableSlider<bool>("Mini Text Box".ToDialogText(), Menu.CreateDefaultHideOptions(),
+            subMenu.Add(new TextMenuExt.EnumerableSlider<bool>("Mini Text Box".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(),
                 Settings.SimplifiedMiniTextbox).Change(value => Settings.SimplifiedMiniTextbox = value));
             subMenu.Add(
-                new TextMenuExt.EnumerableSlider<bool>("Lightning Strike".ToDialogText(), Menu.CreateDefaultHideOptions(),
+                new TextMenuExt.EnumerableSlider<bool>("Lightning Strike".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(),
                     Settings.SimplifiedLightningStrike).Change(value => Settings.SimplifiedLightningStrike = value));
 
             TextMenu.Item clutteredItem;
             subMenu.Add(
-                clutteredItem = new TextMenuExt.EnumerableSlider<bool>("Cluttered Entity".ToDialogText(), Menu.CreateDefaultHideOptions(),
+                clutteredItem = new TextMenuExt.EnumerableSlider<bool>("Cluttered Entity".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(),
                         Settings.SimplifiedClutteredEntity)
                     .Change(value => Settings.SimplifiedClutteredEntity = value));
             subMenu.AddDescription(menu, clutteredItem, "Cluttered Entity Description".ToDialogText());
 
             TextMenu.Item hudItem;
             subMenu.Add(
-                hudItem = new TextMenuExt.EnumerableSlider<bool>("HUD".ToDialogText(), Menu.CreateDefaultHideOptions(), Settings.SimplifiedHud)
+                hudItem = new TextMenuExt.EnumerableSlider<bool>("HUD".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(),
+                        Settings.SimplifiedHud)
                     .Change(value => Settings.SimplifiedHud = value));
             subMenu.AddDescription(menu, hudItem, "HUD Description".ToDialogText());
 
             subMenu.Add(
-                new TextMenuExt.EnumerableSlider<bool>("Waved Edge".ToDialogText(), Menu.CreateSimplifyOptions(), Settings.SimplifiedWavedEdge)
+                new TextMenuExt.EnumerableSlider<bool>("Waved Edge".ToDialogText(), CelesteTasMenu.CreateSimplifyOptions(),
+                        Settings.SimplifiedWavedEdge)
                     .Change(value => Settings.SimplifiedWavedEdge = value));
 
             subMenu.Add(
-                new TextMenuExt.EnumerableSlider<bool>("Spikes".ToDialogText(), Menu.CreateSimplifyOptions(), Settings.SimplifiedSpikes)
+                new TextMenuExt.EnumerableSlider<bool>("Spikes".ToDialogText(), CelesteTasMenu.CreateSimplifyOptions(), Settings.SimplifiedSpikes)
                     .Change(value => Settings.SimplifiedSpikes = value));
         });
     }
