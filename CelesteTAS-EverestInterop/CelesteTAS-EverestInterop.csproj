@@ -70,7 +70,10 @@
         </Content>
     </ItemGroup>
     <ItemGroup>
-        <None Remove="lib-stripped\**" />
-        <None Remove="CelesteTAS-EverestInterop.csproj.DotSettings" />
+        <None Remove="lib-stripped\**"/>
+        <None Remove="CelesteTAS-EverestInterop.csproj.DotSettings"/>
+    </ItemGroup>
+    <ItemGroup>
+        <Folder Include="Source"/>
     </ItemGroup>
 </Project>
