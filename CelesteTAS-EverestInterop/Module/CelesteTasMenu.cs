@@ -47,8 +47,6 @@ internal static class CelesteTasMenu {
 
             subMenu.Add(new TextMenu.OnOff("Pause After Load State".ToDialogText(), Settings.PauseAfterLoadState).Change(value =>
                 Settings.PauseAfterLoadState = value));
-            subMenu.Add(new TextMenu.OnOff("Restore Settings".ToDialogText(), Settings.RestoreSettings).Change(value =>
-                Settings.RestoreSettings = value));
             subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), Settings.LaunchStudioAtBoot).Change(value =>
                 Settings.LaunchStudioAtBoot = value));
             subMenu.Add(new TextMenu.OnOff("Extract New Studio At Boot".ToDialogText(), Settings.ExtractNewStudioAtBoot).Change(value =>
