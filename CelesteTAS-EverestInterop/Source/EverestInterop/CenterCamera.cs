@@ -4,7 +4,6 @@ using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.Utils;
 using TAS.EverestInterop.InfoHUD;
-using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.EverestInterop;
@@ -16,7 +15,7 @@ internal class CameraHitbox : Entity {
     private Vector2 cameraBottomRight;
     private Level level;
 
-    private bool DrawCamera => CelesteTasModule.Settings.CenterCamera && CelesteTasModule.Settings.ShowCameraHitboxes;
+    private bool DrawCamera => TasSettings.CenterCamera && TasSettings.ShowCameraHitboxes;
 
     public override void Added(Scene scene) {
         base.Added(scene);
@@ -54,7 +53,6 @@ public static class CenterCamera {
     private static DateTime? arrowKeyPressTime;
     private static float viewportScale = 1f;
     private static int zoomInterval;
-    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
 
     // this must be <= 4096 / 320 = 12.8, it's used in FreeCameraHitbox and 4096 is the maximum texture size
     public const float MaximumViewportScale = 12f;
@@ -115,7 +113,7 @@ public static class CenterCamera {
     }
 
     private static void CenterTheCamera() {
-        if (Engine.Scene is not Level level || !Settings.CenterCamera) {
+        if (Engine.Scene is not Level level || !TasSettings.CenterCamera) {
             return;
         }
 
@@ -202,7 +200,7 @@ public static class CenterCamera {
     }
 
     private static void MoveCamera(Level level) {
-        if (!Settings.CenterCamera) {
+        if (!TasSettings.CenterCamera) {
             return;
         }
 
@@ -278,7 +276,7 @@ public static class CenterCamera {
     }
 
     private static void ZoomCamera() {
-        if (!Settings.CenterCamera) {
+        if (!TasSettings.CenterCamera) {
             return;
         }
 

@@ -25,7 +25,7 @@ public static class HitboxConquerorBeam {
     }
 
     private static void ModHitbox(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {
-        if (!CelesteTasModule.Settings.ShowHitboxes) {
+        if (!TasSettings.ShowHitboxes) {
             orig(self, camera);
             return;
         }

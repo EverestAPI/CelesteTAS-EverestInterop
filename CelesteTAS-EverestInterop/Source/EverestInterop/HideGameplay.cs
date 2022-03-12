@@ -8,8 +8,6 @@ using TAS.Module;
 namespace TAS.EverestInterop;
 
 public static class HideGameplay {
-    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
-
     [Load]
     private static void Load() {
         IL.Celeste.GameplayRenderer.Render += GameplayRenderer_Render;
@@ -40,7 +38,7 @@ public static class HideGameplay {
         }
 
         c.Index++;
-        c.EmitDelegate<Func<bool>>(() => !Settings.ShowGameplay);
+        c.EmitDelegate<Func<bool>>(() => !TasSettings.ShowGameplay);
         // c.Emit(OpCodes.Call, typeof(CelesteTASModule).GetMethod("get_Settings"));
         // c.Emit(OpCodes.Callvirt, typeof(CelesteTASModuleSettings).GetMethod("get_HideGameplay"));
         c.Emit(OpCodes.Brtrue, lblAfterEntities);

@@ -36,7 +36,8 @@ public static partial class ActualEntityCollideHitbox {
                 ins => ins.OpCode == OpCodes.Callvirt &&
                        ins.Operand.ToString().Contains("Monocle.Tracker::GetComponents<Celeste.PlayerCollider>()"))) {
             ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Action<Player>>(player => {
-                if (Manager.UltraFastForwarding || !Settings.ShowHitboxes || Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off ||
+                if (Manager.UltraFastForwarding || !TasSettings.ShowHitboxes ||
+                    TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off ||
                     playerUpdated) {
                     return;
                 }
@@ -47,8 +48,8 @@ public static partial class ActualEntityCollideHitbox {
     }
 
     private static void PlayerOnDebugRender(On.Celeste.Player.orig_DebugRender orig, Player player, Camera camera) {
-        if (Manager.UltraFastForwarding || !Settings.ShowHitboxes
-                                        || Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off
+        if (Manager.UltraFastForwarding || !TasSettings.ShowHitboxes
+                                        || TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off
                                         || player.Scene is Level {Transitioning: true} || player.LoadActualCollidePosition() == null
                                         || player.LoadActualCollidePosition().Value == player.Position
            ) {
@@ -57,12 +58,12 @@ public static partial class ActualEntityCollideHitbox {
         }
 
         Vector2 actualCollidePosition = player.LoadActualCollidePosition().Value;
-        if (Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Override) {
+        if (TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Override) {
             DrawAssistedHitbox(orig, player, camera, actualCollidePosition);
         }
 
         orig(player, camera);
-        if (Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Append) {
+        if (TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Append) {
             DrawAssistedHitbox(orig, player, camera, actualCollidePosition);
         }
     }

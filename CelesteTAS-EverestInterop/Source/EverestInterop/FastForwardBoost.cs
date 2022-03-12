@@ -158,7 +158,7 @@ public static class FastForwardBoost {
                 ins => ins.MatchCall(typeof(GC), "WaitForPendingFinalizers"))) {
             Instruction afterGc = ilCursor.Next.Next.Next;
             ilCursor.EmitDelegate<Func<bool>>(() => {
-                bool result = !Environment.Is64BitProcess && CelesteTasModule.Settings.IgnoreGcCollect && UltraFastForwarding;
+                bool result = !Environment.Is64BitProcess && TasSettings.IgnoreGcCollect && UltraFastForwarding;
                 if (celesteProcess == null && result) {
                     celesteProcess = Process.GetCurrentProcess();
                 }

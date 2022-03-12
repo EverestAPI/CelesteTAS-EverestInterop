@@ -21,7 +21,7 @@ public static class HitboxFinalBoss {
     }
 
     private static void ModHitbox(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {
-        if (!CelesteTasModule.Settings.ShowHitboxes) {
+        if (!TasSettings.ShowHitboxes) {
             orig(self, camera);
             return;
         }
@@ -44,7 +44,7 @@ public static class HitboxFinalBoss {
     }
 
     private static void HitboxOnRender(On.Monocle.Hitbox.orig_Render orig, Hitbox self, Camera camera, Color color) {
-        if (!CelesteTasModule.Settings.ShowHitboxes) {
+        if (!TasSettings.ShowHitboxes) {
             orig(self, camera, color);
             return;
         }

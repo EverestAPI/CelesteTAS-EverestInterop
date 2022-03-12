@@ -26,8 +26,6 @@ public static class InfoCustom {
     private static readonly Dictionary<string, MethodInfo> CachedSetMethodInfos = new();
     private static readonly Dictionary<string, FieldInfo> CachedFieldInfos = new();
 
-    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
-
     [LoadContent]
     private static void CollectAllTypeInfo() {
         AllTypes.Clear();
@@ -43,10 +41,10 @@ public static class InfoCustom {
     }
 
     public static string Parse(int? decimals = null) {
-        decimals ??= Settings.CustomInfoDecimals;
+        decimals ??= TasSettings.CustomInfoDecimals;
         Dictionary<string, List<Entity>> cachedEntities = new();
 
-        return BraceRegex.Replace(Settings.InfoCustomTemplate, match => {
+        return BraceRegex.Replace(TasSettings.InfoCustomTemplate, match => {
             string matchText = match.Groups[1].Value;
 
             if (!TryParseMemberNames(matchText, out string typeText, out List<string> memberNames, out string errorMessage)) {

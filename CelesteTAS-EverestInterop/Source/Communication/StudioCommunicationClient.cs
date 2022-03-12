@@ -225,7 +225,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
 
     private string GetSettingValue(string settingName) {
         if (typeof(CelesteTasSettings).GetProperty(settingName) is { } property) {
-            return property.GetValue(CelesteTasModule.Settings).ToString();
+            return property.GetValue(TasSettings).ToString();
         } else {
             return string.Empty;
         }
@@ -266,20 +266,19 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         $"Toggle game setting: {settingName}".DebugLog();
 
         bool modified = false;
-        CelesteTasSettings settings = CelesteTasModule.Settings;
 
         switch (settingName) {
             case "Copy Custom Info Template to Clipboard":
-                TextInput.SetClipboardText(string.IsNullOrEmpty(settings.InfoCustomTemplate) ? "\0" : settings.InfoCustomTemplate);
+                TextInput.SetClipboardText(string.IsNullOrEmpty(TasSettings.InfoCustomTemplate) ? "\0" : TasSettings.InfoCustomTemplate);
                 modified = true;
                 break;
             case "Set Custom Info Template From Clipboard":
-                settings.InfoCustomTemplate = TextInput.GetClipboardText();
+                TasSettings.InfoCustomTemplate = TextInput.GetClipboardText();
                 GameInfo.Update();
                 modified = true;
                 break;
             case "Clear Custom Info Template":
-                settings.InfoCustomTemplate = string.Empty;
+                TasSettings.InfoCustomTemplate = string.Empty;
                 GameInfo.Update();
                 modified = true;
                 break;
@@ -296,23 +295,23 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
                 return;
             }
 
-            object value = property.GetValue(settings);
+            object value = property.GetValue(TasSettings);
             if (value is bool boolValue) {
-                property.SetValue(settings, !boolValue);
+                property.SetValue(TasSettings, !boolValue);
                 modified = true;
             } else if (value is HudOptions hudOptions) {
-                property.SetValue(settings, hudOptions.HasFlag(HudOptions.StudioOnly) ? HudOptions.Off : HudOptions.Both);
+                property.SetValue(TasSettings, hudOptions.HasFlag(HudOptions.StudioOnly) ? HudOptions.Off : HudOptions.Both);
                 modified = true;
             } else if (value is Enum) {
-                property.SetValue(settings, ((int) value + 1) % Enum.GetValues(property.PropertyType).Length);
+                property.SetValue(TasSettings, ((int) value + 1) % Enum.GetValues(property.PropertyType).Length);
                 modified = true;
             } else if (value != null && settingValue != null && value.GetType() == settingValue.GetType()) {
-                property.SetValue(settings, settingValue);
+                property.SetValue(TasSettings, settingValue);
                 modified = true;
             }
 
             if (modified) {
-                ReturnData((property.GetValue(settings)?.ToString() ?? string.Empty).SpacedPascalCase());
+                ReturnData((property.GetValue(TasSettings)?.ToString() ?? string.Empty).SpacedPascalCase());
                 CelesteTasModule.Instance.SaveSettings();
             } else {
                 ReturnData(string.Empty);

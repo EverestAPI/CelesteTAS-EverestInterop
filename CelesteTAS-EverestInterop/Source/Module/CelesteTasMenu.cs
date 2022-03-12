@@ -19,7 +19,6 @@ internal static class CelesteTasMenu {
     private static readonly MethodInfo CreateButtonConfigUI = typeof(EverestModule).GetMethodInfo("CreateButtonConfigUI");
     private static List<EaseInSubMenu> options;
     private static TextMenu.Item hotkeysSubMenu;
-    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
 
     internal static string ToDialogText(this string input) => Dialog.Clean("TAS_" + input.Replace(" ", "_"));
 
@@ -37,24 +36,24 @@ internal static class CelesteTasMenu {
 
     private static EaseInSubMenu CreateMoreOptionsSubMenu(TextMenu menu) {
         return new EaseInSubMenu("More Options".ToDialogText(), false).Apply(subMenu => {
-            subMenu.Add(new TextMenu.OnOff("Center Camera".ToDialogText(), Settings.CenterCamera).Change(value =>
-                Settings.CenterCamera = value));
+            subMenu.Add(new TextMenu.OnOff("Center Camera".ToDialogText(), TasSettings.CenterCamera).Change(value =>
+                TasSettings.CenterCamera = value));
 
             TextMenu.Item ignoreGcItem;
-            subMenu.Add(ignoreGcItem = new TextMenu.OnOff("Ignore GC Collect".ToDialogText(), Settings.IgnoreGcCollect).Change(value =>
-                Settings.IgnoreGcCollect = value));
+            subMenu.Add(ignoreGcItem = new TextMenu.OnOff("Ignore GC Collect".ToDialogText(), TasSettings.IgnoreGcCollect).Change(value =>
+                TasSettings.IgnoreGcCollect = value));
             subMenu.AddDescription(menu, ignoreGcItem, "Ignore GC Collect Description 1".ToDialogText());
             subMenu.AddDescription(menu, ignoreGcItem, "Ignore GC Collect Description 2".ToDialogText());
 
-            subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), Settings.LaunchStudioAtBoot).Change(value =>
-                Settings.LaunchStudioAtBoot = value));
-            subMenu.Add(new TextMenu.OnOff("Extract New Studio At Boot".ToDialogText(), Settings.ExtractNewStudioAtBoot).Change(value =>
-                Settings.ExtractNewStudioAtBoot = value));
+            subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), TasSettings.LaunchStudioAtBoot).Change(value =>
+                TasSettings.LaunchStudioAtBoot = value));
+            subMenu.Add(new TextMenu.OnOff("Extract New Studio At Boot".ToDialogText(), TasSettings.ExtractNewStudioAtBoot).Change(value =>
+                TasSettings.ExtractNewStudioAtBoot = value));
             subMenu.Add(
-                new TextMenu.OnOff("Disable Achievements".ToDialogText(), Settings.DisableAchievements).Change(value =>
-                    Settings.DisableAchievements = value));
-            subMenu.Add(new TextMenu.OnOff("Mod 9D Lighting".ToDialogText(), Settings.Mod9DLighting).Change(value =>
-                Settings.Mod9DLighting = value));
+                new TextMenu.OnOff("Disable Achievements".ToDialogText(), TasSettings.DisableAchievements).Change(value =>
+                    TasSettings.DisableAchievements = value));
+            subMenu.Add(new TextMenu.OnOff("Mod 9D Lighting".ToDialogText(), TasSettings.Mod9DLighting).Change(value =>
+                TasSettings.Mod9DLighting = value));
         });
     }
 
@@ -75,9 +74,9 @@ internal static class CelesteTasMenu {
     private static EaseInSubMenu CreateForwardSpeedSubMenu() {
         return new EaseInSubMenu("Forward Speed".ToDialogText(), false).Apply(subMenu => {
             subMenu.Add(new TextMenuExt.IntSlider("Fast Forward Speed".ToDialogText(), 2,
-                30, Settings.FastForwardSpeed).Change(value => Settings.FastForwardSpeed = value));
-            subMenu.Add(new TextMenuExt.EnumerableSlider<float>("Slow Forward Speed".ToDialogText(), Settings.SlowForwardSpeeds,
-                Settings.SlowForwardSpeed).Change(value => Settings.SlowForwardSpeed = value));
+                30, TasSettings.FastForwardSpeed).Change(value => TasSettings.FastForwardSpeed = value));
+            subMenu.Add(new TextMenuExt.EnumerableSlider<float>("Slow Forward Speed".ToDialogText(), TasSettings.SlowForwardSpeeds,
+                TasSettings.SlowForwardSpeed).Change(value => TasSettings.SlowForwardSpeed = value));
         });
     }
 
@@ -119,25 +118,25 @@ internal static class CelesteTasMenu {
     private static EaseInSubMenu CreateRoundValuesSubMenu() {
         return new EaseInSubMenu("Round Values".ToDialogText(), false).Apply(subMenu => {
             subMenu.Add(new TextMenuExt.IntSlider("Position Decimals".ToDialogText(), CelesteTasSettings.MinDecimals,
-                CelesteTasSettings.MaxDecimals, Settings.PositionDecimals).Change(value =>
-                Settings.PositionDecimals = value));
+                CelesteTasSettings.MaxDecimals, TasSettings.PositionDecimals).Change(value =>
+                TasSettings.PositionDecimals = value));
             subMenu.Add(new TextMenuExt.IntSlider("Speed Decimals".ToDialogText(), CelesteTasSettings.MinDecimals,
-                CelesteTasSettings.MaxDecimals, Settings.SpeedDecimals).Change(value =>
-                Settings.SpeedDecimals = value));
+                CelesteTasSettings.MaxDecimals, TasSettings.SpeedDecimals).Change(value =>
+                TasSettings.SpeedDecimals = value));
             subMenu.Add(new TextMenuExt.IntSlider("Velocity Decimals".ToDialogText(), CelesteTasSettings.MinDecimals,
-                CelesteTasSettings.MaxDecimals, Settings.VelocityDecimals).Change(value =>
-                Settings.VelocityDecimals = value));
+                CelesteTasSettings.MaxDecimals, TasSettings.VelocityDecimals).Change(value =>
+                TasSettings.VelocityDecimals = value));
             subMenu.Add(new TextMenuExt.IntSlider("Custom Info Decimals".ToDialogText(), CelesteTasSettings.MinDecimals,
-                CelesteTasSettings.MaxDecimals, Settings.CustomInfoDecimals).Change(value =>
-                Settings.CustomInfoDecimals = value));
+                CelesteTasSettings.MaxDecimals, TasSettings.CustomInfoDecimals).Change(value =>
+                TasSettings.CustomInfoDecimals = value));
             subMenu.Add(new TextMenuExt.IntSlider("Subpixel Indicator Decimals".ToDialogText(), CelesteTasSettings.MinDecimals,
-                CelesteTasSettings.MaxDecimals, Settings.SubpixelIndicatorDecimals).Change(value =>
-                Settings.SubpixelIndicatorDecimals = value));
+                CelesteTasSettings.MaxDecimals, TasSettings.SubpixelIndicatorDecimals).Change(value =>
+                TasSettings.SubpixelIndicatorDecimals = value));
             subMenu.Add(new TextMenuExt.EnumerableSlider<SpeedUnit>("Speed Unit".ToDialogText(), new[] {
                     new KeyValuePair<SpeedUnit, string>(SpeedUnit.PixelPerSecond, "Pixel Per Second".ToDialogText()),
                     new KeyValuePair<SpeedUnit, string>(SpeedUnit.PixelPerFrame, "Pixel Per Frame".ToDialogText())
-                }, Settings.SpeedUnit)
-                .Change(value => Settings.SpeedUnit = value));
+                }, TasSettings.SpeedUnit)
+                .Change(value => TasSettings.SpeedUnit = value));
         });
     }
 
@@ -155,14 +154,14 @@ internal static class CelesteTasMenu {
                 containingMenu.Insert(items.IndexOf(enabledItem) + 1, descriptionText);
             }
 
-            enabledItem.OnEnter += () => descriptionText.FadeVisible = Settings.Enabled;
+            enabledItem.OnEnter += () => descriptionText.FadeVisible = TasSettings.Enabled;
             enabledItem.OnLeave += () => descriptionText.FadeVisible = false;
 
             return descriptionText;
         }
 
-        TextMenu.Item enabledItem = new TextMenu.OnOff("Enabled".ToDialogText(), Settings.Enabled).Change((value) => {
-            Settings.Enabled = value;
+        TextMenu.Item enabledItem = new TextMenu.OnOff("Enabled".ToDialogText(), TasSettings.Enabled).Change((value) => {
+            TasSettings.Enabled = value;
             foreach (EaseInSubMenu easeInSubMenu in options) {
                 easeInSubMenu.FadeVisible = value;
             }
@@ -244,8 +243,8 @@ public class EaseInSubMenu : TextMenuExt.SubMenu {
     private float unEasedAlpha;
 
     public EaseInSubMenu(string label, bool enterOnSelect) : base(label, enterOnSelect) {
-        alpha = unEasedAlpha = CelesteTasModule.Settings.Enabled ? 1f : 0f;
-        FadeVisible = Visible = CelesteTasModule.Settings.Enabled;
+        alpha = unEasedAlpha = TasSettings.Enabled ? 1f : 0f;
+        FadeVisible = Visible = TasSettings.Enabled;
         icon = GFX.Gui["downarrow"];
     }
 

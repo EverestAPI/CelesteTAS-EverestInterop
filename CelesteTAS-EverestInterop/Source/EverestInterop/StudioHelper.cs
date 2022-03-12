@@ -82,7 +82,7 @@ public static class StudioHelper {
     }
 
     private static bool CheckNewerStudio() {
-        if (!CelesteTasModule.Settings.ExtractNewStudioAtBoot) {
+        if (!TasSettings.ExtractNewStudioAtBoot) {
             return false;
         }
 
@@ -126,7 +126,7 @@ public static class StudioHelper {
     }
 
     private static void LaunchStudioAtBoot(bool studioProcessWasKilled) {
-        if (CelesteTasModule.Settings.Enabled && CelesteTasModule.Settings.LaunchStudioAtBoot || studioProcessWasKilled) {
+        if (TasSettings.Enabled && TasSettings.LaunchStudioAtBoot || studioProcessWasKilled) {
             try {
                 Process[] processes = Process.GetProcesses();
                 foreach (Process process in processes) {

@@ -8,11 +8,8 @@ using TAS.Module;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxToggle {
-    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
-
     private static bool origDrawHitboxes = false;
-
-    public static bool DrawHitboxes => origDrawHitboxes || Settings.ShowHitboxes || !Settings.ShowGameplay;
+    public static bool DrawHitboxes => origDrawHitboxes || TasSettings.ShowHitboxes || !TasSettings.ShowGameplay;
 
     [Load]
     private static void Load() {
@@ -49,14 +46,14 @@ public static class HitboxToggle {
     private static void DistortOnRender(ILContext il) {
         ILCursor ilCursor = new(il);
         if (ilCursor.TryGotoNext(MoveType.After, i => i.MatchLdsfld(typeof(GFX), "FxDistort"))) {
-            ilCursor.EmitDelegate<Func<Effect, Effect>>(effect => Settings.ShowHitboxes ? null : effect);
+            ilCursor.EmitDelegate<Func<Effect, Effect>>(effect => TasSettings.ShowHitboxes ? null : effect);
         }
     }
 
     private static void GlitchOnApply(ILContext il) {
         ILCursor ilCursor = new(il);
         Instruction start = ilCursor.Next;
-        ilCursor.EmitDelegate<Func<bool>>(() => Settings.ShowHitboxes);
+        ilCursor.EmitDelegate<Func<bool>>(() => TasSettings.ShowHitboxes);
         ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ret);
     }
 }

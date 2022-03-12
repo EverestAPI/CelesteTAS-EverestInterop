@@ -38,91 +38,91 @@ public static class SimplifiedGraphicsFeature {
     private static readonly FieldInfo DecalInfoCustomProperties = typeof(DecalRegistry.DecalInfo).GetFieldInfo("CustomProperties");
     private static readonly List<ILHook> IlHooks = new();
 
-    private static bool lastSimplifiedGraphics = Settings.SimplifiedGraphics;
+    private static bool lastSimplifiedGraphics = TasSettings.SimplifiedGraphics;
     private static SolidTilesStyle currentSolidTilesStyle;
     private static bool creatingSolidTiles;
-    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
 
     public static EaseInSubMenu CreateSubMenu(TextMenu menu) {
         return new EaseInSubMenu("Simplified Graphics".ToDialogText(), false).Apply(subMenu => {
-            subMenu.Add(new TextMenu.OnOff("Enabled".ToDialogText(), Settings.SimplifiedGraphics)
-                .Change(value => Settings.SimplifiedGraphics = value));
+            subMenu.Add(new TextMenu.OnOff("Enabled".ToDialogText(), TasSettings.SimplifiedGraphics)
+                .Change(value => TasSettings.SimplifiedGraphics = value));
             subMenu.Add(
-                new TextMenuExt.EnumerableSlider<bool>("Gameplay".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(), !Settings.ShowGameplay)
-                    .Change(value => Settings.ShowGameplay = !value));
+                new TextMenuExt.EnumerableSlider<bool>("Gameplay".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(),
+                        !TasSettings.ShowGameplay)
+                    .Change(value => TasSettings.ShowGameplay = !value));
             subMenu.Add(
                 new TextMenuExt.EnumerableSlider<int?>("Lighting".ToDialogText(), CelesteTasMenu.CreateSliderOptions(10, 0, i => $"{i * 10}%"),
-                    Settings.SimplifiedLighting).Change(value => Settings.SimplifiedLighting = value));
+                    TasSettings.SimplifiedLighting).Change(value => TasSettings.SimplifiedLighting = value));
             subMenu.Add(
                 new TextMenuExt.EnumerableSlider<int?>("Bloom Base".ToDialogText(),
                         CelesteTasMenu.CreateSliderOptions(0, 10, i => (i / 10f).ToString(CultureInfo.InvariantCulture)),
-                        Settings.SimplifiedBloomBase)
+                        TasSettings.SimplifiedBloomBase)
                     .Change(
-                        value => Settings.SimplifiedBloomBase = value));
+                        value => TasSettings.SimplifiedBloomBase = value));
             subMenu.Add(
                 new TextMenuExt.EnumerableSlider<int?>("Bloom Strength".ToDialogText(), CelesteTasMenu.CreateSliderOptions(1, 10),
-                    Settings.SimplifiedBloomStrength).Change(value => Settings.SimplifiedBloomStrength = value));
+                    TasSettings.SimplifiedBloomStrength).Change(value => TasSettings.SimplifiedBloomStrength = value));
             subMenu.Add(
                 new TextMenuExt.EnumerableSlider<SpinnerColor>("Spinner Color".ToDialogText(), SpinnerColor.All,
-                    Settings.SimplifiedSpinnerColor).Change(value => Settings.SimplifiedSpinnerColor = value));
+                    TasSettings.SimplifiedSpinnerColor).Change(value => TasSettings.SimplifiedSpinnerColor = value));
             subMenu.Add(
                 new TextMenuExt.EnumerableSlider<bool>("Dust Sprite Edge".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(),
-                    Settings.SimplifiedDustSpriteEdge).Change(value => Settings.SimplifiedDustSpriteEdge = value));
+                    TasSettings.SimplifiedDustSpriteEdge).Change(value => TasSettings.SimplifiedDustSpriteEdge = value));
             subMenu.Add(
                 new TextMenuExt.EnumerableSlider<bool>("Screen Wipe".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(),
-                    Settings.SimplifiedScreenWipe).Change(value => Settings.SimplifiedScreenWipe = value));
+                    TasSettings.SimplifiedScreenWipe).Change(value => TasSettings.SimplifiedScreenWipe = value));
             subMenu.Add(
                 new TextMenuExt.EnumerableSlider<bool>("Color Grade".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(),
-                    Settings.SimplifiedColorGrade).Change(value => Settings.SimplifiedColorGrade = value));
+                    TasSettings.SimplifiedColorGrade).Change(value => TasSettings.SimplifiedColorGrade = value));
             subMenu.Add(
                 new TextMenuExt.EnumerableSlider<SolidTilesStyle>("Solid Tiles Style".ToDialogText(), SolidTilesStyle.All,
-                    Settings.SimplifiedSolidTilesStyle).Change(value => Settings.SimplifiedSolidTilesStyle = value));
+                    TasSettings.SimplifiedSolidTilesStyle).Change(value => TasSettings.SimplifiedSolidTilesStyle = value));
             subMenu.Add(
                 new TextMenuExt.EnumerableSlider<bool>("Background Tiles".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(),
-                        Settings.SimplifiedBackgroundTiles)
-                    .Change(value => Settings.SimplifiedBackgroundTiles = value));
+                        TasSettings.SimplifiedBackgroundTiles)
+                    .Change(value => TasSettings.SimplifiedBackgroundTiles = value));
             subMenu.Add(
                 new TextMenuExt.EnumerableSlider<bool>("Backdrop".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(),
-                        Settings.SimplifiedBackdrop)
-                    .Change(value => Settings.SimplifiedBackdrop = value));
+                        TasSettings.SimplifiedBackdrop)
+                    .Change(value => TasSettings.SimplifiedBackdrop = value));
             subMenu.Add(
-                new TextMenuExt.EnumerableSlider<bool>("Decal".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(), Settings.SimplifiedDecal)
+                new TextMenuExt.EnumerableSlider<bool>("Decal".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(), TasSettings.SimplifiedDecal)
                     .Change(
-                        value => Settings.SimplifiedDecal = value));
+                        value => TasSettings.SimplifiedDecal = value));
             subMenu.Add(
                 new TextMenuExt.EnumerableSlider<bool>("Particle".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(),
-                        Settings.SimplifiedParticle)
-                    .Change(value => Settings.SimplifiedParticle = value));
+                        TasSettings.SimplifiedParticle)
+                    .Change(value => TasSettings.SimplifiedParticle = value));
             subMenu.Add(new TextMenuExt.EnumerableSlider<bool>("Distort".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(),
-                Settings.SimplifiedDistort).Change(value => Settings.SimplifiedDistort = value));
+                TasSettings.SimplifiedDistort).Change(value => TasSettings.SimplifiedDistort = value));
             subMenu.Add(new TextMenuExt.EnumerableSlider<bool>("Mini Text Box".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(),
-                Settings.SimplifiedMiniTextbox).Change(value => Settings.SimplifiedMiniTextbox = value));
+                TasSettings.SimplifiedMiniTextbox).Change(value => TasSettings.SimplifiedMiniTextbox = value));
             subMenu.Add(
                 new TextMenuExt.EnumerableSlider<bool>("Lightning Strike".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(),
-                    Settings.SimplifiedLightningStrike).Change(value => Settings.SimplifiedLightningStrike = value));
+                    TasSettings.SimplifiedLightningStrike).Change(value => TasSettings.SimplifiedLightningStrike = value));
 
             TextMenu.Item clutteredItem;
             subMenu.Add(
                 clutteredItem = new TextMenuExt.EnumerableSlider<bool>("Cluttered Entity".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(),
-                        Settings.SimplifiedClutteredEntity)
-                    .Change(value => Settings.SimplifiedClutteredEntity = value));
+                        TasSettings.SimplifiedClutteredEntity)
+                    .Change(value => TasSettings.SimplifiedClutteredEntity = value));
             subMenu.AddDescription(menu, clutteredItem, "Cluttered Entity Description".ToDialogText());
 
             TextMenu.Item hudItem;
             subMenu.Add(
                 hudItem = new TextMenuExt.EnumerableSlider<bool>("HUD".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(),
-                        Settings.SimplifiedHud)
-                    .Change(value => Settings.SimplifiedHud = value));
+                        TasSettings.SimplifiedHud)
+                    .Change(value => TasSettings.SimplifiedHud = value));
             subMenu.AddDescription(menu, hudItem, "HUD Description".ToDialogText());
 
             subMenu.Add(
                 new TextMenuExt.EnumerableSlider<bool>("Waved Edge".ToDialogText(), CelesteTasMenu.CreateSimplifyOptions(),
-                        Settings.SimplifiedWavedEdge)
-                    .Change(value => Settings.SimplifiedWavedEdge = value));
+                        TasSettings.SimplifiedWavedEdge)
+                    .Change(value => TasSettings.SimplifiedWavedEdge = value));
 
             subMenu.Add(
-                new TextMenuExt.EnumerableSlider<bool>("Spikes".ToDialogText(), CelesteTasMenu.CreateSimplifyOptions(), Settings.SimplifiedSpikes)
-                    .Change(value => Settings.SimplifiedSpikes = value));
+                new TextMenuExt.EnumerableSlider<bool>("Spikes".ToDialogText(), CelesteTasMenu.CreateSimplifyOptions(), TasSettings.SimplifiedSpikes)
+                    .Change(value => TasSettings.SimplifiedSpikes = value));
         });
     }
 
@@ -160,12 +160,12 @@ public static class SimplifiedGraphicsFeature {
         IL.Celeste.BloomRenderer.Apply += BloomRendererOnApply;
         On.Celeste.Decal.Render += Decal_Render;
 
-        SkipMethod(() => Settings.SimplifiedGraphics && Settings.SimplifiedParticle,
+        SkipMethod(() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedParticle,
             typeof(ParticleSystem).GetMethod("Render", new Type[] { }),
             typeof(ParticleSystem).GetMethod("Render", new[] {typeof(float)})
         );
-        SkipMethod(() => Settings.SimplifiedGraphics && Settings.SimplifiedDistort, "Apply", typeof(Glitch));
-        SkipMethod(() => Settings.SimplifiedGraphics && Settings.SimplifiedMiniTextbox, "Render", typeof(MiniTextbox));
+        SkipMethod(() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedDistort, "Apply", typeof(Glitch));
+        SkipMethod(() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedMiniTextbox, "Render", typeof(MiniTextbox));
 
         IL.Celeste.Distort.Render += DistortOnRender;
         On.Celeste.SolidTiles.ctor += SolidTilesOnCtor;
@@ -176,7 +176,7 @@ public static class SimplifiedGraphicsFeature {
 
         IL.Celeste.LightningRenderer.Render += LightningRenderer_RenderIL;
 
-        bool SimplifiedWavedBlock() => Settings.SimplifiedGraphics && Settings.SimplifiedWavedEdge;
+        bool SimplifiedWavedBlock() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedWavedEdge;
         ReturnZeroMethod(SimplifiedWavedBlock,
             typeof(DreamBlock).GetMethodInfo("Lerp"),
             typeof(LavaRect).GetMethodInfo("Wave")
@@ -188,23 +188,24 @@ public static class SimplifiedGraphicsFeature {
         );
         On.Celeste.LightningRenderer.Bolt.Render += BoltOnRender;
 
-        SkipMethod(() => Settings.SimplifiedGraphics && Settings.SimplifiedScreenWipe, "Render",
+        SkipMethod(() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedScreenWipe, "Render",
             typeof(SpotlightWipe), typeof(FadeWipe)
         );
 
         On.Celeste.Audio.Play_string += AudioOnPlay_string;
-        SkipMethod(() => Settings.SimplifiedGraphics && Settings.SimplifiedLightningStrike, "Render",
+        SkipMethod(() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedLightningStrike, "Render",
             typeof(LightningStrike),
             ModUtils.GetType("ContortHelper.BetterLightningStrike")
         );
 
-        SkipMethod(() => Settings.SimplifiedGraphics && Settings.SimplifiedClutteredEntity, "Render",
+        SkipMethod(() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedClutteredEntity, "Render",
             typeof(ReflectionTentacles), typeof(SummitCloud), typeof(TempleEye), typeof(Wire),
             typeof(DustGraphic).GetNestedType("Eyeballs", BindingFlags.NonPublic)
         );
 
         SkipMethod(
-            () => Settings.SimplifiedGraphics && Settings.SimplifiedHud || Settings.CenterCamera && Math.Abs(CenterCamera.LevelZoom - 1f) > 1e-3,
+            () => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedHud ||
+                  TasSettings.CenterCamera && Math.Abs(CenterCamera.LevelZoom - 1f) > 1e-3,
             "Render",
             typeof(HeightDisplay), typeof(TalkComponent.TalkComponentUI), typeof(BirdTutorialGui), typeof(CoreMessage), typeof(MemorialText),
             typeof(Player).Assembly.GetType("Celeste.Mod.Entities.CustomHeightDisplay")
@@ -282,7 +283,7 @@ public static class SimplifiedGraphicsFeature {
             level.Entities.FindAll<MoonCreature>().ForEach(creature => creature.RemoveSelf());
         }
 
-        if (simplifiedGraphics && currentSolidTilesStyle != Settings.SimplifiedSolidTilesStyle ||
+        if (simplifiedGraphics && currentSolidTilesStyle != TasSettings.SimplifiedSolidTilesStyle ||
             !simplifiedGraphics && currentSolidTilesStyle != default) {
             ReplaceSolidTilesStyle();
         }
@@ -314,9 +315,9 @@ public static class SimplifiedGraphicsFeature {
         orig(self);
 
         // Seems modified the Settings.SimplifiedGraphics property will mess key config.
-        if (lastSimplifiedGraphics != Settings.SimplifiedGraphics) {
-            OnSimplifiedGraphicsChanged(Settings.SimplifiedGraphics);
-            lastSimplifiedGraphics = Settings.SimplifiedGraphics;
+        if (lastSimplifiedGraphics != TasSettings.SimplifiedGraphics) {
+            OnSimplifiedGraphicsChanged(TasSettings.SimplifiedGraphics);
+            lastSimplifiedGraphics = TasSettings.SimplifiedGraphics;
         }
     }
 
@@ -327,14 +328,14 @@ public static class SimplifiedGraphicsFeature {
                 ins => ins.MatchCall(typeof(MathHelper), "Clamp")
             )) {
             ilCursor.EmitDelegate<Func<float, float>>(alpha =>
-                Settings.SimplifiedGraphics && Settings.SimplifiedLighting != null ? (10 - Settings.SimplifiedLighting.Value) / 10f : alpha);
+                TasSettings.SimplifiedGraphics && TasSettings.SimplifiedLighting != null ? (10 - TasSettings.SimplifiedLighting.Value) / 10f : alpha);
         }
     }
 
     private static void ColorGradeOnSet_MTexture_MTexture_float(On.Celeste.ColorGrade.orig_Set_MTexture_MTexture_float orig, MTexture fromTex,
         MTexture toTex, float p) {
         bool? origEnabled = null;
-        if (Settings.SimplifiedGraphics && Settings.SimplifiedColorGrade) {
+        if (TasSettings.SimplifiedGraphics && TasSettings.SimplifiedColorGrade) {
             origEnabled = ColorGrade.Enabled;
             ColorGrade.Enabled = false;
         }
@@ -353,7 +354,9 @@ public static class SimplifiedGraphicsFeature {
                    ins => ins.MatchLdfld<BloomRenderer>("Base")
                )) {
             ilCursor.EmitDelegate<Func<float, float>>(bloomValue =>
-                Settings.SimplifiedGraphics && Settings.SimplifiedBloomBase.HasValue ? Settings.SimplifiedBloomBase.Value / 10f : bloomValue);
+                TasSettings.SimplifiedGraphics && TasSettings.SimplifiedBloomBase.HasValue
+                    ? TasSettings.SimplifiedBloomBase.Value / 10f
+                    : bloomValue);
         }
 
         while (ilCursor.TryGotoNext(
@@ -362,14 +365,14 @@ public static class SimplifiedGraphicsFeature {
                    ins => ins.MatchLdfld<BloomRenderer>("Strength")
                )) {
             ilCursor.EmitDelegate<Func<float, float>>(bloomValue =>
-                Settings.SimplifiedGraphics && Settings.SimplifiedBloomStrength.HasValue
-                    ? Settings.SimplifiedBloomStrength.Value / 10f
+                TasSettings.SimplifiedGraphics && TasSettings.SimplifiedBloomStrength.HasValue
+                    ? TasSettings.SimplifiedBloomStrength.Value / 10f
                     : bloomValue);
         }
     }
 
     private static void Decal_Render(On.Celeste.Decal.orig_Render orig, Decal self) {
-        if (Settings.SimplifiedGraphics && Settings.SimplifiedDecal) {
+        if (TasSettings.SimplifiedGraphics && TasSettings.SimplifiedDecal) {
             string decalName = self.Name.ToLower().Replace("decals/", "");
             if (!SolidDecals.Contains(decalName)) {
                 if (!DecalRegistry.RegisteredDecals.ContainsKey(decalName)) {
@@ -392,13 +395,13 @@ public static class SimplifiedGraphicsFeature {
     private static void DistortOnRender(ILContext il) {
         ILCursor ilCursor = new(il);
         if (ilCursor.TryGotoNext(MoveType.After, i => i.MatchLdsfld(typeof(GFX), "FxDistort"))) {
-            ilCursor.EmitDelegate<Func<Effect, Effect>>(effect => Settings.SimplifiedGraphics && Settings.SimplifiedDistort ? null : effect);
+            ilCursor.EmitDelegate<Func<Effect, Effect>>(effect => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedDistort ? null : effect);
         }
     }
 
     private static void SolidTilesOnCtor(On.Celeste.SolidTiles.orig_ctor orig, SolidTiles self, Vector2 position, VirtualMap<char> data) {
-        if (Settings.SimplifiedGraphics && Settings.SimplifiedSolidTilesStyle != default) {
-            currentSolidTilesStyle = Settings.SimplifiedSolidTilesStyle;
+        if (TasSettings.SimplifiedGraphics && TasSettings.SimplifiedSolidTilesStyle != default) {
+            currentSolidTilesStyle = TasSettings.SimplifiedSolidTilesStyle;
         } else {
             currentSolidTilesStyle = SolidTilesStyle.All[0];
         }
@@ -411,16 +414,16 @@ public static class SimplifiedGraphicsFeature {
     private static char AutotilerOnGetTile(On.Celeste.Autotiler.orig_GetTile orig, Autotiler self, VirtualMap<char> mapData, int x, int y,
         Rectangle forceFill, char forceId, Autotiler.Behaviour behaviour) {
         char tile = orig(self, mapData, x, y, forceFill, forceId, behaviour);
-        if (creatingSolidTiles && Settings.SimplifiedGraphics && Settings.SimplifiedSolidTilesStyle != default && !default(char).Equals(tile) &&
+        if (creatingSolidTiles && TasSettings.SimplifiedGraphics && TasSettings.SimplifiedSolidTilesStyle != default && !default(char).Equals(tile) &&
             tile != '0') {
-            return Settings.SimplifiedSolidTilesStyle.Value;
+            return TasSettings.SimplifiedSolidTilesStyle.Value;
         } else {
             return tile;
         }
     }
 
     private static void BackgroundTilesOnRender(On.Monocle.Entity.orig_Render orig, Entity self) {
-        if (self is BackgroundTiles && Settings.SimplifiedGraphics && Settings.SimplifiedBackgroundTiles) {
+        if (self is BackgroundTiles && TasSettings.SimplifiedGraphics && TasSettings.SimplifiedBackgroundTiles) {
             return;
         }
 
@@ -431,13 +434,13 @@ public static class SimplifiedGraphicsFeature {
         ILCursor c = new(il);
 
         Instruction methodStart = c.Next;
-        c.EmitDelegate<Func<bool>>(() => !Settings.SimplifiedGraphics || !Settings.SimplifiedBackdrop);
+        c.EmitDelegate<Func<bool>>(() => !TasSettings.SimplifiedGraphics || !TasSettings.SimplifiedBackdrop);
         c.Emit(OpCodes.Brtrue, methodStart);
         c.Emit(OpCodes.Ret);
         c.GotoNext(i => i.MatchLdloc(2));
         c.Emit(OpCodes.Ldloc_2);
         c.EmitDelegate<Action<Backdrop>>(backdrop => {
-            if (Settings.Enabled && Settings.Mod9DLighting && backdrop.Visible && Engine.Scene is Level level) {
+            if (TasSettings.Enabled && TasSettings.Mod9DLighting && backdrop.Visible && Engine.Scene is Level level) {
                 bool hideBackdrop =
                     (level.Session.Level.StartsWith("g") || level.Session.Level.StartsWith("h"))
                     && level.Session.Level != "hh-08"
@@ -448,8 +451,8 @@ public static class SimplifiedGraphicsFeature {
     }
 
     private static void CrystalStaticSpinner_CreateSprites(On.Celeste.CrystalStaticSpinner.orig_CreateSprites orig, CrystalStaticSpinner self) {
-        if (Settings.SimplifiedGraphics && Settings.SimplifiedSpinnerColor.Name >= 0) {
-            SpinnerColorField.SetValue(self, Settings.SimplifiedSpinnerColor.Name);
+        if (TasSettings.SimplifiedGraphics && TasSettings.SimplifiedSpinnerColor.Name >= 0) {
+            SpinnerColorField.SetValue(self, TasSettings.SimplifiedSpinnerColor.Name);
         }
 
         orig(self);
@@ -459,12 +462,12 @@ public static class SimplifiedGraphicsFeature {
         ILCursor ilCursor = new(il);
         if (ilCursor.TryGotoNext(MoveType.After, ins => ins.MatchCall(typeof(Calc), "HsvToColor"))) {
             ilCursor.EmitDelegate<Func<Color, Color>>(color =>
-                Settings.SimplifiedGraphics && Settings.SimplifiedSpinnerColor.Name == CrystalColor.Rainbow ? Color.White : color);
+                TasSettings.SimplifiedGraphics && TasSettings.SimplifiedSpinnerColor.Name == CrystalColor.Rainbow ? Color.White : color);
         }
     }
 
     private static DustStyles.DustStyle DustStyles_Get_Session(On.Celeste.DustStyles.orig_Get_Session orig, Session session) {
-        if (Settings.SimplifiedGraphics && Settings.SimplifiedDustSpriteEdge) {
+        if (TasSettings.SimplifiedGraphics && TasSettings.SimplifiedDustSpriteEdge) {
             Color color = Color.Transparent;
             return new DustStyles.DustStyle {
                 EdgeColors = new[] {color.ToVector3(), color.ToVector3(), color.ToVector3()},
@@ -478,14 +481,14 @@ public static class SimplifiedGraphicsFeature {
 
     private static void FloatingDebris_ctor(On.Celeste.FloatingDebris.orig_ctor_Vector2 orig, FloatingDebris self, Vector2 position) {
         orig(self, position);
-        if (Settings.SimplifiedGraphics) {
+        if (TasSettings.SimplifiedGraphics) {
             self.Add(new RemoveSelfComponent());
         }
     }
 
     private static void MoonCreature_ctor(On.Celeste.MoonCreature.orig_ctor_Vector2 orig, MoonCreature self, Vector2 position) {
         orig(self, position);
-        if (Settings.SimplifiedGraphics) {
+        if (TasSettings.SimplifiedGraphics) {
             self.Add(new RemoveSelfComponent());
         }
     }
@@ -496,7 +499,7 @@ public static class SimplifiedGraphicsFeature {
             Instruction lightningIns = c.Prev;
             c.Index++;
             c.Emit(lightningIns.OpCode, lightningIns.Operand).EmitDelegate<Func<bool, Lightning, bool>>((visible, item) => {
-                if (Settings.SimplifiedGraphics && Settings.SimplifiedWavedEdge) {
+                if (TasSettings.SimplifiedGraphics && TasSettings.SimplifiedWavedEdge) {
                     Rectangle rectangle = new((int) item.X + 1, (int) item.Y + 1, (int) item.Width, (int) item.Height);
                     Draw.SpriteBatch.Draw(GameplayBuffers.Lightning, item.Position + Vector2.One, rectangle, Color.Yellow);
                     Draw.HollowRect(rectangle, Color.LightGoldenrodYellow);
@@ -512,12 +515,12 @@ public static class SimplifiedGraphicsFeature {
                 ins => ins.OpCode == OpCodes.Ldarg_0,
                 ins => ins.MatchLdfld<LightningRenderer>("DrawEdges")
             )) {
-            c.EmitDelegate<Func<bool, bool>>(drawEdges => (!Settings.SimplifiedGraphics || !Settings.SimplifiedWavedEdge) && drawEdges);
+            c.EmitDelegate<Func<bool, bool>>(drawEdges => (!TasSettings.SimplifiedGraphics || !TasSettings.SimplifiedWavedEdge) && drawEdges);
         }
     }
 
     private static void BoltOnRender(On.Celeste.LightningRenderer.Bolt.orig_Render orig, object self) {
-        if (Settings.SimplifiedGraphics && Settings.SimplifiedWavedEdge) {
+        if (TasSettings.SimplifiedGraphics && TasSettings.SimplifiedWavedEdge) {
             return;
         }
 
@@ -526,7 +529,8 @@ public static class SimplifiedGraphicsFeature {
 
     private static EventInstance AudioOnPlay_string(On.Celeste.Audio.orig_Play_string orig, string path) {
         EventInstance result = orig(path);
-        if (Settings.SimplifiedGraphics && Settings.SimplifiedLightningStrike && path == "event:/new_content/game/10_farewell/lightning_strike") {
+        if (TasSettings.SimplifiedGraphics && TasSettings.SimplifiedLightningStrike &&
+            path == "event:/new_content/game/10_farewell/lightning_strike") {
             result?.setVolume(0);
         }
 
@@ -535,7 +539,7 @@ public static class SimplifiedGraphicsFeature {
 
     private static void SpikesOnCtor_Vector2_int_Directions_string(On.Celeste.Spikes.orig_ctor_Vector2_int_Directions_string orig, Spikes self,
         Vector2 position, int size, Spikes.Directions direction, string type) {
-        if (Settings.SimplifiedGraphics && Settings.SimplifiedSpikes) {
+        if (TasSettings.SimplifiedGraphics && TasSettings.SimplifiedSpikes) {
             type = "outline";
         }
 
@@ -551,7 +555,9 @@ public static class SimplifiedGraphicsFeature {
             )) {
             ilCursor.Index += 2;
             ilCursor.EmitDelegate<Func<string, string>>(color =>
-                Settings.SimplifiedGraphics && Settings.SimplifiedSpinnerColor.Value != null ? Settings.SimplifiedSpinnerColor.Value : color);
+                TasSettings.SimplifiedGraphics && TasSettings.SimplifiedSpinnerColor.Value != null
+                    ? TasSettings.SimplifiedSpinnerColor.Value
+                    : color);
         }
     }
 
@@ -568,11 +574,11 @@ public static class SimplifiedGraphicsFeature {
             while (ilCursor.TryGotoNext(i => i.MatchRet())) {
                 ilCursor.Emit(OpCodes.Ldarg_0).Emit(OpCodes.Ldfld, colorsFieldInfo);
                 ilCursor.EmitDelegate<Action<object>>(colors => {
-                    if (!Settings.SimplifiedGraphics || Settings.SimplifiedSpinnerColor.Value == null) {
+                    if (!TasSettings.SimplifiedGraphics || TasSettings.SimplifiedSpinnerColor.Value == null) {
                         return;
                     }
 
-                    Color simpleColor = Calc.HexToColor(Settings.SimplifiedSpinnerColor.Value);
+                    Color simpleColor = Calc.HexToColor(TasSettings.SimplifiedSpinnerColor.Value);
 
                     switch (colors) {
                         case Color[] colorArray:
@@ -592,12 +598,12 @@ public static class SimplifiedGraphicsFeature {
     private static void ModVivCustomSpinnerColor(ILContext il) {
         ILCursor ilCursor = new(il);
         Instruction start = ilCursor.Next;
-        ilCursor.EmitDelegate<Func<bool>>(() => Settings.SimplifiedGraphics && Settings.SimplifiedSpinnerColor.Value != null);
+        ilCursor.EmitDelegate<Func<bool>>(() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedSpinnerColor.Value != null);
         ilCursor.Emit(OpCodes.Brfalse, start);
 
         Type type = ModUtils.GetType("VivHelper.Entities.CustomSpinner");
         if (type.GetFieldInfo("color") is { } colorField) {
-            ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Func<Color>>(() => Settings.SimplifiedSpinnerColor.Color);
+            ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Func<Color>>(() => TasSettings.SimplifiedSpinnerColor.Color);
             ilCursor.Emit(OpCodes.Stfld, colorField);
         }
 

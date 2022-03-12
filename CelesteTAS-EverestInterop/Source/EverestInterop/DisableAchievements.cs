@@ -5,8 +5,6 @@ using TAS.Module;
 namespace TAS.EverestInterop;
 
 public static class DisableAchievements {
-    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
-
     [Load]
     private static void Load() {
         // Optional: Disable achievements, stats and terminal.
@@ -38,7 +36,7 @@ public static class DisableAchievements {
     }
 
     private static void Achievements_Register(On.Celeste.Achievements.orig_Register orig, Achievement achievement) {
-        if (Settings.Enabled && Settings.DisableAchievements) {
+        if (TasSettings.Enabled && TasSettings.DisableAchievements) {
             return;
         }
 
@@ -46,7 +44,7 @@ public static class DisableAchievements {
     }
 
     private static void Stats_Increment(On.Celeste.Stats.orig_Increment orig, Stat stat, int increment) {
-        if (Settings.Enabled && Settings.DisableAchievements) {
+        if (TasSettings.Enabled && TasSettings.DisableAchievements) {
             return;
         }
 

@@ -57,7 +57,7 @@ public static class HitboxTriggerSpikes {
     }
 
     private static void ShowGroupedTriggerSpikesHitboxes(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {
-        if (!CelesteTasModule.Settings.ShowHitboxes || self.GetType() != groupedTriggerSpikesType) {
+        if (!TasSettings.ShowHitboxes || self.GetType() != groupedTriggerSpikesType) {
             orig(self, camera);
             return;
         }
@@ -69,7 +69,7 @@ public static class HitboxTriggerSpikes {
     }
 
     private static void ShowTriggerSpikesHitboxes(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {
-        if (!CelesteTasModule.Settings.ShowHitboxes || self is not TriggerSpikes && self is not TriggerSpikesOriginal) {
+        if (!TasSettings.ShowHitboxes || self is not TriggerSpikes && self is not TriggerSpikesOriginal) {
             orig(self, camera);
             return;
         }

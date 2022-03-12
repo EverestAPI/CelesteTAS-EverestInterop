@@ -14,8 +14,6 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class UnloadedRoomHitbox {
-    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
-
     private static readonly HashSet<Type> IgnoreTypes = new() {
         typeof(Bonfire),
         typeof(Checkpoint),
@@ -55,7 +53,7 @@ public static class UnloadedRoomHitbox {
     }
 
     private static void EntityListOnDebugRender(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
-        if (!Settings.Enabled || !Settings.CenterCamera || !Settings.ShowUnloadedRoomsHitboxes || Engine.Scene is not Level level) {
+        if (!TasSettings.Enabled || !TasSettings.CenterCamera || !TasSettings.ShowUnloadedRoomsHitboxes || Engine.Scene is not Level level) {
             orig(self, camera);
             return;
         }
@@ -511,7 +509,7 @@ public static class UnloadedRoomHitbox {
             float height = data.Height;
 
             actions.Add((level) => {
-                if (Settings.ShowTriggerHitboxes) {
+                if (TasSettings.ShowTriggerHitboxes) {
                     Draw.HollowRect(levelData.Position + data.Position, width, height, triggerColor);
                 }
             });
@@ -519,7 +517,7 @@ public static class UnloadedRoomHitbox {
 
         foreach (Vector2 spawn in levelData.Spawns) {
             actions.Add((level) => {
-                if (Settings.ShowTriggerHitboxes) {
+                if (TasSettings.ShowTriggerHitboxes) {
                     Draw.HollowRect(spawn - new Vector2(4, 11), 8, 11, respawnTriggerColor);
                 }
             });

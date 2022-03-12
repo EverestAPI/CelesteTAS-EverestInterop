@@ -25,8 +25,6 @@ public static class Core {
     private static readonly Lazy<bool> CantPauseWhileSaving = new(() => Everest.Version < new Version(1, 2865));
     private static readonly bool updateGrab = typeof(GameInput).GetMethod("UpdateGrab") != null;
 
-    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
-
     [Load]
     private static void Load() {
         // Relink RunThreadWithLogging to Celeste.RunThread.RunThreadWithLogging because reflection invoke is slow.
@@ -77,7 +75,7 @@ public static class Core {
         SkipBaseUpdate = false;
         InUpdate = false;
 
-        if (!Settings.Enabled || !Manager.Running) {
+        if (!TasSettings.Enabled || !Manager.Running) {
             orig(self, gameTime);
             return;
         }
@@ -124,7 +122,7 @@ public static class Core {
     }
 
     private static void MInput_Update(On.Monocle.MInput.orig_Update orig) {
-        if (!Settings.Enabled) {
+        if (!TasSettings.Enabled) {
             orig();
             return;
         }
@@ -145,7 +143,7 @@ public static class Core {
 
     // ReSharper disable once UnusedMember.Local
     private static void Game_Update(Game self, GameTime gameTime) {
-        if (Settings.Enabled && SkipBaseUpdate) {
+        if (TasSettings.Enabled && SkipBaseUpdate) {
             return;
         }
 

@@ -34,8 +34,6 @@ public static class HitboxSimplified {
         typeof(Trapdoor)
     };
 
-    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
-
     [Load]
     private static void Load() {
         IL.Monocle.Entity.DebugRender += HideHitbox;
@@ -56,7 +54,7 @@ public static class HitboxSimplified {
         ILCursor ilCursor = new(il);
         Instruction start = ilCursor.Next;
         ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Func<Entity, bool>>(entity => {
-            if (Settings.ShowHitboxes && Settings.SimplifiedHitboxes && !InfoWatchEntity.WatchingEntities.Contains(entity)) {
+            if (TasSettings.ShowHitboxes && TasSettings.SimplifiedHitboxes && !InfoWatchEntity.WatchingEntities.Contains(entity)) {
                 Type type = entity.GetType();
                 if (UselessTypes.Contains(type)) {
                     return true;
@@ -91,7 +89,7 @@ public static class HitboxSimplified {
     }
 
     private static void ModHitbox(On.Monocle.Hitbox.orig_Render orig, Hitbox hitbox, Camera camera, Color color) {
-        if (!Settings.ShowHitboxes || !Settings.SimplifiedHitboxes) {
+        if (!TasSettings.ShowHitboxes || !TasSettings.SimplifiedHitboxes) {
             orig(hitbox, camera, color);
             return;
         }
@@ -115,7 +113,7 @@ public static class HitboxSimplified {
     }
 
     private static void CombineGridHitbox(On.Monocle.Grid.orig_Render orig, Grid self, Camera camera, Color color) {
-        if (!Settings.ShowHitboxes || !Settings.SimplifiedHitboxes) {
+        if (!TasSettings.ShowHitboxes || !TasSettings.SimplifiedHitboxes) {
             orig(self, camera, color);
             return;
         }

@@ -95,25 +95,23 @@ public static class Hotkeys {
         }
     }
 
-    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
-
     private static void InputInitialize() {
         KeysDict.Clear();
-        KeysDict[HotkeyID.Start] = StartStop = BindingToHotkey(Settings.KeyStart);
-        KeysDict[HotkeyID.Restart] = Restart = BindingToHotkey(Settings.KeyRestart);
-        KeysDict[HotkeyID.FastForward] = FastForward = BindingToHotkey(Settings.KeyFastForward, true);
-        KeysDict[HotkeyID.FastForwardComment] = FastForwardComment = BindingToHotkey(Settings.KeyFastForwardComment);
-        KeysDict[HotkeyID.FrameAdvance] = FrameAdvance = BindingToHotkey(Settings.KeyFrameAdvance);
-        KeysDict[HotkeyID.SlowForward] = SlowForward = BindingToHotkey(Settings.KeySlowForward, true);
-        KeysDict[HotkeyID.Pause] = PauseResume = BindingToHotkey(Settings.KeyPause);
-        KeysDict[HotkeyID.Hitboxes] = Hitboxes = BindingToHotkey(Settings.KeyHitboxes);
-        KeysDict[HotkeyID.TriggerHitboxes] = TriggerHitboxes = BindingToHotkey(Settings.KeyTriggerHitboxes);
-        KeysDict[HotkeyID.Graphics] = SimplifiedGraphic = BindingToHotkey(Settings.KeyGraphics);
-        KeysDict[HotkeyID.Camera] = CenterCamera = BindingToHotkey(Settings.KeyCamera);
-        KeysDict[HotkeyID.SaveState] = SaveState = BindingToHotkey(Settings.KeySaveState);
-        KeysDict[HotkeyID.ClearState] = ClearState = BindingToHotkey(Settings.KeyClearState);
-        KeysDict[HotkeyID.InfoHud] = InfoHud = BindingToHotkey(Settings.KeyInfoHud);
-        KeysDict[HotkeyID.FreeCamera] = FreeCamera = BindingToHotkey(Settings.KeyFreeCamera);
+        KeysDict[HotkeyID.Start] = StartStop = BindingToHotkey(TasSettings.KeyStart);
+        KeysDict[HotkeyID.Restart] = Restart = BindingToHotkey(TasSettings.KeyRestart);
+        KeysDict[HotkeyID.FastForward] = FastForward = BindingToHotkey(TasSettings.KeyFastForward, true);
+        KeysDict[HotkeyID.FastForwardComment] = FastForwardComment = BindingToHotkey(TasSettings.KeyFastForwardComment);
+        KeysDict[HotkeyID.FrameAdvance] = FrameAdvance = BindingToHotkey(TasSettings.KeyFrameAdvance);
+        KeysDict[HotkeyID.SlowForward] = SlowForward = BindingToHotkey(TasSettings.KeySlowForward, true);
+        KeysDict[HotkeyID.Pause] = PauseResume = BindingToHotkey(TasSettings.KeyPause);
+        KeysDict[HotkeyID.Hitboxes] = Hitboxes = BindingToHotkey(TasSettings.KeyHitboxes);
+        KeysDict[HotkeyID.TriggerHitboxes] = TriggerHitboxes = BindingToHotkey(TasSettings.KeyTriggerHitboxes);
+        KeysDict[HotkeyID.Graphics] = SimplifiedGraphic = BindingToHotkey(TasSettings.KeyGraphics);
+        KeysDict[HotkeyID.Camera] = CenterCamera = BindingToHotkey(TasSettings.KeyCamera);
+        KeysDict[HotkeyID.SaveState] = SaveState = BindingToHotkey(TasSettings.KeySaveState);
+        KeysDict[HotkeyID.ClearState] = ClearState = BindingToHotkey(TasSettings.KeyClearState);
+        KeysDict[HotkeyID.InfoHud] = InfoHud = BindingToHotkey(TasSettings.KeyInfoHud);
+        KeysDict[HotkeyID.FreeCamera] = FreeCamera = BindingToHotkey(TasSettings.KeyFreeCamera);
         KeysDict[HotkeyID.CameraUp] = CameraUp = BindingToHotkey(new ButtonBinding(0, Keys.Up));
         KeysDict[HotkeyID.CameraDown] = CameraDown = BindingToHotkey(new ButtonBinding(0, Keys.Down));
         KeysDict[HotkeyID.CameraLeft] = CameraLeft = BindingToHotkey(new ButtonBinding(0, Keys.Left));
@@ -197,22 +195,22 @@ public static class Hotkeys {
     private static void AfterUpdate() {
         if (Engine.Scene is Level level && (!level.Paused || level.PauseMainMenuOpen || Manager.Running)) {
             if (Hitboxes.Pressed) {
-                Settings.ShowHitboxes = !Settings.ShowHitboxes;
+                TasSettings.ShowHitboxes = !TasSettings.ShowHitboxes;
                 CelesteTasModule.Instance.SaveSettings();
             }
 
             if (TriggerHitboxes.Pressed) {
-                Settings.ShowTriggerHitboxes = !Settings.ShowTriggerHitboxes;
+                TasSettings.ShowTriggerHitboxes = !TasSettings.ShowTriggerHitboxes;
                 CelesteTasModule.Instance.SaveSettings();
             }
 
             if (SimplifiedGraphic.Pressed) {
-                Settings.SimplifiedGraphics = !Settings.SimplifiedGraphics;
+                TasSettings.SimplifiedGraphics = !TasSettings.SimplifiedGraphics;
                 CelesteTasModule.Instance.SaveSettings();
             }
 
             if (CenterCamera.Pressed) {
-                Settings.CenterCamera = !Settings.CenterCamera;
+                TasSettings.CenterCamera = !TasSettings.CenterCamera;
                 CelesteTasModule.Instance.SaveSettings();
             }
         }
@@ -287,7 +285,7 @@ public static class Hotkeys {
                     return;
                 }
 
-                if (bindingProperties.FirstOrDefault(info => info.GetValue(Settings) == binding) is { } propertyInfo) {
+                if (bindingProperties.FirstOrDefault(info => info.GetValue(TasSettings) == binding) is { } propertyInfo) {
                     binding.Keys.Insert(0, propertyInfo.GetCustomAttribute<DefaultButtonBinding2Attribute>().ExtraKey);
                 }
             });

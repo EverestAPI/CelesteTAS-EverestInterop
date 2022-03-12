@@ -15,7 +15,6 @@ public static class ExportGameInfo {
     private static StreamWriter streamWriter;
     private static IDictionary<string, Func<List<Entity>>> trackedEntities;
     private static bool exporting;
-    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
 
     // ReSharper disable once UnusedMember.Local
     // "StartExportGameInfo"

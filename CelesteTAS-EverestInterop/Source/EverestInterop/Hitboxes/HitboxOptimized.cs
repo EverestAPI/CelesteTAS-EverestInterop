@@ -27,8 +27,6 @@ public static class HitboxOptimized {
     private static Func<Solid> bgModeToggleBgSolidTiles;
     private static readonly Dictionary<LevelData, bool> ExistBgModeToggle = new();
 
-    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
-
     [Load]
     private static void Load() {
         On.Monocle.Entity.DebugRender += ModDebugRender;
@@ -64,7 +62,7 @@ public static class HitboxOptimized {
     }
 
     private static void ModDebugRender(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {
-        if (!Settings.ShowHitboxes) {
+        if (!TasSettings.ShowHitboxes) {
             orig(self, camera);
             return;
         }
@@ -121,7 +119,7 @@ public static class HitboxOptimized {
     private static void AddHoldableColliderHitbox(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
         orig(self, camera);
 
-        if (!Settings.ShowHitboxes) {
+        if (!TasSettings.ShowHitboxes) {
             return;
         }
 
@@ -164,7 +162,7 @@ public static class HitboxOptimized {
     private static void AddLockBlockColliderHitbox(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
         orig(self, camera);
 
-        if (!Settings.ShowHitboxes) {
+        if (!TasSettings.ShowHitboxes) {
             return;
         }
 
@@ -235,7 +233,7 @@ public static class HitboxOptimized {
     private static void AddSpawnPointHitbox(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
         orig(self, camera);
 
-        if (!Settings.ShowHitboxes || self.Scene is not Level level) {
+        if (!TasSettings.ShowHitboxes || self.Scene is not Level level) {
             return;
         }
 
@@ -245,7 +243,7 @@ public static class HitboxOptimized {
     }
 
     private static void ChangeRespawnTriggerColor(On.Monocle.Hitbox.orig_Render orig, Hitbox self, Camera camera, Color color) {
-        if (!Settings.ShowHitboxes) {
+        if (!TasSettings.ShowHitboxes) {
             orig(self, camera, color);
             return;
         }
@@ -271,7 +269,7 @@ public static class HitboxOptimized {
 
     private static void AddFeatherHitbox(On.Celeste.PlayerCollider.orig_DebugRender orig, PlayerCollider self, Camera camera) {
         orig(self, camera);
-        if (Settings.ShowHitboxes && self.FeatherCollider != null && self.Scene.GetPlayer() is { } player &&
+        if (TasSettings.ShowHitboxes && self.FeatherCollider != null && self.Scene.GetPlayer() is { } player &&
             player.StateMachine.State == Player.StStarFly) {
             Collider collider = self.Entity.Collider;
             self.Entity.Collider = self.FeatherCollider;
@@ -281,7 +279,7 @@ public static class HitboxOptimized {
     }
 
     private static void CircleOnRender(On.Monocle.Circle.orig_Render orig, Circle self, Camera camera, Color color) {
-        if (!Settings.ShowHitboxes) {
+        if (!TasSettings.ShowHitboxes) {
             orig(self, camera, color);
             return;
         }
@@ -294,7 +292,7 @@ public static class HitboxOptimized {
     }
 
     private static void SoundSource_DebugRender(On.Celeste.SoundSource.orig_DebugRender orig, SoundSource self, Camera camera) {
-        if (!Settings.ShowHitboxes) {
+        if (!TasSettings.ShowHitboxes) {
             orig(self, camera);
         }
     }
@@ -308,7 +306,7 @@ public static class HitboxOptimized {
             ilCursor
                 .Emit(OpCodes.Ldarg_0)
                 .EmitDelegate<Func<Color, Entity, Color>>((color, entity) => {
-                    if (!Settings.ShowHitboxes) {
+                    if (!TasSettings.ShowHitboxes) {
                         return color;
                     }
 
@@ -323,7 +321,7 @@ public static class HitboxOptimized {
             ilCursor
                 .Emit(OpCodes.Ldarg_0)
                 .EmitDelegate<Func<Color, Entity, Color>>((color, entity) => {
-                    if (!Settings.ShowHitboxes) {
+                    if (!TasSettings.ShowHitboxes) {
                         return color;
                     }
 
@@ -335,7 +333,7 @@ public static class HitboxOptimized {
     private static void SeekerOnDebugRender(On.Celeste.Seeker.orig_DebugRender orig, Seeker self, Camera camera) {
         orig(self, camera);
 
-        if (!Settings.ShowHitboxes) {
+        if (!TasSettings.ShowHitboxes) {
             return;
         }
 
@@ -366,7 +364,7 @@ public static class HitboxOptimized {
     private static void LevelOnLoadLevel(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader) {
         orig(self, playerIntro, isFromLoader);
 
-        if (Settings.ShowHitboxes && self.Pathfinder is { } pathfinder && PathfinderLastPath(pathfinder) != null) {
+        if (TasSettings.ShowHitboxes && self.Pathfinder is { } pathfinder && PathfinderLastPath(pathfinder) != null) {
             pathfinder.SetFieldValue("lastPath", null);
         }
     }

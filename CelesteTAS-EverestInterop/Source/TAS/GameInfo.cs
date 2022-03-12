@@ -90,8 +90,6 @@ public static class GameInfo {
         CoroutineWaitTimer = waitTimer.CreateGetDelegate<Func<Coroutine, float>>();
     }
 
-    private static CelesteTasSettings TasSettings => CelesteTasModule.Settings;
-
     public static string HudInfo {
         get {
             List<string> infos = new();

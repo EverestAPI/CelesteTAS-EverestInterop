@@ -8,7 +8,6 @@ namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxFixer {
     public static bool DrawingHitboxes { get; set; }
-    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
 
     [Load]
     private static void Load() {
@@ -35,7 +34,7 @@ public static class HitboxFixer {
 
     private static void ModDrawHollowRect(On.Monocle.Draw.orig_HollowRect_float_float_float_float_Color orig, float x, float y, float width,
         float height, Color color) {
-        if (!Settings.ShowHitboxes || !DrawingHitboxes) {
+        if (!TasSettings.ShowHitboxes || !DrawingHitboxes) {
             orig(x, y, width, height, color);
             return;
         }
@@ -56,7 +55,7 @@ public static class HitboxFixer {
         // For similar reasons, we can't just assume the circle has 8-fold symmetry.
         // Modified so that instead of minimizing error, we include exactly those pixels which intersect the circle.
 
-        if (!Settings.ShowHitboxes || !DrawingHitboxes) {
+        if (!TasSettings.ShowHitboxes || !DrawingHitboxes) {
             orig(center, radius, color, resolution);
             return;
         }

@@ -2,13 +2,11 @@
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
-using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD;
 
 public static class InfoSubPixelIndicator {
-    private static CelesteTasSettings TasSettings => CelesteTasModule.Settings;
     private static float PixelScale => Engine.ViewWidth / 320f;
 
     public static void DrawIndicator(float y, float padding, float alpha) {

@@ -18,7 +18,6 @@ public class CelesteTasModule : EverestModule {
     }
 
     public static CelesteTasModule Instance { get; private set; }
-    public static CelesteTasSettings Settings => CelesteTasSettings.Instance;
 
     public override Type SettingsType => typeof(CelesteTasSettings);
 

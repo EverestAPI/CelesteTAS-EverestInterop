@@ -69,7 +69,7 @@ public static class ConsoleCommandHandler {
         Vector2 startPoint = new(-176, 312);
         ilCursor.EmitDelegate<Func<bool>>(() => {
             Session session = Engine.Scene.GetSession();
-            bool skip = CelesteTasModule.Settings.Enabled && (session.GetFlag("campfire_chat") || session.RespawnPoint != startPoint);
+            bool skip = TasSettings.Enabled && (session.GetFlag("campfire_chat") || session.RespawnPoint != startPoint);
             if (skip && Engine.Scene.GetLevel() is { } level && level.GetPlayer() is { } player
                 && level.Entities.FindFirst<NPC06_Theo_Plateau>() is { } theo && level.Tracker.GetEntity<Bonfire>() is { } bonfire) {
                 session.SetFlag("campfire_chat");

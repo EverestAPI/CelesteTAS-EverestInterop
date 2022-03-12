@@ -34,8 +34,6 @@ public static class InfoWatchEntity {
 
     private static readonly List<ILHook> ilHooks = new();
 
-    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
-
     [Load]
     private static void Load() {
         On.Monocle.EntityList.DebugRender += EntityListOnDebugRender;
@@ -103,7 +101,7 @@ public static class InfoWatchEntity {
     }
 
     private static bool IsClickHud() {
-        Rectangle rectangle = new((int) Settings.InfoPosition.X, (int) Settings.InfoPosition.Y, (int) InfoHud.Size.X, (int) InfoHud.Size.Y);
+        Rectangle rectangle = new((int) TasSettings.InfoPosition.X, (int) TasSettings.InfoPosition.Y, (int) InfoHud.Size.X, (int) InfoHud.Size.Y);
         return rectangle.Contains((int) MouseButtons.Position.X, (int) MouseButtons.Position.Y);
     }
 
@@ -302,7 +300,7 @@ public static class InfoWatchEntity {
     private static void EntityListOnDebugRender(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
         orig(self, camera);
 
-        if (Settings.ShowHitboxes) {
+        if (TasSettings.ShowHitboxes) {
             foreach (Entity entity in Engine.Scene.Entities) {
                 if (WatchingEntities.Contains(entity)) {
                     Draw.Point(entity.Position, HitboxColor.EntityColorInversely);
@@ -345,17 +343,17 @@ public static class InfoWatchEntity {
     public static string GetWatchingEntitiesInfo(string separator = "\n", bool alwaysUpdate = false, int? decimals = null) {
         WatchingEntities.Clear();
         string watchingInfo = string.Empty;
-        if (Engine.Scene is not Level level || Settings.InfoWatchEntity == HudOptions.Off && !alwaysUpdate) {
+        if (Engine.Scene is not Level level || TasSettings.InfoWatchEntity == HudOptions.Off && !alwaysUpdate) {
             return string.Empty;
         }
 
-        decimals ??= Settings.CustomInfoDecimals;
+        decimals ??= TasSettings.CustomInfoDecimals;
         if (RequireWatchEntities.IsNotEmpty()) {
             watchingInfo = string.Join(separator, RequireWatchEntities.Where(reference => reference.IsAlive).Select(
                 reference => {
                     Entity entity = (Entity) reference.Target;
                     WatchingEntities.Add(entity);
-                    return GetEntityValues(entity, Settings.InfoWatchEntityType, separator, decimals.Value);
+                    return GetEntityValues(entity, TasSettings.InfoWatchEntityType, separator, decimals.Value);
                 }
             ));
         }
@@ -370,7 +368,7 @@ public static class InfoWatchEntity {
                 watchingInfo += string.Join(separator, matchEntities.Select(pair => {
                     Entity entity = matchEntities[pair.Key];
                     WatchingEntities.Add(entity);
-                    return GetEntityValues(entity, Settings.InfoWatchEntityType, separator, decimals.Value);
+                    return GetEntityValues(entity, TasSettings.InfoWatchEntityType, separator, decimals.Value);
                 }));
             }
         }

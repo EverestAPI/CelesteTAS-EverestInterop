@@ -27,7 +27,7 @@ public static class HitboxNpc {
     private static void EntityOnDebugRender(On.Monocle.Entity.orig_DebugRender orig, Entity entity, Camera camera) {
         orig(entity, camera);
 
-        if (CelesteTasModule.Settings.ShowHitboxes && CelesteTasModule.Settings.ShowTriggerHitboxes && Engine.Scene is Level level) {
+        if (TasSettings.ShowHitboxes && TasSettings.ShowTriggerHitboxes && Engine.Scene is Level level) {
             if (entity.GetEntityData()?.Level?.Name != level.Session.Level) {
                 return;
             }

@@ -19,46 +19,44 @@ public static class HitboxColor {
 
     private static readonly Regex HexChar = new(@"^[0-9a-f]*$", RegexOptions.IgnoreCase);
 
-    public static Color EntityColor => Settings.EntityHitboxColor;
-    public static Color TriggerColor => Settings.TriggerHitboxColor;
-    public static Color PlatformColor => Settings.PlatformHitboxColor;
+    public static Color EntityColor => TasSettings.EntityHitboxColor;
+    public static Color TriggerColor => TasSettings.TriggerHitboxColor;
+    public static Color PlatformColor => TasSettings.PlatformHitboxColor;
     public static Color EntityColorInversely => EntityColor.Invert();
     public static Color EntityColorInverselyLessAlpha => EntityColorInversely * 0.6f;
 
-    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
-
     public static TextMenu.Item CreateEntityHitboxColorButton(TextMenu textMenu, bool inGame) {
-        TextMenu.Item item = new TextMenu.Button("Entity Hitbox Color".ToDialogText() + $": {ColorToHex(Settings.EntityHitboxColor)}").Pressed(
+        TextMenu.Item item = new TextMenu.Button("Entity Hitbox Color".ToDialogText() + $": {ColorToHex(TasSettings.EntityHitboxColor)}").Pressed(
             () => {
                 Audio.Play("event:/ui/main/savefile_rename_start");
                 textMenu.SceneAs<Overworld>().Goto<OuiModOptionString>()
                     .Init<OuiModOptions>(ColorToHex(DefaultEntityColor),
-                        value => Settings.EntityHitboxColor = HexToColor(value, Settings.EntityHitboxColor), 9);
+                        value => TasSettings.EntityHitboxColor = HexToColor(value, TasSettings.EntityHitboxColor), 9);
             });
         item.Disabled = inGame;
         return item;
     }
 
     public static TextMenu.Item CreateTriggerHitboxColorButton(TextMenu textMenu, bool inGame) {
-        TextMenu.Item item = new TextMenu.Button("Trigger Hitbox Color".ToDialogText() + $": {ColorToHex(Settings.TriggerHitboxColor)}").Pressed(
+        TextMenu.Item item = new TextMenu.Button("Trigger Hitbox Color".ToDialogText() + $": {ColorToHex(TasSettings.TriggerHitboxColor)}").Pressed(
             () => {
                 Audio.Play("event:/ui/main/savefile_rename_start");
                 textMenu.SceneAs<Overworld>().Goto<OuiModOptionString>()
                     .Init<OuiModOptions>(ColorToHex(DefaultTriggerColor),
-                        value => Settings.TriggerHitboxColor = HexToColor(value, Settings.TriggerHitboxColor), 9);
+                        value => TasSettings.TriggerHitboxColor = HexToColor(value, TasSettings.TriggerHitboxColor), 9);
             });
         item.Disabled = inGame;
         return item;
     }
 
     public static TextMenu.Item CreatePlatformHitboxColorButton(TextMenu textMenu, bool inGame) {
-        TextMenu.Item item = new TextMenu.Button("Platform Hitbox Color".ToDialogText() + $": {ColorToHex(Settings.PlatformHitboxColor)}")
+        TextMenu.Item item = new TextMenu.Button("Platform Hitbox Color".ToDialogText() + $": {ColorToHex(TasSettings.PlatformHitboxColor)}")
             .Pressed(
                 () => {
                     Audio.Play("event:/ui/main/savefile_rename_start");
                     textMenu.SceneAs<Overworld>().Goto<OuiModOptionString>()
                         .Init<OuiModOptions>(ColorToHex(DefaultPlatformColor),
-                            value => Settings.PlatformHitboxColor = HexToColor(value, Settings.PlatformHitboxColor), 9);
+                            value => TasSettings.PlatformHitboxColor = HexToColor(value, TasSettings.PlatformHitboxColor), 9);
                 });
         item.Disabled = inGame;
         return item;
@@ -133,15 +131,15 @@ public static class HitboxColor {
     }
 
     public static Color GetCustomColor(Color color, Entity entity) {
-        if (!Settings.ShowHitboxes || entity is Player) {
+        if (!TasSettings.ShowHitboxes || entity is Player) {
             return color;
         }
 
-        Color customColor = Settings.EntityHitboxColor;
+        Color customColor = TasSettings.EntityHitboxColor;
         if (entity is Trigger) {
-            customColor = Settings.TriggerHitboxColor;
+            customColor = TasSettings.TriggerHitboxColor;
         } else if (entity is Platform) {
-            customColor = Settings.PlatformHitboxColor;
+            customColor = TasSettings.PlatformHitboxColor;
         }
 
         if (!entity.Collidable) {
@@ -153,19 +151,19 @@ public static class HitboxColor {
 
     [Command("entity_hitbox_color", "change the entity hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000")]
     private static void CmdChangeEntityHitboxColor(string color) {
-        CelesteTasModule.Settings.EntityHitboxColor = HexToColor(color, DefaultEntityColor);
+        TasSettings.EntityHitboxColor = HexToColor(color, DefaultEntityColor);
         CelesteTasModule.Instance.SaveSettings();
     }
 
     [Command("trigger_hitbox_color", "change the trigger hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000")]
     private static void CmdChangeTriggerHitboxColor(string color) {
-        CelesteTasModule.Settings.TriggerHitboxColor = HexToColor(color, DefaultTriggerColor);
+        TasSettings.TriggerHitboxColor = HexToColor(color, DefaultTriggerColor);
         CelesteTasModule.Instance.SaveSettings();
     }
 
     [Command("platform_hitbox_color", "change the platform hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000")]
     private static void CmdChangePlatformHitboxColor(string color) {
-        CelesteTasModule.Settings.PlatformHitboxColor = HexToColor(color, DefaultPlatformColor);
+        TasSettings.PlatformHitboxColor = HexToColor(color, DefaultPlatformColor);
         CelesteTasModule.Instance.SaveSettings();
     }
 }

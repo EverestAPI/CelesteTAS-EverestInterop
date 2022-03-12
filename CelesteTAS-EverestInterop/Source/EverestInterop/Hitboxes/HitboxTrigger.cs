@@ -9,8 +9,6 @@ using TAS.Module;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxTrigger {
-    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
-
     [Load]
     private static void Load() {
         IL.Monocle.Entity.DebugRender += HideHitbox;
@@ -26,7 +24,7 @@ public static class HitboxTrigger {
         Instruction start = ilCursor.Next;
         ilCursor.Emit(OpCodes.Ldarg_0)
             .EmitDelegate<Func<Entity, bool>>(entity =>
-                Settings.ShowHitboxes && !Settings.ShowTriggerHitboxes && entity is Trigger &&
+                TasSettings.ShowHitboxes && !TasSettings.ShowTriggerHitboxes && entity is Trigger &&
                 !InfoWatchEntity.WatchingEntities.Contains(entity));
         ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ret);
     }

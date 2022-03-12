@@ -94,11 +94,11 @@ TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}
             NameValueCollection args = Everest.DebugRC.ParseQueryString(c.Request.RawUrl);
             string template = args["template"];
             if (template != null) {
-                CelesteTasModule.Settings.InfoCustomTemplate = WebUtility.UrlDecode(template).Replace("\\n", "\n");
+                TasSettings.InfoCustomTemplate = WebUtility.UrlDecode(template).Replace("\\n", "\n");
             }
 
             WriteLine(builder, $"<h2>Custom Info Template</h2>");
-            builder.Append($@"<pre>{CelesteTasModule.Settings.InfoCustomTemplate}</pre>");
+            builder.Append($@"<pre>{TasSettings.InfoCustomTemplate}</pre>");
 
             Everest.DebugRC.WriteHTMLEnd(c, builder);
             Everest.DebugRC.Write(c, builder.ToString());

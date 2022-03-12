@@ -20,7 +20,7 @@ public static class HitboxRoomBoundary {
 
     private static void EntityListOnDebugRender(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
         orig(self, camera);
-        if (CelesteTasModule.Settings.ShowHitboxes && CelesteTasModule.Settings.CenterCamera && self.Scene is Level level &&
+        if (TasSettings.ShowHitboxes && TasSettings.CenterCamera && self.Scene is Level level &&
             level.GetPlayer() is { } player) {
             Rectangle bounds = level.Bounds;
             float topExtra = (float) (Math.Floor(player.CenterY - player.Top) + 1);

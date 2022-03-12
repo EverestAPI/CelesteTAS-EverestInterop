@@ -18,7 +18,6 @@ public static partial class ActualEntityCollideHitbox {
     private static bool playerUpdated;
     private static bool dontSaveLastPosition;
     private static bool colliderListRendering;
-    private static CelesteTasSettings Settings => CelesteTasModule.Settings;
 
     [Load]
     private static void Load() {
@@ -43,8 +42,8 @@ public static partial class ActualEntityCollideHitbox {
     }
 
     private static void PlayerOnUpdate(On.Celeste.Player.orig_Update orig, Player self) {
-        dontSaveLastPosition = Manager.UltraFastForwarding || !Settings.ShowHitboxes ||
-                               Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off || playerUpdated;
+        dontSaveLastPosition = Manager.UltraFastForwarding || !TasSettings.ShowHitboxes ||
+                               TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off || playerUpdated;
         orig(self);
         playerUpdated = true;
     }
@@ -96,13 +95,13 @@ public static partial class ActualEntityCollideHitbox {
         Entity entity = self.Entity;
 
         if (Manager.UltraFastForwarding
-            || !Settings.ShowHitboxes
-            || Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off
+            || !TasSettings.ShowHitboxes
+            || TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off
             || colliderListRendering && self is not ColliderList
             || entity.Get<PlayerCollider>() == null
             || entity.Scene?.Tracker.GetEntity<Player>() == null
             || entity.LoadActualCollidePosition() == null
-            || Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Append && entity.Position == entity.LoadActualCollidePosition() &&
+            || TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Append && entity.Position == entity.LoadActualCollidePosition() &&
             entity.Collidable == entity.LoadActualCollidable()
            ) {
             invokeOrig(color);
@@ -110,7 +109,7 @@ public static partial class ActualEntityCollideHitbox {
         }
 
         Color lastFrameColor =
-            Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Append && entity.Position != entity.LoadActualCollidePosition()
+            TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Append && entity.Position != entity.LoadActualCollidePosition()
                 ? color.Invert()
                 : color;
 
@@ -120,7 +119,7 @@ public static partial class ActualEntityCollideHitbox {
             lastFrameColor *= 2f;
         }
 
-        if (Settings.ShowActualCollideHitboxes == ActualCollideHitboxType.Append) {
+        if (TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Append) {
             if (entity.Position == entity.LoadActualCollidePosition()) {
                 invokeOrig(lastFrameColor);
                 return;
