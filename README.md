@@ -44,8 +44,9 @@ e.g. 123,R,J (For 123 frames, hold Right and Jump)
 While in game or in Studio:
 - Start/Stop Playback: RightControl
 - Restart Playback: Equals
-- Fast Forward / Frame Advance Continuously: RightShift
+- Fast Forward / Frame Advance Continuously: RightShift or Controller Right Analog Stick
 - Fast Forward to Next Comment: RightAlt + RightShift
+- Slow Forward: \
 - Pause / Frame Advance: [
 - Pause / Resume: ]
 - Toggle Hitboxes: LeftControl + B
@@ -67,7 +68,7 @@ While in game or in Studio:
 - You can create a breakpoint in the input file by typing `***` by itself on a single line
 - The program when played back from the start will fast forward until it reaches that line and then go into frame stepping mode
 - `***S` will make a [savestate](#savestate), which can reduce TAS playback time. 
-- You can specify the speed with `***X`, where `X` is the speedup factor. e.g. `***10` will go at 10x speed
+- You can specify the speed with `***X`, where `X` is the speedup factor. e.g. `***10` will go at 10x speed, `***0.5` will go at half speed.
 
 ### Commands
 - Various commands exist to facilitate TAS
@@ -123,5 +124,5 @@ The contents of the curly brackets will be converted to actual data, here are so
 4. Run Celeste directly or run the windows version of celeste via wine `env WINEPREFIX=$HOME/winedotnet wine "Celeste.exe"`. If the error `X Error of failed request: GLXBadFBConfig` is reported when running celeste via wine, then you need to run `export MESA_GL_VERSION_OVERRIDE=4.5` first and then rerun the wine command.
 
 ## Other Useful Tools
-- [Radeline](https://github.com/Kataiser/radeline): Chaos monkey that optimizes a Celeste TAS by randomly (or sequentially) changing inputs.
 - [Featherline](https://github.com/tntfalle/featherline): Genetic algorithm for analog feather movement in Celeste.
+- [Radeline](https://github.com/Kataiser/radeline): Chaos monkey that optimizes a Celeste TAS by randomly (or sequentially) changing inputs.
