@@ -17,7 +17,6 @@ public class InputController {
     private static string studioTasFilePath = string.Empty;
 
     public readonly SortedDictionary<int, List<Command>> Commands = new();
-    public readonly List<Command> ExecuteAtStartCommands = new();
     public readonly SortedDictionary<int, FastForward> FastForwards = new();
     public readonly SortedDictionary<int, FastForward> FastForwardComments = new();
     public readonly List<InputFrame> Inputs = new();
@@ -113,10 +112,6 @@ public class InputController {
 
             CurrentFrameInTas = Math.Min(Inputs.Count, CurrentFrameInTas);
         }
-
-        if (enableRun) {
-            ExecuteAtStartCommands.ForEach(command => command.Invoke());
-        }
     }
 
     public void Stop() {
@@ -134,7 +129,6 @@ public class InputController {
         FastForwards.Clear();
         FastForwardComments.Clear();
         Commands.Clear();
-        ExecuteAtStartCommands.Clear();
         UsedFiles.Clear();
         AnalogHelper.AnalogModeChange(AnalogueMode.Ignore);
         RepeatCommand.Clear();
@@ -259,7 +253,6 @@ public class InputController {
         clone.Inputs.AddRange(Inputs);
         clone.FastForwards.AddRange((IDictionary) FastForwards);
         clone.FastForwardComments.AddRange((IDictionary) FastForwardComments);
-        clone.ExecuteAtStartCommands.AddRange(ExecuteAtStartCommands);
         foreach (int frame in Commands.Keys) {
             clone.Commands[frame] = new List<Command>(Commands[frame]);
         }
