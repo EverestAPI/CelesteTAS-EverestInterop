@@ -18,7 +18,7 @@ public static class LibTasHelper {
         exporting = true;
     }
 
-    public static void RestartExport() {
+    public static void TryRestartExport() {
         if (exporting) {
             StartExport(fileName);
         }

@@ -105,13 +105,10 @@ public class InputController {
                     }
 
                     break;
+                } else {
+                    System.Threading.Thread.Sleep(50);
+                    tryCount--;
                 }
-
-                // read file failed, rewrite the libtas inputs file.
-                LibTasHelper.RestartExport();
-
-                System.Threading.Thread.Sleep(50);
-                tryCount--;
             }
 
             CurrentFrameInTas = Math.Min(Inputs.Count, CurrentFrameInTas);
@@ -142,6 +139,7 @@ public class InputController {
         AnalogHelper.AnalogModeChange(AnalogueMode.Ignore);
         RepeatCommand.Clear();
         InputCommands.ClearReadCommandStack();
+        LibTasHelper.TryRestartExport();
     }
 
     private void ParseFileEnd() {
