@@ -34,6 +34,22 @@ public static class HitboxSimplified {
         typeof(Trapdoor)
     };
 
+    private static readonly HashSet<string> UselessTypeNames = new() {
+        "ExtendedVariants.Entities.DashCountIndicator",
+        "ExtendedVariants.Entities.JumpIndicator",
+        "ExtendedVariants.Entities.Speedometer",
+        "Celeste.Mod.JungleHelper.Entities.Firefly"
+    };
+
+    [Initialize]
+    private static void Initialize() {
+        foreach (Type type in ModUtils.GetTypes()) {
+            if (type.FullName is { } fullName && UselessTypeNames.Contains(fullName) && !UselessTypes.Contains(type)) {
+                UselessTypes.Add(type);
+            }
+        }
+    }
+
     [Load]
     private static void Load() {
         IL.Monocle.Entity.DebugRender += HideHitbox;
@@ -62,12 +78,6 @@ public static class HitboxSimplified {
 
                 if (entity is ClutterBlockBase) {
                     return !entity.Collidable;
-                }
-
-                if (type.FullName is "ExtendedVariants.Entities.DashCountIndicator"
-                    or "ExtendedVariants.Entities.JumpIndicator"
-                    or "ExtendedVariants.Entities.Speedometer") {
-                    return true;
                 }
 
                 if (type.FullName == "Celeste.Mod.JungleHelper.Entities.Gecko" && false == GeckoHostile.Value?.Invoke(entity)) {
