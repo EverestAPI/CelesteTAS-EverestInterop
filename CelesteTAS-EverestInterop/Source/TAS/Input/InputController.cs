@@ -150,7 +150,8 @@ public class InputController {
     }
 
     public void AdvanceFrame(out bool canPlayback) {
-        if (!Manager.UltraFastForwarding) {
+        // only refresh inputs when non playback/fast forward
+        if (Manager.LastStates != States.Enable || Manager.States != States.Enable || Manager.NextStates != States.None) {
             RefreshInputs(false);
         }
 
