@@ -13,6 +13,10 @@ public static class HotReloadHelper {
     [Load]
     private static void Load() {
         EverestModuleMetadata meta = CelesteTasModule.Instance.Metadata;
+        if (meta.PathDirectory.IsNullOrEmpty()) {
+            return;
+        }
+
         try {
             watcher = new FileSystemWatcher {
                 Path = Path.GetDirectoryName(meta.DLL),
