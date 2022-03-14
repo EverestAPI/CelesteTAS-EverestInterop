@@ -115,11 +115,9 @@ public static class MetadataCommands {
             allLines[lineNumber] = updateLines[lineNumber];
         }
 
+        bool needsReload = Manager.Controller.NeedsReload;
         File.WriteAllLines(tasFilePath, allLines);
-        if (inputController.UsedFiles.ContainsKey(tasFilePath)) {
-            inputController.UsedFiles[tasFilePath] = File.GetLastWriteTime(tasFilePath);
-        }
-
+        Manager.Controller.NeedsReload = needsReload;
         StudioCommunicationClient.Instance?.UpdateLines(updateLines);
     }
 }

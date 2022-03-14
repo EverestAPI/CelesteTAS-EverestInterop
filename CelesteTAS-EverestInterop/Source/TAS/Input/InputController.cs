@@ -14,13 +14,14 @@ using TAS.Utils;
 namespace TAS.Input;
 
 public class InputController {
+    private static readonly ConcurrentDictionary<string, FileSystemWatcher> watchers = new();
     private static string studioTasFilePath = string.Empty;
 
     public readonly SortedDictionary<int, List<Command>> Commands = new();
     public readonly SortedDictionary<int, FastForward> FastForwards = new();
     public readonly SortedDictionary<int, FastForward> FastForwardComments = new();
     public readonly List<InputFrame> Inputs = new();
-    public readonly ConcurrentDictionary<string, DateTime> UsedFiles = new();
+    private readonly ConcurrentDictionary<string, byte> UsedFiles = new();
 
     private string checksum;
     private int initializationFrameCount;
@@ -67,7 +68,7 @@ public class InputController {
     public FastForward CurrentFastForward => FastForwards.GetValueOrDefault(CurrentFrameInTas);
     private FastForward lastFastForward;
     public List<Command> CurrentCommands => Commands.GetValueOrDefault(CurrentFrameInTas);
-    private bool NeedsReload => UsedFiles.IsEmpty() || UsedFiles.Any(file => File.GetLastWriteTime(file.Key) != file.Value);
+    public bool NeedsReload = true;
     public bool CanPlayback => CurrentFrameInTas < Inputs.Count;
     public bool NeedsToWait => Manager.IsLoading();
 
@@ -98,6 +99,7 @@ public class InputController {
             while (tryCount > 0) {
                 Clear();
                 if (ReadFile(TasFilePath)) {
+                    NeedsReload = false;
                     ParseFileEnd();
                     if (!firstRun && lastChecksum != Checksum) {
                         MetadataCommands.UpdateRecordCount(this);
@@ -130,22 +132,77 @@ public class InputController {
         FastForwardComments.Clear();
         Commands.Clear();
         UsedFiles.Clear();
+        NeedsReload = true;
         AnalogHelper.AnalogModeChange(AnalogueMode.Ignore);
         RepeatCommand.Clear();
         InputCommands.ClearReadCommandStack();
+        StopWatchers();
         LibTasHelper.TryRestartExport();
     }
 
+    private void StartWatchers() {
+        foreach (KeyValuePair<string, byte> pair in UsedFiles) {
+            string filePath = Path.GetFullPath(pair.Key);
+            // watch tas file
+            CreateWatcher(filePath);
+
+            // watch parent folder, since watched folder's change is not detected
+            while (filePath != null && Directory.GetParent(filePath) != null) {
+                CreateWatcher(Path.GetDirectoryName(filePath));
+                filePath = Directory.GetParent(filePath)?.FullName;
+            }
+        }
+
+        void CreateWatcher(string filePath) {
+            if (watchers.ContainsKey(filePath)) {
+                return;
+            }
+
+            FileSystemWatcher watcher;
+            if (File.GetAttributes(filePath).HasFlag(FileAttributes.Directory)) {
+                if (Directory.GetParent(filePath) is { } parentDir) {
+                    watcher = new FileSystemWatcher();
+                    watcher.Path = parentDir.FullName;
+                    watcher.Filter = new DirectoryInfo(filePath).Name;
+                    watcher.NotifyFilter = NotifyFilters.DirectoryName;
+                } else {
+                    return;
+                }
+            } else {
+                watcher = new FileSystemWatcher();
+                watcher.Path = Path.GetDirectoryName(filePath);
+                watcher.Filter = Path.GetFileName(filePath);
+            }
+
+            watcher.Changed += OnTasFileChanged;
+            watcher.Created += OnTasFileChanged;
+            watcher.Deleted += OnTasFileChanged;
+            watcher.Renamed += OnTasFileChanged;
+            watcher.EnableRaisingEvents = true;
+            watchers[filePath] = watcher;
+        }
+
+        void OnTasFileChanged(object sender, FileSystemEventArgs e) {
+            NeedsReload = true;
+        }
+    }
+
+    private void StopWatchers() {
+        foreach (FileSystemWatcher fileSystemWatcher in watchers.Values) {
+            fileSystemWatcher.Dispose();
+        }
+
+        watchers.Clear();
+    }
+
     private void ParseFileEnd() {
+        StartWatchers();
         LibTasHelper.FinishExport();
         lastFastForward = FastForwards.Values.LastOrDefault();
     }
 
     public void AdvanceFrame(out bool canPlayback) {
-        // only refresh inputs when non playback/fast forward
-        if (Manager.LastStates != States.Enable || Manager.States != States.Enable || Manager.NextStates != States.None) {
-            RefreshInputs(false);
-        }
+        RefreshInputs(false);
 
         canPlayback = CanPlayback;
 
@@ -186,7 +243,7 @@ public class InputController {
                 return false;
             }
 
-            UsedFiles[filePath] = File.GetLastWriteTime(filePath);
+            UsedFiles[filePath] = default;
             IEnumerable<string> lines = File.ReadLines(filePath).Take(endLine);
             ReadLines(lines, filePath, startLine, studioLine, repeatIndex, repeatCount);
             return true;
@@ -257,6 +314,7 @@ public class InputController {
             clone.Commands[frame] = new List<Command>(Commands[frame]);
         }
 
+        clone.NeedsReload = NeedsReload;
         clone.UsedFiles.AddRange((IDictionary) UsedFiles);
         clone.CurrentFrameInTas = CurrentFrameInTas;
         clone.CurrentFrameInInput = CurrentFrameInInput;
@@ -310,17 +368,18 @@ public class InputController {
 
     public string CalcChecksum(InputController controller) => CalcChecksum(controller.CurrentFrameInTas);
 
+    // ReSharper disable once UnusedMember.Local
+    [Load]
+    private static void RestoreStudioTasFilePath() {
+        studioTasFilePath = Engine.Instance.GetDynamicDataInstance().Get<string>(nameof(studioTasFilePath));
+    }
+
     // for hot loading
     // ReSharper disable once UnusedMember.Local
     [Unload]
     private static void SaveStudioTasFilePath() {
         Engine.Instance.GetDynamicDataInstance().Set(nameof(studioTasFilePath), studioTasFilePath);
-    }
-
-    // ReSharper disable once UnusedMember.Local
-    [Load]
-    private static void RestoreStudioTasFilePath() {
-        studioTasFilePath = Engine.Instance.GetDynamicDataInstance().Get<string>(nameof(studioTasFilePath));
+        Manager.Controller.StopWatchers();
     }
 
     #region ignore
