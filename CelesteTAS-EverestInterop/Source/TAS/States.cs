@@ -3,7 +3,7 @@ using System;
 namespace TAS;
 
 [Flags]
-public enum States {
+public enum States : byte {
     None = 0,
     Enable = 1,
     Record = 2,
