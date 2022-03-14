@@ -12,6 +12,7 @@ namespace TAS.Utils;
 internal static class LogUtil {
     private const string Tag = "CelesteTAS";
 
+#if DEBUG
     // ReSharper disable once UnusedMember.Global
     public static void DebugLog(this object text, LogLevel logLevel = LogLevel.Verbose) {
         text.DebugLog(false, logLevel);
@@ -19,10 +20,9 @@ internal static class LogUtil {
 
     // ReSharper disable once MemberCanBePrivate.Global
     public static void DebugLog(this object text, bool outputToCommands, LogLevel logLevel = LogLevel.Verbose) {
-#if DEBUG
         text.Log(outputToCommands, logLevel);
-#endif
     }
+#endif
 
     public static void LogException(this Exception e, string header, LogLevel logLevel = LogLevel.Warn) {
         header.Log(logLevel);

@@ -237,7 +237,6 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
             path = path.Substring(2, path.Length - 2).Replace("\\", "/");
         }
 
-        $"Studio TAS File Path: {path}".DebugLog();
         InputController.StudioTasFilePath = path;
     }
 
@@ -250,7 +249,6 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
 
     private void ProcessConvertToLibTas(byte[] data) {
         string path = Encoding.Default.GetString(data);
-        $"Convert to libTAS: {path}".DebugLog();
         LibTasHelper.ConvertToLibTas(path);
     }
 
@@ -262,8 +260,6 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         if (settingName.IsNullOrEmpty()) {
             return;
         }
-
-        $"Toggle game setting: {settingName}".DebugLog();
 
         bool modified = false;
 
