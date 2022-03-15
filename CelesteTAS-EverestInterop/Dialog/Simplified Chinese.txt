@@ -95,7 +95,6 @@ TAS_IGNORE_GC_COLLECT_DESCRIPTION_1= 加快多个章节长度TAS的快进
 TAS_IGNORE_GC_COLLECT_DESCRIPTION_2= 不过会增加内存使用量并可能造成内存不足异常
 TAS_LAUNCH_STUDIO_AT_BOOT=           启动游戏时打开 Studio
 TAS_EXTRACT_NEW_STUDIO_AT_BOOT=      启动游戏时解压新版 Studio
-TAS_DISABLE_ACHIEVEMENTS=            禁止解锁成就
 TAS_MOD_9D_LIGHTING=                 修改 9D 亮度
 
 # ================================== Hotkey Config ==================================

@@ -288,7 +288,6 @@ public class CelesteTasSettings : EverestModuleSettings {
     public bool IgnoreGcCollect { get; set; } = true;
     public bool LaunchStudioAtBoot { get; set; } = false;
     public bool ExtractNewStudioAtBoot { get; set; } = true;
-    public bool DisableAchievements { get; set; } = false;
     public bool Mod9DLighting { get; set; } = false;
 
     #endregion

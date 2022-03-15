@@ -36,7 +36,7 @@ public static class DisableAchievements {
     }
 
     private static void Achievements_Register(On.Celeste.Achievements.orig_Register orig, Achievement achievement) {
-        if (TasSettings.Enabled && TasSettings.DisableAchievements) {
+        if (Manager.Running) {
             return;
         }
 
@@ -44,7 +44,7 @@ public static class DisableAchievements {
     }
 
     private static void Stats_Increment(On.Celeste.Stats.orig_Increment orig, Stat stat, int increment) {
-        if (TasSettings.Enabled && TasSettings.DisableAchievements) {
+        if (Manager.Running) {
             return;
         }
 
