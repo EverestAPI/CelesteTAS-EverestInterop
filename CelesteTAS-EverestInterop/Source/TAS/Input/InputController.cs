@@ -178,7 +178,15 @@ public class InputController {
             watcher.Created += OnTasFileChanged;
             watcher.Deleted += OnTasFileChanged;
             watcher.Renamed += OnTasFileChanged;
-            watcher.EnableRaisingEvents = true;
+
+            try {
+                watcher.EnableRaisingEvents = true;
+            } catch (Exception e) {
+                e.LogException($"Failed watching folder: {watcher.Path}, filter: {watcher.Filter}");
+                watcher.Dispose();
+                return;
+            }
+
             watchers[filePath] = watcher;
         }
 
