@@ -16,7 +16,6 @@ namespace TAS.EverestInterop;
 public static class FastForwardBoost {
     private static bool UltraFastForwarding => Manager.UltraFastForwarding;
     private static readonly List<ILHook> IlHooks = new();
-    private static bool ignoredGc;
     private static Process celesteProcess;
 
     [Initialize]
@@ -157,7 +156,7 @@ public static class FastForwardBoost {
         if (ilCursor.TryGotoNext(ins => ins.MatchCall(typeof(GC), "Collect"),
                 ins => ins.MatchCall(typeof(GC), "WaitForPendingFinalizers"))) {
             Instruction afterGc = ilCursor.Next.Next.Next;
-            ilCursor.EmitDelegate<Func<bool>>(() => {
+            ilCursor.EmitDelegate(() => {
                 bool result = !Environment.Is64BitProcess && TasSettings.IgnoreGcCollect && UltraFastForwarding;
                 if (celesteProcess == null && result) {
                     celesteProcess = Process.GetCurrentProcess();
@@ -169,10 +168,6 @@ public static class FastForwardBoost {
                     if (celesteProcess.PrivateMemorySize64 > 1024L * 1024L * 1024L * 2.5) {
                         result = false;
                     }
-                }
-
-                if (!ignoredGc && result) {
-                    ignoredGc = true;
                 }
 
                 return result;
@@ -191,12 +186,6 @@ public static class FastForwardBoost {
         if (celesteProcess != null) {
             celesteProcess.Dispose();
             celesteProcess = null;
-        }
-
-        if (ignoredGc) {
-            ignoredGc = false;
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
         }
     }
 }
