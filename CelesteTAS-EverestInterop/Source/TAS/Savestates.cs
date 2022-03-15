@@ -15,6 +15,7 @@ using TasStates = TAS.States;
 namespace TAS;
 
 public static class Savestates {
+    private static SaveLoadAction saveLoadAction;
     private static InputController savedController;
 
     private static readonly Dictionary<FieldInfo, object> SavedGameInfo = new() {
@@ -214,11 +215,35 @@ public static class Savestates {
         SendStateToStudio();
     }
 
-    // ReSharper disable once UnusedMember.Local
+    [Load]
+    private static void OnLoad() {
+        if (SpeedrunToolInstalled) {
+            AddSaveLoadAction();
+        }
+    }
+
     [Unload]
-    private static void ClearStateWhenHotReload() {
+    private static void OnUnload() {
         if (IsSaved_Safe()) {
             Clear();
+        }
+
+        if (SpeedrunToolInstalled) {
+            ClearSaveLoadAction();
+        }
+    }
+
+    private static void AddSaveLoadAction() {
+        saveLoadAction = new SaveLoadAction(
+            (_, _) => EntityExtensions.OnSave(),
+            (_, _) => EntityExtensions.OnLoad(),
+            EntityExtensions.OnClear);
+        SaveLoadAction.Add(saveLoadAction);
+    }
+
+    private static void ClearSaveLoadAction() {
+        if (saveLoadAction != null) {
+            SaveLoadAction.Remove(saveLoadAction);
         }
     }
 }
