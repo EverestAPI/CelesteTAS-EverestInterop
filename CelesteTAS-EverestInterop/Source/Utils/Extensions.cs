@@ -416,12 +416,14 @@ internal static class EntityExtensions {
     private static Dictionary<Entity, EntityData> savedEntityData = new();
 
     public static void SetEntityData(this Entity entity, EntityData data) {
-        cachedEntityData.Remove(entity);
-        cachedEntityData.Add(entity, data);
+        if (entity != null) {
+            cachedEntityData.Remove(entity);
+            cachedEntityData.Add(entity, data);
+        }
     }
 
     public static EntityData GetEntityData(this Entity entity) {
-        return cachedEntityData.TryGetValue(entity, out EntityData data) ? data : null;
+        return entity != null && cachedEntityData.TryGetValue(entity, out EntityData data) ? data : null;
     }
 
     public static void OnSave() {
