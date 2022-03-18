@@ -162,7 +162,7 @@ public static class InfoWatchEntity {
         });
     }
 
-    private static void ClearWatchEntities() {
+    public static void ClearWatchEntities() {
         LastClickedEntity.SetTarget(null);
         RequireWatchEntities.Clear();
         RequireWatchUniqueEntityIds.Clear();

@@ -266,8 +266,8 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         switch (settingName) {
             case "Copy Custom Info Template to Clipboard":
                 TextInput.SetClipboardText(string.IsNullOrEmpty(TasSettings.InfoCustomTemplate) ? "\0" : TasSettings.InfoCustomTemplate);
-                modified = true;
-                break;
+                ReturnData(string.Empty);
+                return;
             case "Set Custom Info Template From Clipboard":
                 TasSettings.InfoCustomTemplate = TextInput.GetClipboardText();
                 GameInfo.Update();
@@ -278,6 +278,11 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
                 GameInfo.Update();
                 modified = true;
                 break;
+            case "Clear Watch Entity Info":
+                InfoWatchEntity.ClearWatchEntities();
+                GameInfo.Update();
+                ReturnData(string.Empty);
+                return;
         }
 
         if (modified) {

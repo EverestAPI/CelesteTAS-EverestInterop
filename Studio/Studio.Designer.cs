@@ -35,6 +35,7 @@ namespace CelesteStudio {
             this.copyCustomInfoTemplateToClipboardToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.setCustomInfoTemplateFromClipboardToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.clearCustomInfoTemplateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator20 = new System.Windows.Forms.ToolStripSeparator();
             this.menuStrip = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.newFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -142,6 +143,7 @@ namespace CelesteStudio {
             this.statusPanel = new System.Windows.Forms.Panel();
             this.statusBar = new System.Windows.Forms.StatusStrip();
             this.lblStatus = new System.Windows.Forms.ToolStripStatusLabel();
+            this.clearWatchEntityInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusBarContextMenuStrip.SuspendLayout();
             this.menuStrip.SuspendLayout();
             this.tasTextContextMenuStrip.SuspendLayout();
@@ -161,9 +163,9 @@ namespace CelesteStudio {
             // 
             // statusBarContextMenuStrip
             // 
-            this.statusBarContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.copyGameDataMenuItem, this.reconnectStudioAndCelesteToolStripMenuItem, this.toolStripSeparator11, this.copyCustomInfoTemplateToClipboardToolStripMenuItem, this.setCustomInfoTemplateFromClipboardToolStripMenuItem, this.clearCustomInfoTemplateToolStripMenuItem});
+            this.statusBarContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.copyGameDataMenuItem, this.reconnectStudioAndCelesteToolStripMenuItem, this.toolStripSeparator11, this.copyCustomInfoTemplateToClipboardToolStripMenuItem, this.setCustomInfoTemplateFromClipboardToolStripMenuItem, this.clearCustomInfoTemplateToolStripMenuItem, this.toolStripSeparator20, this.clearWatchEntityInfoToolStripMenuItem});
             this.statusBarContextMenuStrip.Name = "statusBarMenuStrip";
-            this.statusBarContextMenuStrip.Size = new System.Drawing.Size(399, 130);
+            this.statusBarContextMenuStrip.Size = new System.Drawing.Size(399, 182);
             // 
             // copyGameDataMenuItem
             // 
@@ -206,6 +208,11 @@ namespace CelesteStudio {
             this.clearCustomInfoTemplateToolStripMenuItem.Size = new System.Drawing.Size(398, 24);
             this.clearCustomInfoTemplateToolStripMenuItem.Text = "Clear Custom Info Template";
             this.clearCustomInfoTemplateToolStripMenuItem.Click += new System.EventHandler(this.clearCustomInfoTemplateToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator20
+            // 
+            this.toolStripSeparator20.Name = "toolStripSeparator20";
+            this.toolStripSeparator20.Size = new System.Drawing.Size(395, 6);
             // 
             // menuStrip
             // 
@@ -1005,6 +1012,13 @@ namespace CelesteStudio {
             this.lblStatus.Text = "Searching...";
             this.lblStatus.TextAlign = System.Drawing.ContentAlignment.TopLeft;
             // 
+            // clearWatchEntityInfoToolStripMenuItem
+            // 
+            this.clearWatchEntityInfoToolStripMenuItem.Name = "clearWatchEntityInfoToolStripMenuItem";
+            this.clearWatchEntityInfoToolStripMenuItem.Size = new System.Drawing.Size(398, 24);
+            this.clearWatchEntityInfoToolStripMenuItem.Text = "Clear Watch Entity Info";
+            this.clearWatchEntityInfoToolStripMenuItem.Click += new System.EventHandler(this.clearWatchEntityInfoToolStripMenuItem_Click);
+            // 
             // Studio
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
@@ -1037,6 +1051,9 @@ namespace CelesteStudio {
             this.ResumeLayout(false);
             this.PerformLayout();
         }
+
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator20;
+        private System.Windows.Forms.ToolStripMenuItem clearWatchEntityInfoToolStripMenuItem;
 
         private System.Windows.Forms.ToolStripMenuItem fastForwardSpeedToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem slowForwardSpeedToolStripMenuItem;

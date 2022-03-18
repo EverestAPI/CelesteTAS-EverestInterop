@@ -1687,6 +1687,10 @@ public partial class Studio : BaseForm {
         ToggleGameSetting("Clear Custom Info Template", null, sender);
     }
 
+    private void clearWatchEntityInfoToolStripMenuItem_Click(object sender, EventArgs e) {
+        ToggleGameSetting("Clear Watch Entity Info", null, sender);
+    }
+
     private void enabledAutoBackupToolStripMenuItem_Click(object sender, EventArgs e) {
         Settings.Default.AutoBackupEnabled = !Settings.Default.AutoBackupEnabled;
         SaveSettings();
