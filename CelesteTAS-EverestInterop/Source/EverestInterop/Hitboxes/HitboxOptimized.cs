@@ -27,6 +27,21 @@ public static class HitboxOptimized {
     private static Func<Solid> bgModeToggleBgSolidTiles;
     private static readonly Dictionary<LevelData, bool> ExistBgModeToggle = new();
 
+    [Initialize]
+    private static void Initialize() {
+        // remove the yellow points hitboxes added by "Madeline in Wonderland"
+        if (ModUtils.GetType("Celeste.Mod.TomorrowHelper.TomorrowHelperModule")?.GetMethodInfo("ModDebugRender") is { } methodInfo) {
+            methodInfo.IlHook((cursor, context) => {
+                if (cursor.TryGotoNext(MoveType.After, ins => ins.OpCode == OpCodes.Callvirt)) {
+                    Instruction cursorNext = cursor.Next;
+                    cursor.EmitDelegate(() => TasSettings.ShowHitboxes);
+                    cursor.Emit(OpCodes.Brfalse, cursorNext).Emit(OpCodes.Ret);
+                }
+            });
+        }
+    }
+
+
     [Load]
     private static void Load() {
         On.Monocle.Entity.DebugRender += ModDebugRender;

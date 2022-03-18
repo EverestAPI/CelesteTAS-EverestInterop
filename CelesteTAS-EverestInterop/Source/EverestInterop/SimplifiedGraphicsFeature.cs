@@ -160,12 +160,12 @@ public static class SimplifiedGraphicsFeature {
         IL.Celeste.BloomRenderer.Apply += BloomRendererOnApply;
         On.Celeste.Decal.Render += Decal_Render;
 
-        SkipMethod(() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedParticle,
+        HookHelper.SkipMethod(() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedParticle,
             typeof(ParticleSystem).GetMethod("Render", new Type[] { }),
             typeof(ParticleSystem).GetMethod("Render", new[] {typeof(float)})
         );
-        SkipMethod(() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedDistort, "Apply", typeof(Glitch));
-        SkipMethod(() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedMiniTextbox, "Render", typeof(MiniTextbox));
+        HookHelper.SkipMethod(() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedDistort, "Apply", typeof(Glitch));
+        HookHelper.SkipMethod(() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedMiniTextbox, "Render", typeof(MiniTextbox));
 
         IL.Celeste.Distort.Render += DistortOnRender;
         On.Celeste.SolidTiles.ctor += SolidTilesOnCtor;
@@ -177,33 +177,33 @@ public static class SimplifiedGraphicsFeature {
         IL.Celeste.LightningRenderer.Render += LightningRenderer_RenderIL;
 
         bool SimplifiedWavedBlock() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedWavedEdge;
-        ReturnZeroMethod(SimplifiedWavedBlock,
+        HookHelper.ReturnZeroMethod(SimplifiedWavedBlock,
             typeof(DreamBlock).GetMethodInfo("Lerp"),
             typeof(LavaRect).GetMethodInfo("Wave")
         );
-        ReturnZeroMethod(
+        HookHelper.ReturnZeroMethod(
             SimplifiedWavedBlock,
             ModUtils.GetTypes().Where(type => type.FullName?.EndsWith("Renderer+Edge") == true)
                 .Select(type => type.GetMethodInfo("GetWaveAt")).ToArray()
         );
         On.Celeste.LightningRenderer.Bolt.Render += BoltOnRender;
 
-        SkipMethod(() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedScreenWipe, "Render",
+        HookHelper.SkipMethod(() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedScreenWipe, "Render",
             typeof(SpotlightWipe), typeof(FadeWipe)
         );
 
         On.Celeste.Audio.Play_string += AudioOnPlay_string;
-        SkipMethod(() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedLightningStrike, "Render",
+        HookHelper.SkipMethod(() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedLightningStrike, "Render",
             typeof(LightningStrike),
             ModUtils.GetType("ContortHelper.BetterLightningStrike")
         );
 
-        SkipMethod(() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedClutteredEntity, "Render",
+        HookHelper.SkipMethod(() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedClutteredEntity, "Render",
             typeof(ReflectionTentacles), typeof(SummitCloud), typeof(TempleEye), typeof(Wire),
             typeof(DustGraphic).GetNestedType("Eyeballs", BindingFlags.NonPublic)
         );
 
-        SkipMethod(
+        HookHelper.SkipMethod(
             () => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedHud ||
                   TasSettings.CenterCamera && Math.Abs(CenterCamera.LevelZoom - 1f) > 1e-3,
             "Render",
@@ -238,39 +238,6 @@ public static class SimplifiedGraphicsFeature {
 
         IlHooks.ForEach(hook => hook.Dispose());
         IlHooks.Clear();
-    }
-
-    private static void SkipMethod(Func<bool> condition, string methodName, params Type[] types) {
-        foreach (Type type in types) {
-            if (type?.GetMethodInfo(methodName) is { } method) {
-                SkipMethod(condition, method);
-            }
-        }
-    }
-
-    private static void SkipMethod(Func<bool> condition, params MethodInfo[] methodInfos) {
-        foreach (MethodInfo methodInfo in methodInfos) {
-            IlHooks.Add(new ILHook(methodInfo, il => {
-                ILCursor ilCursor = new(il);
-                Instruction start = ilCursor.Next;
-                ilCursor.EmitDelegate(condition);
-                ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ret);
-            }));
-        }
-    }
-
-    private static void ReturnZeroMethod(Func<bool> condition, params MethodInfo[] methods) {
-        foreach (MethodInfo methodInfo in methods) {
-            if (methodInfo != null && !methodInfo.IsGenericMethod && methodInfo.DeclaringType?.IsGenericType != true &&
-                methodInfo.ReturnType == typeof(float)) {
-                IlHooks.Add(new ILHook(methodInfo, il => {
-                    ILCursor ilCursor = new(il);
-                    Instruction start = ilCursor.Next;
-                    ilCursor.EmitDelegate(condition);
-                    ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ldc_R4, 0f).Emit(OpCodes.Ret);
-                }));
-            }
-        }
     }
 
     private static void OnSimplifiedGraphicsChanged(bool simplifiedGraphics) {
