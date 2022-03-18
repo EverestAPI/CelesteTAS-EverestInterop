@@ -235,9 +235,9 @@ public static class Savestates {
 
     private static void AddSaveLoadAction() {
         saveLoadAction = new SaveLoadAction(
-            (_, _) => EntityExtensions.OnSave(),
-            (_, _) => EntityExtensions.OnLoad(),
-            EntityExtensions.OnClear);
+            (_, _) => EntityDataHelper.OnSave(),
+            (_, _) => EntityDataHelper.OnLoad(),
+            EntityDataHelper.OnClear);
         SaveLoadAction.Add(saveLoadAction);
     }
 

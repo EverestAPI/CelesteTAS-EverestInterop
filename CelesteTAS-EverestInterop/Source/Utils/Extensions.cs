@@ -6,11 +6,9 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Celeste;
-using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.Utils;
-using TAS.Module;
 
 namespace TAS.Utils;
 
@@ -412,60 +410,6 @@ internal static class DynamicDataExtensions {
 }
 
 internal static class EntityExtensions {
-    private static Dictionary<Entity, EntityData> cachedEntityData = new();
-    private static Dictionary<Entity, EntityData> savedEntityData = new();
-
-    public static void SetEntityData(this Entity entity, EntityData data) {
-        if (entity != null) {
-            cachedEntityData.Remove(entity);
-            cachedEntityData.Add(entity, data);
-        }
-    }
-
-    public static EntityData GetEntityData(this Entity entity) {
-        return entity != null && cachedEntityData.TryGetValue(entity, out EntityData data) ? data : null;
-    }
-
-    public static void OnSave() {
-        savedEntityData = cachedEntityData.DeepCloneShared();
-    }
-
-    public static void OnLoad() {
-        cachedEntityData = savedEntityData.DeepCloneShared();
-    }
-
-    public static void OnClear() {
-        savedEntityData.Clear();
-    }
-
-    [Load]
-    private static void Load() {
-        On.Celeste.Level.End += LevelOnEnd;
-        On.Monocle.Entity.Removed += EntityOnRemoved;
-    }
-
-    [Unload]
-    private static void Unload() {
-        On.Celeste.Level.End -= LevelOnEnd;
-        On.Monocle.Entity.Removed -= EntityOnRemoved;
-    }
-
-    private static void LevelOnEnd(On.Celeste.Level.orig_End orig, Level self) {
-        orig(self);
-        if (self.Entities.IsEmpty()) {
-            cachedEntityData.Clear();
-        }
-    }
-
-    private static void EntityOnRemoved(On.Monocle.Entity.orig_Removed orig, Entity self, Scene scene) {
-        orig(self, scene);
-        cachedEntityData.Remove(self);
-    }
-
-    public static EntityID ToEntityId(this EntityData entityData) {
-        return new(entityData.Level.Name, entityData.ID);
-    }
-
     public static float DistanceSquared(this Entity entity, Entity otherEntity) {
         return Vector2.DistanceSquared(entity.Center, otherEntity.Center);
     }
