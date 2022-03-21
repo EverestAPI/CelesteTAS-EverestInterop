@@ -26,16 +26,16 @@ public static class Hotkeys {
     private static FieldInfo bindingFieldInfo;
 
     private static readonly Lazy<FieldInfo> CelesteNetClientModuleInstance = new(() =>
-        Type.GetType("Celeste.Mod.CelesteNet.Client.CelesteNetClientModule, CelesteNet.Client")?.GetFieldInfo("Instance"));
+        ModUtils.GetType("CelesteNet.Client", "Celeste.Mod.CelesteNet.Client.CelesteNetClientModule")?.GetFieldInfo("Instance"));
 
     private static readonly Lazy<FieldInfo> CelesteNetClientModuleContext = new(() =>
-        Type.GetType("Celeste.Mod.CelesteNet.Client.CelesteNetClientModule, CelesteNet.Client")?.GetFieldInfo("Context"));
+        ModUtils.GetType("CelesteNet.Client", "Celeste.Mod.CelesteNet.Client.CelesteNetClientModule")?.GetFieldInfo("Context"));
 
     private static readonly Lazy<FieldInfo> CelesteNetClientContextChat = new(() =>
-        Type.GetType("Celeste.Mod.CelesteNet.Client.CelesteNetClientContext, CelesteNet.Client")?.GetFieldInfo("Chat"));
+        ModUtils.GetType("CelesteNet.Client", "Celeste.Mod.CelesteNet.Client.CelesteNetClientContext")?.GetFieldInfo("Chat"));
 
     private static readonly Lazy<PropertyInfo> CelesteNetChatComponentActive = new(() =>
-        Type.GetType("Celeste.Mod.CelesteNet.Client.Components.CelesteNetChatComponent, CelesteNet.Client")?.GetPropertyInfo("Active"));
+        ModUtils.GetType("CelesteNet.Client", "Celeste.Mod.CelesteNet.Client.Components.CelesteNetChatComponent")?.GetPropertyInfo("Active"));
 
     private static KeyboardState kbState;
     private static GamePadState padState;

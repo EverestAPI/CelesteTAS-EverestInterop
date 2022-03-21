@@ -30,7 +30,8 @@ public static class HitboxOptimized {
     [Initialize]
     private static void Initialize() {
         // remove the yellow points hitboxes added by "Madeline in Wonderland"
-        if (ModUtils.GetType("Celeste.Mod.TomorrowHelper.TomorrowHelperModule")?.GetMethodInfo("ModDebugRender") is { } methodInfo) {
+        if (ModUtils.GetType("Madeline in Wonderland", "Celeste.Mod.TomorrowHelper.TomorrowHelperModule")?.GetMethodInfo("ModDebugRender") is
+            { } methodInfo) {
             methodInfo.IlHook((cursor, context) => {
                 if (cursor.TryGotoNext(MoveType.After, ins => ins.OpCode == OpCodes.Callvirt)) {
                     Instruction cursorNext = cursor.Next;
@@ -56,7 +57,8 @@ public static class HitboxOptimized {
         IL.Celeste.Seeker.DebugRender += SeekerOnDebugRender;
         On.Celeste.Seeker.DebugRender += SeekerOnDebugRender;
         On.Celeste.Level.LoadLevel += LevelOnLoadLevel;
-        bgModeToggleBgSolidTiles = ModUtils.GetType("Celeste.BGModeToggle")?.GetFieldInfo("bgSolidTiles")?.CreateGetDelegate<Func<Solid>>();
+        bgModeToggleBgSolidTiles =
+            ModUtils.GetType("BGswitch", "Celeste.BGModeToggle")?.GetFieldInfo("bgSolidTiles")?.CreateGetDelegate<Func<Solid>>();
     }
 
     [Unload]

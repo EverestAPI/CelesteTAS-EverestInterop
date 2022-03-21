@@ -131,20 +131,20 @@ public static class SimplifiedGraphicsFeature {
         // Optional: Various graphical simplifications to cut down on visual noise.
         On.Celeste.Level.Update += Level_Update;
 
-        if (ModUtils.GetType("FrostHelper.CustomSpinner") is { } customSpinnerType) {
+        if (ModUtils.GetType("FrostHelper", "FrostHelper.CustomSpinner") is { } customSpinnerType) {
             foreach (ConstructorInfo constructorInfo in customSpinnerType.GetConstructors()) {
                 IlHooks.Add(new ILHook(constructorInfo, ModCustomSpinnerColor));
             }
         }
 
-        if (ModUtils.GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController") is
+        if (ModUtils.GetType("MaxHelpingHand", "Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController") is
             { } rainbowSpinnerType) {
             foreach (ConstructorInfo constructorInfo in rainbowSpinnerType.GetConstructors()) {
                 IlHooks.Add(new ILHook(constructorInfo, ModRainbowSpinnerColor));
             }
         }
 
-        if (ModUtils.GetType("VivHelper.Entities.CustomSpinner")?.GetMethodInfo("CreateSprites") is
+        if (ModUtils.GetType("VivHelper", "VivHelper.Entities.CustomSpinner")?.GetMethodInfo("CreateSprites") is
             { } customSpinnerCreateSprites) {
             IlHooks.Add(new ILHook(customSpinnerCreateSprites, ModVivCustomSpinnerColor));
         }
@@ -195,7 +195,7 @@ public static class SimplifiedGraphicsFeature {
         On.Celeste.Audio.Play_string += AudioOnPlay_string;
         HookHelper.SkipMethod(() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedLightningStrike, "Render",
             typeof(LightningStrike),
-            ModUtils.GetType("ContortHelper.BetterLightningStrike")
+            ModUtils.GetType("ContortHelper", "ContortHelper.BetterLightningStrike")
         );
 
         HookHelper.SkipMethod(() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedClutteredEntity, "Render",
@@ -536,7 +536,7 @@ public static class SimplifiedGraphicsFeature {
         }
 
         ILCursor ilCursor = new(il);
-        if (Type.GetType("Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController, MaxHelpingHand") is { } rainbowSpinnerType &&
+        if (ModUtils.GetType("MaxHelpingHand", "Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController") is { } rainbowSpinnerType &&
             rainbowSpinnerType.GetFieldInfo("colors") is { } colorsFieldInfo) {
             while (ilCursor.TryGotoNext(i => i.MatchRet())) {
                 ilCursor.Emit(OpCodes.Ldarg_0).Emit(OpCodes.Ldfld, colorsFieldInfo);
@@ -568,14 +568,14 @@ public static class SimplifiedGraphicsFeature {
         ilCursor.EmitDelegate<Func<bool>>(() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedSpinnerColor.Value != null);
         ilCursor.Emit(OpCodes.Brfalse, start);
 
-        Type type = ModUtils.GetType("VivHelper.Entities.CustomSpinner");
+        Type type = ModUtils.GetType("VivHelper", "VivHelper.Entities.CustomSpinner");
         if (type.GetFieldInfo("color") is { } colorField) {
-            ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Func<Color>>(() => TasSettings.SimplifiedSpinnerColor.Color);
+            ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate(() => TasSettings.SimplifiedSpinnerColor.Color);
             ilCursor.Emit(OpCodes.Stfld, colorField);
         }
 
         if (type.GetFieldInfo("borderColor") is { } borderColorField) {
-            ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Func<Color>>(() => Color.Transparent);
+            ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate(() => Color.Transparent);
             ilCursor.Emit(OpCodes.Stfld, borderColorField);
         }
     }

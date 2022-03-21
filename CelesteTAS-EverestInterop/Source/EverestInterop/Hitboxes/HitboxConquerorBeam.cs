@@ -12,7 +12,7 @@ public static class HitboxConquerorBeam {
 
     [Initialize]
     private static void Initialize() {
-        conquerorBeamType = ModUtils.GetType("Celeste.Mod.ricky06ModPack.Entities.ConquerorBeam");
+        conquerorBeamType = ModUtils.GetType("Conqueror's Peak", "Celeste.Mod.ricky06ModPack.Entities.ConquerorBeam");
 
         if (conquerorBeamType != null) {
             On.Monocle.Entity.DebugRender += ModHitbox;

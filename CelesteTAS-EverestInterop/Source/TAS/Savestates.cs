@@ -38,9 +38,7 @@ public static class Savestates {
     private static bool savedByBreakpoint;
     private static string savedTasFilePath;
 
-    private static readonly Lazy<bool> SpeedrunToolInstalledLazy = new(() =>
-        Type.GetType("Celeste.Mod.SpeedrunTool.SaveLoad.StateManager, SpeedrunTool") != null
-    );
+    private static readonly Lazy<bool> SpeedrunToolInstalledLazy = new(() => ModUtils.IsInstalled("SpeedrunTool"));
 
     private static int SavedLine =>
         (savedByBreakpoint

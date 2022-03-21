@@ -6,7 +6,7 @@ using Celeste.Mod;
 
 namespace TAS.Utils;
 
-public static class AttributeUtils {
+internal static class AttributeUtils {
     private static readonly object[] Parameterless = { };
     private static readonly IDictionary<Type, IEnumerable<MethodInfo>> MethodInfos = new Dictionary<Type, IEnumerable<MethodInfo>>();
 

@@ -17,7 +17,7 @@ public static class HitboxSimplified {
     private static readonly Func<Strawberry, bool> StrawberryCollected = FastReflection.CreateGetDelegate<Strawberry, bool>("collected");
 
     private static readonly Lazy<Func<object, bool>> GeckoHostile = new(() =>
-        Type.GetType("Celeste.Mod.JungleHelper.Entities.Gecko, JungleHelper")?.CreateGetDelegate<object, bool>("hostile"));
+        ModUtils.GetType("JungleHelper", "Celeste.Mod.JungleHelper.Entities.Gecko")?.CreateGetDelegate<object, bool>("hostile"));
 
     private static readonly HashSet<Type> UselessTypes = new() {
         typeof(ClutterBlock),

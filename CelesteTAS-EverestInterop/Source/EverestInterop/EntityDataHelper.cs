@@ -209,7 +209,7 @@ public static class EntityDataHelper {
                 i => i.OpCode == OpCodes.Callvirt && i.Operand.ToString() == "System.Void Monocle.Scene::Add(Monocle.Entity)")) {
             cursor.Emit(OpCodes.Dup).Emit(OpCodes.Ldarg_0);
             if (il.ToString().Contains("ldfld Celeste.SeekerStatue Celeste.SeekerStatue/<>c__DisplayClass3_0::<>4__this")
-                && Type.GetType("Celeste.SeekerStatue+<>c__DisplayClass3_0, Celeste")?.GetFieldInfo("<>4__this") is { } seekerStatue
+                && ModUtils.VanillaAssembly.GetType("Celeste.SeekerStatue+<>c__DisplayClass3_0")?.GetFieldInfo("<>4__this") is { } seekerStatue
                ) {
                 cursor.Emit(OpCodes.Ldfld, seekerStatue);
             }

@@ -20,8 +20,7 @@ public static class FastForwardBoost {
 
     [Initialize]
     private static void Initialize() {
-        if (ModUtils.GetType("Celeste.Mod.IsaGrabBag.DreamSpinnerBorder")?.GetMethodInfo("Update") is
-            { } updateMethod) {
+        if (ModUtils.GetType("IsaGrabBag", "Celeste.Mod.IsaGrabBag.DreamSpinnerBorder")?.GetMethodInfo("Update") is { } updateMethod) {
             IlHooks.Add(new ILHook(updateMethod, SkipUpdateMethod));
         }
     }

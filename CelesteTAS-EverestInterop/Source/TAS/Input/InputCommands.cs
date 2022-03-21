@@ -21,9 +21,9 @@ public static class InputCommands {
     private static readonly Regex SpaceRegex = new(@"\s+", RegexOptions.Compiled);
 
     private static readonly Lazy<PropertyInfo> GunInputCursorPosition =
-        new(() => Type.GetType("Guneline.GunInput, Guneline")?.GetProperty("CursorPosition"));
+        new(() => ModUtils.GetType("Guneline", "Guneline.GunInput")?.GetProperty("CursorPosition"));
 
-    private static readonly Lazy<MethodInfo> GunlineGunshot = new(() => Type.GetType("Guneline.Guneline, Guneline")?.GetMethod("Gunshot"));
+    private static readonly Lazy<MethodInfo> GunlineGunshot = new(() => ModUtils.GetType("Guneline", "Guneline.Guneline")?.GetMethod("Gunshot"));
 
     private static string[] Split(string line) {
         string trimLine = line.Trim();

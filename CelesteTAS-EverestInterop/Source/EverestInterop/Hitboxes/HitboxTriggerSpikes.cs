@@ -37,7 +37,7 @@ public static class HitboxTriggerSpikes {
 
     [Initialize]
     private static void Initialize() {
-        groupedTriggerSpikesType = ModUtils.GetType("Celeste.Mod.MaxHelpingHand.Entities.GroupedTriggerSpikes");
+        groupedTriggerSpikesType = ModUtils.GetType("MaxHelpingHand", "Celeste.Mod.MaxHelpingHand.Entities.GroupedTriggerSpikes");
         groupedTriggerSpikesTriggered = groupedTriggerSpikesType?.CreateGetDelegate<object, bool>("Triggered");
         groupedTriggerSpikesLerp = groupedTriggerSpikesType?.CreateGetDelegate<object, float>("Lerp");
         if (groupedTriggerSpikesType != null && groupedTriggerSpikesTriggered != null && groupedTriggerSpikesLerp != null) {
