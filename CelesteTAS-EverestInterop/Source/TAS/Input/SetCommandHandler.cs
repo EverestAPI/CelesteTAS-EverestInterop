@@ -16,6 +16,16 @@ namespace TAS.Input;
 public static class SetCommandHandler {
     private static readonly FieldInfo ActorMovementCounter = typeof(Actor).GetFieldInfo("movementCounter");
     private static readonly FieldInfo InputFeather = typeof(Celeste.Input).GetFieldInfo("Feather");
+    private static bool consolePrintLog;
+
+    [Monocle.Command("set", "Set settings/level/session/entity field. eg set DashMode Infinite; set Player Speed 325 -52.5 (CelesteTAS)")]
+    private static void SetCommand(string arg1, string arg2, string arg3, string arg4, string arg5, string arg6, string arg7, string arg8,
+        string arg9) {
+        string[] args = {arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9};
+        consolePrintLog = true;
+        SetCommand(args.TakeWhile(arg => arg != null).ToArray());
+        consolePrintLog = false;
+    }
 
     // Set, Setting, Value
     // Set, Mod.Setting, Value
@@ -25,6 +35,8 @@ public static class SetCommandHandler {
         if (args.Length < 2) {
             return;
         }
+
+        args = args.Select(s => s is "null" or "\"\"" ? string.Empty : s).ToArray();
 
         try {
             if (args[0].Contains(".")) {
@@ -37,13 +49,13 @@ public static class SetCommandHandler {
                     && InfoCustom.TryParseType(typeText, out Type type, out string entityId, out errorMessage)) {
                     FindObjectAndSetMember(type, entityId, memberNames, parameters);
                 } else {
-                    errorMessage.Log();
+                    errorMessage.Log(consolePrintLog);
                 }
             } else {
                 SetGameSetting(args);
             }
         } catch (Exception e) {
-            e.Log();
+            e.Log(consolePrintLog);
         }
     }
 
@@ -121,12 +133,12 @@ public static class SetCommandHandler {
         } else {
             obj = FindObject(type, entityId);
             if (obj == null) {
-                $"Set Command Failed: {type.FullName}{entityId} object is not found".Log(LogLevel.Warn);
+                $"Set Command Failed: {type.FullName}{entityId} object is not found".Log(consolePrintLog, LogLevel.Warn);
                 return;
             } else {
                 if (type.IsSameOrSubclassOf(typeof(Entity)) && obj is List<Entity> entities) {
                     if (entities.IsEmpty()) {
-                        $"Set Command Failed: {type.FullName}{entityId} entity is not found".Log(LogLevel.Warn);
+                        $"Set Command Failed: {type.FullName}{entityId} entity is not found".Log(consolePrintLog, LogLevel.Warn);
                         return;
                     } else {
                         List<object> memberValues = new();
@@ -187,10 +199,10 @@ public static class SetCommandHandler {
 
         bool TryOutputErrorLog() {
             if (obj == null) {
-                $"Set Command Failed: {type.FullName} member value is null".Log(LogLevel.Warn);
+                $"Set Command Failed: {type.FullName} member value is null".Log(consolePrintLog, LogLevel.Warn);
                 return true;
             } else if (obj is string errorMsg && errorMsg.EndsWith(" not found")) {
-                $"Set Command Failed: {errorMsg}".Log(LogLevel.Warn);
+                $"Set Command Failed: {errorMsg}".Log(consolePrintLog, LogLevel.Warn);
                 return true;
             }
 
@@ -234,7 +246,7 @@ public static class SetCommandHandler {
                 }
             }
         } else {
-            $"Set Command Failed: {objType.FullName}.{lastMemberName} member not found".Log(LogLevel.Warn);
+            $"Set Command Failed: {objType.FullName}.{lastMemberName} member not found".Log(consolePrintLog, LogLevel.Warn);
             return false;
         }
 

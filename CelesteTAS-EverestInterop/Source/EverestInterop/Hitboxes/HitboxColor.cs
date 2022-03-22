@@ -149,19 +149,19 @@ public static class HitboxColor {
         return customColor;
     }
 
-    [Command("entity_hitbox_color", "change the entity hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000")]
+    [Command("entity_hitbox_color", "change the entity hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000 (CelesteTAS)")]
     private static void CmdChangeEntityHitboxColor(string color) {
         TasSettings.EntityHitboxColor = HexToColor(color, DefaultEntityColor);
         CelesteTasModule.Instance.SaveSettings();
     }
 
-    [Command("trigger_hitbox_color", "change the trigger hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000")]
+    [Command("trigger_hitbox_color", "change the trigger hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000 (CelesteTAS)")]
     private static void CmdChangeTriggerHitboxColor(string color) {
         TasSettings.TriggerHitboxColor = HexToColor(color, DefaultTriggerColor);
         CelesteTasModule.Instance.SaveSettings();
     }
 
-    [Command("platform_hitbox_color", "change the platform hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000")]
+    [Command("platform_hitbox_color", "change the platform hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000 (CelesteTAS)")]
     private static void CmdChangePlatformHitboxColor(string color) {
         TasSettings.PlatformHitboxColor = HexToColor(color, DefaultPlatformColor);
         CelesteTasModule.Instance.SaveSettings();
