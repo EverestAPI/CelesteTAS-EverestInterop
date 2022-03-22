@@ -5,9 +5,8 @@ using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using TAS.Module;
-using TAS.Utils;
 
-namespace TAS.EverestInterop;
+namespace TAS.Utils;
 
 public static class HookHelper {
     private static readonly List<IDetour> Hooks = new();
@@ -21,11 +20,15 @@ public static class HookHelper {
         Hooks.Clear();
     }
 
+    public static void IlHook(this MethodBase from, ILContext.Manipulator manipulator) {
+        Hooks.Add(new ILHook(from, manipulator));
+    }
+
     public static void IlHook(this MethodBase from, Action<ILCursor, ILContext> manipulator) {
-        Hooks.Add(new ILHook(from, il => {
+        from.IlHook(il => {
             ILCursor ilCursor = new(il);
             manipulator(ilCursor, il);
-        }));
+        });
     }
 
     public static void SkipMethod(Func<bool> condition, string methodName, params Type[] types) {
@@ -38,12 +41,12 @@ public static class HookHelper {
 
     public static void SkipMethod(Func<bool> condition, params MethodInfo[] methodInfos) {
         foreach (MethodInfo methodInfo in methodInfos) {
-            Hooks.Add(new ILHook(methodInfo, il => {
+            methodInfo.IlHook(il => {
                 ILCursor ilCursor = new(il);
                 Instruction start = ilCursor.Next;
                 ilCursor.EmitDelegate(condition);
                 ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ret);
-            }));
+            });
         }
     }
 
@@ -51,12 +54,12 @@ public static class HookHelper {
         foreach (MethodInfo methodInfo in methods) {
             if (methodInfo != null && !methodInfo.IsGenericMethod && methodInfo.DeclaringType?.IsGenericType != true &&
                 methodInfo.ReturnType == typeof(float)) {
-                Hooks.Add(new ILHook(methodInfo, il => {
+                methodInfo.IlHook(il => {
                     ILCursor ilCursor = new(il);
                     Instruction start = ilCursor.Next;
                     ilCursor.EmitDelegate(condition);
                     ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ldc_R4, 0f).Emit(OpCodes.Ret);
-                }));
+                });
             }
         }
     }

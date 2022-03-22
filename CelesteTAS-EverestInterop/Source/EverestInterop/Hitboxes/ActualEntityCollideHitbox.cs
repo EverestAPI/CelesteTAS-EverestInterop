@@ -6,8 +6,8 @@ using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
-using MonoMod.RuntimeDetour;
 using TAS.Module;
+using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes;
 
@@ -21,7 +21,7 @@ public static partial class ActualEntityCollideHitbox {
 
     [Load]
     private static void Load() {
-        ilHookPlayerOrigUpdate = new ILHook(typeof(Player).GetMethod("orig_Update"), ModPlayerOrigUpdateEntity);
+        typeof(Player).GetMethod("orig_Update").IlHook(ModPlayerOrigUpdateEntity);
         On.Celeste.Player.Update += PlayerOnUpdate;
         On.Monocle.Hitbox.Render += HitboxOnRenderEntity;
         On.Monocle.Circle.Render += CircleOnRender;
@@ -32,7 +32,6 @@ public static partial class ActualEntityCollideHitbox {
 
     [Unload]
     private static void Unload() {
-        ilHookPlayerOrigUpdate?.Dispose();
         On.Celeste.Player.Update -= PlayerOnUpdate;
         On.Monocle.Hitbox.Render -= HitboxOnRenderEntity;
         On.Monocle.Circle.Render -= CircleOnRender;

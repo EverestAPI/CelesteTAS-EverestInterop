@@ -4,7 +4,6 @@ using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
-using MonoMod.RuntimeDetour;
 using TAS.Module;
 using TAS.Utils;
 
@@ -16,18 +15,16 @@ public static partial class ActualEntityCollideHitbox {
 
     private static readonly Color HitboxColor = Color.Red.Invert();
     private static readonly Color HurtboxColor = Color.Lime.Invert();
-    private static ILHook ilHookPlayerOrigUpdate;
 
     [Load]
     private static void LoadPlayerHook() {
         On.Celeste.Player.DebugRender += PlayerOnDebugRender;
-        ilHookPlayerOrigUpdate = new ILHook(typeof(Player).GetMethod("orig_Update"), ModPlayerOrigUpdate);
+        typeof(Player).GetMethod("orig_Update").IlHook(ModPlayerOrigUpdate);
     }
 
     [Unload]
     private static void UnloadPlayerHook() {
         On.Celeste.Player.DebugRender -= PlayerOnDebugRender;
-        ilHookPlayerOrigUpdate?.Dispose();
     }
 
     private static void ModPlayerOrigUpdate(ILContext il) {

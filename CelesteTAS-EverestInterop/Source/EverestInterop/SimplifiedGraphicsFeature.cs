@@ -12,7 +12,6 @@ using Microsoft.Xna.Framework.Graphics;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
-using MonoMod.RuntimeDetour;
 using TAS.Module;
 using TAS.Utils;
 
@@ -36,7 +35,6 @@ public static class SimplifiedGraphicsFeature {
 
     private static readonly FieldInfo SpinnerColorField = typeof(CrystalStaticSpinner).GetFieldInfo("color");
     private static readonly FieldInfo DecalInfoCustomProperties = typeof(DecalRegistry.DecalInfo).GetFieldInfo("CustomProperties");
-    private static readonly List<ILHook> IlHooks = new();
 
     private static bool lastSimplifiedGraphics = TasSettings.SimplifiedGraphics;
     private static SolidTilesStyle currentSolidTilesStyle;
@@ -133,20 +131,20 @@ public static class SimplifiedGraphicsFeature {
 
         if (ModUtils.GetType("FrostHelper", "FrostHelper.CustomSpinner") is { } customSpinnerType) {
             foreach (ConstructorInfo constructorInfo in customSpinnerType.GetConstructors()) {
-                IlHooks.Add(new ILHook(constructorInfo, ModCustomSpinnerColor));
+                constructorInfo.IlHook(ModCustomSpinnerColor);
             }
         }
 
         if (ModUtils.GetType("MaxHelpingHand", "Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController") is
             { } rainbowSpinnerType) {
             foreach (ConstructorInfo constructorInfo in rainbowSpinnerType.GetConstructors()) {
-                IlHooks.Add(new ILHook(constructorInfo, ModRainbowSpinnerColor));
+                constructorInfo.IlHook(ModRainbowSpinnerColor);
             }
         }
 
         if (ModUtils.GetType("VivHelper", "VivHelper.Entities.CustomSpinner")?.GetMethodInfo("CreateSprites") is
             { } customSpinnerCreateSprites) {
-            IlHooks.Add(new ILHook(customSpinnerCreateSprites, ModVivCustomSpinnerColor));
+            customSpinnerCreateSprites.IlHook(ModVivCustomSpinnerColor);
         }
 
         On.Celeste.CrystalStaticSpinner.CreateSprites += CrystalStaticSpinner_CreateSprites;
@@ -235,9 +233,6 @@ public static class SimplifiedGraphicsFeature {
         IL.Celeste.LightningRenderer.Render -= LightningRenderer_RenderIL;
         On.Celeste.Audio.Play_string -= AudioOnPlay_string;
         On.Celeste.Spikes.ctor_Vector2_int_Directions_string -= SpikesOnCtor_Vector2_int_Directions_string;
-
-        IlHooks.ForEach(hook => hook.Dispose());
-        IlHooks.Clear();
     }
 
     private static void OnSimplifiedGraphicsChanged(bool simplifiedGraphics) {

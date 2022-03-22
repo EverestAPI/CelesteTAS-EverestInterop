@@ -7,7 +7,6 @@ using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
-using MonoMod.RuntimeDetour;
 using TAS.Module;
 using TAS.Utils;
 
@@ -15,13 +14,12 @@ namespace TAS.EverestInterop;
 
 public static class FastForwardBoost {
     private static bool UltraFastForwarding => Manager.UltraFastForwarding;
-    private static readonly List<ILHook> IlHooks = new();
     private static Process celesteProcess;
 
     [Initialize]
     private static void Initialize() {
         if (ModUtils.GetType("IsaGrabBag", "Celeste.Mod.IsaGrabBag.DreamSpinnerBorder")?.GetMethodInfo("Update") is { } updateMethod) {
-            IlHooks.Add(new ILHook(updateMethod, SkipUpdateMethod));
+            updateMethod.IlHook(SkipUpdateMethod);
         }
     }
 
@@ -69,8 +67,6 @@ public static class FastForwardBoost {
         IL.Monocle.Engine.OnSceneTransition -= IgnoreGcCollect;
         IL.Celeste.Level.Reload -= IgnoreGcCollect;
         On.Monocle.Engine.Update -= EngineOnUpdate;
-        IlHooks.ForEach(hook => hook.Dispose());
-        IlHooks.Clear();
     }
 
 #pragma warning disable CS0612

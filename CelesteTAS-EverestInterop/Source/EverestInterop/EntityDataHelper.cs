@@ -8,7 +8,6 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
-using MonoMod.RuntimeDetour;
 using TAS.Module;
 using TAS.Utils;
 
@@ -17,7 +16,6 @@ namespace TAS.EverestInterop;
 public static class EntityDataHelper {
     private static Dictionary<Entity, EntityData> cachedEntityData = new();
     private static Dictionary<Entity, EntityData> savedEntityData = new();
-    private static readonly List<ILHook> ilHooks = new();
 
     [Load]
     private static void Load() {
@@ -27,7 +25,7 @@ public static class EntityDataHelper {
         IL.Celeste.Level.LoadCustomEntity += ModLoadCustomEntity;
         On.Celeste.Level.End += LevelOnEnd;
         On.Monocle.Entity.Removed += EntityOnRemoved;
-        ilHooks.Add(new ILHook(typeof(Level).GetMethod("orig_LoadLevel"), ModOrigLoadLevel));
+        typeof(Level).GetMethod("orig_LoadLevel").IlHook(ModOrigLoadLevel);
     }
 
     [LoadContent]
@@ -52,7 +50,7 @@ public static class EntityDataHelper {
         foreach (string typeName in typeMethodNames.Keys) {
             foreach (string methodName in typeMethodNames[typeName]) {
                 if (Type.GetType(typeName)?.GetMethodInfo(methodName) is { } methodInfo) {
-                    ilHooks.Add(new ILHook(methodInfo, ModSpawnEntity));
+                    methodInfo.IlHook(ModSpawnEntity);
                 }
             }
         }
@@ -66,8 +64,6 @@ public static class EntityDataHelper {
         IL.Celeste.Level.LoadCustomEntity -= ModLoadCustomEntity;
         On.Celeste.Level.End -= LevelOnEnd;
         On.Monocle.Entity.Removed -= EntityOnRemoved;
-        ilHooks.ForEach(hook => hook.Dispose());
-        ilHooks.Clear();
     }
 
     private static void SetEntityData(this Entity entity, EntityData data) {

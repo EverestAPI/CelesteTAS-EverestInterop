@@ -10,7 +10,6 @@ using Microsoft.Xna.Framework.Input;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
-using MonoMod.RuntimeDetour;
 using StudioCommunication;
 using TAS.Communication;
 using TAS.Module;
@@ -22,7 +21,6 @@ using Camera = TAS.EverestInterop.CenterCamera;
 namespace TAS.EverestInterop;
 
 public static class Hotkeys {
-    private static readonly List<IDetour> Detours = new();
     private static FieldInfo bindingFieldInfo;
 
     private static readonly Lazy<FieldInfo> CelesteNetClientModuleInstance = new(() =>
@@ -237,14 +235,14 @@ public static class Hotkeys {
            ) {
             // Celeste v1.4: before Everest drop support v1.3.1.2
             if (typeV2.GetMethodInfo("Reset") is { } resetMethodV2) {
-                Detours.Add(new ILHook(resetMethodV2, ModReload));
+                resetMethodV2.IlHook(ModReload);
             }
         } else if (configUiType.GetMethodInfo("Reset") is { } resetMethod) {
             // Celeste v1.4: after Everest drop support v1.3.1.2
-            Detours.Add(new ILHook(resetMethod, ModReload));
+            resetMethod.IlHook(ModReload);
         } else if (configUiType.GetMethodInfo("<Reload>b__6_0") is { } reloadMethod) {
             // Celeste v1.3
-            Detours.Add(new ILHook(reloadMethod, ModReload));
+            reloadMethod.IlHook(ModReload);
         }
     }
 #pragma warning restore CS0612
@@ -252,12 +250,6 @@ public static class Hotkeys {
     [Unload]
     private static void Unload() {
         On.Celeste.Input.Initialize -= InputOnInitialize;
-
-        foreach (IDetour detour in Detours) {
-            detour.Dispose();
-        }
-
-        Detours.Clear();
     }
 
     private static void InputOnInitialize(On.Celeste.Input.orig_Initialize orig) {

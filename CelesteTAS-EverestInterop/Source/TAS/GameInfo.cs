@@ -9,7 +9,6 @@ using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
-using MonoMod.RuntimeDetour;
 using MonoMod.Utils;
 using StudioCommunication;
 using TAS.EverestInterop.InfoHUD;
@@ -36,8 +35,6 @@ public static class GameInfo {
     private static readonly Func<Level, float> LevelUnpauseTimer;
     private static readonly Func<StateMachine, Coroutine> StateMachineCurrentCoroutine;
     private static readonly Func<Coroutine, float> CoroutineWaitTimer;
-
-    private static ILHook dashCoroutineIlHook;
 
     public static string Status = string.Empty;
     public static string StatusWithoutTime = string.Empty;
@@ -165,7 +162,7 @@ public static class GameInfo {
         On.Monocle.Scene.AfterUpdate += SceneOnAfterUpdate;
         Everest.Events.Level.OnTransitionTo += LevelOnOnTransitionTo;
         On.Celeste.Level.Update += LevelOnUpdate;
-        dashCoroutineIlHook = new ILHook(typeof(Player).GetMethodInfo("DashCoroutine").GetStateMachineTarget(), PlayerOnDashCoroutine);
+        typeof(Player).GetMethodInfo("DashCoroutine").GetStateMachineTarget().IlHook(PlayerOnDashCoroutine);
     }
 
     [Unload]
@@ -174,8 +171,6 @@ public static class GameInfo {
         On.Monocle.Scene.AfterUpdate -= SceneOnAfterUpdate;
         Everest.Events.Level.OnTransitionTo -= LevelOnOnTransitionTo;
         On.Celeste.Level.Update -= LevelOnUpdate;
-        dashCoroutineIlHook?.Dispose();
-        dashCoroutineIlHook = null;
     }
 
     private static void PlayerOnDashCoroutine(ILContext il) {
