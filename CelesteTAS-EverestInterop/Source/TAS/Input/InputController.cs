@@ -95,20 +95,25 @@ public class InputController {
         string lastChecksum = Checksum;
         bool firstRun = UsedFiles.IsEmpty();
         if (NeedsReload) {
+            Clear();
             int tryCount = 5;
             while (tryCount > 0) {
-                Clear();
                 if (ReadFile(TasFilePath)) {
-                    NeedsReload = false;
-                    ParseFileEnd();
-                    if (!firstRun && lastChecksum != Checksum) {
-                        MetadataCommands.UpdateRecordCount(this);
+                    if (Manager.Running) {
+                        NeedsReload = false;
+                        ParseFileEnd();
+                        if (!firstRun && lastChecksum != Checksum) {
+                            MetadataCommands.UpdateRecordCount(this);
+                        }
+                    } else {
+                        Clear();
                     }
 
                     break;
                 } else {
                     System.Threading.Thread.Sleep(50);
                     tryCount--;
+                    Clear();
                 }
             }
 

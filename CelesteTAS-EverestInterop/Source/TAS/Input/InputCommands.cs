@@ -110,11 +110,11 @@ public static class InputCommands {
         }
 
         if (!File.Exists(filePath)) {
-            Toast.Show($"\"Read, {string.Join(", ", args)}\" failed\nFile not found");
+            ToastAndLog($"\"Read, {string.Join(", ", args)}\" failed\nFile not found");
             Manager.DisableRun(true);
             return;
         } else if (Path.GetFullPath(filePath) == Path.GetFullPath(currentFilePath)) {
-            Toast.Show($"\"Read, {string.Join(", ", args)}\" failed\nDo not allow reading the file itself");
+            ToastAndLog($"\"Read, {string.Join(", ", args)}\" failed\nDo not allow reading the file itself");
             Manager.DisableRun(true);
             return;
         }
@@ -141,6 +141,11 @@ public static class InputCommands {
         Manager.Controller.ReadFile(filePath, startLine, endLine, studioLine);
         if (readCommandStack.Count > 0) {
             readCommandStack.RemoveAt(readCommandStack.Count - 1);
+        }
+
+        void ToastAndLog(string text) {
+            Toast.Show(text);
+            text.Log();
         }
 
         void FindTheFile() {
