@@ -44,7 +44,7 @@ public static class InfoCustom {
         decimals ??= TasSettings.CustomInfoDecimals;
         Dictionary<string, List<Entity>> cachedEntities = new();
 
-        return ParseTemplate(TasSettings.InfoCustomTemplate, decimals, cachedEntities, false);
+        return ParseTemplate(TasSettings.InfoCustomTemplate, decimals.Value, cachedEntities, false);
     }
 
     [Command("get", "get type.fieldOrProperty value. eg get Player,Position; get Level.Wind (CelesteTAS)")]
@@ -52,7 +52,7 @@ public static class InfoCustom {
         ParseTemplate($"{{{template}}}", TasSettings.CustomInfoDecimals, new Dictionary<string, List<Entity>>(), true).ConsoleLog();
     }
 
-    private static string ParseTemplate(string template, int? decimals, Dictionary<string, List<Entity>> cachedEntities, bool consoleCommand) {
+    private static string ParseTemplate(string template, int decimals, Dictionary<string, List<Entity>> cachedEntities, bool consoleCommand) {
         List<Entity> GetCachedOrFindEntities(Type type, string entityId, Dictionary<string, List<Entity>> dictionary) {
             string entityText = $"{type.FullName}{entityId}";
             List<Entity> entities;
@@ -95,7 +95,7 @@ public static class InfoCustom {
 
             List<string> result = types.Select(type => {
                 if (GetGetMethod(type, memberNames.First()) is {IsStatic: true} || GetFieldInfo(type, memberNames.First()) is {IsStatic: true}) {
-                    return FormatValue(GetMemberValue(type, null, memberNames), helperMethod, decimals.Value);
+                    return FormatValue(GetMemberValue(type, null, memberNames), helperMethod, decimals);
                 }
 
                 if (Engine.Scene is Level level) {
@@ -107,7 +107,7 @@ public static class InfoCustom {
                         }
 
                         return string.Join("", entities.Select(entity => {
-                            string value = FormatValue(GetMemberValue(type, entity, memberNames), helperMethod, decimals.Value);
+                            string value = FormatValue(GetMemberValue(type, entity, memberNames), helperMethod, decimals);
 
                             if (moreThanOneEntity) {
                                 if (entity.GetEntityData()?.ToEntityId().ToString() is { } id) {
@@ -120,9 +120,9 @@ public static class InfoCustom {
                             return value;
                         }));
                     } else if (type == typeof(Level)) {
-                        return FormatValue(GetMemberValue(type, level, memberNames), helperMethod, decimals.Value);
+                        return FormatValue(GetMemberValue(type, level, memberNames), helperMethod, decimals);
                     } else if (type == typeof(Session)) {
-                        return FormatValue(GetMemberValue(type, level.Session, memberNames), helperMethod, decimals.Value);
+                        return FormatValue(GetMemberValue(type, level.Session, memberNames), helperMethod, decimals);
                     }
                 }
 

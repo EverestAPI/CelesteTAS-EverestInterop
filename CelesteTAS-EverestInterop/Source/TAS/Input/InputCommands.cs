@@ -99,7 +99,7 @@ public static class InputCommands {
         }
 
         string filePath = args[0];
-        string fileDirectory = Path.GetDirectoryName(InputController.TasFilePath);
+        string fileDirectory = Path.GetDirectoryName(currentFilePath);
         FindTheFile();
 
         if (!File.Exists(filePath)) {
