@@ -39,12 +39,18 @@ internal static class LogUtil {
         Logger.Log(logLevel, Tag, text.ToString());
 #if DEBUG
         outputToCommands = true;
+        text = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [{Tag}] {logLevel}: {text}";
 #endif
         // ReSharper disable once ConditionIsAlwaysTrueOrFalse
         if (!outputToCommands) {
             return;
         }
 
+        ConsoleLog(text, logLevel);
+    }
+
+    public static void ConsoleLog(this object text, LogLevel logLevel = LogLevel.Verbose) {
+        text = text == null ? "null" : text.ToString();
         Color color;
         switch (logLevel) {
             case LogLevel.Warn:
@@ -59,7 +65,7 @@ internal static class LogUtil {
         }
 
         try {
-            Engine.Commands?.Log($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [{Tag}] {logLevel}: {text}", color);
+            Engine.Commands?.Log(text, color);
         } catch (Exception) {
             // ignored
         }

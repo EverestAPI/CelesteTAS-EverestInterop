@@ -104,11 +104,11 @@ public static class ExportGameInfo {
                 }
             }
 
-            if (InfoCustom.Parse(CelesteTasSettings.MaxDecimals) is { } customInfo && customInfo.IsNotEmpty()) {
+            if (InfoCustom.GetInfo(CelesteTasSettings.MaxDecimals) is { } customInfo && customInfo.IsNotEmpty()) {
                 output += $"\t{customInfo.ReplaceLineBreak(" ")}";
             }
 
-            if (InfoWatchEntity.GetWatchingEntitiesInfo("\t", true, CelesteTasSettings.MaxDecimals) is { } watchInfo &&
+            if (InfoWatchEntity.GetInfo("\t", true, CelesteTasSettings.MaxDecimals) is { } watchInfo &&
                 watchInfo.IsNotEmpty()) {
                 output += $"\t{watchInfo}";
             }

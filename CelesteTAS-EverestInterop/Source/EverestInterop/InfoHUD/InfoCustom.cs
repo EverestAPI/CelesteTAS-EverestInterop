@@ -40,11 +40,33 @@ public static class InfoCustom {
         }
     }
 
-    public static string Parse(int? decimals = null) {
+    public static string GetInfo(int? decimals = null) {
         decimals ??= TasSettings.CustomInfoDecimals;
         Dictionary<string, List<Entity>> cachedEntities = new();
 
-        return BraceRegex.Replace(TasSettings.InfoCustomTemplate, match => {
+        return ParseTemplate(TasSettings.InfoCustomTemplate, decimals, cachedEntities, false);
+    }
+
+    [Command("get", "get type.fieldOrProperty value. eg get Player,Position; get Level.Wind (CelesteTAS)")]
+    private static void GetCommand(string template) {
+        ParseTemplate($"{{{template}}}", TasSettings.CustomInfoDecimals, new Dictionary<string, List<Entity>>(), true).ConsoleLog();
+    }
+
+    private static string ParseTemplate(string template, int? decimals, Dictionary<string, List<Entity>> cachedEntities, bool consoleCommand) {
+        List<Entity> GetCachedOrFindEntities(Type type, string entityId, Dictionary<string, List<Entity>> dictionary) {
+            string entityText = $"{type.FullName}{entityId}";
+            List<Entity> entities;
+            if (dictionary.ContainsKey(entityText)) {
+                entities = dictionary[entityText];
+            } else {
+                entities = FindEntities(type, entityId).ToList();
+                dictionary[entityText] = entities;
+            }
+
+            return entities;
+        }
+
+        return BraceRegex.Replace(template, match => {
             string matchText = match.Groups[1].Value;
 
             if (!TryParseMemberNames(matchText, out string typeText, out List<string> memberNames, out string errorMessage)) {
@@ -114,21 +136,12 @@ public static class InfoCustom {
             };
 
             string separator = types.First().IsSameOrSubclassOf(typeof(Entity)) ? "" : " ";
-            return $"{prefix}{string.Join(separator, result)}";
-        });
-
-        List<Entity> GetCachedOrFindEntities(Type type, string entityId, Dictionary<string, List<Entity>> dictionary) {
-            string entityText = $"{type.FullName}{entityId}";
-            List<Entity> entities;
-            if (dictionary.ContainsKey(entityText)) {
-                entities = dictionary[entityText];
-            } else {
-                entities = FindEntities(type, entityId).ToList();
-                dictionary[entityText] = entities;
+            if (consoleCommand && separator.IsEmpty() && result.IsNotEmpty()) {
+                result[0] = result[0].TrimStart();
             }
 
-            return entities;
-        }
+            return $"{prefix}{string.Join(separator, result)}";
+        });
     }
 
     public static bool TryParseMemberNames(string matchText, out string typeText, out List<string> memberNames, out string errorMessage) {

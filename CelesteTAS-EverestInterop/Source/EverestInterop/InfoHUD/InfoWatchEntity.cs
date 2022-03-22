@@ -170,7 +170,7 @@ public static class InfoWatchEntity {
         GameInfo.Update();
     }
 
-    public static string GetWatchingEntitiesInfo(string separator = "\n", bool alwaysUpdate = false, int? decimals = null) {
+    public static string GetInfo(string separator = "\n", bool alwaysUpdate = false, int? decimals = null) {
         WatchingEntities.Clear();
         string watchingInfo = string.Empty;
         if (Engine.Scene is not Level level || TasSettings.InfoWatchEntity == HudOptions.Off && !alwaysUpdate) {

@@ -138,8 +138,8 @@ public static class GameInfo {
                 infos.Add(InfoMouse.MouseInfo);
             }
 
-            WatchingInfo = InfoWatchEntity.GetWatchingEntitiesInfo(alwaysUpdate: true, decimals: CelesteTasSettings.MaxDecimals);
-            CustomInfo = InfoCustom.Parse(CelesteTasSettings.MaxDecimals);
+            WatchingInfo = InfoWatchEntity.GetInfo(alwaysUpdate: true, decimals: CelesteTasSettings.MaxDecimals);
+            CustomInfo = InfoCustom.GetInfo(CelesteTasSettings.MaxDecimals);
 
             if (CustomInfo.IsNotNullOrWhiteSpace()) {
                 infos.Add(CustomInfo);
@@ -376,14 +376,14 @@ public static class GameInfo {
 
             if (TasSettings.InfoHud && (TasSettings.InfoWatchEntity & HudOptions.HudOnly) != 0 ||
                 (TasSettings.InfoWatchEntity & HudOptions.StudioOnly) != 0 && StudioCommunicationBase.Initialized) {
-                WatchingInfo = InfoWatchEntity.GetWatchingEntitiesInfo();
+                WatchingInfo = InfoWatchEntity.GetInfo();
             } else {
                 WatchingInfo = string.Empty;
             }
 
             if (TasSettings.InfoHud && (TasSettings.InfoCustom & HudOptions.HudOnly) != 0 ||
                 (TasSettings.InfoCustom & HudOptions.StudioOnly) != 0 && StudioCommunicationBase.Initialized) {
-                CustomInfo = InfoCustom.Parse();
+                CustomInfo = InfoCustom.GetInfo();
             } else {
                 CustomInfo = string.Empty;
             }
