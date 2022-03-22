@@ -124,31 +124,65 @@ public static class SetCommandHandler {
                 $"Set Command Failed: {type.FullName}{entityId} object is not found".Log(LogLevel.Warn);
                 return;
             } else {
-                obj = InfoCustom.GetMemberValue(type, obj, memberNames);
-                if (TryOutputErrorLog()) {
-                    return;
-                }
+                if (type.IsSameOrSubclassOf(typeof(Entity)) && obj is List<Entity> entities) {
+                    if (entities.IsEmpty()) {
+                        $"Set Command Failed: {type.FullName}{entityId} entity is not found".Log(LogLevel.Warn);
+                        return;
+                    } else {
+                        List<object> memberValues = new();
+                        foreach (Entity entity in entities) {
+                            object memberValue = InfoCustom.GetMemberValue(type, entity, memberNames);
+                            if (TryOutputErrorLog()) {
+                                return;
+                            }
 
-                objType = obj.GetType();
+                            if (memberValue != null) {
+                                memberValues.Add(memberValue);
+                            }
+                        }
+
+                        if (memberValues.IsEmpty()) {
+                            return;
+                        }
+
+                        obj = memberValues;
+                        objType = memberValues.First().GetType();
+                    }
+                } else {
+                    obj = InfoCustom.GetMemberValue(type, obj, memberNames);
+                    if (TryOutputErrorLog()) {
+                        return;
+                    }
+
+                    objType = obj.GetType();
+                }
             }
         }
 
-        if (!TrySetMember(objType, obj, lastMemberName, values, structObj)) {
-            return;
+        if (type.IsSameOrSubclassOf(typeof(Entity)) && obj is List<object> objects) {
+            objects.ForEach(SetMember);
+        } else {
+            SetMember(obj);
         }
 
-        // after modifying the struct
-        // we also need to update the object own the struct
-        if (memberNames.IsNotEmpty() && objType.IsStructType()) {
-            string[] position = obj switch {
-                Vector2 vector2 => new[] {vector2.X.ToString(CultureInfo.InvariantCulture), vector2.Y.ToString(CultureInfo.InvariantCulture)},
-                Vector2Double vector2Double => new[] {
-                    vector2Double.X.ToString(CultureInfo.InvariantCulture), vector2Double.Y.ToString(CultureInfo.InvariantCulture)
-                },
-                _ => new string[] { }
-            };
+        void SetMember(object @object) {
+            if (!TrySetMember(objType, @object, lastMemberName, values, structObj)) {
+                return;
+            }
 
-            FindObjectAndSetMember(type, entityId, memberNames, position, position.IsEmpty() ? obj : null);
+            // after modifying the struct
+            // we also need to update the object own the struct
+            if (memberNames.IsNotEmpty() && objType.IsStructType()) {
+                string[] position = @object switch {
+                    Vector2 vector2 => new[] {vector2.X.ToString(CultureInfo.InvariantCulture), vector2.Y.ToString(CultureInfo.InvariantCulture)},
+                    Vector2Double vector2Double => new[] {
+                        vector2Double.X.ToString(CultureInfo.InvariantCulture), vector2Double.Y.ToString(CultureInfo.InvariantCulture)
+                    },
+                    _ => new string[] { }
+                };
+
+                FindObjectAndSetMember(type, entityId, memberNames, position, position.IsEmpty() ? @object : null);
+            }
         }
 
         bool TryOutputErrorLog() {
@@ -209,7 +243,7 @@ public static class SetCommandHandler {
 
     private static object FindObject(Type type, string entityId) {
         if (type.IsSameOrSubclassOf(typeof(Entity))) {
-            return InfoCustom.FindEntities(type, entityId).FirstOrDefault();
+            return InfoCustom.FindEntities(type, entityId);
         } else if (type == typeof(Level)) {
             return Engine.Scene.GetLevel();
         } else if (type == typeof(Session)) {
