@@ -127,7 +127,7 @@ public static class Core {
             return;
         }
 
-        if ((!Manager.Running || Manager.Recording) && Engine.Instance.IsActive) {
+        if (!Manager.Running && Engine.Instance.IsActive) {
             orig();
         }
 

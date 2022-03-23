@@ -20,7 +20,7 @@ public static class Manager {
 
     private static readonly DUpdateVirtualInputs UpdateVirtualInputs;
 
-    public static bool Running, Recording;
+    public static bool Running;
     public static readonly InputController Controller = new();
     public static States LastStates, States, NextStates;
     public static float FrameLoops { get; private set; } = 1f;
@@ -105,8 +105,7 @@ public static class Manager {
     private static void HandleFrameRates() {
         FrameLoops = 1;
 
-        if (States.HasFlag(States.Enable) && !States.HasFlag(States.FrameStep) && !NextStates.HasFlag(States.FrameStep) &&
-            !States.HasFlag(States.Record)) {
+        if (States.HasFlag(States.Enable) && !States.HasFlag(States.FrameStep) && !NextStates.HasFlag(States.FrameStep)) {
             if (Controller.HasFastForward) {
                 FrameLoops = Controller.FastForwardSpeed;
             }
@@ -128,7 +127,7 @@ public static class Manager {
         bool frameAdvance = Hotkeys.FrameAdvance.Check && !Hotkeys.StartStop.Check;
         bool pause = Hotkeys.PauseResume.Check && !Hotkeys.StartStop.Check;
 
-        if (States.HasFlag(States.Enable) && !States.HasFlag(States.Record)) {
+        if (States.HasFlag(States.Enable)) {
             if (NextStates.HasFlag(States.FrameStep)) {
                 States |= States.FrameStep;
                 NextStates &= ~States.FrameStep;
@@ -184,19 +183,17 @@ public static class Manager {
             return;
         }
 
+        Running = true;
+        States |= States.Enable;
+        States &= ~States.FrameStep;
         NextStates &= ~States.Enable;
         AttributeUtils.Invoke<EnableRunAttribute>();
-        InitializeRun(false);
+        Controller.RefreshInputs(true);
     }
 
     public static void DisableRun(bool clear = false) {
         Running = false;
-        /*
-        if (Recording) {
-            controller.WriteInputs();
-        }
-        */
-        Recording = false;
+
         LastStates = States.None;
         States = States.None;
         NextStates = States.None;
@@ -213,20 +210,6 @@ public static class Manager {
         Controller.Stop();
         if (clear) {
             Controller.Clear();
-        }
-    }
-
-    private static void InitializeRun(bool recording) {
-        States |= States.Enable;
-        States &= ~States.FrameStep;
-        if (recording) {
-            Recording = recording;
-            States |= States.Record;
-            Controller.InitializeRecording();
-        } else {
-            States &= ~States.Record;
-            Controller.RefreshInputs(true);
-            Running = true;
         }
     }
 

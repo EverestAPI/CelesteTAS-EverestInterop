@@ -246,8 +246,6 @@ public class InputController {
         CurrentFrameInTas++;
     }
 
-    public void InitializeRecording() { }
-
     // studioLine start from 0, startLine start from 1;
     public bool ReadFile(string filePath, int startLine = 0, int endLine = int.MaxValue, int studioLine = 0, int repeatIndex = 0,
         int repeatCount = 0) {
@@ -394,82 +392,4 @@ public class InputController {
         Engine.Instance.GetDynamicDataInstance().Set(nameof(studioTasFilePath), studioTasFilePath);
         Manager.Controller.StopWatchers();
     }
-
-    #region ignore
-
-    /*
-    public void RecordPlayer() {
-        InputRecord input = new InputRecord() { Line = inputIndex + 1, Frames = currentFrame };
-        GetCurrentInputs(input);
-
-        if (currentFrame == 0 && input == Current) {
-            return;
-        } else if (input != Current && !Manager.IsLoading()) {
-            Current.Frames = currentFrame - Current.Frames;
-            inputIndex++;
-            if (Current.Frames != 0) {
-                inputs.Add(Current);
-            }
-            Current = input;
-        }
-        currentFrame++;
-    }
-
-
-    private static void GetCurrentInputs(InputRecord record) {
-        if (Input.Jump.Check || Input.MenuConfirm.Check) {
-            record.Actions |= Actions.Jump;
-        }
-
-        if (Input.Dash.Check || Input.MenuCancel.Check || Input.Talk.Check) {
-            record.Actions |= Actions.Dash;
-        }
-
-        if (Input.Grab.Check) {
-            record.Actions |= Actions.Grab;
-        }
-
-        if (Input.MenuJournal.Check) {
-            record.Actions |= Actions.Journal;
-        }
-
-        if (Input.Pause.Check) {
-            record.Actions |= Actions.Start;
-        }
-
-        if (Input.QuickRestart.Check) {
-            record.Actions |= Actions.Restart;
-        }
-
-        if (Input.MenuLeft.Check || Input.MoveX.Value < 0) {
-            record.Actions |= Actions.Left;
-        }
-
-        if (Input.MenuRight.Check || Input.MoveX.Value > 0) {
-            record.Actions |= Actions.Right;
-        }
-
-        if (Input.MenuUp.Check || Input.MoveY.Value < 0) {
-            record.Actions |= Actions.Up;
-        }
-
-        if (Input.MenuDown.Check || Input.MoveY.Value > 0) {
-            record.Actions |= Actions.Down;
-        }
-    }
-
-    /*
-    public void WriteInputs() {
-        using (FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)) {
-            for (int i = 0; i < inputs.Count; i++) {
-                InputRecord record = inputs[i];
-                byte[] data = Encoding.ASCII.GetBytes(record.ToString() + "\r\n");
-                fs.Write(data, 0, data.Length);
-            }
-            fs.Close();
-        }
-    }
-    */
-
-    #endregion
 }
