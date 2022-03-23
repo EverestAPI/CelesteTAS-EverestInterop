@@ -49,6 +49,8 @@ public class InputController {
                 }
 
                 Manager.Controller.Clear();
+
+                // preload tas file
                 Manager.Controller.RefreshInputs(true);
             }
         }
@@ -99,7 +101,7 @@ public class InputController {
             int tryCount = 5;
             while (tryCount > 0) {
                 if (ReadFile(TasFilePath)) {
-                    if (!Manager.Running && Manager.LastStates == States.None && Manager.States == States.None && Manager.NextStates == States.None) {
+                    if (Manager.NextStates.HasFlag(States.Disable)) {
                         Clear();
                     } else {
                         NeedsReload = false;

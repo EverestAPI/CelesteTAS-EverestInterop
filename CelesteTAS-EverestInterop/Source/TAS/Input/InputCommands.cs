@@ -111,11 +111,11 @@ public static class InputCommands {
 
         if (!File.Exists(filePath)) {
             ToastAndLog($"\"Read, {string.Join(", ", args)}\" failed\nFile not found");
-            Manager.DisableRun(true);
+            Manager.DisableRunLater();
             return;
         } else if (Path.GetFullPath(filePath) == Path.GetFullPath(currentFilePath)) {
             ToastAndLog($"\"Read, {string.Join(", ", args)}\" failed\nDo not allow reading the file itself");
-            Manager.DisableRun(true);
+            Manager.DisableRunLater();
             return;
         }
 
@@ -133,7 +133,7 @@ public static class InputCommands {
         if (readCommandStack.Contains(readCommandDetail)) {
             $"Multiple read commands lead to dead loops:\n{string.Join("\n", readCommandStack)}".Log(LogLevel.Warn);
             Toast.Show("Multiple read commands lead to dead loops\nPlease check log.txt for more details");
-            Manager.DisableRun(true);
+            Manager.DisableRunLater();
             return;
         }
 

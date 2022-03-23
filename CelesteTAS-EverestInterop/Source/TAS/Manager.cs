@@ -191,7 +191,7 @@ public static class Manager {
         Controller.RefreshInputs(true);
     }
 
-    public static void DisableRun(bool clear = false) {
+    public static void DisableRun() {
         Running = false;
 
         LastStates = States.None;
@@ -208,9 +208,10 @@ public static class Manager {
 
         AttributeUtils.Invoke<DisableRunAttribute>();
         Controller.Stop();
-        if (clear) {
-            Controller.Clear();
-        }
+    }
+
+    public static void DisableRunLater() {
+        NextStates |= States.Disable;
     }
 
     public static void SendStateToStudio() {
