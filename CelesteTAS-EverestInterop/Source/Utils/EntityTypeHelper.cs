@@ -161,7 +161,7 @@ internal static class EntityTypeHelper {
             ["birdForsakenCityGem"] = typeof(ForsakenCitySatellite),
             ["whiteblock"] = typeof(WhiteBlock),
             ["plateau"] = typeof(Plateau),
-            ["soundSource"] = typeof(SoundSource),
+            ["soundSource"] = typeof(SoundSourceEntity),
             ["templeMirror"] = typeof(TempleMirror),
             ["templeEye"] = typeof(TempleEye),
             ["clutterCabinet"] = typeof(ClutterCabinet),

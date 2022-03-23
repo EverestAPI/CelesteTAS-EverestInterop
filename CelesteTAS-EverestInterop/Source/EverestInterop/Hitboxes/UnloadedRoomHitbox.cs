@@ -30,6 +30,7 @@ public static class UnloadedRoomHitbox {
         typeof(PlaybackBillboard),
         typeof(ResortLantern),
         typeof(ResortMirror),
+        typeof(SoundSourceEntity),
         typeof(TempleMirror),
         typeof(Torch),
         typeof(Trapdoor),
