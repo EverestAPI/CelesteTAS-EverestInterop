@@ -197,6 +197,7 @@ public static class Manager {
         }
         */
         Recording = false;
+        LastStates = States.None;
         States = States.None;
         NextStates = States.None;
 

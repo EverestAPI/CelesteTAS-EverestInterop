@@ -99,14 +99,14 @@ public class InputController {
             int tryCount = 5;
             while (tryCount > 0) {
                 if (ReadFile(TasFilePath)) {
-                    if (Manager.Running) {
+                    if (!Manager.Running && Manager.LastStates == States.None && Manager.States == States.None && Manager.NextStates == States.None) {
+                        Clear();
+                    } else {
                         NeedsReload = false;
                         ParseFileEnd();
                         if (!firstRun && lastChecksum != Checksum) {
                             MetadataCommands.UpdateRecordCount(this);
                         }
-                    } else {
-                        Clear();
                     }
 
                     break;
