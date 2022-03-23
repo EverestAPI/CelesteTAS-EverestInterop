@@ -17,6 +17,7 @@ public static class SetCommandHandler {
     private static readonly FieldInfo ActorMovementCounter = typeof(Actor).GetFieldInfo("movementCounter");
     private static readonly FieldInfo InputFeather = typeof(Celeste.Input).GetFieldInfo("Feather");
     private static bool consolePrintLog;
+    private const string logPrefix = "{Set Command Failed: }";
 
     [Monocle.Command("set", "Set settings/level/session/entity field. eg set DashMode Infinite; set Player Speed 325 -52.5 (CelesteTAS)")]
     private static void SetCommand(string arg1, string arg2, string arg3, string arg4, string arg5, string arg6, string arg7, string arg8,
@@ -35,8 +36,6 @@ public static class SetCommandHandler {
         if (args.Length < 2) {
             return;
         }
-
-        args = args.Select(s => s is "null" or "\"\"" ? string.Empty : s).ToArray();
 
         try {
             if (args[0].Contains(".")) {
@@ -125,26 +124,26 @@ public static class SetCommandHandler {
                    (InfoCustom.GetGetMethod(type, memberNames.First()) is {IsStatic: true} ||
                     InfoCustom.GetFieldInfo(type, memberNames.First()) is {IsStatic: true})) {
             obj = InfoCustom.GetMemberValue(type, null, memberNames);
-            if (TryOutputErrorLog()) {
+            if (TryPrintErrorLog()) {
                 return;
             }
 
             objType = obj.GetType();
         } else {
-            obj = FindObject(type, entityId);
+            obj = FindSpecialObject(type, entityId);
             if (obj == null) {
-                $"Set Command Failed: {type.FullName}{entityId} object is not found".Log(consolePrintLog, LogLevel.Warn);
+                Log($"{type.FullName}{entityId} object is not found");
                 return;
             } else {
                 if (type.IsSameOrSubclassOf(typeof(Entity)) && obj is List<Entity> entities) {
                     if (entities.IsEmpty()) {
-                        $"Set Command Failed: {type.FullName}{entityId} entity is not found".Log(consolePrintLog, LogLevel.Warn);
+                        Log($"{type.FullName}{entityId} entity is not found");
                         return;
                     } else {
                         List<object> memberValues = new();
                         foreach (Entity entity in entities) {
                             object memberValue = InfoCustom.GetMemberValue(type, entity, memberNames);
-                            if (TryOutputErrorLog()) {
+                            if (TryPrintErrorLog()) {
                                 return;
                             }
 
@@ -162,7 +161,7 @@ public static class SetCommandHandler {
                     }
                 } else {
                     obj = InfoCustom.GetMemberValue(type, obj, memberNames);
-                    if (TryOutputErrorLog()) {
+                    if (TryPrintErrorLog()) {
                         return;
                     }
 
@@ -197,12 +196,12 @@ public static class SetCommandHandler {
             }
         }
 
-        bool TryOutputErrorLog() {
+        bool TryPrintErrorLog() {
             if (obj == null) {
-                $"Set Command Failed: {type.FullName} member value is null".Log(consolePrintLog, LogLevel.Warn);
+                Log($"{type.FullName} member value is null");
                 return true;
             } else if (obj is string errorMsg && errorMsg.EndsWith(" not found")) {
-                $"Set Command Failed: {errorMsg}".Log(consolePrintLog, LogLevel.Warn);
+                Log(errorMsg);
                 return true;
             }
 
@@ -246,14 +245,14 @@ public static class SetCommandHandler {
                 }
             }
         } else {
-            $"Set Command Failed: {objType.FullName}.{lastMemberName} member not found".Log(consolePrintLog, LogLevel.Warn);
+            Log($"{objType.FullName}.{lastMemberName} member not found");
             return false;
         }
 
         return true;
     }
 
-    private static object FindObject(Type type, string entityId) {
+    public static object FindSpecialObject(Type type, string entityId) {
         if (type.IsSameOrSubclassOf(typeof(Entity))) {
             return InfoCustom.FindEntities(type, entityId);
         } else if (type == typeof(Level)) {
@@ -265,15 +264,25 @@ public static class SetCommandHandler {
         }
     }
 
-    private static object Convert(object value, Type type) {
+    private static void Log(string text) {
+        if (!consolePrintLog) {
+            text = $"{logPrefix}{text}";
+        }
+
+        text.Log(consolePrintLog, LogLevel.Warn);
+    }
+
+    public static object Convert(object value, Type type) {
         try {
-            if (value is string s && s.IsEmpty()) {
+            if (value is string and ("" or "null")) {
                 return type.IsValueType ? Activator.CreateInstance(type) : null;
+            } else if (type == typeof(string) && value is "\"\"") {
+                return string.Empty;
             } else {
                 return type.IsEnum ? Enum.Parse(type, (string) value, true) : System.Convert.ChangeType(value, type);
             }
-        } catch {
-            return value;
+        } catch (Exception) {
+            return type.IsValueType ? Activator.CreateInstance(type) : null;
         }
     }
 

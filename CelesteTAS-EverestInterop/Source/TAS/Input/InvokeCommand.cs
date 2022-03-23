@@ -1,0 +1,192 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using Celeste.Mod;
+using Microsoft.Xna.Framework;
+using Monocle;
+using TAS.EverestInterop.InfoHUD;
+using TAS.Utils;
+
+namespace TAS.Input;
+
+public static class InvokeCommand {
+    private static bool consolePrintLog;
+    private const string logPrefix = "{Invoke Command Failed: }";
+    private static readonly object nonReturnObject = new();
+
+    [Monocle.Command("invoke", "Invoke level/session/entity method. eg invoke Level.Pause; invoke Player.Jump (CelesteTAS)")]
+    private static void Invoke(string arg1, string arg2, string arg3, string arg4, string arg5, string arg6, string arg7, string arg8,
+        string arg9) {
+        string[] args = {arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9};
+        consolePrintLog = true;
+        Invoke(args.TakeWhile(arg => arg != null).ToArray());
+        consolePrintLog = false;
+    }
+
+    // Invoke, Type.StaticMethod, Parameters...
+    // Invoke, Level.Method, Parameters...
+    // Invoke, Session.Method, Parameters...
+    // Invoke, Entity.Method, Parameters...
+    [TasCommand("Invoke", LegalInMainGame = false)]
+    private static void Invoke(string[] args) {
+        if (args.Length < 1) {
+            return;
+        }
+
+        try {
+            if (args[0].Contains(".")) {
+                string[] parameters = args.Skip(1).ToArray();
+                if (InfoCustom.TryParseMemberNames(args[0], out string typeText, out List<string> memberNames, out string errorMessage)
+                    && InfoCustom.TryParseType(typeText, out Type type, out string entityId, out errorMessage)) {
+                    object result = FindObjectAndInvoke(type, entityId, memberNames, parameters);
+                    if (result != nonReturnObject) {
+                        result ??= "null";
+                        result.Log(consolePrintLog);
+                    }
+                } else {
+                    errorMessage.Log(consolePrintLog);
+                }
+            }
+        } catch (Exception e) {
+            e.Log(consolePrintLog);
+        }
+    }
+
+    private static object FindObjectAndInvoke(Type type, string entityId, List<string> memberNames, string[] parameters) {
+        if (memberNames.IsEmpty()) {
+            return nonReturnObject;
+        }
+
+        string lastMemberName = memberNames.Last();
+        memberNames = memberNames.SkipLast().ToList();
+
+        Type objType;
+        object obj = null;
+        if (memberNames.IsEmpty() &&
+            type.GetMethodInfo(lastMemberName, null, true) is {IsStatic: true}) {
+            objType = type;
+        } else if (memberNames.IsNotEmpty() && type.GetMethodInfo(memberNames.First(), null, true) is {IsStatic: true}) {
+            obj = InfoCustom.GetMemberValue(type, null, memberNames);
+            if (TryPrintErrorLog()) {
+                return nonReturnObject;
+            }
+
+            objType = obj.GetType();
+        } else {
+            obj = SetCommandHandler.FindSpecialObject(type, entityId);
+            if (obj == null) {
+                Log($"{type.FullName}{entityId} object is not found");
+                return nonReturnObject;
+            } else {
+                if (type.IsSameOrSubclassOf(typeof(Entity)) && obj is List<Entity> entities) {
+                    if (entities.IsEmpty()) {
+                        Log($"{type.FullName}{entityId} entity is not found");
+                        return nonReturnObject;
+                    } else {
+                        List<object> memberValues = new();
+                        foreach (Entity entity in entities) {
+                            object memberValue = InfoCustom.GetMemberValue(type, entity, memberNames);
+                            if (TryPrintErrorLog()) {
+                                return nonReturnObject;
+                            }
+
+                            if (memberValue != null) {
+                                memberValues.Add(memberValue);
+                            }
+                        }
+
+                        if (memberValues.IsEmpty()) {
+                            return nonReturnObject;
+                        }
+
+                        obj = memberValues;
+                        objType = memberValues.First().GetType();
+                    }
+                } else {
+                    obj = InfoCustom.GetMemberValue(type, obj, memberNames);
+                    if (TryPrintErrorLog()) {
+                        return null;
+                    }
+
+                    objType = obj.GetType();
+                }
+            }
+        }
+
+        if (type.IsSameOrSubclassOf(typeof(Entity)) && obj is List<object> objects) {
+            List<object> result = new();
+            foreach (object o in objects) {
+                if (TryInvokeMethod(o, out object r)) {
+                    r ??= "null";
+                    result.Add(r);
+                }
+            }
+
+            return result.IsEmpty() ? nonReturnObject : string.Join("\n", result);
+        } else {
+            if (TryInvokeMethod(obj, out object r)) {
+                return r;
+            } else {
+                return nonReturnObject;
+            }
+        }
+
+        void Log(string text) {
+            if (!consolePrintLog) {
+                text = $"{logPrefix}{text}";
+            }
+
+            text.Log(consolePrintLog, LogLevel.Warn);
+        }
+
+        bool TryInvokeMethod(object @object, out object returnObject) {
+            if (objType.GetMethodInfo(lastMemberName) is { } methodInfo) {
+                List<ParameterInfo> parameterInfos = methodInfo.GetParameters().ToList();
+                object[] p = new object[parameterInfos.Count];
+                for (int i = 0; i < parameterInfos.Count; i++) {
+                    object convertedObj;
+                    ParameterInfo parameterInfo = parameterInfos[i];
+                    Type parameterType = parameterInfo.ParameterType;
+                    if (parameterType == typeof(Vector2)) {
+                        if (parameters.IsEmpty() && parameterInfo.HasDefaultValue) {
+                            convertedObj = parameterInfo.DefaultValue;
+                        } else {
+                            string[] array = parameters.Take(2).ToArray();
+                            float.TryParse(array.GetValueOrDefault(0), out float x);
+                            float.TryParse(array.GetValueOrDefault(1), out float y);
+                            convertedObj = new Vector2(x, y);
+                            parameters = parameters.Skip(2).ToArray();
+                        }
+                    } else {
+                        convertedObj = parameters.IsEmpty() && parameterInfo.HasDefaultValue
+                            ? parameterInfo.DefaultValue
+                            : SetCommandHandler.Convert(parameters.FirstOrDefault(), parameterType);
+                        parameters = parameters.Skip(1).ToArray();
+                    }
+
+                    p[i] = convertedObj;
+                }
+
+                returnObject = methodInfo.Invoke(@object, p);
+                return methodInfo.ReturnType != typeof(void);
+            } else {
+                Log($"{objType.FullName}.{lastMemberName} member not found");
+                returnObject = nonReturnObject;
+                return false;
+            }
+        }
+
+        bool TryPrintErrorLog() {
+            if (obj == null) {
+                Log($"{type.FullName}{entityId} member value is null");
+                return true;
+            } else if (obj is string errorMsg && errorMsg.EndsWith(" not found")) {
+                Log(errorMsg);
+                return true;
+            }
+
+            return false;
+        }
+    }
+}
