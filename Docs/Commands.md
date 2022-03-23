@@ -61,7 +61,8 @@
   
 ### Set
 - `Set, (Optional Mod).Setting, Values`
-- `Set, Entity.Field..., Values`
+- `Set, Entity.Field..., Values` (set all entities)
+- `Set, Entity[roomName:id].Field..., Values` (set specific entity)
 - `Set, Level.Field..., Values`
 - `Set, Session.Field..., Values`
 - `Set, Type.StaticField..., Values`
