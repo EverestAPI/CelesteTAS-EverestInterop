@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
@@ -148,20 +149,31 @@ public static class InvokeCommand {
                     object convertedObj;
                     ParameterInfo parameterInfo = parameterInfos[i];
                     Type parameterType = parameterInfo.ParameterType;
+
+                    if (parameters.IsEmpty()) {
+                        p[i] = parameterInfo.HasDefaultValue ? parameterInfo.DefaultValue : SetCommandHandler.Convert(null, parameterType);
+                        continue;
+                    }
+
                     if (parameterType == typeof(Vector2)) {
-                        if (parameters.IsEmpty() && parameterInfo.HasDefaultValue) {
-                            convertedObj = parameterInfo.DefaultValue;
+                        string[] array = parameters.Take(2).ToArray();
+                        float.TryParse(array.GetValueOrDefault(0), out float x);
+                        float.TryParse(array.GetValueOrDefault(1), out float y);
+                        convertedObj = new Vector2(x, y);
+                        parameters = parameters.Skip(2).ToArray();
+                    } else if (parameterType.IsSameOrSubclassOf(typeof(Entity))) {
+                        if (InfoCustom.TryParseType(parameters[0], out Type entityType, out string id, out string errorMessage)) {
+                            convertedObj = ((List<Entity>) SetCommandHandler.FindSpecialObject(entityType, id)).FirstOrDefault();
                         } else {
-                            string[] array = parameters.Take(2).ToArray();
-                            float.TryParse(array.GetValueOrDefault(0), out float x);
-                            float.TryParse(array.GetValueOrDefault(1), out float y);
-                            convertedObj = new Vector2(x, y);
-                            parameters = parameters.Skip(2).ToArray();
+                            Log(errorMessage);
+                            convertedObj = null;
                         }
+                    } else if (type == typeof(Level)) {
+                        convertedObj = Engine.Scene.GetLevel();
+                    } else if (type == typeof(Session)) {
+                        convertedObj = Engine.Scene.GetSession();
                     } else {
-                        convertedObj = parameters.IsEmpty() && parameterInfo.HasDefaultValue
-                            ? parameterInfo.DefaultValue
-                            : SetCommandHandler.Convert(parameters.FirstOrDefault(), parameterType);
+                        convertedObj = SetCommandHandler.Convert(parameters.FirstOrDefault(), parameterType);
                         parameters = parameters.Skip(1).ToArray();
                     }
 

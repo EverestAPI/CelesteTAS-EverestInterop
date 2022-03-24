@@ -274,14 +274,14 @@ public static class SetCommandHandler {
 
     public static object Convert(object value, Type type) {
         try {
-            if (value is string and ("" or "null")) {
+            if (value is null or string and ("" or "null")) {
                 return type.IsValueType ? Activator.CreateInstance(type) : null;
             } else if (type == typeof(string) && value is "\"\"") {
                 return string.Empty;
             } else {
                 return type.IsEnum ? Enum.Parse(type, (string) value, true) : System.Convert.ChangeType(value, type);
             }
-        } catch (Exception) {
+        } catch {
             return type.IsValueType ? Activator.CreateInstance(type) : null;
         }
     }
