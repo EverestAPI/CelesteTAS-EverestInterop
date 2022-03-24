@@ -49,10 +49,12 @@ public static class InputCommands {
 
                 string[] commandArgs = args.Skip(1).ToArray();
 
-                object[] parameters = method.GetParameters().Length switch {
+                ParameterInfo[] parameterInfos = method.GetParameters();
+                object[] parameters = parameterInfos.Length switch {
                     4 => new object[] {commandArgs, studioLine, filePath, fileLine},
                     3 => new object[] {commandArgs, studioLine, filePath},
-                    2 => new object[] {commandArgs, studioLine},
+                    2 when parameterInfos[1].ParameterType == typeof(int) => new object[] {commandArgs, studioLine},
+                    2 when parameterInfos[1].ParameterType == typeof(string) => new object[] {commandArgs, lineText.Trim()},
                     1 => new object[] {commandArgs},
                     0 => EmptyParameters,
                     _ => throw new ArgumentException()

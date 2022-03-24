@@ -103,7 +103,7 @@ public static class ConsoleCommandHandler {
     // "Console LoadCommand IDorSID PositionX PositionY"
     // "Console LoadCommand IDorSID PositionX PositionY SpeedX SpeedY"
     [TasCommand("Console", LegalInMainGame = false)]
-    private static void ConsoleCommand(string[] arguments) {
+    private static void ConsoleCommand(string[] arguments, string commandText) {
         string commandName = arguments[0].ToLower();
         string[] args = arguments.Skip(1).ToArray();
         if (commandName.Equals("load", StringComparison.InvariantCultureIgnoreCase) ||
@@ -111,7 +111,12 @@ public static class ConsoleCommandHandler {
             commandName.Equals("rmx2", StringComparison.InvariantCultureIgnoreCase)) {
             LoadCommand(commandName, args);
         } else {
+            List<string> commandHistory = Engine.Commands.GetFieldValue<List<string>>("commandHistory");
+            commandHistory?.Insert(0, commandText.Substring(8));
             Engine.Commands.ExecuteCommand(commandName, args);
+            if (commandHistory?.IsNotEmpty() == true) {
+                commandHistory.RemoveAt(0);
+            }
         }
     }
 
