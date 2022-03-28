@@ -94,7 +94,6 @@ TAS_IGNORE_GC_COLLECT=               Ignore GC Collect during Fast Forward
 TAS_IGNORE_GC_COLLECT_DESCRIPTION_1= Benefits of fast forwarding multiple chapter length TAS
 TAS_IGNORE_GC_COLLECT_DESCRIPTION_2= but will increase memory usage and may cause out of memory exception
 TAS_LAUNCH_STUDIO_AT_BOOT=           Launch Studio at Boot
-TAS_EXTRACT_NEW_STUDIO_AT_BOOT=      Extract New Studio at Boot
 TAS_MOD_9D_LIGHTING=                 Mod 9D Lighting
 
 # ================================== Hotkey Config ==================================

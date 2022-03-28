@@ -28,53 +28,54 @@ public static class StudioHelper {
 
     private static void ExtractStudio(out bool studioProcessWasKilled) {
         studioProcessWasKilled = false;
-        if (!File.Exists(ExtractedStudioExePath) || CheckNewerStudio()) {
-            try {
-                if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
-                    Process studioProcess = Process.GetProcesses().FirstOrDefault(process =>
-                        process.ProcessName.StartsWith("Celeste") &&
-                        process.ProcessName.Contains("Studio"));
+        if (File.Exists(ExtractedStudioExePath) && !CheckNewerStudio()) {
+            return;
+        }
 
-                    if (studioProcess != null) {
-                        studioProcess.Kill();
-                        studioProcess.WaitForExit(50000);
-                    }
+        try {
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
+                Process studioProcess = Process.GetProcesses().FirstOrDefault(process =>
+                    process.ProcessName.StartsWith("Celeste") &&
+                    process.ProcessName.Contains("Studio"));
 
-                    if (studioProcess?.HasExited == false) {
-                        return;
-                    }
-
-                    if (studioProcess?.HasExited == true) {
-                        studioProcessWasKilled = true;
-                    }
+                if (studioProcess != null) {
+                    studioProcess.Kill();
+                    studioProcess.WaitForExit(50000);
                 }
 
-                if (!string.IsNullOrEmpty(Metadata.PathArchive)) {
-                    using ZipFile zip = ZipFile.Read(Metadata.PathArchive);
-                    if (zip.EntryFileNames.Contains(StudioNameWithExe)) {
-                        foreach (ZipEntry entry in zip.Entries) {
-                            if (entry.FileName.StartsWith(StudioName)) {
-                                entry.Extract(Everest.PathGame, ExtractExistingFileAction.OverwriteSilently);
-                            }
-                        }
-                    }
-                } else if (!string.IsNullOrEmpty(Metadata.PathDirectory)) {
-                    string[] files = Directory.GetFiles(Metadata.PathDirectory);
-
-                    if (files.Any(filePath => filePath.EndsWith(StudioNameWithExe))) {
-                        foreach (string sourceFile in files) {
-                            string fileName = Path.GetFileName(sourceFile);
-                            if (fileName.StartsWith(StudioName)) {
-                                string destFile = Path.Combine(Everest.PathGame, fileName);
-                                File.Copy(sourceFile, destFile, true);
-                            }
-                        }
-                    }
+                if (studioProcess?.HasExited == false) {
+                    return;
                 }
-            } catch (Exception e) {
-                e.LogException("Failed to extract studio.");
+
+                if (studioProcess?.HasExited == true) {
+                    studioProcessWasKilled = true;
+                }
             }
-        } else {
+
+            if (!string.IsNullOrEmpty(Metadata.PathArchive)) {
+                using ZipFile zip = ZipFile.Read(Metadata.PathArchive);
+                if (zip.EntryFileNames.Contains(StudioNameWithExe)) {
+                    foreach (ZipEntry entry in zip.Entries) {
+                        if (entry.FileName.StartsWith(StudioName)) {
+                            entry.Extract(Everest.PathGame, ExtractExistingFileAction.OverwriteSilently);
+                        }
+                    }
+                }
+            } else if (!string.IsNullOrEmpty(Metadata.PathDirectory)) {
+                string[] files = Directory.GetFiles(Metadata.PathDirectory);
+
+                if (files.Any(filePath => filePath.EndsWith(StudioNameWithExe))) {
+                    foreach (string sourceFile in files) {
+                        string fileName = Path.GetFileName(sourceFile);
+                        if (fileName.StartsWith(StudioName)) {
+                            string destFile = Path.Combine(Everest.PathGame, fileName);
+                            File.Copy(sourceFile, destFile, true);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.LogException("Failed to extract studio.");
             foreach (string file in Directory.GetFiles(Everest.PathGame, "*.PendingOverwrite")) {
                 File.Delete(file);
             }
@@ -82,47 +83,24 @@ public static class StudioHelper {
     }
 
     private static bool CheckNewerStudio() {
-        if (!TasSettings.ExtractNewStudioAtBoot) {
-            return false;
-        }
-
-#if DEBUG
-        DateTime zipFileModifiedTime = new();
+        string zipFileVersion = null;
 
         if (!string.IsNullOrEmpty(Metadata.PathArchive)) {
             using ZipFile zip = ZipFile.Read(Metadata.PathArchive);
             if (zip.Entries.FirstOrDefault(zipEntry => zipEntry.FileName == StudioNameWithExe) is { } studioZipEntry) {
-                zipFileModifiedTime = studioZipEntry.LastModified;
+                studioZipEntry.Extract(TempExtractPath, ExtractExistingFileAction.OverwriteSilently);
+                zipFileVersion = FileVersionInfo.GetVersionInfo(TempExtractStudio).FileVersion;
+                File.Delete(TempExtractStudio);
             }
         } else if (!string.IsNullOrEmpty(Metadata.PathDirectory)) {
             string[] files = Directory.GetFiles(Metadata.PathDirectory);
             if (files.FirstOrDefault(filePath => filePath.EndsWith(StudioNameWithExe)) is { } studioFilePath) {
-                zipFileModifiedTime = File.GetLastWriteTime(studioFilePath);
+                zipFileVersion = FileVersionInfo.GetVersionInfo(studioFilePath).FileVersion;
             }
         }
 
-        DateTime existFileModifiedTime = File.GetLastWriteTime(ExtractedStudioExePath);
-        return existFileModifiedTime != zipFileModifiedTime;
-#else
-                string zipFileVersion = null;
-
-                if (!string.IsNullOrEmpty(Metadata.PathArchive)) {
-                    using ZipFile zip = ZipFile.Read(Metadata.PathArchive);
-                    if (zip.Entries.FirstOrDefault(zipEntry => zipEntry.FileName == StudioNameWithExe) is { } studioZipEntry) {
-                        studioZipEntry.Extract(TempExtractPath, ExtractExistingFileAction.OverwriteSilently);
-                        zipFileVersion = FileVersionInfo.GetVersionInfo(TempExtractStudio).FileVersion;
-                        File.Delete(TempExtractStudio);
-                    }
-                } else if (!string.IsNullOrEmpty(Metadata.PathDirectory)) {
-                    string[] files = Directory.GetFiles(Metadata.PathDirectory);
-                    if (files.FirstOrDefault(filePath => filePath.EndsWith(StudioNameWithExe)) is { } studioFilePath) {
-                        zipFileVersion = FileVersionInfo.GetVersionInfo(studioFilePath).FileVersion;
-                    }
-                }
-
-                string existFileVersion = FileVersionInfo.GetVersionInfo(ExtractedStudioExePath).FileVersion;
-                return existFileVersion != zipFileVersion;
-#endif
+        string existFileVersion = FileVersionInfo.GetVersionInfo(ExtractedStudioExePath).FileVersion;
+        return existFileVersion != zipFileVersion;
     }
 
     private static void LaunchStudioAtBoot(bool studioProcessWasKilled) {
@@ -135,6 +113,7 @@ public static class StudioHelper {
                     }
                 }
 
+                // detach studio from steam
                 if (File.Exists(ExtractedStudioExePath)) {
                     Process.Start("Explorer", ExtractedStudioExePath);
                 }

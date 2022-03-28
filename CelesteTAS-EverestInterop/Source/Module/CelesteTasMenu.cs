@@ -47,8 +47,6 @@ internal static class CelesteTasMenu {
 
             subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), TasSettings.LaunchStudioAtBoot).Change(value =>
                 TasSettings.LaunchStudioAtBoot = value));
-            subMenu.Add(new TextMenu.OnOff("Extract New Studio At Boot".ToDialogText(), TasSettings.ExtractNewStudioAtBoot).Change(value =>
-                TasSettings.ExtractNewStudioAtBoot = value));
             subMenu.Add(new TextMenu.OnOff("Mod 9D Lighting".ToDialogText(), TasSettings.Mod9DLighting).Change(value =>
                 TasSettings.Mod9DLighting = value));
         });
