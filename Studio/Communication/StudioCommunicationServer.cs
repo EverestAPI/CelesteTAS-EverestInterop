@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -11,6 +10,8 @@ using StudioCommunication;
 namespace CelesteStudio.Communication;
 
 public sealed class StudioCommunicationServer : StudioCommunicationBase {
+    private string lastModVersion;
+
     private StudioCommunicationServer() { }
     public static StudioCommunicationServer Instance { get; private set; }
 
@@ -76,8 +77,18 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
         try {
             StudioInfo studioInfo = StudioInfo.FromByteArray(data);
             CommunicationWrapper.StudioInfo = studioInfo;
+
+            if (lastModVersion != studioInfo.ModVersion) {
+                lastModVersion = studioInfo.ModVersion;
+                if (new Version(studioInfo.MinStudioVersion + ".0") > Studio.Version) {
+                    MessageBox.Show(
+                        $"CelesteTAS v{studioInfo.ModVersion} require Studio v {studioInfo.MinStudioVersion} at least. Please manually extract the studio from the \"game_path\\Mods\\CelesteTAS.zip\" file.",
+                        "Communication Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Application.Exit();
+                }
+            }
         } catch (InvalidCastException) {
-            string studioVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
+            string studioVersion = Studio.Version.ToString(3);
             object[] objects = BinaryFormatterHelper.FromByteArray<object[]>(data);
             string modVersion = objects.Length >= 10 ? objects[9].ToString() : "Unknown";
             MessageBox.Show(
@@ -127,7 +138,7 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
         studio?.SendPathNow(Studio.Instance.richText.CurrentFileName, false);
         lastMessage = celeste?.ReadMessageGuaranteed();
 
-        //celeste?.SendCurrentBindings(Hotkeys.listHotkeyKeys);
+        // celeste?.SendCurrentBindings(Hotkeys.listHotkeyKeys);
         lastMessage = studio?.ReadMessageGuaranteed();
         if (lastMessage?.Id != MessageID.SendCurrentBindings) {
             throw new NeedsResetException("Invalid data recieved while establishing connection");

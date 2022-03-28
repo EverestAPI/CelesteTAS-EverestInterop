@@ -331,7 +331,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
 
         Message? lastMessage;
 
-        //Stall until input initialized to avoid sending invalid hotkey data
+        // Stall until input initialized to avoid sending invalid hotkey data
         while (Hotkeys.KeysDict == null) {
             Thread.Sleep(Timeout);
         }
@@ -352,9 +352,10 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
 
         celeste?.SendCurrentBindings(true);
         lastMessage = studio?.ReadMessageGuaranteed();
-        //if (lastMessage?.ID != MessageIDs.SendCurrentBindings)
-        //	throw new NeedsResetException();
-        //studio?.ProcessSendCurrentBindings(lastMessage?.Data);
+        // if (lastMessage?.Id != MessageID.SendCurrentBindings) {
+        // throw new NeedsResetException();
+        // }
+        // studio?.ProcessSendCurrentBindings(lastMessage?.Data);
 
         Initialized = true;
     }

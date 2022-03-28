@@ -22,6 +22,7 @@ namespace CelesteStudio;
 public partial class Studio : BaseForm {
     private const string MaxStatusHeight20Line = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
     public static Studio Instance;
+    public static Version Version { get; private set; }
     private static StringCollection RecentFiles => Settings.Default.RecentFiles ??= new StringCollection();
     public readonly List<InputRecord> InputRecords = new();
 
@@ -39,7 +40,7 @@ public partial class Studio : BaseForm {
     private string TitleBarText =>
         (string.IsNullOrEmpty(CurrentFileName) ? "Celeste.tas" : Path.GetFileName(CurrentFileName))
         + " - Studio v"
-        + Assembly.GetExecutingAssembly().GetName().Version.ToString(3)
+        + Version.ToString(3)
         + (string.IsNullOrEmpty(CurrentFileName) ? string.Empty : "   " + CurrentFileName);
 
     private string CurrentFileName {
@@ -49,6 +50,7 @@ public partial class Studio : BaseForm {
 
     public Studio(string[] args) {
         Instance = this;
+        Version = Assembly.GetExecutingAssembly().GetName().Version;
 
         UpgradeSettings();
         InitializeComponent();
@@ -74,9 +76,9 @@ public partial class Studio : BaseForm {
 
     private void UpgradeSettings() {
         if (string.IsNullOrEmpty(Settings.Default.UpgradeVersion) ||
-            new Version(Settings.Default.UpgradeVersion) < Assembly.GetExecutingAssembly().GetName().Version) {
+            new Version(Settings.Default.UpgradeVersion) < Version) {
             Settings.Default.Upgrade();
-            Settings.Default.UpgradeVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            Settings.Default.UpgradeVersion = Version.ToString();
         }
     }
 

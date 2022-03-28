@@ -17,23 +17,23 @@ public enum MessageID : byte {
     [HighPriority] GetData = 0x08,
 
     /// <summary>
-    /// Structure:
+    /// Structure: None
     /// </summary>
     [HighPriority] EstablishConnection = 0x0D,
 
     /// <summary>
-    /// Structure:
+    /// Structure: None
     /// </summary>
     [HighPriority] Wait = 0x0E,
 
     /// <summary>
-    /// Structure:
+    /// Structure: None
     /// </summary>
     Reset = 0x0F,
 
     //Pure data transfer
     /// <summary>
-    /// Structure: string[] = { state, gameData }
+    /// Structure: object[] = StudioInfo
     /// </summary>
     SendState = 0x10,
 
@@ -49,7 +49,7 @@ public enum MessageID : byte {
     [HighPriority] SendHotkeyPressed = 0x21,
 
     /// <summary>
-    /// Structure:
+    /// Structure: None
     /// </summary>
     [HighPriority] ConvertToLibTas = 0x24,
 
@@ -73,12 +73,6 @@ public enum MessageID : byte {
     /// Structure: Dictonary<int(line number), string(line text)>
     /// </summary>
     [HighPriority] UpdateLines = 0x32,
-
-    //External data transfer
-    ExternLow1 = 0x40,
-    ExternLow2 = 0x41,
-    [HighPriority] ExternHigh1 = 0x42,
-    [HighPriority] ExternHigh2 = 0x43,
 }
 
 public enum GameDataType : byte {

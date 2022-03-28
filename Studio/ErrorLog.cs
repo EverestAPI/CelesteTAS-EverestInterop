@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 using System.Text;
 using CelesteStudio.Communication;
 
@@ -37,7 +36,7 @@ public static class ErrorLog {
         stringBuilder.AppendLine();
 
         stringBuilder.Append("Studio v");
-        stringBuilder.Append(Assembly.GetExecutingAssembly().GetName().Version.ToString(3));
+        stringBuilder.Append(Studio.Version.ToString(3));
 
         if (CommunicationWrapper.StudioInfo?.ModVersion is { } modVersion && modVersion != string.Empty) {
             stringBuilder.AppendLine($" & CelesteTAS v{modVersion}");
