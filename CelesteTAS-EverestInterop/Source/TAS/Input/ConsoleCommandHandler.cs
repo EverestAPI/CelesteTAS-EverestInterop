@@ -24,6 +24,7 @@ public static class ConsoleCommandHandler {
         On.Celeste.Level.LoadNewPlayer += LevelOnLoadNewPlayer;
         On.Celeste.Player.IntroRespawnEnd += PlayerOnIntroRespawnEnd;
         IL.Celeste.NPC06_Theo_Plateau.Awake += NPC06_Theo_PlateauOnAwake;
+        On.Celeste.Level.End += LevelOnEnd;
     }
 
     [Unload]
@@ -31,6 +32,7 @@ public static class ConsoleCommandHandler {
         On.Celeste.Level.LoadNewPlayer -= LevelOnLoadNewPlayer;
         On.Celeste.Player.IntroRespawnEnd -= PlayerOnIntroRespawnEnd;
         IL.Celeste.NPC06_Theo_Plateau.Awake -= NPC06_Theo_PlateauOnAwake;
+        On.Celeste.Level.End -= LevelOnEnd;
     }
 
     private static Player LevelOnLoadNewPlayer(On.Celeste.Level.orig_LoadNewPlayer orig, Vector2 position, PlayerSpriteMode spriteMode) {
@@ -93,6 +95,15 @@ public static class ConsoleCommandHandler {
             return skip;
         });
         ilCursor.Emit(OpCodes.Brtrue, skipCs06Campfire);
+    }
+
+    // fix CrystallineHelper.ForceDashCrystal keeps forcing dash dir when console load during freeze frames
+    private static void LevelOnEnd(On.Celeste.Level.orig_End orig, Level self) {
+        orig(self);
+
+        if (TasSettings.Enabled && ModUtils.GetType("CrystallineHelper", "vitmod.ForceDashCrystal") is { } forceDashCrystal) {
+            forceDashCrystal.SetFieldValue("dirToUse", null);
+        }
     }
 
     // "Console CommandType",
