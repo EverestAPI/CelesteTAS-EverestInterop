@@ -135,18 +135,14 @@ public static class SimplifiedGraphicsFeature {
             }
         }
 
-        if (ModUtils.GetType("MaxHelpingHand", "Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController") is
-            { } rainbowSpinnerType) {
-            foreach (ConstructorInfo constructorInfo in rainbowSpinnerType.GetConstructors()) {
-                constructorInfo.IlHook(ModRainbowSpinnerColor(rainbowSpinnerType));
-            }
+        if (ModUtils.GetType("MaxHelpingHand", "Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController")?.GetMethodInfo("getModHue") is
+            { } getModHue) {
+            getModHue.IlHook(ModRainbowSpinnerColor);
         }
 
-        if (ModUtils.GetType("SpringCollab2020", "Celeste.Mod.SpringCollab2020.Entities.RainbowSpinnerColorController") is
-            { } rainbowSpinner) {
-            foreach (ConstructorInfo constructorInfo in rainbowSpinner.GetConstructors()) {
-                constructorInfo.IlHook(ModRainbowSpinnerColor(rainbowSpinner));
-            }
+        if (ModUtils.GetType("SpringCollab2020", "Celeste.Mod.SpringCollab2020.Entities.RainbowSpinnerColorController")?.GetMethodInfo("getModHue") is
+            { } getModHue2) {
+            getModHue2.IlHook(ModRainbowSpinnerColor);
         }
 
         if (ModUtils.GetType("VivHelper", "VivHelper.Entities.CustomSpinner")?.GetMethodInfo("CreateSprites") is
@@ -530,38 +526,12 @@ public static class SimplifiedGraphicsFeature {
         }
     }
 
-    private static Action<ILCursor, ILContext> ModRainbowSpinnerColor(Type type) {
-        void ResetColors(Color[] colorArray, Color simpleColor) {
-            for (int i = 0; i < colorArray.Length; i++) {
-                colorArray[i] = simpleColor;
-            }
-        }
-
-        return (ilCursor, _) => {
-            if (type.GetFieldInfo("colors") is { } colorsFieldInfo) {
-                while (ilCursor.TryGotoNext(i => i.MatchRet())) {
-                    ilCursor.Emit(OpCodes.Ldarg_0).Emit(OpCodes.Ldfld, colorsFieldInfo);
-                    ilCursor.EmitDelegate<Action<object>>(colors => {
-                        if (!TasSettings.SimplifiedGraphics || TasSettings.SimplifiedSpinnerColor.Value == null) {
-                            return;
-                        }
-
-                        Color simpleColor = Calc.HexToColor(TasSettings.SimplifiedSpinnerColor.Value);
-
-                        switch (colors) {
-                            case Color[] colorArray:
-                                ResetColors(colorArray, simpleColor);
-                                break;
-                            case Tuple<Color[], Color[]> tupleColors:
-                                ResetColors(tupleColors.Item1, simpleColor);
-                                ResetColors(tupleColors.Item2, simpleColor);
-                                break;
-                        }
-                    });
-                    ilCursor.Index++;
-                }
-            }
-        };
+    private static void ModRainbowSpinnerColor(ILCursor ilCursor, ILContext ilContext) {
+        Instruction start = ilCursor.Next;
+        ilCursor.EmitDelegate(() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedSpinnerColor.Value != null);
+        ilCursor.Emit(OpCodes.Brfalse, start);
+        ilCursor.EmitDelegate(() => TasSettings.SimplifiedSpinnerColor.Color);
+        ilCursor.Emit(OpCodes.Ret);
     }
 
     private static void ModVivCustomSpinnerColor(ILContext il) {
