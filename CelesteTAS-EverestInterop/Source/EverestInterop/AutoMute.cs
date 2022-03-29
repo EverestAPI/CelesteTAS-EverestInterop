@@ -9,6 +9,7 @@ using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using TAS.Module;
+using TAS.Utils;
 
 namespace TAS.EverestInterop;
 
@@ -54,6 +55,17 @@ public static class AutoMute {
         "event:/new_content/game/10_farewell/fakeheart_get",
     };
 
+    private static readonly HashSet<string> ModLoopAudioPaths = new() {
+        "event:/CommunalHelperEvents/game/connectedDreamBlock/dreamblock_fly_travel",
+        "event:/CommunalHelperEvents/game/dreamSwapBlock/dream_swap_block_return",
+        "event:/CommunalHelperEvents/game/redirectMoveBlock/arrowblock_move",
+        "event:/CommunalHelperEvents/game/melvin/move_loop",
+        "event:/CommunalHelperEvents/game/railedMoveBlock/railedmoveblock_move",
+        "event:/CommunalHelperEvents/game/customBoosters/dreamBooster/dreambooster_move",
+    };
+
+    private static readonly Func<SoundSource, EventInstance> getInstance = FastReflection.CreateGetDelegate<SoundSource, EventInstance>("instance");
+
     private static readonly IDictionary<WeakReference<EventInstance>, int>
         LoopAudioInstances = new ConcurrentDictionary<WeakReference<EventInstance>, int>();
 
@@ -84,16 +96,19 @@ public static class AutoMute {
         On.Celeste.Audio.SetMusic += AudioOnSetMusic;
         On.Celeste.Audio.SetAltMusic += AudioOnSetAltMusic;
         On.FMOD.Studio.EventDescription.createInstance += EventDescriptionOnCreateInstance;
+        On.Celeste.SoundSource.Play += SoundSourceOnPlay;
         IL.Celeste.CassetteBlockManager.AdvanceMusic += CassetteBlockManagerOnAdvanceMusic;
         On.Monocle.Scene.Update += SceneOnUpdate;
         On.Celeste.Celeste.Update += CelesteOnUpdate;
     }
+
 
     [Unload]
     private static void Unload() {
         On.Celeste.Audio.SetMusic -= AudioOnSetMusic;
         On.Celeste.Audio.SetAltMusic -= AudioOnSetAltMusic;
         On.FMOD.Studio.EventDescription.createInstance -= EventDescriptionOnCreateInstance;
+        On.Celeste.SoundSource.Play -= SoundSourceOnPlay;
         IL.Celeste.CassetteBlockManager.AdvanceMusic -= CassetteBlockManagerOnAdvanceMusic;
         On.Monocle.Scene.Update -= SceneOnUpdate;
         On.Celeste.Celeste.Update -= CelesteOnUpdate;
@@ -134,6 +149,16 @@ public static class AutoMute {
             if (delayFrames >= 0) {
                 LoopAudioInstances.Add(new WeakReference<EventInstance>(instance), delayFrames);
             }
+        }
+
+        return result;
+    }
+
+    // EventDescription.GetPath not work for mod's audio, so we catch the path form here
+    private static SoundSource SoundSourceOnPlay(On.Celeste.SoundSource.orig_Play orig, SoundSource self, string path, string param, float value) {
+        var result = orig(self, path, param, value);
+        if (ModLoopAudioPaths.Contains(path) && getInstance(self) is { } instance) {
+            LoopAudioInstances.Add(new WeakReference<EventInstance>(instance), 10);
         }
 
         return result;
