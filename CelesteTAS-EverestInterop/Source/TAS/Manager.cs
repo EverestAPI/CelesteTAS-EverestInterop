@@ -9,7 +9,6 @@ using StudioCommunication;
 using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.Input;
-using TAS.Module;
 using TAS.Utils;
 using GameInput = Celeste.Input;
 
@@ -228,8 +227,7 @@ public static class Manager {
             (int) States,
             GameInfo.StudioInfo,
             GameInfo.LevelName,
-            GameInfo.ChapterTime,
-            CelesteTasModule.Instance.Metadata.VersionString
+            GameInfo.ChapterTime
         );
         StudioCommunicationClient.Instance?.SendState(studioInfo, !ShouldForceState);
     }

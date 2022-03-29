@@ -12,6 +12,11 @@ public enum MessageID : byte {
     Default = 0x00,
 
     /// <summary>
+    /// Structure: [ModVersion, MinStudioVersion]
+    /// </summary>
+    [HighPriority] VersionInfo = 0x01,
+
+    /// <summary>
     /// Structure: [GameDataTypes, Argument]
     /// </summary>
     [HighPriority] GetData = 0x08,
@@ -80,4 +85,5 @@ public enum GameDataType : byte {
     ModInfo,
     ExactGameInfo,
     SettingValue,
+    VersionInfo
 }

@@ -2,13 +2,13 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using CelesteStudio.Communication;
 
 namespace CelesteStudio;
 
 public static class ErrorLog {
     private const string Filename = "celeste_studio_log.txt";
     private const string Marker = "==========================================";
+    public static string ModVersion;
 
     public static void Write(Exception e) {
         Write(e.ToString());
@@ -35,13 +35,13 @@ public static class ErrorLog {
         stringBuilder.AppendLine(Marker);
         stringBuilder.AppendLine();
 
-        stringBuilder.Append("Studio v");
+        stringBuilder.Append("CelesteStudio v");
         stringBuilder.Append(Studio.Version.ToString(3));
 
-        if (CommunicationWrapper.StudioInfo?.ModVersion is { } modVersion && modVersion != string.Empty) {
-            stringBuilder.AppendLine($" & CelesteTAS v{modVersion}");
-        } else {
+        if (string.IsNullOrEmpty(ModVersion)) {
             stringBuilder.AppendLine();
+        } else {
+            stringBuilder.AppendLine($" & CelesteTAS v{ModVersion}");
         }
 
         stringBuilder.AppendLine(DateTime.Now.ToString());

@@ -122,6 +122,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
             GameDataType.ModInfo => GetModInfo(),
             GameDataType.ExactGameInfo => GameInfo.ExactStudioInfo,
             GameDataType.SettingValue => GetSettingValue((string) objects[1]),
+            GameDataType.VersionInfo => "hahahaha",
             _ => string.Empty
         };
 
@@ -325,37 +326,38 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
     #region Write
 
     protected override void EstablishConnection() {
-        var studio = this;
+        // var studio = this;
         var celeste = this;
-        studio = null;
 
-        Message? lastMessage;
+        Message lastMessage;
 
         // Stall until input initialized to avoid sending invalid hotkey data
         while (Hotkeys.KeysDict == null) {
             Thread.Sleep(Timeout);
         }
 
-        studio?.WriteMessageGuaranteed(new Message(MessageID.EstablishConnection, new byte[0]));
-        lastMessage = celeste?.ReadMessageGuaranteed();
-        if (lastMessage?.Id != MessageID.EstablishConnection) {
+        // studio.WriteMessageGuaranteed(new Message(MessageID.EstablishConnection, new byte[0]));
+        lastMessage = celeste.ReadMessageGuaranteed();
+        if (lastMessage.Id != MessageID.EstablishConnection) {
             throw new NeedsResetException("Invalid data recieved while establishing connection");
         }
 
-        studio?.SendPath(null);
-        lastMessage = celeste?.ReadMessageGuaranteed();
-        if (lastMessage?.Id != MessageID.SendPath) {
+        // studio.SendPath(null);
+        lastMessage = celeste.ReadMessageGuaranteed();
+        if (lastMessage.Id != MessageID.SendPath) {
             throw new NeedsResetException("Invalid data recieved while establishing connection");
         }
 
-        celeste?.ProcessSendPath(lastMessage?.Data);
+        celeste.ProcessSendPath(lastMessage.Data);
 
-        celeste?.SendCurrentBindings(true);
-        lastMessage = studio?.ReadMessageGuaranteed();
-        // if (lastMessage?.Id != MessageID.SendCurrentBindings) {
+        celeste.SendCurrentBindings(true);
+        // lastMessage = studio.ReadMessageGuaranteed();
+        // if (lastMessage.Id != MessageID.SendCurrentBindings) {
         // throw new NeedsResetException();
         // }
-        // studio?.ProcessSendCurrentBindings(lastMessage?.Data);
+        // studio.ProcessSendCurrentBindings(lastMessage?.Data);
+
+        celeste.SendModVersion();
 
         Initialized = true;
     }
@@ -391,6 +393,12 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
 
         WriteMessageGuaranteed(new Message(MessageID.SendCurrentBindings, data));
         lastBindingsData = data;
+    }
+
+    private void SendModVersion() {
+        const string minStudioVersion = "2.6.4";
+        byte[] data = BinaryFormatterHelper.ToByteArray(new[] {CelesteTasModule.Instance.Metadata.VersionString, minStudioVersion});
+        WriteMessageGuaranteed(new Message(MessageID.VersionInfo, data));
     }
 
     public void UpdateLines(Dictionary<int, string> lines) {

@@ -10,8 +10,6 @@ using StudioCommunication;
 namespace CelesteStudio.Communication;
 
 public sealed class StudioCommunicationServer : StudioCommunicationBase {
-    private string lastModVersion;
-
     private StudioCommunicationServer() { }
     public static StudioCommunicationServer Instance { get; private set; }
 
@@ -77,22 +75,12 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
         try {
             StudioInfo studioInfo = StudioInfo.FromByteArray(data);
             CommunicationWrapper.StudioInfo = studioInfo;
-
-            if (lastModVersion != studioInfo.ModVersion) {
-                lastModVersion = studioInfo.ModVersion;
-                if (new Version(studioInfo.MinStudioVersion + ".0") > Studio.Version) {
-                    MessageBox.Show(
-                        $"CelesteTAS v{studioInfo.ModVersion} require Studio v {studioInfo.MinStudioVersion} at least. Please manually extract the studio from the \"game_path\\Mods\\CelesteTAS.zip\" file.",
-                        "Communication Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    Application.Exit();
-                }
-            }
         } catch (InvalidCastException) {
             string studioVersion = Studio.Version.ToString(3);
             object[] objects = BinaryFormatterHelper.FromByteArray<object[]>(data);
             string modVersion = objects.Length >= 10 ? objects[9].ToString() : "Unknown";
             MessageBox.Show(
-                $"Studio v{studioVersion} and CelesteTAS v{modVersion} do not match. Please manually extract the studio from the \"game_path\\Mods\\CelesteTAS.zip\" file.",
+                $"CelesteStudio v{studioVersion} and CelesteTAS v{modVersion} do not match. Please manually extract the CelesteStudio from the \"game_path\\Mods\\CelesteTAS.zip\" file.",
                 "Communication Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             Application.Exit();
         }
@@ -109,11 +97,21 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
         CommunicationWrapper.SetBindings(bindings);
     }
 
+    private void ProcessVersionInfo(byte[] data) {
+        string[] versionInfos = BinaryFormatterHelper.FromByteArray<string[]>(data);
+        string modVersion = ErrorLog.ModVersion = versionInfos[0];
+        string minStudioVersion = versionInfos[1];
+
+        if (new Version(minStudioVersion + ".0") > Studio.Version) {
+            MessageBox.Show(
+                $"CelesteTAS v{modVersion} require CelesteStudio v {minStudioVersion} at least. Please manually extract CelesteStudio from the \"game_path\\Mods\\CelesteTAS.zip\" file.",
+                "Communication Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            Application.Exit();
+        }
+    }
+
     private void ProcessUpdateLines(byte[] data) {
         Dictionary<int, string> updateLines = BinaryFormatterHelper.FromByteArray<Dictionary<int, string>>(data);
-        // foreach (KeyValuePair<int,string> keyValuePair in updateLines) {
-        // Log("ProcessUpdateLines: " + keyValuePair);
-        // }
         CommunicationWrapper.UpdateLines(updateLines);
     }
 
@@ -127,24 +125,32 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
 
     protected override void EstablishConnection() {
         var studio = this;
-        var celeste = this;
-        celeste = null;
-        Message? lastMessage;
+        // var celeste = this;
 
-        studio?.ReadMessage();
-        studio?.WriteMessageGuaranteed(new Message(MessageID.EstablishConnection, new byte[0]));
-        celeste?.ReadMessageGuaranteed();
+        Message lastMessage;
 
-        studio?.SendPathNow(Studio.Instance.richText.CurrentFileName, false);
-        lastMessage = celeste?.ReadMessageGuaranteed();
+        studio.ReadMessage();
+        studio.WriteMessageGuaranteed(new Message(MessageID.EstablishConnection, new byte[0]));
+        // celeste.ReadMessageGuaranteed();
 
-        // celeste?.SendCurrentBindings(Hotkeys.listHotkeyKeys);
-        lastMessage = studio?.ReadMessageGuaranteed();
-        if (lastMessage?.Id != MessageID.SendCurrentBindings) {
+        studio.SendPathNow(Studio.Instance.richText.CurrentFileName, false);
+        // lastMessage = celeste.ReadMessageGuaranteed();
+
+        // celeste.SendCurrentBindings(Hotkeys.listHotkeyKeys);
+        lastMessage = studio.ReadMessageGuaranteed();
+        if (lastMessage.Id != MessageID.SendCurrentBindings) {
             throw new NeedsResetException("Invalid data recieved while establishing connection");
         }
 
-        studio?.ProcessSendCurrentBindings(lastMessage?.Data);
+        studio.ProcessSendCurrentBindings(lastMessage.Data);
+
+        // celeste.SendModVersion();
+        lastMessage = studio.ReadMessageGuaranteed();
+        if (lastMessage.Id != MessageID.VersionInfo) {
+            throw new NeedsResetException("Invalid data recieved while establishing connection");
+        }
+
+        studio.ProcessVersionInfo(lastMessage.Data);
 
         Initialized = true;
     }
