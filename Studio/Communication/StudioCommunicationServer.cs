@@ -77,10 +77,8 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
             CommunicationWrapper.StudioInfo = studioInfo;
         } catch (InvalidCastException) {
             string studioVersion = Studio.Version.ToString(3);
-            object[] objects = BinaryFormatterHelper.FromByteArray<object[]>(data);
-            string modVersion = objects.Length >= 10 ? objects[9].ToString() : "Unknown";
             MessageBox.Show(
-                $"CelesteStudio v{studioVersion} and CelesteTAS v{modVersion} do not match. Please manually extract the CelesteStudio from the \"game_path\\Mods\\CelesteTAS.zip\" file.",
+                $"CelesteStudio v{studioVersion} and CelesteTAS v{ErrorLog.ModVersion} do not match. Please manually extract the CelesteStudio from the \"game_path\\Mods\\CelesteTAS.zip\" file.",
                 "Communication Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             Application.Exit();
         }

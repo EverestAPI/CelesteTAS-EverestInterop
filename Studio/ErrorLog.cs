@@ -8,7 +8,7 @@ namespace CelesteStudio;
 public static class ErrorLog {
     private const string Filename = "celeste_studio_log.txt";
     private const string Marker = "==========================================";
-    public static string ModVersion;
+    public static string ModVersion = "Unknown";
 
     public static void Write(Exception e) {
         Write(e.ToString());
@@ -37,12 +37,7 @@ public static class ErrorLog {
 
         stringBuilder.Append("CelesteStudio v");
         stringBuilder.Append(Studio.Version.ToString(3));
-
-        if (string.IsNullOrEmpty(ModVersion)) {
-            stringBuilder.AppendLine();
-        } else {
-            stringBuilder.AppendLine($" & CelesteTAS v{ModVersion}");
-        }
+        stringBuilder.AppendLine($" & CelesteTAS v{ModVersion}");
 
         stringBuilder.AppendLine(DateTime.Now.ToString());
         stringBuilder.AppendLine(str);
