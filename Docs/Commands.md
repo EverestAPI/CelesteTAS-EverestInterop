@@ -61,11 +61,11 @@
   
 ### Set
 - `Set, (Optional Mod).Setting, Values`
-- `Set, Entity.Field..., Values` (set all entities)
-- `Set, Entity[roomName:id].Field..., Values` (set specific entity)
-- `Set, Level.Field..., Values`
-- `Set, Session.Field..., Values`
-- `Set, Type.StaticField..., Values`
+- `Set, Entity.Field, Values` (set all entities)
+- `Set, Entity[roomName:id].Field, Values` (set specific entity)
+- `Set, Level.Field, Values`
+- `Set, Session.Field, Values`
+- `Set, Type.StaticField, Values`
 - Sets the specified setting to the specified value.
 - Defaults to Celeste if no mod specified.
 - Everest settings use the mod name `Everest`.
@@ -85,6 +85,17 @@
   - `Set, Everest.ShowModOptionsInGame, false`
   - `Set, ExtendedVariantMode.Dashcount, 3`
   - `Set, CelesteTAS.CenterCamera, true`
+
+### Invoke
+- `Invoke, Entity.Method, Parameter1, Parameter2...` (all entities)
+- `Invoke, Entity[roomName:id].Method, Parameter1, Parameter2..` (specific entity)
+- `Invoke, Level.Method, Parameter1, Parameter2..`
+- `Invoke, Session.Method, Parameter1, Parameter2..`
+- `Invoke, Type.StaticMethod, Parameter1, Parameter2..`
+- Examples:
+    - `Invoke, Level.Pause`
+    - `Invoke, Player.Die`
+    - `Invoke, Session.SetFlag, whatever`
 
 ### Unsafe and Safe
 - The TAS will normally only run inside levels.
