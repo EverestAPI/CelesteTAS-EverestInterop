@@ -9,6 +9,7 @@ using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
+using TAS.Entities;
 using TAS.Module;
 using TAS.Utils;
 
@@ -115,11 +116,9 @@ public static class ConsoleCommandHandler {
     // "Console LoadCommand IDorSID PositionX PositionY SpeedX SpeedY"
     [TasCommand("Console", LegalInMainGame = false)]
     private static void ConsoleCommand(string[] arguments, string commandText) {
-        string commandName = arguments[0].ToLower();
+        string commandName = arguments[0].ToLower(CultureInfo.InvariantCulture);
         string[] args = arguments.Skip(1).ToArray();
-        if (commandName.Equals("load", StringComparison.InvariantCultureIgnoreCase) ||
-            commandName.Equals("hard", StringComparison.InvariantCultureIgnoreCase) ||
-            commandName.Equals("rmx2", StringComparison.InvariantCultureIgnoreCase)) {
+        if (commandName is "load" or "hard" or "rmx2") {
             LoadCommand(commandName, args);
         } else {
             List<string> commandHistory = Engine.Commands.GetFieldValue<List<string>>("commandHistory");
@@ -163,14 +162,14 @@ public static class ConsoleCommandHandler {
                 }
             }
 
-            AreaMode mode = AreaMode.Normal;
-            if (command.Equals("hard", StringComparison.InvariantCultureIgnoreCase)) {
-                mode = AreaMode.BSide;
-            } else if (command.Equals("rmx2", StringComparison.InvariantCultureIgnoreCase)) {
-                mode = AreaMode.CSide;
-            }
+            AreaMode mode = command switch {
+                "hard" => AreaMode.BSide,
+                "rmx2" => AreaMode.CSide,
+                _ => AreaMode.Normal
+            };
 
             if (!TryGetAreaId(args[0], out int areaId)) {
+                Toast.Show($"Map {args[0]} does not exist");
                 Manager.DisableRunLater();
                 return;
             }
@@ -206,8 +205,8 @@ public static class ConsoleCommandHandler {
             } else {
                 Load(mode, areaId);
             }
-        } catch {
-            // ignored
+        } catch (Exception e) {
+            e.LogException($"Console {command} command failed.");
         }
     }
 
