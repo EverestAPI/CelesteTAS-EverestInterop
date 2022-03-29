@@ -168,9 +168,9 @@ public static class InvokeCommand {
                             Log(errorMessage);
                             convertedObj = null;
                         }
-                    } else if (type == typeof(Level)) {
+                    } else if (parameterType == typeof(Level)) {
                         convertedObj = Engine.Scene.GetLevel();
-                    } else if (type == typeof(Session)) {
+                    } else if (parameterType == typeof(Session)) {
                         convertedObj = Engine.Scene.GetSession();
                     } else {
                         convertedObj = SetCommandHandler.Convert(parameters.FirstOrDefault(), parameterType);
