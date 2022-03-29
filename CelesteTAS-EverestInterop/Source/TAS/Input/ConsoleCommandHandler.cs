@@ -170,7 +170,10 @@ public static class ConsoleCommandHandler {
                 mode = AreaMode.CSide;
             }
 
-            int levelId = GetLevelId(args[0]);
+            if (!TryGetAreaId(args[0], out int areaId)) {
+                Manager.DisableRunLater();
+                return;
+            }
 
             if (args.Length > 1) {
                 if (!double.TryParse(args[1], out double x) || args.Length == 2) {
@@ -181,9 +184,9 @@ public static class ConsoleCommandHandler {
 
                     if (args.Length > 2) {
                         int spawnpoint = int.Parse(args[2]);
-                        Load(mode, levelId, screen, spawnpoint);
+                        Load(mode, areaId, screen, spawnpoint);
                     } else {
-                        Load(mode, levelId, screen);
+                        Load(mode, areaId, screen);
                     }
                 } else if (args.Length > 2 && double.TryParse(args[2], out double y)) {
                     Vector2 position = new((int) Math.Round(x), (int) Math.Round(y));
@@ -198,26 +201,28 @@ public static class ConsoleCommandHandler {
                         speed.Y = speedY;
                     }
 
-                    Load(mode, levelId, position, remainder, speed);
+                    Load(mode, areaId, position, remainder, speed);
                 }
             } else {
-                Load(mode, levelId);
+                Load(mode, areaId);
             }
         } catch {
             // ignored
         }
     }
 
-    private static int GetLevelId(string id) {
-        if (int.TryParse(id, out int num)) {
-            return num;
+    private static bool TryGetAreaId(string id, out int areaId) {
+        if (int.TryParse(id, out areaId)) {
+            return areaId >= 0 && areaId < AreaData.Areas.Count;
         } else {
-            return AreaDataExt.Get(id).ID;
+            AreaData areaData = AreaData.Get(id);
+            areaId = areaData?.ID ?? -1;
+            return areaData != null;
         }
     }
 
-    private static void Load(AreaMode mode, int levelId, string screen = null, int? spawnPoint = null) {
-        AreaKey areaKey = new(levelId, mode);
+    private static void Load(AreaMode mode, int areaId, string screen = null, int? spawnPoint = null) {
+        AreaKey areaKey = new(areaId, mode);
         Session session = AreaData.GetCheckpoint(areaKey, screen) != null ? new Session(areaKey, screen) : new Session(areaKey);
 
         if (screen != null) {
@@ -235,8 +240,8 @@ public static class ConsoleCommandHandler {
         EnterLevel(new LevelLoader(session, startPosition));
     }
 
-    private static void Load(AreaMode mode, int levelId, Vector2 spawnPoint, Vector2 remainder, Vector2 speed) {
-        AreaKey areaKey = new(levelId, mode);
+    private static void Load(AreaMode mode, int areaId, Vector2 spawnPoint, Vector2 remainder, Vector2 speed) {
+        AreaKey areaKey = new(areaId, mode);
         Session session = new(areaKey);
         session.Level = session.MapData.GetAt(spawnPoint)?.Name;
         if (AreaData.GetCheckpoint(areaKey, session.Level) != null) {
