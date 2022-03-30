@@ -36,6 +36,7 @@ namespace CelesteStudio {
             this.setCustomInfoTemplateFromClipboardToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.clearCustomInfoTemplateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator20 = new System.Windows.Forms.ToolStripSeparator();
+            this.clearWatchEntityInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.newFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -143,7 +144,6 @@ namespace CelesteStudio {
             this.statusPanel = new System.Windows.Forms.Panel();
             this.statusBar = new System.Windows.Forms.StatusStrip();
             this.lblStatus = new System.Windows.Forms.ToolStripStatusLabel();
-            this.clearWatchEntityInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusBarContextMenuStrip.SuspendLayout();
             this.menuStrip.SuspendLayout();
             this.tasTextContextMenuStrip.SuspendLayout();
@@ -165,7 +165,7 @@ namespace CelesteStudio {
             // 
             this.statusBarContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.copyGameDataMenuItem, this.reconnectStudioAndCelesteToolStripMenuItem, this.toolStripSeparator11, this.copyCustomInfoTemplateToClipboardToolStripMenuItem, this.setCustomInfoTemplateFromClipboardToolStripMenuItem, this.clearCustomInfoTemplateToolStripMenuItem, this.toolStripSeparator20, this.clearWatchEntityInfoToolStripMenuItem});
             this.statusBarContextMenuStrip.Name = "statusBarMenuStrip";
-            this.statusBarContextMenuStrip.Size = new System.Drawing.Size(399, 182);
+            this.statusBarContextMenuStrip.Size = new System.Drawing.Size(399, 160);
             // 
             // copyGameDataMenuItem
             // 
@@ -214,6 +214,13 @@ namespace CelesteStudio {
             this.toolStripSeparator20.Name = "toolStripSeparator20";
             this.toolStripSeparator20.Size = new System.Drawing.Size(395, 6);
             // 
+            // clearWatchEntityInfoToolStripMenuItem
+            // 
+            this.clearWatchEntityInfoToolStripMenuItem.Name = "clearWatchEntityInfoToolStripMenuItem";
+            this.clearWatchEntityInfoToolStripMenuItem.Size = new System.Drawing.Size(398, 24);
+            this.clearWatchEntityInfoToolStripMenuItem.Text = "Clear Watch Entity Info";
+            this.clearWatchEntityInfoToolStripMenuItem.Click += new System.EventHandler(this.clearWatchEntityInfoToolStripMenuItem_Click);
+            // 
             // menuStrip
             // 
             this.menuStrip.BackColor = System.Drawing.SystemColors.Control;
@@ -222,7 +229,7 @@ namespace CelesteStudio {
             this.menuStrip.Location = new System.Drawing.Point(0, 0);
             this.menuStrip.Name = "menuStrip";
             this.menuStrip.Padding = new System.Windows.Forms.Padding(8, 2, 0, 2);
-            this.menuStrip.Size = new System.Drawing.Size(411, 28);
+            this.menuStrip.Size = new System.Drawing.Size(382, 28);
             this.menuStrip.TabIndex = 3;
             this.menuStrip.Text = "menuStrip1";
             // 
@@ -577,7 +584,7 @@ namespace CelesteStudio {
             this.dividerLabel.Location = new System.Drawing.Point(0, 28);
             this.dividerLabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.dividerLabel.Name = "dividerLabel";
-            this.dividerLabel.Size = new System.Drawing.Size(411, 1);
+            this.dividerLabel.Size = new System.Drawing.Size(382, 1);
             this.dividerLabel.TabIndex = 4;
             // 
             // tasTextContextMenuStrip
@@ -964,7 +971,7 @@ namespace CelesteStudio {
             this.richText.Paddings = new System.Windows.Forms.Padding(0);
             this.richText.SaveStateLine = -1;
             this.richText.SelectionColor = System.Drawing.Color.FromArgb(((int) (((byte) (50)))), ((int) (((byte) (0)))), ((int) (((byte) (0)))), ((int) (((byte) (0)))));
-            this.richText.Size = new System.Drawing.Size(411, 709);
+            this.richText.Size = new System.Drawing.Size(382, 620);
             this.richText.TabIndex = 0;
             this.richText.TabLength = 0;
             this.richText.TextChanged += new System.EventHandler<CelesteStudio.RichText.TextChangedEventArgs>(this.tasText_TextChanged);
@@ -983,10 +990,10 @@ namespace CelesteStudio {
             this.statusPanel.AutoScroll = true;
             this.statusPanel.Controls.Add(this.statusBar);
             this.statusPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.statusPanel.Location = new System.Drawing.Point(0, 717);
+            this.statusPanel.Location = new System.Drawing.Point(0, 628);
             this.statusPanel.Margin = new System.Windows.Forms.Padding(4);
             this.statusPanel.Name = "statusPanel";
-            this.statusPanel.Size = new System.Drawing.Size(411, 125);
+            this.statusPanel.Size = new System.Drawing.Size(382, 125);
             this.statusPanel.TabIndex = 5;
             // 
             // statusBar
@@ -999,7 +1006,7 @@ namespace CelesteStudio {
             this.statusBar.Location = new System.Drawing.Point(0, 0);
             this.statusBar.Name = "statusBar";
             this.statusBar.Padding = new System.Windows.Forms.Padding(1, 0, 19, 0);
-            this.statusBar.Size = new System.Drawing.Size(411, 125);
+            this.statusBar.Size = new System.Drawing.Size(382, 125);
             this.statusBar.TabIndex = 2;
             // 
             // lblStatus
@@ -1007,24 +1014,17 @@ namespace CelesteStudio {
             this.lblStatus.Font = new System.Drawing.Font("Courier New", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte) (0)));
             this.lblStatus.Name = "lblStatus";
             this.lblStatus.Overflow = System.Windows.Forms.ToolStripItemOverflow.Never;
-            this.lblStatus.Size = new System.Drawing.Size(391, 120);
+            this.lblStatus.Size = new System.Drawing.Size(362, 120);
             this.lblStatus.Spring = true;
             this.lblStatus.Text = "Searching...";
             this.lblStatus.TextAlign = System.Drawing.ContentAlignment.TopLeft;
-            // 
-            // clearWatchEntityInfoToolStripMenuItem
-            // 
-            this.clearWatchEntityInfoToolStripMenuItem.Name = "clearWatchEntityInfoToolStripMenuItem";
-            this.clearWatchEntityInfoToolStripMenuItem.Size = new System.Drawing.Size(398, 24);
-            this.clearWatchEntityInfoToolStripMenuItem.Text = "Clear Watch Entity Info";
-            this.clearWatchEntityInfoToolStripMenuItem.Click += new System.EventHandler(this.clearWatchEntityInfoToolStripMenuItem_Click);
             // 
             // Studio
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Control;
-            this.ClientSize = new System.Drawing.Size(411, 842);
+            this.ClientSize = new System.Drawing.Size(382, 753);
             this.Controls.Add(this.statusPanel);
             this.Controls.Add(this.dividerLabel);
             this.Controls.Add(this.menuStrip);
@@ -1034,7 +1034,7 @@ namespace CelesteStudio {
             this.Location = new System.Drawing.Point(0, 0);
             this.MainMenuStrip = this.menuStrip;
             this.Margin = new System.Windows.Forms.Padding(4);
-            this.MinimumSize = new System.Drawing.Size(261, 213);
+            this.MinimumSize = new System.Drawing.Size(250, 250);
             this.Name = "Studio";
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "Studio";

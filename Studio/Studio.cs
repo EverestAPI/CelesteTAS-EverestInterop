@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
@@ -13,7 +12,6 @@ using System.Threading;
 using System.Windows.Forms;
 using CelesteStudio.Communication;
 using CelesteStudio.Entities;
-using CelesteStudio.Properties;
 using CelesteStudio.RichText;
 using StudioCommunication;
 
@@ -23,7 +21,7 @@ public partial class Studio : BaseForm {
     private const string MaxStatusHeight20Line = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
     public static Studio Instance;
     public static Version Version { get; private set; }
-    private static StringCollection RecentFiles => Settings.Default.RecentFiles ??= new StringCollection();
+    private static List<string> RecentFiles => Settings.Instance.RecentFiles;
     public readonly List<InputRecord> InputRecords = new();
 
     private DateTime lastChanged = DateTime.MinValue;
@@ -52,34 +50,26 @@ public partial class Studio : BaseForm {
         Instance = this;
         Version = Assembly.GetExecutingAssembly().GetName().Version;
 
-        UpgradeSettings();
         InitializeComponent();
         InitTitleBarTooltip();
         InitMenu();
         InitDragDrop();
-        InitFont(Settings.Default.Font ?? fontDialog.Font);
+        InitFont(Settings.Instance.Font ?? fontDialog.Font);
 
         Text = TitleBarText;
 
         InputRecords.Add(new InputRecord(""));
         EnableStudio(false);
 
-        DesktopLocation = Settings.Default.DesktopLocation;
-        Size = Settings.Default.Size;
+        DesktopLocation = Settings.Instance.Location;
+        Size = Settings.Instance.Size;
 
         if (!IsTitleBarVisible()) {
-            DesktopLocation = new Point(0, 0);
+            DesktopLocation = new Point(100, 100);
+            Size = new Size(400, 800);
         }
 
         TryOpenFile(args);
-    }
-
-    private void UpgradeSettings() {
-        if (string.IsNullOrEmpty(Settings.Default.UpgradeVersion) ||
-            new Version(Settings.Default.UpgradeVersion) < Version) {
-            Settings.Default.Upgrade();
-            Settings.Default.UpgradeVersion = Version.ToString();
-        }
     }
 
     private void InitTitleBarTooltip() {
@@ -247,9 +237,9 @@ public partial class Studio : BaseForm {
     }
 
     private void SaveSettings() {
-        Settings.Default.DesktopLocation = DesktopLocation;
-        Settings.Default.Size = Size;
-        Settings.Default.Save();
+        Settings.Instance.Location = DesktopLocation;
+        Settings.Instance.Size = Size;
+        Settings.Save();
     }
 
     private void ShowTooltip(string text) {
@@ -417,10 +407,6 @@ public partial class Studio : BaseForm {
             richText.Selection.GoUp(e.Shift);
             richText.ScrollLeft();
         }
-    }
-
-    private void ToggleUpdatingHotkeys() {
-        Settings.Default.UpdatingHotkeys = !Settings.Default.UpdatingHotkeys;
     }
 
     public void TryOpenFile(string[] args) {
@@ -595,7 +581,7 @@ public partial class Studio : BaseForm {
         }
 
         RecentFiles.Insert(0, CurrentFileName);
-        Settings.Default.LastFileName = CurrentFileName;
+        Settings.Instance.LastFileName = CurrentFileName;
         SaveSettings();
     }
 
@@ -761,10 +747,10 @@ public partial class Studio : BaseForm {
         } else {
             UpdateStatusBar();
 
-            if (File.Exists(Settings.Default.LastFileName)
-                && IsFileReadable(Settings.Default.LastFileName)
+            if (File.Exists(Settings.Instance.LastFileName)
+                && IsFileReadable(Settings.Instance.LastFileName)
                 && string.IsNullOrEmpty(CurrentFileName)) {
-                CurrentFileName = Settings.Default.LastFileName;
+                CurrentFileName = Settings.Instance.LastFileName;
                 richText.ReloadFile();
             }
 
@@ -850,7 +836,7 @@ public partial class Studio : BaseForm {
         }
 
         int bottomExtraSpace = TextRenderer.MeasureText("\n", lblStatus.Font).Height / 5;
-        if (Settings.Default.ShowGameInfo) {
+        if (Settings.Instance.ShowGameInfo) {
             int maxHeight = TextRenderer.MeasureText(MaxStatusHeight20Line, lblStatus.Font).Height + bottomExtraSpace;
             int statusBarHeight = TextRenderer.MeasureText(lblStatus.Text.Trim(), lblStatus.Font).Height + bottomExtraSpace;
             statusPanel.Height = Math.Min(maxHeight, statusBarHeight);
@@ -1245,7 +1231,7 @@ public partial class Studio : BaseForm {
     }
 
     private void autoRemoveExclusiveActionsToolStripMenuItem_Click(object sender, EventArgs e) {
-        Settings.Default.AutoRemoveMutuallyExclusiveActions = !Settings.Default.AutoRemoveMutuallyExclusiveActions;
+        Settings.Instance.AutoRemoveMutuallyExclusiveActions = !Settings.Instance.AutoRemoveMutuallyExclusiveActions;
     }
 
     private void homeMenuItem_Click(object sender, EventArgs e) {
@@ -1254,12 +1240,12 @@ public partial class Studio : BaseForm {
 
     private void settingsToolStripMenuItem_Opened(object sender, EventArgs e) {
         settingsToolStripMenuItem.DropDown.Opacity = 1f;
-        sendInputsToCelesteMenuItem.Checked = Settings.Default.UpdatingHotkeys;
-        autoRemoveExclusiveActionsToolStripMenuItem.Checked = Settings.Default.AutoRemoveMutuallyExclusiveActions;
-        showGameInfoToolStripMenuItem.Checked = Settings.Default.ShowGameInfo;
-        enabledAutoBackupToolStripMenuItem.Checked = Settings.Default.AutoBackupEnabled;
-        backupRateToolStripMenuItem.Text = $"Backup Rate (minutes): {Settings.Default.AutoBackupRate}";
-        backupFileCountsToolStripMenuItem.Text = $"Backup File Count: {Settings.Default.AutoBackupCount}";
+        sendInputsToCelesteMenuItem.Checked = Settings.Instance.SendInputsToCeleste;
+        autoRemoveExclusiveActionsToolStripMenuItem.Checked = Settings.Instance.AutoRemoveMutuallyExclusiveActions;
+        showGameInfoToolStripMenuItem.Checked = Settings.Instance.ShowGameInfo;
+        enabledAutoBackupToolStripMenuItem.Checked = Settings.Instance.AutoBackupEnabled;
+        backupRateToolStripMenuItem.Text = $"Backup Rate (minutes): {Settings.Instance.AutoBackupRate}";
+        backupFileCountsToolStripMenuItem.Text = $"Backup File Count: {Settings.Instance.AutoBackupCount}";
     }
 
     private void openPreviousFileToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -1277,9 +1263,9 @@ public partial class Studio : BaseForm {
     }
 
     private void sendInputsToCelesteMenuItem_Click(object sender, EventArgs e) {
-        ToggleUpdatingHotkeys();
+        Settings.Instance.SendInputsToCeleste = !Settings.Instance.SendInputsToCeleste;
         if (settingsToolStripMenuItem.DropDown.Opacity == 0f) {
-            ShowTooltip((Settings.Default.UpdatingHotkeys ? "Enable" : "Disable") + " Send Inputs to Celeste");
+            ShowTooltip((Settings.Instance.SendInputsToCeleste ? "Enable" : "Disable") + " Send Inputs to Celeste");
         }
 
         settingsToolStripMenuItem.DropDown.Opacity = 0f;
@@ -1430,7 +1416,7 @@ public partial class Studio : BaseForm {
             SizeF sizeDot = RichText.RichText.GetCharSize(fontDialog.Font, '.');
             if (sizeM == sizeDot) {
                 InitFont(fontDialog.Font);
-                Settings.Default.Font = fontDialog.Font;
+                Settings.Instance.Font = fontDialog.Font;
             } else {
                 ShowTooltip("Only monospaced font is allowed");
             }
@@ -1500,9 +1486,9 @@ public partial class Studio : BaseForm {
     }
 
     private void showGameInfoToolStripMenuItem_Click(object sender, EventArgs e) {
-        Settings.Default.ShowGameInfo = !Settings.Default.ShowGameInfo;
+        Settings.Instance.ShowGameInfo = !Settings.Instance.ShowGameInfo;
         SaveSettings();
-        if (Settings.Default.ShowGameInfo) {
+        if (Settings.Instance.ShowGameInfo) {
             StudioCommunicationServer.Instance?.ExternalReset();
         }
     }
@@ -1694,37 +1680,37 @@ public partial class Studio : BaseForm {
     }
 
     private void enabledAutoBackupToolStripMenuItem_Click(object sender, EventArgs e) {
-        Settings.Default.AutoBackupEnabled = !Settings.Default.AutoBackupEnabled;
+        Settings.Instance.AutoBackupEnabled = !Settings.Instance.AutoBackupEnabled;
         SaveSettings();
     }
 
     private void backupRateToolStripMenuItem_Click(object sender, EventArgs e) {
-        string origRate = Settings.Default.AutoBackupRate.ToString();
+        string origRate = Settings.Instance.AutoBackupRate.ToString();
         if (!DialogUtils.ShowInputDialog("Backup Rate (minutes)", ref origRate)) {
             return;
         }
 
         if (string.IsNullOrEmpty(origRate)) {
-            Settings.Default.AutoBackupRate = 0;
+            Settings.Instance.AutoBackupRate = 0;
         } else if (int.TryParse(origRate, out int count)) {
-            Settings.Default.AutoBackupRate = Math.Max(0, count);
+            Settings.Instance.AutoBackupRate = Math.Max(0, count);
         }
 
-        backupRateToolStripMenuItem.Text = $"Backup Rate (minutes): {Settings.Default.AutoBackupRate}";
+        backupRateToolStripMenuItem.Text = $"Backup Rate (minutes): {Settings.Instance.AutoBackupRate}";
     }
 
     private void backupFileCountsToolStripMenuItem_Click(object sender, EventArgs e) {
-        string origCount = Settings.Default.AutoBackupCount.ToString();
+        string origCount = Settings.Instance.AutoBackupCount.ToString();
         if (!DialogUtils.ShowInputDialog("Backup File Count", ref origCount)) {
             return;
         }
 
         if (string.IsNullOrEmpty(origCount)) {
-            Settings.Default.AutoBackupCount = 0;
+            Settings.Instance.AutoBackupCount = 0;
         } else if (int.TryParse(origCount, out int count)) {
-            Settings.Default.AutoBackupCount = Math.Max(0, count);
+            Settings.Instance.AutoBackupCount = Math.Max(0, count);
         }
 
-        backupFileCountsToolStripMenuItem.Text = $"Backup File Count: {Settings.Default.AutoBackupCount}";
+        backupFileCountsToolStripMenuItem.Text = $"Backup File Count: {Settings.Instance.AutoBackupCount}";
     }
 }

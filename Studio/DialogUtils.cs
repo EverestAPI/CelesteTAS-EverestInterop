@@ -3,7 +3,6 @@ using System.Drawing;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
-using CelesteStudio.Properties;
 using CelesteStudio.RichText;
 
 namespace CelesteStudio;
@@ -128,8 +127,8 @@ public static class DialogUtils {
         caseCheckbox.Size = new Size(textBox.Width, buttonHeight);
         caseCheckbox.Text = "&Match case";
         caseCheckbox.Location = new Point(textBox.Left, nextButton.Top);
-        caseCheckbox.Checked = Settings.Default.FindMatchCase;
-        caseCheckbox.CheckedChanged += (sender, args) => Settings.Default.FindMatchCase = caseCheckbox.Checked;
+        caseCheckbox.Checked = Settings.Instance.FindMatchCase;
+        caseCheckbox.CheckedChanged += (sender, args) => Settings.Instance.FindMatchCase = caseCheckbox.Checked;
         inputBox.Controls.Add(caseCheckbox);
 
         inputBox.ShowDialog();
@@ -161,7 +160,7 @@ public static class DialogUtils {
         int? resultLine = null;
         int? resultIndex = null;
         StringComparison comparison =
-            Settings.Default.FindMatchCase ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase;
+            Settings.Instance.FindMatchCase ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase;
         if (next) {
             for (int i = startLine; i < richText.LinesCount; i++) {
                 startIndex ??= 0;

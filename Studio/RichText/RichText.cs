@@ -12,7 +12,6 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
 using CelesteStudio.Entities;
-using CelesteStudio.Properties;
 using StudioCommunication;
 
 namespace CelesteStudio.RichText;
@@ -2296,7 +2295,7 @@ public class RichText : UserControl {
     }
 
     private void TryBackupFile() {
-        if (!Settings.Default.AutoBackupEnabled || string.IsNullOrEmpty(CurrentFileName)) {
+        if (!Settings.Instance.AutoBackupEnabled || string.IsNullOrEmpty(CurrentFileName)) {
             return;
         }
 
@@ -2308,12 +2307,12 @@ public class RichText : UserControl {
         string[] files = Directory.GetFiles(backupDir);
         if (files.Length > 0) {
             DateTime lastFileTime = File.GetLastWriteTime(files.Last());
-            if (Settings.Default.AutoBackupRate > 0 && lastFileTime.AddMinutes(Settings.Default.AutoBackupRate) > DateTime.Now) {
+            if (Settings.Instance.AutoBackupRate > 0 && lastFileTime.AddMinutes(Settings.Instance.AutoBackupRate) > DateTime.Now) {
                 return;
             }
 
-            if (Settings.Default.AutoBackupCount > 0 && files.Length >= Settings.Default.AutoBackupCount) {
-                foreach (string path in files.Take(files.Length - Settings.Default.AutoBackupCount + 1)) {
+            if (Settings.Instance.AutoBackupCount > 0 && files.Length >= Settings.Instance.AutoBackupCount) {
+                foreach (string path in files.Take(files.Length - Settings.Instance.AutoBackupCount + 1)) {
                     File.Delete(path);
                 }
             }

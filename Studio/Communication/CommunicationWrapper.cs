@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using CelesteStudio.Properties;
 using CelesteStudio.RichText;
 using StudioCommunication;
 using Char = CelesteStudio.RichText.Char;
@@ -32,7 +31,7 @@ static class CommunicationWrapper {
     //"wrapper"
     //This doesn't work in release build and i don't particularly care to figure out why.
     public static bool CheckControls(ref Message msg) {
-        if (!Settings.Default.UpdatingHotkeys
+        if (!Settings.Instance.SendInputsToCeleste
             || Environment.OSVersion.Platform == PlatformID.Unix
             || bindings == null
             // check if key is repeated

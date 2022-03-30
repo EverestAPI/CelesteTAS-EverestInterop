@@ -30,23 +30,15 @@ public class Program : WindowsFormsApplicationBase {
             Directory.SetCurrentDirectory(exeDir);
         }
 
+        Settings.Load();
+
         new Program().Run(args);
     }
 
     private static void OnUnhandledException(object sender, System.UnhandledExceptionEventArgs e) {
         Exception exception = e.ExceptionObject as Exception ?? new Exception("Unknown unhandled exception");
-        if (exception.GetType().FullName == "System.Configuration.ConfigurationErrorsException") {
-            MessageBox.Show("Your configuration file is corrupted and will be deleted automatically, please try to launch celeste studio again.",
-                "Configuration Errors Exception", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            string configFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Celeste_Studio");
-            if (Directory.Exists(configFolder)) {
-                Directory.Delete(configFolder, true);
-            }
-        } else {
-            ErrorLog.Write(exception);
-            ErrorLog.Open();
-        }
-
+        ErrorLog.Write(exception);
+        ErrorLog.Open();
         Application.Exit();
     }
 

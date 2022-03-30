@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
-using CelesteStudio.Properties;
 
 namespace CelesteStudio.Entities;
 
@@ -143,7 +142,7 @@ public class InputRecord {
             index++;
         }
 
-        if (!Settings.Default.AutoRemoveMutuallyExclusiveActions && HasActions(Actions.Feather)) {
+        if (!Settings.Instance.AutoRemoveMutuallyExclusiveActions && HasActions(Actions.Feather)) {
             Actions &= ~Actions.Right & ~Actions.Left & ~Actions.Up & ~Actions.Down;
         }
     }
@@ -376,7 +375,7 @@ public class InputRecord {
     }
 
     public static void ProcessExclusiveActions(InputRecord oldInput, InputRecord newInput) {
-        if (!Settings.Default.AutoRemoveMutuallyExclusiveActions) {
+        if (!Settings.Instance.AutoRemoveMutuallyExclusiveActions) {
             return;
         }
 
