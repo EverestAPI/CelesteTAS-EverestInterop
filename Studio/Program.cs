@@ -32,6 +32,9 @@ public class Program : WindowsFormsApplicationBase {
 
         Settings.Load();
 
+        // delete the useless config file
+        File.Delete("./Celeste Studio.exe.config");
+
         new Program().Run(args);
     }
 
