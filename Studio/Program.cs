@@ -30,8 +30,6 @@ public class Program : WindowsFormsApplicationBase {
             Directory.SetCurrentDirectory(exeDir);
         }
 
-        Settings.Load();
-
         // delete the useless config file
         File.Delete("./Celeste Studio.exe.config");
 
@@ -53,6 +51,9 @@ public class Program : WindowsFormsApplicationBase {
             try {
                 foreach (Process process in Process.GetProcessesByName("Celeste Studio")) {
                     if (process.Id != Process.GetCurrentProcess().Id) {
+                        // trigger save settings
+                        Hide(process.MainWindowHandle);
+                        Restore(process.MainWindowHandle);
                         process.Kill();
                     }
                 }
@@ -68,7 +69,7 @@ public class Program : WindowsFormsApplicationBase {
     private void OnStartupNextInstance(object sender, StartupNextInstanceEventArgs e) {
         (MainForm as Studio)?.TryOpenFile(e.CommandLine.ToArray());
         if (MainForm.WindowState == FormWindowState.Minimized) {
-            Restore(MainForm);
+            Restore(MainForm.Handle);
         } else {
             SetForegroundWindowEx(MainForm);
         }
@@ -93,8 +94,14 @@ public class Program : WindowsFormsApplicationBase {
     [DllImport("kernel32.dll")]
     private static extern uint GetCurrentThreadId();
 
-    private static void Restore(Form form) {
-        ShowWindow(form.Handle, 0x09);
+    private static void Restore(IntPtr hWnd) {
+        const int restore = 0x09;
+        ShowWindow(hWnd, restore);
+    }
+
+    private static void Hide(IntPtr hWnd) {
+        const int hide = 0x00;
+        ShowWindow(hWnd, hide);
     }
 
     private void SetForegroundWindowEx(Form form) {

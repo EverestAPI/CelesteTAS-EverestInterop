@@ -17,7 +17,7 @@ public class BaseForm : Form {
     protected override void WndProc(ref Message m) {
         base.WndProc(ref m);
         if (m.Msg == WM_NCMOUSEMOVE) {
-            track.hwndTrack = this.Handle;
+            track.hwndTrack = Handle;
             track.cbSize = (uint) Marshal.SizeOf(track);
             track.dwFlags = TME_HOVER | TME_LEAVE | TME_NONCLIENT;
             track.dwHoverTime = 500;

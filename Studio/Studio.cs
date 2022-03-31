@@ -22,7 +22,7 @@ public partial class Studio : BaseForm {
     public static Studio Instance;
     public static Version Version { get; private set; }
     private static List<string> RecentFiles => Settings.Instance.RecentFiles;
-    public readonly List<InputRecord> InputRecords = new();
+    public readonly List<InputRecord> InputRecords = new() {new InputRecord("")};
 
     private DateTime lastChanged = DateTime.MinValue;
     private FormWindowState lastWindowState = FormWindowState.Normal;
@@ -51,16 +51,28 @@ public partial class Studio : BaseForm {
         Version = Assembly.GetExecutingAssembly().GetName().Version;
 
         InitializeComponent();
+        InitSettings();
+        InitLocationSize();
         InitTitleBarTooltip();
         InitMenu();
         InitDragDrop();
         InitFont(Settings.Instance.Font ?? fontDialog.Font);
+        EnableStudio(false);
+        TryOpenFile(args);
 
         Text = TitleBarText;
+    }
 
-        InputRecords.Add(new InputRecord(""));
-        EnableStudio(false);
+    private void InitSettings() {
+        Settings.Load();
+        VisibleChanged += (sender, args) => {
+            if (!Visible) {
+                SaveSettings();
+            }
+        };
+    }
 
+    private void InitLocationSize() {
         DesktopLocation = Settings.Instance.Location;
         Size = Settings.Instance.Size;
 
@@ -68,8 +80,6 @@ public partial class Studio : BaseForm {
             DesktopLocation = new Point(100, 100);
             Size = new Size(400, 800);
         }
-
-        TryOpenFile(args);
     }
 
     private void InitTitleBarTooltip() {
@@ -107,6 +117,7 @@ public partial class Studio : BaseForm {
                 TryGoToPlayLine();
             }
         };
+
         statusBar.MouseClick += (sender, args) => {
             if ((args.Button & MouseButtons.Right) == 0) {
                 return;
@@ -114,6 +125,7 @@ public partial class Studio : BaseForm {
 
             statusBarContextMenuStrip.Show(Cursor.Position);
         };
+
         openRecentMenuItem.DropDownItemClicked += (sender, args) => {
             ToolStripItem clickedItem = args.ClickedItem;
             if (clickedItem.Text == "Clear") {
@@ -162,6 +174,7 @@ public partial class Studio : BaseForm {
                 OpenFile(fileList[0]);
             }
         };
+
         richText.DragEnter += (sender, args) => {
             string[] fileList = (string[]) args.Data.GetData(DataFormats.FileDrop, false);
             if (fileList.Length > 0 && fileList[0].EndsWith(".tas")) {
