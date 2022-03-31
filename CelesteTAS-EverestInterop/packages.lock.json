@@ -14,6 +14,15 @@
                 "resolved": "1.1.8",
                 "contentHash": "a/zkJHzyzjIilu5cn5SnnCkPDbfUD+nLBpCaSivp0GCotBR6w7S8CaDymI5p0qFB1XUImgii1AqWYZsIK+Lh5g=="
             },
+            "Microsoft.NETFramework.ReferenceAssemblies": {
+                "type": "Direct",
+                "requested": "[1.0.2, )",
+                "resolved": "1.0.2",
+                "contentHash": "5/cSEVld+px/CuRrbohO/djfg6++eR6zGpy88MgqloXvkj//WXWpFZyu/OpkXPN0u5m+dN/EVwLNYFUxD4h2+A==",
+                "dependencies": {
+                    "Microsoft.NETFramework.ReferenceAssemblies.net452": "1.0.2"
+                }
+            },
             "Mono.Cecil": {
                 "type": "Direct",
                 "requested": "[0.11.3, )",
@@ -48,6 +57,11 @@
                 "dependencies": {
                     "Mono.Cecil": "0.11.3"
                 }
+            },
+            "Microsoft.NETFramework.ReferenceAssemblies.net452": {
+                "type": "Transitive",
+                "resolved": "1.0.2",
+                "contentHash": "H67KhF+Lldlvr/N55gbtlZNCLq20mPGKFaPLbUkK19boUq/7DTJEHAsxC6yUADKlH1Li/bcyeowB/A484ECDPA=="
             }
         }
     }

@@ -31,11 +31,12 @@
     </PropertyGroup>
     <Import Project="..\StudioCommunication\StudioCommunication.projitems" Label="Shared" />
     <ItemGroup>
-        <PackageReference Include="DotNetZip" Version="1.13.8"/>
-        <PackageReference Include="Mono.Cecil" Version="0.11.3"/>
-        <PackageReference Include="MonoMod" Version="21.4.29.1"/>
-        <PackageReference Include="MonoMod.RuntimeDetour" Version="21.4.29.1"/>
-        <PackageReference Include="MonoMod.Utils" Version="21.4.29.1"/>
+        <PackageReference Include="DotNetZip" Version="1.13.8" />
+        <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" />
+        <PackageReference Include="Mono.Cecil" Version="0.11.3" />
+        <PackageReference Include="MonoMod" Version="21.4.29.1" />
+        <PackageReference Include="MonoMod.RuntimeDetour" Version="21.4.29.1" />
+        <PackageReference Include="MonoMod.Utils" Version="21.4.29.1" />
         <PackageReference Include="JetBrains.Profiler.Api" Version="1.1.8">
             <IncludeAssets Condition="'$(Configuration)' == 'Debug'">all</IncludeAssets>
         </PackageReference>
@@ -70,10 +71,10 @@
         </Content>
     </ItemGroup>
     <ItemGroup>
-        <None Remove="lib-stripped\**"/>
-        <None Remove="CelesteTAS-EverestInterop.csproj.DotSettings"/>
+        <None Remove="lib-stripped\**" />
+        <None Remove="CelesteTAS-EverestInterop.csproj.DotSettings" />
     </ItemGroup>
     <ItemGroup>
-        <Folder Include="Source"/>
+        <Folder Include="Source" />
     </ItemGroup>
 </Project>
