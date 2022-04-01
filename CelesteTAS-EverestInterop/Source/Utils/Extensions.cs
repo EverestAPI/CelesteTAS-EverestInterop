@@ -30,7 +30,7 @@ internal static class FastReflection {
             ilGen.Emit(OpCodes.Ldsfld, field);
         } else {
             ilGen.Emit(OpCodes.Ldarg_0);
-            if (field.DeclaringType.IsValueType) {
+            if (!param[0].IsValueType && field.DeclaringType.IsValueType) {
                 ilGen.Emit(OpCodes.Unbox_Any, field.DeclaringType);
             }
 
