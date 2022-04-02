@@ -30,3 +30,4 @@ Can be used instead of notepad or similar for easier editing of the TAS file. It
 - Right Click on Info Area: Show Info Context Menu
 - Shift + Mouse Wheel: Tweak Frames Between Selected Input and Mouse Pointed Input
 - Ctrl + Shift + Up/Down: Tweak Frames Between Selected Inputs
+- Ctrl + Alt + C: Copy File Path

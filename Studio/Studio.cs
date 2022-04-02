@@ -612,6 +612,10 @@ public partial class Studio : BaseForm {
     }
 
     private void CopyFilePath() {
+        if (string.IsNullOrEmpty(CurrentFileName)) {
+            return;
+        }
+
         for (int i = 0; i < 5; i++) {
             try {
                 Clipboard.SetDataObject(CurrentFileName, true);
