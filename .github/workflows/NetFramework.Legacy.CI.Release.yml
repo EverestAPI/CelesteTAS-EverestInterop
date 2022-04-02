@@ -1,23 +1,13 @@
-name: NetFramework.Legacy.CI
+name: NetFramework.Legacy.CI.Release
 
 on:
   push:
-    branches:
-      - master
-    tags-ignore:
-      - '*'
-    paths-ignore:
-      - LICENSE
-      - README.md
-      - 'Docs/*.md'
-  pull_request:
-    branches:
-      - '*'
+    tags:
+      - "v*.*.*"
 
 jobs:
   build:
     runs-on: windows-2022
-    if: "!contains(toJSON(github.event.commits.*.message), '[skip-ci]') && !startsWith(github.ref, 'refs/tags/')"
 
     env:
       Solution_Name: CelesteTAS-EverestInterop.sln
@@ -37,8 +27,15 @@ jobs:
       - name: Build with MSBuild
         run: msbuild $env:Solution_Name -t:build -restore -p:Configuration=Release,RestoreLockedMode=true -m
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v2
+      - name: Zip Files
+        uses: papeloto/action-zip@v1
         with:
-          name: CelesteTAS
-          path: CelesteTAS-EverestInterop/bin/net452
+          files: CelesteTAS-EverestInterop/bin/net452/
+          dest: CelesteTAS_${{github.ref_name}}.zip
+
+      - name: Tagged Release
+        uses: marvinpinto/action-automatic-releases@latest
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: false
+          files: CelesteTAS_${{github.ref_name}}.zip
