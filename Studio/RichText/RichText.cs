@@ -9,7 +9,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Windows.Forms;
 using CelesteStudio.Entities;
 using StudioCommunication;
@@ -1591,21 +1590,16 @@ public class RichText : UserControl {
             var data = new DataObject();
             data.SetData(DataFormats.UnicodeText, true, Selection.Text);
             data.SetData(DataFormats.Html, PrepareHtmlForClipboard(html));
-            Thread thread = new(() => {
-                for (int i = 0; i < 5; i++) {
-                    try {
-                        Clipboard.SetDataObject(data, true);
-                        return;
-                    } catch (ExternalException) {
-                        Win32Api.UnlockClipboard();
-                    }
+            for (int i = 0; i < 5; i++) {
+                try {
+                    Clipboard.SetDataObject(data, true);
+                    return;
+                } catch (ExternalException) {
+                    Win32Api.UnlockClipboard();
                 }
+            }
 
-                MessageBox.Show("Failed to copy text.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            });
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Start();
-            thread.Join();
+            MessageBox.Show("Failed to copy text.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
     }
 
@@ -1661,15 +1655,9 @@ public class RichText : UserControl {
     /// </summary>
     public void Paste() {
         string text = null;
-        var thread = new Thread(() => {
-                if (Clipboard.ContainsText()) {
-                    text = Clipboard.GetText();
-                }
-            }
-        );
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
+        if (Clipboard.ContainsText()) {
+            text = Clipboard.GetText();
+        }
 
         if (text != null) {
             InsertText(text);

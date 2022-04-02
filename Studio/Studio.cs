@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -291,87 +292,85 @@ public partial class Studio : BaseForm {
 
     private void Studio_KeyDown(object sender, KeyEventArgs e) {
         try {
-            if ((e.Modifiers & Keys.Control) == Keys.Control) {
-                // pressing ctrl
-                if (e.Modifiers == Keys.Control) {
-                    // only ctrl
-                    switch (e.KeyCode) {
-                        case Keys.S: // Ctrl + S
-                            richText.SaveFile();
-                            break;
-                        case Keys.O: // Ctrl + O
-                            OpenFile();
-                            break;
-                        case Keys.OemQuestion: // Ctrl + /
-                        case Keys.K: // Ctrl + K
-                            CommentText(true);
-                            break;
-                        case Keys.P: // Ctrl + P
-                            ClearUncommentedBreakpoints();
-                            break;
-                        case Keys.OemPeriod: // Ctrl + OemPeriod -> insert/remove breakpoint
-                            InsertOrRemoveText(InputRecord.BreakpointRegex, "***");
-                            break;
-                        case Keys.R: // Ctrl + R
-                            InsertRoomName();
-                            break;
-                        case Keys.F: // Ctrl + F
-                            DialogUtils.ShowFindDialog(richText);
-                            break;
-                        case Keys.G: // Ctrl + G
-                            DialogUtils.ShowGoToDialog(richText);
-                            break;
-                        case Keys.T: // Ctrl + T
-                            InsertTime();
-                            break;
-                        case Keys.Down: // Ctrl + Down
-                            GoDownCommentAndBreakpoint(e);
-                            break;
-                        case Keys.Up: // Ctrl + Up
-                            GoUpCommentAndBreakpoint(e);
-                            break;
-                        case Keys.L: // Ctrl + L
-                            CombineInputs(true);
-                            break;
-                    }
-                } else if (e.Modifiers == (Keys.Control | Keys.Shift)) {
-                    // Ctrl + Shift:
-                    switch (e.KeyCode) {
-                        case Keys.OemQuestion: // Ctrl + Shift + /
-                        case Keys.K: // Ctrl + Shift + K
-                            CommentText(false);
-                            break;
-                        case Keys.S: // Ctrl + Shift + S
-                            SaveAsFile();
-                            break;
-                        case Keys.P: // Ctrl + Shift + P
-                            ClearBreakpoints();
-                            break;
-                        case Keys.OemPeriod: // Ctrl + Shift + OemPeriod -> insert/remove savestate
-                            InsertOrRemoveText(InputRecord.BreakpointRegex, "***S");
-                            break;
-                        case Keys.R: // Ctrl + Shift + R
-                            InsertDataFromGame(GameDataType.ConsoleCommand, false);
-                            break;
-                        case Keys.C: // Ctrl + Shift + C
-                            CopyGameInfo();
-                            break;
-                        case Keys.D: // Ctrl + Shift + D
-                            StudioCommunicationServer.Instance?.ExternalReset();
-                            break;
-                        case Keys.L: // Ctrl + Shift + L
-                            CombineInputs(false);
-                            break;
-                    }
-                } else if (e.Modifiers == (Keys.Control | Keys.Alt)) {
-                    // Ctrl + Alt:
-                    if (e.KeyCode == Keys.P) {
-                        // Ctrl + Alt + P
+            if (e.Modifiers == Keys.Control) {
+                switch (e.KeyCode) {
+                    case Keys.S: // Ctrl + S
+                        richText.SaveFile();
+                        break;
+                    case Keys.O: // Ctrl + O
+                        OpenFile();
+                        break;
+                    case Keys.OemQuestion: // Ctrl + /
+                    case Keys.K: // Ctrl + K
+                        CommentText(true);
+                        break;
+                    case Keys.P: // Ctrl + P
+                        ClearUncommentedBreakpoints();
+                        break;
+                    case Keys.OemPeriod: // Ctrl + OemPeriod -> insert/remove breakpoint
+                        InsertOrRemoveText(InputRecord.BreakpointRegex, "***");
+                        break;
+                    case Keys.R: // Ctrl + R
+                        InsertRoomName();
+                        break;
+                    case Keys.F: // Ctrl + F
+                        DialogUtils.ShowFindDialog(richText);
+                        break;
+                    case Keys.G: // Ctrl + G
+                        DialogUtils.ShowGoToDialog(richText);
+                        break;
+                    case Keys.T: // Ctrl + T
+                        InsertTime();
+                        break;
+                    case Keys.Down: // Ctrl + Down
+                        GoDownCommentAndBreakpoint(e);
+                        break;
+                    case Keys.Up: // Ctrl + Up
+                        GoUpCommentAndBreakpoint(e);
+                        break;
+                    case Keys.L: // Ctrl + L
+                        CombineInputs(true);
+                        break;
+                }
+            } else if (e.Modifiers == (Keys.Control | Keys.Shift)) {
+                switch (e.KeyCode) {
+                    case Keys.OemQuestion: // Ctrl + Shift + /
+                    case Keys.K: // Ctrl + Shift + K
+                        CommentText(false);
+                        break;
+                    case Keys.S: // Ctrl + Shift + S
+                        SaveAsFile();
+                        break;
+                    case Keys.P: // Ctrl + Shift + P
+                        ClearBreakpoints();
+                        break;
+                    case Keys.OemPeriod: // Ctrl + Shift + OemPeriod -> insert/remove savestate
+                        InsertOrRemoveText(InputRecord.BreakpointRegex, "***S");
+                        break;
+                    case Keys.R: // Ctrl + Shift + R
+                        InsertDataFromGame(GameDataType.ConsoleCommand, false);
+                        break;
+                    case Keys.C: // Ctrl + Shift + C
+                        CopyGameInfo();
+                        break;
+                    case Keys.D: // Ctrl + Shift + D
+                        StudioCommunicationServer.Instance?.ExternalReset();
+                        break;
+                    case Keys.L: // Ctrl + Shift + L
+                        CombineInputs(false);
+                        break;
+                }
+            } else if (e.Modifiers == (Keys.Control | Keys.Alt)) {
+                switch (e.KeyCode) {
+                    case Keys.C: // Ctrl + Alt + C
+                        CopyFilePath();
+                        break;
+                    case Keys.P: // Ctrl + Alt + P
                         CommentUncommentAllBreakpoints();
-                    } else if (e.KeyCode == Keys.R) {
-                        // Ctrl + Alt + R
+                        break;
+                    case Keys.R: // Ctrl + Alt + R
                         InsertDataFromGame(GameDataType.ConsoleCommand, true);
-                    }
+                        break;
                 }
             }
         } catch (Exception ex) {
@@ -610,6 +609,20 @@ public partial class Studio : BaseForm {
         List<int> breakpoints = richText.FindLines(@"^\s*#*\s*\*\*\*");
         richText.RemoveLines(breakpoints);
         richText.Selection.Start = new Place(0, Math.Min(line, richText.LinesCount - 1));
+    }
+
+    private void CopyFilePath() {
+        for (int i = 0; i < 5; i++) {
+            try {
+                Clipboard.SetDataObject(CurrentFileName, true);
+                ShowTooltip("Copy file path success");
+                return;
+            } catch (ExternalException) {
+                Win32Api.UnlockClipboard();
+            }
+        }
+
+        MessageBox.Show("Failed to copy file path.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
     }
 
     private void CommentUncommentAllBreakpoints() {
