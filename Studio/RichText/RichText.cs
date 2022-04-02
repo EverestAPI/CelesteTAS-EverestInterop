@@ -3340,8 +3340,12 @@ public class RichText : UserControl {
             //draw wordwrap strings of line
             for (int iWordWrapLine = 0; iWordWrapLine < lineInfo.WordWrapStringsCount; iWordWrapLine++) {
                 y = lineInfo.startY + iWordWrapLine * CharHeight - VerticalScroll.Value;
-                //draw chars
-                DrawLineChars(e, firstChar, lastChar, iLine, iWordWrapLine, LeftIndent + Paddings.Left - HorizontalScroll.Value, y);
+                try {
+                    //draw chars
+                    DrawLineChars(e, firstChar, lastChar, iLine, iWordWrapLine, LeftIndent + Paddings.Left - HorizontalScroll.Value, y);
+                } catch (ArgumentOutOfRangeException) {
+                    // ignore
+                }
             }
         }
 
