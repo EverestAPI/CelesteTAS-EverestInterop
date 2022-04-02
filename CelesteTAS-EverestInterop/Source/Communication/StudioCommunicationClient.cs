@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,11 +17,13 @@ using TAS.Utils;
 namespace TAS.Communication;
 
 public sealed class StudioCommunicationClient : StudioCommunicationBase {
+    public static StudioCommunicationClient Instance { get; private set; }
+    private static readonly ConcurrentQueue<Action> mainThreadActions = new();
+
     private byte[] lastBindingsData = new byte[0];
     private readonly List<Thread> threads = new();
     private StudioCommunicationClient() { }
     private StudioCommunicationClient(string target) : base(target) { }
-    public static StudioCommunicationClient Instance { get; private set; }
 
     [Load]
     private static void Load() {
@@ -79,6 +82,18 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         StudioCommunicationClient client = new StudioCommunicationClient(target);
         RunThread($"StudioCom Client_{target}");
         return client;
+    }
+
+    private static void AddWaitingAction(Action action) {
+        mainThreadActions.Enqueue(action);
+    }
+
+    public static void ExecuteWaitingActions() {
+        while (mainThreadActions.TryDequeue(out Action action)) {
+            if (Initialized) {
+                action.Invoke();
+            }
+        }
     }
 
     #region Read
@@ -238,7 +253,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
             path = path.Substring(2, path.Length - 2).Replace("\\", "/");
         }
 
-        InputController.StudioTasFilePath = path;
+        AddWaitingAction(() => InputController.StudioTasFilePath = path);
     }
 
     private void ProcessHotkeyPressed(byte[] data) {

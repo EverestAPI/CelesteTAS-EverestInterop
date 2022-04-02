@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -14,14 +13,14 @@ using TAS.Utils;
 namespace TAS.Input;
 
 public class InputController {
-    private static readonly ConcurrentDictionary<string, FileSystemWatcher> watchers = new();
+    private static readonly Dictionary<string, FileSystemWatcher> watchers = new();
     private static string studioTasFilePath = string.Empty;
 
     public readonly SortedDictionary<int, List<Command>> Commands = new();
     public readonly SortedDictionary<int, FastForward> FastForwards = new();
     public readonly SortedDictionary<int, FastForward> FastForwardComments = new();
     public readonly List<InputFrame> Inputs = new();
-    private readonly ConcurrentDictionary<string, byte> UsedFiles = new();
+    private readonly Dictionary<string, byte> UsedFiles = new();
 
     private string checksum;
     private int initializationFrameCount;

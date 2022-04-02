@@ -46,6 +46,7 @@ public static class Manager {
 
     public static void Update() {
         LastStates = States;
+        StudioCommunicationClient.ExecuteWaitingActions();
         Hotkeys.Update();
         Savestates.HandleSaveStates();
         HandleFrameRates();
