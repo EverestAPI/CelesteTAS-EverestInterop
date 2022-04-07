@@ -54,7 +54,7 @@ internal static class FastReflection {
 
 internal static class ReflectionExtensions {
     private const BindingFlags StaticInstanceAnyVisibility =
-        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
 
     private const BindingFlags InstanceAnyVisibilityDeclaredOnly =
         BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
@@ -63,15 +63,15 @@ internal static class ReflectionExtensions {
     private static readonly Dictionary<Type, Dictionary<string, PropertyInfo>> CachedPropertyInfos = new();
     private static readonly Dictionary<Type, Dictionary<string, MethodInfo>> CachedMethodInfos = new();
 
-    public static FieldInfo GetFieldInfo(this Type type, string name, bool includeSuperClassPrivate = false) {
+    public static FieldInfo GetFieldInfo(this Type type, string name) {
         if (!CachedFieldInfos.ContainsKey(type)) {
             CachedFieldInfos[type] = new Dictionary<string, FieldInfo>();
         }
 
         if (!CachedFieldInfos[type].ContainsKey(name)) {
             FieldInfo result = type.GetField(name, StaticInstanceAnyVisibility);
-            if (result == null && type.BaseType != null && includeSuperClassPrivate) {
-                result = type.BaseType.GetFieldInfo(name, true);
+            if (result == null && type.BaseType != null) {
+                result = type.BaseType.GetFieldInfo(name);
             }
 
             return CachedFieldInfos[type][name] = result;
@@ -80,15 +80,15 @@ internal static class ReflectionExtensions {
         }
     }
 
-    public static PropertyInfo GetPropertyInfo(this Type type, string name, bool includeSuperClassPrivate = false) {
+    public static PropertyInfo GetPropertyInfo(this Type type, string name) {
         if (!CachedPropertyInfos.ContainsKey(type)) {
             CachedPropertyInfos[type] = new Dictionary<string, PropertyInfo>();
         }
 
         if (!CachedPropertyInfos[type].ContainsKey(name)) {
             PropertyInfo result = type.GetProperty(name, StaticInstanceAnyVisibility);
-            if (result == null && type.BaseType != null && includeSuperClassPrivate) {
-                result = type.BaseType.GetPropertyInfo(name, true);
+            if (result == null && type.BaseType != null) {
+                result = type.BaseType.GetPropertyInfo(name);
             }
 
             return CachedPropertyInfos[type][name] = result;
@@ -97,7 +97,7 @@ internal static class ReflectionExtensions {
         }
     }
 
-    public static MethodInfo GetMethodInfo(this Type type, string name, Type[] types = null, bool includeSuperClassPrivate = false) {
+    public static MethodInfo GetMethodInfo(this Type type, string name, Type[] types = null) {
         if (!CachedMethodInfos.TryGetValue(type, out Dictionary<string, MethodInfo> dictionary)) {
             CachedMethodInfos[type] = dictionary = new Dictionary<string, MethodInfo>();
         }
@@ -108,8 +108,8 @@ internal static class ReflectionExtensions {
             MethodInfo[] methodInfos = type.GetMethods(StaticInstanceAnyVisibility);
             result = methodInfos.FirstOrDefault(info =>
                 info.Name == name && types?.SequenceEqual(info.GetParameters().Select(i => i.ParameterType)) != false);
-            if (result == null && type.BaseType != null && includeSuperClassPrivate) {
-                result = type.BaseType.GetMethodInfo(name, types, true);
+            if (result == null && type.BaseType != null) {
+                result = type.BaseType.GetMethodInfo(name, types);
             }
 
             dictionary[key] = result;
@@ -118,18 +118,15 @@ internal static class ReflectionExtensions {
         return result;
     }
 
-    public static IEnumerable<FieldInfo> GetAllFieldInfos(this Type type, bool includeStatic = false, bool filterBackingField = false) {
+    public static IEnumerable<FieldInfo> GetAllFieldInfos(this Type type, bool includeStatic = false) {
         BindingFlags bindingFlags = InstanceAnyVisibilityDeclaredOnly;
         if (includeStatic) {
             bindingFlags |= BindingFlags.Static;
         }
 
-        List<FieldInfo> result = new();
+        HashSet<FieldInfo> result = new();
         while (type != null && type.IsSubclassOf(typeof(object))) {
             IEnumerable<FieldInfo> fieldInfos = type.GetFields(bindingFlags);
-            if (filterBackingField) {
-                fieldInfos = fieldInfos.Where(info => !info.Name.EndsWith("k__BackingField"));
-            }
 
             foreach (FieldInfo fieldInfo in fieldInfos) {
                 if (result.Contains(fieldInfo)) {
@@ -151,7 +148,7 @@ internal static class ReflectionExtensions {
             bindingFlags |= BindingFlags.Static;
         }
 
-        List<PropertyInfo> result = new();
+        HashSet<PropertyInfo> result = new();
         while (type != null && type.IsSubclassOf(typeof(object))) {
             IEnumerable<PropertyInfo> properties = type.GetProperties(bindingFlags);
             foreach (PropertyInfo fieldInfo in properties) {
@@ -590,7 +587,7 @@ internal static class CloneUtil {
             throw new ArgumentException("object to and from must be the same type");
         }
 
-        foreach (FieldInfo fieldInfo in to.GetType().GetAllFieldInfos(false, filterBackingField)) {
+        foreach (FieldInfo fieldInfo in to.GetType().GetAllFieldInfos(false)) {
             object fromValue = fieldInfo.GetValue(from);
             fieldInfo.SetValue(to, fromValue);
         }

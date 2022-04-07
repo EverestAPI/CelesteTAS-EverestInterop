@@ -210,7 +210,7 @@ public static class SetCommandHandler {
     }
 
     private static bool TrySetMember(Type objType, object obj, string lastMemberName, string[] values, object structObj = null) {
-        if (objType.GetPropertyInfo(lastMemberName, true) is { } property && property.GetSetMethod(true) is { } setMethod) {
+        if (objType.GetPropertyInfo(lastMemberName) is { } property && property.GetSetMethod(true) is { } setMethod) {
             if (obj is Actor actor && lastMemberName is "X" or "Y") {
                 double.TryParse(values[0], out double value);
                 Vector2 remainder = actor.PositionRemainder;
@@ -227,7 +227,7 @@ public static class SetCommandHandler {
                 object value = structObj ?? ConvertType(values, property.PropertyType);
                 setMethod.Invoke(obj, new[] {value});
             }
-        } else if (objType.GetFieldInfo(lastMemberName, true) is { } field) {
+        } else if (objType.GetFieldInfo(lastMemberName) is { } field) {
             if (obj is Actor actor && lastMemberName == "Position" && values.Length == 2) {
                 double.TryParse(values[0], out double x);
                 double.TryParse(values[1], out double y);
