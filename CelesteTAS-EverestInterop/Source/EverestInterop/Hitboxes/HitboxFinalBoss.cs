@@ -1,13 +1,18 @@
+using System;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
-using MonoMod.Utils;
 using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxFinalBoss {
+    private static readonly Func<FinalBossBeam, float> GetChargeTimer = FastReflection.CreateGetDelegate<FinalBossBeam, float>("chargeTimer");
+    private static readonly Func<FinalBossBeam, float> GetActiveTimer = FastReflection.CreateGetDelegate<FinalBossBeam, float>("activeTimer");
+    private static readonly Func<FinalBossBeam, float> GetAngle = FastReflection.CreateGetDelegate<FinalBossBeam, float>("angle");
+    private static readonly Func<FinalBossBeam, FinalBoss> GetBoss = FastReflection.CreateGetDelegate<FinalBossBeam, FinalBoss>("boss");
+
     [Load]
     private static void Load() {
         On.Monocle.Entity.DebugRender += ModHitbox;
@@ -29,10 +34,9 @@ public static class HitboxFinalBoss {
         orig(self, camera);
 
         if (self is FinalBossBeam finalBossBeam) {
-            DynamicData dynamicData = finalBossBeam.GetDynamicDataInstance();
-            if (dynamicData.Get<float>("chargeTimer") <= 0f && dynamicData.Get<float>("activeTimer") > 0f) {
-                FinalBoss boss = dynamicData.Get<FinalBoss>("boss");
-                float angle = dynamicData.Get<float>("angle");
+            if (GetChargeTimer(finalBossBeam) <= 0f && GetActiveTimer(finalBossBeam) > 0f) {
+                float angle = GetAngle(finalBossBeam);
+                FinalBoss boss = GetBoss(finalBossBeam);
                 Vector2 vector = boss.BeamOrigin + Calc.AngleToVector(angle, 12f);
                 Vector2 vector2 = boss.BeamOrigin + Calc.AngleToVector(angle, 2000f);
                 Vector2 value = (vector2 - vector).Perpendicular().SafeNormalize(2f);

@@ -380,6 +380,7 @@ public class InputController {
 
     public string CalcChecksum(InputController controller) => CalcChecksum(controller.CurrentFrameInTas);
 
+#if DEBUG
     // ReSharper disable once UnusedMember.Local
     [Load]
     private static void RestoreStudioTasFilePath() {
@@ -393,4 +394,5 @@ public class InputController {
         Engine.Instance.GetDynamicDataInstance().Set(nameof(studioTasFilePath), studioTasFilePath);
         Manager.Controller.StopWatchers();
     }
+#endif
 }

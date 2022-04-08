@@ -2,7 +2,6 @@
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
-using MonoMod.Utils;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Utils;
 
@@ -71,9 +70,11 @@ public static class CenterCamera {
         On.Monocle.Commands.Render += CommandsOnRender;
         On.Celeste.Level.Render += LevelOnRender;
         On.Celeste.Level.LoadLevel += LevelOnLoadLevel;
-        offset = new DynamicData(Engine.Instance).Get<Vector2?>("CelesteTAS_Offset") ?? Vector2.Zero;
-        screenOffset = new DynamicData(Engine.Instance).Get<Vector2?>("CelesteTAS_Screen_Offset") ?? Vector2.Zero;
-        LevelZoom = new DynamicData(Engine.Instance).Get<float?>("CelesteTAS_LevelZoom") ?? 1f;
+#if DEBUG
+        offset = Engine.Instance.GetDynamicDataInstance().Get<Vector2?>("CelesteTAS_Offset") ?? Vector2.Zero;
+        screenOffset = Engine.Instance.GetDynamicDataInstance().Get<Vector2?>("CelesteTAS_Screen_Offset") ?? Vector2.Zero;
+        LevelZoom = Engine.Instance.GetDynamicDataInstance().Get<float?>("CelesteTAS_LevelZoom") ?? 1f;
+#endif
     }
 
     public static void Unload() {
@@ -81,9 +82,11 @@ public static class CenterCamera {
         On.Monocle.Commands.Render -= CommandsOnRender;
         On.Celeste.Level.Render -= LevelOnRender;
         On.Celeste.Level.LoadLevel -= LevelOnLoadLevel;
-        new DynamicData(Engine.Instance).Set("CelesteTAS_Offset", offset);
-        new DynamicData(Engine.Instance).Set("CelesteTAS_Screen_Offset", screenOffset);
-        new DynamicData(Engine.Instance).Set("CelesteTAS_LevelZoom", LevelZoom);
+#if DEBUG
+        Engine.Instance.GetDynamicDataInstance().Set("CelesteTAS_Offset", offset);
+        Engine.Instance.GetDynamicDataInstance().Set("CelesteTAS_Screen_Offset", screenOffset);
+        Engine.Instance.GetDynamicDataInstance().Set("CelesteTAS_LevelZoom", LevelZoom);
+#endif
     }
 
     private static void EngineOnRenderCore(On.Monocle.Engine.orig_RenderCore orig, Engine self) {
