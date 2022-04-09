@@ -117,12 +117,11 @@ public static class SetCommandHandler {
         Type objType;
         object obj = null;
         if (memberNames.IsEmpty() &&
-            (InfoCustom.GetGetMethod(type, lastMemberName) is {IsStatic: true} ||
-             InfoCustom.GetFieldInfo(type, lastMemberName) is {IsStatic: true})) {
+            (type.GetGetMethod(lastMemberName) is {IsStatic: true} || type.GetFieldInfo(lastMemberName) is {IsStatic: true})) {
             objType = type;
         } else if (memberNames.IsNotEmpty() &&
-                   (InfoCustom.GetGetMethod(type, memberNames.First()) is {IsStatic: true} ||
-                    InfoCustom.GetFieldInfo(type, memberNames.First()) is {IsStatic: true})) {
+                   (type.GetGetMethod(memberNames.First()) is {IsStatic: true} ||
+                    type.GetFieldInfo(memberNames.First()) is {IsStatic: true})) {
             obj = InfoCustom.GetMemberValue(type, null, memberNames);
             if (TryPrintErrorLog()) {
                 return;

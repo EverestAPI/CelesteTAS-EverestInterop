@@ -54,65 +54,80 @@ internal static class FastReflection {
 
 internal static class ReflectionExtensions {
     private const BindingFlags StaticInstanceAnyVisibility =
-        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
     private const BindingFlags InstanceAnyVisibilityDeclaredOnly =
         BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
 
-    private static readonly Dictionary<Type, Dictionary<string, FieldInfo>> CachedFieldInfos = new();
-    private static readonly Dictionary<Type, Dictionary<string, PropertyInfo>> CachedPropertyInfos = new();
-    private static readonly Dictionary<Type, Dictionary<string, MethodInfo>> CachedMethodInfos = new();
+    private static readonly Dictionary<int, FieldInfo> CachedFieldInfos = new();
+    private static readonly Dictionary<int, PropertyInfo> CachedPropertyInfos = new();
+    private static readonly Dictionary<int, MethodInfo> CachedMethodInfos = new();
+    private static readonly Dictionary<int, MethodInfo> CachedGetMethodInfos = new();
+    private static readonly Dictionary<int, MethodInfo> CachedSetMethodInfos = new();
 
     public static FieldInfo GetFieldInfo(this Type type, string name) {
-        if (!CachedFieldInfos.ContainsKey(type)) {
-            CachedFieldInfos[type] = new Dictionary<string, FieldInfo>();
-        }
+        var key = type.CombineHashCode(name);
+        if (!CachedFieldInfos.TryGetValue(key, out var result)) {
+            do {
+                result = type.GetField(name, StaticInstanceAnyVisibility);
+            } while (result == null && (type = type.BaseType) != null);
 
-        if (!CachedFieldInfos[type].ContainsKey(name)) {
-            FieldInfo result = type.GetField(name, StaticInstanceAnyVisibility);
-            if (result == null && type.BaseType != null) {
-                result = type.BaseType.GetFieldInfo(name);
-            }
-
-            return CachedFieldInfos[type][name] = result;
+            return CachedFieldInfos[key] = result;
         } else {
-            return CachedFieldInfos[type][name];
+            return result;
         }
     }
 
     public static PropertyInfo GetPropertyInfo(this Type type, string name) {
-        if (!CachedPropertyInfos.ContainsKey(type)) {
-            CachedPropertyInfos[type] = new Dictionary<string, PropertyInfo>();
-        }
+        var key = type.CombineHashCode(name);
+        if (!CachedPropertyInfos.TryGetValue(key, out var result)) {
+            do {
+                result = type.GetProperty(name, StaticInstanceAnyVisibility);
+            } while (result == null && (type = type.BaseType) != null);
 
-        if (!CachedPropertyInfos[type].ContainsKey(name)) {
-            PropertyInfo result = type.GetProperty(name, StaticInstanceAnyVisibility);
-            if (result == null && type.BaseType != null) {
-                result = type.BaseType.GetPropertyInfo(name);
-            }
-
-            return CachedPropertyInfos[type][name] = result;
+            return CachedPropertyInfos[key] = result;
         } else {
-            return CachedPropertyInfos[type][name];
+            return result;
         }
     }
 
     public static MethodInfo GetMethodInfo(this Type type, string name, Type[] types = null) {
-        if (!CachedMethodInfos.TryGetValue(type, out Dictionary<string, MethodInfo> dictionary)) {
-            CachedMethodInfos[type] = dictionary = new Dictionary<string, MethodInfo>();
+        var key = type.CombineHashCode(name).CombineHashCode(types.GetCustomHashCode());
+
+        if (!CachedMethodInfos.TryGetValue(key, out MethodInfo result)) {
+            do {
+                MethodInfo[] methodInfos = type.GetMethods(StaticInstanceAnyVisibility);
+                result = methodInfos.FirstOrDefault(info =>
+                    info.Name == name && types?.SequenceEqual(info.GetParameters().Select(i => i.ParameterType)) != false);
+            } while (result == null && (type = type.BaseType) != null);
+
+            return CachedMethodInfos[key] = result;
         }
 
-        string key = name + (types == null ? "null" : string.Join(",", types.Select(t => t.FullName)));
+        return result;
+    }
 
-        if (!dictionary.TryGetValue(key, out MethodInfo result)) {
-            MethodInfo[] methodInfos = type.GetMethods(StaticInstanceAnyVisibility);
-            result = methodInfos.FirstOrDefault(info =>
-                info.Name == name && types?.SequenceEqual(info.GetParameters().Select(i => i.ParameterType)) != false);
-            if (result == null && type.BaseType != null) {
-                result = type.BaseType.GetMethodInfo(name, types);
-            }
+    public static MethodInfo GetGetMethod(this Type type, string propertyName) {
+        var key = type.CombineHashCode(propertyName);
+        if (!CachedGetMethodInfos.TryGetValue(key, out var result)) {
+            do {
+                result = type.GetPropertyInfo(propertyName)?.GetGetMethod(true);
+            } while (result == null && (type = type.BaseType) != null);
 
-            dictionary[key] = result;
+            return CachedGetMethodInfos[key] = result;
+        }
+
+        return result;
+    }
+
+    public static MethodInfo GetSetMethod(this Type type, string propertyName) {
+        var key = type.CombineHashCode(propertyName);
+        if (!CachedSetMethodInfos.TryGetValue(key, out var result)) {
+            do {
+                result = type.GetPropertyInfo(propertyName)?.GetSetMethod(true);
+            } while (result == null && (type = type.BaseType) != null);
+
+            return CachedSetMethodInfos[key] = result;
         }
 
         return result;
@@ -245,6 +260,29 @@ internal static class ReflectionExtensions {
 
     public static void InvokeMethod(this Type type, string name, params object[] parameters) {
         type.GetMethodInfo(name)?.Invoke(null, parameters);
+    }
+}
+
+internal static class HashCodeExtensions {
+    public static int GetCustomHashCode<T>(this IEnumerable<T> enumerable) {
+        if (enumerable == null) {
+            return 0;
+        }
+
+        unchecked {
+            int hash = 17;
+            foreach (T item in enumerable) {
+                hash = hash * -1521134295 + EqualityComparer<T>.Default.GetHashCode(item);
+            }
+
+            return hash;
+        }
+    }
+
+    public static int CombineHashCode<T1, T2>(this T1 t1, T2 t2) {
+        unchecked {
+            return EqualityComparer<T1>.Default.GetHashCode(t1) * -1521134295 + EqualityComparer<T2>.Default.GetHashCode(t2);
+        }
     }
 }
 

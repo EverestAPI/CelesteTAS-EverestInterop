@@ -22,17 +22,11 @@ public static class InfoCustom {
     private static readonly Regex TypeNameSeparatorRegex = new(@"^[.+]", RegexOptions.Compiled);
     private static readonly Dictionary<string, Type> AllTypes = new();
     private static readonly Dictionary<string, List<Type>> CachedParsedTypes = new();
-    private static readonly Dictionary<string, MethodInfo> CachedGetMethodInfos = new();
-    private static readonly Dictionary<string, MethodInfo> CachedSetMethodInfos = new();
-    private static readonly Dictionary<string, FieldInfo> CachedFieldInfos = new();
 
     [LoadContent]
     private static void CollectAllTypeInfo() {
         AllTypes.Clear();
         CachedParsedTypes.Clear();
-        CachedGetMethodInfos.Clear();
-        CachedSetMethodInfos.Clear();
-        CachedFieldInfos.Clear();
         foreach (Type type in ModUtils.GetTypes()) {
             if (type.FullName != null) {
                 AllTypes[$"{type.FullName}@{type.Assembly.GetName().Name}"] = type;
@@ -94,7 +88,7 @@ public static class InfoCustom {
                 .SelectMany(type => GetCachedOrFindEntities(type, entityId, cachedEntities)).Count() > 1;
 
             List<string> result = types.Select(type => {
-                if (GetGetMethod(type, memberNames.First()) is {IsStatic: true} || GetFieldInfo(type, memberNames.First()) is {IsStatic: true}) {
+                if (type.GetGetMethod(memberNames.First()) is {IsStatic: true} || type.GetFieldInfo(memberNames.First()) is {IsStatic: true}) {
                     return FormatValue(GetMemberValue(type, null, memberNames), helperMethod, decimals);
                 }
 
@@ -290,7 +284,7 @@ public static class InfoCustom {
 
     public static object GetMemberValue(Type type, object obj, List<string> memberNames) {
         foreach (string memberName in memberNames) {
-            if (GetGetMethod(type, memberName) is { } methodInfo) {
+            if (type.GetGetMethod(memberName) is { } methodInfo) {
                 if (methodInfo.IsStatic) {
                     obj = methodInfo.Invoke(null, null);
                 } else if (obj != null) {
@@ -300,7 +294,7 @@ public static class InfoCustom {
                         obj = methodInfo.Invoke(obj, null);
                     }
                 }
-            } else if (GetFieldInfo(type, memberName) is { } fieldInfo) {
+            } else if (type.GetFieldInfo(memberName) is { } fieldInfo) {
                 if (fieldInfo.IsStatic) {
                     obj = fieldInfo.GetValue(null);
                 } else if (obj != null) {
@@ -326,51 +320,6 @@ public static class InfoCustom {
         }
 
         return obj;
-    }
-
-    public static MethodInfo GetGetMethod(Type type, string propertyName) {
-        string key = $"{type.FullName}.get_{propertyName}";
-        if (CachedGetMethodInfos.ContainsKey(key)) {
-            return CachedGetMethodInfos[key];
-        } else {
-            MethodInfo methodInfo = type.GetProperty(propertyName, AllBindingFlags)?.GetGetMethod(true);
-            if (methodInfo == null && type.BaseType != null) {
-                methodInfo = GetGetMethod(type.BaseType, propertyName);
-            }
-
-            CachedGetMethodInfos[key] = methodInfo;
-            return methodInfo;
-        }
-    }
-
-    public static MethodInfo GetSetMethod(Type type, string propertyName) {
-        string key = $"{type.FullName}.set_{propertyName}";
-        if (CachedSetMethodInfos.ContainsKey(key)) {
-            return CachedSetMethodInfos[key];
-        } else {
-            MethodInfo methodInfo = type.GetProperty(propertyName, AllBindingFlags)?.GetSetMethod(true);
-            if (methodInfo == null && type.BaseType != null) {
-                methodInfo = GetSetMethod(type.BaseType, propertyName);
-            }
-
-            CachedSetMethodInfos[key] = methodInfo;
-            return methodInfo;
-        }
-    }
-
-    public static FieldInfo GetFieldInfo(Type type, string fieldName) {
-        string key = $"{type.FullName}.{fieldName}";
-        if (CachedFieldInfos.ContainsKey(key)) {
-            return CachedFieldInfos[key];
-        } else {
-            FieldInfo fieldInfo = type.GetField(fieldName, AllBindingFlags);
-            if (fieldInfo == null && type.BaseType != null) {
-                fieldInfo = GetFieldInfo(type.BaseType, fieldName);
-            }
-
-            CachedFieldInfos[key] = fieldInfo;
-            return fieldInfo;
-        }
     }
 
     public static List<Entity> FindEntities(Type type, string entityId) {
