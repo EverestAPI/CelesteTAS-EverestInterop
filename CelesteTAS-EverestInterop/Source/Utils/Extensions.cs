@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -59,78 +60,79 @@ internal static class ReflectionExtensions {
     private const BindingFlags InstanceAnyVisibilityDeclaredOnly =
         BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
 
-    private static readonly Dictionary<int, FieldInfo> CachedFieldInfos = new();
-    private static readonly Dictionary<int, PropertyInfo> CachedPropertyInfos = new();
-    private static readonly Dictionary<int, MethodInfo> CachedMethodInfos = new();
-    private static readonly Dictionary<int, MethodInfo> CachedGetMethodInfos = new();
-    private static readonly Dictionary<int, MethodInfo> CachedSetMethodInfos = new();
+    private static readonly object[] NullArgs = {null};
+
+    private static readonly ConcurrentDictionary<int, FieldInfo> CachedFieldInfos = new();
+    private static readonly ConcurrentDictionary<int, PropertyInfo> CachedPropertyInfos = new();
+    private static readonly ConcurrentDictionary<int, MethodInfo> CachedMethodInfos = new();
+    private static readonly ConcurrentDictionary<int, MethodInfo> CachedGetMethodInfos = new();
+    private static readonly ConcurrentDictionary<int, MethodInfo> CachedSetMethodInfos = new();
 
     public static FieldInfo GetFieldInfo(this Type type, string name) {
         var key = type.CombineHashCode(name);
-        if (!CachedFieldInfos.TryGetValue(key, out var result)) {
-            do {
-                result = type.GetField(name, StaticInstanceAnyVisibility);
-            } while (result == null && (type = type.BaseType) != null);
-
-            return CachedFieldInfos[key] = result;
-        } else {
+        if (CachedFieldInfos.TryGetValue(key, out var result)) {
             return result;
         }
+
+        do {
+            result = type.GetField(name, StaticInstanceAnyVisibility);
+        } while (result == null && (type = type.BaseType) != null);
+
+        return CachedFieldInfos[key] = result;
     }
 
     public static PropertyInfo GetPropertyInfo(this Type type, string name) {
         var key = type.CombineHashCode(name);
-        if (!CachedPropertyInfos.TryGetValue(key, out var result)) {
-            do {
-                result = type.GetProperty(name, StaticInstanceAnyVisibility);
-            } while (result == null && (type = type.BaseType) != null);
-
-            return CachedPropertyInfos[key] = result;
-        } else {
+        if (CachedPropertyInfos.TryGetValue(key, out var result)) {
             return result;
         }
+
+        do {
+            result = type.GetProperty(name, StaticInstanceAnyVisibility);
+        } while (result == null && (type = type.BaseType) != null);
+
+        return CachedPropertyInfos[key] = result;
     }
 
     public static MethodInfo GetMethodInfo(this Type type, string name, Type[] types = null) {
         var key = type.CombineHashCode(name).CombineHashCode(types.GetCustomHashCode());
-
-        if (!CachedMethodInfos.TryGetValue(key, out MethodInfo result)) {
-            do {
-                MethodInfo[] methodInfos = type.GetMethods(StaticInstanceAnyVisibility);
-                result = methodInfos.FirstOrDefault(info =>
-                    info.Name == name && types?.SequenceEqual(info.GetParameters().Select(i => i.ParameterType)) != false);
-            } while (result == null && (type = type.BaseType) != null);
-
-            return CachedMethodInfos[key] = result;
+        if (CachedMethodInfos.TryGetValue(key, out MethodInfo result)) {
+            return result;
         }
 
-        return result;
+        do {
+            MethodInfo[] methodInfos = type.GetMethods(StaticInstanceAnyVisibility);
+            result = methodInfos.FirstOrDefault(info =>
+                info.Name == name && types?.SequenceEqual(info.GetParameters().Select(i => i.ParameterType)) != false);
+        } while (result == null && (type = type.BaseType) != null);
+
+        return CachedMethodInfos[key] = result;
     }
 
     public static MethodInfo GetGetMethod(this Type type, string propertyName) {
         var key = type.CombineHashCode(propertyName);
-        if (!CachedGetMethodInfos.TryGetValue(key, out var result)) {
-            do {
-                result = type.GetPropertyInfo(propertyName)?.GetGetMethod(true);
-            } while (result == null && (type = type.BaseType) != null);
-
-            return CachedGetMethodInfos[key] = result;
+        if (CachedGetMethodInfos.TryGetValue(key, out var result)) {
+            return result;
         }
 
-        return result;
+        do {
+            result = type.GetPropertyInfo(propertyName)?.GetGetMethod(true);
+        } while (result == null && (type = type.BaseType) != null);
+
+        return CachedGetMethodInfos[key] = result;
     }
 
     public static MethodInfo GetSetMethod(this Type type, string propertyName) {
         var key = type.CombineHashCode(propertyName);
-        if (!CachedSetMethodInfos.TryGetValue(key, out var result)) {
-            do {
-                result = type.GetPropertyInfo(propertyName)?.GetSetMethod(true);
-            } while (result == null && (type = type.BaseType) != null);
-
-            return CachedSetMethodInfos[key] = result;
+        if (CachedSetMethodInfos.TryGetValue(key, out var result)) {
+            return result;
         }
 
-        return result;
+        do {
+            result = type.GetPropertyInfo(propertyName)?.GetSetMethod(true);
+        } while (result == null && (type = type.BaseType) != null);
+
+        return CachedSetMethodInfos[key] = result;
     }
 
     public static IEnumerable<FieldInfo> GetAllFieldInfos(this Type type, bool includeStatic = false) {
@@ -236,30 +238,30 @@ internal static class ReflectionExtensions {
         }
     }
 
-    public static T InvokeMethod<T>(this object obj, string name, params object[] parameters) {
-        object result = obj.GetType().GetMethodInfo(name)?.Invoke(obj, parameters);
+    private static T InvokeMethod<T>(object obj, Type type, string name, params object[] parameters) {
+        parameters ??= NullArgs;
+        object result = type.GetMethodInfo(name)?.Invoke(obj, parameters);
         if (result == null) {
             return default;
         } else {
             return (T) result;
         }
+    }
+
+    public static T InvokeMethod<T>(this object obj, string name, params object[] parameters) {
+        return InvokeMethod<T>(obj, obj.GetType(), name, parameters);
     }
 
     public static T InvokeMethod<T>(this Type type, string name, params object[] parameters) {
-        object result = type.GetMethodInfo(name)?.Invoke(null, parameters);
-        if (result == null) {
-            return default;
-        } else {
-            return (T) result;
-        }
+        return InvokeMethod<T>(null, type, name, parameters);
     }
 
     public static void InvokeMethod(this object obj, string name, params object[] parameters) {
-        obj.GetType().GetMethodInfo(name)?.Invoke(obj, parameters);
+        InvokeMethod<object>(obj, obj.GetType(), name, parameters);
     }
 
     public static void InvokeMethod(this Type type, string name, params object[] parameters) {
-        type.GetMethodInfo(name)?.Invoke(null, parameters);
+        InvokeMethod<object>(null, type, name, parameters);
     }
 }
 

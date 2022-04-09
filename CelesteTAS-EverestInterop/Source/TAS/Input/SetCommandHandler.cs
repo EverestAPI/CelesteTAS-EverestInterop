@@ -383,7 +383,7 @@ public static class SetCommandHandler {
                 break;
             case "GrabMode":
                 settings.SetFieldValue("GrabMode", value);
-                typeof(Celeste.Celeste).InvokeMethod("ResetGrab", null);
+                typeof(Celeste.Celeste).InvokeMethod("ResetGrab");
                 break;
             // case "Fullscreen":
             // game get stuck when toggle fullscreen
