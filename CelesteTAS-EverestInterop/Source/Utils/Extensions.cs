@@ -17,10 +17,13 @@ internal static class FastReflection {
     public static T CreateGetDelegate<T>(this FieldInfo field) where T : Delegate {
         bool isStatic = field.IsStatic;
         Type[] param;
-        if (isStatic) {
-            param = Type.EmptyTypes;
-        } else if (typeof(T) is {IsGenericType: true} t && t.GetGenericTypeDefinition() == typeof(Func<,>)) {
-            param = new[] {t.GetGenericArguments()[0]};
+        if (typeof(T) is {IsGenericType: true} t && t.GetGenericTypeDefinition() == typeof(Func<,>)) {
+            Type[] genericArguments = t.GetGenericArguments();
+            param = genericArguments.Length switch {
+                1 => Type.EmptyTypes,
+                2 => new[] {genericArguments[0]},
+                _ => throw new InvalidCastException($"Cannot cast to {typeof(T).Name}")
+            };
         } else {
             param = new[] {field.DeclaringType};
         }
