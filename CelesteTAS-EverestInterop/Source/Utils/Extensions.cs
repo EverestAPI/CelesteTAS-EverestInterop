@@ -65,16 +65,18 @@ internal static class ReflectionExtensions {
 
     private static readonly object[] NullArgs = {null};
 
+    // ReSharper disable UnusedMember.Local
     private record struct MemberKey(Type Type, string Name) {
-        public Type Type = Type;
-        public string Name = Name;
+        public readonly Type Type = Type;
+        public readonly string Name = Name;
     }
 
     private record struct MethodKey(Type Type, string Name, long Types) {
-        public Type Type = Type;
-        public string Name = Name;
-        public long Types = Types;
+        public readonly Type Type = Type;
+        public readonly string Name = Name;
+        public readonly long Types = Types;
     }
+    // ReSharper restore UnusedMember.Local
 
     private static readonly ConcurrentDictionary<MemberKey, FieldInfo> CachedFieldInfos = new();
     private static readonly ConcurrentDictionary<MemberKey, PropertyInfo> CachedPropertyInfos = new();
