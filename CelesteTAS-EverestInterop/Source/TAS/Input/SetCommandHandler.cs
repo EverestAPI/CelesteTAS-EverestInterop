@@ -17,7 +17,7 @@ public static class SetCommandHandler {
     private static readonly FieldInfo ActorMovementCounter = typeof(Actor).GetFieldInfo("movementCounter");
     private static readonly FieldInfo InputFeather = typeof(Celeste.Input).GetFieldInfo("Feather");
     private static bool consolePrintLog;
-    private const string logPrefix = "{Set Command Failed: }";
+    private const string logPrefix = "Set Command Failed: ";
 
     [Monocle.Command("set", "Set settings/level/session/entity field. eg set DashMode Infinite; set Player Speed 325 -52.5 (CelesteTAS)")]
     private static void SetCommand(string arg1, string arg2, string arg3, string arg4, string arg5, string arg6, string arg7, string arg8,
