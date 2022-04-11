@@ -65,14 +65,25 @@ internal static class ReflectionExtensions {
 
     private static readonly object[] NullArgs = {null};
 
-    private static readonly ConcurrentDictionary<int, FieldInfo> CachedFieldInfos = new();
-    private static readonly ConcurrentDictionary<int, PropertyInfo> CachedPropertyInfos = new();
-    private static readonly ConcurrentDictionary<int, MethodInfo> CachedMethodInfos = new();
-    private static readonly ConcurrentDictionary<int, MethodInfo> CachedGetMethodInfos = new();
-    private static readonly ConcurrentDictionary<int, MethodInfo> CachedSetMethodInfos = new();
+    private record struct MemberKey(Type Type, string Name) {
+        public Type Type = Type;
+        public string Name = Name;
+    }
+
+    private record struct MethodKey(Type Type, string Name, long Types) {
+        public Type Type = Type;
+        public string Name = Name;
+        public long Types = Types;
+    }
+
+    private static readonly ConcurrentDictionary<MemberKey, FieldInfo> CachedFieldInfos = new();
+    private static readonly ConcurrentDictionary<MemberKey, PropertyInfo> CachedPropertyInfos = new();
+    private static readonly ConcurrentDictionary<MethodKey, MethodInfo> CachedMethodInfos = new();
+    private static readonly ConcurrentDictionary<MemberKey, MethodInfo> CachedGetMethodInfos = new();
+    private static readonly ConcurrentDictionary<MemberKey, MethodInfo> CachedSetMethodInfos = new();
 
     public static FieldInfo GetFieldInfo(this Type type, string name) {
-        var key = type.CombineHashCode(name);
+        var key = new MemberKey(type, name);
         if (CachedFieldInfos.TryGetValue(key, out var result)) {
             return result;
         }
@@ -85,7 +96,7 @@ internal static class ReflectionExtensions {
     }
 
     public static PropertyInfo GetPropertyInfo(this Type type, string name) {
-        var key = type.CombineHashCode(name);
+        var key = new MemberKey(type, name);
         if (CachedPropertyInfos.TryGetValue(key, out var result)) {
             return result;
         }
@@ -98,7 +109,7 @@ internal static class ReflectionExtensions {
     }
 
     public static MethodInfo GetMethodInfo(this Type type, string name, Type[] types = null) {
-        var key = type.CombineHashCode(name).CombineHashCode(types.GetCustomHashCode());
+        var key = new MethodKey(type, name, types.GetCustomHashCode());
         if (CachedMethodInfos.TryGetValue(key, out MethodInfo result)) {
             return result;
         }
@@ -113,7 +124,7 @@ internal static class ReflectionExtensions {
     }
 
     public static MethodInfo GetGetMethod(this Type type, string propertyName) {
-        var key = type.CombineHashCode(propertyName);
+        var key = new MemberKey(type, propertyName);
         if (CachedGetMethodInfos.TryGetValue(key, out var result)) {
             return result;
         }
@@ -126,7 +137,7 @@ internal static class ReflectionExtensions {
     }
 
     public static MethodInfo GetSetMethod(this Type type, string propertyName) {
-        var key = type.CombineHashCode(propertyName);
+        var key = new MemberKey(type, propertyName);
         if (CachedSetMethodInfos.TryGetValue(key, out var result)) {
             return result;
         }
@@ -269,24 +280,18 @@ internal static class ReflectionExtensions {
 }
 
 internal static class HashCodeExtensions {
-    public static int GetCustomHashCode<T>(this IEnumerable<T> enumerable) {
+    public static long GetCustomHashCode<T>(this IEnumerable<T> enumerable) {
         if (enumerable == null) {
             return 0;
         }
 
         unchecked {
-            int hash = 17;
+            long hash = 17;
             foreach (T item in enumerable) {
                 hash = hash * -1521134295 + EqualityComparer<T>.Default.GetHashCode(item);
             }
 
             return hash;
-        }
-    }
-
-    public static int CombineHashCode<T1, T2>(this T1 t1, T2 t2) {
-        unchecked {
-            return EqualityComparer<T1>.Default.GetHashCode(t1) * -1521134295 + EqualityComparer<T2>.Default.GetHashCode(t2);
         }
     }
 }
