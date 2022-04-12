@@ -90,9 +90,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
 
     public static void ExecuteWaitingActions() {
         while (mainThreadActions.TryDequeue(out Action action)) {
-            if (Initialized) {
-                action.Invoke();
-            }
+            action.Invoke();
         }
     }
 
