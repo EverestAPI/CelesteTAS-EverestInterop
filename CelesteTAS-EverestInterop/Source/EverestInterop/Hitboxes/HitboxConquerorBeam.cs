@@ -7,10 +7,10 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxConquerorBeam {
-    private static Func<Entity, float> GetChargeTimer;
-    private static Func<Entity, float> GetActiveTimer;
-    private static Func<Entity, float> GetAngle;
-    private static Func<Entity, Entity> GetBoss;
+    private static GetDelegate<Entity, float> GetChargeTimer;
+    private static GetDelegate<Entity, float> GetActiveTimer;
+    private static GetDelegate<Entity, float> GetAngle;
+    private static GetDelegate<Entity, Entity> GetBoss;
     private static Type conquerorBeamType;
 
     [Initialize]

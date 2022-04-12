@@ -10,19 +10,18 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxTriggerSpikes {
-    private static readonly Func<TriggerSpikes, TriggerSpikes.Directions> TriggerSpikesDirection =
-        typeof(TriggerSpikes).GetFieldInfo("direction").CreateGetDelegate<Func<TriggerSpikes, TriggerSpikes.Directions>>();
+    private static readonly GetDelegate<TriggerSpikes, TriggerSpikes.Directions> TriggerSpikesDirection =
+        FastReflection.CreateGetDelegate<TriggerSpikes, TriggerSpikes.Directions>("direction");
 
-    private static readonly Func<object, Array> TriggerSpikesSpikes = typeof(TriggerSpikes).CreateGetDelegate<object, Array>("spikes");
+    private static readonly GetDelegate<object, Array> TriggerSpikesSpikes = typeof(TriggerSpikes).CreateGetDelegate<object, Array>("spikes");
 
     private static FieldInfo triggerSpikesTriggered;
     private static FieldInfo triggerSpikesLerp;
 
-    private static readonly Func<TriggerSpikesOriginal, TriggerSpikesOriginal.Directions> TriggerSpikesOriginalDirection =
-        typeof(TriggerSpikesOriginal).GetFieldInfo("direction")
-            .CreateGetDelegate<Func<TriggerSpikesOriginal, TriggerSpikesOriginal.Directions>>();
+    private static readonly GetDelegate<TriggerSpikesOriginal, TriggerSpikesOriginal.Directions> TriggerSpikesOriginalDirection =
+        FastReflection.CreateGetDelegate<TriggerSpikesOriginal, TriggerSpikesOriginal.Directions>("direction");
 
-    private static readonly Func<object, Array> TriggerSpikesOriginalSpikes =
+    private static readonly GetDelegate<object, Array> TriggerSpikesOriginalSpikes =
         typeof(TriggerSpikesOriginal).CreateGetDelegate<object, Array>("spikes");
 
     private static FieldInfo triggerSpikesOriginalTriggered;
@@ -30,8 +29,8 @@ public static class HitboxTriggerSpikes {
     private static FieldInfo triggerSpikesOriginalPosition;
 
     private static Type groupedTriggerSpikesType;
-    private static Func<object, bool> groupedTriggerSpikesTriggered;
-    private static Func<object, float> groupedTriggerSpikesLerp;
+    private static GetDelegate<object, bool> groupedTriggerSpikesTriggered;
+    private static GetDelegate<object, float> groupedTriggerSpikesLerp;
 
     static HitboxTriggerSpikes() { }
 

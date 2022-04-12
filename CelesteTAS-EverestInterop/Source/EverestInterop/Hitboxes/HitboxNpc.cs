@@ -1,4 +1,3 @@
-using System;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
@@ -8,10 +7,10 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxNpc {
-    private static readonly Func<NPC05_Badeline, BadelineDummy> Npc05BadelineShadow =
+    private static readonly GetDelegate<NPC05_Badeline, BadelineDummy> Npc05BadelineShadow =
         FastReflection.CreateGetDelegate<NPC05_Badeline, BadelineDummy>("shadow");
 
-    private static readonly Func<NPC03_Oshiro_Cluttter, int> Npc03OshiroSectionsComplete =
+    private static readonly GetDelegate<NPC03_Oshiro_Cluttter, int> Npc03OshiroSectionsComplete =
         FastReflection.CreateGetDelegate<NPC03_Oshiro_Cluttter, int>("sectionsComplete");
 
     [Load]

@@ -12,19 +12,19 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxOptimized {
-    private static readonly Func<FireBall, bool> FireBallIceMode = FastReflection.CreateGetDelegate<FireBall, bool>("iceMode");
-    private static readonly Func<Seeker, Hitbox> SeekerPhysicsHitbox = FastReflection.CreateGetDelegate<Seeker, Hitbox>("physicsHitbox");
-    private static readonly Func<Seeker, Circle> SeekerPushRadius = FastReflection.CreateGetDelegate<Seeker, Circle>("pushRadius");
+    private static readonly GetDelegate<FireBall, bool> FireBallIceMode = FastReflection.CreateGetDelegate<FireBall, bool>("iceMode");
+    private static readonly GetDelegate<Seeker, Hitbox> SeekerPhysicsHitbox = FastReflection.CreateGetDelegate<Seeker, Hitbox>("physicsHitbox");
+    private static readonly GetDelegate<Seeker, Circle> SeekerPushRadius = FastReflection.CreateGetDelegate<Seeker, Circle>("pushRadius");
 
-    private static readonly Func<Pathfinder, List<Vector2>> PathfinderLastPath =
+    private static readonly GetDelegate<Pathfinder, List<Vector2>> PathfinderLastPath =
         FastReflection.CreateGetDelegate<Pathfinder, List<Vector2>>("lastPath");
 
-    private static readonly Func<HoldableCollider, Collider> HoldableColliderCollider =
+    private static readonly GetDelegate<HoldableCollider, Collider> HoldableColliderCollider =
         FastReflection.CreateGetDelegate<HoldableCollider, Collider>("collider");
 
-    private static readonly Func<LockBlock, bool> LockBlockOpening = FastReflection.CreateGetDelegate<LockBlock, bool>("opening");
-    private static readonly Func<Player, Hitbox> PlayerHurtbox = FastReflection.CreateGetDelegate<Player, Hitbox>("hurtbox");
-    private static Func<Solid> bgModeToggleBgSolidTiles;
+    private static readonly GetDelegate<LockBlock, bool> LockBlockOpening = FastReflection.CreateGetDelegate<LockBlock, bool>("opening");
+    private static readonly GetDelegate<Player, Hitbox> PlayerHurtbox = FastReflection.CreateGetDelegate<Player, Hitbox>("hurtbox");
+    private static GetDelegate<object, Solid> bgModeToggleBgSolidTiles;
     private static readonly Dictionary<LevelData, bool> ExistBgModeToggle = new();
 
     [Initialize]
@@ -42,7 +42,6 @@ public static class HitboxOptimized {
         }
     }
 
-
     [Load]
     private static void Load() {
         On.Monocle.Entity.DebugRender += ModDebugRender;
@@ -58,7 +57,7 @@ public static class HitboxOptimized {
         On.Celeste.Seeker.DebugRender += SeekerOnDebugRender;
         On.Celeste.Level.LoadLevel += LevelOnLoadLevel;
         bgModeToggleBgSolidTiles =
-            ModUtils.GetType("BGswitch", "Celeste.BGModeToggle")?.GetFieldInfo("bgSolidTiles")?.CreateGetDelegate<Func<Solid>>();
+            ModUtils.GetType("BGswitch", "Celeste.BGModeToggle")?.CreateGetDelegate<object, Solid>("bgSolidTiles");
     }
 
     [Unload]
@@ -95,7 +94,7 @@ public static class HitboxOptimized {
             }
         }
 
-        if (self is Solid && bgModeToggleBgSolidTiles?.Invoke() is { } bgSolid && bgSolid == self && !bgSolid.Collidable &&
+        if (self is Solid && bgModeToggleBgSolidTiles?.Invoke(null) is { } bgSolid && bgSolid == self && !bgSolid.Collidable &&
             self.Scene is Level level) {
             LevelData levelData = level.Session.LevelData;
             if (!ExistBgModeToggle.TryGetValue(levelData, out bool exist)) {

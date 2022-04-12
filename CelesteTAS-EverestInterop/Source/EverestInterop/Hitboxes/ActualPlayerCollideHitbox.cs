@@ -10,8 +10,7 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static partial class ActualEntityCollideHitbox {
-    private static readonly Func<Player, Hitbox>
-        PlayerHurtbox = typeof(Player).GetFieldInfo("hurtbox").CreateGetDelegate<Func<Player, Hitbox>>();
+    private static readonly GetDelegate<Player, Hitbox> PlayerHurtbox = FastReflection.CreateGetDelegate<Player, Hitbox>("hurtbox");
 
     private static readonly Color HitboxColor = Color.Red.Invert();
     private static readonly Color HurtboxColor = Color.Lime.Invert();

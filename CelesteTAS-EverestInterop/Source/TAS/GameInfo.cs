@@ -19,22 +19,22 @@ using TAS.Utils;
 namespace TAS;
 
 public static class GameInfo {
-    private static readonly Func<SummitVignette, bool> SummitVignetteReady = FastReflection.CreateGetDelegate<SummitVignette, bool>("ready");
-    private static readonly DWallJumpCheck WallJumpCheck;
-    private static readonly GetBerryFloat StrawberryCollectTimer;
-    private static readonly GetFloat DashCooldownTimer;
-    private static readonly GetFloat JumpGraceTimer;
-    private static readonly GetFloat VarJumpTimer;
-    private static readonly GetFloat MaxFall;
-    private static readonly GetPlayerSeekerSpeed PlayerSeekerSpeed;
-    private static readonly GetPlayerSeekerDashTimer PlayerSeekerDashTimer;
-    private static readonly Func<Player, Vector2> PlayerLiftBoost;
-    private static readonly GetFloat ActorLiftSpeedTimer;
-    private static readonly GetFloat PlayerRetainedSpeed;
-    private static readonly GetFloat PlayerRetainedSpeedTimer;
-    private static readonly Func<Level, float> LevelUnpauseTimer;
-    private static readonly Func<StateMachine, Coroutine> StateMachineCurrentCoroutine;
-    private static readonly Func<Coroutine, float> CoroutineWaitTimer;
+    private static readonly GetDelegate<SummitVignette, bool> SummitVignetteReady = FastReflection.CreateGetDelegate<SummitVignette, bool>("ready");
+    private static readonly Func<Player, int, bool> WallJumpCheck;
+    private static readonly GetDelegate<Strawberry, float> StrawberryCollectTimer;
+    private static readonly GetDelegate<Player, float> DashCooldownTimer;
+    private static readonly GetDelegate<Player, float> JumpGraceTimer;
+    private static readonly GetDelegate<Player, float> VarJumpTimer;
+    private static readonly GetDelegate<Player, float> MaxFall;
+    private static readonly GetDelegate<PlayerSeeker, Vector2> PlayerSeekerSpeed;
+    private static readonly GetDelegate<PlayerSeeker, float> PlayerSeekerDashTimer;
+    private static readonly GetDelegate<Player, Vector2> PlayerLiftBoost;
+    private static readonly GetDelegate<Player, float> ActorLiftSpeedTimer;
+    private static readonly GetDelegate<Player, float> PlayerRetainedSpeed;
+    private static readonly GetDelegate<Player, float> PlayerRetainedSpeedTimer;
+    private static readonly GetDelegate<Level, float> LevelUnpauseTimer;
+    private static readonly GetDelegate<StateMachine, Coroutine> StateMachineCurrentCoroutine;
+    private static readonly GetDelegate<Coroutine, float> CoroutineWaitTimer;
 
     public static string Status = string.Empty;
     public static string StatusWithoutTime = string.Empty;
@@ -55,36 +55,23 @@ public static class GameInfo {
 
     static GameInfo() {
         MethodInfo wallJumpCheck = typeof(Player).GetMethodInfo("WallJumpCheck");
-        FieldInfo strawberryCollectTimer = typeof(Strawberry).GetFieldInfo("collectTimer");
-        FieldInfo dashCooldownTimer = typeof(Player).GetFieldInfo("dashCooldownTimer");
-        FieldInfo jumpGraceTimer = typeof(Player).GetFieldInfo("jumpGraceTimer");
-        FieldInfo varJumpTimer = typeof(Player).GetFieldInfo("varJumpTimer");
-        FieldInfo maxFall = typeof(Player).GetFieldInfo("maxFall");
-        FieldInfo playerSeekerSpeed = typeof(PlayerSeeker).GetFieldInfo("speed");
-        FieldInfo playerSeekerDashTimer = typeof(PlayerSeeker).GetFieldInfo("dashTimer");
         MethodInfo playerLiftSpeed = typeof(Player).GetPropertyInfo("LiftBoost").GetGetMethod(true);
-        FieldInfo actorLiftSpeedTimer = typeof(Actor).GetFieldInfo("liftSpeedTimer");
-        FieldInfo playerRetainedSpeed = typeof(Player).GetFieldInfo("wallSpeedRetained");
-        FieldInfo playerRetainedSpeedTimer = typeof(Player).GetFieldInfo("wallSpeedRetentionTimer");
-        FieldInfo levelUnpauseTimer = typeof(Level).GetFieldInfo("unpauseTimer");
-        FieldInfo currentCoroutine = typeof(StateMachine).GetFieldInfo("currentCoroutine");
-        FieldInfo waitTimer = typeof(Coroutine).GetFieldInfo("waitTimer");
 
-        WallJumpCheck = (DWallJumpCheck) wallJumpCheck.CreateDelegate(typeof(DWallJumpCheck));
-        StrawberryCollectTimer = strawberryCollectTimer.CreateGetDelegate<GetBerryFloat>();
-        DashCooldownTimer = dashCooldownTimer.CreateGetDelegate<GetFloat>();
-        JumpGraceTimer = jumpGraceTimer.CreateGetDelegate<GetFloat>();
-        VarJumpTimer = varJumpTimer.CreateGetDelegate<GetFloat>();
-        MaxFall = maxFall.CreateGetDelegate<GetFloat>();
-        PlayerSeekerSpeed = playerSeekerSpeed.CreateGetDelegate<GetPlayerSeekerSpeed>();
-        PlayerSeekerDashTimer = playerSeekerDashTimer.CreateGetDelegate<GetPlayerSeekerDashTimer>();
-        PlayerLiftBoost = (Func<Player, Vector2>) playerLiftSpeed.CreateDelegate(typeof(Func<Player, Vector2>));
-        ActorLiftSpeedTimer = actorLiftSpeedTimer.CreateGetDelegate<GetFloat>();
-        PlayerRetainedSpeed = playerRetainedSpeed.CreateGetDelegate<GetFloat>();
-        PlayerRetainedSpeedTimer = playerRetainedSpeedTimer.CreateGetDelegate<GetFloat>();
-        LevelUnpauseTimer = levelUnpauseTimer?.CreateGetDelegate<Func<Level, float>>();
-        StateMachineCurrentCoroutine = currentCoroutine.CreateGetDelegate<Func<StateMachine, Coroutine>>();
-        CoroutineWaitTimer = waitTimer.CreateGetDelegate<Func<Coroutine, float>>();
+        WallJumpCheck = (Func<Player, int, bool>) wallJumpCheck.CreateDelegate(typeof(Func<Player, int, bool>));
+        PlayerLiftBoost = (GetDelegate<Player, Vector2>) playerLiftSpeed.CreateDelegate(typeof(GetDelegate<Player, Vector2>));
+        StrawberryCollectTimer = FastReflection.CreateGetDelegate<Strawberry, float>("collectTimer");
+        DashCooldownTimer = FastReflection.CreateGetDelegate<Player, float>("dashCooldownTimer");
+        JumpGraceTimer = FastReflection.CreateGetDelegate<Player, float>("jumpGraceTimer");
+        VarJumpTimer = FastReflection.CreateGetDelegate<Player, float>("varJumpTimer");
+        MaxFall = FastReflection.CreateGetDelegate<Player, float>("maxFall");
+        PlayerSeekerSpeed = FastReflection.CreateGetDelegate<PlayerSeeker, Vector2>("speed");
+        PlayerSeekerDashTimer = FastReflection.CreateGetDelegate<PlayerSeeker, float>("dashTimer");
+        ActorLiftSpeedTimer = FastReflection.CreateGetDelegate<Player, float>("liftSpeedTimer");
+        PlayerRetainedSpeed = FastReflection.CreateGetDelegate<Player, float>("wallSpeedRetained");
+        PlayerRetainedSpeedTimer = FastReflection.CreateGetDelegate<Player, float>("wallSpeedRetentionTimer");
+        LevelUnpauseTimer = FastReflection.CreateGetDelegate<Level, float>("unpauseTimer");
+        StateMachineCurrentCoroutine = FastReflection.CreateGetDelegate<StateMachine, Coroutine>("currentCoroutine");
+        CoroutineWaitTimer = FastReflection.CreateGetDelegate<Coroutine, float>("waitTimer");
     }
 
     public static string HudInfo {
@@ -502,14 +489,6 @@ public static class GameInfo {
         return DashCooldownTimer(player);
     }
 
-    public static bool GetWallJumpCheck(Player player, int dir) {
-        return WallJumpCheck(player, dir);
-    }
-
-    public static float GetJumpGraceTimer(Player player) {
-        return JumpGraceTimer(player);
-    }
-
     private static int ToCeilingFrames(this float seconds) {
         return (int) Math.Ceiling(seconds / Engine.RawDeltaTime / Engine.TimeRateB);
     }
@@ -639,17 +618,6 @@ public static class GameInfo {
             return 90 + angle;
         }
     }
-
-    //The things we do for faster replay times
-    private delegate bool DWallJumpCheck(Player player, int dir);
-
-    private delegate float GetFloat(Player player);
-
-    private delegate float GetBerryFloat(Strawberry berry);
-
-    private delegate Vector2 GetPlayerSeekerSpeed(PlayerSeeker playerSeeker);
-
-    private delegate float GetPlayerSeekerDashTimer(PlayerSeeker playerSeeker);
 }
 
 public static class PlayerStates {

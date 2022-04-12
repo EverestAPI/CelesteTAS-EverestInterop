@@ -1,4 +1,3 @@
-using System;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
@@ -8,10 +7,10 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxFinalBoss {
-    private static readonly Func<FinalBossBeam, float> GetChargeTimer = FastReflection.CreateGetDelegate<FinalBossBeam, float>("chargeTimer");
-    private static readonly Func<FinalBossBeam, float> GetActiveTimer = FastReflection.CreateGetDelegate<FinalBossBeam, float>("activeTimer");
-    private static readonly Func<FinalBossBeam, float> GetAngle = FastReflection.CreateGetDelegate<FinalBossBeam, float>("angle");
-    private static readonly Func<FinalBossBeam, FinalBoss> GetBoss = FastReflection.CreateGetDelegate<FinalBossBeam, FinalBoss>("boss");
+    private static readonly GetDelegate<FinalBossBeam, float> GetChargeTimer = FastReflection.CreateGetDelegate<FinalBossBeam, float>("chargeTimer");
+    private static readonly GetDelegate<FinalBossBeam, float> GetActiveTimer = FastReflection.CreateGetDelegate<FinalBossBeam, float>("activeTimer");
+    private static readonly GetDelegate<FinalBossBeam, float> GetAngle = FastReflection.CreateGetDelegate<FinalBossBeam, float>("angle");
+    private static readonly GetDelegate<FinalBossBeam, FinalBoss> GetBoss = FastReflection.CreateGetDelegate<FinalBossBeam, FinalBoss>("boss");
 
     [Load]
     private static void Load() {

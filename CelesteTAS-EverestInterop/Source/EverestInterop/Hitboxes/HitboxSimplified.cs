@@ -13,10 +13,10 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxSimplified {
-    private static readonly Func<FireBall, bool> FireBallIceMode = FastReflection.CreateGetDelegate<FireBall, bool>("iceMode");
-    private static readonly Func<Strawberry, bool> StrawberryCollected = FastReflection.CreateGetDelegate<Strawberry, bool>("collected");
+    private static readonly GetDelegate<FireBall, bool> FireBallIceMode = FastReflection.CreateGetDelegate<FireBall, bool>("iceMode");
+    private static readonly GetDelegate<Strawberry, bool> StrawberryCollected = FastReflection.CreateGetDelegate<Strawberry, bool>("collected");
 
-    private static readonly Lazy<Func<object, bool>> GeckoHostile = new(() =>
+    private static readonly Lazy<GetDelegate<object, bool>> GeckoHostile = new(() =>
         ModUtils.GetType("JungleHelper", "Celeste.Mod.JungleHelper.Entities.Gecko")?.CreateGetDelegate<object, bool>("hostile"));
 
     private static readonly HashSet<Type> UselessTypes = new() {

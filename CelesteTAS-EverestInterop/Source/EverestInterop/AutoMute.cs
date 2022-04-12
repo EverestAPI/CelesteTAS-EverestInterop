@@ -64,7 +64,8 @@ public static class AutoMute {
         "event:/CommunalHelperEvents/game/customBoosters/dreamBooster/dreambooster_move",
     };
 
-    private static readonly Func<SoundSource, EventInstance> getInstance = FastReflection.CreateGetDelegate<SoundSource, EventInstance>("instance");
+    private static readonly GetDelegate<SoundSource, EventInstance> getInstance =
+        FastReflection.CreateGetDelegate<SoundSource, EventInstance>("instance");
 
     private static readonly IDictionary<WeakReference<EventInstance>, int>
         LoopAudioInstances = new ConcurrentDictionary<WeakReference<EventInstance>, int>();

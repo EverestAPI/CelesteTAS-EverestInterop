@@ -15,7 +15,7 @@ using GameInput = Celeste.Input;
 namespace TAS;
 
 public static class Manager {
-    private static readonly Func<SummitVignette, bool> SummitVignetteReady = FastReflection.CreateGetDelegate<SummitVignette, bool>("ready");
+    private static readonly GetDelegate<SummitVignette, bool> SummitVignetteReady = FastReflection.CreateGetDelegate<SummitVignette, bool>("ready");
 
     private static readonly DUpdateVirtualInputs UpdateVirtualInputs;
 

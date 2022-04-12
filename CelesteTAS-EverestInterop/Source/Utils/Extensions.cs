@@ -13,46 +13,65 @@ using MonoMod.Utils;
 
 namespace TAS.Utils;
 
+internal delegate TReturn GetDelegate<in TInstance, out TReturn>(TInstance instance);
+
 internal static class FastReflection {
-    public static T CreateGetDelegate<T>(this FieldInfo field) where T : Delegate {
-        bool isStatic = field.IsStatic;
-        Type[] param;
-        if (typeof(T) is {IsGenericType: true} t && t.GetGenericTypeDefinition() == typeof(Func<,>)) {
-            Type[] genericArguments = t.GetGenericArguments();
-            param = genericArguments.Length switch {
-                1 => Type.EmptyTypes,
-                2 => new[] {genericArguments[0]},
-                _ => throw new InvalidCastException($"Cannot cast to {typeof(T).Name}")
-            };
-        } else {
-            param = new[] {field.DeclaringType};
+    private record struct DelegateKey(Type Type, string Name, Type InstanceType, Type ReturnType) {
+        public readonly Type Type = Type;
+        public readonly string Name = Name;
+        public readonly Type InstanceType = InstanceType;
+        public readonly Type ReturnType = ReturnType;
+    }
+
+    private static readonly ConcurrentDictionary<DelegateKey, Delegate> CachedFieldGetDelegates = new();
+
+    private static GetDelegate<TInstance, TReturn> CreateGetDelegateImpl<TInstance, TReturn>(Type type, string name) {
+        FieldInfo field = type.GetFieldInfo(name);
+        if (field == null) {
+            return null;
         }
 
-        DynamicMethod dyn = new($"{field.DeclaringType?.FullName}_{field.Name}_FastAccess", field.FieldType, param, field.DeclaringType);
-        ILGenerator ilGen = dyn.GetILGenerator();
-        if (isStatic) {
-            ilGen.Emit(OpCodes.Ldsfld, field);
+        Type returnType = typeof(TReturn);
+        Type fieldType = field.FieldType;
+        if (!returnType.IsAssignableFrom(fieldType)) {
+            throw new InvalidCastException($"{field.Name} is of type {fieldType}, it cannot be assigned to the type {returnType}.");
+        }
+
+        var key = new DelegateKey(type, name, typeof(TInstance), typeof(TReturn));
+        if (CachedFieldGetDelegates.TryGetValue(key, out var result)) {
+            return (GetDelegate<TInstance, TReturn>) result;
+        }
+
+        var method = new DynamicMethod($"{field} Getter", returnType, new[] {typeof(TInstance)}, field.DeclaringType, true);
+        var il = method.GetILGenerator();
+
+        if (field.IsStatic) {
+            il.Emit(OpCodes.Ldsfld, field);
         } else {
-            ilGen.Emit(OpCodes.Ldarg_0);
-            if (!param[0].IsValueType && field.DeclaringType.IsValueType) {
-                ilGen.Emit(OpCodes.Unbox_Any, field.DeclaringType);
+            il.Emit(OpCodes.Ldarg_0);
+            if (field.DeclaringType.IsValueType && !typeof(TInstance).IsValueType) {
+                il.Emit(OpCodes.Unbox_Any, field.DeclaringType);
             }
 
-            ilGen.Emit(OpCodes.Ldfld, field);
+            il.Emit(OpCodes.Ldfld, field);
         }
 
-        ilGen.Emit(OpCodes.Ret);
-        return dyn.CreateDelegate(typeof(T)) as T;
+        if (fieldType.IsValueType && !returnType.IsValueType) {
+            il.Emit(OpCodes.Box, fieldType);
+        }
+
+        il.Emit(OpCodes.Ret);
+
+        result = CachedFieldGetDelegates[key] = method.CreateDelegate(typeof(GetDelegate<TInstance, TReturn>));
+        return (GetDelegate<TInstance, TReturn>) result;
     }
 
-    public static Func<T, TResult> CreateGetDelegate<T, TResult>(this Type type, string fieldName) {
-        FieldInfo field = type.GetFieldInfo(fieldName);
-        return field == null ? null : CreateGetDelegate<Func<T, TResult>>(field);
+    public static GetDelegate<TInstance, TResult> CreateGetDelegate<TInstance, TResult>(this Type type, string fieldName) {
+        return CreateGetDelegateImpl<TInstance, TResult>(type, fieldName);
     }
 
-    public static Func<T, TResult> CreateGetDelegate<T, TResult>(string fieldName) {
-        FieldInfo field = typeof(T).GetFieldInfo(fieldName);
-        return field == null ? null : CreateGetDelegate<Func<T, TResult>>(field);
+    public static GetDelegate<TInstance, TResult> CreateGetDelegate<TInstance, TResult>(string fieldName) {
+        return CreateGetDelegate<TInstance, TResult>(typeof(TInstance), fieldName);
     }
 }
 
