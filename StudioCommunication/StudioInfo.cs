@@ -1,6 +1,7 @@
 ﻿namespace StudioCommunication;
 
-public record StudioInfo {
+// ReSharper disable once StructCanBeMadeReadOnly
+public record struct StudioInfo {
     public readonly int CurrentLine;
     public readonly string CurrentLineSuffix;
     public readonly int CurrentFrameInTas;

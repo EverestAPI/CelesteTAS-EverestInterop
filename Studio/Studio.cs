@@ -793,7 +793,7 @@ public partial class Studio : BaseForm {
             Invoke((Action) UpdateValues);
         } else {
             if (CommunicationWrapper.StudioInfo != null) {
-                StudioInfo studioInfo = CommunicationWrapper.StudioInfo;
+                StudioInfo studioInfo = CommunicationWrapper.StudioInfo.Value;
                 richText.CurrentLine = studioInfo.CurrentLine;
                 richText.CurrentLineText = studioInfo.CurrentLineSuffix;
                 richText.SaveStateLine = studioInfo.SaveStateLine;
