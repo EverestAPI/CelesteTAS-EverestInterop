@@ -117,6 +117,8 @@ public static class InfoCustom {
                         return FormatValue(GetMemberValue(type, level, memberNames), helperMethod, decimals);
                     } else if (type == typeof(Session)) {
                         return FormatValue(GetMemberValue(type, level.Session, memberNames), helperMethod, decimals);
+                    } else {
+                        return $"{type.FullName}.{memberNames.First()} member not found";
                     }
                 }
 
