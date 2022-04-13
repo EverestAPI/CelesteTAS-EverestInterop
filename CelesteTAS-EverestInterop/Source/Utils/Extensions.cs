@@ -16,12 +16,14 @@ namespace TAS.Utils;
 internal delegate TReturn GetDelegate<in TInstance, out TReturn>(TInstance instance);
 
 internal static class FastReflection {
+    // ReSharper disable UnusedMember.Local
     private record struct DelegateKey(Type Type, string Name, Type InstanceType, Type ReturnType) {
         public readonly Type Type = Type;
         public readonly string Name = Name;
         public readonly Type InstanceType = InstanceType;
         public readonly Type ReturnType = ReturnType;
     }
+    // ReSharper restore UnusedMember.Local
 
     private static readonly ConcurrentDictionary<DelegateKey, Delegate> CachedFieldGetDelegates = new();
 
@@ -40,6 +42,21 @@ internal static class FastReflection {
         var key = new DelegateKey(type, name, typeof(TInstance), typeof(TReturn));
         if (CachedFieldGetDelegates.TryGetValue(key, out var result)) {
             return (GetDelegate<TInstance, TReturn>) result;
+        }
+
+        if (field.IsLiteral && !field.IsInitOnly) {
+            Func<TInstance, TReturn> func = obj => {
+                object value = field.GetValue(obj);
+                if (value == null) {
+                    return default;
+                } else {
+                    return (TReturn) value;
+                }
+            };
+
+            GetDelegate<TInstance, TReturn> getDelegate = func.CastDelegate<GetDelegate<TInstance, TReturn>>();
+            CachedFieldGetDelegates[key] = getDelegate;
+            return getDelegate;
         }
 
         var method = new DynamicMethod($"{field} Getter", returnType, new[] {typeof(TInstance)}, field.DeclaringType, true);
