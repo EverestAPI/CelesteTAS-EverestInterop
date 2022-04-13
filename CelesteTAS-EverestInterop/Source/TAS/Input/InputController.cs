@@ -7,6 +7,10 @@ using System.Text;
 using MonoMod.Utils;
 using TAS.EverestInterop;
 using TAS.Utils;
+#if DEBUG
+using TAS.Module;
+using Monocle;
+#endif
 
 namespace TAS.Input;
 
