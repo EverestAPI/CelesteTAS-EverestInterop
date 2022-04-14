@@ -45,14 +45,9 @@ internal static class FastReflection {
         }
 
         if (field.IsLiteral && !field.IsInitOnly) {
-            Func<TInstance, TReturn> func = obj => {
-                object value = field.GetValue(obj);
-                if (value == null) {
-                    return default;
-                } else {
-                    return (TReturn) value;
-                }
-            };
+            object value = field.GetValue(null);
+            TReturn returnValue = value == null ? default : (TReturn) value;
+            Func<TInstance, TReturn> func = _ => returnValue;
 
             GetDelegate<TInstance, TReturn> getDelegate = func.CastDelegate<GetDelegate<TInstance, TReturn>>();
             CachedFieldGetDelegates[key] = getDelegate;
