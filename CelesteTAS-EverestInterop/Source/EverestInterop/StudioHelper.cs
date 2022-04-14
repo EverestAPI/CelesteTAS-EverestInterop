@@ -109,7 +109,7 @@ public static class StudioHelper {
         } catch (Exception e) {
             e.LogException("Failed to check studio version.");
             try {
-                foreach (string file in Directory.GetFiles(Everest.PathGame, "*.PendingOverwrite")) {
+                foreach (string file in Directory.GetFiles(TempExtractPath, "*.PendingOverwrite")) {
                     File.Delete(file);
                 }
             } catch {
