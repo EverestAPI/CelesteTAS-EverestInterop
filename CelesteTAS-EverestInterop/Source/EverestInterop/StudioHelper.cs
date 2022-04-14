@@ -76,31 +76,48 @@ public static class StudioHelper {
             }
         } catch (Exception e) {
             e.LogException("Failed to extract studio.");
-            foreach (string file in Directory.GetFiles(Everest.PathGame, "*.PendingOverwrite")) {
-                File.Delete(file);
+            try {
+                foreach (string file in Directory.GetFiles(Everest.PathGame, "*.PendingOverwrite")) {
+                    File.Delete(file);
+                }
+            } catch {
+                // ignore
             }
         }
     }
 
     private static bool CheckNewerStudio() {
-        string zipFileVersion = null;
+        try {
+            string zipFileVersion = null;
 
-        if (!string.IsNullOrEmpty(Metadata.PathArchive)) {
-            using ZipFile zip = ZipFile.Read(Metadata.PathArchive);
-            if (zip.Entries.FirstOrDefault(zipEntry => zipEntry.FileName == StudioNameWithExe) is { } studioZipEntry) {
-                studioZipEntry.Extract(TempExtractPath, ExtractExistingFileAction.OverwriteSilently);
-                zipFileVersion = FileVersionInfo.GetVersionInfo(TempExtractStudio).FileVersion;
-                File.Delete(TempExtractStudio);
+            if (!string.IsNullOrEmpty(Metadata.PathArchive)) {
+                using ZipFile zip = ZipFile.Read(Metadata.PathArchive);
+                if (zip.Entries.FirstOrDefault(zipEntry => zipEntry.FileName == StudioNameWithExe) is { } studioZipEntry) {
+                    studioZipEntry.Extract(TempExtractPath, ExtractExistingFileAction.OverwriteSilently);
+                    zipFileVersion = FileVersionInfo.GetVersionInfo(TempExtractStudio).FileVersion;
+                    File.Delete(TempExtractStudio);
+                }
+            } else if (!string.IsNullOrEmpty(Metadata.PathDirectory)) {
+                string[] files = Directory.GetFiles(Metadata.PathDirectory);
+                if (files.FirstOrDefault(filePath => filePath.EndsWith(StudioNameWithExe)) is { } studioFilePath) {
+                    zipFileVersion = FileVersionInfo.GetVersionInfo(studioFilePath).FileVersion;
+                }
             }
-        } else if (!string.IsNullOrEmpty(Metadata.PathDirectory)) {
-            string[] files = Directory.GetFiles(Metadata.PathDirectory);
-            if (files.FirstOrDefault(filePath => filePath.EndsWith(StudioNameWithExe)) is { } studioFilePath) {
-                zipFileVersion = FileVersionInfo.GetVersionInfo(studioFilePath).FileVersion;
+
+            string existFileVersion = FileVersionInfo.GetVersionInfo(ExtractedStudioExePath).FileVersion;
+            return existFileVersion != zipFileVersion;
+        } catch (Exception e) {
+            e.LogException("Failed to check studio version.");
+            try {
+                foreach (string file in Directory.GetFiles(Everest.PathGame, "*.PendingOverwrite")) {
+                    File.Delete(file);
+                }
+            } catch {
+                // ignore
             }
+
+            return false;
         }
-
-        string existFileVersion = FileVersionInfo.GetVersionInfo(ExtractedStudioExePath).FileVersion;
-        return existFileVersion != zipFileVersion;
     }
 
     private static void LaunchStudioAtBoot(bool studioProcessWasKilled) {
