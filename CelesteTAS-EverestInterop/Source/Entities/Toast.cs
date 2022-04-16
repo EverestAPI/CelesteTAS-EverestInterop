@@ -1,6 +1,5 @@
 ﻿using System.Collections;
 using Celeste;
-using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Microsoft.Xna.Framework;
 using Monocle;
 
@@ -23,7 +22,6 @@ internal class Toast : Entity {
         Tag = Tags.HUD | Tags.Global | Tags.FrozenUpdate | Tags.PauseUpdate | Tags.TransitionUpdate;
         Depth = Depths.Top;
         Add(new Coroutine(Show()));
-        Add(new IgnoreSaveLoadComponent());
     }
 
     private IEnumerator Show() {

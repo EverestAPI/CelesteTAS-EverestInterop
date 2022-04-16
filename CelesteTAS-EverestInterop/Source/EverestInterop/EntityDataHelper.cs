@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Celeste;
-using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Microsoft.Xna.Framework;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -14,8 +13,8 @@ using TAS.Utils;
 namespace TAS.EverestInterop;
 
 public static class EntityDataHelper {
-    private static Dictionary<Entity, EntityData> cachedEntityData = new();
-    private static Dictionary<Entity, EntityData> savedEntityData = new();
+    public static Dictionary<Entity, EntityData> CachedEntityData = new();
+    public static Dictionary<Entity, EntityData> SavedEntityData = new();
 
     [Load]
     private static void Load() {
@@ -68,37 +67,25 @@ public static class EntityDataHelper {
 
     private static void SetEntityData(this Entity entity, EntityData data) {
         if (entity != null) {
-            cachedEntityData.Remove(entity);
-            cachedEntityData.Add(entity, data);
+            CachedEntityData.Remove(entity);
+            CachedEntityData.Add(entity, data);
         }
     }
 
     public static EntityData GetEntityData(this Entity entity) {
-        return entity != null && cachedEntityData.TryGetValue(entity, out EntityData data) ? data : null;
-    }
-
-    public static void OnSave() {
-        savedEntityData = cachedEntityData.DeepCloneShared();
-    }
-
-    public static void OnLoad() {
-        cachedEntityData = savedEntityData.DeepCloneShared();
-    }
-
-    public static void OnClear() {
-        savedEntityData.Clear();
+        return entity != null && CachedEntityData.TryGetValue(entity, out EntityData data) ? data : null;
     }
 
     private static void LevelOnEnd(On.Celeste.Level.orig_End orig, Level self) {
         orig(self);
         if (self.Entities.IsEmpty()) {
-            cachedEntityData.Clear();
+            CachedEntityData.Clear();
         }
     }
 
     private static void EntityOnRemoved(On.Monocle.Entity.orig_Removed orig, Entity self, Scene scene) {
         orig(self, scene);
-        cachedEntityData.Remove(self);
+        CachedEntityData.Remove(self);
     }
 
     public static EntityID ToEntityId(this EntityData entityData) {

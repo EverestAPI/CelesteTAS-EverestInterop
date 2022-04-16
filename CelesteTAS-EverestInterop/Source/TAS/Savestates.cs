@@ -15,7 +15,6 @@ using TasStates = TAS.States;
 namespace TAS;
 
 public static class Savestates {
-    private static SaveLoadAction saveLoadAction;
     private static InputController savedController;
 
     private static readonly Dictionary<FieldInfo, object> SavedGameInfo = new() {
@@ -216,7 +215,7 @@ public static class Savestates {
     [Load]
     private static void OnLoad() {
         if (SpeedrunToolInstalled) {
-            AddSaveLoadAction();
+            SpeedrunToolUtils.AddSaveLoadAction();
         }
     }
 
@@ -227,21 +226,7 @@ public static class Savestates {
         }
 
         if (SpeedrunToolInstalled) {
-            ClearSaveLoadAction();
-        }
-    }
-
-    private static void AddSaveLoadAction() {
-        saveLoadAction = new SaveLoadAction(
-            (_, _) => EntityDataHelper.OnSave(),
-            (_, _) => EntityDataHelper.OnLoad(),
-            EntityDataHelper.OnClear);
-        SaveLoadAction.Add(saveLoadAction);
-    }
-
-    private static void ClearSaveLoadAction() {
-        if (saveLoadAction != null) {
-            SaveLoadAction.Remove(saveLoadAction);
+            SpeedrunToolUtils.ClearSaveLoadAction();
         }
     }
 }
