@@ -102,6 +102,11 @@ internal static class ReflectionExtensions {
         public readonly string Name = Name;
     }
 
+    private record struct AllMemberKey(Type Type, BindingFlags BindingFlags) {
+        public readonly Type Type = Type;
+        public readonly BindingFlags BindingFlags = BindingFlags;
+    }
+
     private record struct MethodKey(Type Type, string Name, long Types) {
         public readonly Type Type = Type;
         public readonly string Name = Name;
@@ -114,6 +119,8 @@ internal static class ReflectionExtensions {
     private static readonly ConcurrentDictionary<MethodKey, MethodInfo> CachedMethodInfos = new();
     private static readonly ConcurrentDictionary<MemberKey, MethodInfo> CachedGetMethodInfos = new();
     private static readonly ConcurrentDictionary<MemberKey, MethodInfo> CachedSetMethodInfos = new();
+    private static readonly ConcurrentDictionary<AllMemberKey, IEnumerable<FieldInfo>> CachedAllFieldInfos = new();
+    private static readonly ConcurrentDictionary<AllMemberKey, IEnumerable<PropertyInfo>> CachedAllPropertyInfos = new();
 
     public static FieldInfo GetFieldInfo(this Type type, string name) {
         var key = new MemberKey(type, name);
@@ -188,22 +195,28 @@ internal static class ReflectionExtensions {
             bindingFlags |= BindingFlags.Static;
         }
 
-        HashSet<FieldInfo> result = new();
+        var key = new AllMemberKey(type, bindingFlags);
+        if (CachedAllFieldInfos.TryGetValue(key, out var result)) {
+            return result;
+        }
+
+        HashSet<FieldInfo> hashSet = new();
         while (type != null && type.IsSubclassOf(typeof(object))) {
             IEnumerable<FieldInfo> fieldInfos = type.GetFields(bindingFlags);
 
             foreach (FieldInfo fieldInfo in fieldInfos) {
-                if (result.Contains(fieldInfo)) {
+                if (hashSet.Contains(fieldInfo)) {
                     continue;
                 }
 
-                result.Add(fieldInfo);
+                hashSet.Add(fieldInfo);
             }
 
             type = type.BaseType;
         }
 
-        return result;
+        CachedAllFieldInfos[key] = hashSet;
+        return hashSet;
     }
 
     public static IEnumerable<PropertyInfo> GetAllProperties(this Type type, bool includeStatic = false) {
@@ -212,21 +225,27 @@ internal static class ReflectionExtensions {
             bindingFlags |= BindingFlags.Static;
         }
 
-        HashSet<PropertyInfo> result = new();
+        var key = new AllMemberKey(type, bindingFlags);
+        if (CachedAllPropertyInfos.TryGetValue(key, out var result)) {
+            return result;
+        }
+
+        HashSet<PropertyInfo> hashSet = new();
         while (type != null && type.IsSubclassOf(typeof(object))) {
             IEnumerable<PropertyInfo> properties = type.GetProperties(bindingFlags);
             foreach (PropertyInfo fieldInfo in properties) {
-                if (result.Contains(fieldInfo)) {
+                if (hashSet.Contains(fieldInfo)) {
                     continue;
                 }
 
-                result.Add(fieldInfo);
+                hashSet.Add(fieldInfo);
             }
 
             type = type.BaseType;
         }
 
-        return result;
+        CachedAllPropertyInfos[key] = hashSet;
+        return hashSet;
     }
 
     public static T GetFieldValue<T>(this object obj, string name) {

@@ -18,7 +18,14 @@ public enum WatchEntityType {
 }
 
 public static class InfoWatchEntity {
-    private static readonly Dictionary<string, IEnumerable<MemberInfo>> CachedMemberInfos = new();
+    // ReSharper disable UnusedMember.Local
+    private record struct MemberKey(Type Type, bool DeclaredOnly) {
+        public readonly Type Type = Type;
+        public readonly bool DeclaredOnly = DeclaredOnly;
+    }
+    // ReSharper restore UnusedMember.Local
+
+    private static readonly Dictionary<MemberKey, IEnumerable<MemberInfo>> CachedMemberInfos = new();
 
     private static readonly WeakReference<Entity> LastClickedEntity = new(null);
 
@@ -260,7 +267,7 @@ public static class InfoWatchEntity {
     }
 
     private static IEnumerable<MemberInfo> GetAllSimpleFields(Type type, bool declaredOnly = false) {
-        string key = type.FullName + "-" + declaredOnly;
+        var key = new MemberKey(type, declaredOnly);
 
         if (CachedMemberInfos.ContainsKey(key)) {
             return CachedMemberInfos[key];
