@@ -291,6 +291,10 @@ public partial class Studio : BaseForm {
     }
 
     private void Studio_KeyDown(object sender, KeyEventArgs e) {
+        if (richText.ReadOnly) {
+            return;
+        }
+
         try {
             if (e.Modifiers == Keys.Control) {
                 switch (e.KeyCode) {
