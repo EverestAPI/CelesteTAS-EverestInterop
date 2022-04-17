@@ -38,17 +38,17 @@ internal static class CelesteTasMenu {
         return new EaseInSubMenu("More Options".ToDialogText(), false).Apply(subMenu => {
             subMenu.Add(new TextMenu.OnOff("Center Camera".ToDialogText(), TasSettings.CenterCamera).Change(value =>
                 TasSettings.CenterCamera = value));
-
+            subMenu.Add(new TextMenu.OnOff("Restore Settings".ToDialogText(), TasSettings.RestoreSettings).Change(value =>
+                TasSettings.RestoreSettings = value));
+            subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), TasSettings.LaunchStudioAtBoot).Change(value =>
+                TasSettings.LaunchStudioAtBoot = value));
+            subMenu.Add(new TextMenu.OnOff("Mod 9D Lighting".ToDialogText(), TasSettings.Mod9DLighting).Change(value =>
+                TasSettings.Mod9DLighting = value));
             TextMenu.Item ignoreGcItem;
             subMenu.Add(ignoreGcItem = new TextMenu.OnOff("Ignore GC Collect".ToDialogText(), TasSettings.IgnoreGcCollect).Change(value =>
                 TasSettings.IgnoreGcCollect = value));
             subMenu.AddDescription(menu, ignoreGcItem, "Ignore GC Collect Description 1".ToDialogText());
             subMenu.AddDescription(menu, ignoreGcItem, "Ignore GC Collect Description 2".ToDialogText());
-
-            subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), TasSettings.LaunchStudioAtBoot).Change(value =>
-                TasSettings.LaunchStudioAtBoot = value));
-            subMenu.Add(new TextMenu.OnOff("Mod 9D Lighting".ToDialogText(), TasSettings.Mod9DLighting).Change(value =>
-                TasSettings.Mod9DLighting = value));
         });
     }
 

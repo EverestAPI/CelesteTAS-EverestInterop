@@ -285,9 +285,10 @@ public class CelesteTasSettings : EverestModuleSettings {
         set => centerCamera = value;
     }
 
-    public bool IgnoreGcCollect { get; set; } = true;
+    public bool RestoreSettings { get; set; } = false;
     public bool LaunchStudioAtBoot { get; set; } = false;
     public bool Mod9DLighting { get; set; } = false;
+    public bool IgnoreGcCollect { get; set; } = true;
 
     #endregion
 }

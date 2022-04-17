@@ -663,12 +663,12 @@ internal static class CloneUtil<T> {
 internal static class CloneUtil {
     public static T ShallowClone<T>(this T obj) => CloneUtil<T>.ShallowClone(obj);
 
-    public static void CopyAllFields(this object to, object from, bool filterBackingField = false) {
+    public static void CopyAllFields(this object to, object from) {
         if (to.GetType() != from.GetType()) {
             throw new ArgumentException("object to and from must be the same type");
         }
 
-        foreach (FieldInfo fieldInfo in to.GetType().GetAllFieldInfos(false)) {
+        foreach (FieldInfo fieldInfo in to.GetType().GetAllFieldInfos()) {
             object fromValue = fieldInfo.GetValue(from);
             fieldInfo.SetValue(to, fromValue);
         }
