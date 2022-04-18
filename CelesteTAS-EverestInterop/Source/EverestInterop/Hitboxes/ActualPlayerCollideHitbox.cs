@@ -44,16 +44,17 @@ public static partial class ActualEntityCollideHitbox {
     }
 
     private static void PlayerOnDebugRender(On.Celeste.Player.orig_DebugRender orig, Player player, Camera camera) {
-        if (Manager.UltraFastForwarding || !TasSettings.ShowHitboxes
-                                        || TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off
-                                        || player.Scene is Level {Transitioning: true} || player.LoadActualCollidePosition() == null
-                                        || player.LoadActualCollidePosition().Value == player.Position
+        if (Manager.UltraFastForwarding
+            || !TasSettings.ShowHitboxes
+            || TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off
+            || player.Scene is Level {Transitioning: true}
+            || player.LoadActualCollidePosition() is not { } actualCollidePosition
+            || actualCollidePosition == player.Position
            ) {
             orig(player, camera);
             return;
         }
 
-        Vector2 actualCollidePosition = player.LoadActualCollidePosition().Value;
         if (TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Override) {
             DrawAssistedHitbox(orig, player, camera, actualCollidePosition);
         }

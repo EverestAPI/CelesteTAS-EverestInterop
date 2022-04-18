@@ -99,8 +99,8 @@ public static partial class ActualEntityCollideHitbox {
             || colliderListRendering && self is not ColliderList
             || entity.Get<PlayerCollider>() == null
             || entity.Scene?.Tracker.GetEntity<Player>() == null
-            || entity.LoadActualCollidePosition() == null
-            || TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Append && entity.Position == entity.LoadActualCollidePosition() &&
+            || entity.LoadActualCollidePosition() is not { } actualCollidePosition
+            || TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Append && entity.Position == actualCollidePosition &&
             entity.Collidable == entity.LoadActualCollidable()
            ) {
             invokeOrig(color);
@@ -108,7 +108,7 @@ public static partial class ActualEntityCollideHitbox {
         }
 
         Color lastFrameColor =
-            TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Append && entity.Position != entity.LoadActualCollidePosition()
+            TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Append && entity.Position != actualCollidePosition
                 ? color.Invert()
                 : color;
 
@@ -119,7 +119,7 @@ public static partial class ActualEntityCollideHitbox {
         }
 
         if (TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Append) {
-            if (entity.Position == entity.LoadActualCollidePosition()) {
+            if (entity.Position == actualCollidePosition) {
                 invokeOrig(lastFrameColor);
                 return;
             }
@@ -127,20 +127,19 @@ public static partial class ActualEntityCollideHitbox {
             invokeOrig(color);
         }
 
-        Vector2 lastPosition = entity.LoadActualCollidePosition().Value;
         Vector2 currentPosition = entity.Position;
 
         IEnumerable<PlayerCollider> playerColliders = entity.Components.GetAll<PlayerCollider>().ToArray();
         if (playerColliders.All(playerCollider => playerCollider.Collider != null)) {
             if (playerColliders.Any(playerCollider => playerCollider.Collider == self)) {
-                entity.Position = lastPosition;
+                entity.Position = actualCollidePosition;
                 invokeOrig(lastFrameColor);
                 entity.Position = currentPosition;
             } else {
                 invokeOrig(color);
             }
         } else {
-            entity.Position = lastPosition;
+            entity.Position = actualCollidePosition;
             invokeOrig(lastFrameColor);
             entity.Position = currentPosition;
         }
