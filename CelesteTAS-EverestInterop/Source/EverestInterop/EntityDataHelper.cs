@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Mono.Cecil;
@@ -15,6 +16,11 @@ namespace TAS.EverestInterop;
 public static class EntityDataHelper {
     public static Dictionary<Entity, EntityData> CachedEntityData = new();
 
+    private static readonly Lazy<EntityData> Ch6FlyFeatherData = new(() => new EntityData() {
+        Name = "infiniteStar", ID = -1, Level = AreaData.Get(6).Mode[0].MapData.StartLevel(), Position = new Vector2(88, 256),
+        Values = new Dictionary<string, object> {{"shielded", false}, {"singleUse", false}}
+    });
+
     [Load]
     private static void Load() {
         On.Celeste.Player.Added += PlayerOnAdded;
@@ -23,31 +29,54 @@ public static class EntityDataHelper {
         IL.Celeste.Level.LoadCustomEntity += ModLoadCustomEntity;
         On.Celeste.Level.End += LevelOnEnd;
         On.Monocle.Entity.Removed += EntityOnRemoved;
+        On.Celeste.FlyFeather.ctor_Vector2_bool_bool += FlyFeatherOnCtor_Vector2_bool_bool;
         typeof(Level).GetMethod("orig_LoadLevel").IlHook(ModOrigLoadLevel);
     }
 
     [LoadContent]
     private static void LoadContent() {
-        Dictionary<string, string[]> typeMethodNames = new() {
-            {"Celeste.SeekerStatue+<>c__DisplayClass3_0, Celeste", new[] {"<.ctor>b__0"}},
-            {"Celeste.FireBall, Celeste", new[] {"Added"}},
-            {"Celeste.WindAttackTrigger, Celeste", new[] {"OnEnter"}},
-            {"Celeste.OshiroTrigger, Celeste", new[] {"OnEnter"}},
-            {"Celeste.NPC03_Oshiro_Rooftop, Celeste", new[] {"Added"}},
-            {"Celeste.CS03_OshiroRooftop, Celeste", new[] {"OnEnd"}},
-            {"Celeste.NPC10_Gravestone, Celeste", new[] {"Added", "Interact"}},
-            {"Celeste.CS10_Gravestone, Celeste", new[] {"OnEnd"}},
-            {"Celeste.Mod.DJMapHelper.Triggers.OshiroRightTrigger, DJMapHelper", new[] {"OnEnter"}},
-            {"Celeste.Mod.DJMapHelper.Triggers.WindAttackLeftTrigger, DJMapHelper", new[] {"OnEnter"}},
-            {"Celeste.Mod.RubysEntities.FastOshiroTrigger, RubysEntities", new[] {"OnEnter"}},
-            {"FrostHelper.SnowballTrigger, FrostTempleHelper", new[] {"OnEnter"}},
-            {"OshiroCaller, FemtoHelper", new[] {"OnHoldable", "OnPlayer"}},
-            {"Celeste.Mod.PandorasBox.CloneSpawner, PandorasBox", new[] {"handleClone"}},
+        Dictionary<Type, string[]> typeMethodNames = new() {
+            {typeof(SeekerStatue).GetNestedType("<>c__DisplayClass3_0", BindingFlags.NonPublic), new[] {"<.ctor>b__0"}},
+            {typeof(FireBall), new[] {"Added"}},
+            {typeof(WindAttackTrigger), new[] {"OnEnter"}},
+            {typeof(OshiroTrigger), new[] {"OnEnter"}},
+            {typeof(NPC03_Oshiro_Rooftop), new[] {"Added"}},
+            {typeof(CS03_OshiroRooftop), new[] {"OnEnd"}},
+            {typeof(NPC10_Gravestone), new[] {"Added", "Interact"}},
+            {typeof(CS10_Gravestone), new[] {"OnEnd"}},
         };
 
-        foreach (string typeName in typeMethodNames.Keys) {
-            foreach (string methodName in typeMethodNames[typeName]) {
-                if (Type.GetType(typeName)?.GetMethodInfo(methodName) is { } methodInfo) {
+        if (ModUtils.GetType("DJMapHelper", "Celeste.Mod.DJMapHelper.Triggers.OshiroRightTrigger") is { } oshiroRightTrigger) {
+            typeMethodNames.Add(oshiroRightTrigger, new[] {"OnEnter"});
+        }
+
+        if (ModUtils.GetType("DJMapHelper", "Celeste.Mod.DJMapHelper.Triggers.WindAttackLeftTrigger") is { } windAttackLeftTrigger) {
+            typeMethodNames.Add(windAttackLeftTrigger, new[] {"OnEnter"});
+        }
+
+        if (ModUtils.GetType("Monika's D-Sides", "Celeste.Mod.RubysEntities.FastOshiroTrigger") is { } fastOshiroTrigger) {
+            typeMethodNames.Add(fastOshiroTrigger, new[] {"OnEnter"});
+        }
+
+        if (ModUtils.GetType("FrostHelper", "FrostHelper.SnowballTrigger") is { } snowballTrigger) {
+            typeMethodNames.Add(snowballTrigger, new[] {"OnEnter"});
+        }
+
+        if (ModUtils.GetType("FemtoHelper", "OshiroCaller") is { } oshiroCaller) {
+            typeMethodNames.Add(oshiroCaller, new[] {"OnHoldable", "OnPlayer"});
+        }
+
+        if (ModUtils.GetType("PandorasBox", "Celeste.Mod.PandorasBox.CloneSpawner") is { } cloneSpawner) {
+            typeMethodNames.Add(cloneSpawner, new[] {"handleClone"});
+        }
+
+        foreach (Type type in typeMethodNames.Keys) {
+            if (type == null) {
+                continue;
+            }
+
+            foreach (string methodName in typeMethodNames[type]) {
+                if (type.GetMethodInfo(methodName) is { } methodInfo) {
                     methodInfo.IlHook(ModSpawnEntity);
                 }
             }
@@ -62,12 +91,12 @@ public static class EntityDataHelper {
         IL.Celeste.Level.LoadCustomEntity -= ModLoadCustomEntity;
         On.Celeste.Level.End -= LevelOnEnd;
         On.Monocle.Entity.Removed -= EntityOnRemoved;
+        On.Celeste.FlyFeather.ctor_Vector2_bool_bool -= FlyFeatherOnCtor_Vector2_bool_bool;
     }
 
     private static void SetEntityData(this Entity entity, EntityData data) {
         if (entity != null) {
-            CachedEntityData.Remove(entity);
-            CachedEntityData.Add(entity, data);
+            CachedEntityData[entity] = data;
         }
     }
 
@@ -85,6 +114,16 @@ public static class EntityDataHelper {
     private static void EntityOnRemoved(On.Monocle.Entity.orig_Removed orig, Entity self, Scene scene) {
         orig(self, scene);
         CachedEntityData.Remove(self);
+    }
+
+    private static void FlyFeatherOnCtor_Vector2_bool_bool(On.Celeste.FlyFeather.orig_ctor_Vector2_bool_bool orig, FlyFeather self, Vector2 position,
+        bool shielded, bool singleUse) {
+        orig(self, position, shielded, singleUse);
+
+        if (Engine.Scene.GetSession() is { } session && session.Area.ToString() == "6" && session.LevelData.Name == "start" &&
+            position == new Vector2(88, 256)) {
+            self.SetEntityData(Ch6FlyFeatherData.Value);
+        }
     }
 
     public static EntityID ToEntityId(this EntityData entityData) {
@@ -164,7 +203,7 @@ public static class EntityDataHelper {
 
         if (self.GetEntityData() == null && scene is Level level && level.Session.MapData.StartLevel() is { } levelData) {
             self.SetEntityData(new EntityData {
-                ID = 0, Level = levelData, Name = levelData.Name
+                ID = 0, Level = levelData, Name = "player"
             });
         }
     }
