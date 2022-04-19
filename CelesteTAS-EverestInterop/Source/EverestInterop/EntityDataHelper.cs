@@ -14,7 +14,6 @@ namespace TAS.EverestInterop;
 
 public static class EntityDataHelper {
     public static Dictionary<Entity, EntityData> CachedEntityData = new();
-    public static Dictionary<Entity, EntityData> SavedEntityData = new();
 
     [Load]
     private static void Load() {

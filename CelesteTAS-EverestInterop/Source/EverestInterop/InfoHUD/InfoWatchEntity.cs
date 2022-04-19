@@ -30,7 +30,8 @@ public static class InfoWatchEntity {
     private static readonly WeakReference<Entity> LastClickedEntity = new(null);
 
     // TODO FIXME: entity w/o id not work properly after retry or load state
-    private static readonly List<WeakReference> RequireWatchEntities = new();
+    public static List<WeakReference> RequireWatchEntities = new();
+    public static List<WeakReference> SavedRequireWatchEntities = new();
     private static readonly HashSet<UniqueEntityId> RequireWatchUniqueEntityIds = new();
     public static readonly HashSet<Entity> WatchingEntities = new();
     private static AreaKey requireWatchAreaKey;
@@ -172,6 +173,7 @@ public static class InfoWatchEntity {
     public static void ClearWatchEntities() {
         LastClickedEntity.SetTarget(null);
         RequireWatchEntities.Clear();
+        SavedRequireWatchEntities.Clear();
         RequireWatchUniqueEntityIds.Clear();
         WatchingEntities.Clear();
         GameInfo.Update();
