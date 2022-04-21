@@ -210,10 +210,6 @@ public class StudioCommunicationBase {
             }
         }
 
-        if (message.Id != MessageID.SendState) {
-            Log($"{this} forcing write of {message.Id} with length {message.Length}");
-        }
-
         while (true) {
             if (WriteMessage(message)) {
                 break;

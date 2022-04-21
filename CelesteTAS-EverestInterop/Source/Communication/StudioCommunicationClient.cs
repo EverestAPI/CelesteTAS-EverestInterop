@@ -416,7 +416,11 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
 
     public void UpdateLines(Dictionary<int, string> lines) {
         byte[] data = BinaryFormatterHelper.ToByteArray(lines);
-        WriteMessageGuaranteed(new Message(MessageID.UpdateLines, data));
+        try {
+            WriteMessageGuaranteed(new Message(MessageID.UpdateLines, data));
+        } catch {
+            // ignored
+        }
     }
 
     #endregion
