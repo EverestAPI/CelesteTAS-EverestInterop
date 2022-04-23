@@ -375,11 +375,6 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         Initialized = true;
     }
 
-    private void SendPath(string path) {
-        byte[] pathBytes = Encoding.Default.GetBytes(path);
-        WriteMessageGuaranteed(new Message(MessageID.SendPath, pathBytes));
-    }
-
     private void SendStateNow(StudioInfo studioInfo, bool canFail) {
         if (Initialized) {
             byte[] data = studioInfo.ToByteArray();
