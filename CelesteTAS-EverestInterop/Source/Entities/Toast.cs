@@ -1,7 +1,10 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
+using TAS.Utils;
 
 namespace TAS.Entities;
 
@@ -9,19 +12,23 @@ namespace TAS.Entities;
 internal class Toast : Entity {
     private const int Padding = 25;
     private const float DefaultDuration = 1.5f;
-    private readonly string message;
+    private string message;
     private readonly float duration;
     private float alpha;
     private float unEasedAlpha;
 
     private Toast(string message, float duration = DefaultDuration) {
-        this.message = message;
         this.duration = duration;
-        Vector2 messageSize = ActiveFont.Measure(message);
-        Position = new(Padding, Engine.Height - messageSize.Y - Padding / 2f);
+        UpdateMessage(message);
         Tag = Tags.HUD | Tags.Global | Tags.FrozenUpdate | Tags.PauseUpdate | Tags.TransitionUpdate;
         Depth = Depths.Top;
         Add(new Coroutine(Show()));
+    }
+
+    private void UpdateMessage(string newMessage) {
+        message = newMessage;
+        Vector2 messageSize = ActiveFont.Measure(message);
+        Position = new(Padding, Engine.Height - messageSize.Y - Padding / 2f);
     }
 
     private IEnumerator Show() {
@@ -57,6 +64,11 @@ internal class Toast : Entity {
         }
 
         Engine.Scene.Tracker.GetEntities<Toast>().ForEach(entity => entity.RemoveSelf());
-        Engine.Scene.Add(new Toast(message, duration));
+        if (Engine.Scene.Entities.GetFieldValue<HashSet<Entity>>("adding") is { } adding &&
+            adding.FirstOrDefault(entity => entity is Toast) is Toast toast) {
+            toast.UpdateMessage(toast.message + "\n" + message);
+        } else {
+            Engine.Scene.Add(new Toast(message, duration));
+        }
     }
 }
