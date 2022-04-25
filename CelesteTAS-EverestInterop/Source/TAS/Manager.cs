@@ -159,7 +159,7 @@ public static class Manager {
     }
 
     private static void CheckToEnable() {
-        if (!Savestates.SpeedrunToolInstalled && Hotkeys.Restart.Pressed) {
+        if (!Savestates.SpeedrunToolInstalled && Hotkeys.Restart.Released) {
             DisableRun();
             EnableRun();
             return;
