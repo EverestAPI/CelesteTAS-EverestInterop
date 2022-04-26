@@ -258,7 +258,7 @@ public static class GameInfo {
 
                 string liftBoost = GetAdjustedLiftBoost(player, out string exactLiftBoost);
 
-                string miscStats = $"Stamina: {player.Stamina:0} "
+                string miscStats = $"Stamina: {player.Stamina:F2} "
                                    + (WallJumpCheck(player, 1) ? "Wall-R " : string.Empty)
                                    + (WallJumpCheck(player, -1) ? "Wall-L " : string.Empty)
                                    + PlayerStates.GetStateName(player.StateMachine.State);
