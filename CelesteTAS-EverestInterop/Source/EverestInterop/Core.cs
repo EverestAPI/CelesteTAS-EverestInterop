@@ -25,6 +25,9 @@ public static class Core {
     private static readonly Lazy<bool> CantPauseWhileSaving = new(() => Everest.Version < new Version(1, 2865));
     private static readonly bool updateGrab = typeof(GameInput).GetMethod("UpdateGrab") != null;
 
+    private static readonly GetDelegate<FinalBoss, int> GetFacing = FastReflection.CreateGetDelegate<FinalBoss, int>("facing");
+    private static readonly GetDelegate<FinalBoss, Wiggler> GetScaleWiggler = FastReflection.CreateGetDelegate<FinalBoss, Wiggler>("scaleWiggler");
+
     [Load]
     private static void Load() {
         // Relink RunThreadWithLogging to Celeste.RunThread.RunThreadWithLogging because reflection invoke is slow.
@@ -53,6 +56,8 @@ public static class Core {
 
         // Forced: Allow "rendering" entities without actually rendering them.
         On.Monocle.Entity.Render += Entity_Render;
+
+        On.Monocle.Scene.AfterUpdate += SceneOnAfterUpdate;
     }
 
     [Unload]
@@ -63,6 +68,7 @@ public static class Core {
         On.Celeste.RunThread.Start -= RunThread_Start;
         HGameUpdate.Dispose();
         On.Monocle.Entity.Render -= Entity_Render;
+        On.Monocle.Scene.AfterUpdate -= SceneOnAfterUpdate;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -97,13 +103,6 @@ public static class Core {
             orig(self, gameTime);
             if (updateGrab) {
                 UpdateGrab();
-            }
-
-            // Badeline does some dirty stuff in Render.
-            if (i < loops - 1 && Engine.Scene?.Tracker.GetEntities<FinalBoss>() is { } finalBosses) {
-                foreach (Entity finalBoss in finalBosses) {
-                    finalBoss.Render();
-                }
             }
 
             // Autosaving prevents opening the menu to skip cutscenes during fast forward.
@@ -171,6 +170,22 @@ public static class Core {
         }
 
         orig(self);
+    }
+
+    private static void SceneOnAfterUpdate(On.Monocle.Scene.orig_AfterUpdate orig, Scene self) {
+        orig(self);
+
+        // Badeline does some dirty stuff in Render.
+        // finalBoss.ShotOrigin => base.Center + Sprite.Position + new Vector2(6f * Sprite.Scale.X, 2f);
+        if (TasSettings.Enabled && self is Level) {
+            foreach (FinalBoss finalBoss in self.Tracker.GetCastEntities<FinalBoss>()) {
+                if (finalBoss.Sprite is { } sprite) {
+                    sprite.Scale.X = GetFacing(finalBoss);
+                    sprite.Scale.Y = 1f;
+                    sprite.Scale *= 1f + GetScaleWiggler(finalBoss).Value * 0.2f;
+                }
+            }
+        }
     }
 
     private static void UpdateGrab() {
