@@ -467,7 +467,10 @@ public static class SimplifiedGraphicsFeature {
                 if (TasSettings.SimplifiedGraphics && TasSettings.SimplifiedWavedEdge) {
                     Rectangle rectangle = new((int) item.X + 1, (int) item.Y + 1, (int) item.Width, (int) item.Height);
                     Draw.SpriteBatch.Draw(GameplayBuffers.Lightning, item.Position + Vector2.One, rectangle, Color.Yellow);
-                    Draw.HollowRect(rectangle, Color.LightGoldenrodYellow);
+                    if (visible) {
+                        Draw.HollowRect(rectangle, Color.LightGoldenrodYellow);
+                    }
+
                     return false;
                 }
 
