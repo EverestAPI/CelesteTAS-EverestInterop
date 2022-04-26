@@ -24,6 +24,7 @@ public partial class Studio : BaseForm {
     public static Version Version { get; private set; }
     private static List<string> RecentFiles => Settings.Instance.RecentFiles;
     public readonly List<InputRecord> InputRecords = new() {new InputRecord("")};
+    private readonly StringBuilder statusBarBuilder = new();
 
     private DateTime lastChanged = DateTime.MinValue;
     private FormWindowState lastWindowState = FormWindowState.Normal;
@@ -862,11 +863,40 @@ public partial class Studio : BaseForm {
     private void UpdateStatusBar() {
         if (StudioCommunicationBase.Initialized) {
             string gameInfo = CommunicationWrapper.StudioInfo?.GameInfo ?? string.Empty;
-            lblStatus.Text = "(" + (currentFrame > 0 ? currentFrame + "/" : "")
-                                 + totalFrames + ") \n" + gameInfo
-                                 + new string('\n', Math.Max(0, 7 - gameInfo.Split('\n').Length));
+            statusBarBuilder.Clear();
+            if (currentFrame > 0) {
+                statusBarBuilder.Append($"{currentFrame}/");
+            }
+
+            statusBarBuilder.Append($"{totalFrames}");
+
+            int startLine = richText.Selection.Start.iLine;
+            int endLine = richText.Selection.End.iLine;
+            if (startLine != endLine) {
+                if (endLine < startLine) {
+                    int temp = startLine;
+                    startLine = endLine;
+                    endLine = temp;
+                }
+
+                int selectedFrames = 0;
+                for (int i = startLine; i <= endLine && i < InputRecords.Count; i++) {
+                    InputRecord input = InputRecords[i];
+                    if (input.Frames > 0) {
+                        selectedFrames += input.Frames;
+                    }
+                }
+
+                if (selectedFrames > 0) {
+                    statusBarBuilder.Append($" Selected: {selectedFrames}");
+                }
+            }
+
+            statusBarBuilder.Append($"\n{gameInfo}");
+            statusBarBuilder.Append(new string('\n', Math.Max(0, 7 - gameInfo.Split('\n').Length)));
+            lblStatus.Text = statusBarBuilder.ToString();
         } else {
-            lblStatus.Text = "(" + totalFrames + ")\r\nSearching...";
+            lblStatus.Text = $"{totalFrames}\nSearching...";
         }
 
         int bottomExtraSpace = TextRenderer.MeasureText("\n", lblStatus.Font).Height / 5;
