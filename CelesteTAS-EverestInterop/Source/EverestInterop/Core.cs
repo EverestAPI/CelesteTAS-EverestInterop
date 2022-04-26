@@ -100,8 +100,10 @@ public static class Core {
             }
 
             // Badeline does some dirty stuff in Render.
-            if (i < loops - 1) {
-                Engine.Scene?.Tracker.GetEntity<FinalBoss>()?.Render();
+            if (i < loops - 1 && Engine.Scene?.Tracker.GetEntities<FinalBoss>() is { } finalBosses) {
+                foreach (Entity finalBoss in finalBosses) {
+                    finalBoss.Render();
+                }
             }
 
             // Autosaving prevents opening the menu to skip cutscenes during fast forward.
