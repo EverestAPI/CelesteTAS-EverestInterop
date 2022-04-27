@@ -892,7 +892,8 @@ public partial class Studio : BaseForm {
                 }
             }
 
-            statusBarBuilder.Append($"\n{gameInfo}");
+            statusBarBuilder.AppendLine();
+            statusBarBuilder.Append(gameInfo);
             statusBarBuilder.Append(new string('\n', Math.Max(0, 7 - gameInfo.Split('\n').Length)));
             lblStatus.Text = statusBarBuilder.ToString();
         } else {

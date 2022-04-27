@@ -1124,9 +1124,24 @@ public class RichText : UserControl {
                 return string.Empty;
             }
 
-            string validDir = $"{Path.GetFileName(CurrentFileName)}_{CurrentFileName.GetHashCode()}";
+            string validDir;
+            if (CurrentFileIsBackup()) {
+                validDir = Directory.GetParent(CurrentFileName).FullName;
+            } else {
+                validDir = $"{Path.GetFileName(CurrentFileName)}_{CurrentFileName.GetHashCode()}";
+            }
+
             return Path.Combine(Directory.GetCurrentDirectory(), "TAS Files", "Backups", validDir);
         }
+    }
+
+    private bool CurrentFileIsBackup() {
+        if (string.IsNullOrEmpty(CurrentFileName)) {
+            return false;
+        }
+
+        return Directory.GetParent(CurrentFileName) is { } folder &&
+               folder.Parent?.FullName == Path.Combine(Directory.GetCurrentDirectory(), "TAS Files", "Backups");
     }
 
     /// <summary>
@@ -2306,8 +2321,12 @@ public class RichText : UserControl {
             }
         }
 
-        string backupFileName = Path.Combine(backupDir,
-            Path.GetFileNameWithoutExtension(CurrentFileName) + DateTime.Now.ToString("_yyyy-MM-dd_HH-mm-ss-fff") + ".tas");
+        string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(CurrentFileName);
+        if (CurrentFileIsBackup() && fileNameWithoutExtension.Length > 24) {
+            fileNameWithoutExtension = fileNameWithoutExtension.Substring(0, fileNameWithoutExtension.Length - 24);
+        }
+
+        string backupFileName = Path.Combine(backupDir, fileNameWithoutExtension + DateTime.Now.ToString("_yyyy-MM-dd_HH-mm-ss-fff") + ".tas");
         File.Copy(CurrentFileName, Path.Combine(backupDir, backupFileName));
     }
 
