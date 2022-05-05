@@ -15,8 +15,9 @@ public static class HitboxTriggerSpikes {
 
     private static readonly GetDelegate<object, Array> TriggerSpikesSpikes = typeof(TriggerSpikes).CreateGetDelegate<object, Array>("spikes");
 
-    private static FieldInfo triggerSpikesTriggered;
-    private static FieldInfo triggerSpikesLerp;
+    private static readonly Type spikeInfoType = typeof(TriggerSpikes).GetNestedType("SpikeInfo", BindingFlags.NonPublic);
+    private static readonly GetDelegate<object, bool> triggerSpikesTriggered = spikeInfoType.CreateGetDelegate<object, bool>("Triggered");
+    private static readonly GetDelegate<object, float> triggerSpikesLerp = spikeInfoType.CreateGetDelegate<object, float>("Lerp");
 
     private static readonly GetDelegate<TriggerSpikesOriginal, TriggerSpikesOriginal.Directions> TriggerSpikesOriginalDirection =
         FastReflection.CreateGetDelegate<TriggerSpikesOriginal, TriggerSpikesOriginal.Directions>("direction");
@@ -24,9 +25,15 @@ public static class HitboxTriggerSpikes {
     private static readonly GetDelegate<object, Array> TriggerSpikesOriginalSpikes =
         typeof(TriggerSpikesOriginal).CreateGetDelegate<object, Array>("spikes");
 
-    private static FieldInfo triggerSpikesOriginalTriggered;
-    private static FieldInfo triggerSpikesOriginalLerp;
-    private static FieldInfo triggerSpikesOriginalPosition;
+    private static readonly Type originalSpikeInfoType = typeof(TriggerSpikesOriginal).GetNestedType("SpikeInfo", BindingFlags.NonPublic);
+
+    private static readonly GetDelegate<object, bool> triggerSpikesOriginalTriggered =
+        originalSpikeInfoType.CreateGetDelegate<object, bool>("Triggered");
+
+    private static readonly GetDelegate<object, float> triggerSpikesOriginalLerp = originalSpikeInfoType.CreateGetDelegate<object, float>("Lerp");
+
+    private static readonly GetDelegate<object, Vector2> triggerSpikesOriginalPosition =
+        originalSpikeInfoType.CreateGetDelegate<object, Vector2>("Position");
 
     private static Type groupedTriggerSpikesType;
     private static GetDelegate<object, bool> groupedTriggerSpikesTriggered;
@@ -108,24 +115,17 @@ public static class HitboxTriggerSpikes {
                 return;
         }
 
-        Array spikes = TriggerSpikesSpikes(triggerSpikes) as Array;
+        Array spikes = TriggerSpikesSpikes(triggerSpikes);
         for (int i = 0; i < spikes.Length; i++) {
             object spikeInfo = spikes.GetValue(i);
-            if (triggerSpikesTriggered == null) {
-                triggerSpikesTriggered = spikeInfo.GetType().GetField("Triggered", BindingFlags.Instance | BindingFlags.Public);
-            }
-
-            if (triggerSpikesLerp == null) {
-                triggerSpikesLerp = spikeInfo.GetType().GetField("Lerp", BindingFlags.Instance | BindingFlags.Public);
-            }
-
-            if ((bool) triggerSpikesTriggered.GetValue(spikeInfo) && (float) triggerSpikesLerp.GetValue(spikeInfo) >= 1f) {
+            if (triggerSpikesTriggered(spikeInfo) && triggerSpikesLerp(spikeInfo) >= 1f) {
                 Vector2 position = triggerSpikes.Position + value * (2 + i * 4) + offset;
 
+                bool startFromZero = i == 0;
                 int num = 1;
                 for (int j = i + 1; j < spikes.Length; j++) {
                     object nextSpikeInfo = spikes.GetValue(j);
-                    if ((bool) triggerSpikesTriggered.GetValue(nextSpikeInfo) && (float) triggerSpikesLerp.GetValue(nextSpikeInfo) >= 1f) {
+                    if (triggerSpikesTriggered(nextSpikeInfo) && triggerSpikesLerp(nextSpikeInfo) >= 1f) {
                         num++;
                         i++;
                     } else {
@@ -133,8 +133,19 @@ public static class HitboxTriggerSpikes {
                     }
                 }
 
-                Draw.HollowRect(position, 4f * (vertical ? 1 : num), 4f * (vertical ? num : 1),
-                    HitboxColor.GetCustomColor(Color.Red, triggerSpikes));
+                float totalWidth = 4f * (vertical ? 1 : num);
+                float totalHeight = 4f * (vertical ? num : 1);
+                if (!startFromZero) {
+                    if (vertical) {
+                        position.Y -= 1;
+                        totalHeight += 1;
+                    } else {
+                        position.X -= 1;
+                        totalWidth += 1;
+                    }
+                }
+
+                Draw.HollowRect(position, totalWidth, totalHeight, HitboxColor.GetCustomColor(Color.Red, triggerSpikes));
             }
         }
     }
@@ -172,28 +183,16 @@ public static class HitboxTriggerSpikes {
                 return;
         }
 
-        Array spikes = TriggerSpikesOriginalSpikes(triggerSpikes) as Array;
+        Array spikes = TriggerSpikesOriginalSpikes(triggerSpikes);
         for (int i = 0; i < spikes.Length; i++) {
             object spikeInfo = spikes.GetValue(i);
 
-            if (triggerSpikesOriginalTriggered == null) {
-                triggerSpikesOriginalTriggered = spikeInfo.GetType().GetField("Triggered", BindingFlags.Instance | BindingFlags.Public);
-            }
-
-            if (triggerSpikesOriginalLerp == null) {
-                triggerSpikesOriginalLerp = spikeInfo.GetType().GetField("Lerp", BindingFlags.Instance | BindingFlags.Public);
-            }
-
-            if (triggerSpikesOriginalPosition == null) {
-                triggerSpikesOriginalPosition = spikeInfo.GetType().GetField("Position", BindingFlags.Instance | BindingFlags.Public);
-            }
-
-            if ((bool) triggerSpikesOriginalTriggered.GetValue(spikeInfo) && (float) triggerSpikesOriginalLerp.GetValue(spikeInfo) >= 1) {
+            if (triggerSpikesOriginalTriggered(spikeInfo) && triggerSpikesOriginalLerp(spikeInfo) >= 1) {
+                bool startFromZero = i == 0;
                 int num = 1;
                 for (int j = i + 1; j < spikes.Length; j++) {
                     object nextSpikeInfo = spikes.GetValue(j);
-                    if ((bool) triggerSpikesOriginalTriggered.GetValue(nextSpikeInfo) &&
-                        (float) triggerSpikesOriginalLerp.GetValue(nextSpikeInfo) >= 1) {
+                    if (triggerSpikesOriginalTriggered(nextSpikeInfo) && triggerSpikesOriginalLerp(nextSpikeInfo) >= 1) {
                         num++;
                         i++;
                     } else {
@@ -201,9 +200,20 @@ public static class HitboxTriggerSpikes {
                     }
                 }
 
-                Vector2 position = (Vector2) triggerSpikesOriginalPosition.GetValue(spikeInfo) + triggerSpikes.Position + offset;
-                Draw.HollowRect(position, width * (vertical ? 1 : num), height * (vertical ? num : 1),
-                    HitboxColor.GetCustomColor(Color.Red, triggerSpikes));
+                Vector2 position = triggerSpikesOriginalPosition(spikeInfo) + triggerSpikes.Position + offset;
+                float totalWidth = width * (vertical ? 1 : num);
+                float totalHeight = height * (vertical ? num : 1);
+                if (!startFromZero) {
+                    if (vertical) {
+                        position.Y -= 1;
+                        totalHeight += 1;
+                    } else {
+                        position.X -= 1;
+                        totalWidth += 1;
+                    }
+                }
+
+                Draw.HollowRect(position, totalWidth, totalHeight, HitboxColor.GetCustomColor(Color.Red, triggerSpikes));
             }
         }
     }
