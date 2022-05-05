@@ -21,6 +21,7 @@ using Camera = TAS.EverestInterop.CenterCamera;
 namespace TAS.EverestInterop;
 
 public static class Hotkeys {
+    private static IEnumerable<PropertyInfo> bindingProperties;
     private static FieldInfo bindingFieldInfo;
 
     private static readonly Lazy<FieldInfo> CelesteNetClientModuleInstance = new(() =>
@@ -258,29 +259,32 @@ public static class Hotkeys {
     }
 
     private static void ModReload(ILContext il) {
-        IEnumerable<PropertyInfo> bindingProperties = typeof(CelesteTasSettings)
+        bindingProperties = typeof(CelesteTasSettings)
             .GetProperties(BindingFlags.Instance | BindingFlags.Public)
             .Where(info => info.PropertyType == typeof(ButtonBinding) &&
                            info.GetCustomAttribute<DefaultButtonBinding2Attribute>() is { } extraDefaultKeyAttribute &&
                            extraDefaultKeyAttribute.ExtraKey != Keys.None);
+
         ILCursor ilCursor = new(il);
         if (ilCursor.TryGotoNext(
                 MoveType.After,
                 ins => ins.OpCode == OpCodes.Callvirt && ins.Operand.ToString().Contains("<Microsoft.Xna.Framework.Input.Keys>::Add(T)")
             )) {
-            ilCursor.Emit(OpCodes.Ldloc_1).EmitDelegate<Action<object>>(bindingEntry => {
-                if (bindingFieldInfo == null) {
-                    bindingFieldInfo = bindingEntry.GetType().GetFieldInfo("Binding");
-                }
+            ilCursor.Emit(OpCodes.Ldloc_1).EmitDelegate<Action<object>>(AddExtraDefaultKey);
+        }
+    }
 
-                if (bindingFieldInfo?.GetValue(bindingEntry) is not ButtonBinding binding) {
-                    return;
-                }
+    private static void AddExtraDefaultKey(object bindingEntry) {
+        if (bindingFieldInfo == null) {
+            bindingFieldInfo = bindingEntry.GetType().GetFieldInfo("Binding");
+        }
 
-                if (bindingProperties.FirstOrDefault(info => info.GetValue(TasSettings) == binding) is { } propertyInfo) {
-                    binding.Keys.Add(propertyInfo.GetCustomAttribute<DefaultButtonBinding2Attribute>().ExtraKey);
-                }
-            });
+        if (bindingFieldInfo?.GetValue(bindingEntry) is not ButtonBinding binding) {
+            return;
+        }
+
+        if (bindingProperties.FirstOrDefault(info => info.GetValue(TasSettings) == binding) is { } propertyInfo) {
+            binding.Keys.Add(propertyInfo.GetCustomAttribute<DefaultButtonBinding2Attribute>().ExtraKey);
         }
     }
 

@@ -235,20 +235,22 @@ public static class EntityDataHelper {
                 cursor.Emit(OpCodes.Ldfld, seekerStatue);
             }
 
-            cursor.EmitDelegate<Action<Entity, Entity>>((spawnedEntity, entity) => {
-                if (entity.GetEntityData() is { } entityData) {
-                    EntityData clonedEntityData = entityData.ShallowClone();
-                    if (spawnedEntity is FireBall fireBall) {
-                        clonedEntityData.ID = clonedEntityData.ID * -100 - fireBall.GetFieldValue<int>("index");
-                    } else if (entity is CS03_OshiroRooftop) {
-                        clonedEntityData.ID = 2;
-                    } else {
-                        clonedEntityData.ID *= -1;
-                    }
+            cursor.EmitDelegate<Action<Entity, Entity>>(SetCustomEntityData);
+        }
+    }
 
-                    spawnedEntity.SetEntityData(clonedEntityData);
-                }
-            });
+    private static void SetCustomEntityData(Entity spawnedEntity, Entity entity) {
+        if (entity.GetEntityData() is { } entityData) {
+            EntityData clonedEntityData = entityData.ShallowClone();
+            if (spawnedEntity is FireBall fireBall) {
+                clonedEntityData.ID = clonedEntityData.ID * -100 - fireBall.GetFieldValue<int>("index");
+            } else if (entity is CS03_OshiroRooftop) {
+                clonedEntityData.ID = 2;
+            } else {
+                clonedEntityData.ID *= -1;
+            }
+
+            spawnedEntity.SetEntityData(clonedEntityData);
         }
     }
 

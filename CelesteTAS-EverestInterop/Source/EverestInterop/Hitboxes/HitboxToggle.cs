@@ -37,23 +37,33 @@ public static class HitboxToggle {
         }
 
         ilCursor.Emit(OpCodes.Or);
-        ilCursor.EmitDelegate<Func<bool, bool>>(orig => {
-            origDrawHitboxes = orig;
-            return DrawHitboxes && !FreeCameraHitbox.DrawFreeCameraHitboxes;
-        });
+        ilCursor.EmitDelegate<Func<bool, bool>>(IsShowHitbox);
+    }
+
+    private static bool IsShowHitbox(bool orig) {
+        origDrawHitboxes = orig;
+        return DrawHitboxes && !FreeCameraHitbox.DrawFreeCameraHitboxes;
     }
 
     private static void DistortOnRender(ILContext il) {
         ILCursor ilCursor = new(il);
         if (ilCursor.TryGotoNext(MoveType.After, i => i.MatchLdsfld(typeof(GFX), "FxDistort"))) {
-            ilCursor.EmitDelegate<Func<Effect, Effect>>(effect => TasSettings.ShowHitboxes ? null : effect);
+            ilCursor.EmitDelegate<Func<Effect, Effect>>(DisableDistortWhenShowHitbox);
         }
+    }
+
+    private static Effect DisableDistortWhenShowHitbox(Effect effect) {
+        return TasSettings.ShowHitboxes ? null : effect;
     }
 
     private static void GlitchOnApply(ILContext il) {
         ILCursor ilCursor = new(il);
         Instruction start = ilCursor.Next;
-        ilCursor.EmitDelegate<Func<bool>>(() => TasSettings.ShowHitboxes);
+        ilCursor.EmitDelegate<Func<bool>>(IsShowHitbox);
         ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ret);
+    }
+
+    private static bool IsShowHitbox() {
+        return TasSettings.ShowHitboxes;
     }
 }

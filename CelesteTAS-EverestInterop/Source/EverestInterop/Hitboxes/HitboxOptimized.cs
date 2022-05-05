@@ -35,11 +35,15 @@ public static class HitboxOptimized {
             methodInfo.IlHook((cursor, context) => {
                 if (cursor.TryGotoNext(MoveType.After, ins => ins.OpCode == OpCodes.Callvirt)) {
                     Instruction cursorNext = cursor.Next;
-                    cursor.EmitDelegate(() => TasSettings.ShowHitboxes);
+                    cursor.EmitDelegate<Func<bool>>(IsShowHitboxes);
                     cursor.Emit(OpCodes.Brfalse, cursorNext).Emit(OpCodes.Ret);
                 }
             });
         }
+    }
+
+    private static bool IsShowHitboxes() {
+        return TasSettings.ShowHitboxes;
     }
 
     [Load]
@@ -263,9 +267,12 @@ public static class HitboxOptimized {
             )) {
             ilCursor
                 .Emit(OpCodes.Ldarg_0)
-                .EmitDelegate<Func<Color, Component, Color>>((color, component) =>
-                    component.Entity.Collidable ? color : color * HitboxColor.UnCollidableAlpha);
+                .EmitDelegate<Func<Color, Component, Color>>(OptimizePlayerColliderHitbox);
         }
+    }
+
+    private static Color OptimizePlayerColliderHitbox(Color color, Component component) {
+        return component.Entity.Collidable ? color : color * HitboxColor.UnCollidableAlpha;
     }
 
     private static void AddFeatherHitbox(On.Celeste.PlayerCollider.orig_DebugRender orig, PlayerCollider self, Camera camera) {
@@ -306,13 +313,7 @@ public static class HitboxOptimized {
             )) {
             ilCursor
                 .Emit(OpCodes.Ldarg_0)
-                .EmitDelegate<Func<Color, Entity, Color>>((color, entity) => {
-                    if (!TasSettings.ShowHitboxes) {
-                        return color;
-                    }
-
-                    return entity.Collidable ? HitboxColor.EntityColor : HitboxColor.EntityColor * HitboxColor.UnCollidableAlpha;
-                });
+                .EmitDelegate<Func<Color, Entity, Color>>(OptimizeSeekerHitbox1);
         }
 
         if (ilCursor.TryGotoNext(
@@ -321,14 +322,24 @@ public static class HitboxOptimized {
             )) {
             ilCursor
                 .Emit(OpCodes.Ldarg_0)
-                .EmitDelegate<Func<Color, Entity, Color>>((color, entity) => {
-                    if (!TasSettings.ShowHitboxes) {
-                        return color;
-                    }
-
-                    return entity.Collidable ? Color.HotPink : Color.HotPink * HitboxColor.UnCollidableAlpha;
-                });
+                .EmitDelegate<Func<Color, Entity, Color>>(OptimizeSeekerHitbox2);
         }
+    }
+
+    private static Color OptimizeSeekerHitbox1(Color color, Entity entity) {
+        if (!TasSettings.ShowHitboxes) {
+            return color;
+        }
+
+        return entity.Collidable ? HitboxColor.EntityColor : HitboxColor.EntityColor * HitboxColor.UnCollidableAlpha;
+    }
+
+    private static Color OptimizeSeekerHitbox2(Color color, Entity entity) {
+        if (!TasSettings.ShowHitboxes) {
+            return color;
+        }
+
+        return entity.Collidable ? Color.HotPink : Color.HotPink * HitboxColor.UnCollidableAlpha;
     }
 
     private static void SeekerOnDebugRender(On.Celeste.Seeker.orig_DebugRender orig, Seeker self, Camera camera) {

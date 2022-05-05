@@ -31,33 +31,33 @@ public static class HookHelper {
         });
     }
 
-    public static void SkipMethod(Func<bool> condition, string methodName, params Type[] types) {
+    public static void SkipMethod(Type conditionType, string conditionMethodName, string methodName, params Type[] types) {
         foreach (Type type in types) {
             if (type?.GetMethodInfo(methodName) is { } method) {
-                SkipMethod(condition, method);
+                SkipMethod(conditionType, conditionMethodName, method);
             }
         }
     }
 
-    public static void SkipMethod(Func<bool> condition, params MethodInfo[] methodInfos) {
+    public static void SkipMethod(Type conditionType, string conditionMethodName, params MethodInfo[] methodInfos) {
         foreach (MethodInfo methodInfo in methodInfos) {
             methodInfo.IlHook(il => {
                 ILCursor ilCursor = new(il);
                 Instruction start = ilCursor.Next;
-                ilCursor.EmitDelegate(condition);
+                ilCursor.Emit(OpCodes.Call, conditionType.GetMethodInfo(conditionMethodName));
                 ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ret);
             });
         }
     }
 
-    public static void ReturnZeroMethod(Func<bool> condition, params MethodInfo[] methods) {
+    public static void ReturnZeroMethod(Type conditionType, string conditionMethodName, params MethodInfo[] methods) {
         foreach (MethodInfo methodInfo in methods) {
             if (methodInfo != null && !methodInfo.IsGenericMethod && methodInfo.DeclaringType?.IsGenericType != true &&
                 methodInfo.ReturnType == typeof(float)) {
                 methodInfo.IlHook(il => {
                     ILCursor ilCursor = new(il);
                     Instruction start = ilCursor.Next;
-                    ilCursor.EmitDelegate(condition);
+                    ilCursor.Emit(OpCodes.Call, conditionType.GetMethodInfo(conditionMethodName));
                     ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ldc_R4, 0f).Emit(OpCodes.Ret);
                 });
             }

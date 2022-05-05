@@ -38,9 +38,13 @@ public static class HideGameplay {
         }
 
         c.Index++;
-        c.EmitDelegate<Func<bool>>(() => !TasSettings.ShowGameplay);
+        c.EmitDelegate<Func<bool>>(IsHideGamePlay);
         // c.Emit(OpCodes.Call, typeof(CelesteTASModule).GetMethod("get_Settings"));
         // c.Emit(OpCodes.Callvirt, typeof(CelesteTASModuleSettings).GetMethod("get_HideGameplay"));
         c.Emit(OpCodes.Brtrue, lblAfterEntities);
+    }
+
+    private static bool IsHideGamePlay() {
+        return !TasSettings.ShowGameplay;
     }
 }

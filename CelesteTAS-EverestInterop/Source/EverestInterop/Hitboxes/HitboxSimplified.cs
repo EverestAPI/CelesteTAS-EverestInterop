@@ -52,7 +52,7 @@ public static class HitboxSimplified {
 
     [Load]
     private static void Load() {
-        IL.Monocle.Entity.DebugRender += HideHitbox;
+        IL.Monocle.Entity.DebugRender += ModDebugRender;
         On.Monocle.Hitbox.Render += ModHitbox;
         On.Monocle.Grid.Render += CombineGridHitbox;
         IL.Monocle.Draw.HollowRect_float_float_float_float_Color += AvoidRedrawCorners;
@@ -60,42 +60,44 @@ public static class HitboxSimplified {
 
     [Unload]
     private static void Unload() {
-        IL.Monocle.Entity.DebugRender -= HideHitbox;
+        IL.Monocle.Entity.DebugRender -= ModDebugRender;
         On.Monocle.Hitbox.Render -= ModHitbox;
         On.Monocle.Grid.Render -= CombineGridHitbox;
         IL.Monocle.Draw.HollowRect_float_float_float_float_Color -= AvoidRedrawCorners;
     }
 
-    private static void HideHitbox(ILContext il) {
+    private static void ModDebugRender(ILContext il) {
         ILCursor ilCursor = new(il);
         Instruction start = ilCursor.Next;
-        ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Func<Entity, bool>>(entity => {
-            if (TasSettings.ShowHitboxes && TasSettings.SimplifiedHitboxes && !InfoWatchEntity.WatchingEntities.Contains(entity)) {
-                Type type = entity.GetType();
-                if (UselessTypes.Contains(type)) {
-                    return true;
-                }
+        ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Func<Entity, bool>>(HideHitbox);
+        ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ret);
+    }
 
-                if (entity is ClutterBlockBase) {
-                    return !entity.Collidable;
-                }
-
-                if (type.FullName == "Celeste.Mod.JungleHelper.Entities.Gecko" && false == GeckoHostile.Value?.Invoke(entity)) {
-                    return true;
-                }
-
-                if (entity.Get<Follower>() is {Leader: { }}) {
-                    return true;
-                }
-
-                if (entity is Strawberry strawberry && StrawberryCollected(strawberry)) {
-                    return true;
-                }
+    private static bool HideHitbox(Entity entity) {
+        if (TasSettings.ShowHitboxes && TasSettings.SimplifiedHitboxes && !InfoWatchEntity.WatchingEntities.Contains(entity)) {
+            Type type = entity.GetType();
+            if (UselessTypes.Contains(type)) {
+                return true;
             }
 
-            return false;
-        });
-        ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ret);
+            if (entity is ClutterBlockBase) {
+                return !entity.Collidable;
+            }
+
+            if (type.FullName == "Celeste.Mod.JungleHelper.Entities.Gecko" && false == GeckoHostile.Value?.Invoke(entity)) {
+                return true;
+            }
+
+            if (entity.Get<Follower>() is {Leader: { }}) {
+                return true;
+            }
+
+            if (entity is Strawberry strawberry && StrawberryCollected(strawberry)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static void ModHitbox(On.Monocle.Hitbox.orig_Render orig, Hitbox hitbox, Camera camera, Color color) {

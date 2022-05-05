@@ -26,10 +26,18 @@ public static class HitboxFixer {
     private static void GameplayRendererOnRender(ILContext il) {
         ILCursor ilCursor = new(il);
         if (ilCursor.TryGotoNext(i => i.MatchCallvirt<EntityList>("DebugRender"))) {
-            ilCursor.EmitDelegate<Action>(() => DrawingHitboxes = true);
+            ilCursor.EmitDelegate<Action>(SetDrawingHitboxesTrue);
             ilCursor.Index++;
-            ilCursor.EmitDelegate<Action>(() => DrawingHitboxes = false);
+            ilCursor.EmitDelegate<Action>(SetDrawingHitboxesFalse);
         }
+    }
+
+    private static void SetDrawingHitboxesTrue() {
+        DrawingHitboxes = true;
+    }
+
+    private static void SetDrawingHitboxesFalse() {
+        DrawingHitboxes = false;
     }
 
     private static void ModDrawHollowRect(On.Monocle.Draw.orig_HollowRect_float_float_float_float_Color orig, float x, float y, float width,

@@ -170,8 +170,12 @@ public static class AutoMute {
         ilCursor.Goto(ilCursor.Instrs.Count - 1);
         if (ilCursor.TryGotoPrev(ins => ins.MatchLdfld<CassetteBlockManager>("leadBeats"), ins => ins.OpCode == OpCodes.Ldc_I4_0)) {
             ilCursor.Index++;
-            ilCursor.EmitDelegate<Func<int, int>>(leadBeats => ShouldBeMuted ? 1 : leadBeats);
+            ilCursor.EmitDelegate<Func<int, int>>(MuteBeats);
         }
+    }
+
+    private static int MuteBeats(int leadBeats) {
+        return ShouldBeMuted ? 1 : leadBeats;
     }
 
     private static void SceneOnUpdate(On.Monocle.Scene.orig_Update orig, Monocle.Scene self) {

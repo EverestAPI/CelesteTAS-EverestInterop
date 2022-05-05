@@ -69,33 +69,35 @@ public static class ConsoleCommandHandler {
             return;
         }
 
-        Vector2 startPoint = new(-176, 312);
-        ilCursor.EmitDelegate<Func<bool>>(() => {
-            Session session = Engine.Scene.GetSession();
-            bool skip = TasSettings.Enabled && (session.GetFlag("campfire_chat") || session.RespawnPoint != startPoint);
-            if (skip && Engine.Scene.GetLevel() is { } level && level.GetPlayer() is { } player
-                && level.Entities.FindFirst<NPC06_Theo_Plateau>() is { } theo && level.Tracker.GetEntity<Bonfire>() is { } bonfire) {
-                session.SetFlag("campfire_chat");
-                level.Session.BloomBaseAdd = 1f;
-                level.Bloom.Base = AreaData.Get(level).BloomBase + 1f;
-                level.Session.Dreaming = true;
-                level.Add(new StarJumpController());
-                level.Add(new CS06_StarJumpEnd(theo, player, new Vector2(-4, 312), new Vector2(-184, 177.6818f)));
-                level.Add(new FlyFeather(new Vector2(88, 256), shielded: false, singleUse: false));
-                bonfire.Activated = false;
-                bonfire.SetMode(Bonfire.Mode.Lit);
-                theo.Position = new Vector2(-40, 312);
-                theo.Sprite.Play("sleep");
-                theo.Sprite.SetAnimationFrame(theo.Sprite.CurrentAnimationTotalFrames - 1);
-                if (level.Session.RespawnPoint == startPoint) {
-                    player.Position = new Vector2(-4, 312);
-                    player.Facing = Facings.Left;
-                }
-            }
-
-            return skip;
-        });
+        ilCursor.EmitDelegate<Func<bool>>(FixCh6FirstRoomLoad);
         ilCursor.Emit(OpCodes.Brtrue, skipCs06Campfire);
+    }
+
+    private static bool FixCh6FirstRoomLoad() {
+        Vector2 startPoint = new(-176, 312);
+        Session session = Engine.Scene.GetSession();
+        bool skip = TasSettings.Enabled && (session.GetFlag("campfire_chat") || session.RespawnPoint != startPoint);
+        if (skip && Engine.Scene.GetLevel() is { } level && level.GetPlayer() is { } player &&
+            level.Entities.FindFirst<NPC06_Theo_Plateau>() is { } theo && level.Tracker.GetEntity<Bonfire>() is { } bonfire) {
+            session.SetFlag("campfire_chat");
+            level.Session.BloomBaseAdd = 1f;
+            level.Bloom.Base = AreaData.Get(level).BloomBase + 1f;
+            level.Session.Dreaming = true;
+            level.Add(new StarJumpController());
+            level.Add(new CS06_StarJumpEnd(theo, player, new Vector2(-4, 312), new Vector2(-184, 177.6818f)));
+            level.Add(new FlyFeather(new Vector2(88, 256), shielded: false, singleUse: false));
+            bonfire.Activated = false;
+            bonfire.SetMode(Bonfire.Mode.Lit);
+            theo.Position = new Vector2(-40, 312);
+            theo.Sprite.Play("sleep");
+            theo.Sprite.SetAnimationFrame(theo.Sprite.CurrentAnimationTotalFrames - 1);
+            if (level.Session.RespawnPoint == startPoint) {
+                player.Position = new Vector2(-4, 312);
+                player.Facing = Facings.Left;
+            }
+        }
+
+        return skip;
     }
 
     // fix CrystallineHelper.ForceDashCrystal keeps forcing dash dir when console load during freeze frames

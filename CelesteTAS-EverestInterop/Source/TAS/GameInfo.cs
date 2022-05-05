@@ -166,12 +166,14 @@ public static class GameInfo {
                    ins => ins.MatchBox<float>(),
                    ins => ins.OpCode == OpCodes.Stfld && ins.Operand.ToString().EndsWith("::<>2__current")
                )) {
-            ilCursor.EmitDelegate<Func<float, float>>(dashTime => {
-                DashTime = dashTime;
-                return dashTime;
-            });
+            ilCursor.EmitDelegate<Func<float, float>>(SetDashTime);
             ilCursor.Index++;
         }
+    }
+
+    private static float SetDashTime(float dashTime) {
+        DashTime = dashTime;
+        return dashTime;
     }
 
     private static void EngineOnUpdate(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {

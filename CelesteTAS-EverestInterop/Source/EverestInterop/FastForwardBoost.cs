@@ -134,7 +134,7 @@ public static class FastForwardBoost {
         }
 
         ILLabel target = cursor.DefineLabel();
-        cursor.EmitDelegate<Func<bool>>(() => UltraFastForwarding);
+        cursor.EmitDelegate<Func<bool>>(IsSkipSeekerBarrierOverloadPart);
         cursor.Emit(OpCodes.Brtrue, target);
 
         if (!cursor.TryGotoNext(instr => instr.MatchLdarg(0),
@@ -146,29 +146,35 @@ public static class FastForwardBoost {
         cursor.MarkLabel(target);
     }
 
+    private static bool IsSkipSeekerBarrierOverloadPart() {
+        return UltraFastForwarding;
+    }
+
     private static void IgnoreGcCollect(ILContext il) {
         ILCursor ilCursor = new(il);
         if (ilCursor.TryGotoNext(ins => ins.MatchCall(typeof(GC), "Collect"),
                 ins => ins.MatchCall(typeof(GC), "WaitForPendingFinalizers"))) {
             Instruction afterGc = ilCursor.Next.Next.Next;
-            ilCursor.EmitDelegate(() => {
-                bool result = !Environment.Is64BitProcess && TasSettings.IgnoreGcCollect && UltraFastForwarding;
-                if (celesteProcess == null && result) {
-                    celesteProcess = Process.GetCurrentProcess();
-                }
-
-                if (celesteProcess != null) {
-                    celesteProcess.Refresh();
-                    // 2.5GB
-                    if (celesteProcess.PrivateMemorySize64 > 1024L * 1024L * 1024L * 2.5) {
-                        result = false;
-                    }
-                }
-
-                return result;
-            });
+            ilCursor.EmitDelegate<Func<bool>>(IsIgnoreGcCollect);
             ilCursor.Emit(OpCodes.Brtrue, afterGc);
         }
+    }
+
+    private static bool IsIgnoreGcCollect() {
+        bool result = !Environment.Is64BitProcess && TasSettings.IgnoreGcCollect && UltraFastForwarding;
+        if (celesteProcess == null && result) {
+            celesteProcess = Process.GetCurrentProcess();
+        }
+
+        if (celesteProcess != null) {
+            celesteProcess.Refresh();
+            // 2.5GB
+            if (celesteProcess.PrivateMemorySize64 > 1024L * 1024L * 1024L * 2.5) {
+                result = false;
+            }
+        }
+
+        return result;
     }
 
     private static void EngineOnUpdate(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {

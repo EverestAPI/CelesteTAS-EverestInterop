@@ -31,16 +31,17 @@ public static partial class ActualEntityCollideHitbox {
         if (ilCursor.TryGotoNext(MoveType.After,
                 ins => ins.OpCode == OpCodes.Callvirt &&
                        ins.Operand.ToString().Contains("Monocle.Tracker::GetComponents<Celeste.PlayerCollider>()"))) {
-            ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Action<Player>>(player => {
-                if (Manager.UltraFastForwarding || !TasSettings.ShowHitboxes ||
-                    TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off ||
-                    playerUpdated) {
-                    return;
-                }
-
-                player.SaveActualCollidePosition();
-            });
+            ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Action<Player>>(SavePlayerPosition);
         }
+    }
+
+    private static void SavePlayerPosition(Player player) {
+        if (Manager.UltraFastForwarding || !TasSettings.ShowHitboxes || TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off ||
+            playerUpdated) {
+            return;
+        }
+
+        player.SaveActualCollidePosition();
     }
 
     private static void PlayerOnDebugRender(On.Celeste.Player.orig_DebugRender orig, Player player, Camera camera) {

@@ -63,17 +63,19 @@ public static partial class ActualEntityCollideHitbox {
     private static void ModPlayerOrigUpdateEntity(ILContext il) {
         ILCursor ilCursor = new(il);
         if (ilCursor.TryGotoNext(MoveType.After, ins => ins.MatchCastclass<PlayerCollider>())) {
-            ilCursor.Emit(OpCodes.Dup).EmitDelegate<Action<PlayerCollider>>(playerCollider => {
-                Entity entity = playerCollider.Entity;
-
-                if (dontSaveLastPosition || entity == null) {
-                    return;
-                }
-
-                entity.SaveActualCollidePosition();
-                entity.SaveActualCollidable();
-            });
+            ilCursor.Emit(OpCodes.Dup).EmitDelegate<Action<PlayerCollider>>(SaveEntityPosition);
         }
+    }
+
+    private static void SaveEntityPosition(PlayerCollider playerCollider) {
+        Entity entity = playerCollider.Entity;
+
+        if (dontSaveLastPosition || entity == null) {
+            return;
+        }
+
+        entity.SaveActualCollidePosition();
+        entity.SaveActualCollidable();
     }
 
     private static void CircleOnRender(On.Monocle.Circle.orig_Render orig, Circle self, Camera camera, Color color) {
