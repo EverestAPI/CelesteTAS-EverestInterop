@@ -696,7 +696,7 @@ public partial class Studio : BaseForm {
             StudioCommunicationServer.Instance.GetDataFromGame(gameDataTypes.Value, arg);
         }
 
-        int sleepTimeout = 100;
+        int sleepTimeout = 150;
         while (CommunicationWrapper.ReturnData == null && sleepTimeout > 0) {
             Thread.Sleep(10);
             sleepTimeout -= 10;
