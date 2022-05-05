@@ -145,7 +145,7 @@ public static class HitboxTriggerSpikes {
                     }
                 }
 
-                Draw.HollowRect(position, totalWidth, totalHeight, HitboxColor.GetCustomColor(Color.Red, triggerSpikes));
+                Draw.HollowRect(position, totalWidth, totalHeight, HitboxColor.GetCustomColor(triggerSpikes));
             }
         }
     }
@@ -213,7 +213,7 @@ public static class HitboxTriggerSpikes {
                     }
                 }
 
-                Draw.HollowRect(position, totalWidth, totalHeight, HitboxColor.GetCustomColor(Color.Red, triggerSpikes));
+                Draw.HollowRect(position, totalWidth, totalHeight, HitboxColor.GetCustomColor(triggerSpikes));
             }
         }
     }

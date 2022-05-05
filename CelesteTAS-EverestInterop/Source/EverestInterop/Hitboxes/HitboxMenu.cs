@@ -28,6 +28,9 @@ public static class HitboxMenu {
             }));
             subMenu.Add(new TextMenu.OnOff("Simplified Hitboxes".ToDialogText(), TasSettings.SimplifiedHitboxes).Change(value =>
                 TasSettings.SimplifiedHitboxes = value));
+            subMenu.Add(new TextMenuExt.IntSlider("Un-collidable Hitboxes Opacity".ToDialogText(), 0, 10, TasSettings.UnCollidableHitboxesOpacity)
+                .Change(value =>
+                    TasSettings.UnCollidableHitboxesOpacity = value));
             subMenu.Add(HitboxColor.CreateEntityHitboxColorButton(menu, inGame));
             subMenu.Add(HitboxColor.CreateTriggerHitboxColorButton(menu, inGame));
             subMenu.Add(HitboxColor.CreatePlatformHitboxColorButton(menu, inGame));

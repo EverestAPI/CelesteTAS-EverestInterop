@@ -30,14 +30,15 @@ public class CelesteTasSettings : EverestModuleSettings {
         set => showHitboxes = value;
     }
 
-    [SettingIgnore] public Color EntityHitboxColor { get; set; } = HitboxColor.DefaultEntityColor;
-    [SettingIgnore] public Color TriggerHitboxColor { get; set; } = HitboxColor.DefaultTriggerColor;
-    [SettingIgnore] public Color PlatformHitboxColor { get; set; } = HitboxColor.DefaultPlatformColor;
     public bool ShowTriggerHitboxes { get; set; } = true;
     public bool ShowUnloadedRoomsHitboxes { get; set; } = true;
     public bool ShowCameraHitboxes { get; set; } = true;
     public bool SimplifiedHitboxes { get; set; } = true;
     public ActualCollideHitboxType ShowActualCollideHitboxes { get; set; } = ActualCollideHitboxType.Off;
+    public int UnCollidableHitboxesOpacity { get; set; } = 5;
+    [SettingIgnore] public Color EntityHitboxColor { get; set; } = HitboxColor.DefaultEntityColor;
+    [SettingIgnore] public Color TriggerHitboxColor { get; set; } = HitboxColor.DefaultTriggerColor;
+    [SettingIgnore] public Color PlatformHitboxColor { get; set; } = HitboxColor.DefaultPlatformColor;
 
     #endregion
 

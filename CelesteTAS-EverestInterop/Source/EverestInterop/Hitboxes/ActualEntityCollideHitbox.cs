@@ -113,9 +113,9 @@ public static partial class ActualEntityCollideHitbox {
                 : color;
 
         if (entity.Collidable && !entity.LoadActualCollidable()) {
-            lastFrameColor *= 0.5f;
-        } else if (!entity.Collidable && entity.LoadActualCollidable()) {
-            lastFrameColor *= 2f;
+            lastFrameColor *= HitboxColor.UnCollidableAlpha;
+        } else if (!entity.Collidable && entity.LoadActualCollidable() & HitboxColor.UnCollidableAlpha > 0) {
+            lastFrameColor *= 1 / HitboxColor.UnCollidableAlpha;
         }
 
         if (TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Append) {

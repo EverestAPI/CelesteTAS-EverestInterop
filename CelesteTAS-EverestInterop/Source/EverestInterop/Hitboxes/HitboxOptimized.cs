@@ -48,7 +48,6 @@ public static class HitboxOptimized {
         On.Monocle.EntityList.DebugRender += AddHoldableColliderHitbox;
         On.Monocle.EntityList.DebugRender += AddLockBlockColliderHitbox;
         On.Monocle.EntityList.DebugRender += AddSpawnPointHitbox;
-        On.Monocle.Hitbox.Render += ChangeRespawnTriggerColor;
         IL.Celeste.PlayerCollider.DebugRender += PlayerColliderOnDebugRender;
         On.Celeste.PlayerCollider.DebugRender += AddFeatherHitbox;
         On.Monocle.Circle.Render += CircleOnRender;
@@ -66,7 +65,6 @@ public static class HitboxOptimized {
         On.Monocle.EntityList.DebugRender -= AddHoldableColliderHitbox;
         On.Monocle.EntityList.DebugRender -= AddLockBlockColliderHitbox;
         On.Monocle.EntityList.DebugRender -= AddSpawnPointHitbox;
-        On.Monocle.Hitbox.Render -= ChangeRespawnTriggerColor;
         IL.Celeste.PlayerCollider.DebugRender -= PlayerColliderOnDebugRender;
         On.Celeste.PlayerCollider.DebugRender -= AddFeatherHitbox;
         On.Monocle.Circle.Render -= CircleOnRender;
@@ -122,10 +120,7 @@ public static class HitboxOptimized {
             bottomCenter -= Vector2.UnitY * 3;
         }
 
-        Color hitboxColor = HitboxColor.EntityColor;
-        if (!puffer.Collidable) {
-            hitboxColor *= 0.5f;
-        }
+        Color hitboxColor = HitboxColor.GetCustomColor(puffer);
 
         Draw.Circle(puffer.Position, 32f, hitboxColor, 32);
         Draw.Line(bottomCenter - Vector2.UnitX * 32, bottomCenter - Vector2.UnitX * 6, hitboxColor);
@@ -166,11 +161,13 @@ public static class HitboxOptimized {
             }
 
             Color color = firstHoldable.Entity is Glider ? new Color(104, 142, 255) : new Color(89, 177, 147);
-            color *= entity.Collidable ? 1f : 0.5f;
+            if (!entity.Collidable) {
+                color *= HitboxColor.UnCollidableAlpha;
+            }
 
             Collider origCollider = entity.Collider;
             entity.Collider = collider;
-            collider.Render(camera, color * (entity.Collidable ? 1f : 0.5f));
+            collider.Render(camera, color);
             entity.Collider = origCollider;
         }
     }
@@ -227,7 +224,7 @@ public static class HitboxOptimized {
             lockBlock.Collidable = origCollidable;
 
             if (collideSolid || collideSolidTiles) {
-                color *= 0.5f;
+                color *= HitboxColor.UnCollidableAlpha;
             }
 
             if (!collideSolid) {
@@ -237,7 +234,7 @@ public static class HitboxOptimized {
                         Grid grid = solidTiles.Grid;
                         grid.GetCheckedTilesInLineCollision(playerCenter, lockBlock.Center)
                             .ForEach(tuple => Draw.HollowRect(tuple.Item1, grid.CellWidth, grid.CellHeight,
-                                Color.HotPink * (tuple.Item2 ? 1f : 0.5f)));
+                                Color.HotPink * (tuple.Item2 ? 1f : HitboxColor.UnCollidableAlpha)));
                     }
                 });
             }
@@ -254,21 +251,8 @@ public static class HitboxOptimized {
         }
 
         foreach (Vector2 spawn in level.Session.LevelData.Spawns) {
-            Draw.HollowRect(spawn - new Vector2(4, 11), 8, 11, HitboxColor.RespawnTriggerColor * 0.5f);
+            Draw.HollowRect(spawn - new Vector2(4, 11), 8, 11, HitboxColor.RespawnTriggerColor * HitboxColor.UnCollidableAlpha);
         }
-    }
-
-    private static void ChangeRespawnTriggerColor(On.Monocle.Hitbox.orig_Render orig, Hitbox self, Camera camera, Color color) {
-        if (!TasSettings.ShowHitboxes) {
-            orig(self, camera, color);
-            return;
-        }
-
-        if (self.Entity is ChangeRespawnTrigger) {
-            color = HitboxColor.RespawnTriggerColor * (self.Entity.Collidable ? 1 : 0.5f);
-        }
-
-        orig(self, camera, color);
     }
 
     private static void PlayerColliderOnDebugRender(ILContext il) {
@@ -279,7 +263,8 @@ public static class HitboxOptimized {
             )) {
             ilCursor
                 .Emit(OpCodes.Ldarg_0)
-                .EmitDelegate<Func<Color, Component, Color>>((color, component) => component.Entity.Collidable ? color : color * 0.5f);
+                .EmitDelegate<Func<Color, Component, Color>>((color, component) =>
+                    component.Entity.Collidable ? color : color * HitboxColor.UnCollidableAlpha);
         }
     }
 
@@ -289,7 +274,7 @@ public static class HitboxOptimized {
             player.StateMachine.State == Player.StStarFly) {
             Collider collider = self.Entity.Collider;
             self.Entity.Collider = self.FeatherCollider;
-            self.FeatherCollider.Render(camera, Color.HotPink * (self.Entity.Collidable ? 1 : 0.5f));
+            self.FeatherCollider.Render(camera, Color.HotPink * (self.Entity.Collidable ? 1 : HitboxColor.UnCollidableAlpha));
             self.Entity.Collider = collider;
         }
     }
@@ -326,7 +311,7 @@ public static class HitboxOptimized {
                         return color;
                     }
 
-                    return entity.Collidable ? HitboxColor.EntityColor : HitboxColor.EntityColor * 0.5f;
+                    return entity.Collidable ? HitboxColor.EntityColor : HitboxColor.EntityColor * HitboxColor.UnCollidableAlpha;
                 });
         }
 
@@ -341,7 +326,7 @@ public static class HitboxOptimized {
                         return color;
                     }
 
-                    return entity.Collidable ? Color.HotPink : Color.HotPink * 0.5f;
+                    return entity.Collidable ? Color.HotPink : Color.HotPink * HitboxColor.UnCollidableAlpha;
                 });
         }
     }
@@ -371,7 +356,7 @@ public static class HitboxOptimized {
             Vector2 start = lastPath[0];
             for (int i = 1; i < lastPath.Count; i++) {
                 Vector2 vector = lastPath[i];
-                Draw.Line(start, vector, Color.Goldenrod * 0.5f);
+                Draw.Line(start, vector, Color.Goldenrod * HitboxColor.UnCollidableAlpha);
                 start = vector;
             }
         }

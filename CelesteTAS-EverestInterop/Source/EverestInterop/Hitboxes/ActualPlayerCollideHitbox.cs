@@ -12,8 +12,8 @@ namespace TAS.EverestInterop.Hitboxes;
 public static partial class ActualEntityCollideHitbox {
     private static readonly GetDelegate<Player, Hitbox> PlayerHurtbox = FastReflection.CreateGetDelegate<Player, Hitbox>("hurtbox");
 
-    private static readonly Color HitboxColor = Color.Red.Invert();
-    private static readonly Color HurtboxColor = Color.Lime.Invert();
+    private static readonly Color PlayerHitboxColor = Color.Red.Invert();
+    private static readonly Color PlayerHurtboxColor = Color.Lime.Invert();
 
     [Load]
     private static void LoadPlayerHook() {
@@ -73,9 +73,9 @@ public static partial class ActualEntityCollideHitbox {
 
         player.Position = hitboxPosition;
 
-        Draw.HollowRect(origCollider, HitboxColor);
+        Draw.HollowRect(origCollider, PlayerHitboxColor);
         player.Collider = hurtbox;
-        Draw.HollowRect(hurtbox, HurtboxColor);
+        Draw.HollowRect(hurtbox, PlayerHurtboxColor);
 
         player.Collider = origCollider;
         player.Position = origPosition;

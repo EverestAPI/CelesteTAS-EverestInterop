@@ -24,6 +24,7 @@ public static class HitboxColor {
     public static Color PlatformColor => TasSettings.PlatformHitboxColor;
     public static Color EntityColorInversely => EntityColor.Invert();
     public static Color EntityColorInverselyLessAlpha => EntityColorInversely * 0.6f;
+    public static float UnCollidableAlpha => TasSettings.UnCollidableHitboxesOpacity / 10f;
 
     public static TextMenu.Item CreateEntityHitboxColorButton(TextMenu textMenu, bool inGame) {
         TextMenu.Item item = new TextMenu.Button("Entity Hitbox Color".ToDialogText() + $": {ColorToHex(TasSettings.EntityHitboxColor)}").Pressed(
@@ -130,23 +131,27 @@ public static class HitboxColor {
         }
     }
 
-    public static Color GetCustomColor(Color color, Entity entity) {
+    private static Color GetCustomColor(Color color, Entity entity) {
         if (!TasSettings.ShowHitboxes || entity is Player) {
             return color;
         }
 
-        Color customColor = TasSettings.EntityHitboxColor;
-        if (entity is Trigger) {
-            customColor = TasSettings.TriggerHitboxColor;
-        } else if (entity is Platform) {
-            customColor = TasSettings.PlatformHitboxColor;
-        }
+        Color customColor = entity switch {
+            Platform => TasSettings.PlatformHitboxColor,
+            ChangeRespawnTrigger => RespawnTriggerColor,
+            Trigger => TasSettings.TriggerHitboxColor,
+            _ => TasSettings.EntityHitboxColor
+        };
 
         if (!entity.Collidable) {
-            customColor *= 0.5f;
+            customColor *= UnCollidableAlpha;
         }
 
         return customColor;
+    }
+
+    public static Color GetCustomColor(Entity entity) {
+        return GetCustomColor(Color.Red, entity);
     }
 
     [Command("entity_hitbox_color", "change the entity hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000 (CelesteTAS)")]
