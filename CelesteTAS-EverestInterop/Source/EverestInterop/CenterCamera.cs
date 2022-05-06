@@ -3,12 +3,13 @@ using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.EverestInterop.InfoHUD;
+using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.EverestInterop;
 
 [Tracked]
-internal class CameraHitbox : Entity {
+internal class CameraHitboxEntity : Entity {
     private static readonly Color color = Color.LightBlue * 0.75f;
     private Vector2 cameraTopLeft;
     private Vector2 cameraBottomRight;
@@ -23,10 +24,10 @@ internal class CameraHitbox : Entity {
     }
 
     public override void Update() {
-        if (!DrawCamera) {
-            return;
-        }
+        level.OnEndOfFrame += UpdateCameraHitbox;
+    }
 
+    private void UpdateCameraHitbox() {
         cameraTopLeft = level.MouseToWorld(Vector2.Zero);
         cameraBottomRight = level.MouseToWorld(new Vector2(Engine.ViewWidth, Engine.ViewHeight));
     }
@@ -37,6 +38,23 @@ internal class CameraHitbox : Entity {
         }
 
         Draw.HollowRect(cameraTopLeft, cameraBottomRight.X - cameraTopLeft.X, cameraBottomRight.Y - cameraTopLeft.Y, color);
+    }
+
+    [Load]
+    public static void Load() {
+        On.Celeste.Level.LoadLevel += LevelOnLoadLevel;
+    }
+
+    [Unload]
+    public static void Unload() {
+        On.Celeste.Level.LoadLevel -= LevelOnLoadLevel;
+    }
+
+    private static void LevelOnLoadLevel(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader) {
+        orig(self, playerIntro, isFromLoader);
+        if (!self.Tracker.Entities.TryGetValue(typeof(CameraHitboxEntity), out var entities) || entities.IsEmpty()) {
+            self.Add(new CameraHitboxEntity());
+        }
     }
 }
 
@@ -69,7 +87,6 @@ public static class CenterCamera {
         On.Monocle.Engine.RenderCore += EngineOnRenderCore;
         On.Monocle.Commands.Render += CommandsOnRender;
         On.Celeste.Level.Render += LevelOnRender;
-        On.Celeste.Level.LoadLevel += LevelOnLoadLevel;
 #if DEBUG
         offset = Engine.Instance.GetDynamicDataInstance().Get<Vector2?>("CelesteTAS_Offset") ?? Vector2.Zero;
         screenOffset = Engine.Instance.GetDynamicDataInstance().Get<Vector2?>("CelesteTAS_Screen_Offset") ?? Vector2.Zero;
@@ -81,7 +98,6 @@ public static class CenterCamera {
         On.Monocle.Engine.RenderCore -= EngineOnRenderCore;
         On.Monocle.Commands.Render -= CommandsOnRender;
         On.Celeste.Level.Render -= LevelOnRender;
-        On.Celeste.Level.LoadLevel -= LevelOnLoadLevel;
 #if DEBUG
         Engine.Instance.GetDynamicDataInstance().Set("CelesteTAS_Offset", offset);
         Engine.Instance.GetDynamicDataInstance().Set("CelesteTAS_Screen_Offset", screenOffset);
@@ -106,13 +122,6 @@ public static class CenterCamera {
         orig(self);
         MoveCamera(self);
         ZoomCamera();
-    }
-
-    private static void LevelOnLoadLevel(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerintro, bool isfromloader) {
-        orig(self, playerintro, isfromloader);
-        if (!self.Tracker.Entities.TryGetValue(typeof(CameraHitbox), out var entities) || entities.IsEmpty()) {
-            self.Add(new CameraHitbox());
-        }
     }
 
     private static void CenterTheCamera() {
