@@ -21,10 +21,7 @@ internal class CameraHitboxEntity : Entity {
         base.Added(scene);
         Tag = Tags.Global | Tags.FrozenUpdate | Tags.PauseUpdate | Tags.TransitionUpdate;
         level = scene as Level;
-    }
-
-    public override void Update() {
-        level.OnEndOfFrame += UpdateCameraHitbox;
+        Add(new PostUpdateHook(UpdateCameraHitbox));
     }
 
     private void UpdateCameraHitbox() {
