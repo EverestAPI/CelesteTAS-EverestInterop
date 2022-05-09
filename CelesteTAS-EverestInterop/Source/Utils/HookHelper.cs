@@ -8,7 +8,7 @@ using TAS.Module;
 
 namespace TAS.Utils;
 
-public static class HookHelper {
+internal static class HookHelper {
     private static readonly List<IDetour> Hooks = new();
 
     [Unload]
