@@ -44,12 +44,13 @@ internal static class FastReflection {
             return (GetDelegate<TInstance, TReturn>) result;
         }
 
-        if (field.IsLiteral && !field.IsInitOnly) {
+        if (field.IsConst()) {
             object value = field.GetValue(null);
             TReturn returnValue = value == null ? default : (TReturn) value;
             Func<TInstance, TReturn> func = _ => returnValue;
 
-            GetDelegate<TInstance, TReturn> getDelegate = func.CastDelegate<GetDelegate<TInstance, TReturn>>();
+            GetDelegate<TInstance, TReturn> getDelegate =
+                (GetDelegate<TInstance, TReturn>) func.Method.CreateDelegate(typeof(GetDelegate<TInstance, TReturn>), func.Target);
             CachedFieldGetDelegates[key] = getDelegate;
             return getDelegate;
         }
@@ -363,6 +364,10 @@ internal static class TypeExtensions {
 
     public static bool IsStructType(this Type type) {
         return type.IsValueType && !type.IsEnum && !type.IsPrimitive && !type.IsEquivalentTo(typeof(decimal));
+    }
+
+    public static bool IsConst(this FieldInfo fieldInfo) {
+        return fieldInfo.IsLiteral && !fieldInfo.IsInitOnly;
     }
 }
 
