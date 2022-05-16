@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Reflection;
 using Celeste;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Monocle;
@@ -8,29 +10,40 @@ using TAS.EverestInterop.InfoHUD;
 namespace TAS.Utils;
 
 internal static class SpeedrunToolUtils {
-    private static SaveLoadAction saveLoadAction;
+    private static object saveLoadAction;
     private static Dictionary<Entity, EntityData> savedEntityData = new();
 
     public static void AddSaveLoadAction() {
-        saveLoadAction = new SaveLoadAction(
-            (_, _) => {
-                savedEntityData = EntityDataHelper.CachedEntityData.DeepCloneShared();
-                InfoWatchEntity.SavedRequireWatchEntities = InfoWatchEntity.RequireWatchEntities.DeepCloneShared();
-            },
-            (_, _) => {
-                EntityDataHelper.CachedEntityData = savedEntityData.DeepCloneShared();
-                InfoWatchEntity.RequireWatchEntities = InfoWatchEntity.SavedRequireWatchEntities.DeepCloneShared();
-            },
-            () => {
-                savedEntityData.Clear();
-                InfoWatchEntity.SavedRequireWatchEntities.Clear();
-            });
-        SaveLoadAction.Add(saveLoadAction);
+        Action<Dictionary<Type, Dictionary<string, object>>, Level> save = (_, _) => {
+            savedEntityData = EntityDataHelper.CachedEntityData.DeepCloneShared();
+            InfoWatchEntity.SavedRequireWatchEntities = InfoWatchEntity.RequireWatchEntities.DeepCloneShared();
+        };
+        Action<Dictionary<Type, Dictionary<string, object>>, Level> load = (_, _) => {
+            EntityDataHelper.CachedEntityData = savedEntityData.DeepCloneShared();
+            InfoWatchEntity.RequireWatchEntities = InfoWatchEntity.SavedRequireWatchEntities.DeepCloneShared();
+        };
+        Action clear = () => {
+            savedEntityData.Clear();
+            InfoWatchEntity.SavedRequireWatchEntities.Clear();
+        };
+
+        ConstructorInfo constructor = typeof(SaveLoadAction).GetConstructors()[0];
+        Type delegateType = constructor.GetParameters()[0].ParameterType;
+
+        saveLoadAction = constructor.Invoke(new object[] {
+                save.Method.CreateDelegate(delegateType, save.Target),
+                load.Method.CreateDelegate(delegateType, load.Target),
+                clear,
+                null,
+                null
+            }
+        );
+        SaveLoadAction.Add((SaveLoadAction) saveLoadAction);
     }
 
     public static void ClearSaveLoadAction() {
         if (saveLoadAction != null) {
-            SaveLoadAction.Remove(saveLoadAction);
+            SaveLoadAction.Remove((SaveLoadAction) saveLoadAction);
         }
     }
 }
