@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Specialized;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
 using Celeste.Mod;
 using StudioCommunication;
+using TAS.Input;
 using TAS.Module;
 using TAS.Utils;
 
@@ -105,11 +107,44 @@ TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}
         }
     };
 
+    private static readonly RCEndPoint PlayTasPoint = new() {
+        Path = "/tas/playtas",
+        PathHelp = "/tas/playtas?filePath={filePath} (Example: ?file=C:\\Celeste.tas",
+        PathExample = "/tas/playtas?filePath=C:\\Celeste.tas",
+        Name = "CelesteTAS Play TAS",
+        InfoHTML = "Play the specified TAS file",
+        Handle = c => {
+            StringBuilder builder = new();
+            Everest.DebugRC.WriteHTMLStart(c, builder);
+
+            NameValueCollection args = Everest.DebugRC.ParseQueryString(c.Request.RawUrl);
+            string filePath = args["filePath"];
+            if (filePath.IsNullOrEmpty()) {
+                WriteLine(builder, $"<h2>ERROR: Invalid file path: {filePath ?? "NULL"} </h2>");
+            } else {
+                filePath = WebUtility.UrlDecode(filePath);
+                if (!File.Exists(filePath)) {
+                    WriteLine(builder, $"<h2>ERROR: File not exist: {filePath} </h2>");
+                } else {
+                    WriteLine(builder, "OK");
+                    Manager.AddMainThreadAction(() => {
+                        InputController.StudioTasFilePath = filePath;
+                        Manager.EnableRun();
+                    });
+                }
+            }
+
+            Everest.DebugRC.WriteHTMLEnd(c, builder);
+            Everest.DebugRC.Write(c, builder.ToString());
+        }
+    };
+
     [Load]
     private static void Load() {
         Everest.DebugRC.EndPoints.Add(InfoEndPoint);
         Everest.DebugRC.EndPoints.Add(HotkeyEndPoint);
         Everest.DebugRC.EndPoints.Add(CustomInfoPoint);
+        Everest.DebugRC.EndPoints.Add(PlayTasPoint);
     }
 
     [Unload]
@@ -117,6 +152,7 @@ TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}
         Everest.DebugRC.EndPoints.Remove(InfoEndPoint);
         Everest.DebugRC.EndPoints.Remove(HotkeyEndPoint);
         Everest.DebugRC.EndPoints.Remove(CustomInfoPoint);
+        Everest.DebugRC.EndPoints.Remove(PlayTasPoint);
     }
 
     private static void WriteLine(StringBuilder builder, string text) {
