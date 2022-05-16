@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using Celeste;
+using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
@@ -15,8 +18,9 @@ using GameInput = Celeste.Input;
 namespace TAS;
 
 public static class Manager {
-    private static readonly GetDelegate<SummitVignette, bool> SummitVignetteReady = FastReflection.CreateGetDelegate<SummitVignette, bool>("ready");
+    private static readonly ConcurrentQueue<Action> mainThreadActions = new();
 
+    private static readonly GetDelegate<SummitVignette, bool> SummitVignetteReady = FastReflection.CreateGetDelegate<SummitVignette, bool>("ready");
     private static readonly DUpdateVirtualInputs UpdateVirtualInputs;
 
     public static bool Running;
@@ -44,9 +48,24 @@ public static class Manager {
     private static bool ShouldForceState =>
         NextStates.HasFlag(States.FrameStep) && !Hotkeys.FastForward.OverrideCheck && !Hotkeys.SlowForward.OverrideCheck;
 
+    public static void AddMainThreadAction(Action action) {
+        if (Thread.CurrentThread == MainThreadHelper.MainThread) {
+            action();
+        } else {
+            mainThreadActions.Enqueue(action);
+        }
+    }
+
+    private static void ExecuteMainThreadActions() {
+        while (mainThreadActions.TryDequeue(out Action action)) {
+            action.Invoke();
+        }
+    }
+
+
     public static void Update() {
         LastStates = States;
-        StudioCommunicationClient.ExecuteWaitingActions();
+        ExecuteMainThreadActions();
         Hotkeys.Update();
         Savestates.HandleSaveStates();
         HandleFrameRates();

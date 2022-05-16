@@ -33,7 +33,11 @@ public class InputController {
     public static string StudioTasFilePath {
         get => studioTasFilePath;
         set {
-            if (studioTasFilePath != value) {
+            if (studioTasFilePath == value) {
+                return;
+            }
+
+            Manager.AddMainThreadAction(() => {
                 studioTasFilePath = value;
 
                 string path = string.IsNullOrEmpty(value) ? DefaultTasFilePath : value;
@@ -53,7 +57,7 @@ public class InputController {
 
                 // preload tas file
                 Manager.Controller.RefreshInputs(true);
-            }
+            });
         }
     }
 
