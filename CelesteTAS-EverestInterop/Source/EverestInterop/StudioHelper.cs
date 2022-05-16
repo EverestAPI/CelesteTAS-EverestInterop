@@ -20,6 +20,13 @@ public static class StudioHelper {
 
     [Initialize]
     private static void Initialize() {
+        try {
+            // delete the useless file that makes Studio require.net472
+            File.Delete(Path.Combine(Everest.PathGame, "Celeste Studio.exe.config"));
+        } catch {
+            // ignored
+        }
+
         ExtractStudio(out bool studioProcessWasKilled);
         if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
             LaunchStudioAtBoot(studioProcessWasKilled);
