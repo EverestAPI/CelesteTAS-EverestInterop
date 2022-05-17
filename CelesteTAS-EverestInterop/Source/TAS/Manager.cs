@@ -62,7 +62,6 @@ public static class Manager {
         }
     }
 
-
     public static void Update() {
         LastStates = States;
         ExecuteMainThreadActions();
