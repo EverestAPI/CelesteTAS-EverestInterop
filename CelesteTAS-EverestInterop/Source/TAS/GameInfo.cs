@@ -504,46 +504,9 @@ public static class GameInfo {
     }
 
     private static string GetAdjustedPos(Actor actor, out string exactPos) {
-        string result;
-
-        if (TasSettings.PositionDecimals > 2) {
-            result = actor.ToSimplePositionString(TasSettings.PositionDecimals);
-        } else {
-            Vector2 intPos = actor.Position;
-            Vector2 subpixelPos = actor.PositionRemainder;
-            double x = intPos.X;
-            double y = intPos.Y;
-            double subX = subpixelPos.X;
-            double subY = subpixelPos.Y;
-
-            // euni: ensure .999/.249 round away from .0/.25
-            // .00/.25/.75 let you distinguish which 8th of a pixel you're on, quite handy when doing subpixel manip
-            if (Math.Abs(subX) % 0.25 < 0.01 || Math.Abs(subX) % 0.25 > 0.24) {
-                if (x > 0 || x == 0 && subX > 0) {
-                    x += Math.Floor(subX * 100) / 100;
-                } else {
-                    x += Math.Ceiling(subX * 100) / 100;
-                }
-            } else {
-                x += subX;
-            }
-
-            if (Math.Abs(subY) % 0.25 < 0.01 || Math.Abs(subY) % 0.25 > 0.24) {
-                if (y > 0 || y == 0 && subY > 0) {
-                    y += Math.Floor(subY * 100) / 100;
-                } else {
-                    y += Math.Ceiling(subY * 100) / 100;
-                }
-            } else {
-                y += subY;
-            }
-
-            result = $"{x:F2}, {y:F2}";
-        }
-
         const string prefix = "Pos:   ";
         exactPos = $"{prefix}{actor.ToSimplePositionString(CelesteTasSettings.MaxDecimals)}";
-        return $"{prefix}{result}";
+        return $"{prefix}{actor.ToSimplePositionString(TasSettings.PositionDecimals)}";
     }
 
     private static string GetAdjustedSpeed(Vector2 speed, out string exactSpeed) {
