@@ -53,9 +53,6 @@ public static class AutoMute {
         "event:/game/09_core/rising_threat",
         "event:/new_content/game/10_farewell/glider_movement",
         "event:/new_content/game/10_farewell/fakeheart_get",
-    };
-
-    private static readonly HashSet<string> ModLoopAudioPaths = new() {
         "event:/CommunalHelperEvents/game/connectedDreamBlock/dreamblock_fly_travel",
         "event:/CommunalHelperEvents/game/dreamSwapBlock/dream_swap_block_return",
         "event:/CommunalHelperEvents/game/redirectMoveBlock/arrowblock_move",
@@ -97,7 +94,6 @@ public static class AutoMute {
         On.Celeste.Audio.SetMusic += AudioOnSetMusic;
         On.Celeste.Audio.SetAltMusic += AudioOnSetAltMusic;
         On.FMOD.Studio.EventDescription.createInstance += EventDescriptionOnCreateInstance;
-        On.Celeste.SoundSource.Play += SoundSourceOnPlay;
         IL.Celeste.CassetteBlockManager.AdvanceMusic += CassetteBlockManagerOnAdvanceMusic;
         On.Monocle.Scene.Update += SceneOnUpdate;
         On.Celeste.Celeste.Update += CelesteOnUpdate;
@@ -109,7 +105,6 @@ public static class AutoMute {
         On.Celeste.Audio.SetMusic -= AudioOnSetMusic;
         On.Celeste.Audio.SetAltMusic -= AudioOnSetAltMusic;
         On.FMOD.Studio.EventDescription.createInstance -= EventDescriptionOnCreateInstance;
-        On.Celeste.SoundSource.Play -= SoundSourceOnPlay;
         IL.Celeste.CassetteBlockManager.AdvanceMusic -= CassetteBlockManagerOnAdvanceMusic;
         On.Monocle.Scene.Update -= SceneOnUpdate;
         On.Celeste.Celeste.Update -= CelesteOnUpdate;
@@ -131,14 +126,15 @@ public static class AutoMute {
     private static RESULT EventDescriptionOnCreateInstance(On.FMOD.Studio.EventDescription.orig_createInstance orig, EventDescription self,
         out EventInstance instance) {
         RESULT result;
-        if (ShouldBeMuted && self.getPath(out string p) == RESULT.OK && p != null) {
+        string path = Audio.GetEventName(self);
+        if (ShouldBeMuted && path.IsNotNullOrEmpty()) {
             result = RESULT.OK;
             instance = DummyEventInstance;
         } else {
             result = orig(self, out instance);
         }
 
-        if (!ShouldBeMuted && instance != null && self.getPath(out string path) == RESULT.OK && path != null) {
+        if (!ShouldBeMuted && instance != null && path.IsNotNullOrEmpty()) {
             int delayFrames = -1;
             if (LoopAudioPaths.Contains(path)) {
                 delayFrames = 10;
@@ -150,16 +146,6 @@ public static class AutoMute {
             if (delayFrames >= 0) {
                 LoopAudioInstances.Add(new WeakReference<EventInstance>(instance), delayFrames);
             }
-        }
-
-        return result;
-    }
-
-    // EventDescription.GetPath not work for mod's audio, so we catch the path form here
-    private static SoundSource SoundSourceOnPlay(On.Celeste.SoundSource.orig_Play orig, SoundSource self, string path, string param, float value) {
-        var result = orig(self, path, param, value);
-        if (ModLoopAudioPaths.Contains(path) && getInstance(self) is { } instance) {
-            LoopAudioInstances.Add(new WeakReference<EventInstance>(instance), 10);
         }
 
         return result;
