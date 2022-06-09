@@ -573,7 +573,13 @@ internal static class SceneExtensions {
     }
 
     public static Session GetSession(this Scene scene) {
-        return scene.GetLevel()?.Session;
+        return scene switch {
+            Level level => level.Session,
+            LevelLoader levelLoader => levelLoader.GetFieldValue<Session>("session"),
+            LevelExit levelExit => levelExit.GetFieldValue<Session>("session"),
+            AreaComplete areaComplete => areaComplete.Session,
+            _ => null
+        };
     }
 }
 

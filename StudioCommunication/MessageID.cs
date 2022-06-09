@@ -85,5 +85,5 @@ public enum GameDataType : byte {
     ModInfo,
     ExactGameInfo,
     SettingValue,
-    VersionInfo
+    CompleteInfoCommand,
 }

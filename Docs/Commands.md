@@ -121,6 +121,13 @@
 - Dumps the elapsed time of each room to a file. which can be used to compare improvements.
 - Default filepath is `dump_room_info.txt`.
 
+### CompleteInfo
+- `CompleteInfo Side SID/ID`
+- The successive comments immediately following this command will be displayed to the specified chapter complete screen.
+- Sides are `A`, `B` and `C`
+- e.g. `CompleteInfo A 1` display info on 1A complete screen.
+- e.g. `CompleteInfo` If neither side nor sid/id is specified, the info will be displayed on all chapters, if the other CompleteInfo command specifies a chapter, both will be displayed.
+
 ### RecordCount
 - e.g. `RecordCount: 1`
 - Every time you run tas after modifying the current input file, the record count auto increases by one.

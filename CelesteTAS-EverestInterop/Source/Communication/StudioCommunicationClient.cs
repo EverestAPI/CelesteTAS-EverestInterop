@@ -123,7 +123,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
             GameDataType.ModInfo => GetModInfo(),
             GameDataType.ExactGameInfo => GameInfo.ExactStudioInfo,
             GameDataType.SettingValue => GetSettingValue((string) objects[1]),
-            GameDataType.VersionInfo => "hahahaha",
+            GameDataType.CompleteInfoCommand => AreaCompleteInfo.CreateCommand(),
             _ => string.Empty
         };
 

@@ -1450,6 +1450,10 @@ public partial class Studio : BaseForm {
         InsertNewLine("FinishExportLibTAS");
     }
 
+    private void completeInfoToolStripMenuItem_Click(object sender, EventArgs e) {
+        InsertDataFromGame(GameDataType.CompleteInfoCommand);
+    }
+
     private void recordCountToolStripMenuItem_Click(object sender, EventArgs e) {
         InsertNewLine("RecordCount: 1");
     }

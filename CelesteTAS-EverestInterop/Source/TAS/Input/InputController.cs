@@ -21,6 +21,7 @@ public class InputController {
     public readonly SortedDictionary<int, List<Command>> Commands = new();
     public readonly SortedDictionary<int, FastForward> FastForwards = new();
     public readonly SortedDictionary<int, FastForward> FastForwardComments = new();
+    public readonly Dictionary<string, List<Comment>> Comments = new();
     public readonly List<InputFrame> Inputs = new();
     private readonly Dictionary<string, byte> UsedFiles = new();
 
@@ -140,9 +141,10 @@ public class InputController {
         savestateChecksum = string.Empty;
         Inputs.Clear();
         lastFastForward = null;
+        Commands.Clear();
         FastForwards.Clear();
         FastForwardComments.Clear();
-        Commands.Clear();
+        Comments.Clear();
         UsedFiles.Clear();
         NeedsReload = true;
         AnalogHelper.AnalogModeChange(AnalogueMode.Ignore);
@@ -296,6 +298,11 @@ public class InputController {
                 }
             } else if (lineText.StartsWith("#")) {
                 FastForwardComments[initializationFrameCount] = new FastForward(initializationFrameCount, "", studioLine);
+                if (!Comments.TryGetValue(filePath, out var comments)) {
+                    Comments[filePath] = comments = new List<Comment>();
+                }
+
+                comments.Add(new Comment(filePath, initializationFrameCount, subLine, lineText));
             } else {
                 AddFrames(lineText, studioLine, repeatIndex, repeatCount);
             }
@@ -328,6 +335,11 @@ public class InputController {
         clone.Inputs.AddRange(Inputs);
         clone.FastForwards.AddRange((IDictionary) FastForwards);
         clone.FastForwardComments.AddRange((IDictionary) FastForwardComments);
+
+        foreach (string filePath in Comments.Keys) {
+            clone.Comments[filePath] = new List<Comment>(Comments[filePath]);
+        }
+
         foreach (int frame in Commands.Keys) {
             clone.Commands[frame] = new List<Command>(Commands[frame]);
         }
