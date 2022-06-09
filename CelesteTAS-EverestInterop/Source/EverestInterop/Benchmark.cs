@@ -1,19 +1,13 @@
 #if DEBUG
-using System;
-using System.Diagnostics;
 using JetBrains.Profiler.Api;
 using Microsoft.Xna.Framework;
 using Monocle;
-using TAS.Input;
 using TAS.Module;
-using TAS.Utils;
 
 namespace TAS.EverestInterop;
 
 public static class Benchmark {
-    private static readonly Stopwatch watch = new Stopwatch();
     private static bool lastRunning;
-    private static ulong lastFrameCounter;
 
     [Load]
     private static void Load() {
@@ -29,41 +23,13 @@ public static class Benchmark {
         orig(self, gameTime);
         if (lastRunning != Manager.Running && Manager.Controller.HasFastForward) {
             if (Manager.Running) {
-                Start();
+                MeasureProfiler.StartCollectingData();
             } else {
-                Stop();
-            }
-        }
-
-        if (Manager.Running) {
-            if (watch.IsRunning && Manager.IsLoading()) {
-                watch.Stop();
-            } else if (!watch.IsRunning && !Manager.IsLoading()) {
-                watch.Start();
-            }
-
-            if (!watch.IsRunning) {
-                lastFrameCounter++;
+                MeasureProfiler.SaveData();
             }
         }
 
         lastRunning = Manager.Running;
-    }
-
-    private static void Start() {
-        lastFrameCounter = Engine.FrameCounter;
-        watch.Restart();
-        $"Benchmark Start: {InputController.TasFilePath}".Log();
-        MeasureProfiler.StartCollectingData();
-    }
-
-    private static void Stop() {
-        MeasureProfiler.SaveData();
-        ulong frames = Engine.FrameCounter - lastFrameCounter;
-        float framesPerSecond = (int) Math.Round(1 / Engine.RawDeltaTime);
-        $"Benchmark Stop: frames={frames} time={watch.ElapsedMilliseconds}ms avg_speed={frames / framesPerSecond / watch.ElapsedMilliseconds * 1000f}"
-            .Log();
-        watch.Stop();
     }
 }
 #endif
