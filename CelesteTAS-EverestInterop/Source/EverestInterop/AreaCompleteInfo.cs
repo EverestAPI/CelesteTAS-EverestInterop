@@ -43,6 +43,12 @@ public static class AreaCompleteInfo {
         bool pieScreen, Session session) {
         orig(pieScreen, session);
 
+        session ??= Engine.Scene.GetSession();
+
+        if (session == null) {
+            return;
+        }
+
         if (!session.GetFlag(TasWereRun)) {
             text = null;
             return;
