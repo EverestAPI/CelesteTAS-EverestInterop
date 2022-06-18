@@ -1197,7 +1197,7 @@ public partial class Studio : BaseForm {
         Place place = new(0, end);
         while (start <= end) {
             InputRecord oldInput = InputRecords.Count > start ? InputRecords[start] : null;
-            string text = tas[start++].Text;
+            string text = tas[start].Text;
             InputRecord newInput = new(text);
             if (oldInput != null) {
                 totalFrames -= oldInput.Frames;
@@ -1229,27 +1229,40 @@ public partial class Studio : BaseForm {
                             index = newInput.HasActions(Actions.Feather) ? formattedText.Length : 4;
                         }
 
-                        place = new Place(index, start - 1);
+                        place = new Place(index, start);
                     }
 
                     modified = true;
                 } else {
-                    place = new Place(4, start - 1);
+                    place = new Place(4, start);
+                    if (tas.Selection.IsEmpty && oldInput.HasActions(Actions.Feather) && newInput.HasActions(Actions.Feather)) {
+                        string oldText = oldInput.ToString();
+                        string newText = newInput.ToString();
+
+                        if (newText.Substring(0, newText.Length - 1) == oldText) {
+                            Range clone = tas.Selection.Clone();
+                            tas.Selection = new Range(tas, newText.Length - 1, end, newText.Length, end);
+                            tas.InsertText(newText.Last().ToString());
+                            tas.Selection = clone;
+                        }
+                    }
                 }
 
                 text = formattedText;
-                InputRecords[start - 1] = newInput;
+                InputRecords[start] = newInput;
             } else {
-                place = new Place(text.Length, start - 1);
+                place = new Place(text.Length, start);
             }
 
-            if (start <= end) {
+            if (start < end) {
                 sb.AppendLine(text);
             } else {
                 sb.Append(text);
             }
 
             totalFrames += newInput.Frames;
+
+            start++;
         }
 
         if (modified) {
