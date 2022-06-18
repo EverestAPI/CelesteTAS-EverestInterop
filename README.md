@@ -38,7 +38,7 @@ e.g. 123,R,J (For 123 frames, hold Right and Jump)
 - F = Feather Aim
 <br>Format: F, angle, optional upper limit of single axis (default value is 1, range is 0.5 to 1, only works in precise [AnalogMode](Docs/Commands.md#analoguemode)
 - O = Confirm Bind 2
-- N = Journal (Used Only for Cheat Code)
+- N = Journal / Talk Bind 2
 
 ## Controls
 While in game or in Studio:

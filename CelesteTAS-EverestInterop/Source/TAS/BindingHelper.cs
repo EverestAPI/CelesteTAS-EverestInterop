@@ -35,7 +35,7 @@ public static class BindingHelper {
     public static Buttons Down => Buttons.DPadDown;
     public static Buttons Left => Buttons.DPadLeft;
     public static Buttons Right => Buttons.DPadRight;
-    public static Buttons Journal => Buttons.LeftTrigger;
+    public static Buttons JournalAndTalk => Buttons.LeftTrigger;
     public static Buttons DemoDash { get; } = Buttons.RightShoulder;
     public static Buttons DemoDash2 { get; } = Buttons.RightStick;
     public static Keys Confirm2 => Keys.C;
@@ -102,7 +102,7 @@ public static class BindingHelper {
         settings.Set("BtnGrab", new List<Buttons> {Grab});
         settings.Set("BtnJump", new List<Buttons> {JumpAndConfirm, Jump2});
         settings.Set("BtnDash", new List<Buttons> {DashAndTalkAndCancel, Dash2AndCancel});
-        settings.Set("BtnTalk", new List<Buttons> {DashAndTalkAndCancel});
+        settings.Set("BtnTalk", new List<Buttons> {DashAndTalkAndCancel, JournalAndTalk});
         settings.Set("BtnAltQuickRestart", new List<Buttons>());
 
         GameInput.Initialize();
@@ -124,13 +124,13 @@ public static class BindingHelper {
         SetBinding("Grab", Grab);
         SetBinding("Jump", JumpAndConfirm, Jump2);
         SetBinding("Dash", DashAndTalkAndCancel, Dash2AndCancel);
-        SetBinding("Talk", DashAndTalkAndCancel);
+        SetBinding("Talk", DashAndTalkAndCancel, JournalAndTalk);
 
         SetBinding("Pause", Pause);
         SetBinding("Confirm", new[] {Confirm2}, JumpAndConfirm);
         SetBinding("Cancel", DashAndTalkAndCancel, Dash2AndCancel);
 
-        SetBinding("Journal", Journal);
+        SetBinding("Journal", JournalAndTalk);
         SetBinding("QuickRestart", QuickRestart);
 
         SetBinding("DemoDash", DemoDash, DemoDash2);

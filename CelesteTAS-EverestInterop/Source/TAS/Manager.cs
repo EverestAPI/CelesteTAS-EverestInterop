@@ -324,7 +324,7 @@ public static class Manager {
                 | (input.HasActions(Actions.Down) ? BindingHelper.Down : 0)
                 | (input.HasActions(Actions.Left) ? BindingHelper.Left : 0)
                 | (input.HasActions(Actions.Right) ? BindingHelper.Right : 0)
-                | (input.HasActions(Actions.Journal) ? BindingHelper.Journal : 0)
+                | (input.HasActions(Actions.Journal) ? BindingHelper.JournalAndTalk : 0)
             ),
             pad
         );

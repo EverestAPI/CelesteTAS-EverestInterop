@@ -86,6 +86,7 @@ public static class LibTasHelper {
             return "72";
         }
 
+        // Playback via libtas requires the Keys.Tab to be set as Journal and Talk
         // Keys.Tab
         if (inputFrame.HasActions(Actions.Journal)) {
             return "ff09";
