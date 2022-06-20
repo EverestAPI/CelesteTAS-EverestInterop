@@ -163,7 +163,7 @@ internal class SelectedAreaEntity : Entity {
         }
     }
 
-    private static bool IsDragging => Instance?.start != null && Instance.width > 0 && Instance.height > 0;
+    private static bool IsDragging => Instance?.start != null && (Instance.width > 1 || Instance.height > 1);
 
     private Vector2? start;
     private int left;
@@ -204,11 +204,11 @@ internal class SelectedAreaEntity : Entity {
             right = (int) Math.Max(start.Value.X, end.X);
             top = (int) Math.Min(start.Value.Y, end.Y);
             bottom = (int) Math.Max(start.Value.Y, end.Y);
-            width = right - left;
-            height = bottom - top;
+            width = right - left + 1;
+            height = bottom - top + 1;
 
             if (IsDragging && MouseButtons.Right.Check) {
-                Draw.HollowRect(left, top, Math.Max(1, right - left), Math.Max(1, bottom - top), Color.Yellow);
+                Draw.HollowRect(left, top, width, height, Color.Yellow);
             }
 
             if (MouseButtons.Right.Released) {
