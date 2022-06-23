@@ -534,7 +534,7 @@ public static class UnloadedRoomHitbox {
             Rectangle rect = new();
             Vector2 position = levelData.Position + data.Position;
 
-            string input = Path.Combine("decals", data.Texture.Replace(Path.GetExtension(data.Texture), "")).Replace('\\', '/');
+            string input = Path.Combine("decals", Path.ChangeExtension(data.Texture, null)).Replace('\\', '/');
             string name = Regex.Replace(input, "\\d+$", string.Empty);
             string decalName = name.ToLower().Replace("decals/", "");
 
