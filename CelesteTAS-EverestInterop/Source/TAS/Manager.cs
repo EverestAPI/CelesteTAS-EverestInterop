@@ -74,11 +74,6 @@ public static class Manager {
         if (States.HasFlag(States.Enable)) {
             Running = true;
 
-            /*
-            if (State.HasFlag(State.Record)) {
-                controller.RecordPlayer();
-            }
-            */
             if (!SkipFrame) {
                 Controller.AdvanceFrame(out bool canPlayback);
 
