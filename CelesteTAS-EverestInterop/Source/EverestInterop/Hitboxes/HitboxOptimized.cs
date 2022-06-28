@@ -363,7 +363,7 @@ public static class HitboxOptimized {
 
         self.Collider = origCollider;
 
-        if (self.SceneAs<Level>() is {Pathfinder: { } pathfinder} && PathfinderLastPath(pathfinder) is { } lastPath && lastPath.IsNotEmpty()) {
+        if (!self.Regenerating && self.SceneAs<Level>() is {Pathfinder: { } pathfinder} && PathfinderLastPath(pathfinder) is {Count: >= 2} lastPath) {
             Vector2 start = lastPath[0];
             for (int i = 1; i < lastPath.Count; i++) {
                 Vector2 vector = lastPath[i];
