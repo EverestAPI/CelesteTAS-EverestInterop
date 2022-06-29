@@ -9,7 +9,7 @@ using Monocle;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Utils;
 
-namespace TAS.Input;
+namespace TAS.Input.Commands;
 
 public static class InvokeCommand {
     private static bool consolePrintLog;

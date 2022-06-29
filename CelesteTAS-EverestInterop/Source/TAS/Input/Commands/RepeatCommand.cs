@@ -5,7 +5,7 @@ using System.Linq;
 using Celeste.Mod;
 using TAS.Utils;
 
-namespace TAS.Input;
+namespace TAS.Input.Commands;
 
 public static class RepeatCommand {
     // <filePath, Tuple<fileLine, count, startFrame>>

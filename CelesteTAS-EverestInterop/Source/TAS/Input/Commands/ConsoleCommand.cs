@@ -13,7 +13,7 @@ using TAS.Entities;
 using TAS.Module;
 using TAS.Utils;
 
-namespace TAS.Input;
+namespace TAS.Input.Commands;
 
 public static class ConsoleCommandHandler {
     private static readonly FieldInfo MovementCounter = typeof(Actor).GetFieldInfo("movementCounter");
@@ -134,7 +134,7 @@ public static class ConsoleCommandHandler {
 
     private static void LoadCommand(string command, string[] args) {
         try {
-            if (SaveData.Instance == null || !Manager.AllowUnsafeInput && SaveData.Instance.FileSlot != -1) {
+            if (SaveData.Instance == null || !SafeCommand.AllowUnsafeInput && SaveData.Instance.FileSlot != -1) {
                 SaveData data = SaveData.Instance ?? UserIO.Load<SaveData>(SaveData.GetFilename(-1)) ?? new SaveData();
                 if (SaveData.Instance?.FileSlot is { } slot && slot != -1) {
                     SaveData.TryDelete(-1);
@@ -328,51 +328,6 @@ public static class ConsoleCommandHandler {
             EntityID gid = new(level.Session.Level, entityData.ID);
             Strawberry entity2 = new(entityData, Vector2.Zero, gid);
             level.Add(entity2);
-        }
-    }
-
-    [Monocle.Command("clrsav", "clears save data on debug file (CelesteTAS)")]
-    private static void CmdClearSave() {
-        SaveData.TryDelete(-1);
-        SaveData.Start(new SaveData {Name = "debug"}, -1);
-        // Pretend that we've beaten Prologue.
-        LevelSetStats stats = SaveData.Instance.GetLevelSetStatsFor("Celeste");
-        stats.UnlockedAreas = 1;
-        stats.AreasIncludingCeleste[0].Modes[0].Completed = true;
-    }
-
-    [Monocle.Command("hearts",
-        "sets the amount of obtained hearts for the specified level set to a given number (default all hearts and current level set) (support mini heart door via CelesteTAS)")]
-    private static void CmdHearts(int amount = int.MaxValue, string levelSet = null) {
-        SaveData saveData = SaveData.Instance;
-        if (saveData == null) {
-            return;
-        }
-
-        if (string.IsNullOrEmpty(levelSet)) {
-            const string miniHeartDoorFullName = "Celeste.Mod.CollabUtils2.Entities.MiniHeartDoor";
-
-            if (Engine.Scene.Entities.FirstOrDefault(e => e.GetType().FullName == miniHeartDoorFullName) is { } miniHeartDoor) {
-                levelSet = miniHeartDoor.GetFieldValue<string>("levelSet");
-            } else {
-                levelSet = saveData.GetLevelSet();
-            }
-        }
-
-        int num = 0;
-        foreach (AreaStats areaStats in saveData.Areas_Safe.Where(stats => stats.LevelSet == levelSet)) {
-            for (int i = 0; i < areaStats.Modes.Length; i++) {
-                if (AreaData.Get(areaStats.ID).Mode is not { } mode || mode.Length <= i || mode[i]?.MapData == null)
-                    continue;
-
-                AreaModeStats areaModeStats = areaStats.Modes[i];
-                if (num < amount) {
-                    areaModeStats.HeartGem = true;
-                    num++;
-                } else {
-                    areaModeStats.HeartGem = false;
-                }
-            }
         }
     }
 }

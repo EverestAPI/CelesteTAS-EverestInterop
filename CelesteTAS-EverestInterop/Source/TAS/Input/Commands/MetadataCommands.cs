@@ -9,7 +9,7 @@ using TAS.Communication;
 using TAS.Module;
 using TAS.Utils;
 
-namespace TAS.Input;
+namespace TAS.Input.Commands;
 
 public static class MetadataCommands {
     private static long? tasStartFileTime;
@@ -89,7 +89,7 @@ public static class MetadataCommands {
         InputController inputController = Manager.Controller;
         string tasFilePath = InputController.TasFilePath;
         IEnumerable<Command> metadataCommands = inputController.Commands.SelectMany(pair => pair.Value)
-            .Where(command => command.Attribute.IsName(commandName) && command.FilePath == InputController.TasFilePath)
+            .Where(command => command.Is(commandName) && command.FilePath == InputController.TasFilePath)
             .Where(predicate ?? (_ => true))
             .ToList();
 

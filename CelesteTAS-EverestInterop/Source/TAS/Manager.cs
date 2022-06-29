@@ -12,6 +12,7 @@ using StudioCommunication;
 using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.Input;
+using TAS.Input.Commands;
 using TAS.Utils;
 using GameInput = Celeste.Input;
 
@@ -34,8 +35,6 @@ public static class Manager {
         FrameLoops < 1f && (int) ((Engine.FrameCounter + 1) * FrameLoops) == (int) (Engine.FrameCounter * FrameLoops);
 
     public static bool SkipFrame => States.HasFlag(States.FrameStep) || SkipSlowForwardingFrame;
-
-    public static bool EnforceLegal, AllowUnsafeInput;
 
     static Manager() {
         MethodInfo updateVirtualInputs = typeof(MInput).GetMethodInfo("UpdateVirtualInputs");
@@ -84,7 +83,7 @@ public static class Manager {
                     FrameLoops = 1;
                 }
 
-                if (!canPlayback || !AllowUnsafeInput &&
+                if (!canPlayback || !SafeCommand.AllowUnsafeInput &&
                     !(Engine.Scene is Level or LevelLoader or LevelExit || Controller.CurrentFrameInTas <= 1)) {
                     DisableRun();
                 }
@@ -210,9 +209,6 @@ public static class Manager {
         LastStates = States.None;
         States = States.None;
         NextStates = States.None;
-
-        EnforceLegal = false;
-        AllowUnsafeInput = false;
 
         // fix the input that was last held stays for a frame when it ends
         if (MInput.GamePads != null && MInput.GamePads.FirstOrDefault(data => data.Attached) is { } gamePadData) {

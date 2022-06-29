@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using Celeste;
 using Celeste.Mod;
 using Monocle;
-using TAS.Input;
+using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
 

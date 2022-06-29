@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Input;
+using TAS.Input.Commands;
 using GameInput = Celeste.Input;
 
 namespace TAS;

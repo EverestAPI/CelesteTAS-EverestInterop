@@ -5,6 +5,7 @@ using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Input;
+using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
 

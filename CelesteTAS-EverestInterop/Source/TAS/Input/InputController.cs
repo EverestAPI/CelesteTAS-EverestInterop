@@ -6,7 +6,9 @@ using System.Linq;
 using System.Text;
 using MonoMod.Utils;
 using TAS.EverestInterop;
+using TAS.Input.Commands;
 using TAS.Utils;
+using Command = TAS.Input.Commands.Command;
 #if DEBUG
 using TAS.Module;
 using Monocle;
@@ -143,7 +145,7 @@ public class InputController {
         NeedsReload = true;
         AnalogHelper.AnalogModeChange(AnalogueMode.Ignore);
         RepeatCommand.Clear();
-        InputCommands.ClearReadCommandStack();
+        ReadCommand.ClearReadCommandStack();
         StopWatchers();
         LibTasHelper.TryRestartExport();
     }
@@ -226,7 +228,7 @@ public class InputController {
         }
 
         CurrentCommands?.ForEach(command => {
-            if (command.Attribute.ExecuteTiming == ExecuteTiming.Runtime && (!Manager.EnforceLegal || command.Attribute.LegalInMainGame)) {
+            if (command.Attribute.ExecuteTiming == ExecuteTiming.Runtime && (!EnforceLegalCommand.Enabled || command.Attribute.LegalInMainGame)) {
                 command.Invoke();
             }
         });
@@ -276,8 +278,10 @@ public class InputController {
                 continue;
             }
 
-            if (InputCommands.TryParseCommand(this, filePath, subLine, lineText, initializationFrameCount, studioLine)) {
-                //workaround for the play command
+            if (Command.TryParse(this, filePath, subLine, lineText, initializationFrameCount, studioLine, out Command command)
+                && command.Is("Play")) {
+                // workaround for the play command
+                // the play command needs to stop reading the current file when it's done to prevent recursion
                 return;
             }
 

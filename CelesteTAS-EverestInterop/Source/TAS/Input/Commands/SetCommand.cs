@@ -10,7 +10,7 @@ using Monocle;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Utils;
 
-namespace TAS.Input;
+namespace TAS.Input.Commands;
 
 // ReSharper disable once UnusedType.Global
 public static class SetCommandHandler {

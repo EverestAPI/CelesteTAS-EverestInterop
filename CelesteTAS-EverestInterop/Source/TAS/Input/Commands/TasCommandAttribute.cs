@@ -6,7 +6,7 @@ using Celeste.Mod;
 using TAS.Module;
 using TAS.Utils;
 
-namespace TAS.Input;
+namespace TAS.Input.Commands;
 
 /* Additional commands can be added by giving them the TASCommand attribute and naming them (CommandName)Command.
  * The execute at start field indicates whether a command should be executed while building the input list (read, play)
