@@ -83,9 +83,17 @@ public static class Manager {
                     FrameLoops = 1;
                 }
 
-                if (!canPlayback || !SafeCommand.AllowUnsafeInput &&
-                    !(Engine.Scene is Level or LevelLoader or LevelExit || Controller.CurrentFrameInTas <= 1)) {
+                if (!canPlayback) {
                     DisableRun();
+                } else if (SafeCommand.DisallowUnsafeInput && Controller.CurrentFrameInTas > 1) {
+                    if (Engine.Scene is not (Level or LevelLoader or LevelExit)) {
+                        DisableRun();
+                    } else if (Engine.Scene is Level level && level.Tracker.GetEntity<TextMenu>() is { } menu) {
+                        if (menu.Items.FirstOrDefault() is TextMenu.Header header && header.Title == Dialog.Clean("options_title") ||
+                            menu.Items.FirstOrDefault() is TextMenuExt.HeaderImage {Image: "menu/everest"}) {
+                            DisableRun();
+                        }
+                    }
                 }
             }
         } else {

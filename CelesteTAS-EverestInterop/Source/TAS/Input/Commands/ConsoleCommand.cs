@@ -134,7 +134,7 @@ public static class ConsoleCommandHandler {
 
     private static void LoadCommand(string command, string[] args) {
         try {
-            if (SaveData.Instance == null || !SafeCommand.AllowUnsafeInput && SaveData.Instance.FileSlot != -1) {
+            if (SaveData.Instance == null || SafeCommand.DisallowUnsafeInput && SaveData.Instance.FileSlot != -1) {
                 SaveData data = SaveData.Instance ?? UserIO.Load<SaveData>(SaveData.GetFilename(-1)) ?? new SaveData();
                 if (SaveData.Instance?.FileSlot is { } slot && slot != -1) {
                     SaveData.TryDelete(-1);

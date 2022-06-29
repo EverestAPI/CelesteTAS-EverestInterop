@@ -98,7 +98,7 @@
     - `Invoke, Session.SetFlag, whatever`
 
 ### Unsafe and Safe
-- The TAS will normally only run inside levels.
+- The TAS will normally only run inside levels and stop when entering the Options/ModOptions menu.
 - Console load normally forces the TAS to load the debug save.
 - `Unsafe` allows the TAS to run anywhere, on any save.
 - `Safe` makes the TAS only run inside levels and debug save.

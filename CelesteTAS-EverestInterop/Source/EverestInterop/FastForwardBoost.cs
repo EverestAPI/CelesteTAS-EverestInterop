@@ -72,6 +72,7 @@ public static class FastForwardBoost {
 #pragma warning disable CS0612
     private static void TrackerOnInitialize(On.Monocle.Tracker.orig_Initialize orig) {
         orig();
+        AddTypeToTracker(typeof(TextMenu));
         AddTypeToTracker(typeof(PlayerSeeker));
         AddTypeToTracker(typeof(LockBlock));
         AddTypeToTracker(typeof(KeyboardConfigUI), typeof(ModuleSettingsKeyboardConfigUI));

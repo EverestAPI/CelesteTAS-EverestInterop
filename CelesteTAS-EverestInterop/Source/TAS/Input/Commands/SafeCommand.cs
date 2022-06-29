@@ -1,20 +1,22 @@
 namespace TAS.Input.Commands;
 
 public static class SafeCommand {
-    public static bool AllowUnsafeInput { get; private set; }
+    // stop tas when out of Level/LevelLoader/LevelExit
+    // stop tas when entering Options/ModOptions UI
+    public static bool DisallowUnsafeInput { get; private set; } = true;
 
     [TasCommand("Safe")]
     private static void Safe() {
-        AllowUnsafeInput = false;
+        DisallowUnsafeInput = true;
     }
 
     [TasCommand("Unsafe")]
     private static void Unsafe() {
-        AllowUnsafeInput = true;
+        DisallowUnsafeInput = false;
     }
 
     [DisableRun]
     private static void DisableRun() {
-        AllowUnsafeInput = false;
+        DisallowUnsafeInput = true;
     }
 }
