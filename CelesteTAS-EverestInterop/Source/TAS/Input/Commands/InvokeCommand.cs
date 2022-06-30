@@ -75,7 +75,7 @@ public static class InvokeCommand {
 
             objType = obj.GetType();
         } else {
-            obj = SetCommandHandler.FindSpecialObject(type, entityId);
+            obj = SetCommand.FindSpecialObject(type, entityId);
             if (obj == null) {
                 Log($"{type.FullName}{entityId} object is not found");
                 return nonReturnObject;
@@ -151,7 +151,7 @@ public static class InvokeCommand {
                     Type parameterType = parameterInfo.ParameterType;
 
                     if (parameters.IsEmpty()) {
-                        p[i] = parameterInfo.HasDefaultValue ? parameterInfo.DefaultValue : SetCommandHandler.Convert(null, parameterType);
+                        p[i] = parameterInfo.HasDefaultValue ? parameterInfo.DefaultValue : SetCommand.Convert(null, parameterType);
                         continue;
                     }
 
@@ -163,7 +163,7 @@ public static class InvokeCommand {
                         parameters = parameters.Skip(2).ToArray();
                     } else if (parameterType.IsSameOrSubclassOf(typeof(Entity))) {
                         if (InfoCustom.TryParseType(parameters[0], out Type entityType, out string id, out string errorMessage)) {
-                            convertedObj = ((List<Entity>) SetCommandHandler.FindSpecialObject(entityType, id)).FirstOrDefault();
+                            convertedObj = ((List<Entity>) SetCommand.FindSpecialObject(entityType, id)).FirstOrDefault();
                         } else {
                             Log(errorMessage);
                             convertedObj = null;
@@ -173,7 +173,7 @@ public static class InvokeCommand {
                     } else if (parameterType == typeof(Session)) {
                         convertedObj = Engine.Scene.GetSession();
                     } else {
-                        convertedObj = SetCommandHandler.Convert(parameters.FirstOrDefault(), parameterType);
+                        convertedObj = SetCommand.Convert(parameters.FirstOrDefault(), parameterType);
                         parameters = parameters.Skip(1).ToArray();
                     }
 

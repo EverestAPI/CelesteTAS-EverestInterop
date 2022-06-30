@@ -137,7 +137,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
     }
 
     private string GetConsoleCommand(bool simple) {
-        return ConsoleCommandHandler.CreateConsoleCommand(simple);
+        return ConsoleCommand.CreateConsoleCommand(simple);
     }
 
     private string GetModInfo() {

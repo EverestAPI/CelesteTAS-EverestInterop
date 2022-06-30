@@ -15,7 +15,7 @@ using TAS.Utils;
 
 namespace TAS.Input.Commands;
 
-public static class ConsoleCommandHandler {
+public static class ConsoleCommand {
     private static readonly FieldInfo MovementCounter = typeof(Actor).GetFieldInfo("movementCounter");
     private static Vector2 resetRemainder;
     private static Vector2 initSpeed;
@@ -117,7 +117,7 @@ public static class ConsoleCommandHandler {
     // "Console LoadCommand IDorSID PositionX PositionY"
     // "Console LoadCommand IDorSID PositionX PositionY SpeedX SpeedY"
     [TasCommand("Console", LegalInMainGame = false)]
-    private static void ConsoleCommand(string[] arguments, string commandText) {
+    private static void Console(string[] arguments, string commandText) {
         string commandName = arguments[0].ToLower(CultureInfo.InvariantCulture);
         string[] args = arguments.Skip(1).ToArray();
         if (commandName is "load" or "hard" or "rmx2") {

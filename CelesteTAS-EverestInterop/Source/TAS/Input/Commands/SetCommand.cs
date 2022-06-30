@@ -13,18 +13,18 @@ using TAS.Utils;
 namespace TAS.Input.Commands;
 
 // ReSharper disable once UnusedType.Global
-public static class SetCommandHandler {
+public static class SetCommand {
     private static readonly FieldInfo ActorMovementCounter = typeof(Actor).GetFieldInfo("movementCounter");
     private static readonly FieldInfo InputFeather = typeof(Celeste.Input).GetFieldInfo("Feather");
     private static bool consolePrintLog;
     private const string logPrefix = "Set Command Failed: ";
 
-    [Monocle.Command("set", "Set settings/level/session/entity field. eg set DashMode Infinite; set Player Speed 325 -52.5 (CelesteTAS)")]
-    private static void SetCommand(string arg1, string arg2, string arg3, string arg4, string arg5, string arg6, string arg7, string arg8,
+    [Monocle.Command("set", "Set settings/level/session/entity field. eg set DashMode Infinite; set Player.Speed 325 -52.5 (CelesteTAS)")]
+    private static void ConsoleSet(string arg1, string arg2, string arg3, string arg4, string arg5, string arg6, string arg7, string arg8,
         string arg9) {
         string[] args = {arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9};
         consolePrintLog = true;
-        SetCommand(args.TakeWhile(arg => arg != null).ToArray());
+        Set(args.TakeWhile(arg => arg != null).ToArray());
         consolePrintLog = false;
     }
 
@@ -32,7 +32,7 @@ public static class SetCommandHandler {
     // Set, Mod.Setting, Value
     // Set, Entity.Field, Value
     [TasCommand("Set", LegalInMainGame = false)]
-    private static void SetCommand(string[] args) {
+    private static void Set(string[] args) {
         if (args.Length < 2) {
             return;
         }

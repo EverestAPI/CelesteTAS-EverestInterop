@@ -58,7 +58,7 @@ public static class RestoreSettings {
 
         if (origAssists != null) {
             SaveData.Instance.Assists = origAssists.Value;
-            SetCommandHandler.ResetVariants(origAssists.Value);
+            SetCommand.ResetVariants(origAssists.Value);
             origAssists = null;
         }
 
