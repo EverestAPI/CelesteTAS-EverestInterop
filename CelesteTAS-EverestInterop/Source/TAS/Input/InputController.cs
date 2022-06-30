@@ -75,16 +75,19 @@ public class InputController {
     public InputFrame Previous => Inputs.GetValueOrDefault(CurrentFrameInTas - 1);
     public InputFrame Current => Inputs.GetValueOrDefault(CurrentFrameInTas);
     public InputFrame Next => Inputs.GetValueOrDefault(CurrentFrameInTas + 1);
-    public FastForward CurrentFastForward => FastForwards.GetValueOrDefault(CurrentFrameInTas);
     public List<Command> CurrentCommands => Commands.GetValueOrDefault(CurrentFrameInTas);
     public bool NeedsReload = true;
     public bool CanPlayback => CurrentFrameInTas < Inputs.Count;
     public bool NeedsToWait => Manager.IsLoading();
     public FastForward NextCommentFastForward;
-    private FastForward LastFastForward => NextCommentFastForward ?? FastForwards.FirstOrDefault(pair => pair.Key > CurrentFrameInTas).Value;
-    public bool HasFastForward => LastFastForward != null && LastFastForward.Frame > CurrentFrameInTas;
-    public float FastForwardSpeed => HasFastForward ? Math.Min(LastFastForward.Frame - CurrentFrameInTas, LastFastForward.Speed) : 1f;
-    public bool Break => LastFastForward?.Frame == CurrentFrameInTas;
+
+    private FastForward CurrentFastForward => NextCommentFastForward ??
+                                              FastForwards.FirstOrDefault(pair => pair.Key > CurrentFrameInTas).Value ??
+                                              FastForwards.LastOrDefault().Value;
+
+    public bool HasFastForward => CurrentFastForward != null && CurrentFastForward.Frame > CurrentFrameInTas;
+    public float FastForwardSpeed => HasFastForward ? Math.Min(CurrentFastForward.Frame - CurrentFrameInTas, CurrentFastForward.Speed) : 1f;
+    public bool Break => CurrentFastForward?.Frame == CurrentFrameInTas;
     private string Checksum => string.IsNullOrEmpty(checksum) ? checksum = CalcChecksum(Inputs.Count - 1) : checksum;
 
     public string SavestateChecksum {
@@ -355,7 +358,7 @@ public class InputController {
             NextCommentFastForward = null;
             RefreshInputs(false);
             FastForward next = FastForwardComments.FirstOrDefault(pair => pair.Key > CurrentFrameInTas).Value;
-            if (next != null && LastFastForward is { } last && HasFastForward && next.Frame > last.Frame) {
+            if (next != null && CurrentFastForward is { } last && HasFastForward && next.Frame > last.Frame) {
                 // NextCommentFastForward = last;
             } else {
                 NextCommentFastForward = next;

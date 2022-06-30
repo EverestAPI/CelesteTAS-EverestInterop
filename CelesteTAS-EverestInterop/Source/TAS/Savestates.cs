@@ -94,7 +94,7 @@ public static class Savestates {
         // save state when tas run to the last savestate breakpoint
         if (Running
             && Controller.Inputs.Count > Controller.CurrentFrameInTas
-            && Controller.CurrentFastForward is {SaveState: true} currentFastForward &&
+            && Controller.FastForwards.GetValueOrDefault(Controller.CurrentFrameInTas) is {SaveState: true} currentFastForward &&
             Controller.FastForwards.Last(pair => pair.Value.SaveState).Value == currentFastForward &&
             SavedCurrentFrame != currentFastForward.Frame) {
             Save(true);
