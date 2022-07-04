@@ -176,6 +176,10 @@ public static class ConsoleCommand {
                 return;
             }
 
+            if (SaveData.Instance is { } saveData) {
+                saveData.Name = "TAS";
+            }
+
             if (args.Length > 1) {
                 if (!double.TryParse(args[1], out double x) || args.Length == 2) {
                     string screen = args[1];
