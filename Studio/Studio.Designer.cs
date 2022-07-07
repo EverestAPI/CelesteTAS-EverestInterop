@@ -965,7 +965,7 @@ namespace CelesteStudio {
             this.richText.CommentPrefix = "#";
             this.richText.CurrentFileName = null;
             this.richText.CurrentLineColor = System.Drawing.Color.FromArgb(((int) (((byte) (64)))), ((int) (((byte) (64)))), ((int) (((byte) (64)))));
-            this.richText.CurrentLineText = null;
+            this.richText.CurrentLineSuffix = null;
             this.richText.Cursor = System.Windows.Forms.Cursors.IBeam;
             this.richText.DisabledColor = System.Drawing.Color.FromArgb(((int) (((byte) (100)))), ((int) (((byte) (180)))), ((int) (((byte) (180)))), ((int) (((byte) (180)))));
             this.richText.Font = new System.Drawing.Font("Courier New", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte) (0)));

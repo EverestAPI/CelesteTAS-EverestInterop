@@ -491,11 +491,20 @@ public partial class Studio : BaseForm {
     }
 
     private void TryOpenReadFile() {
-        string lineText = richText.Lines[richText.Selection.Start.iLine].Trim();
-        if (lineText.StartsWith("read", StringComparison.InvariantCultureIgnoreCase)) {
+        string text = richText.CurrentStartLineText;
+        string trimText = richText.CurrentStartLineText.Trim();
+        if (trimText.StartsWith("read", StringComparison.InvariantCultureIgnoreCase)) {
             Regex spaceRegex = new(@"^[^,]+?\s+[^,]");
 
-            string[] args = spaceRegex.IsMatch(lineText) ? lineText.Split() : lineText.Split(',');
+            string[] args = spaceRegex.IsMatch(trimText) ? trimText.Split() : trimText.Split(',');
+
+            bool jumpToEndLabel = false;
+            int clickPosition = richText.Selection.Start.iChar;
+            int leftSpace = text.Length - text.TrimStart().Length;
+            if (args.Length >= 4 && args[0].Length + args[1].Length + args[2].Length + 2 + leftSpace < clickPosition) {
+                jumpToEndLabel = true;
+            }
+
             args = args.Select(text => text.Trim()).ToArray();
             if (args[0].Equals("read", StringComparison.InvariantCultureIgnoreCase) && args.Length >= 2) {
                 string filePath = args[1];
@@ -514,7 +523,10 @@ public partial class Studio : BaseForm {
                 }
 
                 int startLine = 0;
-                if (args.Length >= 3) {
+
+                if (jumpToEndLabel) {
+                    startLine = GetLine(filePath, args[3]);
+                } else if (args.Length >= 3) {
                     startLine = GetLine(filePath, args[2]);
                 }
 
@@ -542,7 +554,7 @@ public partial class Studio : BaseForm {
     }
 
     private void TryGoToPlayLine() {
-        string lineText = richText.Lines[richText.Selection.Start.iLine].Trim();
+        string lineText = richText.CurrentStartLineText.Trim();
         if (!new Regex(@"^#?play", RegexOptions.IgnoreCase).IsMatch(lineText)) {
             return;
         }
@@ -800,7 +812,7 @@ public partial class Studio : BaseForm {
             if (CommunicationWrapper.StudioInfo != null) {
                 StudioInfo studioInfo = CommunicationWrapper.StudioInfo.Value;
                 richText.CurrentLine = studioInfo.CurrentLine;
-                richText.CurrentLineText = studioInfo.CurrentLineSuffix;
+                richText.CurrentLineSuffix = studioInfo.CurrentLineSuffix;
                 richText.SaveStateLine = studioInfo.SaveStateLine;
                 currentFrame = studioInfo.CurrentFrameInTas;
                 tasStates = (States) studioInfo.tasStates;
@@ -810,7 +822,7 @@ public partial class Studio : BaseForm {
             } else {
                 currentFrame = 0;
                 richText.CurrentLine = -1;
-                richText.CurrentLineText = string.Empty;
+                richText.CurrentLineSuffix = string.Empty;
                 richText.SaveStateLine = -1;
                 tasStates = States.None;
             }

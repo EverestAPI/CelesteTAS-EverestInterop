@@ -49,7 +49,7 @@ public class RichText : UserControl {
         selectionColor;
 
     private int currentLine;
-    private string currentLineText;
+    private string currentLineSuffix;
     private string descriptionFile;
     private int saveStateLine = -1;
 
@@ -168,6 +168,9 @@ public class RichText : UserControl {
 
     public string CurrentFileName { get; set; }
 
+    public string CurrentStartLineText => Lines[Selection.Start.iLine];
+    public string CurrentEndLineText => Lines[Selection.End.iLine];
+
     /// <summary>
     /// Indicates if tab characters are accepted as input
     /// </summary>
@@ -247,14 +250,14 @@ public class RichText : UserControl {
     }
 
     [DefaultValue(typeof(string), null), Browsable(false)]
-    public string CurrentLineText {
-        get => currentLineText;
+    public string CurrentLineSuffix {
+        get => currentLineSuffix;
         set {
-            if (currentLineText == value) {
+            if (currentLineSuffix == value) {
                 return;
             }
 
-            currentLineText = value;
+            currentLineSuffix = value;
             Invalidate();
         }
     }
@@ -2974,7 +2977,7 @@ public class RichText : UserControl {
 
             //insert char
             if (c == '\n') {
-                string line = Lines[Selection.Start.iLine];
+                string line = CurrentStartLineText;
                 if (Selection.Start.iChar > 0) {
                     if (AllSpaceRegex.IsMatch(line.Substring(0, Math.Max(line.Length, Selection.Start.iChar)))) {
                         Selection.GoHome(false);
@@ -3309,10 +3312,10 @@ public class RichText : UserControl {
                 }
             }
 
-            if (!string.IsNullOrEmpty(currentLineText) && iLine == CurrentLine) {
+            if (!string.IsNullOrEmpty(currentLineSuffix) && iLine == CurrentLine) {
                 using (var lineNumberBrush = new SolidBrush(currentTextColor)) {
-                    SizeF size = e.Graphics.MeasureString(currentLineText, Font, 0, StringFormat.GenericTypographic);
-                    e.Graphics.DrawString(currentLineText, Font, lineNumberBrush,
+                    SizeF size = e.Graphics.MeasureString(currentLineSuffix, Font, 0, StringFormat.GenericTypographic);
+                    e.Graphics.DrawString(currentLineSuffix, Font, lineNumberBrush,
                         new RectangleF(ClientSize.Width - size.Width - 10, y, size.Width, CharHeight), StringFormat.GenericTypographic);
                 }
             }
