@@ -454,60 +454,11 @@ internal static class DictionaryExtensions {
     }
 }
 
-// source from: https://stackoverflow.com/a/17264480
-internal static class ExtendedDataExtensions {
-    private static readonly ConditionalWeakTable<object, object> ExtendedData =
-        new();
-
-    private static IDictionary<string, object> CreateDictionary(object o) {
-        return new Dictionary<string, object>();
-    }
-
-    public static void SetExtendedDataValue(this object o, string name, object value) {
-        if (string.IsNullOrWhiteSpace(name)) {
-            throw new ArgumentException("Invalid name");
-        }
-
-        name = name.Trim();
-
-        IDictionary<string, object> values =
-            (IDictionary<string, object>) ExtendedData.GetValue(o, CreateDictionary);
-
-        if (value != null) {
-            values[name] = value;
-        } else {
-            values.Remove(name);
-        }
-    }
-
-    public static T GetExtendedDataValue<T>(this object o, string name) {
-        if (string.IsNullOrWhiteSpace(name)) {
-            throw new ArgumentException("Invalid name");
-        }
-
-        name = name.Trim();
-
-        IDictionary<string, object> values =
-            (IDictionary<string, object>) ExtendedData.GetValue(o, CreateDictionary);
-
-        if (values.ContainsKey(name)) {
-            return (T) values[name];
-        }
-
-        return default;
-    }
-}
-
 internal static class DynamicDataExtensions {
-    public static DynamicData GetDynamicDataInstance(this object obj) {
-        string dynDataInstanceKey = $"{obj.GetType().FullName}_DynDataInstanceKey";
-        DynamicData dynamicData = obj.GetExtendedDataValue<DynamicData>(dynDataInstanceKey);
-        if (dynamicData == null) {
-            dynamicData = new DynamicData(obj);
-            obj.SetExtendedDataValue(dynDataInstanceKey, dynamicData);
-        }
+    private static readonly ConditionalWeakTable<object, DynamicData> cached = new();
 
-        return dynamicData;
+    public static DynamicData GetDynamicDataInstance(this object obj) {
+        return cached.GetValue(obj, key => new DynamicData(key));
     }
 }
 
