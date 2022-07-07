@@ -48,6 +48,8 @@ public partial class Studio : BaseForm {
         set => richText.CurrentFileName = value;
     }
 
+    private Tuple<string, int> previousFile;
+
     public Studio(string[] args) {
         Instance = this;
         Version = Assembly.GetExecutingAssembly().GetName().Version;
@@ -131,7 +133,12 @@ public partial class Studio : BaseForm {
         openRecentMenuItem.DropDownItemClicked += (sender, args) => {
             ToolStripItem clickedItem = args.ClickedItem;
             if (clickedItem.Text == "Clear") {
+                openPreviousFileToolStripMenuItem.Enabled = false;
                 RecentFiles.Clear();
+                if (File.Exists(CurrentFileName)) {
+                    RecentFiles.Add(CurrentFileName);
+                }
+
                 return;
             }
 
@@ -476,7 +483,10 @@ public partial class Studio : BaseForm {
         }
 
         StudioCommunicationServer.Instance?.WriteWait();
+
+        Tuple<string, int> tuple = new(CurrentFileName, richText.Selection.Start.iLine);
         if (richText.OpenFile(fileName)) {
+            previousFile = tuple;
             UpdateRecentFiles();
             richText.GoHome();
             if (startLine > 0) {
@@ -610,6 +620,7 @@ public partial class Studio : BaseForm {
         }
 
         RecentFiles.Insert(0, CurrentFileName);
+        openPreviousFileToolStripMenuItem.Enabled = RecentFiles.Count >= 2;
         Settings.Instance.LastFileName = CurrentFileName;
         SaveSettings();
     }
@@ -1349,7 +1360,12 @@ public partial class Studio : BaseForm {
             RecentFiles.Remove(fileName);
         }
 
-        OpenFile(fileName);
+        int startLine = 0;
+        if (previousFile != null && previousFile.Item1 == fileName) {
+            startLine = previousFile.Item2;
+        }
+
+        OpenFile(fileName, startLine);
     }
 
     private void sendInputsToCelesteMenuItem_Click(object sender, EventArgs e) {
