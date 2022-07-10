@@ -30,9 +30,6 @@ public class Program : WindowsFormsApplicationBase {
             Directory.SetCurrentDirectory(exeDir);
         }
 
-        // delete the useless config file
-        File.Delete("./Celeste Studio.exe.config");
-
         new Program().Run(args);
     }
 

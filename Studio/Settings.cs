@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using Tommy.Serializer;
 
 namespace CelesteStudio;
@@ -70,19 +71,36 @@ public class Settings {
     // ReSharper disable once FieldCanBeMadeReadOnly.Global
     public List<string> RecentFiles = new();
 
-    public static void Load() {
-        try {
-            if (File.Exists(path)) {
-                Instance = TommySerializer.FromTomlFile<Settings>(path);
+    [TommyInclude] private string themes = ThemesType.Light.ToString();
+
+    [TommyIgnore]
+    public ThemesType ThemesType {
+        get {
+            int index = typeof(ThemesType).GetEnumNames().ToList().IndexOf(themes);
+            if (index == -1) {
+                index = 0;
             }
-        } catch {
-            // ignore
+
+            return (ThemesType) index;
+        }
+
+        set => themes = value.ToString();
+    }
+
+    public static void Load() {
+        if (File.Exists(path)) {
+            try {
+                Instance = TommySerializer.FromTomlFile<Settings>(path);
+                Themes.Load(path);
+            } catch {
+                // ignore
+            }
         }
     }
 
     public static void Save() {
         try {
-            TommySerializer.ToTomlFile(Instance, path);
+            TommySerializer.ToTomlFile(new object[] {Instance, Themes.Light, Themes.Dark, Themes.Custom}, path);
         } catch {
             // ignore
         }

@@ -57,6 +57,10 @@ namespace CelesteStudio {
             this.backupRateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.backupFileCountsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.fontToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.themesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.lightToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.darkToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.customToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toggleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toggleHitboxesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toggleTriggerHitboxesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -303,7 +307,7 @@ namespace CelesteStudio {
             // 
             // settingsToolStripMenuItem
             // 
-            this.settingsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.sendInputsToCelesteMenuItem, this.autoRemoveExclusiveActionsToolStripMenuItem, this.showGameInfoToolStripMenuItem, this.autoBackupToolStripMenuItem, this.fontToolStripMenuItem});
+            this.settingsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.sendInputsToCelesteMenuItem, this.autoRemoveExclusiveActionsToolStripMenuItem, this.showGameInfoToolStripMenuItem, this.autoBackupToolStripMenuItem, this.fontToolStripMenuItem, this.themesToolStripMenuItem});
             this.settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
             this.settingsToolStripMenuItem.Size = new System.Drawing.Size(84, 20);
             this.settingsToolStripMenuItem.Text = "&Settings";
@@ -369,6 +373,35 @@ namespace CelesteStudio {
             this.fontToolStripMenuItem.Size = new System.Drawing.Size(380, 22);
             this.fontToolStripMenuItem.Text = "Font...";
             this.fontToolStripMenuItem.Click += new System.EventHandler(this.fontToolStripMenuItem_Click);
+            // 
+            // themesToolStripMenuItem
+            // 
+            this.themesToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.lightToolStripMenuItem, this.darkToolStripMenuItem, this.customToolStripMenuItem});
+            this.themesToolStripMenuItem.Name = "themesToolStripMenuItem";
+            this.themesToolStripMenuItem.Size = new System.Drawing.Size(380, 22);
+            this.themesToolStripMenuItem.Text = "Themes";
+            this.themesToolStripMenuItem.DropDownOpened += new System.EventHandler(this.themesToolStripMenuItem_DropDownOpened);
+            // 
+            // lightToolStripMenuItem
+            // 
+            this.lightToolStripMenuItem.Name = "lightToolStripMenuItem";
+            this.lightToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.lightToolStripMenuItem.Text = "Light";
+            this.lightToolStripMenuItem.Click += new System.EventHandler(this.lightToolStripMenuItem_Click);
+            // 
+            // darkToolStripMenuItem
+            // 
+            this.darkToolStripMenuItem.Name = "darkToolStripMenuItem";
+            this.darkToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.darkToolStripMenuItem.Text = "Dark";
+            this.darkToolStripMenuItem.Click += new System.EventHandler(this.darkToolStripMenuItem_Click);
+            // 
+            // customToolStripMenuItem
+            // 
+            this.customToolStripMenuItem.Name = "customToolStripMenuItem";
+            this.customToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.customToolStripMenuItem.Text = "Custom";
+            this.customToolStripMenuItem.Click += new System.EventHandler(this.customToolStripMenuItem_Click);
             // 
             // toggleToolStripMenuItem
             // 
@@ -590,7 +623,7 @@ namespace CelesteStudio {
             // 
             this.tasTextContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.insertRemoveBreakPointToolStripMenuItem, this.insertRemoveSavestateBreakPointToolStripMenuItem, this.removeAllUncommentedBreakpointsToolStripMenuItem, this.removeAllBreakpointsToolStripMenuItem, this.commentUncommentAllBreakpointsToolStripMenuItem, this.toolStripSeparator2, this.commentUncommentTextToolStripMenuItem, this.insertRoomNameToolStripMenuItem, this.insertCurrentInGameTimeToolStripMenuItem, this.insertModInfoStripMenuItem1, this.insertConsoleLoadCommandToolStripMenuItem, this.insertSimpleConsoleLoadCommandToolStripMenuItem, this.insertOtherCommandToolStripMenuItem, this.toolStripSeparator6, this.swapDashKeysStripMenuItem, this.swapJumpKeysToolStripMenuItem, this.combineConsecutiveSameInputsToolStripMenuItem, this.forceCombineInputsToolStripMenuItem, this.convertDashToDemoDashToolStripMenuItem, this.toolStripSeparator12, this.openReadFileToolStripMenuItem});
             this.tasTextContextMenuStrip.Name = "tasTextContextMenuStrip";
-            this.tasTextContextMenuStrip.Size = new System.Drawing.Size(426, 440);
+            this.tasTextContextMenuStrip.Size = new System.Drawing.Size(426, 418);
             // 
             // insertRemoveBreakPointToolStripMenuItem
             // 
@@ -955,13 +988,13 @@ namespace CelesteStudio {
             // 
             // richText
             // 
-            this.richText.ActiveLineColor = System.Drawing.Color.Lime;
+            this.richText.PlayingLineBgColor = System.Drawing.Color.Lime;
             this.richText.AllowDrop = true;
             this.richText.Anchor = ((System.Windows.Forms.AnchorStyles) ((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
             this.richText.AutoIndent = false;
             this.richText.AutoScrollMinSize = new System.Drawing.Size(33, 84);
             this.richText.BackBrush = null;
-            this.richText.ChangedLineColor = System.Drawing.Color.DarkOrange;
+            this.richText.ChangedLineBgColor = System.Drawing.Color.DarkOrange;
             this.richText.CommentPrefix = "#";
             this.richText.CurrentFileName = null;
             this.richText.CurrentLineColor = System.Drawing.Color.FromArgb(((int) (((byte) (64)))), ((int) (((byte) (64)))), ((int) (((byte) (64)))));
@@ -1054,6 +1087,11 @@ namespace CelesteStudio {
             this.ResumeLayout(false);
             this.PerformLayout();
         }
+
+        private System.Windows.Forms.ToolStripMenuItem themesToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem lightToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem darkToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem customToolStripMenuItem;
 
         private System.Windows.Forms.ToolStripMenuItem completeInfoToolStripMenuItem;
 

@@ -971,7 +971,7 @@ public class Range : IEnumerable<Place> {
         try {
             ClearStyle(tb.GetStyleIndexMask(styles));
         } catch {
-            ;
+            // ignore
         }
     }
 

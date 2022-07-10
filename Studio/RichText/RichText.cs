@@ -37,18 +37,22 @@ public class RichText : UserControl {
 
     private bool caretVisible;
 
-    private Color changedLineColor,
+    private Color changedLineBgColor,
+        changedLineTextColor,
         currentLineColor,
         currentTextColor,
-        activeLineColor,
+        playingLineBgColor,
+        playingLineTextColor,
         foldingIndicatorColor,
         indentBackColor,
         paddingBackColor,
         lineNumberColor,
+        saveStateBgColor,
+        saveStateTextColor,
         serviceLinesColor,
         selectionColor;
 
-    private int currentLine;
+    private int playingLine;
     private string currentLineSuffix;
     private string descriptionFile;
     private int saveStateLine = -1;
@@ -129,8 +133,12 @@ public class RichText : UserControl {
         FoldingIndicatorColor = Color.Green;
         CurrentLineColor = Color.Transparent;
         CurrentTextColor = Color.Green;
-        ChangedLineColor = Color.Transparent;
-        ActiveLineColor = Color.Transparent;
+        ChangedLineBgColor = Color.Transparent;
+        ChangedLineTextColor = Color.Teal;
+        PlayingLineBgColor = Color.Transparent;
+        PlayingLineTextColor = Color.Teal;
+        SaveStateTextColor = Color.White;
+        SaveStateBgColor = Color.SteelBlue;
         HighlightFoldingIndicator = true;
         ShowLineNumbers = true;
         TabLength = 4;
@@ -157,7 +165,7 @@ public class RichText : UserControl {
         AcceptsReturn = true;
         caretVisible = true;
         CaretColor = Color.Black;
-        CurrentLine = -1;
+        PlayingLine = -1;
         Paddings = new Padding(0, 0, 0, 0);
         PaddingBackColor = Color.Transparent;
         DisabledColor = Color.FromArgb(100, 180, 180, 180);
@@ -223,25 +231,33 @@ public class RichText : UserControl {
 
     [DefaultValue(typeof(Color), "Transparent")]
     [Description("Background color for active line. Set to Color.Transparent to hide current line highlighting")]
-    public Color ActiveLineColor {
-        get => activeLineColor;
+    public Color PlayingLineBgColor {
+        get => playingLineBgColor;
         set {
-            activeLineColor = value;
+            playingLineBgColor = value;
+            Invalidate();
+        }
+    }
+
+    public Color PlayingLineTextColor {
+        get => playingLineTextColor;
+        set {
+            playingLineTextColor = value;
             Invalidate();
         }
     }
 
     [DefaultValue(typeof(int), "-1"), Browsable(false)]
-    public int CurrentLine {
-        get => currentLine;
+    public int PlayingLine {
+        get => playingLine;
         set {
-            if (currentLine == value) {
+            if (playingLine == value) {
                 return;
             }
 
-            currentLine = value;
-            if (currentLine >= 0) {
-                Selection = new Range(this, 4, currentLine, 4, currentLine);
+            playingLine = value;
+            if (playingLine >= 0) {
+                Selection = new Range(this, 4, playingLine, 4, playingLine);
                 DoSelectionVisible();
             }
 
@@ -269,10 +285,34 @@ public class RichText : UserControl {
     [Description(
         "Background color for highlighting of changed lines. Set to Color.Transparent to hide changed line highlighting"
     )]
-    public Color ChangedLineColor {
-        get => changedLineColor;
+    public Color ChangedLineBgColor {
+        get => changedLineBgColor;
         set {
-            changedLineColor = value;
+            changedLineBgColor = value;
+            Invalidate();
+        }
+    }
+
+    public Color ChangedLineTextColor {
+        get => changedLineTextColor;
+        set {
+            changedLineTextColor = value;
+            Invalidate();
+        }
+    }
+
+    public Color SaveStateBgColor {
+        get => saveStateBgColor;
+        set {
+            saveStateBgColor = value;
+            Invalidate();
+        }
+    }
+
+    public Color SaveStateTextColor {
+        get => saveStateTextColor;
+        set {
+            saveStateTextColor = value;
             Invalidate();
         }
     }
@@ -1112,10 +1152,6 @@ public class RichText : UserControl {
         get => selectionColor;
         set {
             selectionColor = value;
-            if (selectionColor.A == 255) {
-                selectionColor = Color.FromArgb(50, selectionColor);
-            }
-
             SelectionStyle = new SelectionStyle(new SolidBrush(selectionColor));
             Invalidate();
         }
@@ -3221,12 +3257,12 @@ public class RichText : UserControl {
         e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
         var servicePen = new Pen(ServiceLinesColor);
-        Brush changedLineBrush = new SolidBrush(ChangedLineColor);
-        Brush activeLineBrush = new SolidBrush(ActiveLineColor);
-        Brush saveStateLineBrush = new SolidBrush(Color.SteelBlue);
+        Brush changedLineBrush = new SolidBrush(ChangedLineBgColor);
+        Brush activeLineBrush = new SolidBrush(PlayingLineBgColor);
+        Brush saveStateLineBrush = new SolidBrush(SaveStateBgColor);
         Brush indentBrush = new SolidBrush(IndentBackColor);
         Brush paddingBrush = new SolidBrush(PaddingBackColor);
-        Brush currentLineBrush = new SolidBrush(Color.FromArgb(CurrentLineColor.A == 255 ? 50 : CurrentLineColor.A, CurrentLineColor));
+        Brush currentLineBrush = new SolidBrush(CurrentLineColor);
         //draw padding area
         //top
         e.Graphics.FillRectangle(paddingBrush, 0, -VerticalScroll.Value, ClientSize.Width, Math.Max(0, Paddings.Top - 1));
@@ -3295,29 +3331,28 @@ public class RichText : UserControl {
             }
 
             //draw changed line marker
-            if (ChangedLineColor != Color.Transparent && line.IsChanged) {
+            if (ChangedLineBgColor != Color.Transparent && line.IsChanged) {
                 e.Graphics.FillRectangle(changedLineBrush, new RectangleF(-10, y, LeftIndent - minLeftIndent - 2 + 10, CharHeight + 1));
             }
 
-            if (CurrentLineColor != Color.Transparent && iLine == CurrentLine) {
+            if (PlayingLineBgColor != Color.Transparent && iLine == PlayingLine) {
                 e.Graphics.FillRectangle(activeLineBrush, new RectangleF(-10, y, LeftIndent - minLeftIndent - 2 + 10, CharHeight + 1));
             }
 
             //draw savestate line background
             if (iLine == SaveStateLine) {
-                if (SaveStateLine == CurrentLine) {
+                if (SaveStateLine == PlayingLine) {
                     e.Graphics.FillRectangle(saveStateLineBrush, new RectangleF(-10, y, 15, CharHeight + 1));
                 } else {
                     e.Graphics.FillRectangle(saveStateLineBrush, new RectangleF(-10, y, LeftIndent - minLeftIndent - 2 + 10, CharHeight + 1));
                 }
             }
 
-            if (!string.IsNullOrEmpty(currentLineSuffix) && iLine == CurrentLine) {
-                using (var lineNumberBrush = new SolidBrush(currentTextColor)) {
-                    SizeF size = e.Graphics.MeasureString(currentLineSuffix, Font, 0, StringFormat.GenericTypographic);
-                    e.Graphics.DrawString(currentLineSuffix, Font, lineNumberBrush,
-                        new RectangleF(ClientSize.Width - size.Width - 10, y, size.Width, CharHeight), StringFormat.GenericTypographic);
-                }
+            if (!string.IsNullOrEmpty(currentLineSuffix) && iLine == PlayingLine) {
+                using var lineNumberBrush = new SolidBrush(currentTextColor);
+                SizeF size = e.Graphics.MeasureString(currentLineSuffix, Font, 0, StringFormat.GenericTypographic);
+                e.Graphics.DrawString(currentLineSuffix, Font, lineNumberBrush,
+                    new RectangleF(ClientSize.Width - size.Width - 10, y, size.Width, CharHeight), StringFormat.GenericTypographic);
             }
 
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
@@ -3329,17 +3364,25 @@ public class RichText : UserControl {
 
             //draw line number
             if (ShowLineNumbers) {
-                using (var lineNumberBrush = new SolidBrush(LineNumberColor)) {
-                    if (PlatformUtils.Wine) {
-                        e.Graphics.DrawString((iLine + lineNumberStartValue).ToString().PadLeft(LinesCount.ToString().Length, ' '), Font,
-                            lineNumberBrush,
-                            new RectangleF(4, y, LeftIndent + 8, CharHeight),
-                            new StringFormat(StringFormatFlags.DirectionRightToLeft));
-                    } else {
-                        e.Graphics.DrawString((iLine + lineNumberStartValue).ToString(), Font, lineNumberBrush,
-                            new RectangleF(-10, y, LeftIndent - minLeftIndent - 2 + 10, CharHeight),
-                            new StringFormat(StringFormatFlags.DirectionRightToLeft));
-                    }
+                Color lineNumberColor = LineNumberColor;
+                if (iLine == PlayingLine) {
+                    lineNumberColor = PlayingLineTextColor;
+                } else if (iLine == SaveStateLine) {
+                    lineNumberColor = SaveStateTextColor;
+                } else if (line.IsChanged) {
+                    lineNumberColor = ChangedLineTextColor;
+                }
+
+                using var lineNumberBrush = new SolidBrush(lineNumberColor);
+                if (PlatformUtils.Wine) {
+                    e.Graphics.DrawString((iLine + lineNumberStartValue).ToString().PadLeft(LinesCount.ToString().Length, ' '), Font,
+                        lineNumberBrush,
+                        new RectangleF(4, y, LeftIndent + 8, CharHeight),
+                        new StringFormat(StringFormatFlags.DirectionRightToLeft));
+                } else {
+                    e.Graphics.DrawString((iLine + lineNumberStartValue).ToString(), Font, lineNumberBrush,
+                        new RectangleF(-10, y, LeftIndent - minLeftIndent - 2 + 10, CharHeight),
+                        new StringFormat(StringFormatFlags.DirectionRightToLeft));
                 }
             }
 
@@ -3434,7 +3477,7 @@ public class RichText : UserControl {
             //CreateCaret(Handle, 0, carWidth, CharHeight);
             NativeMethodsWrapper.SetCaretPos(car.X, car.Y);
             //ShowCaret(Handle);
-            using (Pen pen = new(Color.Black)) {
+            using (Pen pen = new(CaretColor)) {
                 e.Graphics.DrawLine(pen, car.X, car.Y, car.X, car.Y + CharHeight - 1);
             }
         } else {

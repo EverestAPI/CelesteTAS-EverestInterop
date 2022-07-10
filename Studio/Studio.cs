@@ -822,7 +822,7 @@ public partial class Studio : BaseForm {
         } else {
             if (CommunicationWrapper.StudioInfo != null) {
                 StudioInfo studioInfo = CommunicationWrapper.StudioInfo.Value;
-                richText.CurrentLine = studioInfo.CurrentLine;
+                richText.PlayingLine = studioInfo.CurrentLine;
                 richText.CurrentLineSuffix = studioInfo.CurrentLineSuffix;
                 richText.SaveStateLine = studioInfo.SaveStateLine;
                 currentFrame = studioInfo.CurrentFrameInTas;
@@ -832,7 +832,7 @@ public partial class Studio : BaseForm {
                 }
             } else {
                 currentFrame = 0;
-                richText.CurrentLine = -1;
+                richText.PlayingLine = -1;
                 richText.CurrentLineSuffix = string.Empty;
                 richText.SaveStateLine = -1;
                 tasStates = States.None;
@@ -1822,5 +1822,47 @@ public partial class Studio : BaseForm {
         }
 
         backupFileCountsToolStripMenuItem.Text = $"Backup File Count: {Settings.Instance.AutoBackupCount}";
+    }
+
+    public void SetControlsColor(Themes themes) {
+        Color foreColor = ColorUtils.HexToColor(themes.Status);
+        Color backColor = ColorUtils.HexToColor(themes.Status, 1);
+        Color dividerColor = ColorUtils.HexToColor(themes.ServiceLine, 0);
+
+        lblStatus.ForeColor = foreColor;
+        lblStatus.BackColor = backColor;
+
+        statusPanel.Controls[0].ForeColor = foreColor;
+        statusPanel.Controls[0].BackColor = backColor;
+
+        menuStrip.ForeColor = foreColor;
+        menuStrip.BackColor = backColor;
+        menuStrip.Renderer = new ThemesRenderer(themes);
+
+        dividerLabel.BackColor = dividerColor;
+    }
+
+    private void lightToolStripMenuItem_Click(object sender, EventArgs e) {
+        Settings.Instance.ThemesType = ThemesType.Light;
+        Themes.ResetThemes();
+        SaveSettings();
+    }
+
+    private void darkToolStripMenuItem_Click(object sender, EventArgs e) {
+        Settings.Instance.ThemesType = ThemesType.Dark;
+        Themes.ResetThemes();
+        SaveSettings();
+    }
+
+    private void customToolStripMenuItem_Click(object sender, EventArgs e) {
+        Settings.Instance.ThemesType = ThemesType.Custom;
+        Themes.ResetThemes();
+        SaveSettings();
+    }
+
+    private void themesToolStripMenuItem_DropDownOpened(object sender, EventArgs e) {
+        lightToolStripMenuItem.Checked = Settings.Instance.ThemesType == ThemesType.Light;
+        darkToolStripMenuItem.Checked = Settings.Instance.ThemesType == ThemesType.Dark;
+        customToolStripMenuItem.Checked = Settings.Instance.ThemesType == ThemesType.Custom;
     }
 }
