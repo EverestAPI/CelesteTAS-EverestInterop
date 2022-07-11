@@ -50,7 +50,7 @@ public static class ConsoleEnhancements {
                 Type type = clickedEntity.GetType();
                 clickedEntityInfo = "\n entity type: ";
                 if (type.Assembly == typeof(Celeste.Celeste).Assembly) {
-                    clickedEntityInfo += type.Name;
+                    clickedEntityInfo += type.FullName;
                 } else {
                     // StartExport uses a comma as a separator, so we can't use comma,
                     // use @ to place it and replace it back with a comma when looking for the type
