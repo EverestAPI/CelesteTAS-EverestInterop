@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Celeste.Mod;
 using MonoMod.Utils;
 using TAS.EverestInterop;
 using TAS.Input.Commands;
@@ -266,7 +267,7 @@ public class InputController {
             ReadLines(lines, filePath, startLine, studioLine, repeatIndex, repeatCount);
             return true;
         } catch (Exception e) {
-            e.Log();
+            e.Log(LogLevel.Warn);
             return false;
         }
     }

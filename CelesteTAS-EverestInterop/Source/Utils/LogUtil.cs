@@ -29,12 +29,12 @@ internal static class LogUtil {
         e.LogDetailed();
     }
 
-    public static void Log(this object text, LogLevel logLevel = LogLevel.Verbose) {
+    public static void Log(this object text, LogLevel logLevel = LogLevel.Info) {
         text.Log(false, logLevel);
     }
 
     // ReSharper disable once RedundantAssignment
-    public static void Log(this object text, bool outputToCommands, LogLevel logLevel = LogLevel.Verbose) {
+    public static void Log(this object text, bool outputToCommands, LogLevel logLevel = LogLevel.Info) {
         text = text == null ? "null" : text.ToString();
         Logger.Log(logLevel, Tag, text.ToString());
 #if DEBUG

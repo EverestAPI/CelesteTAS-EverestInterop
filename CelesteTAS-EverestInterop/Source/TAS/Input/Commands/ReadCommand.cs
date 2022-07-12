@@ -70,7 +70,7 @@ public static class ReadCommand {
 
         void ToastAndLog(string text) {
             Toast.Show(text);
-            text.Log();
+            text.Log(LogLevel.Warn);
         }
 
         void FindTheFile() {

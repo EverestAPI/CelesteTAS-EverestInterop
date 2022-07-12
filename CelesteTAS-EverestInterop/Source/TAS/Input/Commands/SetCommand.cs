@@ -48,13 +48,13 @@ public static class SetCommand {
                     && InfoCustom.TryParseType(typeText, out Type type, out string entityId, out errorMessage)) {
                     FindObjectAndSetMember(type, entityId, memberNames, parameters);
                 } else {
-                    errorMessage.Log(consolePrintLog);
+                    errorMessage.Log(consolePrintLog, LogLevel.Warn);
                 }
             } else {
                 SetGameSetting(args);
             }
         } catch (Exception e) {
-            e.Log(consolePrintLog);
+            e.Log(consolePrintLog, LogLevel.Warn);
         }
     }
 

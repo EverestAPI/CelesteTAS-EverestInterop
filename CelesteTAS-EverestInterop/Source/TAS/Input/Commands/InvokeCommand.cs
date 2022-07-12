@@ -43,14 +43,14 @@ public static class InvokeCommand {
                     object result = FindObjectAndInvoke(type, entityId, memberNames, parameters);
                     if (result != nonReturnObject) {
                         result ??= "null";
-                        result.Log(consolePrintLog);
+                        result.Log(consolePrintLog, LogLevel.Warn);
                     }
                 } else {
-                    errorMessage.Log(consolePrintLog);
+                    errorMessage.Log(consolePrintLog, LogLevel.Warn);
                 }
             }
         } catch (Exception e) {
-            e.Log(consolePrintLog);
+            e.Log(consolePrintLog, LogLevel.Warn);
         }
     }
 
