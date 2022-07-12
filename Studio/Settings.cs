@@ -91,11 +91,12 @@ public class Settings {
         if (File.Exists(path)) {
             try {
                 Instance = TommySerializer.FromTomlFile<Settings>(path);
-                Themes.Load(path);
             } catch {
                 // ignore
             }
         }
+
+        Themes.Load(path);
     }
 
     public static void Save() {

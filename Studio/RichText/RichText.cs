@@ -131,7 +131,7 @@ public class RichText : UserControl {
         IndentBackColor = Color.White;
         ServiceLinesColor = Color.Silver;
         FoldingIndicatorColor = Color.Green;
-        CurrentLineColor = Color.Transparent;
+        CurrentLineColor = Color.FromArgb(50, 0, 0, 0);
         CurrentTextColor = Color.Green;
         ChangedLineBgColor = Color.Transparent;
         ChangedLineTextColor = Color.Teal;

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
@@ -40,9 +41,16 @@ public abstract class Themes {
     public abstract List<string> Status { get; set; }
 
     public static void Load(string path) {
-        Light = TommySerializer.FromTomlFile<LightThemes>(path);
-        Dark = TommySerializer.FromTomlFile<DarkThemes>(path);
-        Custom = TommySerializer.FromTomlFile<CustomThemes>(path);
+        if (File.Exists(path)) {
+            try {
+                Light = TommySerializer.FromTomlFile<LightThemes>(path);
+                Dark = TommySerializer.FromTomlFile<DarkThemes>(path);
+                Custom = TommySerializer.FromTomlFile<CustomThemes>(path);
+            } catch {
+                // ignore
+            }
+        }
+
         ResetThemes();
     }
 
@@ -92,7 +100,6 @@ public class LightThemes : Themes {
     public override List<string> Action { get; set; } = new() {"2222FF"};
     public override List<string> Angle { get; set; } = new() {"EE22EE"};
     public override List<string> Breakpoint { get; set; } = new() {"FFFFFF", "FF5555"};
-    public override List<string> SaveState { get; set; } = new() {"FFFFFF", "4682B4"};
     public override List<string> Background { get; set; } = new() {"FFFFFF"};
     public override List<string> Caret { get; set; } = new() {"000000"};
     public override List<string> ChangedLine { get; set; } = new() {"000000", "FF8C00"};
@@ -104,6 +111,7 @@ public class LightThemes : Themes {
     public override List<string> LineNumber { get; set; } = new() {"000000"};
     public override List<string> PlayingFrame { get; set; } = new() {"22A022"};
     public override List<string> PlayingLine { get; set; } = new() {"000000", "55FF55"};
+    public override List<string> SaveState { get; set; } = new() {"FFFFFF", "4682B4"};
     public override List<string> Selection { get; set; } = new() {"20000000"};
     public override List<string> ServiceLine { get; set; } = new() {"C0C0C0"};
     public override List<string> Status { get; set; } = new() {"000000", "F2F2F2"};
@@ -114,7 +122,6 @@ public class DarkThemes : Themes {
     public override List<string> Action { get; set; } = new() {"8BE9FD"};
     public override List<string> Angle { get; set; } = new() {"FF79C6"};
     public override List<string> Breakpoint { get; set; } = new() {"F8F8F2", "FF5555"};
-    public override List<string> SaveState { get; set; } = new() {"F8F8F2", "4682B4"};
     public override List<string> Background { get; set; } = new() {"282A36"};
     public override List<string> Caret { get; set; } = new() {"AEAFAD"};
     public override List<string> ChangedLine { get; set; } = new() {"6272A4", "FFB86C"};
@@ -126,6 +133,7 @@ public class DarkThemes : Themes {
     public override List<string> LineNumber { get; set; } = new() {"6272A4"};
     public override List<string> PlayingFrame { get; set; } = new() {"F1FA8C"};
     public override List<string> PlayingLine { get; set; } = new() {"6272A4", "F1FA8C"};
+    public override List<string> SaveState { get; set; } = new() {"F8F8F2", "4682B4"};
     public override List<string> Selection { get; set; } = new() {"20B4B6C7"};
     public override List<string> ServiceLine { get; set; } = new() {"44475A"};
     public override List<string> Status { get; set; } = new() {"F8F8F2", "383A46"};
