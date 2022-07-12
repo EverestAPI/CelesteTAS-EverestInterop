@@ -23,8 +23,8 @@ public abstract class Themes {
 
     public abstract List<string> Action { get; set; }
     public abstract List<string> Angle { get; set; }
-    public abstract List<string> Breakpoint { get; set; }
     public abstract List<string> Background { get; set; }
+    public abstract List<string> Breakpoint { get; set; }
     public abstract List<string> Caret { get; set; }
     public abstract List<string> ChangedLine { get; set; }
     public abstract List<string> Comma { get; set; }
@@ -99,8 +99,8 @@ public abstract class Themes {
 public class LightThemes : Themes {
     public override List<string> Action { get; set; } = new() {"2222FF"};
     public override List<string> Angle { get; set; } = new() {"EE22EE"};
-    public override List<string> Breakpoint { get; set; } = new() {"FFFFFF", "FF5555"};
     public override List<string> Background { get; set; } = new() {"FFFFFF"};
+    public override List<string> Breakpoint { get; set; } = new() {"FFFFFF", "FF5555"};
     public override List<string> Caret { get; set; } = new() {"000000"};
     public override List<string> ChangedLine { get; set; } = new() {"000000", "FF8C00"};
     public override List<string> Comma { get; set; } = new() {"808080"};
@@ -121,8 +121,8 @@ public class LightThemes : Themes {
 public class DarkThemes : Themes {
     public override List<string> Action { get; set; } = new() {"8BE9FD"};
     public override List<string> Angle { get; set; } = new() {"FF79C6"};
-    public override List<string> Breakpoint { get; set; } = new() {"F8F8F2", "FF5555"};
     public override List<string> Background { get; set; } = new() {"282A36"};
+    public override List<string> Breakpoint { get; set; } = new() {"F8F8F2", "FF5555"};
     public override List<string> Caret { get; set; } = new() {"AEAFAD"};
     public override List<string> ChangedLine { get; set; } = new() {"6272A4", "FFB86C"};
     public override List<string> Comma { get; set; } = new() {"6272A4"};
@@ -143,9 +143,8 @@ public class DarkThemes : Themes {
 public class CustomThemes : Themes {
     public override List<string> Action { get; set; } = new() {"268BD2"};
     public override List<string> Angle { get; set; } = new() {"D33682"};
-    public override List<string> Breakpoint { get; set; } = new() {"FDF6E3", "DC322F"};
-    public override List<string> SaveState { get; set; } = new() {"FDF6E3", "268BD2"};
     public override List<string> Background { get; set; } = new() {"FDF6E3"};
+    public override List<string> Breakpoint { get; set; } = new() {"FDF6E3", "DC322F"};
     public override List<string> Caret { get; set; } = new() {"6B7A82"};
     public override List<string> ChangedLine { get; set; } = new() {"F8F8F2", "CB4B16"};
     public override List<string> Comma { get; set; } = new() {"808080"};
@@ -156,6 +155,7 @@ public class CustomThemes : Themes {
     public override List<string> LineNumber { get; set; } = new() {"93A1A1"};
     public override List<string> PlayingFrame { get; set; } = new() {"6C71C4"};
     public override List<string> PlayingLine { get; set; } = new() {"FDF6E3", "6C71C4"};
+    public override List<string> SaveState { get; set; } = new() {"FDF6E3", "268BD2"};
     public override List<string> Selection { get; set; } = new() {"201A1300"};
     public override List<string> ServiceLine { get; set; } = new() {"44475A"};
     public override List<string> Status { get; set; } = new() {"073642", "EEE8D5"};
@@ -211,7 +211,8 @@ public class ThemesRenderer : ToolStripProfessionalRenderer {
 
 public static class ColorUtils {
     private static readonly Regex HexChar = new(@"^[0-9a-f]*$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-    private static readonly TextStyle ErrorTextStyle = new(Brushes.White, new SolidBrush(Color.FromArgb(80, 0, 0, 0)), FontStyle.Regular);
+    private static readonly Color ErrorColor = Color.FromArgb(128, 255, 0, 0);
+    private static readonly TextStyle ErrorTextStyle = new(Brushes.White, new SolidBrush(ErrorColor), FontStyle.Regular);
 
     public static TextStyle CreateTextStyle(List<string> colors) {
         if (colors == null || colors.Count == 0) {
@@ -233,14 +234,14 @@ public static class ColorUtils {
 
     public static Color HexToColor(List<string> colors, int index = 0) {
         if (colors == null || colors.Count <= index) {
-            return Color.Black;
+            return ErrorColor;
         }
 
-        return TryHexToColor(colors[index], out Color color) ? color : Color.Black;
+        return TryHexToColor(colors[index], out Color color) ? color : ErrorColor;
     }
 
     public static bool TryHexToColor(string hex, out Color color) {
-        color = Color.White;
+        color = ErrorColor;
         if (string.IsNullOrWhiteSpace(hex)) {
             return false;
         }

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using Tommy.Serializer;
 
 namespace CelesteStudio;
@@ -10,6 +11,7 @@ namespace CelesteStudio;
 public class Settings {
     private const string path = "Celeste Studio.toml";
     public static Settings Instance { get; private set; } = new();
+    private static bool saving;
 
     [TommyInclude] private int locationX = 100;
     [TommyInclude] private int locationY = 100;
@@ -87,6 +89,24 @@ public class Settings {
         set => themes = value.ToString();
     }
 
+    public static void StartWatcher() {
+        FileSystemWatcher watcher = new();
+        watcher.Path = Directory.GetCurrentDirectory();
+        watcher.Filter = Path.GetFileName(path);
+        watcher.Changed += (_, _) => {
+            if (!saving) {
+                Thread.Sleep(100);
+                Load();
+            }
+        };
+
+        try {
+            watcher.EnableRaisingEvents = true;
+        } catch {
+            watcher.Dispose();
+        }
+    }
+
     public static void Load() {
         if (File.Exists(path)) {
             try {
@@ -97,13 +117,20 @@ public class Settings {
         }
 
         Themes.Load(path);
+
+        if (!File.Exists(path)) {
+            Save();
+        }
     }
 
     public static void Save() {
+        saving = true;
         try {
             TommySerializer.ToTomlFile(new object[] {Instance, Themes.Light, Themes.Dark, Themes.Custom}, path);
         } catch {
             // ignore
         }
+
+        saving = false;
     }
 }

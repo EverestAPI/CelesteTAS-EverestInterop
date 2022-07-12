@@ -69,6 +69,7 @@ public partial class Studio : BaseForm {
 
     private void InitSettings() {
         Settings.Load();
+        Settings.StartWatcher();
         VisibleChanged += (sender, args) => {
             if (!Visible) {
                 SaveSettings();
