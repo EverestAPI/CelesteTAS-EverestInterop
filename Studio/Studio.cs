@@ -1643,6 +1643,9 @@ public partial class Studio : BaseForm {
         if (StudioCommunicationBase.Initialized && Process.GetProcessesByName("Celeste").Length > 0) {
             if (GetDataFromGame(GameDataType.ConsoleCommand, true) is { } simpleConsoleCommand) {
                 initText += $"{Environment.NewLine}{simpleConsoleCommand}{Environment.NewLine}   1{Environment.NewLine}";
+                if (GetDataFromGame(GameDataType.ModUrl) is { } modUrl) {
+                    initText = modUrl + initText;
+                }
             }
         }
 

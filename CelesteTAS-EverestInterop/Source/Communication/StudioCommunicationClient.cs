@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using Celeste;
 using Celeste.Mod;
+using Celeste.Mod.Helpers;
 using Monocle;
 using StudioCommunication;
 using TAS.EverestInterop;
@@ -17,6 +18,7 @@ using TAS.Utils;
 namespace TAS.Communication;
 
 public sealed class StudioCommunicationClient : StudioCommunicationBase {
+    private static Dictionary<string, ModUpdateInfo> modUpdateInfos;
     public static StudioCommunicationClient Instance { get; private set; }
 
     private byte[] lastBindingsData = new byte[0];
@@ -27,11 +29,15 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
     [Load]
     private static void Load() {
         Everest.Events.Celeste.OnExiting += Destroy;
+        On.Celeste.Mod.Helpers.ModUpdaterHelper.DownloadModUpdateList += ModUpdaterHelperOnDownloadModUpdateList;
+        modUpdateInfos = Engine.Instance.GetDynamicDataInstance().Get<Dictionary<string, ModUpdateInfo>>(nameof(modUpdateInfos));
     }
 
     [Unload]
     private static void Unload() {
         Everest.Events.Celeste.OnExiting -= Destroy;
+        On.Celeste.Mod.Helpers.ModUpdaterHelper.DownloadModUpdateList -= ModUpdaterHelperOnDownloadModUpdateList;
+        Engine.Instance.GetDynamicDataInstance().Set(nameof(modUpdateInfos), modUpdateInfos);
         Destroy();
     }
 
@@ -55,6 +61,11 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         Instance?.WriteReset();
         Instance?.threads?.ForEach(thread => thread.Abort());
         Instance = null;
+    }
+
+    private static Dictionary<string, ModUpdateInfo> ModUpdaterHelperOnDownloadModUpdateList(
+        On.Celeste.Mod.Helpers.ModUpdaterHelper.orig_DownloadModUpdateList orig) {
+        return modUpdateInfos = orig();
     }
 
     private static void RunThread(string threadName) {
@@ -125,6 +136,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
             GameDataType.ExactGameInfo => GameInfo.ExactStudioInfo,
             GameDataType.SettingValue => GetSettingValue((string) objects[1]),
             GameDataType.CompleteInfoCommand => AreaCompleteInfo.CreateCommand(),
+            GameDataType.ModUrl => GetModUrl(),
             _ => string.Empty
         };
 
@@ -198,6 +210,9 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         modInfo += "\n# Map:\n";
         if (mapMeta != null) {
             modInfo += MetaToString(mapMeta, 2);
+            if (modUpdateInfos?.TryGetValue(mapMeta.Name, out var modUpdateInfo) == true && modUpdateInfo.GameBananaId > 0) {
+                modInfo += $"#   https://gamebanana.com/mods/{modUpdateInfo.GameBananaId}\n";
+            }
         }
 
         string mode = level.Session.Area.Mode == AreaMode.Normal ? "ASide" : level.Session.Area.Mode.ToString();
@@ -232,6 +247,30 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         } else {
             return string.Empty;
         }
+    }
+
+    private string GetModUrl() {
+        if (Engine.Scene is not Level level) {
+            return string.Empty;
+        }
+
+        AreaData areaData = AreaData.Get(level);
+        string moduleName = string.Empty;
+        EverestModule mapModule = null;
+        if (Everest.Content.TryGet<AssetTypeMap>("Maps/" + areaData.SID, out ModAsset mapModAsset) && mapModAsset.Source != null) {
+            moduleName = mapModAsset.Source.Name;
+            mapModule = Everest.Modules.FirstOrDefault(module => module.Metadata?.Name == moduleName);
+        }
+
+        if (mapModule == null) {
+            return string.Empty;
+        }
+
+        if (modUpdateInfos?.TryGetValue(moduleName, out var modUpdateInfo) == true && modUpdateInfo.GameBananaId > 0) {
+            return $"# {moduleName}\n# https://gamebanana.com/mods/{modUpdateInfo.GameBananaId}\n\n";
+        }
+
+        return string.Empty;
     }
 
     private void ProcessSendPath(byte[] data) {
