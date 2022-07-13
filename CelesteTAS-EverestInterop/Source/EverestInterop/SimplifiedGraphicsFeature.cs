@@ -12,6 +12,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
+using MonoMod.Utils;
 using TAS.Module;
 using TAS.Utils;
 
@@ -150,6 +151,11 @@ public static class SimplifiedGraphicsFeature {
             customSpinnerCreateSprites.IlHook(ModVivCustomSpinnerColor);
         }
 
+        if (ModUtils.GetType("PandorasBox", "Celeste.Mod.PandorasBox.TileGlitcher")?.GetMethodInfo("tileGlitcher") is
+            { } tileGlitcher) {
+            tileGlitcher.GetStateMachineTarget().IlHook(ModTileGlitcher);
+        }
+
         On.Celeste.CrystalStaticSpinner.CreateSprites += CrystalStaticSpinner_CreateSprites;
         IL.Celeste.CrystalStaticSpinner.GetHue += CrystalStaticSpinnerOnGetHue;
 
@@ -279,6 +285,8 @@ public static class SimplifiedGraphicsFeature {
             return;
         }
 
+        Calc.PushRandom();
+
         SolidTiles newSolidTiles = new(new Vector2(level.TileBounds.X, level.TileBounds.Y) * 8f, level.SolidsData);
 
         if (solidTiles.Tiles is { } tiles) {
@@ -294,6 +302,8 @@ public static class SimplifiedGraphicsFeature {
 
         solidTiles.Add(solidTiles.Tiles = newSolidTiles.Tiles);
         solidTiles.Add(solidTiles.AnimatedTiles = newSolidTiles.AnimatedTiles);
+
+        Calc.PopRandom();
     }
 
     private static void Level_Update(On.Celeste.Level.orig_Update orig, Level self) {
@@ -420,6 +430,33 @@ public static class SimplifiedGraphicsFeature {
         } else {
             return tile;
         }
+    }
+
+    private static void ModTileGlitcher(ILCursor ilCursor, ILContext ilContext) {
+        if (ilCursor.TryGotoNext(ins => ins.OpCode == OpCodes.Callvirt && ins.Operand.ToString().Contains("Monocle.MTexture>::set_Item"))) {
+            if (ilCursor.TryFindPrev(out var cursors, ins => ins.OpCode == OpCodes.Ldarg_0,
+                    ins => ins.OpCode == OpCodes.Ldfld && ins.Operand.ToString().Contains("<fgTexes>"),
+                    ins => ins.OpCode == OpCodes.Ldarg_0, ins => ins.OpCode == OpCodes.Ldfld,
+                    ins => ins.OpCode == OpCodes.Ldarg_0, ins => ins.OpCode == OpCodes.Ldfld
+                )) {
+                for (int i = 0; i < 6; i++) {
+                    ilCursor.Emit(cursors[0].Next.OpCode, cursors[0].Next.Operand);
+                    cursors[0].Index++;
+                }
+
+                ilCursor.EmitDelegate<Func<MTexture, VirtualMap<MTexture>, int, int, MTexture>>(IgnoreNewTileTexture);
+            }
+        }
+    }
+
+    private static MTexture IgnoreNewTileTexture(MTexture newTexture, VirtualMap<MTexture> fgTiles, int x, int y) {
+        if (TasSettings.SimplifiedGraphics && TasSettings.SimplifiedSolidTilesStyle != default) {
+            if (fgTiles[x, y] is { } texture && newTexture != null) {
+                return texture;
+            }
+        }
+
+        return newTexture;
     }
 
     private static void BackgroundTilesOnRender(On.Monocle.Entity.orig_Render orig, Entity self) {
