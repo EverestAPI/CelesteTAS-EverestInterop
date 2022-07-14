@@ -41,6 +41,7 @@
 - `load` (for A-Sides) is used in these examples, but this also applies to `hard` (B-Sides) and `rmx2` (C-Sides).
 - `load` can be used to in place of a reset to start a chapter. However, `load` can be used to start playback from any location in the game without risk of desyncing.
 - `load` command requires an additional frame compared to the normal start/restart chapter.
+- `loadN` N is for loading the Nth save file. e.g. `load1`, `load2`, `load3`...
 - Takes the following formats:
   - `console load (ID or SID)`
   - `console load (ID or SID) screen`
