@@ -124,10 +124,10 @@ public static class ConsoleCommand {
         string[] args = arguments.Skip(1).ToArray();
         if (LoadCommandRegex.IsMatch(commandName)) {
             if (int.TryParse(LoadCommandRegex.Match(commandName).Groups[2].Value, out int slot)) {
-                // slot 1 => 0.celeste
+                // load1 => 0.celeste
                 slot--;
             } else {
-                // slot -1 == debug.celeste
+                // debug.celeste
                 slot = -1;
             }
 
@@ -147,7 +147,11 @@ public static class ConsoleCommand {
             if (slot >= 0) {
                 if (SaveData.Instance?.FileSlot != slot) {
                     if (UserIO.Load<SaveData>(SaveData.GetFilename(slot)) is { } data) {
-                        SaveData.Start(data, slot);
+                        if (CheckValid(data, args)) {
+                            SaveData.Start(data, slot);
+                        } else {
+                            return;
+                        }
                     } else {
                         Toast.Show($"Save file {slot + 1} does not exist");
                         Manager.DisableRunLater();
@@ -156,6 +160,10 @@ public static class ConsoleCommand {
                 }
             } else if (SaveData.Instance == null || SafeCommand.DisallowUnsafeInput && SaveData.Instance.FileSlot != -1) {
                 SaveData data = SaveData.Instance ?? UserIO.Load<SaveData>(SaveData.GetFilename(-1)) ?? new SaveData();
+                if (!CheckValid(data, args)) {
+                    return;
+                }
+
                 if (SaveData.Instance?.FileSlot is { } currentSlot && currentSlot != -1) {
                     data.AfterInitialize();
                     SaveData.TryDelete(-1);
@@ -174,7 +182,11 @@ public static class ConsoleCommand {
                     SaveData.Instance.FileSlot = -1;
                     UserIO.SaveHandler(true, true);
                 } else {
-                    SaveData.Start(data, -1);
+                    if (CheckValid(data, args)) {
+                        SaveData.Start(data, -1);
+                    } else {
+                        return;
+                    }
                 }
             }
 
@@ -184,23 +196,31 @@ public static class ConsoleCommand {
                 _ => AreaMode.Normal
             };
 
-            if (!TryGetAreaId(args[0], out int areaId)) {
-                Toast.Show($"Map {args[0]} does not exist");
+            if (SaveData.Instance is not { } saveData) {
+                Toast.Show($"Save data is null");
                 Manager.DisableRunLater();
                 return;
             }
 
-            if (SaveData.Instance is { } saveData) {
-                // Complete Prologue if incomplete and make sure the return to map menu item will be shown
-                LevelSetStats stats = saveData.GetLevelSetStatsFor("Celeste");
-                if (areaId > 0 && !saveData.Areas[0].Modes[0].Completed) {
-                    saveData.Areas[0].Modes[0].Completed = true;
-                    stats.UnlockedAreas++;
-                }
+            int areaId;
 
-                if (saveData.FileSlot == -1) {
-                    saveData.Name = "TAS";
-                }
+            // we have checked the args is valid
+            if (args.Length == 0) {
+                EnterLevel(new LevelLoader(saveData.CurrentSession_Safe));
+                return;
+            } else {
+                TryGetAreaId(args[0], out areaId);
+            }
+
+            // complete prologue if incomplete and make sure the return to map menu item will be shown
+            LevelSetStats stats = saveData.GetLevelSetStatsFor("Celeste");
+            if (areaId > 0 && !saveData.Areas[0].Modes[0].Completed) {
+                saveData.Areas[0].Modes[0].Completed = true;
+                stats.UnlockedAreas++;
+            }
+
+            if (saveData.FileSlot == -1) {
+                saveData.Name = "TAS";
             }
 
             if (args.Length > 1) {
@@ -236,6 +256,30 @@ public static class ConsoleCommand {
             }
         } catch (Exception e) {
             e.LogException($"Console {command} command failed.");
+        }
+    }
+
+    private static bool CheckValid(SaveData saveData, string[] args) {
+        if (args.Length == 0) {
+            if (saveData.CurrentSession_Safe is {InArea: true} session) {
+                if (AreaData.Get(session) != null) {
+                    return true;
+                } else {
+                    Toast.Show($"Map {session.Area.SID} does not exist");
+                    Manager.DisableRunLater();
+                }
+            } else {
+                Toast.Show($"Save file is not in chapter");
+                Manager.DisableRunLater();
+            }
+
+            return false;
+        } else if (!TryGetAreaId(args[0], out int _)) {
+            Toast.Show($"Map {args[0]} does not exist");
+            Manager.DisableRunLater();
+            return false;
+        } else {
+            return true;
         }
     }
 

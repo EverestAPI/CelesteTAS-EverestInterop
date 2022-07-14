@@ -52,6 +52,7 @@
   - `screen` is the name of the screen you want you load (Note that if the screen name is a number you have to prepend "lvl_", so lvl_00 instead of 00).
   - `spawnpoint` is the # of the spawnpoint in the room you want to load, as most rooms have multiple spawnpoints (starts at 0).
   - Alternatively, `positionX` and `positionY` are the position you want to load at, `speedX` and `speedY` are the speed after respawning.
+  - `console load` w/o any parameters is used to load a s&q save file
 - So the following all do the same thing:
   - `console load 2 3x`
   - `console load 2 lvl_3x`
