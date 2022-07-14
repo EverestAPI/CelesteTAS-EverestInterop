@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
@@ -16,6 +17,7 @@ using TAS.Utils;
 namespace TAS.Input.Commands;
 
 public static class ConsoleCommand {
+    private static readonly Regex LoadCommandRegex = new(@"^(load|hard|rmx2)(\d*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private static readonly FieldInfo MovementCounter = typeof(Actor).GetFieldInfo("movementCounter");
     private static Vector2 resetRemainder;
     private static Vector2 initSpeed;
@@ -120,8 +122,16 @@ public static class ConsoleCommand {
     private static void Console(string[] arguments, string commandText) {
         string commandName = arguments[0].ToLower(CultureInfo.InvariantCulture);
         string[] args = arguments.Skip(1).ToArray();
-        if (commandName is "load" or "hard" or "rmx2") {
-            LoadCommand(commandName, args);
+        if (LoadCommandRegex.IsMatch(commandName)) {
+            if (int.TryParse(LoadCommandRegex.Match(commandName).Groups[2].Value, out int slot)) {
+                // slot 1 => 0.celeste
+                slot--;
+            } else {
+                // slot -1 == debug.celeste
+                slot = -1;
+            }
+
+            LoadCommand(commandName, args, slot);
         } else {
             List<string> commandHistory = Engine.Commands.GetFieldValue<List<string>>("commandHistory");
             commandHistory?.Insert(0, commandText.Substring(8));
@@ -132,11 +142,22 @@ public static class ConsoleCommand {
         }
     }
 
-    private static void LoadCommand(string command, string[] args) {
+    private static void LoadCommand(string command, string[] args, int slot) {
         try {
-            if (SaveData.Instance == null || SafeCommand.DisallowUnsafeInput && SaveData.Instance.FileSlot != -1) {
+            if (slot >= 0) {
+                if (SaveData.Instance?.FileSlot != slot) {
+                    if (UserIO.Load<SaveData>(SaveData.GetFilename(slot)) is { } data) {
+                        SaveData.Start(data, slot);
+                    } else {
+                        Toast.Show($"Save file {slot + 1} does not exist");
+                        Manager.DisableRunLater();
+                        return;
+                    }
+                }
+            } else if (SaveData.Instance == null || SafeCommand.DisallowUnsafeInput && SaveData.Instance.FileSlot != -1) {
                 SaveData data = SaveData.Instance ?? UserIO.Load<SaveData>(SaveData.GetFilename(-1)) ?? new SaveData();
-                if (SaveData.Instance?.FileSlot is { } slot && slot != -1) {
+                if (SaveData.Instance?.FileSlot is { } currentSlot && currentSlot != -1) {
+                    data.AfterInitialize();
                     SaveData.TryDelete(-1);
                     SaveData.LoadedModSaveDataIndex = -1;
                     foreach (EverestModule module in Everest.Modules) {
@@ -155,13 +176,6 @@ public static class ConsoleCommand {
                 } else {
                     SaveData.Start(data, -1);
                 }
-
-                // Complete Prologue if incomplete and make sure the return to map menu item will be shown
-                LevelSetStats stats = data.GetLevelSetStatsFor("Celeste");
-                if (!data.Areas[0].Modes[0].Completed) {
-                    data.Areas[0].Modes[0].Completed = true;
-                    stats.UnlockedAreas++;
-                }
             }
 
             AreaMode mode = command switch {
@@ -177,7 +191,16 @@ public static class ConsoleCommand {
             }
 
             if (SaveData.Instance is { } saveData) {
-                saveData.Name = "TAS";
+                // Complete Prologue if incomplete and make sure the return to map menu item will be shown
+                LevelSetStats stats = saveData.GetLevelSetStatsFor("Celeste");
+                if (areaId > 0 && !saveData.Areas[0].Modes[0].Completed) {
+                    saveData.Areas[0].Modes[0].Completed = true;
+                    stats.UnlockedAreas++;
+                }
+
+                if (saveData.FileSlot == -1) {
+                    saveData.Name = "TAS";
+                }
             }
 
             if (args.Length > 1) {
