@@ -16,6 +16,9 @@
             <Private>False</Private>
         </Reference>
     </ItemDefinitionGroup>
+    <PropertyGroup>
+        <PathMap>$(MSBuildProjectDirectory)=CelesteTAS/</PathMap>
+    </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
         <DebugType>portable</DebugType>
         <DefineConstants>TRACE</DefineConstants>
