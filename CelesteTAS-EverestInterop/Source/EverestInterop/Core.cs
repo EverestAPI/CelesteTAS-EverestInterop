@@ -6,6 +6,7 @@ using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.RuntimeDetour;
+using MonoMod.Utils;
 using TAS.Module;
 using TAS.Utils;
 using GameInput = Celeste.Input;
@@ -27,6 +28,9 @@ public static class Core {
 
     private static readonly GetDelegate<FinalBoss, int> GetFacing = FastReflection.CreateGetDelegate<FinalBoss, int>("facing");
     private static readonly GetDelegate<FinalBoss, Wiggler> GetScaleWiggler = FastReflection.CreateGetDelegate<FinalBoss, Wiggler>("scaleWiggler");
+
+    private static readonly Action<DreamMirror> dreamMirrorBeforeRender =
+        typeof(DreamMirror).GetMethodInfo("BeforeRender").CreateDelegate<Action<DreamMirror>>();
 
     [Load]
     private static void Load() {
@@ -175,15 +179,20 @@ public static class Core {
     private static void SceneOnAfterUpdate(On.Monocle.Scene.orig_AfterUpdate orig, Scene self) {
         orig(self);
 
-        // Badeline does some dirty stuff in Render.
-        // finalBoss.ShotOrigin => base.Center + Sprite.Position + new Vector2(6f * Sprite.Scale.X, 2f);
         if (TasSettings.Enabled && self is Level) {
+            // Badeline does some dirty stuff in Render.
+            // finalBoss.ShotOrigin => base.Center + Sprite.Position + new Vector2(6f * Sprite.Scale.X, 2f);
             foreach (FinalBoss finalBoss in self.Tracker.GetCastEntities<FinalBoss>()) {
                 if (finalBoss.Sprite is { } sprite) {
                     sprite.Scale.X = GetFacing(finalBoss);
                     sprite.Scale.Y = 1f;
                     sprite.Scale *= 1f + GetScaleWiggler(finalBoss).Value * 0.2f;
                 }
+            }
+
+            // DreamMirror does some dirty stuff in BeforeRender.
+            foreach (DreamMirror dreamMirror in self.Tracker.GetCastEntities<DreamMirror>()) {
+                dreamMirrorBeforeRender(dreamMirror);
             }
         }
     }
