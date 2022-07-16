@@ -179,7 +179,7 @@ public static class Core {
     private static void SceneOnAfterUpdate(On.Monocle.Scene.orig_AfterUpdate orig, Scene self) {
         orig(self);
 
-        if (TasSettings.Enabled && self is Level) {
+        if (Manager.Running && self is Level) {
             // Badeline does some dirty stuff in Render.
             // finalBoss.ShotOrigin => base.Center + Sprite.Position + new Vector2(6f * Sprite.Scale.X, 2f);
             foreach (FinalBoss finalBoss in self.Tracker.GetCastEntities<FinalBoss>()) {
