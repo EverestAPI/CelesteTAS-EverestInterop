@@ -75,7 +75,6 @@ public static class FastForwardBoost {
         AddTypeToTracker(typeof(TextMenu));
         AddTypeToTracker(typeof(PlayerSeeker));
         AddTypeToTracker(typeof(LockBlock));
-        AddTypeToTracker(typeof(DreamMirror));
         AddTypeToTracker(typeof(KeyboardConfigUI), typeof(ModuleSettingsKeyboardConfigUI));
         AddTypeToTracker(typeof(ButtonConfigUI), typeof(ModuleSettingsButtonConfigUI));
     }

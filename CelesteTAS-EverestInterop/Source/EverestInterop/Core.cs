@@ -23,6 +23,8 @@ public static class Core {
     private static DGameUpdate OrigGameUpdate;
 
     private static Action PreviousGameLoop;
+
+    // https://github.com/EverestAPI/Everest/commit/b2a6f8e7c41ddafac4e6fde0e43a09ce1ac4f17e
     private static readonly Lazy<bool> CantPauseWhileSaving = new(() => Everest.Version < new Version(1, 2865));
     private static readonly bool updateGrab = typeof(GameInput).GetMethod("UpdateGrab") != null;
 
@@ -60,8 +62,6 @@ public static class Core {
 
         // Forced: Allow "rendering" entities without actually rendering them.
         On.Monocle.Entity.Render += Entity_Render;
-
-        On.Monocle.Scene.AfterUpdate += SceneOnAfterUpdate;
     }
 
     [Unload]
@@ -72,7 +72,6 @@ public static class Core {
         On.Celeste.RunThread.Start -= RunThread_Start;
         HGameUpdate.Dispose();
         On.Monocle.Entity.Render -= Entity_Render;
-        On.Monocle.Scene.AfterUpdate -= SceneOnAfterUpdate;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -174,27 +173,6 @@ public static class Core {
         }
 
         orig(self);
-    }
-
-    private static void SceneOnAfterUpdate(On.Monocle.Scene.orig_AfterUpdate orig, Scene self) {
-        orig(self);
-
-        if (Manager.Running && self is Level) {
-            // Badeline does some dirty stuff in Render.
-            // finalBoss.ShotOrigin => base.Center + Sprite.Position + new Vector2(6f * Sprite.Scale.X, 2f);
-            foreach (FinalBoss finalBoss in self.Tracker.GetCastEntities<FinalBoss>()) {
-                if (finalBoss.Sprite is { } sprite) {
-                    sprite.Scale.X = GetFacing(finalBoss);
-                    sprite.Scale.Y = 1f;
-                    sprite.Scale *= 1f + GetScaleWiggler(finalBoss).Value * 0.2f;
-                }
-            }
-
-            // DreamMirror does some dirty stuff in BeforeRender.
-            foreach (DreamMirror dreamMirror in self.Tracker.GetCastEntities<DreamMirror>()) {
-                dreamMirrorBeforeRender(dreamMirror);
-            }
-        }
     }
 
     private static void UpdateGrab() {
