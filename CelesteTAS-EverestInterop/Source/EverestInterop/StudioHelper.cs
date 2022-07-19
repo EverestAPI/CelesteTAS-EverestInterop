@@ -41,9 +41,7 @@ public static class StudioHelper {
 
         try {
             if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
-                Process studioProcess = Process.GetProcesses().FirstOrDefault(process =>
-                    process.ProcessName.StartsWith("Celeste") &&
-                    process.ProcessName.Contains("Studio"));
+                Process studioProcess = Process.GetProcesses().FirstOrDefault(process => process.ProcessName == StudioName);
 
                 if (studioProcess != null) {
                     studioProcess.Kill();
@@ -95,24 +93,24 @@ public static class StudioHelper {
 
     private static bool CheckNewerStudio() {
         try {
-            string zipFileVersion = null;
+            string modStudioVersion = null;
 
             if (!string.IsNullOrEmpty(Metadata.PathArchive)) {
                 using ZipFile zip = ZipFile.Read(Metadata.PathArchive);
                 if (zip.Entries.FirstOrDefault(zipEntry => zipEntry.FileName == StudioNameWithExe) is { } studioZipEntry) {
                     studioZipEntry.Extract(TempExtractPath, ExtractExistingFileAction.OverwriteSilently);
-                    zipFileVersion = FileVersionInfo.GetVersionInfo(TempExtractStudio).FileVersion;
+                    modStudioVersion = FileVersionInfo.GetVersionInfo(TempExtractStudio).FileVersion;
                     File.Delete(TempExtractStudio);
                 }
             } else if (!string.IsNullOrEmpty(Metadata.PathDirectory)) {
                 string[] files = Directory.GetFiles(Metadata.PathDirectory);
                 if (files.FirstOrDefault(filePath => filePath.EndsWith(StudioNameWithExe)) is { } studioFilePath) {
-                    zipFileVersion = FileVersionInfo.GetVersionInfo(studioFilePath).FileVersion;
+                    modStudioVersion = FileVersionInfo.GetVersionInfo(studioFilePath).FileVersion;
                 }
             }
 
-            string existFileVersion = FileVersionInfo.GetVersionInfo(ExtractedStudioExePath).FileVersion;
-            return existFileVersion != zipFileVersion;
+            string existStudioVersion = FileVersionInfo.GetVersionInfo(ExtractedStudioExePath).FileVersion;
+            return existStudioVersion != modStudioVersion;
         } catch (Exception e) {
             e.LogException("Failed to check studio version.");
             try {
@@ -131,10 +129,8 @@ public static class StudioHelper {
         if (TasSettings.Enabled && TasSettings.LaunchStudioAtBoot || studioProcessWasKilled) {
             try {
                 Process[] processes = Process.GetProcesses();
-                foreach (Process process in processes) {
-                    if (process.ProcessName.StartsWith("Celeste") && process.ProcessName.Contains("Studio")) {
-                        return;
-                    }
+                if (processes.Any(process => process.ProcessName == StudioName)) {
+                    return;
                 }
 
                 // detach studio from steam
