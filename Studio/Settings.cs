@@ -12,6 +12,7 @@ public class Settings {
     private const string path = "Celeste Studio.toml";
     public static Settings Instance { get; private set; } = new();
     private static bool saving;
+    private static FileSystemWatcher watcher;
 
     [TommyInclude] private int locationX = 100;
     [TommyInclude] private int locationY = 100;
@@ -90,13 +91,17 @@ public class Settings {
     }
 
     public static void StartWatcher() {
-        FileSystemWatcher watcher = new();
+        watcher = new();
         watcher.Path = Directory.GetCurrentDirectory();
         watcher.Filter = Path.GetFileName(path);
         watcher.Changed += (_, _) => {
-            if (!saving) {
+            if (!saving && File.Exists(path)) {
                 Thread.Sleep(100);
-                Load();
+                try {
+                    Studio.Instance.Invoke(Load);
+                } catch {
+                    // ignore
+                }
             }
         };
 
@@ -104,7 +109,13 @@ public class Settings {
             watcher.EnableRaisingEvents = true;
         } catch {
             watcher.Dispose();
+            watcher = null;
         }
+    }
+
+    public static void StopWatcher() {
+        watcher?.Dispose();
+        watcher = null;
     }
 
     public static void Load() {
@@ -125,6 +136,7 @@ public class Settings {
 
     public static void Save() {
         saving = true;
+
         try {
             TommySerializer.ToTomlFile(new object[] {Instance, Themes.Light, Themes.Dark, Themes.Custom}, path);
         } catch {

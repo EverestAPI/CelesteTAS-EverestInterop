@@ -277,6 +277,7 @@ public partial class Studio : BaseForm {
     }
 
     private void TASStudio_FormClosed(object sender, FormClosedEventArgs e) {
+        Settings.StopWatcher();
         SaveSettings();
         StudioCommunicationServer.Instance?.SendPath(string.Empty);
         Thread.Sleep(50);
