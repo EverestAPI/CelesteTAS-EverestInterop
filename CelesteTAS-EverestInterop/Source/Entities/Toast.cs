@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Celeste;
+using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Utils;
@@ -11,7 +12,7 @@ namespace TAS.Entities;
 [Tracked]
 internal class Toast : Entity {
     private const int Padding = 25;
-    private const float DefaultDuration = 1.5f;
+    private const float DefaultDuration = 2f;
     private string message;
     private readonly float duration;
     private float alpha;
@@ -70,5 +71,10 @@ internal class Toast : Entity {
         } else {
             Engine.Scene.Add(new Toast(message, duration));
         }
+    }
+
+    public static void ShowAndLog(string message, float duration = DefaultDuration, LogLevel logLevel = LogLevel.Warn) {
+        Show(message, duration);
+        message.Log(logLevel);
     }
 }

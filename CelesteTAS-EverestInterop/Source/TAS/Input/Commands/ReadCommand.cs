@@ -35,11 +35,11 @@ public static class ReadCommand {
         }
 
         if (!File.Exists(filePath)) {
-            ToastAndLog($"\"Read, {string.Join(", ", args)}\" failed\nFile not found");
+            Toast.ShowAndLog($"\"Read, {string.Join(", ", args)}\" failed\nFile not found");
             Manager.DisableRunLater();
             return;
         } else if (Path.GetFullPath(filePath) == Path.GetFullPath(currentFilePath)) {
-            ToastAndLog($"\"Read, {string.Join(", ", args)}\" failed\nDo not allow reading the file itself");
+            Toast.ShowAndLog($"\"Read, {string.Join(", ", args)}\" failed\nDo not allow reading the file itself");
             Manager.DisableRunLater();
             return;
         }
@@ -66,11 +66,6 @@ public static class ReadCommand {
         Manager.Controller.ReadFile(filePath, startLine, endLine, studioLine);
         if (readCommandStack.Count > 0) {
             readCommandStack.RemoveAt(readCommandStack.Count - 1);
-        }
-
-        void ToastAndLog(string text) {
-            Toast.Show(text);
-            text.Log(LogLevel.Warn);
         }
 
         void FindTheFile() {

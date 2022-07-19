@@ -110,6 +110,7 @@ public class InputController {
                 if (ReadFile(TasFilePath)) {
                     if (Manager.NextStates.HasFlag(States.Disable)) {
                         Clear();
+                        Manager.DisableRun();
                     } else {
                         NeedsReload = false;
                         ParseFileEnd();

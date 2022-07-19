@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Celeste.Mod;
+using TAS.Entities;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;
@@ -18,20 +18,28 @@ public static class RepeatCommand {
     // "Repeat, Count"
     [TasCommand("Repeat", ExecuteTiming = ExecuteTiming.Parse)]
     private static void Repeat(string[] args, int _, string filePath, int fileLine) {
-        if (args.Length > 0 && int.TryParse(args[0], out int count)) {
-            if (RepeatArgs.ContainsKey(filePath)) {
-                $"The Repeat command on line {fileLine} of the {filePath} file does not have a paired EndRepeat command".Log(LogLevel.Warn);
-            }
-
+        string errorText = $"On line {fileLine} of the {Path.GetFileName(filePath)} file\n";
+        if (args.IsEmpty()) {
+            Toast.Show($"{errorText}Repeat command no count given");
+            Manager.DisableRunLater();
+        } else if (!int.TryParse(args[0], out int count)) {
+            Toast.Show($"{errorText}Repeat command's count is not an integer");
+            Manager.DisableRunLater();
+        } else if (RepeatArgs.ContainsKey(filePath)) {
+            Toast.Show($"{errorText}Nesting repeat commands are not supported");
+            Manager.DisableRunLater();
+        } else {
             RepeatArgs[filePath] = Tuple.Create(fileLine, count, Manager.Controller.Inputs.Count);
         }
     }
 
     // "EndRepeat"
     [TasCommand("EndRepeat", ExecuteTiming = ExecuteTiming.Parse)]
-    private static void EndRepeat(string[] args, int studioLine, string filePath, int fileLine) {
+    private static void EndRepeat(string[] _, int studioLine, string filePath, int fileLine) {
+        string errorText = $"On line {fileLine} of the {Path.GetFileName(filePath)} file\n";
         if (!RepeatArgs.ContainsKey(filePath)) {
-            $"The EndRepeat command on line {fileLine} of the {filePath} file does not have a paired Repeat command".Log(LogLevel.Warn);
+            Toast.Show($"{errorText} EndRepeat command does not have a paired Repeat command");
+            Manager.DisableRunLater();
             return;
         }
 
