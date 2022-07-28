@@ -127,7 +127,7 @@ public static class EntityDataHelper {
     }
 
     public static EntityID ToEntityId(this EntityData entityData) {
-        return new(entityData.Level.Name, entityData.ID);
+        return new(entityData.Level?.Name ?? "None", entityData.ID);
     }
 
     private static void ModOrigLoadLevel(ILContext il) {
