@@ -124,5 +124,5 @@ The contents of the curly brackets will be converted to actual data, here are so
 4. Run Celeste directly or run the windows version of celeste via wine `env WINEPREFIX=$HOME/winedotnet wine "Celeste.exe"`. If the error `X Error of failed request: GLXBadFBConfig` is reported when running celeste via wine, then you need to run `export MESA_GL_VERSION_OVERRIDE=4.5` first and then rerun the wine command.
 
 ## Other Useful Tools
-- [Featherline](https://github.com/tntfalle/featherline): Genetic algorithm for analog feather movement in Celeste.
+- [Featherline](https://github.com/tntfalle/featherline): Algorithm for analog feather movement in Celeste.
 - [Radeline](https://github.com/Kataiser/radeline): Chaos monkey that optimizes a Celeste TAS by randomly (or sequentially) changing inputs.
