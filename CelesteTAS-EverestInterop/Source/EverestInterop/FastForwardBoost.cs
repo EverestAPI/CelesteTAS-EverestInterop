@@ -34,12 +34,12 @@ public static class FastForwardBoost {
         IL.Celeste.FloatingDebris.Update += SkipUpdateMethod;
         IL.Celeste.AnimatedTiles.Update += SkipUpdateMethod;
         IL.Celeste.Water.Surface.Update += SkipUpdateMethod;
-        IL.Celeste.LightningRenderer.Update += SkipUpdateMethod;
         IL.Celeste.DustGraphic.Update += SkipUpdateMethod;
         IL.Celeste.LavaRect.Update += SkipUpdateMethod;
         IL.Celeste.CliffsideWindFlag.Update += SkipUpdateMethod;
         IL.Celeste.CrystalStaticSpinner.UpdateHue += SkipUpdateMethod;
         IL.Celeste.SeekerBarrierRenderer.Update += SkipUpdateMethod;
+        IL.Celeste.LightningRenderer.Update += LightningRendererOnUpdate;
         IL.Celeste.SeekerBarrier.Update += SeekerBarrierOnUpdate;
         IL.Monocle.Engine.OnSceneTransition += IgnoreGcCollect;
         IL.Celeste.Level.Reload += IgnoreGcCollect;
@@ -57,12 +57,12 @@ public static class FastForwardBoost {
         IL.Celeste.FloatingDebris.Update -= SkipUpdateMethod;
         IL.Celeste.AnimatedTiles.Update -= SkipUpdateMethod;
         IL.Celeste.Water.Surface.Update -= SkipUpdateMethod;
-        IL.Celeste.LightningRenderer.Update -= SkipUpdateMethod;
         IL.Celeste.DustGraphic.Update -= SkipUpdateMethod;
         IL.Celeste.LavaRect.Update -= SkipUpdateMethod;
         IL.Celeste.CliffsideWindFlag.Update -= SkipUpdateMethod;
         IL.Celeste.CrystalStaticSpinner.UpdateHue -= SkipUpdateMethod;
         IL.Celeste.SeekerBarrierRenderer.Update -= SkipUpdateMethod;
+        IL.Celeste.LightningRenderer.Update -= LightningRendererOnUpdate;
         IL.Celeste.SeekerBarrier.Update -= SeekerBarrierOnUpdate;
         IL.Monocle.Engine.OnSceneTransition -= IgnoreGcCollect;
         IL.Celeste.Level.Reload -= IgnoreGcCollect;
@@ -121,6 +121,17 @@ public static class FastForwardBoost {
         Instruction start = ilCursor.Next;
         ilCursor.Emit(OpCodes.Call, typeof(Manager).GetProperty(nameof(Manager.UltraFastForwarding)).GetMethod);
         ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ret);
+    }
+
+    private static void LightningRendererOnUpdate(ILContext il) {
+        ILCursor ilCursor = new(il);
+        Instruction start = ilCursor.Next;
+        ilCursor.EmitDelegate<Func<bool>>(IsSkipLightningRendererUpdate);
+        ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ret);
+    }
+
+    private static bool IsSkipLightningRendererUpdate() {
+        return Manager.UltraFastForwarding && Engine.FrameCounter % 30 > 0;
     }
 
     private static void SeekerBarrierOnUpdate(ILContext il) {
