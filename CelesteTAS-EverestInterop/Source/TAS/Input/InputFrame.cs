@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.Text;
 using Microsoft.Xna.Framework;
+using Monocle;
 using TAS.Utils;
 
 namespace TAS.Input;
@@ -211,7 +212,7 @@ public record InputFrame {
                         }
 
                         if (args.Length >= 2 && float.TryParse(args[1], out float upperLimitFloat)) {
-                            inputFrame.UpperLimit = upperLimitFloat;
+                            inputFrame.UpperLimit = Calc.Clamp(upperLimitFloat, 0.26f, 1f);
                         }
                     }
 

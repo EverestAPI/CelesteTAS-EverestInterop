@@ -129,13 +129,13 @@ public class InputRecord {
                 case 'F':
                     Actions ^= Actions.Feather;
                     index++;
-                    ReadAngle(line, ref index);
+                    ClampAngle(line, ref index);
                     if (string.IsNullOrEmpty(AngleStr)) {
                         UpperLimitStr = string.Empty;
                         continue;
                     }
 
-                    ReadUpperLimit(line, ref index);
+                    ClampUpperLimit(line, ref index);
                     continue;
             }
 
@@ -195,7 +195,7 @@ public class InputRecord {
         };
     }
 
-    private float ReadAngle(string line, ref int start) {
+    private void ClampAngle(string line, ref int start) {
         string angleStr = line.Substring(start).Trim();
         if (FloatRegex.Match(angleStr) is {Success: true} match && float.TryParse(match.Groups[1].Value, out float angle)) {
             AngleStr = DuplicateZeroRegex.Replace(match.Groups[1].Value, "$1");
@@ -205,29 +205,25 @@ public class InputRecord {
             } else if (angle > 360f) {
                 AngleStr = "360";
             }
-
-            return angle;
         } else {
             AngleStr = string.Empty;
-            return 0;
         }
     }
 
-    private float ReadUpperLimit(string line, ref int start) {
+    private void ClampUpperLimit(string line, ref int start) {
         string upperLimitStr = line.Substring(start).Trim();
         if (FloatRegex.Match(upperLimitStr) is {Success: true} match && float.TryParse(match.Groups[1].Value, out float upperLimit)) {
             UpperLimitStr = DuplicateZeroRegex.Replace(match.Groups[1].Value, "$1");
             start += match.Groups[0].Value.Length;
-            if (upperLimit != 0 && upperLimit < 0.5f) {
-                UpperLimitStr = "0.5";
+            if (upperLimit is > 0.2f and < 0.26f) {
+                UpperLimitStr = "0.26";
+            } else if (upperLimit != 0 && upperLimit < 0.26f) {
+                UpperLimitStr = "0.2";
             } else if (upperLimit > 1f) {
                 UpperLimitStr = "1";
             }
-
-            return upperLimit;
         } else {
             UpperLimitStr = string.Empty;
-            return 0;
         }
     }
 

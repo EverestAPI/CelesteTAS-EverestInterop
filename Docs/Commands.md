@@ -143,7 +143,7 @@
 - After completing the whole level from the beginning, auto updating the chapter time.
 
 ### AnalogueMode
-- `AnalogueMode, (Mode), (Optional upper limit of single axis, default value is 1, range is 0.5 to 1, only works in precise mode)`
+- `AnalogueMode, (Mode)`
 - `AnalogMode, (Mode)` also works
 - Modes are `Ignore` (no check), `Circle`, `Square` and `Precise`.
 - `Circle`, `Square` and `Precise` are make sure the analogue inputs sent to the game are actually possible, locking it to a circular or square deadzone with the maximum amplitude, or calculating the closest position possible on a controller within the possible amplitude.

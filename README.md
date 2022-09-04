@@ -36,7 +36,7 @@ e.g. 123,R,J (For 123 frames, hold Right and Jump)
 - S = Pause
 - Q = Quick Restart
 - F = Feather Aim
-<br>Format: F, angle, optional upper limit of single axis (default value is 1, range is 0.5 to 1, only works in precise [AnalogMode](Docs/Commands.md#analoguemode)
+<br>Format: F, angle, optional upper limit of single axis (default value is 1, range is 0.26 to 1, works in all [analog modes](Docs/Commands.md#analoguemode)
 - O = Confirm Bind 2
 - N = Journal / Talk Bind 2
 

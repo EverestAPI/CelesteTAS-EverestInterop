@@ -50,7 +50,14 @@ public static class AnalogHelper {
             precision = float.Parse($"0.5E-{digits + 2}");
         }
 
-        Vector2 angleVector2 = ComputeFeather(input.GetX(), input.GetY(), precision, input.UpperLimit, out Vector2Short retDirectionShort);
+        float x = input.GetX();
+        float y = input.GetY();
+        if (analogMode != AnalogueMode.Precise) {
+            x *= input.UpperLimit;
+            y *= input.UpperLimit;
+        }
+
+        Vector2 angleVector2 = ComputeFeather(x, y, precision, input.UpperLimit, out Vector2Short retDirectionShort);
         angleVector2Short = retDirectionShort;
         return angleVector2;
     }
@@ -78,8 +85,6 @@ public static class AnalogHelper {
             return new Vector2(feather.Y, feather.X);
         }
 
-        short upperbound = (short) Calc.Clamp(upperLimit * 32767, Lowerbound, 32767);
-
         // assure positive and x>=y
         short shortX, shortY;
         switch (analogMode) {
@@ -96,6 +101,7 @@ public static class AnalogHelper {
                 shortY = RoundToValidShort(y);
                 break;
             case AnalogueMode.Precise:
+                short upperbound = (short) Math.Round(Calc.Clamp(upperLimit * 32767, Lowerbound, 32767), MidpointRounding.AwayFromZero);
                 Vector2Short result = ComputePrecise(new Vector2(x, y), precision, upperbound);
                 shortX = result.X;
                 shortY = result.Y;
