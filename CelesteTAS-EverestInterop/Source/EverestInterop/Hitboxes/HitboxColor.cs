@@ -31,7 +31,7 @@ public static class HitboxColor {
             () => {
                 Audio.Play("event:/ui/main/savefile_rename_start");
                 textMenu.SceneAs<Overworld>().Goto<OuiModOptionString>()
-                    .Init<OuiModOptions>(ColorToHex(DefaultEntityColor),
+                    .Init<OuiModOptions>(ColorToHex(TasSettings.EntityHitboxColor),
                         value => TasSettings.EntityHitboxColor = HexToColor(value, TasSettings.EntityHitboxColor), 9);
             });
         item.Disabled = inGame;
@@ -43,7 +43,7 @@ public static class HitboxColor {
             () => {
                 Audio.Play("event:/ui/main/savefile_rename_start");
                 textMenu.SceneAs<Overworld>().Goto<OuiModOptionString>()
-                    .Init<OuiModOptions>(ColorToHex(DefaultTriggerColor),
+                    .Init<OuiModOptions>(ColorToHex(TasSettings.TriggerHitboxColor),
                         value => TasSettings.TriggerHitboxColor = HexToColor(value, TasSettings.TriggerHitboxColor), 9);
             });
         item.Disabled = inGame;
@@ -56,7 +56,7 @@ public static class HitboxColor {
                 () => {
                     Audio.Play("event:/ui/main/savefile_rename_start");
                     textMenu.SceneAs<Overworld>().Goto<OuiModOptionString>()
-                        .Init<OuiModOptions>(ColorToHex(DefaultPlatformColor),
+                        .Init<OuiModOptions>(ColorToHex(TasSettings.PlatformHitboxColor),
                             value => TasSettings.PlatformHitboxColor = HexToColor(value, TasSettings.PlatformHitboxColor), 9);
                 });
         item.Disabled = inGame;
