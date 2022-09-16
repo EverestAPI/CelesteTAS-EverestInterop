@@ -29,6 +29,8 @@ public class CelesteTasModule : EverestModule {
         AttributeUtils.Invoke<LoadAttribute>();
         // avoid issues if center camera is enabled, hook at he end
         CenterCamera.Load();
+
+        CelesteTasExports.Export();
     }
 
     public override void Unload() {
