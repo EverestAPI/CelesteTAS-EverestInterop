@@ -782,6 +782,8 @@ public partial class Studio : BaseForm {
                     UpdateValues();
                     FixSomeBugsWhenOutOfMinimized();
                     CommunicationWrapper.CheckForward();
+                } else {
+                    richText.ReadOnly = DisableTyping;
                 }
 
                 Thread.Sleep(14);
