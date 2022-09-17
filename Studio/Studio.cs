@@ -1519,6 +1519,10 @@ public partial class Studio : BaseForm {
         InsertNewLine("EndRepeat");
     }
 
+    private void exitGameToolStripMenuItem_Click(object sender, EventArgs e) {
+        InsertNewLine("ExitGame");
+    }
+
     private void copyGamerDataMenuItem_Click(object sender, EventArgs e) {
         CopyGameInfo();
     }
