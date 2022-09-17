@@ -163,4 +163,4 @@
 - Odds are you don't need to worry about this.
 
 ### ExitGame
-- Used to force the game when recording video with [.kkapture](https://github.com/DemoJameson/kkapture/wiki/Manual) to finish recording.
+- Used to force the game when recording video with [.kkapture](https://github.com/DemoJameson/kkapture/wiki) to finish recording.
