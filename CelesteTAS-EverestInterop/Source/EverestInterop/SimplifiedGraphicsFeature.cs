@@ -471,24 +471,30 @@ public static class SimplifiedGraphicsFeature {
         ILCursor c = new(il);
 
         Instruction methodStart = c.Next;
-        c.EmitDelegate<Func<bool>>(IsNotSimplifiedBackdrop);
+        c.EmitDelegate(IsNotSimplifiedBackdrop);
         c.Emit(OpCodes.Brtrue, methodStart);
         c.Emit(OpCodes.Ret);
-        c.GotoNext(i => i.MatchLdloc(2));
-        c.Emit(OpCodes.Ldloc_2);
-        c.EmitDelegate<Action<Backdrop>>(backdrop => {
-            if (TasSettings.Enabled && TasSettings.Mod9DLighting && backdrop.Visible && Engine.Scene is Level level) {
-                bool hideBackdrop =
-                    (level.Session.Level.StartsWith("g") || level.Session.Level.StartsWith("h"))
-                    && level.Session.Level != "hh-08"
-                    && backdrop.Name?.StartsWith("bgs/nameguysdsides") == true;
-                backdrop.Visible = !hideBackdrop;
-            }
-        });
+        if (c.TryGotoNext(ins => ins.MatchLdloc(out int _), ins => ins.MatchLdfld<Backdrop>("Visible"))) {
+            Instruction ldloc = c.Next;
+            c.Index += 2;
+            c.Emit(ldloc.OpCode, ldloc.Operand).EmitDelegate(IsShow9DBlackBackdrop);
+        }
     }
 
     private static bool IsNotSimplifiedBackdrop() {
         return !TasSettings.SimplifiedGraphics || !TasSettings.SimplifiedBackdrop;
+    }
+
+    private static bool IsShow9DBlackBackdrop(bool visible, Backdrop backdrop) {
+        if (TasSettings.Enabled && TasSettings.Mod9DLighting && backdrop.Visible && Engine.Scene is Level level) {
+            bool hideBackdrop =
+                backdrop.Name?.StartsWith("bgs/nameguysdsides") == true &&
+                (level.Session.Level.StartsWith("g") || level.Session.Level.StartsWith("h")) &&
+                level.Session.Level != "hh-08";
+            return !hideBackdrop;
+        }
+
+        return visible;
     }
 
     private static void CrystalStaticSpinner_CreateSprites(On.Celeste.CrystalStaticSpinner.orig_CreateSprites orig, CrystalStaticSpinner self) {
