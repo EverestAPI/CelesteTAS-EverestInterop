@@ -176,18 +176,22 @@ public static class ExportRoomInfo {
 
             if (EnterRoomChapterTime != null && LeaveRoomChapterTime != null) {
                 values.Add(FormatTime(LeaveRoomChapterTime - EnterRoomChapterTime));
+                values.Add(ConvertToFrames(LeaveRoomChapterTime - EnterRoomChapterTime));
             } else {
+                values.Add(string.Empty);
                 values.Add(string.Empty);
             }
 
             if (EnterRoomFileTime != null && LeaveRoomFileTime != null) {
                 values.Add(FormatTime(LeaveRoomFileTime - EnterRoomFileTime));
+                values.Add(ConvertToFrames(LeaveRoomFileTime - EnterRoomFileTime));
             } else {
+                values.Add(string.Empty);
                 values.Add(string.Empty);
             }
 
-            values.Add(FormatTime(LeaveRoomChapterTime));
-            values.Add(FormatTime(LeaveRoomFileTime));
+            values.Add(FormatTimeWithFrames(LeaveRoomChapterTime));
+            values.Add(FormatTimeWithFrames(LeaveRoomFileTime));
 
             return string.Join("\t", values);
         }
@@ -197,7 +201,9 @@ public static class ExportRoomInfo {
                 "Chapter",
                 "Room",
                 "Elapsed Chapter Time",
+                "Elapsed Chapter Time (Frame)",
                 "Elapsed File Time",
+                "Elapsed File Time (Frame)",
                 "Chapter Time",
                 "File Time"
             );
@@ -208,17 +214,24 @@ public static class ExportRoomInfo {
                 return string.Empty;
             }
 
-            string frames = $" ({time.Value / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks})";
             TimeSpan timeSpan = TimeSpan.FromTicks(time.Value);
             if (timeSpan.TotalHours >= 1) {
-                return (int) timeSpan.TotalHours + ":" + timeSpan.ToString("mm\\:ss\\.fff") + frames;
+                return (int) timeSpan.TotalHours + ":" + timeSpan.ToString("mm\\:ss\\.fff");
             }
 
             if (timeSpan.TotalMinutes >= 1) {
-                return (int) timeSpan.TotalMinutes + ":" + timeSpan.ToString("ss\\.fff") + frames;
+                return (int) timeSpan.TotalMinutes + ":" + timeSpan.ToString("ss\\.fff");
             }
 
-            return timeSpan.ToString("s\\.fff") + frames;
+            return timeSpan.ToString("s\\.fff");
+        }
+
+        private static string ConvertToFrames(long? time) {
+            return time == null ? string.Empty : (time.Value / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks).ToString();
+        }
+
+        private static string FormatTimeWithFrames(long? time) {
+            return time == null ? string.Empty : $"{FormatTime(time)} ({ConvertToFrames(time)})";
         }
     }
 }
