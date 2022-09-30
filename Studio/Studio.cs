@@ -933,6 +933,7 @@ public partial class Studio : BaseForm {
             int statusBarHeight = TextRenderer.MeasureText(lblStatus.Text.Trim(), lblStatus.Font).Height + bottomExtraSpace;
             statusPanel.Height = Math.Min(maxHeight, statusBarHeight);
             statusPanel.AutoScrollMinSize = new Size(0, statusBarHeight);
+            statusPanel.AutoScroll = statusBarHeight > maxHeight;
             statusBar.Height = statusBarHeight;
         } else {
             statusPanel.Height = 0;
@@ -1839,6 +1840,8 @@ public partial class Studio : BaseForm {
         Color foreColor = ColorUtils.HexToColor(themes.Status);
         Color backColor = ColorUtils.HexToColor(themes.Status, 1);
         Color dividerColor = ColorUtils.HexToColor(themes.ServiceLine, 0);
+
+        BackColor = ColorUtils.HexToColor(themes.Background);
 
         lblStatus.ForeColor = foreColor;
         lblStatus.BackColor = backColor;
