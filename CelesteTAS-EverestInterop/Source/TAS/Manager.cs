@@ -292,7 +292,7 @@ public static class Manager {
 
     private static void SetFeather(InputFrame input, ref GamePadDPad pad, ref GamePadThumbSticks sticks) {
         pad = new GamePadDPad(ButtonState.Released, ButtonState.Released, ButtonState.Released, ButtonState.Released);
-        sticks = new GamePadThumbSticks(input.AngleVector2, new Vector2(0, 0));
+        sticks = new GamePadThumbSticks(input.AngleVector2, input.DashOnlyVector2);
     }
 
     private static void SetDPad(InputFrame input, ref GamePadDPad pad, ref GamePadThumbSticks sticks) {
@@ -302,7 +302,7 @@ public static class Manager {
             input.HasActions(Actions.Left) ? ButtonState.Pressed : ButtonState.Released,
             input.HasActions(Actions.Right) ? ButtonState.Pressed : ButtonState.Released
         );
-        sticks = new GamePadThumbSticks(new Vector2(0, 0), new Vector2(0, 0));
+        sticks = new GamePadThumbSticks(new Vector2(0, 0), input.DashOnlyVector2);
     }
 
     private static void SetGamePadState(InputFrame input, ref GamePadState state, ref GamePadDPad pad, ref GamePadThumbSticks sticks) {
@@ -328,7 +328,6 @@ public static class Manager {
             pad
         );
     }
-
 
     //The things we do for faster replay times
     private delegate void DUpdateVirtualInputs();

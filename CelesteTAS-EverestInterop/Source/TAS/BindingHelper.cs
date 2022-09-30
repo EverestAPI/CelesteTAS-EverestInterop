@@ -21,6 +21,10 @@ public static class BindingHelper {
         if (typeof(GameInput).GetFieldInfo("DemoDash") == null && typeof(GameInput).GetFieldInfo("CrouchDash") == null) {
             DemoDash = 0;
             DemoDash2 = 0;
+            LeftDashOnly = 0;
+            RightDashOnly = 0;
+            UpDashOnly = 0;
+            DownDashOnly = 0;
         }
     }
 
@@ -38,6 +42,10 @@ public static class BindingHelper {
     public static Buttons JournalAndTalk => Buttons.LeftTrigger;
     public static Buttons DemoDash { get; } = Buttons.RightShoulder;
     public static Buttons DemoDash2 { get; } = Buttons.RightStick;
+    public static Buttons LeftDashOnly { get; } = Buttons.RightThumbstickLeft;
+    public static Buttons RightDashOnly { get; } = Buttons.RightThumbstickRight;
+    public static Buttons UpDashOnly { get; } = Buttons.RightThumbstickUp;
+    public static Buttons DownDashOnly { get; } = Buttons.RightThumbstickDown;
     public static Keys Confirm2 => Keys.C;
     private static bool? origControllerHasFocus;
     private static bool origKbTextInput;
@@ -135,15 +143,15 @@ public static class BindingHelper {
 
         SetBinding("DemoDash", DemoDash, DemoDash2);
 
-        SetBinding("RightMoveOnly");
+        SetBinding("LeftDashOnly", LeftDashOnly);
+        SetBinding("RightDashOnly", RightDashOnly);
+        SetBinding("UpDashOnly", UpDashOnly);
+        SetBinding("DownDashOnly", DownDashOnly);
+
         SetBinding("LeftMoveOnly");
+        SetBinding("RightMoveOnly");
         SetBinding("UpMoveOnly");
         SetBinding("DownMoveOnly");
-
-        SetBinding("RightDashOnly");
-        SetBinding("LeftDashOnly");
-        SetBinding("UpDashOnly");
-        SetBinding("DownDashOnly");
 
         GameInput.Initialize();
     }

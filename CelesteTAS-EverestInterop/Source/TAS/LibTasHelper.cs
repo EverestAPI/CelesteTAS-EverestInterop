@@ -40,7 +40,8 @@ public static class LibTasHelper {
 
         for (int i = 0; i < inputFrame.Frames; ++i) {
             WriteLibTasFrame(LibTasKeys(inputFrame),
-                inputFrame.HasActions(Actions.Feather) ? ($"{inputFrame.AngleVector2Short.X}:{-inputFrame.AngleVector2Short.Y}") : "0:0",
+                $"{inputFrame.AngleVector2Short.X}:{-inputFrame.AngleVector2Short.Y}",
+                $"{inputFrame.DashOnlyVector2Short.X}:{-inputFrame.DashOnlyVector2Short.Y}",
                 LibTasButtons(inputFrame));
         }
     }
@@ -72,8 +73,8 @@ public static class LibTasHelper {
         Manager.DisableRun();
     }
 
-    private static void WriteLibTasFrame(string outputKeys, string outputAxes, string outputButtons) {
-        streamWriter.WriteLine($"|{outputKeys}|{outputAxes}:0:0:0:0:{outputButtons}|.........|");
+    private static void WriteLibTasFrame(string outputKeys, string outputAxesLeft, string outputAxesRight, string outputButtons) {
+        streamWriter.WriteLine($"|{outputKeys}|{outputAxesLeft}:{outputAxesRight}:0:0:{outputButtons}|.........|");
     }
 
     private static string LibTasKeys(InputFrame inputFrame) {

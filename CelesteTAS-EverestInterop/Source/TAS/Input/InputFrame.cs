@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Utils;
@@ -25,15 +26,25 @@ public enum Actions {
     Dash2 = 1 << 12,
     Confirm = 1 << 13,
     DemoDash = 1 << 14,
-    DemoDash2 = 1 << 15
+    DemoDash2 = 1 << 15,
+    DashOnly = 1 << 16,
+    LeftDashOnly = 1 << 17,
+    RightDashOnly = 1 << 18,
+    UpDashOnly = 1 << 19,
+    DownDashOnly = 1 << 20,
 }
 
 public record InputFrame {
+    private static readonly Regex DashOnlyDirectionRegex = new(@"[A]([LRUD]+$)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
     public Actions Actions { get; private set; }
     public float Angle { get; private set; }
     public float UpperLimit { get; private set; } = 1f;
     public Vector2 AngleVector2 { get; private set; }
+    public Vector2 DashOnlyVector2 { get; private set; }
     public Vector2Short AngleVector2Short { get; private set; }
+    public Vector2Short DashOnlyVector2Short { get; private set; }
+
     public int Frames { get; private set; }
     public int Line { get; private set; }
     public InputFrame Previous { get; private set; }
@@ -57,6 +68,7 @@ public record InputFrame {
 
     public string ToActionsString() {
         StringBuilder sb = new();
+
         if (HasActions(Actions.Left)) {
             sb.Append(",L");
         }
@@ -117,6 +129,26 @@ public record InputFrame {
             sb.Append(",O");
         }
 
+        if (HasActions(Actions.DashOnly)) {
+            sb.Append(",A");
+
+            if (HasActions(Actions.LeftDashOnly)) {
+                sb.Append("L");
+            }
+
+            if (HasActions(Actions.RightDashOnly)) {
+                sb.Append("R");
+            }
+
+            if (HasActions(Actions.UpDashOnly)) {
+                sb.Append("U");
+            }
+
+            if (HasActions(Actions.DownDashOnly)) {
+                sb.Append("D");
+            }
+        }
+
         if (HasActions(Actions.Feather)) {
             sb.Append(",F,").Append(Angle == 0 ? string.Empty : Angle.ToString(CultureInfo.InvariantCulture));
             if (Math.Abs(UpperLimit - 1f) > 1e-10) {
@@ -156,16 +188,40 @@ public record InputFrame {
 
             switch (char.ToUpper(c)) {
                 case 'L':
-                    inputFrame.Actions ^= Actions.Left;
+                    if (IsDashOnlyDirection()) {
+                        inputFrame.Actions ^= Actions.LeftDashOnly;
+                        inputFrame.DashOnlyVector2 = new(-1, inputFrame.DashOnlyVector2.Y);
+                    } else {
+                        inputFrame.Actions ^= Actions.Left;
+                    }
+
                     break;
                 case 'R':
-                    inputFrame.Actions ^= Actions.Right;
+                    if (IsDashOnlyDirection()) {
+                        inputFrame.Actions ^= Actions.RightDashOnly;
+                        inputFrame.DashOnlyVector2 = new(1, inputFrame.DashOnlyVector2.Y);
+                    } else {
+                        inputFrame.Actions ^= Actions.Right;
+                    }
+
                     break;
                 case 'U':
-                    inputFrame.Actions ^= Actions.Up;
+                    if (IsDashOnlyDirection()) {
+                        inputFrame.Actions ^= Actions.UpDashOnly;
+                        inputFrame.DashOnlyVector2 = new(inputFrame.DashOnlyVector2.X, 1);
+                    } else {
+                        inputFrame.Actions ^= Actions.Up;
+                    }
+
                     break;
                 case 'D':
-                    inputFrame.Actions ^= Actions.Down;
+                    if (IsDashOnlyDirection()) {
+                        inputFrame.Actions ^= Actions.DownDashOnly;
+                        inputFrame.DashOnlyVector2 = new(inputFrame.DashOnlyVector2.X, -1);
+                    } else {
+                        inputFrame.Actions ^= Actions.Down;
+                    }
+
                     break;
                 case 'J':
                     inputFrame.Actions ^= Actions.Jump;
@@ -200,6 +256,9 @@ public record InputFrame {
                 case 'V':
                     inputFrame.Actions ^= Actions.DemoDash2;
                     break;
+                case 'A':
+                    inputFrame.Actions ^= Actions.DashOnly;
+                    break;
                 case 'F':
                     inputFrame.Actions ^= Actions.Feather;
                     index++;
@@ -224,6 +283,9 @@ public record InputFrame {
             index++;
         }
 
+        Vector2 v = inputFrame.DashOnlyVector2;
+        inputFrame.DashOnlyVector2Short = new Vector2Short((short) (v.X * 32767), (short) (v.Y * 32767));
+
         if (prevInputFrame != null) {
             prevInputFrame.Next = inputFrame;
             inputFrame.Previous = prevInputFrame;
@@ -232,5 +294,10 @@ public record InputFrame {
         LibTasHelper.WriteLibTasFrame(inputFrame);
 
         return true;
+
+        bool IsDashOnlyDirection() {
+            string subLine = line.Substring(0, index + 1);
+            return DashOnlyDirectionRegex.IsMatch(subLine);
+        }
     }
 }

@@ -24,6 +24,11 @@ public enum Actions {
     Confirm = 1 << 13,
     DemoDash = 1 << 14,
     DemoDash2 = 1 << 15,
+    DashOnly = 1 << 16,
+    LeftDashOnly = 1 << 17,
+    RightDashOnly = 1 << 18,
+    UpDashOnly = 1 << 19,
+    DownDashOnly = 1 << 20,
 }
 
 public class InputRecord {
@@ -37,12 +42,15 @@ public class InputRecord {
     public static readonly Regex CommentLineRegex = new(@"^\s*#.*", RegexOptions.Compiled);
     public static readonly Regex BreakpointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
     public static readonly Regex InputFrameRegex = new(@"^(\s*\d+)", RegexOptions.Compiled);
+    private static readonly Regex DashOnlyDirectionRegex = new(@"[A]([LRUD]+$)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     private static readonly Actions[][] ExclusiveActions = {
         new[] {Actions.Dash, Actions.Dash2, Actions.DemoDash, Actions.DemoDash2},
         new[] {Actions.Jump, Actions.Jump2},
         new[] {Actions.Up, Actions.Down, Actions.Feather},
         new[] {Actions.Left, Actions.Right, Actions.Feather},
+        new[] {Actions.UpDashOnly, Actions.DownDashOnly},
+        new[] {Actions.LeftDashOnly, Actions.RightDashOnly},
     };
 
     public InputRecord(int frames, string actions) : this($"{frames},{actions}") { }
@@ -82,16 +90,16 @@ public class InputRecord {
 
             switch (char.ToUpper(c)) {
                 case 'L':
-                    Actions ^= Actions.Left;
+                    Actions ^= IsDashOnlyDirection() ? Actions.LeftDashOnly : Actions.Left;
                     break;
                 case 'R':
-                    Actions ^= Actions.Right;
+                    Actions ^= IsDashOnlyDirection() ? Actions.RightDashOnly : Actions.Right;
                     break;
                 case 'U':
-                    Actions ^= Actions.Up;
+                    Actions ^= IsDashOnlyDirection() ? Actions.UpDashOnly : Actions.Up;
                     break;
                 case 'D':
-                    Actions ^= Actions.Down;
+                    Actions ^= IsDashOnlyDirection() ? Actions.DownDashOnly : Actions.Down;
                     break;
                 case 'J':
                     Actions ^= Actions.Jump;
@@ -126,6 +134,9 @@ public class InputRecord {
                 case 'V':
                     Actions ^= Actions.DemoDash2;
                     break;
+                case 'A':
+                    Actions ^= Actions.DashOnly;
+                    break;
                 case 'F':
                     Actions ^= Actions.Feather;
                     index++;
@@ -144,6 +155,11 @@ public class InputRecord {
 
         if (!Settings.Instance.AutoRemoveMutuallyExclusiveActions && HasActions(Actions.Feather)) {
             Actions &= ~Actions.Right & ~Actions.Left & ~Actions.Up & ~Actions.Down;
+        }
+
+        bool IsDashOnlyDirection() {
+            string subLine = line.Substring(0, index + 1);
+            return DashOnlyDirectionRegex.IsMatch(subLine);
         }
     }
 
@@ -237,6 +253,7 @@ public class InputRecord {
 
     public string ActionsToString() {
         StringBuilder sb = new();
+
         if (HasActions(Actions.Left)) {
             sb.Append($"{Delimiter}L");
         }
@@ -295,6 +312,26 @@ public class InputRecord {
 
         if (HasActions(Actions.Confirm)) {
             sb.Append($"{Delimiter}O");
+        }
+
+        if (HasActions(Actions.DashOnly)) {
+            sb.Append($"{Delimiter}A");
+
+            if (HasActions(Actions.LeftDashOnly)) {
+                sb.Append("L");
+            }
+
+            if (HasActions(Actions.RightDashOnly)) {
+                sb.Append("R");
+            }
+
+            if (HasActions(Actions.UpDashOnly)) {
+                sb.Append("U");
+            }
+
+            if (HasActions(Actions.DownDashOnly)) {
+                sb.Append("D");
+            }
         }
 
         if (HasActions(Actions.Feather)) {
