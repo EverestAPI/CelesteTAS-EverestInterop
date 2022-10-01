@@ -1255,6 +1255,10 @@ public partial class Studio : BaseForm {
 
                         if (oldInput.Frames == newInput.Frames) {
                             index = newInput.HasActions(Actions.Feather) ? formattedText.Length : 4;
+
+                            if (!oldInput.HasActions(Actions.DashOnly) && newInput.HasActions(Actions.DashOnly)) {
+                                index = formattedText.Length;
+                            }
                         }
 
                         place = new Place(index, start);
