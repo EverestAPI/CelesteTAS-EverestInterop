@@ -30,8 +30,8 @@ e.g. 123,R,J (For 123 frames, hold Right and Jump)
 - K = Jump Bind 2
 - X = Dash / Talk / Cancel
 - C = Dash Bind 2 / Cancel Bind 2
-- Z = Crouch Dash (Celeste v1.4+ only)
-- V = Crouch Dash Bind 2 (Celeste v1.4+ only)
+- Z = Crouch Dash
+- V = Crouch Dash Bind 2
 - G = Grab
 - S = Pause
 - Q = Quick Restart
@@ -39,6 +39,7 @@ e.g. 123,R,J (For 123 frames, hold Right and Jump)
 <br>Format: F, angle, optional upper limit of single axis (default value is 1, range is 0.26 to 1, works in all [analog modes](Docs/Commands.md#analoguemode))
 - O = Confirm Bind 2
 - N = Journal / Talk Bind 2
+- A = Dash Only Directional Modifier (generally used to manipulate cameras with binocular control storage. eg: 15 R,X,ALU)
 
 ## Controls
 While in game or in Studio:
