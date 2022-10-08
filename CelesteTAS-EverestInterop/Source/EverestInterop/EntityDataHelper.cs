@@ -243,7 +243,7 @@ public static class EntityDataHelper {
         if (entity.GetEntityData() is { } entityData) {
             EntityData clonedEntityData = entityData.ShallowClone();
             if (spawnedEntity is FireBall fireBall) {
-                clonedEntityData.ID = clonedEntityData.ID * -100 - fireBall.GetFieldValue<int>("index");
+                clonedEntityData.ID = clonedEntityData.ID * -100 - fireBall.index;
             } else if (entity is CS03_OshiroRooftop) {
                 clonedEntityData.ID = 2;
             } else {

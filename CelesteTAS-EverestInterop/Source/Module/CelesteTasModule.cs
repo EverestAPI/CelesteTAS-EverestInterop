@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using Celeste;
 using Celeste.Mod;
 using FMOD.Studio;
 using TAS.EverestInterop;
 using TAS.Utils;
+
+[assembly: IgnoresAccessChecksTo("Celeste")]
 
 namespace TAS.Module;
 

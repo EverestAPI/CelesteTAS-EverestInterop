@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
-using System.Xml;
 using Celeste;
 using Celeste.Mod;
 using FMOD.Studio;
@@ -33,9 +32,6 @@ public static class SimplifiedGraphicsFeature {
         "3-resort/roofedge_d",
         "4-cliffside/bridge_a",
     };
-
-    private static readonly FieldInfo SpinnerColorField = typeof(CrystalStaticSpinner).GetFieldInfo("color");
-    private static readonly FieldInfo DecalInfoCustomProperties = typeof(DecalRegistry.DecalInfo).GetFieldInfo("CustomProperties");
 
     private static bool lastSimplifiedGraphics = TasSettings.SimplifiedGraphics;
     private static SolidTilesStyle currentSolidTilesStyle;
@@ -385,12 +381,8 @@ public static class SimplifiedGraphicsFeature {
                     return;
                 }
 
-                object customProperties = DecalInfoCustomProperties.GetValue(DecalRegistry.RegisteredDecals[decalName]);
-
-                switch (customProperties) {
-                    case Dictionary<string, XmlAttributeCollection> dictionary when !dictionary.ContainsKey("solid"):
-                    case List<KeyValuePair<string, XmlAttributeCollection>> list when list.All(pair => pair.Key != "solid"):
-                        return;
+                if (DecalRegistry.RegisteredDecals[decalName].CustomProperties.All(pair => pair.Key != "solid")) {
+                    return;
                 }
             }
         }
@@ -499,7 +491,7 @@ public static class SimplifiedGraphicsFeature {
 
     private static void CrystalStaticSpinner_CreateSprites(On.Celeste.CrystalStaticSpinner.orig_CreateSprites orig, CrystalStaticSpinner self) {
         if (TasSettings.SimplifiedGraphics && TasSettings.SimplifiedSpinnerColor.Name >= 0) {
-            SpinnerColorField.SetValue(self, TasSettings.SimplifiedSpinnerColor.Name);
+            self.color = TasSettings.SimplifiedSpinnerColor.Name;
         }
 
         orig(self);

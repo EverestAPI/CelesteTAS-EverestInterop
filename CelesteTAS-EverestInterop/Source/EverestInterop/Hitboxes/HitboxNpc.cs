@@ -7,12 +7,6 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxNpc {
-    private static readonly GetDelegate<NPC05_Badeline, BadelineDummy> Npc05BadelineShadow =
-        FastReflection.CreateGetDelegate<NPC05_Badeline, BadelineDummy>("shadow");
-
-    private static readonly GetDelegate<NPC03_Oshiro_Cluttter, int> Npc03OshiroSectionsComplete =
-        FastReflection.CreateGetDelegate<NPC03_Oshiro_Cluttter, int>("sectionsComplete");
-
     [Load]
     private static void Load() {
         On.Monocle.Entity.DebugRender += EntityOnDebugRender;
@@ -44,7 +38,7 @@ public static class HitboxNpc {
             } else if (entity is NPC03_Oshiro_Hallway1 or NPC03_Oshiro_Hallway2 or NPC06_Granny) {
                 float x = entity.X - 55;
                 Draw.Line(x, top, x, bottom, color);
-            } else if (entity is NPC03_Oshiro_Cluttter oshiro && Npc03OshiroSectionsComplete(oshiro) == 3) {
+            } else if (entity is NPC03_Oshiro_Cluttter {sectionsComplete: 3}) {
                 float x = entity.X + 28;
                 Draw.Line(x, top, x, entity.Y, color);
             } else if (entity is NPC04_Granny) {
@@ -69,7 +63,7 @@ public static class HitboxNpc {
                 if (levelName == "c-00") {
                     float x = entity.X - 59;
                     Draw.Line(x, top, x, bottom, color);
-                } else if (levelName == "c-01" && Npc05BadelineShadow(badelineNpc) is { } badelineDummy) {
+                } else if (levelName == "c-01" && badelineNpc.shadow is { } badelineDummy) {
                     Draw.Circle(badelineDummy.Position, 70, color, 4);
                     if (level.GetPlayer() is { } player && Vector2.Distance(player.Position, badelineDummy.Position) <= 150) {
                         Draw.Line(player.Position, badelineDummy.Position, Color.Aqua);

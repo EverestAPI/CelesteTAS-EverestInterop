@@ -1,5 +1,4 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using Celeste;
 using Celeste.Mod;
@@ -65,8 +64,7 @@ internal class Toast : Entity {
         }
 
         Engine.Scene.Tracker.GetEntities<Toast>().ForEach(entity => entity.RemoveSelf());
-        if (Engine.Scene.Entities.GetFieldValue<HashSet<Entity>>("adding") is { } adding &&
-            adding.FirstOrDefault(entity => entity is Toast) is Toast toast) {
+        if (Engine.Scene.Entities.adding.FirstOrDefault(entity => entity is Toast) is Toast toast) {
             toast.UpdateMessage(toast.message + "\n" + message);
         } else {
             Engine.Scene.Add(new Toast(message, duration));

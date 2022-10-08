@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Reflection;
 using Celeste;
 using Celeste.Mod.Entities;
 using Microsoft.Xna.Framework;
@@ -10,36 +9,9 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxTriggerSpikes {
-    private static readonly GetDelegate<TriggerSpikes, TriggerSpikes.Directions> TriggerSpikesDirection =
-        FastReflection.CreateGetDelegate<TriggerSpikes, TriggerSpikes.Directions>("direction");
-
-    private static readonly GetDelegate<object, Array> TriggerSpikesSpikes = typeof(TriggerSpikes).CreateGetDelegate<object, Array>("spikes");
-
-    private static readonly Type spikeInfoType = typeof(TriggerSpikes).GetNestedType("SpikeInfo", BindingFlags.NonPublic);
-    private static readonly GetDelegate<object, bool> triggerSpikesTriggered = spikeInfoType.CreateGetDelegate<object, bool>("Triggered");
-    private static readonly GetDelegate<object, float> triggerSpikesLerp = spikeInfoType.CreateGetDelegate<object, float>("Lerp");
-
-    private static readonly GetDelegate<TriggerSpikesOriginal, TriggerSpikesOriginal.Directions> TriggerSpikesOriginalDirection =
-        FastReflection.CreateGetDelegate<TriggerSpikesOriginal, TriggerSpikesOriginal.Directions>("direction");
-
-    private static readonly GetDelegate<object, Array> TriggerSpikesOriginalSpikes =
-        typeof(TriggerSpikesOriginal).CreateGetDelegate<object, Array>("spikes");
-
-    private static readonly Type originalSpikeInfoType = typeof(TriggerSpikesOriginal).GetNestedType("SpikeInfo", BindingFlags.NonPublic);
-
-    private static readonly GetDelegate<object, bool> triggerSpikesOriginalTriggered =
-        originalSpikeInfoType.CreateGetDelegate<object, bool>("Triggered");
-
-    private static readonly GetDelegate<object, float> triggerSpikesOriginalLerp = originalSpikeInfoType.CreateGetDelegate<object, float>("Lerp");
-
-    private static readonly GetDelegate<object, Vector2> triggerSpikesOriginalPosition =
-        originalSpikeInfoType.CreateGetDelegate<object, Vector2>("Position");
-
     private static Type groupedTriggerSpikesType;
     private static GetDelegate<object, bool> groupedTriggerSpikesTriggered;
     private static GetDelegate<object, float> groupedTriggerSpikesLerp;
-
-    static HitboxTriggerSpikes() { }
 
     [Initialize]
     private static void Initialize() {
@@ -92,7 +64,7 @@ public static class HitboxTriggerSpikes {
 
         Vector2 offset, value;
         bool vertical = false;
-        switch (TriggerSpikesDirection(triggerSpikes)) {
+        switch (triggerSpikes.direction) {
             case TriggerSpikes.Directions.Up:
                 offset = new Vector2(-2f, -4f);
                 value = new Vector2(1f, 0f);
@@ -115,17 +87,17 @@ public static class HitboxTriggerSpikes {
                 return;
         }
 
-        Array spikes = TriggerSpikesSpikes(triggerSpikes);
+        TriggerSpikes.SpikeInfo[] spikes = triggerSpikes.spikes;
         for (int i = 0; i < spikes.Length; i++) {
-            object spikeInfo = spikes.GetValue(i);
-            if (triggerSpikesTriggered(spikeInfo) && triggerSpikesLerp(spikeInfo) >= 1f) {
+            TriggerSpikes.SpikeInfo spikeInfo = spikes[i];
+            if (spikeInfo.Triggered && spikeInfo.Lerp >= 1f) {
                 Vector2 position = triggerSpikes.Position + value * (2 + i * 4) + offset;
 
                 bool startFromZero = i == 0;
                 int num = 1;
                 for (int j = i + 1; j < spikes.Length; j++) {
-                    object nextSpikeInfo = spikes.GetValue(j);
-                    if (triggerSpikesTriggered(nextSpikeInfo) && triggerSpikesLerp(nextSpikeInfo) >= 1f) {
+                    TriggerSpikes.SpikeInfo nextSpikeInfo = spikes[j];
+                    if (nextSpikeInfo.Triggered && nextSpikeInfo.Lerp >= 1f) {
                         num++;
                         i++;
                     } else {
@@ -156,7 +128,7 @@ public static class HitboxTriggerSpikes {
         Vector2 offset;
         float width, height;
         bool vertical = false;
-        switch (TriggerSpikesOriginalDirection(triggerSpikes)) {
+        switch (triggerSpikes.direction) {
             case TriggerSpikesOriginal.Directions.Up:
                 width = 8f;
                 height = 3f;
@@ -183,16 +155,16 @@ public static class HitboxTriggerSpikes {
                 return;
         }
 
-        Array spikes = TriggerSpikesOriginalSpikes(triggerSpikes);
+        TriggerSpikesOriginal.SpikeInfo[] spikes = triggerSpikes.spikes;
         for (int i = 0; i < spikes.Length; i++) {
-            object spikeInfo = spikes.GetValue(i);
+            TriggerSpikesOriginal.SpikeInfo spikeInfo = spikes[i];
 
-            if (triggerSpikesOriginalTriggered(spikeInfo) && triggerSpikesOriginalLerp(spikeInfo) >= 1) {
+            if (spikeInfo.Triggered && spikeInfo.Lerp >= 1) {
                 bool startFromZero = i == 0;
                 int num = 1;
                 for (int j = i + 1; j < spikes.Length; j++) {
-                    object nextSpikeInfo = spikes.GetValue(j);
-                    if (triggerSpikesOriginalTriggered(nextSpikeInfo) && triggerSpikesOriginalLerp(nextSpikeInfo) >= 1) {
+                    TriggerSpikesOriginal.SpikeInfo nextSpikeInfo = spikes[j];
+                    if (nextSpikeInfo.Triggered && nextSpikeInfo.Lerp >= 1) {
                         num++;
                         i++;
                     } else {
@@ -200,7 +172,7 @@ public static class HitboxTriggerSpikes {
                     }
                 }
 
-                Vector2 position = triggerSpikesOriginalPosition(spikeInfo) + triggerSpikes.Position + offset;
+                Vector2 position = spikeInfo.Position + triggerSpikes.Position + offset;
                 float totalWidth = width * (vertical ? 1 : num);
                 float totalHeight = height * (vertical ? num : 1);
                 if (!startFromZero) {

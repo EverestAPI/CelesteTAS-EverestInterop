@@ -6,7 +6,6 @@ using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.RuntimeDetour;
-using MonoMod.Utils;
 using TAS.Module;
 using TAS.Utils;
 using GameInput = Celeste.Input;
@@ -27,12 +26,6 @@ public static class Core {
     // https://github.com/EverestAPI/Everest/commit/b2a6f8e7c41ddafac4e6fde0e43a09ce1ac4f17e
     private static readonly Lazy<bool> CantPauseWhileSaving = new(() => Everest.Version < new Version(1, 2865));
     private static readonly bool updateGrab = typeof(GameInput).GetMethod("UpdateGrab") != null;
-
-    private static readonly GetDelegate<FinalBoss, int> GetFacing = FastReflection.CreateGetDelegate<FinalBoss, int>("facing");
-    private static readonly GetDelegate<FinalBoss, Wiggler> GetScaleWiggler = FastReflection.CreateGetDelegate<FinalBoss, Wiggler>("scaleWiggler");
-
-    private static readonly Action<DreamMirror> dreamMirrorBeforeRender =
-        typeof(DreamMirror).GetMethodInfo("BeforeRender").CreateDelegate<Action<DreamMirror>>();
 
     [Load]
     private static void Load() {

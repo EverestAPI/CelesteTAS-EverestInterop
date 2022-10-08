@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using Celeste;
 using Celeste.Mod;
@@ -18,7 +17,6 @@ namespace TAS.Input.Commands;
 
 public static class ConsoleCommand {
     private static readonly Regex LoadCommandRegex = new(@"^(load|hard|rmx2)(\d*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-    private static readonly FieldInfo MovementCounter = typeof(Actor).GetFieldInfo("movementCounter");
     private static Vector2 resetRemainder;
     private static Vector2 initSpeed;
 
@@ -42,7 +40,7 @@ public static class ConsoleCommand {
         Player player = orig(position, spriteMode);
 
         if (resetRemainder != Vector2.Zero) {
-            MovementCounter.SetValue(player, resetRemainder);
+            player.movementCounter = resetRemainder;
             resetRemainder = Vector2.Zero;
         }
 
@@ -133,12 +131,10 @@ public static class ConsoleCommand {
 
             LoadCommand(commandName, args, slot);
         } else {
-            List<string> commandHistory = Engine.Commands.GetFieldValue<List<string>>("commandHistory");
-            commandHistory?.Insert(0, commandText.Substring(8));
+            List<string> commandHistory = Engine.Commands.commandHistory;
+            commandHistory.Insert(0, commandText.Substring(8));
             Engine.Commands.ExecuteCommand(commandName, args);
-            if (commandHistory?.IsNotEmpty() == true) {
-                commandHistory.RemoveAt(0);
-            }
+            commandHistory.RemoveAt(0);
         }
     }
 

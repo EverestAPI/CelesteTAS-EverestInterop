@@ -2,16 +2,10 @@ using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Module;
-using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxFinalBoss {
-    private static readonly GetDelegate<FinalBossBeam, float> GetChargeTimer = FastReflection.CreateGetDelegate<FinalBossBeam, float>("chargeTimer");
-    private static readonly GetDelegate<FinalBossBeam, float> GetActiveTimer = FastReflection.CreateGetDelegate<FinalBossBeam, float>("activeTimer");
-    private static readonly GetDelegate<FinalBossBeam, float> GetAngle = FastReflection.CreateGetDelegate<FinalBossBeam, float>("angle");
-    private static readonly GetDelegate<FinalBossBeam, FinalBoss> GetBoss = FastReflection.CreateGetDelegate<FinalBossBeam, FinalBoss>("boss");
-
     [Load]
     private static void Load() {
         On.Monocle.Entity.DebugRender += ModHitbox;
@@ -32,12 +26,10 @@ public static class HitboxFinalBoss {
 
         orig(self, camera);
 
-        if (self is FinalBossBeam finalBossBeam) {
-            if (GetChargeTimer(finalBossBeam) <= 0f && GetActiveTimer(finalBossBeam) > 0f) {
-                float angle = GetAngle(finalBossBeam);
-                FinalBoss boss = GetBoss(finalBossBeam);
-                Vector2 vector = boss.BeamOrigin + Calc.AngleToVector(angle, 12f);
-                Vector2 vector2 = boss.BeamOrigin + Calc.AngleToVector(angle, 2000f);
+        if (self is FinalBossBeam beam) {
+            if (beam.chargeTimer <= 0f && beam.activeTimer > 0f) {
+                Vector2 vector = beam.boss.BeamOrigin + Calc.AngleToVector(beam.angle, 12f);
+                Vector2 vector2 = beam.boss.BeamOrigin + Calc.AngleToVector(beam.angle, 2000f);
                 Vector2 value = (vector2 - vector).Perpendicular().SafeNormalize(2f);
                 Draw.Line(vector + value, vector2 + value, Color.Goldenrod);
                 Draw.Line(vector - value, vector2 - value, Color.Goldenrod);

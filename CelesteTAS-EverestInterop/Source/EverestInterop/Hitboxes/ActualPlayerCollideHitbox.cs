@@ -10,8 +10,6 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static partial class ActualEntityCollideHitbox {
-    private static readonly GetDelegate<Player, Hitbox> PlayerHurtbox = FastReflection.CreateGetDelegate<Player, Hitbox>("hurtbox");
-
     private static readonly Color PlayerHitboxColor = Color.Red.Invert();
     private static readonly Color PlayerHurtboxColor = Color.Lime.Invert();
 
@@ -57,19 +55,18 @@ public static partial class ActualEntityCollideHitbox {
         }
 
         if (TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Override) {
-            DrawAssistedHitbox(orig, player, camera, actualCollidePosition);
+            DrawAssistedHitbox(player, actualCollidePosition);
         }
 
         orig(player, camera);
         if (TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Append) {
-            DrawAssistedHitbox(orig, player, camera, actualCollidePosition);
+            DrawAssistedHitbox(player, actualCollidePosition);
         }
     }
 
-    private static void DrawAssistedHitbox(On.Celeste.Player.orig_DebugRender orig, Player player, Camera camera,
-        Vector2 hitboxPosition) {
+    private static void DrawAssistedHitbox(Player player, Vector2 hitboxPosition) {
         Collider origCollider = player.Collider;
-        Collider hurtbox = PlayerHurtbox(player);
+        Collider hurtbox = player.hurtbox;
         Vector2 origPosition = player.Position;
 
         player.Position = hitboxPosition;

@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Celeste;
@@ -15,8 +14,6 @@ using TAS.Utils;
 namespace TAS.EverestInterop.InfoHUD;
 
 public static class InfoCustom {
-    private const BindingFlags AllBindingFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-
     private static readonly Regex BraceRegex = new(@"\{(.+?)\}", RegexOptions.Compiled);
     private static readonly Regex TypeNameRegex = new(@"^([.\w=+<>]+)(\[(.+?)\])?(@([^.]*))?$", RegexOptions.Compiled);
     private static readonly Regex TypeNameSeparatorRegex = new(@"^[.+]", RegexOptions.Compiled);

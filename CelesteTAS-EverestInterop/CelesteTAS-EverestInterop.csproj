@@ -9,6 +9,7 @@
         <OutputPath>bin\</OutputPath>
         <MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB3270</MSBuildWarningsAsMessages>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
     <ItemDefinitionGroup>
         <PackageReference IncludeAssets="compile" />

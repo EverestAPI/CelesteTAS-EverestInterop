@@ -12,21 +12,6 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxOptimized {
-    private static readonly GetDelegate<FireBall, bool> FireBallIceMode = FastReflection.CreateGetDelegate<FireBall, bool>("iceMode");
-    private static readonly GetDelegate<Seeker, Hitbox> SeekerPhysicsHitbox = FastReflection.CreateGetDelegate<Seeker, Hitbox>("physicsHitbox");
-    private static readonly GetDelegate<Seeker, Circle> SeekerPushRadius = FastReflection.CreateGetDelegate<Seeker, Circle>("pushRadius");
-
-    private static readonly GetDelegate<Pathfinder, List<Vector2>> PathfinderLastPath =
-        FastReflection.CreateGetDelegate<Pathfinder, List<Vector2>>("lastPath");
-
-    private static readonly GetDelegate<HoldableCollider, Collider> HoldableColliderCollider =
-        FastReflection.CreateGetDelegate<HoldableCollider, Collider>("collider");
-
-    private static readonly GetDelegate<LockBlock, bool> LockBlockOpening = FastReflection.CreateGetDelegate<LockBlock, bool>("opening");
-    private static readonly GetDelegate<Player, Hitbox> PlayerHurtbox = FastReflection.CreateGetDelegate<Player, Hitbox>("hurtbox");
-    private static GetDelegate<object, Solid> bgModeToggleBgSolidTiles;
-    private static readonly Dictionary<LevelData, bool> ExistBgModeToggle = new();
-
     [Initialize]
     private static void Initialize() {
         // remove the yellow points hitboxes added by "Madeline in Wonderland"
@@ -59,8 +44,6 @@ public static class HitboxOptimized {
         IL.Celeste.Seeker.DebugRender += SeekerOnDebugRender;
         On.Celeste.Seeker.DebugRender += SeekerOnDebugRender;
         On.Celeste.Level.LoadLevel += LevelOnLoadLevel;
-        bgModeToggleBgSolidTiles =
-            ModUtils.GetType("BGswitch", "Celeste.BGModeToggle")?.CreateGetDelegate<object, Solid>("bgSolidTiles");
     }
 
     [Unload]
@@ -76,7 +59,6 @@ public static class HitboxOptimized {
         IL.Celeste.Seeker.DebugRender -= SeekerOnDebugRender;
         On.Celeste.Seeker.DebugRender -= SeekerOnDebugRender;
         On.Celeste.Level.LoadLevel -= LevelOnLoadLevel;
-        bgModeToggleBgSolidTiles = null;
     }
 
     private static void ModDebugRender(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {
@@ -92,19 +74,6 @@ public static class HitboxOptimized {
             Rectangle bounds = new((int) camera.Left - width / 2, (int) camera.Top - height / 2, width * 2, height * 2);
             if (self.Right < bounds.Left || self.Left > bounds.Right || self.Top > bounds.Bottom ||
                 self.Bottom < bounds.Top) {
-                return;
-            }
-        }
-
-        if (self is Solid && bgModeToggleBgSolidTiles?.Invoke(null) is { } bgSolid && bgSolid == self && !bgSolid.Collidable &&
-            self.Scene is Level level) {
-            LevelData levelData = level.Session.LevelData;
-            if (!ExistBgModeToggle.TryGetValue(levelData, out bool exist)) {
-                exist = levelData.Entities.Union(levelData.Triggers).Any(data => data.Name?.StartsWith("bgSwitch/") == true);
-                ExistBgModeToggle[levelData] = exist;
-            }
-
-            if (!exist) {
                 return;
             }
         }
@@ -152,7 +121,7 @@ public static class HitboxOptimized {
         }
 
         foreach (HoldableCollider component in level.Tracker.GetCastComponents<HoldableCollider>()) {
-            if (HoldableColliderCollider(component) is not { } collider || component.Entity is Seeker) {
+            if (component.collider is not { } collider || component.Entity is Seeker) {
                 continue;
             }
 
@@ -193,7 +162,7 @@ public static class HitboxOptimized {
         }
 
         Collider origCollider = player.Collider;
-        player.Collider = PlayerHurtbox(player);
+        player.Collider = player.hurtbox;
         Vector2 playerCenter = player.Center;
         player.Collider = origCollider;
 
@@ -207,7 +176,7 @@ public static class HitboxOptimized {
             }
 
             Color color = Color.HotPink;
-            if (LockBlockOpening(lockBlock)) {
+            if (lockBlock.opening) {
                 color = Color.Aqua;
             }
 
@@ -292,7 +261,7 @@ public static class HitboxOptimized {
             return;
         }
 
-        if (self.Entity is FireBall fireBall && !FireBallIceMode(fireBall)) {
+        if (self.Entity is FireBall {iceMode: false}) {
             color = Color.Goldenrod;
         }
 
@@ -351,19 +320,19 @@ public static class HitboxOptimized {
 
         Collider origCollider = self.Collider;
 
-        if (SeekerPhysicsHitbox(self) is { } physicsHitbox) {
+        if (self.physicsHitbox is { } physicsHitbox) {
             self.Collider = physicsHitbox;
             physicsHitbox.Render(camera, Color.Goldenrod);
         }
 
-        if (self.Regenerating && SeekerPushRadius(self) is { } pushRadius) {
+        if (self.Regenerating && self.pushRadius is { } pushRadius) {
             self.Collider = pushRadius;
             pushRadius.Render(camera, HitboxColor.EntityColor);
         }
 
         self.Collider = origCollider;
 
-        if (!self.Regenerating && self.SceneAs<Level>() is {Pathfinder: { } pathfinder} && PathfinderLastPath(pathfinder) is {Count: >= 2} lastPath) {
+        if (!self.Regenerating && self.SceneAs<Level>() is {Pathfinder.lastPath: {Count: >= 2} lastPath}) {
             Vector2 start = lastPath[0];
             for (int i = 1; i < lastPath.Count; i++) {
                 Vector2 vector = lastPath[i];
@@ -376,8 +345,8 @@ public static class HitboxOptimized {
     private static void LevelOnLoadLevel(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader) {
         orig(self, playerIntro, isFromLoader);
 
-        if (TasSettings.ShowHitboxes && self.Pathfinder is { } pathfinder && PathfinderLastPath(pathfinder) != null) {
-            pathfinder.SetFieldValue("lastPath", null);
+        if (TasSettings.ShowHitboxes && self.Pathfinder is {lastPath: { }} pathfinder) {
+            pathfinder.lastPath = null;
         }
     }
 }

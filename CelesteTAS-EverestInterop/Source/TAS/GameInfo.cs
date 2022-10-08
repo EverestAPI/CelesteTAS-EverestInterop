@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using Celeste;
 using Celeste.Mod;
@@ -19,22 +18,7 @@ using TAS.Utils;
 namespace TAS;
 
 public static class GameInfo {
-    private static readonly GetDelegate<SummitVignette, bool> SummitVignetteReady = FastReflection.CreateGetDelegate<SummitVignette, bool>("ready");
-    private static readonly Func<Player, int, bool> WallJumpCheck;
-    private static readonly GetDelegate<Strawberry, float> StrawberryCollectTimer;
-    private static readonly GetDelegate<Player, float> DashCooldownTimer;
-    private static readonly GetDelegate<Player, float> JumpGraceTimer;
-    private static readonly GetDelegate<Player, float> VarJumpTimer;
-    private static readonly GetDelegate<Player, float> MaxFall;
-    private static readonly GetDelegate<PlayerSeeker, Vector2> PlayerSeekerSpeed;
-    private static readonly GetDelegate<PlayerSeeker, float> PlayerSeekerDashTimer;
-    private static readonly GetDelegate<Player, Vector2> PlayerLiftBoost;
-    private static readonly GetDelegate<Player, float> ActorLiftSpeedTimer;
-    private static readonly GetDelegate<Player, float> PlayerRetainedSpeed;
-    private static readonly GetDelegate<Player, float> PlayerRetainedSpeedTimer;
-    private static readonly GetDelegate<Level, float> LevelUnpauseTimer;
-    private static readonly GetDelegate<StateMachine, Coroutine> StateMachineCurrentCoroutine;
-    private static readonly GetDelegate<Coroutine, float> CoroutineWaitTimer;
+    private static readonly GetDelegate<Level, float> LevelUnpauseTimer = FastReflection.CreateGetDelegate<Level, float>("unpauseTimer");
 
     public static string Status = string.Empty;
     public static string StatusWithoutTime = string.Empty;
@@ -52,27 +36,6 @@ public static class GameInfo {
     public static bool Frozen;
 
     private static int transitionFrames;
-
-    static GameInfo() {
-        MethodInfo wallJumpCheck = typeof(Player).GetMethodInfo("WallJumpCheck");
-        MethodInfo playerLiftSpeed = typeof(Player).GetPropertyInfo("LiftBoost").GetGetMethod(true);
-
-        WallJumpCheck = (Func<Player, int, bool>) wallJumpCheck.CreateDelegate(typeof(Func<Player, int, bool>));
-        PlayerLiftBoost = (GetDelegate<Player, Vector2>) playerLiftSpeed.CreateDelegate(typeof(GetDelegate<Player, Vector2>));
-        StrawberryCollectTimer = FastReflection.CreateGetDelegate<Strawberry, float>("collectTimer");
-        DashCooldownTimer = FastReflection.CreateGetDelegate<Player, float>("dashCooldownTimer");
-        JumpGraceTimer = FastReflection.CreateGetDelegate<Player, float>("jumpGraceTimer");
-        VarJumpTimer = FastReflection.CreateGetDelegate<Player, float>("varJumpTimer");
-        MaxFall = FastReflection.CreateGetDelegate<Player, float>("maxFall");
-        PlayerSeekerSpeed = FastReflection.CreateGetDelegate<PlayerSeeker, Vector2>("speed");
-        PlayerSeekerDashTimer = FastReflection.CreateGetDelegate<PlayerSeeker, float>("dashTimer");
-        ActorLiftSpeedTimer = FastReflection.CreateGetDelegate<Player, float>("liftSpeedTimer");
-        PlayerRetainedSpeed = FastReflection.CreateGetDelegate<Player, float>("wallSpeedRetained");
-        PlayerRetainedSpeedTimer = FastReflection.CreateGetDelegate<Player, float>("wallSpeedRetentionTimer");
-        LevelUnpauseTimer = FastReflection.CreateGetDelegate<Level, float>("unpauseTimer");
-        StateMachineCurrentCoroutine = FastReflection.CreateGetDelegate<StateMachine, Coroutine>("currentCoroutine");
-        CoroutineWaitTimer = FastReflection.CreateGetDelegate<Coroutine, float>("waitTimer");
-    }
 
     public static string HudInfo {
         get {
@@ -261,16 +224,16 @@ public static class GameInfo {
                 string liftBoost = GetAdjustedLiftBoost(player, out string exactLiftBoost);
 
                 string miscStats = $"Stamina: {player.Stamina:F2} "
-                                   + (WallJumpCheck(player, 1) ? "Wall-R " : string.Empty)
-                                   + (WallJumpCheck(player, -1) ? "Wall-L " : string.Empty)
+                                   + (player.WallJumpCheck(1) ? "Wall-R " : string.Empty)
+                                   + (player.WallJumpCheck(-1) ? "Wall-L " : string.Empty)
                                    + PlayerStates.GetStateName(player.StateMachine.State);
 
-                int dashCooldown = DashCooldownTimer(player).ToFloorFrames();
+                int dashCooldown = player.dashCooldownTimer.ToFloorFrames();
 
                 PlayerSeeker playerSeeker = level.Tracker.GetEntity<PlayerSeeker>();
                 if (playerSeeker != null) {
                     pos = GetAdjustedPos(playerSeeker, out exactPos);
-                    speed = GetAdjustedSpeed(PlayerSeekerSpeed(playerSeeker), out exactSpeed);
+                    speed = GetAdjustedSpeed(playerSeeker.speed, out exactSpeed);
                     diff = playerSeeker.GetMoreExactPosition(false) - LastPlayerSeekerPos;
                     if (!Frozen && updateVel) {
                         LastPlayerSeekerDiff = diff;
@@ -285,7 +248,7 @@ public static class GameInfo {
                     velocity = GetAdjustedVelocity(diff, out exactVelocity);
 
                     polarVel = $"Chase: {diff.Length():F2}, {diff.Angle():F5}°";
-                    dashCooldown = PlayerSeekerDashTimer(playerSeeker).ToCeilingFrames();
+                    dashCooldown = playerSeeker.dashTimer.ToCeilingFrames();
                 }
 
                 string statuses = GetStatuses(level, player, dashCooldown);
@@ -293,7 +256,7 @@ public static class GameInfo {
                 string timers = string.Empty;
                 Follower firstRedBerryFollower = player.Leader.Followers.Find(follower => follower.Entity is Strawberry {Golden: false});
                 if (firstRedBerryFollower?.Entity is Strawberry firstRedBerry) {
-                    float collectTimer = StrawberryCollectTimer(firstRedBerry);
+                    float collectTimer = firstRedBerry.collectTimer;
                     if (collectTimer <= 0.15f) {
                         int collectFrames = (0.15f - collectTimer).ToCeilingFrames();
                         if (collectTimer >= 0f) {
@@ -311,7 +274,7 @@ public static class GameInfo {
 
                 if ((FramesPerGameSecond != 60 || SaveData.Instance.Assists.SuperDashing) &&
                     DashTime.ToCeilingFrames() >= 1 && player.StateMachine.State == Player.StDash) {
-                    DashTime = CoroutineWaitTimer(StateMachineCurrentCoroutine(player.StateMachine));
+                    DashTime = player.StateMachine.currentCoroutine.waitTimer;
                     timers += $"Dash({DashTime.ToCeilingFrames()}) ";
                 }
 
@@ -382,7 +345,7 @@ public static class GameInfo {
             WatchingInfo = string.Empty;
             CustomInfo = string.Empty;
             if (Engine.Scene is SummitVignette summit) {
-                Status = ExactStatus = $"SummitVignette {SummitVignetteReady(summit)}";
+                Status = ExactStatus = $"SummitVignette {summit.ready}";
             } else if (Engine.Scene is Overworld overworld) {
                 Status = ExactStatus = $"Overworld {(overworld.Current ?? overworld.Next).GetType().Name} {overworld.ShowInputUI}";
             } else if (Engine.Scene != null) {
@@ -412,17 +375,16 @@ public static class GameInfo {
             if (player.LoseShards) {
                 statuses.Add("Ground");
             } else {
-                if (JumpGraceTimer(player).ToFloorFrames() is var coyote and > 0) {
+                if (player.jumpGraceTimer.ToFloorFrames() is var coyote and > 0) {
                     statuses.Add($"Coyote({coyote})");
                 }
 
-                if (VarJumpTimer(player).ToFloorFrames() is var jumpTimer and > 0) {
+                if (player.varJumpTimer.ToFloorFrames() is var jumpTimer and > 0) {
                     statuses.Add($"Jump({jumpTimer})");
                 }
 
-                if (player.StateMachine.State == Player.StNormal && MaxFall(player) is var maxFall &&
-                    (player.Speed.Y > 0f || player.Holding is {SlowFall: true})) {
-                    statuses.Add($"MaxFall({ConvertSpeedUnit(maxFall, TasSettings.SpeedUnit):0.##})");
+                if (player.StateMachine.State == Player.StNormal && (player.Speed.Y > 0f || player.Holding is {SlowFall: true})) {
+                    statuses.Add($"MaxFall({ConvertSpeedUnit(player.maxFall, TasSettings.SpeedUnit):0.##})");
                 }
             }
         } else {
@@ -487,10 +449,6 @@ public static class GameInfo {
         return builder.ToString();
     }
 
-    public static float GetDashCooldownTimer(Player player) {
-        return DashCooldownTimer(player);
-    }
-
     private static int ToCeilingFrames(this float seconds) {
         return (int) Math.Ceiling(seconds / Engine.RawDeltaTime / Engine.TimeRateB);
     }
@@ -541,9 +499,9 @@ public static class GameInfo {
     }
 
     private static string GetAdjustedRetainedSpeed(Player player, out string exactRetainedSpeed) {
-        if (PlayerRetainedSpeedTimer(player) is float retainedSpeedTimer and > 0f) {
-            int timer = retainedSpeedTimer.ToCeilingFrames();
-            float retainedSpeed = ConvertSpeedUnit(PlayerRetainedSpeed(player), TasSettings.SpeedUnit);
+        if (player.wallSpeedRetentionTimer > 0f) {
+            int timer = player.wallSpeedRetentionTimer.ToCeilingFrames();
+            float retainedSpeed = ConvertSpeedUnit(player.wallSpeedRetained, TasSettings.SpeedUnit);
             exactRetainedSpeed = $"Retained({timer}): {retainedSpeed.ToString($"F{CelesteTasSettings.MaxDecimals}")}";
             return $"Retained({timer}): {retainedSpeed.ToString($"F{TasSettings.SpeedDecimals}")}";
         } else {
@@ -552,9 +510,9 @@ public static class GameInfo {
     }
 
     private static string GetAdjustedLiftBoost(Player player, out string exactLiftBoost) {
-        if (PlayerLiftBoost(player) is var liftBoost && liftBoost != Vector2.Zero) {
+        if (player.LiftBoost is var liftBoost && liftBoost != Vector2.Zero) {
             liftBoost = ConvertSpeedUnit(liftBoost, TasSettings.SpeedUnit);
-            int timer = ActorLiftSpeedTimer(player).ToCeilingFrames();
+            int timer = player.liftSpeedTimer.ToCeilingFrames();
             exactLiftBoost = $"LiftBoost({timer}): {liftBoost.ToSimpleString(CelesteTasSettings.MaxDecimals)}";
             return $"LiftBoost({timer}): {liftBoost.ToSimpleString(TasSettings.SpeedDecimals)}";
         } else {

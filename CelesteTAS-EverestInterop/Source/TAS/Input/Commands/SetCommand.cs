@@ -14,8 +14,6 @@ namespace TAS.Input.Commands;
 
 // ReSharper disable once UnusedType.Global
 public static class SetCommand {
-    private static readonly FieldInfo ActorMovementCounter = typeof(Actor).GetFieldInfo("movementCounter");
-    private static readonly FieldInfo InputFeather = typeof(Celeste.Input).GetFieldInfo("Feather");
     private static bool consolePrintLog;
     private const string logPrefix = "Set Command Failed: ";
 
@@ -221,7 +219,7 @@ public static class SetCommand {
                     remainder.Y = (float) (value - actor.Position.Y);
                 }
 
-                ActorMovementCounter.SetValue(obj, remainder);
+                actor.movementCounter = remainder;
             } else {
                 object value = structObj ?? ConvertType(values, property.PropertyType);
                 setMethod.Invoke(obj, new[] {value});
@@ -233,7 +231,7 @@ public static class SetCommand {
                 Vector2 position = new((int) Math.Round(x), (int) Math.Round(y));
                 Vector2 remainder = new((float) (x - position.X), (float) (y - position.Y));
                 actor.Position = position;
-                ActorMovementCounter.SetValue(obj, remainder);
+                actor.movementCounter = remainder;
             } else {
                 object value = structObj ?? ConvertType(values, field.FieldType);
                 if (lastMemberName.Equals("Speed", StringComparison.OrdinalIgnoreCase) && value is Vector2 speed &&
@@ -327,7 +325,7 @@ public static class SetCommand {
             case "MirrorMode":
                 saveData.Assists.MirrorMode = (bool) value;
                 Celeste.Input.MoveX.Inverted = Celeste.Input.Aim.InvertedX = (bool) value;
-                if (InputFeather?.GetValue(null) is VirtualJoystick featherJoystick) {
+                if (Celeste.Input.Feather is { } featherJoystick) {
                     featherJoystick.InvertedX = (bool) value;
                 }
 

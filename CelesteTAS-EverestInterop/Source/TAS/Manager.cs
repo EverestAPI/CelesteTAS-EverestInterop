@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using Celeste;
 using Celeste.Mod;
@@ -21,9 +20,6 @@ namespace TAS;
 public static class Manager {
     private static readonly ConcurrentQueue<Action> mainThreadActions = new();
 
-    private static readonly GetDelegate<SummitVignette, bool> SummitVignetteReady = FastReflection.CreateGetDelegate<SummitVignette, bool>("ready");
-    private static readonly DUpdateVirtualInputs UpdateVirtualInputs;
-
     public static bool Running;
     public static readonly InputController Controller = new();
     public static States LastStates, States, NextStates;
@@ -37,9 +33,6 @@ public static class Manager {
     public static bool SkipFrame => States.HasFlag(States.FrameStep) || SkipSlowForwardingFrame;
 
     static Manager() {
-        MethodInfo updateVirtualInputs = typeof(MInput).GetMethodInfo("UpdateVirtualInputs");
-        UpdateVirtualInputs = (DUpdateVirtualInputs) updateVirtualInputs.CreateDelegate(typeof(DUpdateVirtualInputs));
-
         AttributeUtils.CollectMethods<EnableRunAttribute>();
         AttributeUtils.CollectMethods<DisableRunAttribute>();
     }
@@ -115,7 +108,7 @@ public static class Manager {
                     }
                 }
 
-                UpdateVirtualInputs();
+                MInput.UpdateVirtualInputs();
             }
         }
 
@@ -255,7 +248,7 @@ public static class Manager {
             case Level level:
                 return level.IsAutoSaving() && level.Session.Level == "end-cinematic";
             case SummitVignette summit:
-                return !SummitVignetteReady(summit);
+                return !summit.ready;
             case Overworld overworld:
                 return overworld.Current is OuiFileSelect {SlotIndex: >= 0} slot && slot.Slots[slot.SlotIndex].StartingGame;
             default:
@@ -287,7 +280,7 @@ public static class Manager {
             MInput.Keyboard.CurrentState = new KeyboardState();
         }
 
-        UpdateVirtualInputs();
+        MInput.UpdateVirtualInputs();
     }
 
     private static void SetFeather(InputFrame input, ref GamePadDPad pad, ref GamePadThumbSticks sticks) {
@@ -328,9 +321,6 @@ public static class Manager {
             pad
         );
     }
-
-    //The things we do for faster replay times
-    private delegate void DUpdateVirtualInputs();
 }
 
 [AttributeUsage(AttributeTargets.Method)]

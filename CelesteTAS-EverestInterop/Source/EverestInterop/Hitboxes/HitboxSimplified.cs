@@ -13,9 +13,6 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxSimplified {
-    private static readonly GetDelegate<FireBall, bool> FireBallIceMode = FastReflection.CreateGetDelegate<FireBall, bool>("iceMode");
-    private static readonly GetDelegate<Strawberry, bool> StrawberryCollected = FastReflection.CreateGetDelegate<Strawberry, bool>("collected");
-
     private static readonly Lazy<GetDelegate<object, bool>> GeckoHostile = new(() =>
         ModUtils.GetType("JungleHelper", "Celeste.Mod.JungleHelper.Entities.Gecko")?.CreateGetDelegate<object, bool>("hostile"));
 
@@ -92,7 +89,7 @@ public static class HitboxSimplified {
                 return true;
             }
 
-            if (entity is Strawberry strawberry && StrawberryCollected(strawberry)) {
+            if (entity is Strawberry {collected: true}) {
                 return true;
             }
         }
@@ -108,7 +105,7 @@ public static class HitboxSimplified {
 
         Entity entity = hitbox.Entity;
 
-        if (entity is FireBall fireBall && !FireBallIceMode(fireBall)) {
+        if (entity is FireBall {iceMode: false}) {
             return;
         }
 
