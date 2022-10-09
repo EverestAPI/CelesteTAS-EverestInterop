@@ -23,22 +23,6 @@
                     "Microsoft.NETFramework.ReferenceAssemblies.net452": "1.0.2"
                 }
             },
-            "Mono.Cecil": {
-                "type": "Direct",
-                "requested": "[0.11.3, )",
-                "resolved": "0.11.3",
-                "contentHash": "DNYE+io5XfEE8+E+5padThTPHJARJHbz1mhbhMPNrrWGKVKKqj/KEeLvbawAmbIcT73NuxLV7itHZaYCZcVWGg=="
-            },
-            "MonoMod": {
-                "type": "Direct",
-                "requested": "[21.4.29.1, )",
-                "resolved": "21.4.29.1",
-                "contentHash": "wLPPps08WGBgqQ6qnEndsE78oR5k0yFUYCaw9x29HaWxoogFsjfY4Y5YbbDmJJUjx41ynkvjESPRk6YJl1e59g==",
-                "dependencies": {
-                    "Mono.Cecil": "0.11.3",
-                    "MonoMod.Utils": "21.4.29.1"
-                }
-            },
             "MonoMod.RuntimeDetour": {
                 "type": "Direct",
                 "requested": "[21.4.29.1, )",
@@ -49,19 +33,23 @@
                     "MonoMod.Utils": "21.4.29.1"
                 }
             },
+            "Microsoft.NETFramework.ReferenceAssemblies.net452": {
+                "type": "Transitive",
+                "resolved": "1.0.2",
+                "contentHash": "H67KhF+Lldlvr/N55gbtlZNCLq20mPGKFaPLbUkK19boUq/7DTJEHAsxC6yUADKlH1Li/bcyeowB/A484ECDPA=="
+            },
+            "Mono.Cecil": {
+                "type": "Transitive",
+                "resolved": "0.11.3",
+                "contentHash": "DNYE+io5XfEE8+E+5padThTPHJARJHbz1mhbhMPNrrWGKVKKqj/KEeLvbawAmbIcT73NuxLV7itHZaYCZcVWGg=="
+            },
             "MonoMod.Utils": {
-                "type": "Direct",
-                "requested": "[21.4.29.1, )",
+                "type": "Transitive",
                 "resolved": "21.4.29.1",
                 "contentHash": "4ZSnPtXZ5q4Fdd7dRVBgeg26OXlB+bTLdDqI7R6Tu5Iw28+ipAwujXbd2dVU13PbSj+qhkrq2MKZoJM2Er07WQ==",
                 "dependencies": {
                     "Mono.Cecil": "0.11.3"
                 }
-            },
-            "Microsoft.NETFramework.ReferenceAssemblies.net452": {
-                "type": "Transitive",
-                "resolved": "1.0.2",
-                "contentHash": "H67KhF+Lldlvr/N55gbtlZNCLq20mPGKFaPLbUkK19boUq/7DTJEHAsxC6yUADKlH1Li/bcyeowB/A484ECDPA=="
             }
         }
     }
