@@ -44,6 +44,7 @@ public static class FastForwardBoost {
         IL.Monocle.Engine.OnSceneTransition += IgnoreGcCollect;
         IL.Celeste.Level.Reload += IgnoreGcCollect;
         On.Monocle.Engine.Update += EngineOnUpdate;
+        Everest.Events.Input.OnInitialize += InputOnOnInitialize;
     }
 
     [Unload]
@@ -67,6 +68,7 @@ public static class FastForwardBoost {
         IL.Monocle.Engine.OnSceneTransition -= IgnoreGcCollect;
         IL.Celeste.Level.Reload -= IgnoreGcCollect;
         On.Monocle.Engine.Update -= EngineOnUpdate;
+        Everest.Events.Input.OnInitialize -= InputOnOnInitialize;
     }
 
 #pragma warning disable CS0612
@@ -200,5 +202,9 @@ public static class FastForwardBoost {
             celesteProcess.Dispose();
             celesteProcess = null;
         }
+    }
+
+    private static void InputOnOnInitialize() {
+        CelesteTasModule.Instance.OnInputDeregister();
     }
 }

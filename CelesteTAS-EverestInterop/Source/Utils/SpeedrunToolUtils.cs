@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using Celeste;
+using Celeste.Mod.SpeedrunTool.Other;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Monocle;
 using TAS.EverestInterop;
@@ -44,6 +45,13 @@ internal static class SpeedrunToolUtils {
     public static void ClearSaveLoadAction() {
         if (saveLoadAction != null) {
             SaveLoadAction.Remove((SaveLoadAction) saveLoadAction);
+        }
+    }
+
+    public static void InputDeregister() {
+        Dictionary<Hotkey, HotkeyConfig> hotkeyConfigs = typeof(HotkeyConfigUi).GetFieldValue<Dictionary<Hotkey, HotkeyConfig>>("HotkeyConfigs");
+        foreach (HotkeyConfig config in hotkeyConfigs.Values) {
+            config.VirtualButton.Value.Deregister();
         }
     }
 }

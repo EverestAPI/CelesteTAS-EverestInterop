@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using Celeste;
 using Celeste.Mod;
+using Celeste.Mod.Core;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
 using MonoMod.Utils;
@@ -66,12 +67,17 @@ public static class BindingHelper {
             }
         }
 
+        CoreModule.Instance.OnInputDeregister();
+        if (Savestates.SpeedrunToolInstalled) {
+            SpeedrunToolUtils.InputDeregister();
+        }
+
         Settings.Instance.CopyAllFields(settingsBackup);
         MInput.Active = true;
         MInput.Disabled = false;
 
-        origKbTextInput = Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput;
-        Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = false;
+        origKbTextInput = CoreModule.Settings.UseKeyboardForTextInput;
+        CoreModule.Settings.UseKeyboardForTextInput = false;
 
         origAttached = MInput.GamePads[GameInput.Gamepad].Attached;
         MInput.GamePads[GameInput.Gamepad].Attached = true;
