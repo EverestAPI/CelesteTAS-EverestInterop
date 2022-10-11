@@ -39,6 +39,8 @@ public static class FastForwardBoost {
         IL.Celeste.CliffsideWindFlag.Update += SkipUpdateMethod;
         IL.Celeste.CrystalStaticSpinner.UpdateHue += SkipUpdateMethod;
         IL.Celeste.SeekerBarrierRenderer.Update += SkipUpdateMethod;
+        IL.Celeste.HiresSnow.Update += SkipUpdateMethod;
+        IL.Celeste.Snow3D.Update += SkipUpdateMethod;
         IL.Celeste.LightningRenderer.Update += LightningRendererOnUpdate;
         IL.Celeste.SeekerBarrier.Update += SeekerBarrierOnUpdate;
         IL.Monocle.Engine.OnSceneTransition += IgnoreGcCollect;
@@ -63,6 +65,8 @@ public static class FastForwardBoost {
         IL.Celeste.CliffsideWindFlag.Update -= SkipUpdateMethod;
         IL.Celeste.CrystalStaticSpinner.UpdateHue -= SkipUpdateMethod;
         IL.Celeste.SeekerBarrierRenderer.Update -= SkipUpdateMethod;
+        IL.Celeste.HiresSnow.Update -= SkipUpdateMethod;
+        IL.Celeste.Snow3D.Update -= SkipUpdateMethod;
         IL.Celeste.LightningRenderer.Update -= LightningRendererOnUpdate;
         IL.Celeste.SeekerBarrier.Update -= SeekerBarrierOnUpdate;
         IL.Monocle.Engine.OnSceneTransition -= IgnoreGcCollect;

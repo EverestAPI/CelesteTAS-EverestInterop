@@ -86,8 +86,12 @@ public class InputController {
                                               FastForwards.FirstOrDefault(pair => pair.Key > CurrentFrameInTas).Value ??
                                               FastForwards.LastOrDefault().Value;
 
-    public bool HasFastForward => CurrentFastForward != null && CurrentFastForward.Frame > CurrentFrameInTas;
-    public float FastForwardSpeed => HasFastForward ? Math.Min(CurrentFastForward.Frame - CurrentFrameInTas, CurrentFastForward.Speed) : 1f;
+    public bool HasFastForward => CurrentFastForward is { } forward && forward.Frame > CurrentFrameInTas;
+
+    public float FastForwardSpeed => CurrentFastForward is { } forward && forward.Frame > CurrentFrameInTas
+        ? Math.Min(forward.Frame - CurrentFrameInTas, forward.Speed)
+        : 1f;
+
     public bool Break => CurrentFastForward?.Frame == CurrentFrameInTas;
     private string Checksum => string.IsNullOrEmpty(checksum) ? checksum = CalcChecksum(Inputs.Count - 1) : checksum;
 
@@ -360,7 +364,7 @@ public class InputController {
             NextCommentFastForward = null;
             RefreshInputs(false);
             FastForward next = FastForwardComments.FirstOrDefault(pair => pair.Key > CurrentFrameInTas).Value;
-            if (next != null && CurrentFastForward is { } last && HasFastForward && next.Frame > last.Frame) {
+            if (next != null && HasFastForward && CurrentFastForward is { } last && next.Frame > last.Frame) {
                 // NextCommentFastForward = last;
             } else {
                 NextCommentFastForward = next;
