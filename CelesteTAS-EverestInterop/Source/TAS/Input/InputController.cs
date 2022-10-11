@@ -37,7 +37,7 @@ public class InputController {
     public static string StudioTasFilePath {
         get => studioTasFilePath;
         set {
-            if (studioTasFilePath == value || PlayTASAtLanunch.WaitToPlayTas) {
+            if (studioTasFilePath == value || PlayTasAtLaunch.WaitToPlayTas) {
                 return;
             }
 

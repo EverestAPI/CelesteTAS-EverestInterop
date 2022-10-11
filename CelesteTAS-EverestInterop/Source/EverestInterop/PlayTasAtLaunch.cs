@@ -9,7 +9,7 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop;
 
-public static class PlayTASAtLanunch {
+public static class PlayTasAtLaunch {
     public static bool WaitToPlayTas { get; private set; }
 
     [Initialize]
