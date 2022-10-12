@@ -217,15 +217,15 @@ public static class HitboxOptimized {
     }
 
     private static void AddSpawnPointHitbox(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
+        if (TasSettings.ShowHitboxes && self.Scene is Level {Session: { } session}) {
+            foreach (Vector2 spawn in session.LevelData.Spawns) {
+                Draw.HollowRect(spawn - new Vector2(4, 11), 8, 11,
+                    HitboxColor.RespawnTriggerColor * HitboxColor.UnCollidableAlpha
+                );
+            }
+        }
+
         orig(self, camera);
-
-        if (!TasSettings.ShowHitboxes || self.Scene is not Level level) {
-            return;
-        }
-
-        foreach (Vector2 spawn in level.Session.LevelData.Spawns) {
-            Draw.HollowRect(spawn - new Vector2(4, 11), 8, 11, HitboxColor.RespawnTriggerColor * HitboxColor.UnCollidableAlpha);
-        }
     }
 
     private static void PlayerColliderOnDebugRender(ILContext il) {
