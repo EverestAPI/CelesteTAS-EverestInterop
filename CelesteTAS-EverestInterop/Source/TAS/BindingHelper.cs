@@ -92,7 +92,7 @@ public static class BindingHelper {
             origControllerHasFocus = null;
         }
 
-        Celeste.Mod.Core.CoreModule.Settings.UseKeyboardForTextInput = origKbTextInput;
+        CoreModule.Settings.UseKeyboardForTextInput = origKbTextInput;
         MInput.GamePads[GameInput.Gamepad].Attached = origAttached;
     }
 
