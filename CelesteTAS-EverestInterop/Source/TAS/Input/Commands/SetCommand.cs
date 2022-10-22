@@ -284,6 +284,7 @@ public static class SetCommand {
     }
 
     private static object ConvertType(string[] values, Type type) {
+        type = Nullable.GetUnderlyingType(type);
         if (values.Length == 2 && type == typeof(Vector2)) {
             float.TryParse(values[0], out float x);
             float.TryParse(values[1], out float y);
