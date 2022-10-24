@@ -284,7 +284,9 @@ public static class SetCommand {
     }
 
     private static object ConvertType(string[] values, Type type) {
-        type = Nullable.GetUnderlyingType(type);
+        Type nullableType = type;
+        type = Nullable.GetUnderlyingType(type) ?? type;
+
         if (values.Length == 2 && type == typeof(Vector2)) {
             float.TryParse(values[0], out float x);
             float.TryParse(values[1], out float y);
@@ -293,7 +295,7 @@ public static class SetCommand {
             if (type == typeof(Random) && int.TryParse(values[0], out int seed)) {
                 return new Random(seed);
             } else {
-                return Convert(values[0], type);
+                return Convert(values[0], nullableType);
             }
         } else if (values.Length >= 2) {
             object instance = Activator.CreateInstance(type);
