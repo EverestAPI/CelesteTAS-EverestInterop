@@ -1,5 +1,5 @@
 - Name: CelesteTAS
-  Version: 3.16.5
+  Version: 3.16.6
   DLL: CelesteTAS-EverestInterop.dll
   Dependencies:
     - Name: Everest
