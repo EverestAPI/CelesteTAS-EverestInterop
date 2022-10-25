@@ -90,55 +90,55 @@ public class InputRecord {
 
             switch (char.ToUpper(c)) {
                 case 'L':
-                    Actions |= IsDashOnlyDirection() ? Actions.LeftDashOnly : Actions.Left;
+                    Actions ^= IsDashOnlyDirection() ? Actions.LeftDashOnly : Actions.Left;
                     break;
                 case 'R':
-                    Actions |= IsDashOnlyDirection() ? Actions.RightDashOnly : Actions.Right;
+                    Actions ^= IsDashOnlyDirection() ? Actions.RightDashOnly : Actions.Right;
                     break;
                 case 'U':
-                    Actions |= IsDashOnlyDirection() ? Actions.UpDashOnly : Actions.Up;
+                    Actions ^= IsDashOnlyDirection() ? Actions.UpDashOnly : Actions.Up;
                     break;
                 case 'D':
-                    Actions |= IsDashOnlyDirection() ? Actions.DownDashOnly : Actions.Down;
+                    Actions ^= IsDashOnlyDirection() ? Actions.DownDashOnly : Actions.Down;
                     break;
                 case 'J':
-                    Actions |= Actions.Jump;
+                    Actions ^= Actions.Jump;
                     break;
                 case 'X':
-                    Actions |= Actions.Dash;
+                    Actions ^= Actions.Dash;
                     break;
                 case 'G':
-                    Actions |= Actions.Grab;
+                    Actions ^= Actions.Grab;
                     break;
                 case 'S':
-                    Actions |= Actions.Start;
+                    Actions ^= Actions.Start;
                     break;
                 case 'Q':
-                    Actions |= Actions.Restart;
+                    Actions ^= Actions.Restart;
                     break;
                 case 'N':
-                    Actions |= Actions.Journal;
+                    Actions ^= Actions.Journal;
                     break;
                 case 'K':
-                    Actions |= Actions.Jump2;
+                    Actions ^= Actions.Jump2;
                     break;
                 case 'C':
-                    Actions |= Actions.Dash2;
+                    Actions ^= Actions.Dash2;
                     break;
                 case 'O':
-                    Actions |= Actions.Confirm;
+                    Actions ^= Actions.Confirm;
                     break;
                 case 'Z':
-                    Actions |= Actions.DemoDash;
+                    Actions ^= Actions.DemoDash;
                     break;
                 case 'V':
-                    Actions |= Actions.DemoDash2;
+                    Actions ^= Actions.DemoDash2;
                     break;
                 case 'A':
-                    Actions |= Actions.DashOnly;
+                    Actions ^= Actions.DashOnly;
                     break;
                 case 'F':
-                    Actions |= Actions.Feather;
+                    Actions ^= Actions.Feather;
                     index++;
                     ClampAngle(line, ref index);
                     if (string.IsNullOrEmpty(AngleStr)) {

@@ -189,78 +189,78 @@ public record InputFrame {
             switch (char.ToUpper(c)) {
                 case 'L':
                     if (IsDashOnlyDirection()) {
-                        inputFrame.Actions |= Actions.LeftDashOnly;
+                        inputFrame.Actions ^= Actions.LeftDashOnly;
                         inputFrame.DashOnlyVector2 = new(-1, inputFrame.DashOnlyVector2.Y);
                     } else {
-                        inputFrame.Actions |= Actions.Left;
+                        inputFrame.Actions ^= Actions.Left;
                     }
 
                     break;
                 case 'R':
                     if (IsDashOnlyDirection()) {
-                        inputFrame.Actions |= Actions.RightDashOnly;
+                        inputFrame.Actions ^= Actions.RightDashOnly;
                         inputFrame.DashOnlyVector2 = new(1, inputFrame.DashOnlyVector2.Y);
                     } else {
-                        inputFrame.Actions |= Actions.Right;
+                        inputFrame.Actions ^= Actions.Right;
                     }
 
                     break;
                 case 'U':
                     if (IsDashOnlyDirection()) {
-                        inputFrame.Actions |= Actions.UpDashOnly;
+                        inputFrame.Actions ^= Actions.UpDashOnly;
                         inputFrame.DashOnlyVector2 = new(inputFrame.DashOnlyVector2.X, 1);
                     } else {
-                        inputFrame.Actions |= Actions.Up;
+                        inputFrame.Actions ^= Actions.Up;
                     }
 
                     break;
                 case 'D':
                     if (IsDashOnlyDirection()) {
-                        inputFrame.Actions |= Actions.DownDashOnly;
+                        inputFrame.Actions ^= Actions.DownDashOnly;
                         inputFrame.DashOnlyVector2 = new(inputFrame.DashOnlyVector2.X, -1);
                     } else {
-                        inputFrame.Actions |= Actions.Down;
+                        inputFrame.Actions ^= Actions.Down;
                     }
 
                     break;
                 case 'J':
-                    inputFrame.Actions |= Actions.Jump;
+                    inputFrame.Actions ^= Actions.Jump;
                     break;
                 case 'X':
-                    inputFrame.Actions |= Actions.Dash;
+                    inputFrame.Actions ^= Actions.Dash;
                     break;
                 case 'G':
-                    inputFrame.Actions |= Actions.Grab;
+                    inputFrame.Actions ^= Actions.Grab;
                     break;
                 case 'S':
-                    inputFrame.Actions |= Actions.Start;
+                    inputFrame.Actions ^= Actions.Start;
                     break;
                 case 'Q':
-                    inputFrame.Actions |= Actions.Restart;
+                    inputFrame.Actions ^= Actions.Restart;
                     break;
                 case 'N':
-                    inputFrame.Actions |= Actions.Journal;
+                    inputFrame.Actions ^= Actions.Journal;
                     break;
                 case 'K':
-                    inputFrame.Actions |= Actions.Jump2;
+                    inputFrame.Actions ^= Actions.Jump2;
                     break;
                 case 'C':
-                    inputFrame.Actions |= Actions.Dash2;
+                    inputFrame.Actions ^= Actions.Dash2;
                     break;
                 case 'O':
-                    inputFrame.Actions |= Actions.Confirm;
+                    inputFrame.Actions ^= Actions.Confirm;
                     break;
                 case 'Z':
-                    inputFrame.Actions |= Actions.DemoDash;
+                    inputFrame.Actions ^= Actions.DemoDash;
                     break;
                 case 'V':
-                    inputFrame.Actions |= Actions.DemoDash2;
+                    inputFrame.Actions ^= Actions.DemoDash2;
                     break;
                 case 'A':
-                    inputFrame.Actions |= Actions.DashOnly;
+                    inputFrame.Actions ^= Actions.DashOnly;
                     break;
                 case 'F':
-                    inputFrame.Actions |= Actions.Feather;
+                    inputFrame.Actions ^= Actions.Feather;
                     index++;
                     string angleAndUpperLimit = line.Substring(index + 1).Trim();
                     if (angleAndUpperLimit.IsNotNullOrEmpty()) {
