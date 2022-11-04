@@ -347,7 +347,12 @@ public static class GameInfo {
             if (Engine.Scene is SummitVignette summit) {
                 Status = ExactStatus = $"SummitVignette {summit.ready}";
             } else if (Engine.Scene is Overworld overworld) {
-                Status = ExactStatus = $"Overworld {(overworld.Current ?? overworld.Next).GetType().Name} {overworld.ShowInputUI}";
+                string ouiName = "";
+                if ((overworld.Current ?? overworld.Next) is { } oui) {
+                    ouiName = $"{oui.GetType().Name} ";
+                }
+
+                Status = ExactStatus = $"Overworld {ouiName}{overworld.ShowInputUI}";
             } else if (Engine.Scene != null) {
                 Status = ExactStatus = Engine.Scene.GetType().Name;
             }
