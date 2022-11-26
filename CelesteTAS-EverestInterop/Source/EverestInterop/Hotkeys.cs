@@ -50,6 +50,7 @@ public static class Hotkeys {
     public static Hotkey TriggerHitboxes { get; private set; }
     public static Hotkey SimplifiedGraphic { get; private set; }
     public static Hotkey CenterCamera { get; private set; }
+    public static Hotkey LockCamera { get; private set; }
     public static Hotkey SaveState { get; private set; }
     public static Hotkey ClearState { get; private set; }
     public static Hotkey InfoHud { get; private set; }
@@ -107,6 +108,7 @@ public static class Hotkeys {
         KeysDict[HotkeyID.TriggerHitboxes] = TriggerHitboxes = BindingToHotkey(TasSettings.KeyTriggerHitboxes);
         KeysDict[HotkeyID.Graphics] = SimplifiedGraphic = BindingToHotkey(TasSettings.KeyGraphics);
         KeysDict[HotkeyID.Camera] = CenterCamera = BindingToHotkey(TasSettings.KeyCamera);
+        KeysDict[HotkeyID.LockCamera] = LockCamera = BindingToHotkey(TasSettings.KeyLockCamera);
         KeysDict[HotkeyID.SaveState] = SaveState = BindingToHotkey(TasSettings.KeySaveState);
         KeysDict[HotkeyID.ClearState] = ClearState = BindingToHotkey(TasSettings.KeyClearState);
         KeysDict[HotkeyID.InfoHud] = InfoHud = BindingToHotkey(TasSettings.KeyInfoHud);

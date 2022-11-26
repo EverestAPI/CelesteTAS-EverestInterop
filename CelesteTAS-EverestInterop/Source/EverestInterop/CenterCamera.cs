@@ -67,6 +67,7 @@ public static class CenterCamera {
     private static DateTime? arrowKeyPressTime;
     private static float viewportScale = 1f;
     private static int zoomInterval;
+    private static Vector2? lockPosition;
 
     // this must be <= 4096 / 320 = 12.8, it's used in FreeCameraHitbox and 4096 is the maximum texture size
     public const float MaximumViewportScale = 12f;
@@ -119,6 +120,22 @@ public static class CenterCamera {
         orig(self);
         MoveCamera(self);
         ZoomCamera();
+        LockCamera(self);
+    }
+
+    private static void LockCamera(Level level) {
+        if (!TasSettings.CenterCamera) {
+            return;
+        }
+
+        if (Hotkeys.LockCamera.Pressed) {
+            if (lockPosition.HasValue) {
+                lockPosition = null;
+            } else {
+                Camera camera = level.Camera;
+                lockPosition = camera.Position - offset + new Vector2(camera.Viewport.Width / 2f, camera.Viewport.Height / 2f);
+            }
+        }
     }
 
     private static void CenterTheCamera() {
@@ -128,7 +145,7 @@ public static class CenterCamera {
 
         Camera camera = level.Camera;
         if (Engine.Scene.GetPlayer() is { } player) {
-            lastPlayerPosition = player.Position;
+            lastPlayerPosition = lockPosition ?? player.Position;
         }
 
         if (lastPlayerPosition != null) {
@@ -205,6 +222,7 @@ public static class CenterCamera {
             offset = Vector2.Zero;
             screenOffset = Vector2.Zero;
             LevelZoom = 1;
+            lockPosition = null;
         }
     }
 

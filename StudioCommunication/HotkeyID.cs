@@ -14,6 +14,7 @@ public enum HotkeyID : byte {
     TriggerHitboxes,
     Graphics,
     Camera,
+    LockCamera,
     SaveState,
     ClearState,
     InfoHud,

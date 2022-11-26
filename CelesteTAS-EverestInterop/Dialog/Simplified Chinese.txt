@@ -110,6 +110,7 @@ TAS_KEY_HITBOXES=             碰撞箱
 TAS_KEY_TRIGGER_HITBOXES=     触发区域碰撞箱
 TAS_KEY_SIMPLIFIED_GRAPHICS=  简化图形
 TAS_KEY_CENTER_CAMERA=        镜头居中
+TAS_KEY_LOCK_CAMERA=          锁定镜头
 TAS_KEY_SAVE_STATE=           保存状态
 TAS_KEY_CLEAR_STATE=          清除状态
 TAS_KEY_INFO_HUD=             信息面板

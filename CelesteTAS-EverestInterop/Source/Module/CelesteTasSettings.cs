@@ -88,6 +88,10 @@ public class CelesteTasSettings : EverestModuleSettings {
     [DefaultButtonBinding2(0, Keys.LeftControl, Keys.M)]
     public ButtonBinding KeyCamera { get; set; } = new(0, Keys.LeftControl, Keys.M);
 
+    [SettingName("TAS_KEY_LOCK_CAMERA")]
+    [DefaultButtonBinding2(0, Keys.LeftControl, Keys.H)]
+    public ButtonBinding KeyLockCamera { get; set; } = new(0, Keys.LeftControl, Keys.H);
+
     [SettingName("TAS_KEY_SAVE_STATE")]
     [DefaultButtonBinding2(0, Keys.RightAlt, Keys.OemMinus)]
     public ButtonBinding KeySaveState { get; set; } = new(0, Keys.RightAlt, Keys.OemMinus);
