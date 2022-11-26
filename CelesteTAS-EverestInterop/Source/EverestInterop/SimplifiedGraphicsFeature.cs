@@ -587,7 +587,9 @@ public static class SimplifiedGraphicsFeature {
     private static void SpikesOnCtor_Vector2_int_Directions_string(On.Celeste.Spikes.orig_ctor_Vector2_int_Directions_string orig, Spikes self,
         Vector2 position, int size, Spikes.Directions direction, string type) {
         if (TasSettings.SimplifiedGraphics && TasSettings.SimplifiedSpikes) {
-            type = "outline";
+            if (self.GetType().FullName != "VivHelper.Entities.AnimatedSpikes") {
+                type = "outline";
+            }
         }
 
         orig(self, position, size, direction, type);
