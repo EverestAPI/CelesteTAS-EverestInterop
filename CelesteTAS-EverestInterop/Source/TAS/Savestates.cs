@@ -140,10 +140,13 @@ public static class Savestates {
                     return;
                 }
 
-                if (StateManager.Instance.LoadState()) {
+                if (Engine.Scene is Level) {
                     if (!Running) {
                         EnableRun();
                     }
+
+                    // make sure LoadState is after EnableRun, otherwise the input state will be reset in BindingHelper.SetTasBindings
+                    StateManager.Instance.LoadState();
 
                     LoadStateRoutine();
                     return;
