@@ -16,6 +16,9 @@ public static class HitboxSimplified {
     private static readonly Lazy<GetDelegate<object, bool>> GeckoHostile = new(() =>
         ModUtils.GetType("JungleHelper", "Celeste.Mod.JungleHelper.Entities.Gecko")?.CreateGetDelegate<object, bool>("hostile"));
 
+    private static readonly Lazy<GetDelegate<object, bool>> CustomClutterBlockBaseEnabled = new(() =>
+        Type.GetType("Celeste.Mod.ClutterHelper.CustomClutterBlockBase, CustomClutter")?.CreateGetDelegate<object, bool>("enabled"));
+
     private static readonly HashSet<Type> UselessTypes = new() {
         typeof(ClutterBlock),
         typeof(CrystalDebris),
@@ -35,7 +38,8 @@ public static class HitboxSimplified {
         "ExtendedVariants.Entities.DashCountIndicator",
         "ExtendedVariants.Entities.JumpIndicator",
         "ExtendedVariants.Entities.Speedometer",
-        "Celeste.Mod.JungleHelper.Entities.Firefly"
+        "Celeste.Mod.JungleHelper.Entities.Firefly",
+        "Celeste.Mod.ClutterHelper.CustomClutter"
     };
 
     [Initialize]
@@ -81,16 +85,19 @@ public static class HitboxSimplified {
                 return !entity.Collidable;
             }
 
-            if (type.FullName == "Celeste.Mod.JungleHelper.Entities.Gecko" && false == GeckoHostile.Value?.Invoke(entity)) {
-                return true;
-            }
-
             if (entity.Get<Follower>() is {Leader: { }}) {
                 return true;
             }
 
             if (entity is Strawberry {collected: true}) {
                 return true;
+            }
+
+            switch (type.FullName) {
+                case "Celeste.Mod.JungleHelper.Entities.Gecko":
+                    return false == GeckoHostile.Value?.Invoke(entity);
+                case "Celeste.Mod.ClutterHelper.CustomClutterBlockBase":
+                    return false == CustomClutterBlockBaseEnabled.Value?.Invoke(entity);
             }
         }
 

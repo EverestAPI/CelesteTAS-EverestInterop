@@ -143,7 +143,7 @@ public static class HitboxColor {
             _ => TasSettings.EntityHitboxColor
         };
 
-        if (!entity.Collidable) {
+        if (!entity.Collidable || entity is Lightning {disappearing: true}) {
             customColor *= UnCollidableAlpha;
         }
 
