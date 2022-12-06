@@ -17,7 +17,7 @@ public static class HitboxSimplified {
         ModUtils.GetType("JungleHelper", "Celeste.Mod.JungleHelper.Entities.Gecko")?.CreateGetDelegate<object, bool>("hostile"));
 
     private static readonly Lazy<GetDelegate<object, bool>> CustomClutterBlockBaseEnabled = new(() =>
-        Type.GetType("Celeste.Mod.ClutterHelper.CustomClutterBlockBase, CustomClutter")?.CreateGetDelegate<object, bool>("enabled"));
+        ModUtils.GetType("ClutterHelper", "Celeste.Mod.ClutterHelper.CustomClutterBlockBase")?.CreateGetDelegate<object, bool>("enabled"));
 
     private static readonly HashSet<Type> UselessTypes = new() {
         typeof(ClutterBlock),
