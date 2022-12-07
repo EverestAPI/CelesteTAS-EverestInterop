@@ -251,7 +251,7 @@ public static class GameInfo {
                     dashCooldown = playerSeeker.dashTimer.ToCeilingFrames();
                 }
 
-                string statuses = GetStatuses(level, player, dashCooldown);
+                string statuses = GetStatuses(level, player);
 
                 string timers = string.Empty;
                 Follower firstRedBerryFollower = player.Leader.Followers.Find(follower => follower.Entity is Strawberry {Golden: false});
@@ -359,7 +359,7 @@ public static class GameInfo {
         }
     }
 
-    public static string GetStatuses(Level level, Player player, int dashCooldown) {
+    public static string GetStatuses(Level level, Player player) {
         List<string> statuses = new();
 
         string noControlFrames = transitionFrames > 0 ? $"({transitionFrames})" : string.Empty;
@@ -373,11 +373,11 @@ public static class GameInfo {
         }
 
         if (player.InControl && !level.Transitioning && unpauseTimer <= 0f) {
-            if (dashCooldown <= 0 && player.Dashes > 0) {
+            if (player.dashCooldownTimer <= 0 && player.Dashes > 0) {
                 statuses.Add("CanDash");
             }
 
-            if (player.LoseShards) {
+            if (player.onGround) {
                 statuses.Add("Ground");
             } else {
                 if (player.jumpGraceTimer.ToFloorFrames() is var coyote and > 0) {

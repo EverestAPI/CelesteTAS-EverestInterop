@@ -85,9 +85,7 @@ public static class ExportGameInfo {
             string time = GameInfo.GetChapterTime(level);
             string pos = player.ToSimplePositionString(CelesteTasSettings.MaxDecimals);
             string speed = player.Speed.ToSimpleString(CelesteTasSettings.MaxDecimals);
-
-            int dashCooldown = (int) player.dashCooldownTimer;
-            string statuses = GameInfo.GetStatuses(level, player, dashCooldown);
+            string statuses = GameInfo.GetStatuses(level, player);
 
             output = string.Join("\t",
                 inputFrame.Line + 1, $"{controller.CurrentFrameInInput}/{inputFrame}", controller.CurrentFrameInTas, time, pos, speed,
