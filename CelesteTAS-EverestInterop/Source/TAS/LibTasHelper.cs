@@ -5,6 +5,13 @@ using TAS.Input.Commands;
 
 namespace TAS;
 
+/// <summary>
+/// Playback via libtas requires default bindings
+/// and set
+/// RightShoulder, RightStickButton = Crouch Dash
+/// Keys.Tab = Journal and Talk
+/// RightStickAxis = Dashing Only Directions
+/// </summary>
 public static class LibTasHelper {
     private static StreamWriter streamWriter;
     private static InputFrame skipInputFrame;
@@ -88,7 +95,6 @@ public static class LibTasHelper {
             return "72";
         }
 
-        // Playback via libtas requires the Keys.Tab to be set as Journal and Talk
         // Keys.Tab
         if (inputFrame.HasActions(Actions.Journal)) {
             return "ff09";
@@ -144,12 +150,10 @@ public static class LibTasHelper {
         }
 
         if (inputFrame.HasActions(Actions.DemoDash)) {
-            // Playback via libtas requires the right shoulder to be set to demodash in game settings
             buttons[10] = ']';
         }
 
         if (inputFrame.HasActions(Actions.DemoDash2)) {
-            // Playback via libtas requires the right stick to be set to demodash in game settings
             buttons[8] = ')';
         }
 
