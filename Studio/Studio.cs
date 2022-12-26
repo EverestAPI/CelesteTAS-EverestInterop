@@ -1591,6 +1591,10 @@ public partial class Studio : BaseForm {
         SwapActionKeys('J', 'K');
     }
 
+    private void swapSelectedLAndRToolStripMenuItem_Click(object sender, EventArgs e) {
+        SwapActionKeys('L', 'R');
+    }
+
     private void combineConsecutiveSameInputsToolStripMenuItem_Click(object sender, EventArgs e) {
         CombineInputs(true);
     }
