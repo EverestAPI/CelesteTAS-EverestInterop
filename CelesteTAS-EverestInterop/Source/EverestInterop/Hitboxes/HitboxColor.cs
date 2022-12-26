@@ -63,7 +63,7 @@ public static class HitboxColor {
         return item;
     }
 
-    private static string ColorToHex(Color color) {
+    public static string ColorToHex(Color color) {
         return
             $"#{color.A.ToString("X").PadLeft(2, '0')}" +
             $"{color.R.ToString("X").PadLeft(2, '0')}" +

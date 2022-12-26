@@ -36,9 +36,13 @@ public class CelesteTasSettings : EverestModuleSettings {
     public bool SimplifiedHitboxes { get; set; } = true;
     public ActualCollideHitboxType ShowActualCollideHitboxes { get; set; } = ActualCollideHitboxType.Off;
     public int UnCollidableHitboxesOpacity { get; set; } = 5;
-    [SettingIgnore] public Color EntityHitboxColor { get; set; } = HitboxColor.DefaultEntityColor;
-    [SettingIgnore] public Color TriggerHitboxColor { get; set; } = HitboxColor.DefaultTriggerColor;
-    [SettingIgnore] public Color PlatformHitboxColor { get; set; } = HitboxColor.DefaultPlatformColor;
+    public Color EntityHitboxColor { get; set; } = HitboxColor.DefaultEntityColor;
+    public Color TriggerHitboxColor { get; set; } = HitboxColor.DefaultTriggerColor;
+    public Color PlatformHitboxColor { get; set; } = HitboxColor.DefaultPlatformColor;
+    public bool ShowCycleHitboxColors { get; set; } = false;
+    public Color CycleHitboxColor1 { get; set; } = CycleHitboxColor.DefaultColor1;
+    public Color CycleHitboxColor2 { get; set; } = CycleHitboxColor.DefaultColor2;
+    public Color CycleHitboxColor3 { get; set; } = CycleHitboxColor.DefaultColor3;
 
     #endregion
 

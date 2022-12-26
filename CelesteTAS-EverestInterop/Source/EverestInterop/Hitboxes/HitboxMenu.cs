@@ -26,6 +26,8 @@ public static class HitboxMenu {
 
                 option.Change(value => TasSettings.ShowActualCollideHitboxes = value);
             }));
+            subMenu.Add(new TextMenu.OnOff("Show Cycle Hitbox Colors".ToDialogText(), TasSettings.ShowCycleHitboxColors).Change(value =>
+                TasSettings.ShowCycleHitboxColors = value));
             subMenu.Add(new TextMenu.OnOff("Simplified Hitboxes".ToDialogText(), TasSettings.SimplifiedHitboxes).Change(value =>
                 TasSettings.SimplifiedHitboxes = value));
             subMenu.Add(new TextMenuExt.IntSlider("Un-collidable Hitboxes Opacity".ToDialogText(), 0, 10, TasSettings.UnCollidableHitboxesOpacity)
@@ -34,6 +36,9 @@ public static class HitboxMenu {
             subMenu.Add(HitboxColor.CreateEntityHitboxColorButton(menu, inGame));
             subMenu.Add(HitboxColor.CreateTriggerHitboxColorButton(menu, inGame));
             subMenu.Add(HitboxColor.CreatePlatformHitboxColorButton(menu, inGame));
+            subMenu.Add(CycleHitboxColor.CreateCycleHitboxColorButton(0, menu, inGame));
+            subMenu.Add(CycleHitboxColor.CreateCycleHitboxColorButton(1, menu, inGame));
+            subMenu.Add(CycleHitboxColor.CreateCycleHitboxColorButton(2, menu, inGame));
         });
         return subMenuItem;
     }
