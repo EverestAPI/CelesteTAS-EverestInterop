@@ -27,6 +27,7 @@ TAS_PLATFORM_HITBOX_COLOR=          Platform Hitbox Color
 TAS_CYCLE1_HITBOX_COLOR=            Cycle 1 Hitbox Color
 TAS_CYCLE2_HITBOX_COLOR=            Cycle 2 Hitbox Color
 TAS_CYCLE3_HITBOX_COLOR=            Cycle 3 Hitbox Color
+TAS_CYCLE4_HITBOX_COLOR=            Other Cycles Hitbox Color
 
 # ================================== Simplified Graphics Submenu ==================================
 TAS_GAMEPLAY=                     Gameplay

@@ -43,6 +43,7 @@ public class CelesteTasSettings : EverestModuleSettings {
     public Color CycleHitboxColor1 { get; set; } = CycleHitboxColor.DefaultColor1;
     public Color CycleHitboxColor2 { get; set; } = CycleHitboxColor.DefaultColor2;
     public Color CycleHitboxColor3 { get; set; } = CycleHitboxColor.DefaultColor3;
+    public Color OtherCyclesHitboxColor { get; set; } = CycleHitboxColor.DefaultOthersColor;
 
     #endregion
 

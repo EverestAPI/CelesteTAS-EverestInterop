@@ -27,6 +27,7 @@ TAS_PLATFORM_HITBOX_COLOR=          平台碰撞箱颜色
 TAS_CYCLE1_HITBOX_COLOR=            周期 1 颜色
 TAS_CYCLE2_HITBOX_COLOR=            周期 2 颜色
 TAS_CYCLE3_HITBOX_COLOR=            周期 3 颜色
+TAS_CYCLE4_HITBOX_COLOR=            其它周期颜色
 
 # ================================== Simplified Graphics Submenu ==================================
 TAS_GAMEPLAY=                     游戏内容

@@ -39,6 +39,7 @@ public static class HitboxMenu {
             subMenu.Add(CycleHitboxColor.CreateCycleHitboxColorButton(0, menu, inGame));
             subMenu.Add(CycleHitboxColor.CreateCycleHitboxColorButton(1, menu, inGame));
             subMenu.Add(CycleHitboxColor.CreateCycleHitboxColorButton(2, menu, inGame));
+            subMenu.Add(CycleHitboxColor.CreateCycleHitboxColorButton(3, menu, inGame));
         });
         return subMenuItem;
     }

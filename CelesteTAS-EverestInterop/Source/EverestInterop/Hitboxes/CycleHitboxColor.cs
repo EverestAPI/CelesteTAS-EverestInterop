@@ -13,12 +13,25 @@ public static class CycleHitboxColor {
     public static readonly Color DefaultColor1 = Color.Red;
     public static readonly Color DefaultColor2 = Color.Yellow;
     public static readonly Color DefaultColor3 = new(0.1f, 0.2f, 1f);
+    public static readonly Color DefaultOthersColor = new(0.25f, 1f, 0.5f);
 
     private static readonly Dictionary<Type, GetDelegate<object, float>> OffsetGetters = new();
+
+    // This counter defines which group is assigned to which third frame
+    public static int GroupCounter;
 
     [Load]
     private static void Load() {
         On.Monocle.Entity.DebugRender += EntityOnDebugRender;
+        On.Monocle.Scene.BeforeUpdate += SceneOnBeforeUpdate;
+        On.Monocle.Scene.Begin += SceneOnBegin;
+    }
+
+    [Unload]
+    private static void Unload() {
+        On.Monocle.Entity.DebugRender -= EntityOnDebugRender;
+        On.Monocle.Scene.BeforeUpdate -= SceneOnBeforeUpdate;
+        On.Monocle.Scene.Begin -= SceneOnBegin;
     }
 
     [Initialize]
@@ -48,11 +61,6 @@ public static class CycleHitboxColor {
         }
     }
 
-    [Unload]
-    private static void Unload() {
-        On.Monocle.Entity.DebugRender -= EntityOnDebugRender;
-    }
-
     private static void EntityOnDebugRender(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {
         if (TasSettings.ShowHitboxes && TasSettings.ShowCycleHitboxColors) {
             float? offset = self switch {
@@ -66,18 +74,41 @@ public static class CycleHitboxColor {
                 offset = getter(self);
             }
 
-            if (offset.HasValue) {
-                int activeFrame = (int) (self.Scene.TimeActive / Engine.DeltaTime);
-                for (int i = 0; i < 3; i++) {
-                    if (self.Scene.OnInterval(0.05f, offset.Value - Engine.DeltaTime * i)) {
-                        self.Collider.Render(camera, GetColor((i + activeFrame) % 3) * (self.Collidable ? 1f : HitboxColor.UnCollidableAlpha));
-                        return;
-                    }
+            if (offset is { } offsetValue) {
+                // Calculate how many frames away is the hazard's loading check (time distance)
+                float time = self.Scene.TimeActive;
+                int timeDist = 0;
+
+                while (Math.Floor((time - offsetValue - Engine.DeltaTime) / 0.05f) >= Math.Floor((time - offsetValue) / 0.05f) && timeDist < 3) {
+                    time += Engine.DeltaTime;
+                    timeDist++;
                 }
+
+                // Calculate what the value of the counter is after the time distance, which defines the hazard's group
+                int group = 3;
+                if (timeDist < 3) {
+                    group = (timeDist + GroupCounter) % 3;
+                }
+
+                self.Collider.Render(camera, GetColor(group) * (self.Collidable ? 1f : HitboxColor.UnCollidableAlpha));
+                return;
             }
         }
 
         orig(self, camera);
+    }
+
+    private static void SceneOnBeforeUpdate(On.Monocle.Scene.orig_BeforeUpdate orig, Scene self) {
+        orig(self);
+        if (!self.Paused) {
+            // If the scene isn't paused (TimeActive is increased), advance the spinner group counter
+            GroupCounter = (GroupCounter + 1) % 3;
+        }
+    }
+
+    private static void SceneOnBegin(On.Monocle.Scene.orig_Begin orig, Scene self) {
+        orig(self);
+        GroupCounter = 0;
     }
 
     private static Color GetColor(int index) {
@@ -85,6 +116,7 @@ public static class CycleHitboxColor {
             0 => TasSettings.CycleHitboxColor1,
             1 => TasSettings.CycleHitboxColor2,
             2 => TasSettings.CycleHitboxColor3,
+            3 => TasSettings.OtherCyclesHitboxColor,
         };
     }
 
@@ -97,6 +129,8 @@ public static class CycleHitboxColor {
             TasSettings.CycleHitboxColor2 = color;
         } else if (index == 2) {
             TasSettings.CycleHitboxColor3 = color;
+        } else if (index == 3) {
+            TasSettings.OtherCyclesHitboxColor = color;
         }
     }
 
@@ -127,6 +161,12 @@ public static class CycleHitboxColor {
     [Command("cycle3_hitbox_color", "change the cycle 3 hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000 (CelesteTAS)")]
     private static void CmdChangeCycleHitboxColor3(string color) {
         TasSettings.CycleHitboxColor3 = HitboxColor.HexToColor(color, DefaultColor3);
+        CelesteTasModule.Instance.SaveSettings();
+    }
+
+    [Command("other_cycles_hitbox_color", "change other cycles hitbox color (ARGB). eg Red = F00 or FF00 or FFFF0000 (CelesteTAS)")]
+    private static void CmdChangeOtherCyclesHitboxColor(string color) {
+        TasSettings.OtherCyclesHitboxColor = HitboxColor.HexToColor(color, DefaultOthersColor);
         CelesteTasModule.Instance.SaveSettings();
     }
 }

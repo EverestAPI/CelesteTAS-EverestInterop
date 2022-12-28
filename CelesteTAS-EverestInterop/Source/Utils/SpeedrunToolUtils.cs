@@ -6,6 +6,7 @@ using Celeste.Mod.SpeedrunTool.Other;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Monocle;
 using TAS.EverestInterop;
+using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
 
 namespace TAS.Utils;
@@ -13,15 +14,18 @@ namespace TAS.Utils;
 internal static class SpeedrunToolUtils {
     private static object saveLoadAction;
     private static Dictionary<Entity, EntityData> savedEntityData = new();
+    private static int groupCounter;
 
     public static void AddSaveLoadAction() {
         Action<Dictionary<Type, Dictionary<string, object>>, Level> save = (_, _) => {
             savedEntityData = EntityDataHelper.CachedEntityData.DeepCloneShared();
             InfoWatchEntity.SavedRequireWatchEntities = InfoWatchEntity.RequireWatchEntities.DeepCloneShared();
+            groupCounter = CycleHitboxColor.GroupCounter;
         };
         Action<Dictionary<Type, Dictionary<string, object>>, Level> load = (_, _) => {
             EntityDataHelper.CachedEntityData = savedEntityData.DeepCloneShared();
             InfoWatchEntity.RequireWatchEntities = InfoWatchEntity.SavedRequireWatchEntities.DeepCloneShared();
+            CycleHitboxColor.GroupCounter = groupCounter;
         };
         Action clear = () => {
             savedEntityData.Clear();
