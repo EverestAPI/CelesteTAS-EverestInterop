@@ -392,6 +392,15 @@ public static class GameInfo {
                     statuses.Add($"MaxFall({ConvertSpeedUnit(player.maxFall, TasSettings.SpeedUnit):0.##})");
                 }
             }
+
+            if (player.forceMoveXTimer.ToCeilingFrames() is var forceMoveXTimer and > 0) {
+                string direction = player.forceMoveX switch {
+                    > 0 => "R ",
+                    < 0 => "L",
+                    0 => "N"
+                };
+                statuses.Add($"ForceMove{direction}({forceMoveXTimer})");
+            }
         } else {
             statuses.Add($"NoControl{noControlFrames}");
         }
