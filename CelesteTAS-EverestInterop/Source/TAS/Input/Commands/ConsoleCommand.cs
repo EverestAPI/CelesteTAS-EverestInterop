@@ -9,7 +9,6 @@ using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
-using TAS.Entities;
 using TAS.Module;
 using TAS.Utils;
 
@@ -149,8 +148,7 @@ public static class ConsoleCommand {
                             return;
                         }
                     } else {
-                        Toast.Show($"Save file {slot + 1} does not exist");
-                        Manager.DisableRunLater();
+                        AbortTas($"Save file {slot + 1} does not exist");
                         return;
                     }
                 }
@@ -193,8 +191,7 @@ public static class ConsoleCommand {
             };
 
             if (SaveData.Instance is not { } saveData) {
-                Toast.Show("Save data is null");
-                Manager.DisableRunLater();
+                AbortTas("Save data is null");
                 return;
             }
 
@@ -206,15 +203,13 @@ public static class ConsoleCommand {
                 return;
             } else {
                 if (!TryGetAreaId(args[0], out areaId)) {
-                    Toast.Show($"Map {args[0]} does not exist");
-                    Manager.DisableRunLater();
+                    AbortTas($"Map {args[0]} does not exist");
                     return;
                 }
             }
 
             if (AreaData.Get(areaId).Mode.GetValueOrDefault((int) mode) == null) {
-                Toast.Show($"Map {args[0]} has no {mode}");
-                Manager.DisableRunLater();
+                AbortTas($"Map {args[0]} has no {mode}");
                 return;
             }
 
@@ -237,8 +232,7 @@ public static class ConsoleCommand {
                     }
 
                     if (AreaData.Areas[areaId].Mode[(int) mode].MapData is { } mapData && mapData.Get(screen) == null) {
-                        Toast.Show($"Room {screen} does not exist");
-                        Manager.DisableRunLater();
+                        AbortTas($"Room {screen} does not exist");
                         return;
                     }
 
@@ -246,8 +240,7 @@ public static class ConsoleCommand {
                         int spawnpoint = int.Parse(args[2]);
                         if (AreaData.Areas[areaId].Mode[(int) mode].MapData.Get(screen).Spawns is { } spawns) {
                             if (spawnpoint < 0 || spawnpoint >= spawns.Count) {
-                                Toast.Show($"Room {screen} does not exist spawn point {spawnpoint}");
-                                Manager.DisableRunLater();
+                                AbortTas($"Room {screen} does not exist spawn point {spawnpoint}");
                             }
                         }
 
@@ -284,18 +277,15 @@ public static class ConsoleCommand {
                 if (AreaData.Get(session) != null) {
                     return true;
                 } else {
-                    Toast.Show($"Map {session.Area.SID} does not exist");
-                    Manager.DisableRunLater();
+                    AbortTas($"Map {session.Area.SID} does not exist");
                 }
             } else {
-                Toast.Show($"Save file is not in chapter");
-                Manager.DisableRunLater();
+                AbortTas($"Save file is not in chapter");
             }
 
             return false;
         } else if (!TryGetAreaId(args[0], out int _)) {
-            Toast.Show($"Map {args[0]} does not exist");
-            Manager.DisableRunLater();
+            AbortTas($"Map {args[0]} does not exist");
             return false;
         } else {
             return true;

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using TAS.Entities;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;
@@ -20,14 +19,11 @@ public static class RepeatCommand {
     private static void Repeat(string[] args, int _, string filePath, int fileLine) {
         string errorText = $"On line {fileLine} of the {Path.GetFileName(filePath)} file\n";
         if (args.IsEmpty()) {
-            Toast.Show($"{errorText}Repeat command no count given");
-            Manager.DisableRunLater();
+            AbortTas($"{errorText}Repeat command no count given");
         } else if (!int.TryParse(args[0], out int count)) {
-            Toast.Show($"{errorText}Repeat command's count is not an integer");
-            Manager.DisableRunLater();
+            AbortTas($"{errorText}Repeat command's count is not an integer");
         } else if (RepeatArgs.ContainsKey(filePath)) {
-            Toast.Show($"{errorText}Nesting repeat commands are not supported");
-            Manager.DisableRunLater();
+            AbortTas($"{errorText}Nesting repeat commands are not supported");
         } else {
             RepeatArgs[filePath] = Tuple.Create(fileLine, count, Manager.Controller.Inputs.Count);
         }
@@ -38,8 +34,7 @@ public static class RepeatCommand {
     private static void EndRepeat(string[] _, int studioLine, string filePath, int fileLine) {
         string errorText = $"On line {fileLine} of the {Path.GetFileName(filePath)} file\n";
         if (!RepeatArgs.ContainsKey(filePath)) {
-            Toast.Show($"{errorText} EndRepeat command does not have a paired Repeat command");
-            Manager.DisableRunLater();
+            AbortTas($"{errorText} EndRepeat command does not have a paired Repeat command");
             return;
         }
 

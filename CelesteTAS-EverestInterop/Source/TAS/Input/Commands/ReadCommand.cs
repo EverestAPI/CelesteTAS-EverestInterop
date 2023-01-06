@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Celeste.Mod;
-using TAS.Entities;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;
@@ -35,12 +34,10 @@ public static class ReadCommand {
         }
 
         if (!File.Exists(filePath)) {
-            Toast.ShowAndLog($"\"Read, {string.Join(", ", args)}\" failed\nFile not found");
-            Manager.DisableRunLater();
+            AbortTas($"\"Read, {string.Join(", ", args)}\" failed\nFile not found", true);
             return;
         } else if (Path.GetFullPath(filePath) == Path.GetFullPath(currentFilePath)) {
-            Toast.ShowAndLog($"\"Read, {string.Join(", ", args)}\" failed\nDo not allow reading the file itself");
-            Manager.DisableRunLater();
+            AbortTas($"\"Read, {string.Join(", ", args)}\" failed\nDo not allow reading the file itself", true);
             return;
         }
 
@@ -57,8 +54,7 @@ public static class ReadCommand {
         string readCommandDetail = $"Read, {string.Join(", ", args)}: line {fileLine} of the file \"{currentFilePath}\"";
         if (readCommandStack.Contains(readCommandDetail)) {
             $"Multiple read commands lead to dead loops:\n{string.Join("\n", readCommandStack)}".Log(LogLevel.Warn);
-            Toast.Show("Multiple read commands lead to dead loops\nPlease check log.txt for more details");
-            Manager.DisableRunLater();
+            AbortTas("Multiple read commands lead to dead loops\nPlease check log.txt for more details");
             return;
         }
 
