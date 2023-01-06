@@ -365,7 +365,7 @@ public static class GameInfo {
         string noControlFrames = transitionFrames > 0 ? $"({transitionFrames})" : string.Empty;
         float unpauseTimer = LevelUnpauseTimer?.Invoke(level) ?? 0f;
         if (unpauseTimer > 0f) {
-            noControlFrames = $"({unpauseTimer.ToCeilingFrames()})";
+            noControlFrames = $"({(int) Math.Ceiling(unpauseTimer / Engine.RawDeltaTime)})";
         }
 
         if (Engine.FreezeTimer > 0f) {
