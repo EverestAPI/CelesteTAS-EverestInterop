@@ -328,7 +328,7 @@ public static class SetCommand {
             case "MirrorMode":
                 saveData.Assists.MirrorMode = (bool) value;
                 Celeste.Input.MoveX.Inverted = Celeste.Input.Aim.InvertedX = (bool) value;
-                if (Celeste.Input.Feather is { } featherJoystick) {
+                if (typeof(Celeste.Input).GetFieldValue<VirtualJoystick>("Feather") is { } featherJoystick) {
                     featherJoystick.InvertedX = (bool) value;
                 }
 

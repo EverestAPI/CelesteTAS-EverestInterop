@@ -190,7 +190,6 @@ internal static class EntityTypeHelper {
             ["playbackBillboard"] = typeof(PlaybackBillboard),
             ["cutsceneNode"] = typeof(CutsceneNode),
             ["kevins_pc"] = typeof(KevinsPC),
-            ["powerSourceNumber"] = typeof(PowerSourceNumber),
             ["npc"] = typeof(NPC),
             ["eventTrigger"] = typeof(EventTrigger),
             ["musicFadeTrigger"] = typeof(MusicFadeTrigger),
@@ -222,6 +221,11 @@ internal static class EntityTypeHelper {
             ["spawnFacingTrigger"] = typeof(SpawnFacingTrigger),
             ["detachFollowersTrigger"] = typeof(DetachStrawberryTrigger),
         });
+
+        // add from Celeste v1.4
+        if (typeof(Player).Assembly.GetType("Celeste.PowerSourceNumber") is { } powerSourceNumber) {
+            vanillaEntityNameToType["powerSourceNumber"] = powerSourceNumber;
+        }
 
         foreach (Type type in FakeAssembly.GetFakeEntryAssembly().GetTypesSafe()) {
             CheckType(type);
