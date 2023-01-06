@@ -193,7 +193,7 @@ public static class ConsoleCommand {
             };
 
             if (SaveData.Instance is not { } saveData) {
-                Toast.Show($"Save data is null");
+                Toast.Show("Save data is null");
                 Manager.DisableRunLater();
                 return;
             }
@@ -205,7 +205,17 @@ public static class ConsoleCommand {
                 EnterLevel(new LevelLoader(saveData.CurrentSession_Safe));
                 return;
             } else {
-                TryGetAreaId(args[0], out areaId);
+                if (!TryGetAreaId(args[0], out areaId)) {
+                    Toast.Show($"Map {args[0]} does not exist");
+                    Manager.DisableRunLater();
+                    return;
+                }
+            }
+
+            if (AreaData.Get(areaId).Mode.GetValueOrDefault((int) mode) == null) {
+                Toast.Show($"Map {args[0]} has no {mode}");
+                Manager.DisableRunLater();
+                return;
             }
 
             // complete prologue if incomplete and make sure the return to map menu item will be shown
@@ -226,8 +236,21 @@ public static class ConsoleCommand {
                         screen = screen.Substring(4);
                     }
 
+                    if (AreaData.Areas[areaId].Mode[(int) mode].MapData is { } mapData && mapData.Get(screen) == null) {
+                        Toast.Show($"Room {screen} does not exist");
+                        Manager.DisableRunLater();
+                        return;
+                    }
+
                     if (args.Length > 2) {
                         int spawnpoint = int.Parse(args[2]);
+                        if (AreaData.Areas[areaId].Mode[(int) mode].MapData.Get(screen).Spawns is { } spawns) {
+                            if (spawnpoint < 0 || spawnpoint >= spawns.Count) {
+                                Toast.Show($"Room {screen} does not exist spawn point {spawnpoint}");
+                                Manager.DisableRunLater();
+                            }
+                        }
+
                         Load(mode, areaId, screen, spawnpoint);
                     } else {
                         Load(mode, areaId, screen);
@@ -300,8 +323,7 @@ public static class ConsoleCommand {
 
         Vector2? startPosition = null;
         if (spawnPoint != null) {
-            LevelData levelData = session.MapData.Get(screen);
-            startPosition = levelData.Spawns[spawnPoint.Value];
+            startPosition = session.MapData.Get(screen).Spawns[spawnPoint.Value];
         }
 
         session.StartedFromBeginning = spawnPoint == null && session.FirstLevel;
