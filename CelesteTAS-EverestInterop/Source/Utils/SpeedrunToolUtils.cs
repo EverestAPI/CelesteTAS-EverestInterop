@@ -8,6 +8,7 @@ using Monocle;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
+using TAS.Input.Commands;
 
 namespace TAS.Utils;
 
@@ -15,17 +16,23 @@ internal static class SpeedrunToolUtils {
     private static object saveLoadAction;
     private static Dictionary<Entity, EntityData> savedEntityData = new();
     private static int groupCounter;
+    private static bool simulatePauses;
+    private static bool pauseOnCurrentFrame;
 
     public static void AddSaveLoadAction() {
         Action<Dictionary<Type, Dictionary<string, object>>, Level> save = (_, _) => {
             savedEntityData = EntityDataHelper.CachedEntityData.DeepCloneShared();
             InfoWatchEntity.SavedRequireWatchEntities = InfoWatchEntity.RequireWatchEntities.DeepCloneShared();
             groupCounter = CycleHitboxColor.GroupCounter;
+            simulatePauses = StunPauseCommand.SimulatePauses;
+            pauseOnCurrentFrame = StunPauseCommand.PauseOnCurrentFrame;
         };
         Action<Dictionary<Type, Dictionary<string, object>>, Level> load = (_, _) => {
             EntityDataHelper.CachedEntityData = savedEntityData.DeepCloneShared();
             InfoWatchEntity.RequireWatchEntities = InfoWatchEntity.SavedRequireWatchEntities.DeepCloneShared();
             CycleHitboxColor.GroupCounter = groupCounter;
+            StunPauseCommand.SimulatePauses = simulatePauses;
+            StunPauseCommand.PauseOnCurrentFrame = pauseOnCurrentFrame;
         };
         Action clear = () => {
             savedEntityData.Clear();
