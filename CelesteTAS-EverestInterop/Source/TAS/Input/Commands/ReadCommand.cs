@@ -9,7 +9,8 @@ namespace TAS.Input.Commands;
 public static class ReadCommand {
     private static readonly List<string> readCommandStack = new();
 
-    public static void ClearReadCommandStack() {
+    [ClearInputs]
+    private static void Clear() {
         readCommandStack.Clear();
     }
 

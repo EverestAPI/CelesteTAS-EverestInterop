@@ -10,7 +10,8 @@ public static class RepeatCommand {
     // <filePath, Tuple<fileLine, count, startFrame>>
     private static readonly Dictionary<string, Tuple<int, int, int>> RepeatArgs = new();
 
-    public static void Clear() {
+    [ClearInputs]
+    private static void Clear() {
         RepeatArgs.Clear();
     }
 

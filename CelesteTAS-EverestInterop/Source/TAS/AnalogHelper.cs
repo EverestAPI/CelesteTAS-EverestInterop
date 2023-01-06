@@ -32,10 +32,6 @@ public static class AnalogHelper {
     private static readonly Regex Fractional = new(@"\d+\.(\d*)", RegexOptions.Compiled);
     private static AnalogueMode analogMode = AnalogueMode.Ignore;
 
-    public static void AnalogModeChange(AnalogueMode mode) {
-        analogMode = mode;
-    }
-
     public static Vector2 ComputeAngleVector2(InputFrame input, out Vector2Short angleVector2Short) {
         float precision;
         if (input.Angle == 0) {
@@ -172,7 +168,12 @@ public static class AnalogHelper {
     [TasCommand("AnalogueMode", AliasNames = new[] {"AnalogMode"}, ExecuteTiming = ExecuteTiming.Parse)]
     private static void AnalogueModeCommand(string[] args) {
         if (args.Length > 0 && Enum.TryParse(args[0], true, out AnalogueMode mode)) {
-            AnalogModeChange(mode);
+            analogMode = mode;
         }
+    }
+
+    [ClearInputs]
+    private static void Reset() {
+        analogMode = AnalogueMode.Ignore;
     }
 }

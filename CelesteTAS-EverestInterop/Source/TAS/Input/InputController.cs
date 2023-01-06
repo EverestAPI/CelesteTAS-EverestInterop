@@ -152,11 +152,8 @@ public class InputController {
         Comments.Clear();
         UsedFiles.Clear();
         NeedsReload = true;
-        AnalogHelper.AnalogModeChange(AnalogueMode.Ignore);
-        RepeatCommand.Clear();
-        ReadCommand.ClearReadCommandStack();
         StopWatchers();
-        LibTasHelper.TryRestartExport();
+        AttributeUtils.Invoke<ClearInputsAttribute>();
     }
 
     private void StartWatchers() {
@@ -419,4 +416,11 @@ public class InputController {
         Manager.Controller.StopWatchers();
     }
 #endif
+}
+
+[AttributeUsage(AttributeTargets.Method)]
+internal class ClearInputsAttribute : Attribute {
+    static ClearInputsAttribute() {
+        AttributeUtils.CollectMethods<ClearInputsAttribute>();
+    }
 }
