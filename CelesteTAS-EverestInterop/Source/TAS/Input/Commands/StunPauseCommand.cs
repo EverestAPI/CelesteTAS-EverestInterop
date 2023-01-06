@@ -10,7 +10,8 @@ using Engine = Monocle.Engine;
 namespace TAS.Input.Commands;
 
 public static class StunPauseCommand {
-    private static readonly float unpauseTime = typeof(Level).GetFieldInfo("unpauseTimer") != null ? 0.15f : 0f;
+    private static readonly GetDelegate<Level, float> unpauseTimer = FastReflection.CreateGetDelegate<Level, float>("unpauseTimer");
+    private static readonly float unpauseTime = unpauseTimer != null ? 0.15f : 0f;
     public static bool SimulatePauses;
     public static bool PauseOnCurrentFrame;
 
@@ -30,12 +31,24 @@ public static class StunPauseCommand {
     private static void DoublePauses(Scene.orig_BeforeUpdate orig, Monocle.Scene self) {
         orig(self);
 
-        if (SimulatePauses && Engine.Scene is Level {Paused: false} level) {
-            PauseOnCurrentFrame = !PauseOnCurrentFrame;
-            if (PauseOnCurrentFrame) {
-                orig(self);
-                UpdateTime(level);
+        if (SimulatePauses && self is Level level) {
+            if (CanPause(level)) {
+                PauseOnCurrentFrame = !PauseOnCurrentFrame;
+                if (PauseOnCurrentFrame) {
+                    orig(self);
+                    UpdateTime(level);
+                }
+            } else {
+                PauseOnCurrentFrame = false;
             }
+        }
+    }
+
+    private static bool CanPause(Level level) {
+        if (unpauseTimer == null) {
+            return level.CanPause;
+        } else {
+            return level.CanPause && unpauseTimer(level) <= 0f;
         }
     }
 
@@ -60,14 +73,9 @@ public static class StunPauseCommand {
         }
     }
 
+    [DisableRun]
     [TasCommand("EndStunPause", LegalInMainGame = false)]
     private static void EndStunPause() {
-        SimulatePauses = false;
-        PauseOnCurrentFrame = false;
-    }
-
-    [DisableRun]
-    private static void DisableRun() {
         SimulatePauses = false;
         PauseOnCurrentFrame = false;
     }
