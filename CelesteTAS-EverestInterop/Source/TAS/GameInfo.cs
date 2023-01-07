@@ -395,7 +395,7 @@ public static class GameInfo {
 
             if (player.forceMoveXTimer.ToCeilingFrames() is var forceMoveXTimer and > 0) {
                 string direction = player.forceMoveX switch {
-                    > 0 => "R ",
+                    > 0 => "R",
                     < 0 => "L",
                     0 => "N"
                 };
