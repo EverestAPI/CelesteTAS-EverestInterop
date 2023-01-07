@@ -33,7 +33,8 @@ public static class LibTasHelper {
         }
     }
 
-    public static void FinishExport() {
+    [ParseFileEnd]
+    private static void FinishExport() {
         streamWriter?.Flush();
         streamWriter?.Dispose();
         streamWriter = null;

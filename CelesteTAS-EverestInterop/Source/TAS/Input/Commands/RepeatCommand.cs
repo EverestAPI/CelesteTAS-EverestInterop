@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using TAS.Utils;
@@ -7,18 +6,37 @@ using TAS.Utils;
 namespace TAS.Input.Commands;
 
 public static class RepeatCommand {
-    // <filePath, Tuple<fileLine, count, startFrame>>
-    private static readonly Dictionary<string, Tuple<int, int, int>> RepeatArgs = new();
+    private record struct Arguments(int StartLine, int Count, int StartFrame) {
+        public readonly int StartLine = StartLine;
+        public readonly int Count = Count;
+        public readonly int StartFrame = StartFrame;
+    }
+
+    private static readonly Dictionary<string, Arguments> RepeatArgs = new();
 
     [ClearInputs]
     private static void Clear() {
         RepeatArgs.Clear();
     }
 
+    [ParseFileEnd]
+    private static void ParseFileEnd() {
+        if (RepeatArgs.IsEmpty()) {
+            return;
+        }
+
+        foreach (KeyValuePair<string, Arguments> pair in RepeatArgs) {
+            string errorText = $"{Path.GetFileName(pair.Key)} line {pair.Value.StartLine - 1}\n";
+            AbortTas($"{errorText}Repeat command does not have a paired EndRepeat command");
+        }
+
+        Manager.Controller.Clear();
+    }
+
     // "Repeat, Count"
     [TasCommand("Repeat", ExecuteTiming = ExecuteTiming.Parse)]
     private static void Repeat(string[] args, int _, string filePath, int fileLine) {
-        string errorText = $"On line {fileLine} of the {Path.GetFileName(filePath)} file\n";
+        string errorText = $"{Path.GetFileName(filePath)} line {fileLine}\n";
         if (args.IsEmpty()) {
             AbortTas($"{errorText}Repeat command no count given");
         } else if (!int.TryParse(args[0], out int count)) {
@@ -26,24 +44,29 @@ public static class RepeatCommand {
         } else if (RepeatArgs.ContainsKey(filePath)) {
             AbortTas($"{errorText}Nesting repeat commands are not supported");
         } else {
-            RepeatArgs[filePath] = Tuple.Create(fileLine, count, Manager.Controller.Inputs.Count);
+            if (count < 1) {
+                AbortTas($"{errorText}Repeat command's count must be greater than 0");
+            }
+
+            RepeatArgs[filePath] = new Arguments(fileLine + 1, count, Manager.Controller.Inputs.Count);
         }
     }
 
     // "EndRepeat"
     [TasCommand("EndRepeat", ExecuteTiming = ExecuteTiming.Parse)]
     private static void EndRepeat(string[] _, int studioLine, string filePath, int fileLine) {
-        string errorText = $"On line {fileLine} of the {Path.GetFileName(filePath)} file\n";
-        if (!RepeatArgs.ContainsKey(filePath)) {
-            AbortTas($"{errorText} EndRepeat command does not have a paired Repeat command");
+        string errorText = $"{Path.GetFileName(filePath)} line {fileLine}\n";
+        if (!RepeatArgs.TryGetValue(filePath, out var arguments)) {
+            AbortTas($"{errorText}EndRepeat command does not have a paired Repeat command");
             return;
         }
 
-        int endLine = fileLine - 1;
-        int startLine = RepeatArgs[filePath].Item1 + 1;
-        int count = RepeatArgs[filePath].Item2;
-        int repeatStartFrame = RepeatArgs[filePath].Item3;
         RepeatArgs.Remove(filePath);
+
+        int endLine = fileLine - 1;
+        int startLine = arguments.StartLine;
+        int count = arguments.Count;
+        int repeatStartFrame = arguments.StartFrame;
 
         if (count <= 1 || endLine < startLine || !File.Exists(filePath)) {
             return;

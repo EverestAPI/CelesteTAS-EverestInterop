@@ -18,6 +18,11 @@ using Monocle;
 namespace TAS.Input;
 
 public class InputController {
+    static InputController() {
+        AttributeUtils.CollectMethods<ClearInputsAttribute>();
+        AttributeUtils.CollectMethods<ParseFileEndAttribute>();
+    }
+
     private static readonly Dictionary<string, FileSystemWatcher> watchers = new();
     private static string studioTasFilePath = string.Empty;
 
@@ -221,7 +226,7 @@ public class InputController {
 
     private void ParseFileEnd() {
         StartWatchers();
-        LibTasHelper.FinishExport();
+        AttributeUtils.Invoke<ParseFileEndAttribute>();
     }
 
     public void AdvanceFrame(out bool canPlayback) {
@@ -419,8 +424,7 @@ public class InputController {
 }
 
 [AttributeUsage(AttributeTargets.Method)]
-internal class ClearInputsAttribute : Attribute {
-    static ClearInputsAttribute() {
-        AttributeUtils.CollectMethods<ClearInputsAttribute>();
-    }
-}
+internal class ClearInputsAttribute : Attribute { }
+
+[AttributeUsage(AttributeTargets.Method)]
+internal class ParseFileEndAttribute : Attribute { }
