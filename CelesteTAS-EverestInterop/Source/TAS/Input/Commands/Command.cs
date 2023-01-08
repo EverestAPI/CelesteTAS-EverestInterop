@@ -34,6 +34,7 @@ public partial record Command {
     private static readonly object[] EmptyParameters = { };
     private static readonly Regex CheckSpaceRegex = new(@"^[^,]+?\s+[^,]", RegexOptions.Compiled);
     private static readonly Regex SpaceRegex = new(@"\s+", RegexOptions.Compiled);
+    public static bool Parsing;
 
     private static string[] Split(string line) {
         string trimLine = line.Trim();
@@ -74,8 +75,10 @@ public partial record Command {
                 Action commandCall = () => method.Invoke(null, parameters);
                 command = new(attribute, frame, commandCall, commandArgs, filePath, studioLine);
 
-                if (attribute.ExecuteTiming == ExecuteTiming.Parse) {
+                if (attribute.ExecuteTiming.HasFlag(ExecuteTiming.Parse)) {
+                    Parsing = true;
                     commandCall.Invoke();
+                    Parsing = false;
                 }
 
                 if (!inputController.Commands.ContainsKey(frame)) {

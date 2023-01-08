@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Celeste;
 using MonoMod.RuntimeDetour;
 using On.Monocle;
@@ -10,10 +12,29 @@ using Engine = Monocle.Engine;
 namespace TAS.Input.Commands;
 
 public static class StunPauseCommand {
+    private enum StunPauseMode {
+        AutoInput,
+        Simulate
+    }
+
+    private static Dictionary<string, AutoInputCommand.Arguments> AutoInputArgs => AutoInputCommand.AutoInputArgs;
     private static readonly GetDelegate<Level, float> unpauseTimer = FastReflection.CreateGetDelegate<Level, float>("unpauseTimer");
     private static readonly float unpauseTime = unpauseTimer != null ? 0.15f : 0f;
     public static bool SimulatePauses;
     public static bool PauseOnCurrentFrame;
+
+    private static StunPauseMode? localMode;
+    private static StunPauseMode? globalMode;
+
+    private static StunPauseMode Mode {
+        get {
+            if (EnforceLegalCommand.EnabledWhenParsing) {
+                return StunPauseMode.AutoInput;
+            }
+
+            return localMode ?? globalMode ?? StunPauseMode.AutoInput;
+        }
+    }
 
     // hook after CycleHitboxColor.Load, so that the grouping color does not change
     [Initialize]
@@ -65,18 +86,66 @@ public static class StunPauseCommand {
         }
     }
 
-    [TasCommand("StunPause", LegalInMainGame = false)]
-    private static void StunPause() {
-        if (!SimulatePauses) {
-            SimulatePauses = true;
-            PauseOnCurrentFrame = false;
+    [TasCommand("StunPause", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
+    private static void StunPause(string[] args, int studioLine, string filePath, int fileLine) {
+        localMode = null;
+
+        if (args.IsNotEmpty() && Enum.TryParse(args[0], out StunPauseMode value)) {
+            localMode = value;
+        }
+
+        if (Command.Parsing && Mode == StunPauseMode.AutoInput) {
+            StunPauseAutoInputMode(studioLine, filePath, fileLine);
+        } else if (!Command.Parsing && Mode == StunPauseMode.Simulate) {
+            if (!SimulatePauses) {
+                SimulatePauses = true;
+                PauseOnCurrentFrame = false;
+            }
+        }
+    }
+
+    private static void StunPauseAutoInputMode(int studioLine, string filePath, int fileLine) {
+        string errorText = $"{Path.GetFileName(filePath)} line {fileLine}\n";
+        if (AutoInputArgs.ContainsKey(filePath)) {
+            AbortTas($"{errorText}Nesting StunPause command is not allowed at AutoInput mode");
+        } else {
+            AutoInputCommand.Arguments arguments = new(fileLine, 2);
+            AutoInputArgs[filePath] = arguments;
+            List<string> inputs = File.ReadLines(filePath).Take(fileLine - 1).ToList();
+            inputs.Add("   1,S,N");
+            inputs.Add("  10,O");
+            arguments.Inputs = inputs.ToArray();
+            arguments.LockStudioLine = true;
+            arguments.StunPause = true;
+            AutoInputCommand.ParseInsertedLines(arguments, filePath, studioLine, 0, 0);
+        }
+    }
+
+    [TasCommand("EndStunPause", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
+    private static void EndStunPause(string[] _, int __, string filePath, int fileLine) {
+        if (Command.Parsing && Mode == StunPauseMode.AutoInput) {
+            AutoInputCommand.EndAutoInputImpl(filePath, fileLine, "EndStunPause", "StunPause");
+        } else if (!Command.Parsing && Mode == StunPauseMode.Simulate) {
+            Reset();
+        }
+    }
+
+    [TasCommand("StunPauseMode", ExecuteTiming = ExecuteTiming.Parse)]
+    private static void StunPauseCommandMode(string[] args) {
+        if (args.IsNotEmpty() && Enum.TryParse(args[0], out StunPauseMode value)) {
+            globalMode = value;
         }
     }
 
     [DisableRun]
-    [TasCommand("EndStunPause", LegalInMainGame = false)]
-    private static void EndStunPause() {
+    private static void Reset() {
         SimulatePauses = false;
         PauseOnCurrentFrame = false;
+        localMode = null;
+    }
+
+    [ClearInputs]
+    private static void ClearInputs() {
+        globalMode = null;
     }
 }

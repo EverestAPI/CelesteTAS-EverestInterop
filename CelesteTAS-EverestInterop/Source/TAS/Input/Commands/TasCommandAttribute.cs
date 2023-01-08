@@ -55,7 +55,8 @@ public class TasCommandAttribute : Attribute {
     }
 }
 
+[Flags]
 public enum ExecuteTiming {
-    Parse,
-    Runtime
+    Parse = 1,
+    Runtime = 2
 }

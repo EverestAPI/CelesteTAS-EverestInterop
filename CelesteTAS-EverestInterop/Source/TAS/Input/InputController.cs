@@ -240,7 +240,8 @@ public class InputController {
         }
 
         CurrentCommands?.ForEach(command => {
-            if (command.Attribute.ExecuteTiming == ExecuteTiming.Runtime && (!EnforceLegalCommand.Enabled || command.Attribute.LegalInMainGame)) {
+            if (command.Attribute.ExecuteTiming.HasFlag(ExecuteTiming.Runtime) &&
+                (!EnforceLegalCommand.EnabledWhenRunning || command.Attribute.LegalInMainGame)) {
                 command.Invoke();
             }
         });
@@ -280,7 +281,8 @@ public class InputController {
         }
     }
 
-    public void ReadLines(IEnumerable<string> lines, string filePath, int startLine, int studioLine, int repeatIndex, int repeatCount) {
+    public void ReadLines(IEnumerable<string> lines, string filePath, int startLine, int studioLine, int repeatIndex, int repeatCount,
+        bool lockStudioLine = false) {
         int subLine = 0;
         foreach (string readLine in lines) {
             subLine++;
@@ -316,7 +318,7 @@ public class InputController {
                 AddFrames(lineText, studioLine, repeatIndex, repeatCount);
             }
 
-            if (filePath == TasFilePath) {
+            if (filePath == TasFilePath && !lockStudioLine) {
                 studioLine++;
             }
         }

@@ -7,7 +7,7 @@ using TAS.Utils;
 namespace TAS.Input.Commands;
 
 public static class AutoInputCommand {
-    private record Arguments {
+    public record Arguments {
         public readonly int StartLine;
         public readonly int CycleLength;
         public int CycleOffset;
@@ -16,6 +16,8 @@ public static class AutoInputCommand {
         public InputController LastInputController;
         public bool Inserting;
         public bool SkipNextInput;
+        public bool LockStudioLine;
+        public bool StunPause;
 
         public Arguments(int startLine, int cycleLength) {
             StartLine = startLine;
@@ -23,7 +25,7 @@ public static class AutoInputCommand {
         }
     }
 
-    private static readonly Dictionary<string, Arguments> AutoInputArgs = new();
+    public static readonly Dictionary<string, Arguments> AutoInputArgs = new();
 
     [ClearInputs]
     private static void Clear() {
@@ -38,9 +40,11 @@ public static class AutoInputCommand {
 
         foreach (KeyValuePair<string, Arguments> pair in AutoInputArgs) {
             string errorText = $"{Path.GetFileName(pair.Key)} line {pair.Value.StartLine - 1}\n";
+            string name = pair.Value.StunPause ? "StunPause" : "StartAutoInput";
+            string pairedName = pair.Value.StunPause ? "EndStunPause" : "EndAutoInput";
             AbortTas(pair.Value.Inputs == null
                 ? $"{errorText}AutoInput command does not have a paired StartAutoInput command"
-                : $"{errorText}StartAutoInput command does not have a paired EndAutoInput command");
+                : $"{errorText}{name} command does not have a paired {pairedName} command");
         }
 
         Manager.Controller.Clear();
@@ -83,9 +87,13 @@ public static class AutoInputCommand {
 
     [TasCommand("EndAutoInput", ExecuteTiming = ExecuteTiming.Parse)]
     private static void EndAutoInput(string[] _, int __, string filePath, int fileLine) {
+        EndAutoInputImpl(filePath, fileLine, "EndAutoInput", "AutoInput");
+    }
+
+    public static void EndAutoInputImpl(string filePath, int fileLine, string name, string pairedName) {
         string errorText = $"{Path.GetFileName(filePath)} line {fileLine}\n";
         if (!AutoInputArgs.TryGetValue(filePath, out Arguments arguments)) {
-            AbortTas($"{errorText}EndAutoInput command does not have a paired AutoInput command");
+            AbortTas($"{errorText}{name} command does not have a paired {pairedName} command");
             return;
         }
 
@@ -144,7 +152,7 @@ public static class AutoInputCommand {
                     arguments.LastInputController = Manager.Controller.Clone();
                 }
 
-                ReadLines();
+                ParseInsertedLines(arguments, filePath, studioLine, repeatIndex, repeatCount);
                 frames = 0;
                 arguments.CycleOffset = arguments.CycleLength;
                 arguments.LastInsertedFrame = Manager.Controller.Inputs.Count;
@@ -155,18 +163,19 @@ public static class AutoInputCommand {
         }
 
         return true;
+    }
 
-        void ReadLines() {
-            arguments.Inserting = true;
-            Manager.Controller.ReadLines(
-                arguments.Inputs,
-                filePath,
-                arguments.StartLine,
-                mainFile ? arguments.StartLine - 1 : studioLine,
-                repeatIndex,
-                repeatCount
-            );
-            arguments.Inserting = false;
-        }
+    public static void ParseInsertedLines(Arguments arguments, string filePath, int studioLine, int repeatIndex, int repeatCount) {
+        arguments.Inserting = true;
+        Manager.Controller.ReadLines(
+            arguments.Inputs,
+            filePath,
+            arguments.StartLine,
+            filePath == InputController.TasFilePath ? arguments.StartLine - 1 : studioLine,
+            repeatIndex,
+            repeatCount,
+            arguments.LockStudioLine
+        );
+        arguments.Inserting = false;
     }
 }
