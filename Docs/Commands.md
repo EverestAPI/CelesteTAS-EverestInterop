@@ -107,8 +107,53 @@
 
 ### EnforceLegal
 - This is used at the start of fullgame files.
-- It prevents the use of [Console](#console) and [Set](#set) commands which would not be legal in a run.
-  
+- It prevents the use of [Console](#console), [Set](#set), [Invoke](#invoke), [StunPause](#stunpause-and-endstunpause) commands which would not be legal in a run.
+
+### StunPause and EndStunPause
+- Simulate pausing every other frame without doing the actual pause inputs.
+- These commands should only be used to test routes, to simplify the stunning pause inputs use the [AutoInput](#autoinput-startautoinput-endautoinput-skipautoinput) command.
+
+### AutoInput, StartAutoInput, EndAutoInput, SkipAutoInput
+- Inserts the auto inputs every cycle length frames that is played through inputs.
+- `SkipAutoInput` prevents the next input from being calculated in the `AutoInput` cycle. Usually used to mark the freeze frames.
+- ```
+  AutoInput, (cycle length)
+  (auto inputs)
+  StartAutoInput
+  (inputs)
+  SkipAutoInput
+  (skipped input)
+  (inputs)
+  EndAutoInput
+  ```
+- e.g.
+  ```
+  AutoInput, 2
+  1,S,N
+  10,O
+  StartAutoInput
+  1,R,X
+  SkipAutoInput
+  3
+  1,R,X
+  4,R,J
+  endautoinput
+  ```
+  would produce
+  ```
+  1,S,N
+  10,O
+  1,R,X
+  3
+  1,R,X
+  1,S,N
+  10,O
+  2,R,J
+  1,S,N
+  10,O
+  2,R,J
+  ```
+
 ### StartExportGameInfo and FinishExportGameInfo
 - `StartExportGameInfo (Optional File Path) (Optional Entities Names)`
 - `FinishExportGameInfo`

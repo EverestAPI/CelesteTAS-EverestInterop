@@ -1464,8 +1464,36 @@ public partial class Studio : BaseForm {
         InsertNewLine("Set, (Mod).Setting, Value");
     }
 
+    private void invokeToolStripMenuItem_Click(object sender, EventArgs e) {
+        InsertNewLine("Invoke, Entity.Method, Parameter");
+    }
+
     private void analogueModeToolStripMenuItem_Click(object sender, EventArgs e) {
         InsertNewLine("AnalogMode, Ignore/Circle/Square/Precise");
+    }
+
+    private void stunPauseToolStripMenuItem_Click(object sender, EventArgs e) {
+        InsertNewLine("StunPause\n\nEndStunPause");
+    }
+
+    private void endStunPauseToolStripMenuItem_Click(object sender, EventArgs e) {
+        InsertNewLine("EndStunPause");
+    }
+
+    private void autoInputToolStripMenuItem_Click(object sender, EventArgs e) {
+        InsertNewLine("AutoInput, 2\n   1,S,N\n  10,O\nStartAutoInput\n\nEndAutoInput");
+    }
+
+    private void startAutoInputToolStripMenuItem_Click(object sender, EventArgs e) {
+        InsertNewLine("StartAutoInput");
+    }
+
+    private void endAutoInputToolStripMenuItem_Click(object sender, EventArgs e) {
+        InsertNewLine("EndAutoInput");
+    }
+
+    private void skipAutoInputToolStripMenuItem_Click(object sender, EventArgs e) {
+        InsertNewLine("SkipAutoInput");
     }
 
     private void startExportToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -1517,7 +1545,7 @@ public partial class Studio : BaseForm {
     }
 
     private void repeatToolStripMenuItem_Click(object sender, EventArgs e) {
-        InsertNewLine("Repeat Count");
+        InsertNewLine("Repeat 2\n\nEndRepeat");
     }
 
     private void endRepeatToolStripMenuItem_Click(object sender, EventArgs e) {

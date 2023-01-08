@@ -52,6 +52,7 @@ public record InputFrame {
     public int RepeatCount { get; set; }
     public int RepeatIndex { get; set; }
     public string RepeatString => RepeatCount > 1 ? $" {RepeatIndex}/{RepeatCount}" : "";
+    public int FrameOffset { get; private set; }
 
     public bool HasActions(Actions actions) =>
         (Actions & actions) != 0;
@@ -160,7 +161,7 @@ public record InputFrame {
     }
 
     public static bool TryParse(string line, int studioLine, InputFrame prevInputFrame, out InputFrame inputFrame, int repeatIndex = 0,
-        int repeatCount = 0) {
+        int repeatCount = 0, int frameOffset = 0) {
         int index = line.IndexOf(",", StringComparison.Ordinal);
         string framesStr;
         if (index == -1) {
@@ -170,7 +171,7 @@ public record InputFrame {
             framesStr = line.Substring(0, index);
         }
 
-        if (!int.TryParse(framesStr, out int frames)) {
+        if (!int.TryParse(framesStr, out int frames) || frames <= 0) {
             inputFrame = null;
             return false;
         }
@@ -180,7 +181,8 @@ public record InputFrame {
             Line = studioLine,
             Frames = frames,
             RepeatIndex = repeatIndex,
-            RepeatCount = repeatCount
+            RepeatCount = repeatCount,
+            FrameOffset = frameOffset,
         };
 
         while (index < line.Length) {

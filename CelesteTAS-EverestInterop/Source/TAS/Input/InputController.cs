@@ -33,6 +33,9 @@ public class InputController {
     public readonly List<InputFrame> Inputs = new();
     private readonly Dictionary<string, byte> UsedFiles = new();
 
+    public bool NeedsReload = true;
+    public FastForward NextCommentFastForward;
+
     private string checksum;
     private int initializationFrameCount;
     private string savestateChecksum;
@@ -82,10 +85,8 @@ public class InputController {
     public InputFrame Current => Inputs.GetValueOrDefault(CurrentFrameInTas);
     public InputFrame Next => Inputs.GetValueOrDefault(CurrentFrameInTas + 1);
     public List<Command> CurrentCommands => Commands.GetValueOrDefault(CurrentFrameInTas);
-    public bool NeedsReload = true;
     public bool CanPlayback => CurrentFrameInTas < Inputs.Count;
     public bool NeedsToWait => Manager.IsLoading();
-    public FastForward NextCommentFastForward;
 
     private FastForward CurrentFastForward => NextCommentFastForward ??
                                               FastForwards.FirstOrDefault(pair => pair.Key > CurrentFrameInTas).Value ??
@@ -282,15 +283,15 @@ public class InputController {
     public void ReadLines(IEnumerable<string> lines, string filePath, int startLine, int studioLine, int repeatIndex, int repeatCount) {
         int subLine = 0;
         foreach (string readLine in lines) {
-            string lineText = readLine.Trim();
-
             subLine++;
             if (subLine < startLine) {
                 continue;
             }
 
-            if (Command.TryParse(this, filePath, subLine, lineText, initializationFrameCount, studioLine, out Command command)
-                && command.Is("Play")) {
+            string lineText = readLine.Trim();
+
+            if (Command.TryParse(this, filePath, subLine, lineText, initializationFrameCount, studioLine, out Command command) &&
+                command.Is("Play")) {
                 // workaround for the play command
                 // the play command needs to stop reading the current file when it's done to prevent recursion
                 return;
@@ -311,7 +312,7 @@ public class InputController {
                 }
 
                 comments.Add(new Comment(filePath, initializationFrameCount, subLine, lineText));
-            } else {
+            } else if (!AutoInputCommand.TryInsert(filePath, lineText, studioLine, repeatIndex, repeatCount)) {
                 AddFrames(lineText, studioLine, repeatIndex, repeatCount);
             }
 
@@ -325,8 +326,8 @@ public class InputController {
         }
     }
 
-    public void AddFrames(string line, int studioLine, int repeatIndex = 0, int repeatCount = 0) {
-        if (!InputFrame.TryParse(line, studioLine, Inputs.LastOrDefault(), out InputFrame inputFrame, repeatIndex, repeatCount)) {
+    public void AddFrames(string line, int studioLine, int repeatIndex = 0, int repeatCount = 0, int frameOffset = 0) {
+        if (!InputFrame.TryParse(line, studioLine, Inputs.LastOrDefault(), out InputFrame inputFrame, repeatIndex, repeatCount, frameOffset)) {
             return;
         }
 
@@ -358,7 +359,46 @@ public class InputController {
         clone.CurrentFrameInInput = CurrentFrameInInput;
         clone.SavestateChecksum = clone.CalcChecksum(CurrentFrameInTas);
 
+        clone.checksum = checksum;
+        clone.initializationFrameCount = initializationFrameCount;
+
         return clone;
+    }
+
+    public void CopyFrom(InputController controller) {
+        Inputs.Clear();
+        Inputs.AddRange(controller.Inputs);
+
+        FastForwards.Clear();
+        FastForwards.AddRange((IDictionary) controller.FastForwards);
+        FastForwardComments.Clear();
+        FastForwardComments.AddRange((IDictionary) controller.FastForwardComments);
+
+        Comments.Clear();
+        foreach (string filePath in controller.Comments.Keys) {
+            Comments[filePath] = new List<Comment>(controller.Comments[filePath]);
+        }
+
+        Comments.Clear();
+        foreach (int frame in controller.Commands.Keys) {
+            Commands[frame] = new List<Command>(controller.Commands[frame]);
+        }
+
+        UsedFiles.Clear();
+        UsedFiles.AddRange((IDictionary) controller.UsedFiles);
+
+        NeedsReload = controller.NeedsReload;
+        CurrentFrameInTas = controller.CurrentFrameInTas;
+        CurrentFrameInInput = controller.CurrentFrameInInput;
+
+        checksum = controller.checksum;
+        initializationFrameCount = controller.initializationFrameCount;
+        savestateChecksum = controller.savestateChecksum;
+    }
+
+    public void CopyProgressFrom(InputController controller) {
+        CurrentFrameInInput = controller.CurrentFrameInInput;
+        CurrentFrameInTas = controller.CurrentFrameInTas;
     }
 
     public void FastForwardToNextComment() {
@@ -375,11 +415,6 @@ public class InputController {
             Manager.States &= ~States.FrameStep;
             Manager.NextStates &= ~States.FrameStep;
         }
-    }
-
-    public void CopyFrom(InputController controller) {
-        CurrentFrameInInput = controller.CurrentFrameInInput;
-        CurrentFrameInTas = controller.CurrentFrameInTas;
     }
 
     private string CalcChecksum(int toInputFrame) {

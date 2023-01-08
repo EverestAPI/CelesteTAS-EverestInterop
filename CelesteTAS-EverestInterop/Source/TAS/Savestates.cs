@@ -194,7 +194,7 @@ public static class Savestates {
     }
 
     private static void LoadStateRoutine() {
-        Controller.CopyFrom(savedController);
+        Controller.CopyProgressFrom(savedController);
         SetTasState();
         LoadGameInfo();
         UpdateStudio();

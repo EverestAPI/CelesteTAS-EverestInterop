@@ -229,9 +229,10 @@ public static class Manager {
             return;
         }
 
+        InputFrame previous = Controller.Previous;
         StudioInfo studioInfo = new(
-            Controller.Previous?.Line ?? -1,
-            $"{Controller.CurrentFrameInInput}{Controller.Previous?.RepeatString ?? ""}",
+            previous?.Line ?? -1,
+            $"{Controller.CurrentFrameInInput + (previous?.FrameOffset ?? 0)}{previous?.RepeatString ?? ""}",
             Controller.CurrentFrameInTas,
             Controller.Inputs.Count,
             Savestates.StudioHighlightLine,
