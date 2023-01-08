@@ -239,47 +239,36 @@ public static class HitboxSimplified {
 
     private static void AvoidRedrawCorners(ILContext il) {
         ILCursor ilCursor = new(il);
-        if (ilCursor.TryGotoNext(
+        if (!ilCursor.TryGotoNext(
                 ins => ins.OpCode == OpCodes.Ldc_I4_1,
                 ins => ins.OpCode == OpCodes.Sub,
                 ins => ins.OpCode == OpCodes.Sub,
                 ins => ins.OpCode == OpCodes.Stind_I4
-            ) && ilCursor.TryGotoNext(
+            )) {
+            return;
+        }
+
+        ILCursor clonedCursor = ilCursor.Clone();
+
+        if (!ilCursor.TryGotoNext(
                 MoveType.After,
                 ins => ins.MatchLdsflda(typeof(Draw), "rect"),
                 ins => ins.OpCode == OpCodes.Ldarg_3,
                 ins => ins.OpCode == OpCodes.Conv_I4,
                 ins => ins.MatchStfld<Rectangle>("Height")
             )) {
-            $"Injecting code to avoid redrawing hitbox corners in IL for {ilCursor.Method.FullName}".Log();
-
-            ilCursor.Goto(0);
-
-            // Draw.rect.Y -= (int) height - 1;
-            // to
-            // Draw.rect.Y -= (int) height - 2;
-            ilCursor.GotoNext(
-                ins => ins.OpCode == OpCodes.Ldc_I4_1,
-                ins => ins.OpCode == OpCodes.Sub,
-                ins => ins.OpCode == OpCodes.Sub,
-                ins => ins.OpCode == OpCodes.Stind_I4
-            );
-            ilCursor.Remove().Emit(OpCodes.Ldc_I4_2);
-
-            // Draw.rect.Height = (int) height;
-            // to
-            // Draw.rect.Height = (int) height - 2;
-            ilCursor.GotoNext(
-                MoveType.After,
-                ins => ins.MatchLdsflda(typeof(Draw), "rect"),
-                ins => ins.OpCode == OpCodes.Ldarg_3,
-                ins => ins.OpCode == OpCodes.Conv_I4,
-                ins => ins.MatchStfld<Rectangle>("Height")
-            );
-            ilCursor.Index--;
-            ilCursor.Emit(OpCodes.Ldc_I4_2).Emit(OpCodes.Sub);
-        } else {
-            $"Injecting code to avoid redrawing hitbox corners in IL failed: {ilCursor.Method.FullName}".Log();
+            return;
         }
+
+        // Draw.rect.Y -= (int) height - 1;
+        // to
+        // Draw.rect.Y -= (int) height - 2;
+        clonedCursor.Remove().Emit(OpCodes.Ldc_I4_2);
+
+        // Draw.rect.Height = (int) height;
+        // to
+        // Draw.rect.Height = (int) height - 2;
+        ilCursor.Index--;
+        ilCursor.Emit(OpCodes.Ldc_I4_2).Emit(OpCodes.Sub);
     }
 }
