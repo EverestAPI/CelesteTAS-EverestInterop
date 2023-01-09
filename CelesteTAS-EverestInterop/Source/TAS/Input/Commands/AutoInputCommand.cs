@@ -131,28 +131,22 @@ public static class AutoInputCommand {
 
         bool mainFile = filePath == InputController.TasFilePath;
 
-        if (arguments.CycleOffset == 0) {
-            ParseInsertedLines(arguments, filePath, studioLine, repeatIndex, repeatCount);
-            arguments.CycleOffset = arguments.CycleLength;
-        }
-
         int frames = 0;
         for (int i = 0; i < inputFrame.Frames; i++) {
             bool lastFrame = i == inputFrame.Frames - 1;
 
+            if (arguments.CycleOffset == 0) {
+                frames = 0;
+                ParseInsertedLines(arguments, filePath, studioLine, repeatIndex, repeatCount);
+                arguments.CycleOffset = arguments.CycleLength;
+            }
+
             frames++;
             arguments.CycleOffset--;
+
             if (arguments.CycleOffset == 0) {
                 Manager.Controller.AddFrames(frames + inputFrame.ToActionsString(), studioLine, repeatIndex, repeatCount,
                     mainFile ? Math.Max(0, i + 1 - arguments.CycleLength) : 0);
-                frames = 0;
-
-                // inserted inputs at the next input if now is the last frame
-                // since we don't want to inserted inputs before SkipAutoInput and EndAutoInput
-                if (!lastFrame) {
-                    ParseInsertedLines(arguments, filePath, studioLine, repeatIndex, repeatCount);
-                    arguments.CycleOffset = arguments.CycleLength;
-                }
             } else if (lastFrame) {
                 Manager.Controller.AddFrames(frames + inputFrame.ToActionsString(), studioLine, repeatIndex, repeatCount,
                     mainFile ? inputFrame.Frames - frames : 0);
