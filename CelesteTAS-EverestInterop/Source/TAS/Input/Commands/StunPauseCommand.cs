@@ -90,7 +90,7 @@ public static class StunPauseCommand {
     private static void StunPause(string[] args, int studioLine, string filePath, int fileLine) {
         localMode = null;
 
-        if (args.IsNotEmpty() && Enum.TryParse(args[0], out StunPauseMode value)) {
+        if (args.IsNotEmpty() && Enum.TryParse(args[0], true, out StunPauseMode value)) {
             localMode = value;
         }
 
@@ -132,7 +132,7 @@ public static class StunPauseCommand {
 
     [TasCommand("StunPauseMode", ExecuteTiming = ExecuteTiming.Parse)]
     private static void StunPauseCommandMode(string[] args) {
-        if (args.IsNotEmpty() && Enum.TryParse(args[0], out StunPauseMode value)) {
+        if (args.IsNotEmpty() && Enum.TryParse(args[0], true, out StunPauseMode value)) {
             globalMode = value;
         }
     }
