@@ -25,6 +25,10 @@ public static class FastForwardBoost {
 
     [Load]
     private static void Load() {
+        // cause desync
+        // https://discord.com/channels/403698615446536203/519281383164739594/1061696803772321923
+        // IL.Celeste.DustGraphic.Update += SkipUpdateMethod;
+
         On.Monocle.Tracker.Initialize += TrackerOnInitialize;
         On.Celeste.BackdropRenderer.Update += BackdropRendererOnUpdate;
         On.Celeste.SoundEmitter.Update += SoundEmitterOnUpdate;
@@ -34,7 +38,6 @@ public static class FastForwardBoost {
         IL.Celeste.FloatingDebris.Update += SkipUpdateMethod;
         IL.Celeste.AnimatedTiles.Update += SkipUpdateMethod;
         IL.Celeste.Water.Surface.Update += SkipUpdateMethod;
-        IL.Celeste.DustGraphic.Update += SkipUpdateMethod;
         IL.Celeste.LavaRect.Update += SkipUpdateMethod;
         IL.Celeste.CliffsideWindFlag.Update += SkipUpdateMethod;
         IL.Celeste.CrystalStaticSpinner.UpdateHue += SkipUpdateMethod;
