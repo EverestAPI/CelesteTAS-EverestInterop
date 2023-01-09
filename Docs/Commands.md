@@ -148,6 +148,10 @@
   3. Mode specified by the `StunPauseMode` command
   4. Default mode is `Input`
 
+### StunPauseMode
+Specify the default mode for `StunPause` command.
+- `StunPauseMode, Simulate/Input`
+
 ### AutoInput, StartAutoInput, EndAutoInput, SkipAutoInput
 - Inserts the auto inputs every cycle length frames that is played through inputs.
 - `SkipAutoInput` prevents the next input from being calculated in the `AutoInput` cycle. Usually used to mark the freeze frames.
