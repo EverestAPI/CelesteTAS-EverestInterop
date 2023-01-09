@@ -212,7 +212,8 @@ public static class SimplifiedGraphicsFeature {
             nameof(IsSimplifiedHud),
             "Render",
             typeof(HeightDisplay), typeof(TalkComponent.TalkComponentUI), typeof(BirdTutorialGui), typeof(CoreMessage), typeof(MemorialText),
-            typeof(Player).Assembly.GetType("Celeste.Mod.Entities.CustomHeightDisplay")
+            typeof(Player).Assembly.GetType("Celeste.Mod.Entities.CustomHeightDisplay"),
+            ModUtils.GetType("Monika's D-Sides", "Celeste.Mod.RubysEntities.AltHeightDisplay")
         );
 
         On.Celeste.Spikes.ctor_Vector2_int_Directions_string += SpikesOnCtor_Vector2_int_Directions_string;
