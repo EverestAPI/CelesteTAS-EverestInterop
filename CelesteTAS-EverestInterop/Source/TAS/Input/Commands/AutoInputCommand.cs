@@ -14,6 +14,8 @@ public static class AutoInputCommand {
         public string[] Inputs;
         public bool Inserting;
         public bool SkipNextInput;
+        public int SkipFrames;
+        public int SkipWaitingFrames;
         public bool LockStudioLine;
         public bool StunPause;
 
@@ -104,10 +106,40 @@ public static class AutoInputCommand {
         AutoInputArgs.Remove(filePath);
     }
 
-    [TasCommand("SkipAutoInput", ExecuteTiming = ExecuteTiming.Parse)]
-    private static void SkipAutoInput(string[] _, int __, string filePath, int fileLine) {
+    [TasCommand("SkipInput", AliasNames = new[] {"SkipAutoInput"}, ExecuteTiming = ExecuteTiming.Parse)]
+    private static void SkipInput(string[] args, int __, string filePath, int fileLine) {
         if (AutoInputArgs.TryGetValue(filePath, out var arguments)) {
-            arguments.SkipNextInput = true;
+            string errorText = $"{Path.GetFileName(filePath)} line {fileLine}\nSkipInput command's ";
+            if (args.IsEmpty()) {
+                arguments.SkipNextInput = true;
+                arguments.SkipFrames = 0;
+                arguments.SkipWaitingFrames = 0;
+            } else if (!int.TryParse(args[0], out int frames)) {
+                AbortTas($"{errorText}first parameter is not an integer");
+            } else {
+                if (frames <= 0) {
+                    AbortTas($"{errorText}first parameter must be greater than 0");
+                    return;
+                }
+
+                arguments.SkipNextInput = false;
+                arguments.SkipFrames = frames;
+
+                if (args.Length >= 2) {
+                    if (int.TryParse(args[1], out int waitFrames)) {
+                        if (waitFrames < 0) {
+                            AbortTas($"{errorText}second parameter must be greater than or equal 0");
+                            return;
+                        }
+
+                        arguments.SkipWaitingFrames = waitFrames;
+                    } else {
+                        AbortTas($"{errorText}second parameter is not an integer");
+                    }
+                } else {
+                    arguments.SkipWaitingFrames = 0;
+                }
+            }
         }
     }
 
@@ -131,12 +163,20 @@ public static class AutoInputCommand {
 
         bool mainFile = filePath == InputController.TasFilePath;
 
+        int overOffset = 0;
         int frames = 0;
         for (int i = 0; i < inputFrame.Frames; i++) {
-            bool lastFrame = i == inputFrame.Frames - 1;
+            if (arguments.SkipFrames > 0) {
+                arguments.SkipWaitingFrames--;
+                if (arguments.SkipWaitingFrames == -1) {
+                    overOffset = arguments.SkipFrames;
+                    arguments.CycleOffset += arguments.SkipFrames;
+                    arguments.SkipFrames = 0;
+                    arguments.SkipWaitingFrames = 0;
+                }
+            }
 
             if (arguments.CycleOffset == 0) {
-                frames = 0;
                 ParseInsertedLines(arguments, filePath, studioLine, repeatIndex, repeatCount);
                 arguments.CycleOffset = arguments.CycleLength;
             }
@@ -146,8 +186,10 @@ public static class AutoInputCommand {
 
             if (arguments.CycleOffset == 0) {
                 Manager.Controller.AddFrames(frames + inputFrame.ToActionsString(), studioLine, repeatIndex, repeatCount,
-                    mainFile ? Math.Max(0, i + 1 - arguments.CycleLength) : 0);
-            } else if (lastFrame) {
+                    mainFile ? Math.Max(0, i + 1 - arguments.CycleLength - overOffset) : 0);
+                overOffset = 0;
+                frames = 0;
+            } else if (i == inputFrame.Frames - 1) {
                 Manager.Controller.AddFrames(frames + inputFrame.ToActionsString(), studioLine, repeatIndex, repeatCount,
                     mainFile ? inputFrame.Frames - frames : 0);
             }
