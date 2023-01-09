@@ -12,8 +12,6 @@ public static class AutoInputCommand {
         public readonly int CycleLength;
         public int CycleOffset;
         public string[] Inputs;
-        public int? LastInsertedFrame;
-        public InputController LastInputController;
         public bool Inserting;
         public bool SkipNextInput;
         public bool LockStudioLine;
@@ -104,11 +102,6 @@ public static class AutoInputCommand {
         }
 
         AutoInputArgs.Remove(filePath);
-
-        // revert the last inserted input frames;
-        if (arguments.LastInputController != null && arguments.LastInsertedFrame == Manager.Controller.Inputs.Count) {
-            Manager.Controller.CopyFrom(arguments.LastInputController);
-        }
     }
 
     [TasCommand("SkipAutoInput", ExecuteTiming = ExecuteTiming.Parse)]
@@ -138,6 +131,11 @@ public static class AutoInputCommand {
 
         bool mainFile = filePath == InputController.TasFilePath;
 
+        if (arguments.CycleOffset == 0) {
+            ParseInsertedLines(arguments, filePath, studioLine, repeatIndex, repeatCount);
+            arguments.CycleOffset = arguments.CycleLength;
+        }
+
         int frames = 0;
         for (int i = 0; i < inputFrame.Frames; i++) {
             bool lastFrame = i == inputFrame.Frames - 1;
@@ -147,15 +145,14 @@ public static class AutoInputCommand {
             if (arguments.CycleOffset == 0) {
                 Manager.Controller.AddFrames(frames + inputFrame.ToActionsString(), studioLine, repeatIndex, repeatCount,
                     mainFile ? Math.Max(0, i + 1 - arguments.CycleLength) : 0);
-
-                if (lastFrame) {
-                    arguments.LastInputController = Manager.Controller.Clone();
-                }
-
-                ParseInsertedLines(arguments, filePath, studioLine, repeatIndex, repeatCount);
                 frames = 0;
-                arguments.CycleOffset = arguments.CycleLength;
-                arguments.LastInsertedFrame = Manager.Controller.Inputs.Count;
+
+                // inserted inputs at the next input if now is the last frame
+                // since we don't want to inserted inputs before SkipAutoInput and EndAutoInput
+                if (!lastFrame) {
+                    ParseInsertedLines(arguments, filePath, studioLine, repeatIndex, repeatCount);
+                    arguments.CycleOffset = arguments.CycleLength;
+                }
             } else if (lastFrame) {
                 Manager.Controller.AddFrames(frames + inputFrame.ToActionsString(), studioLine, repeatIndex, repeatCount,
                     mainFile ? inputFrame.Frames - frames : 0);
