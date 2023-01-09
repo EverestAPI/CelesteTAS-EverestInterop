@@ -750,7 +750,8 @@ public partial class Studio : BaseForm {
         int startLine = richText.Selection.Start.iLine;
         richText.Selection = new Range(richText, 0, startLine, 0, startLine);
         richText.InsertText(text + "\n");
-        richText.Selection = new Range(richText, text.Length, startLine, text.Length, startLine);
+        int lenght = text.Split('\n')[0].Length;
+        richText.Selection = new Range(richText, lenght, startLine, lenght, startLine);
     }
 
     private void CopyGameInfo() {
