@@ -13,7 +13,7 @@ namespace TAS.Input.Commands;
 
 public static class StunPauseCommand {
     private enum StunPauseMode {
-        AutoInput,
+        Input,
         Simulate
     }
 
@@ -29,10 +29,10 @@ public static class StunPauseCommand {
     private static StunPauseMode Mode {
         get {
             if (EnforceLegalCommand.EnabledWhenParsing) {
-                return StunPauseMode.AutoInput;
+                return StunPauseMode.Input;
             }
 
-            return localMode ?? globalMode ?? StunPauseMode.AutoInput;
+            return localMode ?? globalMode ?? StunPauseMode.Input;
         }
     }
 
@@ -94,7 +94,7 @@ public static class StunPauseCommand {
             localMode = value;
         }
 
-        if (Command.Parsing && Mode == StunPauseMode.AutoInput) {
+        if (Command.Parsing && Mode == StunPauseMode.Input) {
             StunPauseAutoInputMode(studioLine, filePath, fileLine);
         } else if (!Command.Parsing && Mode == StunPauseMode.Simulate) {
             if (!SimulatePauses) {
@@ -123,7 +123,7 @@ public static class StunPauseCommand {
 
     [TasCommand("EndStunPause", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
     private static void EndStunPause(string[] _, int __, string filePath, int fileLine) {
-        if (Command.Parsing && Mode == StunPauseMode.AutoInput) {
+        if (Command.Parsing && Mode == StunPauseMode.Input) {
             AutoInputCommand.EndAutoInputImpl(filePath, fileLine, "EndStunPause", "StunPause");
         } else if (!Command.Parsing && Mode == StunPauseMode.Simulate) {
             Reset();

@@ -107,11 +107,46 @@
 
 ### EnforceLegal
 - This is used at the start of fullgame files.
-- It prevents the use of [Console](#console), [Set](#set), [Invoke](#invoke), [StunPause](#stunpause-and-endstunpause) commands which would not be legal in a run.
+- It prevents the use of [Console](#console), [Set](#set), [Invoke](#invoke), [StunPause simulate mode](#stunpause-and-endstunpause) commands which would not be legal in a run.
 
 ### StunPause and EndStunPause
-- Simulate pausing every other frame without doing the actual pause inputs.
-- These commands should only be used to test routes, to simplify the stunning pause inputs use the [AutoInput](#autoinput-startautoinput-endautoinput-skipautoinput) command.
+- ```
+  StunPause, (optional mode, Simulate or Input)
+  (intpus）
+  EndStunPause
+  ```
+- Simulate mode is illegal and should only be used to test routes, which will pause every other frame without doing the actual pause inputs.
+- Input mode is legal, it is actually [AutoInput](#autoinput-startautoinput-endautoinput-skipautoinput) but with predefined pause inputs and cycle length.
+
+  e.g.
+  ```
+  StunPause, Input
+  1,R,X
+  SkipAutoInput
+  3
+  1,R,X
+  4,R,J
+  EndStunPause
+  ```
+  would produce
+  ```
+  1,S,N
+  10,O
+  1,R,X
+  3
+  1,R,X
+  1,S,N
+  10,O
+  2,R,J
+  1,S,N
+  10,O
+  2,R,J
+  ```
+- The command's mode is determined by several things, the priority from high to low are:
+  1. [EnforceLegal](#enforcelegal) command force all the commands use `Input` mode
+  2. Mode specified by the `StunPause` command
+  3. Mode specified by the `StunPauseMode` command
+  4. Default mode is `Input`
 
 ### AutoInput, StartAutoInput, EndAutoInput, SkipAutoInput
 - Inserts the auto inputs every cycle length frames that is played through inputs.
