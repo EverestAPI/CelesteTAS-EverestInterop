@@ -1502,19 +1502,19 @@ public partial class Studio : BaseForm {
     }
 
     private void startExportToolStripMenuItem_Click(object sender, EventArgs e) {
-        InsertNewLine("StartExportGameInfo (Path) (Entities)");
+        InsertNewLine("ExportGameInfo (Path) (Entities)");
     }
 
     private void finishExportToolStripMenuItem_Click(object sender, EventArgs e) {
-        InsertNewLine("FinishExportGameInfo");
+        InsertNewLine("EndExportGameInfo");
     }
 
     private void startExportRoomInfoToolStripMenuItem_Click(object sender, EventArgs e) {
-        InsertNewLine("StartExportRoomInfo dump_room_info.txt");
+        InsertNewLine("ExportRoomInfo dump_room_info.txt");
     }
 
     private void finishExportRoomInfoToolStripMenuItem_Click(object sender, EventArgs e) {
-        InsertNewLine("FinishExportRoomInfo");
+        InsertNewLine("EndExportRoomInfo");
     }
 
     private void addToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -1526,11 +1526,11 @@ public partial class Studio : BaseForm {
     }
 
     private void startExportLibTASToolStripMenuItem_Click(object sender, EventArgs e) {
-        InsertNewLine("StartExportLibTAS (Path)");
+        InsertNewLine("ExportLibTAS (Path)");
     }
 
     private void finishExportLibTASToolStripMenuItem_Click(object sender, EventArgs e) {
-        InsertNewLine("FinishExportLibTAS");
+        InsertNewLine("EndExportLibTAS");
     }
 
     private void completeInfoToolStripMenuItem_Click(object sender, EventArgs e) {

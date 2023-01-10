@@ -193,17 +193,17 @@ Specify the default mode for `StunPause` command.
   2,R,J
   ```
 
-### StartExportGameInfo and FinishExportGameInfo
-- `StartExportGameInfo (Optional File Path) (Optional Entities Names)`
-- `FinishExportGameInfo`
+### ExportGameInfo and EndExportGameInfo
+- `ExportGameInfo (Optional File Path) (Optional Entities Names)`
+- `EndExportGameInfo`
 - Dumps data to a file, which can be used to analyze desyncs.
 - Default filepath is `dump.txt`.
-- Keeps track of any additional entities specified - e.g. `StartExportGameInfo additional.txt TheoCrystal Glider CustomSpinner@FrostTempleHelper` will keep track of Theo, Jellyfish, and custom spinners from the FrostHelper mod.
+- Keeps track of any additional entities specified - e.g. `ExportGameInfo additional.txt TheoCrystal Glider CustomSpinner@FrostTempleHelper` will keep track of Theo, Jellyfish, and custom spinners from the FrostHelper mod.
 - You can get the name of the entity by opening the console and clicking on it, the entity name will be displayed in the top left corner and output to log.txt.
 
-### StartExportRoomInfo and FinishExportRoomInfo
-- `StartExportRoomInfo (Optional File Path)`
-- `FinishExportRoomInfo`
+### ExportRoomInfo and EndExportRoomInfo
+- `ExportRoomInfo (Optional File Path)`
+- `EndExportRoomInfo`
 - Dumps the elapsed time of each room to a file. which can be used to compare improvements.
 - Default filepath is `dump_room_info.txt`.
 
@@ -233,8 +233,8 @@ Specify the default mode for `StunPause` command.
 - `Circle`, `Square` and `Precise` are make sure the analogue inputs sent to the game are actually possible, locking it to a circular or square deadzone with the maximum amplitude, or calculating the closest position possible on a controller within the possible amplitude.
 - Odds are you don't need to worry about this.
 
-### StartExportLibTAS and FinishExportLibTAS
-- `StartExportLibTAS, (Optional File Path)`
+### ExportLibTAS and EndExportLibTAS
+- `ExportLibTAS, (Optional File Path)`
 - Converts the TAS to the inputs portion of a LibTAS movie file.
 - Default filepath is `libTAS_inputs.txt`
 - Odds are you don't need to worry about this.

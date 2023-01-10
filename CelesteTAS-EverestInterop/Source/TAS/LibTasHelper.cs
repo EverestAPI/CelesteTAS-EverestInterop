@@ -179,7 +179,7 @@ public static class LibTasHelper {
     }
 
     // StartExportLibTAS (Optional Path)
-    [TasCommand("StartExportLibTAS", ExecuteTiming = ExecuteTiming.Parse)]
+    [TasCommand("StartExportLibTAS", AliasNames = new[] {"ExportLibTAS"}, ExecuteTiming = ExecuteTiming.Parse)]
     private static void StartExportLibTasCommand(string[] args) {
         string path = "libTAS_inputs.txt";
         if (args.Length > 0) {
@@ -189,7 +189,7 @@ public static class LibTasHelper {
         StartExport(path);
     }
 
-    [TasCommand("FinishExportLibTAS", ExecuteTiming = ExecuteTiming.Parse)]
+    [TasCommand("FinishExportLibTAS", AliasNames = new[] {"EndExportLibTAS"}, ExecuteTiming = ExecuteTiming.Parse)]
     private static void FinishExportLibTasCommand() {
         FinishExport();
     }
