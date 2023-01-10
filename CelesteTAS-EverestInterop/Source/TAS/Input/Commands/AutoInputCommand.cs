@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using TAS.Utils;
@@ -163,13 +162,12 @@ public static class AutoInputCommand {
 
         bool mainFile = filePath == InputController.TasFilePath;
 
-        int overOffset = 0;
         int frames = 0;
+        int parsedFrames = 0;
         for (int i = 0; i < inputFrame.Frames; i++) {
             if (arguments.SkipFrames > 0) {
                 arguments.SkipWaitingFrames--;
                 if (arguments.SkipWaitingFrames == -1) {
-                    overOffset = arguments.SkipFrames;
                     arguments.CycleOffset += arguments.SkipFrames;
                     arguments.SkipFrames = 0;
                     arguments.SkipWaitingFrames = 0;
@@ -184,14 +182,11 @@ public static class AutoInputCommand {
             frames++;
             arguments.CycleOffset--;
 
-            if (arguments.CycleOffset == 0) {
+            if (arguments.CycleOffset == 0 || i == inputFrame.Frames - 1) {
                 Manager.Controller.AddFrames(frames + inputFrame.ToActionsString(), studioLine, repeatIndex, repeatCount,
-                    mainFile ? Math.Max(0, i + 1 - arguments.CycleLength - overOffset) : 0);
-                overOffset = 0;
+                    mainFile ? parsedFrames : 0);
+                parsedFrames += frames;
                 frames = 0;
-            } else if (i == inputFrame.Frames - 1) {
-                Manager.Controller.AddFrames(frames + inputFrame.ToActionsString(), studioLine, repeatIndex, repeatCount,
-                    mainFile ? inputFrame.Frames - frames : 0);
             }
         }
 

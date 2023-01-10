@@ -258,7 +258,8 @@ public class InputController {
 
         Manager.SetInputs(Current);
 
-        if (CurrentFrameInInput == 0 || Current.Line == Previous.Line && Current.RepeatIndex == Previous.RepeatIndex) {
+        if (CurrentFrameInInput == 0 || Current.Line == Previous.Line && Current.RepeatIndex == Previous.RepeatIndex &&
+            Current.FrameOffset == Previous.FrameOffset) {
             CurrentFrameInInput++;
         } else {
             CurrentFrameInInput = 1;
