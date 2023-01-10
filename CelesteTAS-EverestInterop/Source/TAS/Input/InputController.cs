@@ -78,6 +78,9 @@ public class InputController {
     // start from 1
     public int CurrentFrameInInput { get; private set; }
 
+    // start from 1
+    public int CurrentFrameInInputForHud { get; private set; }
+
     // start from 0
     public int CurrentFrameInTas { get; private set; }
 
@@ -143,6 +146,7 @@ public class InputController {
 
     public void Stop() {
         CurrentFrameInInput = 0;
+        CurrentFrameInInputForHud = 0;
         CurrentFrameInTas = 0;
         NextCommentFastForward = null;
     }
@@ -260,6 +264,12 @@ public class InputController {
             CurrentFrameInInput = 1;
         }
 
+        if (CurrentFrameInInputForHud == 0 || Current == Previous) {
+            CurrentFrameInInputForHud++;
+        } else {
+            CurrentFrameInInputForHud = 1;
+        }
+
         CurrentFrameInTas++;
     }
 
@@ -359,6 +369,7 @@ public class InputController {
         clone.UsedFiles.AddRange((IDictionary) UsedFiles);
         clone.CurrentFrameInTas = CurrentFrameInTas;
         clone.CurrentFrameInInput = CurrentFrameInInput;
+        clone.CurrentFrameInInputForHud = CurrentFrameInInputForHud;
         clone.SavestateChecksum = clone.CalcChecksum(CurrentFrameInTas);
 
         clone.checksum = checksum;
@@ -392,6 +403,7 @@ public class InputController {
         NeedsReload = controller.NeedsReload;
         CurrentFrameInTas = controller.CurrentFrameInTas;
         CurrentFrameInInput = controller.CurrentFrameInInput;
+        CurrentFrameInInputForHud = controller.CurrentFrameInInputForHud;
 
         checksum = controller.checksum;
         initializationFrameCount = controller.initializationFrameCount;
@@ -400,6 +412,7 @@ public class InputController {
 
     public void CopyProgressFrom(InputController controller) {
         CurrentFrameInInput = controller.CurrentFrameInInput;
+        CurrentFrameInInputForHud = controller.CurrentFrameInInputForHud;
         CurrentFrameInTas = controller.CurrentFrameInTas;
     }
 

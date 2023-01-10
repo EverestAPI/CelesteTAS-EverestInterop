@@ -163,7 +163,7 @@ public static class InfoHud {
             int inputWidth = currentStr.Length + currentFrameLength + 2;
             inputWidth = Math.Max(inputWidth, 20);
             stringBuilder.AppendLine(
-                $"{currentStr.PadRight(inputWidth - currentFrameLength)}{controller.CurrentFrameInInput}{current.RepeatString}");
+                $"{currentStr.PadRight(inputWidth - currentFrameLength)}{controller.CurrentFrameInInputForHud}{current.RepeatString}");
 
             if (next != null) {
                 stringBuilder.AppendLine(FormatInputFrame(next));
