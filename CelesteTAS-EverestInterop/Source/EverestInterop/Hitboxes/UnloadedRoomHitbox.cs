@@ -96,6 +96,7 @@ public static class UnloadedRoomHitbox {
     }
 
     private static void DrawEntityHitbox(LevelData levelData, List<Action<Level>> actions) {
+        string levelName = levelData.Name ?? "";
         foreach (EntityData data in levelData.Entities) {
             string dataName = data.Name ?? "";
             Vector2 levelPosition = levelData.Position;
@@ -133,14 +134,14 @@ public static class UnloadedRoomHitbox {
                             if (Engine.Scene.GetSession() is { } session) {
                                 if (session.Area.ID == 10 || data.Bool("star")) {
                                     textureId = "danger/starfish00";
-                                } else if (session.Area.ID == 3 || session.Area.ID == 7 && session.Level.StartsWith("d-") || data.Bool("dust")) {
+                                } else if (session.Area.ID == 3 || session.Area.ID == 7 && levelName.StartsWith("d-") || data.Bool("dust")) {
                                     textureId = "danger/dustcreature/center00";
                                 }
                             }
                         } else {
                             textureId = "danger/crystal/fg_blue00";
                             if (Engine.Scene.GetSession() is { } session) {
-                                if (session.Area.ID == 3 || session.Area.ID == 7 && session.Level.StartsWith("d-") || data.Bool("dust")) {
+                                if (session.Area.ID == 3 || session.Area.ID == 7 && levelName.StartsWith("d-") || data.Bool("dust")) {
                                     textureId = "danger/dustcreature/base01";
                                 } else {
                                     string dataColor = data.Attr("color");
