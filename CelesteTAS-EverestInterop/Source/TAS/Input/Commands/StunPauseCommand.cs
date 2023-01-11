@@ -48,14 +48,14 @@ public static class StunPauseCommand {
         On.Monocle.Scene.BeforeUpdate -= DoublePauses;
     }
 
-    private static void DoublePauses(On.Monocle.Scene.orig_BeforeUpdate orig, Monocle.Scene self) {
+    private static void DoublePauses(On.Monocle.Scene.orig_BeforeUpdate orig, Scene self) {
         orig(self);
 
         if (SimulatePauses && self is Level level) {
             if (CanPause(level)) {
                 PauseOnCurrentFrame = !PauseOnCurrentFrame;
                 if (PauseOnCurrentFrame) {
-                    UpdateTime(level, () => orig(self));
+                    UpdateTime(level, orig);
                 }
             } else {
                 PauseOnCurrentFrame = false;
@@ -71,12 +71,12 @@ public static class StunPauseCommand {
         }
     }
 
-    private static void UpdateTime(Level level, Action updateTimeActive) {
-        int gameTimeCount = (int) Math.Ceiling(unpauseTime / Engine.RawDeltaTime) + 2;
-        int timeActiveCount = gameTimeCount - 1;
+    private static void UpdateTime(Level level, On.Monocle.Scene.orig_BeforeUpdate orig) {
+        int gameTimeFrames = (int) Math.Ceiling(unpauseTime / Engine.RawDeltaTime) + 2;
+        int timeActiveFrames = gameTimeFrames - 1;
 
-        for (int i = 0; i < timeActiveCount; i++) {
-            updateTimeActive();
+        for (int i = 0; i < timeActiveFrames; i++) {
+            orig(level);
         }
 
         if (level.InCredits || level.Session.Area.ID == 8 || level.TimerStopped) {
