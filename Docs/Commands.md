@@ -193,6 +193,15 @@ Specify the default mode for `StunPause` command.
   2,R,J
   ```
 
+### Press
+- Press the specified keys with the next input, [the available keys can be found here](https://docs.monogame.net/api/Microsoft.Xna.Framework.Input.Keys.html).
+- `Press, Key1, Key2, ...`
+- e.g. Press Q and W and Right 10 frames.
+  ```
+  Press, Q, W
+  10,R
+  ```
+
 ### ExportGameInfo and EndExportGameInfo
 - `ExportGameInfo (Optional File Path) (Optional Entities Names)`
 - `EndExportGameInfo`
@@ -208,7 +217,7 @@ Specify the default mode for `StunPause` command.
 - Default filepath is `dump_room_info.txt`.
 
 ### CompleteInfo
-- `CompleteInfo Side SID/ID`
+- `CompleteInfo, Side, SID/ID`
 - The successive comments immediately following this command will be displayed to the specified chapter complete screen.
 - Sides are `A`, `B` and `C`
 - e.g. `CompleteInfo A 1` display info on 1A complete screen.

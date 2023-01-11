@@ -120,6 +120,8 @@ namespace CelesteStudio {
             this.setToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.invokeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
+            this.pressToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator24 = new System.Windows.Forms.ToolStripSeparator();
             this.analogueModeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
             this.stunPauseToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -732,7 +734,7 @@ namespace CelesteStudio {
             // 
             // insertOtherCommandToolStripMenuItem
             // 
-            this.insertOtherCommandToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.enforceLegalToolStripMenuItem, this.unsafeToolStripMenuItem, this.safeToolStripMenuItem, this.toolStripSeparator18, this.readToolStripMenuItem, this.playToolStripMenuItem, this.toolStripSeparator17, this.repeatToolStripMenuItem, this.endRepeatToolStripMenuItem, this.toolStripSeparator16, this.setToolStripMenuItem, this.invokeToolStripMenuItem, this.toolStripSeparator3, this.analogueModeToolStripMenuItem, this.toolStripSeparator4, this.stunPauseToolStripMenuItem, this.endStunPauseToolStripMenuItem, this.stunPauseModeToolStripMenuItem, this.toolStripSeparator23, this.autoInputToolStripMenuItem, this.startAutoInputToolStripMenuItem, this.endAutoInputToolStripMenuItem, this.skipAutoInputToolStripMenuItem, this.toolStripSeparator22, this.startExportToolStripMenuItem, this.finishExportToolStripMenuItem, this.toolStripSeparator14, this.startExportRoomInfoToolStripMenuItem, this.finishExportRoomInfoToolStripMenuItem, this.toolStripSeparator5, this.addToolStripMenuItem, this.skipToolStripMenuItem, this.startExportLibTASToolStripMenuItem, this.finishExportLibTASToolStripMenuItem, this.toolStripSeparator13, this.completeInfoToolStripMenuItem, this.recordCountToolStripMenuItem, this.fileTimeToolStripMenuItem, this.chapterTimeToolStripMenuItem, this.toolStripSeparator21, this.exitGameToolStripMenuItem});
+            this.insertOtherCommandToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.enforceLegalToolStripMenuItem, this.unsafeToolStripMenuItem, this.safeToolStripMenuItem, this.toolStripSeparator18, this.readToolStripMenuItem, this.playToolStripMenuItem, this.toolStripSeparator17, this.repeatToolStripMenuItem, this.endRepeatToolStripMenuItem, this.toolStripSeparator16, this.setToolStripMenuItem, this.invokeToolStripMenuItem, this.toolStripSeparator3, this.pressToolStripMenuItem, this.toolStripSeparator24, this.analogueModeToolStripMenuItem, this.toolStripSeparator4, this.stunPauseToolStripMenuItem, this.endStunPauseToolStripMenuItem, this.stunPauseModeToolStripMenuItem, this.toolStripSeparator23, this.autoInputToolStripMenuItem, this.startAutoInputToolStripMenuItem, this.endAutoInputToolStripMenuItem, this.skipAutoInputToolStripMenuItem, this.toolStripSeparator22, this.startExportToolStripMenuItem, this.finishExportToolStripMenuItem, this.toolStripSeparator14, this.startExportRoomInfoToolStripMenuItem, this.finishExportRoomInfoToolStripMenuItem, this.toolStripSeparator5, this.addToolStripMenuItem, this.skipToolStripMenuItem, this.startExportLibTASToolStripMenuItem, this.finishExportLibTASToolStripMenuItem, this.toolStripSeparator13, this.completeInfoToolStripMenuItem, this.recordCountToolStripMenuItem, this.fileTimeToolStripMenuItem, this.chapterTimeToolStripMenuItem, this.toolStripSeparator21, this.exitGameToolStripMenuItem});
             this.insertOtherCommandToolStripMenuItem.Name = "insertOtherCommandToolStripMenuItem";
             this.insertOtherCommandToolStripMenuItem.Size = new System.Drawing.Size(425, 22);
             this.insertOtherCommandToolStripMenuItem.Text = "Insert Other Command";
@@ -828,6 +830,19 @@ namespace CelesteStudio {
             // 
             this.toolStripSeparator3.Name = "toolStripSeparator3";
             this.toolStripSeparator3.Size = new System.Drawing.Size(191, 6);
+            // 
+            // pressToolStripMenuItem
+            // 
+            this.pressToolStripMenuItem.Name = "pressToolStripMenuItem";
+            this.pressToolStripMenuItem.Size = new System.Drawing.Size(194, 22);
+            this.pressToolStripMenuItem.Text = "Press";
+            this.pressToolStripMenuItem.ToolTipText = "Press the specified keys with the next input.";
+            this.pressToolStripMenuItem.Click += new System.EventHandler(this.pressToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator24
+            // 
+            this.toolStripSeparator24.Name = "toolStripSeparator24";
+            this.toolStripSeparator24.Size = new System.Drawing.Size(191, 6);
             // 
             // analogueModeToolStripMenuItem
             // 
@@ -978,7 +993,7 @@ namespace CelesteStudio {
             // 
             this.finishExportLibTASToolStripMenuItem.Name = "finishExportLibTASToolStripMenuItem";
             this.finishExportLibTASToolStripMenuItem.Size = new System.Drawing.Size(194, 22);
-            this.finishExportLibTASToolStripMenuItem.Text = "F";
+            this.finishExportLibTASToolStripMenuItem.Text = "EndExportLibTAS";
             this.finishExportLibTASToolStripMenuItem.ToolTipText = "Converts the TAS to the inputs portion of a LibTAS movie file.\r\n";
             this.finishExportLibTASToolStripMenuItem.Click += new System.EventHandler(this.finishExportLibTASToolStripMenuItem_Click);
             // 
@@ -1198,6 +1213,9 @@ namespace CelesteStudio {
             this.ResumeLayout(false);
             this.PerformLayout();
         }
+
+        private System.Windows.Forms.ToolStripMenuItem pressToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator24;
 
         private System.Windows.Forms.ToolStripMenuItem stunPauseModeToolStripMenuItem;
 

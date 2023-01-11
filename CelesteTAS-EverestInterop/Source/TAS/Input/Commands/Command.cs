@@ -10,15 +10,15 @@ namespace TAS.Input.Commands;
 public partial record Command {
     public readonly string[] Args;
     public readonly TasCommandAttribute Attribute;
-    private readonly Action commandCall; // null if ExecuteAtStart = true
     public readonly string FilePath;
     public readonly int Frame;
     public readonly int StudioLineNumber; // form zero
+    public Action CommandCall { get; private set; }
+    public object Data;
 
-    private Command(TasCommandAttribute attribute, int frame, Action commandCall, string[] args, string filePath, int studioLineNumber) {
+    private Command(TasCommandAttribute attribute, int frame, string[] args, string filePath, int studioLineNumber) {
         Attribute = attribute;
         Frame = frame;
-        this.commandCall = commandCall;
         Args = args;
         FilePath = filePath;
         StudioLineNumber = studioLineNumber;
@@ -26,7 +26,7 @@ public partial record Command {
 
     public string LineText => Args.Length == 0 ? Attribute.Name : $"{Attribute.Name}, {string.Join(", ", Args)}";
 
-    public void Invoke() => commandCall?.Invoke();
+    public void Invoke() => CommandCall?.Invoke();
     public bool Is(string commandName) => Attribute.IsName(commandName);
 }
 
@@ -34,7 +34,7 @@ public partial record Command {
     private static readonly object[] EmptyParameters = { };
     private static readonly Regex CheckSpaceRegex = new(@"^[^,]+?\s+[^,]", RegexOptions.Compiled);
     private static readonly Regex SpaceRegex = new(@"\s+", RegexOptions.Compiled);
-    public static bool Parsing;
+    public static bool Parsing { get; private set; }
 
     private static string[] Split(string line) {
         string trimLine = line.Trim();
@@ -60,24 +60,24 @@ public partial record Command {
                 TasCommandAttribute attribute = pair.Key;
 
                 string[] commandArgs = args.Skip(1).ToArray();
+                command = new(attribute, frame, commandArgs, filePath, studioLine);
 
-                ParameterInfo[] parameterInfos = method.GetParameters();
-                object[] parameters = parameterInfos.Length switch {
+                List<Type> parameterTypes = method.GetParameters().Select(info => info.ParameterType).ToList();
+                object[] parameters = parameterTypes.Count switch {
                     4 => new object[] {commandArgs, studioLine, filePath, fileLine},
                     3 => new object[] {commandArgs, studioLine, filePath},
-                    2 when parameterInfos[1].ParameterType == typeof(int) => new object[] {commandArgs, studioLine},
-                    2 when parameterInfos[1].ParameterType == typeof(string) => new object[] {commandArgs, lineText.Trim()},
+                    2 when parameterTypes[1] == typeof(int) => new object[] {commandArgs, studioLine},
+                    2 when parameterTypes[1] == typeof(string) => new object[] {commandArgs, lineText.Trim()},
+                    2 when parameterTypes[1] == typeof(Command) => new object[] {commandArgs, command},
                     1 => new object[] {commandArgs},
                     0 => EmptyParameters,
                     _ => throw new ArgumentException()
                 };
 
-                Action commandCall = () => method.Invoke(null, parameters);
-                command = new(attribute, frame, commandCall, commandArgs, filePath, studioLine);
-
+                command.CommandCall = () => method.Invoke(null, parameters);
                 if (attribute.ExecuteTiming.HasFlag(ExecuteTiming.Parse)) {
                     Parsing = true;
-                    commandCall.Invoke();
+                    command.Invoke();
                     Parsing = false;
                 }
 

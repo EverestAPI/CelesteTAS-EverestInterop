@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Celeste;
@@ -274,14 +275,20 @@ public static class Manager {
         gamePadData.PreviousState = gamePadData.CurrentState;
         gamePadData.CurrentState = gamePadState;
 
-        MInput.Keyboard.PreviousState = MInput.Keyboard.CurrentState;
-        if (input.HasActions(Actions.Confirm)) {
-            MInput.Keyboard.CurrentState = new KeyboardState(BindingHelper.Confirm2);
-        } else {
-            MInput.Keyboard.CurrentState = new KeyboardState();
-        }
+        SetKeyboardState(input);
 
         MInput.UpdateVirtualInputs();
+    }
+
+    private static void SetKeyboardState(InputFrame input) {
+        MInput.Keyboard.PreviousState = MInput.Keyboard.CurrentState;
+
+        HashSet<Keys> keys = PressCommand.GetKeys();
+        if (input.HasActions(Actions.Confirm)) {
+            keys.Add(BindingHelper.Confirm2);
+        }
+
+        MInput.Keyboard.CurrentState = new KeyboardState(keys.ToArray());
     }
 
     private static void SetFeather(InputFrame input, ref GamePadDPad pad, ref GamePadThumbSticks sticks) {

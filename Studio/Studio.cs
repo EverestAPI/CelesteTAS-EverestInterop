@@ -1469,6 +1469,10 @@ public partial class Studio : BaseForm {
         InsertNewLine("Invoke, Entity.Method, Parameter");
     }
 
+    private void pressToolStripMenuItem_Click(object sender, EventArgs e) {
+        InsertNewLine("Press, Key1, Key2...");
+    }
+
     private void analogueModeToolStripMenuItem_Click(object sender, EventArgs e) {
         InsertNewLine("AnalogMode, Ignore/Circle/Square/Precise");
     }
