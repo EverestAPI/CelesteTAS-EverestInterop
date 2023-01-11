@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Celeste;
+using Monocle;
 using MonoMod.RuntimeDetour;
-using On.Monocle;
 using TAS.Module;
 using TAS.Utils;
-using Engine = Monocle.Engine;
 
 namespace TAS.Input.Commands;
 
@@ -40,24 +39,23 @@ public static class StunPauseCommand {
     [Initialize]
     private static void Initialize() {
         using (new DetourContext {After = new List<string> {"*"}}) {
-            Scene.BeforeUpdate += DoublePauses;
+            On.Monocle.Scene.BeforeUpdate += DoublePauses;
         }
     }
 
     [Unload]
     private static void Unload() {
-        Scene.BeforeUpdate -= DoublePauses;
+        On.Monocle.Scene.BeforeUpdate -= DoublePauses;
     }
 
-    private static void DoublePauses(Scene.orig_BeforeUpdate orig, Monocle.Scene self) {
+    private static void DoublePauses(On.Monocle.Scene.orig_BeforeUpdate orig, Monocle.Scene self) {
         orig(self);
 
         if (SimulatePauses && self is Level level) {
             if (CanPause(level)) {
                 PauseOnCurrentFrame = !PauseOnCurrentFrame;
                 if (PauseOnCurrentFrame) {
-                    orig(self);
-                    UpdateTime(level);
+                    UpdateTime(level, () => orig(self));
                 }
             } else {
                 PauseOnCurrentFrame = false;
@@ -73,7 +71,14 @@ public static class StunPauseCommand {
         }
     }
 
-    private static void UpdateTime(Level level) {
+    private static void UpdateTime(Level level, Action updateTimeActive) {
+        int gameTimeCount = (int) Math.Ceiling(unpauseTime / Engine.RawDeltaTime) + 2;
+        int timeActiveCount = gameTimeCount - 1;
+
+        for (int i = 0; i < timeActiveCount; i++) {
+            updateTimeActive();
+        }
+
         if (level.InCredits || level.Session.Area.ID == 8 || level.TimerStopped) {
             return;
         }
