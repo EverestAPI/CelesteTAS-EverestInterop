@@ -4,6 +4,7 @@ using System.Reflection;
 using Celeste;
 using Celeste.Mod.SpeedrunTool.Other;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
+using Microsoft.Xna.Framework.Input;
 using Monocle;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
@@ -18,6 +19,8 @@ internal static class SpeedrunToolUtils {
     private static int groupCounter;
     private static bool simulatePauses;
     private static bool pauseOnCurrentFrame;
+    private static int pressFrames;
+    private static HashSet<Keys> pressKeys;
 
     public static void AddSaveLoadAction() {
         Action<Dictionary<Type, Dictionary<string, object>>, Level> save = (_, _) => {
@@ -26,6 +29,8 @@ internal static class SpeedrunToolUtils {
             groupCounter = CycleHitboxColor.GroupCounter;
             simulatePauses = StunPauseCommand.SimulatePauses;
             pauseOnCurrentFrame = StunPauseCommand.PauseOnCurrentFrame;
+            pressFrames = PressCommand.PressFrames;
+            pressKeys = PressCommand.PressKeys.DeepCloneShared();
         };
         Action<Dictionary<Type, Dictionary<string, object>>, Level> load = (_, _) => {
             EntityDataHelper.CachedEntityData = savedEntityData.DeepCloneShared();
@@ -33,6 +38,11 @@ internal static class SpeedrunToolUtils {
             CycleHitboxColor.GroupCounter = groupCounter;
             StunPauseCommand.SimulatePauses = simulatePauses;
             StunPauseCommand.PauseOnCurrentFrame = pauseOnCurrentFrame;
+            PressCommand.PressFrames = pressFrames;
+            PressCommand.PressKeys.Clear();
+            foreach (Keys keys in pressKeys) {
+                PressCommand.PressKeys.Add(keys);
+            }
         };
         Action clear = () => {
             savedEntityData.Clear();

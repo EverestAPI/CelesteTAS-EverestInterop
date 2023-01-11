@@ -10,15 +10,15 @@ namespace TAS.Input.Commands;
 public partial record Command {
     public readonly string[] Args;
     public readonly TasCommandAttribute Attribute;
+    private readonly Action commandCall;
     public readonly string FilePath;
     public readonly int Frame;
     public readonly int StudioLineNumber; // form zero
-    public Action CommandCall { get; private set; }
-    public object Data;
 
-    private Command(TasCommandAttribute attribute, int frame, string[] args, string filePath, int studioLineNumber) {
+    private Command(TasCommandAttribute attribute, int frame, Action commandCall, string[] args, string filePath, int studioLineNumber) {
         Attribute = attribute;
         Frame = frame;
+        this.commandCall = commandCall;
         Args = args;
         FilePath = filePath;
         StudioLineNumber = studioLineNumber;
@@ -26,7 +26,7 @@ public partial record Command {
 
     public string LineText => Args.Length == 0 ? Attribute.Name : $"{Attribute.Name}, {string.Join(", ", Args)}";
 
-    public void Invoke() => CommandCall?.Invoke();
+    public void Invoke() => commandCall?.Invoke();
     public bool Is(string commandName) => Attribute.IsName(commandName);
 }
 
@@ -60,7 +60,6 @@ public partial record Command {
                 TasCommandAttribute attribute = pair.Key;
 
                 string[] commandArgs = args.Skip(1).ToArray();
-                command = new(attribute, frame, commandArgs, filePath, studioLine);
 
                 List<Type> parameterTypes = method.GetParameters().Select(info => info.ParameterType).ToList();
                 object[] parameters = parameterTypes.Count switch {
@@ -68,16 +67,17 @@ public partial record Command {
                     3 => new object[] {commandArgs, studioLine, filePath},
                     2 when parameterTypes[1] == typeof(int) => new object[] {commandArgs, studioLine},
                     2 when parameterTypes[1] == typeof(string) => new object[] {commandArgs, lineText.Trim()},
-                    2 when parameterTypes[1] == typeof(Command) => new object[] {commandArgs, command},
                     1 => new object[] {commandArgs},
                     0 => EmptyParameters,
                     _ => throw new ArgumentException()
                 };
 
-                command.CommandCall = () => method.Invoke(null, parameters);
+                Action commandCall = () => method.Invoke(null, parameters);
+                command = new(attribute, frame, commandCall, commandArgs, filePath, studioLine);
+
                 if (attribute.ExecuteTiming.HasFlag(ExecuteTiming.Parse)) {
                     Parsing = true;
-                    command.Invoke();
+                    commandCall.Invoke();
                     Parsing = false;
                 }
 
