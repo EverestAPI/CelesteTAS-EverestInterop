@@ -119,8 +119,9 @@ public static class ConsoleCommand {
     private static void Console(string[] arguments, string commandText) {
         string commandName = arguments[0].ToLower(CultureInfo.InvariantCulture);
         string[] args = arguments.Skip(1).ToArray();
-        if (LoadCommandRegex.IsMatch(commandName)) {
-            if (int.TryParse(LoadCommandRegex.Match(commandName).Groups[2].Value, out int slot)) {
+        if (LoadCommandRegex.Match(commandName) is {Success: true} match) {
+            commandName = match.Groups[1].Value;
+            if (int.TryParse(match.Groups[2].Value, out int slot)) {
                 // load1 => 0.celeste
                 slot--;
             } else {
