@@ -87,6 +87,10 @@
   - `Set, Everest.ShowModOptionsInGame, false`
   - `Set, ExtendedVariantMode.Dashcount, 3`
   - `Set, CelesteTAS.CenterCamera, true`
+  - `Set, AnarchyCollab2022.LeftButton, N, V`
+
+    Set helper's button, only keyboard keys are supported.
+    The setting is only valid when tas is running, it will be restored automatically when tas is stopped.
 
 ### Invoke
 - `Invoke, Entity.Method, Parameter1, Parameter2...` (all entities)

@@ -6,6 +6,7 @@ using System.Reflection;
 using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using Monocle;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Utils;
@@ -220,6 +221,25 @@ public static class SetCommand {
                 }
 
                 actor.movementCounter = remainder;
+            } else if (property.PropertyType == typeof(ButtonBinding) && property.GetValue(obj) is ButtonBinding buttonBinding) {
+                HashSet<Keys> keys = new();
+                foreach (string str in values) {
+                    if (!Enum.TryParse(str, true, out Keys key)) {
+                        AbortTas($"{str} is not a valid key");
+                        return false;
+                    }
+
+                    keys.Add(key);
+                }
+
+                List<VirtualButton.Node> nodes = buttonBinding.Button.Nodes;
+                foreach (VirtualButton.Node node in nodes.ToList()) {
+                    if (node is VirtualButton.KeyboardKey) {
+                        nodes.Remove(node);
+                    }
+                }
+
+                nodes.AddRange(keys.Select(key => new VirtualButton.KeyboardKey(key)));
             } else {
                 object value = structObj ?? ConvertType(values, property.PropertyType);
                 setMethod.Invoke(obj, new[] {value});
