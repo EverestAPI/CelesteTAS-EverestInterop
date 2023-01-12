@@ -245,8 +245,8 @@ internal static class EntityTypeHelper {
                     }
 
                     string idTrim = id.Trim();
-                    if (vanillaEntityNameToType.ContainsKey(idTrim)) {
-                        $"Found duplicate entity name {idTrim} - {type.FullName} vs {vanillaEntityNameToType[idTrim].FullName}"
+                    if (vanillaEntityNameToType.TryGetValue(idTrim, out Type vanillaType)) {
+                        $"Found duplicate entity name {idTrim} - {type.FullName} vs {vanillaType.FullName}"
                             .Log(LogLevel.Warn);
                     }
 

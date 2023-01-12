@@ -81,11 +81,11 @@ public partial record Command {
                     Parsing = false;
                 }
 
-                if (!inputController.Commands.ContainsKey(frame)) {
-                    inputController.Commands[frame] = new List<Command>();
+                if (!inputController.Commands.TryGetValue(frame, out List<Command> commands)) {
+                    inputController.Commands[frame] = commands = new List<Command>();
                 }
 
-                inputController.Commands[frame].Add(command);
+                commands.Add(command);
 
                 return true;
             }

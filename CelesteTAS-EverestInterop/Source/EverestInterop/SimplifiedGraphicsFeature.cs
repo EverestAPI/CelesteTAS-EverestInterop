@@ -378,11 +378,11 @@ public static class SimplifiedGraphicsFeature {
         if (TasSettings.SimplifiedGraphics && TasSettings.SimplifiedDecal) {
             string decalName = self.Name.ToLower().Replace("decals/", "");
             if (!SolidDecals.Contains(decalName)) {
-                if (!DecalRegistry.RegisteredDecals.ContainsKey(decalName)) {
+                if (!DecalRegistry.RegisteredDecals.TryGetValue(decalName, out DecalRegistry.DecalInfo decalInfo)) {
                     return;
                 }
 
-                if (DecalRegistry.RegisteredDecals[decalName].CustomProperties.All(pair => pair.Key != "solid")) {
+                if (decalInfo.CustomProperties.All(pair => pair.Key != "solid")) {
                     return;
                 }
             }

@@ -152,11 +152,7 @@ public static partial class ActualEntityCollideHitbox {
     }
 
     private static Vector2? LoadActualCollidePosition(this Entity entity) {
-        if (LastPositions.ContainsKey(entity)) {
-            return LastPositions[entity];
-        }
-
-        return null;
+        return LastPositions.TryGetValue(entity, out Vector2 result) ? result : null;
     }
 
     private static void SaveActualCollidable(this Entity entity) {
@@ -164,7 +160,7 @@ public static partial class ActualEntityCollideHitbox {
     }
 
     private static bool LoadActualCollidable(this Entity entity) {
-        return LastColldables.ContainsKey(entity) && LastColldables[entity];
+        return LastColldables.TryGetValue(entity, out bool result) && result;
     }
 }
 

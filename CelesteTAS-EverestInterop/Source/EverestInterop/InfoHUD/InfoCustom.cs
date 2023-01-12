@@ -322,10 +322,7 @@ public static class InfoCustom {
     }
 
     public static List<Entity> FindEntities(Type type, string entityId) {
-        List<Entity> entities;
-        if (Engine.Scene.Tracker.Entities.ContainsKey(type)) {
-            entities = Engine.Scene.Tracker.Entities[type].ToList();
-        } else {
+        if (!Engine.Scene.Tracker.Entities.TryGetValue(type, out List<Entity> entities)) {
             entities = Engine.Scene.Entities.Where(entity => entity.GetType().IsSameOrSubclassOf(type)).ToList();
         }
 

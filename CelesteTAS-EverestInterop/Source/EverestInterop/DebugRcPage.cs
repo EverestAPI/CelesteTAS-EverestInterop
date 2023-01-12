@@ -61,9 +61,9 @@ public static class DebugRcPage {
                 WriteIdErrorPage("No id given.");
             } else {
                 if (Enum.TryParse(idValue, true, out HotkeyID id) && (int) id < Enum.GetNames(typeof(HotkeyID)).Length) {
-                    if (Hotkeys.KeysDict.ContainsKey(id)) {
+                    if (Hotkeys.KeysDict.TryGetValue(id, out Hotkeys.Hotkey hotkey)) {
                         bool press = !"release".Equals(pressValue, StringComparison.InvariantCultureIgnoreCase);
-                        Hotkeys.KeysDict[id].OverrideCheck = press;
+                        hotkey.OverrideCheck = press;
                         Everest.DebugRC.Write(c, "OK");
                     } else {
                         WriteIdErrorPage($"Hotkeys.KeysDict doesn't have id {id}, please report to the developer.");

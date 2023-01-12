@@ -588,7 +588,7 @@ public static class PlayerStates {
     };
 
     public static string GetStateName(int state) {
-        return States.ContainsKey(state) ? States[state] : state.ToString();
+        return States.TryGetValue(state, out string name) ? name : state.ToString();
     }
 
     // ReSharper disable once UnusedMember.Global

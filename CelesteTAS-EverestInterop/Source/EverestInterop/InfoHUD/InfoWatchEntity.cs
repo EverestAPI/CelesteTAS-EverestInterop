@@ -25,7 +25,7 @@ public static class InfoWatchEntity {
     }
     // ReSharper restore UnusedMember.Local
 
-    private static readonly Dictionary<MemberKey, IEnumerable<MemberInfo>> CachedMemberInfos = new();
+    private static readonly Dictionary<MemberKey, List<MemberInfo>> CachedMemberInfos = new();
 
     private static readonly WeakReference<Entity> LastClickedEntity = new(null);
 
@@ -269,11 +269,13 @@ public static class InfoWatchEntity {
     }
 
     private static IEnumerable<MemberInfo> GetAllSimpleFields(Type type, bool declaredOnly = false) {
-        var key = new MemberKey(type, declaredOnly);
+        MemberKey key = new(type, declaredOnly);
 
-        if (CachedMemberInfos.ContainsKey(key)) {
-            return CachedMemberInfos[key];
+        if (CachedMemberInfos.TryGetValue(key, out List<MemberInfo> result)) {
+            return result;
         } else {
+            CachedMemberInfos[key] = result = new List<MemberInfo>();
+
             FieldInfo[] fields;
             PropertyInfo[] properties;
 
@@ -291,7 +293,6 @@ public static class InfoWatchEntity {
             List<MemberInfo> propertyInfos = properties.Where(info => info.PropertyType.IsSimpleType()).Cast<MemberInfo>().ToList();
             memberInfos.AddRange(propertyInfos);
 
-            List<MemberInfo> result = new();
             foreach (IGrouping<bool, MemberInfo> grouping in memberInfos.GroupBy(info => type == info.DeclaringType)) {
                 List<MemberInfo> infos = grouping.ToList();
                 infos.Sort((info1, info2) => string.Compare(info1.Name, info2.Name, StringComparison.InvariantCultureIgnoreCase));
@@ -302,7 +303,6 @@ public static class InfoWatchEntity {
                 }
             }
 
-            CachedMemberInfos[key] = result;
             return result;
         }
     }
