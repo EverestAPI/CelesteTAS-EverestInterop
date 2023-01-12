@@ -6,14 +6,11 @@ using TAS.Utils;
 namespace TAS.Input.Commands;
 
 public static class PressCommand {
-    public static int PressFrames;
     public static readonly HashSet<Keys> PressKeys = new();
 
     // "Press, Key1, Key2...",
     [TasCommand("Press")]
     private static void Press(string[] args) {
-        PressFrames = Manager.Controller.Current.Frames;
-
         if (args.IsEmpty()) {
             return;
         }
@@ -30,19 +27,16 @@ public static class PressCommand {
 
     [DisableRun]
     private static void DisableRun() {
-        PressFrames = 0;
         PressKeys.Clear();
     }
 
     public static HashSet<Keys> GetKeys() {
-        if (PressFrames >= 0) {
-            PressFrames--;
-        }
+        HashSet<Keys> result = new(PressKeys);
 
-        if (PressFrames == -1) {
+        if (Manager.Controller.Current != Manager.Controller.Next) {
             PressKeys.Clear();
         }
 
-        return new HashSet<Keys>(PressKeys);
+        return result;
     }
 }
