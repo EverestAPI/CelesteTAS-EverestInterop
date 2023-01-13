@@ -255,7 +255,7 @@ public class InputController {
         }
 
         ExportGameInfo.ExportInfo();
-
+        StunPauseCommand.UpdateSimulateSkipInput();
         Manager.SetInputs(Current);
 
         if (CurrentFrameInInput == 0 || Current.Line == Previous.Line && Current.RepeatIndex == Previous.RepeatIndex &&

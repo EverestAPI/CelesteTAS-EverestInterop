@@ -21,6 +21,8 @@ public static class StunPauseCommand {
     private static readonly float unpauseTime = unpauseTimer != null ? 0.15f : 0f;
     public static bool SimulatePauses;
     public static bool PauseOnCurrentFrame;
+    public static int SkipFrames;
+    public static int WaitingFrames;
 
     private static StunPauseMode? localMode;
     private static StunPauseMode? globalMode;
@@ -52,7 +54,7 @@ public static class StunPauseCommand {
         orig(self);
 
         if (SimulatePauses && self is Level level) {
-            if (CanPause(level)) {
+            if (CanPause(level) && SkipFrames < 0) {
                 PauseOnCurrentFrame = !PauseOnCurrentFrame;
                 if (PauseOnCurrentFrame) {
                     UpdateTime(level, orig);
@@ -174,5 +176,47 @@ public static class StunPauseCommand {
     [ClearInputs]
     private static void ClearInputs() {
         globalMode = null;
+    }
+
+    public static void UpdateSimulateSkipInput() {
+        if (WaitingFrames >= 0) {
+            WaitingFrames--;
+        }
+
+        if (WaitingFrames < 0) {
+            SkipFrames--;
+        }
+    }
+
+    public static void SkipInput(string[] args, string filePath, int fileLine) {
+        string errorText = $"{Path.GetFileName(filePath)} line {fileLine}\nSkipInput command's ";
+        if (args.IsEmpty()) {
+            SkipFrames = Manager.Controller.Current?.Frames ?? 0;
+            WaitingFrames = 0;
+        } else if (!int.TryParse(args[0], out int frames)) {
+            AbortTas($"{errorText}first parameter is not an integer");
+        } else {
+            if (frames <= 0) {
+                AbortTas($"{errorText}first parameter must be greater than 0");
+                return;
+            }
+
+            SkipFrames = frames;
+
+            if (args.Length >= 2) {
+                if (int.TryParse(args[1], out int waitFrames)) {
+                    if (waitFrames < 0) {
+                        AbortTas($"{errorText}second parameter must be greater than or equal 0");
+                        return;
+                    }
+
+                    WaitingFrames = waitFrames;
+                } else {
+                    AbortTas($"{errorText}second parameter is not an integer");
+                }
+            } else {
+                WaitingFrames = 0;
+            }
+        }
     }
 }

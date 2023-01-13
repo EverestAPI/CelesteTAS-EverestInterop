@@ -105,9 +105,9 @@ public static class AutoInputCommand {
         AutoInputArgs.Remove(filePath);
     }
 
-    [TasCommand("SkipInput", AliasNames = new[] {"SkipAutoInput"}, ExecuteTiming = ExecuteTiming.Parse)]
+    [TasCommand("SkipInput", AliasNames = new[] {"SkipAutoInput"}, ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
     private static void SkipInput(string[] args, int __, string filePath, int fileLine) {
-        if (AutoInputArgs.TryGetValue(filePath, out var arguments)) {
+        if (Command.Parsing && AutoInputArgs.TryGetValue(filePath, out var arguments)) {
             string errorText = $"{Path.GetFileName(filePath)} line {fileLine}\nSkipInput command's ";
             if (args.IsEmpty()) {
                 arguments.SkipNextInput = true;
@@ -139,6 +139,8 @@ public static class AutoInputCommand {
                     arguments.SkipWaitingFrames = 0;
                 }
             }
+        } else if (!Command.Parsing) {
+            StunPauseCommand.SkipInput(args, filePath, fileLine);
         }
     }
 

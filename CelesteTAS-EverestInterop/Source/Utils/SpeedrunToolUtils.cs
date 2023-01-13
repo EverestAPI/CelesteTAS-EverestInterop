@@ -19,6 +19,8 @@ internal static class SpeedrunToolUtils {
     private static int groupCounter;
     private static bool simulatePauses;
     private static bool pauseOnCurrentFrame;
+    private static int skipFrames;
+    private static int waitingFrames;
     private static HashSet<Keys> pressKeys;
 
     public static void AddSaveLoadAction() {
@@ -28,6 +30,8 @@ internal static class SpeedrunToolUtils {
             groupCounter = CycleHitboxColor.GroupCounter;
             simulatePauses = StunPauseCommand.SimulatePauses;
             pauseOnCurrentFrame = StunPauseCommand.PauseOnCurrentFrame;
+            skipFrames = StunPauseCommand.SkipFrames;
+            waitingFrames = StunPauseCommand.WaitingFrames;
             pressKeys = PressCommand.PressKeys.DeepCloneShared();
         };
         Action<Dictionary<Type, Dictionary<string, object>>, Level> load = (_, _) => {
@@ -36,6 +40,8 @@ internal static class SpeedrunToolUtils {
             CycleHitboxColor.GroupCounter = groupCounter;
             StunPauseCommand.SimulatePauses = simulatePauses;
             StunPauseCommand.PauseOnCurrentFrame = pauseOnCurrentFrame;
+            StunPauseCommand.SkipFrames = skipFrames;
+            StunPauseCommand.WaitingFrames = waitingFrames;
             PressCommand.PressKeys.Clear();
             foreach (Keys keys in pressKeys) {
                 PressCommand.PressKeys.Add(keys);
