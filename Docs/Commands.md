@@ -120,32 +120,34 @@
   EndStunPause
   ```
 - Simulate mode is illegal and should only be used to test routes, which will pause every other frame without doing the actual pause inputs.
-- Input mode is legal, it is actually [AutoInput](#autoinput-startautoinput-endautoinput-skipinput) but with predefined pause inputs and cycle length.
+- Input mode is legal, it is actually [AutoInput](#autoinput-startautoinput-endautoinput-skipinput) but with predefined pause inputs and cycle length. It would hold jump automatically if the inputs before the pause have a jump button pressed.
 
   e.g.
   ```
+  1,K
   StunPause, Input
-  1,R,X
-  SkipInput
-  3
-  1,R,X
+  SkipInput, 3, 1
+  7,R,X
   4,R,J
   EndStunPause
   ```
   would produce
   ```
-  1,S,N
+   1,J
+   1,S,N
+  10,K,O
+   5,R,X
+   1,S,N
   10,O
-  1,R,X
-  3
-  1,R,X
-  1,S,N
+   2,R,X
+   1,S,N
   10,O
-  2,R,J
-  1,S,N
-  10,O
-  2,R,J
+   2,R,J
+   1,S,N
+  10,J
+   2,R,J
   ```
+
 - The command's mode is determined by several things, the priority from high to low are:
   1. [EnforceLegal](#enforcelegal) command force all the commands use `Input` mode
   2. Mode specified by the `StunPause` command
@@ -158,8 +160,8 @@ Specify the default mode for `StunPause` command.
 
 ### AutoInput, StartAutoInput, EndAutoInput, SkipInput
 - Inserts the auto inputs every cycle length frames that is played through inputs.
-- `SkipInput/SkipAutoInput` Prevents the next input from being calculated in the `AutoInput` cycle. Usually used to mark the freeze frames.
-- `SkipInput/SkipAutoInput, (skip frames), (optional waiting frames)` Wait specified frames then prevents the next specified frames from being calculated in the `AutoInput` cycle. Usually used to mark the freeze frames.
+- `SkipInput` Prevents the next input from being calculated in the `AutoInput` cycle. Usually used to mark the freeze frames.
+- `SkipInput, (skip frames), (optional waiting frames)` Wait specified frames then prevents the next specified frames from being calculated in the `AutoInput` cycle. Usually used to mark the freeze frames.
 - ```
   AutoInput, (cycle length)
   (auto inputs)
@@ -173,28 +175,28 @@ Specify the default mode for `StunPause` command.
 - e.g.
   ```
   AutoInput, 2
-  1,S,N
+   1,S,N
   10,O
-  StartAutoInput
+  StartInput
   SkipInput, 3, 1
-  7,R,X
-  4,R,J
+   7,R,X
+   4,R,J
   EndAutoInput
   ```
   would produce
   ```
-  1,S,N
+   1,S,N
   10,O
-  5,R,X
-  1,S,N
+   5,R,X
+   1,S,N
   10,O
-  2,R,X
-  1,S,N
+   2,R,X
+   1,S,N
   10,O
-  2,R,J
-  1,S,N
+   2,R,J
+   1,S,N
   10,O
-  2,R,J
+   2,R,J
   ```
 
 ### Press
