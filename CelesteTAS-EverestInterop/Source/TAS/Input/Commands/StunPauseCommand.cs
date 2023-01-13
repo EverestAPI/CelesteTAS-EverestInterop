@@ -116,13 +116,35 @@ public static class StunPauseCommand {
         } else {
             AutoInputCommand.Arguments arguments = new(fileLine, 2);
             AutoInputArgs[filePath] = arguments;
+
             List<string> inputs = File.ReadLines(filePath).Take(fileLine - 1).ToList();
-            inputs.Add("   1,S,N");
-            inputs.Add("  10,O");
-            arguments.Inputs = inputs.ToArray();
+            inputs.Add("1,S,N");
+            inputs.Add("");
+            arguments.Inputs = inputs;
+            UpdatePauseInputs(arguments);
+
             arguments.LockStudioLine = true;
             arguments.StunPause = true;
             AutoInputCommand.ParseInsertedLines(arguments, filePath, studioLine, 0, 0);
+        }
+    }
+
+    public static void UpdatePauseInputs(AutoInputCommand.Arguments arguments) {
+        List<string> inputs = arguments.Inputs;
+        inputs.RemoveAt(inputs.Count - 1);
+
+        if (Manager.Controller.Inputs.LastOrDefault() is { } input) {
+            if (input.HasActions(Actions.Jump) && input.HasActions(Actions.Jump2)) {
+                inputs.Add("10,J,K");
+            } else if (input.HasActions(Actions.Jump)) {
+                inputs.Add("10,J");
+            } else if (input.HasActions(Actions.Jump2)) {
+                inputs.Add("10,K,O");
+            } else {
+                inputs.Add("10,O");
+            }
+        } else {
+            inputs.Add("10,O");
         }
     }
 

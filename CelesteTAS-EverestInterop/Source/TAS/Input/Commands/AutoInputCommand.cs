@@ -10,7 +10,7 @@ public static class AutoInputCommand {
         public readonly int StartLine;
         public readonly int CycleLength;
         public int CycleOffset;
-        public string[] Inputs;
+        public List<string> Inputs;
         public bool Inserting;
         public bool SkipNextInput;
         public int SkipFrames;
@@ -81,7 +81,7 @@ public static class AutoInputCommand {
             return;
         }
 
-        arguments.Inputs = File.ReadLines(filePath).Take(fileLine - 1).ToArray();
+        arguments.Inputs = File.ReadLines(filePath).Take(fileLine - 1).ToList();
     }
 
     [TasCommand("EndAutoInput", ExecuteTiming = ExecuteTiming.Parse)]
@@ -194,6 +194,10 @@ public static class AutoInputCommand {
     }
 
     public static void ParseInsertedLines(Arguments arguments, string filePath, int studioLine, int repeatIndex, int repeatCount) {
+        if (arguments.StunPause) {
+            StunPauseCommand.UpdatePauseInputs(arguments);
+        }
+
         arguments.Inserting = true;
         Manager.Controller.ReadLines(
             arguments.Inputs,
