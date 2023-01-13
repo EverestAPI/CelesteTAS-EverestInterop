@@ -2428,6 +2428,12 @@ public class RichText : UserControl {
                 }
 
                 break;
+            case Keys.W:
+                if (e.Modifiers == Keys.Control) {
+                    Selection.SelectBlock();
+                }
+
+                break;
             case Keys.Z:
                 if (e.Modifiers == Keys.Control && !ReadOnly) {
                     Undo();

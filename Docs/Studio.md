@@ -7,6 +7,8 @@ Can be used instead of notepad or similar for easier editing of the TAS file. It
 - Ctrl + O: Open File
 - Alt + Left: Open Previous File
 - Ctrl + Shift + S: Save As
+- Ctrl + A: Select All
+- Ctrl + W: Select Block
 - Ctrl + F: Find Text
 - Ctrl + G: Go to Line/Label
 - Ctrl + D: Toggle Sending Inputs to Celeste
@@ -31,3 +33,5 @@ Can be used instead of notepad or similar for easier editing of the TAS file. It
 - Shift + Mouse Wheel: Tweak Frames Between Selected Input and Mouse Pointed Input
 - Ctrl + Shift + Up/Down: Tweak Frames Between Selected Inputs
 - Ctrl + Alt + C: Copy File Path
+- Alt + Up: Move Selected Lines Up
+- Alt + Down: Move Selected Lines Down

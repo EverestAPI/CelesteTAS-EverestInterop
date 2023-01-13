@@ -309,12 +309,50 @@ public class Range : IEnumerable<Place> {
     public void SelectAll() {
         ColumnSelectionMode = false;
 
-        Start = new Place(0, 0);
         if (tb.LinesCount == 0) {
             Start = new Place(0, 0);
         } else {
             end = new Place(0, 0);
             start = new Place(tb[tb.LinesCount - 1].Count, tb.LinesCount - 1);
+        }
+
+        if (this == tb.Selection) {
+            tb.Invalidate();
+        }
+    }
+
+    public void SelectBlock() {
+        ColumnSelectionMode = false;
+
+        if (tb.LinesCount == 0) {
+            Start = new Place(0, 0);
+        } else {
+            Normalize();
+            int startLine = start.iLine;
+            int endLine = end.iLine;
+
+            while (startLine > 0) {
+                if (tb.Lines[startLine].Trim().Length == 0) {
+                    break;
+                }
+
+                startLine--;
+            }
+
+            if (startLine > 0 && startLine < tb.LinesCount - 1) {
+                startLine++;
+            }
+
+            while (endLine < tb.LinesCount - 1) {
+                if (tb.Lines[endLine].Trim().Length == 0) {
+                    break;
+                }
+
+                endLine++;
+            }
+
+            start = new Place(0, startLine);
+            end = new Place(tb[endLine].Count, endLine);
         }
 
         if (this == tb.Selection) {
