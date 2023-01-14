@@ -22,6 +22,7 @@ internal static class SpeedrunToolUtils {
     private static int skipFrames;
     private static int waitingFrames;
     private static HashSet<Keys> pressKeys;
+    private static long? tasStartFileTime;
 
     public static void AddSaveLoadAction() {
         Action<Dictionary<Type, Dictionary<string, object>>, Level> save = (_, _) => {
@@ -33,6 +34,7 @@ internal static class SpeedrunToolUtils {
             skipFrames = StunPauseCommand.SkipFrames;
             waitingFrames = StunPauseCommand.WaitingFrames;
             pressKeys = PressCommand.PressKeys.DeepCloneShared();
+            tasStartFileTime = MetadataCommands.TasStartFileTime;
         };
         Action<Dictionary<Type, Dictionary<string, object>>, Level> load = (_, _) => {
             EntityDataHelper.CachedEntityData = savedEntityData.DeepCloneShared();
@@ -46,6 +48,8 @@ internal static class SpeedrunToolUtils {
             foreach (Keys keys in pressKeys) {
                 PressCommand.PressKeys.Add(keys);
             }
+
+            MetadataCommands.TasStartFileTime = tasStartFileTime;
         };
         Action clear = () => {
             savedEntityData.Clear();

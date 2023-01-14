@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using Celeste;
 using Celeste.Mod;
-using Microsoft.Xna.Framework;
 using TAS.Communication;
 using TAS.Module;
 using TAS.Utils;
@@ -12,47 +11,45 @@ using TAS.Utils;
 namespace TAS.Input.Commands;
 
 public static class MetadataCommands {
-    private static long? tasStartFileTime;
+    public static long? TasStartFileTime;
 
     [Load]
     private static void Load() {
+        On.Celeste.Level.Begin += LevelOnBegin;
+        On.Celeste.Level.UpdateTime += LevelOnUpdateTime;
         Everest.Events.Level.OnComplete += UpdateChapterTime;
-        On.Celeste.OuiFileSelectSlot.OnNewGameSelected += OuiFileSelectSlotOnOnNewGameSelected;
-        On.Celeste.LevelLoader.ctor += LevelLoaderOnCtor;
     }
 
     [Unload]
     private static void Unload() {
+        On.Celeste.Level.Begin -= LevelOnBegin;
+        On.Celeste.Level.UpdateTime -= LevelOnUpdateTime;
         Everest.Events.Level.OnComplete -= UpdateChapterTime;
-        On.Celeste.OuiFileSelectSlot.OnNewGameSelected -= OuiFileSelectSlotOnOnNewGameSelected;
-        On.Celeste.LevelLoader.ctor -= LevelLoaderOnCtor;
     }
 
-    private static void OuiFileSelectSlotOnOnNewGameSelected(On.Celeste.OuiFileSelectSlot.orig_OnNewGameSelected orig, OuiFileSelectSlot self) {
+    private static void LevelOnBegin(On.Celeste.Level.orig_Begin orig, Level self) {
         orig(self);
-        if (Manager.Running) {
-            tasStartFileTime = 0;
-        }
+        StartFileTime();
     }
 
-    private static void LevelLoaderOnCtor(On.Celeste.LevelLoader.orig_ctor orig, LevelLoader self, Session session, Vector2? startPosition) {
-        orig(self, session, startPosition);
-
-        if (Manager.Running && !Savestates.IsSaved_Safe() && tasStartFileTime == null) {
-            tasStartFileTime = SaveData.Instance?.Time;
-        }
+    private static void LevelOnUpdateTime(On.Celeste.Level.orig_UpdateTime orig, Level self) {
+        orig(self);
+        StartFileTime();
     }
 
-    [EnableRun]
     private static void StartFileTime() {
-        tasStartFileTime = Savestates.IsSaved_Safe() ? null : SaveData.Instance?.Time;
+        if (Manager.Running && TasStartFileTime == null) {
+            TasStartFileTime = SaveData.Instance?.Time;
+        }
     }
 
     [DisableRun]
     private static void UpdateFileTime() {
-        if (tasStartFileTime != null && SaveData.Instance != null && !Manager.Controller.CanPlayback) {
-            UpdateAllMetadata("FileTime", _ => GameInfo.FormatTime(SaveData.Instance.Time - tasStartFileTime.Value));
+        if (TasStartFileTime != null && SaveData.Instance != null && !Manager.Controller.CanPlayback) {
+            UpdateAllMetadata("FileTime", _ => GameInfo.FormatTime(SaveData.Instance.Time - TasStartFileTime.Value));
         }
+
+        TasStartFileTime = null;
     }
 
     [TasCommand("RecordCount", AliasNames = new[] {"RecordCount:", "RecordCount："}, CalcChecksum = false)]
