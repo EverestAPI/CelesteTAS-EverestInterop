@@ -170,6 +170,8 @@ public static class StunPauseCommand {
     private static void Reset() {
         SimulatePauses = false;
         PauseOnCurrentFrame = false;
+        SkipFrames = 0;
+        WaitingFrames = 0;
         localMode = null;
     }
 
@@ -189,6 +191,10 @@ public static class StunPauseCommand {
     }
 
     public static void SkipInput(string[] args, string filePath, int fileLine) {
+        if (!SimulatePauses) {
+            return;
+        }
+
         string errorText = $"{Path.GetFileName(filePath)} line {fileLine}\nSkipInput command's ";
         if (args.IsEmpty()) {
             SkipFrames = Manager.Controller.Current?.Frames ?? 0;
