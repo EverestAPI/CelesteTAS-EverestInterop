@@ -24,14 +24,14 @@ public static class CycleHitboxColor {
     private static void Load() {
         On.Monocle.Entity.DebugRender += EntityOnDebugRender;
         On.Monocle.Scene.BeforeUpdate += SceneOnBeforeUpdate;
-        On.Monocle.Scene.Begin += SceneOnBegin;
+        On.Celeste.Level.Begin += LevelOnBegin;
     }
 
     [Unload]
     private static void Unload() {
         On.Monocle.Entity.DebugRender -= EntityOnDebugRender;
         On.Monocle.Scene.BeforeUpdate -= SceneOnBeforeUpdate;
-        On.Monocle.Scene.Begin -= SceneOnBegin;
+        On.Celeste.Level.Begin -= LevelOnBegin;
     }
 
     [Initialize]
@@ -99,14 +99,15 @@ public static class CycleHitboxColor {
     }
 
     private static void SceneOnBeforeUpdate(On.Monocle.Scene.orig_BeforeUpdate orig, Scene self) {
+        float timeActive = self.TimeActive;
         orig(self);
-        if (!self.Paused) {
+        if (self is Level && Math.Abs(timeActive - self.TimeActive) > 0.000001f) {
             // If the scene isn't paused (TimeActive is increased), advance the spinner group counter
             GroupCounter = (GroupCounter + 1) % 3;
         }
     }
 
-    private static void SceneOnBegin(On.Monocle.Scene.orig_Begin orig, Scene self) {
+    private static void LevelOnBegin(On.Celeste.Level.orig_Begin orig, Level self) {
         orig(self);
         GroupCounter = 0;
     }
