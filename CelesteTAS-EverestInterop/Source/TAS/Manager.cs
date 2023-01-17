@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -275,9 +275,20 @@ public static class Manager {
         gamePadData.PreviousState = gamePadData.CurrentState;
         gamePadData.CurrentState = gamePadState;
 
+        SetMousePosition();
         SetKeyboardState(input);
 
         MInput.UpdateVirtualInputs();
+    }
+
+    private static void SetMousePosition() {
+        Point? pos = MouseCommand.GetPosition();
+        if (pos.HasValue) {
+            int scale = Engine.Instance.Window.ClientBounds.Width / 320;
+            int x = pos.Value.X * scale;
+            int y = pos.Value.Y * scale;
+            Mouse.SetPosition(x, y);
+        }
     }
 
     private static void SetKeyboardState(InputFrame input) {
