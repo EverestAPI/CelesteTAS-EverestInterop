@@ -22,7 +22,7 @@ public static class MouseCommand {
             return;
         }
 
-        if (!int.TryParse(args[1], out int y) || y > 320 || y < 0) {
+        if (!int.TryParse(args[1], out int y) || y > 180 || y < 0) {
             AbortTas($"{args[1]} is not a valid Y position");
             return;
         }
