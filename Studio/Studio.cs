@@ -1258,7 +1258,11 @@ public partial class Studio : BaseForm {
                             index = newInput.HasActions(Actions.Feather) ? formattedText.Length : 4;
 
                             if (!oldInput.HasActions(Actions.DashOnly) && newInput.HasActions(Actions.DashOnly)) {
-                                index = formattedText.Length;
+                                index = formattedText.IndexOf(",A", StringComparison.InvariantCultureIgnoreCase) + 2;
+                            }
+
+                            if (!oldInput.HasActions(Actions.PressedKey) && newInput.HasActions(Actions.PressedKey)) {
+                                index = formattedText.IndexOf(",P", StringComparison.InvariantCultureIgnoreCase) + 2;
                             }
                         }
 
