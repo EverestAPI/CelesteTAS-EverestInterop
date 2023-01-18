@@ -275,20 +275,25 @@ public static class Manager {
         gamePadData.PreviousState = gamePadData.CurrentState;
         gamePadData.CurrentState = gamePadState;
 
-        SetMousePosition();
+        SetMouseState();
         SetKeyboardState(input);
 
         MInput.UpdateVirtualInputs();
     }
 
-    private static void SetMousePosition() {
-        Point? pos = MouseCommand.GetPosition();
-        if (pos.HasValue) {
-            int scale = Engine.Instance.Window.ClientBounds.Width / 320;
-            int x = pos.Value.X * scale;
-            int y = pos.Value.Y * scale;
-            Mouse.SetPosition(x, y);
-        }
+    private static void SetMouseState() {
+        MInput.Mouse.PreviousState = MInput.Mouse.CurrentState;
+        
+        var buttons = MouseCommand.GetButtons();
+
+        MInput.Mouse.CurrentState = new MouseState(
+            MouseCommand.Position.X, MouseCommand.Position.Y,
+            MInput.Mouse.PreviousState.ScrollWheelValue,
+            buttons[MouseCommand.MINDEX_LFTBTN],
+            buttons[MouseCommand.MINDEX_MIDBTN],
+            buttons[MouseCommand.MINDEX_RITBTN],
+            ButtonState.Released, ButtonState.Released
+        );
     }
 
     private static void SetKeyboardState(InputFrame input) {

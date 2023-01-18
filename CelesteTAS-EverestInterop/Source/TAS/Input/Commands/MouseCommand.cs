@@ -8,24 +8,56 @@ using TAS.Utils;
 namespace TAS.Input.Commands;
 
 public static class MouseCommand {
-    public static Point? Position { get; private set; } = null;
-    public static bool Click;
+    public const int MINDEX_LFTBTN = 0;
+    public const int MINDEX_RITBTN = 1;
+    public const int MINDEX_MIDBTN = 2;
 
-    // "Mouse, X, Y",
+    public static Point Position { get; private set; }
+    public static readonly ButtonState[] Buttons = new ButtonState[3];
+
+    private static void ClearButtons() => Buttons[0] = Buttons[1] = Buttons[2] = ButtonState.Released;
+
+    // "Mouse, X, Y"
+    // "Mouse, [L], [R], [M]"
+    // "Mouse, X, Y, [L], [R], [M]"
+    // "Mouse, [L], [R], [M], X, Y"
     [TasCommand("Mouse")]
-    private static void Move(string[] args) {
+    private static void MouseControl(string[] args) {
         if (args.IsEmpty()) {
             return;
         }
 
-        if (!int.TryParse(args[0], out int x) || x > 319 || x < 0) {
-            AbortTas($"{args[0]} is not a valid X position");
-            return;
-        }
+        int x = -1, y = -1, n;
 
-        if (!int.TryParse(args[1], out int y) || y > 179 || y < 0) {
-            AbortTas($"{args[1]} is not a valid Y position");
-            return;
+        foreach (var arg in args) {
+            if (int.TryParse(args[0], out n)) {
+                if (x == -1) {
+                    x = n;
+                    if (x > 319 || x < 0) {
+                        AbortTas($"{x} is not a valid X position");
+                        return;
+                    }
+                } else if (y == -1) {
+                    y = n;
+                    if (y > 179 || y < 0) {
+                        AbortTas($"{y} is not a valid Y position");
+                        return;
+                    }
+                }
+            } else {
+                var dir = arg.ToUpperInvariant()[0];
+                switch (dir) {
+                    case 'R':
+                        Buttons[MINDEX_RITBTN] = ButtonState.Pressed;
+                        break;
+                    case 'M':
+                        Buttons[MINDEX_MIDBTN] = ButtonState.Pressed;
+                        break;
+                    case 'L':
+                        Buttons[MINDEX_LFTBTN] = ButtonState.Pressed;
+                        break;
+                }
+            }
         }
 
         var win = Engine.Instance.Window.ClientBounds;
@@ -34,19 +66,29 @@ public static class MouseCommand {
             return;
         }
 
-        Position = new Point(x, y);
+        if (x != -1 && y == -1) {
+            AbortTas("No Y mouse coordinate was provided");
+            return;
+        } else if (y != -1) {
+            int scale = win.Width / 320;
+            Position = new Point(x, y);
+            Mouse.SetPosition(x * scale, y * scale);
+        }
     }
 
     [DisableRun]
     private static void DisableRun() {
-        Position = null;
+        ClearButtons();
     }
 
-    public static Point? GetPosition() {
+    public static ButtonState[] GetButtons() {
+        var clearCopy = new ButtonState[3];
+        Buttons.CopyTo(clearCopy, 0);
+
         if (Manager.Controller.Current != Manager.Controller.Next) {
-            Position = null;
+            ClearButtons();
         }
 
-        return Position;
+        return clearCopy;
     }
 }
