@@ -89,7 +89,7 @@
   - `Set, CelesteTAS.CenterCamera, true`
   - `Set, AnarchyCollab2022.LeftButton, Q, W`
 
-    Set helper's button, only keyboard keys are supported. Then you can use [Press](#press) command to press them.
+    Set helper's button, only keyboard keys are supported. Then you can use the `P` custom key press modifier or the [Press](#press) command to press them.
     The setting is only valid when tas is running, it will be restored automatically when tas is stopped.
 
 ### Invoke
