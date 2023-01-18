@@ -1021,7 +1021,7 @@ public partial class Studio : BaseForm {
 
             while (end < InputRecords.Count - 1) {
                 InputRecord next = InputRecords[end + 1];
-                if ((next.IsInput || next.IsEmpty) && next.Actions == currentRecord.Actions) {
+                if ((next.IsInput || next.IsEmpty) && next.Actions == currentRecord.Actions && next.PressedKeys.SetEquals(currentRecord.PressedKeys)) {
                     end++;
                 } else {
                     break;

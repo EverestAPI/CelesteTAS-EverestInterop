@@ -287,6 +287,7 @@ public static class Manager {
         if (input.HasActions(Actions.Confirm)) {
             keys.Add(BindingHelper.Confirm2);
         }
+        keys.UnionWith(input.PressedKeys);
 
         MInput.Keyboard.CurrentState = new KeyboardState(keys.ToArray());
     }

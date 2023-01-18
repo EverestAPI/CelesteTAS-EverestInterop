@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using Monocle;
 using TAS.Utils;
 
@@ -32,10 +34,12 @@ public enum Actions {
     RightDashOnly = 1 << 18,
     UpDashOnly = 1 << 19,
     DownDashOnly = 1 << 20,
+    PressedKey = 1 << 21,
 }
 
 public record InputFrame {
     private static readonly Regex DashOnlyDirectionRegex = new(@"[A]([LRUD]+$)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex PressedKeyRegex = new(@"[P]([A-Z]+$)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     public Actions Actions { get; private set; }
     public float Angle { get; private set; }
@@ -44,6 +48,7 @@ public record InputFrame {
     public Vector2 DashOnlyVector2 { get; private set; }
     public Vector2Short AngleVector2Short { get; private set; }
     public Vector2Short DashOnlyVector2Short { get; private set; }
+    public HashSet<Keys> PressedKeys { get; } = new();
 
     public int Frames { get; private set; }
     public int Line { get; private set; }
@@ -150,6 +155,13 @@ public record InputFrame {
             }
         }
 
+        if (HasActions(Actions.PressedKey)) {
+            sb.Append(",P");
+            foreach (Keys key in PressedKeys) {
+                sb.Append((char) key);
+            }
+        }
+
         if (HasActions(Actions.Feather)) {
             sb.Append(",F,").Append(Angle == 0 ? string.Empty : Angle.ToString(CultureInfo.InvariantCulture));
             if (Math.Abs(UpperLimit - 1f) > 1e-10) {
@@ -186,9 +198,12 @@ public record InputFrame {
         };
 
         while (index < line.Length) {
-            char c = line[index];
+            char c = char.ToUpper(line[index]);
 
-            switch (char.ToUpper(c)) {
+            switch (c) {
+                case >= 'A' and <= 'Z' when IsPressedKey():
+                    inputFrame.PressedKeys.Add((Keys) c); // enum values for letter keys match ASCII uppercase letters
+                    break;
                 case 'L':
                     if (IsDashOnlyDirection()) {
                         inputFrame.Actions ^= Actions.LeftDashOnly;
@@ -261,6 +276,9 @@ public record InputFrame {
                 case 'A':
                     inputFrame.Actions ^= Actions.DashOnly;
                     break;
+                case 'P':
+                    inputFrame.Actions ^= Actions.PressedKey;
+                    break;
                 case 'F':
                     inputFrame.Actions ^= Actions.Feather;
                     index++;
@@ -300,6 +318,11 @@ public record InputFrame {
         bool IsDashOnlyDirection() {
             string subLine = line.Substring(0, index + 1);
             return DashOnlyDirectionRegex.IsMatch(subLine);
+        }
+
+        bool IsPressedKey() {
+            string subLine = line.Substring(0, index + 1);
+            return PressedKeyRegex.IsMatch(subLine);
         }
     }
 }
