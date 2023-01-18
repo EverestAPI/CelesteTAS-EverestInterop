@@ -9,20 +9,21 @@ namespace TAS.Input.Commands;
 
 public static class MouseCommand {
     public static Point? Position { get; private set; } = null;
+    public static bool Click;
 
     // "Mouse, X, Y",
     [TasCommand("Mouse")]
-    private static void Press(string[] args) {
+    private static void Move(string[] args) {
         if (args.IsEmpty()) {
             return;
         }
 
-        if (!int.TryParse(args[0], out int x) || x > 320 || x < 0) {
+        if (!int.TryParse(args[0], out int x) || x > 319 || x < 0) {
             AbortTas($"{args[0]} is not a valid X position");
             return;
         }
 
-        if (!int.TryParse(args[1], out int y) || y > 180 || y < 0) {
+        if (!int.TryParse(args[1], out int y) || y > 179 || y < 0) {
             AbortTas($"{args[1]} is not a valid Y position");
             return;
         }
