@@ -82,18 +82,6 @@ public static class BindingHelper {
 
         origAttached = MInput.GamePads[GameInput.Gamepad].Attached;
         MInput.GamePads[GameInput.Gamepad].Attached = true;
-        
-        foreach (EverestModule module in Everest.Modules) {
-            if (module.SettingsType != null && module._Settings is { } settings and not CelesteTasSettings) {
-                foreach (PropertyInfo propertyInfo in module.SettingsType.GetAllProperties()) {
-                    if (propertyInfo.GetGetMethod(true) == null || propertyInfo.GetSetMethod(true) == null || propertyInfo.PropertyType != typeof(ButtonBinding) || propertyInfo.GetValue(settings) is not ButtonBinding buttonBinding) {
-                        continue;
-                    }
-
-                    buttonBinding.Button.Binding = new Binding();
-                }
-            }
-        }
     }
 
     // ReSharper disable once UnusedMember.Local
@@ -173,6 +161,18 @@ public static class BindingHelper {
         SetBinding("DownMoveOnly");
 
         GameInput.Initialize();
+
+        foreach (EverestModule module in Everest.Modules) {
+            if (module.SettingsType != null && module._Settings is { } settings and not CelesteTasSettings) {
+                foreach (PropertyInfo propertyInfo in module.SettingsType.GetAllProperties()) {
+                    if (propertyInfo.GetGetMethod(true) == null || propertyInfo.GetSetMethod(true) == null || propertyInfo.PropertyType != typeof(ButtonBinding) || propertyInfo.GetValue(settings) is not ButtonBinding buttonBinding) {
+                        continue;
+                    }
+
+                    buttonBinding.Button.Binding = new Binding();
+                }
+            }
+        }
     }
 
     private static void SetBinding(string fieldName, params Buttons[] buttons) {
