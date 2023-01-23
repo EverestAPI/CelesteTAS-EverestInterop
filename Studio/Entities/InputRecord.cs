@@ -29,6 +29,7 @@ public enum Actions {
     RightDashOnly = 1 << 18,
     UpDashOnly = 1 << 19,
     DownDashOnly = 1 << 20,
+    PressedKey = 1 << 21,
 }
 
 public class InputRecord {
@@ -43,6 +44,7 @@ public class InputRecord {
     public static readonly Regex BreakpointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
     public static readonly Regex InputFrameRegex = new(@"^(\s*\d+)", RegexOptions.Compiled);
     private static readonly Regex DashOnlyDirectionRegex = new(@"[A]([LRUD]+$)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex PressedKeyRegex = new(@"[P]([A-Z]+$)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     private static readonly Actions[][] ExclusiveActions = {
         new[] {Actions.Dash, Actions.Dash2, Actions.DemoDash, Actions.DemoDash2},
@@ -86,9 +88,12 @@ public class InputRecord {
         }
 
         while (index < line.Length) {
-            char c = line[index];
+            char c = char.ToUpper(line[index]);
 
-            switch (char.ToUpper(c)) {
+            switch (c) {
+                case >= 'A' and <= 'Z' when IsPressedKey():
+                    PressedKeys.Add(c);
+                    break;
                 case 'L':
                     Actions ^= IsDashOnlyDirection() ? Actions.LeftDashOnly : Actions.Left;
                     break;
@@ -137,6 +142,9 @@ public class InputRecord {
                 case 'A':
                     Actions ^= Actions.DashOnly;
                     break;
+                case 'P':
+                    Actions ^= Actions.PressedKey;
+                    break;
                 case 'F':
                     Actions ^= Actions.Feather;
                     index++;
@@ -161,12 +169,18 @@ public class InputRecord {
             string subLine = line.Substring(0, index + 1);
             return DashOnlyDirectionRegex.IsMatch(subLine);
         }
+        
+        bool IsPressedKey() {
+            string subLine = line.Substring(0, index + 1);
+            return PressedKeyRegex.IsMatch(subLine);
+        }
     }
 
     public int Frames { get; set; }
     public Actions Actions { get; set; }
     public string AngleStr { get; set; }
     public string UpperLimitStr { get; set; }
+    public SortedSet<char> PressedKeys { get; } = new();
     public string LineText { get; }
     public bool IsInput { get; }
     public bool IsComment { get; }
@@ -331,6 +345,13 @@ public class InputRecord {
 
             if (HasActions(Actions.DownDashOnly)) {
                 sb.Append("D");
+            }
+        }
+
+        if (HasActions(Actions.PressedKey)) {
+            sb.Append($"{Delimiter}P");
+            foreach (char c in PressedKeys) {
+                sb.Append(c);
             }
         }
 

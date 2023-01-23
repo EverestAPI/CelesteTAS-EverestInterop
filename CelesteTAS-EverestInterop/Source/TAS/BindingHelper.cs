@@ -7,6 +7,7 @@ using Celeste.Mod.Core;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
 using MonoMod.Utils;
+using TAS.Module;
 using TAS.Utils;
 using GameInput = Celeste.Input;
 
@@ -47,7 +48,7 @@ public static class BindingHelper {
     public static Buttons RightDashOnly { get; } = Buttons.RightThumbstickRight;
     public static Buttons UpDashOnly { get; } = Buttons.RightThumbstickUp;
     public static Buttons DownDashOnly { get; } = Buttons.RightThumbstickDown;
-    public static Keys Confirm2 => Keys.C;
+    public static Keys Confirm2 => Keys.NumPad0;
     private static bool? origControllerHasFocus;
     private static bool origKbTextInput;
     private static bool origAttached;
@@ -160,6 +161,18 @@ public static class BindingHelper {
         SetBinding("DownMoveOnly");
 
         GameInput.Initialize();
+
+        foreach (EverestModule module in Everest.Modules) {
+            if (module.SettingsType != null && module._Settings is { } settings and not CelesteTasSettings) {
+                foreach (PropertyInfo propertyInfo in module.SettingsType.GetAllProperties()) {
+                    if (propertyInfo.GetGetMethod(true) == null || propertyInfo.GetSetMethod(true) == null || propertyInfo.PropertyType != typeof(ButtonBinding) || propertyInfo.GetValue(settings) is not ButtonBinding buttonBinding) {
+                        continue;
+                    }
+
+                    buttonBinding.Button.Binding = new Binding();
+                }
+            }
+        }
     }
 
     private static void SetBinding(string fieldName, params Buttons[] buttons) {
