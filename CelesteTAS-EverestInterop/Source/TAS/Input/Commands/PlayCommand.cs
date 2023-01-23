@@ -8,7 +8,11 @@ public static class PlayCommand {
     // "Play, StartLine, FramesToWait"
     [TasCommand("Play", ExecuteTiming = ExecuteTiming.Parse)]
     private static void Play(string[] args, int studioLine) {
-        ReadCommand.GetLine(args[0], InputController.TasFilePath, out int startLine);
+        if (!ReadCommand.TryGetLine(args[0], InputController.TasFilePath, out int startLine)) {
+            AbortTas($"\"Play, {string.Join(", ", args)}\" failed\n{args[0]} is invalid", true);
+            return;
+        }
+
         if (args.Length > 1 && int.TryParse(args[1], out _)) {
             Manager.Controller.AddFrames(args[1], studioLine);
         }
