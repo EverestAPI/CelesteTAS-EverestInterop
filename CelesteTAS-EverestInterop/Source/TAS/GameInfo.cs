@@ -377,20 +377,16 @@ public static class GameInfo {
                 statuses.Add("CanDash");
             }
 
-            if (player.onGround) {
-                statuses.Add("Ground");
-            } else {
-                if (player.jumpGraceTimer.ToFloorFrames() is var coyote and > 0) {
-                    statuses.Add($"Coyote({coyote})");
-                }
+            if (player.jumpGraceTimer.ToFloorFrames() is var coyote and > 0) {
+                statuses.Add($"Coyote({coyote})");
+            }
 
-                if (player.varJumpTimer.ToFloorFrames() is var jumpTimer and > 0) {
-                    statuses.Add($"Jump({jumpTimer})");
-                }
+            if (player.varJumpTimer.ToFloorFrames() is var jumpTimer and > 0) {
+                statuses.Add($"Jump({jumpTimer})");
+            }
 
-                if (player.StateMachine.State == Player.StNormal && (player.Speed.Y > 0f || player.Holding is {SlowFall: true})) {
-                    statuses.Add($"MaxFall({ConvertSpeedUnit(player.maxFall, TasSettings.SpeedUnit):0.##})");
-                }
+            if (player.StateMachine.State == Player.StNormal && (player.Speed.Y > 0f || player.Holding is {SlowFall: true})) {
+                statuses.Add($"MaxFall({ConvertSpeedUnit(player.maxFall, TasSettings.SpeedUnit):0.##})");
             }
 
             if (player.forceMoveXTimer.ToCeilingFrames() is var forceMoveXTimer and > 0) {
