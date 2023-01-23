@@ -155,7 +155,10 @@ public partial class Studio : BaseForm {
             ToolStripItem clickedItem = args.ClickedItem;
             string backupFolder = richText.BackupFolder;
             if (clickedItem.Text == "Delete All Files") {
-                Directory.Delete(backupFolder, true);
+                DialogResult result = MessageBox.Show("Are you sure you want to delete all backups of this file?", "Delete All Backups", MessageBoxButtons.YesNo);
+                if (result == DialogResult.Yes) {
+                    Directory.Delete(backupFolder, true);
+                }
                 return;
             } else if (clickedItem.Text == "Show Older Files...") {
                 if (!Directory.Exists(backupFolder)) {
