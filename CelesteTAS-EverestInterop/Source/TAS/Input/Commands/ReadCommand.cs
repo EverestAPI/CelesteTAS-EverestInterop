@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -73,7 +74,8 @@ public static class ReadCommand {
                 if (File.Exists(absoluteOrRelativePath)) {
                     filePath = absoluteOrRelativePath;
                 } else {
-                    string[] files = Directory.GetFiles(fileDirectory, $"{filePath}*.tas");
+                    List<string> files = Directory.GetFiles(fileDirectory, $"{filePath}*.tas").ToList();
+                    files.Sort((s1, s2) => string.Compare(s1, s2, StringComparison.InvariantCulture));
                     if (files.FirstOrDefault() is { } shortenedFilePath) {
                         filePath = shortenedFilePath;
                     }
