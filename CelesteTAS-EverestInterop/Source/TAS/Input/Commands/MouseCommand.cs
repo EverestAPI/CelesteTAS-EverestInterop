@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
 using TAS.Utils;
@@ -8,87 +6,124 @@ using TAS.Utils;
 namespace TAS.Input.Commands;
 
 public static class MouseCommand {
-    public const int MINDEX_LFTBTN = 0;
-    public const int MINDEX_RITBTN = 1;
-    public const int MINDEX_MIDBTN = 2;
+    public static MouseState CurrentState;
 
-    public static Point Position { get; private set; }
-    public static readonly ButtonState[] Buttons = new ButtonState[3];
-
-    private static void ClearButtons() => Buttons[0] = Buttons[1] = Buttons[2] = ButtonState.Released;
-
-    // "Mouse, X, Y"
-    // "Mouse, [L], [R], [M]"
-    // "Mouse, X, Y, [L], [R], [M]"
-    // "Mouse, [L], [R], [M], X, Y"
+    // "Mouse, X, Y, [ScrollWheel]"
+    // "Mouse, [L], [R], [M], [X1], [X2]"
+    // "Mouse, X, Y, [ScrollWheel], [L], [R], [M], [X1], [X2]"
+    // "Mouse, [L], [R], [M], [X1], [X2], X, Y, [ScrollWheel]"
     [TasCommand("Mouse")]
     private static void MouseControl(string[] args) {
         if (args.IsEmpty()) {
             return;
         }
 
-        int x = -1, y = -1, n;
+        int? x = null;
+        int? y = null;
+        int? scrollWheel = null;
 
-        foreach (var arg in args) {
-            if (int.TryParse(args[0], out n)) {
-                if (x == -1) {
+        foreach (string arg in args) {
+            if (int.TryParse(arg, out int n)) {
+                if (x == null) {
                     x = n;
-                    if (x > 319 || x < 0) {
+                    if (x is > 319 or < 0) {
                         AbortTas($"{x} is not a valid X position");
                         return;
                     }
-                } else if (y == -1) {
+                } else if (y == null) {
                     y = n;
-                    if (y > 179 || y < 0) {
+                    if (y is > 179 or < 0) {
                         AbortTas($"{y} is not a valid Y position");
                         return;
                     }
+                } else if (scrollWheel == null) {
+                    scrollWheel = n;
                 }
             } else {
-                var dir = arg.ToUpperInvariant()[0];
-                switch (dir) {
-                    case 'R':
-                        Buttons[MINDEX_RITBTN] = ButtonState.Pressed;
+                string button = arg.ToUpperInvariant();
+                switch (button) {
+                    case "L":
+                        CurrentState.Set(leftButton: ButtonState.Pressed);
                         break;
-                    case 'M':
-                        Buttons[MINDEX_MIDBTN] = ButtonState.Pressed;
+                    case "M":
+                        CurrentState.Set(middleButton: ButtonState.Pressed);
                         break;
-                    case 'L':
-                        Buttons[MINDEX_LFTBTN] = ButtonState.Pressed;
+                    case "R":
+                        CurrentState.Set(rightButton: ButtonState.Pressed);
+                        break;
+                    case "X1":
+                        CurrentState.Set(xButton1: ButtonState.Pressed);
+                        break;
+                    case "X2":
+                        CurrentState.Set(xButton2: ButtonState.Pressed);
                         break;
                 }
             }
         }
 
-        var win = Engine.Instance.Window.ClientBounds;
-        if ((win.Width % 320) != 0 || (win.Height % 180) != 0) {
+        Rectangle win = Engine.Instance.Window.ClientBounds;
+        if (win.Width % 320 != 0 || win.Height % 180 != 0) {
             AbortTas("Window size isn't an integer multiple of 320x180");
             return;
         }
 
-        if (x != -1 && y == -1) {
+        if (x != null && y == null) {
             AbortTas("No Y mouse coordinate was provided");
-            return;
-        } else if (y != -1) {
+        } else if (y != null) {
             int scale = win.Width / 320;
-            Position = new Point(x, y);
-            Mouse.SetPosition(x * scale, y * scale);
+            CurrentState.Set(x * scale, y * scale);
         }
+
+        if (scrollWheel != null) {
+            CurrentState.Set(scrollWheel: scrollWheel);
+        }
+    }
+
+    public static void SetMouseState() {
+        MInput.Mouse.PreviousState = MInput.Mouse.CurrentState;
+        MInput.Mouse.CurrentState = CurrentState;
+        if (Manager.Controller.Current != Manager.Controller.Next) {
+            ReleaseButtons();
+        }
+    }
+
+    private static void ReleaseButtons() {
+        CurrentState = new MouseState(
+            CurrentState.X,
+            CurrentState.Y,
+            0,
+            ButtonState.Released,
+            ButtonState.Released,
+            ButtonState.Released,
+            ButtonState.Released,
+            ButtonState.Released
+        );
     }
 
     [DisableRun]
-    private static void DisableRun() {
-        ClearButtons();
+    private static void ClearState() {
+        CurrentState = default;
     }
 
-    public static ButtonState[] GetButtons() {
-        var clearCopy = new ButtonState[3];
-        Buttons.CopyTo(clearCopy, 0);
-
-        if (Manager.Controller.Current != Manager.Controller.Next) {
-            ClearButtons();
-        }
-
-        return clearCopy;
+    private static void Set(this ref MouseState mouseState,
+        int? x = null,
+        int? y = null,
+        int? scrollWheel = null,
+        ButtonState? leftButton = null,
+        ButtonState? middleButton = null,
+        ButtonState? rightButton = null,
+        ButtonState? xButton1 = null,
+        ButtonState? xButton2 = null
+    ) {
+        mouseState = new MouseState(
+            x ?? mouseState.X,
+            y ?? mouseState.Y,
+            scrollWheel ?? mouseState.ScrollWheelValue,
+            leftButton ?? mouseState.LeftButton,
+            middleButton ?? mouseState.MiddleButton,
+            rightButton ?? mouseState.RightButton,
+            xButton1 ?? mouseState.XButton1,
+            xButton2 ?? mouseState.XButton2
+        );
     }
 }
