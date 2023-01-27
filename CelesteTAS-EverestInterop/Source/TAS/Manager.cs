@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -275,6 +275,7 @@ public static class Manager {
         gamePadData.PreviousState = gamePadData.CurrentState;
         gamePadData.CurrentState = gamePadState;
 
+        MouseCommand.SetMouseState();
         SetKeyboardState(input);
 
         MInput.UpdateVirtualInputs();
