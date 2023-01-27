@@ -20,6 +20,10 @@ internal static class HookHelper {
         Hooks.Clear();
     }
 
+    public static void OnHook(this MethodBase from, Delegate to) {
+        Hooks.Add(new Hook(from, to));
+    }
+
     public static void IlHook(this MethodBase from, ILContext.Manipulator manipulator) {
         Hooks.Add(new ILHook(from, manipulator));
     }
