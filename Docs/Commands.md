@@ -116,7 +116,7 @@
 ### StunPause and EndStunPause
 - ```
   StunPause, (optional mode, Simulate or Input)
-  (intpus）
+  (inputs）
   EndStunPause
   ```
 - Simulate mode is illegal and should only be used to test routes, which will pause every other frame without doing the actual pause inputs.
