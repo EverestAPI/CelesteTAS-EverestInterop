@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -223,23 +224,65 @@ public static class SetCommand {
                 actor.movementCounter = remainder;
             } else if (property.PropertyType == typeof(ButtonBinding) && property.GetValue(obj) is ButtonBinding buttonBinding) {
                 HashSet<Keys> keys = new();
+                HashSet<MButtons> mButtons = new();
+                IList mouseButtons = buttonBinding.Button.GetFieldValue<object>("Binding")?.GetFieldValue<IList>("Mouse");
                 foreach (string str in values) {
-                    if (!Enum.TryParse(str, true, out Keys key)) {
+                    // parse mouse first, so Mouse.Left is not parsed as Keys.Left
+                    if (Enum.TryParse(str, true, out MButtons mButton)) {
+                        if (mouseButtons == null && mButton is MButtons.X1 or MButtons.X2) {
+                            AbortTas("X1 and X2 are not supported before Everest adding mouse support");
+                            return false;
+                        }
+
+                        mButtons.Add(mButton);
+                    } else if (Enum.TryParse(str, true, out Keys key)) {
+                        keys.Add(key);
+                    } else {
                         AbortTas($"{str} is not a valid key");
                         return false;
                     }
-
-                    keys.Add(key);
                 }
 
                 List<VirtualButton.Node> nodes = buttonBinding.Button.Nodes;
-                foreach (VirtualButton.Node node in nodes.ToList()) {
-                    if (node is VirtualButton.KeyboardKey) {
-                        nodes.Remove(node);
+
+                if (keys.IsNotEmpty()) {
+                    foreach (VirtualButton.Node node in nodes.ToList()) {
+                        if (node is VirtualButton.KeyboardKey) {
+                            nodes.Remove(node);
+                        }
                     }
+
+                    nodes.AddRange(keys.Select(key => new VirtualButton.KeyboardKey(key)));
                 }
 
-                nodes.AddRange(keys.Select(key => new VirtualButton.KeyboardKey(key)));
+                if (mButtons.IsNotEmpty()) {
+                    foreach (VirtualButton.Node node in nodes.ToList()) {
+                        switch (node) {
+                            case VirtualButton.MouseLeftButton:
+                            case VirtualButton.MouseRightButton:
+                            case VirtualButton.MouseMiddleButton:
+                                nodes.Remove(node);
+                                break;
+                        }
+                    }
+
+                    if (mouseButtons != null) {
+                        mouseButtons.Clear();
+                        foreach (MButtons mButton in mButtons) {
+                            mouseButtons.Add(mButton);
+                        }
+                    } else {
+                        foreach (MButtons mButton in mButtons) {
+                            if (mButton == MButtons.Left) {
+                                nodes.AddRange(keys.Select(key => new VirtualButton.MouseLeftButton()));
+                            } else if (mButton == MButtons.Right) {
+                                nodes.AddRange(keys.Select(key => new VirtualButton.MouseRightButton()));
+                            } else if (mButton == MButtons.Middle) {
+                                nodes.AddRange(keys.Select(key => new VirtualButton.MouseMiddleButton()));
+                            }
+                        }
+                    }
+                }
             } else {
                 object value = structObj ?? ConvertType(values, property.PropertyType);
                 setMethod.Invoke(obj, new[] {value});

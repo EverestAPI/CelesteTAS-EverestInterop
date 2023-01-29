@@ -127,3 +127,11 @@ public static class MouseCommand {
         );
     }
 }
+
+internal enum MButtons {
+    Left,
+    Right,
+    Middle,
+    X1,
+    X2
+}
