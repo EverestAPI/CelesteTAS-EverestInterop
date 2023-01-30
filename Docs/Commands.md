@@ -89,7 +89,7 @@
   - `Set, CelesteTAS.CenterCamera, true`
   - `Set, AnarchyCollab2022.LeftButton, Q, W`
 
-    Set helper's button, only keyboard keys are supported. Then you can use the `P` custom key press modifier or the [Press](#press) command to press them.
+    Set helper's button, supporting keyboard and mouse. Then you can use the `P` custom key press modifier or the [Press](#press) command to press keys, use the [Mouse](#mouse) command to press and move mouse (available mouse buttons `Left`, `Right`, `Middle`, `X1`, `X2`).
     The setting is only valid when tas is running, it will be restored automatically when tas is stopped.
 
 ### Invoke
@@ -206,6 +206,16 @@ Specify the default mode for `StunPause` command.
   ```
   Press, Q, W
   10,R
+  ```
+
+### Mouse
+- Move mouse and press mouse buttons with the next input.
+- `Mouse, X, Y, [ScrollWheel], [L/R/M/X1/X2], [L/R/M/X1/X2]...`
+- X and Y are integers, X from 0 to 319, y from 0 to 179.
+- e.g. Press mouse left button at (50, 100) and jump 10 frames.
+  ```
+  Mouse, 50, 100, L
+  10,J
   ```
 
 ### ExportGameInfo and EndExportGameInfo
