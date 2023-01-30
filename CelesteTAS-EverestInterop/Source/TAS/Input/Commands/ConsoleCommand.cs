@@ -380,8 +380,8 @@ public static class ConsoleCommand {
             } else {
                 double x = player.X;
                 double y = player.Y;
-                double subX = player.PositionRemainder.X;
-                double subY = player.PositionRemainder.Y;
+                double subX = player.movementCounter.X;
+                double subY = player.movementCounter.Y;
 
                 string format = "0.".PadRight(CelesteTasSettings.MaxDecimals + 2, '#');
                 values.Add((x + subX).ToString(format, CultureInfo.InvariantCulture));

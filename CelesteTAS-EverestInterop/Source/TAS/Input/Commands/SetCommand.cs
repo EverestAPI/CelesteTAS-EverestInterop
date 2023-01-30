@@ -212,7 +212,7 @@ public static class SetCommand {
         if (objType.GetPropertyInfo(lastMemberName) is { } property && property.GetSetMethod(true) is { } setMethod) {
             if (obj is Actor actor && lastMemberName is "X" or "Y") {
                 double.TryParse(values[0], out double value);
-                Vector2 remainder = actor.PositionRemainder;
+                Vector2 remainder = actor.movementCounter;
                 if (lastMemberName == "X") {
                     actor.Position.X = (int) Math.Round(value);
                     remainder.X = (float) (value - actor.Position.X);

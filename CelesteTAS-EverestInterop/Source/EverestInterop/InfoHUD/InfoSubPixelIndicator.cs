@@ -22,8 +22,8 @@ public static class InfoSubPixelIndicator {
 
         Player player = Engine.Scene.Tracker.GetEntity<Player>();
         if (player != null) {
-            subPixelLeft = (float) Math.Round(player.PositionRemainder.X + 0.5f, decimals, MidpointRounding.AwayFromZero);
-            subPixelTop = (float) Math.Round(player.PositionRemainder.Y + 0.5f, decimals, MidpointRounding.AwayFromZero);
+            subPixelLeft = (float) Math.Round(player.movementCounter.X + 0.5f, decimals, MidpointRounding.AwayFromZero);
+            subPixelTop = (float) Math.Round(player.movementCounter.Y + 0.5f, decimals, MidpointRounding.AwayFromZero);
             subPixelRight = 1f - subPixelLeft;
             subPixelBottom = 1f - subPixelTop;
         }
@@ -39,7 +39,7 @@ public static class InfoSubPixelIndicator {
         Draw.Rect(x + (rectSide - thickness) * subPixelLeft, y + (rectSide - thickness) * subPixelTop, thickness, thickness,
             Color.Red * alpha);
 
-        Vector2 remainder = player?.PositionRemainder ?? Vector2.One;
+        Vector2 remainder = player?.movementCounter ?? Vector2.One;
         int hDecimals = Math.Abs(remainder.X) switch {
             0.5f => 0,
             _ => decimals

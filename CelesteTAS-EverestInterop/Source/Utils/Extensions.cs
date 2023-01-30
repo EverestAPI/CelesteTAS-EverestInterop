@@ -482,7 +482,7 @@ internal static class EntityExtensions {
 
 internal static class Vector2DoubleExtension {
     public static Vector2Double GetMoreExactPosition(this Actor actor, bool subpixelRounding) {
-        return new(actor.Position, actor.PositionRemainder, subpixelRounding);
+        return new(actor.Position, actor.movementCounter, subpixelRounding);
     }
 }
 
