@@ -155,10 +155,12 @@ public partial class Studio : BaseForm {
             ToolStripItem clickedItem = args.ClickedItem;
             string backupFolder = richText.BackupFolder;
             if (clickedItem.Text == "Delete All Files") {
-                DialogResult result = MessageBox.Show("Are you sure you want to delete all backups of this file?", "Delete All Backups", MessageBoxButtons.YesNo);
+                DialogResult result = MessageBox.Show("Are you sure you want to delete all backups of this file?", "Delete All Backups",
+                    MessageBoxButtons.YesNo);
                 if (result == DialogResult.Yes) {
                     Directory.Delete(backupFolder, true);
                 }
+
                 return;
             } else if (clickedItem.Text == "Show Older Files...") {
                 if (!Directory.Exists(backupFolder)) {
@@ -1024,7 +1026,8 @@ public partial class Studio : BaseForm {
 
             while (end < InputRecords.Count - 1) {
                 InputRecord next = InputRecords[end + 1];
-                if ((next.IsInput || next.IsEmpty) && next.Actions == currentRecord.Actions && next.PressedKeys.SetEquals(currentRecord.PressedKeys)) {
+                if ((next.IsInput || next.IsEmpty) && next.Actions == currentRecord.Actions &&
+                    next.PressedKeys.SetEquals(currentRecord.PressedKeys)) {
                     end++;
                 } else {
                     break;
@@ -1779,7 +1782,7 @@ public partial class Studio : BaseForm {
     }
 
     private void subpixelIndicatorToolStripMenuItem_Click(object sender, EventArgs e) {
-        ToggleGameSetting("InfoSubPixelIndicator", null, sender);
+        ToggleGameSetting("InfoSubpixelIndicator", null, sender);
     }
 
     private void SetDecimals(string settingName, object sender, bool floatNumber = false) {
