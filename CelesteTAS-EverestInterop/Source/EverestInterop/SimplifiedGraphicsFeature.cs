@@ -192,9 +192,7 @@ public static class SimplifiedGraphicsFeature {
         );
         On.Celeste.LightningRenderer.Bolt.Render += BoltOnRender;
 
-        HookHelper.SkipMethod(t, nameof(IsSimplifiedScreenWipe), "Render",
-            typeof(SpotlightWipe), typeof(FadeWipe)
-        );
+        IL.Celeste.Level.Render += LevelOnRender;
 
         On.Celeste.Audio.Play_string += AudioOnPlay_string;
         HookHelper.SkipMethod(t, nameof(IsSimplifiedLightningStrike), "Render",
@@ -228,6 +226,7 @@ public static class SimplifiedGraphicsFeature {
         On.Celeste.MoonCreature.ctor_Vector2 -= MoonCreature_ctor;
         IL.Celeste.LightingRenderer.Render -= LightingRenderer_Render;
         On.Celeste.LightningRenderer.Bolt.Render -= BoltOnRender;
+        IL.Celeste.Level.Render -= LevelOnRender;
         On.Celeste.ColorGrade.Set_MTexture_MTexture_float -= ColorGradeOnSet_MTexture_MTexture_float;
         IL.Celeste.BloomRenderer.Apply -= BloomRendererOnApply;
         On.Celeste.Decal.Render -= Decal_Render;
@@ -250,7 +249,8 @@ public static class SimplifiedGraphicsFeature {
 
     private static bool SimplifiedWavedBlock() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedWavedEdge;
 
-    private static bool IsSimplifiedScreenWipe() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedScreenWipe;
+    private static ScreenWipe SimplifiedScreenWipe(ScreenWipe wipe) =>
+        TasSettings.SimplifiedGraphics && TasSettings.SimplifiedScreenWipe ? null : wipe;
 
     private static bool IsSimplifiedLightningStrike() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedLightningStrike;
 
@@ -573,6 +573,14 @@ public static class SimplifiedGraphicsFeature {
         }
 
         orig(self);
+    }
+
+    private static void LevelOnRender(ILContext il) {
+        ILCursor ilCursor = new(il);
+        if (ilCursor.TryGotoNext(i => i.MatchLdarg(0), i => i.MatchLdfld<Level>("Wipe"), i => i.OpCode == OpCodes.Brfalse_S)) {
+            ilCursor.Index += 2;
+            ilCursor.EmitDelegate(SimplifiedScreenWipe);
+        }
     }
 
     private static EventInstance AudioOnPlay_string(On.Celeste.Audio.orig_Play_string orig, string path) {
