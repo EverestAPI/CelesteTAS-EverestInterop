@@ -19,6 +19,13 @@ public static partial class ActualEntityCollideHitbox {
     private static bool dontSaveLastPosition;
     private static bool colliderListRendering;
 
+    [Initialize]
+    private static void Initialize() {
+        if (ModUtils.GetType("SpirialisHelper", "Celeste.Mod.Spirialis.TimeController")?.GetMethodInfo("CustomELUpdate") is { } customELUpdate) {
+            customELUpdate.IlHook((cursor, _) => cursor.EmitDelegate(Clear));
+        }
+    }
+
     [Load]
     private static void Load() {
         typeof(Player).GetMethod("orig_Update").IlHook(ModPlayerOrigUpdateEntity);
@@ -48,16 +55,19 @@ public static partial class ActualEntityCollideHitbox {
     }
 
     private static void EntityListOnUpdate(On.Monocle.EntityList.orig_Update orig, EntityList self) {
-        playerUpdated = false;
-        LastPositions.Clear();
-        LastColldables.Clear();
+        Clear();
         orig(self);
     }
 
     private static void LevelOnEnd(On.Celeste.Level.orig_End orig, Level self) {
+        Clear();
+        orig(self);
+    }
+
+    private static void Clear() {
+        playerUpdated = false;
         LastPositions.Clear();
         LastColldables.Clear();
-        orig(self);
     }
 
     private static void ModPlayerOrigUpdateEntity(ILContext il) {
