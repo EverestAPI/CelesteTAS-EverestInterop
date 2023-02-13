@@ -206,10 +206,6 @@ internal static class ReflectionExtensions {
             IEnumerable<FieldInfo> fieldInfos = type.GetFields(bindingFlags);
 
             foreach (FieldInfo fieldInfo in fieldInfos) {
-                if (hashSet.Contains(fieldInfo)) {
-                    continue;
-                }
-
                 hashSet.Add(fieldInfo);
             }
 
@@ -235,10 +231,6 @@ internal static class ReflectionExtensions {
         while (type != null && type.IsSubclassOf(typeof(object))) {
             IEnumerable<PropertyInfo> properties = type.GetProperties(bindingFlags);
             foreach (PropertyInfo fieldInfo in properties) {
-                if (hashSet.Contains(fieldInfo)) {
-                    continue;
-                }
-
                 hashSet.Add(fieldInfo);
             }
 
