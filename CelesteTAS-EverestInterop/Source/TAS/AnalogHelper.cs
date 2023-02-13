@@ -124,8 +124,8 @@ public static class AnalogHelper {
             return new Vector2Short(upperbound, 0);
         }
 
-        double approx = direction.Y / direction.X;
-        double multip = direction.X / direction.Y;
+        double approx = (double) direction.Y / (double) direction.X;
+        double multip = (double) direction.X / (double) direction.Y;
         double upperl = (double) upperbound / 32767;
         double leastError = approx;
         short retX = upperbound, retY = 0; // y/x=0, so error is approx
