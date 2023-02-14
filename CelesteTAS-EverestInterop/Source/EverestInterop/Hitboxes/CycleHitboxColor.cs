@@ -90,7 +90,7 @@ public static class CycleHitboxColor {
                     group = (timeDist + GroupCounter) % 3;
                 }
 
-                self.Collider.Render(camera, GetColor(group) * (self.Collidable ? 1f : HitboxColor.UnCollidableAlpha));
+                self.Collider?.Render(camera, GetColor(group) * (self.Collidable ? 1f : HitboxColor.UnCollidableAlpha));
                 return;
             }
         }
