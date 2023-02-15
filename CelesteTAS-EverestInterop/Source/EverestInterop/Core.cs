@@ -55,6 +55,10 @@ public static class Core {
 
         // Forced: Allow "rendering" entities without actually rendering them.
         On.Monocle.Entity.Render += Entity_Render;
+
+        if (updateGrab) {
+            HookHelper.SkipMethod(typeof(Core), nameof(IgnoreOrigUpdateGrab), typeof(GameInput).GetMethod("UpdateGrab"));
+        }
     }
 
     [Unload]
@@ -84,6 +88,7 @@ public static class Core {
 
         if (Manager.SlowForwarding) {
             orig(self, gameTime);
+            TryUpdateGrab();
             return;
         }
 
@@ -97,9 +102,7 @@ public static class Core {
         for (int i = 0; i < loops; i++) {
             // Anything happening early on runs in the MInput.Update hook.
             orig(self, gameTime);
-            if (updateGrab) {
-                UpdateGrab();
-            }
+            TryUpdateGrab();
 
             // Autosaving prevents opening the menu to skip cutscenes during fast forward.
             if (CantPauseWhileSaving.Value && Engine.Scene is Level level && UserIO.Saving
@@ -168,9 +171,23 @@ public static class Core {
         orig(self);
     }
 
+    private static void TryUpdateGrab() {
+        if (!updateGrab || Manager.SkipFrame) {
+            return;
+        }
+
+        UpdateGrab();
+    }
+
     private static void UpdateGrab() {
         // this method needs to be isolated for compatibility with Celeste v1.3+
-        GameInput.UpdateGrab();
+        if (Settings.Instance.GrabMode == GrabModes.Toggle && GameInput.Grab.Pressed) {
+            GameInput.grabToggle = !GameInput.grabToggle;
+        }
+    }
+
+    private static bool IgnoreOrigUpdateGrab() {
+        return Manager.Running;
     }
 
     private delegate void DGameUpdate(Game self, GameTime gameTime);
