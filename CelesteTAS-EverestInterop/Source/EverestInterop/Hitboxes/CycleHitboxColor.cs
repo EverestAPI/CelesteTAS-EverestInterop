@@ -46,6 +46,14 @@ public static class CycleHitboxColor {
             types.Add(vidSpinnerType, "offset");
         }
 
+        if (ModUtils.GetType("VivHelper", "VivHelper.Entities.AnimatedSpinner") is { } animatedSpinnerType) {
+            types.Add(animatedSpinnerType, "offset");
+        }
+
+        if (ModUtils.GetType("VivHelper", "VivHelper.Entities.MovingSpinner") is { } movingSpinnerType) {
+            types.Add(movingSpinnerType, "offset");
+        }
+
         if (ModUtils.GetType("ChronoHelper", "Celeste.Mod.ChronoHelper.Entities.ShatterSpinner") is { } chronoSpinnerType) {
             types.Add(chronoSpinnerType, "offset");
         }
