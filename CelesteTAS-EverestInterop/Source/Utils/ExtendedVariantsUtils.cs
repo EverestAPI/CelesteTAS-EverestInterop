@@ -1,15 +1,14 @@
-﻿using ExtendedVariants.Module;
-using TAS.Module;
+﻿using System;
+using ExtendedVariants.Module;
 
 namespace TAS.Utils;
 
 internal static class ExtendedVariantsUtils {
-    private static bool installed;
-    private static bool upsideDown => ExtendedVariantsModule.Settings.UpsideDown;
-    public static bool UpsideDown => installed && upsideDown;
+    private static readonly Lazy<bool> installed =
+        new(() => ModUtils.GetType("ExtendedVariantMode", "ExtendedVariants.Module.ExtendedVariantsModule") != null);
 
-    [LoadContent]
-    private static void LoadContent() {
-        installed = ModUtils.GetType("ExtendedVariantMode", "ExtendedVariants.Module.ExtendedVariantsModule") != null;
-    }
+    private static bool upsideDown =>
+        (bool) ExtendedVariantsModule.Instance.TriggerManager.GetCurrentVariantValue(ExtendedVariantsModule.Variant.UpsideDown);
+
+    public static bool UpsideDown => installed.Value && upsideDown;
 }
