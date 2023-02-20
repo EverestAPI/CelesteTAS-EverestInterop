@@ -157,6 +157,7 @@ public static class SimplifiedGraphicsFeature {
 
         On.Celeste.FloatingDebris.ctor_Vector2 += FloatingDebris_ctor;
         On.Celeste.MoonCreature.ctor_Vector2 += MoonCreature_ctor;
+        On.Celeste.MirrorSurfaces.Render += MirrorSurfacesOnRender;
 
         IL.Celeste.LightingRenderer.Render += LightingRenderer_Render;
         On.Celeste.ColorGrade.Set_MTexture_MTexture_float += ColorGradeOnSet_MTexture_MTexture_float;
@@ -224,6 +225,7 @@ public static class SimplifiedGraphicsFeature {
         IL.Celeste.CrystalStaticSpinner.GetHue -= CrystalStaticSpinnerOnGetHue;
         On.Celeste.FloatingDebris.ctor_Vector2 -= FloatingDebris_ctor;
         On.Celeste.MoonCreature.ctor_Vector2 -= MoonCreature_ctor;
+        On.Celeste.MirrorSurfaces.Render -= MirrorSurfacesOnRender;
         IL.Celeste.LightingRenderer.Render -= LightingRenderer_Render;
         On.Celeste.LightningRenderer.Bolt.Render -= BoltOnRender;
         IL.Celeste.Level.Render -= LevelOnRender;
@@ -533,6 +535,12 @@ public static class SimplifiedGraphicsFeature {
         orig(self, position);
         if (TasSettings.SimplifiedGraphics) {
             self.Add(new RemoveSelfComponent());
+        }
+    }
+
+    private static void MirrorSurfacesOnRender(On.Celeste.MirrorSurfaces.orig_Render orig, MirrorSurfaces self) {
+        if (!TasSettings.SimplifiedGraphics) {
+            orig(self);
         }
     }
 
