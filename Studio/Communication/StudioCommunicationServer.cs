@@ -203,7 +203,7 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
         }
 
         byte[] bytes = BinaryFormatterHelper.ToByteArray(new[] {
-            gameDataType, arg
+            (byte) gameDataType, arg
         });
         WriteMessageGuaranteed(new Message(MessageID.GetData, bytes));
     }
