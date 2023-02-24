@@ -13,4 +13,11 @@ public static class DisableRumble {
     private static bool IsDisableRumble() {
         return Manager.Running;
     }
+
+    [EnableRun]
+    private static void EnableRun() {
+        for (int i = 0; i < 4; i++) {
+            MInput.GamePads[i].StopRumble();
+        }
+    }
 }
