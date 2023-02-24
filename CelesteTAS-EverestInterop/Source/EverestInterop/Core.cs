@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Celeste;
@@ -35,8 +36,10 @@ public static class Core {
             typeof(RunThread).GetMethodInfo("RunThreadWithLogging")
         );
 
-        // The original mod adds a few lines of code into Monocle.Engine::Update.
-        On.Monocle.Engine.Update += Engine_Update;
+        using (new DetourContext {After = new List<string> {"*"}}) {
+            // The original mod adds a few lines of code into Monocle.Engine::Update.
+            On.Monocle.Engine.Update += Engine_Update;
+        }
 
         // The original mod makes the MInput.Update call conditional and invokes UpdateInputs afterwards.
         On.Monocle.MInput.Update += MInput_Update;
