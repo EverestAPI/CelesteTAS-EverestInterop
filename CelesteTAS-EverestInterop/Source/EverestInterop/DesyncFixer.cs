@@ -1,11 +1,25 @@
 using Celeste;
 using Microsoft.Xna.Framework;
+using Mono.Cecil.Cil;
 using Monocle;
+using MonoMod.Cil;
 using TAS.Module;
+using TAS.Utils;
 
 namespace TAS.EverestInterop;
 
 public static class DesyncFixer {
+    [Initialize]
+    private static void Initialize() {
+        if (ModUtils.GetType("StrawberryJam2021", "Celeste.Mod.StrawberryJam2021.Entities.WonkyCassetteBlockController") is { } type) {
+            type.GetMethodInfo("Engine_Update").IlHook((cursor, _) => {
+                if (cursor.TryGotoNext(MoveType.After, i => i.MatchLdsfld<Engine>("DashAssistFreeze"))) {
+                    cursor.Emit(OpCodes.Call, typeof(Manager).GetProperty(nameof(Manager.SkipFrame)).GetGetMethod()).Emit(OpCodes.Or);
+                }
+            });
+        }
+    }
+
     [Load]
     private static void Load() {
         On.Celeste.DreamMirror.ctor += DreamMirrorOnCtor;
