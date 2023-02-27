@@ -102,10 +102,6 @@ public static class MouseCommand {
     public static void SetMouseState() {
         MInput.Mouse.PreviousState = MInput.Mouse.CurrentState;
         MInput.Mouse.CurrentState = CurrentState;
-        if (CurrentState != default) {
-            CurrentState.DebugLog();
-        }
-
         if (Manager.Controller.Current != Manager.Controller.Next) {
             ReleaseButtons();
         }
