@@ -16,8 +16,8 @@ public static class DisableRumble {
 
     [EnableRun]
     private static void EnableRun() {
-        for (int i = 0; i < 4; i++) {
-            MInput.GamePads[i].StopRumble();
+        foreach (MInput.GamePadData gamePadData in MInput.GamePads) {
+            gamePadData.StopRumble();
         }
     }
 }

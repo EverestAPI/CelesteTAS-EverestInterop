@@ -11,8 +11,9 @@ namespace TAS.EverestInterop;
 public static class DesyncFixer {
     [Initialize]
     private static void Initialize() {
-        if (ModUtils.GetType("StrawberryJam2021", "Celeste.Mod.StrawberryJam2021.Entities.WonkyCassetteBlockController") is { } type) {
-            type.GetMethodInfo("Engine_Update").IlHook((cursor, _) => {
+        if (ModUtils.GetType("StrawberryJam2021", "Celeste.Mod.StrawberryJam2021.Entities.WonkyCassetteBlockController")
+                ?.GetMethodInfo("Engine_Update") is { } methodInfo) {
+            methodInfo.IlHook((cursor, _) => {
                 if (cursor.TryGotoNext(MoveType.After, i => i.MatchLdsfld<Engine>("DashAssistFreeze"))) {
                     cursor.Emit(OpCodes.Call, typeof(Manager).GetProperty(nameof(Manager.SkipFrame)).GetGetMethod()).Emit(OpCodes.Or);
                 }
