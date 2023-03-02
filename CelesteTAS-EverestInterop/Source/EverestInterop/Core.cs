@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
@@ -20,7 +19,6 @@ public static class Core {
     private static bool SkipBaseUpdate;
     private static bool InUpdate;
 
-    private static Detour HRunThreadWithLogging;
     private static Detour HGameUpdate;
     private static DGameUpdate OrigGameUpdate;
 
@@ -32,24 +30,6 @@ public static class Core {
 
     [Load]
     private static void Load() {
-        // Relink RunThreadWithLogging to Celeste.RunThread.RunThreadWithLogging because reflection invoke is slow.
-        HRunThreadWithLogging = new Detour(
-            typeof(Core).GetMethodInfo("RunThreadWithLogging"),
-            typeof(RunThread).GetMethodInfo("RunThreadWithLogging")
-        );
-
-        using (new DetourContext {After = new List<string> {"*"}}) {
-            // The original mod adds a few lines of code into Monocle.Engine::Update.
-            On.Monocle.Engine.Update += Engine_Update;
-        }
-
-        // The original mod makes the MInput.Update call conditional and invokes UpdateInputs afterwards.
-        On.Monocle.MInput.Update += MInput_Update;
-        IL.Monocle.MInput.Update += MInputOnUpdate;
-
-        // The original mod makes RunThread.Start run synchronously.
-        On.Celeste.RunThread.Start += RunThread_Start;
-
         // The original mod makes the base.Update call conditional.
         // We need to use Detour for two reasons:
         // 1. Expose the trampoline to be used for the base.Update call in MInput_Update
@@ -59,29 +39,34 @@ public static class Core {
             typeof(Core).GetMethodInfo("Game_Update")
         )).GenerateTrampoline<DGameUpdate>();
 
-        // Forced: Allow "rendering" entities without actually rendering them.
-        On.Monocle.Entity.Render += Entity_Render;
+        using (new DetourContext {After = new List<string> {"*"}}) {
+            // The original mod adds a few lines of code into Monocle.Engine::Update.
+            On.Monocle.Engine.Update += Engine_Update;
 
-        if (updateGrab) {
-            HookHelper.SkipMethod(typeof(Core), nameof(IgnoreOrigUpdateGrab), typeof(GameInput).GetMethod("UpdateGrab"));
+            // The original mod makes the MInput.Update call conditional and invokes UpdateInputs afterwards.
+            On.Monocle.MInput.Update += MInput_Update;
+            IL.Monocle.MInput.Update += MInputOnUpdate;
+
+            // The original mod makes RunThread.Start run synchronously.
+            On.Celeste.RunThread.Start += RunThread_Start;
+
+            // Forced: Allow "rendering" entities without actually rendering them.
+            On.Monocle.Entity.Render += Entity_Render;
+
+            if (updateGrab) {
+                HookHelper.SkipMethod(typeof(Core), nameof(IgnoreOrigUpdateGrab), typeof(GameInput).GetMethod("UpdateGrab"));
+            }
         }
     }
 
     [Unload]
     private static void Unload() {
-        HRunThreadWithLogging.Dispose();
         On.Monocle.Engine.Update -= Engine_Update;
         On.Monocle.MInput.Update -= MInput_Update;
         IL.Monocle.MInput.Update -= MInputOnUpdate;
         On.Celeste.RunThread.Start -= RunThread_Start;
         HGameUpdate.Dispose();
         On.Monocle.Entity.Render -= Entity_Render;
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void RunThreadWithLogging(Action method) {
-        // This gets relinked to Celeste.RunThread.RunThreadWithLogging
-        throw new Exception("Failed relinking RunThreadWithLogging!");
     }
 
     private static void Engine_Update(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
@@ -188,7 +173,7 @@ public static class Core {
 
     private static void RunThread_Start(On.Celeste.RunThread.orig_Start orig, Action method, string name, bool highPriority) {
         if (Manager.Running && (CantPauseWhileSaving.Value || name != "USER_IO" && name != "MOD_IO")) {
-            RunThreadWithLogging(method);
+            RunThread.RunThreadWithLogging(method);
             return;
         }
 
