@@ -5,7 +5,9 @@ using System.Runtime.CompilerServices;
 using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
+using Mono.Cecil.Cil;
 using Monocle;
+using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using TAS.Module;
 using TAS.Utils;
@@ -43,6 +45,7 @@ public static class Core {
 
         // The original mod makes the MInput.Update call conditional and invokes UpdateInputs afterwards.
         On.Monocle.MInput.Update += MInput_Update;
+        IL.Monocle.MInput.Update += MInputOnUpdate;
 
         // The original mod makes RunThread.Start run synchronously.
         On.Celeste.RunThread.Start += RunThread_Start;
@@ -69,6 +72,7 @@ public static class Core {
         HRunThreadWithLogging.Dispose();
         On.Monocle.Engine.Update -= Engine_Update;
         On.Monocle.MInput.Update -= MInput_Update;
+        IL.Monocle.MInput.Update -= MInputOnUpdate;
         On.Celeste.RunThread.Start -= RunThread_Start;
         HGameUpdate.Dispose();
         On.Monocle.Entity.Render -= Entity_Render;
@@ -130,7 +134,7 @@ public static class Core {
             return;
         }
 
-        if (!Manager.Running && Engine.Instance.IsActive) {
+        if (!Manager.Running) {
             orig();
         }
 
@@ -141,6 +145,31 @@ public static class Core {
         if (Manager.SkipFrame && !Manager.IsLoading()) {
             PreviousGameLoop = Engine.OverloadGameLoop;
             Engine.OverloadGameLoop = FrameStepGameLoop;
+        }
+    }
+
+    // update controller even the game is lose focus 
+    private static void MInputOnUpdate(ILContext il) {
+        ILCursor ilCursor = new(il);
+        ilCursor.Goto(il.Instrs.Count - 1);
+
+        if (ilCursor.TryGotoPrev(MoveType.After, i => i.MatchCallvirt<MInput.MouseData>("UpdateNull"))) {
+            ilCursor.EmitDelegate(UpdateGamePads);
+        }
+
+        // skip the orig GamePads[j].UpdateNull();
+        if (ilCursor.TryGotoNext(MoveType.After, i => i.MatchLdcI4(0))) {
+            ilCursor.Emit(OpCodes.Ldc_I4_4).Emit(OpCodes.Add);
+        }
+    }
+
+    private static void UpdateGamePads() {
+        for (int i = 0; i < 4; i++) {
+            if (MInput.Active) {
+                MInput.GamePads[i].Update();
+            } else {
+                MInput.GamePads[i].UpdateNull();
+            }
         }
     }
 

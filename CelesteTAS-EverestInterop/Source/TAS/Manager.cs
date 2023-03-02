@@ -92,25 +92,6 @@ public static class Manager {
             }
         } else {
             Running = false;
-            if (!Engine.Instance.IsActive) {
-                // MInput.Keyboard.UpdateNull();
-                MInput.Keyboard.PreviousState = MInput.Keyboard.CurrentState;
-                MInput.Keyboard.CurrentState = default;
-
-                // MInput.Mouse.UpdateNull();
-                MInput.Mouse.PreviousState = MInput.Mouse.CurrentState;
-                MInput.Mouse.CurrentState = default;
-
-                for (int i = 0; i < 4; i++) {
-                    if (MInput.Active) {
-                        MInput.GamePads[i].Update();
-                    } else {
-                        MInput.GamePads[i].UpdateNull();
-                    }
-                }
-
-                MInput.UpdateVirtualInputs();
-            }
         }
 
         SendStateToStudio();
@@ -288,6 +269,7 @@ public static class Manager {
         if (input.HasActions(Actions.Confirm)) {
             keys.Add(BindingHelper.Confirm2);
         }
+
         keys.UnionWith(input.PressedKeys);
 
         MInput.Keyboard.CurrentState = new KeyboardState(keys.ToArray());
