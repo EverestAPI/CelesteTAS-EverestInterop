@@ -614,12 +614,10 @@ public static class SimplifiedGraphicsFeature {
 
     private static void ModCustomSpinnerColor(ILContext il) {
         ILCursor ilCursor = new(il);
-        if (ilCursor.TryGotoNext(
+        if (ilCursor.TryGotoNext(MoveType.After,
                 i => i.OpCode == OpCodes.Ldarg_0,
-                i => i.OpCode == OpCodes.Ldarg_S && i.Operand.ToString() == "tint",
-                i => i.OpCode == OpCodes.Call && i.Operand.ToString().StartsWith("Microsoft.Xna.Framework.Color")
+                i => i.OpCode == OpCodes.Ldarg_S && i.Operand.ToString() == "tint"
             )) {
-            ilCursor.Index += 2;
             ilCursor.EmitDelegate<Func<string, string>>(GetSimplifiedSpinnerColor);
         }
     }
