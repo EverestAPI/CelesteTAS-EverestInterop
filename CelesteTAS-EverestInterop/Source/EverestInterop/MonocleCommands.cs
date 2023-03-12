@@ -1,11 +1,17 @@
+using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Celeste;
 using Monocle;
+using TAS.Input;
 using TAS.Utils;
 
 namespace TAS.EverestInterop;
 
 public static class MonocleCommands {
+    private const string PlayTAS = "playtas";
+    private static readonly Regex SeparatorRegex = new(@$"^{PlayTAS}[ |,]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
     [Command("clrsav", "clears save data on debug file (CelesteTAS)")]
     private static void CmdClearSave() {
         SaveData.TryDelete(-1);
@@ -49,5 +55,21 @@ public static class MonocleCommands {
                 }
             }
         }
+    }
+
+    [Command(PlayTAS, "play the specified tas file (CelesteTAS)")]
+    private static void CmdPlayTas(string filePath) {
+        filePath = SeparatorRegex.Replace(Engine.Commands.commandHistory.First(), "");
+
+        if (filePath.IsNullOrEmpty()) {
+            Engine.Commands.Log("Please specified tas file.");
+        }
+
+        if (!File.Exists(filePath)) {
+            Engine.Commands.Log("File does not exist.");
+        }
+
+        InputController.StudioTasFilePath = filePath;
+        Manager.EnableRun();
     }
 }

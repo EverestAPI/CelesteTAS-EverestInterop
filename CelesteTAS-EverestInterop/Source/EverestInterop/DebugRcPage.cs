@@ -124,7 +124,7 @@ TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}
             } else {
                 filePath = WebUtility.UrlDecode(filePath);
                 if (!File.Exists(filePath)) {
-                    WriteLine(builder, $"<h2>ERROR: File not exist: {filePath} </h2>");
+                    WriteLine(builder, $"<h2>ERROR: File does not exist: {filePath} </h2>");
                 } else {
                     WriteLine(builder, "OK");
                     Manager.AddMainThreadAction(() => {
