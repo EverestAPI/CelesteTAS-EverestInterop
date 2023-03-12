@@ -63,10 +63,12 @@ public static class MonocleCommands {
 
         if (filePath.IsNullOrEmpty()) {
             Engine.Commands.Log("Please specified tas file.");
+            return;
         }
 
         if (!File.Exists(filePath)) {
             Engine.Commands.Log("File does not exist.");
+            return;
         }
 
         InputController.StudioTasFilePath = filePath;
