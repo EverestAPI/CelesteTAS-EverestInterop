@@ -42,8 +42,6 @@ public static class HitboxSimplified {
         "Celeste.Mod.ClutterHelper.CustomClutter"
     };
 
-    private static Type fancySolidTilesType;
-
     [Initialize]
     private static void Initialize() {
         foreach (Type type in ModUtils.GetTypes()) {
@@ -51,8 +49,6 @@ public static class HitboxSimplified {
                 UselessTypes.Add(type);
             }
         }
-
-        fancySolidTilesType = ModUtils.GetType("FancyTileEntities", "Celeste.Mod.FancyTileEntities.FancySolidTiles");
     }
 
     [Load]
@@ -151,7 +147,7 @@ public static class HitboxSimplified {
             int bottom = (int) Math.Min(self.CellsY - 1,
                 Math.Ceiling((camera.Bottom - (double) self.AbsoluteTop) / self.CellHeight));
 
-            bool hackyFix = self.Entity?.GetType() is { } type && type == fancySolidTilesType;
+            bool hackyFix = camera.Left < self.AbsoluteLeft || camera.Top < self.AbsoluteTop;
 
             for (int x = left; x <= right; ++x) {
                 for (int y = top; y <= bottom; ++y) {
@@ -178,7 +174,7 @@ public static class HitboxSimplified {
 
         if (data[x, y]) {
             // left
-            if ((x != left || hackyFix && x != left + 1) && !data[x - 1, y]) {
+            if ((x != left || hackyFix) && !data[x - 1, y]) {
                 Draw.Line(topLeft + Vector2.One, bottomLeft + Vector2.UnitX - Vector2.UnitY, color);
                 drawnLeft = true;
             }
@@ -190,7 +186,7 @@ public static class HitboxSimplified {
             }
 
             // top
-            if ((y != top || hackyFix && y != top + 1) && !data[x, y - 1]) {
+            if ((y != top || hackyFix) && !data[x, y - 1]) {
                 Draw.Line(topLeft + Vector2.UnitX, topRight - Vector2.UnitX, color);
                 drawnTop = true;
             }
