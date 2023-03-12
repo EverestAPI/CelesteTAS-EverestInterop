@@ -50,7 +50,11 @@ public class InputController {
             }
 
             Manager.AddMainThreadAction(() => {
-                studioTasFilePath = value;
+                if (string.IsNullOrEmpty(value)) {
+                    studioTasFilePath = value;
+                } else {
+                    studioTasFilePath = Path.GetFullPath(value);
+                }
 
                 string path = string.IsNullOrEmpty(value) ? DefaultTasFilePath : value;
                 try {

@@ -26,6 +26,10 @@ public static class ReadCommand {
 
         string filePath = args[0];
         string fileDirectory = Path.GetDirectoryName(currentFilePath);
+        if (fileDirectory.IsEmpty()) {
+            fileDirectory = Directory.GetCurrentDirectory();
+        }
+
         FindTheFile();
 
         if (!File.Exists(filePath)) {
