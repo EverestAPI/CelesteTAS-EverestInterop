@@ -82,6 +82,12 @@ public static class HitboxOptimized {
             case Puffer puffer:
                 DrawPufferHitbox(puffer);
                 break;
+            case SwitchGate switchGate:
+                DrawSwitchGateEnd(switchGate);
+                break;
+            case IntroCrusher introCrusher:
+                DrawIntroCrusherEnd(introCrusher);
+                break;
         }
 
         orig(self, camera);
@@ -98,6 +104,26 @@ public static class HitboxOptimized {
         Draw.Circle(puffer.Position, 32f, hitboxColor, 32);
         Draw.Line(bottomCenter - Vector2.UnitX * 32, bottomCenter - Vector2.UnitX * 6, hitboxColor);
         Draw.Line(bottomCenter + Vector2.UnitX * 6, bottomCenter + Vector2.UnitX * 32, hitboxColor);
+    }
+
+    private static void DrawSwitchGateEnd(SwitchGate gate) {
+        if (gate.Position != gate.node && gate.collider is { } collider) {
+            Color color = HitboxColor.PlatformColor * HitboxColor.UnCollidableAlpha;
+            Draw.HollowRect(gate.node, collider.Width, collider.Height, color);
+            if (gate.Scene is { } scene && Switch.Check(scene)) {
+                Draw.Line(gate.Center, gate.Center + gate.node - gate.Position, color);
+            }
+        }
+    }
+
+    private static void DrawIntroCrusherEnd(IntroCrusher crusher) {
+        if (crusher.Position != crusher.end && crusher.collider is { } collider) {
+            Color color = HitboxColor.PlatformColor * HitboxColor.UnCollidableAlpha;
+            Draw.HollowRect(crusher.end, collider.Width, collider.Height, color);
+            if (crusher.Position != crusher.start) {
+                Draw.Line(crusher.Center, crusher.Center + crusher.end - crusher.Position, color);
+            }
+        }
     }
 
     private static void AddHoldableColliderHitbox(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
