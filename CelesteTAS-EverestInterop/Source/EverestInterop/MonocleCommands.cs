@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -33,8 +34,15 @@ public static class MonocleCommands {
         if (string.IsNullOrEmpty(levelSet)) {
             const string miniHeartDoorFullName = "Celeste.Mod.CollabUtils2.Entities.MiniHeartDoor";
 
-            if (Engine.Scene.Entities.FirstOrDefault(e => e.GetType().FullName == miniHeartDoorFullName) is { } miniHeartDoor) {
-                levelSet = miniHeartDoor.GetFieldValue<string>("levelSet");
+            if (Engine.Scene.Entities.FirstOrDefault(e => e.GetType().FullName == miniHeartDoorFullName) is HeartGemDoor door) {
+                levelSet = door.GetFieldValue<string>("levelSet");
+                if (door.Scene is Level level && amount < door.Requires) {
+                    level.Session.SetFlag($"opened_mini_heart_door_{door.GetEntityData().ToEntityId()}", false);
+                    ModUtils.GetModule("CollabUtils2")
+                        ?.GetPropertyValue<object>("SaveData")
+                        ?.GetPropertyValue<HashSet<string>>("OpenedMiniHeartDoors")
+                        ?.Remove(door.InvokeMethod<string>("GetDoorSaveDataID", level));
+                }
             } else {
                 levelSet = saveData.GetLevelSet();
             }
