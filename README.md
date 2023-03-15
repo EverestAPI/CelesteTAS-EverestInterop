@@ -39,8 +39,9 @@ e.g. 123,R,J (For 123 frames, hold Right and Jump)
 <br>Format: F, angle, optional upper limit of single axis (default value is 1, range is 0.26 to 1, works in all [analog modes](Docs/Commands.md#analoguemode))
 - O = Confirm Bind 2
 - N = Journal / Talk Bind 2
-- A = Dash Only Directional Modifier (generally used to manipulate camera with binocular control storage. eg: 15 R,X,ALU)
-- P = Custom Button Press Modifier (used to press inputs added by mods after binding them using the [Set command](Docs/Commands.md#set), e.g. 15 R,X,PA after binding A to a custom input)
+- A = Dash Only Directional Modifier (generally used to manipulate camera with binocular control storage. eg: 15,R,X,ALU)
+- M = Move Only Directional Modifier (eg: 15,X,AL,MR)
+- P = Custom Button Press Modifier (used to press inputs added by mods after binding them using the [Set command](Docs/Commands.md#set), e.g. 15,R,X,PA after binding A to a custom input)
 
 ## Controls
 While in game or in Studio:
