@@ -5,6 +5,7 @@ using System.Linq;
 using Celeste;
 using Monocle;
 using MonoMod.RuntimeDetour;
+using StudioCommunication;
 using TAS.Module;
 using TAS.Utils;
 

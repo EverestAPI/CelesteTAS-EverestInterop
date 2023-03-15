@@ -27,6 +27,10 @@ public static class BindingHelper {
             RightDashOnly = 0;
             UpDashOnly = 0;
             DownDashOnly = 0;
+            LeftMoveOnly = Keys.None;
+            RightMoveOnly = Keys.None;
+            UpMoveOnly = Keys.None;
+            DownMoveOnly = Keys.None;
         }
     }
 
@@ -49,6 +53,10 @@ public static class BindingHelper {
     public static Buttons UpDashOnly { get; } = Buttons.RightThumbstickUp;
     public static Buttons DownDashOnly { get; } = Buttons.RightThumbstickDown;
     public static Keys Confirm2 => Keys.NumPad0;
+    public static Keys LeftMoveOnly { get; } = Keys.Left;
+    public static Keys RightMoveOnly { get; } = Keys.Right;
+    public static Keys UpMoveOnly { get; } = Keys.Up;
+    public static Keys DownMoveOnly { get; } = Keys.Down;
     private static bool? origControllerHasFocus;
     private static bool origKbTextInput;
     private static bool origAttached;
@@ -155,17 +163,18 @@ public static class BindingHelper {
         SetBinding("UpDashOnly", UpDashOnly);
         SetBinding("DownDashOnly", DownDashOnly);
 
-        SetBinding("LeftMoveOnly");
-        SetBinding("RightMoveOnly");
-        SetBinding("UpMoveOnly");
-        SetBinding("DownMoveOnly");
+        SetBinding("LeftMoveOnly", new[] {LeftMoveOnly});
+        SetBinding("RightMoveOnly", new[] {RightMoveOnly});
+        SetBinding("UpMoveOnly", new[] {UpMoveOnly});
+        SetBinding("DownMoveOnly", new[] {DownMoveOnly});
 
         GameInput.Initialize();
 
         foreach (EverestModule module in Everest.Modules) {
             if (module.SettingsType != null && module._Settings is { } settings and not CelesteTasSettings) {
                 foreach (PropertyInfo propertyInfo in module.SettingsType.GetAllProperties()) {
-                    if (propertyInfo.GetGetMethod(true) == null || propertyInfo.GetSetMethod(true) == null || propertyInfo.PropertyType != typeof(ButtonBinding) || propertyInfo.GetValue(settings) is not ButtonBinding buttonBinding) {
+                    if (propertyInfo.GetGetMethod(true) == null || propertyInfo.GetSetMethod(true) == null ||
+                        propertyInfo.PropertyType != typeof(ButtonBinding) || propertyInfo.GetValue(settings) is not ButtonBinding buttonBinding) {
                         continue;
                     }
 

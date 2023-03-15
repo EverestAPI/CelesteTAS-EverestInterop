@@ -1,6 +1,6 @@
 using System;
 
-namespace CelesteStudio.Entities;
+namespace StudioCommunication;
 
 [Flags]
 public enum States : byte {

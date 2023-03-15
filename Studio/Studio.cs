@@ -1267,6 +1267,10 @@ public partial class Studio : BaseForm {
                                 index = formattedText.IndexOf(",A", StringComparison.InvariantCultureIgnoreCase) + 2;
                             }
 
+                            if (!oldInput.HasActions(Actions.MoveOnly) && newInput.HasActions(Actions.MoveOnly)) {
+                                index = formattedText.IndexOf(",M", StringComparison.InvariantCultureIgnoreCase) + 2;
+                            }
+
                             if (!oldInput.HasActions(Actions.PressedKey) && newInput.HasActions(Actions.PressedKey)) {
                                 index = formattedText.IndexOf(",P", StringComparison.InvariantCultureIgnoreCase) + 2;
                             }
