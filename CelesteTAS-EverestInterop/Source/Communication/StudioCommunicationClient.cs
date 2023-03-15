@@ -433,7 +433,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
 
     private void SendModVersion() {
         // TODO: move to everest.yaml
-        const string minStudioVersion = "2.12.0";
+        const string minStudioVersion = "2.13.0";
         byte[] data = BinaryFormatterHelper.ToByteArray(new[] {CelesteTasModule.Instance.Metadata.VersionString, minStudioVersion});
         WriteMessageGuaranteed(new Message(MessageID.VersionInfo, data));
     }
