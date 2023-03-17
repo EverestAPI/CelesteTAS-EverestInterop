@@ -28,7 +28,6 @@ public static class DesyncFixer {
             {typeof(Debris).GetMethod(nameof(Debris.orig_Init)), 1},
             {typeof(Debris).GetMethod(nameof(Debris.Init), new[] {typeof(Vector2), typeof(char), typeof(bool)}), 1},
             {typeof(Debris).GetMethod(nameof(Debris.BlastFrom)), 1},
-            {typeof(MoveBlock.Debris).GetMethod(nameof(MoveBlock.Debris.Init)), 1}
         };
 
         foreach (Type type in ModUtils.GetTypes()) {
@@ -109,7 +108,7 @@ public static class DesyncFixer {
         return context => {
             ILCursor cursor = new(context);
             cursor.Emit(OpCodes.Ldarg, index).EmitDelegate(PushRandom);
-            while (cursor.TryGotoNext(i => i.OpCode == OpCodes.Ret)) {
+            while (cursor.TryGotoNext(MoveType.AfterLabel, i => i.OpCode == OpCodes.Ret)) {
                 cursor.Emit(OpCodes.Call, typeof(Calc).GetMethod(nameof(Calc.PopRandom)));
                 cursor.Index++;
             }
