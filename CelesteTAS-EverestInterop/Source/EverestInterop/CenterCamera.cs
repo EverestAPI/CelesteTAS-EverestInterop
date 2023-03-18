@@ -146,6 +146,8 @@ public static class CenterCamera {
         Camera camera = level.Camera;
         if (Engine.Scene.GetPlayer() is { } player) {
             lastPlayerPosition = lockPosition ?? player.Position;
+        } else if (Engine.Scene.Tracker.GetEntity<PlayerDeadBody>() is { } deadBody) {
+            lastPlayerPosition = lockPosition ?? deadBody.Position;
         }
 
         if (lastPlayerPosition != null) {
