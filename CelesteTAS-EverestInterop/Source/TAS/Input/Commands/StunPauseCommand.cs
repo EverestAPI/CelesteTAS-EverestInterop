@@ -12,21 +12,21 @@ using TAS.Utils;
 namespace TAS.Input.Commands;
 
 public static class StunPauseCommand {
-    private enum StunPauseMode {
+    public enum StunPauseMode {
         Input,
         Simulate
     }
 
     private static Dictionary<string, AutoInputCommand.Arguments> AutoInputArgs => AutoInputCommand.AutoInputArgs;
     private static readonly GetDelegate<Level, float> unpauseTimer = FastReflection.CreateGetDelegate<Level, float>("unpauseTimer");
+    private static readonly HashSet<string[]> parsedCommands = new();
     private static readonly float unpauseTime = unpauseTimer != null ? 0.15f : 0f;
     public static bool SimulatePauses;
     public static bool PauseOnCurrentFrame;
     public static int SkipFrames;
     public static int WaitingFrames;
-
-    private static StunPauseMode? localMode;
-    private static StunPauseMode? globalMode;
+    public static StunPauseMode? LocalMode;
+    public static StunPauseMode? GlobalMode;
 
     private static StunPauseMode Mode {
         get {
@@ -34,7 +34,7 @@ public static class StunPauseCommand {
                 return StunPauseMode.Input;
             }
 
-            return localMode ?? globalMode ?? StunPauseMode.Input;
+            return LocalMode ?? GlobalMode ?? StunPauseMode.Input;
         }
     }
 
@@ -96,15 +96,16 @@ public static class StunPauseCommand {
 
     [TasCommand("StunPause", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
     private static void StunPause(string[] args, int studioLine, string filePath, int fileLine) {
-        localMode = null;
+        LocalMode = null;
 
         if (args.IsNotEmpty() && Enum.TryParse(args[0], true, out StunPauseMode value)) {
-            localMode = value;
+            LocalMode = value;
         }
 
         if (Command.Parsing && Mode == StunPauseMode.Input) {
+            parsedCommands.Add(args);
             StunPauseAutoInputMode(studioLine, filePath, fileLine);
-        } else if (!Command.Parsing && Mode == StunPauseMode.Simulate) {
+        } else if (!Command.Parsing && Mode == StunPauseMode.Simulate && !parsedCommands.Contains(args)) {
             if (!SimulatePauses) {
                 SimulatePauses = true;
                 PauseOnCurrentFrame = false;
@@ -152,10 +153,11 @@ public static class StunPauseCommand {
     }
 
     [TasCommand("EndStunPause", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
-    private static void EndStunPause(string[] _, int __, string filePath, int fileLine) {
+    private static void EndStunPause(string[] args, int __, string filePath, int fileLine) {
         if (Command.Parsing && Mode == StunPauseMode.Input) {
+            parsedCommands.Add(args);
             AutoInputCommand.EndAutoInputImpl(filePath, fileLine, "EndStunPause", "StunPause");
-        } else if (!Command.Parsing && Mode == StunPauseMode.Simulate) {
+        } else if (!Command.Parsing && Mode == StunPauseMode.Simulate && !parsedCommands.Contains(args)) {
             Reset();
         }
     }
@@ -163,7 +165,7 @@ public static class StunPauseCommand {
     [TasCommand("StunPauseMode", ExecuteTiming = ExecuteTiming.Parse)]
     private static void StunPauseCommandMode(string[] args) {
         if (args.IsNotEmpty() && Enum.TryParse(args[0], true, out StunPauseMode value)) {
-            globalMode = value;
+            GlobalMode = value;
         }
     }
 
@@ -173,12 +175,13 @@ public static class StunPauseCommand {
         PauseOnCurrentFrame = false;
         SkipFrames = 0;
         WaitingFrames = 0;
-        localMode = null;
+        LocalMode = null;
     }
 
     [ClearInputs]
     private static void ClearInputs() {
-        globalMode = null;
+        GlobalMode = null;
+        parsedCommands.Clear();
     }
 
     public static void UpdateSimulateSkipInput() {
