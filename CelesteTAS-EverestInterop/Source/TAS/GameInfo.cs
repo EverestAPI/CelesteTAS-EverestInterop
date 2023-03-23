@@ -11,7 +11,6 @@ using MonoMod.Cil;
 using MonoMod.Utils;
 using StudioCommunication;
 using TAS.EverestInterop.InfoHUD;
-using TAS.Input;
 using TAS.Module;
 using TAS.Utils;
 
@@ -649,7 +648,7 @@ public struct Vector2Double {
                 case 0.5f:
                     // don't show subsequent zeros when subpixel is exactly equal to 0.5
                     return round.ToString("F1");
-                case < 0.5f: {
+                case < 0.5f:
                     // make 0.495 round away from 0.50
                     int diffX = (int) position - (int) Math.Round(round, MidpointRounding.AwayFromZero);
                     if (diffX != 0) {
@@ -657,7 +656,6 @@ public struct Vector2Double {
                     }
 
                     break;
-                }
             }
 
             return round.ToFormattedString(decimals);

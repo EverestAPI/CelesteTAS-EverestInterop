@@ -15,7 +15,7 @@ public static class CycleHitboxColor {
     public static readonly Color DefaultColor3 = new(0.1f, 0.2f, 1f);
     public static readonly Color DefaultOthersColor = new(0.25f, 1f, 0.5f);
 
-    private static readonly Dictionary<Type, GetDelegate<object, float>> OffsetGetters = new();
+    private static readonly Dictionary<Type, Func<Entity, float?>> OffsetGetters = new();
 
     // This counter defines which group is assigned to which third frame
     public static int GroupCounter;
@@ -38,8 +38,18 @@ public static class CycleHitboxColor {
     private static void Initialize() {
         Dictionary<Type, string> types = new();
 
-        if (ModUtils.GetType("FrostHelper", "FrostHelper.CustomSpinner") is { } frostSpinnerType) {
+        Type frostSpinnerType = ModUtils.GetType("FrostHelper", "FrostHelper.CustomSpinner");
+        Func<Entity, bool> noCycles = null;
+
+        if (frostSpinnerType != null) {
             types.Add(frostSpinnerType, "offset");
+
+            if (frostSpinnerType.CreateGetDelegate<Entity, Entity>("controller") is { } getController &&
+                frostSpinnerType.Assembly.GetType("FrostHelper.CustomSpinnerController") is { } spinnerControllerType &&
+                spinnerControllerType.CreateGetDelegate<Entity, bool>("NoCycles") is { } getNoCycles
+               ) {
+                noCycles = entity => getNoCycles(getController(entity));
+            }
         }
 
         if (ModUtils.GetType("VivHelper", "VivHelper.Entities.CustomSpinner") is { } vidSpinnerType) {
@@ -63,14 +73,24 @@ public static class CycleHitboxColor {
         }
 
         foreach (Type type in types.Keys) {
-            if (type.CreateGetDelegate<object, float>(types[type]) is { } offsetGetter) {
-                OffsetGetters[type] = offsetGetter;
+            if (type.CreateGetDelegate<Entity, float>(types[type]) is { } offsetGetter) {
+                if (type == frostSpinnerType) {
+                    OffsetGetters[type] = entity => {
+                        if (noCycles == null || !noCycles(entity)) {
+                            return offsetGetter(entity);
+                        } else {
+                            return null;
+                        }
+                    };
+                } else {
+                    OffsetGetters[type] = entity => offsetGetter(entity);
+                }
             }
         }
     }
 
     private static void EntityOnDebugRender(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {
-        if (TasSettings.ShowHitboxes && TasSettings.ShowCycleHitboxColors) {
+        if (TasSettings.ShowHitboxes && TasSettings.ShowCycleHitboxColors && self.Collider is { } collider) {
             float? offset = self switch {
                 CrystalStaticSpinner spinner => spinner.offset,
                 DustStaticSpinner dust => dust.offset,
@@ -78,7 +98,7 @@ public static class CycleHitboxColor {
                 _ => null
             };
 
-            if (offset == null && OffsetGetters.TryGetValue(self.GetType(), out GetDelegate<object, float> getter)) {
+            if (offset == null && OffsetGetters.TryGetValue(self.GetType(), out Func<Entity, float?> getter)) {
                 offset = getter(self);
             }
 
@@ -98,7 +118,7 @@ public static class CycleHitboxColor {
                     group = (timeDist + GroupCounter) % 3;
                 }
 
-                self.Collider?.Render(camera, GetColor(group) * (self.Collidable ? 1f : HitboxColor.UnCollidableAlpha));
+                collider.Render(camera, GetColor(group) * (self.Collidable ? 1f : HitboxColor.UnCollidableAlpha));
                 return;
             }
         }
