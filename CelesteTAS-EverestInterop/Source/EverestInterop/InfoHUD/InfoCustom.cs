@@ -297,11 +297,7 @@ public static class InfoCustom {
                 if (fieldInfo.IsStatic) {
                     obj = fieldInfo.GetValue(null);
                 } else if (obj != null) {
-                    if (obj is Actor actor && memberName == "Position") {
-                        obj = actor.GetMoreExactPosition(true);
-                    } else {
-                        obj = fieldInfo.GetValue(obj);
-                    }
+                    obj = fieldInfo.GetValue(obj);
                 }
             } else {
                 if (obj == null) {
