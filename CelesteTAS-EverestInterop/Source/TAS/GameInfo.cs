@@ -642,6 +642,10 @@ public struct Vector2Double {
 
     private string ToExactPositionString(int decimals) {
         string RoundPosition(double exactPosition, float position, float remainder) {
+            if (decimals == 0) {
+                return exactPosition.ToFormattedString(decimals);
+            }
+
             double round = Math.Round(exactPosition, decimals);
 
             switch (Math.Abs(remainder)) {

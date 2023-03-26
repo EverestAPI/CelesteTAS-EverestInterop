@@ -11,7 +11,7 @@ using TAS.EverestInterop.InfoHUD;
 namespace TAS.Module;
 
 public class CelesteTasSettings : EverestModuleSettings {
-    public const int MinDecimals = 2;
+    public const int MinDecimals = 0;
     public const int MaxDecimals = 12;
     public static CelesteTasSettings Instance { get; private set; }
 
@@ -237,7 +237,7 @@ public class CelesteTasSettings : EverestModuleSettings {
     public int SubpixelIndicatorDecimals {
         get => subpixelIndicatorDecimals;
         set {
-            subpixelIndicatorDecimals = Calc.Clamp(value, MinDecimals, MaxDecimals);
+            subpixelIndicatorDecimals = Calc.Clamp(value, 1, MaxDecimals);
             GameInfo.Update();
         }
     }

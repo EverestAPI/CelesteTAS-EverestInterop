@@ -479,12 +479,22 @@ internal static class Vector2DoubleExtension {
 }
 
 internal static class NumberExtensions {
+    private static readonly string format = "0.".PadRight(339, '#');
+
     public static string ToFormattedString(this float value, int decimals) {
-        return ((double) value).ToFormattedString(decimals);
+        if (decimals == 0) {
+            return value.ToString(format);
+        } else {
+            return ((double) value).ToFormattedString(decimals);
+        }
     }
 
     public static string ToFormattedString(this double value, int decimals) {
-        return value.ToString($"F{decimals}");
+        if (decimals == 0) {
+            return value.ToString(format);
+        } else {
+            return value.ToString($"F{decimals}");
+        }
     }
 }
 
