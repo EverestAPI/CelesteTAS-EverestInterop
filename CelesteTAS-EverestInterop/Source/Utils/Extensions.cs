@@ -10,6 +10,7 @@ using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.Utils;
+using Platform = Celeste.Platform;
 
 namespace TAS.Utils;
 
@@ -462,6 +463,8 @@ internal static class EntityExtensions {
     public static string ToSimplePositionString(this Entity entity, int decimals) {
         if (entity is Actor actor) {
             return ToSimplePositionString(actor, decimals);
+        } else if (entity is Platform platform) {
+            return ToSimplePositionString(platform, decimals);
         } else {
             return entity.Position.ToSimpleString(decimals);
         }
@@ -470,11 +473,19 @@ internal static class EntityExtensions {
     private static string ToSimplePositionString(Actor actor, int decimals) {
         return actor.GetMoreExactPosition(true).ToSimpleString(decimals);
     }
+
+    private static string ToSimplePositionString(Platform platform, int decimals) {
+        return platform.GetMoreExactPosition(true).ToSimpleString(decimals);
+    }
 }
 
 internal static class Vector2DoubleExtension {
     public static Vector2Double GetMoreExactPosition(this Actor actor, bool subpixelRounding) {
         return new(actor.Position, actor.movementCounter, subpixelRounding);
+    }
+
+    public static Vector2Double GetMoreExactPosition(this Platform platform, bool subpixelRounding) {
+        return new(platform.Position, platform.movementCounter, subpixelRounding);
     }
 }
 

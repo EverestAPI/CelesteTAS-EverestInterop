@@ -289,6 +289,8 @@ public static class InfoCustom {
                 } else if (obj != null) {
                     if (obj is Actor actor && memberName == "ExactPosition") {
                         obj = actor.GetMoreExactPosition(true);
+                    } else if (obj is Platform platform && memberName == "ExactPosition") {
+                        obj = platform.GetMoreExactPosition(true);
                     } else {
                         obj = methodInfo.Invoke(obj, null);
                     }

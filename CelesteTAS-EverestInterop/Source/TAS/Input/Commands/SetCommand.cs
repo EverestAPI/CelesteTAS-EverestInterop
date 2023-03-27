@@ -222,6 +222,18 @@ public static class SetCommand {
                 }
 
                 actor.movementCounter = remainder;
+            } else if (obj is Platform platform && lastMemberName is "X" or "Y") {
+                double.TryParse(values[0], out double value);
+                Vector2 remainder = platform.movementCounter;
+                if (lastMemberName == "X") {
+                    platform.Position.X = (int) Math.Round(value);
+                    remainder.X = (float) (value - platform.Position.X);
+                } else {
+                    platform.Position.Y = (int) Math.Round(value);
+                    remainder.Y = (float) (value - platform.Position.Y);
+                }
+
+                platform.movementCounter = remainder;
             } else if (property.PropertyType == typeof(ButtonBinding) && property.GetValue(obj) is ButtonBinding buttonBinding) {
                 HashSet<Keys> keys = new();
                 HashSet<MButtons> mButtons = new();
@@ -295,6 +307,13 @@ public static class SetCommand {
                 Vector2 remainder = new((float) (x - position.X), (float) (y - position.Y));
                 actor.Position = position;
                 actor.movementCounter = remainder;
+            } else if (obj is Platform platform && lastMemberName == "Position" && values.Length == 2) {
+                double.TryParse(values[0], out double x);
+                double.TryParse(values[1], out double y);
+                Vector2 position = new((int) Math.Round(x), (int) Math.Round(y));
+                Vector2 remainder = new((float) (x - position.X), (float) (y - position.Y));
+                platform.Position = position;
+                platform.movementCounter = remainder;
             } else {
                 object value = structObj ?? ConvertType(values, field.FieldType);
                 if (lastMemberName.Equals("Speed", StringComparison.OrdinalIgnoreCase) && value is Vector2 speed &&
