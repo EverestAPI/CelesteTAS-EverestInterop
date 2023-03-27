@@ -85,7 +85,8 @@ public static class ExportGameInfo {
             string time = GameInfo.GetChapterTime(level);
             string pos = player.ToSimplePositionString(GetDecimals(TasSettings.PositionDecimals, CelesteTasSettings.MaxDecimals));
             string speed = player.Speed.ToSimpleString(GetDecimals(TasSettings.SpeedDecimals, CelesteTasSettings.MaxDecimals));
-            string statuses = GameInfo.GetStatuses(level, player);
+            GameInfo.GetAdjustedLiftBoost(player, out string liftBoost);
+            string statuses = $"{GameInfo.GetStatuses(level, player)}\t{liftBoost}";
 
             output = string.Join("\t",
                 inputFrame.Line + 1, $"{controller.CurrentFrameInInput}/{inputFrame}", controller.CurrentFrameInTas, time, pos, speed,

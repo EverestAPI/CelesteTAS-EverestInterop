@@ -518,7 +518,7 @@ public static class GameInfo {
         }
     }
 
-    private static string GetAdjustedLiftBoost(Player player, out string exactLiftBoost) {
+    public static string GetAdjustedLiftBoost(Player player, out string exactLiftBoost) {
         if (player.LiftBoost is var liftBoost && liftBoost != Vector2.Zero) {
             liftBoost = ConvertSpeedUnit(liftBoost, TasSettings.SpeedUnit);
             int timer = player.liftSpeedTimer.ToCeilingFrames();
