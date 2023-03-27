@@ -33,8 +33,8 @@ public static class EntityDataHelper {
         typeof(Level).GetMethod("orig_LoadLevel").IlHook(ModOrigLoadLevel);
     }
 
-    [LoadContent]
-    private static void LoadContent() {
+    [Initialize]
+    private static void Initialize() {
         Dictionary<Type, string[]> typeMethodNames = new() {
             {typeof(SeekerStatue).GetNestedType("<>c__DisplayClass3_0", BindingFlags.NonPublic), new[] {"<.ctor>b__0"}},
             {typeof(FireBall), new[] {"Added"}},

@@ -41,7 +41,6 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         Destroy();
     }
 
-    [Initialize]
     public static bool Run() {
         if (Instance != null) {
             return false;

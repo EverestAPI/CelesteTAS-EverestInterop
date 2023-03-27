@@ -121,8 +121,8 @@ public static class SimplifiedGraphicsFeature {
         });
     }
 
-    [LoadContent]
-    private static void OnLoadContent() {
+    [Initialize]
+    private static void Initialize() {
         // Optional: Various graphical simplifications to cut down on visual noise.
         On.Celeste.Level.Update += Level_Update;
 

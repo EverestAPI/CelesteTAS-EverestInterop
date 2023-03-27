@@ -20,7 +20,7 @@ public static class InfoCustom {
     private static readonly Dictionary<string, Type> AllTypes = new();
     private static readonly Dictionary<string, List<Type>> CachedParsedTypes = new();
 
-    [LoadContent]
+    [Initialize]
     private static void CollectAllTypeInfo() {
         AllTypes.Clear();
         CachedParsedTypes.Clear();

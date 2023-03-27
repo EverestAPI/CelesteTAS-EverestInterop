@@ -36,7 +36,7 @@ public class TasCommandAttribute : Attribute {
         }
     }
 
-    [LoadContent]
+    [Initialize]
     private static void CollectMethods() {
         MethodInfos.Clear();
         IEnumerable<MethodInfo> methodInfos = Assembly.GetCallingAssembly().GetTypesSafe().SelectMany(type => type

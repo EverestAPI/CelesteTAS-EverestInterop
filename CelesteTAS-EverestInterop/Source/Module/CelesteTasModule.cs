@@ -2,6 +2,7 @@
 using Celeste;
 using Celeste.Mod;
 using FMOD.Studio;
+using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.Utils;
 
@@ -13,7 +14,6 @@ public class CelesteTasModule : EverestModule {
         Instance = this;
         AttributeUtils.CollectMethods<LoadAttribute>();
         AttributeUtils.CollectMethods<UnloadAttribute>();
-        AttributeUtils.CollectMethods<LoadContentAttribute>();
         AttributeUtils.CollectMethods<InitializeAttribute>();
     }
 
@@ -23,6 +23,9 @@ public class CelesteTasModule : EverestModule {
 
     public override void Initialize() {
         AttributeUtils.Invoke<InitializeAttribute>();
+
+        // required run after TasCommandAttribute.CollectMethods()
+        StudioCommunicationClient.Run();
     }
 
     public override void Load() {
@@ -36,12 +39,6 @@ public class CelesteTasModule : EverestModule {
         CenterCamera.Unload();
     }
 
-    public override void LoadContent(bool firstLoad) {
-        if (firstLoad) {
-            AttributeUtils.Invoke<LoadContentAttribute>();
-        }
-    }
-
     public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance snapshot) {
         CreateModMenuSectionHeader(menu, inGame, snapshot);
         CelesteTasMenu.CreateMenu(this, menu, inGame);
@@ -53,9 +50,6 @@ internal class LoadAttribute : Attribute { }
 
 [AttributeUsage(AttributeTargets.Method)]
 internal class UnloadAttribute : Attribute { }
-
-[AttributeUsage(AttributeTargets.Method)]
-internal class LoadContentAttribute : Attribute { }
 
 [AttributeUsage(AttributeTargets.Method)]
 internal class InitializeAttribute : Attribute { }
