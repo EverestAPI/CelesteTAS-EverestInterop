@@ -122,7 +122,7 @@ public static class SetCommand {
         } else if (memberNames.IsNotEmpty() &&
                    (type.GetGetMethod(memberNames.First()) is {IsStatic: true} ||
                     type.GetFieldInfo(memberNames.First()) is {IsStatic: true})) {
-            obj = InfoCustom.GetMemberValue(type, null, memberNames);
+            obj = InfoCustom.GetMemberValue(type, null, memberNames, true);
             if (TryPrintErrorLog()) {
                 return;
             }
@@ -141,7 +141,7 @@ public static class SetCommand {
                     } else {
                         List<object> memberValues = new();
                         foreach (Entity entity in entities) {
-                            object memberValue = InfoCustom.GetMemberValue(type, entity, memberNames);
+                            object memberValue = InfoCustom.GetMemberValue(type, entity, memberNames, true);
                             if (TryPrintErrorLog()) {
                                 return;
                             }
@@ -159,7 +159,7 @@ public static class SetCommand {
                         objType = memberValues.First().GetType();
                     }
                 } else {
-                    obj = InfoCustom.GetMemberValue(type, obj, memberNames);
+                    obj = InfoCustom.GetMemberValue(type, obj, memberNames, true);
                     if (TryPrintErrorLog()) {
                         return;
                     }

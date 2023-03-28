@@ -281,7 +281,7 @@ public static class InfoCustom {
         return obj.ToString();
     }
 
-    public static object GetMemberValue(Type type, object obj, List<string> memberNames) {
+    public static object GetMemberValue(Type type, object obj, List<string> memberNames, bool setCommand = false) {
         foreach (string memberName in memberNames) {
             if (type.GetGetMethod(memberName) is { } methodInfo) {
                 if (methodInfo.IsStatic) {
@@ -299,7 +299,11 @@ public static class InfoCustom {
                 if (fieldInfo.IsStatic) {
                     obj = fieldInfo.GetValue(null);
                 } else if (obj != null) {
-                    obj = fieldInfo.GetValue(obj);
+                    obj = setCommand switch {
+                        true when obj is Actor actor && memberName == "Position" => actor.GetMoreExactPosition(true),
+                        true when obj is Platform platform && memberName == "Position" => platform.GetMoreExactPosition(true),
+                        _ => fieldInfo.GetValue(obj)
+                    };
                 }
             } else {
                 if (obj == null) {
