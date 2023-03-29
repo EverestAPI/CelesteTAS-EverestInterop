@@ -91,6 +91,8 @@ public static class ExportGameInfo {
                 statuses += $"\t{liftBoost}";
             }
 
+            statuses += $"\t[{level.Session.Level}]";
+
             output = string.Join("\t",
                 inputFrame.Line + 1, $"{controller.CurrentFrameInInput}/{inputFrame}", controller.CurrentFrameInTas, time, pos, speed,
                 PlayerStates.GetStateName(player.StateMachine.State),
