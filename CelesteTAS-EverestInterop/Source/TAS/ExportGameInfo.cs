@@ -52,7 +52,7 @@ public static class ExportGameInfo {
         }
 
         streamWriter = new StreamWriter(path);
-        streamWriter.WriteLine(string.Join("\t", "Line", "Inputs", "Frames", "Time", "Position", "Speed", "State", "Statuses", "Entities"));
+        streamWriter.WriteLine(string.Join("\t", "Line", "Inputs", "Frames", "Time", "Position", "Speed", "State", "Statuses", "Room", "Entities"));
         trackedEntities = new Dictionary<string, Func<List<Entity>>>();
         foreach (string typeName in tracked) {
             if (!InfoCustom.TryParseTypes(typeName, out List<Type> types)) {
@@ -88,7 +88,11 @@ public static class ExportGameInfo {
             string statuses = GameInfo.GetStatuses(level, player);
             GameInfo.GetAdjustedLiftBoost(player, out string liftBoost);
             if (liftBoost.IsNotEmpty()) {
-                statuses += $"\t{liftBoost}";
+                if (statuses.IsEmpty()) {
+                    statuses = liftBoost;
+                } else {
+                    statuses += $"\t{liftBoost}";
+                }
             }
 
             statuses += $"\t[{level.Session.Level}]";
