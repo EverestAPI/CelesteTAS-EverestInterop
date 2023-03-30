@@ -195,11 +195,12 @@ public class CelesteTasSettings : EverestModuleSettings {
 
     #region Round Values
 
-    private int positionDecimals = MinDecimals;
-    private int speedDecimals = MinDecimals;
-    private int velocityDecimals = MinDecimals;
-    private int customInfoDecimals = MinDecimals;
-    private int subpixelIndicatorDecimals = MinDecimals;
+    private int positionDecimals = 2;
+    private int speedDecimals = 2;
+    private int velocityDecimals = 2;
+    private int angleDecimals = 5;
+    private int customInfoDecimals = 2;
+    private int subpixelIndicatorDecimals = 2;
     private SpeedUnit speedUnit = SpeedUnit.PixelPerSecond;
 
     public int PositionDecimals {
@@ -222,6 +223,14 @@ public class CelesteTasSettings : EverestModuleSettings {
         get => velocityDecimals;
         set {
             velocityDecimals = Calc.Clamp(value, MinDecimals, MaxDecimals);
+            GameInfo.Update();
+        }
+    }
+
+    public int AngleDecimals {
+        get => angleDecimals;
+        set {
+            angleDecimals = Calc.Clamp(value, MinDecimals, MaxDecimals);
             GameInfo.Update();
         }
     }

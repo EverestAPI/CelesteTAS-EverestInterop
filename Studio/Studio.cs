@@ -1824,6 +1824,10 @@ public partial class Studio : BaseForm {
         SetDecimals("Velocity Decimals", sender);
     }
 
+    private void angleDecimalsToolStripMenuItem_Click(object sender, EventArgs e) {
+        SetDecimals("Angle Decimals", sender);
+    }
+
     private void customInfoDecimalsToolStripMenuItem_Click(object sender, EventArgs e) {
         SetDecimals("Custom Info Decimals", sender);
     }

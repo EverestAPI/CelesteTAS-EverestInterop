@@ -121,6 +121,9 @@ internal static class CelesteTasMenu {
             subMenu.Add(new TextMenuExt.IntSlider("Velocity Decimals".ToDialogText(), CelesteTasSettings.MinDecimals,
                 CelesteTasSettings.MaxDecimals, TasSettings.VelocityDecimals).Change(value =>
                 TasSettings.VelocityDecimals = value));
+            subMenu.Add(new TextMenuExt.IntSlider("Angle Decimals".ToDialogText(), CelesteTasSettings.MinDecimals,
+                CelesteTasSettings.MaxDecimals, TasSettings.AngleDecimals).Change(value =>
+                TasSettings.AngleDecimals = value));
             subMenu.Add(new TextMenuExt.IntSlider("Custom Info Decimals".ToDialogText(), CelesteTasSettings.MinDecimals,
                 CelesteTasSettings.MaxDecimals, TasSettings.CustomInfoDecimals).Change(value =>
                 TasSettings.CustomInfoDecimals = value));

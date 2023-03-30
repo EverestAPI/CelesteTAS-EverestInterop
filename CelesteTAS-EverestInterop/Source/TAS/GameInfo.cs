@@ -209,13 +209,12 @@ public static class GameInfo {
 
                 string velocity = GetAdjustedVelocity(diff, out string exactVelocity);
 
-                string polarVel = $"Fly:   {diff.Length():F2}, {diff.Angle():F5}°";
+                string polarVel = GetAdjustedPolarVel(diff, out string exactPolarVel);
 
                 string analog = string.Empty;
+                string exactAnalog = string.Empty;
                 if (Manager.Running && Manager.Controller.Previous is { } inputFrame && inputFrame.HasActions(Actions.Feather)) {
-                    Vector2 angleVector2 = inputFrame.AngleVector2;
-                    analog =
-                        $"Analog: {angleVector2.X:F5}, {angleVector2.Y:F5}, {GetAngle(new Vector2(angleVector2.X, -angleVector2.Y)):F5}°";
+                    analog = GetAdjustedAnalog(inputFrame.AngleVector2, out exactAnalog);
                 }
 
                 string retainedSpeed = GetAdjustedRetainedSpeed(player, out string exactRetainedSpeed);
@@ -302,8 +301,8 @@ public static class GameInfo {
                     exactVelocity,
                     player,
                     playerSeeker,
-                    polarVel,
-                    analog,
+                    exactPolarVel,
+                    exactAnalog,
                     exactRetainedSpeed,
                     exactLiftBoost,
                     miscStats,
@@ -505,6 +504,21 @@ public static class GameInfo {
     private static string GetAdjustedVelocity(Vector2Double diff, out string exactVelocity) {
         exactVelocity = $"Vel:   {diff.ToSimpleString(CelesteTasSettings.MaxDecimals)}";
         return $"Vel:   {diff.ToSimpleString(TasSettings.VelocityDecimals)}";
+    }
+
+    private static string GetAdjustedPolarVel(Vector2Double diff, out string exactPolarVel) {
+        exactPolarVel =
+            $"Fly:   {diff.Length().ToFormattedString(CelesteTasSettings.MaxDecimals)}, {diff.Angle().ToFormattedString(CelesteTasSettings.MaxDecimals)}°";
+        return
+            $"Fly:   {diff.Length().ToFormattedString(TasSettings.VelocityDecimals)}, {diff.Angle().ToFormattedString(TasSettings.AngleDecimals)}°";
+    }
+
+    private static string GetAdjustedAnalog(Vector2 angleVector2, out string exactAnalog) {
+        exactAnalog =
+            $"Analog: {angleVector2.ToSimpleString(CelesteTasSettings.MaxDecimals)}, {GetAngle(new Vector2(angleVector2.X, -angleVector2.Y)).ToFormattedString(CelesteTasSettings.MaxDecimals)}°";
+        return
+            $"Analog: {angleVector2.ToSimpleString(TasSettings.AngleDecimals)}, {GetAngle(new Vector2(angleVector2.X, -angleVector2.Y)).ToFormattedString(TasSettings.AngleDecimals)}°";
+        ;
     }
 
     private static string GetAdjustedRetainedSpeed(Player player, out string exactRetainedSpeed) {

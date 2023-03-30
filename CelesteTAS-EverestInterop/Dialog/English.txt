@@ -80,6 +80,7 @@ TAS_INFO_HUD_OPTIONS_BOTH=        Both
 TAS_POSITION_DECIMALS=            Position Decimals
 TAS_SPEED_DECIMALS=               Speed Decimals
 TAS_VELOCITY_DECIMALS=            Velocity Decimals
+TAS_ANGLE_DECIMALS=               Angle Decimals
 TAS_CUSTOM_INFO_DECIMALS=         Custom Info Decimals
 TAS_SUBPIXEL_INDICATOR_DECIMALS=  Subpixel Indicator Decimals
 TAS_SPEED_UNIT=                   Speed Unit
