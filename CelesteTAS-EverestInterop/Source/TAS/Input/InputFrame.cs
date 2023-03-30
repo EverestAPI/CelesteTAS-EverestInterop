@@ -60,11 +60,27 @@ public record InputFrame {
     public bool HasActions(Actions actions) =>
         (Actions & actions) != 0;
 
-    public float GetX() =>
-        (float) Math.Sin(Angle * Math.PI / 180.0);
+    public float GetX() {
+        return Angle switch {
+            0f => 0,
+            90f => 1,
+            180f => 0,
+            270f => -1,
+            360f => 0,
+            _ => (float) Math.Sin(Angle * Math.PI / 180.0)
+        };
+    }
 
-    public float GetY() =>
-        (float) Math.Cos(Angle * Math.PI / 180.0);
+    public float GetY() {
+        return Angle switch {
+            0f => 1,
+            90f => 0,
+            180f => -1,
+            270f => 0,
+            360f => 1,
+            _ => (float) Math.Cos(Angle * Math.PI / 180.0)
+        };
+    }
 
     public override string ToString() {
         return Frames + ToActionsString();
