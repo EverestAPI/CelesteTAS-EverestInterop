@@ -1,4 +1,6 @@
-﻿using Celeste;
+﻿using Mono.Cecil.Cil;
+using MonoMod.Cil;
+using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Module;
@@ -10,19 +12,26 @@ public static class HitboxNpc {
     [Load]
     private static void Load() {
         On.Monocle.Entity.DebugRender += EntityOnDebugRender;
+        IL.Celeste.BirdNPC.DebugRender += BirdNPC_DebugRender;
+    }
+
+    private static void BirdNPC_DebugRender(ILContext il) {
+        var cursor = new ILCursor(il);
+        cursor.GotoNext(moveType: MoveType.After, (instr) => instr.Match(OpCodes.Call));
+        cursor.Emit(OpCodes.Ret);
     }
 
     [Unload]
     private static void Unload() {
         On.Monocle.Entity.DebugRender -= EntityOnDebugRender;
+        IL.Celeste.BirdNPC.DebugRender -= BirdNPC_DebugRender;
     }
 
     private static void EntityOnDebugRender(On.Monocle.Entity.orig_DebugRender orig, Entity entity, Camera camera) {
-        bool drawOriginal = true;
+        orig(entity, camera);
 
         if (TasSettings.ShowHitboxes && TasSettings.ShowTriggerHitboxes && Engine.Scene is Level level) {
             if (entity.GetEntityData()?.Level?.Name != level.Session.Level) {
-                orig(entity, camera);
                 return;
             }
 
@@ -74,17 +83,16 @@ public static class HitboxNpc {
             } else if (entity is BirdNPC birdNpc && birdNpc.mode == BirdNPC.Modes.DashingTutorial) {
                 Vector2 offset = ((player is { }) ? player.Collider : player.normalHitbox).BottomRight;
                 Vector2 position = birdNpc.StartPosition;
-                float x1 = position.X - 91f + offset.X;
-                float x2 = level.Bounds.Right;
-                float y1 = position.Y - 19f + offset.Y;
-                float y2 = position.Y - 11f + offset.Y;
-                Draw.HollowRect(x1 - 1f, y1 - 1f, x2 - x1, y2 - y1, Color.Aqua);
-                drawOriginal = false;
-            }
-        }
 
-        if (drawOriginal) {
-            orig(entity, camera);
+                void drawTrigger(float xrange, float yrangestart, float yrangeend) {
+                    float x1 = position.X - xrange + offset.X;
+                    float y1 = position.Y - 19f + offset.Y;
+                    float y2 = position.Y - 11f + offset.Y;
+                    Draw.HollowRect(x1 - 1f, y1 - 1f, level.Bounds.Right - x1, y2 - y1, Color.Aqua);
+                }
+                drawTrigger(91f, 19f, 11f);
+                drawTrigger(59f, -1f, -33f);
+            }
         }
     }
 }
