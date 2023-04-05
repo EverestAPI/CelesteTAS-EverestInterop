@@ -1,4 +1,4 @@
-using Celeste;
+﻿using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Module;
@@ -18,10 +18,11 @@ public static class HitboxNpc {
     }
 
     private static void EntityOnDebugRender(On.Monocle.Entity.orig_DebugRender orig, Entity entity, Camera camera) {
-        orig(entity, camera);
+        bool drawOriginal = true;
 
         if (TasSettings.ShowHitboxes && TasSettings.ShowTriggerHitboxes && Engine.Scene is Level level) {
             if (entity.GetEntityData()?.Level?.Name != level.Session.Level) {
+                orig(entity, camera);
                 return;
             }
 
@@ -31,6 +32,7 @@ public static class HitboxNpc {
             int bottom = levelBounds.Bottom;
             Color color = HitboxColor.TriggerColor;
             string levelName = level.Session.Level;
+            Player player = level.GetPlayer();
 
             if (entity is NPC00_Granny) {
                 float x = left + 100;
@@ -65,11 +67,24 @@ public static class HitboxNpc {
                     Draw.Line(x, top, x, bottom, color);
                 } else if (levelName == "c-01" && badelineNpc.shadow is { } badelineDummy) {
                     Draw.Circle(badelineDummy.Position, 70, color, 4);
-                    if (level.GetPlayer() is { } player && Vector2.Distance(player.Position, badelineDummy.Position) <= 150) {
+                    if (player is { } && Vector2.Distance(player.Position, badelineDummy.Position) <= 150) {
                         Draw.Line(player.Position, badelineDummy.Position, Color.Aqua);
                     }
                 }
+            } else if (entity is BirdNPC birdNpc && birdNpc.mode == BirdNPC.Modes.DashingTutorial) {
+                Vector2 offset = ((player is { }) ? player.Collider : player.normalHitbox).BottomRight;
+                Vector2 position = birdNpc.StartPosition;
+                float x1 = position.X - 91f + offset.X;
+                float x2 = level.Bounds.Right;
+                float y1 = position.Y - 19f + offset.Y;
+                float y2 = position.Y - 11f + offset.Y;
+                Draw.HollowRect(x1 - 1f, y1 - 1f, x2 - x1, y2 - y1, Color.Aqua);
+                drawOriginal = false;
             }
+        }
+
+        if (drawOriginal) {
+            orig(entity, camera);
         }
     }
 }
