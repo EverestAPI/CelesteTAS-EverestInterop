@@ -1,4 +1,4 @@
-using Celeste;
+﻿using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Module;
@@ -7,14 +7,54 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxNpc {
+    private static readonly Vector2 DefaultOffset = new(4f, 0f);
+
     [Load]
     private static void Load() {
+        On.Celeste.BirdNPC.DebugRender += BirdNPC_DebugRender;
+        On.Celeste.Player.DebugRender += PlayerOnDebugRender;
         On.Monocle.Entity.DebugRender += EntityOnDebugRender;
     }
 
     [Unload]
     private static void Unload() {
+        On.Celeste.BirdNPC.DebugRender -= BirdNPC_DebugRender;
+        On.Celeste.Player.DebugRender -= PlayerOnDebugRender;
         On.Monocle.Entity.DebugRender -= EntityOnDebugRender;
+    }
+
+    private static void BirdNPC_DebugRender(On.Celeste.BirdNPC.orig_DebugRender orig, BirdNPC birdNpc, Camera camera) {
+        if (TasSettings.ShowHitboxes) {
+            if (TasSettings.ShowTriggerHitboxes && Engine.Scene is Level level && birdNpc.mode == BirdNPC.Modes.DashingTutorial) {
+                Player player = level.GetPlayer();
+                Vector2 offset = player is { } ? player.Collider.BottomRight : DefaultOffset;
+                Vector2 position = birdNpc.StartPosition;
+
+                void DrawTrigger(float xRange, float yRangeStart, float yRangeEnd) {
+                    float x1 = position.X - xRange + offset.X;
+                    float y1 = position.Y - yRangeStart + offset.Y;
+                    float y2 = position.Y - yRangeEnd + offset.Y;
+                    Draw.HollowRect(x1 - 1f, y1 - 1f, level.Bounds.Right - x1, y2 - y1 + 1f, Color.Aqua);
+                }
+
+                DrawTrigger(91f, 11f, 19f);
+
+                if (SaveData.Instance.Assists.Invincible) {
+                    DrawTrigger(59f, -33f, -1f);
+                }
+            }
+        } else {
+            orig(birdNpc, camera);
+        }
+    }
+
+    private static void PlayerOnDebugRender(On.Celeste.Player.orig_DebugRender orig, Player self, Camera camera) {
+        orig(self, camera);
+
+        if (TasSettings.ShowHitboxes && TasSettings.ShowTriggerHitboxes && Engine.Scene is Level level && level.Session.Area.ID == 0 &&
+            level.Session.Level == "3") {
+            Draw.Point(self.BottomRight - Vector2.One, Color.Aqua);
+        }
     }
 
     private static void EntityOnDebugRender(On.Monocle.Entity.orig_DebugRender orig, Entity entity, Camera camera) {
