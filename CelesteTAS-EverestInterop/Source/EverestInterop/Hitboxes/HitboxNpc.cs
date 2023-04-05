@@ -86,12 +86,12 @@ public static class HitboxNpc {
 
                 void drawTrigger(float xrange, float yrangestart, float yrangeend) {
                     float x1 = position.X - xrange + offset.X;
-                    float y1 = position.Y - 19f + offset.Y;
-                    float y2 = position.Y - 11f + offset.Y;
-                    Draw.HollowRect(x1 - 1f, y1 - 1f, level.Bounds.Right - x1, y2 - y1, Color.Aqua);
+                    float y1 = position.Y - yrangestart + offset.Y;
+                    float y2 = position.Y - yrangeend + offset.Y;
+                    Draw.HollowRect(x1 - 1f, y1 - 1f, level.Bounds.Right - x1, y2 - y1 + 1f, Color.Aqua);
                 }
-                drawTrigger(91f, 19f, 11f);
-                drawTrigger(59f, -1f, -33f);
+                drawTrigger(91f, 11f, 19f);
+                drawTrigger(59f, -33f, -1f);
             }
         }
     }
