@@ -18,6 +18,7 @@ public static class ConsoleCommand {
     private static readonly Regex LoadCommandRegex = new(@"^(load|hard|rmx2)(\d*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private static Vector2 resetRemainder;
     private static Vector2 initSpeed;
+    private static List<Action<Entity>> bugFixers;
 
     [Load]
     private static void Load() {
@@ -338,11 +339,32 @@ public static class ConsoleCommand {
     }
 
     private static void EnterLevel(LevelLoader levelLoader) {
-        // fix game crash when leaving a map exist TileGlitcher
-        if (Engine.Scene is Level level && ModUtils.IsInstalled("PandorasBox")) {
+        if (bugFixers == null) {
+            bugFixers = new List<Action<Entity>>();
+
+            // fix game crash when leaving a map exist TileGlitcher
+            if (ModUtils.IsInstalled("PandorasBox")) {
+                bugFixers.Add(entity => {
+                    if (entity.GetType().FullName == "Celeste.Mod.PandorasBox.TileGlitcher") {
+                        entity.Active = false;
+                    }
+                });
+            }
+
+            // fix tas desync when restarting tas in DashBoostField
+            if (ModUtils.IsInstalled("StrawberryJam2021")) {
+                bugFixers.Add(entity => {
+                    if (entity.GetType().FullName == "Celeste.Mod.StrawberryJam2021.Entities.DashBoostField") {
+                        entity.Active = false;
+                    }
+                });
+            }
+        }
+
+        if (Engine.Scene is Level level && bugFixers.IsNotEmpty()) {
             foreach (Entity entity in level.Entities) {
-                if (entity.GetType().FullName == "Celeste.Mod.PandorasBox.TileGlitcher") {
-                    entity.Active = false;
+                foreach (Action<Entity> bugFixer in bugFixers) {
+                    bugFixer(entity);
                 }
             }
         }
@@ -380,8 +402,8 @@ public static class ConsoleCommand {
             } else {
                 double x = player.X;
                 double y = player.Y;
-                double subX = player.PositionRemainder.X;
-                double subY = player.PositionRemainder.Y;
+                double subX = player.movementCounter.X;
+                double subY = player.movementCounter.Y;
 
                 string format = "0.".PadRight(CelesteTasSettings.MaxDecimals + 2, '#');
                 values.Add((x + subX).ToString(format, CultureInfo.InvariantCulture));

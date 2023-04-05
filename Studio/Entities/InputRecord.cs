@@ -2,34 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
+using StudioCommunication;
 
 namespace CelesteStudio.Entities;
-
-[Flags]
-public enum Actions {
-    None = 0,
-    Left = 1 << 0,
-    Right = 1 << 1,
-    Up = 1 << 2,
-    Down = 1 << 3,
-    Jump = 1 << 4,
-    Dash = 1 << 5,
-    Grab = 1 << 6,
-    Start = 1 << 7,
-    Restart = 1 << 8,
-    Feather = 1 << 9,
-    Journal = 1 << 10,
-    Jump2 = 1 << 11,
-    Dash2 = 1 << 12,
-    Confirm = 1 << 13,
-    DemoDash = 1 << 14,
-    DemoDash2 = 1 << 15,
-    DashOnly = 1 << 16,
-    LeftDashOnly = 1 << 17,
-    RightDashOnly = 1 << 18,
-    UpDashOnly = 1 << 19,
-    DownDashOnly = 1 << 20,
-}
 
 public class InputRecord {
     private const char Delimiter = ',';
@@ -43,6 +18,8 @@ public class InputRecord {
     public static readonly Regex BreakpointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
     public static readonly Regex InputFrameRegex = new(@"^(\s*\d+)", RegexOptions.Compiled);
     private static readonly Regex DashOnlyDirectionRegex = new(@"[A]([LRUD]+$)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex MoveOnlyDirectionRegex = new(@"[M]([LRUD]+$)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex PressedKeyRegex = new(@"[P]([A-Z]+$)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     private static readonly Actions[][] ExclusiveActions = {
         new[] {Actions.Dash, Actions.Dash2, Actions.DemoDash, Actions.DemoDash2},
@@ -51,7 +28,24 @@ public class InputRecord {
         new[] {Actions.Left, Actions.Right, Actions.Feather},
         new[] {Actions.UpDashOnly, Actions.DownDashOnly},
         new[] {Actions.LeftDashOnly, Actions.RightDashOnly},
+        new[] {Actions.UpMoveOnly, Actions.DownMoveOnly},
+        new[] {Actions.LeftMoveOnly, Actions.RightMoveOnly},
     };
+
+    public int Frames { get; set; }
+    public Actions Actions { get; set; }
+    public string AngleStr { get; set; }
+    public string UpperLimitStr { get; set; }
+    public SortedSet<char> PressedKeys { get; } = new();
+    public string LineText { get; }
+    public bool IsInput { get; }
+    public bool IsComment { get; }
+    public bool IsCommentRoom { get; }
+    public bool IsCommentTime { get; }
+    public bool IsCommand { get; }
+    public bool IsBreakpoint { get; }
+    public bool IsEmpty { get; }
+    public bool IsEmptyOrZeroFrameInput => IsEmpty || IsInput && Frames == 0;
 
     public InputRecord(int frames, string actions) : this($"{frames},{actions}") { }
 
@@ -86,58 +80,16 @@ public class InputRecord {
         }
 
         while (index < line.Length) {
-            char c = line[index];
+            char c = char.ToUpper(line[index]);
 
-            switch (char.ToUpper(c)) {
-                case 'L':
-                    Actions ^= IsDashOnlyDirection() ? Actions.LeftDashOnly : Actions.Left;
-                    break;
-                case 'R':
-                    Actions ^= IsDashOnlyDirection() ? Actions.RightDashOnly : Actions.Right;
-                    break;
-                case 'U':
-                    Actions ^= IsDashOnlyDirection() ? Actions.UpDashOnly : Actions.Up;
-                    break;
-                case 'D':
-                    Actions ^= IsDashOnlyDirection() ? Actions.DownDashOnly : Actions.Down;
-                    break;
-                case 'J':
-                    Actions ^= Actions.Jump;
-                    break;
-                case 'X':
-                    Actions ^= Actions.Dash;
-                    break;
-                case 'G':
-                    Actions ^= Actions.Grab;
-                    break;
-                case 'S':
-                    Actions ^= Actions.Start;
-                    break;
-                case 'Q':
-                    Actions ^= Actions.Restart;
-                    break;
-                case 'N':
-                    Actions ^= Actions.Journal;
-                    break;
-                case 'K':
-                    Actions ^= Actions.Jump2;
-                    break;
-                case 'C':
-                    Actions ^= Actions.Dash2;
-                    break;
-                case 'O':
-                    Actions ^= Actions.Confirm;
-                    break;
-                case 'Z':
-                    Actions ^= Actions.DemoDash;
-                    break;
-                case 'V':
-                    Actions ^= Actions.DemoDash2;
-                    break;
-                case 'A':
-                    Actions ^= Actions.DashOnly;
-                    break;
-                case 'F':
+            if (c is >= 'A' and <= 'Z' && IsPressedKey()) {
+                PressedKeys.Add(c);
+            } else if (ActionsUtils.TryParse(c, out Actions actions)) {
+                if (IsDashOnlyDirection()) {
+                    actions = actions.ToDashOnlyActions();
+                } else if (IsMoveOnlyDirection()) {
+                    actions = actions.ToMoveOnlyActions();
+                } else if (actions == Actions.Feather) {
                     Actions ^= Actions.Feather;
                     index++;
                     ClampAngle(line, ref index);
@@ -148,6 +100,9 @@ public class InputRecord {
 
                     ClampUpperLimit(line, ref index);
                     continue;
+                }
+
+                Actions ^= actions;
             }
 
             index++;
@@ -161,21 +116,17 @@ public class InputRecord {
             string subLine = line.Substring(0, index + 1);
             return DashOnlyDirectionRegex.IsMatch(subLine);
         }
-    }
 
-    public int Frames { get; set; }
-    public Actions Actions { get; set; }
-    public string AngleStr { get; set; }
-    public string UpperLimitStr { get; set; }
-    public string LineText { get; }
-    public bool IsInput { get; }
-    public bool IsComment { get; }
-    public bool IsCommentRoom { get; }
-    public bool IsCommentTime { get; }
-    public bool IsCommand { get; }
-    public bool IsBreakpoint { get; }
-    public bool IsEmpty { get; }
-    public bool IsEmptyOrZeroFrameInput => IsEmpty || IsInput && Frames == 0;
+        bool IsMoveOnlyDirection() {
+            string subLine = line.Substring(0, index + 1);
+            return MoveOnlyDirectionRegex.IsMatch(subLine);
+        }
+
+        bool IsPressedKey() {
+            string subLine = line.Substring(0, index + 1);
+            return PressedKeyRegex.IsMatch(subLine);
+        }
+    }
 
     private int ReadFrames(string line, ref int start) {
         bool foundFrames = false;
@@ -254,93 +205,36 @@ public class InputRecord {
     public string ActionsToString() {
         StringBuilder sb = new();
 
-        if (HasActions(Actions.Left)) {
-            sb.Append($"{Delimiter}L");
-        }
+        foreach (KeyValuePair<char, Actions> pair in ActionsUtils.Chars) {
+            Actions actions = pair.Value;
+            if (HasActions(actions)) {
+                sb.Append($"{Delimiter}{pair.Key}");
 
-        if (HasActions(Actions.Right)) {
-            sb.Append($"{Delimiter}R");
-        }
+                if (actions == Actions.DashOnly) {
+                    foreach (KeyValuePair<char, Actions> dashOnlyPair in ActionsUtils.DashOnlyChars) {
+                        if (HasActions(dashOnlyPair.Value)) {
+                            sb.Append($"{dashOnlyPair.Key}");
+                        }
+                    }
+                } else if (actions == Actions.MoveOnly) {
+                    foreach (KeyValuePair<char, Actions> moveOnlyPair in ActionsUtils.MoveOnlyChars) {
+                        if (HasActions(moveOnlyPair.Value)) {
+                            sb.Append($"{moveOnlyPair.Key}");
+                        }
+                    }
+                } else if (actions == Actions.PressedKey) {
+                    foreach (char key in PressedKeys) {
+                        sb.Append(key);
+                    }
+                } else if (actions == Actions.Feather) {
+                    sb.Append(Delimiter);
+                    if (!string.IsNullOrEmpty(AngleStr)) {
+                        sb.Append($"{AngleStr}");
 
-        if (HasActions(Actions.Up)) {
-            sb.Append($"{Delimiter}U");
-        }
-
-        if (HasActions(Actions.Down)) {
-            sb.Append($"{Delimiter}D");
-        }
-
-        if (HasActions(Actions.Jump)) {
-            sb.Append($"{Delimiter}J");
-        }
-
-        if (HasActions(Actions.Jump2)) {
-            sb.Append($"{Delimiter}K");
-        }
-
-        if (HasActions(Actions.DemoDash)) {
-            sb.Append($"{Delimiter}Z");
-        }
-
-        if (HasActions(Actions.DemoDash2)) {
-            sb.Append($"{Delimiter}V");
-        }
-
-        if (HasActions(Actions.Dash)) {
-            sb.Append($"{Delimiter}X");
-        }
-
-        if (HasActions(Actions.Dash2)) {
-            sb.Append($"{Delimiter}C");
-        }
-
-        if (HasActions(Actions.Grab)) {
-            sb.Append($"{Delimiter}G");
-        }
-
-        if (HasActions(Actions.Start)) {
-            sb.Append($"{Delimiter}S");
-        }
-
-        if (HasActions(Actions.Restart)) {
-            sb.Append($"{Delimiter}Q");
-        }
-
-        if (HasActions(Actions.Journal)) {
-            sb.Append($"{Delimiter}N");
-        }
-
-        if (HasActions(Actions.Confirm)) {
-            sb.Append($"{Delimiter}O");
-        }
-
-        if (HasActions(Actions.DashOnly)) {
-            sb.Append($"{Delimiter}A");
-
-            if (HasActions(Actions.LeftDashOnly)) {
-                sb.Append("L");
-            }
-
-            if (HasActions(Actions.RightDashOnly)) {
-                sb.Append("R");
-            }
-
-            if (HasActions(Actions.UpDashOnly)) {
-                sb.Append("U");
-            }
-
-            if (HasActions(Actions.DownDashOnly)) {
-                sb.Append("D");
-            }
-        }
-
-        if (HasActions(Actions.Feather)) {
-            sb.Append($"{Delimiter}F{Delimiter}");
-            if (!string.IsNullOrEmpty(AngleStr)) {
-                sb.Append($"{AngleStr}");
-
-                if (!string.IsNullOrEmpty(UpperLimitStr)) {
-                    sb.Append($"{Delimiter}{UpperLimitStr}");
+                        if (!string.IsNullOrEmpty(UpperLimitStr)) {
+                            sb.Append($"{Delimiter}{UpperLimitStr}");
+                        }
+                    }
                 }
             }
         }

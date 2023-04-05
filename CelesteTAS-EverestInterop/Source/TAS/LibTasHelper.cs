@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Text;
+using StudioCommunication;
 using TAS.Input;
 using TAS.Input.Commands;
 

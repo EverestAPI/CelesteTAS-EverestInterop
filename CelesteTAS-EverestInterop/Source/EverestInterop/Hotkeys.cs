@@ -373,6 +373,7 @@ public static class Hotkeys {
 }
 
 public static class MouseButtons {
+    public static bool Updating { get; private set; }
     public static Vector2 Position { get; private set; }
     public static Vector2 LastPosition { get; private set; }
     public static readonly Button Left = new();
@@ -402,7 +403,10 @@ public static class MouseButtons {
     }
 
     private static void Update() {
+        Updating = true;
         MouseState mouseState = Mouse.GetState();
+        Updating = false;
+
         LastPosition = Position;
         Position = new Vector2(mouseState.X, mouseState.Y);
         Left.Update(mouseState.LeftButton);

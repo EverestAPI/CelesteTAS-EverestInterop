@@ -1,11 +1,18 @@
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Celeste;
 using Monocle;
+using TAS.Input;
 using TAS.Utils;
 
 namespace TAS.EverestInterop;
 
 public static class MonocleCommands {
+    private const string PlayTAS = "playtas";
+    private static readonly Regex SeparatorRegex = new(@$"^{PlayTAS}[ |,]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
     [Command("clrsav", "clears save data on debug file (CelesteTAS)")]
     private static void CmdClearSave() {
         SaveData.TryDelete(-1);
@@ -27,8 +34,15 @@ public static class MonocleCommands {
         if (string.IsNullOrEmpty(levelSet)) {
             const string miniHeartDoorFullName = "Celeste.Mod.CollabUtils2.Entities.MiniHeartDoor";
 
-            if (Engine.Scene.Entities.FirstOrDefault(e => e.GetType().FullName == miniHeartDoorFullName) is { } miniHeartDoor) {
-                levelSet = miniHeartDoor.GetFieldValue<string>("levelSet");
+            if (Engine.Scene.Entities.FirstOrDefault(e => e.GetType().FullName == miniHeartDoorFullName) is HeartGemDoor door) {
+                levelSet = door.GetFieldValue<string>("levelSet");
+                if (door.Scene is Level level && amount < door.Requires) {
+                    level.Session.SetFlag($"opened_mini_heart_door_{door.GetEntityData().ToEntityId()}", false);
+                    ModUtils.GetModule("CollabUtils2")
+                        ?.GetPropertyValue<object>("SaveData")
+                        ?.GetPropertyValue<HashSet<string>>("OpenedMiniHeartDoors")
+                        ?.Remove(door.InvokeMethod<string>("GetDoorSaveDataID", level));
+                }
             } else {
                 levelSet = saveData.GetLevelSet();
             }
@@ -49,5 +63,23 @@ public static class MonocleCommands {
                 }
             }
         }
+    }
+
+    [Command(PlayTAS, "play the specified tas file (CelesteTAS)")]
+    private static void CmdPlayTas(string filePath) {
+        filePath = SeparatorRegex.Replace(Engine.Commands.commandHistory.First(), "");
+
+        if (filePath.IsNullOrEmpty()) {
+            Engine.Commands.Log("Please specified tas file.");
+            return;
+        }
+
+        if (!File.Exists(filePath)) {
+            Engine.Commands.Log("File does not exist.");
+            return;
+        }
+
+        InputController.StudioTasFilePath = filePath;
+        Manager.EnableRun();
     }
 }

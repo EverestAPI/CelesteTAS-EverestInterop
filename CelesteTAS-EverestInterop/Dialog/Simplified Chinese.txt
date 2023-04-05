@@ -80,6 +80,7 @@ TAS_INFO_HUD_OPTIONS_BOTH=        同时显示
 TAS_POSITION_DECIMALS=           坐标小数位数
 TAS_SPEED_DECIMALS=              速度小数位数
 TAS_VELOCITY_DECIMALS=           位移速度小数位数
+TAS_ANGLE_DECIMALS=              角度小数位数
 TAS_CUSTOM_INFO_DECIMALS=        自定义数据小数位数
 TAS_SUBPIXEL_INDICATOR_DECIMALS= 亚像素指示器小数位数
 TAS_SPEED_UNIT=                  速度单位

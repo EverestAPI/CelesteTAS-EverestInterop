@@ -11,7 +11,7 @@ using TAS.EverestInterop.InfoHUD;
 namespace TAS.Module;
 
 public class CelesteTasSettings : EverestModuleSettings {
-    public const int MinDecimals = 2;
+    public const int MinDecimals = 0;
     public const int MaxDecimals = 12;
     public static CelesteTasSettings Instance { get; private set; }
 
@@ -195,11 +195,12 @@ public class CelesteTasSettings : EverestModuleSettings {
 
     #region Round Values
 
-    private int positionDecimals = MinDecimals;
-    private int speedDecimals = MinDecimals;
-    private int velocityDecimals = MinDecimals;
-    private int customInfoDecimals = MinDecimals;
-    private int subpixelIndicatorDecimals = MinDecimals;
+    private int positionDecimals = 2;
+    private int speedDecimals = 2;
+    private int velocityDecimals = 2;
+    private int angleDecimals = 5;
+    private int customInfoDecimals = 2;
+    private int subpixelIndicatorDecimals = 2;
     private SpeedUnit speedUnit = SpeedUnit.PixelPerSecond;
 
     public int PositionDecimals {
@@ -226,6 +227,14 @@ public class CelesteTasSettings : EverestModuleSettings {
         }
     }
 
+    public int AngleDecimals {
+        get => angleDecimals;
+        set {
+            angleDecimals = Calc.Clamp(value, MinDecimals, MaxDecimals);
+            GameInfo.Update();
+        }
+    }
+
     public int CustomInfoDecimals {
         get => customInfoDecimals;
         set {
@@ -237,7 +246,7 @@ public class CelesteTasSettings : EverestModuleSettings {
     public int SubpixelIndicatorDecimals {
         get => subpixelIndicatorDecimals;
         set {
-            subpixelIndicatorDecimals = Calc.Clamp(value, MinDecimals, MaxDecimals);
+            subpixelIndicatorDecimals = Calc.Clamp(value, 1, MaxDecimals);
             GameInfo.Update();
         }
     }

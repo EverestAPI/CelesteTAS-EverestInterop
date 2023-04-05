@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -121,7 +122,7 @@ public static class SetCommand {
         } else if (memberNames.IsNotEmpty() &&
                    (type.GetGetMethod(memberNames.First()) is {IsStatic: true} ||
                     type.GetFieldInfo(memberNames.First()) is {IsStatic: true})) {
-            obj = InfoCustom.GetMemberValue(type, null, memberNames);
+            obj = InfoCustom.GetMemberValue(type, null, memberNames, true);
             if (TryPrintErrorLog()) {
                 return;
             }
@@ -140,7 +141,7 @@ public static class SetCommand {
                     } else {
                         List<object> memberValues = new();
                         foreach (Entity entity in entities) {
-                            object memberValue = InfoCustom.GetMemberValue(type, entity, memberNames);
+                            object memberValue = InfoCustom.GetMemberValue(type, entity, memberNames, true);
                             if (TryPrintErrorLog()) {
                                 return;
                             }
@@ -158,7 +159,7 @@ public static class SetCommand {
                         objType = memberValues.First().GetType();
                     }
                 } else {
-                    obj = InfoCustom.GetMemberValue(type, obj, memberNames);
+                    obj = InfoCustom.GetMemberValue(type, obj, memberNames, true);
                     if (TryPrintErrorLog()) {
                         return;
                     }
@@ -211,7 +212,7 @@ public static class SetCommand {
         if (objType.GetPropertyInfo(lastMemberName) is { } property && property.GetSetMethod(true) is { } setMethod) {
             if (obj is Actor actor && lastMemberName is "X" or "Y") {
                 double.TryParse(values[0], out double value);
-                Vector2 remainder = actor.PositionRemainder;
+                Vector2 remainder = actor.movementCounter;
                 if (lastMemberName == "X") {
                     actor.Position.X = (int) Math.Round(value);
                     remainder.X = (float) (value - actor.Position.X);
@@ -221,25 +222,79 @@ public static class SetCommand {
                 }
 
                 actor.movementCounter = remainder;
+            } else if (obj is Platform platform && lastMemberName is "X" or "Y") {
+                double.TryParse(values[0], out double value);
+                Vector2 remainder = platform.movementCounter;
+                if (lastMemberName == "X") {
+                    platform.Position.X = (int) Math.Round(value);
+                    remainder.X = (float) (value - platform.Position.X);
+                } else {
+                    platform.Position.Y = (int) Math.Round(value);
+                    remainder.Y = (float) (value - platform.Position.Y);
+                }
+
+                platform.movementCounter = remainder;
             } else if (property.PropertyType == typeof(ButtonBinding) && property.GetValue(obj) is ButtonBinding buttonBinding) {
                 HashSet<Keys> keys = new();
+                HashSet<MButtons> mButtons = new();
+                IList mouseButtons = buttonBinding.Button.GetFieldValue<object>("Binding")?.GetFieldValue<IList>("Mouse");
                 foreach (string str in values) {
-                    if (!Enum.TryParse(str, true, out Keys key)) {
+                    // parse mouse first, so Mouse.Left is not parsed as Keys.Left
+                    if (Enum.TryParse(str, true, out MButtons mButton)) {
+                        if (mouseButtons == null && mButton is MButtons.X1 or MButtons.X2) {
+                            AbortTas("X1 and X2 are not supported before Everest adding mouse support");
+                            return false;
+                        }
+
+                        mButtons.Add(mButton);
+                    } else if (Enum.TryParse(str, true, out Keys key)) {
+                        keys.Add(key);
+                    } else {
                         AbortTas($"{str} is not a valid key");
                         return false;
                     }
-
-                    keys.Add(key);
                 }
 
                 List<VirtualButton.Node> nodes = buttonBinding.Button.Nodes;
-                foreach (VirtualButton.Node node in nodes.ToList()) {
-                    if (node is VirtualButton.KeyboardKey) {
-                        nodes.Remove(node);
+
+                if (keys.IsNotEmpty()) {
+                    foreach (VirtualButton.Node node in nodes.ToList()) {
+                        if (node is VirtualButton.KeyboardKey) {
+                            nodes.Remove(node);
+                        }
                     }
+
+                    nodes.AddRange(keys.Select(key => new VirtualButton.KeyboardKey(key)));
                 }
 
-                nodes.AddRange(keys.Select(key => new VirtualButton.KeyboardKey(key)));
+                if (mButtons.IsNotEmpty()) {
+                    foreach (VirtualButton.Node node in nodes.ToList()) {
+                        switch (node) {
+                            case VirtualButton.MouseLeftButton:
+                            case VirtualButton.MouseRightButton:
+                            case VirtualButton.MouseMiddleButton:
+                                nodes.Remove(node);
+                                break;
+                        }
+                    }
+
+                    if (mouseButtons != null) {
+                        mouseButtons.Clear();
+                        foreach (MButtons mButton in mButtons) {
+                            mouseButtons.Add(mButton);
+                        }
+                    } else {
+                        foreach (MButtons mButton in mButtons) {
+                            if (mButton == MButtons.Left) {
+                                nodes.AddRange(keys.Select(key => new VirtualButton.MouseLeftButton()));
+                            } else if (mButton == MButtons.Right) {
+                                nodes.AddRange(keys.Select(key => new VirtualButton.MouseRightButton()));
+                            } else if (mButton == MButtons.Middle) {
+                                nodes.AddRange(keys.Select(key => new VirtualButton.MouseMiddleButton()));
+                            }
+                        }
+                    }
+                }
             } else {
                 object value = structObj ?? ConvertType(values, property.PropertyType);
                 setMethod.Invoke(obj, new[] {value});
@@ -252,6 +307,13 @@ public static class SetCommand {
                 Vector2 remainder = new((float) (x - position.X), (float) (y - position.Y));
                 actor.Position = position;
                 actor.movementCounter = remainder;
+            } else if (obj is Platform platform && lastMemberName == "Position" && values.Length == 2) {
+                double.TryParse(values[0], out double x);
+                double.TryParse(values[1], out double y);
+                Vector2 position = new((int) Math.Round(x), (int) Math.Round(y));
+                Vector2 remainder = new((float) (x - position.X), (float) (y - position.Y));
+                platform.Position = position;
+                platform.movementCounter = remainder;
             } else {
                 object value = structObj ?? ConvertType(values, field.FieldType);
                 if (lastMemberName.Equals("Speed", StringComparison.OrdinalIgnoreCase) && value is Vector2 speed &&

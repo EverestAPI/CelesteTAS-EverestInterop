@@ -10,6 +10,7 @@ using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.Utils;
+using Platform = Celeste.Platform;
 
 namespace TAS.Utils;
 
@@ -206,10 +207,6 @@ internal static class ReflectionExtensions {
             IEnumerable<FieldInfo> fieldInfos = type.GetFields(bindingFlags);
 
             foreach (FieldInfo fieldInfo in fieldInfos) {
-                if (hashSet.Contains(fieldInfo)) {
-                    continue;
-                }
-
                 hashSet.Add(fieldInfo);
             }
 
@@ -235,10 +232,6 @@ internal static class ReflectionExtensions {
         while (type != null && type.IsSubclassOf(typeof(object))) {
             IEnumerable<PropertyInfo> properties = type.GetProperties(bindingFlags);
             foreach (PropertyInfo fieldInfo in properties) {
-                if (hashSet.Contains(fieldInfo)) {
-                    continue;
-                }
-
                 hashSet.Add(fieldInfo);
             }
 
@@ -470,6 +463,8 @@ internal static class EntityExtensions {
     public static string ToSimplePositionString(this Entity entity, int decimals) {
         if (entity is Actor actor) {
             return ToSimplePositionString(actor, decimals);
+        } else if (entity is Platform platform) {
+            return ToSimplePositionString(platform, decimals);
         } else {
             return entity.Position.ToSimpleString(decimals);
         }
@@ -478,21 +473,39 @@ internal static class EntityExtensions {
     private static string ToSimplePositionString(Actor actor, int decimals) {
         return actor.GetMoreExactPosition(true).ToSimpleString(decimals);
     }
+
+    private static string ToSimplePositionString(Platform platform, int decimals) {
+        return platform.GetMoreExactPosition(true).ToSimpleString(decimals);
+    }
 }
 
 internal static class Vector2DoubleExtension {
     public static Vector2Double GetMoreExactPosition(this Actor actor, bool subpixelRounding) {
-        return new(actor.Position, actor.PositionRemainder, subpixelRounding);
+        return new(actor.Position, actor.movementCounter, subpixelRounding);
+    }
+
+    public static Vector2Double GetMoreExactPosition(this Platform platform, bool subpixelRounding) {
+        return new(platform.Position, platform.movementCounter, subpixelRounding);
     }
 }
 
 internal static class NumberExtensions {
+    private static readonly string format = "0.".PadRight(339, '#');
+
     public static string ToFormattedString(this float value, int decimals) {
-        return ((double) value).ToFormattedString(decimals);
+        if (decimals == 0) {
+            return value.ToString(format);
+        } else {
+            return ((double) value).ToFormattedString(decimals);
+        }
     }
 
     public static string ToFormattedString(this double value, int decimals) {
-        return value.ToString($"F{decimals}");
+        if (decimals == 0) {
+            return value.ToString(format);
+        } else {
+            return value.ToString($"F{decimals}");
+        }
     }
 }
 

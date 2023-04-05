@@ -50,7 +50,11 @@ public class InputController {
             }
 
             Manager.AddMainThreadAction(() => {
-                studioTasFilePath = value;
+                if (string.IsNullOrEmpty(value)) {
+                    studioTasFilePath = value;
+                } else {
+                    studioTasFilePath = Path.GetFullPath(value);
+                }
 
                 string path = string.IsNullOrEmpty(value) ? DefaultTasFilePath : value;
                 try {
@@ -256,7 +260,7 @@ public class InputController {
 
         ExportGameInfo.ExportInfo();
         StunPauseCommand.UpdateSimulateSkipInput();
-        Manager.SetInputs(Current);
+        InputHelper.FeedInputs(Current);
 
         if (CurrentFrameInInput == 0 || Current.Line == Previous.Line && Current.RepeatIndex == Previous.RepeatIndex &&
             Current.FrameOffset == Previous.FrameOffset) {

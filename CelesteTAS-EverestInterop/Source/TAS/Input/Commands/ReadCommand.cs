@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -25,6 +26,10 @@ public static class ReadCommand {
 
         string filePath = args[0];
         string fileDirectory = Path.GetDirectoryName(currentFilePath);
+        if (fileDirectory.IsEmpty()) {
+            fileDirectory = Directory.GetCurrentDirectory();
+        }
+
         FindTheFile();
 
         if (!File.Exists(filePath)) {
@@ -46,9 +51,16 @@ public static class ReadCommand {
         int startLine = 0;
         int endLine = int.MaxValue;
         if (args.Length > 1) {
-            GetLine(args[1], filePath, out startLine);
+            if (!TryGetLine(args[1], filePath, out startLine)) {
+                AbortTas($"\"Read, {string.Join(", ", args)}\" failed\n{args[1]} is invalid", true);
+                return;
+            }
+
             if (args.Length > 2) {
-                GetLine(args[2], filePath, out endLine);
+                if (!TryGetLine(args[2], filePath, out endLine)) {
+                    AbortTas($"\"Read, {string.Join(", ", args)}\" failed\n{args[2]} is invalid", true);
+                    return;
+                }
             }
         }
 
@@ -73,7 +85,8 @@ public static class ReadCommand {
                 if (File.Exists(absoluteOrRelativePath)) {
                     filePath = absoluteOrRelativePath;
                 } else {
-                    string[] files = Directory.GetFiles(fileDirectory, $"{filePath}*.tas");
+                    List<string> files = Directory.GetFiles(fileDirectory, $"{filePath}*.tas").ToList();
+                    files.Sort((s1, s2) => string.Compare(s1, s2, StringComparison.InvariantCulture));
                     if (files.FirstOrDefault() is { } shortenedFilePath) {
                         filePath = shortenedFilePath;
                     }
@@ -82,7 +95,7 @@ public static class ReadCommand {
         }
     }
 
-    public static void GetLine(string labelOrLineNumber, string path, out int lineNumber) {
+    public static bool TryGetLine(string labelOrLineNumber, string path, out int lineNumber) {
         if (!int.TryParse(labelOrLineNumber, out lineNumber)) {
             int curLine = 0;
             foreach (string readLine in File.ReadLines(path)) {
@@ -90,11 +103,13 @@ public static class ReadCommand {
                 string line = readLine.Trim();
                 if (line == $"#{labelOrLineNumber}") {
                     lineNumber = curLine;
-                    return;
+                    return true;
                 }
             }
 
-            lineNumber = int.MaxValue;
+            return false;
         }
+
+        return true;
     }
 }

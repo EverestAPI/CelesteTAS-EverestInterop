@@ -121,8 +121,8 @@ public static class SimplifiedGraphicsFeature {
         });
     }
 
-    [LoadContent]
-    private static void OnLoadContent() {
+    [Initialize]
+    private static void Initialize() {
         // Optional: Various graphical simplifications to cut down on visual noise.
         On.Celeste.Level.Update += Level_Update;
 
@@ -157,6 +157,7 @@ public static class SimplifiedGraphicsFeature {
 
         On.Celeste.FloatingDebris.ctor_Vector2 += FloatingDebris_ctor;
         On.Celeste.MoonCreature.ctor_Vector2 += MoonCreature_ctor;
+        On.Celeste.MirrorSurfaces.Render += MirrorSurfacesOnRender;
 
         IL.Celeste.LightingRenderer.Render += LightingRenderer_Render;
         On.Celeste.ColorGrade.Set_MTexture_MTexture_float += ColorGradeOnSet_MTexture_MTexture_float;
@@ -192,9 +193,7 @@ public static class SimplifiedGraphicsFeature {
         );
         On.Celeste.LightningRenderer.Bolt.Render += BoltOnRender;
 
-        HookHelper.SkipMethod(t, nameof(IsSimplifiedScreenWipe), "Render",
-            typeof(SpotlightWipe), typeof(FadeWipe)
-        );
+        IL.Celeste.Level.Render += LevelOnRender;
 
         On.Celeste.Audio.Play_string += AudioOnPlay_string;
         HookHelper.SkipMethod(t, nameof(IsSimplifiedLightningStrike), "Render",
@@ -226,8 +225,10 @@ public static class SimplifiedGraphicsFeature {
         IL.Celeste.CrystalStaticSpinner.GetHue -= CrystalStaticSpinnerOnGetHue;
         On.Celeste.FloatingDebris.ctor_Vector2 -= FloatingDebris_ctor;
         On.Celeste.MoonCreature.ctor_Vector2 -= MoonCreature_ctor;
+        On.Celeste.MirrorSurfaces.Render -= MirrorSurfacesOnRender;
         IL.Celeste.LightingRenderer.Render -= LightingRenderer_Render;
         On.Celeste.LightningRenderer.Bolt.Render -= BoltOnRender;
+        IL.Celeste.Level.Render -= LevelOnRender;
         On.Celeste.ColorGrade.Set_MTexture_MTexture_float -= ColorGradeOnSet_MTexture_MTexture_float;
         IL.Celeste.BloomRenderer.Apply -= BloomRendererOnApply;
         On.Celeste.Decal.Render -= Decal_Render;
@@ -250,7 +251,8 @@ public static class SimplifiedGraphicsFeature {
 
     private static bool SimplifiedWavedBlock() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedWavedEdge;
 
-    private static bool IsSimplifiedScreenWipe() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedScreenWipe;
+    private static ScreenWipe SimplifiedScreenWipe(ScreenWipe wipe) =>
+        TasSettings.SimplifiedGraphics && TasSettings.SimplifiedScreenWipe ? null : wipe;
 
     private static bool IsSimplifiedLightningStrike() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedLightningStrike;
 
@@ -536,6 +538,12 @@ public static class SimplifiedGraphicsFeature {
         }
     }
 
+    private static void MirrorSurfacesOnRender(On.Celeste.MirrorSurfaces.orig_Render orig, MirrorSurfaces self) {
+        if (!TasSettings.SimplifiedGraphics) {
+            orig(self);
+        }
+    }
+
     private static void LightningRenderer_RenderIL(ILContext il) {
         ILCursor c = new(il);
         if (c.TryGotoNext(i => i.MatchLdfld<Entity>("Visible"))) {
@@ -575,6 +583,14 @@ public static class SimplifiedGraphicsFeature {
         orig(self);
     }
 
+    private static void LevelOnRender(ILContext il) {
+        ILCursor ilCursor = new(il);
+        if (ilCursor.TryGotoNext(i => i.MatchLdarg(0), i => i.MatchLdfld<Level>("Wipe"), i => i.OpCode == OpCodes.Brfalse_S)) {
+            ilCursor.Index += 2;
+            ilCursor.EmitDelegate(SimplifiedScreenWipe);
+        }
+    }
+
     private static EventInstance AudioOnPlay_string(On.Celeste.Audio.orig_Play_string orig, string path) {
         EventInstance result = orig(path);
         if (TasSettings.SimplifiedGraphics && TasSettings.SimplifiedLightningStrike &&
@@ -598,12 +614,10 @@ public static class SimplifiedGraphicsFeature {
 
     private static void ModCustomSpinnerColor(ILContext il) {
         ILCursor ilCursor = new(il);
-        if (ilCursor.TryGotoNext(
+        if (ilCursor.TryGotoNext(MoveType.After,
                 i => i.OpCode == OpCodes.Ldarg_0,
-                i => i.OpCode == OpCodes.Ldarg_S && i.Operand.ToString() == "tint",
-                i => i.OpCode == OpCodes.Call && i.Operand.ToString().StartsWith("Microsoft.Xna.Framework.Color")
+                i => i.OpCode == OpCodes.Ldarg_S && i.Operand.ToString() == "tint"
             )) {
-            ilCursor.Index += 2;
             ilCursor.EmitDelegate<Func<string, string>>(GetSimplifiedSpinnerColor);
         }
     }

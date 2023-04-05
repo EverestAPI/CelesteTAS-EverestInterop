@@ -39,7 +39,9 @@ e.g. 123,R,J (For 123 frames, hold Right and Jump)
 <br>Format: F, angle, optional upper limit of single axis (default value is 1, range is 0.26 to 1, works in all [analog modes](Docs/Commands.md#analoguemode))
 - O = Confirm Bind 2
 - N = Journal / Talk Bind 2
-- A = Dash Only Directional Modifier (generally used to manipulate camera with binocular control storage. eg: 15 R,X,ALU)
+- A = Dash Only Directional Modifier (generally used to manipulate camera with binocular control storage. eg: 15,R,X,ALU)
+- M = Move Only Directional Modifier (eg: 15,X,AL,MR)
+- P = Custom Button Press Modifier (used to press inputs added by mods after binding them using the [Set command](Docs/Commands.md#set), e.g. 15,R,X,PA after binding A to a custom input)
 
 ## Controls
 While in game or in Studio:
@@ -127,3 +129,4 @@ The contents of the curly brackets will be converted to actual data, here are so
 - [Featherline](https://github.com/tntfalle/featherline): Algorithm for analog feather movement in Celeste.
 - [Radeline](https://github.com/Kataiser/radeline): Chaos monkey that optimizes a Celeste TAS by randomly (or sequentially) changing inputs.
 - [.kkapture](https://github.com/DemoJameson/kkapture/wiki): Record high quality smooth tas video on low end PC.
+- [GhostMod](https://github.com/DemoJameson/GhostMod): Used to compare old and new tas.

@@ -20,7 +20,7 @@ public static class InfoCustom {
     private static readonly Dictionary<string, Type> AllTypes = new();
     private static readonly Dictionary<string, List<Type>> CachedParsedTypes = new();
 
-    [LoadContent]
+    [Initialize]
     private static void CollectAllTypeInfo() {
         AllTypes.Clear();
         CachedParsedTypes.Clear();
@@ -281,7 +281,7 @@ public static class InfoCustom {
         return obj.ToString();
     }
 
-    public static object GetMemberValue(Type type, object obj, List<string> memberNames) {
+    public static object GetMemberValue(Type type, object obj, List<string> memberNames, bool setCommand = false) {
         foreach (string memberName in memberNames) {
             if (type.GetGetMethod(memberName) is { } methodInfo) {
                 if (methodInfo.IsStatic) {
@@ -289,6 +289,8 @@ public static class InfoCustom {
                 } else if (obj != null) {
                     if (obj is Actor actor && memberName == "ExactPosition") {
                         obj = actor.GetMoreExactPosition(true);
+                    } else if (obj is Platform platform && memberName == "ExactPosition") {
+                        obj = platform.GetMoreExactPosition(true);
                     } else {
                         obj = methodInfo.Invoke(obj, null);
                     }
@@ -297,11 +299,11 @@ public static class InfoCustom {
                 if (fieldInfo.IsStatic) {
                     obj = fieldInfo.GetValue(null);
                 } else if (obj != null) {
-                    if (obj is Actor actor && memberName == "Position") {
-                        obj = actor.GetMoreExactPosition(true);
-                    } else {
-                        obj = fieldInfo.GetValue(obj);
-                    }
+                    obj = setCommand switch {
+                        true when obj is Actor actor && memberName == "Position" => actor.GetMoreExactPosition(true),
+                        true when obj is Platform platform && memberName == "Position" => platform.GetMoreExactPosition(true),
+                        _ => fieldInfo.GetValue(obj)
+                    };
                 }
             } else {
                 if (obj == null) {

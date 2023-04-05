@@ -1,12 +1,32 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
+using Mono.Cecil.Cil;
 using Monocle;
+using TAS.EverestInterop;
+using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;
 
 public static class MouseCommand {
     public static MouseState CurrentState;
+
+    [Load]
+    private static void Load() {
+        // make Mouse.GetState() return fake data if tas is running
+        typeof(Mouse).GetMethod(nameof(Mouse.GetState)).IlHook((cursor, _) => {
+            Instruction start = cursor.Next;
+            cursor.EmitDelegate(IsRunningTas);
+            cursor.Emit(OpCodes.Brfalse, start)
+                .Emit(OpCodes.Call, typeof(MInput).GetMethod("get_Mouse"))
+                .Emit(OpCodes.Ldfld, typeof(MInput.MouseData).GetField(nameof(MInput.MouseData.CurrentState)))
+                .Emit(OpCodes.Ret);
+        });
+    }
+
+    private static bool IsRunningTas() {
+        return Manager.Running && !MouseButtons.Updating;
+    }
 
     // "Mouse, X, Y, [ScrollWheel]"
     // "Mouse, [L], [R], [M], [X1], [X2]"
@@ -126,4 +146,12 @@ public static class MouseCommand {
             xButton2 ?? mouseState.XButton2
         );
     }
+}
+
+internal enum MButtons {
+    Left,
+    Right,
+    Middle,
+    X1,
+    X2
 }

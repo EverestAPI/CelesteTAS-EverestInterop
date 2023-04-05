@@ -121,10 +121,13 @@ internal static class CelesteTasMenu {
             subMenu.Add(new TextMenuExt.IntSlider("Velocity Decimals".ToDialogText(), CelesteTasSettings.MinDecimals,
                 CelesteTasSettings.MaxDecimals, TasSettings.VelocityDecimals).Change(value =>
                 TasSettings.VelocityDecimals = value));
+            subMenu.Add(new TextMenuExt.IntSlider("Angle Decimals".ToDialogText(), CelesteTasSettings.MinDecimals,
+                CelesteTasSettings.MaxDecimals, TasSettings.AngleDecimals).Change(value =>
+                TasSettings.AngleDecimals = value));
             subMenu.Add(new TextMenuExt.IntSlider("Custom Info Decimals".ToDialogText(), CelesteTasSettings.MinDecimals,
                 CelesteTasSettings.MaxDecimals, TasSettings.CustomInfoDecimals).Change(value =>
                 TasSettings.CustomInfoDecimals = value));
-            subMenu.Add(new TextMenuExt.IntSlider("Subpixel Indicator Decimals".ToDialogText(), CelesteTasSettings.MinDecimals,
+            subMenu.Add(new TextMenuExt.IntSlider("Subpixel Indicator Decimals".ToDialogText(), 1,
                 CelesteTasSettings.MaxDecimals, TasSettings.SubpixelIndicatorDecimals).Change(value =>
                 TasSettings.SubpixelIndicatorDecimals = value));
             subMenu.Add(new TextMenuExt.EnumerableSlider<SpeedUnit>("Speed Unit".ToDialogText(), new[] {

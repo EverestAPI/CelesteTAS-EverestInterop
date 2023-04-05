@@ -11,7 +11,6 @@ using MonoMod.Cil;
 using MonoMod.Utils;
 using StudioCommunication;
 using TAS.EverestInterop.InfoHUD;
-using TAS.Input;
 using TAS.Module;
 using TAS.Utils;
 
@@ -210,13 +209,12 @@ public static class GameInfo {
 
                 string velocity = GetAdjustedVelocity(diff, out string exactVelocity);
 
-                string polarVel = $"Fly:   {diff.Length():F2}, {diff.Angle():F5}°";
+                string polarVel = GetAdjustedPolarVel(diff, out string exactPolarVel);
 
                 string analog = string.Empty;
+                string exactAnalog = string.Empty;
                 if (Manager.Running && Manager.Controller.Previous is { } inputFrame && inputFrame.HasActions(Actions.Feather)) {
-                    Vector2 angleVector2 = inputFrame.AngleVector2;
-                    analog =
-                        $"Analog: {angleVector2.X:F5}, {angleVector2.Y:F5}, {GetAngle(new Vector2(angleVector2.X, -angleVector2.Y)):F5}°";
+                    analog = GetAdjustedAnalog(inputFrame.AngleVector2, out exactAnalog);
                 }
 
                 string retainedSpeed = GetAdjustedRetainedSpeed(player, out string exactRetainedSpeed);
@@ -303,8 +301,8 @@ public static class GameInfo {
                     exactVelocity,
                     player,
                     playerSeeker,
-                    polarVel,
-                    analog,
+                    exactPolarVel,
+                    exactAnalog,
                     exactRetainedSpeed,
                     exactLiftBoost,
                     miscStats,
@@ -377,20 +375,16 @@ public static class GameInfo {
                 statuses.Add("CanDash");
             }
 
-            if (player.onGround) {
-                statuses.Add("Ground");
-            } else {
-                if (player.jumpGraceTimer.ToFloorFrames() is var coyote and > 0) {
-                    statuses.Add($"Coyote({coyote})");
-                }
+            if (player.jumpGraceTimer.ToFloorFrames() is var coyote and > 0) {
+                statuses.Add($"Coyote({coyote})");
+            }
 
-                if (player.varJumpTimer.ToFloorFrames() is var jumpTimer and > 0) {
-                    statuses.Add($"Jump({jumpTimer})");
-                }
+            if (player.varJumpTimer.ToFloorFrames() is var jumpTimer and > 0) {
+                statuses.Add($"Jump({jumpTimer})");
+            }
 
-                if (player.StateMachine.State == Player.StNormal && (player.Speed.Y > 0f || player.Holding is {SlowFall: true})) {
-                    statuses.Add($"MaxFall({ConvertSpeedUnit(player.maxFall, TasSettings.SpeedUnit):0.##})");
-                }
+            if (player.StateMachine.State == Player.StNormal && (player.Speed.Y > 0f || player.Holding is {SlowFall: true})) {
+                statuses.Add($"MaxFall({ConvertSpeedUnit(player.maxFall, TasSettings.SpeedUnit):0.##})");
             }
 
             if (player.forceMoveXTimer.ToCeilingFrames() is var forceMoveXTimer and > 0) {
@@ -512,6 +506,21 @@ public static class GameInfo {
         return $"Vel:   {diff.ToSimpleString(TasSettings.VelocityDecimals)}";
     }
 
+    private static string GetAdjustedPolarVel(Vector2Double diff, out string exactPolarVel) {
+        exactPolarVel =
+            $"Fly:   {diff.Length().ToFormattedString(CelesteTasSettings.MaxDecimals)}, {diff.Angle().ToFormattedString(CelesteTasSettings.MaxDecimals)}°";
+        return
+            $"Fly:   {diff.Length().ToFormattedString(TasSettings.VelocityDecimals)}, {diff.Angle().ToFormattedString(TasSettings.AngleDecimals)}°";
+    }
+
+    private static string GetAdjustedAnalog(Vector2 angleVector2, out string exactAnalog) {
+        exactAnalog =
+            $"Analog: {angleVector2.ToSimpleString(CelesteTasSettings.MaxDecimals)}, {GetAngle(new Vector2(angleVector2.X, -angleVector2.Y)).ToFormattedString(CelesteTasSettings.MaxDecimals)}°";
+        return
+            $"Analog: {angleVector2.ToSimpleString(TasSettings.AngleDecimals)}, {GetAngle(new Vector2(angleVector2.X, -angleVector2.Y)).ToFormattedString(TasSettings.AngleDecimals)}°";
+        ;
+    }
+
     private static string GetAdjustedRetainedSpeed(Player player, out string exactRetainedSpeed) {
         if (player.wallSpeedRetentionTimer > 0f) {
             int timer = player.wallSpeedRetentionTimer.ToCeilingFrames();
@@ -523,7 +532,7 @@ public static class GameInfo {
         }
     }
 
-    private static string GetAdjustedLiftBoost(Player player, out string exactLiftBoost) {
+    public static string GetAdjustedLiftBoost(Player player, out string exactLiftBoost) {
         if (player.LiftBoost is var liftBoost && liftBoost != Vector2.Zero) {
             liftBoost = ConvertSpeedUnit(liftBoost, TasSettings.SpeedUnit);
             int timer = player.liftSpeedTimer.ToCeilingFrames();
@@ -647,13 +656,17 @@ public struct Vector2Double {
 
     private string ToExactPositionString(int decimals) {
         string RoundPosition(double exactPosition, float position, float remainder) {
+            if (decimals == 0) {
+                return exactPosition.ToFormattedString(decimals);
+            }
+
             double round = Math.Round(exactPosition, decimals);
 
             switch (Math.Abs(remainder)) {
                 case 0.5f:
                     // don't show subsequent zeros when subpixel is exactly equal to 0.5
                     return round.ToString("F1");
-                case < 0.5f: {
+                case < 0.5f:
                     // make 0.495 round away from 0.50
                     int diffX = (int) position - (int) Math.Round(round, MidpointRounding.AwayFromZero);
                     if (diffX != 0) {
@@ -661,7 +674,6 @@ public struct Vector2Double {
                     }
 
                     break;
-                }
             }
 
             return round.ToFormattedString(decimals);

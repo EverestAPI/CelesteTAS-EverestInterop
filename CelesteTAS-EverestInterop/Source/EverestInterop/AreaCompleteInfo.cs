@@ -1,9 +1,12 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Celeste;
 using Microsoft.Xna.Framework;
+using Mono.Cecil.Cil;
 using Monocle;
+using MonoMod.Cil;
 using TAS.Input;
 using TAS.Input.Commands;
 using TAS.Module;
@@ -12,45 +15,79 @@ using TAS.Utils;
 namespace TAS.EverestInterop;
 
 public static class AreaCompleteInfo {
-    private const string TasWereRun = "CelesteTAS_TAS_Were_Run";
+    private const string TasWasRun = "CelesteTAS_TAS_Was_Run";
     private const string AlwaysShowInfo = nameof(AlwaysShowInfo);
     private static string text;
     private static readonly Dictionary<string, StringBuilder> completeInfos = new();
     private static readonly Vector2 position = new(10, 10);
 
+    [Initialize]
+    private static void Initialize() {
+        if (ModUtils.GetType("XaphanHelper", "Celeste.Mod.XaphanHelper.UI_Elements.CustomEndScreen") is { } customEndScreen) {
+            customEndScreen.GetMethodInfo("Info")?.OnHook(CustomEndScreenInfo);
+            customEndScreen.GetConstructors()[0].IlHook(CustomEndScreenCtor);
+        }
+    }
+
     [Load]
     private static void Load() {
         On.Celeste.Level.Update += LevelOnUpdate;
         On.Celeste.AreaComplete.InitAreaCompleteInfoForEverest2 += AreaCompleteOnInitAreaCompleteInfoForEverest2;
-        On.Celeste.AreaComplete.VersionNumberAndVariants += AreaCompleteOnVersionNumberAndVariants;
+        On.Celeste.AreaComplete.Info += AreaCompleteOnInfo;
+        On.Celeste.CS08_Ending.Render += CS08_EndingOnRender;
     }
 
     [Unload]
     private static void Unload() {
         On.Celeste.Level.Update -= LevelOnUpdate;
         On.Celeste.AreaComplete.InitAreaCompleteInfoForEverest2 -= AreaCompleteOnInitAreaCompleteInfoForEverest2;
-        On.Celeste.AreaComplete.VersionNumberAndVariants -= AreaCompleteOnVersionNumberAndVariants;
+        On.Celeste.AreaComplete.Info -= AreaCompleteOnInfo;
+        On.Celeste.CS08_Ending.Render -= CS08_EndingOnRender;
     }
 
     private static void LevelOnUpdate(On.Celeste.Level.orig_Update orig, Level self) {
         orig(self);
 
         if (Manager.Running) {
-            self.Session.SetFlag(TasWereRun);
+            self.Session.SetFlag(TasWasRun);
         }
     }
 
     private static void AreaCompleteOnInitAreaCompleteInfoForEverest2(On.Celeste.AreaComplete.orig_InitAreaCompleteInfoForEverest2 orig,
         bool pieScreen, Session session) {
         orig(pieScreen, session);
+        InitText(session);
+    }
 
+    private static void CustomEndScreenCtor(ILCursor ilCursor, ILContext ilContext) {
+        ilCursor.Emit(OpCodes.Ldarg_1).EmitDelegate(InitText);
+    }
+
+    private static void AreaCompleteOnInfo(On.Celeste.AreaComplete.orig_Info orig, float ease, string speedrunTimerChapterString,
+        string speedrunTimerFileString, string ChapterSpeedrunText, string versiontext) {
+        orig(ease, speedrunTimerChapterString, speedrunTimerFileString, ChapterSpeedrunText, versiontext);
+        DrawText(ease);
+    }
+
+    private static void CS08_EndingOnRender(On.Celeste.CS08_Ending.orig_Render orig, CS08_Ending self) {
+        orig(self);
+        DrawText(self.versionAlpha);
+    }
+
+    private static void CustomEndScreenInfo(Action<float, string, string, string, string> orig, float ease, string speedrunTimerChapterString,
+        string speedrunTimerFileString, string chapterSpeedrunText, string versionText) {
+        orig(ease, speedrunTimerChapterString, speedrunTimerFileString, chapterSpeedrunText, versionText);
+        DrawText(ease);
+    }
+
+    private static void InitText(Session session) {
         session ??= Engine.Scene.GetSession();
 
         if (session == null) {
             return;
         }
 
-        if (!session.GetFlag(TasWereRun)) {
+        if (!session.GetFlag(TasWasRun)) {
             text = null;
             return;
         }
@@ -71,10 +108,7 @@ public static class AreaCompleteInfo {
         }
     }
 
-    private static void AreaCompleteOnVersionNumberAndVariants(On.Celeste.AreaComplete.orig_VersionNumberAndVariants orig, string version, float ease,
-        float alpha) {
-        orig(version, ease, alpha);
-
+    private static void DrawText(float ease) {
         if (text.IsNullOrEmpty()) {
             return;
         }
