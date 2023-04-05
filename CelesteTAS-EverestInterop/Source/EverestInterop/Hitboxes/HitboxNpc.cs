@@ -12,19 +12,36 @@ public static class HitboxNpc {
     [Load]
     private static void Load() {
         On.Monocle.Entity.DebugRender += EntityOnDebugRender;
-        IL.Celeste.BirdNPC.DebugRender += BirdNPC_DebugRender;
-    }
-
-    private static void BirdNPC_DebugRender(ILContext il) {
-        var cursor = new ILCursor(il);
-        cursor.GotoNext(moveType: MoveType.After, (instr) => instr.Match(OpCodes.Call));
-        cursor.Emit(OpCodes.Ret);
+        On.Celeste.BirdNPC.DebugRender += BirdNPC_DebugRender;
     }
 
     [Unload]
     private static void Unload() {
         On.Monocle.Entity.DebugRender -= EntityOnDebugRender;
-        IL.Celeste.BirdNPC.DebugRender -= BirdNPC_DebugRender;
+        On.Celeste.BirdNPC.DebugRender -= BirdNPC_DebugRender;
+    }
+
+    private static readonly Vector2 DefaultOffset = new Vector2(4f, 0f);
+
+    private static void BirdNPC_DebugRender(On.Celeste.BirdNPC.orig_DebugRender orig, BirdNPC birdNpc, Camera camera) {
+        if (TasSettings.ShowHitboxes && TasSettings.ShowTriggerHitboxes && Engine.Scene is Level level && birdNpc.mode == BirdNPC.Modes.DashingTutorial) {
+            Player player = level.GetPlayer();
+            Vector2 offset = (player is { }) ? player.Collider.BottomRight : DefaultOffset;
+            Vector2 position = birdNpc.StartPosition;
+
+            void drawTrigger(float xrange, float yrangestart, float yrangeend) {
+                float x1 = position.X - xrange + offset.X;
+                float y1 = position.Y - yrangestart + offset.Y;
+                float y2 = position.Y - yrangeend + offset.Y;
+                Draw.HollowRect(x1 - 1f, y1 - 1f, level.Bounds.Right - x1, y2 - y1 + 1f, Color.Aqua);
+            }
+            drawTrigger(91f, 11f, 19f);
+            drawTrigger(59f, -33f, -1f);
+        }
+        else
+        {
+            orig(birdNpc, camera);
+        }
     }
 
     private static void EntityOnDebugRender(On.Monocle.Entity.orig_DebugRender orig, Entity entity, Camera camera) {
@@ -80,18 +97,6 @@ public static class HitboxNpc {
                         Draw.Line(player.Position, badelineDummy.Position, Color.Aqua);
                     }
                 }
-            } else if (entity is BirdNPC birdNpc && birdNpc.mode == BirdNPC.Modes.DashingTutorial) {
-                Vector2 offset = ((player is { }) ? player.Collider : player.normalHitbox).BottomRight;
-                Vector2 position = birdNpc.StartPosition;
-
-                void drawTrigger(float xrange, float yrangestart, float yrangeend) {
-                    float x1 = position.X - xrange + offset.X;
-                    float y1 = position.Y - yrangestart + offset.Y;
-                    float y2 = position.Y - yrangeend + offset.Y;
-                    Draw.HollowRect(x1 - 1f, y1 - 1f, level.Bounds.Right - x1, y2 - y1 + 1f, Color.Aqua);
-                }
-                drawTrigger(91f, 11f, 19f);
-                drawTrigger(59f, -33f, -1f);
             }
         }
     }
