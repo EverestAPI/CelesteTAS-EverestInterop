@@ -1,6 +1,4 @@
-﻿using Mono.Cecil.Cil;
-using MonoMod.Cil;
-using Celeste;
+﻿using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Module;
@@ -9,38 +7,53 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxNpc {
+    private static readonly Vector2 DefaultOffset = new(4f, 0f);
+
     [Load]
     private static void Load() {
-        On.Monocle.Entity.DebugRender += EntityOnDebugRender;
         On.Celeste.BirdNPC.DebugRender += BirdNPC_DebugRender;
+        On.Celeste.Player.DebugRender += PlayerOnDebugRender;
+        On.Monocle.Entity.DebugRender += EntityOnDebugRender;
     }
 
     [Unload]
     private static void Unload() {
-        On.Monocle.Entity.DebugRender -= EntityOnDebugRender;
         On.Celeste.BirdNPC.DebugRender -= BirdNPC_DebugRender;
+        On.Celeste.Player.DebugRender -= PlayerOnDebugRender;
+        On.Monocle.Entity.DebugRender -= EntityOnDebugRender;
     }
 
-    private static readonly Vector2 DefaultOffset = new Vector2(4f, 0f);
-
     private static void BirdNPC_DebugRender(On.Celeste.BirdNPC.orig_DebugRender orig, BirdNPC birdNpc, Camera camera) {
-        if (TasSettings.ShowHitboxes && TasSettings.ShowTriggerHitboxes && Engine.Scene is Level level && birdNpc.mode == BirdNPC.Modes.DashingTutorial) {
-            Player player = level.GetPlayer();
-            Vector2 offset = (player is { }) ? player.Collider.BottomRight : DefaultOffset;
-            Vector2 position = birdNpc.StartPosition;
+        if (TasSettings.ShowHitboxes) {
+            if (TasSettings.ShowTriggerHitboxes && Engine.Scene is Level level && birdNpc.mode == BirdNPC.Modes.DashingTutorial) {
+                Player player = level.GetPlayer();
+                Vector2 offset = player is { } ? player.Collider.BottomRight : DefaultOffset;
+                Vector2 position = birdNpc.StartPosition;
 
-            void drawTrigger(float xrange, float yrangestart, float yrangeend) {
-                float x1 = position.X - xrange + offset.X;
-                float y1 = position.Y - yrangestart + offset.Y;
-                float y2 = position.Y - yrangeend + offset.Y;
-                Draw.HollowRect(x1 - 1f, y1 - 1f, level.Bounds.Right - x1, y2 - y1 + 1f, Color.Aqua);
+                void DrawTrigger(float xRange, float yRangeStart, float yRangeEnd) {
+                    float x1 = position.X - xRange + offset.X;
+                    float y1 = position.Y - yRangeStart + offset.Y;
+                    float y2 = position.Y - yRangeEnd + offset.Y;
+                    Draw.HollowRect(x1 - 1f, y1 - 1f, level.Bounds.Right - x1, y2 - y1 + 1f, Color.Aqua);
+                }
+
+                DrawTrigger(91f, 11f, 19f);
+
+                if (SaveData.Instance.Assists.Invincible) {
+                    DrawTrigger(59f, -33f, -1f);
+                }
             }
-            drawTrigger(91f, 11f, 19f);
-            drawTrigger(59f, -33f, -1f);
-        }
-        else
-        {
+        } else {
             orig(birdNpc, camera);
+        }
+    }
+
+    private static void PlayerOnDebugRender(On.Celeste.Player.orig_DebugRender orig, Player self, Camera camera) {
+        orig(self, camera);
+
+        if (TasSettings.ShowHitboxes && TasSettings.ShowTriggerHitboxes && Engine.Scene is Level level && level.Session.Area.ID == 0 &&
+            level.Session.Level == "3") {
+            Draw.Point(self.BottomRight - Vector2.One, Color.Aqua);
         }
     }
 
@@ -58,7 +71,6 @@ public static class HitboxNpc {
             int bottom = levelBounds.Bottom;
             Color color = HitboxColor.TriggerColor;
             string levelName = level.Session.Level;
-            Player player = level.GetPlayer();
 
             if (entity is NPC00_Granny) {
                 float x = left + 100;
@@ -93,7 +105,7 @@ public static class HitboxNpc {
                     Draw.Line(x, top, x, bottom, color);
                 } else if (levelName == "c-01" && badelineNpc.shadow is { } badelineDummy) {
                     Draw.Circle(badelineDummy.Position, 70, color, 4);
-                    if (player is { } && Vector2.Distance(player.Position, badelineDummy.Position) <= 150) {
+                    if (level.GetPlayer() is { } player && Vector2.Distance(player.Position, badelineDummy.Position) <= 150) {
                         Draw.Line(player.Position, badelineDummy.Position, Color.Aqua);
                     }
                 }
