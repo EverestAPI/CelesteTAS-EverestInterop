@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
+using TAS.EverestInterop.Hitboxes;
 using TAS.Module;
 using TAS.Utils;
 
@@ -76,7 +77,7 @@ public static class InfoCustom {
             }
 
             string helperMethod = "";
-            if (lastMemberName is "toFrame()" or "toPixelPerFrame()") {
+            if (lastMemberName is "toFrame()" or "toPixelPerFrame()" or "nextCheck()") {
                 helperMethod = lastMemberName;
                 memberNames = memberNames.SkipLast().ToList();
             }
@@ -260,6 +261,8 @@ public static class InfoCustom {
                 return GameInfo.ConvertToFrames(floatValue).ToString();
             } else if (helperMethod == "toPixelPerFrame()") {
                 return GameInfo.ConvertSpeedUnit(floatValue, SpeedUnit.PixelPerFrame).ToString(CultureInfo.InvariantCulture);
+            } else if (helperMethod == "nextCheck()") {
+                return CycleHitboxColor.NextCheckDistance(floatValue).ToString();
             } else {
                 return floatValue.ToFormattedString(decimals);
             }

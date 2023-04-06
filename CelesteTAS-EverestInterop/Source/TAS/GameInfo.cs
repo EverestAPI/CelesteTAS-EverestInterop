@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,6 +10,7 @@ using Monocle;
 using MonoMod.Cil;
 using MonoMod.Utils;
 using StudioCommunication;
+using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Module;
 using TAS.Utils;
@@ -452,6 +453,10 @@ public static class GameInfo {
 
         if (!string.IsNullOrEmpty(timers)) {
             builder.AppendLine(timers);
+        }
+
+        if (TasSettings.ShowHitboxes && TasSettings.ShowCycleHitboxColors) {
+            builder.AppendLine($"TimeActive: {player.Scene.TimeActive} ({CycleHitboxColor.GroupCounter})");
         }
 
         return builder.ToString();

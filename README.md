@@ -1,4 +1,4 @@
-# CelesteTAS
+﻿# CelesteTAS
 
 ## TAS tools mod in Everest
 
@@ -118,6 +118,7 @@ The contents of the curly brackets will be converted to actual data, here are so
 - `TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}`
 - `KeyCycle: {Key.sprite.CurrentAnimationFrame}`
 - `CustomSpinner: {CustomSpinner.Position}` or `CustomSpinner: {FrostHelper.CustomSpinner@FrostTempleHelper.Position}`
+- `{CrystalStaticSpinner.offset.nextCheck()}` add `nextCheck()` after offset to calculate number of frames until next check
 
 ## Running Studio via Wine
 1. Install Wine: https://wiki.winehq.org/Download
