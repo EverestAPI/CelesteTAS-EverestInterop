@@ -64,6 +64,7 @@ TAS_INFO_WATCH_ENTITY=                     Watch Entity
 TAS_INFO_WATCH_ENTITY_TYPE=                Watch Entity Info
 TAS_INFO_WATCH_ENTITY_POSITION=            Position
 TAS_INFO_WATCH_ENTITY_DECLARED_ONLY=       Declared Only
+TAS_INFO_WATCH_ENTITY_AUTO=                Automatic
 TAS_INFO_WATCH_ENTITY_ALL=                 All
 TAS_INFO_TEXT_SIZE=                        Text Size
 TAS_INFO_SUBPIXEL_INDICATOR_SIZE=          Subpixel Indicator Size

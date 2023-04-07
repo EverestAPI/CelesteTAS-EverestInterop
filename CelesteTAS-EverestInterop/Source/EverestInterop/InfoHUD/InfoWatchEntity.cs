@@ -1,7 +1,8 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Security.Permissions;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
@@ -14,6 +15,7 @@ namespace TAS.EverestInterop.InfoHUD;
 public enum WatchEntityType {
     Position,
     DeclaredOnly,
+    Auto,
     All
 }
 
@@ -229,6 +231,33 @@ public static class InfoWatchEntity {
         if (watchEntityType == WatchEntityType.Position) {
             return GetPositionInfo(entity, entityId, decimals);
         }
+        else if (watchEntityType == WatchEntityType.Auto) {
+            string data = GetPositionInfo(entity, entityId, decimals);
+            if (entity is Platform platform) {
+                data += $"{separator}Liftspeed: {platform.LiftSpeed.ToSimpleString(decimals)}";
+                data += $" ({platform.LiftSpeed.ClampLiftSpeed().ToSimpleString(decimals)})";
+            }
+
+            // TODO: Platform-specific information
+
+            if (entity is Seeker seeker) {
+                data += $"{separator}{seeker.GetStateName()}";
+                // TODO: State-specific information
+            }
+            else if (entity is AngryOshiro oshiro) {
+                data += $"{separator}{oshiro.GetStateName()}";
+                // TODO: State-specific information
+            }
+            else if (entity is Actor actor) {
+                data += $"{separator}Liftboost: ${actor.LiftSpeed.ToSimpleString(decimals)}";
+            }
+
+            if (entity.GetOffset() is float offset) {
+                data += $"{separator}Next check: {offset.NextCheckDistance()}";
+            }
+
+            return data;
+        }
 
         List<string> values = GetAllSimpleFields(type, watchEntityType == WatchEntityType.DeclaredOnly).Select(info => {
             object value;
@@ -346,6 +375,10 @@ public static class InfoWatchEntity {
 
         return result;
     }
+
+    public static Vector2 ClampLiftSpeed(this Vector2 liftspeed) {
+        return liftspeed.Clamp(-250f, -130f, 250f, 0f);
+    }
 }
 
 internal record UniqueEntityId {
@@ -357,5 +390,36 @@ internal record UniqueEntityId {
         Type = entity.GetType();
         GlobalOrPersistent = entity.TagCheck(Tags.Global) || entity.TagCheck(Tags.Persistent) || entity.Get<Holdable>() != null;
         EntityId = entityData.ToEntityId();
+    }
+}
+
+public static class EntityStates {
+    private static readonly IDictionary<int, string> SeekerStates = new Dictionary<int, string> {
+        {Seeker.StIdle, nameof(Seeker.StIdle)},
+        {Seeker.StPatrol, nameof(Seeker.StPatrol)},
+        {Seeker.StSpotted, nameof(Seeker.StSpotted)},
+        {Seeker.StAttack, nameof(Seeker.StAttack)},
+        {Seeker.StStunned, nameof(Seeker.StStunned)},
+        {Seeker.StSkidding, nameof(Seeker.StSkidding)},
+        {Seeker.StRegenerate, nameof(Seeker.StRegenerate)},
+        {Seeker.StReturned, nameof(Seeker.StReturned)},
+    };
+    private static readonly IDictionary<int, string> OshiroStates = new Dictionary<int, string> {
+        {AngryOshiro.StChase, nameof(AngryOshiro.StChase)},
+        {AngryOshiro.StChargeUp, nameof(AngryOshiro.StChargeUp)},
+        {AngryOshiro.StAttack, nameof(AngryOshiro.StAttack)},
+        {AngryOshiro.StDummy, nameof(AngryOshiro.StDummy)},
+        {AngryOshiro.StWaiting, nameof(AngryOshiro.StWaiting)},
+        {AngryOshiro.StHurt, nameof(AngryOshiro.StHurt)},
+    };
+
+    public static string GetStateName(this AngryOshiro oshiro) {
+        int state = oshiro.state.State;
+        return SeekerStates.TryGetValue(state, out string name) ? name : state.ToString();
+    }
+
+    public static string GetStateName(this Seeker seeker) {
+        int state = seeker.State.State;
+        return SeekerStates.TryGetValue(state, out string name) ? name : state.ToString();
     }
 }
