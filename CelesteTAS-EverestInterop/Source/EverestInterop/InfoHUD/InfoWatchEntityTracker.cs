@@ -16,8 +16,6 @@ public static partial class InfoWatchEntity {
     internal static List<UniqueEntityId> WatchCheckList = new();
     internal static List<UniqueEntityId> WatchMissingList = new();
     internal static EntityWatchingList WatchingList = new();
-    internal static List<UniqueEntityId> SaveWatchMissingList = new();
-    internal static EntityWatchingList SaveWatchingList = new();
 
     [Load]
     private static void LoadTracker() {
@@ -39,19 +37,7 @@ public static partial class InfoWatchEntity {
         // Update last watch chapter
         requireWatchAreaKey = clickedEntity.SceneAs<Level>().Session.Area;
 
-        // We can't get the entity data to identify the entity
-        // We do our best and watch the entity until the room is left or the entity is unwatched
-        if (clickedEntity.GetEntityData() is not { } data) {
-            if (WatchingList.Has(clickedEntity, out var noDataTuple)) {
-                WatchingList.Remove(noDataTuple);
-            } else {
-                WatchingList.Add(null, clickedEntity);
-            }
-            GameInfo.Update();
-            return;
-        }
-
-        UniqueEntityId id = new UniqueEntityId(clickedEntity, data);
+        UniqueEntityId id = new(clickedEntity);
 
         if (WatchCheckList.Contains(id) && WatchingList.Has(clickedEntity, out var tuple)) {
             // We are watching the entity already, stop watching and remove it from the lists
@@ -85,10 +71,7 @@ public static partial class InfoWatchEntity {
     }
 
     private static void TryAddEntity(Entity entity) {
-        // We don't have the entity id, we can't track it across rooms
-        if (entity.GetEntityData() is not { } data) return;
-
-        UniqueEntityId id = new(entity, data);
+        UniqueEntityId id = new(entity);
 
         // The entity is missing, add it to the list
         if (WatchMissingList.Contains(id)) {
@@ -111,8 +94,6 @@ public static partial class InfoWatchEntity {
 
     public static void ClearWatchEntities(bool update = true, bool clearCheckList = false) {
         LastClickedEntity.SetTarget(null);
-        SaveWatchingList.Clear();
-        SaveWatchMissingList.Clear();
         WatchingList.Clear();
         if (clearCheckList) {
             WatchCheckList.Clear();
@@ -226,14 +207,25 @@ public static partial class InfoWatchEntity {
     }
 
     internal record UniqueEntityId {
-        public readonly EntityID EntityId;
+        public readonly EntityID? EntityId;
         public readonly Type Type;
         public readonly bool GlobalOrPersistent;
 
-        public UniqueEntityId(Entity entity, EntityData entityData) {
+        public UniqueEntityId(Entity entity) {
             Type = entity.GetType();
-            EntityId = entityData.ToEntityId();
             GlobalOrPersistent = entity.TagCheck(Tags.Global) || entity.TagCheck(Tags.Persistent) || entity.Get<Holdable>() != null;
+
+            if (entity.GetEntityData() is { } data) {
+                EntityId = data.ToEntityId();
+            } else {
+                // We don't have the entity data to determine exact original room and its identifier
+                // Track the entity in current room and don't differentiate using ID
+                if (entity.Scene is Level level) {
+                    EntityId = new EntityID(entity.SceneAs<Level>().Session.Level, 0);
+                } else {
+                    EntityId = null;
+                }
+            }
         }
     }
 }
