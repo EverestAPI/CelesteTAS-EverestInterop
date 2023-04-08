@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Celeste;
@@ -75,7 +75,7 @@ public static class HitboxSimplified {
     }
 
     private static bool HideHitbox(Entity entity) {
-        if (TasSettings.ShowHitboxes && TasSettings.SimplifiedHitboxes && !InfoWatchEntity.WatchingEntities.Contains(entity)) {
+        if (TasSettings.ShowHitboxes && TasSettings.SimplifiedHitboxes && !InfoWatchEntity.WatchingList.Has(entity, out _)) {
             Type type = entity.GetType();
             if (UselessTypes.Contains(type)) {
                 return true;
