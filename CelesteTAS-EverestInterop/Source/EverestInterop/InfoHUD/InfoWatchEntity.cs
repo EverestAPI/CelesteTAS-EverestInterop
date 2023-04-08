@@ -6,9 +6,12 @@ using System.Security.Permissions;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
+using MonoMod.Utils;
 using TAS.EverestInterop.Hitboxes;
 using TAS.Module;
 using TAS.Utils;
+
+using Platform = Celeste.Platform;
 
 namespace TAS.EverestInterop.InfoHUD;
 
@@ -145,6 +148,9 @@ public static partial class InfoWatchEntity {
             return GetPositionInfo(entity, entityId, decimals);
         }
         else if (watchEntityType == WatchEntityType.Auto) {
+            Level level = entity.SceneAs<Level>();
+            Player player = level.GetPlayer();
+
             string data = GetPositionInfo(entity, entityId, decimals);
             if (entity is Platform platform) {
                 data += $"{separator}Liftspeed: {platform.LiftSpeed.ToSimpleString(decimals)}";
@@ -153,11 +159,108 @@ public static partial class InfoWatchEntity {
 
             // TODO: Platform-specific information
 
-            if (entity is Seeker seeker) {
-                data += $"{separator}{seeker.GetStateName()}";
-                // TODO: State-specific information
+            if (entity is Cloud cloud) {
+                if (cloud.respawnTimer > 0f) {
+                    data += $"{separator}Respawn  : {GameInfo.ConvertToFrames(cloud.respawnTimer)}";
+                } else {
+                    data += $"{separator}Speed    : {GameInfo.ConvertSpeedUnit(cloud.speed, TasSettings.SpeedUnit).ToFormattedString(decimals)}";
+                }
             }
-            else if (entity is AngryOshiro oshiro) {
+
+            if (entity is Seeker seeker) {
+                int seekerStateStringStart = data.Length;
+                string seekerStateString = $"{separator}{seeker.GetStateName()}";
+
+                List<string> tags = new List<string>();
+
+                Vector2 seekerPlayerAim = (seeker.FollowTarget - seeker.Center).SafeNormalize();
+                Vector2 seekerSpeedAim = (seeker.FollowTarget - seeker.Center).SafeNormalize();
+
+                int seekerState = seeker.State.state;
+
+                int seekerCoroutineTimer = 0;
+                if (seekerState != Seeker.StPatrol) {
+                    seekerCoroutineTimer = GameInfo.ConvertToFrames(seeker.State.currentCoroutine.waitTimer);
+                }
+
+                switch (seekerState) {
+                    case Seeker.StIdle:
+                        if (seeker.spotted) {
+                            tags.Add("aware");
+                        }
+                        if (seekerCoroutineTimer > 0) {
+                            data += $"{separator}Patrol delay: {seekerCoroutineTimer}";
+                        }
+                        break;
+                    case Seeker.StPatrol:
+                        data += $"{separator}Next point   ";
+                        if (seeker.patrolWaitTimer < 0.4f) {
+                            data += $": {GameInfo.ConvertToFrames(seeker.patrolWaitTimer)}";
+                        } else {
+                            tags.Add("close");
+                        }
+                        break;
+                    case Seeker.StSpotted:
+                        data += $"{separator}Losing player: {GameInfo.ConvertToFrames(seeker.spottedLosePlayerTimer)}";
+                        if (seekerCoroutineTimer > 0) {
+                            data += $"{separator}Attack delay : {seekerCoroutineTimer}";
+                        }
+                        break;
+                    case Seeker.StAttack:
+                        if (seeker.attackWindUp) {
+                            tags.Add("windup");
+                            data += $"{separator}Windup    : {seekerCoroutineTimer}";
+                        } else {
+                            tags.Add("dash");
+                        }
+                        break;
+                    case Seeker.StStunned:
+                        if (seekerCoroutineTimer >= 0) {
+                            tags.Add(seekerCoroutineTimer.ToString());
+                        }
+                        break;
+                    case Seeker.StSkidding:
+                        tags.Add(seeker.strongSkid ? "strong" : $"weak {seekerCoroutineTimer}");
+                        break;
+                    case Seeker.StRegenerate:
+                        string regenerateRoutineTag = String.Empty;
+                        if (!seeker.shaker.on) {
+                            regenerateRoutineTag = "falling";
+                        } else if (seeker.sprite.CurrentAnimationID == "pulse") {
+                            regenerateRoutineTag = "pulsing";
+                        } else if (seeker.sprite.CurrentAnimationID == "recover") {
+                            regenerateRoutineTag = "recovering";
+                        } else {
+                            regenerateRoutineTag = "shaking";
+                        }
+                        regenerateRoutineTag += $" {seekerCoroutineTimer}";
+                        tags.Add(regenerateRoutineTag);
+                        break;
+                    case Seeker.StReturned:
+                        tags.Add(seekerCoroutineTimer.ToString());
+                        break;
+                }
+
+                if (seekerState <= Seeker.StSpotted) {
+                    if (player is { } && Vector2.DistanceSquared(player.Center, seeker.Center) > 12544f) {
+                        tags.Add("far");
+                    }
+                    data += $"{separator}Last player  : {seeker.lastSpottedAt.ToSimpleString(decimals)}";
+                }
+
+                if (seekerState == Seeker.StSpotted || seekerState == Seeker.StAttack) {
+                    data += $"{separator}Player angle : {Vector2.Dot(seekerSpeedAim, seekerPlayerAim)}";
+                }
+
+                if (tags.Count > 0) {
+                    seekerStateString += $" ({string.Join(", ", tags)})";
+                }
+
+                data = data.Insert(seekerStateStringStart, seekerStateString);
+
+                data += $"{separator}Speed    : {seeker.Speed.ToSimpleString(decimals)}";
+                data += $"{separator}Speed Magnitude: {seeker.Speed.Length().ToFormattedString(decimals)}";
+            } else if (entity is AngryOshiro oshiro) {
                 data += $"{separator}{oshiro.GetStateName()}";
                 // TODO: State-specific information
             } else if (entity is Actor actor) {
