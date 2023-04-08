@@ -31,11 +31,6 @@ public static partial class InfoWatchEntity {
 
     private static readonly WeakReference<Entity> LastClickedEntity = new(null);
 
-    // TODO FIXME: entity w/o id not work properly after retry or load state
-    public static List<WeakReference> RequireWatchEntities = new();
-    public static List<WeakReference> SavedRequireWatchEntities = new();
-    private static readonly HashSet<UniqueEntityId> RequireWatchUniqueEntityIds = new();
-    public static readonly HashSet<Entity> WatchingEntities = new();
     private static AreaKey requireWatchAreaKey;
 
     [Load]
@@ -123,7 +118,6 @@ public static partial class InfoWatchEntity {
     }
 
     public static string GetInfo(string separator = "\n", bool alwaysUpdate = false, int? decimals = null) {
-        WatchingEntities.Clear();
         string watchingInfo = string.Empty;
         if (Engine.Scene is not Level level || TasSettings.InfoWatchEntity == HudOptions.Off && !alwaysUpdate) {
             return string.Empty;
