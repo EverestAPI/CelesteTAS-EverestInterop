@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -320,7 +320,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
                 modified = true;
                 break;
             case "Clear Watch Entity Info":
-                InfoWatchEntity.ClearWatchEntities();
+                InfoWatchEntity.ClearWatchEntities(clearCheckList: true);
                 GameInfo.Update();
                 ReturnData(string.Empty);
                 return;

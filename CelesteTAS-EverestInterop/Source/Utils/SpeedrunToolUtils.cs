@@ -30,7 +30,8 @@ internal static class SpeedrunToolUtils {
     public static void AddSaveLoadAction() {
         Action<Dictionary<Type, Dictionary<string, object>>, Level> save = (_, _) => {
             savedEntityData = EntityDataHelper.CachedEntityData.DeepCloneShared();
-            InfoWatchEntity.SavedRequireWatchEntities = InfoWatchEntity.RequireWatchEntities.DeepCloneShared();
+            InfoWatchEntity.SaveWatchingList = InfoWatchEntity.WatchingList.DeepCloneShared();
+            InfoWatchEntity.SaveWatchMissingList = InfoWatchEntity.WatchMissingList.DeepCloneShared();
             groupCounter = CycleHitboxColor.GroupCounter;
             simulatePauses = StunPauseCommand.SimulatePauses;
             pauseOnCurrentFrame = StunPauseCommand.PauseOnCurrentFrame;
@@ -44,7 +45,8 @@ internal static class SpeedrunToolUtils {
         };
         Action<Dictionary<Type, Dictionary<string, object>>, Level> load = (_, _) => {
             EntityDataHelper.CachedEntityData = savedEntityData.DeepCloneShared();
-            InfoWatchEntity.RequireWatchEntities = InfoWatchEntity.SavedRequireWatchEntities.DeepCloneShared();
+            InfoWatchEntity.WatchingList = InfoWatchEntity.SaveWatchingList.DeepCloneShared();
+            InfoWatchEntity.WatchMissingList = InfoWatchEntity.SaveWatchMissingList.DeepCloneShared();
             CycleHitboxColor.GroupCounter = groupCounter;
             StunPauseCommand.SimulatePauses = simulatePauses;
             StunPauseCommand.PauseOnCurrentFrame = pauseOnCurrentFrame;
@@ -62,7 +64,8 @@ internal static class SpeedrunToolUtils {
         };
         Action clear = () => {
             savedEntityData.Clear();
-            InfoWatchEntity.SavedRequireWatchEntities.Clear();
+            InfoWatchEntity.SaveWatchingList.Clear();
+            InfoWatchEntity.SaveWatchMissingList.Clear();
         };
 
         ConstructorInfo constructor = typeof(SaveLoadAction).GetConstructors()[0];

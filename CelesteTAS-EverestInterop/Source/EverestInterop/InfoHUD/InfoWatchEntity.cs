@@ -19,7 +19,7 @@ public enum WatchEntityType {
     All
 }
 
-public static class InfoWatchEntity {
+public static partial class InfoWatchEntity {
     // ReSharper disable UnusedMember.Local
     private record struct MemberKey(Type Type, bool DeclaredOnly) {
         public readonly Type Type = Type;
@@ -38,30 +38,23 @@ public static class InfoWatchEntity {
     public static readonly HashSet<Entity> WatchingEntities = new();
     private static AreaKey requireWatchAreaKey;
 
-
     [Load]
     private static void Load() {
         On.Monocle.EntityList.DebugRender += EntityListOnDebugRender;
-        On.Celeste.Level.Begin += LevelOnBegin;
-        On.Celeste.Level.End += LevelOnEnd;
-        On.Celeste.Level.LoadLevel += LevelOnLoadLevel;
     }
 
     [Unload]
     private static void Unload() {
         On.Monocle.EntityList.DebugRender -= EntityListOnDebugRender;
-        On.Celeste.Level.Begin -= LevelOnBegin;
-        On.Celeste.Level.End -= LevelOnEnd;
-        On.Celeste.Level.LoadLevel -= LevelOnLoadLevel;
     }
 
     public static void CheckMouseButtons() {
         if (MouseButtons.Right.Pressed) {
-            ClearWatchEntities();
+            ClearWatchEntities(clearCheckList: true);
         }
 
         if (MouseButtons.Left.Pressed && !IsClickHud() && FindClickedEntity() is { } entity) {
-            AddOrRemoveWatching(entity);
+            ToggleWatching(entity);
             PrintAllSimpleValues(entity);
         }
     }
@@ -117,68 +110,16 @@ public static class InfoWatchEntity {
         return clickedEntity;
     }
 
-    private static void AddOrRemoveWatching(Entity clickedEntity) {
-        requireWatchAreaKey = clickedEntity.SceneAs<Level>().Session.Area;
-        if (clickedEntity.GetEntityData() is { } entityData) {
-            UniqueEntityId uniqueEntityId = new(clickedEntity, entityData);
-            if (RequireWatchUniqueEntityIds.Contains(uniqueEntityId)) {
-                RequireWatchUniqueEntityIds.Remove(uniqueEntityId);
-            } else {
-                RequireWatchUniqueEntityIds.Add(uniqueEntityId);
-            }
-        } else {
-            if (RequireWatchEntities.FirstOrDefault(reference => reference.Target == clickedEntity) is { } alreadyAdded) {
-                RequireWatchEntities.Remove(alreadyAdded);
-            } else {
-                RequireWatchEntities.Add(new WeakReference(clickedEntity));
-            }
-        }
-
-        GameInfo.Update();
-    }
-
     private static void EntityListOnDebugRender(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
         orig(self, camera);
 
         if (TasSettings.ShowHitboxes) {
             foreach (Entity entity in Engine.Scene.Entities) {
-                if (WatchingEntities.Contains(entity)) {
+                if (WatchingList.Has(entity, out _)) {
                     Draw.Point(entity.Position, HitboxColor.EntityColorInversely);
                 }
             }
         }
-    }
-
-    private static void LevelOnBegin(On.Celeste.Level.orig_Begin orig, Level self) {
-        orig(self);
-
-        if (self.Session.Area != requireWatchAreaKey) {
-            ClearWatchEntities();
-        }
-    }
-
-    private static void LevelOnEnd(On.Celeste.Level.orig_End orig, Level self) {
-        orig(self);
-        WatchingEntities.Clear();
-    }
-
-    private static void LevelOnLoadLevel(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader) {
-        orig(self, playerIntro, isFromLoader);
-
-        RequireWatchEntities.ToList().ForEach(reference => {
-            if (reference.Target is Entity {Scene: null}) {
-                RequireWatchEntities.Remove(reference);
-            }
-        });
-    }
-
-    public static void ClearWatchEntities() {
-        LastClickedEntity.SetTarget(null);
-        RequireWatchEntities.Clear();
-        SavedRequireWatchEntities.Clear();
-        RequireWatchUniqueEntityIds.Clear();
-        WatchingEntities.Clear();
-        GameInfo.Update();
     }
 
     public static string GetInfo(string separator = "\n", bool alwaysUpdate = false, int? decimals = null) {
@@ -189,32 +130,10 @@ public static class InfoWatchEntity {
         }
 
         decimals ??= TasSettings.CustomInfoDecimals;
-        if (RequireWatchEntities.IsNotEmpty()) {
-            watchingInfo = string.Join(separator, RequireWatchEntities.Where(reference => reference.IsAlive).Select(
-                reference => {
-                    Entity entity = (Entity) reference.Target;
-                    WatchingEntities.Add(entity);
-                    return GetEntityValues(entity, TasSettings.InfoWatchEntityType, separator, decimals.Value);
-                }
-            ));
-        }
 
-        if (RequireWatchUniqueEntityIds.IsNotEmpty()) {
-            Dictionary<UniqueEntityId, Entity> matchEntities = GetMatchEntities(level);
-            if (matchEntities.IsNotEmpty()) {
-                if (watchingInfo.IsNotNullOrEmpty()) {
-                    watchingInfo += separator;
-                }
-
-                watchingInfo += string.Join(separator, matchEntities.Select(pair => {
-                    Entity entity = matchEntities[pair.Key];
-                    WatchingEntities.Add(entity);
-                    return GetEntityValues(entity, TasSettings.InfoWatchEntityType, separator, decimals.Value);
-                }));
-            }
-        }
-
-        return watchingInfo;
+        return string.Join(separator, WatchingList.Tuples.Where((tuple) => tuple.Item2.Target is Entity { Scene: { } }).Select((tuple) => {
+            return GetEntityValues((Entity) tuple.Item2.Target, TasSettings.InfoWatchEntityType, separator, decimals.Value);
+        }));
     }
 
     private static void PrintAllSimpleValues(Entity entity) {
@@ -247,9 +166,8 @@ public static class InfoWatchEntity {
             else if (entity is AngryOshiro oshiro) {
                 data += $"{separator}{oshiro.GetStateName()}";
                 // TODO: State-specific information
-            }
-            else if (entity is Actor actor) {
-                data += $"{separator}Liftboost: ${actor.LiftSpeed.ToSimpleString(decimals)}";
+            } else if (entity is Actor actor) {
+                data += $"{separator}Liftboost: {actor.LiftSpeed.ToSimpleString(decimals)}";
             }
 
             if (entity.GetOffset() is float offset) {
@@ -336,60 +254,8 @@ public static class InfoWatchEntity {
         }
     }
 
-    private static Dictionary<UniqueEntityId, Entity> GetMatchEntities(Level level) {
-        Dictionary<UniqueEntityId, Entity> result = new();
-        List<Entity> possibleEntities = new();
-        HashSet<Type> possibleTypes = new();
-
-        string currentRoom = level.Session.Level;
-        foreach (UniqueEntityId id in RequireWatchUniqueEntityIds.Where(id => id.GlobalOrPersistent || id.EntityId.Level == currentRoom)) {
-            possibleTypes.Add(id.Type);
-        }
-
-        if (possibleTypes.IsEmpty()) {
-            return result;
-        }
-
-        if (possibleTypes.All(type => level.Tracker.Entities.ContainsKey(type))) {
-            foreach (Type type in possibleTypes) {
-                possibleEntities.AddRange(level.Tracker.Entities[type]);
-            }
-        } else {
-            possibleEntities.AddRange(level.Entities.Where(entity => possibleTypes.Contains(entity.GetType())));
-        }
-
-        foreach (Entity entity in possibleEntities) {
-            if (entity.GetEntityData() is not { } entityData) {
-                continue;
-            }
-
-            UniqueEntityId uniqueEntityId = new(entity, entityData);
-            if (RequireWatchUniqueEntityIds.Contains(uniqueEntityId) && !result.ContainsKey(uniqueEntityId)) {
-                result[uniqueEntityId] = entity;
-
-                if (result.Count == RequireWatchUniqueEntityIds.Count) {
-                    return result;
-                }
-            }
-        }
-
-        return result;
-    }
-
     public static Vector2 ClampLiftSpeed(this Vector2 liftspeed) {
         return liftspeed.Clamp(-250f, -130f, 250f, 0f);
-    }
-}
-
-internal record UniqueEntityId {
-    public readonly EntityID EntityId;
-    public readonly bool GlobalOrPersistent;
-    public readonly Type Type;
-
-    public UniqueEntityId(Entity entity, EntityData entityData) {
-        Type = entity.GetType();
-        GlobalOrPersistent = entity.TagCheck(Tags.Global) || entity.TagCheck(Tags.Persistent) || entity.Get<Holdable>() != null;
-        EntityId = entityData.ToEntityId();
     }
 }
 
