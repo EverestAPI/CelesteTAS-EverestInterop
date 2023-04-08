@@ -31,9 +31,7 @@ public static partial class InfoWatchEntity {
     // ReSharper restore UnusedMember.Local
 
     private static readonly Dictionary<MemberKey, List<MemberInfo>> CachedMemberInfos = new();
-
     private static readonly WeakReference<Entity> LastClickedEntity = new(null);
-
     private static AreaKey requireWatchAreaKey;
 
     [Load]
@@ -266,6 +264,8 @@ public static partial class InfoWatchEntity {
             } else if (entity is Actor actor) {
                 data += $"{separator}Liftboost: {actor.LiftSpeed.ToSimpleString(decimals)}";
             }
+
+            // TODO: Other Actor-specific inforemation
 
             if (entity.GetOffset() is float offset) {
                 data += $"{separator}Next check: {offset.NextCheckDistance()}";

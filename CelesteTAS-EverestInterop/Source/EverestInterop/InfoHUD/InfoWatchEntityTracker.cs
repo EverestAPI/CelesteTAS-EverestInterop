@@ -150,16 +150,6 @@ public static partial class InfoWatchEntity {
         public List<Tuple<UniqueEntityId, WeakReference>> Tuples = new();
         private List<Tuple<UniqueEntityId, WeakReference>> ToRemove = new();
 
-        public void Remove(UniqueEntityId id) {
-            var tuple = Tuples.Find((tuple) => tuple.Item1.Equals(id));
-            Remove(tuple);
-        }
-
-        public void Remove(Entity entity) {
-            var tuple = Tuples.Find((tuple) => entity.Equals(tuple.Item2.Target));
-            Remove(tuple);
-        }
-
         public void Remove(Tuple<UniqueEntityId, WeakReference> tuple) {
             if (tuple is null)
                 return;
@@ -171,10 +161,6 @@ public static partial class InfoWatchEntity {
             WeakReference reference = new WeakReference(entity);
             Tuples.Add(new(id, reference));
             Ids.Add(id);
-        }
-
-        public bool Has(UniqueEntityId id) {
-            return Ids.Contains(id);
         }
 
         public bool Has(Entity entity, out Tuple<UniqueEntityId, WeakReference> foundTuple) {
