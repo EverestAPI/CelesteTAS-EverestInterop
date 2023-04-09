@@ -15,7 +15,7 @@ namespace TAS.Utils;
 
 internal static class SpeedrunToolUtils {
     private static object saveLoadAction;
-    private static Dictionary<Entity, EntityData> savedEntityData = new();
+    private static Dictionary<Entity, EntityData> savedEntityData;
     private static int groupCounter;
     private static bool simulatePauses;
     private static bool pauseOnCurrentFrame;
@@ -26,6 +26,7 @@ internal static class SpeedrunToolUtils {
     private static HashSet<Keys> pressKeys;
     private static long? tasStartFileTime;
     private static MouseState mouseState;
+    private static Dictionary<Follower, bool> followers;
 
     public static void AddSaveLoadAction() {
         Action<Dictionary<Type, Dictionary<string, object>>, Level> save = (_, _) => {
@@ -60,7 +61,9 @@ internal static class SpeedrunToolUtils {
             MouseCommand.CurrentState = mouseState;
         };
         Action clear = () => {
-            savedEntityData.Clear();
+            savedEntityData = null;
+            pressKeys = null;
+            followers = null;
         };
 
         ConstructorInfo constructor = typeof(SaveLoadAction).GetConstructors()[0];

@@ -42,10 +42,12 @@ public static class HitboxSimplified {
         "Celeste.Mod.ClutterHelper.CustomClutter"
     };
 
+    public static Dictionary<Follower, bool> Followers = new();
+
     [Initialize]
     private static void Initialize() {
         foreach (Type type in ModUtils.GetTypes()) {
-            if (type.FullName is { } fullName && UselessTypeNames.Contains(fullName) && !UselessTypes.Contains(type)) {
+            if (type.FullName is { } fullName && UselessTypeNames.Contains(fullName)) {
                 UselessTypes.Add(type);
             }
         }
@@ -57,6 +59,8 @@ public static class HitboxSimplified {
         On.Monocle.Hitbox.Render += ModHitbox;
         On.Monocle.Grid.Render += CombineGridHitbox;
         IL.Monocle.Draw.HollowRect_float_float_float_float_Color += AvoidRedrawCorners;
+        On.Celeste.Follower.Update += FollowerOnUpdate;
+        On.Celeste.Level.End += LevelOnEnd;
     }
 
     [Unload]
@@ -65,6 +69,8 @@ public static class HitboxSimplified {
         On.Monocle.Hitbox.Render -= ModHitbox;
         On.Monocle.Grid.Render -= CombineGridHitbox;
         IL.Monocle.Draw.HollowRect_float_float_float_float_Color -= AvoidRedrawCorners;
+        On.Celeste.Follower.Update -= FollowerOnUpdate;
+        On.Celeste.Level.End -= LevelOnEnd;
     }
 
     private static void ModDebugRender(ILContext il) {
@@ -85,11 +91,11 @@ public static class HitboxSimplified {
                 return !entity.Collidable;
             }
 
-            if (entity.Get<Follower>() is {Leader: { }}) {
+            if (entity.Get<Follower>() is { Leader: not null } follower && Followers.TryGetValue(follower, out bool delayed) && delayed) {
                 return true;
             }
 
-            if (entity is Strawberry {collected: true}) {
+            if (entity is Strawberry { collected: true }) {
                 return true;
             }
 
@@ -112,7 +118,7 @@ public static class HitboxSimplified {
 
         Entity entity = hitbox.Entity;
 
-        if (entity is FireBall {iceMode: false}) {
+        if (entity is FireBall { iceMode: false }) {
             return;
         }
 
@@ -272,5 +278,24 @@ public static class HitboxSimplified {
         // Draw.rect.Height = (int) height - 2;
         ilCursor.Index--;
         ilCursor.Emit(OpCodes.Ldc_I4_2).Emit(OpCodes.Sub);
+    }
+
+    private static void FollowerOnUpdate(On.Celeste.Follower.orig_Update orig, Follower self) {
+        orig(self);
+
+        if (self.Leader == null) {
+            Followers.Remove(self);
+        } else {
+            if (Followers.ContainsKey(self)) {
+                Followers[self] = true;
+            } else {
+                Followers[self] = false;
+            }
+        }
+    }
+
+    private static void LevelOnEnd(On.Celeste.Level.orig_End orig, Level self) {
+        orig(self);
+        Followers.Clear();
     }
 }
