@@ -172,7 +172,8 @@ public static partial class InfoWatchEntity {
                 List<string> tags = new List<string>();
 
                 Vector2 seekerPlayerAim = (seeker.FollowTarget - seeker.Center).SafeNormalize();
-                Vector2 seekerSpeedAim = (seeker.FollowTarget - seeker.Center).SafeNormalize();
+                Vector2 seekerSpeedAim = seeker.Speed.SafeNormalize();
+                float seekerAimDot = Vector2.Dot(seekerSpeedAim, seekerPlayerAim);
 
                 int seekerState = seeker.State.state;
 
@@ -187,11 +188,11 @@ public static partial class InfoWatchEntity {
                             tags.Add("aware");
                         }
                         if (seekerCoroutineTimer > 0) {
-                            data += $"{separator}Patrol delay: {seekerCoroutineTimer}";
+                            data += $"{separator}Patrol delay   : {seekerCoroutineTimer}";
                         }
                         break;
                     case Seeker.StPatrol:
-                        data += $"{separator}Next point   ";
+                        data += $"{separator}Next point     :";
                         if (seeker.patrolWaitTimer < 0.4f) {
                             data += $": {GameInfo.ConvertToFrames(seeker.patrolWaitTimer)}";
                         } else {
@@ -199,15 +200,14 @@ public static partial class InfoWatchEntity {
                         }
                         break;
                     case Seeker.StSpotted:
-                        data += $"{separator}Losing player: {GameInfo.ConvertToFrames(seeker.spottedLosePlayerTimer)}";
+                        data += $"{separator}Losing player  : {GameInfo.ConvertToFrames(seeker.spottedLosePlayerTimer)}";
                         if (seekerCoroutineTimer > 0) {
-                            data += $"{separator}Attack delay : {seekerCoroutineTimer}";
+                            data += $"{separator}Attack delay   : {seekerCoroutineTimer}";
                         }
                         break;
                     case Seeker.StAttack:
                         if (seeker.attackWindUp) {
-                            tags.Add("windup");
-                            data += $"{separator}Windup    : {seekerCoroutineTimer}";
+                            tags.Add($"windup {seekerCoroutineTimer}");
                         } else {
                             tags.Add("dash");
                         }
@@ -243,11 +243,14 @@ public static partial class InfoWatchEntity {
                     if (player is { } && Vector2.DistanceSquared(player.Center, seeker.Center) > 12544f) {
                         tags.Add("far");
                     }
-                    data += $"{separator}Last player  : {seeker.lastSpottedAt.ToSimpleString(decimals)}";
+                    float seekerLastDistance = Vector2.Distance(seeker.Center, seeker.FollowTarget);
+                    data += $"{separator}Last player    : {seeker.FollowTarget.ToSimpleString(decimals)}";
+                    data += $"{separator}Last distance  : {seekerLastDistance.ToFormattedString(decimals)} px ({(seekerLastDistance / 8f).ToFormattedString(decimals)} tiles)";
                 }
 
                 if (seekerState == Seeker.StSpotted || seekerState == Seeker.StAttack) {
-                    data += $"{separator}Player angle : {Vector2.Dot(seekerSpeedAim, seekerPlayerAim)}";
+
+                    data += $"{separator}Player angle   : {seekerAimDot.ToDeg().ToFormattedString(decimals)} ({seekerAimDot.ToFormattedString(decimals)})";
                 }
 
                 if (tags.Count > 0) {
@@ -256,7 +259,11 @@ public static partial class InfoWatchEntity {
 
                 data = data.Insert(seekerStateStringStart, seekerStateString);
 
-                data += $"{separator}Speed    : {seeker.Speed.ToSimpleString(decimals)}";
+                if (player is { }) {
+                    float seekerPlayerDistance = Vector2.Distance(seeker.Center, player.Center);
+                    data += $"{separator}Player distance: {seekerPlayerDistance.ToFormattedString(decimals)} px ({(seekerPlayerDistance / 8f).ToFormattedString(decimals)} tiles)";
+                }
+                data += $"{separator}Speed          : {seeker.Speed.ToSimpleString(decimals)}";
                 data += $"{separator}Speed Magnitude: {seeker.Speed.Length().ToFormattedString(decimals)}";
             } else if (entity is AngryOshiro oshiro) {
                 data += $"{separator}{oshiro.GetStateName()}";
