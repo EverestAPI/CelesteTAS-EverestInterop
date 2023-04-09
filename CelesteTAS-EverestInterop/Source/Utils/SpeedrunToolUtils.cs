@@ -41,6 +41,7 @@ internal static class SpeedrunToolUtils {
             pressKeys = PressCommand.PressKeys.DeepCloneShared();
             tasStartFileTime = MetadataCommands.TasStartFileTime;
             mouseState = MouseCommand.CurrentState;
+            followers = HitboxSimplified.Followers.DeepCloneShared();
         };
         Action<Dictionary<Type, Dictionary<string, object>>, Level> load = (_, _) => {
             EntityDataHelper.CachedEntityData = savedEntityData.DeepCloneShared();
@@ -59,6 +60,7 @@ internal static class SpeedrunToolUtils {
 
             MetadataCommands.TasStartFileTime = tasStartFileTime;
             MouseCommand.CurrentState = mouseState;
+            HitboxSimplified.Followers = followers.DeepCloneShared();
         };
         Action clear = () => {
             savedEntityData = null;

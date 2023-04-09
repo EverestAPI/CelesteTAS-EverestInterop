@@ -135,8 +135,8 @@ public static class ExportGameInfo {
                 sceneName);
         }
 
-        streamWriter.WriteLine(output);
-        streamWriter.Flush();
+        streamWriter?.WriteLine(output);
+        streamWriter?.Flush();
     }
 
     private static int GetDecimals(int current, int max) {
