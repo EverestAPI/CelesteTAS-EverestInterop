@@ -109,18 +109,28 @@ public static class DesyncFixer {
             ILCursor cursor = new(context);
             cursor.Emit(OpCodes.Ldarg, index).EmitDelegate(PushRandom);
             while (cursor.TryGotoNext(MoveType.AfterLabel, i => i.OpCode == OpCodes.Ret)) {
-                cursor.Emit(OpCodes.Call, typeof(Calc).GetMethod(nameof(Calc.PopRandom)));
+                cursor.EmitDelegate(PopRandom);
                 cursor.Index++;
             }
         };
     }
 
     private static void PushRandom(Vector2 vector2) {
+        if (!Manager.Running) {
+            return;
+        }
+
         int seed = vector2.GetHashCode();
         if (Engine.Scene is Level level) {
             seed += level.Session.LevelData.LoadSeed;
         }
 
         Calc.PushRandom(seed);
+    }
+
+    private static void PopRandom() {
+        if (Manager.Running) {
+            Calc.PopRandom();
+        }
     }
 }
