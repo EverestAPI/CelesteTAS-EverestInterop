@@ -270,7 +270,7 @@ public static class GameInfo {
                     timers += $"DashCD({dashCooldown}) ";
                 }
 
-                if ((FramesPerGameSecond != 60 || SaveData.Instance.Assists.SuperDashing) &&
+                if ((FramesPerGameSecond != 60 || SaveData.Instance.Assists.SuperDashing || ExtendedVariantsUtils.SuperDashing) &&
                     DashTime.ToCeilingFrames() >= 1 && player.StateMachine.State == Player.StDash) {
                     DashTime = player.StateMachine.currentCoroutine.waitTimer;
                     timers += $"Dash({DashTime.ToCeilingFrames()}) ";
