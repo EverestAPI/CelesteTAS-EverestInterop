@@ -558,8 +558,8 @@ public partial class Studio : BaseForm {
                 string absoluteOrRelativePath = Path.Combine(fileDirectory, filePath);
                 if (File.Exists(absoluteOrRelativePath) && absoluteOrRelativePath != CurrentFileName) {
                     filePath = absoluteOrRelativePath;
-                } else {
-                    string[] files = Directory.GetFiles(fileDirectory, $"{filePath}*.tas");
+                } else if (Directory.GetParent(absoluteOrRelativePath) is { } directoryInfo && Directory.Exists(directoryInfo.ToString())) {
+                    string[] files = Directory.GetFiles(directoryInfo.ToString(), $"{Path.GetFileName(filePath)}*.tas");
                     if (files.FirstOrDefault(path => path != CurrentFileName) is { } shortenedFilePath) {
                         filePath = shortenedFilePath;
                     }

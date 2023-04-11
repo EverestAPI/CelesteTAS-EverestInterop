@@ -84,8 +84,8 @@ public static class ReadCommand {
                 string absoluteOrRelativePath = Path.Combine(fileDirectory, filePath);
                 if (File.Exists(absoluteOrRelativePath)) {
                     filePath = absoluteOrRelativePath;
-                } else {
-                    List<string> files = Directory.GetFiles(fileDirectory, $"{filePath}*.tas").ToList();
+                } else if (Directory.GetParent(absoluteOrRelativePath) is { } directoryInfo && Directory.Exists(directoryInfo.ToString())) {
+                    List<string> files = Directory.GetFiles(directoryInfo.ToString(), $"{Path.GetFileName(filePath)}*.tas").ToList();
                     files.Sort((s1, s2) => string.Compare(s1, s2, StringComparison.InvariantCulture));
                     if (files.FirstOrDefault() is { } shortenedFilePath) {
                         filePath = shortenedFilePath;
