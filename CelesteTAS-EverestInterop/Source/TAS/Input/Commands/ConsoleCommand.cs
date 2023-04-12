@@ -325,7 +325,13 @@ public static class ConsoleCommand {
     private static void Load(AreaMode mode, int areaId, Vector2 spawnPoint, Vector2 remainder, Vector2 speed) {
         AreaKey areaKey = new(areaId, mode);
         Session session = new(areaKey);
-        session.Level = session.MapData.GetAt(spawnPoint)?.Name;
+
+        if (session.MapData.GetAt(spawnPoint) is not { } levelData) {
+            AbortTas($"Spawn point {spawnPoint} does not exist room");
+            return;
+        }
+
+        session.Level = levelData.Name;
         if (AreaData.GetCheckpoint(areaKey, session.Level) != null) {
             session = new Session(areaKey, session.Level);
         }
