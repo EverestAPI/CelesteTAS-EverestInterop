@@ -75,6 +75,8 @@ public partial class Studio : BaseForm {
                 SaveSettings();
             }
         };
+
+        TopMost = Settings.Instance.AlwaysOnTop;
     }
 
     private void InitLocationSize() {
@@ -1359,6 +1361,11 @@ public partial class Studio : BaseForm {
         Settings.Instance.AutoRemoveMutuallyExclusiveActions = !Settings.Instance.AutoRemoveMutuallyExclusiveActions;
     }
 
+    private void alwaysOnTopToolStripMenuItem_Click(object sender, EventArgs e) {
+        Settings.Instance.AlwaysOnTop = !Settings.Instance.AlwaysOnTop;
+        TopMost = Settings.Instance.AlwaysOnTop;
+    }
+
     private void homeMenuItem_Click(object sender, EventArgs e) {
         Process.Start("https://github.com/EverestAPI/CelesteTAS-EverestInterop");
     }
@@ -1367,6 +1374,7 @@ public partial class Studio : BaseForm {
         settingsToolStripMenuItem.DropDown.Opacity = 1f;
         sendInputsToCelesteMenuItem.Checked = Settings.Instance.SendInputsToCeleste;
         autoRemoveExclusiveActionsToolStripMenuItem.Checked = Settings.Instance.AutoRemoveMutuallyExclusiveActions;
+        alwaysOnTopToolStripMenuItem.Checked = Settings.Instance.AlwaysOnTop;
         showGameInfoToolStripMenuItem.Checked = Settings.Instance.ShowGameInfo;
         enabledAutoBackupToolStripMenuItem.Checked = Settings.Instance.AutoBackupEnabled;
         backupRateToolStripMenuItem.Text = $"Backup Rate (minutes): {Settings.Instance.AutoBackupRate}";

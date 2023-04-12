@@ -84,6 +84,7 @@ namespace CelesteStudio {
             this.positionDecimalsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.speedDecimalsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.velocityDecimalsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.angleDecimalsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.customInfoDecimalsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.subpixelIndicatorDecimalsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.unitOfSpeedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -164,7 +165,7 @@ namespace CelesteStudio {
             this.statusPanel = new System.Windows.Forms.Panel();
             this.statusBar = new System.Windows.Forms.StatusStrip();
             this.lblStatus = new System.Windows.Forms.ToolStripStatusLabel();
-            this.angleDecimalsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.alwaysOnTopToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusBarContextMenuStrip.SuspendLayout();
             this.menuStrip.SuspendLayout();
             this.tasTextContextMenuStrip.SuspendLayout();
@@ -351,6 +352,7 @@ namespace CelesteStudio {
             this.sendInputsToCelesteMenuItem,
             this.autoRemoveExclusiveActionsToolStripMenuItem,
             this.showGameInfoToolStripMenuItem,
+            this.alwaysOnTopToolStripMenuItem,
             this.autoBackupToolStripMenuItem,
             this.fontToolStripMenuItem,
             this.themesToolStripMenuItem});
@@ -637,6 +639,13 @@ namespace CelesteStudio {
             this.velocityDecimalsToolStripMenuItem.Text = "Velocity Decimals";
             this.velocityDecimalsToolStripMenuItem.Click += new System.EventHandler(this.velocityDecimalsToolStripMenuItem_Click);
             // 
+            // angleDecimalsToolStripMenuItem
+            // 
+            this.angleDecimalsToolStripMenuItem.Name = "angleDecimalsToolStripMenuItem";
+            this.angleDecimalsToolStripMenuItem.Size = new System.Drawing.Size(290, 22);
+            this.angleDecimalsToolStripMenuItem.Text = "Angle Decimals";
+            this.angleDecimalsToolStripMenuItem.Click += new System.EventHandler(this.angleDecimalsToolStripMenuItem_Click);
+            // 
             // customInfoDecimalsToolStripMenuItem
             // 
             this.customInfoDecimalsToolStripMenuItem.Name = "customInfoDecimalsToolStripMenuItem";
@@ -688,7 +697,7 @@ namespace CelesteStudio {
             // homeMenuItem
             // 
             this.homeMenuItem.Name = "homeMenuItem";
-            this.homeMenuItem.Size = new System.Drawing.Size(106, 22);
+            this.homeMenuItem.Size = new System.Drawing.Size(180, 22);
             this.homeMenuItem.Text = "&Home";
             this.homeMenuItem.Click += new System.EventHandler(this.homeMenuItem_Click);
             // 
@@ -1343,12 +1352,12 @@ namespace CelesteStudio {
             this.lblStatus.Text = "Searching...";
             this.lblStatus.TextAlign = System.Drawing.ContentAlignment.TopLeft;
             // 
-            // angleDecimalsToolStripMenuItem
+            // alwaysOnTopToolStripMenuItem
             // 
-            this.angleDecimalsToolStripMenuItem.Name = "angleDecimalsToolStripMenuItem";
-            this.angleDecimalsToolStripMenuItem.Size = new System.Drawing.Size(290, 22);
-            this.angleDecimalsToolStripMenuItem.Text = "Angle Decimals";
-            this.angleDecimalsToolStripMenuItem.Click += new System.EventHandler(this.angleDecimalsToolStripMenuItem_Click);
+            this.alwaysOnTopToolStripMenuItem.Name = "alwaysOnTopToolStripMenuItem";
+            this.alwaysOnTopToolStripMenuItem.Size = new System.Drawing.Size(378, 22);
+            this.alwaysOnTopToolStripMenuItem.Text = "Always on Top";
+            this.alwaysOnTopToolStripMenuItem.Click += new System.EventHandler(this.alwaysOnTopToolStripMenuItem_Click);
             // 
             // Studio
             // 
@@ -1586,5 +1595,6 @@ namespace CelesteStudio {
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator21;
         private System.Windows.Forms.ToolStripMenuItem exitGameToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem angleDecimalsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem alwaysOnTopToolStripMenuItem;
     }
 }

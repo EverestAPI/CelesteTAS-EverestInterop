@@ -64,6 +64,7 @@ public class Settings {
     public bool SendInputsToCeleste = true;
     public bool ShowGameInfo = true;
     public bool AutoRemoveMutuallyExclusiveActions = true;
+    public bool AlwaysOnTop = false;
     public bool AutoBackupEnabled = true;
     public int AutoBackupRate = 1;
     public int AutoBackupCount = 100;
