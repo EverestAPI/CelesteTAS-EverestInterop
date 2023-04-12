@@ -93,6 +93,10 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         return client;
     }
 
+    protected override void LogImpl(string text) {
+        text.Log(LogLevel.Verbose);
+    }
+
     #region Read
 
     protected override void ReadData(Message message) {
