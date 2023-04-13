@@ -15,11 +15,11 @@ internal static class LogUtil {
 #if DEBUG
     // ReSharper disable once UnusedMember.Global
     public static void DebugLog(this object text, LogLevel logLevel = LogLevel.Info) {
-        text.DebugLog(false, logLevel);
+        text.DebugLog(true, logLevel);
     }
 
     // ReSharper disable once MemberCanBePrivate.Global
-    public static void DebugLog(this object text, bool outputToCommands, LogLevel logLevel = LogLevel.Info) {
+    public static void DebugLog(this object text, bool outputToCommands = true, LogLevel logLevel = LogLevel.Info) {
         text.Log(outputToCommands, logLevel);
     }
 #endif
@@ -37,16 +37,12 @@ internal static class LogUtil {
     public static void Log(this object text, bool outputToCommands, LogLevel logLevel = LogLevel.Info) {
         text = text == null ? "null" : text.ToString();
         Logger.Log(logLevel, Tag, text.ToString());
-#if DEBUG
-        outputToCommands = true;
-        text = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [{Tag}] {logLevel}: {text}";
-#endif
-        // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-        if (!outputToCommands) {
-            return;
-        }
 
-        ConsoleLog(text, logLevel);
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+        if (outputToCommands) {
+            text = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [{Tag}] {logLevel}: {text}";
+            ConsoleLog(text, logLevel);
+        }
     }
 
     public static void ConsoleLog(this object text, LogLevel logLevel = LogLevel.Verbose) {
