@@ -19,7 +19,7 @@ internal static class LogUtil {
     }
 
     // ReSharper disable once MemberCanBePrivate.Global
-    public static void DebugLog(this object text, bool outputToCommands = true, LogLevel logLevel = LogLevel.Info) {
+    public static void DebugLog(this object text, bool outputToCommands, LogLevel logLevel = LogLevel.Info) {
         text.Log(outputToCommands, logLevel);
     }
 #endif
