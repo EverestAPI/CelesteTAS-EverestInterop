@@ -327,7 +327,7 @@ public static class ConsoleCommand {
         Session session = new(areaKey);
 
         if (session.MapData.GetAt(spawnPoint) is not { } levelData) {
-            AbortTas($"Spawn point {spawnPoint} does not exist room");
+            AbortTas($"Room does not exist at {spawnPoint}");
             return;
         }
 
