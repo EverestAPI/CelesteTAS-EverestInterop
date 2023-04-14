@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Celeste;
+using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Input;
@@ -16,6 +17,7 @@ public static class ExportGameInfo {
     private static StreamWriter streamWriter;
     private static IDictionary<string, Func<List<Entity>>> trackedEntities;
     private static bool exporting;
+    private static InputFrame exportingInput;
 
     // ReSharper disable once UnusedMember.Local
     // "StartExportGameInfo"
@@ -39,8 +41,28 @@ public static class ExportGameInfo {
     [TasCommand("FinishExportGameInfo", AliasNames = new[] {"EndExportGameInfo"}, CalcChecksum = false)]
     private static void FinishExportCommand() {
         exporting = false;
+        exportingInput = null;
         streamWriter?.Dispose();
         streamWriter = null;
+    }
+
+    [Load]
+    private static void Load() {
+        On.Monocle.Engine.Update += EngineOnUpdate;
+    }
+
+    [Unload]
+    private static void Unload() {
+        On.Monocle.Engine.Update -= EngineOnUpdate;
+    }
+
+    private static void EngineOnUpdate(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
+        orig(self, gameTime);
+
+        if (exportingInput != null) {
+            ExportInfo(exportingInput);
+            exportingInput = null;
+        }
     }
 
     private static void BeginExport(string path, string[] tracked) {
@@ -69,7 +91,7 @@ public static class ExportGameInfo {
 
     public static void ExportInfo() {
         if (exporting && Manager.Controller.Current is { } currentInput) {
-            Engine.Scene.OnEndOfFrame += () => ExportInfo(currentInput);
+            exportingInput = currentInput;
         }
     }
 

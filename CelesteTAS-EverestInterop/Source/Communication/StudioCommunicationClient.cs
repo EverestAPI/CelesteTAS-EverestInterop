@@ -93,6 +93,10 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         return client;
     }
 
+    protected override void LogImpl(string text) {
+        text.Log(LogLevel.Verbose);
+    }
+
     #region Read
 
     protected override void ReadData(Message message) {
@@ -432,7 +436,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
 
     private void SendModVersion() {
         // TODO: move to everest.yaml
-        const string minStudioVersion = "2.14.0";
+        const string minStudioVersion = "2.14.1";
         byte[] data = BinaryFormatterHelper.ToByteArray(new[] {CelesteTasModule.Instance.Metadata.VersionString, minStudioVersion});
         WriteMessageGuaranteed(new Message(MessageID.VersionInfo, data));
     }

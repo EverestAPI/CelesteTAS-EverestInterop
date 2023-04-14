@@ -278,12 +278,18 @@ public class StudioCommunicationBase {
         return $"StudioCommunicationBase Location @ {location}";
     }
 
-    protected void Log(string s) {
+    // ReSharper disable once MemberCanBePrivate.Global
+    protected void Log(string log) {
         if (timeoutCount <= 5) {
-            Console.WriteLine(s);
-            System.Diagnostics.Trace.WriteLine(s);
+            LogImpl(log);
         }
     }
+
+    protected virtual void LogImpl(string text) {
+        Console.WriteLine(text);
+        System.Diagnostics.Trace.WriteLine(text);
+    }
+
     // This is literally the first thing I have ever written with threading
     // Apologies in advance to anyone else working on this
 

@@ -13,6 +13,8 @@ namespace TAS.EverestInterop;
 
 // ReSharper disable AssignNullToNotNullAttribute
 public static class DesyncFixer {
+    private static int debrisAmount;
+
     [Initialize]
     private static void Initialize() {
         if (ModUtils.GetType("StrawberryJam2021", "Celeste.Mod.StrawberryJam2021.Entities.WonkyCassetteBlockController")
@@ -54,6 +56,7 @@ public static class DesyncFixer {
         On.Celeste.DreamMirror.ctor += DreamMirrorOnCtor;
         On.Celeste.FinalBoss.ctor_Vector2_Vector2Array_int_float_bool_bool_bool += FinalBossOnCtor_Vector2_Vector2Array_int_float_bool_bool_bool;
         On.Celeste.CS03_Memo.MemoPage.ctor += MemoPageOnCtor;
+        On.Monocle.Entity.Update += EntityOnUpdate;
     }
 
     [Unload]
@@ -61,6 +64,7 @@ public static class DesyncFixer {
         On.Celeste.DreamMirror.ctor -= DreamMirrorOnCtor;
         On.Celeste.FinalBoss.ctor_Vector2_Vector2Array_int_float_bool_bool_bool -= FinalBossOnCtor_Vector2_Vector2Array_int_float_bool_bool_bool;
         On.Celeste.CS03_Memo.MemoPage.ctor -= MemoPageOnCtor;
+        On.Monocle.Entity.Update -= EntityOnUpdate;
     }
 
     private static void DreamMirrorOnCtor(On.Celeste.DreamMirror.orig_ctor orig, DreamMirror self, Vector2 position) {
@@ -104,23 +108,37 @@ public static class DesyncFixer {
         }));
     }
 
+    private static void EntityOnUpdate(On.Monocle.Entity.orig_Update orig, Entity self) {
+        orig(self);
+        debrisAmount = 0;
+    }
+
     private static ILContext.Manipulator SeededRandom(int index) {
         return context => {
             ILCursor cursor = new(context);
             cursor.Emit(OpCodes.Ldarg, index).EmitDelegate(PushRandom);
             while (cursor.TryGotoNext(MoveType.AfterLabel, i => i.OpCode == OpCodes.Ret)) {
-                cursor.Emit(OpCodes.Call, typeof(Calc).GetMethod(nameof(Calc.PopRandom)));
+                cursor.EmitDelegate(PopRandom);
                 cursor.Index++;
             }
         };
     }
 
     private static void PushRandom(Vector2 vector2) {
-        int seed = vector2.GetHashCode();
-        if (Engine.Scene is Level level) {
-            seed += level.Session.LevelData.LoadSeed;
-        }
+        if (Manager.Running) {
+            debrisAmount++;
+            int seed = debrisAmount + vector2.GetHashCode();
+            if (Engine.Scene is Level level) {
+                seed += level.Session.LevelData.LoadSeed;
+            }
 
-        Calc.PushRandom(seed);
+            Calc.PushRandom(seed);
+        }
+    }
+
+    private static void PopRandom() {
+        if (Manager.Running) {
+            Calc.PopRandom();
+        }
     }
 }
