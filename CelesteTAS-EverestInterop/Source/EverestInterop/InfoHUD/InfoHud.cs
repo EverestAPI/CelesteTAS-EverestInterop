@@ -95,7 +95,7 @@ public static class InfoHud {
 
         Rectangle bgRect = new((int) x, (int) y, (int) (Size.X + padding * 2), (int) (Size.Y + padding * 2));
 
-        if (!Hotkeys.InfoHud.Check && (level.Paused || CollidePlayer(level, bgRect))) {
+        if (!Hotkeys.InfoHud.Check && ((level.Paused && !Celeste.Input.MenuJournal.Check) || CollidePlayer(level, bgRect))) {
             alpha *= TasSettings.InfoMaskedOpacity / 10f;
             infoAlpha *= alpha;
         }
