@@ -18,6 +18,7 @@ public static class DialogUtils {
         Size size = new(200, buttonHeight * 2 + padding * 3);
 
         using Form inputBox = new();
+        inputBox.TopMost = true;
         inputBox.FormBorderStyle = FormBorderStyle.FixedDialog;
         inputBox.ClientSize = size;
         inputBox.Text = title;
@@ -68,6 +69,7 @@ public static class DialogUtils {
         bool pressEnter = false;
 
         using Form inputBox = new();
+        inputBox.TopMost = true;
         inputBox.FormBorderStyle = FormBorderStyle.FixedDialog;
         inputBox.ClientSize = size;
         inputBox.Text = "Find";
@@ -212,6 +214,7 @@ public static class DialogUtils {
         bool pressEnter = false;
 
         using Form inputBox = new();
+        inputBox.TopMost = true;
 
         void GoToLine(int line) {
             richText.GoToLine(line);
