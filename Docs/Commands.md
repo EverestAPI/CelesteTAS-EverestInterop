@@ -124,7 +124,7 @@
 
   e.g.
   ```
-  1,K
+  1,J
   StunPause, Input
   SkipInput, 3, 1
   7,R,X
