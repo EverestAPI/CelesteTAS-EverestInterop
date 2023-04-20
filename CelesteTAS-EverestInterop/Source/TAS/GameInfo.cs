@@ -193,7 +193,7 @@ public static class GameInfo {
 
     public static void Update(bool updateVel = false) {
         if (Engine.Scene is Level level) {
-            Player player = level.Tracker.GetEntity<Player>();
+            Player player = level.GetPlayer();
             if (player != null) {
                 string pos = GetAdjustedPos(player, out string exactPos);
                 string speed = GetAdjustedSpeed(player.Speed, out string exactSpeed);

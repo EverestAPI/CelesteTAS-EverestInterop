@@ -402,7 +402,7 @@ public static class ConsoleCommand {
         List<string> values = new() {"console", mode, id};
 
         if (!simple) {
-            Player player = level.Tracker.GetEntity<Player>();
+            Player player = level.GetPlayer();
             if (player == null) {
                 values.Add(level.Session.Level);
             } else {
@@ -427,7 +427,7 @@ public static class ConsoleCommand {
 
     [Monocle.Command("giveberry", "Gives player a red berry (CelesteTAS)")]
     private static void CmdGiveBerry() {
-        if (Engine.Scene is Level level && level.Tracker.GetEntity<Player>() is { } player) {
+        if (Engine.Scene is Level level && level.GetPlayer() is { } player) {
             EntityData entityData = new() {
                 Position = player.Position + new Vector2(0f, -16f),
                 ID = new Random().Next(),

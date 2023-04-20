@@ -95,7 +95,7 @@ public static class HitboxOptimized {
 
     private static void DrawPufferHitbox(Puffer puffer) {
         Vector2 bottomCenter = puffer.BottomCenter - Vector2.UnitY * 1;
-        if (puffer.Scene.Tracker.GetEntity<Player>() is {Ducking: true}) {
+        if (puffer.Scene.GetPlayer() is {Ducking: true}) {
             bottomCenter -= Vector2.UnitY * 3;
         }
 
