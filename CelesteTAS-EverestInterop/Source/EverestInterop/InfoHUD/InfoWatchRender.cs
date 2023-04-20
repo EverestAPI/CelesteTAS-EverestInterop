@@ -9,9 +9,12 @@ using TAS.Utils;
 namespace TAS.EverestInterop.InfoHUD;
 
 public static partial class InfoWatchEntity {
-
-    const byte RENDER_LIGHT_ALPHA = 160;
+    public static byte RENDER_LIGHT_ALPHA => (byte) (TasSettings.UnCollidableHitboxesOpacity * 25.5f);
     const byte RENDER_FULL_ALPHA = 255;
+
+    public static readonly Color DefaultBumperColorHigh = Color.Red;
+    public static readonly Color DefaultBumperColorLow = Color.Blue;
+    public static readonly Color DefaultBumperColorMid = Color.Goldenrod;
 
     [Load]
     private static void LoadRender() {
@@ -46,6 +49,9 @@ public static partial class InfoWatchEntity {
                     if (entity is Seeker seeker) {
                         RenderSeeker(seeker);
                         hasSeekers = true;
+                    }
+                    if (entity is Bumper bumper) {
+                        RenderBumper(bumper);
                     }
                 }
             }
@@ -105,6 +111,53 @@ public static partial class InfoWatchEntity {
                 DrawExt.Arc(seeker.Center, Vector2.Distance(seeker.FollowTarget, seeker.Center), speedAngle - speedAngleDiff, speedAngle + speedAngleDiff, attackColor, 32);
                 DrawExt.Crosshair(followTarget, 2f, attackColorAlt);
                 break;
+        }
+    }
+
+    private static void RenderBumper(Bumper bumper) {
+        const float HIGH_HIT_ANGLE1 = -0.5823642378687435f; // -asin(0.55)
+        const float HIGH_HIT_ANGLE2 = -2.5592284157210496f; // -(PI-asin(0.55))
+        const float HIGH_HIT_DOT = -0.55f;
+        const float LOW_HIT_ANGLE1 = 0.7075844367253556f; // asin(0.65)
+        const float LOW_HIT_ANGLE2 = 2.4340082168644375f; // PI-asin(0.65)
+        const float LOW_HIT_DOT = 0.65f;
+        const float HIT_LINE_LENGTH = 26f;
+
+        const float STATIC_LINES_RANGE = 88f;
+        const float PLAYER_LINE_RANGE = 48f;
+
+        // TODO: Consider adding settings for those colorss
+        Color colorHigh = DefaultBumperColorHigh;
+        Color colorMid = DefaultBumperColorMid;
+        Color colorLow = DefaultBumperColorLow;
+        if (bumper.respawnTimer >= 0f) {
+            colorHigh.A = colorLow.A = colorMid.A = RENDER_LIGHT_ALPHA;
+        }
+
+        Player player = bumper.Scene.GetPlayer();
+        float dist = float.PositiveInfinity;
+        if (player is { }) {
+            dist = Vector2.DistanceSquared(player.Center, bumper.Position);
+        }
+
+        if (dist < (STATIC_LINES_RANGE * STATIC_LINES_RANGE)) {
+            Draw.LineAngle(bumper.Position, HIGH_HIT_ANGLE1, HIT_LINE_LENGTH, colorHigh);
+            Draw.LineAngle(bumper.Position, HIGH_HIT_ANGLE2, HIT_LINE_LENGTH, colorHigh);
+            Draw.LineAngle(bumper.Position, LOW_HIT_ANGLE1, HIT_LINE_LENGTH, colorLow);
+            Draw.LineAngle(bumper.Position, LOW_HIT_ANGLE2, HIT_LINE_LENGTH, colorLow);
+        }
+
+        if (player is { } && dist < (PLAYER_LINE_RANGE * PLAYER_LINE_RANGE)) {
+            Color playerLineColor = colorMid;
+            float playerLineDot = Vector2.Dot((player.Center - bumper.Position).SafeNormalize(), Vector2.UnitY);
+            if (playerLineDot <= HIGH_HIT_DOT) {
+                playerLineColor = colorHigh;
+            } else if (playerLineDot > LOW_HIT_DOT) {
+                playerLineColor = colorLow;
+            }
+            Draw.Line(bumper.Position, player.Center, playerLineColor);
+            Draw.Point(player.Center - Vector2.One, Color.OrangeRed);
+            Draw.Point(bumper.Position - Vector2.One, Color.OrangeRed);
         }
     }
 }

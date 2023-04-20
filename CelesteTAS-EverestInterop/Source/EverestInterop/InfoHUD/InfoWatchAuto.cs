@@ -43,6 +43,16 @@ public static partial class InfoWatchEntity {
             appendSeparator($"Liftboost: {actor.LiftSpeed.ToSimpleString(decimals)}");
         }
 
+        if (entity is Bumper bumper) {
+            appendSeparator($"Anchor : {bumper.anchor.ToSimpleString(decimals)}");
+            appendSeparator($"Offset : {(bumper.Position - bumper.anchor).ToSimpleString(decimals)}");
+            float bumperAngle = bumper.sine.counter % (float) (Math.PI * 2d);
+            appendSeparator($"Angle  : {(bumperAngle / (float)(Math.PI * 2d)).ToFormattedString(decimals)} ({bumperAngle.ToFormattedString(decimals)})");
+            if (bumper.respawnTimer > 0f) {
+                appendSeparator($"Respawn: {GameInfo.ConvertToFrames(bumper.respawnTimer)}");
+            }
+        }
+
         // TODO: Other Actor-specific inforemation
 
         if (entity.GetOffset() is float offset) {
