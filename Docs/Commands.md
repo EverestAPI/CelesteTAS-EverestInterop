@@ -239,6 +239,12 @@ Specify the default mode for `StunPause` command.
 - e.g. `CompleteInfo A 1` display info on 1A complete screen.
 - e.g. `CompleteInfo` If neither side nor sid/id is specified, the info will be displayed on all chapters, if the other CompleteInfo command specifies a chapter, both will be displayed.
 
+### AutoWatch
+- `AutoWatch, Type, [Unwatch]
+- After the command is executed, the specified `Type` of entities will be automatically added to the watched entity list.
+- e.g. `AutoWatch Bumper` would automatically watch any bumpers
+- e.g. `AutoWatch Bumper unwatch` would stop automatically watching bumpers
+
 ### RecordCount
 - e.g. `RecordCount: 1`
 - Every time you run tas after modifying the current input file, the record count auto increases by one.

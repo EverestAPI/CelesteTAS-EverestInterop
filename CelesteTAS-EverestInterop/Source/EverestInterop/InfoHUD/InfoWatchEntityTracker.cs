@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Celeste;
 using Monocle;
 using TAS.Module;
+using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD;
 
@@ -10,6 +11,7 @@ public static partial class InfoWatchEntity {
     internal static List<UniqueEntityId> WatchCheckList = new();
     internal static List<UniqueEntityId> WatchMissingList = new();
     internal static EntityWatchingList WatchingList = new();
+    internal static HashSet<Type> AutoWatch = new();
 
     [Load]
     private static void LoadTracker() {
@@ -71,6 +73,13 @@ public static partial class InfoWatchEntity {
         if (WatchMissingList.Contains(id)) {
             WatchMissingList.Remove(id);
             WatchingList.Add(id, entity);
+        } else {
+            foreach (var autoType in AutoWatch) {
+                if (entity.GetType().IsSameOrSubclassOf(autoType)) {
+                    WatchingList.Add(id, entity);
+                    break;
+                }
+            }
         }
     }
 
@@ -89,6 +98,7 @@ public static partial class InfoWatchEntity {
     public static void ClearWatchEntities(bool update = true, bool clearCheckList = false) {
         LastClickedEntity.SetTarget(null);
         WatchingList.Clear();
+        AutoWatch.Clear();
         if (clearCheckList) {
             WatchCheckList.Clear();
             WatchMissingList.Clear();
