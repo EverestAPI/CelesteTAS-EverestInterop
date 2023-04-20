@@ -1,14 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Security.Permissions;
 using Celeste;
-using Microsoft.Xna.Framework;
 using Monocle;
-using TAS.EverestInterop.Hitboxes;
 using TAS.Module;
-using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD;
 

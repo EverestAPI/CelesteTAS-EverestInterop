@@ -683,3 +683,21 @@ internal static class CloneUtil {
         }
     }
 }
+
+public static class DrawExt {
+    public static void Arc(Vector2 position, float radius, float angleStart, float angleEnd, Color color, int resolution) {
+        Vector2 vector = Calc.AngleToVector(angleStart, radius);
+        for (int i = 1; i <= resolution; i++) {
+            float angle = Calc.Map(i, 0f, resolution, angleStart, angleEnd);
+            Vector2 vector2 = Calc.AngleToVector(angle, radius);
+            Draw.Line(position + vector, position + vector2, color);
+            vector = vector2;
+        }
+    }
+
+    public static void Crosshair(Vector2 position, float length, Color color) {
+        length = (float)Math.Round(length);
+        Draw.Line(position.X, position.Y - length - 1f, position.X, position.Y + length, color);
+        Draw.Line(position.X - length - 1f, position.Y - 1f, position.X + length, position.Y - 1f, color);
+    }
+}
