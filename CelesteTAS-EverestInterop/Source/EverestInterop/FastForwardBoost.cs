@@ -91,9 +91,7 @@ public static class FastForwardBoost {
 #pragma warning restore CS0612
 
     private static void AddTypeToTracker(Type type, params Type[] subTypes) {
-        if (!Tracker.StoredEntityTypes.Contains(type)) {
-            Tracker.StoredEntityTypes.Add(type);
-        }
+        Tracker.StoredEntityTypes.Add(type);
 
         if (!Tracker.TrackedEntityTypes.ContainsKey(type)) {
             Tracker.TrackedEntityTypes[type] = new List<Type> {type};

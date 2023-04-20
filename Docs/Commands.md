@@ -124,7 +124,7 @@
 
   e.g.
   ```
-  1,K
+  1,J
   StunPause, Input
   SkipInput, 3, 1
   7,R,X
@@ -135,7 +135,7 @@
   ```
    1,J
    1,S,N
-  10,K,O
+  10,J,O
    5,R,X
    1,S,N
   10,O
