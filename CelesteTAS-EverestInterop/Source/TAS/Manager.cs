@@ -230,7 +230,9 @@ public static class Manager {
             case SummitVignette summit:
                 return !summit.ready;
             case Overworld overworld:
-                return overworld.Current is OuiFileSelect {SlotIndex: >= 0} slot && slot.Slots[slot.SlotIndex].StartingGame;
+                return overworld.Current is OuiFileSelect {SlotIndex: >= 0} slot && slot.Slots[slot.SlotIndex].StartingGame ||
+                       overworld.Next is OuiChapterSelect && UserIO.Saving ||
+                       overworld.Next is OuiMainMenu && (UserIO.Saving || Everest._SavingSettings);
             default:
                 bool isLoading = Engine.Scene is LevelExit or LevelLoader or GameLoader || Engine.Scene.GetType().Name == "LevelExitToLobby";
                 return isLoading;

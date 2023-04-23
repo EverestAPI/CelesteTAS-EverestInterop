@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using Celeste;
 using Celeste.Mod;
-using Monocle;
 using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
@@ -52,7 +51,6 @@ public static class RestoreSettings {
             Settings.Instance.ApplyVolumes();
             Settings.Instance.ApplyScreen();
             Settings.Instance.ApplyLanguage();
-            (Engine.Scene as Overworld)?.GetUI<OuiMainMenu>()?.CreateButtons();
             origSettings = null;
         }
 
