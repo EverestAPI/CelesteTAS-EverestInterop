@@ -150,12 +150,19 @@ public static partial class InfoWatchEntity {
         if (player is { } && dist < (PLAYER_LINE_RANGE * PLAYER_LINE_RANGE)) {
             Color playerLineColor = colorMid;
             float playerLineDot = Vector2.Dot((player.Center - bumper.Position).SafeNormalize(), Vector2.UnitY);
+
+            Vector2 playerLaunchSpeed = CalculateBumperLaunchSpeed(bumper, player, 48f, false);
+            Vector2 playerLaunchSpeedX = CalculateBumperLaunchSpeed(bumper, player, 48f, true);
+
             if (playerLineDot <= HIGH_HIT_DOT) {
                 playerLineColor = colorHigh;
             } else if (playerLineDot > LOW_HIT_DOT) {
                 playerLineColor = colorLow;
             }
+
             Draw.Line(bumper.Position, player.Center, playerLineColor);
+            Draw.Line(player.Center, player.Center + playerLaunchSpeed, Color.Aqua);
+            Draw.Line(player.Center, player.Center + playerLaunchSpeedX, Color.Blue);
             Draw.Point(player.Center - Vector2.One, Color.OrangeRed);
             Draw.Point(bumper.Position - Vector2.One, Color.OrangeRed);
         }

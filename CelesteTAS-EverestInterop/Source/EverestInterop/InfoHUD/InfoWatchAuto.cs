@@ -13,6 +13,7 @@ namespace TAS.EverestInterop.InfoHUD;
 public static partial class InfoWatchEntity {
     public static string GetAutoWatchInfo(Entity entity, string separator, int decimals, string entityId) {
         StringBuilder data = new();
+        Player player = entity.Scene.GetPlayer();
 
         void appendSeparator(string add) {
             data.Append(separator);
@@ -46,8 +47,15 @@ public static partial class InfoWatchEntity {
         if (entity is Bumper bumper) {
             appendSeparator($"Anchor : {bumper.anchor.ToSimpleString(decimals)}");
             appendSeparator($"Offset : {(bumper.Position - bumper.anchor).ToSimpleString(decimals)}");
-            float bumperAngle = bumper.sine.counter % (float) (Math.PI * 2d);
-            appendSeparator($"Angle  : {(bumperAngle / (float)(Math.PI * 2d)).ToFormattedString(decimals)} ({bumperAngle.ToFormattedString(decimals)})");
+            float bumperCycleAngle = bumper.sine.counter % (float) (Math.PI * 2d);
+            appendSeparator($"Cycle  : {(bumperCycleAngle / (float) (Math.PI * 2d)).ToFormattedString(decimals)} ({bumperCycleAngle.ToFormattedString(decimals)})");
+            if (player is { }) {
+                float bumperYDot = Vector2.Dot((player.Center - bumper.Position).SafeNormalize(), Vector2.UnitY);
+                appendSeparator($"Launch : {CalculateBumperLaunchSpeed(bumper, player, 280f, false).ToSimpleString(decimals)}");
+                appendSeparator($"LaunchX: {CalculateBumperLaunchSpeed(bumper, player, 280f, true).ToSimpleString(decimals)}");
+                appendSeparator($"Y-Dot  : {bumperYDot.ToFormattedString(decimals)} ({Math.Atan(bumperYDot).ToFormattedString(decimals)})");
+            }
+
             if (bumper.respawnTimer > 0f) {
                 appendSeparator($"Respawn: {GameInfo.ConvertToFrames(bumper.respawnTimer)}");
             }
@@ -170,5 +178,32 @@ public static partial class InfoWatchEntity {
         }
         appendSeparator($"Speed          : {seeker.Speed.ToSimpleString(decimals)}");
         appendSeparator($"Speed Magnitude: {seeker.Speed.Length().ToFormattedString(decimals)}");
+    }
+    public static Vector2 CalculateBumperLaunchSpeed(Bumper bumper, Player player, float length = 280f, bool explosive = false) {
+        const float HIGH_HIT_DOT = -0.55f;
+        const float LOW_HIT_DOT = 0.65f;
+
+        const float PLAYER_HOR_SPEED = -15f / 28f;
+
+        float playerLineDot = Vector2.Dot((player.Center - bumper.Position).SafeNormalize(), Vector2.UnitY);
+
+        double playerLineSin = playerLineDot;
+        double playerLineCos = Math.Sqrt(1 - (playerLineSin * playerLineSin)) * Math.Sign(player.Center.X - bumper.Position.X);
+        Vector2 playerLaunchSpeed = new Vector2((float) playerLineCos, (float) playerLineSin);
+        bool autoJump = true;
+
+        if (playerLineDot > LOW_HIT_DOT) {
+            autoJump = false;
+        } else if (playerLineDot > HIGH_HIT_DOT ) {
+            playerLaunchSpeed.Y = PLAYER_HOR_SPEED;
+            playerLaunchSpeed.X = Math.Sign(playerLaunchSpeed.X);
+        }
+
+        playerLaunchSpeed *= length;
+        if (explosive) {
+            playerLaunchSpeed.X *= 1.2f;
+        }
+
+        return playerLaunchSpeed;
     }
 }
