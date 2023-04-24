@@ -31,7 +31,8 @@ public static class Savestates {
         {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerPos)), null},
         {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerDiff)), null},
         {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.DashTime)), null},
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.Frozen)), null}
+        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.Frozen)), null},
+        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.TransitionFrames)), null},
     };
 
     private static bool savedByBreakpoint;
