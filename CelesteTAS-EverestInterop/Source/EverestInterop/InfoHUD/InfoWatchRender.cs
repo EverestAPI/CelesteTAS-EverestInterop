@@ -53,6 +53,9 @@ public static partial class InfoWatchEntity {
                     if (entity is Bumper bumper) {
                         RenderBumper(bumper);
                     }
+                    if (entity is Player player2) {
+                        Draw.Line(player2.level.GetSpawnPoint(player2.Position), player2.Position, Color.Red);
+                    }
                 }
             }
 
