@@ -35,6 +35,7 @@ public static class AreaCompleteInfo {
         On.Celeste.AreaComplete.InitAreaCompleteInfoForEverest2 += AreaCompleteOnInitAreaCompleteInfoForEverest2;
         On.Celeste.AreaComplete.Info += AreaCompleteOnInfo;
         On.Celeste.CS08_Ending.Render += CS08_EndingOnRender;
+        On.Celeste.Session.SetFlag += SessionOnSetFlag;
     }
 
     [Unload]
@@ -43,6 +44,7 @@ public static class AreaCompleteInfo {
         On.Celeste.AreaComplete.InitAreaCompleteInfoForEverest2 -= AreaCompleteOnInitAreaCompleteInfoForEverest2;
         On.Celeste.AreaComplete.Info -= AreaCompleteOnInfo;
         On.Celeste.CS08_Ending.Render -= CS08_EndingOnRender;
+        On.Celeste.Session.SetFlag -= SessionOnSetFlag;
     }
 
     private static void LevelOnUpdate(On.Celeste.Level.orig_Update orig, Level self) {
@@ -72,6 +74,14 @@ public static class AreaCompleteInfo {
     private static void CS08_EndingOnRender(On.Celeste.CS08_Ending.orig_Render orig, CS08_Ending self) {
         orig(self);
         DrawText(self.versionAlpha);
+    }
+
+    private static void SessionOnSetFlag(On.Celeste.Session.orig_SetFlag orig, Session self, string flag, bool setTo) {
+        if (!setTo && flag == TasWasRun) {
+            return;
+        }
+
+        orig(self, flag, setTo);
     }
 
     private static void CustomEndScreenInfo(Action<float, string, string, string, string> orig, float ease, string speedrunTimerChapterString,
