@@ -57,10 +57,10 @@ public static class InfoMouse {
         InfoWatchEntity.CheckMouseButtons();
 
         DrawCursor(MouseButtons.Position);
-        MoveInfoHub();
+        MoveInfoHud();
     }
 
-    private static void MoveInfoHub() {
+    private static void MoveInfoHud() {
         if (MouseButtons.Left.Pressed) {
             startDragPosition = MouseButtons.Position;
         }
