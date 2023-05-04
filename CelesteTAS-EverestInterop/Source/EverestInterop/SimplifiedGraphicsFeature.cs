@@ -166,7 +166,7 @@ public static class SimplifiedGraphicsFeature {
         IL.Celeste.BloomRenderer.Apply += BloomRendererOnApply;
 
         On.Celeste.Decal.Render += Decal_Render;
-        HookHelper.SkipMethod(t, nameof(IsSimplifiedDecal), "Render", typeof(CliffsideWindFlag), typeof(Flagline));
+        HookHelper.SkipMethod(t, nameof(IsSimplifiedDecal), "Render", typeof(CliffsideWindFlag), typeof(Flagline), typeof(FakeWall));
 
         HookHelper.SkipMethod(t, nameof(IsSimplifiedParticle),
             typeof(ParticleSystem).GetMethod("Render", new Type[] { }),
