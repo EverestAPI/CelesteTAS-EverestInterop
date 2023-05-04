@@ -1467,6 +1467,10 @@ public partial class Studio : BaseForm {
         InsertNewLine("EnforceLegal");
     }
 
+    private void assertToolStripMenuItem_Click(object sender, EventArgs e) {
+        InsertNewLine("Assert, Condition, Expected, Actual");
+    }
+
     private void unsafeToolStripMenuItem_Click(object sender, EventArgs e) {
         InsertNewLine("Unsafe");
     }

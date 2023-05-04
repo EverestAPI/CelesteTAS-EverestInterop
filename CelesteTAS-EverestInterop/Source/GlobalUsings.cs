@@ -7,11 +7,11 @@ namespace TAS;
 public static class GlobalVariables {
     public static CelesteTasSettings TasSettings => CelesteTasSettings.Instance;
 
-    public static void AbortTas(string message, bool log = false) {
+    public static void AbortTas(string message, bool log = false, float duration = 2f) {
         if (log) {
-            Toast.ShowAndLog(message);
+            Toast.ShowAndLog(message, duration);
         } else {
-            Toast.Show(message);
+            Toast.Show(message, duration);
         }
 
         Manager.DisableRunLater();
