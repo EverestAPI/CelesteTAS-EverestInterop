@@ -46,18 +46,20 @@ public partial record Command {
     public static bool TryParse(InputController inputController, string filePath, int fileLine, string lineText, int frame, int studioLine,
         out Command command) {
         command = null;
+        string error = $"Failed to parse command \"{lineText.Trim()}\" at line {fileLine} of the file \"{filePath}\"";
         try {
             if (!string.IsNullOrEmpty(lineText) && char.IsLetter(lineText[0])) {
                 string[] args = Split(lineText);
                 string commandName = args[0];
 
                 KeyValuePair<TasCommandAttribute, MethodInfo> pair = TasCommandAttribute.FindMethod(commandName);
-                if (pair.Equals(default)) {
+                if (pair.Key == null || pair.Value == null) {
+                    error.Log();
                     return false;
                 }
 
-                MethodInfo method = pair.Value;
                 TasCommandAttribute attribute = pair.Key;
+                MethodInfo method = pair.Value;
 
                 string[] commandArgs = args.Skip(1).ToArray();
 
@@ -92,7 +94,7 @@ public partial record Command {
 
             return false;
         } catch (Exception e) {
-            e.LogException("Failed to parse command.");
+            e.LogException(error);
             return false;
         }
     }
