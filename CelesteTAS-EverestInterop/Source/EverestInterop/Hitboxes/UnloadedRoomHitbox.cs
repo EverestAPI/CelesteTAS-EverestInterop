@@ -539,7 +539,11 @@ public static class UnloadedRoomHitbox {
             string name = Regex.Replace(input, "\\d+$", string.Empty);
             string decalName = name.ToLower().Replace("decals/", "");
 
-            actions.Add(() => GFX.Game.GetAtlasSubtextures(name)[0].DrawCentered(position, Color.White, data.Scale));
+            actions.Add(() => {
+                if (!TasSettings.SimplifiedGraphics || !TasSettings.SimplifiedDecal) {
+                    GFX.Game.GetAtlasSubtextures(name)[0].DrawCentered(position, Color.White, data.Scale);
+                }
+            });
 
             switch (decalName) {
                 case "3-resort/roofcenter":

@@ -113,6 +113,22 @@
 - This is used at the start of fullgame files.
 - It prevents the use of [Console](#console), [Set](#set), [Invoke](#invoke), [StunPause simulate mode](#stunpause-and-endstunpause) commands which would not be legal in a run.
 
+### Assert
+- If the condition being checked is not met, tas will be stopped. Usually used to make tas stop as soon as possible when tas desync.
+- `Assert, Condition, Expected, Actual`
+- Conditions are `Equal`, `NotEqual`, `Contain`, `NotContain`, `StartWith`, `NotStartWith`, `EndWith`, `NotEndWith`
+- `Actual` use the same syntax as the [custom info template](https://github.com/EverestAPI/CelesteTAS-EverestInterop#custom-info) but without the curly brackets
+- Examples:
+  ```
+  # Ensure that you are currently in the save file selection screen and the save file is selected
+  Assert EndWith OuiFileSelect Engine.Scene.Current
+  Assert Equal True Engine.Scene.Current.SlotSelected
+  ```
+  ```
+  # Ensure that you are currently in the chapter 2
+  Assert EndWith 2-OldSite Session.Area.SID
+  ```
+
 ### StunPause and EndStunPause
 - ```
   StunPause, (optional mode, Simulate or Input)
