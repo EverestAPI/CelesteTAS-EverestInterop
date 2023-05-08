@@ -43,7 +43,7 @@ public static class InfoCustom {
         ParseTemplate($"{{{template}}}", TasSettings.CustomInfoDecimals, new Dictionary<string, List<Entity>>(), true).ConsoleLog();
     }
 
-    private static string ParseTemplate(string template, int decimals, Dictionary<string, List<Entity>> cachedEntities, bool consoleCommand) {
+    public static string ParseTemplate(string template, int decimals, Dictionary<string, List<Entity>> cachedEntities, bool consoleCommand) {
         List<Entity> GetCachedOrFindEntities(Type type, string entityId, Dictionary<string, List<Entity>> dictionary) {
             string entityText = $"{type.FullName}{entityId}";
             List<Entity> entities;
@@ -265,7 +265,7 @@ public static class InfoCustom {
             }
         }
 
-        if (obj is IEnumerable enumerable and not IEnumerable<char>) {
+        if (obj is IEnumerable enumerable and not IEnumerable<char> and not IEnumerable<Component> and not IEnumerable<Entity>) {
             StringBuilder sb = new();
             foreach (object o in enumerable) {
                 if (sb.Length > 0) {

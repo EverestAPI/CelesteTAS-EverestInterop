@@ -152,6 +152,8 @@ public static class SimplifiedGraphicsFeature {
             tileGlitcher.GetStateMachineTarget().IlHook(ModTileGlitcher);
         }
 
+        Type t = typeof(SimplifiedGraphicsFeature);
+
         On.Celeste.CrystalStaticSpinner.CreateSprites += CrystalStaticSpinner_CreateSprites;
         IL.Celeste.CrystalStaticSpinner.GetHue += CrystalStaticSpinnerOnGetHue;
 
@@ -162,9 +164,10 @@ public static class SimplifiedGraphicsFeature {
         IL.Celeste.LightingRenderer.Render += LightingRenderer_Render;
         On.Celeste.ColorGrade.Set_MTexture_MTexture_float += ColorGradeOnSet_MTexture_MTexture_float;
         IL.Celeste.BloomRenderer.Apply += BloomRendererOnApply;
-        On.Celeste.Decal.Render += Decal_Render;
 
-        Type t = typeof(SimplifiedGraphicsFeature);
+        On.Celeste.Decal.Render += Decal_Render;
+        HookHelper.SkipMethod(t, nameof(IsSimplifiedDecal), "Render", typeof(CliffsideWindFlag), typeof(Flagline), typeof(FakeWall));
+
         HookHelper.SkipMethod(t, nameof(IsSimplifiedParticle),
             typeof(ParticleSystem).GetMethod("Render", new Type[] { }),
             typeof(ParticleSystem).GetMethod("Render", new[] {typeof(float)})
@@ -246,6 +249,8 @@ public static class SimplifiedGraphicsFeature {
     private static bool IsSimplifiedParticle() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedParticle;
 
     private static bool IsSimplifiedDistort() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedDistort;
+
+    private static bool IsSimplifiedDecal() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedDecal;
 
     private static bool IsSimplifiedMiniTextbox() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedMiniTextbox;
 
@@ -377,7 +382,7 @@ public static class SimplifiedGraphicsFeature {
     }
 
     private static void Decal_Render(On.Celeste.Decal.orig_Render orig, Decal self) {
-        if (TasSettings.SimplifiedGraphics && TasSettings.SimplifiedDecal) {
+        if (IsSimplifiedDecal()) {
             string decalName = self.Name.ToLower().Replace("decals/", "");
             if (!SolidDecals.Contains(decalName)) {
                 if (!DecalRegistry.RegisteredDecals.TryGetValue(decalName, out DecalRegistry.DecalInfo decalInfo)) {

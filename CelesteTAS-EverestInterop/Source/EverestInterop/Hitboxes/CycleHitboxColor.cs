@@ -107,7 +107,8 @@ public static class CycleHitboxColor {
                 float time = self.Scene.TimeActive;
                 int timeDist = 0;
 
-                while (Math.Floor((time - offsetValue - Engine.DeltaTime) / 0.05f) >= Math.Floor((time - offsetValue) / 0.05f) && timeDist < 3) {
+                while (Math.Floor(((double) time - offsetValue - Engine.DeltaTime) / 0.05f) >= Math.Floor(((double) time - offsetValue) / 0.05f) &&
+                       timeDist < 3) {
                     time += Engine.DeltaTime;
                     timeDist++;
                 }
