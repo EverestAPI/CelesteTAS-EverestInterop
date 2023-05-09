@@ -1,22 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29521.150
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33213.308
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CelesteTAS-EverestInterop", "CelesteTAS-EverestInterop\CelesteTAS-EverestInterop.csproj", "{12CEFB4D-5E61-4F7E-93A6-637D96AB0139}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CelesteTAS-EverestInterop", "CelesteTAS-EverestInterop\CelesteTAS-EverestInterop.csproj", "{12CEFB4D-5E61-4F7E-93A6-637D96AB0139}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CelesteStudio", "Studio\CelesteStudio.csproj", "{51388820-C0EE-420A-BB43-94C7F75145FC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CelesteStudio", "Studio\CelesteStudio.csproj", "{51388820-C0EE-420A-BB43-94C7F75145FC}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F7CE669A-946E-425F-9C3F-657A88DBF4B1}"
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "StudioCommunication", "StudioCommunication\StudioCommunication.shproj", "{6B20B22D-D4C8-4F9D-A84A-E340551AE591}"
 EndProject
 Global
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		StudioCommunication\StudioCommunication.projitems*{12cefb4d-5e61-4f7e-93a6-637d96ab0139}*SharedItemsImports = 4
-		StudioCommunication\StudioCommunication.projitems*{51388820-c0ee-420a-bb43-94c7f75145fc}*SharedItemsImports = 4
-		StudioCommunication\StudioCommunication.projitems*{6b20b22d-d4c8-4f9d-a84a-e340551ae591}*SharedItemsImports = 13
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -36,5 +31,10 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {01A2B8AE-3E45-4A9E-8C01-379AB3FAED1E}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		StudioCommunication\StudioCommunication.projitems*{12cefb4d-5e61-4f7e-93a6-637d96ab0139}*SharedItemsImports = 5
+		StudioCommunication\StudioCommunication.projitems*{51388820-c0ee-420a-bb43-94c7f75145fc}*SharedItemsImports = 5
+		StudioCommunication\StudioCommunication.projitems*{6b20b22d-d4c8-4f9d-a84a-e340551ae591}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal
