@@ -25,10 +25,9 @@ public static class HitboxNpc {
 
     private static void BirdNPC_DebugRender(On.Celeste.BirdNPC.orig_DebugRender orig, BirdNPC birdNpc, Camera camera) {
         if (TasSettings.ShowHitboxes) {
-            if (TasSettings.ShowTriggerHitboxes && birdNpc.mode == BirdNPC.Modes.DashingTutorial && Engine.Scene is Level level && level.Session.Area.ID == 0 &&
-            level.Session.Level == "3") {
+            if (TasSettings.ShowTriggerHitboxes && birdNpc.mode == BirdNPC.Modes.DashingTutorial && Engine.Scene is Level {Session: {Area.ID: 0, Level: "3"}} level) {
                 Player player = level.GetPlayer();
-                Vector2 offset = player is { } ? player.Collider.BottomRight : DefaultOffset;
+                Vector2 offset = player is null ? DefaultOffset : player.Collider.BottomRight;
                 Vector2 position = birdNpc.StartPosition;
 
                 void DrawTrigger(float xRange, float yRangeStart, float yRangeEnd) {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -480,6 +480,12 @@ public static class UnloadedRoomHitbox {
                     continue;
                 }
             }
+
+#if REALESE
+                if (rect.Width == 0 || rect.Height == 0) {
+                    continue;
+                }
+#endif
 
             if (textureId.IsNotEmpty()) {
                 MTexture texture = GFX.Game[textureId];
