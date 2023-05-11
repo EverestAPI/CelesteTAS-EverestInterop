@@ -482,9 +482,9 @@ public static class UnloadedRoomHitbox {
             }
 
 #if RELEASE
-             if (rect.Width == 0 || rect.Height == 0) {
-                 continue;
-             }
+            if (rect.Width == 0 || rect.Height == 0) {
+                continue;
+            }
 #endif
 
             if (textureId.IsNotEmpty()) {
