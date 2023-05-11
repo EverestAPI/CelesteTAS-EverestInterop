@@ -186,12 +186,16 @@ public static class StunPauseCommand {
         SkipFrames = 0;
         WaitingFrames = 0;
         LocalMode = null;
+    }
+
+    [DisableRun]
+    private static void ClearGlobalModRuntime() {
         GlobalModeRuntime = null;
     }
 
     [ParseFileEnd]
     [ClearInputs]
-    private static void ClearGlobalMode() {
+    private static void ClearGlobalModeParsing() {
         GlobalModeParsing = null;
     }
 
