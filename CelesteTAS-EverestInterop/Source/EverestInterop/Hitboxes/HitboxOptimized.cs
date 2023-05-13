@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
@@ -25,6 +26,39 @@ public static class HitboxOptimized {
                 }
             });
         }
+
+        typeof(Puffer).GetMethod("Explode", BindingFlags.NonPublic | BindingFlags.Instance).HookBefore<Entity>(self => PufferPushRadius.Add(new Circle(40f, self.X, self.Y)));
+       
+
+        if (ModUtils.GetType("CrystallineHelper", "vitmod.CustomPuffer") is { } customPufferType) {
+            getPushRadius = customPufferType.GetField("pushRadius", BindingFlags.NonPublic | BindingFlags.Instance);
+            customPufferType.GetMethod("Explode", BindingFlags.NonPublic | BindingFlags.Instance).HookBefore<Entity>(self => PufferPushRadius.Add(new Circle(((Circle) getPushRadius.GetValue(self)).Radius, self.X, self.Y)));
+            // its debug render also needs optimize
+            // but i have no good idea, so i put it aside
+        }
+    }
+
+    private static FieldInfo getPushRadius;
+
+    public static List<Circle> PufferPushRadius = new List<Circle>();
+    private static void AddPufferPushRadius(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
+        orig(self, camera);
+
+        if (!TasSettings.ShowHitboxes) {
+            return;
+        }
+
+        if (self.Scene is not Level level) {
+            return;
+        }
+
+        foreach (Circle circle in PufferPushRadius) {
+            Monocle.Draw.Circle(circle.Position, circle.Radius, Color.DarkRed, 4);
+        }
+
+        if (Engine.FreezeTimer <= 0f) {
+            PufferPushRadius.Clear();
+        }
     }
 
     private static bool IsShowHitboxes() {
@@ -37,6 +71,7 @@ public static class HitboxOptimized {
         On.Monocle.EntityList.DebugRender += AddHoldableColliderHitbox;
         On.Monocle.EntityList.DebugRender += AddLockBlockColliderHitbox;
         On.Monocle.EntityList.DebugRender += AddSpawnPointHitbox;
+        On.Monocle.EntityList.DebugRender += AddPufferPushRadius;
         IL.Celeste.PlayerCollider.DebugRender += PlayerColliderOnDebugRender;
         On.Celeste.PlayerCollider.DebugRender += AddFeatherHitbox;
         On.Monocle.Circle.Render += CircleOnRender;
@@ -52,6 +87,7 @@ public static class HitboxOptimized {
         On.Monocle.EntityList.DebugRender -= AddHoldableColliderHitbox;
         On.Monocle.EntityList.DebugRender -= AddLockBlockColliderHitbox;
         On.Monocle.EntityList.DebugRender -= AddSpawnPointHitbox;
+        On.Monocle.EntityList.DebugRender -= AddPufferPushRadius;
         IL.Celeste.PlayerCollider.DebugRender -= PlayerColliderOnDebugRender;
         On.Celeste.PlayerCollider.DebugRender -= AddFeatherHitbox;
         On.Monocle.Circle.Render -= CircleOnRender;
