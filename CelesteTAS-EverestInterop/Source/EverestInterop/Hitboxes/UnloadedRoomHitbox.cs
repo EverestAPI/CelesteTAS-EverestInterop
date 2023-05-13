@@ -481,10 +481,10 @@ public static class UnloadedRoomHitbox {
                 }
             }
 
-#if REALESE
-                if (rect.Width == 0 || rect.Height == 0) {
-                    continue;
-                }
+#if RELEASE
+            if (rect.Width == 0 || rect.Height == 0) {
+                continue;
+            }
 #endif
 
             if (textureId.IsNotEmpty()) {

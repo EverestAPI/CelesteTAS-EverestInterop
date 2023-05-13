@@ -25,7 +25,8 @@ public static class StunPauseCommand {
     public static int SkipFrames;
     public static int WaitingFrames;
     public static StunPauseMode? LocalMode;
-    public static StunPauseMode? GlobalMode;
+    public static StunPauseMode? GlobalModeParsing;
+    public static StunPauseMode? GlobalModeRuntime;
 
     private static StunPauseMode Mode {
         get {
@@ -33,7 +34,8 @@ public static class StunPauseCommand {
                 return StunPauseMode.Input;
             }
 
-            return LocalMode ?? GlobalMode ?? StunPauseMode.Input;
+            StunPauseMode? globalMode = ParsingCommand ? GlobalModeParsing : GlobalModeRuntime;
+            return LocalMode ?? globalMode ?? StunPauseMode.Input;
         }
     }
 
@@ -97,13 +99,18 @@ public static class StunPauseCommand {
     private static void StunPause(string[] args, int studioLine, string filePath, int fileLine) {
         LocalMode = null;
 
-        if (args.IsNotEmpty() && Enum.TryParse(args[0], true, out StunPauseMode value)) {
-            LocalMode = value;
+        if (args.IsNotEmpty()) {
+            if (Enum.TryParse(args[0], true, out StunPauseMode value)) {
+                LocalMode = value;
+            } else if (ParsingCommand) {
+                AbortTas("StunPause command failed.\nMode must be Input or Simulate");
+                return;
+            }
         }
 
-        if (Command.Parsing && Mode == StunPauseMode.Input) {
+        if (ParsingCommand && Mode == StunPauseMode.Input) {
             StunPauseAutoInputMode(studioLine, filePath, fileLine);
-        } else if (!Command.Parsing && Mode == StunPauseMode.Simulate) {
+        } else if (!ParsingCommand && Mode == StunPauseMode.Simulate) {
             if (!SimulatePauses) {
                 SimulatePauses = true;
                 PauseOnCurrentFrame = false;
@@ -152,9 +159,9 @@ public static class StunPauseCommand {
 
     [TasCommand("EndStunPause", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
     private static void EndStunPause(string[] args, int __, string filePath, int fileLine) {
-        if (Command.Parsing && Mode == StunPauseMode.Input) {
+        if (ParsingCommand && Mode == StunPauseMode.Input) {
             AutoInputCommand.EndAutoInputImpl(filePath, fileLine, "EndStunPause", "StunPause");
-        } else if (!Command.Parsing && Mode == StunPauseMode.Simulate) {
+        } else if (!ParsingCommand && Mode == StunPauseMode.Simulate) {
             Reset();
         }
     }
@@ -162,7 +169,13 @@ public static class StunPauseCommand {
     [TasCommand("StunPauseMode", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
     private static void StunPauseCommandMode(string[] args) {
         if (args.IsNotEmpty() && Enum.TryParse(args[0], true, out StunPauseMode value)) {
-            GlobalMode = value;
+            if (ParsingCommand) {
+                GlobalModeParsing = value;
+            } else {
+                GlobalModeRuntime = value;
+            }
+        } else if (ParsingCommand) {
+            AbortTas("StunPauseMode command failed.\nMode must be Input or Simulate");
         }
     }
 
@@ -175,10 +188,15 @@ public static class StunPauseCommand {
         LocalMode = null;
     }
 
+    [DisableRun]
+    private static void ClearGlobalModRuntime() {
+        GlobalModeRuntime = null;
+    }
+
     [ParseFileEnd]
     [ClearInputs]
-    private static void ClearGlobalMode() {
-        GlobalMode = null;
+    private static void ClearGlobalModeParsing() {
+        GlobalModeParsing = null;
     }
 
     public static void UpdateSimulateSkipInput() {
