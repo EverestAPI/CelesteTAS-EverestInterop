@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
@@ -13,6 +12,8 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxOptimized {
+    private static readonly List<Circle> pufferPushRadius = new();
+
     [Initialize]
     private static void Initialize() {
         // remove the yellow points hitboxes added by "Madeline in Wonderland"
@@ -27,37 +28,13 @@ public static class HitboxOptimized {
             });
         }
 
-        typeof(Puffer).GetMethod("Explode", BindingFlags.NonPublic | BindingFlags.Instance).HookBefore<Entity>(self => PufferPushRadius.Add(new Circle(40f, self.X, self.Y)));
+        typeof(Puffer).GetMethodInfo("Explode").HookBefore<Puffer>(self => pufferPushRadius.Add(new Circle(40f, self.X, self.Y)));
        
-
-        if (ModUtils.GetType("CrystallineHelper", "vitmod.CustomPuffer") is { } customPufferType) {
-            getPushRadius = customPufferType.GetField("pushRadius", BindingFlags.NonPublic | BindingFlags.Instance);
-            customPufferType.GetMethod("Explode", BindingFlags.NonPublic | BindingFlags.Instance).HookBefore<Entity>(self => PufferPushRadius.Add(new Circle(((Circle) getPushRadius.GetValue(self)).Radius, self.X, self.Y)));
+        if (ModUtils.GetType("CrystallineHelper", "vitmod.CustomPuffer") is { } customPufferType && 
+            customPufferType.CreateGetDelegate<Entity, Circle>("pushRadius") is { } getPushRadius) {
+            customPufferType.GetMethodInfo("Explode").HookBefore<Entity>(self => pufferPushRadius.Add(new Circle(getPushRadius.Invoke(self).Radius, self.X, self.Y)));
             // its debug render also needs optimize
             // but i have no good idea, so i put it aside
-        }
-    }
-
-    private static FieldInfo getPushRadius;
-
-    public static List<Circle> PufferPushRadius = new List<Circle>();
-    private static void AddPufferPushRadius(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
-        orig(self, camera);
-
-        if (!TasSettings.ShowHitboxes) {
-            return;
-        }
-
-        if (self.Scene is not Level level) {
-            return;
-        }
-
-        foreach (Circle circle in PufferPushRadius) {
-            Monocle.Draw.Circle(circle.Position, circle.Radius, Color.DarkRed, 4);
-        }
-
-        if (Engine.FreezeTimer <= 0f) {
-            PufferPushRadius.Clear();
         }
     }
 
@@ -288,6 +265,26 @@ public static class HitboxOptimized {
         }
 
         orig(self, camera);
+    }
+
+    private static void AddPufferPushRadius(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
+        orig(self, camera);
+
+        if (!TasSettings.ShowHitboxes) {
+            return;
+        }
+
+        if (self.Scene is not Level level) {
+            return;
+        }
+
+        foreach (Circle circle in pufferPushRadius) {
+            Draw.Circle(circle.Position, circle.Radius, Color.DarkRed, 4);
+        }
+
+        if (Engine.FreezeTimer <= 0f) {
+            pufferPushRadius.Clear();
+        }
     }
 
     private static void PlayerColliderOnDebugRender(ILContext il) {
