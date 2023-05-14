@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Celeste;
@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
+using MonoMod.RuntimeDetour;
 using TAS.Module;
 using TAS.Utils;
 
@@ -36,6 +37,10 @@ public static class HitboxOptimized {
             // its debug render also needs optimize
             // but i have no good idea, so i put it aside
         }
+
+        using (new DetourContext {After = new List<string> {"*"}}) {
+            On.Monocle.Entity.DebugRender += ModDebugRender;
+        }
     }
 
     private static bool IsShowHitboxes() {
@@ -44,11 +49,7 @@ public static class HitboxOptimized {
 
     [Load]
     private static void Load() {
-        On.Monocle.Entity.DebugRender += ModDebugRender;
-        On.Monocle.EntityList.DebugRender += AddHoldableColliderHitbox;
-        On.Monocle.EntityList.DebugRender += AddLockBlockColliderHitbox;
-        On.Monocle.EntityList.DebugRender += AddSpawnPointHitbox;
-        On.Monocle.EntityList.DebugRender += AddPufferPushRadius;
+        On.Monocle.EntityList.DebugRender += EntityListOnDebugRender;
         IL.Celeste.PlayerCollider.DebugRender += PlayerColliderOnDebugRender;
         On.Celeste.PlayerCollider.DebugRender += AddFeatherHitbox;
         On.Monocle.Circle.Render += CircleOnRender;
@@ -61,10 +62,7 @@ public static class HitboxOptimized {
     [Unload]
     private static void Unload() {
         On.Monocle.Entity.DebugRender -= ModDebugRender;
-        On.Monocle.EntityList.DebugRender -= AddHoldableColliderHitbox;
-        On.Monocle.EntityList.DebugRender -= AddLockBlockColliderHitbox;
-        On.Monocle.EntityList.DebugRender -= AddSpawnPointHitbox;
-        On.Monocle.EntityList.DebugRender -= AddPufferPushRadius;
+        On.Monocle.EntityList.DebugRender -= EntityListOnDebugRender;
         IL.Celeste.PlayerCollider.DebugRender -= PlayerColliderOnDebugRender;
         On.Celeste.PlayerCollider.DebugRender -= AddFeatherHitbox;
         On.Monocle.Circle.Render -= CircleOnRender;
@@ -139,17 +137,30 @@ public static class HitboxOptimized {
         }
     }
 
-    private static void AddHoldableColliderHitbox(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
+    private static void EntityListOnDebugRender(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
+        Level level = self.Scene as Level;
+        if (TasSettings.ShowHitboxes && level != null) {
+            AddSpawnPointHitbox(level);
+        }
+
         orig(self, camera);
 
-        if (!TasSettings.ShowHitboxes) {
-            return;
+        if (TasSettings.ShowHitboxes && level != null) {
+            AddHoldableColliderHitbox(level, camera);
+            AddLockBlockColliderHitbox(level);
+            AddPufferPushRadius();
         }
+    }
 
-        if (self.Scene is not Level level) {
-            return;
+    private static void AddSpawnPointHitbox(Level level) {
+        foreach (Vector2 spawn in level.Session.LevelData.Spawns) {
+            Draw.HollowRect(spawn - new Vector2(4, 11), 8, 11,
+                HitboxColor.RespawnTriggerColor * HitboxColor.UnCollidableAlpha
+            );
         }
+    }
 
+    private static void AddHoldableColliderHitbox(Level level, Camera camera) {
         List<Holdable> holdables = level.Tracker.GetCastComponents<Holdable>();
         if (holdables.IsEmpty()) {
             return;
@@ -184,14 +195,8 @@ public static class HitboxOptimized {
         }
     }
 
-    private static void AddLockBlockColliderHitbox(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
-        orig(self, camera);
-
-        if (!TasSettings.ShowHitboxes) {
-            return;
-        }
-
-        if (self.Scene is not Level level || level.GetPlayer() is not { } player) {
+    private static void AddLockBlockColliderHitbox(Level level) {
+        if (level.GetPlayer() is not { } player) {
             return;
         }
 
@@ -255,29 +260,7 @@ public static class HitboxOptimized {
         }
     }
 
-    private static void AddSpawnPointHitbox(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
-        if (TasSettings.ShowHitboxes && self.Scene is Level {Session: { } session}) {
-            foreach (Vector2 spawn in session.LevelData.Spawns) {
-                Draw.HollowRect(spawn - new Vector2(4, 11), 8, 11,
-                    HitboxColor.RespawnTriggerColor * HitboxColor.UnCollidableAlpha
-                );
-            }
-        }
-
-        orig(self, camera);
-    }
-
-    private static void AddPufferPushRadius(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
-        orig(self, camera);
-
-        if (!TasSettings.ShowHitboxes) {
-            return;
-        }
-
-        if (self.Scene is not Level level) {
-            return;
-        }
-
+    private static void AddPufferPushRadius() {
         foreach (Circle circle in pufferPushRadius) {
             Draw.Circle(circle.Position, circle.Radius, Color.DarkRed, 4);
         }
