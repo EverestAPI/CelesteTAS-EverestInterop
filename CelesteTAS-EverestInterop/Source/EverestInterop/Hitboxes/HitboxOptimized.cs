@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -106,16 +106,40 @@ public static class HitboxOptimized {
     }
 
     private static void DrawPufferHitbox(Puffer puffer) {
-        Vector2 bottomCenter = puffer.BottomCenter - Vector2.UnitY * 1;
-        if (puffer.Scene.Tracker.GetEntity<Player>() is {Ducking: true}) {
-            bottomCenter -= Vector2.UnitY * 3;
-        }
+        /*
+         * ProximityExplodeCheck: player.CenterY >= base.Y + collider.Bottom - 4f
+         * OnPlayer Explode: player.Bottom > lastSpeedPosition.Y + 3f
+         * 
+         * CenterY can be half integer if crouched
+         * base.Y is not integer
+         * laseSpeedPosition is not integer
+         * 
+         * Draw.Line: round to integer, plus an annoying offset depending on angle
+         * Draw.Rect: trunc to integer, quite stable
+         */
 
+        /*
+         * we pretend we are using Hurtbox in collide check, and assume Player's position is on grid
+         * b = Hurtbox.Bottom = [player's Position] + ...
+         * b'= Rendered Hurtbox Bottom = b - 1
+         * c = player.CenterY = [player's Position] + (Hitbox.Top + Hitbox.Height/2)
+         * int i = height of Draw.Line
+         * i - b + c >= base.Y + collider.Bottom - 4f = puffer.Bottom - 4f
+         * i = Ceil(puffer.Bottom - 4f + b' - c)
+         * 
+         * in some weird cases, maddy can have starFlyHitbox + normalHurtbox...so we can't just check Ducking and StateMachine.State == 19
+         */
+
+        var player = puffer.Scene.Tracker.GetEntity<Player>();
+        float b = player?.hurtbox.Bottom ?? -2f;
+        float c = player?.collider.CenterY ?? -5.5f;
+        Vector2 bottomCenter = new Vector2(puffer.CenterX, (float) Math.Ceiling(puffer.Bottom - 5f + b - c));
         Color hitboxColor = HitboxColor.GetCustomColor(puffer);
-
         Draw.Circle(puffer.Position, 32f, hitboxColor, 32);
-        Draw.Line(bottomCenter - Vector2.UnitX * 32, bottomCenter - Vector2.UnitX * 6, hitboxColor);
-        Draw.Line(bottomCenter + Vector2.UnitX * 6, bottomCenter + Vector2.UnitX * 32, hitboxColor);
+        Color heightCheckColor = HitboxColor.PufferHeightCheckColor * (puffer.Collidable ? 1f : HitboxColor.UnCollidableAlpha);
+        Draw.Rect(bottomCenter.X - 7, bottomCenter.Y, -25f, 1f, heightCheckColor);
+        Draw.Rect(bottomCenter.X + 7, bottomCenter.Y, 25f, 1f, heightCheckColor);
+        // sometimes it will draw an extra pixel at the endpoint..
     }
 
     private static void DrawSwitchGateEnd(SwitchGate gate) {
@@ -263,7 +287,7 @@ public static class HitboxOptimized {
 
     private static void AddPufferPushRadius() {
         foreach (Circle circle in pufferPushRadius) {
-            Draw.Circle(circle.Position, circle.Radius, Color.DarkRed, 4);
+            Draw.Circle(circle.Position, circle.Radius, HitboxColor.PufferPushRadiusColor, 4);
         }
 
         if (Engine.FreezeTimer <= 0f) {
@@ -280,6 +304,26 @@ public static class HitboxOptimized {
             ilCursor
                 .Emit(OpCodes.Ldarg_0)
                 .EmitDelegate<Func<Color, Component, Color>>(OptimizePlayerColliderHitbox);
+            ilCursor.Index++;
+            ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate(OptimizePufferPlayerCollider);
+        }
+    }
+
+    private static void OptimizePufferPlayerCollider(Component component) {
+        if (component.Entity is not Puffer puffer || component is not PlayerCollider pc) {
+            return;
+        }
+        if (typeof(Puffer).CreateGetDelegate<Puffer,Vector2>("lastSpeedPosition") is { } getLastSpeedPosition) {
+            float y = getLastSpeedPosition.Invoke(puffer).Y + 3f - 1f;
+            float z = (float)Math.Ceiling(y);
+            if (z <= y) {
+                z+= 1f;
+            }
+            if (z > pc.Collider.AbsoluteBottom) {
+                return;
+            }
+            float top = Math.Max(pc.Collider.AbsoluteTop,z);
+            Draw.HollowRect(puffer.X - 7f, top, 14f, pc.Collider.AbsoluteBottom - top, puffer.Collidable ? HitboxColor.PufferHeightCheckColor : HitboxColor.PufferHeightCheckColor * HitboxColor.UnCollidableAlpha);
         }
     }
 
