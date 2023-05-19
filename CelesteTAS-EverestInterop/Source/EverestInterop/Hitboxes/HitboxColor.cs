@@ -1,4 +1,5 @@
-using System;
+﻿using System;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Celeste;
@@ -16,6 +17,8 @@ public static class HitboxColor {
     public static readonly Color DefaultTriggerColor = Color.MediumPurple;
     public static readonly Color DefaultPlatformColor = Color.Coral;
     public static readonly Color RespawnTriggerColor = Color.YellowGreen;
+    public static readonly Color PufferHeightCheckColor = Color.WhiteSmoke;
+    public static readonly Color PufferPushRadiusColor = Color.DarkRed;
 
     private static readonly Regex HexChar = new(@"^[0-9a-f]*$", RegexOptions.IgnoreCase);
 
