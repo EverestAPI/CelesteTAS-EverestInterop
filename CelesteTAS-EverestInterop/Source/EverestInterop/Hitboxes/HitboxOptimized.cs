@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
@@ -108,11 +107,9 @@ public static class HitboxOptimized {
     private static void DrawPufferHitbox(Puffer puffer) {
         /*
          * ProximityExplodeCheck: player.CenterY >= base.Y + collider.Bottom - 4f
-         * OnPlayer Explode: player.Bottom > lastSpeedPosition.Y + 3f
          * 
          * CenterY can be half integer if crouched
          * base.Y is not integer
-         * laseSpeedPosition is not integer
          * 
          * Draw.Line: round to integer, plus an annoying offset depending on angle
          * Draw.Rect: trunc to integer, quite stable
@@ -140,6 +137,12 @@ public static class HitboxOptimized {
         Draw.Rect(bottomCenter.X - 7, bottomCenter.Y, -25f, 1f, heightCheckColor);
         Draw.Rect(bottomCenter.X + 7, bottomCenter.Y, 25f, 1f, heightCheckColor);
         // sometimes it will draw an extra pixel at the endpoint..
+
+        /*
+         * still one small issue remains: we are pretending that all collide checks are using player's hurtbox
+         * but for collide check with the circle detectRadius
+         * current implementation can't hold if player's hitbox is starFlyHitbox (which is 1px wider than hurtbox on twosides)
+         */
     }
 
     private static void DrawSwitchGateEnd(SwitchGate gate) {
@@ -313,8 +316,10 @@ public static class HitboxOptimized {
         if (component.Entity is not Puffer puffer || component is not PlayerCollider pc) {
             return;
         }
+        // OnPlayer Explode: player.Bottom > lastSpeedPosition.Y + 3f
         if (typeof(Puffer).CreateGetDelegate<Puffer,Vector2>("lastSpeedPosition") is { } getLastSpeedPosition) {
             float y = getLastSpeedPosition.Invoke(puffer).Y + 3f - 1f;
+            // -1f coz player's bottom is "1px lower" than the bottom of hitbox (due to how they render)
             float z = (float)Math.Ceiling(y);
             if (z <= y) {
                 z+= 1f;
