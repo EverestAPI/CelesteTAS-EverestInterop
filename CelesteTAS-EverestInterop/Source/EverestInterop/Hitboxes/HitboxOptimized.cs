@@ -16,6 +16,10 @@ namespace TAS.EverestInterop.Hitboxes;
 public static class HitboxOptimized {
     private static readonly List<Circle> pufferPushRadius = new();
 
+    private static bool IsShowHitboxes() {
+        return TasSettings.ShowHitboxes;
+    }
+
     [Initialize]
     private static void Initialize() {
         // remove the yellow points hitboxes added by "Madeline in Wonderland"
@@ -31,10 +35,17 @@ public static class HitboxOptimized {
         }
 
         typeof(Puffer).GetMethodInfo("Explode").HookBefore<Puffer>(self => pufferPushRadius.Add(new Circle(40f, self.X, self.Y)));
-       
-        if (ModUtils.GetType("CrystallineHelper", "vitmod.CustomPuffer") is { } customPufferType && 
+        typeof(Puffer).GetMethod("Render").IlHook((cursor, context) => {
+            if (cursor.TryGotoNext(i => i.MatchLdloc(out _), i => i.MatchLdcI4(28), i => i.MatchBlt(out _))) {
+                cursor.Index++;
+                cursor.EmitDelegate(HidePufferWhiteLine);
+            }
+        });
+
+        if (ModUtils.GetType("CrystallineHelper", "vitmod.CustomPuffer") is { } customPufferType &&
             customPufferType.CreateGetDelegate<Entity, Circle>("pushRadius") is { } getPushRadius) {
-            customPufferType.GetMethodInfo("Explode").HookBefore<Entity>(self => pufferPushRadius.Add(new Circle(getPushRadius.Invoke(self).Radius, self.X, self.Y)));
+            customPufferType.GetMethodInfo("Explode")
+                .HookBefore<Entity>(self => pufferPushRadius.Add(new Circle(getPushRadius.Invoke(self).Radius, self.X, self.Y)));
             // its debug render also needs optimize
             // but i have no good idea, so i put it aside
         }
@@ -42,10 +53,6 @@ public static class HitboxOptimized {
         using (new DetourContext {After = new List<string> {"*"}}) {
             On.Monocle.Entity.DebugRender += ModDebugRender;
         }
-    }
-
-    private static bool IsShowHitboxes() {
-        return TasSettings.ShowHitboxes;
     }
 
     [Load]
@@ -105,15 +112,21 @@ public static class HitboxOptimized {
         orig(self, camera);
     }
 
+    private static int HidePufferWhiteLine(int i) {
+        if (TasSettings.ShowHitboxes) {
+            return 28;
+        } else {
+            return i;
+        }
+    }
+
     private static void DrawPufferHitbox(Puffer puffer) {
         /*
          * ProximityExplodeCheck: player.CenterY >= base.Y + collider.Bottom - 4f
-         * OnPlayer Explode: player.Bottom > lastSpeedPosition.Y + 3f
-         * 
+         *
          * CenterY can be half integer if crouched
          * base.Y is not integer
-         * laseSpeedPosition is not integer
-         * 
+         *
          * Draw.Line: round to integer, plus an annoying offset depending on angle
          * Draw.Rect: trunc to integer, quite stable
          */
@@ -126,7 +139,7 @@ public static class HitboxOptimized {
          * int i = height of Draw.Line
          * i - b + c >= base.Y + collider.Bottom - 4f = puffer.Bottom - 4f
          * i = Ceil(puffer.Bottom - 4f + b' - c)
-         * 
+         *
          * in some weird cases, maddy can have starFlyHitbox + normalHurtbox...so we can't just check Ducking and StateMachine.State == 19
          */
 
@@ -140,6 +153,12 @@ public static class HitboxOptimized {
         Draw.Rect(bottomCenter.X - 7, bottomCenter.Y, -25f, 1f, heightCheckColor);
         Draw.Rect(bottomCenter.X + 7, bottomCenter.Y, 25f, 1f, heightCheckColor);
         // sometimes it will draw an extra pixel at the endpoint..
+
+        /*
+         * still one small issue remains: we are pretending that all collide checks are using player's hurtbox
+         * but for collide check with the circle detectRadius
+         * current implementation can't hold if player's hitbox is starFlyHitbox (which is 1px wider than hurtbox on twosides)
+         */
     }
 
     private static void DrawSwitchGateEnd(SwitchGate gate) {
@@ -313,17 +332,23 @@ public static class HitboxOptimized {
         if (component.Entity is not Puffer puffer || component is not PlayerCollider pc) {
             return;
         }
-        if (typeof(Puffer).CreateGetDelegate<Puffer,Vector2>("lastSpeedPosition") is { } getLastSpeedPosition) {
+
+        // OnPlayer Explode: player.Bottom > lastSpeedPosition.Y + 3f
+        if (typeof(Puffer).CreateGetDelegate<Puffer, Vector2>("lastSpeedPosition") is { } getLastSpeedPosition) {
             float y = getLastSpeedPosition.Invoke(puffer).Y + 3f - 1f;
-            float z = (float)Math.Ceiling(y);
+            // -1f coz player's bottom is "1px lower" than the bottom of hitbox (due to how they render)
+            float z = (float) Math.Ceiling(y);
             if (z <= y) {
-                z+= 1f;
+                z += 1f;
             }
+
             if (z > pc.Collider.AbsoluteBottom) {
                 return;
             }
-            float top = Math.Max(pc.Collider.AbsoluteTop,z);
-            Draw.HollowRect(puffer.X - 7f, top, 14f, pc.Collider.AbsoluteBottom - top, puffer.Collidable ? HitboxColor.PufferHeightCheckColor : HitboxColor.PufferHeightCheckColor * HitboxColor.UnCollidableAlpha);
+
+            float top = Math.Max(pc.Collider.AbsoluteTop, z);
+            Draw.HollowRect(puffer.X - 7f, top, 14f, pc.Collider.AbsoluteBottom - top,
+                puffer.Collidable ? HitboxColor.PufferHeightCheckColor : HitboxColor.PufferHeightCheckColor * HitboxColor.UnCollidableAlpha);
         }
     }
 
