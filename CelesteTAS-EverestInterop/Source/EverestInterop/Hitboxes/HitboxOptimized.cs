@@ -35,7 +35,7 @@ public static class HitboxOptimized {
 
         typeof(Puffer).GetMethodInfo("Explode").HookBefore<Puffer>(self => pufferPushRadius.Add(new Circle(40f, self.X, self.Y)));
         typeof(Puffer).GetMethod("Render").IlHook((cursor, context) => {
-            if (cursor.TryGotoNext(i => i.MatchLdloc(out _), i => i.MatchLdcI4(28), i => i.MatchBlt(out _))) {
+            if (cursor.TryGotoNext(i => i.MatchLdloc(out _), i => i.MatchLdcI4(28))) {
                 cursor.Index++;
                 cursor.EmitDelegate(HidePufferWhiteLine);
             }
