@@ -147,7 +147,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
     }
 
     private void ReturnData(string gameData) {
-        byte[] gameDataBytes = Encoding.Default.GetBytes(gameData ?? string.Empty);
+        byte[] gameDataBytes = Encoding.UTF8.GetBytes(gameData ?? string.Empty);
         WriteMessageGuaranteed(new Message(MessageID.ReturnData, gameDataBytes));
     }
 
@@ -277,7 +277,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
     }
 
     private void ProcessSendPath(byte[] data) {
-        string path = Encoding.Default.GetString(data);
+        string path = Encoding.UTF8.GetString(data);
         if (PlatformUtils.NonWindows && path.StartsWith("Z:\\", StringComparison.InvariantCultureIgnoreCase)) {
             path = path.Substring(2, path.Length - 2).Replace("\\", "/");
         }
@@ -293,7 +293,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
     }
 
     private void ProcessConvertToLibTas(byte[] data) {
-        string path = Encoding.Default.GetString(data);
+        string path = Encoding.UTF8.GetString(data);
         LibTasHelper.ConvertToLibTas(path);
     }
 

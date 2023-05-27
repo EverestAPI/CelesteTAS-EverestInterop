@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -114,7 +114,7 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
     }
 
     private void ProcessReturnData(byte[] data) {
-        CommunicationWrapper.ReturnData = Encoding.Default.GetString(data);
+        CommunicationWrapper.ReturnData = Encoding.UTF8.GetString(data);
     }
 
     #endregion
@@ -161,7 +161,7 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
 
     private void SendPathNow(string path, bool canFail) {
         if (Initialized || !canFail) {
-            byte[] pathBytes = path != null ? Encoding.Default.GetBytes(path) : new byte[0];
+            byte[] pathBytes = path != null ? Encoding.UTF8.GetBytes(path) : new byte[0];
 
             WriteMessageGuaranteed(new Message(MessageID.SendPath, pathBytes));
         }
@@ -172,7 +172,7 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
             return;
         }
 
-        byte[] pathBytes = string.IsNullOrEmpty(path) ? new byte[0] : Encoding.Default.GetBytes(path);
+        byte[] pathBytes = string.IsNullOrEmpty(path) ? new byte[0] : Encoding.UTF8.GetBytes(path);
 
         WriteMessageGuaranteed(new Message(MessageID.ConvertToLibTas, pathBytes));
     }
