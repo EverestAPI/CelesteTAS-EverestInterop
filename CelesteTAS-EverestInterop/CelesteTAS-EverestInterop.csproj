@@ -38,6 +38,7 @@
         <PackageReference Include="DotNetZip" Version="1.13.8" />
         <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" />
         <PackageReference Include="MonoMod.RuntimeDetour" Version="21.4.29.1" />
+        <PackageReference Include="YamlDotNet" Version="8.0.0.0" />
         <PackageReference Include="JetBrains.Profiler.Api" Version="1.1.8">
             <IncludeAssets Condition="'$(Configuration)' == 'Debug'">all</IncludeAssets>
         </PackageReference>
