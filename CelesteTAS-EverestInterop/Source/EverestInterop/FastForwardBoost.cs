@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
@@ -104,6 +105,12 @@ public static class FastForwardBoost {
                 Tracker.TrackedEntityTypes[subType] = new List<Type> {type};
             } else if (!Tracker.TrackedEntityTypes[subType].Contains(type)) {
                 Tracker.TrackedEntityTypes[subType].Add(type);
+            }
+        }
+
+        if (Engine.Scene?.Tracker.Entities is { } entities) {
+            if (!entities.ContainsKey(type)) {
+                entities[type] = Engine.Scene.Entities.Where(e => e.GetType() == type).ToList();
             }
         }
     }
