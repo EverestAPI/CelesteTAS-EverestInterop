@@ -2777,7 +2777,7 @@ public class RichText : UserControl {
         } else {
             Place end = Selection.End;
             line = Selection.Start.iLine - 1;
-            Selection.Start = new Place(Lines[line].Length, line);
+            Selection.Start = new Place(line == -1 ? 0 : Lines[line].Length, line == -1 ? 0 : line);
             Selection.End = end;
         }
     }
