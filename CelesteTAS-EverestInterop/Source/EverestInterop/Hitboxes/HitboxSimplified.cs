@@ -39,7 +39,8 @@ public static class HitboxSimplified {
         "ExtendedVariants.Entities.JumpIndicator",
         "ExtendedVariants.Entities.Speedometer",
         "Celeste.Mod.JungleHelper.Entities.Firefly",
-        "Celeste.Mod.ClutterHelper.CustomClutter"
+        "Celeste.Mod.ClutterHelper.CustomClutter",
+        "Celeste.Mod.HonlyHelper.FloatyBgTile",
     };
 
     public static Dictionary<Follower, bool> Followers = new();
