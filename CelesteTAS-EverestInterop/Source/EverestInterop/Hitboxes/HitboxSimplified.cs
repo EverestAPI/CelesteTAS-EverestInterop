@@ -124,7 +124,7 @@ public static class HitboxSimplified {
         }
 
         if (entity is WallBooster
-            || entity.GetType().FullName is "Celeste.Mod.ShroomHelper.Entities.SlippyWall"
+            || entity?.GetType().FullName is "Celeste.Mod.ShroomHelper.Entities.SlippyWall"
                 or "Celeste.Mod.ShroomHelper.Entities.AttachedIceWall"
                 or "Celeste.Mod.JungleHelper.Entities.MossyWall"
                 or "Celeste.Mod.CavernHelper.IcyFloor"
