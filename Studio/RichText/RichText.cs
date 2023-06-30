@@ -2769,15 +2769,14 @@ public class RichText : UserControl {
 
     private void ExpandLine() {
         Selection.Expand();
-        int line = Selection.End.iLine;
         if (LinesCount <= 1) {
             // ignored
-        } else if (line < LinesCount - 1) {
-            Selection.End = new Place(0, line + 1);
-        } else {
+        } else if (Selection.End.iLine is var endLine && endLine < LinesCount - 1) {
+            Selection.End = new Place(0, endLine + 1);
+        } else if (Selection.Start.iLine > 0) {
             Place end = Selection.End;
-            line = Selection.Start.iLine - 1;
-            Selection.Start = new Place(line == -1 ? 0 : Lines[line].Length, line == -1 ? 0 : line);
+            int startLine = Selection.Start.iLine - 1;
+            Selection.Start = new Place(Lines[startLine].Length, startLine);
             Selection.End = end;
         }
     }

@@ -486,7 +486,7 @@ public partial class Studio : BaseForm {
         return result;
     }
 
-    private void OpenFile(string fileName = null, int startLine = 0) {
+    public void OpenFile(string fileName = null, int startLine = 0) {
         if (fileName == CurrentFileName && fileName != null) {
             return;
         }
@@ -609,11 +609,11 @@ public partial class Studio : BaseForm {
 
         int curLine = 0;
         foreach (string readLine in File.ReadLines(path)) {
-            curLine++;
             string line = readLine.Trim();
             if (line == $"#{labelOrLineNumber}") {
-                return curLine - 1;
+                return curLine;
             }
+            curLine++;
         }
 
         return 0;
@@ -1429,6 +1429,10 @@ public partial class Studio : BaseForm {
 
     private void saveAsToolStripMenuItem_Click(object sender, EventArgs e) {
         SaveAsFile();
+    }
+
+    private void integrateReadFilesToolStripMenuItem_Click(object sender, EventArgs e) {
+        IntegrateReadFiles.Generate();
     }
 
     private void commentUncommentTextToolStripMenuItem_Click(object sender, EventArgs e) {

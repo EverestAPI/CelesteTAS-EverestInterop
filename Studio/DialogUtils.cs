@@ -291,7 +291,7 @@ public static class DialogUtils {
         ComboBox roomComboBox = new();
 
         Regex labelRegex = new(@"^\s*#[^\s#]");
-        Regex commentCommandRegex = new(@"^\s*#(play|read|console|set)(\s|,)", RegexOptions.IgnoreCase);
+        Regex commentCommandRegex = new(@"^\s*#(play|console|set)(\s|,)", RegexOptions.IgnoreCase);
         Regex roomRegex = new(@"^\s*#(lvl_)?");
         for (int i = 0; i < richText.Lines.Count; i++) {
             string lineText = richText.Lines[i];
