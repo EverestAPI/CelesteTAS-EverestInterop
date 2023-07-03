@@ -635,22 +635,30 @@ public partial class Studio : BaseForm {
         SaveSettings();
     }
 
-    private void ClearUncommentedBreakpoints() {
-        var line = Math.Min(richText.Selection.Start.iLine, richText.Selection.End.iLine);
-        List<int> breakpoints = richText.FindLines(@"^\s*\*\*\*");
+    private void RemoveLinesMatching(string searchPattern) {
+        Place prevSelectionStart = richText.Selection.Start;
+        Place prevSelectionEnd = richText.Selection.End;
+
+        List<int> breakpoints = richText.FindLines(searchPattern);
         richText.RemoveLines(breakpoints);
 
-        var linesToShift = breakpoints.Count(breakpointLine => breakpointLine < line);
-        richText.Selection.Start = new Place(0, Math.Min(Math.Max(0, line - linesToShift), richText.LinesCount - 1));
+        var linesRemovedBeforeStart = breakpoints.Count(breakpointLine => breakpointLine < prevSelectionStart.iLine);
+        var linesRemovedBeforeEnd = breakpoints.Count(breakpointLine => breakpointLine < prevSelectionEnd.iLine);
+
+        prevSelectionStart.iLine = Math.Min(prevSelectionStart.iLine - linesRemovedBeforeStart, richText.LinesCount - 1);
+        prevSelectionEnd.iLine = Math.Min(prevSelectionEnd.iLine - linesRemovedBeforeEnd, richText.LinesCount - 1);
+        prevSelectionStart.iChar = Math.Min(prevSelectionStart.iChar, richText.Lines[prevSelectionStart.iLine].Length);
+        prevSelectionEnd.iChar = Math.Min(prevSelectionEnd.iChar, richText.Lines[prevSelectionEnd.iLine].Length);
+
+        richText.Selection = new Range(richText, prevSelectionStart, prevSelectionEnd);
+    }
+
+    private void ClearUncommentedBreakpoints() {
+        RemoveLinesMatching(@"^\s*\*\*\*");
     }
 
     private void ClearBreakpoints() {
-        var line = Math.Min(richText.Selection.Start.iLine, richText.Selection.End.iLine);
-        List<int> breakpoints = richText.FindLines(@"^\s*#*\s*\*\*\*");
-        richText.RemoveLines(breakpoints);
-
-        var linesToShift = breakpoints.Count(breakpointLine => breakpointLine < line);
-        richText.Selection.Start = new Place(0, Math.Min(Math.Max(0, line - linesToShift), richText.LinesCount - 1));
+        RemoveLinesMatching(@"^\s*#*\s*\*\*\*");
     }
 
     private void CopyFilePath() {
