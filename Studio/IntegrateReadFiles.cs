@@ -2,14 +2,22 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using CelesteStudio.Entities;
 
 namespace CelesteStudio;
 
 internal static class IntegrateReadFiles {
+    private static readonly Regex readCommandRegex = new(@"^read( |,)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex spaceSeparatorRegex = new(@"^[^,]+?\s+[^,]", RegexOptions.Compiled);
+    private static readonly Regex recordCountRegex = new(@"^\s*RecordCount:\s*(\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex authorRegex = new(@"^\s*Author:\s*(.+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly HashSet<string> readFiles = new();
+
     public static void Generate() {
+        readFiles.Clear();
+
         string mainFilePath = Studio.Instance.richText.CurrentFileName;
         if (!File.Exists(mainFilePath)) {
             MessageBox.Show(mainFilePath, "Opened file does not exist");
@@ -22,8 +30,9 @@ internal static class IntegrateReadFiles {
         }
 
         try {
-            string integratedText = ReadAllFiles(mainFilePath);
-            File.WriteAllText(saveFilePath, integratedText);
+            List<string> allLines = ReadAllFiles(mainFilePath);
+            InsertHeader(allLines);
+            File.WriteAllText(saveFilePath, string.Join("\n", allLines));
             Studio.Instance.OpenFile(saveFilePath);
         } catch (ReadFileNotExistException e) {
             MessageBox.Show(e.Message, "Read file does not exist");
@@ -46,30 +55,30 @@ internal static class IntegrateReadFiles {
         }
     }
 
-    private static string ReadAllFiles(string filePath, IEnumerable<string> lines = null) {
-        StringBuilder result = new();
+    private static List<string> ReadAllFiles(string filePath, IEnumerable<string> lines = null) {
+        List<string> result = new();
         lines ??= File.ReadLines(filePath);
+
         foreach (string lineText in lines) {
-            if (TryParseReadCommand(filePath, lineText, out string readText)) {
-                result.AppendLine($"#{lineText.Trim()}");
-                result.AppendLine(readText);
+            readFiles.Add(filePath);
+            if (TryParseReadCommand(filePath, lineText, out List<string> readText)) {
+                result.Add($"#{lineText.Trim()}");
+                result.AddRange(readText);
             } else {
-                result.AppendLine(lineText);
+                result.Add(lineText);
             }
         }
 
-        return result.ToString();
+        return result;
     }
-
-    private static bool TryParseReadCommand(string filePath, string readCommand, out string readText) {
+    private static bool TryParseReadCommand(string filePath, string readCommand, out List<string> readText) {
         readText = null;
         readCommand = readCommand.Trim();
-        if (!readCommand.StartsWith("read", StringComparison.InvariantCultureIgnoreCase)) {
+        if (!readCommandRegex.IsMatch(readCommand)) {
             return false;
         }
 
-        Regex spaceRegex = new(@"^[^,]+?\s+[^,]");
-        string[] args = spaceRegex.IsMatch(readCommand) ? readCommand.Split() : readCommand.Split(',');
+        string[] args = spaceSeparatorRegex.IsMatch(readCommand) ? readCommand.Split() : readCommand.Split(',');
         args = args.Select(text => text.Trim()).ToArray();
         if (!args[0].Equals("read", StringComparison.InvariantCultureIgnoreCase) || args.Length < 2) {
             return false;
@@ -101,7 +110,8 @@ internal static class IntegrateReadFiles {
             endLine = GetLineNumber(readFilePath, args[3]);
         }
 
-        readText = ReadAllFiles(filePath, File.ReadLines(readFilePath).Take(endLine).Skip(startLine - 1));
+        readText = ReadAllFiles(readFilePath, File.ReadLines(readFilePath).Take(endLine).Skip(startLine - 1));
+
         return true;
     }
 
@@ -139,6 +149,50 @@ internal static class IntegrateReadFiles {
         }
 
         return 1;
+    }
+
+    private static void InsertHeader(List<string> allLines) {
+        int i = 0;
+        allLines.Insert(i++, $"Author: {GetAuthor(allLines)}");
+        allLines.Insert(i++, $"FrameCount: {GetFrameCount(allLines)}");
+        allLines.Insert(i++, $"TotalRecordCount: {GetTotalRecordCount()}");
+        allLines.Insert(i++, "");
+    }
+
+    private static string GetAuthor(List<string> lines) {
+        foreach (string line in lines) {
+            if (authorRegex.Match(line) is {Success: true} match) {
+                return match.Groups[1].Value;
+            }
+        }
+
+        return "";
+    }
+
+    private static int GetFrameCount(List<string> lines) {
+        int result = 0;
+        foreach (string line in lines) {
+            InputRecord record = new(line);
+            if (record.Frames > 0) {
+                result += record.Frames;
+            }
+        }
+
+        return result;
+    }
+
+    private static int GetTotalRecordCount() {
+        int recordCount = 0;
+        foreach (string filePath in readFiles) {
+            foreach (string line in File.ReadLines(filePath)) {
+                if (recordCountRegex.Match(line) is {Success: true} match && int.TryParse(match.Groups[1].Value, out int count)) {
+                    recordCount += count;
+                    break;
+                }
+            }
+        }
+
+        return recordCount;
     }
 }
 

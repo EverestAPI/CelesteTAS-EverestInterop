@@ -512,7 +512,8 @@ public partial class Studio : BaseForm {
     private void TryOpenReadFile() {
         string text = richText.CurrentStartLineText;
         string trimText = richText.CurrentStartLineText.Trim();
-        if (trimText.StartsWith("read", StringComparison.InvariantCultureIgnoreCase)) {
+        Regex readRegex = new Regex("^#?read( |,)", RegexOptions.IgnoreCase);
+        if (readRegex.IsMatch(trimText)) {
             Regex spaceRegex = new(@"^[^,]+?\s+[^,]");
 
             string[] args = spaceRegex.IsMatch(trimText) ? trimText.Split() : trimText.Split(',');
@@ -525,7 +526,7 @@ public partial class Studio : BaseForm {
             }
 
             args = args.Select(text => text.Trim()).ToArray();
-            if (args[0].Equals("read", StringComparison.InvariantCultureIgnoreCase) && args.Length >= 2) {
+            if (args.Length >= 2) {
                 string filePath = args[1];
                 string fileDirectory = Path.GetDirectoryName(CurrentFileName);
                 filePath = FindTheFile(fileDirectory, filePath);
@@ -604,7 +605,7 @@ public partial class Studio : BaseForm {
 
     private static int GetLine(string path, string labelOrLineNumber) {
         if (int.TryParse(labelOrLineNumber, out int lineNumber)) {
-            return lineNumber;
+            return lineNumber - 1;
         }
 
         int curLine = 0;
