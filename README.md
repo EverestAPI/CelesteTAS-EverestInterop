@@ -128,5 +128,6 @@ The contents of the curly brackets will be converted to actual data, here are so
 ## Other Useful Tools
 - [Featherline](https://github.com/tntfalle/featherline): Algorithm for analog feather movement in Celeste.
 - [Radeline](https://github.com/Kataiser/radeline): Chaos monkey that optimizes a Celeste TAS by randomly (or sequentially) changing inputs.
-- [.kkapture](https://github.com/DemoJameson/kkapture/wiki): Record high quality smooth tas video on low end PC.
+- [.kkapture](https://github.com/DemoJameson/kkapture/wiki): Record high quality smooth tas video on low end PC, Windows only.
+- [ldcapture](https://github.com/psyGamer/ldcapture): Record high quality smooth tas video on low end PC, Linux only.
 - [GhostMod](https://github.com/DemoJameson/GhostMod): Used to compare old and new tas.
