@@ -1971,4 +1971,11 @@ public partial class Studio : BaseForm {
         darkToolStripMenuItem.Checked = Settings.Instance.ThemesType == ThemesType.Dark;
         customToolStripMenuItem.Checked = Settings.Instance.ThemesType == ThemesType.Custom;
     }
+
+    public void UseImmersiveDarkMode(bool enabled) {
+        Win32Api.UseImmersiveDarkMode(base.Handle, enabled);
+
+        ClientSize = new Size(ClientSize.Width + 1, ClientSize.Height);
+        ClientSize = new Size(ClientSize.Width - 1, ClientSize.Height);
+    }
 }
