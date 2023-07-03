@@ -76,7 +76,7 @@ internal class CommandManager {
         //undo next autoUndo command
         if (history.Count > 0) {
             UndoableCommand cmd = history.Peek();
-            if (cmd.autoUndo || cmd is InsertCharCommand) {
+            if (cmd.autoUndo) {
                 Undo();
             }
         }
@@ -93,6 +93,10 @@ internal class CommandManager {
     }
 
     public void EndAutoUndoCommands() {
+        if (disabledCommands > 0) {
+            return;
+        }
+
         autoUndoCommands--;
         if (autoUndoCommands == 0) {
             if (history.Count > 0) {
@@ -102,6 +106,10 @@ internal class CommandManager {
     }
 
     public void BeginAutoUndoCommands() {
+        if (disabledCommands > 0) {
+            return;
+        }
+
         autoUndoCommands++;
     }
 
