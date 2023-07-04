@@ -115,6 +115,8 @@ internal class InsertCharCommand : UndoableCommand {
                 } else {
                     int tl = tb.TabLength;
                     deletedChar = ts[tb.Selection.Start.iLine][tb.Selection.Start.iChar - 1].c;
+
+                    char lastDeletedChar = deletedChar;
                     do {
                         ts[tb.Selection.Start.iLine].RemoveAt(tb.Selection.Start.iChar - 1);
                         tb.Selection.Start = new Place(tb.Selection.Start.iChar + (c == (char) 1 ? 0 : -1), tb.Selection.Start.iLine);
@@ -124,7 +126,7 @@ internal class InsertCharCommand : UndoableCommand {
                             break;
                         }
 
-                        if (deletedChar != ' ' || tb.Selection.Start.iChar == 0) {
+                        if (lastDeletedChar != ' ' || tb.Selection.Start.iChar == 0) {
                             if (c == (char) 1 && tb.Selection.Start.iChar > 0) {
                                 tb.Selection.Start = new Place(tb.Selection.Start.iChar - 1, tb.Selection.Start.iLine);
                             }
@@ -132,11 +134,11 @@ internal class InsertCharCommand : UndoableCommand {
                             break;
                         }
 
-                        deletedChar = ts[tb.Selection.Start.iLine][tb.Selection.Start.iChar - 1].c;
-                        if ((deletedChar != ' ' || tl == 0) && c == (char) 1 && tb.Selection.Start.iChar > 0) {
+                        lastDeletedChar = ts[tb.Selection.Start.iLine][tb.Selection.Start.iChar - 1].c;
+                        if ((lastDeletedChar != ' ' || tl == 0) && c == (char) 1 && tb.Selection.Start.iChar > 0) {
                             tb.Selection.Start = new Place(tb.Selection.Start.iChar - 1, tb.Selection.Start.iLine);
                         }
-                    } while (deletedChar == ' ' && tl > 0);
+                    } while (lastDeletedChar == ' ' && tl > 0);
                 }
 
                 break;
