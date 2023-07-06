@@ -121,9 +121,9 @@ The contents of the curly brackets will be converted to actual data, here are so
 
 ## Running Studio via Wine
 1. Install Wine: https://wiki.winehq.org/Download
-2. Install .NET Framework 4.5.2: https://appdb.winehq.org/objectManager.php?sClass=version&iId=31023#notes
-3. Run Studio via command `env WINEPREFIX=$HOME/winedotnet wine "Celeste Studio.exe"`
-4. Run Celeste directly or run the windows version of celeste via wine `env WINEPREFIX=$HOME/winedotnet wine "Celeste.exe"`. If the error `X Error of failed request: GLXBadFBConfig` is reported when running celeste via wine, then you need to run `export MESA_GL_VERSION_OVERRIDE=4.5` first and then rerun the wine command.
+2. Install `ttf-mscorefonts-installer`.
+3. Run Studio via command `wine "Celeste Studio.exe"`, agree to install wine-mono.
+4. Run Celeste directly or run the windows version of celeste via wine `wine "Celeste.exe"`. If the error `X Error of failed request: GLXBadFBConfig` is reported when running celeste via wine, then you need to run `export MESA_GL_VERSION_OVERRIDE=4.5` first and then rerun the wine command.
 
 ## Other Useful Tools
 - [Featherline](https://github.com/tntfalle/featherline): Algorithm for analog feather movement in Celeste.
