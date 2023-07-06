@@ -24,8 +24,12 @@ public static class Win32Api {
     private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
 
     public static bool UseImmersiveDarkMode(IntPtr hwnd, bool enabled) {
-        int useImmersiveDarkMode = enabled ? 1 : 0;
-        bool success = DwmSetWindowAttribute(hwnd, Win32Api.DWMWA_USE_IMMERSIVE_DARK_MODE, ref useImmersiveDarkMode, sizeof(int)) == 0;
-        return success;
+        try {
+            int useImmersiveDarkMode = enabled ? 1 : 0;
+            bool success = DwmSetWindowAttribute(hwnd, Win32Api.DWMWA_USE_IMMERSIVE_DARK_MODE, ref useImmersiveDarkMode, sizeof(int)) == 0;
+            return success;
+        } catch {
+            return false;
+        }
     }
 }

@@ -19,7 +19,7 @@ using StudioCommunication;
 namespace CelesteStudio;
 
 public partial class Studio : BaseForm {
-    private const string MaxStatusHeight20Line = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
+    private static readonly string MaxStatusHeight20Line = "".PadRight(20, '\n') + (PlatformUtils.Mono ? "." : "");
     public static Studio Instance;
     public static Version Version { get; private set; }
     private static List<string> RecentFiles => Settings.Instance.RecentFiles;
@@ -55,6 +55,7 @@ public partial class Studio : BaseForm {
         Version = Assembly.GetExecutingAssembly().GetName().Version;
 
         InitializeComponent();
+        MonoFix();
         InitSettings();
         InitLocationSize();
         InitTitleBarTooltip();
@@ -484,6 +485,16 @@ public partial class Studio : BaseForm {
         }
 
         return result;
+    }
+
+    private void MonoFix() {
+        if (PlatformUtils.Mono) {
+            // remove the shortcut keys, otherwise they will be triggered when writing tas input
+            fileToolStripMenuItem.Text = fileToolStripMenuItem.Text.Replace("&", "");
+            settingsToolStripMenuItem.Text = settingsToolStripMenuItem.Text.Replace("&", "");
+            toggleToolStripMenuItem.Text = toggleToolStripMenuItem.Text.Replace("&", "");
+            helpToolStripMenuItem.Text = helpToolStripMenuItem.Text.Replace("&", "");
+        }
     }
 
     public void OpenFile(string fileName = null, int startLine = 0) {
