@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 using Microsoft.VisualBasic.ApplicationServices;
+using StudioCommunication;
 
 namespace CelesteStudio;
 
@@ -28,6 +29,10 @@ public class Program : WindowsFormsApplicationBase {
         Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
         if (Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) is { } exeDir) {
             Directory.SetCurrentDirectory(exeDir);
+        }
+
+        if (PlatformUtils.Wine) {
+            Console.SetOut(new StringWriter());
         }
 
         new Program().Run(args);
