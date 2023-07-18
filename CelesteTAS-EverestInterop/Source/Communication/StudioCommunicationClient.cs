@@ -31,14 +31,13 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
     [Load]
     private static void Load() {
         Everest.Events.Celeste.OnExiting += Destroy;
-        On.Celeste.Mod.Helpers.ModUpdaterHelper.DownloadModUpdateList += ModUpdaterHelperOnDownloadModUpdateList;
+        typeof(ModUpdaterHelper).GetMethod("DownloadModUpdateList")?.OnHook(ModUpdaterHelperOnDownloadModUpdateList);
         modUpdateInfos = Engine.Instance.GetDynamicDataInstance().Get<Dictionary<string, ModUpdateInfo>>(nameof(modUpdateInfos));
     }
 
     [Unload]
     private static void Unload() {
         Everest.Events.Celeste.OnExiting -= Destroy;
-        On.Celeste.Mod.Helpers.ModUpdaterHelper.DownloadModUpdateList -= ModUpdaterHelperOnDownloadModUpdateList;
         Engine.Instance.GetDynamicDataInstance().Set(nameof(modUpdateInfos), modUpdateInfos);
         Destroy();
     }
