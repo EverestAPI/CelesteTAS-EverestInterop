@@ -153,6 +153,10 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
         Initialized = true;
     }
 
+    protected override void LogImpl(string text) {
+        System.Diagnostics.Trace.WriteLine(text);
+    }
+
     public void SendPath(string path) => PendingWrite = () => SendPathNow(path, false);
     public void ConvertToLibTas(string path) => PendingWrite = () => ConvertToLibTasNow(path);
     public void SendHotkeyPressed(HotkeyID hotkey, bool released = false) => PendingWrite = () => SendHotkeyPressedNow(hotkey, released);
