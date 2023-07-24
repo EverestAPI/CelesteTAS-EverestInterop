@@ -134,7 +134,7 @@ public static class AreaCompleteInfo {
 
     // "CompleteInfo, Side, SID/ID"
     // The comments immediately following this command will be printed to the complete screen
-    [TasCommand("CompleteInfo")]
+    [TasCommand("CompleteInfo", CalcChecksum = false)]
     private static void CompleteInfoCommand(string[] args, int _, string filePath, int fileLine) {
         if (args.Length == 1) {
             return;
