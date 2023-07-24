@@ -619,10 +619,10 @@ public partial class Studio : BaseForm {
             return lineNumber - 1;
         }
 
+        Regex labelRegex = new(@$"^\s*#\s*{Regex.Escape(labelOrLineNumber)}\s*$");
         int curLine = 0;
         foreach (string readLine in File.ReadLines(path)) {
-            string line = readLine.Trim();
-            if (line == $"#{labelOrLineNumber}") {
+            if (labelRegex.IsMatch(readLine)) {
                 return curLine;
             }
             curLine++;

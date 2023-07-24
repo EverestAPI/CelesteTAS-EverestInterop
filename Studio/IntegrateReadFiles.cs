@@ -138,10 +138,10 @@ internal static class IntegrateReadFiles {
             return lineNumber;
         }
 
+        Regex labelRegex = new(@$"^\s*#\s*{Regex.Escape(labelOrLineNumber)}\s*$");
         int currentLine = 1;
         foreach (string readLine in File.ReadLines(path)) {
-            string line = readLine.Trim();
-            if (line == $"#{labelOrLineNumber}") {
+            if (labelRegex.IsMatch(readLine)) {
                 return currentLine;
             }
 
