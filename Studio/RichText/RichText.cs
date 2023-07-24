@@ -378,7 +378,7 @@ public class RichText : UserControl {
         set {
             if (!value) {
                 lines.ClearIsChanged();
-                NoChanges?.Invoke(this, new EventArgs());
+                NoChanges?.Invoke(this, EventArgs.Empty);
             }
 
             isChanged = value;
@@ -1190,7 +1190,7 @@ public class RichText : UserControl {
         needRecalcFoldingLines = true;
 
         if (VisibleRangeChanged != null) {
-            VisibleRangeChanged(this, new EventArgs());
+            VisibleRangeChanged(this, EventArgs.Empty);
         }
     }
 
@@ -1560,13 +1560,13 @@ public class RichText : UserControl {
         }
 
         if (SelectionChangedDelayed != null) {
-            SelectionChangedDelayed(this, new EventArgs());
+            SelectionChangedDelayed(this, EventArgs.Empty);
         }
     }
 
     public virtual void OnVisibleRangeChangedDelayed() {
         if (VisibleRangeChangedDelayed != null) {
-            VisibleRangeChangedDelayed(this, new EventArgs());
+            VisibleRangeChangedDelayed(this, EventArgs.Empty);
         }
     }
 
@@ -2292,12 +2292,12 @@ public class RichText : UserControl {
 
             if (diag.ShowDialog() == DialogResult.OK) {
                 CurrentFileName = diag.FileName;
-                OpenBindingFile(diag.FileName, Encoding.ASCII);
+                OpenBindingFile(diag.FileName, new UTF8Encoding(false));
                 return true;
             }
         } else {
             CurrentFileName = fileName;
-            OpenBindingFile(fileName, Encoding.ASCII);
+            OpenBindingFile(fileName, new UTF8Encoding(false));
             return true;
         }
 
@@ -2306,7 +2306,7 @@ public class RichText : UserControl {
 
     public void ReloadFile() {
         if (!string.IsNullOrEmpty(CurrentFileName) && File.Exists(CurrentFileName)) {
-            OpenBindingFile(CurrentFileName, Encoding.ASCII);
+            OpenBindingFile(CurrentFileName, new UTF8Encoding(false));
         }
     }
 
@@ -2331,8 +2331,8 @@ public class RichText : UserControl {
     }
 
     public void SaveFile() {
-        FileSaving?.Invoke(this, new EventArgs());
-        SaveToFile(CurrentFileName, Encoding.ASCII);
+        FileSaving?.Invoke(this, EventArgs.Empty);
+        SaveToFile(CurrentFileName, new UTF8Encoding(false));
         TryBackupFile();
     }
 
@@ -4067,7 +4067,7 @@ public class RichText : UserControl {
         }
 
         if (SelectionChanged != null) {
-            SelectionChanged(this, new EventArgs());
+            SelectionChanged(this, EventArgs.Empty);
         }
     }
 
@@ -5061,14 +5061,14 @@ window.status = ""#print"";
     /// <param name="enc"></param>
     public void OpenBindingFile(string fileName, Encoding enc) {
         try {
-            FileOpening?.Invoke(this, new EventArgs());
+            FileOpening?.Invoke(this, EventArgs.Empty);
             var fts = new FileTextSource(this);
             InitTextSource(fts);
             fts.OpenFile(fileName, enc);
             IsChanged = false;
             OnVisibleRangeChanged();
             UpdateHighlighting();
-            FileOpened?.Invoke(this, new EventArgs());
+            FileOpened?.Invoke(this, EventArgs.Empty);
         } catch {
             InitTextSource(CreateTextSource());
             lines.InsertLine(0, TextSource.CreateLine());
