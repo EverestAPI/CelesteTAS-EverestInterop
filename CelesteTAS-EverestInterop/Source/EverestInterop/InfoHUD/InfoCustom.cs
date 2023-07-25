@@ -17,6 +17,7 @@ public static class InfoCustom {
     private static readonly Regex BraceRegex = new(@"\{(.+?)\}", RegexOptions.Compiled);
     private static readonly Regex TypeNameRegex = new(@"^([.\w=+<>]+)(\[(.+?)\])?(@([^.]*))?$", RegexOptions.Compiled);
     private static readonly Regex TypeNameSeparatorRegex = new(@"^[.+]", RegexOptions.Compiled);
+    private static readonly Regex MethodRegex = new(@"^(.+)\((.*)\)$", RegexOptions.Compiled);
     private static readonly Dictionary<string, Type> AllTypes = new();
     private static readonly Dictionary<string, List<Type>> CachedParsedTypes = new();
 
@@ -47,8 +48,8 @@ public static class InfoCustom {
         List<Entity> GetCachedOrFindEntities(Type type, string entityId, Dictionary<string, List<Entity>> dictionary) {
             string entityText = $"{type.FullName}{entityId}";
             List<Entity> entities;
-            if (dictionary.ContainsKey(entityText)) {
-                entities = dictionary[entityText];
+            if (dictionary.TryGetValue(entityText, out List<Entity> value)) {
+                entities = value;
             } else {
                 entities = FindEntities(type, entityId).ToList();
                 dictionary[entityText] = entities;
@@ -283,16 +284,16 @@ public static class InfoCustom {
 
     public static object GetMemberValue(Type type, object obj, List<string> memberNames, bool setCommand = false) {
         foreach (string memberName in memberNames) {
-            if (type.GetGetMethod(memberName) is { } methodInfo) {
-                if (methodInfo.IsStatic) {
-                    obj = methodInfo.Invoke(null, null);
+            if (type.GetGetMethod(memberName) is { } getMethodInfo) {
+                if (getMethodInfo.IsStatic) {
+                    obj = getMethodInfo.Invoke(null, null);
                 } else if (obj != null) {
                     if (obj is Actor actor && memberName == "ExactPosition") {
                         obj = actor.GetMoreExactPosition(true);
                     } else if (obj is Platform platform && memberName == "ExactPosition") {
                         obj = platform.GetMoreExactPosition(true);
                     } else {
-                        obj = methodInfo.Invoke(obj, null);
+                        obj = getMethodInfo.Invoke(obj, null);
                     }
                 }
             } else if (type.GetFieldInfo(memberName) is { } fieldInfo) {
@@ -304,6 +305,22 @@ public static class InfoCustom {
                         true when obj is Platform platform && memberName == "Position" => platform.GetMoreExactPosition(true),
                         _ => fieldInfo.GetValue(obj)
                     };
+                }
+            } else if (MethodRegex.Match(memberName) is {Success: true} match && type.GetMethodInfo(match.Groups[1].Value) is { } methodInfo) {
+                if (match.Groups[2].Value.IsNotNullOrWhiteSpace() ||　methodInfo.GetParameters().Length > 0) {
+                    return $"{memberName}: Only method without parameters is supported";
+                }　else if (methodInfo.ReturnType == typeof(void)) {
+                    return $"{memberName}: Method return void is not supported";
+                } else if (methodInfo.IsStatic) {
+                    obj = methodInfo.Invoke(null, null);
+                } else if (obj != null) {
+                    if (obj is Actor actor && memberName == "get_ExactPosition()") {
+                        obj = actor.GetMoreExactPosition(true);
+                    } else if (obj is Platform platform && memberName == "get_ExactPosition()") {
+                        obj = platform.GetMoreExactPosition(true);
+                    } else {
+                        obj = methodInfo.Invoke(obj, null);
+                    }
                 }
             } else {
                 if (obj == null) {
