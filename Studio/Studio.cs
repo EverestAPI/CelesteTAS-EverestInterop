@@ -1637,6 +1637,10 @@ public partial class Studio : BaseForm {
         }
     }
 
+    private void openSettingsFileToolStripMenuItem_Click(object sender, EventArgs e) {
+        Settings.Open();
+    }
+
     private void reconnectStudioAndCelesteToolStripMenuItem_Click(object sender, EventArgs e) {
         StudioCommunicationServer.Instance?.ExternalReset();
     }
