@@ -27,7 +27,7 @@ public static class DebugRcPage {
             WriteLine(builder, $"TotalFrames: {Manager.Controller.Inputs.Count}");
             WriteLine(builder, $"RoomName: {GameInfo.LevelName}");
             WriteLine(builder, $"ChapterTime: {GameInfo.ChapterTime}");
-            WriteLine(builder, $"Game Info: ");
+            WriteLine(builder, "Game Info: ");
             builder.Append($@"<pre>{GameInfo.ExactStudioInfo}</pre>");
             Everest.DebugRC.WriteHTMLEnd(c, builder);
             Everest.DebugRC.Write(c, builder.ToString());
@@ -39,16 +39,15 @@ public static class DebugRcPage {
         PathHelp = "/tas/sendhotkey?id={HotkeyIds}&action={press(default)|release} (Example: ?id=Start&action=press)",
         PathExample = "/tas/sendhotkey?id=Start&action=press",
         Name = "CelesteTAS Send Hotkey",
-        InfoHTML = $"Press/Release the specified hotkey.<br />Available id: {string.Join(", ", Enum.GetNames(typeof(HotkeyID)))}",
+        InfoHTML = $"Press/Release the specified hotkey.<br />Except for hotkeys FastForward and SlowForward, other hotkeys are automatically released after being pressed.<br />Available id: {string.Join(", ", Enum.GetNames(typeof(HotkeyID)))}",
         Handle = c => {
             void WriteIdErrorPage(string message) {
                 StringBuilder builder = new();
                 Everest.DebugRC.WriteHTMLStart(c, builder);
                 WriteLine(builder, $"<h2>ERROR: {message}</h2>");
-                WriteLine(builder, $"Example: <a href='/tas/sendhotkey?id=Start&action=press'>/tas/sendhotkey?id=Start&action=press</a>");
-                WriteLine(builder,
-                    $"Available id: {string.Join(", ", Enum.GetNames(typeof(HotkeyID)).Select(id => $"<a href='/tas/sendhotkey?id={id}'>{id}</a>"))}");
-                WriteLine(builder, $"Available action: press, release");
+                WriteLine(builder, "Example: <a href='/tas/sendhotkey?id=Start&action=press'>/tas/sendhotkey?id=Start&action=press</a>");
+                WriteLine(builder, $"Available id: {string.Join(", ", Enum.GetNames(typeof(HotkeyID)).Select(id => $"<a href='/tas/sendhotkey?id={id}'>{id}</a>"))}");
+                WriteLine(builder, "Available action: press, release");
                 Everest.DebugRC.WriteHTMLEnd(c, builder);
                 Everest.DebugRC.Write(c, builder.ToString());
             }
@@ -78,7 +77,6 @@ public static class DebugRcPage {
     private const string defaultCustomInfoTemplate = @"
 Wind: {Level.Wind}\n
 AutoJump: {Player.AutoJump} {Player.AutoJumpTimer.toFrame()}\n
-ForceMoveX: {Player.forceMoveX} {Player.forceMoveXTimer.toFrame()}\n
 Theo: {TheoCrystal.ExactPosition}\n
 TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}
 ";
@@ -88,7 +86,7 @@ TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}
         PathHelp = "/tas/custominfo?template={content} (Example: ?template=" + defaultCustomInfoTemplate,
         PathExample = $"/tas/custominfo?template={defaultCustomInfoTemplate}",
         Name = "CelesteTAS Custom Info Template",
-        InfoHTML = "Get/Set custom info template. Please use \n for linebreaks.",
+        InfoHTML = "Get/Set custom info template. Please use \\n for linebreaks.",
         Handle = c => {
             StringBuilder builder = new();
             Everest.DebugRC.WriteHTMLStart(c, builder);
@@ -99,7 +97,7 @@ TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}
                 TasSettings.InfoCustomTemplate = WebUtility.UrlDecode(template).Replace("\\n", "\n");
             }
 
-            WriteLine(builder, $"<h2>Custom Info Template</h2>");
+            WriteLine(builder, "<h2>Custom Info Template</h2>");
             builder.Append($@"<pre>{TasSettings.InfoCustomTemplate}</pre>");
 
             Everest.DebugRC.WriteHTMLEnd(c, builder);
