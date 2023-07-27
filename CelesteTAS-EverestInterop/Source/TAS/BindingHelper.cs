@@ -39,6 +39,7 @@ public static class BindingHelper {
     public static Buttons DashAndTalkAndCancel => Buttons.B;
     public static Buttons Dash2AndCancel => Buttons.X;
     public static Buttons Grab => Buttons.LeftStick;
+    public static Buttons Grab2 => Buttons.Back;
     public static Buttons Pause => Buttons.Start;
     public static Buttons QuickRestart => Buttons.LeftShoulder;
     public static Buttons Up => Buttons.DPadUp;
@@ -122,7 +123,7 @@ public static class BindingHelper {
         settings.Set("Journal", new List<Keys>());
         settings.Set("QuickRestart", new List<Keys>());
 
-        settings.Set("BtnGrab", new List<Buttons> {Grab});
+        settings.Set("BtnGrab", new List<Buttons> {Grab, Grab2});
         settings.Set("BtnJump", new List<Buttons> {JumpAndConfirm, Jump2});
         settings.Set("BtnDash", new List<Buttons> {DashAndTalkAndCancel, Dash2AndCancel});
         settings.Set("BtnTalk", new List<Buttons> {DashAndTalkAndCancel, JournalAndTalk});
@@ -144,7 +145,7 @@ public static class BindingHelper {
         SetBinding("MenuDown", Buttons.LeftThumbstickDown, Buttons.DPadDown);
         SetBinding("MenuUp", Buttons.LeftThumbstickUp, Buttons.DPadUp);
 
-        SetBinding("Grab", Grab);
+        SetBinding("Grab", Grab, Grab2);
         SetBinding("Jump", JumpAndConfirm, Jump2);
         SetBinding("Dash", DashAndTalkAndCancel, Dash2AndCancel);
         SetBinding("Talk", DashAndTalkAndCancel, JournalAndTalk);

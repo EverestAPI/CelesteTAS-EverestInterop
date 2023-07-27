@@ -176,6 +176,10 @@ public static class LibTasHelper {
             buttons[9] = '[';
         }
 
+        if (inputFrame.HasActions(Actions.Grab2)) {
+            buttons[10] = ']';
+        }
+
         return string.Join("", buttons);
     }
 

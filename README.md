@@ -33,6 +33,7 @@ e.g. 123,R,J (For 123 frames, hold Right and Jump)
 - Z = Crouch Dash
 - V = Crouch Dash Bind 2
 - G = Grab
+- H = Grab Bind 2
 - S = Pause
 - Q = Quick Restart
 - F = Feather Aim

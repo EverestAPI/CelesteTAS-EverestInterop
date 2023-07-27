@@ -88,6 +88,7 @@ public static class InputHelper {
                 | (input.HasActions(Actions.Dash) ? BindingHelper.DashAndTalkAndCancel : 0)
                 | (input.HasActions(Actions.Dash2) ? BindingHelper.Dash2AndCancel : 0)
                 | (input.HasActions(Actions.Grab) ? BindingHelper.Grab : 0)
+                | (input.HasActions(Actions.Grab2) ? BindingHelper.Grab2 : 0)
                 | (input.HasActions(Actions.Start) ? BindingHelper.Pause : 0)
                 | (input.HasActions(Actions.Restart) ? BindingHelper.QuickRestart : 0)
                 | (input.HasActions(Actions.Up) ? BindingHelper.Up : 0)
