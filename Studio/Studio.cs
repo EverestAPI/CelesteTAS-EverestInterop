@@ -1567,6 +1567,14 @@ public partial class Studio : BaseForm {
         InsertNewLine("EndExportGameInfo");
     }
 
+    private void startRecordingToolStripMenuItem_Click(object sender, EventArgs e) {
+        InsertNewLine("StartRecording");
+    }
+
+    private void stopRecordingToolStripMenuItem_Click(object sender, EventArgs e) {
+        InsertNewLine("StopRecording");
+    }
+
     private void startExportRoomInfoToolStripMenuItem_Click(object sender, EventArgs e) {
         InsertNewLine("ExportRoomInfo dump_room_info.txt");
     }

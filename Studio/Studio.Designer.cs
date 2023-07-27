@@ -139,6 +139,9 @@ namespace CelesteStudio {
             this.toolStripSeparator22 = new System.Windows.Forms.ToolStripSeparator();
             this.startExportToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.finishExportToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator25 = new System.Windows.Forms.ToolStripSeparator();
+            this.startRecordingToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.stopRecordingToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator14 = new System.Windows.Forms.ToolStripSeparator();
             this.startExportRoomInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.finishExportRoomInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -766,7 +769,7 @@ namespace CelesteStudio {
             // 
             // insertOtherCommandToolStripMenuItem
             // 
-            this.insertOtherCommandToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.enforceLegalToolStripMenuItem, this.unsafeToolStripMenuItem, this.safeToolStripMenuItem, this.toolStripSeparator18, this.readToolStripMenuItem, this.playToolStripMenuItem, this.toolStripSeparator17, this.repeatToolStripMenuItem, this.endRepeatToolStripMenuItem, this.toolStripSeparator16, this.setToolStripMenuItem, this.invokeToolStripMenuItem, this.toolStripSeparator3, this.pressToolStripMenuItem, this.toolStripSeparator24, this.analogueModeToolStripMenuItem, this.toolStripSeparator4, this.stunPauseToolStripMenuItem, this.endStunPauseToolStripMenuItem, this.stunPauseModeToolStripMenuItem, this.toolStripSeparator23, this.autoInputToolStripMenuItem, this.startAutoInputToolStripMenuItem, this.endAutoInputToolStripMenuItem, this.skipAutoInputToolStripMenuItem, this.toolStripSeparator22, this.startExportToolStripMenuItem, this.finishExportToolStripMenuItem, this.toolStripSeparator14, this.startExportRoomInfoToolStripMenuItem, this.finishExportRoomInfoToolStripMenuItem, this.toolStripSeparator5, this.addToolStripMenuItem, this.skipToolStripMenuItem, this.startExportLibTASToolStripMenuItem, this.finishExportLibTASToolStripMenuItem, this.toolStripSeparator13, this.completeInfoToolStripMenuItem, this.recordCountToolStripMenuItem, this.fileTimeToolStripMenuItem, this.chapterTimeToolStripMenuItem, this.toolStripSeparator21, this.exitGameToolStripMenuItem});
+            this.insertOtherCommandToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.enforceLegalToolStripMenuItem, this.unsafeToolStripMenuItem, this.safeToolStripMenuItem, this.toolStripSeparator18, this.readToolStripMenuItem, this.playToolStripMenuItem, this.toolStripSeparator17, this.repeatToolStripMenuItem, this.endRepeatToolStripMenuItem, this.toolStripSeparator16, this.setToolStripMenuItem, this.invokeToolStripMenuItem, this.toolStripSeparator3, this.pressToolStripMenuItem, this.toolStripSeparator24, this.analogueModeToolStripMenuItem, this.toolStripSeparator4, this.stunPauseToolStripMenuItem, this.endStunPauseToolStripMenuItem, this.stunPauseModeToolStripMenuItem, this.toolStripSeparator23, this.autoInputToolStripMenuItem, this.startAutoInputToolStripMenuItem, this.endAutoInputToolStripMenuItem, this.skipAutoInputToolStripMenuItem, this.toolStripSeparator22, this.startExportToolStripMenuItem, this.finishExportToolStripMenuItem, this.toolStripSeparator14, this.startExportRoomInfoToolStripMenuItem, this.finishExportRoomInfoToolStripMenuItem, this.toolStripSeparator25, this.startRecordingToolStripMenuItem, this.stopRecordingToolStripMenuItem, this.toolStripSeparator5, this.addToolStripMenuItem, this.skipToolStripMenuItem, this.startExportLibTASToolStripMenuItem, this.finishExportLibTASToolStripMenuItem, this.toolStripSeparator13, this.completeInfoToolStripMenuItem, this.recordCountToolStripMenuItem, this.fileTimeToolStripMenuItem, this.chapterTimeToolStripMenuItem, this.toolStripSeparator21, this.exitGameToolStripMenuItem});
             this.insertOtherCommandToolStripMenuItem.Name = "insertOtherCommandToolStripMenuItem";
             this.insertOtherCommandToolStripMenuItem.Size = new System.Drawing.Size(425, 22);
             this.insertOtherCommandToolStripMenuItem.Text = "Insert Other Command";
@@ -970,6 +973,27 @@ namespace CelesteStudio {
             this.finishExportToolStripMenuItem.Text = "EndExportGameInfo";
             this.finishExportToolStripMenuItem.ToolTipText = "Dumps data to a file, which can be used to analyze desyncs.";
             this.finishExportToolStripMenuItem.Click += new System.EventHandler(this.finishExportToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator25
+            // 
+            this.toolStripSeparator25.Name = "toolStripSeparator25";
+            this.toolStripSeparator25.Size = new System.Drawing.Size(191, 6);
+            // 
+            // startRecordingToolStripMenuItem
+            // 
+            this.startRecordingToolStripMenuItem.Name = "startRecordingToolStripMenuItem";
+            this.startRecordingToolStripMenuItem.Size = new System.Drawing.Size(194, 22);
+            this.startRecordingToolStripMenuItem.Text = "StartRecording";
+            this.startRecordingToolStripMenuItem.ToolTipText = "Creates frame-perfect recordings, no matter what hardware is used.";
+            this.startRecordingToolStripMenuItem.Click += new System.EventHandler(this.startRecordingToolStripMenuItem_Click);
+            // 
+            // stopRecordingToolStripMenuItem
+            // 
+            this.stopRecordingToolStripMenuItem.Name = "stopRecordingToolStripMenuItem";
+            this.stopRecordingToolStripMenuItem.Size = new System.Drawing.Size(194, 22);
+            this.stopRecordingToolStripMenuItem.Text = "StopRecording";
+            this.stopRecordingToolStripMenuItem.ToolTipText = "Creates frame-perfect recordings, no matter what hardware is used.";
+            this.stopRecordingToolStripMenuItem.Click += new System.EventHandler(this.stopRecordingToolStripMenuItem_Click);
             // 
             // toolStripSeparator14
             // 
@@ -1319,6 +1343,7 @@ namespace CelesteStudio {
 
         private System.Windows.Forms.ToolStripMenuItem startExportRoomInfoToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem finishExportRoomInfoToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator25;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator14;
 
         private System.Windows.Forms.ToolStripMenuItem watchEntityInfoToolStripMenuItem;
@@ -1441,6 +1466,8 @@ namespace CelesteStudio {
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator4;
         private System.Windows.Forms.ToolStripMenuItem startExportToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem finishExportToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem startRecordingToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem stopRecordingToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator5;
         private System.Windows.Forms.ToolStripMenuItem addToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem skipToolStripMenuItem;
