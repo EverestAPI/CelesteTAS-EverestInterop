@@ -11,7 +11,8 @@
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
-    <ItemDefinitionGroup>
+    <!-- This causes compilation issues on Linux and probably MacOS too. -->
+    <ItemDefinitionGroup Condition="'$(OS)' == 'Windows_NT'">
         <PackageReference IncludeAssets="compile" />
         <Reference>
             <Private>False</Private>
