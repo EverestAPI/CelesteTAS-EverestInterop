@@ -122,6 +122,9 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
             case MessageID.ToggleGameSetting:
                 ProcessToggleGameSetting(message.Data);
                 break;
+            case MessageID.RecordInputs:
+                ProcessRecordInputs(message.Data);
+                break;
             default:
                 if (ExternalReadHandler?.Invoke(message.Data) != true) {
                     throw new InvalidOperationException($"{message.Id}");
@@ -364,6 +367,15 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
                 ReturnData(string.Empty);
             }
         }
+    }
+
+    private void ProcessRecordInputs(byte[] data) {
+        string fileName = Encoding.UTF8.GetString(data);
+        
+        int totalFrames = Manager.Controller.Inputs.Count;
+        Manager.EnableRun();
+        Manager.Recording = true;
+        TASRecorderUtils.RecordFrames(totalFrames, fileName);
     }
 
     #endregion

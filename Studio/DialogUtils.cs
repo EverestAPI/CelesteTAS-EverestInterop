@@ -3,7 +3,9 @@ using System.Drawing;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using CelesteStudio.Communication;
 using CelesteStudio.RichText;
+using StudioCommunication;
 
 namespace CelesteStudio;
 
@@ -333,6 +335,91 @@ public static class DialogUtils {
         commentLabel.Location = new Point(padding, roomComboBox.Bottom - commentLabel.Height);
 
         inputBox.ShowDialog();
+    }
+
+    public static void ShowRecordDialog() {
+        const int padding = 10;
+        const int buttonWidth = 100;
+        const int buttonHeight = 30;
+
+        Size size = new(buttonWidth * 3 + padding * 4, buttonHeight * 2 + padding * 3);
+
+        using Form inputBox = new();
+        inputBox.TopMost = true;
+        inputBox.FormBorderStyle = FormBorderStyle.FixedDialog;
+        inputBox.ClientSize = size;
+        inputBox.Text = "Record TAS";
+        inputBox.StartPosition = FormStartPosition.CenterParent;
+        inputBox.MinimizeBox = false;
+        inputBox.MaximizeBox = false;
+
+        Label label = new();
+        label.AutoSize = true;
+        label.Text = "File Name  ";
+        inputBox.Controls.Add(label);
+
+        TextBox textBox = new();
+        textBox.AutoSize = true;
+        textBox.Location = new Point(label.Right + padding, padding);
+        textBox.ClientSize = new Size(size.Width - label.Width - padding * 2, textBox.Height);
+        textBox.Font = new Font(FontFamily.GenericSansSerif, 11);
+        textBox.ForeColor = Color.FromArgb(50, 50, 50);
+        textBox.Text = $"{DateTime.Now:dd-MM-yyyy_HH-mm-ss}";
+
+        inputBox.Controls.Add(textBox);
+        label.Location = new Point(padding, padding + (textBox.Height - label.Height) / 2);
+
+        bool Validate() {
+            if (string.IsNullOrWhiteSpace(textBox.Text)) {
+                MessageBox.Show("An empty file name is not valid!",
+                    "Information",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+                return false;
+            }
+            return true;
+        }
+
+        Button recordInputsButton = new();
+        recordInputsButton.DialogResult = DialogResult.OK;
+        recordInputsButton.Name = "recordInputsButton";
+        recordInputsButton.Size = new Size(buttonWidth, buttonHeight);
+        recordInputsButton.Text = "Record &Inputs";
+        recordInputsButton.Location = new Point(size.Width - buttonWidth * 3 - padding * 3, textBox.Bottom + padding);
+        recordInputsButton.Click += (_, _) => {
+            if (!Validate()) {
+                return;
+            }
+            StudioCommunicationServer.Instance.RecordInputs(textBox.Text);
+        };
+        inputBox.Controls.Add(recordInputsButton);
+
+        Button recordLevelButton = new();
+        recordLevelButton.DialogResult = DialogResult.OK;
+        recordLevelButton.Name = "recordLevelButton";
+        recordLevelButton.Size = new Size(buttonWidth, buttonHeight);
+        recordLevelButton.Text = "Record &Level";
+        recordLevelButton.Location = new Point(size.Width - buttonWidth * 2 - padding * 2, textBox.Bottom + padding);
+        recordLevelButton.Enabled = false;
+        recordLevelButton.Click += (_, _) => {
+            if (!Validate()) {
+                return;
+            }
+        };
+        inputBox.Controls.Add(recordLevelButton);
+
+        Button cancelButton = new();
+        cancelButton.DialogResult = DialogResult.Cancel;
+        cancelButton.Name = "cancelButton";
+        cancelButton.Size = new Size(buttonWidth, buttonHeight);
+        cancelButton.Text = "&Cancel";
+        cancelButton.Location = new Point(size.Width - buttonWidth - padding, textBox.Bottom + padding);
+        inputBox.Controls.Add(cancelButton);
+
+        inputBox.CancelButton = cancelButton;
+
+        DialogResult result = inputBox.ShowDialog();
     }
 
     private record RoomNameItem {

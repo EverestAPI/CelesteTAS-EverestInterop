@@ -78,6 +78,11 @@ public enum MessageID : byte {
     /// Structure: Dictonary<int(line number), string(line text)>
     /// </summary>
     [HighPriority] UpdateLines = 0x32,
+
+    // <summary>
+    /// Structure: None
+    /// </summary>
+    [HighPriority] RecordInputs = 0x33,
 }
 
 public enum GameDataType : byte {

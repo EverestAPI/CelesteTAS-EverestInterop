@@ -162,6 +162,7 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
     public void SendHotkeyPressed(HotkeyID hotkey, bool released = false) => PendingWrite = () => SendHotkeyPressedNow(hotkey, released);
     public void ToggleGameSetting(string settingName, object value) => PendingWrite = () => ToggleGameSettingNow(settingName, value);
     public void GetDataFromGame(GameDataType gameDataType, object arg) => PendingWrite = () => GetGameDataNow(gameDataType, arg);
+    public void RecordInputs(string fileName) => PendingWrite = () => RecordInputsNow(fileName);
 
     private void SendPathNow(string path, bool canFail) {
         if (Initialized || !canFail) {
@@ -210,6 +211,16 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
             (byte) gameDataType, arg
         });
         WriteMessageGuaranteed(new Message(MessageID.GetData, bytes));
+    }
+
+    private void RecordInputsNow(string fileName) {
+        if (!Initialized) {
+            return;
+        }
+
+        byte[] fileNameBytes = string.IsNullOrEmpty(fileName) ? new byte[0] : Encoding.UTF8.GetBytes(fileName);
+
+        WriteMessageGuaranteed(new Message(MessageID.RecordInputs, fileNameBytes));
     }
 
     #endregion

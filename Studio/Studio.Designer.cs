@@ -48,6 +48,7 @@ namespace CelesteStudio {
             this.toolStripSeparator15 = new System.Windows.Forms.ToolStripSeparator();
             this.saveAsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.integrateReadFilesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.recordTASToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.convertToLibTASInputsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.settingsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.sendInputsToCelesteMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -261,7 +262,7 @@ namespace CelesteStudio {
             // 
             // fileToolStripMenuItem
             // 
-            this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.newFileToolStripMenuItem, this.toolStripSeparator7, this.openFileMenuItem, this.openPreviousFileToolStripMenuItem, this.openRecentMenuItem, this.openBackupToolStripMenuItem, this.toolStripSeparator15, this.saveAsToolStripMenuItem, this.integrateReadFilesToolStripMenuItem, this.convertToLibTASInputsToolStripMenuItem});
+            this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.newFileToolStripMenuItem, this.toolStripSeparator7, this.openFileMenuItem, this.openPreviousFileToolStripMenuItem, this.openRecentMenuItem, this.openBackupToolStripMenuItem, this.toolStripSeparator15, this.saveAsToolStripMenuItem, this.integrateReadFilesToolStripMenuItem, this.recordTASToolStripMenuItem, this.convertToLibTASInputsToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(52, 20);
             this.fileToolStripMenuItem.Text = "&File";
@@ -326,6 +327,13 @@ namespace CelesteStudio {
             this.integrateReadFilesToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
             this.integrateReadFilesToolStripMenuItem.Text = "&Integrate Read Files...";
             this.integrateReadFilesToolStripMenuItem.Click += new System.EventHandler(this.integrateReadFilesToolStripMenuItem_Click);
+            // 
+            // recordTASToolStripMenuItem
+            // 
+            this.recordTASToolStripMenuItem.Name = "recordTASToolStripMenuItem";
+            this.recordTASToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.recordTASToolStripMenuItem.Text = "&Record TAS...";
+            this.recordTASToolStripMenuItem.Click += new System.EventHandler(this.recordTASToolStripMenuItem_Click);
             // 
             // convertToLibTASInputsToolStripMenuItem
             // 
@@ -1273,6 +1281,7 @@ namespace CelesteStudio {
         private System.Windows.Forms.ToolStripMenuItem openSettingsFileToolStripMenuItem;
 
         private System.Windows.Forms.ToolStripMenuItem integrateReadFilesToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem recordTASToolStripMenuItem;
 
         private System.Windows.Forms.ToolStripMenuItem pressToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator24;

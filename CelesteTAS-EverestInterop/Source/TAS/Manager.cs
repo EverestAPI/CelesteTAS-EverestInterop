@@ -19,6 +19,7 @@ public static class Manager {
     private static readonly ConcurrentQueue<Action> mainThreadActions = new();
 
     public static bool Running;
+    public static bool Recording;
     public static readonly InputController Controller = new();
     public static States LastStates, States, NextStates;
     public static float FrameLoops { get; private set; } = 1f;
@@ -185,6 +186,11 @@ public static class Manager {
 
     public static void DisableRun() {
         Running = false;
+
+        if (Recording) {
+            TASRecorderUtils.StopRecording();
+            Recording = false;
+        }
 
         LastStates = States.None;
         States = States.None;
