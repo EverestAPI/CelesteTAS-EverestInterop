@@ -373,6 +373,21 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         string fileName = Encoding.UTF8.GetString(data);
         
         int totalFrames = Manager.Controller.Inputs.Count;
+        if (totalFrames <= 0) return;
+
+        bool startsWithConsoleLoad = false;
+        if (Manager.Controller.Commands.TryGetValue(0, out var commands)) {
+            startsWithConsoleLoad = commands.Any(c => c.Attribute.Name.Equals("Console", StringComparison.OrdinalIgnoreCase) &&
+                                                     c.Args.Length >= 1 && 
+                                                     ConsoleCommand.LoadCommandRegex.Match(c.Args[0].ToLower()) is {Success: true});
+        }
+
+        if (startsWithConsoleLoad) {
+            // Restart the music when we enter the level
+            Audio.SetMusic(null);
+            Audio.BusStopAll("bus:/gameplay_sfx", immediate: true);
+        }
+
         Manager.EnableRun();
         Manager.Recording = true;
         TASRecorderUtils.RecordFrames(totalFrames, fileName);
