@@ -377,12 +377,13 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
 
         string fileName = Encoding.UTF8.GetString(data);
         
-        int totalFrames = Manager.Controller.Inputs.Count;
-        if (totalFrames <= 0) return;
-
         Manager.Controller.RefreshInputs(enableRun: true);
         Manager.NextStates |= States.Enable;
         Manager.Recording = true;
+
+        int totalFrames = Manager.Controller.Inputs.Count;
+        if (totalFrames <= 0) return;
+
         TASRecorderUtils.RecordFrames(totalFrames);
 
         if (!Manager.Controller.Commands.TryGetValue(0, out var commands)) return;
@@ -391,7 +392,8 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
                                                        ConsoleCommand.LoadCommandRegex.Match(c.Args[0].ToLower()) is {Success: true});
         if (startsWithConsoleLoad) {
             // Restart the music when we enter the level
-            Audio.SetMusic(null);
+            Audio.SetMusic(null, startPlaying: false, allowFadeOut: false);
+            Audio.SetAmbience(null, startPlaying: false);
             Audio.BusStopAll("bus:/gameplay_sfx", immediate: true);
         }
     }

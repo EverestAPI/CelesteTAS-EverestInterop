@@ -69,7 +69,7 @@ public static class Manager {
                 Controller.AdvanceFrame(out bool canPlayback);
 
                 // stop TAS if breakpoint is not placed at the end
-                if (Controller.Break && Controller.CanPlayback) {
+                if (Controller.Break && Controller.CanPlayback && !Recording) {
                     Controller.NextCommentFastForward = null;
                     NextStates |= States.FrameStep;
                     FrameLoops = 1;
@@ -97,6 +97,11 @@ public static class Manager {
 
     private static void HandleFrameRates() {
         FrameLoops = 1;
+
+        // Keep frame rate consistant while recording
+        if (Recording) {
+            return;
+        }
 
         if (States.HasFlag(States.Enable) && !States.HasFlag(States.FrameStep) && !NextStates.HasFlag(States.FrameStep)) {
             if (Controller.HasFastForward) {
