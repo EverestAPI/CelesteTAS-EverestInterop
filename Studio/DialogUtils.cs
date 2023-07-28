@@ -369,18 +369,6 @@ public static class DialogUtils {
         inputBox.Controls.Add(textBox);
         label.Location = new Point(padding, padding + (textBox.Height - label.Height) / 2);
 
-        bool Validate() {
-            if (string.IsNullOrWhiteSpace(textBox.Text)) {
-                MessageBox.Show("An empty file name is not valid!",
-                    "Information",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error
-                );
-                return false;
-            }
-            return true;
-        }
-
         Button recordButton = new();
         recordButton.DialogResult = DialogResult.OK;
         recordButton.Name = "recordButton";
@@ -402,9 +390,18 @@ public static class DialogUtils {
 
         DialogResult result = inputBox.ShowDialog();
 
-        if (result == DialogResult.Cancel || !Validate()) {
+        if (string.IsNullOrWhiteSpace(textBox.Text)) {
+            MessageBox.Show("An empty file name is not valid!",
+                "Information",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error
+            );
             return;
         }
+        if (result == DialogResult.Cancel) {
+            return;
+        }
+
         StudioCommunicationServer.Instance.RecordInputs(textBox.Text);
     }
 
