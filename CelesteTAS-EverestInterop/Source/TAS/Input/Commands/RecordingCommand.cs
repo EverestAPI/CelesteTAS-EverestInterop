@@ -16,11 +16,13 @@ public static class RecordingCommand {
             TASRecorderUtils.RecordFrames(framesToRecord);
         else
             TASRecorderUtils.StartRecording();
+        Manager.Recording = true;
     }
 
     // "StopRecording"
     [TasCommand("StopRecording")]
     private static void StopRecording() {
         TASRecorderUtils.StopRecording();
+        Manager.Recording = false;
     }
 }
