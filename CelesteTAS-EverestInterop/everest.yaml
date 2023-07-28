@@ -8,3 +8,5 @@
   OptionalDependencies:
     - Name: SpeedrunTool
       Version: 3.16.4
+    - Name: TASRecorder
+      Version: 1.0.0
