@@ -402,7 +402,7 @@ public static class DialogUtils {
             return;
         }
 
-        StudioCommunicationServer.Instance.RecordInputs(textBox.Text);
+        StudioCommunicationServer.Instance.RecordTAS(textBox.Text);
     }
 
     public static void ShowRecordingFailedDialog() {

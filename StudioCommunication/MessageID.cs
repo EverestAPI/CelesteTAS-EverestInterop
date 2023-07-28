@@ -82,7 +82,7 @@ public enum MessageID : byte {
     // <summary>
     /// Structure: None
     /// </summary>
-    [HighPriority] RecordInputs = 0x33,
+    [HighPriority] RecordTAS = 0x33,
 
     // <summary>
     /// Structure: None

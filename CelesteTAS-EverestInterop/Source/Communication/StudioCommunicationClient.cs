@@ -122,8 +122,8 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
             case MessageID.ToggleGameSetting:
                 ProcessToggleGameSetting(message.Data);
                 break;
-            case MessageID.RecordInputs:
-                ProcessRecordInputs(message.Data);
+            case MessageID.RecordTAS:
+                ProcessRecordTAS(message.Data);
                 break;
             default:
                 if (ExternalReadHandler?.Invoke(message.Data) != true) {
@@ -369,7 +369,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         }
     }
 
-    private void ProcessRecordInputs(byte[] data) {
+    private void ProcessRecordTAS(byte[] data) {
         if (!TASRecorderUtils.Installed) {
             StudioCommunicationClient.Instance?.SendRecordingFailed();
             return;
