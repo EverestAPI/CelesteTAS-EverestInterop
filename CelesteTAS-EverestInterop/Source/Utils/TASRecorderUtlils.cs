@@ -4,6 +4,7 @@ using Celeste.Mod.TASRecorder.Interop;
 namespace TAS.Utils;
 
 internal static class TASRecorderUtils {
+    public static bool Installed => installed.Value;
     private static readonly Lazy<bool> installed = new(() => ModUtils.IsInstalled("TASRecorder"));
 
     public static void StartRecording(string fileName = null) {

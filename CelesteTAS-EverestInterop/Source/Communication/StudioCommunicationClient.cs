@@ -370,6 +370,11 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
     }
 
     private void ProcessRecordInputs(byte[] data) {
+        if (!TASRecorderUtils.Installed) {
+            StudioCommunicationClient.Instance?.SendRecordingFailed();
+            return;
+        }
+
         string fileName = Encoding.UTF8.GetString(data);
         
         int totalFrames = Manager.Controller.Inputs.Count;
@@ -473,6 +478,10 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         } catch {
             // ignored
         }
+    }
+
+    public void SendRecordingFailed() {
+        WriteMessageGuaranteed(new Message(MessageID.RecordingFailed, new byte[0]));
     }
 
     #endregion

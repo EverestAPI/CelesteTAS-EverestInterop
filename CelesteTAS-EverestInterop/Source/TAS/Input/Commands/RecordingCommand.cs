@@ -1,4 +1,5 @@
 using Celeste.Mod;
+using TAS.Communication;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;
@@ -7,6 +8,11 @@ public static class RecordingCommand {
     // "StartRecording, [FramesToRecord]"
     [TasCommand("StartRecording")]
     private static void StartRecording(string[] args) {
+        if (!TASRecorderUtils.Installed) {
+            StudioCommunicationClient.Instance?.SendRecordingFailed();
+            return;
+        }
+
         int framesToRecord = -1;
 
         if (args.Length != 0)
