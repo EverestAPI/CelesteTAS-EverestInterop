@@ -339,10 +339,10 @@ public static class DialogUtils {
 
     public static void ShowRecordDialog() {
         const int padding = 10;
-        const int buttonWidth = 100;
+        const int buttonWidth = 150;
         const int buttonHeight = 30;
 
-        Size size = new(buttonWidth * 3 + padding * 4, buttonHeight * 2 + padding * 3);
+        Size size = new(buttonWidth * 2 + padding * 3, buttonHeight * 2 + padding * 3);
 
         using Form inputBox = new();
         inputBox.TopMost = true;
@@ -381,33 +381,13 @@ public static class DialogUtils {
             return true;
         }
 
-        Button recordInputsButton = new();
-        recordInputsButton.DialogResult = DialogResult.OK;
-        recordInputsButton.Name = "recordInputsButton";
-        recordInputsButton.Size = new Size(buttonWidth, buttonHeight);
-        recordInputsButton.Text = "Record &Inputs";
-        recordInputsButton.Location = new Point(size.Width - buttonWidth * 3 - padding * 3, textBox.Bottom + padding);
-        recordInputsButton.Click += (_, _) => {
-            if (!Validate()) {
-                return;
-            }
-            StudioCommunicationServer.Instance.RecordInputs(textBox.Text);
-        };
-        inputBox.Controls.Add(recordInputsButton);
-
-        Button recordLevelButton = new();
-        recordLevelButton.DialogResult = DialogResult.OK;
-        recordLevelButton.Name = "recordLevelButton";
-        recordLevelButton.Size = new Size(buttonWidth, buttonHeight);
-        recordLevelButton.Text = "Record &Level";
-        recordLevelButton.Location = new Point(size.Width - buttonWidth * 2 - padding * 2, textBox.Bottom + padding);
-        recordLevelButton.Enabled = false;
-        recordLevelButton.Click += (_, _) => {
-            if (!Validate()) {
-                return;
-            }
-        };
-        inputBox.Controls.Add(recordLevelButton);
+        Button recordButton = new();
+        recordButton.DialogResult = DialogResult.OK;
+        recordButton.Name = "recordButton";
+        recordButton.Size = new Size(buttonWidth, buttonHeight);
+        recordButton.Text = "&Record";
+        recordButton.Location = new Point(size.Width - buttonWidth * 2 - padding * 2, textBox.Bottom + padding);
+        inputBox.Controls.Add(recordButton);
 
         Button cancelButton = new();
         cancelButton.DialogResult = DialogResult.Cancel;
@@ -417,9 +397,15 @@ public static class DialogUtils {
         cancelButton.Location = new Point(size.Width - buttonWidth - padding, textBox.Bottom + padding);
         inputBox.Controls.Add(cancelButton);
 
+        inputBox.AcceptButton = recordButton;
         inputBox.CancelButton = cancelButton;
 
         DialogResult result = inputBox.ShowDialog();
+
+        if (result == DialogResult.Cancel || !Validate()) {
+            return;
+        }
+        StudioCommunicationServer.Instance.RecordInputs(textBox.Text);
     }
 
     private record RoomNameItem {
