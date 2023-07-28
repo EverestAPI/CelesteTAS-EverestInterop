@@ -405,7 +405,7 @@ public static class DialogUtils {
         StudioCommunicationServer.Instance.RecordTAS(textBox.Text);
     }
 
-    public static void ShowRecordingFailedDialog() {
+    public static void ShowRecordingFailedDialog(string gameBananaURL) {
         const int padding = 10;
         const int buttonWidth = 150;
         const int buttonHeight = 30;
@@ -433,8 +433,8 @@ public static class DialogUtils {
         gbButton.Size = new Size(buttonWidth, buttonHeight);
         gbButton.Text = "&Open GameBanana page";
         gbButton.Location = new Point(size.Width - buttonWidth * 2 - padding * 2, label.Bottom + padding);
-        // TODO: Use the actual GameBanana URL
-        gbButton.Click += (_, _) => Process.Start("https://gamebanana.com/mods/53697");
+        gbButton.Click += (_, _) => Process.Start(gameBananaURL);
+        gbButton.Enabled = !string.IsNullOrWhiteSpace(gameBananaURL);
         inputBox.Controls.Add(gbButton);
 
         Button okButton = new();

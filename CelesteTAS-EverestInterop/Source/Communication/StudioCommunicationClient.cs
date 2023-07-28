@@ -481,7 +481,11 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
     }
 
     public void SendRecordingFailed() {
-        WriteMessageGuaranteed(new Message(MessageID.RecordingFailed, new byte[0]));
+        string gameBananaURL = string.Empty;
+        if (modUpdateInfos?.TryGetValue("TASRecorder", out var modUpdateInfo) == true && modUpdateInfo.GameBananaId > 0) {
+            gameBananaURL = $"https://gamebanana.com/tools/{modUpdateInfo.GameBananaId}\n";
+        }
+        WriteMessageGuaranteed(new Message(MessageID.RecordingFailed, Encoding.UTF8.GetBytes(gameBananaURL)));
     }
 
     #endregion
