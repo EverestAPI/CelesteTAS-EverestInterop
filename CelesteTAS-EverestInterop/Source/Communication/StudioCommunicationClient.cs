@@ -378,6 +378,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         Manager.Controller.RefreshInputs(enableRun: true);
         Manager.NextStates |= States.Enable;
         Manager.Recording = true;
+        TASRecorderUtils.RecordFrames(totalFrames);
 
         if (!Manager.Controller.Commands.TryGetValue(0, out var commands)) return;
         bool startsWithConsoleLoad = commands.Any(c => c.Attribute.Name.Equals("Console", StringComparison.OrdinalIgnoreCase) &&
