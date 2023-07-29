@@ -1,4 +1,4 @@
-﻿# ================================== Menu ==================================
+# ================================== Menu ==================================
 TAS_ENABLED=                    Enabled
 TAS_ENABLED_DESCRIPTION=        Working TAS File Path:
 TAS_SHOW_HITBOXES=              Hitboxes
@@ -99,6 +99,9 @@ TAS_HOTKEYS_DESCRIPTION= Binding multiple keys to a control will cause those key
 TAS_CENTER_CAMERA=                   Center Camera
 TAS_RESTORE_SETTINGS=                Restore All Settings when TAS Stop
 TAS_LAUNCH_STUDIO_AT_BOOT=           Launch Studio at Boot
+TAS_HIDE_FREEZE_FRAMES=              Hide Freeze Frames on Playback
+TAS_HIDE_FREEZE_FRAMES_DESCRIPTION_1=Stops freeze frames from being displayed while the TAS is active,
+TAS_HIDE_FREEZE_FRAMES_DESCRIPTION_2=but still runs the inputs made during freeze frames
 TAS_MOD_9D_LIGHTING=                 Mod 9D Lighting
 TAS_IGNORE_GC_COLLECT=               Ignore GC Collect during Fast Forward
 TAS_IGNORE_GC_COLLECT_DESCRIPTION_1= Benefits of fast forwarding multiple chapter length TAS

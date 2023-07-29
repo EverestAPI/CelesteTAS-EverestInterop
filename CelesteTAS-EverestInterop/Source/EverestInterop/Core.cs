@@ -78,39 +78,20 @@ public static class Core {
             return;
         }
 
-        //if (Manager.SlowForwarding) {
-        //    orig(self, gameTime);
-        //    TryUpdateGrab();
-        //    return;
-        //}
-
         // The original patch doesn't store FrameLoops in a local variable, but it's only updated in UpdateInputs anyway.
         int loops = Manager.SlowForwarding ? 1 : (int) Manager.FrameLoops;
         bool skipBaseUpdate = loops >= 2;
 
         SkipBaseUpdate = skipBaseUpdate;
         InUpdate = true;
-        float lastFreezeTimer = float.PositiveInfinity;
 
         for (int i = 0; i < loops; i++) {
-            Manager.AdvanceHiddenFrame = false;
-            bool incrementedLoops = false;
-            if (Engine.FreezeTimer > 0f && !Manager.SkipFrame) {
-                skipBaseUpdate = true;
-                SkipBaseUpdate = skipBaseUpdate;
-                Manager.AdvanceHiddenFrame = true;
-                loops += 1;
-                incrementedLoops = true;
-                lastFreezeTimer = Engine.FreezeTimer;
-            }
+            float oldFreezeTimer = Engine.FreezeTimer;
 
             // Anything happening early on runs in the MInput.Update hook.
             orig(self, gameTime);
             TryUpdateGrab();
-
-            if (incrementedLoops && Engine.FreezeTimer >= lastFreezeTimer) {
-                loops -= 1;
-            }
+            Manager.AdvanceHiddenFrame = false;
 
             // Autosaving prevents opening the menu to skip cutscenes during fast forward.
             if (CantPauseWhileSaving.Value && Engine.Scene is Level level && UserIO.Saving
@@ -118,6 +99,11 @@ public static class Core {
                ) {
                 skipBaseUpdate = false;
                 loops = 1;
+            } else if (TasSettings.HideFreezeFrames && oldFreezeTimer > 0f && oldFreezeTimer > Engine.FreezeTimer) {
+                skipBaseUpdate = true;
+                SkipBaseUpdate = skipBaseUpdate;
+                Manager.AdvanceHiddenFrame = true;
+                loops += 1;
             }
         }
 
