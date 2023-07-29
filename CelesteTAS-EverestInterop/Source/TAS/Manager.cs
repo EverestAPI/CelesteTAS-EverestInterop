@@ -24,12 +24,12 @@ public static class Manager {
     public static float FrameLoops { get; private set; } = 1f;
     public static bool UltraFastForwarding => FrameLoops >= 100 && Running;
     public static bool SlowForwarding => FrameLoops < 1f;
-    public static bool AdvanceHiddenFrame;
+    public static bool AdvanceThroughHiddenFrame;
 
     private static bool SkipSlowForwardingFrame =>
         FrameLoops < 1f && (int) ((Engine.FrameCounter + 1) * FrameLoops) == (int) (Engine.FrameCounter * FrameLoops);
 
-    public static bool SkipFrame => (States.HasFlag(States.FrameStep) || SkipSlowForwardingFrame) && !AdvanceHiddenFrame;
+    public static bool SkipFrame => (States.HasFlag(States.FrameStep) || SkipSlowForwardingFrame) && !AdvanceThroughHiddenFrame;
 
     static Manager() {
         AttributeUtils.CollectMethods<EnableRunAttribute>();

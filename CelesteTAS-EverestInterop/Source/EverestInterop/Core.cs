@@ -91,7 +91,7 @@ public static class Core {
             // Anything happening early on runs in the MInput.Update hook.
             orig(self, gameTime);
             TryUpdateGrab();
-            Manager.AdvanceHiddenFrame = false;
+            Manager.AdvanceThroughHiddenFrame = false;
 
             // Autosaving prevents opening the menu to skip cutscenes during fast forward.
             if (CantPauseWhileSaving.Value && Engine.Scene is Level level && UserIO.Saving
@@ -102,7 +102,7 @@ public static class Core {
             } else if (TasSettings.HideFreezeFrames && oldFreezeTimer > 0f && oldFreezeTimer > Engine.FreezeTimer) {
                 skipBaseUpdate = true;
                 SkipBaseUpdate = skipBaseUpdate;
-                Manager.AdvanceHiddenFrame = true;
+                Manager.AdvanceThroughHiddenFrame = true;
                 loops += 1;
             }
         }
