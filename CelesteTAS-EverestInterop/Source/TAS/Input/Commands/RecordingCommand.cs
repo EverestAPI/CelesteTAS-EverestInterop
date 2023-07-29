@@ -1,4 +1,5 @@
 using Celeste.Mod;
+using StudioCommunication;
 using TAS.Communication;
 using TAS.Utils;
 
@@ -26,7 +27,10 @@ public static class RecordingCommand {
             TASRecorderUtils.RecordFrames(framesToRecord);
         else
             TASRecorderUtils.StartRecording();
+
         Manager.Recording = true;
+        Manager.States &= ~States.FrameStep;
+        Manager.NextStates &= ~States.FrameStep;
     }
 
     // "StopRecording"

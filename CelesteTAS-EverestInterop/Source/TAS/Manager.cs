@@ -139,7 +139,7 @@ public static class Manager {
                     States &= ~States.FrameStep;
                     NextStates |= States.FrameStep;
                 }
-            } else if (pause && !Hotkeys.PauseResume.LastCheck) {
+            } else if (pause && !Hotkeys.PauseResume.LastCheck && !Recording) {
                 if (!States.HasFlag(States.FrameStep)) {
                     States |= States.FrameStep;
                     NextStates &= ~States.FrameStep;
