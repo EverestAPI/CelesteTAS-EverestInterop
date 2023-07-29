@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Celeste;
@@ -15,10 +16,14 @@ namespace TAS.EverestInterop.InfoHUD;
 
 public static class InfoCustom {
     private static readonly Regex BraceRegex = new(@"\{(.+?)\}", RegexOptions.Compiled);
+    private static readonly Regex BracketRegex = new(@"\(.*", RegexOptions.Compiled);
+    // this may allow some wild inputs...
     private static readonly Regex TypeNameRegex = new(@"^([.\w=+<>]+)(\[(.+?)\])?(@([^.]*))?$", RegexOptions.Compiled);
     private static readonly Regex TypeNameSeparatorRegex = new(@"^[.+]", RegexOptions.Compiled);
     private static readonly Dictionary<string, Type> AllTypes = new();
     private static readonly Dictionary<string, List<Type>> CachedParsedTypes = new();
+
+    private static bool DisableParameterlessMethod => TAS.Input.Commands.EnforceLegalCommand.EnabledWhenRunning;
 
     [Initialize]
     private static void CollectAllTypeInfo() {
@@ -50,7 +55,7 @@ public static class InfoCustom {
             if (dictionary.ContainsKey(entityText)) {
                 entities = dictionary[entityText];
             } else {
-                entities = FindEntities(type, entityId).ToList();
+                entities = FindEntities(type, entityId);
                 dictionary[entityText] = entities;
             }
 
@@ -85,10 +90,9 @@ public static class InfoCustom {
                 .SelectMany(type => GetCachedOrFindEntities(type, entityId, cachedEntities)).Count() > 1;
 
             List<string> result = types.Select(type => {
-                if (type.GetGetMethod(memberNames.First()) is {IsStatic: true} || type.GetFieldInfo(memberNames.First()) is {IsStatic: true}) {
+                if (type.GetGetMethod(memberNames.First()) is { IsStatic: true } || type.GetFieldInfo(memberNames.First()) is { IsStatic: true } || type.GetMethodInfo(BracketRegex.Replace(memberNames.First(), "")) is { IsStatic: true }) {
                     return FormatValue(GetMemberValue(type, null, memberNames), helperMethod, decimals);
                 }
-
                 if (Engine.Scene is Level level) {
                     if (type.IsSameOrSubclassOf(typeof(Entity))) {
                         List<Entity> entities = GetCachedOrFindEntities(type, entityId, cachedEntities);
@@ -223,7 +227,7 @@ public static class InfoCustom {
         typeNameMatched = "";
         typeNameWithAssembly = "";
         entityId = "";
-        if (TypeNameRegex.Match(text) is {Success: true} match) {
+        if (TypeNameRegex.Match(text) is { Success: true } match) {
             typeNameMatched = match.Groups[1].Value;
             typeNameWithAssembly = $"{typeNameMatched}@{match.Groups[5].Value}";
             typeNameWithAssembly = typeNameWithAssembly switch {
@@ -265,17 +269,11 @@ public static class InfoCustom {
             }
         }
 
-        if (obj is IEnumerable enumerable and not IEnumerable<char> and not IEnumerable<Component> and not IEnumerable<Entity>) {
-            StringBuilder sb = new();
-            foreach (object o in enumerable) {
-                if (sb.Length > 0) {
-                    sb.Append(", ");
-                }
+        if (obj is IEnumerable enumerable and not IEnumerable<char> ) {
+            bool compressed = obj is IEnumerable<Entity> || obj is IEnumerable<Component>;
+            string separator = compressed ? ",\n " : ", ";
 
-                sb.Append(o);
-            }
-
-            return sb.ToString();
+            return IEnumerableToString(enumerable, separator, compressed);
         }
 
         return obj.ToString();
@@ -283,16 +281,16 @@ public static class InfoCustom {
 
     public static object GetMemberValue(Type type, object obj, List<string> memberNames, bool setCommand = false) {
         foreach (string memberName in memberNames) {
-            if (type.GetGetMethod(memberName) is { } methodInfo) {
-                if (methodInfo.IsStatic) {
-                    obj = methodInfo.Invoke(null, null);
+            if (type.GetGetMethod(memberName) is { } getmethodInfo) {
+                if (getmethodInfo.IsStatic) {
+                    obj = getmethodInfo.Invoke(null, null);
                 } else if (obj != null) {
                     if (obj is Actor actor && memberName == "ExactPosition") {
                         obj = actor.GetMoreExactPosition(true);
                     } else if (obj is Platform platform && memberName == "ExactPosition") {
                         obj = platform.GetMoreExactPosition(true);
                     } else {
-                        obj = methodInfo.Invoke(obj, null);
+                        obj = getmethodInfo.Invoke(obj, null);
                     }
                 }
             } else if (type.GetFieldInfo(memberName) is { } fieldInfo) {
@@ -306,10 +304,25 @@ public static class InfoCustom {
                     };
                 }
             } else {
-                if (obj == null) {
-                    return $"{type.FullName}.{memberName} member not found";
+                string methodName = BracketRegex.Replace(memberName, "");
+                if (type.GetMethodInfo(methodName) is { } methodInfo) {
+                    if (methodInfo.GetParameters().Count<ParameterInfo>() != 0) {
+                        return $"{type.FullName}.{methodName}(..) is not parameterless. Not supported";
+                    }
+                    if (DisableParameterlessMethod) {
+                        return $"call {type.FullName}.{methodName}() is illegal when tas is running.";
+                    }
+                    if (methodInfo.IsStatic) {
+                        obj = methodInfo.Invoke(null, null);
+                    } else if (obj != null) {
+                        obj = methodInfo.Invoke(obj, null);
+                    }
                 } else {
-                    return $"{obj.GetType().FullName}.{memberName} member not found";
+                    if (obj == null) {
+                        return $"{type.FullName}.{memberName} member not found";
+                    } else {
+                        return $"{obj.GetType().FullName}.{memberName} member not found";
+                    }
                 }
             }
 
@@ -334,4 +347,40 @@ public static class InfoCustom {
             return entities.Where(entity => entity.GetEntityData()?.ToEntityId().ToString() == entityId).ToList();
         }
     }
+
+    public static string IEnumerableToString(IEnumerable enumerable, string separator, bool compressed) {
+        StringBuilder sb = new();
+        if (!compressed) {
+            foreach (object o in enumerable) {
+                if (sb.Length > 0) {
+                    sb.Append(separator);
+                }
+
+                sb.Append(o);
+            }
+
+            return sb.ToString();
+        }
+        Dictionary<string, int> keyValuePairs = new Dictionary<string, int>();
+        foreach(object obj in enumerable) {
+            string str = obj.ToString();
+            if (keyValuePairs.ContainsKey(str)) {
+                keyValuePairs[str]++;
+            } else {
+                keyValuePairs.Add(str, 1);
+            }
+        }
+        foreach (string key in keyValuePairs.Keys) {
+            if (sb.Length > 0) {
+                sb.Append(separator);
+            }
+            if (keyValuePairs[key] == 1) {
+                sb.Append(key);
+            } else {
+                sb.Append($"{key} * {keyValuePairs[key]}");
+            }
+        }
+        return sb.ToString();
+    }
+
 }
