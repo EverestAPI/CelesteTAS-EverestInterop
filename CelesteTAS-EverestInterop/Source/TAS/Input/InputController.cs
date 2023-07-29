@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using Celeste.Mod;
 using MonoMod.Utils;
+using StudioCommunication;
 using TAS.EverestInterop;
 using TAS.Input.Commands;
 using TAS.Utils;
@@ -318,7 +319,7 @@ public class InputController {
                 FastForward fastForward = new(initializationFrameCount, lineText.Substring(3), studioLine);
                 if (FastForwards.TryGetValue(initializationFrameCount, out FastForward oldFastForward) && oldFastForward.SaveState &&
                     !fastForward.SaveState) {
-                    // ignore 
+                    // ignore
                 } else {
                     FastForwards[initializationFrameCount] = fastForward;
                 }

@@ -33,6 +33,7 @@ e.g. 123,R,J (For 123 frames, hold Right and Jump)
 - Z = Crouch Dash
 - V = Crouch Dash Bind 2
 - G = Grab
+- H = Grab Bind 2
 - S = Pause
 - Q = Quick Restart
 - F = Feather Aim
@@ -110,6 +111,7 @@ The contents of the curly brackets will be converted to actual data, here are so
 - `{Level.field...}` Get the value of level field. e.g. `Wind: {Level.Wind}`.
 - `{Session.field...}` Get the value of session field. e.g. `Room: {Session.Level}`.
 - `{ClassName.staticField.field...}` Non-entity and non-level types that can get the value of a static field.
+- `{Player.Position.Length()}` Invoke method is supported, but must be parameterless and return a non-void type. Be careful not to invoke method that change the game state, as this will cause tas desync.
 - `{Player.AutoJumpTimer.toFrame()}` add `toFrame()` to the end can change the float value to frames.
 - `{Player.Speed.toPixelPerFrame()}` add `toPixelPerFrame()` to the end can change the float/vector2 speed unit to pixel/frame.
 - `{Player.Position:}` add `:` or `=` to the end will add label before the value. e.g. `{Player.Position:}` is the same as `Player.Position: {Player.Position}`.

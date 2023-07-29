@@ -10,7 +10,7 @@ using TAS.Input;
 using TAS.Module;
 using TAS.Utils;
 using static TAS.Manager;
-using TasStates = TAS.States;
+using TasStates = StudioCommunication.States;
 
 namespace TAS;
 

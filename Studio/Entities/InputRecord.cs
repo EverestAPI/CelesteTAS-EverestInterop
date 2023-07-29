@@ -24,6 +24,7 @@ public class InputRecord {
     private static readonly Actions[][] ExclusiveActions = {
         new[] {Actions.Dash, Actions.Dash2, Actions.DemoDash, Actions.DemoDash2},
         new[] {Actions.Jump, Actions.Jump2},
+        new[] {Actions.Grab, Actions.Grab2},
         new[] {Actions.Up, Actions.Down, Actions.Feather},
         new[] {Actions.Left, Actions.Right, Actions.Feather},
         new[] {Actions.UpDashOnly, Actions.DownDashOnly},

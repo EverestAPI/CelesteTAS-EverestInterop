@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Celeste.Mod;
 using TAS.Utils;
 
@@ -98,10 +99,11 @@ public static class ReadCommand {
     public static bool TryGetLine(string labelOrLineNumber, string path, out int lineNumber) {
         if (!int.TryParse(labelOrLineNumber, out lineNumber)) {
             int curLine = 0;
+            Regex labelRegex = new(@$"^\s*#\s*{Regex.Escape(labelOrLineNumber)}\s*$");
             foreach (string readLine in File.ReadLines(path)) {
                 curLine++;
                 string line = readLine.Trim();
-                if (line == $"#{labelOrLineNumber}") {
+                if (labelRegex.IsMatch(line)) {
                     lineNumber = curLine;
                     return true;
                 }

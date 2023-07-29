@@ -63,6 +63,7 @@ namespace CelesteStudio {
             this.lightToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.darkToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.customToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.openSettingsFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toggleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toggleHitboxesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toggleTriggerHitboxesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -332,7 +333,7 @@ namespace CelesteStudio {
             // 
             // settingsToolStripMenuItem
             // 
-            this.settingsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.sendInputsToCelesteMenuItem, this.autoRemoveExclusiveActionsToolStripMenuItem, this.showGameInfoToolStripMenuItem, this.alwaysOnTopToolStripMenuItem, this.autoBackupToolStripMenuItem, this.fontToolStripMenuItem, this.themesToolStripMenuItem});
+            this.settingsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.sendInputsToCelesteMenuItem, this.autoRemoveExclusiveActionsToolStripMenuItem, this.showGameInfoToolStripMenuItem, this.alwaysOnTopToolStripMenuItem, this.autoBackupToolStripMenuItem, this.fontToolStripMenuItem, this.themesToolStripMenuItem, this.openSettingsFileToolStripMenuItem});
             this.settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
             this.settingsToolStripMenuItem.Size = new System.Drawing.Size(84, 20);
             this.settingsToolStripMenuItem.Text = "&Settings";
@@ -434,6 +435,13 @@ namespace CelesteStudio {
             this.customToolStripMenuItem.Size = new System.Drawing.Size(124, 22);
             this.customToolStripMenuItem.Text = "Custom";
             this.customToolStripMenuItem.Click += new System.EventHandler(this.customToolStripMenuItem_Click);
+            // 
+            // openSettingsFileToolStripMenuItem
+            // 
+            this.openSettingsFileToolStripMenuItem.Name = "openSettingsFileToolStripMenuItem";
+            this.openSettingsFileToolStripMenuItem.Size = new System.Drawing.Size(380, 22);
+            this.openSettingsFileToolStripMenuItem.Text = "Open Settings File...";
+            this.openSettingsFileToolStripMenuItem.Click += new System.EventHandler(this.openSettingsFileToolStripMenuItem_Click);
             // 
             // toggleToolStripMenuItem
             // 
@@ -1237,6 +1245,8 @@ namespace CelesteStudio {
             this.ResumeLayout(false);
             this.PerformLayout();
         }
+
+        private System.Windows.Forms.ToolStripMenuItem openSettingsFileToolStripMenuItem;
 
         private System.Windows.Forms.ToolStripMenuItem integrateReadFilesToolStripMenuItem;
 

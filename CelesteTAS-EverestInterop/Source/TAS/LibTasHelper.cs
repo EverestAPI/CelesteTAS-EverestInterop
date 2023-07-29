@@ -21,7 +21,7 @@ public static class LibTasHelper {
 
     private static void StartExport(string path) {
         FinishExport();
-        streamWriter = new StreamWriter(path, false, Encoding.ASCII, 1 << 20);
+        streamWriter = new StreamWriter(path, false, new UTF8Encoding(false), 1 << 20);
         fileName = path;
         skipInputFrame = null;
         exporting = true;
@@ -174,6 +174,10 @@ public static class LibTasHelper {
 
         if (inputFrame.HasActions(Actions.Grab)) {
             buttons[9] = '[';
+        }
+
+        if (inputFrame.HasActions(Actions.Grab2)) {
+            buttons[10] = ']';
         }
 
         return string.Join("", buttons);
