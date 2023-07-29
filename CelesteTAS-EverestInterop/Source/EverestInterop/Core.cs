@@ -39,7 +39,7 @@ public static class Core {
             typeof(Core).GetMethodInfo("Game_Update")
         )).GenerateTrampoline<DGameUpdate>();
 
-        using (new DetourContext {After = new List<string> {"*"}}) {
+        using (new DetourContext { After = new List<string> { "*" } }) {
             // The original mod adds a few lines of code into Monocle.Engine::Update.
             On.Monocle.Engine.Update += Engine_Update;
 
@@ -78,23 +78,39 @@ public static class Core {
             return;
         }
 
-        if (Manager.SlowForwarding) {
-            orig(self, gameTime);
-            TryUpdateGrab();
-            return;
-        }
+        //if (Manager.SlowForwarding) {
+        //    orig(self, gameTime);
+        //    TryUpdateGrab();
+        //    return;
+        //}
 
         // The original patch doesn't store FrameLoops in a local variable, but it's only updated in UpdateInputs anyway.
-        int loops = (int) Manager.FrameLoops;
+        int loops = Manager.SlowForwarding ? 1 : (int) Manager.FrameLoops;
         bool skipBaseUpdate = loops >= 2;
 
         SkipBaseUpdate = skipBaseUpdate;
         InUpdate = true;
+        float lastFreezeTimer = float.PositiveInfinity;
 
         for (int i = 0; i < loops; i++) {
+            Manager.AdvanceHiddenFrame = false;
+            bool incrementedLoops = false;
+            if (Engine.FreezeTimer > 0f && !Manager.SkipFrame) {
+                skipBaseUpdate = true;
+                SkipBaseUpdate = skipBaseUpdate;
+                Manager.AdvanceHiddenFrame = true;
+                loops += 1;
+                incrementedLoops = true;
+                lastFreezeTimer = Engine.FreezeTimer;
+            }
+
             // Anything happening early on runs in the MInput.Update hook.
             orig(self, gameTime);
             TryUpdateGrab();
+
+            if (incrementedLoops && Engine.FreezeTimer >= lastFreezeTimer) {
+                loops -= 1;
+            }
 
             // Autosaving prevents opening the menu to skip cutscenes during fast forward.
             if (CantPauseWhileSaving.Value && Engine.Scene is Level level && UserIO.Saving
