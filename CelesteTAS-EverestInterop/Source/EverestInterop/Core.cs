@@ -103,6 +103,11 @@ public static class Core {
                 skipBaseUpdate = false;
                 loops = 1;
             }
+
+            if (Manager.Recording) {
+                skipBaseUpdate = false;
+                loops = 1;
+            }
         }
 
         SkipBaseUpdate = false;
