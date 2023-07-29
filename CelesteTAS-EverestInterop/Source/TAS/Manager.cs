@@ -131,7 +131,7 @@ public static class Manager {
                 NextStates &= ~States.FrameStep;
             }
 
-            if (frameAdvance && !Hotkeys.FrameAdvance.LastCheck) {
+            if (frameAdvance && !Hotkeys.FrameAdvance.LastCheck && !Recording) {
                 if (!States.HasFlag(States.FrameStep)) {
                     States |= States.FrameStep;
                     NextStates &= ~States.FrameStep;
