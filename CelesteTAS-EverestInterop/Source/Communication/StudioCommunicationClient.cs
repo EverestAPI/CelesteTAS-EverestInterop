@@ -371,7 +371,11 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
 
     private void ProcessRecordTAS(byte[] data) {
         if (!TASRecorderUtils.Installed) {
-            StudioCommunicationClient.Instance?.SendRecordingFailed();
+            AbortTas("TAS Recorder isn't installed");
+            return;
+        }
+        if (!TASRecorderUtils.IsFFmpegInstalled()) {
+            AbortTas("FFmpeg libraries aren't properly installed");
             return;
         }
 
@@ -480,14 +484,6 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         } catch {
             // ignored
         }
-    }
-
-    public void SendRecordingFailed() {
-        string gameBananaURL = string.Empty;
-        if (modUpdateInfos?.TryGetValue("TASRecorder", out var modUpdateInfo) == true && modUpdateInfo.GameBananaId > 0) {
-            gameBananaURL = $"https://gamebanana.com/tools/{modUpdateInfo.GameBananaId}\n";
-        }
-        WriteMessageGuaranteed(new Message(MessageID.RecordingFailed, Encoding.UTF8.GetBytes(gameBananaURL)));
     }
 
     #endregion

@@ -405,49 +405,6 @@ public static class DialogUtils {
         StudioCommunicationServer.Instance.RecordTAS(textBox.Text);
     }
 
-    public static void ShowRecordingFailedDialog(string gameBananaURL) {
-        const int padding = 10;
-        const int buttonWidth = 150;
-        const int buttonHeight = 30;
-
-        Size size = new(buttonWidth * 2 + padding * 3, buttonHeight * 2 + padding * 3);
-
-        using Form inputBox = new();
-        inputBox.TopMost = true;
-        inputBox.FormBorderStyle = FormBorderStyle.FixedDialog;
-        inputBox.ClientSize = size;
-        inputBox.Text = "Recording Failed";
-        inputBox.StartPosition = FormStartPosition.CenterParent;
-        inputBox.MinimizeBox = false;
-        inputBox.MaximizeBox = false;
-
-        Label label = new();
-        label.Text = "TASRecorder is not installed! Please install it to record your TAS.";
-        label.Location = new Point(padding, padding);
-        label.Size = new Size(size.Width - padding * 2, 30);
-        inputBox.Controls.Add(label);
-
-         Button gbButton = new();
-        gbButton.DialogResult = DialogResult.OK;
-        gbButton.Name = "gbButton";
-        gbButton.Size = new Size(buttonWidth, buttonHeight);
-        gbButton.Text = "&Open GameBanana page";
-        gbButton.Location = new Point(size.Width - buttonWidth * 2 - padding * 2, label.Bottom + padding);
-        gbButton.Click += (_, _) => Process.Start(gameBananaURL);
-        gbButton.Enabled = !string.IsNullOrWhiteSpace(gameBananaURL);
-        inputBox.Controls.Add(gbButton);
-
-        Button okButton = new();
-        okButton.DialogResult = DialogResult.OK;
-        okButton.Name = "okButton";
-        okButton.Size = new Size(buttonWidth, buttonHeight);
-        okButton.Text = "&Close";
-        okButton.Location = new Point(size.Width - buttonWidth - padding, label.Bottom + padding);
-        inputBox.Controls.Add(okButton);
-
-        inputBox.ShowDialog();
-    }
-
     private record RoomNameItem {
         public readonly int LineNumber;
         public readonly string RoomName;

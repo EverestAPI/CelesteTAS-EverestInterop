@@ -9,7 +9,11 @@ public static class RecordingCommand {
     [TasCommand("StartRecording")]
     private static void StartRecording(string[] args) {
         if (!TASRecorderUtils.Installed) {
-            StudioCommunicationClient.Instance?.SendRecordingFailed();
+            AbortTas("TAS Recorder isn't installed");
+            return;
+        }
+        if (!TASRecorderUtils.IsFFmpegInstalled()) {
+            AbortTas("FFmpeg libraries aren't properly installed");
             return;
         }
 

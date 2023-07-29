@@ -16,8 +16,13 @@ internal static class TASRecorderUtils {
     public static void RecordFrames(int frames, string fileName = null) {
         if (installed.Value) recordFrames(frames, fileName);
     }
+    public static bool IsFFmpegInstalled() {
+        if (installed.Value) return ffmpegInstalled();
+        return false;
+    }
 
     private static void startRecording(string fileName = null) => TASRecorderInterop.StartRecording(fileName);
     private static void stopRecording() => TASRecorderInterop.StopRecording();
     private static void recordFrames(int frames, string fileName = null) => TASRecorderInterop.RecordFrames(frames, fileName);
+    private static bool ffmpegInstalled() => TASRecorderInterop.IsFFmpegInstalled();
 }
