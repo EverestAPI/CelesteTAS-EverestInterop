@@ -49,6 +49,10 @@ public static class DesyncFixer {
         foreach (KeyValuePair<MethodInfo, int> pair in methods) {
             pair.Key.IlHook(SeededRandom(pair.Value));
         }
+
+        if (ModUtils.GetModule("DeadzoneConfig")?.GetType() is { } deadzoneConfigModuleType) {
+            HookHelper.SkipMethod(typeof(DesyncFixer), nameof(SkipDeadzoneConfig), deadzoneConfigModuleType.GetMethod("OnInputInitialize"));
+        }
     }
 
     [Load]
@@ -124,5 +128,9 @@ public static class DesyncFixer {
         if (Manager.Running) {
             Calc.PopRandom();
         }
+    }
+
+    private static bool SkipDeadzoneConfig() {
+        return Manager.Running;
     }
 }

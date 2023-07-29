@@ -15,14 +15,8 @@ public static class FreeCameraHitbox {
 
     [Load]
     private static void Load() {
-        On.Celeste.Mod.UI.SubHudRenderer.RenderContent += SubHudRendererOnRenderContent;
-        On.Celeste.Mod.UI.SubHudRenderer.BeforeRender += SubHudRendererOnBeforeRender;
-    }
-
-    [Unload]
-    private static void Unload() {
-        On.Celeste.Mod.UI.SubHudRenderer.RenderContent -= SubHudRendererOnRenderContent;
-        On.Celeste.Mod.UI.SubHudRenderer.BeforeRender -= SubHudRendererOnBeforeRender;
+        typeof(SubHudRenderer).GetMethod("RenderContent")?.OnHook(SubHudRendererOnRenderContent);
+        typeof(SubHudRenderer).GetMethod("BeforeRender")?.OnHook(SubHudRendererOnBeforeRender);
     }
 
     private static void SubHudRendererOnBeforeRender(On.Celeste.Mod.UI.SubHudRenderer.orig_BeforeRender orig, SubHudRenderer self, Scene scene) {

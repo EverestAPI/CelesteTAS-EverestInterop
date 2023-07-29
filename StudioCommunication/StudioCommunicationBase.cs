@@ -287,7 +287,6 @@ public class StudioCommunicationBase {
 
     protected virtual void LogImpl(string text) {
         Console.WriteLine(text);
-        System.Diagnostics.Trace.WriteLine(text);
     }
 
     // This is literally the first thing I have ever written with threading

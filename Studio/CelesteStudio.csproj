@@ -8,8 +8,8 @@
         <AssemblyTitle>Celeste Studio</AssemblyTitle>
         <Product>Celeste Studio</Product>
         <Copyright>Copyright © 2018</Copyright>
-        <AssemblyVersion>2.14.4.0</AssemblyVersion>
-        <FileVersion>2.14.4.0</FileVersion>
+        <AssemblyVersion>2.15.4.0</AssemblyVersion>
+        <FileVersion>2.15.4.0</FileVersion>
         <OutputPath>..\CelesteTAS-EverestInterop\bin\</OutputPath>
         <SignAssembly>true</SignAssembly>
         <AssemblyOriginatorKeyFile>sgKey.snk</AssemblyOriginatorKeyFile>

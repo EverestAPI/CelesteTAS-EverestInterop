@@ -2769,15 +2769,14 @@ public class RichText : UserControl {
 
     private void ExpandLine() {
         Selection.Expand();
-        int line = Selection.End.iLine;
         if (LinesCount <= 1) {
             // ignored
-        } else if (line < LinesCount - 1) {
-            Selection.End = new Place(0, line + 1);
-        } else {
+        } else if (Selection.End.iLine is var endLine && endLine < LinesCount - 1) {
+            Selection.End = new Place(0, endLine + 1);
+        } else if (Selection.Start.iLine > 0) {
             Place end = Selection.End;
-            line = Selection.Start.iLine - 1;
-            Selection.Start = new Place(Lines[line].Length, line);
+            int startLine = Selection.Start.iLine - 1;
+            Selection.Start = new Place(Lines[startLine].Length, startLine);
             Selection.End = end;
         }
     }
@@ -3386,8 +3385,9 @@ public class RichText : UserControl {
                         new RectangleF(4, y, LeftIndent + 8, CharHeight),
                         new StringFormat(StringFormatFlags.DirectionRightToLeft));
                 } else {
+                    int x = PlatformUtils.Mono ? -20 : -10;
                     e.Graphics.DrawString((iLine + lineNumberStartValue).ToString(), Font, lineNumberBrush,
-                        new RectangleF(-10, y, LeftIndent - minLeftIndent - 2 + 10, CharHeight),
+                        new RectangleF(x, y, LeftIndent - minLeftIndent - 2 + 10, CharHeight),
                         new StringFormat(StringFormatFlags.DirectionRightToLeft));
                 }
             }

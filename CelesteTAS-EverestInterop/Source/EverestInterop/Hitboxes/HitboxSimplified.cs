@@ -39,7 +39,8 @@ public static class HitboxSimplified {
         "ExtendedVariants.Entities.JumpIndicator",
         "ExtendedVariants.Entities.Speedometer",
         "Celeste.Mod.JungleHelper.Entities.Firefly",
-        "Celeste.Mod.ClutterHelper.CustomClutter"
+        "Celeste.Mod.ClutterHelper.CustomClutter",
+        "Celeste.Mod.HonlyHelper.FloatyBgTile",
     };
 
     public static Dictionary<Follower, bool> Followers = new();
@@ -123,7 +124,7 @@ public static class HitboxSimplified {
         }
 
         if (entity is WallBooster
-            || entity.GetType().FullName is "Celeste.Mod.ShroomHelper.Entities.SlippyWall"
+            || entity?.GetType().FullName is "Celeste.Mod.ShroomHelper.Entities.SlippyWall"
                 or "Celeste.Mod.ShroomHelper.Entities.AttachedIceWall"
                 or "Celeste.Mod.JungleHelper.Entities.MossyWall"
                 or "Celeste.Mod.CavernHelper.IcyFloor"

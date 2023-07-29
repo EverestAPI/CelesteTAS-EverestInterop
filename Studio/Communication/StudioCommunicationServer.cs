@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -114,7 +114,7 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
     }
 
     private void ProcessReturnData(byte[] data) {
-        CommunicationWrapper.ReturnData = Encoding.Default.GetString(data);
+        CommunicationWrapper.ReturnData = Encoding.UTF8.GetString(data);
     }
 
     #endregion
@@ -153,6 +153,10 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
         Initialized = true;
     }
 
+    protected override void LogImpl(string text) {
+        System.Diagnostics.Trace.WriteLine(text);
+    }
+
     public void SendPath(string path) => PendingWrite = () => SendPathNow(path, false);
     public void ConvertToLibTas(string path) => PendingWrite = () => ConvertToLibTasNow(path);
     public void SendHotkeyPressed(HotkeyID hotkey, bool released = false) => PendingWrite = () => SendHotkeyPressedNow(hotkey, released);
@@ -161,7 +165,7 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
 
     private void SendPathNow(string path, bool canFail) {
         if (Initialized || !canFail) {
-            byte[] pathBytes = path != null ? Encoding.Default.GetBytes(path) : new byte[0];
+            byte[] pathBytes = path != null ? Encoding.UTF8.GetBytes(path) : new byte[0];
 
             WriteMessageGuaranteed(new Message(MessageID.SendPath, pathBytes));
         }
@@ -172,7 +176,7 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
             return;
         }
 
-        byte[] pathBytes = string.IsNullOrEmpty(path) ? new byte[0] : Encoding.Default.GetBytes(path);
+        byte[] pathBytes = string.IsNullOrEmpty(path) ? new byte[0] : Encoding.UTF8.GetBytes(path);
 
         WriteMessageGuaranteed(new Message(MessageID.ConvertToLibTas, pathBytes));
     }
