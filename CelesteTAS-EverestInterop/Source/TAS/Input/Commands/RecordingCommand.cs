@@ -1,4 +1,3 @@
-using Celeste.Mod;
 using StudioCommunication;
 using TAS.Communication;
 using TAS.Utils;
@@ -6,6 +5,13 @@ using TAS.Utils;
 namespace TAS.Input.Commands;
 
 public static class RecordingCommand {
+    // workaround the first few frames get skipped when there is a breakpoint after startrecording
+    public static bool StopFastForward => Manager.Recording || Manager.Controller.CurrentFrameInTas >= startRecordingFrame - 60 &&
+        Manager.Controller.CurrentFrameInTas <= stopRecordingFrame;
+
+    private static int startRecordingFrame = -1;
+    private static int stopRecordingFrame = -1;
+
     // "StartRecording, [FramesToRecord]"
     [TasCommand("StartRecording", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
     private static void StartRecording(string[] args) {
@@ -27,16 +33,25 @@ public static class RecordingCommand {
                 AbortTas("FFmpeg libraries aren't properly installed");
                 return;
             }
-        } else {
+
+            startRecordingFrame = Manager.Controller.Inputs.Count;
+
+            if (args.Length != 0 && int.TryParse(args[0], out int framesToRecord)) {
+                stopRecordingFrame = startRecordingFrame + framesToRecord;
+            }
+
+        } else if (!Manager.Recording) {
             int framesToRecord = -1;
 
-            if (args.Length != 0)
+            if (args.Length != 0) {
                 int.TryParse(args[0], out framesToRecord);
+            }
 
-            if (framesToRecord > 0)
+            if (framesToRecord > 0) {
                 TASRecorderUtils.RecordFrames(framesToRecord);
-            else
+            } else {
                 TASRecorderUtils.StartRecording();
+            }
 
             Manager.Recording = true;
             Manager.States &= ~States.FrameStep;
@@ -45,9 +60,19 @@ public static class RecordingCommand {
     }
 
     // "StopRecording"
-    [TasCommand("StopRecording")]
+    [TasCommand("StopRecording", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
     private static void StopRecording() {
-        TASRecorderUtils.StopRecording();
-        Manager.Recording = false;
+        if (ParsingCommand) {
+            stopRecordingFrame = Manager.Controller.Inputs.Count;
+        } else {
+            TASRecorderUtils.StopRecording();
+            Manager.Recording = false;
+        }
+    }
+
+    [ClearInputs]
+    private static void Clear() {
+        startRecordingFrame = -1;
+        stopRecordingFrame = -1;
     }
 }

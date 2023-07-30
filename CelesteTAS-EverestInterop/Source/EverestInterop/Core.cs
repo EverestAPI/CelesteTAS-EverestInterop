@@ -8,6 +8,7 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
+using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
 using GameInput = Celeste.Input;
@@ -97,16 +98,16 @@ public static class Core {
             TryUpdateGrab();
 
             // Autosaving prevents opening the menu to skip cutscenes during fast forward.
-            if (CantPauseWhileSaving.Value && Engine.Scene is Level level && UserIO.Saving
+            if (skipBaseUpdate && CantPauseWhileSaving.Value && Engine.Scene is Level level && UserIO.Saving
                 && level.Entities.Any(entity => entity is EventTrigger or NPC or FlingBirdIntro)
                ) {
                 skipBaseUpdate = false;
-                loops = 1;
+                break;
             }
 
-            if (Manager.Recording) {
+            if (skipBaseUpdate && RecordingCommand.StopFastForward) {
                 skipBaseUpdate = false;
-                loops = 1;
+                break;
             }
         }
 
@@ -138,7 +139,7 @@ public static class Core {
         }
     }
 
-    // update controller even the game is lose focus 
+    // update controller even the game is lose focus
     private static void MInputOnUpdate(ILContext il) {
         ILCursor ilCursor = new(il);
         ilCursor.Goto(il.Instrs.Count - 1);
