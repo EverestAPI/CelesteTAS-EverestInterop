@@ -423,9 +423,9 @@ public static class DialogUtils {
         inputBox.MaximizeBox = false;
 
         Label label = new();
-        label.Text = "TASRecorder is not installed! Please install it to record your TAS.";
+        label.Text = "TAS Recorder is not installed! Please install it to record your TAS.";
         if (reason == RecordingFailedReason.FFmpegNotInstalled) {
-            label.Text = "FFmpeg libraries aren't properly installed! Please install it to record your TAS.";
+            label.Text = "FFmpeg libraries aren't properly installed! Please install them to record your TAS.";
         }
         label.Location = new Point(padding, padding);
         label.Size = new Size(size.Width - padding * 2, 30);
