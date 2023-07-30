@@ -85,7 +85,6 @@
   - `Set, Player.Speed, 325, -52.5`
   - `Set, Player.Ducking, true`
   - `Set, Everest.ShowModOptionsInGame, false`
-  - `Set, ExtendedVariantMode.Dashcount, 3`
   - `Set, CelesteTAS.CenterCamera, true`
   - `Set, AnarchyCollab2022.LeftButton, Q, W`
 
@@ -102,6 +101,7 @@
     - `Invoke, Level.Pause`
     - `Invoke, Player.Die`
     - `Invoke, Session.SetFlag, whatever`
+    - `invoke, LuaCutscenesUtils.TriggerBooleanVariant, UpsideDown, true, true`, check here for more extended variant [methods](https://github.com/maddie480/ExtendedVariantMode/blob/master/Module/LuaCutscenesUtils.cs) and [options](https://github.com/maddie480/ExtendedVariantMode/blob/master/Module/ExtendedVariantsModule.cs#L45-L64).
 
 ### Unsafe and Safe
 - The TAS will normally only run inside levels and stop when entering the Options/ModOptions menu.
