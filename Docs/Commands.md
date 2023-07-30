@@ -101,7 +101,7 @@
     - `Invoke, Level.Pause`
     - `Invoke, Player.Die`
     - `Invoke, Session.SetFlag, whatever`
-    - `invoke, LuaCutscenesUtils.TriggerBooleanVariant, UpsideDown, true, true`, check here for more extended variant [methods](https://github.com/maddie480/ExtendedVariantMode/blob/master/Module/LuaCutscenesUtils.cs) and [options](https://github.com/maddie480/ExtendedVariantMode/blob/master/Module/ExtendedVariantsModule.cs#L45-L64).
+    - `Invoke, LuaCutscenesUtils.TriggerBooleanVariant, UpsideDown, true, true`, check here for more extended variant [methods](https://github.com/maddie480/ExtendedVariantMode/blob/master/Module/LuaCutscenesUtils.cs) and [options](https://github.com/maddie480/ExtendedVariantMode/blob/master/Module/ExtendedVariantsModule.cs#L45-L64).
 
 ### Unsafe and Safe
 - The TAS will normally only run inside levels and stop when entering the Options/ModOptions menu.
