@@ -431,15 +431,21 @@ public static class DialogUtils {
         label.Size = new Size(size.Width - padding * 2, 30);
         inputBox.Controls.Add(label);
 
-         Button gbButton = new();
-        gbButton.DialogResult = DialogResult.OK;
-        gbButton.Name = "gbButton";
-        gbButton.Size = new Size(buttonWidth, buttonHeight);
-        gbButton.Text = "&Open GameBanana page";
-        gbButton.Location = new Point(size.Width - buttonWidth * 2 - padding * 2, label.Bottom + padding);
-        gbButton.Click += (_, _) => Process.Start(gameBananaURL);
-        gbButton.Enabled = !string.IsNullOrWhiteSpace(gameBananaURL);
-        inputBox.Controls.Add(gbButton);
+        Button openButton = new();
+        openButton.DialogResult = DialogResult.OK;
+        openButton.Name = "openButton";
+        openButton.Size = new Size(buttonWidth, buttonHeight);
+        openButton.Location = new Point(size.Width - buttonWidth * 2 - padding * 2, label.Bottom + padding);
+        if (reason == RecordingFailedReason.TASRecorderNotInstalled) {
+            openButton.Text = "&Open GameBanana page";
+            openButton.Click += (_, _) => Process.Start(gameBananaURL);
+            openButton.Enabled = !string.IsNullOrWhiteSpace(gameBananaURL);
+        } else  {
+            openButton.Text = "&Open Install instructions";
+            openButton.Click += (_, _) => Process.Start("https://github.com/psyGamer/TASRecorder#requirements");
+            openButton.Enabled = true;
+        }
+        inputBox.Controls.Add(openButton);
 
         Button okButton = new();
         okButton.DialogResult = DialogResult.OK;
