@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using StudioCommunication;
 using TAS.Communication;
 using TAS.Utils;
@@ -5,12 +7,36 @@ using TAS.Utils;
 namespace TAS.Input.Commands;
 
 public static class RecordingCommand {
-    // workaround the first few frames get skipped when there is a breakpoint after startrecording
-    public static bool StopFastForward => Manager.Recording || Manager.Controller.CurrentFrameInTas >= startRecordingFrame - 60 &&
-        Manager.Controller.CurrentFrameInTas <= stopRecordingFrame;
+    private record RecordingTime {
+        public int StartFrame = int.MaxValue;
+        public int StopFrame = int.MaxValue;
+        public int Duration => StopFrame - StartFrame;
 
-    private static int startRecordingFrame = int.MaxValue;
-    private static int stopRecordingFrame = int.MaxValue;
+        public RecordingTime(int startFrame, int stopFrame) {
+            StartFrame = startFrame;
+            StopFrame = stopFrame;
+        }
+
+        public RecordingTime(int startFrame) {
+            StartFrame = startFrame;
+        }
+    }
+
+    private static readonly Dictionary<int, RecordingTime> recordingTimes = new();
+
+    // workaround the first few frames get skipped when there is a breakpoint after StartRecording command
+    public static bool StopFastForward {
+        get {
+            if (Manager.Recording) {
+                return true;
+            }
+
+            return recordingTimes.Values.Any(time => {
+                int currentFrame = Manager.Controller.CurrentFrameInTas;
+                return currentFrame > time.StartFrame - 60 && currentFrame <= time.StopFrame;
+            });
+        }
+    }
 
     // "StartRecording, [FramesToRecord]"
     [TasCommand("StartRecording", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
@@ -34,19 +60,19 @@ public static class RecordingCommand {
                 return;
             }
 
-            startRecordingFrame = Manager.Controller.Inputs.Count;
-
+            RecordingTime time = new(Manager.Controller.Inputs.Count);
+            recordingTimes[time.StartFrame] = time;
             if (args.Length != 0 && int.TryParse(args[0], out int framesToRecord)) {
-                stopRecordingFrame = startRecordingFrame + framesToRecord;
+                time.StopFrame = time.StartFrame + framesToRecord;
             }
-
         } else if (!Manager.Recording) {
             int framesToRecord = -1;
 
             if (args.Length != 0) {
                 int.TryParse(args[0], out framesToRecord);
-            } else if (startRecordingFrame != int.MaxValue && stopRecordingFrame != int.MaxValue) {
-                framesToRecord = stopRecordingFrame - startRecordingFrame;
+            } else if (recordingTimes.TryGetValue(Manager.Controller.CurrentFrameInTas, out RecordingTime time) &&
+                       time.StartFrame != int.MaxValue && time.StopFrame != int.MaxValue) {
+                framesToRecord = time.Duration;
             }
 
             if (framesToRecord > 0) {
@@ -63,8 +89,9 @@ public static class RecordingCommand {
     // "StopRecording"
     [TasCommand("StopRecording", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
     private static void StopRecording() {
-        if (ParsingCommand) {
-            stopRecordingFrame = Manager.Controller.Inputs.Count;
+        if (ParsingCommand && recordingTimes.Count > 0) {
+            RecordingTime last = recordingTimes.Last().Value;
+            last.StopFrame = Manager.Controller.Inputs.Count;
         } else {
             TASRecorderUtils.StopRecording();
         }
@@ -72,8 +99,7 @@ public static class RecordingCommand {
 
     [ClearInputs]
     private static void Clear() {
-        startRecordingFrame = int.MaxValue;
-        stopRecordingFrame = int.MaxValue;
+        recordingTimes.Clear();
     }
 
     [DisableRun]
