@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -66,6 +66,9 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
             case MessageID.ReturnData:
                 ProcessReturnData(message.Data);
                 break;
+            case MessageID.RecordingFailed:
+                ProcessRecordingFailed(message.Data);
+                break;
             default:
                 throw new InvalidOperationException($"{message.Id}");
         }
@@ -114,7 +117,14 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
     }
 
     private void ProcessReturnData(byte[] data) {
-        CommunicationWrapper.ReturnData = Encoding.Default.GetString(data);
+        CommunicationWrapper.ReturnData = Encoding.UTF8.GetString(data);
+    }
+
+    private void ProcessRecordingFailed(byte[] data) {
+        object[] objects = BinaryFormatterHelper.FromByteArray<object[]>(data);
+        RecordingFailedReason reason = (RecordingFailedReason) objects[0];
+        string gameBananaURL = (string) objects[1];
+        DialogUtils.ShowRecordingFailedDialog(reason, gameBananaURL);
     }
 
     #endregion
@@ -153,15 +163,20 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
         Initialized = true;
     }
 
+    protected override void LogImpl(string text) {
+        System.Diagnostics.Trace.WriteLine(text);
+    }
+
     public void SendPath(string path) => PendingWrite = () => SendPathNow(path, false);
     public void ConvertToLibTas(string path) => PendingWrite = () => ConvertToLibTasNow(path);
     public void SendHotkeyPressed(HotkeyID hotkey, bool released = false) => PendingWrite = () => SendHotkeyPressedNow(hotkey, released);
     public void ToggleGameSetting(string settingName, object value) => PendingWrite = () => ToggleGameSettingNow(settingName, value);
     public void GetDataFromGame(GameDataType gameDataType, object arg) => PendingWrite = () => GetGameDataNow(gameDataType, arg);
+    public void RecordTAS(string fileName) => PendingWrite = () => RecordTASNow(fileName);
 
     private void SendPathNow(string path, bool canFail) {
         if (Initialized || !canFail) {
-            byte[] pathBytes = path != null ? Encoding.Default.GetBytes(path) : new byte[0];
+            byte[] pathBytes = path != null ? Encoding.UTF8.GetBytes(path) : new byte[0];
 
             WriteMessageGuaranteed(new Message(MessageID.SendPath, pathBytes));
         }
@@ -172,7 +187,7 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
             return;
         }
 
-        byte[] pathBytes = string.IsNullOrEmpty(path) ? new byte[0] : Encoding.Default.GetBytes(path);
+        byte[] pathBytes = string.IsNullOrEmpty(path) ? new byte[0] : Encoding.UTF8.GetBytes(path);
 
         WriteMessageGuaranteed(new Message(MessageID.ConvertToLibTas, pathBytes));
     }
@@ -206,6 +221,16 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
             (byte) gameDataType, arg
         });
         WriteMessageGuaranteed(new Message(MessageID.GetData, bytes));
+    }
+
+    private void RecordTASNow(string fileName) {
+        if (!Initialized) {
+            return;
+        }
+
+        byte[] fileNameBytes = string.IsNullOrEmpty(fileName) ? new byte[0] : Encoding.UTF8.GetBytes(fileName);
+
+        WriteMessageGuaranteed(new Message(MessageID.RecordTAS, fileNameBytes));
     }
 
     #endregion

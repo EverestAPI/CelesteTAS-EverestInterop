@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using Celeste;
 using Celeste.Mod;
 using Celeste.Mod.Helpers;
+using Ionic.Zip;
 using Monocle;
 using StudioCommunication;
 using TAS.EverestInterop;
@@ -29,14 +31,13 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
     [Load]
     private static void Load() {
         Everest.Events.Celeste.OnExiting += Destroy;
-        On.Celeste.Mod.Helpers.ModUpdaterHelper.DownloadModUpdateList += ModUpdaterHelperOnDownloadModUpdateList;
+        typeof(ModUpdaterHelper).GetMethod("DownloadModUpdateList")?.OnHook(ModUpdaterHelperOnDownloadModUpdateList);
         modUpdateInfos = Engine.Instance.GetDynamicDataInstance().Get<Dictionary<string, ModUpdateInfo>>(nameof(modUpdateInfos));
     }
 
     [Unload]
     private static void Unload() {
         Everest.Events.Celeste.OnExiting -= Destroy;
-        On.Celeste.Mod.Helpers.ModUpdaterHelper.DownloadModUpdateList -= ModUpdaterHelperOnDownloadModUpdateList;
         Engine.Instance.GetDynamicDataInstance().Set(nameof(modUpdateInfos), modUpdateInfos);
         Destroy();
     }
@@ -121,6 +122,9 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
             case MessageID.ToggleGameSetting:
                 ProcessToggleGameSetting(message.Data);
                 break;
+            case MessageID.RecordTAS:
+                ProcessRecordTAS(message.Data);
+                break;
             default:
                 if (ExternalReadHandler?.Invoke(message.Data) != true) {
                     throw new InvalidOperationException($"{message.Id}");
@@ -147,7 +151,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
     }
 
     private void ReturnData(string gameData) {
-        byte[] gameDataBytes = Encoding.Default.GetBytes(gameData ?? string.Empty);
+        byte[] gameDataBytes = Encoding.UTF8.GetBytes(gameData ?? string.Empty);
         WriteMessageGuaranteed(new Message(MessageID.ReturnData, gameDataBytes));
     }
 
@@ -277,7 +281,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
     }
 
     private void ProcessSendPath(byte[] data) {
-        string path = Encoding.Default.GetString(data);
+        string path = Encoding.UTF8.GetString(data);
         if (PlatformUtils.NonWindows && path.StartsWith("Z:\\", StringComparison.InvariantCultureIgnoreCase)) {
             path = path.Substring(2, path.Length - 2).Replace("\\", "/");
         }
@@ -293,7 +297,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
     }
 
     private void ProcessConvertToLibTas(byte[] data) {
-        string path = Encoding.Default.GetString(data);
+        string path = Encoding.UTF8.GetString(data);
         LibTasHelper.ConvertToLibTas(path);
     }
 
@@ -362,6 +366,41 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
             } else {
                 ReturnData(string.Empty);
             }
+        }
+    }
+
+    private void ProcessRecordTAS(byte[] data) {
+        if (!TASRecorderUtils.Installed) {
+            SendRecordingFailed(RecordingFailedReason.TASRecorderNotInstalled);
+            return;
+        }
+
+        if (!TASRecorderUtils.IsFFmpegInstalled()) {
+            SendRecordingFailed(RecordingFailedReason.FFmpegNotInstalled);
+            return;
+        }
+
+        Manager.Controller.RefreshInputs(enableRun: true);
+        Manager.NextStates |= States.Enable;
+
+        int totalFrames = Manager.Controller.Inputs.Count;
+        if (totalFrames <= 0) return;
+
+        string fileName = Encoding.UTF8.GetString(data);
+        if (fileName.IsNullOrWhiteSpace()) {
+            fileName = null;
+        }
+        TASRecorderUtils.RecordFrames(totalFrames, fileName);
+
+        if (!Manager.Controller.Commands.TryGetValue(0, out var commands)) return;
+        bool startsWithConsoleLoad = commands.Any(c => c.Attribute.Name.Equals("Console", StringComparison.OrdinalIgnoreCase) &&
+                                                       c.Args.Length >= 1 &&
+                                                       ConsoleCommand.LoadCommandRegex.Match(c.Args[0].ToLower()) is {Success: true});
+        if (startsWithConsoleLoad) {
+            // Restart the music when we enter the level
+            Audio.SetMusic(null, startPlaying: false, allowFadeOut: false);
+            Audio.SetAmbience(null, startPlaying: false);
+            Audio.BusStopAll("bus:/gameplay_sfx", immediate: true);
         }
     }
 
@@ -435,8 +474,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
     }
 
     private void SendModVersion() {
-        // TODO: move to everest.yaml
-        const string minStudioVersion = "2.14.1";
+        string minStudioVersion = StudioMetadata.GetMinStudioVersion();
         byte[] data = BinaryFormatterHelper.ToByteArray(new[] {CelesteTasModule.Instance.Metadata.VersionString, minStudioVersion});
         WriteMessageGuaranteed(new Message(MessageID.VersionInfo, data));
     }
@@ -450,5 +488,49 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         }
     }
 
+    public void SendRecordingFailed(RecordingFailedReason reason) {
+        string gameBananaURL = string.Empty;
+        if (modUpdateInfos?.TryGetValue("TASRecorder", out var modUpdateInfo) == true && modUpdateInfo.GameBananaId > 0) {
+            gameBananaURL = $"https://gamebanana.com/tools/{modUpdateInfo.GameBananaId}";
+        }
+
+        byte[] bytes = BinaryFormatterHelper.ToByteArray(new object[] {
+            (byte) reason, gameBananaURL
+        });
+        WriteMessageGuaranteed(new Message(MessageID.RecordingFailed, bytes));
+    }
+
     #endregion
+}
+
+class StudioMetadata {
+    private const string EverestMeta = "everest.yaml";
+    private const string DefaultVersion = "1.0.0";
+    public string MinStudioVersion { get; set; } = DefaultVersion;
+
+    internal static string GetMinStudioVersion() {
+        try {
+            EverestModuleMetadata metadata = CelesteTasModule.Instance.Metadata;
+            if (!string.IsNullOrEmpty(metadata.PathArchive)) {
+                using ZipFile zip = ZipFile.Read(metadata.PathArchive);
+
+                if (zip.Entries.FirstOrDefault(e => e.FileName == EverestMeta) is { } entry) {
+                    using MemoryStream stream = entry.ExtractStream();
+                    using StreamReader reader = new(stream);
+                    if (!reader.EndOfStream) {
+                        return YamlHelper.Deserializer.Deserialize<StudioMetadata[]>(reader)[0].MinStudioVersion;
+                    }
+                }
+            } else if (!string.IsNullOrEmpty(metadata.PathDirectory)) {
+                string[] files = Directory.GetFiles(metadata.PathDirectory);
+                if (files.FirstOrDefault(path => path.EndsWith(EverestMeta)) is { } file) {
+                    return YamlHelper.Deserializer.Deserialize<StudioMetadata[]>(File.ReadAllText(file))[0].MinStudioVersion;
+                }
+            }
+        } catch (Exception) {
+            return DefaultVersion;
+        }
+
+        return DefaultVersion;
+    }
 }

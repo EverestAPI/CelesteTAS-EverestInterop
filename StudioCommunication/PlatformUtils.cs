@@ -14,4 +14,12 @@ public static class PlatformUtils {
     }
 
     public static bool NonWindows => !Environment.OSVersion.Platform.HasFlag(PlatformID.Win32NT);
+
+    private static bool? mono;
+    public static bool Mono {
+        get {
+            mono ??= Type.GetType("Mono.Runtime") != null;
+            return mono.Value && !Wine;
+        }
+    }
 }

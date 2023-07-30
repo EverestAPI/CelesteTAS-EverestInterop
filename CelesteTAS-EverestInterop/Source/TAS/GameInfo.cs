@@ -34,8 +34,7 @@ public static class GameInfo {
     public static Vector2Double LastPlayerSeekerPos;
     public static float DashTime;
     public static bool Frozen;
-
-    private static int transitionFrames;
+    public static int TransitionFrames;
 
     public static string HudInfo {
         get {
@@ -154,18 +153,22 @@ public static class GameInfo {
             return;
         }
 
-        Update(true);
+        if (self is Level level) {
+            Update(!level.wasPaused);
+        } else {
+            Update();
+        }
     }
 
     private static void LevelOnOnTransitionTo(Level level, LevelData next, Vector2 direction) {
-        transitionFrames = GetTransitionFrames(level, next);
+        TransitionFrames = GetTransitionFrames(level, next);
     }
 
     private static void LevelOnUpdate(On.Celeste.Level.orig_Update orig, Level self) {
         orig(self);
 
-        if (transitionFrames > 0) {
-            transitionFrames--;
+        if (TransitionFrames > 0) {
+            TransitionFrames--;
         }
     }
 
@@ -361,7 +364,7 @@ public static class GameInfo {
     public static string GetStatuses(Level level, Player player) {
         List<string> statuses = new();
 
-        string noControlFrames = transitionFrames > 0 ? $"({transitionFrames})" : string.Empty;
+        string noControlFrames = TransitionFrames > 0 ? $"({TransitionFrames})" : string.Empty;
         float unpauseTimer = LevelUnpauseTimer?.Invoke(level) ?? 0f;
         if (unpauseTimer > 0f) {
             noControlFrames = $"({(int) Math.Ceiling(unpauseTimer / Engine.RawDeltaTime)})";

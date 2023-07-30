@@ -15,7 +15,8 @@ using TAS.Utils;
 namespace TAS.Input.Commands;
 
 public static class ConsoleCommand {
-    private static readonly Regex LoadCommandRegex = new(@"^(load|hard|rmx2)(\d*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    public static readonly Regex LoadCommandRegex = new(@"^(load|hard|rmx2)(\d*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
     private static Vector2 resetRemainder;
     private static Vector2 initSpeed;
     private static List<Action<Entity>> bugFixers;

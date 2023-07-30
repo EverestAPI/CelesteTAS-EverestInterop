@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using CelesteStudio.Communication;
 using CelesteStudio.RichText;
+using StudioCommunication;
 
 namespace CelesteStudio;
 
@@ -291,7 +294,7 @@ public static class DialogUtils {
         ComboBox roomComboBox = new();
 
         Regex labelRegex = new(@"^\s*#[^\s#]");
-        Regex commentCommandRegex = new(@"^\s*#(play|read|console|set)(\s|,)", RegexOptions.IgnoreCase);
+        Regex commentCommandRegex = new(@"^\s*#(play|console|set)(\s|,)", RegexOptions.IgnoreCase);
         Regex roomRegex = new(@"^\s*#(lvl_)?");
         for (int i = 0; i < richText.Lines.Count; i++) {
             string lineText = richText.Lines[i];
@@ -331,6 +334,132 @@ public static class DialogUtils {
         };
         inputBox.Controls.Add(roomComboBox);
         commentLabel.Location = new Point(padding, roomComboBox.Bottom - commentLabel.Height);
+
+        inputBox.ShowDialog();
+    }
+
+    public static void ShowRecordDialog() {
+        const int padding = 10;
+        const int buttonWidth = 150;
+        const int buttonHeight = 30;
+
+        Size size = new(buttonWidth * 2 + padding * 3, buttonHeight * 2 + padding * 3);
+
+        using Form inputBox = new();
+        inputBox.TopMost = true;
+        inputBox.FormBorderStyle = FormBorderStyle.FixedDialog;
+        inputBox.ClientSize = size;
+        inputBox.Text = "Record TAS";
+        inputBox.StartPosition = FormStartPosition.CenterParent;
+        inputBox.MinimizeBox = false;
+        inputBox.MaximizeBox = false;
+
+        Label label = new();
+        label.AutoSize = true;
+        label.Text = "File Name  ";
+        inputBox.Controls.Add(label);
+
+        TextBox textBox = new();
+        textBox.AutoSize = true;
+        textBox.Location = new Point(label.Right + padding, padding);
+        textBox.ClientSize = new Size(size.Width - label.Width - padding * 2, textBox.Height);
+        textBox.Font = new Font(FontFamily.GenericSansSerif, 11);
+        textBox.ForeColor = Color.FromArgb(50, 50, 50);
+        textBox.Text = $"{DateTime.Now:dd-MM-yyyy_HH-mm-ss}";
+
+        inputBox.Controls.Add(textBox);
+        label.Location = new Point(padding, padding + (textBox.Height - label.Height) / 2);
+
+        Button recordButton = new();
+        recordButton.DialogResult = DialogResult.OK;
+        recordButton.Name = "recordButton";
+        recordButton.Size = new Size(buttonWidth, buttonHeight);
+        recordButton.Text = "&Record";
+        recordButton.Location = new Point(size.Width - buttonWidth * 2 - padding * 2, textBox.Bottom + padding);
+        inputBox.Controls.Add(recordButton);
+
+        Button cancelButton = new();
+        cancelButton.DialogResult = DialogResult.Cancel;
+        cancelButton.Name = "cancelButton";
+        cancelButton.Size = new Size(buttonWidth, buttonHeight);
+        cancelButton.Text = "&Cancel";
+        cancelButton.Location = new Point(size.Width - buttonWidth - padding, textBox.Bottom + padding);
+        inputBox.Controls.Add(cancelButton);
+
+        inputBox.AcceptButton = recordButton;
+        inputBox.CancelButton = cancelButton;
+
+        DialogResult result = inputBox.ShowDialog();
+
+        if (string.IsNullOrWhiteSpace(textBox.Text)) {
+            MessageBox.Show("An empty file name is not valid!",
+                "Information",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error
+            );
+            return;
+        }
+        if (result == DialogResult.Cancel) {
+            return;
+        }
+
+        StudioCommunicationServer.Instance.RecordTAS(textBox.Text);
+    }
+
+    public static void ShowRecordingFailedDialog(RecordingFailedReason reason, string gameBananaURL) {
+        const int padding = 10;
+        const int buttonWidth = 200;
+        const int buttonHeight = 30;
+
+        Size size = new(buttonWidth * 2 + padding * 3, buttonHeight * 2 + padding * 3);
+
+        using Form inputBox = new();
+        inputBox.TopMost = true;
+        inputBox.FormBorderStyle = FormBorderStyle.FixedDialog;
+        inputBox.ClientSize = size;
+        inputBox.Text = "Recording Failed";
+        inputBox.StartPosition = FormStartPosition.CenterParent;
+        inputBox.MinimizeBox = false;
+        inputBox.MaximizeBox = false;
+
+        Label label = new();
+        label.Text = "TAS Recorder is not installed! Please install it to record your TAS.";
+        if (reason == RecordingFailedReason.FFmpegNotInstalled) {
+            label.Text = "FFmpeg libraries aren't properly installed! Please install them to record your TAS.";
+        }
+        label.Location = new Point(padding, padding);
+        label.Size = new Size(size.Width - padding * 2, 30);
+        inputBox.Controls.Add(label);
+
+        Button openButton = new();
+        openButton.DialogResult = DialogResult.OK;
+        openButton.Name = "openButton";
+        openButton.Size = new Size(buttonWidth, buttonHeight);
+        openButton.Location = new Point(size.Width - buttonWidth * 2 - padding * 2, label.Bottom + padding);
+        if (reason == RecordingFailedReason.TASRecorderNotInstalled) {
+            openButton.Text = "&Open GameBanana page";
+            openButton.Click += (_, _) => {
+                Process.Start(gameBananaURL);
+                inputBox.Close();
+            };
+            openButton.Enabled = !string.IsNullOrWhiteSpace(gameBananaURL);
+        } else  {
+            openButton.Text = "&Open Install instructions";
+            openButton.Click += (_, _) => {
+                Process.Start("https://github.com/psyGamer/TASRecorder#requirements");
+                inputBox.Close();
+            };
+            openButton.Enabled = true;
+        }
+        inputBox.Controls.Add(openButton);
+
+        Button okButton = new();
+        okButton.DialogResult = DialogResult.OK;
+        okButton.Name = "okButton";
+        okButton.Size = new Size(buttonWidth, buttonHeight);
+        okButton.Text = "&Close";
+        okButton.Location = new Point(size.Width - buttonWidth - padding, label.Bottom + padding);
+        inputBox.Controls.Add(okButton);
 
         inputBox.ShowDialog();
     }

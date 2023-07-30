@@ -22,7 +22,7 @@ internal static class SpeedrunToolUtils {
     private static int skipFrames;
     private static int waitingFrames;
     private static StunPauseCommand.StunPauseMode? localMode;
-    private static StunPauseCommand.StunPauseMode? globalMode;
+    private static StunPauseCommand.StunPauseMode? globalModeRuntime;
     private static HashSet<Keys> pressKeys;
     private static long? tasStartFileTime;
     private static MouseState mouseState;
@@ -37,7 +37,7 @@ internal static class SpeedrunToolUtils {
             skipFrames = StunPauseCommand.SkipFrames;
             waitingFrames = StunPauseCommand.WaitingFrames;
             localMode = StunPauseCommand.LocalMode;
-            globalMode = StunPauseCommand.GlobalMode;
+            globalModeRuntime = StunPauseCommand.GlobalModeRuntime;
             pressKeys = PressCommand.PressKeys.DeepCloneShared();
             tasStartFileTime = MetadataCommands.TasStartFileTime;
             mouseState = MouseCommand.CurrentState;
@@ -52,7 +52,7 @@ internal static class SpeedrunToolUtils {
             StunPauseCommand.SkipFrames = skipFrames;
             StunPauseCommand.WaitingFrames = waitingFrames;
             StunPauseCommand.LocalMode = localMode;
-            StunPauseCommand.GlobalMode = globalMode;
+            StunPauseCommand.GlobalModeRuntime = globalModeRuntime;
             PressCommand.PressKeys.Clear();
             foreach (Keys keys in pressKeys) {
                 PressCommand.PressKeys.Add(keys);

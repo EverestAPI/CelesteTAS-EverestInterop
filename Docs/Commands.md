@@ -85,7 +85,6 @@
   - `Set, Player.Speed, 325, -52.5`
   - `Set, Player.Ducking, true`
   - `Set, Everest.ShowModOptionsInGame, false`
-  - `Set, ExtendedVariantMode.Dashcount, 3`
   - `Set, CelesteTAS.CenterCamera, true`
   - `Set, AnarchyCollab2022.LeftButton, Q, W`
 
@@ -102,6 +101,7 @@
     - `Invoke, Level.Pause`
     - `Invoke, Player.Die`
     - `Invoke, Session.SetFlag, whatever`
+    - `Invoke, LuaCutscenesUtils.TriggerBooleanVariant, UpsideDown, true, true`, check here for more extended variant [methods](https://github.com/maddie480/ExtendedVariantMode/blob/master/Module/LuaCutscenesUtils.cs) and [options](https://github.com/maddie480/ExtendedVariantMode/blob/master/Module/ExtendedVariantsModule.cs#L45-L64).
 
 ### Unsafe and Safe
 - The TAS will normally only run inside levels and stop when entering the Options/ModOptions menu.
@@ -112,6 +112,22 @@
 ### EnforceLegal
 - This is used at the start of fullgame files.
 - It prevents the use of [Console](#console), [Set](#set), [Invoke](#invoke), [StunPause simulate mode](#stunpause-and-endstunpause) commands which would not be legal in a run.
+
+### Assert
+- If the condition being checked is not met, tas will be stopped. Usually used to make tas stop as soon as possible when tas desync.
+- `Assert, Condition, Expected, Actual`
+- Conditions are `Equal`, `NotEqual`, `Contain`, `NotContain`, `StartWith`, `NotStartWith`, `EndWith`, `NotEndWith`
+- `Actual` use the same syntax as the [custom info template](https://github.com/EverestAPI/CelesteTAS-EverestInterop#custom-info) but without the curly brackets
+- Examples:
+  ```
+  # Ensure that you are currently in the save file selection screen and the save file is selected
+  Assert EndWith OuiFileSelect Engine.Scene.Current
+  Assert Equal True Engine.Scene.Current.SlotSelected
+  ```
+  ```
+  # Ensure that you are currently in the chapter 2
+  Assert EndWith 2-OldSite Session.Area.SID
+  ```
 
 ### StunPause and EndStunPause
 - ```
@@ -198,6 +214,29 @@ Specify the default mode for `StunPause` command.
   10,O
    2,R,J
   ```
+
+### StartRecording and StopRecording
+NOTE: These commands require [TAS Recorder](https://gamebanana.com/tools/14085)!
+- `StartRecording  (optional, frame count)` starts a recording until it's stopped again. If a frame count is specified, then the recording will only last for that many frames.
+- `StopRecording` stops a started recording. Not needed when a frame count was specified for `StartRecording`.
+- e.g. Record two bunny-hops
+  ```
+  StartRecording
+   1,R,J
+  14,R
+   1,R,J
+  14,R
+  StopRecording
+  ```
+- The same can be achived with the following
+  ```
+  StartRecording 30
+   1,R,J
+  14,R
+   1,R,J
+  14,R
+  ```
+- `StopRecording` can also be used to stop a recording, which was started with `Record TAS`
 
 ### Press
 - Press the specified keys with the next input, [the available keys can be found here](https://docs.monogame.net/api/Microsoft.Xna.Framework.Input.Keys.html).

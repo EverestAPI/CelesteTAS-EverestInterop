@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -18,8 +18,10 @@ public static class InfoCustom {
     private static readonly Regex BraceRegex = new(@"\{(.+?)\}", RegexOptions.Compiled);
     private static readonly Regex TypeNameRegex = new(@"^([.\w=+<>]+)(\[(.+?)\])?(@([^.]*))?$", RegexOptions.Compiled);
     private static readonly Regex TypeNameSeparatorRegex = new(@"^[.+]", RegexOptions.Compiled);
+    private static readonly Regex MethodRegex = new(@"^(.+)\((.*)\)$", RegexOptions.Compiled);
     private static readonly Dictionary<string, Type> AllTypes = new();
     private static readonly Dictionary<string, List<Type>> CachedParsedTypes = new();
+    private static bool DisableParameterlessMethod => TAS.Input.Commands.EnforceLegalCommand.EnabledWhenRunning;
 
     [Initialize]
     private static void CollectAllTypeInfo() {
@@ -44,14 +46,14 @@ public static class InfoCustom {
         ParseTemplate($"{{{template}}}", TasSettings.CustomInfoDecimals, new Dictionary<string, List<Entity>>(), true).ConsoleLog();
     }
 
-    private static string ParseTemplate(string template, int decimals, Dictionary<string, List<Entity>> cachedEntities, bool consoleCommand) {
+    public static string ParseTemplate(string template, int decimals, Dictionary<string, List<Entity>> cachedEntities, bool consoleCommand) {
         List<Entity> GetCachedOrFindEntities(Type type, string entityId, Dictionary<string, List<Entity>> dictionary) {
             string entityText = $"{type.FullName}{entityId}";
             List<Entity> entities;
-            if (dictionary.ContainsKey(entityText)) {
-                entities = dictionary[entityText];
+            if (dictionary.TryGetValue(entityText, out List<Entity> value)) {
+                entities = value;
             } else {
-                entities = FindEntities(type, entityId).ToList();
+                entities = FindEntities(type, entityId);
                 dictionary[entityText] = entities;
             }
 
@@ -72,7 +74,7 @@ public static class InfoCustom {
             string lastMemberName = memberNames.Last();
             string lastCharacter = lastMemberName.Substring(lastMemberName.Length - 1, 1);
             if (lastCharacter is ":" or "=") {
-                lastMemberName = lastMemberName.Substring(0, lastMemberName.Length - 1);
+                lastMemberName = lastMemberName.Substring(0, lastMemberName.Length - 1).Trim();
                 memberNames[memberNames.Count - 1] = lastMemberName;
             }
 
@@ -86,7 +88,7 @@ public static class InfoCustom {
                 .SelectMany(type => GetCachedOrFindEntities(type, entityId, cachedEntities)).Count() > 1;
 
             List<string> result = types.Select(type => {
-                if (type.GetGetMethod(memberNames.First()) is {IsStatic: true} || type.GetFieldInfo(memberNames.First()) is {IsStatic: true}) {
+                if (type.GetGetMethod(memberNames.First()) is {IsStatic: true} || type.GetFieldInfo(memberNames.First()) is {IsStatic: true} || (MethodRegex.Match(memberNames.First()) is { Success: true } match && type.GetMethodInfo(match.Groups[1].Value) is {IsStatic: true })) {
                     return FormatValue(GetMemberValue(type, null, memberNames), helperMethod, decimals);
                 }
 
@@ -187,7 +189,7 @@ public static class InfoCustom {
         errorMessage = "";
 
         if (!TryParseTypeName(text, out string typeNameMatched, out string typeNameWithAssembly, out entityId)) {
-            errorMessage = "paring type name failed";
+            errorMessage = "parsing type name failed";
             return false;
         }
 
@@ -267,18 +269,14 @@ public static class InfoCustom {
                 return floatValue.ToFormattedString(decimals);
             }
         }
-
+        if (obj is Entity entity) {
+            string id = entity.GetEntityData()?.ToEntityId().ToString() is { } value ? $"[{value}]" : "";
+            return $"{entity.ToString()}{id}";
+        }
         if (obj is IEnumerable enumerable and not IEnumerable<char>) {
-            StringBuilder sb = new();
-            foreach (object o in enumerable) {
-                if (sb.Length > 0) {
-                    sb.Append(", ");
-                }
-
-                sb.Append(o);
-            }
-
-            return sb.ToString();
+            bool compressed = enumerable is IEnumerable<Component> or IEnumerable<Entity>;
+            string separator = compressed ? ",\n " : ", ";
+            return IEnumerableToString(enumerable, separator, compressed);
         }
 
         return obj.ToString();
@@ -286,16 +284,16 @@ public static class InfoCustom {
 
     public static object GetMemberValue(Type type, object obj, List<string> memberNames, bool setCommand = false) {
         foreach (string memberName in memberNames) {
-            if (type.GetGetMethod(memberName) is { } methodInfo) {
-                if (methodInfo.IsStatic) {
-                    obj = methodInfo.Invoke(null, null);
+            if (type.GetGetMethod(memberName) is { } getMethodInfo) {
+                if (getMethodInfo.IsStatic) {
+                    obj = getMethodInfo.Invoke(null, null);
                 } else if (obj != null) {
                     if (obj is Actor actor && memberName == "ExactPosition") {
                         obj = actor.GetMoreExactPosition(true);
                     } else if (obj is Platform platform && memberName == "ExactPosition") {
                         obj = platform.GetMoreExactPosition(true);
                     } else {
-                        obj = methodInfo.Invoke(obj, null);
+                        obj = getMethodInfo.Invoke(obj, null);
                     }
                 }
             } else if (type.GetFieldInfo(memberName) is { } fieldInfo) {
@@ -307,6 +305,24 @@ public static class InfoCustom {
                         true when obj is Platform platform && memberName == "Position" => platform.GetMoreExactPosition(true),
                         _ => fieldInfo.GetValue(obj)
                     };
+                }
+            } else if (MethodRegex.Match(memberName) is {Success: true} match && type.GetMethodInfo(match.Groups[1].Value) is { } methodInfo) {
+                if (DisableParameterlessMethod) {
+                    return $"{memberName}: Calling methods is illegal when tas is running.";
+                }  else if (match.Groups[2].Value.IsNotNullOrWhiteSpace() ||　methodInfo.GetParameters().Length > 0) {
+                    return $"{memberName}: Only method without parameters is supported";
+                }　else if (methodInfo.ReturnType == typeof(void)) {
+                    return $"{memberName}: Method return void is not supported";
+                } else if (methodInfo.IsStatic) {
+                    obj = methodInfo.Invoke(null, null);
+                } else if (obj != null) {
+                    if (obj is Actor actor && memberName == "get_ExactPosition()") {
+                        obj = actor.GetMoreExactPosition(true);
+                    } else if (obj is Platform platform && memberName == "get_ExactPosition()") {
+                        obj = platform.GetMoreExactPosition(true);
+                    } else {
+                        obj = methodInfo.Invoke(obj, null);
+                    }
                 }
             } else {
                 if (obj == null) {
@@ -337,4 +353,40 @@ public static class InfoCustom {
             return entities.Where(entity => entity.GetEntityData()?.ToEntityId().ToString() == entityId).ToList();
         }
     }
+
+    public static string IEnumerableToString(IEnumerable enumerable, string separator, bool compressed) {
+        StringBuilder sb = new();
+        if (!compressed) {
+            foreach (object o in enumerable) {
+                if (sb.Length > 0) {
+                    sb.Append(separator);
+                }
+
+                sb.Append(o);
+            }
+
+            return sb.ToString();
+        }
+        Dictionary<string, int> keyValuePairs = new Dictionary<string, int>();
+        foreach (object obj in enumerable) {
+            string str = obj.ToString();
+            if (keyValuePairs.ContainsKey(str)) {
+                keyValuePairs[str]++;
+            } else {
+                keyValuePairs.Add(str, 1);
+            }
+        }
+        foreach (string key in keyValuePairs.Keys) {
+            if (sb.Length > 0) {
+                sb.Append(separator);
+            }
+            if (keyValuePairs[key] == 1) {
+                sb.Append(key);
+            } else {
+                sb.Append($"{key} * {keyValuePairs[key]}");
+            }
+        }
+        return sb.ToString();
+    }
+
 }

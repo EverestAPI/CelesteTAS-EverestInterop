@@ -481,10 +481,10 @@ public static class UnloadedRoomHitbox {
                 }
             }
 
-#if REALESE
-                if (rect.Width == 0 || rect.Height == 0) {
-                    continue;
-                }
+#if RELEASE
+            if (rect.Width == 0 || rect.Height == 0) {
+                continue;
+            }
 #endif
 
             if (textureId.IsNotEmpty()) {
@@ -545,7 +545,11 @@ public static class UnloadedRoomHitbox {
             string name = Regex.Replace(input, "\\d+$", string.Empty);
             string decalName = name.ToLower().Replace("decals/", "");
 
-            actions.Add(() => GFX.Game.GetAtlasSubtextures(name)[0].DrawCentered(position, Color.White, data.Scale));
+            actions.Add(() => {
+                if (!TasSettings.SimplifiedGraphics || !TasSettings.SimplifiedDecal) {
+                    GFX.Game.GetAtlasSubtextures(name)[0].DrawCentered(position, Color.White, data.Scale);
+                }
+            });
 
             switch (decalName) {
                 case "3-resort/roofcenter":

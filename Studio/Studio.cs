@@ -19,7 +19,7 @@ using StudioCommunication;
 namespace CelesteStudio;
 
 public partial class Studio : BaseForm {
-    private const string MaxStatusHeight20Line = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
+    private static readonly string MaxStatusHeight20Line = "".PadRight(20, '\n') + (PlatformUtils.Mono ? "." : "");
     public static Studio Instance;
     public static Version Version { get; private set; }
     private static List<string> RecentFiles => Settings.Instance.RecentFiles;
@@ -55,6 +55,7 @@ public partial class Studio : BaseForm {
         Version = Assembly.GetExecutingAssembly().GetName().Version;
 
         InitializeComponent();
+        MonoFix();
         InitSettings();
         InitLocationSize();
         InitTitleBarTooltip();
@@ -486,7 +487,17 @@ public partial class Studio : BaseForm {
         return result;
     }
 
-    private void OpenFile(string fileName = null, int startLine = 0) {
+    private void MonoFix() {
+        if (PlatformUtils.Mono) {
+            // remove the shortcut keys, otherwise they will be triggered when writing tas input
+            fileToolStripMenuItem.Text = fileToolStripMenuItem.Text.Replace("&", "");
+            settingsToolStripMenuItem.Text = settingsToolStripMenuItem.Text.Replace("&", "");
+            toggleToolStripMenuItem.Text = toggleToolStripMenuItem.Text.Replace("&", "");
+            helpToolStripMenuItem.Text = helpToolStripMenuItem.Text.Replace("&", "");
+        }
+    }
+
+    public void OpenFile(string fileName = null, int startLine = 0) {
         if (fileName == CurrentFileName && fileName != null) {
             return;
         }
@@ -512,7 +523,8 @@ public partial class Studio : BaseForm {
     private void TryOpenReadFile() {
         string text = richText.CurrentStartLineText;
         string trimText = richText.CurrentStartLineText.Trim();
-        if (trimText.StartsWith("read", StringComparison.InvariantCultureIgnoreCase)) {
+        Regex readRegex = new Regex("^#?read( |,)", RegexOptions.IgnoreCase);
+        if (readRegex.IsMatch(trimText)) {
             Regex spaceRegex = new(@"^[^,]+?\s+[^,]");
 
             string[] args = spaceRegex.IsMatch(trimText) ? trimText.Split() : trimText.Split(',');
@@ -525,7 +537,7 @@ public partial class Studio : BaseForm {
             }
 
             args = args.Select(text => text.Trim()).ToArray();
-            if (args[0].Equals("read", StringComparison.InvariantCultureIgnoreCase) && args.Length >= 2) {
+            if (args.Length >= 2) {
                 string filePath = args[1];
                 string fileDirectory = Path.GetDirectoryName(CurrentFileName);
                 filePath = FindTheFile(fileDirectory, filePath);
@@ -604,16 +616,16 @@ public partial class Studio : BaseForm {
 
     private static int GetLine(string path, string labelOrLineNumber) {
         if (int.TryParse(labelOrLineNumber, out int lineNumber)) {
-            return lineNumber;
+            return lineNumber - 1;
         }
 
+        Regex labelRegex = new(@$"^\s*#\s*{Regex.Escape(labelOrLineNumber)}\s*$");
         int curLine = 0;
         foreach (string readLine in File.ReadLines(path)) {
-            curLine++;
-            string line = readLine.Trim();
-            if (line == $"#{labelOrLineNumber}") {
-                return curLine - 1;
+            if (labelRegex.IsMatch(readLine)) {
+                return curLine;
             }
+            curLine++;
         }
 
         return 0;
@@ -634,18 +646,30 @@ public partial class Studio : BaseForm {
         SaveSettings();
     }
 
-    private void ClearUncommentedBreakpoints() {
-        var line = Math.Min(richText.Selection.Start.iLine, richText.Selection.End.iLine);
-        List<int> breakpoints = richText.FindLines(@"^\s*\*\*\*");
+    private void RemoveLinesMatching(string searchPattern) {
+        Place prevSelectionStart = richText.Selection.Start;
+        Place prevSelectionEnd = richText.Selection.End;
+
+        List<int> breakpoints = richText.FindLines(searchPattern);
         richText.RemoveLines(breakpoints);
-        richText.Selection.Start = new Place(0, Math.Min(line, richText.LinesCount - 1));
+
+        var linesRemovedBeforeStart = breakpoints.Count(breakpointLine => breakpointLine < prevSelectionStart.iLine);
+        var linesRemovedBeforeEnd = breakpoints.Count(breakpointLine => breakpointLine < prevSelectionEnd.iLine);
+
+        prevSelectionStart.iLine = Math.Min(prevSelectionStart.iLine - linesRemovedBeforeStart, richText.LinesCount - 1);
+        prevSelectionEnd.iLine = Math.Min(prevSelectionEnd.iLine - linesRemovedBeforeEnd, richText.LinesCount - 1);
+        prevSelectionStart.iChar = Math.Min(prevSelectionStart.iChar, richText.Lines[prevSelectionStart.iLine].Length);
+        prevSelectionEnd.iChar = Math.Min(prevSelectionEnd.iChar, richText.Lines[prevSelectionEnd.iLine].Length);
+
+        richText.Selection = new Range(richText, prevSelectionStart, prevSelectionEnd);
+    }
+
+    private void ClearUncommentedBreakpoints() {
+        RemoveLinesMatching(@"^\s*\*\*\*");
     }
 
     private void ClearBreakpoints() {
-        var line = Math.Min(richText.Selection.Start.iLine, richText.Selection.End.iLine);
-        List<int> breakpoints = richText.FindLines(@"^\s*#*\s*\*\*\*");
-        richText.RemoveLines(breakpoints);
-        richText.Selection.Start = new Place(0, Math.Min(line, richText.LinesCount - 1));
+        RemoveLinesMatching(@"^\s*#*\s*\*\*\*");
     }
 
     private void CopyFilePath() {
@@ -1431,6 +1455,22 @@ public partial class Studio : BaseForm {
         SaveAsFile();
     }
 
+    private void integrateReadFilesToolStripMenuItem_Click(object sender, EventArgs e) {
+        IntegrateReadFiles.Generate();
+    }
+
+    private void recordTASToolStripMenuItem_Click(object sender, EventArgs e) {
+        if (!StudioCommunicationBase.Initialized) {
+            MessageBox.Show("This feature requires the support of CelesteTAS mod, please launch the game.",
+                    "Information",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information
+                );
+            return;
+        }
+        DialogUtils.ShowRecordDialog();
+    }
+
     private void commentUncommentTextToolStripMenuItem_Click(object sender, EventArgs e) {
         CommentText(true);
     }
@@ -1465,6 +1505,10 @@ public partial class Studio : BaseForm {
 
     private void enforceLegalToolStripMenuItem_Click(object sender, EventArgs e) {
         InsertNewLine("EnforceLegal");
+    }
+
+    private void assertToolStripMenuItem_Click(object sender, EventArgs e) {
+        InsertNewLine("Assert, Condition, Expected, Actual");
     }
 
     private void unsafeToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -1535,6 +1579,14 @@ public partial class Studio : BaseForm {
         InsertNewLine("EndExportGameInfo");
     }
 
+    private void startRecordingToolStripMenuItem_Click(object sender, EventArgs e) {
+        InsertNewLine("StartRecording");
+    }
+
+    private void stopRecordingToolStripMenuItem_Click(object sender, EventArgs e) {
+        InsertNewLine("StopRecording");
+    }
+
     private void startExportRoomInfoToolStripMenuItem_Click(object sender, EventArgs e) {
         InsertNewLine("ExportRoomInfo dump_room_info.txt");
     }
@@ -1603,6 +1655,10 @@ public partial class Studio : BaseForm {
                 ShowTooltip("Only monospaced font is allowed");
             }
         }
+    }
+
+    private void openSettingsFileToolStripMenuItem_Click(object sender, EventArgs e) {
+        Settings.Open();
     }
 
     private void reconnectStudioAndCelesteToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -1949,5 +2005,12 @@ public partial class Studio : BaseForm {
         lightToolStripMenuItem.Checked = Settings.Instance.ThemesType == ThemesType.Light;
         darkToolStripMenuItem.Checked = Settings.Instance.ThemesType == ThemesType.Dark;
         customToolStripMenuItem.Checked = Settings.Instance.ThemesType == ThemesType.Custom;
+    }
+
+    public void UseImmersiveDarkMode(bool enabled) {
+        Win32Api.UseImmersiveDarkMode(base.Handle, enabled);
+
+        ClientSize = new Size(ClientSize.Width + 1, ClientSize.Height);
+        ClientSize = new Size(ClientSize.Width - 1, ClientSize.Height);
     }
 }

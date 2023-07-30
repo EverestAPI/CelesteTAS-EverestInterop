@@ -39,6 +39,7 @@ public abstract class Themes {
     public abstract List<string> Selection { get; set; }
     public abstract List<string> ServiceLine { get; set; }
     public abstract List<string> Status { get; set; }
+    public abstract bool DarkTitlebar { get; set; }
 
     public static void Load(string path) {
         if (File.Exists(path)) {
@@ -89,6 +90,7 @@ public abstract class Themes {
         richText.ServiceLinesColor = ColorUtils.HexToColor(themes.ServiceLine);
 
         Studio.Instance.SetControlsColor(themes);
+        Studio.Instance.UseImmersiveDarkMode(themes.DarkTitlebar);
 
         richText.ClearStylesBuffer();
         richText.SyntaxHighlighter.TASSyntaxHighlight(richText.Range);
@@ -97,68 +99,72 @@ public abstract class Themes {
 
 [TommyTableName("LightThemes")]
 public class LightThemes : Themes {
-    public override List<string> Action { get; set; } = new() {"2222FF"};
-    public override List<string> Angle { get; set; } = new() {"EE22EE"};
-    public override List<string> Background { get; set; } = new() {"FFFFFF"};
-    public override List<string> Breakpoint { get; set; } = new() {"FFFFFF", "FF5555"};
-    public override List<string> Caret { get; set; } = new() {"000000"};
-    public override List<string> ChangedLine { get; set; } = new() {"000000", "FF8C00"};
-    public override List<string> Comma { get; set; } = new() {"808080"};
-    public override List<string> Command { get; set; } = new() {"D2691E"};
-    public override List<string> Comment { get; set; } = new() {"00A000"};
-    public override List<string> CurrentLine { get; set; } = new() {"20000000"};
-    public override List<string> Frame { get; set; } = new() {"FF2222"};
-    public override List<string> LineNumber { get; set; } = new() {"000000"};
-    public override List<string> PlayingFrame { get; set; } = new() {"22A022"};
-    public override List<string> PlayingLine { get; set; } = new() {"000000", "55FF55"};
-    public override List<string> SaveState { get; set; } = new() {"FFFFFF", "4682B4"};
-    public override List<string> Selection { get; set; } = new() {"20000000"};
-    public override List<string> ServiceLine { get; set; } = new() {"C0C0C0"};
-    public override List<string> Status { get; set; } = new() {"000000", "F2F2F2"};
+    public override List<string> Action { get; set; } = new() { "2222FF" };
+    public override List<string> Angle { get; set; } = new() { "EE22EE" };
+    public override List<string> Background { get; set; } = new() { "FFFFFF" };
+    public override List<string> Breakpoint { get; set; } = new() { "FFFFFF", "FF5555" };
+    public override List<string> Caret { get; set; } = new() { "000000" };
+    public override List<string> ChangedLine { get; set; } = new() { "000000", "FF8C00" };
+    public override List<string> Comma { get; set; } = new() { "808080" };
+    public override List<string> Command { get; set; } = new() { "D2691E" };
+    public override List<string> Comment { get; set; } = new() { "00A000" };
+    public override List<string> CurrentLine { get; set; } = new() { "20000000" };
+    public override List<string> Frame { get; set; } = new() { "FF2222" };
+    public override List<string> LineNumber { get; set; } = new() { "000000" };
+    public override List<string> PlayingFrame { get; set; } = new() { "22A022" };
+    public override List<string> PlayingLine { get; set; } = new() { "000000", "55FF55" };
+    public override List<string> SaveState { get; set; } = new() { "FFFFFF", "4682B4" };
+    public override List<string> Selection { get; set; } = new() { "20000000" };
+    public override List<string> ServiceLine { get; set; } = new() { "C0C0C0" };
+    public override List<string> Status { get; set; } = new() { "000000", "F2F2F2" };
+    public override bool DarkTitlebar { get; set; } = false;
 }
 
 [TommyTableName("DarkThemes")]
 public class DarkThemes : Themes {
-    public override List<string> Action { get; set; } = new() {"8BE9FD"};
-    public override List<string> Angle { get; set; } = new() {"FF79C6"};
-    public override List<string> Background { get; set; } = new() {"282A36"};
-    public override List<string> Breakpoint { get; set; } = new() {"F8F8F2", "FF5555"};
-    public override List<string> Caret { get; set; } = new() {"AEAFAD"};
-    public override List<string> ChangedLine { get; set; } = new() {"6272A4", "FFB86C"};
-    public override List<string> Comma { get; set; } = new() {"6272A4"};
-    public override List<string> Command { get; set; } = new() {"FFB86C"};
-    public override List<string> Comment { get; set; } = new() {"95B272"};
-    public override List<string> CurrentLine { get; set; } = new() {"20B4B6C7"};
-    public override List<string> Frame { get; set; } = new() {"BD93F9"};
-    public override List<string> LineNumber { get; set; } = new() {"6272A4"};
-    public override List<string> PlayingFrame { get; set; } = new() {"F1FA8C"};
-    public override List<string> PlayingLine { get; set; } = new() {"6272A4", "F1FA8C"};
-    public override List<string> SaveState { get; set; } = new() {"F8F8F2", "4682B4"};
-    public override List<string> Selection { get; set; } = new() {"20B4B6C7"};
-    public override List<string> ServiceLine { get; set; } = new() {"44475A"};
-    public override List<string> Status { get; set; } = new() {"F8F8F2", "383A46"};
+    public override List<string> Action { get; set; } = new() { "8BE9FD" };
+    public override List<string> Angle { get; set; } = new() { "FF79C6" };
+    public override List<string> Background { get; set; } = new() { "282A36" };
+    public override List<string> Breakpoint { get; set; } = new() { "F8F8F2", "FF5555" };
+    public override List<string> Caret { get; set; } = new() { "AEAFAD" };
+    public override List<string> ChangedLine { get; set; } = new() { "6272A4", "FFB86C" };
+    public override List<string> Comma { get; set; } = new() { "6272A4" };
+    public override List<string> Command { get; set; } = new() { "FFB86C" };
+    public override List<string> Comment { get; set; } = new() { "95B272" };
+    public override List<string> CurrentLine { get; set; } = new() { "20B4B6C7" };
+    public override List<string> Frame { get; set; } = new() { "BD93F9" };
+    public override List<string> LineNumber { get; set; } = new() { "6272A4" };
+    public override List<string> PlayingFrame { get; set; } = new() { "F1FA8C" };
+    public override List<string> PlayingLine { get; set; } = new() { "6272A4", "F1FA8C" };
+    public override List<string> SaveState { get; set; } = new() { "F8F8F2", "4682B4" };
+    public override List<string> Selection { get; set; } = new() { "20B4B6C7" };
+    public override List<string> ServiceLine { get; set; } = new() { "44475A" };
+    public override List<string> Status { get; set; } = new() { "F8F8F2", "383A46" };
+    public override bool DarkTitlebar { get; set; } = true;
 }
 
 [TommyTableName("CustomThemes")]
 public class CustomThemes : Themes {
-    public override List<string> Action { get; set; } = new() {"268BD2"};
-    public override List<string> Angle { get; set; } = new() {"D33682"};
-    public override List<string> Background { get; set; } = new() {"FDF6E3"};
-    public override List<string> Breakpoint { get; set; } = new() {"FDF6E3", "DC322F"};
-    public override List<string> Caret { get; set; } = new() {"6B7A82"};
-    public override List<string> ChangedLine { get; set; } = new() {"F8F8F2", "CB4B16"};
-    public override List<string> Comma { get; set; } = new() {"808080"};
-    public override List<string> Command { get; set; } = new() {"B58900"};
-    public override List<string> Comment { get; set; } = new() {"859900"};
-    public override List<string> CurrentLine { get; set; } = new() {"201A1300"};
-    public override List<string> Frame { get; set; } = new() {"DC322F"};
-    public override List<string> LineNumber { get; set; } = new() {"93A1A1"};
-    public override List<string> PlayingFrame { get; set; } = new() {"6C71C4"};
-    public override List<string> PlayingLine { get; set; } = new() {"FDF6E3", "6C71C4"};
-    public override List<string> SaveState { get; set; } = new() {"FDF6E3", "268BD2"};
-    public override List<string> Selection { get; set; } = new() {"201A1300"};
-    public override List<string> ServiceLine { get; set; } = new() {"44475A"};
-    public override List<string> Status { get; set; } = new() {"073642", "EEE8D5"};
+    public override List<string> Action { get; set; } = new() { "268BD2" };
+    public override List<string> Angle { get; set; } = new() { "D33682" };
+    public override List<string> Background { get; set; } = new() { "FDF6E3" };
+    public override List<string> Breakpoint { get; set; } = new() { "FDF6E3", "DC322F" };
+    public override List<string> Caret { get; set; } = new() { "6B7A82" };
+    public override List<string> ChangedLine { get; set; } = new() { "F8F8F2", "CB4B16" };
+    public override List<string> Comma { get; set; } = new() { "808080" };
+    public override List<string> Command { get; set; } = new() { "B58900" };
+    public override List<string> Comment { get; set; } = new() { "859900" };
+    public override List<string> CurrentLine { get; set; } = new() { "201A1300" };
+    public override List<string> Frame { get; set; } = new() { "DC322F" };
+    public override List<string> LineNumber { get; set; } = new() { "93A1A1" };
+    public override List<string> PlayingFrame { get; set; } = new() { "6C71C4" };
+    public override List<string> PlayingLine { get; set; } = new() { "FDF6E3", "6C71C4" };
+    public override List<string> SaveState { get; set; } = new() { "FDF6E3", "268BD2" };
+    public override List<string> Selection { get; set; } = new() { "201A1300" };
+    public override List<string> ServiceLine { get; set; } = new() { "44475A" };
+    public override List<string> Status { get; set; } = new() { "073642", "EEE8D5" };
+    public override bool DarkTitlebar { get; set; } = false;
+
 }
 
 public class ThemesColorTable : ProfessionalColorTable {

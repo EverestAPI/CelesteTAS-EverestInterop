@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using Celeste.Mod;
 using MonoMod.Utils;
+using StudioCommunication;
 using TAS.EverestInterop;
 using TAS.Input.Commands;
 using TAS.Utils;
@@ -101,7 +102,7 @@ public class InputController {
 
     public bool HasFastForward => CurrentFastForward is { } forward && forward.Frame > CurrentFrameInTas;
 
-    public float FastForwardSpeed => CurrentFastForward is { } forward && forward.Frame > CurrentFrameInTas
+    public float FastForwardSpeed => RecordingCommand.StopFastForward ? 1  : CurrentFastForward is { } forward && forward.Frame > CurrentFrameInTas
         ? Math.Min(forward.Frame - CurrentFrameInTas, forward.Speed)
         : 1f;
 
@@ -318,7 +319,7 @@ public class InputController {
                 FastForward fastForward = new(initializationFrameCount, lineText.Substring(3), studioLine);
                 if (FastForwards.TryGetValue(initializationFrameCount, out FastForward oldFastForward) && oldFastForward.SaveState &&
                     !fastForward.SaveState) {
-                    // ignore 
+                    // ignore
                 } else {
                     FastForwards[initializationFrameCount] = fastForward;
                 }

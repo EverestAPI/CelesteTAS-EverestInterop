@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Input;
 using TAS.Input.Commands;
+using TAS.Utils;
 using GameInput = Celeste.Input;
 
 namespace TAS;
@@ -166,8 +167,10 @@ public static class AnalogHelper {
     // AnalogMode, Mode
     // AnalogueMode, Mode
     [TasCommand("AnalogueMode", AliasNames = new[] {"AnalogMode"}, ExecuteTiming = ExecuteTiming.Parse)]
-    private static void AnalogueModeCommand(string[] args) {
-        if (args.Length > 0 && Enum.TryParse(args[0], true, out AnalogueMode mode)) {
+    private static void AnalogueModeCommand(string[] args, int _, string __, int line) {
+        if (args.IsEmpty() || !Enum.TryParse(args[0], true, out AnalogueMode mode)) {
+            AbortTas($"AnalogMode command failed at line {line}\nMode must be Ignore, Circle, Square or Precise");
+        } else {
             analogMode = mode;
         }
     }

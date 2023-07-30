@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -145,5 +146,13 @@ public class Settings {
         }
 
         saving = false;
+    }
+
+    public static void Open() {
+        if (!File.Exists(path)) {
+            Save();
+        }
+
+        Process.Start(path);
     }
 }

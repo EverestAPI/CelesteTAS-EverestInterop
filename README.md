@@ -33,6 +33,7 @@ e.g. 123,R,J (For 123 frames, hold Right and Jump)
 - Z = Crouch Dash
 - V = Crouch Dash Bind 2
 - G = Grab
+- H = Grab Bind 2
 - S = Pause
 - Q = Quick Restart
 - F = Feather Aim
@@ -110,6 +111,7 @@ The contents of the curly brackets will be converted to actual data, here are so
 - `{Level.field...}` Get the value of level field. e.g. `Wind: {Level.Wind}`.
 - `{Session.field...}` Get the value of session field. e.g. `Room: {Session.Level}`.
 - `{ClassName.staticField.field...}` Non-entity and non-level types that can get the value of a static field.
+- `{Player.Position.Length()}` Invoke method is supported, but must be parameterless and return a non-void type. Be careful not to invoke method that change the game state, as this will cause tas desync.
 - `{Player.AutoJumpTimer.toFrame()}` add `toFrame()` to the end can change the float value to frames.
 - `{Player.Speed.toPixelPerFrame()}` add `toPixelPerFrame()` to the end can change the float/vector2 speed unit to pixel/frame.
 - `{Player.Position:}` add `:` or `=` to the end will add label before the value. e.g. `{Player.Position:}` is the same as `Player.Position: {Player.Position}`.
@@ -122,12 +124,13 @@ The contents of the curly brackets will be converted to actual data, here are so
 
 ## Running Studio via Wine
 1. Install Wine: https://wiki.winehq.org/Download
-2. Install .NET Framework 4.5.2: https://appdb.winehq.org/objectManager.php?sClass=version&iId=31023#notes
-3. Run Studio via command `env WINEPREFIX=$HOME/winedotnet wine "Celeste Studio.exe"`
-4. Run Celeste directly or run the windows version of celeste via wine `env WINEPREFIX=$HOME/winedotnet wine "Celeste.exe"`. If the error `X Error of failed request: GLXBadFBConfig` is reported when running celeste via wine, then you need to run `export MESA_GL_VERSION_OVERRIDE=4.5` first and then rerun the wine command.
+2. Install `ttf-mscorefonts-installer`.
+3. Run Studio via command `wine "Celeste Studio.exe"`, agree to install wine-mono.
+4. Run Celeste directly or run the windows version of celeste via wine `wine "Celeste.exe"`. If the error `X Error of failed request: GLXBadFBConfig` is reported when running celeste via wine, then you need to run `export MESA_GL_VERSION_OVERRIDE=4.5` first and then rerun the wine command.
 
 ## Other Useful Tools
 - [Featherline](https://github.com/tntfalle/featherline): Algorithm for analog feather movement in Celeste.
 - [Radeline](https://github.com/Kataiser/radeline): Chaos monkey that optimizes a Celeste TAS by randomly (or sequentially) changing inputs.
-- [.kkapture](https://github.com/DemoJameson/kkapture/wiki): Record high quality smooth tas video on low end PC.
+- [.kkapture](https://github.com/DemoJameson/kkapture/wiki): Record high quality smooth tas video on low end PC, Windows only.
+- [ldcapture](https://github.com/psyGamer/ldcapture): Record high quality smooth tas video on low end PC, Linux only.
 - [GhostMod](https://github.com/DemoJameson/GhostMod): Used to compare old and new tas.

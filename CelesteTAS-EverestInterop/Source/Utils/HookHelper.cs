@@ -35,6 +35,38 @@ internal static class HookHelper {
         });
     }
 
+    public static void HookBefore<T>(this MethodBase methodInfo, Action<T> action) {
+        methodInfo.IlHook((cursor, _) => {
+            cursor.Emit(OpCodes.Ldarg_0);
+            cursor.EmitDelegate(action);
+        });
+    }
+
+    public static void HookBefore(this MethodBase methodInfo, Action action) {
+        methodInfo.IlHook((cursor, _) => {
+            cursor.EmitDelegate(action);
+        });
+    }
+
+    public static void HookAfter<T>(this MethodBase methodInfo, Action<T> action) {
+        methodInfo.IlHook((cursor, _) => {
+            while (cursor.TryGotoNext(MoveType.AfterLabel, i => i.OpCode == OpCodes.Ret)) {
+                cursor.Emit(OpCodes.Ldarg_0);
+                cursor.EmitDelegate(action);
+                cursor.Index++;
+            }
+        });
+    }
+
+    public static void HookAfter(this MethodBase methodInfo, Action action) {
+        methodInfo.IlHook((cursor, _) => {
+            while (cursor.TryGotoNext(MoveType.AfterLabel, i => i.OpCode == OpCodes.Ret)) {
+                cursor.EmitDelegate(action);
+                cursor.Index++;
+            }
+        });
+    }
+
     public static void SkipMethod(Type conditionType, string conditionMethodName, string methodName, params Type[] types) {
         foreach (Type type in types) {
             if (type?.GetMethodInfo(methodName) is { } method) {

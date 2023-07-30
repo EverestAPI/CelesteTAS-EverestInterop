@@ -10,7 +10,7 @@ using TAS.Input;
 using TAS.Module;
 using TAS.Utils;
 using static TAS.Manager;
-using TasStates = TAS.States;
+using TasStates = StudioCommunication.States;
 
 namespace TAS;
 
@@ -31,7 +31,8 @@ public static class Savestates {
         {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerPos)), null},
         {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerDiff)), null},
         {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.DashTime)), null},
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.Frozen)), null}
+        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.Frozen)), null},
+        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.TransitionFrames)), null},
     };
 
     private static bool savedByBreakpoint;
@@ -130,6 +131,11 @@ public static class Savestates {
     }
 
     private static void Load() {
+        // Don't load save states while recording
+        if (Manager.Recording) {
+            return;
+        }
+
         if (IsSaved()) {
             Controller.RefreshInputs(false);
             if (!BreakpointHasBeenDeleted && savedController.SavestateChecksum == Controller.CalcChecksum(savedController)) {

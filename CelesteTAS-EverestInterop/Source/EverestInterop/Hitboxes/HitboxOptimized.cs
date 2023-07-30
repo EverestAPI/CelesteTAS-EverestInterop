@@ -7,12 +7,19 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 using TAS.EverestInterop.InfoHUD;
+using MonoMod.RuntimeDetour;
 using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxOptimized {
+    private static readonly List<Circle> pufferPushRadius = new();
+
+    private static bool IsShowHitboxes() {
+        return TasSettings.ShowHitboxes;
+    }
+
     [Initialize]
     private static void Initialize() {
         // remove the yellow points hitboxes added by "Madeline in Wonderland"
@@ -26,18 +33,31 @@ public static class HitboxOptimized {
                 }
             });
         }
-    }
 
-    private static bool IsShowHitboxes() {
-        return TasSettings.ShowHitboxes;
+        typeof(Puffer).GetMethodInfo("Explode").HookBefore<Puffer>(self => pufferPushRadius.Add(new Circle(40f, self.X, self.Y)));
+        typeof(Puffer).GetMethod("Render").IlHook((cursor, context) => {
+            if (cursor.TryGotoNext(i => i.MatchLdloc(out _), i => i.MatchLdcI4(28))) {
+                cursor.Index++;
+                cursor.EmitDelegate(HidePufferWhiteLine);
+            }
+        });
+
+        if (ModUtils.GetType("CrystallineHelper", "vitmod.CustomPuffer") is { } customPufferType &&
+            customPufferType.CreateGetDelegate<Entity, Circle>("pushRadius") is { } getPushRadius) {
+            customPufferType.GetMethodInfo("Explode")
+                .HookBefore<Entity>(self => pufferPushRadius.Add(new Circle(getPushRadius.Invoke(self).Radius, self.X, self.Y)));
+            // its debug render also needs optimize
+            // but i have no good idea, so i put it aside
+        }
+
+        using (new DetourContext {After = new List<string> {"*"}}) {
+            On.Monocle.Entity.DebugRender += ModDebugRender;
+        }
     }
 
     [Load]
     private static void Load() {
-        On.Monocle.Entity.DebugRender += ModDebugRender;
-        On.Monocle.EntityList.DebugRender += AddHoldableColliderHitbox;
-        On.Monocle.EntityList.DebugRender += AddLockBlockColliderHitbox;
-        On.Monocle.EntityList.DebugRender += AddSpawnPointHitbox;
+        On.Monocle.EntityList.DebugRender += EntityListOnDebugRender;
         IL.Celeste.PlayerCollider.DebugRender += PlayerColliderOnDebugRender;
         On.Celeste.PlayerCollider.DebugRender += AddFeatherHitbox;
         On.Monocle.Circle.Render += CircleOnRender;
@@ -50,9 +70,7 @@ public static class HitboxOptimized {
     [Unload]
     private static void Unload() {
         On.Monocle.Entity.DebugRender -= ModDebugRender;
-        On.Monocle.EntityList.DebugRender -= AddHoldableColliderHitbox;
-        On.Monocle.EntityList.DebugRender -= AddLockBlockColliderHitbox;
-        On.Monocle.EntityList.DebugRender -= AddSpawnPointHitbox;
+        On.Monocle.EntityList.DebugRender -= EntityListOnDebugRender;
         IL.Celeste.PlayerCollider.DebugRender -= PlayerColliderOnDebugRender;
         On.Celeste.PlayerCollider.DebugRender -= AddFeatherHitbox;
         On.Monocle.Circle.Render -= CircleOnRender;
@@ -93,18 +111,53 @@ public static class HitboxOptimized {
 
         orig(self, camera);
     }
+    private static int HidePufferWhiteLine(int i) {
+        if (TasSettings.ShowHitboxes) {
+            return 28;
+        } else {
+            return i;
+        }
+    }
 
     private static void DrawPufferHitbox(Puffer puffer) {
-        Vector2 bottomCenter = puffer.BottomCenter - Vector2.UnitY * 1;
-        if (puffer.Scene.GetPlayer() is {Ducking: true}) {
-            bottomCenter -= Vector2.UnitY * 3;
-        }
+        /*
+         * ProximityExplodeCheck: player.CenterY >= base.Y + collider.Bottom - 4f
+         *
+         * CenterY can be half integer if crouched
+         * base.Y is not integer
+         *
+         * Draw.Line: round to integer, plus an annoying offset depending on angle
+         * Draw.Rect: trunc to integer, quite stable
+         */
 
+        /*
+         * we pretend we are using Hurtbox in collide check, and assume Player's position is on grid
+         * b = Hurtbox.Bottom = [player's Position] + ...
+         * b'= Rendered Hurtbox Bottom = b - 1
+         * c = player.CenterY = [player's Position] + (Hitbox.Top + Hitbox.Height/2)
+         * int i = height of Draw.Line
+         * i - b + c >= base.Y + collider.Bottom - 4f = puffer.Bottom - 4f
+         * i = Ceil(puffer.Bottom - 4f + b' - c)
+         *
+         * in some weird cases, maddy can have starFlyHitbox + normalHurtbox...so we can't just check Ducking and StateMachine.State == 19
+         */
+
+        var player = puffer.Scene.Tracker.GetEntity<Player>();
+        float b = player?.hurtbox.Bottom ?? -2f;
+        float c = player?.collider.CenterY ?? -5.5f;
+        Vector2 bottomCenter = new Vector2(puffer.CenterX, (float) Math.Ceiling(puffer.Bottom - 5f + b - c));
         Color hitboxColor = HitboxColor.GetCustomColor(puffer);
-
         Draw.Circle(puffer.Position, 32f, hitboxColor, 32);
-        Draw.Line(bottomCenter - Vector2.UnitX * 32, bottomCenter - Vector2.UnitX * 6, hitboxColor);
-        Draw.Line(bottomCenter + Vector2.UnitX * 6, bottomCenter + Vector2.UnitX * 32, hitboxColor);
+        Color heightCheckColor = HitboxColor.PufferHeightCheckColor * (puffer.Collidable ? 1f : HitboxColor.UnCollidableAlpha);
+        Draw.Rect(bottomCenter.X - 7, bottomCenter.Y, -25f, 1f, heightCheckColor);
+        Draw.Rect(bottomCenter.X + 7, bottomCenter.Y, 25f, 1f, heightCheckColor);
+        // sometimes it will draw an extra pixel at the endpoint..
+
+        /*
+         * still one small issue remains: we are pretending that all collide checks are using player's hurtbox
+         * but for collide check with the circle detectRadius
+         * current implementation can't hold if player's hitbox is starFlyHitbox (which is 1px wider than hurtbox on twosides)
+         */
     }
 
     private static void DrawSwitchGateEnd(SwitchGate gate) {
@@ -127,17 +180,30 @@ public static class HitboxOptimized {
         }
     }
 
-    private static void AddHoldableColliderHitbox(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
+    private static void EntityListOnDebugRender(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
+        Level level = self.Scene as Level;
+        if (TasSettings.ShowHitboxes && level != null) {
+            AddSpawnPointHitbox(level);
+        }
+
         orig(self, camera);
 
-        if (!TasSettings.ShowHitboxes) {
-            return;
+        if (TasSettings.ShowHitboxes && level != null) {
+            AddHoldableColliderHitbox(level, camera);
+            AddLockBlockColliderHitbox(level);
+            AddPufferPushRadius();
         }
+    }
 
-        if (self.Scene is not Level level) {
-            return;
+    private static void AddSpawnPointHitbox(Level level) {
+        foreach (Vector2 spawn in level.Session.LevelData.Spawns) {
+            Draw.HollowRect(spawn - new Vector2(4, 11), 8, 11,
+                HitboxColor.RespawnTriggerColor * HitboxColor.UnCollidableAlpha
+            );
         }
+    }
 
+    private static void AddHoldableColliderHitbox(Level level, Camera camera) {
         List<Holdable> holdables = level.Tracker.GetCastComponents<Holdable>();
         if (holdables.IsEmpty()) {
             return;
@@ -172,14 +238,8 @@ public static class HitboxOptimized {
         }
     }
 
-    private static void AddLockBlockColliderHitbox(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
-        orig(self, camera);
-
-        if (!TasSettings.ShowHitboxes) {
-            return;
-        }
-
-        if (self.Scene is not Level level || level.GetPlayer() is not { } player) {
+    private static void AddLockBlockColliderHitbox(Level level) {
+        if (level.GetPlayer() is not { } player) {
             return;
         }
 
@@ -243,16 +303,14 @@ public static class HitboxOptimized {
         }
     }
 
-    private static void AddSpawnPointHitbox(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
-        if (TasSettings.ShowHitboxes && self.Scene is Level {Session: { } session}) {
-            foreach (Vector2 spawn in session.LevelData.Spawns) {
-                Draw.HollowRect(spawn - new Vector2(4, 11), 8, 11,
-                    HitboxColor.RespawnTriggerColor * HitboxColor.UnCollidableAlpha
-                );
-            }
+    private static void AddPufferPushRadius() {
+        foreach (Circle circle in pufferPushRadius) {
+            Draw.Circle(circle.Position, circle.Radius, HitboxColor.PufferPushRadiusColor, 4);
         }
 
-        orig(self, camera);
+        if (Engine.FreezeTimer <= 0f) {
+            pufferPushRadius.Clear();
+        }
     }
 
     private static void PlayerColliderOnDebugRender(ILContext il) {
@@ -264,6 +322,32 @@ public static class HitboxOptimized {
             ilCursor
                 .Emit(OpCodes.Ldarg_0)
                 .EmitDelegate<Func<Color, Component, Color>>(OptimizePlayerColliderHitbox);
+            ilCursor.Index++;
+            ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate(OptimizePufferPlayerCollider);
+        }
+    }
+
+    private static void OptimizePufferPlayerCollider(Component component) {
+        if (component.Entity is not Puffer puffer || component is not PlayerCollider pc) {
+            return;
+        }
+
+        // OnPlayer Explode: player.Bottom > lastSpeedPosition.Y + 3f
+        if (typeof(Puffer).CreateGetDelegate<Puffer, Vector2>("lastSpeedPosition") is { } getLastSpeedPosition) {
+            float y = getLastSpeedPosition.Invoke(puffer).Y + 3f - 1f;
+            // -1f coz player's bottom is "1px lower" than the bottom of hitbox (due to how they render)
+            float z = (float) Math.Ceiling(y);
+            if (z <= y) {
+                z += 1f;
+            }
+
+            if (z > pc.Collider.AbsoluteBottom) {
+                return;
+            }
+
+            float top = Math.Max(pc.Collider.AbsoluteTop, z);
+            Draw.HollowRect(puffer.X - 7f, top, 14f, pc.Collider.AbsoluteBottom - top,
+                puffer.Collidable ? HitboxColor.PufferHeightCheckColor : HitboxColor.PufferHeightCheckColor * HitboxColor.UnCollidableAlpha);
         }
     }
 

@@ -73,7 +73,14 @@ public static class ExportGameInfo {
             Directory.CreateDirectory(dir);
         }
 
-        streamWriter = new StreamWriter(path);
+        try {
+            streamWriter = new StreamWriter(path);
+        } catch (Exception e) {
+            AbortTas($"ExportGameInfo failed\n{e.Message}", true);
+            FinishExportCommand();
+            return;
+        }
+
         streamWriter.WriteLine(string.Join("\t", "Line", "Inputs", "Frames", "Time", "Position", "Speed", "State", "Statuses", "Room", "Entities"));
         trackedEntities = new Dictionary<string, Func<List<Entity>>>();
         foreach (string typeName in tracked) {

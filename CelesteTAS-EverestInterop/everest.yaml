@@ -1,5 +1,6 @@
 - Name: CelesteTAS
-  Version: 3.25.11
+  Version: 3.30.1
+  MinStudioVersion: 2.18.1
   DLL: CelesteTAS-EverestInterop.dll
   Dependencies:
     - Name: Everest
@@ -7,3 +8,5 @@
   OptionalDependencies:
     - Name: SpeedrunTool
       Version: 3.16.4
+    - Name: TASRecorder
+      Version: 1.0.1
