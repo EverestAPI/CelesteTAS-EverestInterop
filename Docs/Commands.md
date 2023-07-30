@@ -215,6 +215,29 @@ Specify the default mode for `StunPause` command.
    2,R,J
   ```
 
+### StartRecording and StopRecording
+NOTE: These commands require [TAS Recorder](https://gamebanana.com/tools/14085)!
+- `StartRecording  (optional, frame count)` starts a recording until it's stopped again. If a frame count is specified, then the recording will only last for that many frames.
+- `StopRecording` stops a started recording. Not needed when a frame count was specified for `StartRecording`.
+- e.g. Record two bunny-hops
+  ```
+  StartRecording
+   1,R,J
+  14,R
+   1,R,J
+  14,R
+  StopRecording
+  ```
+- The same can be achived with the following
+  ```
+  StartRecording 30
+   1,R,J
+  14,R
+   1,R,J
+  14,R
+  ```
+- `StopRecording` can also be used to stop a recording, which was started with `Record TAS`
+
 ### Press
 - Press the specified keys with the next input, [the available keys can be found here](https://docs.monogame.net/api/Microsoft.Xna.Framework.Input.Keys.html).
 - `Press, Key1, Key2, ...`
