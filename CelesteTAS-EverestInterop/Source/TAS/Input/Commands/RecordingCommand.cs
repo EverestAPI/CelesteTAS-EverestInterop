@@ -89,9 +89,11 @@ public static class RecordingCommand {
     // "StopRecording"
     [TasCommand("StopRecording", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
     private static void StopRecording() {
-        if (ParsingCommand && recordingTimes.Count > 0) {
-            RecordingTime last = recordingTimes.Last().Value;
-            last.StopFrame = Manager.Controller.Inputs.Count;
+        if (ParsingCommand) {
+            if (recordingTimes.Count > 0) {
+                RecordingTime last = recordingTimes.Last().Value;
+                last.StopFrame = Manager.Controller.Inputs.Count;
+            }
         } else {
             TASRecorderUtils.StopRecording();
         }
