@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -42,6 +42,11 @@ internal static class CelesteTasMenu {
                 TasSettings.RestoreSettings = value));
             subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), TasSettings.LaunchStudioAtBoot).Change(value =>
                 TasSettings.LaunchStudioAtBoot = value));
+            TextMenu.Item hideFreezeFramesItem;
+            subMenu.Add(hideFreezeFramesItem = new TextMenu.OnOff("Hide Freeze Frames".ToDialogText(), TasSettings.HideFreezeFrames).Change(value =>
+                TasSettings.HideFreezeFrames = value));
+            subMenu.AddDescription(menu, hideFreezeFramesItem, "Hide Freeze Frames Description 1".ToDialogText());
+            subMenu.AddDescription(menu, hideFreezeFramesItem, "Hide Freeze Frames Description 2".ToDialogText());
             subMenu.Add(new TextMenu.OnOff("Mod 9D Lighting".ToDialogText(), TasSettings.Mod9DLighting).Change(value =>
                 TasSettings.Mod9DLighting = value));
             TextMenu.Item ignoreGcItem;
