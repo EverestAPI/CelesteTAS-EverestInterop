@@ -9,8 +9,8 @@ public static class RecordingCommand {
     public static bool StopFastForward => Manager.Recording || Manager.Controller.CurrentFrameInTas >= startRecordingFrame - 60 &&
         Manager.Controller.CurrentFrameInTas <= stopRecordingFrame;
 
-    private static int startRecordingFrame = -1;
-    private static int stopRecordingFrame = -1;
+    private static int startRecordingFrame = int.MaxValue;
+    private static int stopRecordingFrame = int.MaxValue;
 
     // "StartRecording, [FramesToRecord]"
     [TasCommand("StartRecording", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
@@ -72,7 +72,7 @@ public static class RecordingCommand {
 
     [ClearInputs]
     private static void Clear() {
-        startRecordingFrame = -1;
-        stopRecordingFrame = -1;
+        startRecordingFrame = int.MaxValue;
+        stopRecordingFrame = int.MaxValue;
     }
 }
