@@ -53,7 +53,6 @@ public static class RecordingCommand {
                 TASRecorderUtils.StartRecording();
             }
 
-            Manager.Recording = true;
             Manager.States &= ~States.FrameStep;
             Manager.NextStates &= ~States.FrameStep;
         }
@@ -66,7 +65,6 @@ public static class RecordingCommand {
             stopRecordingFrame = Manager.Controller.Inputs.Count;
         } else {
             TASRecorderUtils.StopRecording();
-            Manager.Recording = false;
         }
     }
 
@@ -74,5 +72,12 @@ public static class RecordingCommand {
     private static void Clear() {
         startRecordingFrame = int.MaxValue;
         stopRecordingFrame = int.MaxValue;
+    }
+
+    [DisableRun]
+    private static void DisableRun() {
+        if (Manager.Recording) {
+            TASRecorderUtils.StopRecording();
+        }
     }
 }

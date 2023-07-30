@@ -384,7 +384,6 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
 
         Manager.Controller.RefreshInputs(enableRun: true);
         Manager.NextStates |= States.Enable;
-        Manager.Recording = true;
 
         int totalFrames = Manager.Controller.Inputs.Count;
         if (totalFrames <= 0) return;
