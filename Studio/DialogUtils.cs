@@ -408,7 +408,7 @@ public static class DialogUtils {
 
     public static void ShowRecordingFailedDialog(RecordingFailedReason reason, string gameBananaURL) {
         const int padding = 10;
-        const int buttonWidth = 150;
+        const int buttonWidth = 200;
         const int buttonHeight = 30;
 
         Size size = new(buttonWidth * 2 + padding * 3, buttonHeight * 2 + padding * 3);
@@ -438,11 +438,17 @@ public static class DialogUtils {
         openButton.Location = new Point(size.Width - buttonWidth * 2 - padding * 2, label.Bottom + padding);
         if (reason == RecordingFailedReason.TASRecorderNotInstalled) {
             openButton.Text = "&Open GameBanana page";
-            openButton.Click += (_, _) => Process.Start(gameBananaURL);
+            openButton.Click += (_, _) => {
+                Process.Start(gameBananaURL);
+                inputBox.Close();
+            };
             openButton.Enabled = !string.IsNullOrWhiteSpace(gameBananaURL);
         } else  {
             openButton.Text = "&Open Install instructions";
-            openButton.Click += (_, _) => Process.Start("https://github.com/psyGamer/TASRecorder#requirements");
+            openButton.Click += (_, _) => {
+                Process.Start("https://github.com/psyGamer/TASRecorder#requirements");
+                inputBox.Close();
+            };
             openButton.Enabled = true;
         }
         inputBox.Controls.Add(openButton);
