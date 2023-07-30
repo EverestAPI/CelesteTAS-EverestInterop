@@ -380,15 +380,17 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
             return;
         }
 
-        string fileName = Encoding.UTF8.GetString(data);
-
         Manager.Controller.RefreshInputs(enableRun: true);
         Manager.NextStates |= States.Enable;
 
         int totalFrames = Manager.Controller.Inputs.Count;
         if (totalFrames <= 0) return;
 
-        TASRecorderUtils.RecordFrames(totalFrames);
+        string fileName = Encoding.UTF8.GetString(data);
+        if (fileName.IsNullOrWhiteSpace()) {
+            fileName = null;
+        }
+        TASRecorderUtils.RecordFrames(totalFrames, fileName);
 
         if (!Manager.Controller.Commands.TryGetValue(0, out var commands)) return;
         bool startsWithConsoleLoad = commands.Any(c => c.Attribute.Name.Equals("Console", StringComparison.OrdinalIgnoreCase) &&
