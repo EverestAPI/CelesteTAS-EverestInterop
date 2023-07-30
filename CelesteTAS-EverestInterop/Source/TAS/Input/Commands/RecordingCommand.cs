@@ -45,6 +45,8 @@ public static class RecordingCommand {
 
             if (args.Length != 0) {
                 int.TryParse(args[0], out framesToRecord);
+            } else if (startRecordingFrame != int.MaxValue && stopRecordingFrame != int.MaxValue) {
+                framesToRecord = stopRecordingFrame - startRecordingFrame;
             }
 
             if (framesToRecord > 0) {
