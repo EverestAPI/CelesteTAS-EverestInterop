@@ -79,23 +79,20 @@ public static class Core {
             return;
         }
 
-        if (Manager.SlowForwarding) {
-            orig(self, gameTime);
-            TryUpdateGrab();
-            return;
-        }
-
         // The original patch doesn't store FrameLoops in a local variable, but it's only updated in UpdateInputs anyway.
-        int loops = (int) Manager.FrameLoops;
+        int loops = Manager.SlowForwarding ? 1 : (int) Manager.FrameLoops;
         bool skipBaseUpdate = loops >= 2;
 
         SkipBaseUpdate = skipBaseUpdate;
         InUpdate = true;
 
         for (int i = 0; i < loops; i++) {
+            float oldFreezeTimer = Engine.FreezeTimer;
+
             // Anything happening early on runs in the MInput.Update hook.
             orig(self, gameTime);
             TryUpdateGrab();
+            Manager.AdvanceThroughHiddenFrame = false;
 
             // Autosaving prevents opening the menu to skip cutscenes during fast forward.
             if (skipBaseUpdate && CantPauseWhileSaving.Value && Engine.Scene is Level level && UserIO.Saving
@@ -105,7 +102,11 @@ public static class Core {
                 break;
             }
 
-            if (skipBaseUpdate && RecordingCommand.StopFastForward) {
+            if (TasSettings.HideFreezeFrames && oldFreezeTimer > 0f && oldFreezeTimer > Engine.FreezeTimer) {
+                SkipBaseUpdate = skipBaseUpdate = true;
+                Manager.AdvanceThroughHiddenFrame = true;
+                loops += 1;
+            } else if (skipBaseUpdate && RecordingCommand.StopFastForward) {
                 skipBaseUpdate = false;
                 break;
             }

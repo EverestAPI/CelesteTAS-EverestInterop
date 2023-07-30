@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
@@ -25,11 +25,12 @@ public static class Manager {
     public static float FrameLoops { get; private set; } = 1f;
     public static bool UltraFastForwarding => FrameLoops >= 100 && Running;
     public static bool SlowForwarding => FrameLoops < 1f;
+    public static bool AdvanceThroughHiddenFrame;
 
     private static bool SkipSlowForwardingFrame =>
         FrameLoops < 1f && (int) ((Engine.FrameCounter + 1) * FrameLoops) == (int) (Engine.FrameCounter * FrameLoops);
 
-    public static bool SkipFrame => States.HasFlag(States.FrameStep) || SkipSlowForwardingFrame;
+    public static bool SkipFrame => (States.HasFlag(States.FrameStep) || SkipSlowForwardingFrame) && !AdvanceThroughHiddenFrame;
 
     static Manager() {
         AttributeUtils.CollectMethods<EnableRunAttribute>();
