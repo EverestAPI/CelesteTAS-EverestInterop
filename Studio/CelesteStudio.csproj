@@ -2,7 +2,8 @@
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
         <AssemblyName>Celeste Studio</AssemblyName>
-        <TargetFramework>net462</TargetFramework>
+        <TargetFramework Condition="'$(OS)' != 'Windows_NT'">net462</TargetFramework>
+        <TargetFramework Condition="'$(OS)' == 'Windows_NT'">net452</TargetFramework>
         <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
         <LangVersion>10</LangVersion>
         <AssemblyTitle>Celeste Studio</AssemblyTitle>
@@ -14,7 +15,7 @@
         <SignAssembly>true</SignAssembly>
         <AssemblyOriginatorKeyFile>sgKey.snk</AssemblyOriginatorKeyFile>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
-        <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
+        <GenerateResourceUsePreserializedResources Condition="'$(OS)' != 'Windows_NT'">true</GenerateResourceUsePreserializedResources>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -31,12 +32,17 @@
         <ApplicationIcon>GoldBerry.ico</ApplicationIcon>
     </PropertyGroup>
     <Import Project="..\StudioCommunication\StudioCommunication.projitems" Label="Shared" />
-    <ItemGroup>
+    <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
         <PackageReference Include="System.Drawing.Common" Version="4.6.2" /> 
         <PackageReference Include="System.Resources.Extensions" Version="4.6.0" />
         <PackageReference Include="System.Windows.Forms" Version="4.0.0" />
         <PackageReference Include="Microsoft.VisualBasic" Version="10.3.0" />
         <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+        <Reference Include="Microsoft.VisualBasic" />
+        <Reference Include="System.Deployment" />
+        <Reference Include="System.Windows.Forms" />
     </ItemGroup>
     <ItemGroup>
         <Compile Update="RichText\AutocompleteMenu.cs">
