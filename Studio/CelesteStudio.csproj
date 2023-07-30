@@ -2,7 +2,7 @@
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
         <AssemblyName>Celeste Studio</AssemblyName>
-        <TargetFramework>net452</TargetFramework>
+        <TargetFramework>net462</TargetFramework>
         <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
         <LangVersion>10</LangVersion>
         <AssemblyTitle>Celeste Studio</AssemblyTitle>
@@ -10,10 +10,12 @@
         <Copyright>Copyright © 2018</Copyright>
         <AssemblyVersion>2.17.0.0</AssemblyVersion>
         <FileVersion>2.17.0.0</FileVersion>
-        <OutputPath>..\CelesteTAS-EverestInterop\bin\</OutputPath>
+        <OutputPath>..\CelesteTAS-EverestInterop\bin\net452</OutputPath>
         <SignAssembly>true</SignAssembly>
         <AssemblyOriginatorKeyFile>sgKey.snk</AssemblyOriginatorKeyFile>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+        <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
         <DebugType>portable</DebugType>
@@ -30,9 +32,11 @@
     </PropertyGroup>
     <Import Project="..\StudioCommunication\StudioCommunication.projitems" Label="Shared" />
     <ItemGroup>
-        <Reference Include="Microsoft.VisualBasic" />
-        <Reference Include="System.Deployment" />
-        <Reference Include="System.Windows.Forms" />
+        <PackageReference Include="System.Drawing.Common" Version="4.6.2" /> 
+        <PackageReference Include="System.Resources.Extensions" Version="4.6.0" />
+        <PackageReference Include="System.Windows.Forms" Version="4.0.0" />
+        <PackageReference Include="Microsoft.VisualBasic" Version="10.3.0" />
+        <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" />
     </ItemGroup>
     <ItemGroup>
         <Compile Update="RichText\AutocompleteMenu.cs">
@@ -76,9 +80,6 @@
     </ItemGroup>
     <ItemGroup>
         <Content Include="GoldBerry.ico" />
-    </ItemGroup>
-    <ItemGroup>
-        <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" />
     </ItemGroup>
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
         <Delete Files="$(TargetDir)$(AssemblyName).exe.config" />

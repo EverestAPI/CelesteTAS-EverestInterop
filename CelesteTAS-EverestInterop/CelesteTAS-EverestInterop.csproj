@@ -11,7 +11,8 @@
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
-    <ItemDefinitionGroup>
+    <!-- This causes compilation issues on Linux and probably MacOS too. -->
+    <ItemDefinitionGroup Condition="'$(OS)' == 'Windows_NT'">
         <PackageReference IncludeAssets="compile" />
         <Reference>
             <Private>False</Private>
@@ -58,6 +59,9 @@
         </Reference>
         <Reference Include="ExtendedVariantMode">
             <HintPath>lib-stripped\ExtendedVariantMode.dll</HintPath>
+        </Reference>
+        <Reference Include="TASRecorder">
+            <HintPath>lib-stripped\TASRecorder.dll</HintPath>
         </Reference>
     </ItemGroup>
     <ItemGroup>

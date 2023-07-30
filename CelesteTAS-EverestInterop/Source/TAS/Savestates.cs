@@ -131,6 +131,11 @@ public static class Savestates {
     }
 
     private static void Load() {
+        // Don't load save states while recording
+        if (Manager.Recording) {
+            return;
+        }
+
         if (IsSaved()) {
             Controller.RefreshInputs(false);
             if (!BreakpointHasBeenDeleted && savedController.SavestateChecksum == Controller.CalcChecksum(savedController)) {

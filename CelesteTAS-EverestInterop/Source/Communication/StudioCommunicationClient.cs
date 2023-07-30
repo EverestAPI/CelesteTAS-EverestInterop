@@ -122,6 +122,9 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
             case MessageID.ToggleGameSetting:
                 ProcessToggleGameSetting(message.Data);
                 break;
+            case MessageID.RecordTAS:
+                ProcessRecordTAS(message.Data);
+                break;
             default:
                 if (ExternalReadHandler?.Invoke(message.Data) != true) {
                     throw new InvalidOperationException($"{message.Id}");
@@ -366,6 +369,39 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         }
     }
 
+    private void ProcessRecordTAS(byte[] data) {
+        if (!TASRecorderUtils.Installed) {
+            SendRecordingFailed(RecordingFailedReason.TASRecorderNotInstalled);
+            return;
+        }
+
+        if (!TASRecorderUtils.IsFFmpegInstalled()) {
+            SendRecordingFailed(RecordingFailedReason.FFmpegNotInstalled);
+            return;
+        }
+
+        string fileName = Encoding.UTF8.GetString(data);
+
+        Manager.Controller.RefreshInputs(enableRun: true);
+        Manager.NextStates |= States.Enable;
+
+        int totalFrames = Manager.Controller.Inputs.Count;
+        if (totalFrames <= 0) return;
+
+        TASRecorderUtils.RecordFrames(totalFrames);
+
+        if (!Manager.Controller.Commands.TryGetValue(0, out var commands)) return;
+        bool startsWithConsoleLoad = commands.Any(c => c.Attribute.Name.Equals("Console", StringComparison.OrdinalIgnoreCase) &&
+                                                       c.Args.Length >= 1 &&
+                                                       ConsoleCommand.LoadCommandRegex.Match(c.Args[0].ToLower()) is {Success: true});
+        if (startsWithConsoleLoad) {
+            // Restart the music when we enter the level
+            Audio.SetMusic(null, startPlaying: false, allowFadeOut: false);
+            Audio.SetAmbience(null, startPlaying: false);
+            Audio.BusStopAll("bus:/gameplay_sfx", immediate: true);
+        }
+    }
+
     #endregion
 
     #region Write
@@ -448,6 +484,18 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         } catch {
             // ignored
         }
+    }
+
+    public void SendRecordingFailed(RecordingFailedReason reason) {
+        string gameBananaURL = string.Empty;
+        if (modUpdateInfos?.TryGetValue("TASRecorder", out var modUpdateInfo) == true && modUpdateInfo.GameBananaId > 0) {
+            gameBananaURL = $"https://gamebanana.com/tools/{modUpdateInfo.GameBananaId}";
+        }
+
+        byte[] bytes = BinaryFormatterHelper.ToByteArray(new object[] {
+            (byte) reason, gameBananaURL
+        });
+        WriteMessageGuaranteed(new Message(MessageID.RecordingFailed, bytes));
     }
 
     #endregion

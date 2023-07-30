@@ -66,6 +66,9 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
             case MessageID.ReturnData:
                 ProcessReturnData(message.Data);
                 break;
+            case MessageID.RecordingFailed:
+                ProcessRecordingFailed(message.Data);
+                break;
             default:
                 throw new InvalidOperationException($"{message.Id}");
         }
@@ -117,6 +120,13 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
         CommunicationWrapper.ReturnData = Encoding.UTF8.GetString(data);
     }
 
+    private void ProcessRecordingFailed(byte[] data) {
+        object[] objects = BinaryFormatterHelper.FromByteArray<object[]>(data);
+        RecordingFailedReason reason = (RecordingFailedReason) objects[0];
+        string gameBananaURL = (string) objects[1];
+        DialogUtils.ShowRecordingFailedDialog(reason, gameBananaURL);
+    }
+
     #endregion
 
     #region Write
@@ -162,6 +172,7 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
     public void SendHotkeyPressed(HotkeyID hotkey, bool released = false) => PendingWrite = () => SendHotkeyPressedNow(hotkey, released);
     public void ToggleGameSetting(string settingName, object value) => PendingWrite = () => ToggleGameSettingNow(settingName, value);
     public void GetDataFromGame(GameDataType gameDataType, object arg) => PendingWrite = () => GetGameDataNow(gameDataType, arg);
+    public void RecordTAS(string fileName) => PendingWrite = () => RecordTASNow(fileName);
 
     private void SendPathNow(string path, bool canFail) {
         if (Initialized || !canFail) {
@@ -210,6 +221,16 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
             (byte) gameDataType, arg
         });
         WriteMessageGuaranteed(new Message(MessageID.GetData, bytes));
+    }
+
+    private void RecordTASNow(string fileName) {
+        if (!Initialized) {
+            return;
+        }
+
+        byte[] fileNameBytes = string.IsNullOrEmpty(fileName) ? new byte[0] : Encoding.UTF8.GetBytes(fileName);
+
+        WriteMessageGuaranteed(new Message(MessageID.RecordTAS, fileNameBytes));
     }
 
     #endregion

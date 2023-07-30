@@ -1459,6 +1459,18 @@ public partial class Studio : BaseForm {
         IntegrateReadFiles.Generate();
     }
 
+    private void recordTASToolStripMenuItem_Click(object sender, EventArgs e) {
+        if (!StudioCommunicationBase.Initialized) {
+            MessageBox.Show("This feature requires the support of CelesteTAS mod, please launch the game.",
+                    "Information",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information
+                );
+            return;
+        }
+        DialogUtils.ShowRecordDialog();
+    }
+
     private void commentUncommentTextToolStripMenuItem_Click(object sender, EventArgs e) {
         CommentText(true);
     }
@@ -1565,6 +1577,14 @@ public partial class Studio : BaseForm {
 
     private void finishExportToolStripMenuItem_Click(object sender, EventArgs e) {
         InsertNewLine("EndExportGameInfo");
+    }
+
+    private void startRecordingToolStripMenuItem_Click(object sender, EventArgs e) {
+        InsertNewLine("StartRecording");
+    }
+
+    private void stopRecordingToolStripMenuItem_Click(object sender, EventArgs e) {
+        InsertNewLine("StopRecording");
     }
 
     private void startExportRoomInfoToolStripMenuItem_Click(object sender, EventArgs e) {

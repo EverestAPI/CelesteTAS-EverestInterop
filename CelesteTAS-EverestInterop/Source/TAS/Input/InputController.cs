@@ -102,7 +102,7 @@ public class InputController {
 
     public bool HasFastForward => CurrentFastForward is { } forward && forward.Frame > CurrentFrameInTas;
 
-    public float FastForwardSpeed => CurrentFastForward is { } forward && forward.Frame > CurrentFrameInTas
+    public float FastForwardSpeed => RecordingCommand.StopFastForward ? 1  : CurrentFastForward is { } forward && forward.Frame > CurrentFrameInTas
         ? Math.Min(forward.Frame - CurrentFrameInTas, forward.Speed)
         : 1f;
 

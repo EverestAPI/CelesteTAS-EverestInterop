@@ -8,6 +8,7 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
+using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
 using GameInput = Celeste.Input;
@@ -39,7 +40,7 @@ public static class Core {
             typeof(Core).GetMethodInfo("Game_Update")
         )).GenerateTrampoline<DGameUpdate>();
 
-        using (new DetourContext { After = new List<string> { "*" } }) {
+        using (new DetourContext {After = new List<string> {"*"}}) {
             // The original mod adds a few lines of code into Monocle.Engine::Update.
             On.Monocle.Engine.Update += Engine_Update;
 
@@ -94,16 +95,20 @@ public static class Core {
             Manager.AdvanceThroughHiddenFrame = false;
 
             // Autosaving prevents opening the menu to skip cutscenes during fast forward.
-            if (CantPauseWhileSaving.Value && Engine.Scene is Level level && UserIO.Saving
+            if (skipBaseUpdate && CantPauseWhileSaving.Value && Engine.Scene is Level level && UserIO.Saving
                 && level.Entities.Any(entity => entity is EventTrigger or NPC or FlingBirdIntro)
                ) {
                 skipBaseUpdate = false;
-                loops = 1;
-            } else if (TasSettings.HideFreezeFrames && oldFreezeTimer > 0f && oldFreezeTimer > Engine.FreezeTimer) {
-                skipBaseUpdate = true;
-                SkipBaseUpdate = skipBaseUpdate;
+                break;
+            }
+
+            if (TasSettings.HideFreezeFrames && oldFreezeTimer > 0f && oldFreezeTimer > Engine.FreezeTimer) {
+                SkipBaseUpdate = skipBaseUpdate = true;
                 Manager.AdvanceThroughHiddenFrame = true;
                 loops += 1;
+            } else if (skipBaseUpdate && RecordingCommand.StopFastForward) {
+                skipBaseUpdate = false;
+                break;
             }
         }
 
@@ -135,7 +140,7 @@ public static class Core {
         }
     }
 
-    // update controller even the game is lose focus 
+    // update controller even the game is lose focus
     private static void MInputOnUpdate(ILContext il) {
         ILCursor ilCursor = new(il);
         ilCursor.Goto(il.Instrs.Count - 1);
