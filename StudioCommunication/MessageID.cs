@@ -83,6 +83,11 @@ public enum MessageID : byte {
     /// Structure: None
     /// </summary>
     [HighPriority] RecordTAS = 0x33,
+
+    // <summary>
+    /// Structure: None
+    /// </summary>
+    [HighPriority] RecordingFailed = 0x34,
 }
 
 public enum GameDataType : byte {
@@ -92,4 +97,9 @@ public enum GameDataType : byte {
     SettingValue,
     CompleteInfoCommand,
     ModUrl,
+}
+
+public enum RecordingFailedReason : byte {
+    TASRecorderNotInstalled,
+    FFmpegNotInstalled,
 }

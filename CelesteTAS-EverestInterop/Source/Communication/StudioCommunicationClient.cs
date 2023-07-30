@@ -371,16 +371,17 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
 
     private void ProcessRecordTAS(byte[] data) {
         if (!TASRecorderUtils.Installed) {
-            AbortTas("TAS Recorder isn't installed");
+            SendRecordingFailed(RecordingFailedReason.TASRecorderNotInstalled);
             return;
         }
+
         if (!TASRecorderUtils.IsFFmpegInstalled()) {
-            AbortTas("FFmpeg libraries aren't properly installed");
+            SendRecordingFailed(RecordingFailedReason.FFmpegNotInstalled);
             return;
         }
 
         string fileName = Encoding.UTF8.GetString(data);
-        
+
         Manager.Controller.RefreshInputs(enableRun: true);
         Manager.NextStates |= States.Enable;
         Manager.Recording = true;
@@ -392,7 +393,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
 
         if (!Manager.Controller.Commands.TryGetValue(0, out var commands)) return;
         bool startsWithConsoleLoad = commands.Any(c => c.Attribute.Name.Equals("Console", StringComparison.OrdinalIgnoreCase) &&
-                                                       c.Args.Length >= 1 && 
+                                                       c.Args.Length >= 1 &&
                                                        ConsoleCommand.LoadCommandRegex.Match(c.Args[0].ToLower()) is {Success: true});
         if (startsWithConsoleLoad) {
             // Restart the music when we enter the level
@@ -484,6 +485,18 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         } catch {
             // ignored
         }
+    }
+
+    public void SendRecordingFailed(RecordingFailedReason reason) {
+        string gameBananaURL = string.Empty;
+        if (modUpdateInfos?.TryGetValue("TASRecorder", out var modUpdateInfo) == true && modUpdateInfo.GameBananaId > 0) {
+            gameBananaURL = $"https://gamebanana.com/tools/{modUpdateInfo.GameBananaId}";
+        }
+
+        byte[] bytes = BinaryFormatterHelper.ToByteArray(new object[] {
+            (byte) reason, gameBananaURL
+        });
+        WriteMessageGuaranteed(new Message(MessageID.RecordingFailed, bytes));
     }
 
     #endregion

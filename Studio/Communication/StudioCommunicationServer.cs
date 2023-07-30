@@ -66,6 +66,9 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
             case MessageID.ReturnData:
                 ProcessReturnData(message.Data);
                 break;
+            case MessageID.RecordingFailed:
+                ProcessRecordingFailed(message.Data);
+                break;
             default:
                 throw new InvalidOperationException($"{message.Id}");
         }
@@ -115,6 +118,13 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
 
     private void ProcessReturnData(byte[] data) {
         CommunicationWrapper.ReturnData = Encoding.UTF8.GetString(data);
+    }
+
+    private void ProcessRecordingFailed(byte[] data) {
+        object[] objects = BinaryFormatterHelper.FromByteArray<object[]>(data);
+        RecordingFailedReason reason = (RecordingFailedReason) objects[0];
+        string gameBananaURL = (string) objects[1];
+        DialogUtils.ShowRecordingFailedDialog(reason, gameBananaURL);
     }
 
     #endregion
