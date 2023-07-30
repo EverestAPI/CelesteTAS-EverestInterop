@@ -1,6 +1,6 @@
 - Name: CelesteTAS
-  Version: 3.30.0
-  MinStudioVersion: 2.18.0
+  Version: 3.30.1
+  MinStudioVersion: 2.18.1
   DLL: CelesteTAS-EverestInterop.dll
   Dependencies:
     - Name: Everest
