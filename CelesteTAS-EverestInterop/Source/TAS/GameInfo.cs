@@ -459,7 +459,7 @@ public static class GameInfo {
         }
 
         if (TasSettings.ShowHitboxes && TasSettings.ShowCycleHitboxColors) {
-            builder.AppendLine($"TimeActive: {player.Scene.TimeActive} ({CycleHitboxColor.GroupCounter})");
+            builder.AppendLine($"TimeActive: {player.Scene.TimeActive} ({CycleHitboxColor.GroupCounter})".PadRight(26, ' '));
         }
 
         return builder.ToString();
