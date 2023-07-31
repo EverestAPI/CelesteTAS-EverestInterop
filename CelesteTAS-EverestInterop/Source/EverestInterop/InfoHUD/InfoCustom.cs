@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Celeste;
+using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Module;
@@ -25,8 +26,8 @@ public static class InfoCustom {
 
     public delegate bool HelperMethod(object obj, int decimals, out string formattedValue);
     // return true if obj is of expected parameter type. otherwise we call AutoFormatter
-    private static Dictionary<string, HelperMethod> HelperMethods = new();
-
+    private static readonly Dictionary<string, HelperMethod> HelperMethods = new();
+    private static readonly Dictionary<string, string> AllModNames = new();
 
     [Initialize]
     private static void CollectAllTypeInfo() {
@@ -43,7 +44,18 @@ public static class InfoCustom {
     private static void InitializeHelperMethods() {
         HelperMethods.Add("toFrame()", HelperMethod_toFrame);
         HelperMethods.Add("toPixelPerFrame()", HelperMethod_toPixelPerFrame);
-        HelperMethods.Add("GetAssembly()", HelperMethod_GetAssembly);
+        HelperMethods.Add("GetModName()", HelperMethod_GetModName);
+
+        AllModNames.Add(ModUtils.VanillaAssembly.FullName, "Celeste");
+        foreach (EverestModule module in Everest.Modules) {
+            // Everest need to register some NullModule's and LuaModule's (including Celeste, as EverestModule)
+            // their key will be completely same, their value will be "Celeste"
+            // i have no idea for these
+            string key = module.GetType().Assembly.FullName;
+            if (!AllModNames.ContainsKey(key)) {
+                AllModNames.Add(key, module.Metadata?.Name);
+            }
+        }
     }
 
     public static string GetInfo(int? decimals = null) {
@@ -101,8 +113,8 @@ public static class InfoCustom {
 
             List<string> result = types.Select(type => {
                 if (memberNames.IsNotEmpty() && (
-                    type.GetGetMethod(memberNames.First()) is { IsStatic: true } || 
-                    type.GetFieldInfo(memberNames.First()) is { IsStatic: true } || 
+                    type.GetGetMethod(memberNames.First()) is { IsStatic: true } ||
+                    type.GetFieldInfo(memberNames.First()) is { IsStatic: true } ||
                     (MethodRegex.Match(memberNames.First()) is { Success: true } match && type.GetMethodInfo(match.Groups[1].Value) is { IsStatic: true })
                     )) {
                     return FormatValue(GetMemberValue(type, null, memberNames), helperMethod, decimals);
@@ -242,7 +254,7 @@ public static class InfoCustom {
         typeNameMatched = "";
         typeNameWithAssembly = "";
         entityId = "";
-        if (TypeNameRegex.Match(text) is {Success: true} match) {
+        if (TypeNameRegex.Match(text) is { Success: true } match) {
             typeNameMatched = match.Groups[1].Value;
             typeNameWithAssembly = $"{typeNameMatched}@{match.Groups[5].Value}";
             typeNameWithAssembly = typeNameWithAssembly switch {
@@ -281,12 +293,12 @@ public static class InfoCustom {
                         _ => fieldInfo.GetValue(obj)
                     };
                 }
-            } else if (MethodRegex.Match(memberName) is {Success: true} match && type.GetMethodInfo(match.Groups[1].Value) is { } methodInfo) {
+            } else if (MethodRegex.Match(memberName) is { Success: true } match && type.GetMethodInfo(match.Groups[1].Value) is { } methodInfo) {
                 if (DisableParameterlessMethod) {
                     return $"{memberName}: Calling methods is illegal when tas is running.";
-                }  else if (match.Groups[2].Value.IsNotNullOrWhiteSpace() ||　methodInfo.GetParameters().Length > 0) {
+                } else if (match.Groups[2].Value.IsNotNullOrWhiteSpace() || methodInfo.GetParameters().Length > 0) {
                     return $"{memberName}: Only method without parameters is supported";
-                }　else if (methodInfo.ReturnType == typeof(void)) {
+                } else if (methodInfo.ReturnType == typeof(void)) {
                     return $"{memberName}: Method return void is not supported";
                 } else if (methodInfo.IsStatic) {
                     obj = methodInfo.Invoke(null, null);
@@ -368,11 +380,14 @@ public static class InfoCustom {
         return false;
     }
 
-    public static bool HelperMethod_GetAssembly(object obj, int decimals, out string formattedValue) {
+    public static bool HelperMethod_GetModName(object obj, int decimals, out string formattedValue) {
         // tells you where that weird entity/trigger comes from
-        // not perfect, we expect "CrystallineHelper" but get "vitmod"
         Type type = obj is Type type2 ? type2 : obj.GetType();
-        formattedValue = type.Assembly.GetName().Name;
+        if (AllModNames.TryGetValue(type.Assembly.FullName, out string modName)) {
+            formattedValue = modName;
+        } else {
+            formattedValue = $"from \"{type.Assembly.GetName().Name}\" instead of mod";
+        }
         return true;
     }
 
