@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,6 +10,7 @@ using Monocle;
 using MonoMod.Cil;
 using MonoMod.Utils;
 using StudioCommunication;
+using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Module;
 using TAS.Utils;
@@ -195,7 +196,7 @@ public static class GameInfo {
 
     public static void Update(bool updateVel = false) {
         if (Engine.Scene is Level level) {
-            Player player = level.Tracker.GetEntity<Player>();
+            Player player = level.GetPlayer();
             if (player != null) {
                 string pos = GetAdjustedPos(player, out string exactPos);
                 string speed = GetAdjustedSpeed(player.Speed, out string exactSpeed);
@@ -455,6 +456,10 @@ public static class GameInfo {
 
         if (!string.IsNullOrEmpty(timers)) {
             builder.AppendLine(timers);
+        }
+
+        if (TasSettings.ShowHitboxes && TasSettings.ShowCycleHitboxColors) {
+            builder.AppendLine($"TimeActive: {player.Scene.TimeActive} ({CycleHitboxColor.GroupCounter})".PadRight(26, ' '));
         }
 
         return builder.ToString();

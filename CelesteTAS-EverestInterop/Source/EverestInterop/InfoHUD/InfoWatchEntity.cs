@@ -1,23 +1,25 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
-using TAS.EverestInterop.Hitboxes;
 using TAS.Module;
 using TAS.Utils;
+
+using Platform = Celeste.Platform;
 
 namespace TAS.EverestInterop.InfoHUD;
 
 public enum WatchEntityType {
     Position,
     DeclaredOnly,
+    Auto,
     All
 }
 
-public static class InfoWatchEntity {
+public static partial class InfoWatchEntity {
     // ReSharper disable UnusedMember.Local
     private record struct MemberKey(Type Type, bool DeclaredOnly) {
         public readonly Type Type = Type;
@@ -26,40 +28,16 @@ public static class InfoWatchEntity {
     // ReSharper restore UnusedMember.Local
 
     private static readonly Dictionary<MemberKey, List<MemberInfo>> CachedMemberInfos = new();
-
     private static readonly WeakReference<Entity> LastClickedEntity = new(null);
-
-    // TODO FIXME: entity w/o id not work properly after retry or load state
-    public static List<WeakReference> RequireWatchEntities = new();
-    public static List<WeakReference> SavedRequireWatchEntities = new();
-    private static readonly HashSet<UniqueEntityId> RequireWatchUniqueEntityIds = new();
-    public static readonly HashSet<Entity> WatchingEntities = new();
     private static AreaKey requireWatchAreaKey;
-
-
-    [Load]
-    private static void Load() {
-        On.Monocle.EntityList.DebugRender += EntityListOnDebugRender;
-        On.Celeste.Level.Begin += LevelOnBegin;
-        On.Celeste.Level.End += LevelOnEnd;
-        On.Celeste.Level.LoadLevel += LevelOnLoadLevel;
-    }
-
-    [Unload]
-    private static void Unload() {
-        On.Monocle.EntityList.DebugRender -= EntityListOnDebugRender;
-        On.Celeste.Level.Begin -= LevelOnBegin;
-        On.Celeste.Level.End -= LevelOnEnd;
-        On.Celeste.Level.LoadLevel -= LevelOnLoadLevel;
-    }
 
     public static void CheckMouseButtons() {
         if (MouseButtons.Right.Pressed) {
-            ClearWatchEntities();
+            ClearWatchEntities(clearCheckList: true);
         }
 
         if (MouseButtons.Left.Pressed && !IsClickHud() && FindClickedEntity() is { } entity) {
-            AddOrRemoveWatching(entity);
+            ToggleWatching(entity);
             PrintAllSimpleValues(entity);
         }
     }
@@ -115,104 +93,17 @@ public static class InfoWatchEntity {
         return clickedEntity;
     }
 
-    private static void AddOrRemoveWatching(Entity clickedEntity) {
-        requireWatchAreaKey = clickedEntity.SceneAs<Level>().Session.Area;
-        if (clickedEntity.GetEntityData() is { } entityData) {
-            UniqueEntityId uniqueEntityId = new(clickedEntity, entityData);
-            if (RequireWatchUniqueEntityIds.Contains(uniqueEntityId)) {
-                RequireWatchUniqueEntityIds.Remove(uniqueEntityId);
-            } else {
-                RequireWatchUniqueEntityIds.Add(uniqueEntityId);
-            }
-        } else {
-            if (RequireWatchEntities.FirstOrDefault(reference => reference.Target == clickedEntity) is { } alreadyAdded) {
-                RequireWatchEntities.Remove(alreadyAdded);
-            } else {
-                RequireWatchEntities.Add(new WeakReference(clickedEntity));
-            }
-        }
-
-        GameInfo.Update();
-    }
-
-    private static void EntityListOnDebugRender(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
-        orig(self, camera);
-
-        if (TasSettings.ShowHitboxes) {
-            foreach (Entity entity in Engine.Scene.Entities) {
-                if (WatchingEntities.Contains(entity)) {
-                    Draw.Point(entity.Position, HitboxColor.EntityColorInversely);
-                }
-            }
-        }
-    }
-
-    private static void LevelOnBegin(On.Celeste.Level.orig_Begin orig, Level self) {
-        orig(self);
-
-        if (self.Session.Area != requireWatchAreaKey) {
-            ClearWatchEntities();
-        }
-    }
-
-    private static void LevelOnEnd(On.Celeste.Level.orig_End orig, Level self) {
-        orig(self);
-        WatchingEntities.Clear();
-    }
-
-    private static void LevelOnLoadLevel(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader) {
-        orig(self, playerIntro, isFromLoader);
-
-        RequireWatchEntities.ToList().ForEach(reference => {
-            if (reference.Target is Entity {Scene: null}) {
-                RequireWatchEntities.Remove(reference);
-            }
-        });
-    }
-
-    public static void ClearWatchEntities() {
-        LastClickedEntity.SetTarget(null);
-        RequireWatchEntities.Clear();
-        SavedRequireWatchEntities.Clear();
-        RequireWatchUniqueEntityIds.Clear();
-        WatchingEntities.Clear();
-        GameInfo.Update();
-    }
-
     public static string GetInfo(string separator = "\n", bool alwaysUpdate = false, int? decimals = null) {
-        WatchingEntities.Clear();
         string watchingInfo = string.Empty;
         if (Engine.Scene is not Level level || TasSettings.InfoWatchEntity == HudOptions.Off && !alwaysUpdate) {
             return string.Empty;
         }
 
         decimals ??= TasSettings.CustomInfoDecimals;
-        if (RequireWatchEntities.IsNotEmpty()) {
-            watchingInfo = string.Join(separator, RequireWatchEntities.Where(reference => reference.IsAlive).Select(
-                reference => {
-                    Entity entity = (Entity) reference.Target;
-                    WatchingEntities.Add(entity);
-                    return GetEntityValues(entity, TasSettings.InfoWatchEntityType, separator, decimals.Value);
-                }
-            ));
-        }
 
-        if (RequireWatchUniqueEntityIds.IsNotEmpty()) {
-            Dictionary<UniqueEntityId, Entity> matchEntities = GetMatchEntities(level);
-            if (matchEntities.IsNotEmpty()) {
-                if (watchingInfo.IsNotNullOrEmpty()) {
-                    watchingInfo += separator;
-                }
-
-                watchingInfo += string.Join(separator, matchEntities.Select(pair => {
-                    Entity entity = matchEntities[pair.Key];
-                    WatchingEntities.Add(entity);
-                    return GetEntityValues(entity, TasSettings.InfoWatchEntityType, separator, decimals.Value);
-                }));
-            }
-        }
-
-        return watchingInfo;
+        return string.Join(separator, WatchingList.Tuples.Where((tuple) => tuple.Item2.Target is Entity { Scene: { } }).Select((tuple) => {
+            return GetEntityValues((Entity) tuple.Item2.Target, TasSettings.InfoWatchEntityType, separator, decimals.Value);
+        }));
     }
 
     private static void PrintAllSimpleValues(Entity entity) {
@@ -228,6 +119,9 @@ public static class InfoWatchEntity {
 
         if (watchEntityType == WatchEntityType.Position) {
             return GetPositionInfo(entity, entityId, decimals);
+        }
+        else if (watchEntityType == WatchEntityType.Auto) {
+            return GetAutoWatchInfo(entity, separator, decimals, entityId);
         }
 
         List<string> values = GetAllSimpleFields(type, watchEntityType == WatchEntityType.DeclaredOnly).Select(info => {
@@ -307,55 +201,38 @@ public static class InfoWatchEntity {
         }
     }
 
-    private static Dictionary<UniqueEntityId, Entity> GetMatchEntities(Level level) {
-        Dictionary<UniqueEntityId, Entity> result = new();
-        List<Entity> possibleEntities = new();
-        HashSet<Type> possibleTypes = new();
-
-        string currentRoom = level.Session.Level;
-        foreach (UniqueEntityId id in RequireWatchUniqueEntityIds.Where(id => id.GlobalOrPersistent || id.EntityId.Level == currentRoom)) {
-            possibleTypes.Add(id.Type);
-        }
-
-        if (possibleTypes.IsEmpty()) {
-            return result;
-        }
-
-        if (possibleTypes.All(type => level.Tracker.Entities.ContainsKey(type))) {
-            foreach (Type type in possibleTypes) {
-                possibleEntities.AddRange(level.Tracker.Entities[type]);
-            }
-        } else {
-            possibleEntities.AddRange(level.Entities.Where(entity => possibleTypes.Contains(entity.GetType())));
-        }
-
-        foreach (Entity entity in possibleEntities) {
-            if (entity.GetEntityData() is not { } entityData) {
-                continue;
-            }
-
-            UniqueEntityId uniqueEntityId = new(entity, entityData);
-            if (RequireWatchUniqueEntityIds.Contains(uniqueEntityId) && !result.ContainsKey(uniqueEntityId)) {
-                result[uniqueEntityId] = entity;
-
-                if (result.Count == RequireWatchUniqueEntityIds.Count) {
-                    return result;
-                }
-            }
-        }
-
-        return result;
+    public static Vector2 ClampLiftSpeed(this Vector2 liftspeed) {
+        return liftspeed.Clamp(-250f, -130f, 250f, 0f);
     }
 }
 
-internal record UniqueEntityId {
-    public readonly EntityID EntityId;
-    public readonly bool GlobalOrPersistent;
-    public readonly Type Type;
+public static class EntityStates {
+    private static readonly IDictionary<int, string> SeekerStates = new Dictionary<int, string> {
+        {Seeker.StIdle, nameof(Seeker.StIdle)},
+        {Seeker.StPatrol, nameof(Seeker.StPatrol)},
+        {Seeker.StSpotted, nameof(Seeker.StSpotted)},
+        {Seeker.StAttack, nameof(Seeker.StAttack)},
+        {Seeker.StStunned, nameof(Seeker.StStunned)},
+        {Seeker.StSkidding, nameof(Seeker.StSkidding)},
+        {Seeker.StRegenerate, nameof(Seeker.StRegenerate)},
+        {Seeker.StReturned, nameof(Seeker.StReturned)},
+    };
+    private static readonly IDictionary<int, string> OshiroStates = new Dictionary<int, string> {
+        {AngryOshiro.StChase, nameof(AngryOshiro.StChase)},
+        {AngryOshiro.StChargeUp, nameof(AngryOshiro.StChargeUp)},
+        {AngryOshiro.StAttack, nameof(AngryOshiro.StAttack)},
+        {AngryOshiro.StDummy, nameof(AngryOshiro.StDummy)},
+        {AngryOshiro.StWaiting, nameof(AngryOshiro.StWaiting)},
+        {AngryOshiro.StHurt, nameof(AngryOshiro.StHurt)},
+    };
 
-    public UniqueEntityId(Entity entity, EntityData entityData) {
-        Type = entity.GetType();
-        GlobalOrPersistent = entity.TagCheck(Tags.Global) || entity.TagCheck(Tags.Persistent) || entity.Get<Holdable>() != null;
-        EntityId = entityData.ToEntityId();
+    public static string GetStateName(this AngryOshiro oshiro) {
+        int state = oshiro.state.State;
+        return SeekerStates.TryGetValue(state, out string name) ? name : state.ToString();
+    }
+
+    public static string GetStateName(this Seeker seeker) {
+        int state = seeker.State.State;
+        return SeekerStates.TryGetValue(state, out string name) ? name : state.ToString();
     }
 }

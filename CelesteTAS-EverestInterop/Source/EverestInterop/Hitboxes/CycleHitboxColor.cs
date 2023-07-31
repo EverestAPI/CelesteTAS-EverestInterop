@@ -91,27 +91,11 @@ public static class CycleHitboxColor {
 
     private static void EntityOnDebugRender(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {
         if (TasSettings.ShowHitboxes && TasSettings.ShowCycleHitboxColors && self.Collider is { } collider) {
-            float? offset = self switch {
-                CrystalStaticSpinner spinner => spinner.offset,
-                DustStaticSpinner dust => dust.offset,
-                Lightning lightning => lightning.toggleOffset,
-                _ => null
-            };
-
-            if (offset == null && OffsetGetters.TryGetValue(self.GetType(), out Func<Entity, float?> getter)) {
-                offset = getter(self);
-            }
+            float? offset = self.GetOffset();
 
             if (offset is { } offsetValue) {
                 // Calculate how many frames away is the hazard's loading check (time distance)
-                float time = self.Scene.TimeActive;
-                int timeDist = 0;
-
-                while (Math.Floor(((double) time - offsetValue - Engine.DeltaTime) / 0.05f) >= Math.Floor(((double) time - offsetValue) / 0.05f) &&
-                       timeDist < 3) {
-                    time += Engine.DeltaTime;
-                    timeDist++;
-                }
+                int timeDist = NextCheckDistance(offsetValue, true);
 
                 // Calculate what the value of the counter is after the time distance, which defines the hazard's group
                 int group = 3;
@@ -130,7 +114,7 @@ public static class CycleHitboxColor {
     private static void SceneOnBeforeUpdate(On.Monocle.Scene.orig_BeforeUpdate orig, Scene self) {
         float timeActive = self.TimeActive;
         orig(self);
-        if (self is Level && Math.Abs(timeActive - self.TimeActive) > 0.000001f) {
+        if (self is Level && timeActive != self.TimeActive) {
             // If the scene isn't paused (TimeActive is increased), advance the spinner group counter
             GroupCounter = (GroupCounter + 1) % 3;
         }
@@ -139,6 +123,33 @@ public static class CycleHitboxColor {
     private static void LevelOnBegin(On.Celeste.Level.orig_Begin orig, Level self) {
         orig(self);
         GroupCounter = 0;
+    }
+
+    public static float? GetOffset(this Entity entity) {
+        float? offset = entity switch {
+            CrystalStaticSpinner spinner => spinner.offset,
+            DustStaticSpinner dust => dust.offset,
+            Lightning lightning => lightning.toggleOffset,
+            _ => null
+        };
+
+        if (offset == null && OffsetGetters.TryGetValue(entity.GetType(), out Func<Entity, float?> getter)) {
+            offset = getter(entity);
+        }
+
+        return offset;
+    }
+
+    public static int NextCheckDistance(this float offset, bool cap = false) {
+        cap = !cap;
+        float time = Engine.Scene.TimeActive;
+        int timeDist = 0;
+        while (!Engine.Scene.OnInterval(0.05f, offset) && (cap || timeDist < 3)) {
+            Engine.Scene.TimeActive += Engine.DeltaTime;
+            timeDist++;
+        }
+        Engine.Scene.TimeActive = time;
+        return timeDist;
     }
 
     private static Color GetColor(int index) {

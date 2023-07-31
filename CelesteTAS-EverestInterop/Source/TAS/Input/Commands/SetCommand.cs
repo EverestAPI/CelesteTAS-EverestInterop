@@ -398,7 +398,7 @@ public static class SetCommand {
     }
 
     private static bool SettingsSpecialCases(string settingName, object value) {
-        Player player = (Engine.Scene as Level)?.Tracker.GetEntity<Player>();
+        Player player = (Engine.Scene as Level)?.GetPlayer();
         SaveData saveData = SaveData.Instance;
         Settings settings = Settings.Instance;
         switch (settingName) {

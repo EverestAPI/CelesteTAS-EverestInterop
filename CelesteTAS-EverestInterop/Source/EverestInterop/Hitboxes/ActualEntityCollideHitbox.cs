@@ -110,7 +110,7 @@ public static partial class ActualEntityCollideHitbox {
             || TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off
             || colliderListRendering && self is not ColliderList
             || entity.Get<PlayerCollider>() == null
-            || entity.Scene?.Tracker.GetEntity<Player>() == null
+            || entity.Scene?.GetPlayer() == null
             || entity.LoadActualCollidePosition() is not { } actualCollidePosition
             || TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Append && entity.Position == actualCollidePosition &&
             entity.Collidable == entity.LoadActualCollidable()

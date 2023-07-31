@@ -20,7 +20,7 @@ public static class InfoSubPixelIndicator {
         float subPixelBottom = 0.5f;
         int decimals = TasSettings.SubpixelIndicatorDecimals;
 
-        Player player = Engine.Scene.Tracker.GetEntity<Player>();
+        Player player = Engine.Scene.GetPlayer();
         if (player != null) {
             subPixelLeft = (float) Math.Round(player.movementCounter.X + 0.5f, decimals, MidpointRounding.AwayFromZero);
             subPixelTop = (float) Math.Round(player.movementCounter.Y + 0.5f, decimals, MidpointRounding.AwayFromZero);

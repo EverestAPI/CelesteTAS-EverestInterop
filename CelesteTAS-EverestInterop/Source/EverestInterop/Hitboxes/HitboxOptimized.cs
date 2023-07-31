@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
+using TAS.EverestInterop.InfoHUD;
 using MonoMod.RuntimeDetour;
 using TAS.Module;
 using TAS.Utils;
@@ -110,7 +111,6 @@ public static class HitboxOptimized {
 
         orig(self, camera);
     }
-
     private static int HidePufferWhiteLine(int i) {
         if (TasSettings.ShowHitboxes) {
             return 28;
@@ -443,12 +443,22 @@ public static class HitboxOptimized {
 
         self.Collider = origCollider;
 
-        if (!self.Regenerating && self.SceneAs<Level>() is {Pathfinder.lastPath: {Count: >= 2} lastPath}) {
-            Vector2 start = lastPath[0];
-            for (int i = 1; i < lastPath.Count; i++) {
-                Vector2 vector = lastPath[i];
-                Draw.Line(start, vector, Color.Goldenrod * HitboxColor.UnCollidableAlpha);
-                start = vector;
+        bool drawPath =
+            self.State.state == Seeker.StIdle && self.spotted && Vector2.DistanceSquared(self.Center, self.FollowTarget) > 64f
+            || self.State.state == Seeker.StPatrol && self.patrolWaitTimer <= 0f
+            ||  self.State.state == Seeker.StSpotted && Vector2.DistanceSquared(self.Center, self.FollowTarget) >= 2500f && self.Y > self.FollowTarget.Y;
+
+        if (drawPath) {
+            if (self.lastPathFound && self.path is { Count: >= 2 } lastPath) {
+                Vector2 start = lastPath[0];
+                int stopAt = InfoWatchEntity.WatchingList.Has(self, out _) ? lastPath.Count : 2;
+                for (int i = 1; i < stopAt; i++) {
+                    Vector2 vector = lastPath[i];
+                    Draw.Line(start, vector, Color.Goldenrod * HitboxColor.UnCollidableAlpha);
+                    start = vector;
+                }
+            } else if (InfoWatchEntity.WatchingList.Has(self, out _)) {
+                Draw.Line(self.Center, self.FollowTarget, Color.Goldenrod * HitboxColor.UnCollidableAlpha);
             }
         }
     }

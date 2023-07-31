@@ -106,7 +106,7 @@ public static class ExportGameInfo {
         InputController controller = Manager.Controller;
         string output;
         if (Engine.Scene is Level level) {
-            Player player = level.Tracker.GetEntity<Player>();
+            Player player = level.GetPlayer();
             if (player == null) {
                 return;
             }

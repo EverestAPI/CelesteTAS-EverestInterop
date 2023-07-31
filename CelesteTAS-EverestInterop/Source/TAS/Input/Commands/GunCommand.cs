@@ -22,7 +22,7 @@ public static class GunCommand {
 
         if (float.TryParse(args[0], out float x)
             && float.TryParse(args[1], out float y)
-            && Engine.Scene.Tracker.GetEntity<Player>() is { } player
+            && Engine.Scene.GetPlayer() is { } player
             && GunInputCursorPosition.Value != null
             && GunlineGunshot.Value != null
            ) {

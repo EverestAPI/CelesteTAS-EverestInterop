@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Celeste;
@@ -82,7 +82,7 @@ public static class HitboxSimplified {
     }
 
     private static bool HideHitbox(Entity entity) {
-        if (TasSettings.ShowHitboxes && TasSettings.SimplifiedHitboxes && !InfoWatchEntity.WatchingEntities.Contains(entity)) {
+        if (TasSettings.ShowHitboxes && TasSettings.SimplifiedHitboxes && !InfoWatchEntity.WatchingList.Has(entity, out _)) {
             Type type = entity.GetType();
             if (UselessTypes.Contains(type)) {
                 return true;
@@ -92,11 +92,11 @@ public static class HitboxSimplified {
                 return !entity.Collidable;
             }
 
-            if (entity.Get<Follower>() is {Leader: not null} follower && Followers.TryGetValue(follower, out bool delayed) && delayed) {
+            if (entity.Get<Follower>() is { Leader: not null } follower && Followers.TryGetValue(follower, out bool delayed) && delayed) {
                 return true;
             }
 
-            if (entity is Strawberry {collected: true}) {
+            if (entity is Strawberry { collected: true }) {
                 return true;
             }
 
@@ -119,7 +119,7 @@ public static class HitboxSimplified {
 
         Entity entity = hitbox.Entity;
 
-        if (entity is FireBall {iceMode: false}) {
+        if (entity is FireBall { iceMode: false }) {
             return;
         }
 

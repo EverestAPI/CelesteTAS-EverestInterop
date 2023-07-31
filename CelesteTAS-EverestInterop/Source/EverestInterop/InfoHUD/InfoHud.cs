@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using Celeste;
@@ -192,6 +192,7 @@ public static class InfoHud {
             subMenu.Add(new TextMenuExt.EnumerableSlider<WatchEntityType>("Info Watch Entity Type".ToDialogText(), new[] {
                 new KeyValuePair<WatchEntityType, string>(WatchEntityType.Position, "Info Watch Entity Position".ToDialogText()),
                 new KeyValuePair<WatchEntityType, string>(WatchEntityType.DeclaredOnly, "Info Watch Entity Declared Only".ToDialogText()),
+                new KeyValuePair<WatchEntityType, string>(WatchEntityType.Auto, "Info Watch Entity Auto".ToDialogText()),
                 new KeyValuePair<WatchEntityType, string>(WatchEntityType.All, "Info Watch Entity All".ToDialogText()),
             }, TasSettings.InfoWatchEntityType).Change(value => TasSettings.InfoWatchEntityType = value));
             subMenu.Add(new TextMenuExt.IntSlider("Info Text Size".ToDialogText(), 5, 20, TasSettings.InfoTextSize).Change(value =>

@@ -1,4 +1,4 @@
-### Read
+﻿### Read
 - `Read, File Name, Starting Line, (Optional Ending Line)`
 - Will read inputs from the specified file.
 - If a custom path to read files from has been specified, it tries to find the file there. Otherwise, it will look for the file in the main Celeste directory.
@@ -277,6 +277,15 @@ NOTE: These commands require [TAS Recorder](https://gamebanana.com/tools/14085)!
 - Sides are `A`, `B` and `C`
 - e.g. `CompleteInfo A 1` display info on 1A complete screen.
 - e.g. `CompleteInfo` If neither side nor sid/id is specified, the info will be displayed on all chapters, if the other CompleteInfo command specifies a chapter, both will be displayed.
+
+### AutoWatch and EndAutoWatch
+- `AutoWatch, [Type1], [Type2], [Type3]...`
+- `EndAutoWatch, [Type1], [Type2], [Type3]...`
+- After the watch command is executed, each specified `Type` of entities will be automatically added to the watched entity list.
+- e.g. `AutoWatch Bumper` would automatically watch any bumpers
+- e.g. `AutoWatch Bumper Kevin Seeker` would automatically watch any bumpers, kevins and seekers
+- After the end watch command is executed, each specified `Type` of entities will stop being automatically added to the watched entity list.
+- If not types are specified for EndAutoWatch, it will stop auto watching all current entitty types.
 
 ### RecordCount
 - e.g. `RecordCount: 1`

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Celeste;
 using Mono.Cecil.Cil;
 using Monocle;
@@ -29,6 +29,6 @@ public static class HitboxTrigger {
 
     private static bool IsHideTriggerHitbox(Entity entity) {
         return TasSettings.ShowHitboxes && !TasSettings.ShowTriggerHitboxes && entity is Trigger &&
-               !InfoWatchEntity.WatchingEntities.Contains(entity);
+               !InfoWatchEntity.WatchingList.Has(entity, out _);
     }
 }
