@@ -81,7 +81,7 @@ public static class Core {
 
         // The original patch doesn't store FrameLoops in a local variable, but it's only updated in UpdateInputs anyway.
         int loops = Manager.SlowForwarding ? 1 : (int) Manager.FrameLoops;
-        bool skipBaseUpdate = loops >= 2;
+        bool skipBaseUpdate = loops >= 2 || TasSettings.HideFreezeFrames;
 
         SkipBaseUpdate = skipBaseUpdate;
         InUpdate = true;
@@ -103,7 +103,6 @@ public static class Core {
             }
 
             if (TasSettings.HideFreezeFrames && oldFreezeTimer > 0f && oldFreezeTimer > Engine.FreezeTimer) {
-                SkipBaseUpdate = skipBaseUpdate = true;
                 Manager.AdvanceThroughHiddenFrame = true;
                 loops += 1;
             } else if (skipBaseUpdate && RecordingCommand.StopFastForward) {
