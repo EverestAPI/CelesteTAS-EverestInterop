@@ -114,7 +114,6 @@ The contents of the curly brackets will be converted to actual data, here are so
 - `{Player.Position.Length()}` Invoke method is supported, but must be parameterless and return a non-void type. Be careful not to invoke method that change the game state, as this will cause tas desync.
 - `{Player.AutoJumpTimer.toFrame()}` add `toFrame()` to the end can change the float value to frames.
 - `{Player.Speed.toPixelPerFrame()}` add `toPixelPerFrame()` to the end can change the float/vector2 speed unit to pixel/frame.
-- `{NoDashTrigger.GetModName()}` add `GetModName()` to the end can tell you where this object comes from.
 - `{Player.Position:}` add `:` or `=` to the end will add label before the value. e.g. `{Player.Position:}` is the same as `Player.Position: {Player.Position}`.
 - `AutoJump: {Player.AutoJump} ({Player.AutoJumpTimer.toFrame()})`
 - `Theo: {TheoCrystal.Position}`

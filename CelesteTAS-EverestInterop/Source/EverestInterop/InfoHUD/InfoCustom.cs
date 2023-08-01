@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Celeste;
@@ -22,12 +21,11 @@ public static class InfoCustom {
     private static readonly Regex MethodRegex = new(@"^(.+)\((.*)\)$", RegexOptions.Compiled);
     private static readonly Dictionary<string, Type> AllTypes = new();
     private static readonly Dictionary<string, List<Type>> CachedParsedTypes = new();
-    private static bool DisableParameterlessMethod => TAS.Input.Commands.EnforceLegalCommand.EnabledWhenRunning;
+    private static bool DisableParameterlessMethod => Input.Commands.EnforceLegalCommand.EnabledWhenRunning;
 
     public delegate bool HelperMethod(object obj, int decimals, out string formattedValue);
     // return true if obj is of expected parameter type. otherwise we call AutoFormatter
     private static readonly Dictionary<string, HelperMethod> HelperMethods = new();
-    private static readonly Dictionary<string, string> AllModNames = new();
 
     [Initialize]
     private static void CollectAllTypeInfo() {
@@ -44,18 +42,6 @@ public static class InfoCustom {
     private static void InitializeHelperMethods() {
         HelperMethods.Add("toFrame()", HelperMethod_toFrame);
         HelperMethods.Add("toPixelPerFrame()", HelperMethod_toPixelPerFrame);
-        HelperMethods.Add("GetModName()", HelperMethod_GetModName);
-
-        AllModNames.Add(ModUtils.VanillaAssembly.FullName, "Celeste");
-        foreach (EverestModule module in Everest.Modules) {
-            // Everest need to register some NullModule's and LuaModule's (including Celeste, as EverestModule)
-            // their key will be completely same, their value will be "Celeste"
-            // i have no idea for these
-            string key = module.GetType().Assembly.FullName;
-            if (!AllModNames.ContainsKey(key)) {
-                AllModNames.Add(key, module.Metadata?.Name);
-            }
-        }
     }
 
     public static string GetInfo(int? decimals = null) {
@@ -346,16 +332,16 @@ public static class InfoCustom {
             return string.Empty;
         }
 
-        bool InvalidParameter = false;
+        bool invalidParameter = false;
         if (HelperMethods.TryGetValue(helperMethodName, out HelperMethod method)) {
             if (method(obj, decimals, out string formattedValue)) {
                 return formattedValue;
             } else {
-                InvalidParameter = true;
+                invalidParameter = true;
             }
         }
 
-        return $"{AutoFormatter(obj, decimals)}{(InvalidParameter ? $",\n not a valid parameter of {helperMethodName}" : "")}";
+        return $"{AutoFormatter(obj, decimals)}{(invalidParameter ? $",\n not a valid parameter of {helperMethodName}" : "")}";
     }
 
     public static bool HelperMethod_toFrame(object obj, int decimals, out string formattedValue) {
@@ -380,17 +366,6 @@ public static class InfoCustom {
         return false;
     }
 
-    public static bool HelperMethod_GetModName(object obj, int decimals, out string formattedValue) {
-        // tells you where that weird entity/trigger comes from
-        Type type = obj is Type type2 ? type2 : obj.GetType();
-        if (AllModNames.TryGetValue(type.Assembly.FullName, out string modName)) {
-            formattedValue = modName;
-        } else {
-            formattedValue = $"from \"{type.Assembly.GetName().Name}\" instead of mod";
-        }
-        return true;
-    }
-
     public static string AutoFormatter(object obj, int decimals) {
         if (obj is Vector2 vector2) {
             return vector2.ToSimpleString(decimals);
@@ -403,7 +378,7 @@ public static class InfoCustom {
         }
         if (obj is Entity entity) {
             string id = entity.GetEntityData()?.ToEntityId().ToString() is { } value ? $"[{value}]" : "";
-            return $"{entity.ToString()}{id}";
+            return $"{entity}{id}";
         }
         if (obj is IEnumerable enumerable and not IEnumerable<char>) {
             bool compressed = enumerable is IEnumerable<Component> or IEnumerable<Entity>;
