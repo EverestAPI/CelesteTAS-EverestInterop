@@ -7,7 +7,7 @@ using TAS.Input.Commands;
 namespace TAS;
 
 /// <summary>
-/// Playback via libtas requires default bindings
+/// Playback via libTAS requires default bindings
 /// and set
 /// RightShoulder, RightStickButton = Crouch Dash
 /// Keys.Tab = Journal and Talk
