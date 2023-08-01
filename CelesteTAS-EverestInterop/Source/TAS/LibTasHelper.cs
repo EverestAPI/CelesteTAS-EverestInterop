@@ -61,9 +61,7 @@ public static class LibTasHelper {
             return;
         }
 
-        if (InputFrame.TryParse(inputText, 0, null, out InputFrame inputFrame)) {
-            WriteLibTasFrame(inputFrame);
-        }
+        InputFrame.TryParse(inputText, 0, null, out InputFrame _);
     }
 
     private static void SkipNextInput() {
@@ -79,6 +77,7 @@ public static class LibTasHelper {
 
         Manager.DisableRun();
         StartExport(path);
+        Manager.Controller.NeedsReload = true;
         Manager.Controller.RefreshInputs(true);
         Manager.DisableRun();
     }
