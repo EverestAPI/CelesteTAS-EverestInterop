@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Celeste;
+using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Module;
@@ -20,7 +21,11 @@ public static class InfoCustom {
     private static readonly Regex MethodRegex = new(@"^(.+)\((.*)\)$", RegexOptions.Compiled);
     private static readonly Dictionary<string, Type> AllTypes = new();
     private static readonly Dictionary<string, List<Type>> CachedParsedTypes = new();
-    private static bool DisableParameterlessMethod => TAS.Input.Commands.EnforceLegalCommand.EnabledWhenRunning;
+    private static bool DisableParameterlessMethod => Input.Commands.EnforceLegalCommand.EnabledWhenRunning;
+
+    public delegate bool HelperMethod(object obj, int decimals, out string formattedValue);
+    // return true if obj is of expected parameter type. otherwise we call AutoFormatter
+    private static readonly Dictionary<string, HelperMethod> HelperMethods = new();
 
     [Initialize]
     private static void CollectAllTypeInfo() {
@@ -31,6 +36,12 @@ public static class InfoCustom {
                 AllTypes[$"{type.FullName}@{type.Assembly.GetName().Name}"] = type;
             }
         }
+    }
+
+    [Initialize]
+    private static void InitializeHelperMethods() {
+        HelperMethods.Add("toFrame()", HelperMethod_toFrame);
+        HelperMethods.Add("toPixelPerFrame()", HelperMethod_toPixelPerFrame);
     }
 
     public static string GetInfo(int? decimals = null) {
@@ -78,7 +89,7 @@ public static class InfoCustom {
             }
 
             string helperMethod = "";
-            if (lastMemberName is "toFrame()" or "toPixelPerFrame()") {
+            if (HelperMethods.ContainsKey(lastMemberName)) {
                 helperMethod = lastMemberName;
                 memberNames = memberNames.SkipLast().ToList();
             }
@@ -87,7 +98,11 @@ public static class InfoCustom {
                 .SelectMany(type => GetCachedOrFindEntities(type, entityId, cachedEntities)).Count() > 1;
 
             List<string> result = types.Select(type => {
-                if (type.GetGetMethod(memberNames.First()) is {IsStatic: true} || type.GetFieldInfo(memberNames.First()) is {IsStatic: true} || (MethodRegex.Match(memberNames.First()) is { Success: true } match && type.GetMethodInfo(match.Groups[1].Value) is {IsStatic: true })) {
+                if (memberNames.IsNotEmpty() && (
+                    type.GetGetMethod(memberNames.First()) is { IsStatic: true } ||
+                    type.GetFieldInfo(memberNames.First()) is { IsStatic: true } ||
+                    (MethodRegex.Match(memberNames.First()) is { Success: true } match && type.GetMethodInfo(match.Groups[1].Value) is { IsStatic: true })
+                    )) {
                     return FormatValue(GetMemberValue(type, null, memberNames), helperMethod, decimals);
                 }
 
@@ -117,7 +132,7 @@ public static class InfoCustom {
                     } else if (type == typeof(Session)) {
                         return FormatValue(GetMemberValue(type, level.Session, memberNames), helperMethod, decimals);
                     } else {
-                        return $"{type.FullName}.{memberNames.First()} member not found";
+                        return $"Instance of {type.FullName} not found";
                     }
                 }
 
@@ -225,7 +240,7 @@ public static class InfoCustom {
         typeNameMatched = "";
         typeNameWithAssembly = "";
         entityId = "";
-        if (TypeNameRegex.Match(text) is {Success: true} match) {
+        if (TypeNameRegex.Match(text) is { Success: true } match) {
             typeNameMatched = match.Groups[1].Value;
             typeNameWithAssembly = $"{typeNameMatched}@{match.Groups[5].Value}";
             typeNameWithAssembly = typeNameWithAssembly switch {
@@ -238,45 +253,6 @@ public static class InfoCustom {
         } else {
             return false;
         }
-    }
-
-    private static string FormatValue(object obj, string helperMethod, int decimals) {
-        if (obj == null) {
-            return string.Empty;
-        }
-
-        if (obj is Vector2 vector2) {
-            if (helperMethod == "toPixelPerFrame()") {
-                vector2 = GameInfo.ConvertSpeedUnit(vector2, SpeedUnit.PixelPerFrame);
-            }
-
-            return vector2.ToSimpleString(decimals);
-        }
-
-        if (obj is Vector2Double vector2Double) {
-            return vector2Double.ToSimpleString(decimals);
-        }
-
-        if (obj is float floatValue) {
-            if (helperMethod == "toFrame()") {
-                return GameInfo.ConvertToFrames(floatValue).ToString();
-            } else if (helperMethod == "toPixelPerFrame()") {
-                return GameInfo.ConvertSpeedUnit(floatValue, SpeedUnit.PixelPerFrame).ToString(CultureInfo.InvariantCulture);
-            } else {
-                return floatValue.ToFormattedString(decimals);
-            }
-        }
-        if (obj is Entity entity) {
-            string id = entity.GetEntityData()?.ToEntityId().ToString() is { } value ? $"[{value}]" : "";
-            return $"{entity.ToString()}{id}";
-        }
-        if (obj is IEnumerable enumerable and not IEnumerable<char>) {
-            bool compressed = enumerable is IEnumerable<Component> or IEnumerable<Entity>;
-            string separator = compressed ? ",\n " : ", ";
-            return IEnumerableToString(enumerable, separator, compressed);
-        }
-
-        return obj.ToString();
     }
 
     public static object GetMemberValue(Type type, object obj, List<string> memberNames, bool setCommand = false) {
@@ -303,12 +279,12 @@ public static class InfoCustom {
                         _ => fieldInfo.GetValue(obj)
                     };
                 }
-            } else if (MethodRegex.Match(memberName) is {Success: true} match && type.GetMethodInfo(match.Groups[1].Value) is { } methodInfo) {
+            } else if (MethodRegex.Match(memberName) is { Success: true } match && type.GetMethodInfo(match.Groups[1].Value) is { } methodInfo) {
                 if (DisableParameterlessMethod) {
                     return $"{memberName}: Calling methods is illegal when tas is running.";
-                }  else if (match.Groups[2].Value.IsNotNullOrWhiteSpace() ||　methodInfo.GetParameters().Length > 0) {
+                } else if (match.Groups[2].Value.IsNotNullOrWhiteSpace() || methodInfo.GetParameters().Length > 0) {
                     return $"{memberName}: Only method without parameters is supported";
-                }　else if (methodInfo.ReturnType == typeof(void)) {
+                } else if (methodInfo.ReturnType == typeof(void)) {
                     return $"{memberName}: Method return void is not supported";
                 } else if (methodInfo.IsStatic) {
                     obj = methodInfo.Invoke(null, null);
@@ -351,6 +327,71 @@ public static class InfoCustom {
         }
     }
 
+    public static string FormatValue(object obj, string helperMethodName, int decimals) {
+        if (obj == null) {
+            return string.Empty;
+        }
+
+        bool invalidParameter = false;
+        if (HelperMethods.TryGetValue(helperMethodName, out HelperMethod method)) {
+            if (method(obj, decimals, out string formattedValue)) {
+                return formattedValue;
+            } else {
+                invalidParameter = true;
+            }
+        }
+
+        return $"{AutoFormatter(obj, decimals)}{(invalidParameter ? $",\n not a valid parameter of {helperMethodName}" : "")}";
+    }
+
+    public static bool HelperMethod_toFrame(object obj, int decimals, out string formattedValue) {
+        if (obj is float floatValue) {
+            formattedValue = GameInfo.ConvertToFrames(floatValue).ToString();
+            return true;
+        }
+        formattedValue = "";
+        return false;
+    }
+
+    public static bool HelperMethod_toPixelPerFrame(object obj, int decimals, out string formattedValue) {
+        if (obj is float floatValue) {
+            formattedValue = GameInfo.ConvertSpeedUnit(floatValue, SpeedUnit.PixelPerFrame).ToString(CultureInfo.InvariantCulture);
+            return true;
+        }
+        if (obj is Vector2 vector2) {
+            formattedValue = GameInfo.ConvertSpeedUnit(vector2, SpeedUnit.PixelPerFrame).ToSimpleString(decimals);
+            return true;
+        }
+        formattedValue = "";
+        return false;
+    }
+
+    public static string AutoFormatter(object obj, int decimals) {
+        if (obj is Vector2 vector2) {
+            return vector2.ToSimpleString(decimals);
+        }
+        if (obj is Vector2Double vector2Double) {
+            return vector2Double.ToSimpleString(decimals);
+        }
+        if (obj is float floatValue) {
+            return floatValue.ToFormattedString(decimals);
+        }
+        if (obj is Entity entity) {
+            string id = entity.GetEntityData()?.ToEntityId().ToString() is { } value ? $"[{value}]" : "";
+            return $"{entity}{id}";
+        }
+        if (obj is IEnumerable enumerable and not IEnumerable<char>) {
+            bool compressed = enumerable is IEnumerable<Component> or IEnumerable<Entity>;
+            string separator = compressed ? ",\n " : ", ";
+            return IEnumerableToString(enumerable, separator, compressed);
+        }
+        if (obj is Collider collider) {
+            return ColliderToString(collider);
+        }
+
+        return obj.ToString();
+    }
+
     public static string IEnumerableToString(IEnumerable enumerable, string separator, bool compressed) {
         StringBuilder sb = new();
         if (!compressed) {
@@ -386,4 +427,20 @@ public static class InfoCustom {
         return sb.ToString();
     }
 
+    public static string ColliderToString(Collider collider, int iterationHeight = 1) {
+        if (collider is Hitbox hitbox) {
+            return $"Hitbox=[{hitbox.Left},{hitbox.Right}]×[{hitbox.Top},{hitbox.Bottom}]";
+        }
+        if (collider is Circle circle) {
+            if (circle.Position == Vector2.Zero) {
+                return $"Circle=radius {circle.Radius}";
+            } else {
+                return $"Circle=radius {circle.Radius}, offset {circle.Position}";
+            }
+        }
+        if (collider is ColliderList list && iterationHeight > 0) {
+            return "ColliderList: {" + string.Join("; ", list.colliders.Select(s => ColliderToString(s, iterationHeight - 1))) + "}";
+        }
+        return collider.ToString();
+    }
 }

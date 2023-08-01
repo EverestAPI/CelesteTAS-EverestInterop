@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using Celeste;
+using Celeste.Mod;
 using Monocle;
 using MonoMod.Cil;
 using TAS.EverestInterop.InfoHUD;
@@ -10,6 +12,22 @@ namespace TAS.EverestInterop;
 
 public static class ConsoleEnhancements {
     private static string clickedEntityInfo = string.Empty;
+    private static readonly Dictionary<string, string> AllModNames = new();
+
+    [Initialize]
+    private static void InitializeHelperMethods() {
+        AllModNames.Add(ModUtils.VanillaAssembly.FullName, "Celeste");
+        foreach (EverestModule module in Everest.Modules) {
+            if (module is NullModule) {
+                continue;
+            }
+
+            string key = module.GetType().Assembly.FullName;
+            if (!AllModNames.ContainsKey(key)) {
+                AllModNames.Add(key, module.Metadata?.Name);
+            }
+        }
+    }
 
     [Load]
     private static void Load() {
@@ -62,6 +80,8 @@ public static class ConsoleEnhancements {
                     clickedEntityInfo += $"\n entity id  : {entityData.ToEntityId()}";
                 }
 
+                clickedEntityInfo += $"\n mod name   : {GetModName(type)}";
+
                 ("Info of clicked entity: " + clickedEntityInfo).Log();
             } else {
                 clickedEntityInfo = string.Empty;
@@ -72,5 +92,18 @@ public static class ConsoleEnhancements {
 
         return (string.IsNullOrEmpty(clickedEntityInfo) ? string.Empty : clickedEntityInfo) + $"\n world:       {worldX}, {worldY}" +
                $"\n level:       {x}, {y}";
+    }
+
+    private static string GetModName(Type type) {
+        // tells you where that weird entity/trigger comes from
+        if (AllModNames.TryGetValue(type.Assembly.FullName, out string modName)) {
+            if (modName == "Celeste" && type.FullName.StartsWith("Celeste.Mod.")) {
+                modName = "Everest";
+            }
+
+            return modName;
+        } else {
+            return "Unknown";
+        }
     }
 }
