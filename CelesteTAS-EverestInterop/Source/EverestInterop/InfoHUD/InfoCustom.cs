@@ -376,6 +376,9 @@ public static class InfoCustom {
         if (obj is float floatValue) {
             return floatValue.ToFormattedString(decimals);
         }
+        if (obj is Scene) {
+            return obj.ToString();
+        }
         if (obj is Entity entity) {
             string id = entity.GetEntityData()?.ToEntityId().ToString() is { } value ? $"[{value}]" : "";
             return $"{entity}{id}";
