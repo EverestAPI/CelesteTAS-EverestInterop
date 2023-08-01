@@ -178,7 +178,11 @@ public static class Manager {
     }
 
     public static void EnableRun() {
-        if (Engine.Scene is GameLoader) {
+        if (Engine.Scene is GameLoader || CriticalErrorHandlerFixer.Handling) {
+            Running = false;
+            LastStates = States.None;
+            States = States.None;
+            NextStates = States.None;
             return;
         }
 
