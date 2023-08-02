@@ -3355,9 +3355,10 @@ public class RichText : UserControl {
 
             if (!string.IsNullOrEmpty(currentLineSuffix) && iLine == PlayingLine) {
                 using var lineNumberBrush = new SolidBrush(currentTextColor);
+                int offset = PlatformUtils.Mono ? 20 : 10;
                 SizeF size = e.Graphics.MeasureString(currentLineSuffix, Font, 0, StringFormat.GenericTypographic);
                 e.Graphics.DrawString(currentLineSuffix, Font, lineNumberBrush,
-                    new RectangleF(ClientSize.Width - size.Width - 10, y, size.Width, CharHeight), StringFormat.GenericTypographic);
+                    new RectangleF(ClientSize.Width - size.Width - offset, y, size.Width, CharHeight), StringFormat.GenericTypographic);
             }
 
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
@@ -3385,9 +3386,8 @@ public class RichText : UserControl {
                         new RectangleF(4, y, LeftIndent + 8, CharHeight),
                         new StringFormat(StringFormatFlags.DirectionRightToLeft));
                 } else {
-                    int x = PlatformUtils.Mono ? -20 : -10;
                     e.Graphics.DrawString((iLine + lineNumberStartValue).ToString(), Font, lineNumberBrush,
-                        new RectangleF(x, y, LeftIndent - minLeftIndent - 2 + 10, CharHeight),
+                        new RectangleF(-10, y, LeftIndent - minLeftIndent - 2 + 10, CharHeight),
                         new StringFormat(StringFormatFlags.DirectionRightToLeft));
                 }
             }
