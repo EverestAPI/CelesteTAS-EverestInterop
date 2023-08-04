@@ -23,22 +23,22 @@ jobs:
       Solution_Name: CelesteTAS-EverestInterop.sln
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: ${{ runner.os }}-nuget-
 
       - name: Setup MSBuild.exe
-        uses: microsoft/setup-msbuild@v1
+        uses: microsoft/setup-msbuild@v1.1
 
       - name: Build with MSBuild
         run: msbuild $env:Solution_Name -t:build -restore -p:Configuration=Release,RestoreLockedMode=true -m
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: CelesteTAS
           path: CelesteTAS-EverestInterop/bin/net452

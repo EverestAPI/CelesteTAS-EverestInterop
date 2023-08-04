@@ -2,7 +2,7 @@
     <PropertyGroup>
         <RootNamespace>TAS</RootNamespace>
         <TargetFramework>net452</TargetFramework>
-        <LangVersion>10</LangVersion>
+        <LangVersion>11</LangVersion>
         <AssemblyTitle>CelesteTAS-EverestInterop</AssemblyTitle>
         <Product>CelesteTAS-EverestInterop</Product>
         <Copyright>Copyright © 2018</Copyright>

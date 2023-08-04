@@ -5,7 +5,7 @@
         <TargetFramework Condition="'$(OS)' != 'Windows_NT'">net462</TargetFramework>
         <TargetFramework Condition="'$(OS)' == 'Windows_NT'">net452</TargetFramework>
         <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-        <LangVersion>10</LangVersion>
+        <LangVersion>11</LangVersion>
         <AssemblyTitle>Celeste Studio</AssemblyTitle>
         <Product>Celeste Studio</Product>
         <Copyright>Copyright © 2018</Copyright>

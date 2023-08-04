@@ -13,22 +13,22 @@ jobs:
       Solution_Name: CelesteTAS-EverestInterop.sln
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: ${{ runner.os }}-nuget-
 
       - name: Setup MSBuild.exe
-        uses: microsoft/setup-msbuild@v1
+        uses: microsoft/setup-msbuild@v1.1
 
       - name: Build with MSBuild
         run: msbuild $env:Solution_Name -t:build -restore -p:Configuration=Release,RestoreLockedMode=true -m
 
       - name: Zip Files
-        uses: papeloto/action-zip@v1
+        uses: vimtor/action-zip@v1.1
         with:
           files: CelesteTAS-EverestInterop/bin/net452/
           dest: CelesteTAS_${{github.ref_name}}.zip
