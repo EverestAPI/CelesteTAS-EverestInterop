@@ -17,13 +17,13 @@ namespace TAS.Input.Commands;
 public static class ConsoleCommand {
     public static readonly Regex LoadCommandRegex = new(@"^(load|hard|rmx2)(\d*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-    private static Vector2 resetRemainder;
+    private static Vector2 initRemainder;
     private static Vector2 initSpeed;
     private static List<Action<Entity>> bugFixers;
 
     [Load]
     private static void Load() {
-        On.Celeste.Level.LoadNewPlayer += LevelOnLoadNewPlayer;
+        typeof(Level).GetMethod(nameof(Level.orig_LoadLevel)).IlHook(HookLevelOrigLoadLevel);
         On.Celeste.Player.IntroRespawnEnd += PlayerOnIntroRespawnEnd;
         IL.Celeste.NPC06_Theo_Plateau.Awake += NPC06_Theo_PlateauOnAwake;
         On.Celeste.Level.End += LevelOnEnd;
@@ -31,18 +31,21 @@ public static class ConsoleCommand {
 
     [Unload]
     private static void Unload() {
-        On.Celeste.Level.LoadNewPlayer -= LevelOnLoadNewPlayer;
         On.Celeste.Player.IntroRespawnEnd -= PlayerOnIntroRespawnEnd;
         IL.Celeste.NPC06_Theo_Plateau.Awake -= NPC06_Theo_PlateauOnAwake;
         On.Celeste.Level.End -= LevelOnEnd;
     }
 
-    private static Player LevelOnLoadNewPlayer(On.Celeste.Level.orig_LoadNewPlayer orig, Vector2 position, PlayerSpriteMode spriteMode) {
-        Player player = orig(position, spriteMode);
+    private static void HookLevelOrigLoadLevel(ILCursor ilCursor, ILContext ilContext) {
+        ilCursor.GotoNext(i => i.MatchStfld<Player>("IntroType"));
+        ilCursor.GotoPrev(MoveType.After, i => i.OpCode == OpCodes.Ldloc_S);
+        ilCursor.EmitDelegate(SetPlayerRemainder);
+    }
 
-        if (resetRemainder != Vector2.Zero) {
-            player.movementCounter = resetRemainder;
-            resetRemainder = Vector2.Zero;
+    private static Player SetPlayerRemainder(Player player) {
+        if (initRemainder != Vector2.Zero) {
+            player.movementCounter = initRemainder;
+            initRemainder = Vector2.Zero;
         }
 
         return player;
@@ -340,7 +343,7 @@ public static class ConsoleCommand {
         session.FirstLevel = false;
         session.StartedFromBeginning = false;
         session.RespawnPoint = spawnPoint;
-        resetRemainder = remainder;
+        initRemainder = remainder;
         initSpeed = speed;
         EnterLevel(new LevelLoader(session));
     }
