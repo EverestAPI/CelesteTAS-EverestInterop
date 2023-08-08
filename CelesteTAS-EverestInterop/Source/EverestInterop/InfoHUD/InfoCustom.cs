@@ -24,6 +24,7 @@ public static class InfoCustom {
     private static bool DisableParameterlessMethod => Input.Commands.EnforceLegalCommand.EnabledWhenRunning;
 
     public delegate bool HelperMethod(object obj, int decimals, out string formattedValue);
+
     // return true if obj is of expected parameter type. otherwise we call AutoFormatter
     private static readonly Dictionary<string, HelperMethod> HelperMethods = new();
 
@@ -32,9 +33,13 @@ public static class InfoCustom {
         AllTypes.Clear();
         CachedParsedTypes.Clear();
         foreach (Type type in ModUtils.GetTypes()) {
-            if (type.FullName != null) {
-                AllTypes[$"{type.FullName}@{type.Assembly.GetName().Name}"] = type;
-                AllTypes[$"{type.FullName.Replace("+", ".")}@{type.Assembly.GetName().Name}"] = type;
+            if (type.FullName is { } fullName) {
+                string assemblyName = type.Assembly.GetName().Name;
+                AllTypes[$"{fullName}@{assemblyName}"] = type;
+
+                if (!fullName.StartsWith("Celeste.Mod.Everest+Events")) {
+                    AllTypes[$"{fullName.Replace("+", ".")}@{assemblyName}"] = type;
+                }
             }
         }
     }
@@ -100,9 +105,10 @@ public static class InfoCustom {
 
             List<string> result = types.Select(type => {
                 if (memberNames.IsNotEmpty() && (
-                    type.GetGetMethod(memberNames.First()) is { IsStatic: true } ||
-                    type.GetFieldInfo(memberNames.First()) is { IsStatic: true } ||
-                    (MethodRegex.Match(memberNames.First()) is { Success: true } match && type.GetMethodInfo(match.Groups[1].Value) is { IsStatic: true })
+                        type.GetGetMethod(memberNames.First()) is {IsStatic: true} ||
+                        type.GetFieldInfo(memberNames.First()) is {IsStatic: true} ||
+                        (MethodRegex.Match(memberNames.First()) is {Success: true} match &&
+                         type.GetMethodInfo(match.Groups[1].Value) is {IsStatic: true})
                     )) {
                     return FormatValue(GetMemberValue(type, null, memberNames), helperMethod, decimals);
                 }
@@ -241,7 +247,7 @@ public static class InfoCustom {
         typeNameMatched = "";
         typeNameWithAssembly = "";
         entityId = "";
-        if (TypeNameRegex.Match(text) is { Success: true } match) {
+        if (TypeNameRegex.Match(text) is {Success: true} match) {
             typeNameMatched = match.Groups[1].Value;
             typeNameWithAssembly = $"{typeNameMatched}@{match.Groups[5].Value}";
             typeNameWithAssembly = typeNameWithAssembly switch {
@@ -280,7 +286,7 @@ public static class InfoCustom {
                         _ => fieldInfo.GetValue(obj)
                     };
                 }
-            } else if (MethodRegex.Match(memberName) is { Success: true } match && type.GetMethodInfo(match.Groups[1].Value) is { } methodInfo) {
+            } else if (MethodRegex.Match(memberName) is {Success: true} match && type.GetMethodInfo(match.Groups[1].Value) is { } methodInfo) {
                 if (DisableParameterlessMethod) {
                     return $"{memberName}: Calling methods is illegal when tas is running.";
                 } else if (match.Groups[2].Value.IsNotNullOrWhiteSpace() || methodInfo.GetParameters().Length > 0) {
@@ -350,6 +356,7 @@ public static class InfoCustom {
             formattedValue = GameInfo.ConvertToFrames(floatValue).ToString();
             return true;
         }
+
         formattedValue = "";
         return false;
     }
@@ -359,10 +366,12 @@ public static class InfoCustom {
             formattedValue = GameInfo.ConvertSpeedUnit(floatValue, SpeedUnit.PixelPerFrame).ToString(CultureInfo.InvariantCulture);
             return true;
         }
+
         if (obj is Vector2 vector2) {
             formattedValue = GameInfo.ConvertSpeedUnit(vector2, SpeedUnit.PixelPerFrame).ToSimpleString(decimals);
             return true;
         }
+
         formattedValue = "";
         return false;
     }
@@ -371,24 +380,30 @@ public static class InfoCustom {
         if (obj is Vector2 vector2) {
             return vector2.ToSimpleString(decimals);
         }
+
         if (obj is Vector2Double vector2Double) {
             return vector2Double.ToSimpleString(decimals);
         }
+
         if (obj is float floatValue) {
             return floatValue.ToFormattedString(decimals);
         }
+
         if (obj is Scene) {
             return obj.ToString();
         }
+
         if (obj is Entity entity) {
             string id = entity.GetEntityData()?.ToEntityId().ToString() is { } value ? $"[{value}]" : "";
             return $"{entity}{id}";
         }
+
         if (obj is IEnumerable enumerable and not IEnumerable<char>) {
             bool compressed = enumerable is IEnumerable<Component> or IEnumerable<Entity>;
             string separator = compressed ? ",\n " : ", ";
             return IEnumerableToString(enumerable, separator, compressed);
         }
+
         if (obj is Collider collider) {
             return ColliderToString(collider);
         }
@@ -409,6 +424,7 @@ public static class InfoCustom {
 
             return sb.ToString();
         }
+
         Dictionary<string, int> keyValuePairs = new Dictionary<string, int>();
         foreach (object obj in enumerable) {
             string str = obj.ToString();
@@ -418,16 +434,19 @@ public static class InfoCustom {
                 keyValuePairs.Add(str, 1);
             }
         }
+
         foreach (string key in keyValuePairs.Keys) {
             if (sb.Length > 0) {
                 sb.Append(separator);
             }
+
             if (keyValuePairs[key] == 1) {
                 sb.Append(key);
             } else {
                 sb.Append($"{key} * {keyValuePairs[key]}");
             }
         }
+
         return sb.ToString();
     }
 
@@ -435,6 +454,7 @@ public static class InfoCustom {
         if (collider is Hitbox hitbox) {
             return $"Hitbox=[{hitbox.Left},{hitbox.Right}]×[{hitbox.Top},{hitbox.Bottom}]";
         }
+
         if (collider is Circle circle) {
             if (circle.Position == Vector2.Zero) {
                 return $"Circle=radius {circle.Radius}";
@@ -442,9 +462,11 @@ public static class InfoCustom {
                 return $"Circle=radius {circle.Radius}, offset {circle.Position}";
             }
         }
+
         if (collider is ColliderList list && iterationHeight > 0) {
             return "ColliderList: {" + string.Join("; ", list.colliders.Select(s => ColliderToString(s, iterationHeight - 1))) + "}";
         }
+
         return collider.ToString();
     }
 }
