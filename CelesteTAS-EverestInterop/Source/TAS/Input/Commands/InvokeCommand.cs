@@ -13,7 +13,7 @@ namespace TAS.Input.Commands;
 
 public static class InvokeCommand {
     private static bool consolePrintLog;
-    private const string logPrefix = "{Invoke Command Failed: }";
+    private const string logPrefix = "Invoke Command Failed: ";
     private static readonly object nonReturnObject = new();
 
     [Monocle.Command("invoke", "Invoke level/session/entity method. eg invoke Level.Pause; invoke Player.Jump (CelesteTAS)")]
@@ -43,7 +43,7 @@ public static class InvokeCommand {
                     object result = FindObjectAndInvoke(type, entityId, memberNames, parameters);
                     if (result != nonReturnObject) {
                         result ??= "null";
-                        result.Log(consolePrintLog, LogLevel.Warn);
+                        result.Log(consolePrintLog);
                     }
                 } else {
                     errorMessage.Log(consolePrintLog, LogLevel.Warn);

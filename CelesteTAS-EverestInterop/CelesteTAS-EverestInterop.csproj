@@ -75,6 +75,10 @@
         <Content Include="everest.yaml">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
+        <Content Include="Source\EverestInterop\Lua\env.lua">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+          <Link>env.lua</Link>
+        </Content>
     </ItemGroup>
     <ItemGroup>
         <None Remove="lib-stripped\**" />

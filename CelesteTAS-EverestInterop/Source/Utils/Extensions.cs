@@ -116,6 +116,7 @@ internal static class ReflectionExtensions {
     }
     // ReSharper restore UnusedMember.Local
 
+    private static readonly ConcurrentDictionary<MemberKey, MemberInfo> CachedMemberInfos = new();
     private static readonly ConcurrentDictionary<MemberKey, FieldInfo> CachedFieldInfos = new();
     private static readonly ConcurrentDictionary<MemberKey, PropertyInfo> CachedPropertyInfos = new();
     private static readonly ConcurrentDictionary<MethodKey, MethodInfo> CachedMethodInfos = new();
@@ -123,6 +124,19 @@ internal static class ReflectionExtensions {
     private static readonly ConcurrentDictionary<MemberKey, MethodInfo> CachedSetMethodInfos = new();
     private static readonly ConcurrentDictionary<AllMemberKey, IEnumerable<FieldInfo>> CachedAllFieldInfos = new();
     private static readonly ConcurrentDictionary<AllMemberKey, IEnumerable<PropertyInfo>> CachedAllPropertyInfos = new();
+    
+    public static MemberInfo GetMemberInfo(this Type type, string name) {
+        var key = new MemberKey(type, name);
+        if (CachedMemberInfos.TryGetValue(key, out var result)) {
+            return result;
+        }
+
+        do {
+            result = type.GetMember(name, StaticInstanceAnyVisibility).FirstOrDefault();
+        } while (result == null && (type = type.BaseType) != null);
+
+        return CachedMemberInfos[key] = result;
+    }
 
     public static FieldInfo GetFieldInfo(this Type type, string name) {
         var key = new MemberKey(type, name);
@@ -142,7 +156,7 @@ internal static class ReflectionExtensions {
         if (CachedPropertyInfos.TryGetValue(key, out var result)) {
             return result;
         }
-
+        
         do {
             result = type.GetProperty(name, StaticInstanceAnyVisibility);
         } while (result == null && (type = type.BaseType) != null);

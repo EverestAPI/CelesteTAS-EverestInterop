@@ -34,6 +34,7 @@ public static class InfoCustom {
         foreach (Type type in ModUtils.GetTypes()) {
             if (type.FullName != null) {
                 AllTypes[$"{type.FullName}@{type.Assembly.GetName().Name}"] = type;
+                AllTypes[$"{type.FullName.Replace("+", ".")}@{type.Assembly.GetName().Name}"] = type;
             }
         }
     }
