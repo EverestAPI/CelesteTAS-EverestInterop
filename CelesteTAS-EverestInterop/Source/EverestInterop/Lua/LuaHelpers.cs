@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Celeste;
 using Monocle;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Utils;
@@ -115,5 +116,9 @@ public static class LuaHelpers {
         }
 
         return null;
+    }
+
+    public static Level GetLevel() {
+        return Engine.Scene.GetLevel();
     }
 }

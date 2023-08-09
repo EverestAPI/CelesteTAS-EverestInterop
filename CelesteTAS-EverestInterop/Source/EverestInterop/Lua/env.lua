@@ -30,12 +30,16 @@ function getEnum(enumTypeName, value)
     return LuaHelpers.GetEnum(enumTypeName, value)
 end
 
+function getLevel()
+    return LuaHelpers.GetLevel()
+end
+
 local Monocle = require("#Monocle")
 local Celeste = require("#Celeste")
 local TAS = require("#TAS")
 local Vector2 = require("#Microsoft.Xna.Framework.Vector2")
 
 local scene = Monocle.Engine.Scene
-local level = scene or scene.Level
+local level = getLevel()
 local session = level.Session
 local player = getEntity("Player")
