@@ -25,11 +25,6 @@ public static class LuaCommand {
         HookEverestDebugRc();
     }
 
-    [Initialize]
-    private static void Initialize() {
-        RunEnvLua();
-    }
-
     private static void HookEverestDebugRc() {
         var methods = typeof(Everest.DebugRC).GetNestedType("<>c", BindingFlags.NonPublic)
             .GetMethods(BindingFlags.Instance | BindingFlags.NonPublic);
@@ -61,10 +56,6 @@ public static class LuaCommand {
                 return;
             }
         }
-    }
-
-    private static void RunEnvLua() {
-        Everest.LuaLoader.Run(ReadContent("env"), null);
     }
 
     private static string ReadContent(string assetPath) {
@@ -100,7 +91,7 @@ public static class LuaCommand {
     }
 
     private static void EvalLuaImpl(string code) {
-        string localCode = ReadContent("local");
+        string localCode = ReadContent("env");
         code = $"{localCode}\n{code}";
 
         object[] objects;
