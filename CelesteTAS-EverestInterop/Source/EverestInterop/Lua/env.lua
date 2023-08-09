@@ -1,4 +1,8 @@
-local LuaHelpers = require("#TAS.EverestInterop.Lua.LuaHelpers")
+Monocle = require("#Monocle")
+Celeste = require("#Celeste")
+TAS = require("#TAS")
+Vector2 = require("#Microsoft.Xna.Framework.Vector2")
+LuaHelpers = require("#TAS.EverestInterop.Lua.LuaHelpers")
 
 --- log message
 function log(message, tag)
@@ -21,8 +25,8 @@ function getValue(instanceOrTypeName, memberName)
 end
 
 --- parameters = {parameter1, parameter2, ...}
-function invokeMethod(instanceOrTypeName, methodName, parameters)
-    return LuaHelpers.InvokeMethod(instanceOrTypeName, methodName, parameters or {})
+function invokeMethod(instanceOrTypeName, methodName, ...)
+    return LuaHelpers.InvokeMethod(instanceOrTypeName, methodName, ...)
 end
 
 --- get enum value
@@ -37,13 +41,3 @@ end
 function getSession()
     return LuaHelpers.GetSession()
 end
-
-local Monocle = require("#Monocle")
-local Celeste = require("#Celeste")
-local TAS = require("#TAS")
-local Vector2 = require("#Microsoft.Xna.Framework.Vector2")
-
-local scene = Monocle.Engine.Scene
-local level = getLevel()
-local session = getSession()
-local player = getEntity("Player")

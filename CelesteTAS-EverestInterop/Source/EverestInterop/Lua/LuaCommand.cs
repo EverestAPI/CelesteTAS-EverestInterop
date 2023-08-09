@@ -25,6 +25,11 @@ public static class LuaCommand {
         HookEverestDebugRc();
     }
 
+    [Initialize]
+    private static void Initialize() {
+        RunEnvLua();
+    }
+
     private static void HookEverestDebugRc() {
         var methods = typeof(Everest.DebugRC).GetNestedType("<>c", BindingFlags.NonPublic)
             .GetMethods(BindingFlags.Instance | BindingFlags.NonPublic);
@@ -58,6 +63,20 @@ public static class LuaCommand {
         }
     }
 
+    private static void RunEnvLua() {
+        Everest.LuaLoader.Run(ReadContent("env"), null);
+    }
+
+    private static string ReadContent(string assetPath) {
+        ModAsset modAsset = Everest.Content.Get(assetPath, true);
+        if (modAsset != null) {
+            using StreamReader streamReader = new(modAsset.Stream);
+            return streamReader.ReadToEnd();
+        } else {
+            return null;
+        }
+    }
+
     [Monocle.Command(commandName, "Evaluate lua code (CelesteTAS)")]
     private static void EvalLua(string code) {
         string firstHistory = Engine.Commands.commandHistory.FirstOrDefault();
@@ -76,16 +95,13 @@ public static class LuaCommand {
         if (args.IsEmpty()) {
             return;
         }
-        
+
         EvalLuaImpl(commandAndSeparatorRegex.Replace(lineText, ""));
     }
 
     private static void EvalLuaImpl(string code) {
-        ModAsset modAsset = Everest.Content.Get("env", true);
-        using StreamReader streamReader = new(modAsset.Stream);
-        string envCode = streamReader.ReadToEnd();
-
-        code = $"{envCode}\n{code}";
+        string localCode = ReadContent("local");
+        code = $"{localCode}\n{code}";
 
         object[] objects;
         try {
