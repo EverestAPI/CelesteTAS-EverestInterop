@@ -46,13 +46,7 @@ public static class LuaHelpers {
     }
 
     private static bool TryGetType(string typeName, out Type type) {
-        if (InfoCustom.TryParseTypes(typeName, out List<Type> types)) {
-            type = types.FirstOrDefault();
-            return type != null;
-        } else {
-            type = null;
-            return false;
-        }
+        return InfoCustom.TryParseType(typeName, out type, out _, out _);
     }
 
     // Get field or property value
