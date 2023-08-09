@@ -34,6 +34,10 @@ function getLevel()
     return LuaHelpers.GetLevel()
 end
 
+function getSession()
+    return LuaHelpers.GetSession()
+end
+
 local Monocle = require("#Monocle")
 local Celeste = require("#Celeste")
 local TAS = require("#TAS")
@@ -41,5 +45,5 @@ local Vector2 = require("#Microsoft.Xna.Framework.Vector2")
 
 local scene = Monocle.Engine.Scene
 local level = getLevel()
-local session = level.Session
+local session = getSession()
 local player = getEntity("Player")

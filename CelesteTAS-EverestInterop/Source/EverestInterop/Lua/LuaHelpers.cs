@@ -115,4 +115,8 @@ public static class LuaHelpers {
     public static Level GetLevel() {
         return Engine.Scene.GetLevel();
     }
+
+    public static Session GetSession() {
+        return Engine.Scene.GetSession();
+    }
 }
