@@ -32,14 +32,14 @@ public partial record Command {
 
 public partial record Command {
     private static readonly object[] EmptyParameters = { };
-    private static readonly Regex CheckSpaceRegex = new(@"^[^,]+?\s+[^,]", RegexOptions.Compiled);
     private static readonly Regex SpaceRegex = new(@"\s+", RegexOptions.Compiled);
+    public static readonly Regex SpaceSeparatorRegex = new(@"^[^,]+?\s+[^,\s]", RegexOptions.Compiled);
     public static bool Parsing { get; private set; }
 
     private static string[] Split(string line) {
         string trimLine = line.Trim();
         // Determined by the first separator
-        string[] args = CheckSpaceRegex.IsMatch(trimLine) ? SpaceRegex.Split(trimLine) : trimLine.Split(',');
+        string[] args = SpaceSeparatorRegex.IsMatch(trimLine) ? SpaceRegex.Split(trimLine) : trimLine.Split(',');
         return args.Select(text => text.Trim()).ToArray();
     }
 

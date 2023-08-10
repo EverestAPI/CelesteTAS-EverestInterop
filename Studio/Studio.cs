@@ -525,7 +525,7 @@ public partial class Studio : BaseForm {
         string trimText = richText.CurrentStartLineText.Trim();
         Regex readRegex = new Regex("^#?read( |,)", RegexOptions.IgnoreCase);
         if (readRegex.IsMatch(trimText)) {
-            Regex spaceRegex = new(@"^[^,]+?\s+[^,]");
+            Regex spaceRegex = new(@"^[^,]+?\s+[^,\s]");
 
             string[] args = spaceRegex.IsMatch(trimText) ? trimText.Split() : trimText.Split(',');
 
@@ -590,7 +590,7 @@ public partial class Studio : BaseForm {
             return;
         }
 
-        Regex spaceRegex = new(@"^[^,]+?\s+[^,]");
+        Regex spaceRegex = new(@"^[^,]+?\s+[^,\s]");
 
         string[] args = spaceRegex.IsMatch(lineText) ? lineText.Split() : lineText.Split(',');
         args = args.Select(text => text.Trim()).ToArray();

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using Monocle;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Utils;
@@ -18,9 +19,12 @@ public static class AssertCommand {
         NotEndWith,
     }
 
+    private const string spaceSeparator = @"\s+";
+    private const string commaSeparator = @"\s*,\s*";
+
     //  Assert, Condition, Expected, Actual
     [TasCommand("Assert", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
-    private static void Assert(string[] args) {
+    private static void Assert(string[] args, string lineText) {
         string prefix = $"\"Assert, {string.Join(", ", args)}\" failed\n";
 
         if (Command.Parsing) {
@@ -34,14 +38,17 @@ public static class AssertCommand {
                 AbortTas($"{prefix}Lack of actual value");
             }
         } else {
+            string separator = Command.SpaceSeparatorRegex.IsMatch(lineText) ? spaceSeparator : commaSeparator;
+            Regex regex = new($@"assert{separator}{Regex.Escape(args[0])}{separator}{Regex.Escape(args[1])}{separator}", RegexOptions.IgnoreCase);
+
             Enum.TryParse(args[0], true, out AssertCondition condition);
             string expected = args[1];
-            string actual = InfoCustom.ParseTemplate($"{{{args[2]}}}", 0, new Dictionary<string, List<Entity>>(), false);
+            string actual = InfoCustom.ParseTemplate($"{regex.Replace(lineText, "")}", 0, new Dictionary<string, List<Entity>>(), false);
 
             switch (condition) {
                 case AssertCondition.Equal: {
                     if (actual != expected) {
-                        AbortTas($"{prefix}Expected: {expected}\nBut was: {actual}");
+                        AbortTas($"{prefix}Expected: {expected}\nBut was: {actual}", true, 4f);
                     }
 
                     break;

@@ -10,7 +10,7 @@ namespace CelesteStudio;
 
 internal static class IntegrateReadFiles {
     private static readonly Regex readCommandRegex = new(@"^read( |,)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-    private static readonly Regex spaceSeparatorRegex = new(@"^[^,]+?\s+[^,]", RegexOptions.Compiled);
+    private static readonly Regex spaceSeparatorRegex = new(@"^[^,]+?\s+[^,\s]", RegexOptions.Compiled);
     private static readonly Regex recordCountRegex = new(@"^\s*RecordCount:\s*(\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex authorRegex = new(@"^\s*Author:\s*(.+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly HashSet<string> readFiles = new();
