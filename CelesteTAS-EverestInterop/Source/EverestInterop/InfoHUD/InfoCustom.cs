@@ -9,6 +9,7 @@ using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.EverestInterop.Lua;
+using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
 
@@ -22,7 +23,7 @@ public static class InfoCustom {
     private static readonly Regex MethodRegex = new(@"^(.+)\((.*)\)$", RegexOptions.Compiled);
     private static readonly Dictionary<string, Type> AllTypes = new();
     private static readonly Dictionary<string, List<Type>> CachedParsedTypes = new();
-    private static bool EnforceLegal => Input.Commands.EnforceLegalCommand.EnabledWhenRunning;
+    private static bool EnforceLegal => EnforceLegalCommand.EnabledWhenRunning && !AssertCommand.Running;
 
     public delegate bool HelperMethod(object obj, int decimals, out string formattedValue);
 
@@ -58,7 +59,7 @@ public static class InfoCustom {
         return ParseTemplate(TasSettings.InfoCustomTemplate, decimals.Value, cachedEntities, false);
     }
 
-    [Command("get", "get type.fieldOrProperty value. eg get Player,Position; get Level.Wind (CelesteTAS)")]
+    [Monocle.Command("get", "get type.fieldOrProperty value. eg get Player,Position; get Level.Wind (CelesteTAS)")]
     private static void GetCommand(string template) {
         ParseTemplate($"{{{template}}}", TasSettings.CustomInfoDecimals, new Dictionary<string, List<Entity>>(), true).ConsoleLog();
     }

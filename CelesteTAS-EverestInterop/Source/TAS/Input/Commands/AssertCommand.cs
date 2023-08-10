@@ -21,6 +21,7 @@ public static class AssertCommand {
 
     private const string spaceSeparator = @"\s+";
     private const string commaSeparator = @"\s*,\s*";
+    public static bool Running { get; private set; }
 
     //  Assert, Condition, Expected, Actual
     [TasCommand("Assert", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
@@ -43,7 +44,9 @@ public static class AssertCommand {
 
             Enum.TryParse(args[0], true, out AssertCondition condition);
             string expected = args[1];
+            Running = true;
             string actual = InfoCustom.ParseTemplate($"{regex.Replace(lineText, "")}", 0, new Dictionary<string, List<Entity>>(), false);
+            Running = false;
 
             switch (condition) {
                 case AssertCondition.Equal: {
