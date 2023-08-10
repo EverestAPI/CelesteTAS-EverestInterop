@@ -6,22 +6,23 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Celeste;
-using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
+using TAS.EverestInterop.Lua;
 using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD;
 
 public static class InfoCustom {
+    private static readonly Regex LuaRegex = new(@"\[\[(.+?)\]\]", RegexOptions.Compiled);
     private static readonly Regex BraceRegex = new(@"\{(.+?)\}", RegexOptions.Compiled);
     private static readonly Regex TypeNameRegex = new(@"^([.\w=+<>]+)(\[(.+?)\])?(@([^.]*))?$", RegexOptions.Compiled);
     private static readonly Regex TypeNameSeparatorRegex = new(@"^[.+]", RegexOptions.Compiled);
     private static readonly Regex MethodRegex = new(@"^(.+)\((.*)\)$", RegexOptions.Compiled);
     private static readonly Dictionary<string, Type> AllTypes = new();
     private static readonly Dictionary<string, List<Type>> CachedParsedTypes = new();
-    private static bool DisableParameterlessMethod => Input.Commands.EnforceLegalCommand.EnabledWhenRunning;
+    private static bool EnforceLegal => Input.Commands.EnforceLegalCommand.EnabledWhenRunning;
 
     public delegate bool HelperMethod(object obj, int decimals, out string formattedValue);
 
@@ -76,7 +77,7 @@ public static class InfoCustom {
             return entities;
         }
 
-        return BraceRegex.Replace(template, match => {
+        string result = BraceRegex.Replace(template, match => {
             string matchText = match.Groups[1].Value;
 
             if (!TryParseMemberNames(matchText, out string typeText, out List<string> memberNames, out string errorMessage)) {
@@ -158,6 +159,16 @@ public static class InfoCustom {
             }
 
             return $"{prefix}{string.Join(separator, result)}";
+        });
+
+        return LuaRegex.Replace(result, match => {
+            if (EnforceLegal) {
+                return "Evaluate lua code is illegal when enforce legal";
+            }
+
+            string code = match.Groups[1].Value;
+            object[] objects = LuaCommand.EvalLuaImpl(code);
+            return objects == null ? "null" : string.Join(", ", objects.Select(o => o?.ToString() ?? "null"));
         });
     }
 
@@ -287,8 +298,8 @@ public static class InfoCustom {
                     };
                 }
             } else if (MethodRegex.Match(memberName) is {Success: true} match && type.GetMethodInfo(match.Groups[1].Value) is { } methodInfo) {
-                if (DisableParameterlessMethod) {
-                    return $"{memberName}: Calling methods is illegal when tas is running.";
+                if (EnforceLegal) {
+                    return $"{memberName}: Calling methods is illegal when enforce legal";
                 } else if (match.Groups[2].Value.IsNotNullOrWhiteSpace() || methodInfo.GetParameters().Length > 0) {
                     return $"{memberName}: Only method without parameters is supported";
                 } else if (methodInfo.ReturnType == typeof(void)) {

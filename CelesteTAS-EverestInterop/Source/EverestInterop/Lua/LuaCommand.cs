@@ -15,7 +15,6 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Lua;
 
 public static class LuaCommand {
-    private static bool consolePrintLog;
     private const string commandName = "evallua";
     private static readonly Regex commandAndSeparatorRegex = new(@$"^{commandName}[ |,]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private static readonly FieldInfo DebugRClogFieldInfo = typeof(Commands).GetFieldInfo("debugRClog");
@@ -76,9 +75,8 @@ public static class LuaCommand {
             code = commandAndSeparatorRegex.Replace(firstHistory, "");
         }
 
-        consolePrintLog = true;
-        EvalLuaImpl(code);
-        consolePrintLog = false;
+        object[] result = EvalLuaImpl(code);
+        LogResult(result);
     }
 
     [TasCommand(commandName, LegalInMainGame = false)]
@@ -90,7 +88,7 @@ public static class LuaCommand {
         EvalLuaImpl(commandAndSeparatorRegex.Replace(lineText, ""));
     }
 
-    private static void EvalLuaImpl(string code) {
+    public static object[] EvalLuaImpl(string code) {
         string localCode = ReadContent("env");
         code = $"{localCode}\n{code}";
 
@@ -98,37 +96,26 @@ public static class LuaCommand {
         try {
             objects = Everest.LuaLoader.Run(code, null);
         } catch (Exception e) {
-            Engine.Commands.Log(e);
             e.Log();
-            return;
+            return new object[] {e};
         }
 
-        LogResult(objects);
+        return objects;
     }
 
     private static void LogResult(object[] objects) {
-        if (consolePrintLog) {
-            var result = new List<string>();
+        var result = new List<string>();
 
-            if (objects == null || objects.Length == 0) {
-                return;
-            } else if (objects.Length == 1) {
-                result.Add(objects[0]?.ToString() ?? "null");
-            } else {
-                for (var i = 0; i < objects.Length; i++) {
-                    result.Add($"{i + 1}: {objects[i]?.ToString() ?? "null"}");
-                }
+        if (objects == null || objects.Length == 0) {
+            return;
+        } else if (objects.Length == 1) {
+            result.Add(objects[0]?.ToString() ?? "null");
+        } else {
+            for (var i = 0; i < objects.Length; i++) {
+                result.Add($"{i + 1}: {objects[i]?.ToString() ?? "null"}");
             }
-
-            Engine.Commands.Log(string.Join("\n", result));
-        }
-    }
-
-    private static void Log(string text) {
-        if (consolePrintLog) {
-            Engine.Commands.Log(text);
         }
 
-        $"EvalLua Command Failed: {text}".Log();
+        Engine.Commands.Log(string.Join("\n", result));
     }
 }
