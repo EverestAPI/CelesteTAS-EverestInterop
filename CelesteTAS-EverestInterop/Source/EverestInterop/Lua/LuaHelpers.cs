@@ -51,53 +51,102 @@ public static class LuaHelpers {
 
     // Get field or property value
     public static object GetValue(object instanceOrTypeName, string memberName) {
-        bool staticMember = false;
-        if (instanceOrTypeName is string typeName && TryGetType(typeName, out Type type)) {
-            staticMember = true;
-        } else if (instanceOrTypeName != null) {
-            type = instanceOrTypeName.GetType();
-        } else {
+        if (!TryGetTypeFromInstanceOrTypeName(instanceOrTypeName, out Type type, out bool staticMember)) {
             return null;
         }
 
+        object obj = staticMember ? null : instanceOrTypeName;
         MemberInfo memberInfo = type.GetMemberInfo(memberName);
-        if (memberInfo == null) {
-            return null;
-        } else {
-            if (memberInfo.MemberType == MemberTypes.Field) {
-                if (staticMember) {
-                    return type.GetFieldValue<object>(memberName);
-                } else {
-                    return instanceOrTypeName.GetFieldValue<object>(memberName);
+        if (memberInfo != null) {
+            try {
+                if (memberInfo is FieldInfo fieldInfo) {
+                    return fieldInfo.GetValue(obj);
+                } else if (memberInfo is PropertyInfo propertyInfo) {
+                    return propertyInfo.GetValue(obj);
                 }
-            } else if (memberInfo.MemberType == MemberTypes.Property) {
-                if (staticMember) {
-                    return type.GetPropertyValue<object>(memberName);
-                } else {
-                    return instanceOrTypeName.GetPropertyValue<object>(memberName);
+            } catch (Exception e) {
+                LuaCommand.Log(e);
+            }
+        }
+
+        return null;
+    }
+
+    // Set field or property value
+    public static void SetValue(object instanceOrTypeName, string memberName, object value) {
+        if (!TryGetTypeFromInstanceOrTypeName(instanceOrTypeName, out Type type, out bool staticMember)) {
+            return;
+        }
+
+        object obj = staticMember ? null : instanceOrTypeName;
+        MemberInfo memberInfo = type.GetMemberInfo(memberName);
+        if (memberInfo != null) {
+            try {
+                if (memberInfo is FieldInfo fieldInfo) {
+                    value = ConvertType(value, type, fieldInfo.FieldType);
+                    fieldInfo.SetValue(obj, value);
+                } else if (memberInfo is PropertyInfo propertyInfo) {
+                    value = ConvertType(value, type, propertyInfo.PropertyType);
+                    propertyInfo.SetValue(obj, value);
                 }
-            } else {
-                return null;
+            } catch (Exception e) {
+                LuaCommand.Log(e);
             }
         }
     }
 
     public static object InvokeMethod(object instanceOrTypeName, string methodName, params object[] parameters) {
-        bool staticMethod = false;
-        if (instanceOrTypeName is string typeName && TryGetType(typeName, out Type type)) {
-            staticMethod = true;
-        } else if (instanceOrTypeName != null) {
-            type = instanceOrTypeName.GetType();
-        } else {
+        if (!TryGetTypeFromInstanceOrTypeName(instanceOrTypeName, out Type type, out bool staticMethod)) {
             return null;
         }
 
         // TODO Overloaded methods are not supported
-        if (staticMethod) {
-            return type.InvokeMethod<object>(methodName, parameters);
-        } else {
-            return instanceOrTypeName.InvokeMethod<object>(methodName, parameters);
+        object obj = staticMethod ? null : instanceOrTypeName;
+        MethodInfo methodInfo = type.GetMethodInfo(methodName);
+        if (methodInfo != null) {
+            ParameterInfo[] parameterInfos = methodInfo.GetParameters();
+            for (var i = 0; i < parameterInfos.Length; i++) {
+                if (i < parameters.Length) {
+                    parameters[i] = ConvertType(parameters[i], parameters[i]?.GetType(), parameterInfos[i].ParameterType);
+                }
+            }
+
+            try {
+                return methodInfo.Invoke(obj, parameters);
+            } catch (Exception e) {
+                LuaCommand.Log(e);
+            }
         }
+
+        return null;
+    }
+
+    private static object ConvertType(object value, Type valueType, Type type) {
+        if (valueType != null && type.IsSameOrSubclassOf(valueType)) {
+            return value;
+        }
+
+        try {
+            if (value is null) {
+                return type.IsValueType ? Activator.CreateInstance(type) : null;
+            } else {
+                return type.IsEnum ? Enum.Parse(type, (string) value, true) : Convert.ChangeType(value, type);
+            }
+        } catch {
+            return value;
+        }
+    }
+
+    private static bool TryGetTypeFromInstanceOrTypeName(object instanceOrTypeName, out Type type, out bool staticMember) {
+        type = null;
+        staticMember = false;
+        if (instanceOrTypeName is string typeName && TryGetType(typeName, out type)) {
+            staticMember = true;
+        } else if (instanceOrTypeName != null) {
+            type = instanceOrTypeName.GetType();
+        }
+
+        return type != null;
     }
 
     public static object GetEnum(string enumTypeName, string value) {

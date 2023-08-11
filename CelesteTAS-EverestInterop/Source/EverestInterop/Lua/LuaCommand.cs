@@ -15,6 +15,7 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Lua;
 
 public static class LuaCommand {
+    private static bool consoleCommandRunning;
     private const string commandName = "evallua";
     private static readonly Regex commandAndSeparatorRegex = new(@$"^{commandName}[ |,]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private static readonly FieldInfo DebugRClogFieldInfo = typeof(Commands).GetFieldInfo("debugRClog");
@@ -66,6 +67,14 @@ public static class LuaCommand {
             return null;
         }
     }
+    
+    public static void Log(object message) {
+        if (consoleCommandRunning) {
+            Engine.Commands.Log(message);
+        }
+
+        $"EvalLua Command Failed: {message}".Log();
+    }
 
     [Monocle.Command(commandName, "Evaluate lua code (CelesteTAS)")]
     private static void EvalLua(string code) {
@@ -75,7 +84,9 @@ public static class LuaCommand {
             code = commandAndSeparatorRegex.Replace(firstHistory, "");
         }
 
+        consoleCommandRunning = true;
         object[] result = EvalLuaImpl(code);
+        consoleCommandRunning = false;
         LogResult(result);
     }
 

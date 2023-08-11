@@ -24,6 +24,11 @@ local function getValue(instanceOrTypeName, memberName)
     return LuaHelpers.GetValue(instanceOrTypeName, memberName)
 end
 
+--- set field or property value
+local function setValue(instanceOrTypeName, memberName, value)
+    return LuaHelpers.SetValue(instanceOrTypeName, memberName, value)
+end
+
 --- parameters = {parameter1, parameter2, ...}
 local function invokeMethod(instanceOrTypeName, methodName, ...)
     return LuaHelpers.InvokeMethod(instanceOrTypeName, methodName, ...)
