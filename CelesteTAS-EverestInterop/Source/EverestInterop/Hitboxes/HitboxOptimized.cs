@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
@@ -64,6 +65,7 @@ public static class HitboxOptimized {
         IL.Celeste.Seeker.DebugRender += SeekerOnDebugRender;
         On.Celeste.Seeker.DebugRender += SeekerOnDebugRender;
         On.Celeste.Level.LoadLevel += LevelOnLoadLevel;
+        On.Monocle.Scene.BeforeUpdate += SceneOnBeforeUpdate;
     }
 
     [Unload]
@@ -77,6 +79,7 @@ public static class HitboxOptimized {
         IL.Celeste.Seeker.DebugRender -= SeekerOnDebugRender;
         On.Celeste.Seeker.DebugRender -= SeekerOnDebugRender;
         On.Celeste.Level.LoadLevel -= LevelOnLoadLevel;
+        On.Monocle.Scene.BeforeUpdate -= SceneOnBeforeUpdate;
     }
 
     private static void ModDebugRender(On.Monocle.Entity.orig_DebugRender orig, Entity self, Camera camera) {
@@ -109,6 +112,11 @@ public static class HitboxOptimized {
         }
 
         orig(self, camera);
+
+        if (self is Puffer puffer2) {
+            DrawPufferLaunchOrBounceIndicator(puffer2);
+            // render this above original hitboxes
+        }
     }
 
     private static int HidePufferWhiteLine(int i) {
@@ -177,6 +185,27 @@ public static class HitboxOptimized {
             if (crusher.Position != crusher.start) {
                 Draw.Line(crusher.Center, crusher.Center + crusher.end - crusher.Position, color);
             }
+        }
+    }
+
+    private static void DrawPufferLaunchOrBounceIndicator(Puffer puffer) {
+        // OnPlayer Explode: player.Bottom > lastSpeedPosition.Y + 3f
+        if (puffer.Components.Get<PlayerCollider>() is { } pc && typeof(Puffer).CreateGetDelegate<Puffer, Vector2>("lastSpeedPosition") is { } getLastSpeedPosition) {
+            float y = getLastSpeedPosition.Invoke(puffer).Y + 3f - 1f;
+            // -1f coz player's bottom is "1px lower" than the bottom of hitbox (due to how they render)
+            float z = (float) Math.Ceiling(y);
+            if (z <= y) {
+                z += 1f;
+            }
+
+            // it seems pc.Entity will be null, so we have to manually express pc.Collider.AbsoluteBottom
+            if (z > pc.Collider.Bottom + puffer.Y) {
+                return;
+            }
+            
+            float top = Math.Max(pc.Collider.Top + puffer.Y, z);
+            Draw.HollowRect(puffer.X - 7f, top, 14f, pc.Collider.Bottom + puffer.Y - top,
+                puffer.Collidable ? HitboxColor.PufferHeightCheckColor : HitboxColor.PufferHeightCheckColor * HitboxColor.UnCollidableAlpha);
         }
     }
 
@@ -307,10 +336,6 @@ public static class HitboxOptimized {
         foreach (Circle circle in pufferPushRadius) {
             Draw.Circle(circle.Position, circle.Radius, HitboxColor.PufferPushRadiusColor, 4);
         }
-
-        if (Engine.FreezeTimer <= 0f) {
-            pufferPushRadius.Clear();
-        }
     }
 
     private static void PlayerColliderOnDebugRender(ILContext il) {
@@ -322,32 +347,6 @@ public static class HitboxOptimized {
             ilCursor
                 .Emit(OpCodes.Ldarg_0)
                 .EmitDelegate<Func<Color, Component, Color>>(OptimizePlayerColliderHitbox);
-            ilCursor.Index++;
-            ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate(OptimizePufferPlayerCollider);
-        }
-    }
-
-    private static void OptimizePufferPlayerCollider(Component component) {
-        if (component.Entity is not Puffer puffer || component is not PlayerCollider pc) {
-            return;
-        }
-
-        // OnPlayer Explode: player.Bottom > lastSpeedPosition.Y + 3f
-        if (typeof(Puffer).CreateGetDelegate<Puffer, Vector2>("lastSpeedPosition") is { } getLastSpeedPosition) {
-            float y = getLastSpeedPosition.Invoke(puffer).Y + 3f - 1f;
-            // -1f coz player's bottom is "1px lower" than the bottom of hitbox (due to how they render)
-            float z = (float) Math.Ceiling(y);
-            if (z <= y) {
-                z += 1f;
-            }
-
-            if (z > pc.Collider.AbsoluteBottom) {
-                return;
-            }
-
-            float top = Math.Max(pc.Collider.AbsoluteTop, z);
-            Draw.HollowRect(puffer.X - 7f, top, 14f, pc.Collider.AbsoluteBottom - top,
-                puffer.Collidable ? HitboxColor.PufferHeightCheckColor : HitboxColor.PufferHeightCheckColor * HitboxColor.UnCollidableAlpha);
         }
     }
 
@@ -459,5 +458,10 @@ public static class HitboxOptimized {
         if (TasSettings.ShowHitboxes && self.Pathfinder is {lastPath: { }} pathfinder) {
             pathfinder.lastPath = null;
         }
+    }
+
+    private static void SceneOnBeforeUpdate(On.Monocle.Scene.orig_BeforeUpdate orig, Scene self) {
+        orig(self);
+        pufferPushRadius.Clear();
     }
 }
