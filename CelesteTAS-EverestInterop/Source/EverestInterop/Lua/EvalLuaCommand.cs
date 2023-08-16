@@ -14,7 +14,7 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.Lua;
 
-public static class LuaCommand {
+public static class EvalLuaCommand {
     private static bool consoleCommandRunning;
     private const string commandName = "evallua";
     private static readonly Regex commandAndSeparatorRegex = new(@$"^{commandName}[ |,]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);

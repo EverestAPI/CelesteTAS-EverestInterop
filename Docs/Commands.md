@@ -103,6 +103,13 @@
     - `Invoke, Session.SetFlag, whatever`
     - `Invoke, LuaCutscenesUtils.TriggerBooleanVariant, UpsideDown, true, true`, check here for more extended variant [methods](https://github.com/maddie480/ExtendedVariantMode/blob/master/Module/LuaCutscenesUtils.cs) and [options](https://github.com/maddie480/ExtendedVariantMode/blob/master/Module/ExtendedVariantsModule.cs#L45-L64).
 
+### EvalLua
+- Evaluate lua code, [check out how to access and use C# objects](https://github.com/EverestAPI/ModResources/wiki/Lua-Cutscenes-Recipe-Book#accessing-and-using-c-objects)
+- Due to the limitations of NLua, non-public members and generics are not supported, so some helper methods and predefined variables are provided. check the [env.lua](https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/master/CelesteTAS-EverestInterop/Source/EverestInterop/Lua/env.lua) file for details.
+- `EvalLua, player.Position = player.Position + Vector2(1, 0)`
+- `EvalLua, player:Die(Vector2.Zero)`
+- `EvalLua, setValue(player, 'movementCounter', Vector2(0.1, 0))`
+
 ### Unsafe and Safe
 - The TAS will normally only run inside levels and stop when entering the Options/ModOptions menu.
 - Console load normally forces the TAS to load the debug save.
@@ -120,9 +127,8 @@
 - `Actual` use the same syntax as the [custom info template](https://github.com/EverestAPI/CelesteTAS-EverestInterop#custom-info)
 - Examples:
   ```
-  # Ensure that you are currently in the save file selection screen and the save file is selected
-  Assert EndWith OuiFileSelect {Engine.Scene.Current}
-  Assert Equal True {Engine.Scene.Current.SlotSelected}
+  # Ensure that you are currently in the save file selection screen and the new save file is selected
+  Assert Equal False [[local ui = scene.Current; return ui.Slots[ui.SlotIndex].Exists]]
   ```
   ```
   # Ensure that you are currently in the chapter 2

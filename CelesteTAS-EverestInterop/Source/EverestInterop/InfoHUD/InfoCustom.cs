@@ -168,7 +168,7 @@ public static class InfoCustom {
             }
 
             string code = match.Groups[1].Value;
-            object[] objects = LuaCommand.EvalLuaImpl(code);
+            object[] objects = EvalLuaCommand.EvalLuaImpl(code);
             return objects == null ? "null" : string.Join(", ", objects.Select(o => o?.ToString() ?? "null"));
         });
     }

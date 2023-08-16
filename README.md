@@ -121,6 +121,12 @@ The contents of the curly brackets will be converted to actual data, here are so
 - `KeyCycle: {Key.sprite.CurrentAnimationFrame}`
 - `CustomSpinner: {CustomSpinner.Position}` or `CustomSpinner: {FrostHelper.CustomSpinner@FrostTempleHelper.Position}`
 
+The contents wrapped in double center brackets will be executed as lua code, [check here for how to write lua](https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/master/Docs/Commands.md#evallua).
+Be careful not to change the game state, as this will cause tas desync.
+Here are some examples:
+- `[[return player.Position]]`
+- `[[return player.Position, player.Speed]]` Return multiple results. 
+
 ## Running Studio via Wine
 1. Install Wine: https://wiki.winehq.org/Download
 2. Install `ttf-mscorefonts-installer`.

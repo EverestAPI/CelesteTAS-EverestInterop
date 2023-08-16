@@ -1535,6 +1535,10 @@ public partial class Studio : BaseForm {
         InsertNewLine("Invoke, Entity.Method, Parameter");
     }
 
+    private void evalLuaStripMenuItem_Click(object sender, EventArgs e) {
+        InsertNewLine("EvalLua, Code");
+    }
+
     private void pressToolStripMenuItem_Click(object sender, EventArgs e) {
         InsertNewLine("Press, Key1, Key2...");
     }

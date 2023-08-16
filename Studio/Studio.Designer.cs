@@ -140,12 +140,12 @@ namespace CelesteStudio {
             this.toolStripSeparator22 = new System.Windows.Forms.ToolStripSeparator();
             this.startExportToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.finishExportToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator25 = new System.Windows.Forms.ToolStripSeparator();
-            this.startRecordingToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.stopRecordingToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator14 = new System.Windows.Forms.ToolStripSeparator();
             this.startExportRoomInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.finishExportRoomInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator25 = new System.Windows.Forms.ToolStripSeparator();
+            this.startRecordingToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.stopRecordingToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
             this.addToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.skipToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -172,6 +172,7 @@ namespace CelesteStudio {
             this.statusPanel = new System.Windows.Forms.Panel();
             this.statusBar = new System.Windows.Forms.StatusStrip();
             this.lblStatus = new System.Windows.Forms.ToolStripStatusLabel();
+            this.evalLuaStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusBarContextMenuStrip.SuspendLayout();
             this.menuStrip.SuspendLayout();
             this.tasTextContextMenuStrip.SuspendLayout();
@@ -681,7 +682,7 @@ namespace CelesteStudio {
             // 
             this.tasTextContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.insertRemoveBreakPointToolStripMenuItem, this.insertRemoveSavestateBreakPointToolStripMenuItem, this.removeAllUncommentedBreakpointsToolStripMenuItem, this.removeAllBreakpointsToolStripMenuItem, this.commentUncommentAllBreakpointsToolStripMenuItem, this.toolStripSeparator2, this.commentUncommentTextToolStripMenuItem, this.insertRoomNameToolStripMenuItem, this.insertCurrentInGameTimeToolStripMenuItem, this.insertModInfoStripMenuItem1, this.insertConsoleLoadCommandToolStripMenuItem, this.insertSimpleConsoleLoadCommandToolStripMenuItem, this.insertOtherCommandToolStripMenuItem, this.toolStripSeparator6, this.swapDashKeysStripMenuItem, this.swapJumpKeysToolStripMenuItem, this.swapSelectedLAndRToolStripMenuItem, this.combineConsecutiveSameInputsToolStripMenuItem, this.forceCombineInputsToolStripMenuItem, this.convertDashToDemoDashToolStripMenuItem, this.toolStripSeparator12, this.openReadFileToolStripMenuItem});
             this.tasTextContextMenuStrip.Name = "tasTextContextMenuStrip";
-            this.tasTextContextMenuStrip.Size = new System.Drawing.Size(426, 440);
+            this.tasTextContextMenuStrip.Size = new System.Drawing.Size(426, 462);
             // 
             // insertRemoveBreakPointToolStripMenuItem
             // 
@@ -777,7 +778,7 @@ namespace CelesteStudio {
             // 
             // insertOtherCommandToolStripMenuItem
             // 
-            this.insertOtherCommandToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.enforceLegalToolStripMenuItem, this.unsafeToolStripMenuItem, this.safeToolStripMenuItem, this.toolStripSeparator18, this.readToolStripMenuItem, this.playToolStripMenuItem, this.toolStripSeparator17, this.repeatToolStripMenuItem, this.endRepeatToolStripMenuItem, this.toolStripSeparator16, this.setToolStripMenuItem, this.invokeToolStripMenuItem, this.toolStripSeparator3, this.pressToolStripMenuItem, this.toolStripSeparator24, this.analogueModeToolStripMenuItem, this.toolStripSeparator4, this.stunPauseToolStripMenuItem, this.endStunPauseToolStripMenuItem, this.stunPauseModeToolStripMenuItem, this.toolStripSeparator23, this.autoInputToolStripMenuItem, this.startAutoInputToolStripMenuItem, this.endAutoInputToolStripMenuItem, this.skipAutoInputToolStripMenuItem, this.toolStripSeparator22, this.startExportToolStripMenuItem, this.finishExportToolStripMenuItem, this.toolStripSeparator14, this.startExportRoomInfoToolStripMenuItem, this.finishExportRoomInfoToolStripMenuItem, this.toolStripSeparator25, this.startRecordingToolStripMenuItem, this.stopRecordingToolStripMenuItem, this.toolStripSeparator5, this.addToolStripMenuItem, this.skipToolStripMenuItem, this.startExportLibTASToolStripMenuItem, this.finishExportLibTASToolStripMenuItem, this.toolStripSeparator13, this.completeInfoToolStripMenuItem, this.recordCountToolStripMenuItem, this.fileTimeToolStripMenuItem, this.chapterTimeToolStripMenuItem, this.toolStripSeparator21, this.exitGameToolStripMenuItem});
+            this.insertOtherCommandToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.enforceLegalToolStripMenuItem, this.unsafeToolStripMenuItem, this.safeToolStripMenuItem, this.toolStripSeparator18, this.readToolStripMenuItem, this.playToolStripMenuItem, this.toolStripSeparator17, this.repeatToolStripMenuItem, this.endRepeatToolStripMenuItem, this.toolStripSeparator16, this.setToolStripMenuItem, this.invokeToolStripMenuItem, this.evalLuaStripMenuItem, this.toolStripSeparator3, this.pressToolStripMenuItem, this.toolStripSeparator24, this.analogueModeToolStripMenuItem, this.toolStripSeparator4, this.stunPauseToolStripMenuItem, this.endStunPauseToolStripMenuItem, this.stunPauseModeToolStripMenuItem, this.toolStripSeparator23, this.autoInputToolStripMenuItem, this.startAutoInputToolStripMenuItem, this.endAutoInputToolStripMenuItem, this.skipAutoInputToolStripMenuItem, this.toolStripSeparator22, this.startExportToolStripMenuItem, this.finishExportToolStripMenuItem, this.toolStripSeparator14, this.startExportRoomInfoToolStripMenuItem, this.finishExportRoomInfoToolStripMenuItem, this.toolStripSeparator25, this.startRecordingToolStripMenuItem, this.stopRecordingToolStripMenuItem, this.toolStripSeparator5, this.addToolStripMenuItem, this.skipToolStripMenuItem, this.startExportLibTASToolStripMenuItem, this.finishExportLibTASToolStripMenuItem, this.toolStripSeparator13, this.completeInfoToolStripMenuItem, this.recordCountToolStripMenuItem, this.fileTimeToolStripMenuItem, this.chapterTimeToolStripMenuItem, this.toolStripSeparator21, this.exitGameToolStripMenuItem});
             this.insertOtherCommandToolStripMenuItem.Name = "insertOtherCommandToolStripMenuItem";
             this.insertOtherCommandToolStripMenuItem.Size = new System.Drawing.Size(425, 22);
             this.insertOtherCommandToolStripMenuItem.Text = "Insert Other Command";
@@ -982,27 +983,6 @@ namespace CelesteStudio {
             this.finishExportToolStripMenuItem.ToolTipText = "Dumps data to a file, which can be used to analyze desyncs.";
             this.finishExportToolStripMenuItem.Click += new System.EventHandler(this.finishExportToolStripMenuItem_Click);
             // 
-            // toolStripSeparator25
-            // 
-            this.toolStripSeparator25.Name = "toolStripSeparator25";
-            this.toolStripSeparator25.Size = new System.Drawing.Size(191, 6);
-            // 
-            // startRecordingToolStripMenuItem
-            // 
-            this.startRecordingToolStripMenuItem.Name = "startRecordingToolStripMenuItem";
-            this.startRecordingToolStripMenuItem.Size = new System.Drawing.Size(194, 22);
-            this.startRecordingToolStripMenuItem.Text = "StartRecording";
-            this.startRecordingToolStripMenuItem.ToolTipText = "Creates frame-perfect recordings, no matter what hardware is used.";
-            this.startRecordingToolStripMenuItem.Click += new System.EventHandler(this.startRecordingToolStripMenuItem_Click);
-            // 
-            // stopRecordingToolStripMenuItem
-            // 
-            this.stopRecordingToolStripMenuItem.Name = "stopRecordingToolStripMenuItem";
-            this.stopRecordingToolStripMenuItem.Size = new System.Drawing.Size(194, 22);
-            this.stopRecordingToolStripMenuItem.Text = "StopRecording";
-            this.stopRecordingToolStripMenuItem.ToolTipText = "Creates frame-perfect recordings, no matter what hardware is used.";
-            this.stopRecordingToolStripMenuItem.Click += new System.EventHandler(this.stopRecordingToolStripMenuItem_Click);
-            // 
             // toolStripSeparator14
             // 
             this.toolStripSeparator14.Name = "toolStripSeparator14";
@@ -1023,6 +1003,27 @@ namespace CelesteStudio {
             this.finishExportRoomInfoToolStripMenuItem.Text = "EndExportRoomInfo";
             this.finishExportRoomInfoToolStripMenuItem.ToolTipText = "Dumps the elapsed time of each room to a file. which can be used to compare impro" + "vements.\r\n";
             this.finishExportRoomInfoToolStripMenuItem.Click += new System.EventHandler(this.finishExportRoomInfoToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator25
+            // 
+            this.toolStripSeparator25.Name = "toolStripSeparator25";
+            this.toolStripSeparator25.Size = new System.Drawing.Size(191, 6);
+            // 
+            // startRecordingToolStripMenuItem
+            // 
+            this.startRecordingToolStripMenuItem.Name = "startRecordingToolStripMenuItem";
+            this.startRecordingToolStripMenuItem.Size = new System.Drawing.Size(194, 22);
+            this.startRecordingToolStripMenuItem.Text = "StartRecording";
+            this.startRecordingToolStripMenuItem.ToolTipText = "Creates frame-perfect recordings, no matter what hardware is used.";
+            this.startRecordingToolStripMenuItem.Click += new System.EventHandler(this.startRecordingToolStripMenuItem_Click);
+            // 
+            // stopRecordingToolStripMenuItem
+            // 
+            this.stopRecordingToolStripMenuItem.Name = "stopRecordingToolStripMenuItem";
+            this.stopRecordingToolStripMenuItem.Size = new System.Drawing.Size(194, 22);
+            this.stopRecordingToolStripMenuItem.Text = "StopRecording";
+            this.stopRecordingToolStripMenuItem.ToolTipText = "Creates frame-perfect recordings, no matter what hardware is used.";
+            this.stopRecordingToolStripMenuItem.Click += new System.EventHandler(this.stopRecordingToolStripMenuItem_Click);
             // 
             // toolStripSeparator5
             // 
@@ -1246,6 +1247,14 @@ namespace CelesteStudio {
             this.lblStatus.Text = "Searching...";
             this.lblStatus.TextAlign = System.Drawing.ContentAlignment.TopLeft;
             // 
+            // evalLuaStripMenuItem
+            // 
+            this.evalLuaStripMenuItem.Name = "evalLuaStripMenuItem";
+            this.evalLuaStripMenuItem.Size = new System.Drawing.Size(194, 22);
+            this.evalLuaStripMenuItem.Text = "EvalLua";
+            this.evalLuaStripMenuItem.ToolTipText = "Evaluate lua code";
+            this.evalLuaStripMenuItem.Click += new System.EventHandler(this.evalLuaStripMenuItem_Click);
+            // 
             // Studio
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -1277,6 +1286,8 @@ namespace CelesteStudio {
             this.ResumeLayout(false);
             this.PerformLayout();
         }
+
+        private System.Windows.Forms.ToolStripMenuItem evalLuaStripMenuItem;
 
         private System.Windows.Forms.ToolStripMenuItem openSettingsFileToolStripMenuItem;
 

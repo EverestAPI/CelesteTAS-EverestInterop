@@ -65,7 +65,7 @@ public static class LuaHelpers {
                     return propertyInfo.GetValue(obj);
                 }
             } catch (Exception e) {
-                LuaCommand.Log(e);
+                EvalLuaCommand.Log(e);
             }
         }
 
@@ -90,7 +90,7 @@ public static class LuaHelpers {
                     propertyInfo.SetValue(obj, value);
                 }
             } catch (Exception e) {
-                LuaCommand.Log(e);
+                EvalLuaCommand.Log(e);
             }
         }
     }
@@ -114,7 +114,7 @@ public static class LuaHelpers {
             try {
                 return methodInfo.Invoke(obj, parameters);
             } catch (Exception e) {
-                LuaCommand.Log(e);
+                EvalLuaCommand.Log(e);
             }
         }
 
