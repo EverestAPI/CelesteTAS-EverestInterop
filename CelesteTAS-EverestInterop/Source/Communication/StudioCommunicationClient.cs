@@ -24,7 +24,6 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
     public static StudioCommunicationClient Instance { get; private set; }
 
     private byte[] lastBindingsData = new byte[0];
-    private readonly List<Thread> threads = new();
     private StudioCommunicationClient() { }
     private StudioCommunicationClient(string target) : base(target) { }
 
@@ -48,19 +47,16 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         }
 
         Instance = new StudioCommunicationClient();
-
-#if DEBUG
-        //SetupDebugVariables();
-#endif
-
         RunThread("StudioCom Client");
         return true;
     }
 
-    private static void Destroy() {
-        Instance?.WriteReset();
-        Instance?.threads?.ForEach(thread => thread.Abort());
-        Instance = null;
+    public static void Destroy() {
+        if (Instance != null) {
+            Instance.WriteReset();
+            Instance.Destroyed = true;
+            Instance = null;
+        }
     }
 
     private static Dictionary<string, ModUpdateInfo> ModUpdaterHelperOnDownloadModUpdateList(
@@ -80,7 +76,6 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
             IsBackground = true
         };
         thread.Start();
-        Instance.threads.Add(thread);
     }
 
     /// <summary>
@@ -390,6 +385,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         if (fileName.IsNullOrWhiteSpace()) {
             fileName = null;
         }
+
         TASRecorderUtils.RecordFrames(totalFrames, fileName);
 
         if (!Manager.Controller.Commands.TryGetValue(0, out var commands)) return;

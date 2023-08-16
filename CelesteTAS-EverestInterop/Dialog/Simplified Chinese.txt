@@ -99,6 +99,7 @@ TAS_HOTKEYS_DESCRIPTION= 绑定多个按键表示组合键，需要同时按下�
 TAS_CENTER_CAMERA=                   镜头居中
 TAS_RESTORE_SETTINGS=                TAS 停止时恢复所有设置
 TAS_LAUNCH_STUDIO_AT_BOOT=           启动游戏时打开 Studio
+TAS_ATTEMPTS_TO_CONNECT_TO_STUDIO=   尝试连接 Studio
 TAS_HIDE_FREEZE_FRAMES=              TAS 时跳过冻结帧
 TAS_HIDE_FREEZE_FRAMES_DESCRIPTION_1=运行到冻结帧时自动跳过进入下一帧
 TAS_HIDE_FREEZE_FRAMES_DESCRIPTION_2=仅在 TAS 时启用

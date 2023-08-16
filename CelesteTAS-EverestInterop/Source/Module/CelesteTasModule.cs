@@ -25,7 +25,9 @@ public class CelesteTasModule : EverestModule {
         AttributeUtils.Invoke<InitializeAttribute>();
 
         // required run after TasCommandAttribute.CollectMethods()
-        StudioCommunicationClient.Run();
+        if (TasSettings.AttemptConnectStudio) {
+            StudioCommunicationClient.Run();
+        }
     }
 
     public override void Load() {

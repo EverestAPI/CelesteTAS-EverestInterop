@@ -8,6 +8,8 @@ using System.Threading;
 namespace StudioCommunication;
 
 public class StudioCommunicationBase {
+    private static readonly bool runningOnMono = Type.GetType("Mono.Runtime") != null;
+
     private const int BufferSize = 0x100000;
 
     // ReSharper disable once MemberCanBePrivate.Global
@@ -26,10 +28,9 @@ public class StudioCommunicationBase {
     private int lastSignature;
 
     protected Action PendingWrite;
+    protected bool Destroyed;
     private int timeoutCount;
     private bool waiting;
-
-    private static readonly bool runningOnMono = Type.GetType("Mono.Runtime") != null;
 
     protected StudioCommunicationBase(string target = "CelesteTAS") {
         if (PlatformUtils.Wine || PlatformUtils.NonWindows) {
@@ -66,10 +67,10 @@ public class StudioCommunicationBase {
     }
 
     protected void UpdateLoop() {
-        while (true) {
+        while (!Destroyed) {
             EstablishConnectionLoop();
             try {
-                while (true) {
+                while (!Destroyed) {
                     Message? message = ReadMessage();
 
                     if (message != null) {

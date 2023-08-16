@@ -6,6 +6,7 @@ using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
+using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
@@ -42,6 +43,14 @@ internal static class CelesteTasMenu {
                 TasSettings.RestoreSettings = value));
             subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), TasSettings.LaunchStudioAtBoot).Change(value =>
                 TasSettings.LaunchStudioAtBoot = value));
+            subMenu.Add(new TextMenu.OnOff("Attempt To Connect To Studio".ToDialogText(), TasSettings.AttemptConnectStudio).Change(value => {
+                TasSettings.AttemptConnectStudio = value;
+                if (value) {
+                    StudioCommunicationClient.Run();
+                } else {
+                    StudioCommunicationClient.Destroy();
+                }
+            }));
             TextMenu.Item hideFreezeFramesItem;
             subMenu.Add(hideFreezeFramesItem = new TextMenu.OnOff("Hide Freeze Frames".ToDialogText(), TasSettings.HideFreezeFrames).Change(value =>
                 TasSettings.HideFreezeFrames = value));
