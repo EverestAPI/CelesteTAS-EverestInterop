@@ -432,7 +432,8 @@ public static class GameInfo {
             || PlayerStates.GetStateName(player.StateMachine.State) == "Custom Feather"
             || playerSeeker != null
             || SaveData.Instance.Assists.ThreeSixtyDashing
-            || SaveData.Instance.Assists.SuperDashing) {
+            || SaveData.Instance.Assists.SuperDashing
+            || ExtendedVariantsUtils.SuperDashing) {
             builder.AppendLine(polarVel);
         }
 
