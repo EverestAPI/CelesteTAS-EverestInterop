@@ -94,7 +94,7 @@ public static class ConsoleEnhancements {
                $"\n level:       {x}, {y}";
     }
 
-    private static string GetModName(Type type) {
+    public static string GetModName(Type type) {
         // tells you where that weird entity/trigger comes from
         if (AllModNames.TryGetValue(type.Assembly.FullName, out string modName)) {
             if (modName == "Celeste" && type.FullName.StartsWith("Celeste.Mod.")) {

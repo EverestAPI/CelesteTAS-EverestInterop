@@ -37,10 +37,13 @@ public static class InfoCustom {
         foreach (Type type in ModUtils.GetTypes()) {
             if (type.FullName is { } fullName) {
                 string assemblyName = type.Assembly.GetName().Name;
+                string modName = ConsoleEnhancements.GetModName(type);
                 AllTypes[$"{fullName}@{assemblyName}"] = type;
-
+                AllTypes[$"{fullName}@{modName}"] = type;
+                
                 if (!fullName.StartsWith("Celeste.Mod.Everest+Events")) {
                     AllTypes[$"{fullName.Replace("+", ".")}@{assemblyName}"] = type;
+                    AllTypes[$"{fullName.Replace("+", ".")}@{modName}"] = type;
                 }
             }
         }
