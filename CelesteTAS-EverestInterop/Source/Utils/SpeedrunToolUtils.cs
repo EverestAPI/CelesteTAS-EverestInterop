@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Celeste;
 using Celeste.Mod.SpeedrunTool.Other;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
@@ -84,6 +85,7 @@ internal static class SpeedrunToolUtils {
         SaveLoadAction.Add((SaveLoadAction) saveLoadAction);
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static void ClearSaveLoadAction() {
         if (saveLoadAction != null) {
             SaveLoadAction.Remove((SaveLoadAction) saveLoadAction);

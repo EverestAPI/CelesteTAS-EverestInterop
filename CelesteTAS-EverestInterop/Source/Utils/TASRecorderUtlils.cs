@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using Celeste.Mod.TASRecorder.Interop;
 
 namespace TAS.Utils;
@@ -26,9 +27,14 @@ internal static class TASRecorderUtils {
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static void startRecording(string fileName = null) => TASRecorderInterop.StartRecording(fileName);
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static void stopRecording() => TASRecorderInterop.StopRecording();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static void recordFrames(int frames, string fileName = null) => TASRecorderInterop.RecordFrames(frames, fileName);
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool ffmpegInstalled() => TASRecorderInterop.IsFFmpegInstalled();
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool recording() => TASRecorderInterop.IsRecording();
 }
