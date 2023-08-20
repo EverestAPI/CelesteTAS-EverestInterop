@@ -39,7 +39,7 @@ public class TasCommandAttribute : Attribute {
     [Initialize]
     private static void CollectMethods() {
         MethodInfos.Clear();
-        IEnumerable<MethodInfo> methodInfos = Assembly.GetCallingAssembly().GetTypesSafe().SelectMany(type => type
+        IEnumerable<MethodInfo> methodInfos = typeof(TasCommandAttribute).Assembly.GetTypesSafe().SelectMany(type => type
                 .GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
             .Where(info => info.GetCustomAttributes<TasCommandAttribute>().IsNotEmpty());
         foreach (MethodInfo methodInfo in methodInfos) {
