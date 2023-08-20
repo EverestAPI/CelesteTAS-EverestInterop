@@ -40,7 +40,7 @@ public static class InfoCustom {
                 string modName = ConsoleEnhancements.GetModName(type);
                 AllTypes[$"{fullName}@{assemblyName}"] = type;
                 AllTypes[$"{fullName}@{modName}"] = type;
-                
+
                 if (!fullName.StartsWith("Celeste.Mod.Everest+Events")) {
                     AllTypes[$"{fullName.Replace("+", ".")}@{assemblyName}"] = type;
                     AllTypes[$"{fullName.Replace("+", ".")}@{modName}"] = type;
@@ -219,7 +219,7 @@ public static class InfoCustom {
         return TryParseTypes(text, out types, out _, out _);
     }
 
-    private static bool TryParseTypes(string text, out List<Type> types, out string entityId, out string errorMessage) {
+    public static bool TryParseTypes(string text, out List<Type> types, out string entityId, out string errorMessage) {
         types = new List<Type>();
         entityId = "";
         errorMessage = "";

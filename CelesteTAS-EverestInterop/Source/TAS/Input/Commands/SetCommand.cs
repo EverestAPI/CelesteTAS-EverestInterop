@@ -45,8 +45,10 @@ public static class SetCommand {
                 }
 
                 if (InfoCustom.TryParseMemberNames(args[0], out string typeText, out List<string> memberNames, out string errorMessage)
-                    && InfoCustom.TryParseType(typeText, out Type type, out string entityId, out errorMessage)) {
-                    FindObjectAndSetMember(type, entityId, memberNames, parameters);
+                    && InfoCustom.TryParseTypes(typeText, out List<Type> types, out string entityId, out errorMessage)) {
+                    foreach (Type type in types) {
+                        FindObjectAndSetMember(type, entityId, memberNames, parameters);
+                    }
                 } else {
                     errorMessage.Log(consolePrintLog, LogLevel.Warn);
                 }

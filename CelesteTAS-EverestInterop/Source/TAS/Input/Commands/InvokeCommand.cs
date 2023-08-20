@@ -39,11 +39,13 @@ public static class InvokeCommand {
             if (args[0].Contains(".")) {
                 string[] parameters = args.Skip(1).ToArray();
                 if (InfoCustom.TryParseMemberNames(args[0], out string typeText, out List<string> memberNames, out string errorMessage)
-                    && InfoCustom.TryParseType(typeText, out Type type, out string entityId, out errorMessage)) {
-                    object result = FindObjectAndInvoke(type, entityId, memberNames, parameters);
-                    if (result != nonReturnObject) {
-                        result ??= "null";
-                        result.Log(consolePrintLog);
+                    && InfoCustom.TryParseTypes(typeText, out List<Type> types, out string entityId, out errorMessage)) {
+                    foreach (Type type in types) {
+                        object result = FindObjectAndInvoke(type, entityId, memberNames, parameters);
+                        if (result != nonReturnObject) {
+                            result ??= "null";
+                            result.Log(consolePrintLog);
+                        }
                     }
                 } else {
                     errorMessage.Log(consolePrintLog, LogLevel.Warn);
