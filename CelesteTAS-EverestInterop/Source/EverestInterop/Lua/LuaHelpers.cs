@@ -10,37 +10,33 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Lua;
 
 public static class LuaHelpers {
-    public static Entity GetEntity(string typeName) {
-        if (TryGetEntityType(typeName, out Type type)) {
-            if (Engine.Scene.Tracker.Entities.TryGetValue(type, out var entities)) {
-                return entities.FirstOrDefault();
-            } else {
-                return Engine.Scene.FirstOrDefault(entity => entity.GetType().IsSameOrSubclassOf(type));
-            }
+
+    // can omit entityId
+    public static Entity GetEntity(string typeNameWithId) {
+        if (TryGetEntityTypeWithId(typeNameWithId, out Type type, out string entityId)) {
+            return InfoCustom.FindEntities(type, entityId).FirstOrDefault();
         } else {
             return null;
         }
     }
-
-    public static List<Entity> GetEntities(string typeName) {
-        if (TryGetEntityType(typeName, out Type type)) {
-            if (Engine.Scene.Tracker.Entities.TryGetValue(type, out var entities)) {
-                return entities;
-            } else {
-                return Engine.Scene.Where(entity => entity.GetType().IsSameOrSubclassOf(type)).ToList();
-            }
+    public static List<Entity> GetEntities(string typeNameWithId) {
+        if (TryGetEntityTypeWithId(typeNameWithId, out Type type, out string entityId)) {
+            return InfoCustom.FindEntities(type, entityId);
         } else {
             return new List<Entity>();
         }
     }
 
     // entityTypeName can be "Player" or "Celeste.Player"
-    private static bool TryGetEntityType(string entityTypeName, out Type type) {
-        if (InfoCustom.TryParseTypes(entityTypeName, out List<Type> types)) {
+
+    private static bool TryGetEntityTypeWithId(string entityTypeName, out Type type, out string entityId) {
+        if (InfoCustom.TryParseTypes(entityTypeName, out List<Type> types, out string id)) {
             type = types.FirstOrDefault(t => t.IsSameOrSubclassOf(typeof(Entity)));
+            entityId = id;
             return type != null;
         } else {
             type = null;
+            entityId = "";
             return false;
         }
     }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -15,6 +15,9 @@ public static class InvokeCommand {
     private static bool consolePrintLog;
     private const string logPrefix = "Invoke Command Failed: ";
     private static readonly object nonReturnObject = new();
+
+    private static readonly List<string> errorLogs = new List<string>();
+    private static bool suspendLog = false;
 
     [Monocle.Command("invoke", "Invoke level/session/entity method. eg invoke Level.Pause; invoke Player.Jump (CelesteTAS)")]
     private static void Invoke(string arg1, string arg2, string arg3, string arg4, string arg5, string arg6, string arg7, string arg8,
@@ -40,13 +43,26 @@ public static class InvokeCommand {
                 string[] parameters = args.Skip(1).ToArray();
                 if (InfoCustom.TryParseMemberNames(args[0], out string typeText, out List<string> memberNames, out string errorMessage)
                     && InfoCustom.TryParseTypes(typeText, out List<Type> types, out string entityId, out errorMessage)) {
+                    bool existSuccess = false;
+                    bool forSpecific = entityId.IsNotNullOrEmpty();
+                    suspendLog = true;
                     foreach (Type type in types) {
                         object result = FindObjectAndInvoke(type, entityId, memberNames, parameters);
-                        if (result != nonReturnObject) {
+                        bool b = result != nonReturnObject;
+                        if (b) {
                             result ??= "null";
                             result.Log(consolePrintLog);
                         }
+                        existSuccess |= b;
+                        if (forSpecific && b) {
+                            break;
+                        }
                     }
+                    suspendLog = false;
+                    if (!forSpecific || !existSuccess) {
+                        errorLogs.Where(text => !existSuccess || !text.EndsWith(" entity is not found") && !text.EndsWith(" object is not found")).ToList().ForEach(Log);
+                    }
+                    errorLogs.Clear();
                 } else {
                     errorMessage.Log(consolePrintLog, LogLevel.Warn);
                 }
@@ -79,12 +95,12 @@ public static class InvokeCommand {
         } else {
             obj = SetCommand.FindSpecialObject(type, entityId);
             if (obj == null) {
-                Log($"{type.FullName}{entityId} object is not found");
+                Log($"{type.FullName}{entityId.LogID()} object is not found");
                 return nonReturnObject;
             } else {
                 if (type.IsSameOrSubclassOf(typeof(Entity)) && obj is List<Entity> entities) {
                     if (entities.IsEmpty()) {
-                        Log($"{type.FullName}{entityId} entity is not found");
+                        Log($"{type.FullName}{entityId.LogID()} entity is not found");
                         return nonReturnObject;
                     } else {
                         List<object> memberValues = new();
@@ -133,14 +149,6 @@ public static class InvokeCommand {
             } else {
                 return nonReturnObject;
             }
-        }
-
-        void Log(string text) {
-            if (!consolePrintLog) {
-                text = $"{logPrefix}{text}";
-            }
-
-            text.Log(consolePrintLog, LogLevel.Warn);
         }
 
         bool TryInvokeMethod(object @object, out object returnObject) {
@@ -193,7 +201,7 @@ public static class InvokeCommand {
 
         bool TryPrintErrorLog() {
             if (obj == null) {
-                Log($"{type.FullName}{entityId} member value is null");
+                Log($"{type.FullName}{entityId.LogID()} member value is null");
                 return true;
             } else if (obj is string errorMsg && errorMsg.EndsWith(" not found")) {
                 Log(errorMsg);
@@ -202,5 +210,20 @@ public static class InvokeCommand {
 
             return false;
         }
+
+    }
+    private static string LogID(this string entityId) {
+        return entityId.IsNullOrEmpty() ? "" : $"[{entityId}]";
+    }
+    private static void Log(string text) {
+        if (suspendLog) {
+            errorLogs.Add(text);
+            return;
+        }
+        if (!consolePrintLog) {
+            text = $"{logPrefix}{text}";
+        }
+
+        text.Log(consolePrintLog, LogLevel.Warn);
     }
 }

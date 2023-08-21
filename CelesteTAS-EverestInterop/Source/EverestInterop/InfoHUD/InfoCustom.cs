@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Celeste;
@@ -40,7 +41,7 @@ public static class InfoCustom {
                 string modName = ConsoleEnhancements.GetModName(type);
                 AllTypes[$"{fullName}@{assemblyName}"] = type;
                 AllTypes[$"{fullName}@{modName}"] = type;
-
+                
                 if (!fullName.StartsWith("Celeste.Mod.Everest+Events")) {
                     AllTypes[$"{fullName.Replace("+", ".")}@{assemblyName}"] = type;
                     AllTypes[$"{fullName.Replace("+", ".")}@{modName}"] = type;
@@ -219,6 +220,10 @@ public static class InfoCustom {
         return TryParseTypes(text, out types, out _, out _);
     }
 
+    public static bool TryParseTypes(string text, out List<Type> types, out string id) {
+        return TryParseTypes(text, out types, out id, out _);
+    }
+
     public static bool TryParseTypes(string text, out List<Type> types, out string entityId, out string errorMessage) {
         types = new List<Type>();
         entityId = "";
@@ -246,7 +251,8 @@ public static class InfoCustom {
                 matchTypeNames = AllTypes.Keys.Where(name => name.Contains($"+{typeName}")).ToList();
             }
 
-            types = matchTypeNames.Select(name => AllTypes[name]).ToList();
+            // one type can correspond to two keys (..@assemblyName and ..@modName), so we need Distinct<Type>()
+            types = matchTypeNames.Select(name => AllTypes[name]).Distinct<Type>().ToList();
             CachedParsedTypes[typeNameWithAssembly] = types;
         }
 
