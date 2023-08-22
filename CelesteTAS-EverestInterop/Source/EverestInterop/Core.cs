@@ -16,33 +16,17 @@ using GameInput = Celeste.Input;
 namespace TAS.EverestInterop;
 
 public static class Core {
-    // The fields we want to access from Celeste-Addons
-    private static bool SkipBaseUpdate;
     private static bool InUpdate;
-
-    private static Detour HGameUpdate;
-    private static DGameUpdate OrigGameUpdate;
-
     private static Action PreviousGameLoop;
 
     // https://github.com/EverestAPI/Everest/commit/b2a6f8e7c41ddafac4e6fde0e43a09ce1ac4f17e
     private static readonly Lazy<bool> CantPauseWhileSaving = new(() => Everest.Version < new Version(1, 2865));
-    private static readonly bool updateGrab = typeof(GameInput).GetMethod("UpdateGrab") != null;
 
     [Load]
     private static void Load() {
-        // The original mod makes the base.Update call conditional.
-        // We need to use Detour for two reasons:
-        // 1. Expose the trampoline to be used for the base.Update call in MInput_Update
-        // 2. XNA Framework methods would require a separate MMHOOK .dll
-        OrigGameUpdate = (HGameUpdate = new Detour(
-            typeof(Game).GetMethodInfo("Update"),
-            typeof(Core).GetMethodInfo("Game_Update")
-        )).GenerateTrampoline<DGameUpdate>();
-
         using (new DetourContext {After = new List<string> {"*"}}) {
             // The original mod adds a few lines of code into Monocle.Engine::Update.
-            On.Monocle.Engine.Update += Engine_Update;
+            On.Celeste.Celeste.Update += Celeste_Update;
 
             // The original mod makes the MInput.Update call conditional and invokes UpdateInputs afterwards.
             On.Monocle.MInput.Update += MInput_Update;
@@ -52,26 +36,20 @@ public static class Core {
             On.Celeste.RunThread.Start += RunThread_Start;
 
             // Forced: Allow "rendering" entities without actually rendering them.
-            On.Monocle.Entity.Render += Entity_Render;
-
-            if (updateGrab) {
-                HookHelper.SkipMethod(typeof(Core), nameof(IgnoreOrigUpdateGrab), typeof(GameInput).GetMethod("UpdateGrab"));
-            }
+            IL.Monocle.Entity.Render += SkipRenderMethod;
         }
     }
 
     [Unload]
     private static void Unload() {
-        On.Monocle.Engine.Update -= Engine_Update;
+        On.Celeste.Celeste.Update -= Celeste_Update;
         On.Monocle.MInput.Update -= MInput_Update;
         IL.Monocle.MInput.Update -= MInputOnUpdate;
         On.Celeste.RunThread.Start -= RunThread_Start;
-        HGameUpdate.Dispose();
-        On.Monocle.Entity.Render -= Entity_Render;
+        IL.Monocle.Entity.Render -= SkipRenderMethod;
     }
 
-    private static void Engine_Update(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
-        SkipBaseUpdate = false;
+    private static void Celeste_Update(On.Celeste.Celeste.orig_Update orig, Celeste.Celeste self, GameTime gameTime) {
         InUpdate = false;
 
         if (!TasSettings.Enabled || !Manager.Running) {
@@ -81,9 +59,7 @@ public static class Core {
 
         // The original patch doesn't store FrameLoops in a local variable, but it's only updated in UpdateInputs anyway.
         int loops = Manager.SlowForwarding ? 1 : (int) Manager.FrameLoops;
-        bool skipBaseUpdate = loops >= 2 || TasSettings.HideFreezeFrames;
 
-        SkipBaseUpdate = skipBaseUpdate;
         InUpdate = true;
 
         for (int i = 0; i < loops; i++) {
@@ -91,32 +67,24 @@ public static class Core {
 
             // Anything happening early on runs in the MInput.Update hook.
             orig(self, gameTime);
-            TryUpdateGrab();
             Manager.AdvanceThroughHiddenFrame = false;
 
             // Autosaving prevents opening the menu to skip cutscenes during fast forward.
-            if (skipBaseUpdate && CantPauseWhileSaving.Value && Engine.Scene is Level level && UserIO.Saving
+            if (CantPauseWhileSaving.Value && Engine.Scene is Level level && UserIO.Saving
                 && level.Entities.Any(entity => entity is EventTrigger or NPC or FlingBirdIntro)
                ) {
-                skipBaseUpdate = false;
                 break;
             }
 
             if (TasSettings.HideFreezeFrames && oldFreezeTimer > 0f && oldFreezeTimer > Engine.FreezeTimer) {
                 Manager.AdvanceThroughHiddenFrame = true;
                 loops += 1;
-            } else if (skipBaseUpdate && RecordingCommand.StopFastForward) {
-                skipBaseUpdate = false;
+            } else if (RecordingCommand.StopFastForward) {
                 break;
             }
         }
 
-        SkipBaseUpdate = false;
         InUpdate = false;
-
-        if (skipBaseUpdate) {
-            OrigGameUpdate(self, gameTime);
-        }
     }
 
     private static void MInput_Update(On.Monocle.MInput.orig_Update orig) {
@@ -164,15 +132,6 @@ public static class Core {
         }
     }
 
-    // ReSharper disable once UnusedMember.Local
-    private static void Game_Update(Game self, GameTime gameTime) {
-        if (TasSettings.Enabled && SkipBaseUpdate) {
-            return;
-        }
-
-        OrigGameUpdate(self, gameTime);
-    }
-
     private static void FrameStepGameLoop() {
         Engine.OverloadGameLoop = PreviousGameLoop;
     }
@@ -186,32 +145,12 @@ public static class Core {
         orig(method, name, highPriority);
     }
 
-    private static void Entity_Render(On.Monocle.Entity.orig_Render orig, Entity self) {
-        if (InUpdate) {
-            return;
-        }
-
-        orig(self);
+    private static void SkipRenderMethod(ILContext il) {
+        ILCursor ilCursor = new(il);
+        ILLabel startLabel = ilCursor.DefineLabel();
+        ilCursor.Emit(OpCodes.Ldsfld, typeof(Core).GetFieldInfo(nameof(InUpdate)))
+            .Emit(OpCodes.Brfalse, startLabel)
+            .Emit(OpCodes.Ret)
+            .MarkLabel(startLabel);
     }
-
-    private static void TryUpdateGrab() {
-        if (!updateGrab || Manager.SkipFrame) {
-            return;
-        }
-
-        UpdateGrab();
-    }
-
-    private static void UpdateGrab() {
-        // this method needs to be isolated for compatibility with Celeste v1.3+
-        if (Settings.Instance.GrabMode == GrabModes.Toggle && GameInput.Grab.Pressed) {
-            GameInput.grabToggle = !GameInput.grabToggle;
-        }
-    }
-
-    private static bool IgnoreOrigUpdateGrab() {
-        return Manager.Running;
-    }
-
-    private delegate void DGameUpdate(Game self, GameTime gameTime);
 }
