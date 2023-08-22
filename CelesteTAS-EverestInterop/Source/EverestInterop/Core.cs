@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Celeste;
-using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
@@ -18,9 +16,6 @@ namespace TAS.EverestInterop;
 public static class Core {
     private static bool InUpdate;
     private static Action PreviousGameLoop;
-
-    // https://github.com/EverestAPI/Everest/commit/b2a6f8e7c41ddafac4e6fde0e43a09ce1ac4f17e
-    private static readonly Lazy<bool> CantPauseWhileSaving = new(() => Everest.Version < new Version(1, 2865));
 
     [Load]
     private static void Load() {
@@ -57,24 +52,16 @@ public static class Core {
             return;
         }
 
-        // The original patch doesn't store FrameLoops in a local variable, but it's only updated in UpdateInputs anyway.
-        int loops = Manager.SlowForwarding ? 1 : (int) Manager.FrameLoops;
-
         InUpdate = true;
 
+        // The original patch doesn't store FrameLoops in a local variable, but it's only updated in UpdateInputs anyway.
+        int loops = Manager.SlowForwarding ? 1 : (int) Manager.FrameLoops;
         for (int i = 0; i < loops; i++) {
             float oldFreezeTimer = Engine.FreezeTimer;
 
             // Anything happening early on runs in the MInput.Update hook.
             orig(self, gameTime);
             Manager.AdvanceThroughHiddenFrame = false;
-
-            // Autosaving prevents opening the menu to skip cutscenes during fast forward.
-            if (CantPauseWhileSaving.Value && Engine.Scene is Level level && UserIO.Saving
-                && level.Entities.Any(entity => entity is EventTrigger or NPC or FlingBirdIntro)
-               ) {
-                break;
-            }
 
             if (TasSettings.HideFreezeFrames && oldFreezeTimer > 0f && oldFreezeTimer > Engine.FreezeTimer) {
                 Manager.AdvanceThroughHiddenFrame = true;
@@ -137,7 +124,7 @@ public static class Core {
     }
 
     private static void RunThread_Start(On.Celeste.RunThread.orig_Start orig, Action method, string name, bool highPriority) {
-        if (Manager.Running && (CantPauseWhileSaving.Value || name != "USER_IO" && name != "MOD_IO")) {
+        if (Manager.Running && name != "USER_IO" && name != "MOD_IO") {
             RunThread.RunThreadWithLogging(method);
             return;
         }
