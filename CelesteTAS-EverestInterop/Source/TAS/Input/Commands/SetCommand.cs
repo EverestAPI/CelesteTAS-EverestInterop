@@ -52,9 +52,9 @@ public static class SetCommand {
                     bool forSpecific = entityId.IsNotNullOrEmpty();
                     suspendLog = true;
                     foreach (Type type in types) {
-                        bool b = FindObjectAndSetMember(type, entityId, memberNames, parameters);
-                        existSuccess |= b;
-                        if (forSpecific && b) {
+                        bool hasSet = FindObjectAndSetMember(type, entityId, memberNames, parameters);
+                        existSuccess |= hasSet;
+                        if (forSpecific && hasSet) {
                             break;
                         }
                     }
@@ -147,12 +147,12 @@ public static class SetCommand {
         } else {
             obj = FindSpecialObject(type, entityId);
             if (obj == null) {
-                Log($"{type.FullName}{entityId.LogID()} object is not found");
+                Log($"{type.FullName}{entityId.LogId()} object is not found");
                 return false;
             } else {
                 if (type.IsSameOrSubclassOf(typeof(Entity)) && obj is List<Entity> entities) {
                     if (entities.IsEmpty()) {
-                        Log($"{type.FullName}{entityId.LogID()} entity is not found");
+                        Log($"{type.FullName}{entityId.LogId()} entity is not found");
                         return false;
                     } else {
                         List<object> memberValues = new();
@@ -217,7 +217,7 @@ public static class SetCommand {
 
         bool TryPrintErrorLog() {
             if (obj == null) {
-                Log($"{type.FullName}{entityId.LogID()} member value is null");
+                Log($"{type.FullName}{entityId.LogId()} member value is null");
                 return true;
             } else if (obj is string errorMsg && errorMsg.EndsWith(" not found")) {
                 Log(errorMsg);
@@ -363,7 +363,7 @@ public static class SetCommand {
         }
     }
 
-    private static string LogID(this string entityId) {
+    private static string LogId(this string entityId) {
         return entityId.IsNullOrEmpty() ? "" : $"[{entityId}]";
     }
 

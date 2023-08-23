@@ -41,10 +41,11 @@ public static class InfoCustom {
                 string modName = ConsoleEnhancements.GetModName(type);
                 AllTypes[$"{fullName}@{assemblyName}"] = type;
                 AllTypes[$"{fullName}@{modName}"] = type;
-                
+
                 if (!fullName.StartsWith("Celeste.Mod.Everest+Events")) {
-                    AllTypes[$"{fullName.Replace("+", ".")}@{assemblyName}"] = type;
-                    AllTypes[$"{fullName.Replace("+", ".")}@{modName}"] = type;
+                    string fullNameAlternative = fullName.Replace("+", ".");
+                    AllTypes[$"{fullNameAlternative}@{assemblyName}"] = type;
+                    AllTypes[$"{fullNameAlternative}@{modName}"] = type;
                 }
             }
         }
@@ -220,8 +221,8 @@ public static class InfoCustom {
         return TryParseTypes(text, out types, out _, out _);
     }
 
-    public static bool TryParseTypes(string text, out List<Type> types, out string id) {
-        return TryParseTypes(text, out types, out id, out _);
+    public static bool TryParseTypes(string text, out List<Type> types, out string entityId) {
+        return TryParseTypes(text, out types, out entityId, out _);
     }
 
     public static bool TryParseTypes(string text, out List<Type> types, out string entityId, out string errorMessage) {

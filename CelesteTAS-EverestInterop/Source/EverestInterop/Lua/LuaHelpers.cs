@@ -145,11 +145,15 @@ public static class LuaHelpers {
         return type != null;
     }
 
-    public static object GetEnum(string enumTypeName, string value) {
+    public static object GetEnum(string enumTypeName, object value) {
         if (TryGetType(enumTypeName, out Type type) && type.IsEnum) {
-            foreach (object enumValue in Enum.GetValues(type)) {
-                if (value.Equals(enumValue.ToString(), StringComparison.InvariantCultureIgnoreCase)) {
-                    return enumValue;
+            if (value is long longValue || long.TryParse(value.ToString(), out longValue)) {
+                return Enum.ToObject(type, longValue);
+            } else {
+                try {
+                    return Enum.Parse(type, value.ToString(), true);
+                } catch {
+                    return null;
                 }
             }
         }

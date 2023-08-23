@@ -36,6 +36,7 @@ local function invokeMethod(instanceOrTypeName, methodName, ...)
 end
 
 --- get enum value
+--- getEnum('Facings', 'Right') or getEnum('Facings', 1) 
 local function getEnum(enumTypeName, value)
     return LuaHelpers.GetEnum(enumTypeName, value)
 end

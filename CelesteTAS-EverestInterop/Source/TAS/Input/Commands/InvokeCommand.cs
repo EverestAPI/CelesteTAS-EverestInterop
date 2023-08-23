@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -48,13 +48,13 @@ public static class InvokeCommand {
                     suspendLog = true;
                     foreach (Type type in types) {
                         object result = FindObjectAndInvoke(type, entityId, memberNames, parameters);
-                        bool b = result != nonReturnObject;
-                        if (b) {
+                        bool hasReturned = result != nonReturnObject;
+                        if (hasReturned) {
                             result ??= "null";
                             result.Log(consolePrintLog);
                         }
-                        existSuccess |= b;
-                        if (forSpecific && b) {
+                        existSuccess |= hasReturned;
+                        if (forSpecific && hasReturned) {
                             break;
                         }
                     }
@@ -95,12 +95,12 @@ public static class InvokeCommand {
         } else {
             obj = SetCommand.FindSpecialObject(type, entityId);
             if (obj == null) {
-                Log($"{type.FullName}{entityId.LogID()} object is not found");
+                Log($"{type.FullName}{entityId.LogId()} object is not found");
                 return nonReturnObject;
             } else {
                 if (type.IsSameOrSubclassOf(typeof(Entity)) && obj is List<Entity> entities) {
                     if (entities.IsEmpty()) {
-                        Log($"{type.FullName}{entityId.LogID()} entity is not found");
+                        Log($"{type.FullName}{entityId.LogId()} entity is not found");
                         return nonReturnObject;
                     } else {
                         List<object> memberValues = new();
@@ -201,7 +201,7 @@ public static class InvokeCommand {
 
         bool TryPrintErrorLog() {
             if (obj == null) {
-                Log($"{type.FullName}{entityId.LogID()} member value is null");
+                Log($"{type.FullName}{entityId.LogId()} member value is null");
                 return true;
             } else if (obj is string errorMsg && errorMsg.EndsWith(" not found")) {
                 Log(errorMsg);
@@ -212,9 +212,10 @@ public static class InvokeCommand {
         }
 
     }
-    private static string LogID(this string entityId) {
+    private static string LogId(this string entityId) {
         return entityId.IsNullOrEmpty() ? "" : $"[{entityId}]";
     }
+
     private static void Log(string text) {
         if (suspendLog) {
             errorLogs.Add(text);
