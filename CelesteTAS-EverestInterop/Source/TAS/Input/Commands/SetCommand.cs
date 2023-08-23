@@ -18,6 +18,8 @@ namespace TAS.Input.Commands;
 public static class SetCommand {
     private static bool consolePrintLog;
     private const string logPrefix = "Set Command Failed: ";
+    private static List<string> errorLogs = new List<string>();
+    private static bool suspendLog = false;
 
     [Monocle.Command("set", "Set settings/level/session/entity field. eg set DashMode Infinite; set Player.Speed 325 -52.5 (CelesteTAS)")]
     private static void ConsoleSet(string arg1, string arg2, string arg3, string arg4, string arg5, string arg6, string arg7, string arg8,
@@ -46,9 +48,21 @@ public static class SetCommand {
 
                 if (InfoCustom.TryParseMemberNames(args[0], out string typeText, out List<string> memberNames, out string errorMessage)
                     && InfoCustom.TryParseTypes(typeText, out List<Type> types, out string entityId, out errorMessage)) {
+                    bool existSuccess = false;
+                    bool forSpecific = entityId.IsNotNullOrEmpty();
+                    suspendLog = true;
                     foreach (Type type in types) {
-                        FindObjectAndSetMember(type, entityId, memberNames, parameters);
+                        bool b = FindObjectAndSetMember(type, entityId, memberNames, parameters);
+                        existSuccess |= b;
+                        if (forSpecific && b) {
+                            break;
+                        }
                     }
+                    suspendLog = false;
+                    if (!forSpecific || !existSuccess) {
+                        errorLogs.Where(text => !existSuccess || !text.EndsWith(" entity is not found") && !text.EndsWith(" object is not found")).ToList().ForEach(Log);
+                    }
+                    errorLogs.Clear();
                 } else {
                     errorMessage.Log(consolePrintLog, LogLevel.Warn);
                 }
@@ -108,9 +122,9 @@ public static class SetCommand {
         return false;
     }
 
-    private static void FindObjectAndSetMember(Type type, string entityId, List<string> memberNames, string[] values, object structObj = null) {
+    private static bool FindObjectAndSetMember(Type type, string entityId, List<string> memberNames, string[] values, object structObj = null) {
         if (memberNames.IsEmpty() || values.IsEmpty() && structObj == null) {
-            return;
+            return false;
         }
 
         string lastMemberName = memberNames.Last();
@@ -126,26 +140,26 @@ public static class SetCommand {
                     type.GetFieldInfo(memberNames.First()) is {IsStatic: true})) {
             obj = InfoCustom.GetMemberValue(type, null, memberNames, true);
             if (TryPrintErrorLog()) {
-                return;
+                return false;
             }
 
             objType = obj.GetType();
         } else {
             obj = FindSpecialObject(type, entityId);
             if (obj == null) {
-                Log($"{type.FullName}{entityId} object is not found");
-                return;
+                Log($"{type.FullName}{entityId.LogID()} object is not found");
+                return false;
             } else {
                 if (type.IsSameOrSubclassOf(typeof(Entity)) && obj is List<Entity> entities) {
                     if (entities.IsEmpty()) {
-                        Log($"{type.FullName}{entityId} entity is not found");
-                        return;
+                        Log($"{type.FullName}{entityId.LogID()} entity is not found");
+                        return false;
                     } else {
                         List<object> memberValues = new();
                         foreach (Entity entity in entities) {
                             object memberValue = InfoCustom.GetMemberValue(type, entity, memberNames, true);
                             if (TryPrintErrorLog()) {
-                                return;
+                                return false;
                             }
 
                             if (memberValue != null) {
@@ -154,7 +168,7 @@ public static class SetCommand {
                         }
 
                         if (memberValues.IsEmpty()) {
-                            return;
+                            return false;
                         }
 
                         obj = memberValues;
@@ -163,7 +177,7 @@ public static class SetCommand {
                 } else {
                     obj = InfoCustom.GetMemberValue(type, obj, memberNames, true);
                     if (TryPrintErrorLog()) {
-                        return;
+                        return false;
                     }
 
                     objType = obj.GetType();
@@ -172,14 +186,16 @@ public static class SetCommand {
         }
 
         if (type.IsSameOrSubclassOf(typeof(Entity)) && obj is List<object> objects) {
-            objects.ForEach(SetMember);
+            bool success = false;
+            objects.ForEach(_ => success |= SetMember(_));
+            return success;
         } else {
-            SetMember(obj);
+            return SetMember(obj);
         }
 
-        void SetMember(object @object) {
+        bool SetMember(object @object) {
             if (!TrySetMember(objType, @object, lastMemberName, values, structObj)) {
-                return;
+                return false;
             }
 
             // after modifying the struct
@@ -193,13 +209,15 @@ public static class SetCommand {
                     _ => new string[] { }
                 };
 
-                FindObjectAndSetMember(type, entityId, memberNames, position, position.IsEmpty() ? @object : null);
+                return FindObjectAndSetMember(type, entityId, memberNames, position, position.IsEmpty() ? @object : null);
             }
+
+            return true;
         }
 
         bool TryPrintErrorLog() {
             if (obj == null) {
-                Log($"{type.FullName} member value is null");
+                Log($"{type.FullName}{entityId.LogID()} member value is null");
                 return true;
             } else if (obj is string errorMsg && errorMsg.EndsWith(" not found")) {
                 Log(errorMsg);
@@ -345,7 +363,16 @@ public static class SetCommand {
         }
     }
 
+    private static string LogID(this string entityId) {
+        return entityId.IsNullOrEmpty() ? "" : $"[{entityId}]";
+    }
+
     private static void Log(string text) {
+        if (suspendLog) {
+            errorLogs.Add(text);
+            return;
+        }
+
         if (!consolePrintLog) {
             text = $"{logPrefix}{text}";
         }

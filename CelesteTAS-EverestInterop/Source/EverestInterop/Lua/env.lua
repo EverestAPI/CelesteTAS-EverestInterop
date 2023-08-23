@@ -10,6 +10,7 @@ local function log(message, tag)
 end
 
 --- getEntity("Player") or getEntity("Celeste.Player")
+--- can specify entityId, like getEntity("DustStaticSpinner[s1:12]")
 local function getEntity(entityTypeName)
     return LuaHelpers.GetEntity(entityTypeName)
 end
