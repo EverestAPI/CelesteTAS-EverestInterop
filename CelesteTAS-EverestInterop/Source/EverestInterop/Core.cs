@@ -15,13 +15,15 @@ namespace TAS.EverestInterop;
 
 public static class Core {
     private static bool InUpdate;
-    private static Action PreviousGameLoop;
 
     [Load]
     private static void Load() {
         using (new DetourContext {After = new List<string> {"*"}}) {
-            // The original mod adds a few lines of code into Monocle.Engine::Update.
             On.Celeste.Celeste.Update += Celeste_Update;
+            IL.Monocle.Engine.Update += EngineOnUpdate;
+            if (typeof(GameInput).GetMethod("UpdateGrab") is { } updateGrabMethod) {
+                HookHelper.SkipMethod(typeof(Core), nameof(IsPause), updateGrabMethod);
+            }
 
             // The original mod makes the MInput.Update call conditional and invokes UpdateInputs afterwards.
             On.Monocle.MInput.Update += MInput_Update;
@@ -38,6 +40,7 @@ public static class Core {
     [Unload]
     private static void Unload() {
         On.Celeste.Celeste.Update -= Celeste_Update;
+        IL.Monocle.Engine.Update -= EngineOnUpdate;
         On.Monocle.MInput.Update -= MInput_Update;
         IL.Monocle.MInput.Update -= MInputOnUpdate;
         On.Celeste.RunThread.Start -= RunThread_Start;
@@ -74,6 +77,21 @@ public static class Core {
         InUpdate = false;
     }
 
+    private static void EngineOnUpdate(ILContext il) {
+        ILCursor ilCursor = new(il);
+        if (ilCursor.TryGotoNext(MoveType.After, ins => ins.MatchCall(typeof(MInput), "Update"))) {
+            ILLabel label = ilCursor.DefineLabel();
+            ilCursor.EmitDelegate(IsPause);
+            ilCursor.Emit(OpCodes.Brfalse, label)
+                .Emit(OpCodes.Ret)
+                .MarkLabel(label);
+        }
+    }
+
+    private static bool IsPause() {
+        return Manager.SkipFrame && !Manager.IsLoading();
+    }
+
     private static void MInput_Update(On.Monocle.MInput.orig_Update orig) {
         if (!TasSettings.Enabled) {
             orig();
@@ -85,13 +103,6 @@ public static class Core {
         }
 
         Manager.Update();
-
-        // Hacky, but this works just good enough.
-        // The original code executes base.Update(); return; instead.
-        if (Manager.SkipFrame && !Manager.IsLoading()) {
-            PreviousGameLoop = Engine.OverloadGameLoop;
-            Engine.OverloadGameLoop = FrameStepGameLoop;
-        }
     }
 
     // update controller even the game is lose focus
@@ -117,10 +128,6 @@ public static class Core {
                 MInput.GamePads[i].UpdateNull();
             }
         }
-    }
-
-    private static void FrameStepGameLoop() {
-        Engine.OverloadGameLoop = PreviousGameLoop;
     }
 
     private static void RunThread_Start(On.Celeste.RunThread.orig_Start orig, Action method, string name, bool highPriority) {

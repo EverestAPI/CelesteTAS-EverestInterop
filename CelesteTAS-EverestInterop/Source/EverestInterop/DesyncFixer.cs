@@ -17,15 +17,6 @@ public static class DesyncFixer {
 
     [Initialize]
     private static void Initialize() {
-        if (ModUtils.GetType("StrawberryJam2021", "Celeste.Mod.StrawberryJam2021.Entities.WonkyCassetteBlockController")
-                ?.GetMethodInfo("Engine_Update") is { } methodInfo) {
-            methodInfo.IlHook((cursor, _) => {
-                if (cursor.TryGotoNext(MoveType.After, i => i.MatchLdsfld<Engine>("DashAssistFreeze"))) {
-                    cursor.Emit(OpCodes.Call, typeof(Manager).GetProperty(nameof(Manager.SkipFrame)).GetGetMethod()).Emit(OpCodes.Or);
-                }
-            });
-        }
-
         Dictionary<MethodInfo, int> methods = new() {
             {typeof(Debris).GetMethod(nameof(Debris.orig_Init)), 1},
             {typeof(Debris).GetMethod(nameof(Debris.Init), new[] {typeof(Vector2), typeof(char), typeof(bool)}), 1},
