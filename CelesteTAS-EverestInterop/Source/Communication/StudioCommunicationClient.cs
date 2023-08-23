@@ -59,6 +59,14 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         }
     }
 
+    public static void ChangeStatus() {
+        if (TasSettings.AttemptConnectStudio) {
+            Run();
+        } else {
+            Destroy();
+        }
+    }
+
     private static Dictionary<string, ModUpdateInfo> ModUpdaterHelperOnDownloadModUpdateList(
         On.Celeste.Mod.Helpers.ModUpdaterHelper.orig_DownloadModUpdateList orig) {
         return modUpdateInfos = orig();

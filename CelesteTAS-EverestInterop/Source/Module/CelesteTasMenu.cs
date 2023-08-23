@@ -45,11 +45,7 @@ internal static class CelesteTasMenu {
                 TasSettings.LaunchStudioAtBoot = value));
             subMenu.Add(new TextMenu.OnOff("Attempt To Connect To Studio".ToDialogText(), TasSettings.AttemptConnectStudio).Change(value => {
                 TasSettings.AttemptConnectStudio = value;
-                if (value) {
-                    StudioCommunicationClient.Run();
-                } else {
-                    StudioCommunicationClient.Destroy();
-                }
+                StudioCommunicationClient.ChangeStatus();
             }));
             TextMenu.Item hideFreezeFramesItem;
             subMenu.Add(hideFreezeFramesItem = new TextMenu.OnOff("Hide Freeze Frames".ToDialogText(), TasSettings.HideFreezeFrames).Change(value =>
@@ -181,6 +177,8 @@ internal static class CelesteTasMenu {
             foreach (TextMenuExt.EaseInSubHeaderExt easeInSubHeader in enabledDescriptions) {
                 easeInSubHeader.FadeVisible = value;
             }
+
+            StudioCommunicationClient.ChangeStatus();
         });
         menu.Add(enabledItem);
         CreateOptions(everestModule, menu, inGame);

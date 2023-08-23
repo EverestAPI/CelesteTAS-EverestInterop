@@ -7,6 +7,7 @@ using Monocle;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
+using YamlDotNet.Serialization;
 
 namespace TAS.Module;
 
@@ -23,11 +24,13 @@ public class CelesteTasSettings : EverestModuleSettings {
 
     #region Hitboxes
 
-    private bool showHitboxes;
+    [YamlMember(Alias = "ShowHitboxes")]
+    public bool _ShowHitboxes { get; set; } = false;
 
+    [YamlIgnore]
     public bool ShowHitboxes {
-        get => Enabled && showHitboxes || !ShowGameplay;
-        set => showHitboxes = value;
+        get => Enabled && _ShowHitboxes || !ShowGameplay;
+        set => _ShowHitboxes = value;
     }
 
     public bool ShowTriggerHitboxes { get; set; } = true;
@@ -117,18 +120,22 @@ public class CelesteTasSettings : EverestModuleSettings {
 
     #region SimplifiedGraphics
 
-    private bool simplifiedGraphics;
+    [YamlMember(Alias = "SimplifiedGraphics")]
+    public bool _SimplifiedGraphics { get; set; } = false;
 
+    [YamlIgnore]
     public bool SimplifiedGraphics {
-        get => Enabled && simplifiedGraphics;
-        set => simplifiedGraphics = value;
+        get => Enabled && _SimplifiedGraphics;
+        set => _SimplifiedGraphics = value;
     }
 
-    private bool showGameplay = true;
+    [YamlMember(Alias = "ShowGameplay")]
+    public bool _ShowGameplay { get; set; } = true;
 
+    [YamlIgnore]
     public bool ShowGameplay {
-        get => showGameplay || !SimplifiedGraphics;
-        set => showGameplay = value;
+        get => _ShowGameplay || !SimplifiedGraphics;
+        set => _ShowGameplay = value;
     }
 
     public int? SimplifiedLighting { get; set; } = 10;
@@ -296,21 +303,25 @@ public class CelesteTasSettings : EverestModuleSettings {
 
     #region More Options
 
-    private bool centerCamera;
+    [YamlMember(Alias = "CenterCamera")]
+    public bool _CenterCamera { get; set; } = false;
 
+    [YamlIgnore]
     public bool CenterCamera {
-        get => Enabled && centerCamera;
-        set => centerCamera = value;
+        get => Enabled && _CenterCamera;
+        set => _CenterCamera = value;
     }
 
     public bool RestoreSettings { get; set; } = false;
     public bool LaunchStudioAtBoot { get; set; } = false;
 
-    private bool  attemptConnectStudio = true;
+    [YamlMember(Alias = "AttemptConnectStudio")]
+    public bool _AttemptConnectStudio { get; set; } = true;
 
+    [YamlIgnore]
     public bool AttemptConnectStudio {
-        get => Enabled && attemptConnectStudio;
-        set => attemptConnectStudio = value;
+        get => Enabled && _AttemptConnectStudio;
+        set => _AttemptConnectStudio = value;
     }
 
     public bool HideFreezeFrames { get; set; } = false;
