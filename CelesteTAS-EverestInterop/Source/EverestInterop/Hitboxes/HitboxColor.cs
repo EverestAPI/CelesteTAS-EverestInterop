@@ -139,9 +139,10 @@ public static class HitboxColor {
         }
 
         Color customColor = entity switch {
-            Platform => TasSettings.PlatformHitboxColor,
             ChangeRespawnTrigger => RespawnTriggerColor,
             Trigger => TasSettings.TriggerHitboxColor,
+            Platform => TasSettings.PlatformHitboxColor,
+            LookoutBlocker => Color.Green,
             _ => TasSettings.EntityHitboxColor
         };
 
