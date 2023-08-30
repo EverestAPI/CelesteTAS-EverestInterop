@@ -353,6 +353,7 @@ public class InputController {
             Inputs.Add(inputFrame);
         }
 
+        LibTasHelper.WriteLibTasFrame(inputFrame);
         initializationFrameCount += inputFrame.Frames;
     }
 

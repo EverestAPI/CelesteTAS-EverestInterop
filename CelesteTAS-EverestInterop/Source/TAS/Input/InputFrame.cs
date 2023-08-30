@@ -192,8 +192,6 @@ public record InputFrame {
             inputFrame.Previous = prevInputFrame;
         }
 
-        LibTasHelper.WriteLibTasFrame(inputFrame);
-
         return true;
 
         bool IsDashOnlyDirection() {

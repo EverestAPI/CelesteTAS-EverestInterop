@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using StudioCommunication;
 using TAS.Input;
@@ -9,15 +10,19 @@ namespace TAS;
 /// <summary>
 /// Playback via libTAS requires default bindings
 /// and set
+/// LeftShoulder, LeftStickButton = Grab
 /// RightShoulder, RightStickButton = Crouch Dash
 /// Keys.Tab = Journal and Talk
 /// RightStickAxis = Dashing Only Directions
+/// Keys.I/Keys.K/Keys.J/Keys.L = Move Only Directions
 /// </summary>
 public static class LibTasHelper {
     private static StreamWriter streamWriter;
     private static InputFrame skipInputFrame;
     private static string fileName;
     private static bool exporting;
+    private static readonly List<string> keys = new();
+    private static readonly char[] buttons = new char[15];
 
     private static void StartExport(string path) {
         FinishExport();
@@ -61,7 +66,9 @@ public static class LibTasHelper {
             return;
         }
 
-        InputFrame.TryParse(inputText, 0, null, out InputFrame _);
+        if (InputFrame.TryParse(inputText, 0, null, out InputFrame inputFrame)) {
+            WriteLibTasFrame(inputFrame);
+        }
     }
 
     private static void SkipNextInput() {
@@ -83,26 +90,32 @@ public static class LibTasHelper {
     }
 
     private static void WriteLibTasFrame(string outputKeys, string outputAxesLeft, string outputAxesRight, string outputButtons) {
-        streamWriter.WriteLine($"|{outputKeys}|{outputAxesLeft}:{outputAxesRight}:0:0:{outputButtons}|.........|");
+        if (outputAxesLeft == "0:0" && outputAxesRight == "0:0" && outputButtons == "...............") {
+            streamWriter.WriteLine($"|K{outputKeys}|");
+        } else {
+            streamWriter.WriteLine($"|K{outputKeys}|C1{outputAxesLeft}:{outputAxesRight}:0:0:{outputButtons}|");
+        }
     }
 
     private static string LibTasKeys(InputFrame inputFrame) {
+        keys.Clear();
+        
         // Keys.C
         if (inputFrame.HasActions(Actions.Confirm)) {
-            return "63";
+            keys.Add("63");
         }
 
         // Keys.R
         if (inputFrame.HasActions(Actions.Restart)) {
-            return "72";
+            keys.Add("72");
         }
 
         // Keys.Tab
         if (inputFrame.HasActions(Actions.Journal)) {
-            return "ff09";
+            keys.Add("ff09");
         }
 
-        return "";
+        return string.Join(":", keys);
     }
 
     private static string LibTasButtons(InputFrame inputFrame) {
@@ -122,7 +135,6 @@ public static class LibTasHelper {
         // 13 BUTTON_DPAD_LEFT = l
         // 14 BUTTON_DPAD_RIGHT = r
 
-        char[] buttons = new char[15];
         for (int i = 0; i < 15; ++i) {
             buttons[i] = '.';
         }
@@ -176,7 +188,7 @@ public static class LibTasHelper {
         }
 
         if (inputFrame.HasActions(Actions.Grab2)) {
-            buttons[10] = ']';
+            buttons[7] = '(';
         }
 
         return string.Join("", buttons);
