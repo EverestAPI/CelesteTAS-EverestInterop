@@ -100,18 +100,38 @@ public static class LibTasHelper {
     private static string LibTasKeys(InputFrame inputFrame) {
         keys.Clear();
         
-        // Keys.C
         if (inputFrame.HasActions(Actions.Confirm)) {
+            // Keys.C
             keys.Add("63");
         }
 
-        // Keys.R
         if (inputFrame.HasActions(Actions.Restart)) {
+            // Keys.R
             keys.Add("72");
         }
+        
+        if (inputFrame.HasActions(Actions.UpMoveOnly)) {
+            // Keys.I
+            keys.Add("69");
+        }
+        
+        if (inputFrame.HasActions(Actions.LeftMoveOnly)) {
+            // Keys.J
+            keys.Add("6a");
+        }
+        
+        if (inputFrame.HasActions(Actions.DownMoveOnly)) {
+            // Keys.K
+            keys.Add("6b");
+        }
+        
+        if (inputFrame.HasActions(Actions.RightMoveOnly)) {
+            // Keys.L
+            keys.Add("6c");
+        }
 
-        // Keys.Tab
         if (inputFrame.HasActions(Actions.Journal)) {
+            // Keys.Tab
             keys.Add("ff09");
         }
 
