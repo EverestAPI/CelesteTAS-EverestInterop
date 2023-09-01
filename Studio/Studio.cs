@@ -1750,15 +1750,14 @@ public partial class Studio : BaseForm {
         }
 
         using (SaveFileDialog dialog = new()) {
-            dialog.DefaultExt = ".txt";
+            dialog.DefaultExt = ".ltm";
             dialog.AddExtension = true;
-            dialog.Filter = "TXT|*.txt";
+            dialog.Filter = "libTAS Movie|*.ltm";
             dialog.FilterIndex = 0;
             if (!string.IsNullOrEmpty(CurrentFileName)) {
-                dialog.InitialDirectory = Path.GetDirectoryName(CurrentFileName);
-                dialog.FileName = Path.GetFileNameWithoutExtension(CurrentFileName) + "_libTAS_inputs.txt";
+                dialog.FileName = Path.GetFileNameWithoutExtension(CurrentFileName) + ".ltm";
             } else {
-                dialog.FileName = "libTAS_inputs.txt";
+                dialog.FileName = "Celeste.ltm";
             }
 
             if (dialog.ShowDialog() == DialogResult.OK) {

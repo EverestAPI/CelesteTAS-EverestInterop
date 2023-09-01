@@ -33,6 +33,12 @@
           "MonoMod.Utils": "21.4.29.1"
         }
       },
+      "SharpZipLib": {
+        "type": "Direct",
+        "requested": "[1.3.3, )",
+        "resolved": "1.3.3",
+        "contentHash": "N8+hwhsKZm25tDJfWpBSW7EGhH/R7EMuiX+KJ4C4u+fCWVc1lJ5zg1u3S1RPPVYgTqhx/C3hxrqUpi6RwK5+Tg=="
+      },
       "YamlDotNet": {
         "type": "Direct",
         "requested": "[8.0.0, )",

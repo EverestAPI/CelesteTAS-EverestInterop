@@ -124,6 +124,7 @@ namespace CelesteStudio {
             this.toolStripSeparator16 = new System.Windows.Forms.ToolStripSeparator();
             this.setToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.invokeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.evalLuaStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             this.pressToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator24 = new System.Windows.Forms.ToolStripSeparator();
@@ -172,7 +173,6 @@ namespace CelesteStudio {
             this.statusPanel = new System.Windows.Forms.Panel();
             this.statusBar = new System.Windows.Forms.StatusStrip();
             this.lblStatus = new System.Windows.Forms.ToolStripStatusLabel();
-            this.evalLuaStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusBarContextMenuStrip.SuspendLayout();
             this.menuStrip.SuspendLayout();
             this.tasTextContextMenuStrip.SuspendLayout();
@@ -340,7 +340,7 @@ namespace CelesteStudio {
             // 
             this.convertToLibTASInputsToolStripMenuItem.Name = "convertToLibTASInputsToolStripMenuItem";
             this.convertToLibTASInputsToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
-            this.convertToLibTASInputsToolStripMenuItem.Text = "&Convert to LibTAS Inputs...";
+            this.convertToLibTASInputsToolStripMenuItem.Text = "&Convert to LibTAS Movie...";
             this.convertToLibTASInputsToolStripMenuItem.Click += new System.EventHandler(this.convertToLibTASInputsToolStripMenuItem_Click);
             // 
             // settingsToolStripMenuItem
@@ -682,7 +682,7 @@ namespace CelesteStudio {
             // 
             this.tasTextContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.insertRemoveBreakPointToolStripMenuItem, this.insertRemoveSavestateBreakPointToolStripMenuItem, this.removeAllUncommentedBreakpointsToolStripMenuItem, this.removeAllBreakpointsToolStripMenuItem, this.commentUncommentAllBreakpointsToolStripMenuItem, this.toolStripSeparator2, this.commentUncommentTextToolStripMenuItem, this.insertRoomNameToolStripMenuItem, this.insertCurrentInGameTimeToolStripMenuItem, this.insertModInfoStripMenuItem1, this.insertConsoleLoadCommandToolStripMenuItem, this.insertSimpleConsoleLoadCommandToolStripMenuItem, this.insertOtherCommandToolStripMenuItem, this.toolStripSeparator6, this.swapDashKeysStripMenuItem, this.swapJumpKeysToolStripMenuItem, this.swapSelectedLAndRToolStripMenuItem, this.combineConsecutiveSameInputsToolStripMenuItem, this.forceCombineInputsToolStripMenuItem, this.convertDashToDemoDashToolStripMenuItem, this.toolStripSeparator12, this.openReadFileToolStripMenuItem});
             this.tasTextContextMenuStrip.Name = "tasTextContextMenuStrip";
-            this.tasTextContextMenuStrip.Size = new System.Drawing.Size(426, 462);
+            this.tasTextContextMenuStrip.Size = new System.Drawing.Size(426, 440);
             // 
             // insertRemoveBreakPointToolStripMenuItem
             // 
@@ -869,6 +869,14 @@ namespace CelesteStudio {
             this.invokeToolStripMenuItem.Text = "Invoke";
             this.invokeToolStripMenuItem.ToolTipText = "Similar to the set command, but used to invoke the method";
             this.invokeToolStripMenuItem.Click += new System.EventHandler(this.invokeToolStripMenuItem_Click);
+            // 
+            // evalLuaStripMenuItem
+            // 
+            this.evalLuaStripMenuItem.Name = "evalLuaStripMenuItem";
+            this.evalLuaStripMenuItem.Size = new System.Drawing.Size(194, 22);
+            this.evalLuaStripMenuItem.Text = "EvalLua";
+            this.evalLuaStripMenuItem.ToolTipText = "Evaluate lua code";
+            this.evalLuaStripMenuItem.Click += new System.EventHandler(this.evalLuaStripMenuItem_Click);
             // 
             // toolStripSeparator3
             // 
@@ -1246,14 +1254,6 @@ namespace CelesteStudio {
             this.lblStatus.Spring = true;
             this.lblStatus.Text = "Searching...";
             this.lblStatus.TextAlign = System.Drawing.ContentAlignment.TopLeft;
-            // 
-            // evalLuaStripMenuItem
-            // 
-            this.evalLuaStripMenuItem.Name = "evalLuaStripMenuItem";
-            this.evalLuaStripMenuItem.Size = new System.Drawing.Size(194, 22);
-            this.evalLuaStripMenuItem.Text = "EvalLua";
-            this.evalLuaStripMenuItem.ToolTipText = "Evaluate lua code";
-            this.evalLuaStripMenuItem.Click += new System.EventHandler(this.evalLuaStripMenuItem_Click);
             // 
             // Studio
             // 
