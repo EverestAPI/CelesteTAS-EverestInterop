@@ -52,6 +52,7 @@ public static class LibTasHelper {
         skipInputFrame = null;
         if (exporting && File.Exists(inputsFilePath)) {
             CreateLibTasMovie();
+            CreateResourceFile("settings.celeste", out _);
         }
 
         exporting = false;
@@ -262,12 +263,12 @@ public static class LibTasHelper {
             inputsEntry.Name = "inputs";
             tarArchive.WriteEntry(inputsEntry, false);
 
-            tarArchive.WriteEntry(CreateTarEntry("config.ini", configContent), false);
-            tarArchive.WriteEntry(CreateTarEntry("editor.ini", editorContent), false);
-            tarArchive.WriteEntry(CreateTarEntry("annotations.txt", ""), false);
+            tarArchive.WriteEntry(CreateTarEntry("config.ini"), false);
+            tarArchive.WriteEntry(CreateTarEntry("editor.ini"), false);
+            tarArchive.WriteEntry(CreateTarEntry("annotations.txt"), false);
 
             tarArchive.Close();
-        
+
             File.Delete(inputsFilePath);
             string directory = Path.GetDirectoryName(ltmFilePath);
             File.Delete(Path.Combine(directory, "config.ini"));
@@ -278,110 +279,22 @@ public static class LibTasHelper {
         }
     }
 
-    private static TarEntry CreateTarEntry(string fileName, string fileContent) {
-        string directory = Path.GetDirectoryName(ltmFilePath);
-        string filePath = Path.Combine(directory, fileName);
-        File.WriteAllText(filePath, fileContent);
+    private static TarEntry CreateTarEntry(string fileName) {
+        CreateResourceFile(fileName, out string filePath);
         TarEntry tarEntry = TarEntry.CreateEntryFromFile(filePath);
         tarEntry.Name = fileName;
         return tarEntry;
     }
 
-    private const string configContent =
-        """
-        [General]
-        authors=
-        auto_restart=false
-        frame_count=1
-        framerate_den=1
-        framerate_num=60
-        game_name=Celeste.bin.x86_64
-        initial_monotonic_time_nsec=0
-        initial_monotonic_time_sec=0
-        initial_time_nsec=0
-        initial_time_sec=1
-        length_nsec=17000000
-        length_sec=0
-        libtas_major_version=1
-        libtas_minor_version=4
-        libtas_patch_version=4
-        md5=bca2a5ba50d072dcd118c45ad5521064
-        mouse_support=false
-        nb_controllers=1
-        rerecord_count=0
-        savestate_frame_count=1
-        variable_framerate=false
+    private static void CreateResourceFile(string fileName, out string filePath) {
+        string directory = Path.GetDirectoryName(ltmFilePath);
+        filePath = Path.Combine(directory, fileName);
+        File.WriteAllText(filePath, GetResourceFile(fileName)); 
+    }
 
-        [mainthread_timetrack]
-        GetTickCount=-1
-        GetTickCount64=-1
-        QueryPerformanceCounter=-1
-        clock=-1
-        clock_gettime_monotonic=100
-        clock_gettime_real=-1
-        gettimeofday=-1
-        sdl_getperformancecounter=-1
-        sdl_getticks=-1
-        time=-1
-        """;
-
-    private const string editorContent =
-        """
-        [input_names]
-        1\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\x1\x80\0\0\0\x1)
-        1\name=LeftStickX
-        10\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\x1\n\0\0\0\x1)
-        10\name=RightShoulder
-        11\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\x1\a\0\0\0\x1)
-        11\name=LeftStick
-        12\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\x1\b\0\0\0\x1)
-        12\name=RightStick
-        13\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\x1\x4\0\0\0\x1)
-        13\name=Back
-        14\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\x1\x6\0\0\0\x1)
-        14\name=Start
-        15\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\x1\v\0\0\0\x1)
-        15\name=Joy Up
-        16\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\x1\f\0\0\0\x1)
-        16\name=Joy Down
-        17\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\x1\r\0\0\0\x1)
-        17\name=Joy Left
-        18\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\x1\xe\0\0\0\x1)
-        18\name=Joy Right
-        19\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\0\0\0\0\0\x63)
-        19\name=c
-        2\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\x1\x81\0\0\0\x1)
-        2\name=LeftStickY
-        20\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\0\0\0\0\0r)
-        20\name=r
-        21\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\0\0\0\0\xff\t)
-        21\name=Tab
-        22\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\0\0\0\0\0i)
-        22\name=i
-        23\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\0\0\0\0\0k)
-        23\name=k
-        24\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\0\0\0\0\0j)
-        24\name=j
-        25\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\0\0\0\0\0l)
-        25\name=l
-        3\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\x1\x82\0\0\0\x1)
-        3\name=RightStickX
-        4\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\x1\x83\0\0\0\x1)
-        4\name=RightStickY
-        5\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\x1\0\0\0\0\x1)
-        5\name=Joy A
-        6\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\x1\x1\0\0\0\x1)
-        6\name=Joy B
-        7\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\x1\x2\0\0\0\x1)
-        7\name=Joy X
-        8\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\x1\x3\0\0\0\x1)
-        8\name=Joy Y
-        9\input=@Variant(\0\0\0\x7f\0\0\0\fSingleInput\0\0\0\x1\t\0\0\0\x1)
-        9\name=LeftShoulder
-        size=25
-
-        [nondraw_frames]
-        1\frame=1
-        size=1
-        """;
+    private static string GetResourceFile(string name) {
+        using Stream stream = typeof(LibTasHelper).Assembly.GetManifestResourceStream($"TAS.libTAS.{name}");
+        using StreamReader reader = new(stream);
+        return reader.ReadToEnd();
+    }
 }

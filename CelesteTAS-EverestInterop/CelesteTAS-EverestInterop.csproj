@@ -80,6 +80,7 @@
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
           <Link>%(FileName)%(Extension)</Link>
         </Content>
+        <EmbeddedResource Include="libTAS\*" />
     </ItemGroup>
     <ItemGroup>
         <None Remove="lib-stripped\**" />
