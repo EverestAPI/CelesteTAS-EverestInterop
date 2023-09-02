@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using ICSharpCode.SharpZipLib.GZip;
 using ICSharpCode.SharpZipLib.Tar;
@@ -52,7 +53,7 @@ public static class LibTasHelper {
         skipInputFrame = null;
         if (exporting && File.Exists(inputsFilePath)) {
             CreateLibTasMovie();
-            CreateResourceFile("settings.celeste", out _);
+            CreateResourceFile("settings.celeste", null, out _);
         }
 
         exporting = false;
@@ -263,33 +264,34 @@ public static class LibTasHelper {
             inputsEntry.Name = "inputs";
             tarArchive.WriteEntry(inputsEntry, false);
 
-            tarArchive.WriteEntry(CreateTarEntry("config.ini"), false);
+            tarArchive.WriteEntry(CreateTarEntry("config.ini", contents => string.Format(contents, File.ReadLines(inputsFilePath).Count())), false);
             tarArchive.WriteEntry(CreateTarEntry("editor.ini"), false);
             tarArchive.WriteEntry(CreateTarEntry("annotations.txt"), false);
 
             tarArchive.Close();
 
-            File.Delete(inputsFilePath);
             string directory = Path.GetDirectoryName(ltmFilePath);
             File.Delete(Path.Combine(directory, "config.ini"));
             File.Delete(Path.Combine(directory, "editor.ini"));
             File.Delete(Path.Combine(directory, "annotations.txt"));
+            File.Delete(inputsFilePath);
         } catch (Exception e) {
             e.Log();
         }
     }
 
-    private static TarEntry CreateTarEntry(string fileName) {
-        CreateResourceFile(fileName, out string filePath);
+    private static TarEntry CreateTarEntry(string fileName, Func<string, string> contentsSelector = null) {
+        CreateResourceFile(fileName, contentsSelector, out string filePath);
         TarEntry tarEntry = TarEntry.CreateEntryFromFile(filePath);
         tarEntry.Name = fileName;
         return tarEntry;
     }
 
-    private static void CreateResourceFile(string fileName, out string filePath) {
+    private static void CreateResourceFile(string fileName, Func<string, string> contentsSelector, out string filePath) {
         string directory = Path.GetDirectoryName(ltmFilePath);
         filePath = Path.Combine(directory, fileName);
-        File.WriteAllText(filePath, GetResourceFile(fileName)); 
+        string contents = GetResourceFile(fileName);
+        File.WriteAllText(filePath, contentsSelector == null ? contents : contentsSelector(contents)); 
     }
 
     private static string GetResourceFile(string name) {
