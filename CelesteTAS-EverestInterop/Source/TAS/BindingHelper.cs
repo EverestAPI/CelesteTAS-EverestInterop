@@ -15,9 +15,6 @@ namespace TAS;
 
 public static class BindingHelper {
     private static readonly Type BindingType = typeof(Engine).Assembly.GetType("Monocle.Binding");
-    private static readonly MethodInfo BindingAddKeys = BindingType?.GetMethod("Add", new[] {typeof(Keys[])});
-    private static readonly MethodInfo BindingAddButtons = BindingType?.GetMethod("Add", new[] {typeof(Buttons[])});
-    private static readonly FieldInfo MInputControllerHasFocus = typeof(MInput).GetFieldInfo("ControllerHasFocus");
 
     static BindingHelper() {
         if (typeof(GameInput).GetFieldInfo("DemoDash") == null && typeof(GameInput).GetFieldInfo("CrouchDash") == null) {
@@ -71,10 +68,6 @@ public static class BindingHelper {
             SetTasBindingsV1312();
         } else {
             SetTasBindingsNew();
-            if (MInputControllerHasFocus != null) {
-                origControllerHasFocus = (bool?) MInputControllerHasFocus.GetValue(null);
-                MInputControllerHasFocus.SetValue(null, true);
-            }
         }
 
         CoreModule.Instance.OnInputDeregister();
@@ -98,12 +91,16 @@ public static class BindingHelper {
     private static void RestorePlayerBindings() {
         GameInput.Initialize();
         if (origControllerHasFocus.HasValue) {
-            MInputControllerHasFocus?.SetValue(null, origControllerHasFocus.Value);
-            origControllerHasFocus = null;
+            RestoreControllerHasFocus();
         }
 
         CoreModule.Settings.UseKeyboardForTextInput = origKbTextInput;
         MInput.GamePads[GameInput.Gamepad].Attached = origAttached;
+    }
+
+    private static void RestoreControllerHasFocus() {
+        MInput.ControllerHasFocus = origControllerHasFocus.Value;
+        origControllerHasFocus = null;
     }
 
     private static void SetTasBindingsV1312() {
@@ -170,31 +167,35 @@ public static class BindingHelper {
         SetBinding("DownMoveOnly", new[] {DownMoveOnly});
 
         GameInput.Initialize();
+        ClearModsBindings();
 
+        origControllerHasFocus = MInput.ControllerHasFocus;
+        MInput.ControllerHasFocus = true;
+    }
+
+    private static void ClearModsBindings() {
         foreach (EverestModule module in Everest.Modules) {
             if (module.SettingsType != null && module._Settings is { } settings and not CelesteTasSettings) {
                 foreach (PropertyInfo propertyInfo in module.SettingsType.GetAllProperties()) {
-                    if (propertyInfo.GetGetMethod(true) == null || propertyInfo.GetSetMethod(true) == null ||
-                        propertyInfo.PropertyType != typeof(ButtonBinding) || propertyInfo.GetValue(settings) is not ButtonBinding buttonBinding) {
-                        continue;
+                    if (propertyInfo.GetGetMethod(true) != null && propertyInfo.GetSetMethod(true) != null &&
+                        propertyInfo.PropertyType == typeof(ButtonBinding) && propertyInfo.GetValue(settings) is ButtonBinding buttonBinding) {
+                        buttonBinding.Button.Binding = new Binding();
                     }
-
-                    buttonBinding.Button.Binding = new Binding();
                 }
             }
         }
     }
 
     private static void SetBinding(string fieldName, params Buttons[] buttons) {
-        object binding = Activator.CreateInstance(BindingType);
-        BindingAddButtons.Invoke(binding, new object[] {buttons});
+        Binding binding = new();
+        binding.Add(buttons);
         Settings.Instance.GetDynamicDataInstance().Set(fieldName, binding);
     }
 
     private static void SetBinding(string fieldName, Keys[] keys, params Buttons[] buttons) {
-        object binding = Activator.CreateInstance(BindingType);
-        BindingAddKeys.Invoke(binding, new object[] {keys});
-        BindingAddButtons.Invoke(binding, new object[] {buttons});
+        Binding binding = new();
+        binding.Add(keys);
+        binding.Add(buttons);
         Settings.Instance.GetDynamicDataInstance().Set(fieldName, binding);
     }
 }
