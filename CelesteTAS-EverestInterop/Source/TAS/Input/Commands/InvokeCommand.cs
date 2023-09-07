@@ -93,6 +93,11 @@ public static class InvokeCommand {
 
             objType = obj.GetType();
         } else {
+            if (memberNames.IsEmpty() && type.GetMethodInfo(lastMemberName, null) == null) {
+                Log($"{type.FullName}.{lastMemberName} method is not found");
+                return nonReturnObject;
+            }
+
             obj = SetCommand.FindSpecialObject(type, entityId);
             if (obj == null) {
                 Log($"{type.FullName}{entityId.LogId()} object is not found");
