@@ -53,11 +53,18 @@ public static class DesyncFixer {
         typeof(CS03_Memo.MemoPage).GetConstructors()[0].HookAfter<CS03_Memo.MemoPage>(FixMemoPageCrash);
         typeof(FinalBoss).GetMethod("Added").HookAfter<FinalBoss>(FixFinalBossDesync);
         typeof(Entity).GetMethod("Update").HookAfter(AfterEntityUpdate);
+        typeof(Scene).GetMethod("AfterUpdate").HookAfter<Scene>(FixLightingRendererCrash);
         
         // https://github.com/EverestAPI/Everest/commit/b2a6f8e7c41ddafac4e6fde0e43a09ce1ac4f17e
         // Autosaving prevents opening the menu to skip cutscenes during fast forward before Everest v2865.
         if (Everest.Version < new Version(1, 2865)) {
             typeof(Level).GetProperty("CanPause").GetGetMethod().IlHook(AllowPauseDuringSaving);
+        }
+    }
+
+    private static void FixLightingRendererCrash(Scene scene) {
+        if (scene is Level level && Manager.FastForwarding) {
+            level.Lighting?.BeforeRender(scene);
         }
     }
 

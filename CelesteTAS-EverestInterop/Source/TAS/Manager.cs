@@ -24,6 +24,7 @@ public static class Manager {
     public static States LastStates, States, NextStates;
     public static float FrameLoops { get; private set; } = 1f;
     public static bool UltraFastForwarding => FrameLoops >= 100 && Running;
+    public static bool FastForwarding => FrameLoops > 1 && Running;
     public static bool SlowForwarding => FrameLoops < 1f;
     public static bool AdvanceThroughHiddenFrame;
 
