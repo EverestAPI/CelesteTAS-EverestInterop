@@ -58,9 +58,6 @@
         <Reference Include="SpeedrunTool">
             <HintPath>lib-stripped\SpeedrunTool.dll</HintPath>
         </Reference>
-        <Reference Include="ExtendedVariantMode">
-            <HintPath>lib-stripped\ExtendedVariantMode.dll</HintPath>
-        </Reference>
         <Reference Include="TASRecorder">
             <HintPath>lib-stripped\TASRecorder.dll</HintPath>
         </Reference>
