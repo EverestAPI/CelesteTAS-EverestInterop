@@ -53,12 +53,21 @@ public static class DesyncFixer {
         typeof(CS03_Memo.MemoPage).GetConstructors()[0].HookAfter<CS03_Memo.MemoPage>(FixMemoPageCrash);
         typeof(FinalBoss).GetMethod("Added").HookAfter<FinalBoss>(FixFinalBossDesync);
         typeof(Entity).GetMethod("Update").HookAfter(AfterEntityUpdate);
-        
+
         // https://github.com/EverestAPI/Everest/commit/b2a6f8e7c41ddafac4e6fde0e43a09ce1ac4f17e
         // Autosaving prevents opening the menu to skip cutscenes during fast forward before Everest v2865.
         if (Everest.Version < new Version(1, 2865)) {
             typeof(Level).GetProperty("CanPause").GetGetMethod().IlHook(AllowPauseDuringSaving);
         }
+       
+        // System.IndexOutOfRangeException: Index was outside the bounds of the array.
+        // https://discord.com/channels/403698615446536203/1148931167983251466/1148931167983251466
+        On.Celeste.LightingRenderer.SetOccluder += IgnoreSetOccluderCrash;
+    }
+
+    [Unload]
+    private static void Unload() {
+        On.Celeste.LightingRenderer.SetOccluder -= IgnoreSetOccluderCrash;
     }
 
     private static void FixDreamMirrorDesync(DreamMirror mirror) {
@@ -140,5 +149,17 @@ public static class DesyncFixer {
 
     private static bool IsSaving(bool saving) {
         return !Manager.Running && saving;
+    }
+
+    private static void IgnoreSetOccluderCrash(On.Celeste.LightingRenderer.orig_SetOccluder orig, LightingRenderer self, Vector3 center, Color mask, Vector2 light, Vector2 edgeA, Vector2 edgeB) {
+        try {
+            orig(self, center, mask, light, edgeA, edgeB);
+        } catch (IndexOutOfRangeException e) {
+            if (Manager.Running) {
+                e.Log(LogLevel.Debug);
+            } else {
+                throw;
+            }
+        }
     }
 }
