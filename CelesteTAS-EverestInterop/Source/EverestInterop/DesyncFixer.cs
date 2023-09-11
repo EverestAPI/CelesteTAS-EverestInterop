@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
+using MonoMod.Utils;
 using TAS.Module;
 using TAS.Utils;
 
@@ -14,6 +15,7 @@ namespace TAS.EverestInterop;
 
 // ReSharper disable AssignNullToNotNullAttribute
 public static class DesyncFixer {
+    private const string pushedRandomFlag = "CelesteTAS_PushedRandom";
     private static int debrisAmount;
 
     [Initialize]
@@ -53,6 +55,7 @@ public static class DesyncFixer {
         typeof(CS03_Memo.MemoPage).GetConstructors()[0].HookAfter<CS03_Memo.MemoPage>(FixMemoPageCrash);
         typeof(FinalBoss).GetMethod("Added").HookAfter<FinalBoss>(FixFinalBossDesync);
         typeof(Entity).GetMethod("Update").HookAfter(AfterEntityUpdate);
+        typeof(AscendManager).GetMethodInfo("Routine").GetStateMachineTarget().IlHook(MakeRngConsistent);
 
         // https://github.com/EverestAPI/Everest/commit/b2a6f8e7c41ddafac4e6fde0e43a09ce1ac4f17e
         // Autosaving prevents opening the menu to skip cutscenes during fast forward before Everest v2865.
@@ -106,6 +109,30 @@ public static class DesyncFixer {
 
     private static void AfterEntityUpdate() {
         debrisAmount = 0;
+    }
+
+    private static void MakeRngConsistent(ILCursor ilCursor, ILContext ilContent) {
+        if (ilCursor.TryGotoNext(MoveType.After, ins => ins.OpCode == OpCodes.Stfld && ins.Operand.ToString().Contains("::<from>"))) {
+            ILCursor cursor = ilCursor.Clone();
+            if (ilCursor.TryGotoNext(ins => ins.MatchNewobj<AscendManager.Fader>())) {
+                cursor.EmitDelegate(AscendManagerPushRandom);
+                ilCursor.EmitDelegate(AscendManagerPopRandom);
+            }
+        }
+    }
+
+    private static void AscendManagerPushRandom() {
+        if (Manager.Running && Engine.Scene.GetSession() is { } session && session.Area.GetLevelSet() != "Celeste") {
+            Calc.PushRandom(session.LevelData.LoadSeed);
+            session.SetFlag(pushedRandomFlag);
+        }
+    }
+
+    private static void AscendManagerPopRandom() {
+        if (Engine.Scene.GetSession() is { } session && session.GetFlag(pushedRandomFlag)) {
+            Calc.PopRandom();
+            session.SetFlag(pushedRandomFlag, false);
+        }
     }
 
     private static ILContext.Manipulator SeededRandom(int index) {
