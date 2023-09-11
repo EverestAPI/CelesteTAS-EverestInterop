@@ -24,6 +24,7 @@ Can be used instead of notepad or similar for easier editing of the TAS file. It
 - Ctrl + Shift + R: Insert Console Load Command at Current Location and Speed
 - Ctrl + Alt + R: Insert Console Load Command at Current Level
 - Ctrl + T: Insert Current in-game Time
+- Ctrl + Shift + T: Remove All Timestamps
 - Ctrl + L: Combine Consecutive Same Inputs
 - Ctrl + Shift + L: Force Combine Inputs Frames
 - Ctrl + Down/Up: Go to Comment or Breakpoint

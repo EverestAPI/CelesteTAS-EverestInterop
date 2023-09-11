@@ -173,6 +173,7 @@ namespace CelesteStudio {
             this.statusPanel = new System.Windows.Forms.Panel();
             this.statusBar = new System.Windows.Forms.StatusStrip();
             this.lblStatus = new System.Windows.Forms.ToolStripStatusLabel();
+            this.removeAllTimestampsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusBarContextMenuStrip.SuspendLayout();
             this.menuStrip.SuspendLayout();
             this.tasTextContextMenuStrip.SuspendLayout();
@@ -680,9 +681,9 @@ namespace CelesteStudio {
             // 
             // tasTextContextMenuStrip
             // 
-            this.tasTextContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.insertRemoveBreakPointToolStripMenuItem, this.insertRemoveSavestateBreakPointToolStripMenuItem, this.removeAllUncommentedBreakpointsToolStripMenuItem, this.removeAllBreakpointsToolStripMenuItem, this.commentUncommentAllBreakpointsToolStripMenuItem, this.toolStripSeparator2, this.commentUncommentTextToolStripMenuItem, this.insertRoomNameToolStripMenuItem, this.insertCurrentInGameTimeToolStripMenuItem, this.insertModInfoStripMenuItem1, this.insertConsoleLoadCommandToolStripMenuItem, this.insertSimpleConsoleLoadCommandToolStripMenuItem, this.insertOtherCommandToolStripMenuItem, this.toolStripSeparator6, this.swapDashKeysStripMenuItem, this.swapJumpKeysToolStripMenuItem, this.swapSelectedLAndRToolStripMenuItem, this.combineConsecutiveSameInputsToolStripMenuItem, this.forceCombineInputsToolStripMenuItem, this.convertDashToDemoDashToolStripMenuItem, this.toolStripSeparator12, this.openReadFileToolStripMenuItem});
+            this.tasTextContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.insertRemoveBreakPointToolStripMenuItem, this.insertRemoveSavestateBreakPointToolStripMenuItem, this.removeAllUncommentedBreakpointsToolStripMenuItem, this.removeAllBreakpointsToolStripMenuItem, this.commentUncommentAllBreakpointsToolStripMenuItem, this.toolStripSeparator2, this.commentUncommentTextToolStripMenuItem, this.insertRoomNameToolStripMenuItem, this.insertCurrentInGameTimeToolStripMenuItem, this.removeAllTimestampsToolStripMenuItem, this.insertModInfoStripMenuItem1, this.insertConsoleLoadCommandToolStripMenuItem, this.insertSimpleConsoleLoadCommandToolStripMenuItem, this.insertOtherCommandToolStripMenuItem, this.toolStripSeparator6, this.swapDashKeysStripMenuItem, this.swapJumpKeysToolStripMenuItem, this.swapSelectedLAndRToolStripMenuItem, this.combineConsecutiveSameInputsToolStripMenuItem, this.forceCombineInputsToolStripMenuItem, this.convertDashToDemoDashToolStripMenuItem, this.toolStripSeparator12, this.openReadFileToolStripMenuItem});
             this.tasTextContextMenuStrip.Name = "tasTextContextMenuStrip";
-            this.tasTextContextMenuStrip.Size = new System.Drawing.Size(426, 440);
+            this.tasTextContextMenuStrip.Size = new System.Drawing.Size(426, 484);
             // 
             // insertRemoveBreakPointToolStripMenuItem
             // 
@@ -1255,6 +1256,14 @@ namespace CelesteStudio {
             this.lblStatus.Text = "Searching...";
             this.lblStatus.TextAlign = System.Drawing.ContentAlignment.TopLeft;
             // 
+            // removeAllTimestampsToolStripMenuItem
+            // 
+            this.removeAllTimestampsToolStripMenuItem.Name = "removeAllTimestampsToolStripMenuItem";
+            this.removeAllTimestampsToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys) (((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Shift) | System.Windows.Forms.Keys.T)));
+            this.removeAllTimestampsToolStripMenuItem.Size = new System.Drawing.Size(425, 22);
+            this.removeAllTimestampsToolStripMenuItem.Text = "Remove All Timestamps";
+            this.removeAllTimestampsToolStripMenuItem.Click += new System.EventHandler(this.removeAllTimestampsToolStripMenuItem_Click);
+            // 
             // Studio
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -1286,6 +1295,8 @@ namespace CelesteStudio {
             this.ResumeLayout(false);
             this.PerformLayout();
         }
+
+        private System.Windows.Forms.ToolStripMenuItem removeAllTimestampsToolStripMenuItem;
 
         private System.Windows.Forms.ToolStripMenuItem evalLuaStripMenuItem;
 

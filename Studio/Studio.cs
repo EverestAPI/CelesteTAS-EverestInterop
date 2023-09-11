@@ -366,6 +366,9 @@ public partial class Studio : BaseForm {
                     case Keys.P: // Ctrl + Shift + P
                         ClearBreakpoints();
                         break;
+                    case Keys.T: // Ctrl + Shift + T
+                        ClearTimestamps();
+                        break;
                     case Keys.OemPeriod: // Ctrl + Shift + OemPeriod -> insert/remove savestate
                         InsertOrRemoveText(InputRecord.BreakpointRegex, "***S");
                         break;
@@ -670,6 +673,10 @@ public partial class Studio : BaseForm {
 
     private void ClearBreakpoints() {
         RemoveLinesMatching(@"^\s*#*\s*\*\*\*");
+    }
+    
+    private void ClearTimestamps() {
+        RemoveLinesMatching(@"^\s*#+\s*(\d+:)?\d{1,2}:\d{2}\.\d{3}\(\d+\)");
     }
 
     private void CopyFilePath() {
@@ -1493,6 +1500,10 @@ public partial class Studio : BaseForm {
 
     private void insertCurrentInGameTimeToolStripMenuItem_Click(object sender, EventArgs e) {
         InsertTime();
+    }
+
+    private void removeAllTimestampsToolStripMenuItem_Click(object sender, EventArgs e) {
+        ClearTimestamps();
     }
 
     private void insertConsoleLoadCommandToolStripMenuItem_Click(object sender, EventArgs e) {
