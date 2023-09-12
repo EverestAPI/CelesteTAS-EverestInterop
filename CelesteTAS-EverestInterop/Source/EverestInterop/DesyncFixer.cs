@@ -47,6 +47,10 @@ public static class DesyncFixer {
         if (ModUtils.GetModule("DeadzoneConfig")?.GetType() is { } deadzoneConfigModuleType) {
             HookHelper.SkipMethod(typeof(DesyncFixer), nameof(SkipDeadzoneConfig), deadzoneConfigModuleType.GetMethod("OnInputInitialize"));
         }
+
+        if (ModUtils.GetType("StrawberryJam2021", "Celeste.Mod.StrawberryJam2021.Entities.CustomAscendManager") is { } ascendManagerType) {
+            ascendManagerType.GetMethodInfo("Routine")?.GetStateMachineTarget().IlHook(MakeRngConsistent);
+        }
     }
 
     [Load]
@@ -114,7 +118,7 @@ public static class DesyncFixer {
     private static void MakeRngConsistent(ILCursor ilCursor, ILContext ilContent) {
         if (ilCursor.TryGotoNext(MoveType.After, ins => ins.OpCode == OpCodes.Stfld && ins.Operand.ToString().Contains("::<from>"))) {
             ILCursor cursor = ilCursor.Clone();
-            if (ilCursor.TryGotoNext(ins => ins.MatchNewobj<AscendManager.Fader>())) {
+            if (ilCursor.TryGotoNext(ins => ins.OpCode == OpCodes.Newobj && ins.Operand.ToString().Contains("Fader::.ctor"))) {
                 cursor.EmitDelegate(AscendManagerPushRandom);
                 ilCursor.EmitDelegate(AscendManagerPopRandom);
             }
