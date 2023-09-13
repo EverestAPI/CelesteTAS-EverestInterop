@@ -36,6 +36,7 @@ public class InputRecord {
     public int Frames { get; set; }
     public Actions Actions { get; set; }
     public string AngleStr { get; set; }
+    public bool InvalidAngle { get; set; }
     public string UpperLimitStr { get; set; }
     public SortedSet<char> PressedKeys { get; } = new();
     public string LineText { get; }
@@ -170,8 +171,10 @@ public class InputRecord {
             start += match.Groups[0].Value.Length;
             if (angle < 0f) {
                 AngleStr = "0";
+                InvalidAngle = true;
             } else if (angle > 360f) {
                 AngleStr = "360";
+                InvalidAngle = true;
             }
         } else {
             AngleStr = string.Empty;

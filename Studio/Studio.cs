@@ -1270,6 +1270,10 @@ public partial class Studio : BaseForm {
             if (oldInput != null) {
                 totalFrames -= oldInput.Frames;
 
+                if (newInput.InvalidAngle && oldInput.AngleStr?.Length > 0) {
+                    newInput.AngleStr = oldInput.AngleStr;
+                }
+
                 string formattedText = newInput.ToString();
 
                 bool featherAngle = oldInput.HasActions(Actions.Feather)
