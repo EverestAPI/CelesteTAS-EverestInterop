@@ -513,6 +513,16 @@ public static class SetCommand {
             case "SFXVolume":
                 typeof(MenuOptions).InvokeMethod("SetSfx", value);
                 break;
+            case "Language":
+                string language = value.ToString();
+                if (settings.Language != language && Dialog.Languages.ContainsKey(language)) {
+                    if (settings.Language != "english") {
+                        Fonts.Unload(Dialog.Languages[Settings.Instance.Language].FontFace);
+                    }
+                    settings.Language = language;
+                    settings.ApplyLanguage();
+                }
+                break;
             default:
                 return false;
         }
