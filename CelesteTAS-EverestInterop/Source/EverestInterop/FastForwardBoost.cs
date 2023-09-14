@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Celeste;
 using Celeste.Mod;
-using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
@@ -15,7 +13,6 @@ namespace TAS.EverestInterop;
 
 public static class FastForwardBoost {
     private static bool UltraFastForwarding => Manager.UltraFastForwarding;
-    private static Process celesteProcess;
 
     [Initialize]
     private static void Initialize() {
@@ -49,7 +46,6 @@ public static class FastForwardBoost {
         IL.Celeste.SeekerBarrier.Update += SeekerBarrierOnUpdate;
         IL.Monocle.Engine.OnSceneTransition += IgnoreGcCollect;
         IL.Celeste.Level.Reload += IgnoreGcCollect;
-        On.Monocle.Engine.Update += EngineOnUpdate;
         Everest.Events.Input.OnInitialize += InputOnOnInitialize;
     }
 
@@ -75,7 +71,6 @@ public static class FastForwardBoost {
         IL.Celeste.SeekerBarrier.Update -= SeekerBarrierOnUpdate;
         IL.Monocle.Engine.OnSceneTransition -= IgnoreGcCollect;
         IL.Celeste.Level.Reload -= IgnoreGcCollect;
-        On.Monocle.Engine.Update -= EngineOnUpdate;
         Everest.Events.Input.OnInitialize -= InputOnOnInitialize;
     }
 
@@ -188,33 +183,7 @@ public static class FastForwardBoost {
     }
 
     private static bool IsIgnoreGcCollect() {
-        bool result = !Environment.Is64BitProcess && TasSettings.IgnoreGcCollect && UltraFastForwarding;
-        if (celesteProcess == null && result) {
-            celesteProcess = Process.GetCurrentProcess();
-        }
-
-        if (celesteProcess != null) {
-            celesteProcess.Refresh();
-            // 2.5GB
-            if (celesteProcess.PrivateMemorySize64 > 1024L * 1024L * 1024L * 2.5) {
-                result = false;
-            }
-        }
-
-        return result;
-    }
-
-    private static void EngineOnUpdate(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
-        orig(self, gameTime);
-
-        if (UltraFastForwarding) {
-            return;
-        }
-
-        if (celesteProcess != null) {
-            celesteProcess.Dispose();
-            celesteProcess = null;
-        }
+        return TasSettings.IgnoreGcCollect && UltraFastForwarding;
     }
 
     private static void InputOnOnInitialize() {
