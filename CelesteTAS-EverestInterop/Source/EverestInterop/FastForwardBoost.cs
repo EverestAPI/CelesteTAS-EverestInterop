@@ -13,12 +13,39 @@ namespace TAS.EverestInterop;
 
 public static class FastForwardBoost {
     private static bool UltraFastForwarding => Manager.UltraFastForwarding;
+    private static Type creditsType;
 
     [Initialize]
     private static void Initialize() {
         if (ModUtils.GetType("IsaGrabBag", "Celeste.Mod.IsaGrabBag.DreamSpinnerBorder")?.GetMethodInfo("Update") is { } updateMethod) {
             updateMethod.IlHook(SkipUpdateMethod);
         }
+
+        creditsType = ModUtils.GetType("StrawberryJam2021", "Celeste.Mod.StrawberryJam2021.Cutscenes.CS_Credits");
+        creditsType?.GetMethodInfo("Level_OnLoadEntity")?.IlHook(HookSjCsCredits);
+    }
+
+    private static void HookSjCsCredits(ILCursor ilCursor, ILContext ilContext) {
+        // CS_Credits credits = level.Entities.ToAdd.OfType<CS_Credits>().FirstOrDefault();
+        // to
+        // CS_Credits credits = ReduceLinq(level);
+        if (ilCursor.TryGotoNext(ins => ins.OpCode == OpCodes.Callvirt,
+                ins => ins.OpCode == OpCodes.Callvirt,
+                ins => ins.OpCode == OpCodes.Call,
+                ins => ins.OpCode == OpCodes.Call && ins.Operand.ToString().Contains("Enumerable::FirstOrDefault")
+            )) {
+            ilCursor.RemoveRange(4).EmitDelegate(ReduceLinq);
+        }
+    }
+
+    private static Entity ReduceLinq(Level level) {
+        foreach (Entity entity in level.Entities.ToAdd) {
+            if (entity.GetType() == creditsType) {
+                return entity;
+            }
+        }
+
+        return null;
     }
 
     [Load]
