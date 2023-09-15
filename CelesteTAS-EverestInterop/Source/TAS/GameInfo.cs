@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using Celeste;
 using Celeste.Mod;
+using Celeste.Pico8;
 using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
@@ -194,7 +195,8 @@ public static class GameInfo {
     }
 
     public static void Update(bool updateVel = false) {
-        if (Engine.Scene is Level level) {
+        Scene scene = Engine.Scene;
+        if (scene is Level level) {
             Player player = level.Tracker.GetEntity<Player>();
             if (player != null) {
                 string pos = GetAdjustedPos(player, out string exactPos);
@@ -326,37 +328,55 @@ public static class GameInfo {
 
             Status = StatusWithoutTime + $"[{LevelName}] Timer: {ChapterTime}";
             ExactStatus = ExactStatusWithoutTime + $"[{LevelName}] Timer: {ChapterTime}";
-
-            if (TasSettings.InfoHud && (TasSettings.InfoWatchEntity & HudOptions.HudOnly) != 0 ||
-                (TasSettings.InfoWatchEntity & HudOptions.StudioOnly) != 0 && StudioCommunicationBase.Initialized) {
-                WatchingInfo = InfoWatchEntity.GetInfo();
-            } else {
-                WatchingInfo = string.Empty;
+            UpdateAdditionInfo();
+        } else if (scene is Emulator {game: { } game} emulator) {
+            StringBuilder stringBuilder = new();
+            Classic.player player = emulator.game.objects.FirstOrDefault(o => o is Classic.player) as Classic.player;
+            if (player != null) {
+                stringBuilder.AppendLine($"Pos:   {player.x}, {player.y}");
+                stringBuilder.AppendLine($"Speed: {player.spd.X}, {player.spd.Y}");
+                if (player.grace > 1) {
+                    stringBuilder.AppendLine($"Coyote({player.grace - 1})");
+                }
             }
 
-            if (TasSettings.InfoHud && (TasSettings.InfoCustom & HudOptions.HudOnly) != 0 ||
-                (TasSettings.InfoCustom & HudOptions.StudioOnly) != 0 && StudioCommunicationBase.Initialized) {
-                CustomInfo = InfoCustom.GetInfo();
-            } else {
-                CustomInfo = string.Empty;
-            }
+            LevelName = game.room.ToString();
+            ChapterTime = $"{game.minutes}:{game.seconds.ToString().PadLeft(2, '0')}";
+            Status = ExactStatus = $"{stringBuilder}{LevelName} Timer: {ChapterTime}";
+            UpdateAdditionInfo();
         } else {
             LevelName = string.Empty;
             ChapterTime = string.Empty;
             WatchingInfo = string.Empty;
             CustomInfo = string.Empty;
-            if (Engine.Scene is SummitVignette summit) {
+            if (scene is SummitVignette summit) {
                 Status = ExactStatus = $"SummitVignette {summit.ready}";
-            } else if (Engine.Scene is Overworld overworld) {
+            } else if (scene is Overworld overworld) {
                 string ouiName = "";
                 if ((overworld.Current ?? overworld.Next) is { } oui) {
                     ouiName = $"{oui.GetType().Name} ";
                 }
 
                 Status = ExactStatus = $"Overworld {ouiName}{overworld.ShowInputUI}";
-            } else if (Engine.Scene != null) {
-                Status = ExactStatus = Engine.Scene.GetType().Name;
+            } else if (scene != null) {
+                Status = ExactStatus = scene.GetType().Name;
             }
+        }
+    }
+
+    private static void UpdateAdditionInfo() {
+        if (TasSettings.InfoHud && (TasSettings.InfoWatchEntity & HudOptions.HudOnly) != 0 ||
+            (TasSettings.InfoWatchEntity & HudOptions.StudioOnly) != 0 && StudioCommunicationBase.Initialized) {
+            WatchingInfo = InfoWatchEntity.GetInfo();
+        } else {
+            WatchingInfo = string.Empty;
+        }
+
+        if (TasSettings.InfoHud && (TasSettings.InfoCustom & HudOptions.HudOnly) != 0 ||
+            (TasSettings.InfoCustom & HudOptions.StudioOnly) != 0 && StudioCommunicationBase.Initialized) {
+            CustomInfo = InfoCustom.GetInfo();
+        } else {
+            CustomInfo = string.Empty;
         }
     }
 

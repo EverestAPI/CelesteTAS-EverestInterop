@@ -1,7 +1,7 @@
 namespace TAS.Input.Commands;
 
 public static class SafeCommand {
-    // stop tas when out of Level/LevelLoader/LevelExit
+    // stop tas when out of Level/LevelLoader/LevelExit/Pico8
     // stop tas when entering Options/ModOptions UI
     public static bool DisallowUnsafeInput { get; private set; } = true;
 

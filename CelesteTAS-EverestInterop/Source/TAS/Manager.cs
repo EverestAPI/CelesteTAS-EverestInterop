@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using Celeste;
 using Celeste.Mod;
+using Celeste.Pico8;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
 using StudioCommunication;
@@ -79,7 +80,7 @@ public static class Manager {
                 if (!canPlayback) {
                     DisableRun();
                 } else if (SafeCommand.DisallowUnsafeInput && Controller.CurrentFrameInTas > 1) {
-                    if (Engine.Scene is not (Level or LevelLoader or LevelExit)) {
+                    if (Engine.Scene is not (Level or LevelLoader or LevelExit or Emulator)) {
                         DisableRun();
                     } else if (Engine.Scene is Level level && level.Tracker.GetEntity<TextMenu>() is { } menu) {
                         if (menu.Items.FirstOrDefault() is TextMenu.Header header && header.Title == Dialog.Clean("options_title") ||

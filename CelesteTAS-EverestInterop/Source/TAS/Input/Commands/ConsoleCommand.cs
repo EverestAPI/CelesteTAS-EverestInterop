@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Celeste;
 using Celeste.Mod;
+using Celeste.Pico8;
 using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
@@ -383,6 +384,10 @@ public static class ConsoleCommand {
     }
 
     public static string CreateConsoleCommand(bool simple) {
+        if (Engine.Scene is Emulator emulator && emulator.game?.room is { } room) {
+            return $"console pico {room.X} {room.Y}";
+        }
+        
         if (Engine.Scene is not Level level) {
             return null;
         }
