@@ -66,7 +66,7 @@ public static class DesyncFixer {
         if (Everest.Version < new Version(1, 2865)) {
             typeof(Level).GetProperty("CanPause").GetGetMethod().IlHook(AllowPauseDuringSaving);
         }
-       
+
         // System.IndexOutOfRangeException: Index was outside the bounds of the array.
         // https://discord.com/channels/403698615446536203/1148931167983251466/1148931167983251466
         On.Celeste.LightingRenderer.SetOccluder += IgnoreSetOccluderCrash;

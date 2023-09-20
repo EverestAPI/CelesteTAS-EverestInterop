@@ -11,6 +11,7 @@ using Monocle;
 using MonoMod.Cil;
 using MonoMod.Utils;
 using StudioCommunication;
+using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Module;
 using TAS.Utils;
@@ -334,14 +335,18 @@ public static class GameInfo {
             Classic.player player = emulator.game.objects.FirstOrDefault(o => o is Classic.player) as Classic.player;
             if (player != null) {
                 stringBuilder.AppendLine($"Pos:   {player.x}, {player.y}");
-                stringBuilder.AppendLine($"Speed: {player.spd.X}, {player.spd.Y}");
-                if (player.grace > 1) {
-                    stringBuilder.AppendLine($"Coyote({player.grace - 1})");
-                }
+                stringBuilder.AppendLine($"Rem:   {player.rem.ToSimpleString(3)}");
+                stringBuilder.AppendLine($"Speed: {player.spd.ToSimpleString(3)}");
+
+            }
+            
+            stringBuilder.AppendLine($"Seed:  {Pico8Fixer.Seed}");
+            if (player?.grace > 1) {
+                stringBuilder.AppendLine($"Coyote({player.grace - 1})");
             }
 
-            LevelName = game.room.ToString();
-            ChapterTime = $"{game.minutes}:{game.seconds.ToString().PadLeft(2, '0')}";
+            LevelName = $"[Level:{game.level_index()} X:{game.room.X} Y:{game.room.Y}]";
+            ChapterTime = $"{game.minutes}:{game.seconds.ToString().PadLeft(2, '0')}{(Pico8Fixer.Frames / 30.0).ToString($"F3").TrimStart('0')}";
             Status = ExactStatus = $"{stringBuilder}{LevelName} Timer: {ChapterTime}";
             UpdateAdditionInfo();
         } else {

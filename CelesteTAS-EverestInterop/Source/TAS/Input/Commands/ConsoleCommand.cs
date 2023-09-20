@@ -384,7 +384,7 @@ public static class ConsoleCommand {
     }
 
     public static string CreateConsoleCommand(bool simple) {
-        if (Engine.Scene is Emulator emulator && emulator.game?.room is { } room) {
+        if (Engine.Scene is Emulator {game.room: var room}) {
             return $"console pico {room.X} {room.Y}";
         }
         
