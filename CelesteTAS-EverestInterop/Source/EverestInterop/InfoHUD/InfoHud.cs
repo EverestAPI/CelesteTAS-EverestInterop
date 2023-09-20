@@ -19,14 +19,23 @@ public static class InfoHud {
     [Load]
     private static void Load() {
         On.Celeste.Level.Render += LevelOnRender;
+        On.Celeste.Pico8.Emulator.Render += EmulatorOnRender;
     }
 
     [Unload]
     private static void Unload() {
         On.Celeste.Level.Render -= LevelOnRender;
+        On.Celeste.Pico8.Emulator.Render -= EmulatorOnRender;
     }
 
     private static void LevelOnRender(On.Celeste.Level.orig_Render orig, Level self) {
+        orig(self);
+
+        DrawInfo(self);
+        InfoMouse.DragAndDropHud();
+    }
+
+    private static void EmulatorOnRender(On.Celeste.Pico8.Emulator.orig_Render orig, Celeste.Pico8.Emulator self) {
         orig(self);
 
         DrawInfo(self);
@@ -46,7 +55,7 @@ public static class InfoHud {
         }
     }
 
-    private static void DrawInfo(Level level) {
+    private static void DrawInfo(Scene scene) {
         if (!TasSettings.Enabled || !TasSettings.InfoHud) {
             return;
         }
@@ -95,7 +104,7 @@ public static class InfoHud {
 
         Rectangle bgRect = new((int) x, (int) y, (int) (Size.X + padding * 2), (int) (Size.Y + padding * 2));
 
-        if (!Hotkeys.InfoHud.Check && ((level.Paused && !Celeste.Input.MenuJournal.Check) || CollidePlayer(level, bgRect))) {
+        if (!Hotkeys.InfoHud.Check && (scene.Paused && !Celeste.Input.MenuJournal.Check || scene is Level level && CollidePlayer(level, bgRect))) {
             alpha *= TasSettings.InfoMaskedOpacity / 10f;
             infoAlpha *= alpha;
         }

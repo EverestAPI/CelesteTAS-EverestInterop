@@ -345,7 +345,7 @@ public static class GameInfo {
                 stringBuilder.AppendLine($"Coyote({player.grace - 1})");
             }
 
-            LevelName = $"[Level:{game.level_index()} X:{game.room.X} Y:{game.room.Y}]";
+            LevelName = $"[Level{game.level_index() + 1} X:{game.room.X} Y:{game.room.Y}]";
             ChapterTime = $"{game.minutes}:{game.seconds.ToString().PadLeft(2, '0')}{(Pico8Fixer.Frames / 30.0).ToString($"F3").TrimStart('0')}";
             Status = ExactStatus = $"{stringBuilder}{LevelName} Timer: {ChapterTime}";
             UpdateAdditionInfo();

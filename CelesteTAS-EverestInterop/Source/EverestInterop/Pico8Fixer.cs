@@ -20,11 +20,11 @@ public static class Pico8Fixer {
     }
 
     private static void ClassicOnUpdate(On.Celeste.Pico8.Classic.orig_Update orig, Celeste.Pico8.Classic self) {
+        orig(self);
+
         if (self.level_index() < 30) {
             Frames = self.frames;
         }
-
-        orig(self);
     }
 
     [Unload]
