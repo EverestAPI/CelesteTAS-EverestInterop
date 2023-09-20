@@ -403,8 +403,12 @@ public static class SetCommand {
             float.TryParse(values[1], out float y);
             return new Vector2(x, y);
         } else if (values.Length == 1) {
-            if (type == typeof(Random) && int.TryParse(values[0], out int seed)) {
-                return new Random(seed);
+            if (type == typeof(Random)) {
+                if (int.TryParse(values[0], out int seed)) {
+                    return new Random(seed);
+                } else {
+                    return new Random(values[0].GetHashCode());
+                }
             } else {
                 return Convert(values[0], nullableType);
             }
