@@ -126,7 +126,7 @@ public class InputController {
             int tryCount = 5;
             while (tryCount > 0) {
                 if (ReadFile(TasFilePath)) {
-                    if (Manager.NextStates.HasFlag(States.Disable)) {
+                    if (Manager.NextStates.Has(States.Disable)) {
                         Clear();
                         Manager.DisableRun();
                     } else {
@@ -190,7 +190,7 @@ public class InputController {
             }
 
             FileSystemWatcher watcher;
-            if (File.GetAttributes(filePath).HasFlag(FileAttributes.Directory)) {
+            if (File.GetAttributes(filePath).Has(FileAttributes.Directory)) {
                 if (Directory.GetParent(filePath) is { } parentDir) {
                     watcher = new FileSystemWatcher();
                     watcher.Path = parentDir.FullName;
@@ -249,7 +249,7 @@ public class InputController {
         }
 
         CurrentCommands?.ForEach(command => {
-            if (command.Attribute.ExecuteTiming.HasFlag(ExecuteTiming.Runtime) &&
+            if (command.Attribute.ExecuteTiming.Has(ExecuteTiming.Runtime) &&
                 (!EnforceLegalCommand.EnabledWhenRunning || command.Attribute.LegalInMainGame)) {
                 command.Invoke();
             }

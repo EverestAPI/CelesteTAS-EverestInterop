@@ -77,7 +77,7 @@ public partial record Command {
                 Action commandCall = () => method.Invoke(null, parameters);
                 command = new(attribute, frame, commandCall, commandArgs, filePath, studioLine);
 
-                if (attribute.ExecuteTiming.HasFlag(ExecuteTiming.Parse)) {
+                if (attribute.ExecuteTiming.Has(ExecuteTiming.Parse)) {
                     Parsing = true;
                     commandCall.Invoke();
                     Parsing = false;

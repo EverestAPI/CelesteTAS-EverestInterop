@@ -353,7 +353,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
                 property.SetValue(TasSettings, !boolValue);
                 modified = true;
             } else if (value is HudOptions hudOptions) {
-                property.SetValue(TasSettings, hudOptions.HasFlag(HudOptions.StudioOnly) ? HudOptions.Off : HudOptions.Both);
+                property.SetValue(TasSettings, hudOptions.Has(HudOptions.StudioOnly) ? HudOptions.Off : HudOptions.Both);
                 modified = true;
             } else if (value is Enum) {
                 property.SetValue(TasSettings, ((int) value + 1) % Enum.GetValues(property.PropertyType).Length);

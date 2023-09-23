@@ -31,7 +31,7 @@ public static class Manager {
     private static bool SkipSlowForwardingFrame =>
         FrameLoops < 1f && (int) ((Engine.FrameCounter + 1) * FrameLoops) == (int) (Engine.FrameCounter * FrameLoops);
 
-    public static bool SkipFrame => (States.HasFlag(States.FrameStep) || SkipSlowForwardingFrame) && !AdvanceThroughHiddenFrame;
+    public static bool SkipFrame => (States.Has(States.FrameStep) || SkipSlowForwardingFrame) && !AdvanceThroughHiddenFrame;
 
     static Manager() {
         AttributeUtils.CollectMethods<EnableRunAttribute>();
@@ -39,7 +39,7 @@ public static class Manager {
     }
 
     private static bool ShouldForceState =>
-        NextStates.HasFlag(States.FrameStep) && !Hotkeys.FastForward.OverrideCheck && !Hotkeys.SlowForward.OverrideCheck;
+        NextStates.Has(States.FrameStep) && !Hotkeys.FastForward.OverrideCheck && !Hotkeys.SlowForward.OverrideCheck;
 
     public static void AddMainThreadAction(Action action) {
         if (Thread.CurrentThread == MainThreadHelper.MainThread) {
@@ -64,7 +64,7 @@ public static class Manager {
         CheckToEnable();
         FrameStepping();
 
-        if (States.HasFlag(States.Enable)) {
+        if (States.Has(States.Enable)) {
             Running = true;
 
             if (!SkipFrame) {
@@ -105,7 +105,7 @@ public static class Manager {
             return;
         }
 
-        if (States.HasFlag(States.Enable) && !States.HasFlag(States.FrameStep) && !NextStates.HasFlag(States.FrameStep)) {
+        if (States.Has(States.Enable) && !States.Has(States.FrameStep) && !NextStates.Has(States.FrameStep)) {
             if (Controller.HasFastForward) {
                 FrameLoops = Controller.FastForwardSpeed;
             }
@@ -127,14 +127,14 @@ public static class Manager {
         bool frameAdvance = Hotkeys.FrameAdvance.Check && !Hotkeys.StartStop.Check;
         bool pause = Hotkeys.PauseResume.Check && !Hotkeys.StartStop.Check;
 
-        if (States.HasFlag(States.Enable)) {
-            if (NextStates.HasFlag(States.FrameStep)) {
+        if (States.Has(States.Enable)) {
+            if (NextStates.Has(States.FrameStep)) {
                 States |= States.FrameStep;
                 NextStates &= ~States.FrameStep;
             }
 
             if (frameAdvance && !Hotkeys.FrameAdvance.LastCheck && !Recording) {
-                if (!States.HasFlag(States.FrameStep)) {
+                if (!States.Has(States.FrameStep)) {
                     States |= States.FrameStep;
                     NextStates &= ~States.FrameStep;
                 } else {
@@ -142,14 +142,14 @@ public static class Manager {
                     NextStates |= States.FrameStep;
                 }
             } else if (pause && !Hotkeys.PauseResume.LastCheck && !Recording) {
-                if (!States.HasFlag(States.FrameStep)) {
+                if (!States.Has(States.FrameStep)) {
                     States |= States.FrameStep;
                     NextStates &= ~States.FrameStep;
                 } else {
                     States &= ~States.FrameStep;
                     NextStates &= ~States.FrameStep;
                 }
-            } else if (LastStates.HasFlag(States.FrameStep) && States.HasFlag(States.FrameStep) &&
+            } else if (LastStates.Has(States.FrameStep) && States.Has(States.FrameStep) &&
                        (Hotkeys.FastForward.Check || Hotkeys.SlowForward.Check && Engine.FrameCounter % 10 == 0) &&
                        !Hotkeys.FastForwardComment.Check) {
                 States &= ~States.FrameStep;
@@ -166,14 +166,14 @@ public static class Manager {
         }
 
         if (Hotkeys.StartStop.Check) {
-            if (States.HasFlag(States.Enable)) {
+            if (States.Has(States.Enable)) {
                 NextStates |= States.Disable;
             } else {
                 NextStates |= States.Enable;
             }
-        } else if (NextStates.HasFlag(States.Enable)) {
+        } else if (NextStates.Has(States.Enable)) {
             EnableRun();
-        } else if (NextStates.HasFlag(States.Disable)) {
+        } else if (NextStates.Has(States.Disable)) {
             DisableRun();
         }
     }

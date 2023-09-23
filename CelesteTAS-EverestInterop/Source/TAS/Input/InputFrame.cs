@@ -24,19 +24,19 @@ public record InputFrame {
     public Vector2 DashOnlyVector2 {
         get {
             Vector2 result = Vector2.Zero;
-            if (Actions.HasFlag(Actions.LeftDashOnly)) {
+            if (Actions.Has(Actions.LeftDashOnly)) {
                 result.X = -1;
             }
 
-            if (Actions.HasFlag(Actions.RightDashOnly)) {
+            if (Actions.Has(Actions.RightDashOnly)) {
                 result.X = 1;
             }
 
-            if (Actions.HasFlag(Actions.UpDashOnly)) {
+            if (Actions.Has(Actions.UpDashOnly)) {
                 result.Y = 1;
             }
 
-            if (Actions.HasFlag(Actions.DownDashOnly)) {
+            if (Actions.Has(Actions.DownDashOnly)) {
                 result.Y = -1;
             }
 

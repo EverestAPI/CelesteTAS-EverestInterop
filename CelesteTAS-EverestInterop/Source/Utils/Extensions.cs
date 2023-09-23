@@ -124,7 +124,7 @@ internal static class ReflectionExtensions {
     private static readonly ConcurrentDictionary<MemberKey, MethodInfo> CachedSetMethodInfos = new();
     private static readonly ConcurrentDictionary<AllMemberKey, IEnumerable<FieldInfo>> CachedAllFieldInfos = new();
     private static readonly ConcurrentDictionary<AllMemberKey, IEnumerable<PropertyInfo>> CachedAllPropertyInfos = new();
-    
+
     public static MemberInfo GetMemberInfo(this Type type, string name) {
         var key = new MemberKey(type, name);
         if (CachedMemberInfos.TryGetValue(key, out var result)) {
@@ -156,7 +156,7 @@ internal static class ReflectionExtensions {
         if (CachedPropertyInfos.TryGetValue(key, out var result)) {
             return result;
         }
-        
+
         do {
             result = type.GetProperty(name, StaticInstanceAnyVisibility);
         } while (result == null && (type = type.BaseType) != null);
@@ -382,6 +382,23 @@ internal static class CommonExtensions {
     public static T Apply<T>(this T obj, Action<T> action) {
         action(obj);
         return obj;
+    }
+}
+
+// https://github.com/NoelFB/Foster/blob/main/Framework/Extensions/EnumExt.cs
+internal static class EnumExtensions {
+    /// <summary>
+    /// Enum.Has boxes the value, where as this method does not.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe bool Has<TEnum>(this TEnum lhs, TEnum rhs) where TEnum : unmanaged, Enum {
+        return sizeof(TEnum) switch {
+            1 => (*(byte*) &lhs & *(byte*) &rhs) > 0,
+            2 => (*(ushort*) &lhs & *(ushort*) &rhs) > 0,
+            4 => (*(uint*) &lhs & *(uint*) &rhs) > 0,
+            8 => (*(ulong*) &lhs & *(ulong*) &rhs) > 0,
+            _ => throw new Exception("Size does not match a known Enum backing type."),
+        };
     }
 }
 
