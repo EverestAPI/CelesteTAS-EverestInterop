@@ -56,8 +56,8 @@ public static class BindingHelper {
     public static Keys UpMoveOnly { get; } = Keys.Up;
     public static Keys DownMoveOnly { get; } = Keys.Down;
     private static bool? origControllerHasFocus;
-    private static bool origKbTextInput;
-    private static bool origAttached;
+    private static bool? origKbTextInput;
+    private static bool? origAttached;
 
     // ReSharper disable once UnusedMember.Local
     [EnableRun]
@@ -94,8 +94,15 @@ public static class BindingHelper {
             RestoreControllerHasFocus();
         }
 
-        CoreModule.Settings.UseKeyboardForTextInput = origKbTextInput;
-        MInput.GamePads[GameInput.Gamepad].Attached = origAttached;
+        if (origKbTextInput.HasValue) {
+            CoreModule.Settings.UseKeyboardForTextInput = origKbTextInput.Value;
+            origKbTextInput = null;
+        }
+
+        if (origAttached.HasValue) {
+            MInput.GamePads[GameInput.Gamepad].Attached = origAttached.Value;
+            origAttached = null;
+        }
     }
 
     private static void RestoreControllerHasFocus() {
