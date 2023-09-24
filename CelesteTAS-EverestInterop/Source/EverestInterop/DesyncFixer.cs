@@ -51,6 +51,11 @@ public static class DesyncFixer {
         if (ModUtils.GetType("StrawberryJam2021", "Celeste.Mod.StrawberryJam2021.Entities.CustomAscendManager") is { } ascendManagerType) {
             ascendManagerType.GetMethodInfo("Routine")?.GetStateMachineTarget().IlHook(MakeRngConsistent);
         }
+
+        // https://discord.com/channels/403698615446536203/519281383164739594/1154486504475869236
+        if (ModUtils.GetType("EmoteMod", "Celeste.Mod.EmoteMod.EmoteWheelModule") is { } emoteModuleType) {
+            emoteModuleType.GetMethodInfo("Player_Update")?.IlHook(PreventEmoteMod);
+        }
     }
 
     [Load]
@@ -192,5 +197,27 @@ public static class DesyncFixer {
                 throw;
             }
         }
+    }
+
+    private static void PreventEmoteMod(ILCursor ilCursor, ILContext ilContext) {
+        if (ilCursor.TryGotoNext(
+                ins => ins.OpCode == OpCodes.Call,
+                ins => ins.OpCode == OpCodes.Callvirt && ins.Operand.ToString().Contains("::get_EmoteWheelBinding()"),
+                ins => ins.OpCode == OpCodes.Callvirt,
+                ins => ins.OpCode == OpCodes.Callvirt && ins.Operand.ToString().Contains("::get_Count()")
+            )) {
+            object getSettings = ilCursor.Next.Operand;
+            object getEmoteWheelBindingSettings = ilCursor.Next.Next.Operand;
+            ilCursor.Index += 4;
+            ilCursor
+                .Emit(OpCodes.Call, getSettings)
+                .Emit(OpCodes.Callvirt, getEmoteWheelBindingSettings)
+                .EmitDelegate(IsEmoteWheelBindingPressed);
+        }
+        
+    }
+
+    private static int IsEmoteWheelBindingPressed(int count, ButtonBinding binding) {
+        return binding.Pressed ? count : 0;
     }
 }
