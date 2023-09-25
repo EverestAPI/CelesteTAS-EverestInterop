@@ -206,18 +206,14 @@ public static class DesyncFixer {
                 ins => ins.OpCode == OpCodes.Callvirt,
                 ins => ins.OpCode == OpCodes.Callvirt && ins.Operand.ToString().Contains("::get_Count()")
             )) {
-            object getSettings = ilCursor.Next.Operand;
-            object getEmoteWheelBindingSettings = ilCursor.Next.Next.Operand;
-            ilCursor.Index += 4;
-            ilCursor
-                .Emit(OpCodes.Call, getSettings)
-                .Emit(OpCodes.Callvirt, getEmoteWheelBindingSettings)
-                .EmitDelegate(IsEmoteWheelBindingPressed);
+            ilCursor.Index += 2;
+            ilCursor.Emit(OpCodes.Dup);
+            ilCursor.Index += 2;
+            ilCursor.EmitDelegate(IsEmoteWheelBindingPressed);
         }
-        
     }
 
-    private static int IsEmoteWheelBindingPressed(int count, ButtonBinding binding) {
+    private static int IsEmoteWheelBindingPressed(ButtonBinding binding, int count) {
         return binding.Pressed ? count : 0;
     }
 }

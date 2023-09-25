@@ -181,16 +181,7 @@ public class CelesteTasSettings : EverestModuleSettings {
     public bool EnableInfoHudFirstTime = true;
     public bool InfoGame { get; set; } = true;
     public bool InfoTasInput { get; set; } = true;
-    
-    [YamlMember(Alias = "InfoSubpixelIndicator")]
-    public bool _InfoSubpixelIndicator { get; set; } = true;
-
-    [YamlIgnore]
-    public bool InfoSubpixelIndicator {
-        get => _InfoSubpixelIndicator && Engine.Scene is Level;
-        set => _InfoSubpixelIndicator = value;
-    }
-
+    public bool InfoSubpixelIndicator { get; set; } = true;
     public HudOptions InfoCustom { get; set; } = HudOptions.Off;
     public HudOptions InfoWatchEntity { get; set; } = HudOptions.Both;
     public WatchEntityType InfoWatchEntityType { get; set; } = WatchEntityType.Position;

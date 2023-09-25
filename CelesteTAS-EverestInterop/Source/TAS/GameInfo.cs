@@ -335,9 +335,8 @@ public static class GameInfo {
             Classic.player player = emulator.game.objects.FirstOrDefault(o => o is Classic.player) as Classic.player;
             if (player != null) {
                 stringBuilder.AppendLine($"Pos:   {player.x}, {player.y}");
-                stringBuilder.AppendLine($"Rem:   {player.rem.ToSimpleString(3)}");
-                stringBuilder.AppendLine($"Speed: {player.spd.ToSimpleString(3)}");
-
+                stringBuilder.AppendLine($"Rem:   {player.rem.ToSimpleString(TasSettings.PositionDecimals)}");
+                stringBuilder.AppendLine($"Speed: {player.spd.ToSimpleString(TasSettings.SpeedDecimals)}");
             }
             
             stringBuilder.AppendLine($"Seed:  {Pico8Fixer.Seed}");

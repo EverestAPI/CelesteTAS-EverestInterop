@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Linq;
 using Celeste;
+using Celeste.Pico8;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Utils;
@@ -20,13 +22,17 @@ public static class InfoSubPixelIndicator {
         float subPixelBottom = 0.5f;
         int decimals = TasSettings.SubpixelIndicatorDecimals;
 
-        Player player = Engine.Scene.Tracker.GetEntity<Player>();
-        if (player != null) {
-            subPixelLeft = (float) Math.Round(player.movementCounter.X + 0.5f, decimals, MidpointRounding.AwayFromZero);
-            subPixelTop = (float) Math.Round(player.movementCounter.Y + 0.5f, decimals, MidpointRounding.AwayFromZero);
-            subPixelRight = 1f - subPixelLeft;
-            subPixelBottom = 1f - subPixelTop;
+        Vector2 remainder = Engine.Scene.Tracker.GetEntity<Player>()?.movementCounter ?? Vector2.Zero;
+        if (Engine.Scene is Level level && level.GetPlayer() is { } player) {
+            remainder = player.movementCounter;
+        } else if (Engine.Scene is Emulator emulator && emulator.game?.objects.FirstOrDefault(o => o is Classic.player) is Classic.player classicPlayer) {
+            remainder = classicPlayer.rem;
         }
+
+        subPixelLeft = (float) Math.Round(remainder.X + 0.5f, decimals, MidpointRounding.AwayFromZero);
+        subPixelTop = (float) Math.Round(remainder.Y + 0.5f, decimals, MidpointRounding.AwayFromZero);
+        subPixelRight = 1f - subPixelLeft;
+        subPixelBottom = 1f - subPixelTop;
 
         Vector2 textSize = GetSubPixelTextSize();
         float textWidth = textSize.X;
@@ -39,7 +45,6 @@ public static class InfoSubPixelIndicator {
         Draw.Rect(x + (rectSide - thickness) * subPixelLeft, y + (rectSide - thickness) * subPixelTop, thickness, thickness,
             Color.Red * alpha);
 
-        Vector2 remainder = player?.movementCounter ?? Vector2.One;
         int hDecimals = Math.Abs(remainder.X) switch {
             0.5f => 0,
             _ => decimals
