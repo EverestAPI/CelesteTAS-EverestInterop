@@ -114,7 +114,17 @@ public static class SetCommand {
         string settingName = moduleSetting.Substring(index + 1);
         foreach (EverestModule module in Everest.Modules) {
             if (module.Metadata.Name == moduleName && module.SettingsType is { } settingsType) {
-                TrySetMember(settingsType, module._Settings, settingName, values);
+                bool success = TrySetMember(settingsType, module._Settings, settingName, values);
+
+                // Allow setting extended variants
+                if (!success && moduleName == "ExtendedVariantMode") {
+                    if (!TrySetExtendedVariant(settingName, values)) {
+                        Log($"Setting or extended variant {moduleName}.{settingName} not found");
+                    }
+                } else if (!success) {
+                    Log($"{settingsType.FullName}.{settingName} member not found");
+                }
+
                 return true;
             }
         }
@@ -195,6 +205,7 @@ public static class SetCommand {
 
         bool SetMember(object @object) {
             if (!TrySetMember(objType, @object, lastMemberName, values, structObj)) {
+                Log($"{objType.FullName}.{lastMemberName} member not found");
                 return false;
             }
 
@@ -344,9 +355,19 @@ public static class SetCommand {
                 }
             }
         } else {
-            Log($"{objType.FullName}.{lastMemberName} member not found");
             return false;
         }
+
+        return true;
+    }
+
+    private static bool TrySetExtendedVariant(string variantName, string[] values) {
+        Lazy<object> variant = new(ExtendedVariantsUtils.ParseVariant(variantName));
+        Type? type = ExtendedVariantsUtils.GetVariantType(variant);
+        if (type is null) return false;
+
+        object value = ConvertType(values, type);
+        ExtendedVariantsUtils.SetVariantValue(variant, value);
 
         return true;
     }
