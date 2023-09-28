@@ -62,7 +62,7 @@ public static class CenterCamera {
     private static Vector2? savedLevelZoomFocusPoint;
     private static float? savedLevelScreenPadding;
     private static Vector2? lastPlayerPosition;
-    private static Vector2 offset;
+    private static Vector2 moveOffset;
     private static Vector2 screenOffset;
     private static DateTime? arrowKeyPressTime;
     private static float viewportScale = 1f;
@@ -86,7 +86,7 @@ public static class CenterCamera {
         On.Monocle.Commands.Render += CommandsOnRender;
         On.Celeste.Level.Render += LevelOnRender;
 #if DEBUG
-        offset = Engine.Instance.GetDynamicDataInstance().Get<Vector2?>("CelesteTAS_Offset") ?? Vector2.Zero;
+        moveOffset = Engine.Instance.GetDynamicDataInstance().Get<Vector2?>("CelesteTAS_MoveOffset") ?? Vector2.Zero;
         screenOffset = Engine.Instance.GetDynamicDataInstance().Get<Vector2?>("CelesteTAS_Screen_Offset") ?? Vector2.Zero;
         LevelZoom = Engine.Instance.GetDynamicDataInstance().Get<float?>("CelesteTAS_LevelZoom") ?? 1f;
 #endif
@@ -97,7 +97,7 @@ public static class CenterCamera {
         On.Monocle.Commands.Render -= CommandsOnRender;
         On.Celeste.Level.Render -= LevelOnRender;
 #if DEBUG
-        Engine.Instance.GetDynamicDataInstance().Set("CelesteTAS_Offset", offset);
+        Engine.Instance.GetDynamicDataInstance().Set("CelesteTAS_MoveOffset", moveOffset);
         Engine.Instance.GetDynamicDataInstance().Set("CelesteTAS_Screen_Offset", screenOffset);
         Engine.Instance.GetDynamicDataInstance().Set("CelesteTAS_LevelZoom", LevelZoom);
 #endif
@@ -133,7 +133,7 @@ public static class CenterCamera {
                 lockPosition = null;
             } else {
                 Camera camera = level.Camera;
-                lockPosition = camera.Position - offset + new Vector2(camera.Viewport.Width / 2f, camera.Viewport.Height / 2f);
+                lockPosition = camera.Position - moveOffset + new Vector2(camera.Viewport.Width / 2f, camera.Viewport.Height / 2f);
             }
         }
     }
@@ -157,7 +157,12 @@ public static class CenterCamera {
             savedLevelZoomFocusPoint = level.ZoomFocusPoint;
             savedLevelScreenPadding = level.ScreenPadding;
 
-            camera.Position = lastPlayerPosition.Value + offset - new Vector2(camera.Viewport.Width / 2f, camera.Viewport.Height / 2f);
+            camera.Position = lastPlayerPosition.Value + moveOffset - new Vector2(camera.Viewport.Width / 2f, camera.Viewport.Height / 2f);
+            Vector2 offset = Vector2.Zero;
+            if (TasSettings.CenterCameraHorizontallyOnly) {
+                offset = camera.position - savedCameraPosition.Value - moveOffset;
+                camera.position.Y -= offset.Y;
+            }
 
             level.Zoom = LevelZoom;
             level.ZoomTarget = LevelZoom;
@@ -169,8 +174,12 @@ public static class CenterCamera {
             level.ScreenPadding = 0;
 
             ScreenCamera = new((int) Math.Round(320 * viewportScale), (int) Math.Round(180 * viewportScale));
-            ScreenCamera.Position = lastPlayerPosition.Value + offset -
+            ScreenCamera.Position = lastPlayerPosition.Value + moveOffset -
                                     new Vector2(ScreenCamera.Viewport.Width / 2f, ScreenCamera.Viewport.Height / 2f);
+            if (TasSettings.CenterCameraHorizontallyOnly) {
+                ScreenCamera.position.Y -= offset.Y;
+            }
+
             if (LevelZoomOut) {
                 ScreenCamera.Position += screenOffset;
             }
@@ -221,7 +230,7 @@ public static class CenterCamera {
 
     public static void ResetCamera() {
         if (Hotkeys.FreeCamera.DoublePressed || MouseButtons.Right.DoublePressed) {
-            offset = Vector2.Zero;
+            moveOffset = Vector2.Zero;
             screenOffset = Vector2.Zero;
             LevelZoom = 1;
             lockPosition = null;
@@ -263,7 +272,7 @@ public static class CenterCamera {
         }
 
         if (Hotkeys.InfoHud.Check) {
-            offset += new Vector2(ArrowKeySensitivity * moveX, ArrowKeySensitivity * moveY);
+            moveOffset += new Vector2(ArrowKeySensitivity * moveX, ArrowKeySensitivity * moveY);
             moveCamera = moveX != 0 || moveY != 0;
         }
 
@@ -272,7 +281,7 @@ public static class CenterCamera {
                 screenOffset += new Vector2(ArrowKeySensitivity * moveX, ArrowKeySensitivity * moveY);
                 moveScreenCamera = moveX != 0 || moveY != 0;
             } else {
-                offset += new Vector2(ArrowKeySensitivity * moveX, ArrowKeySensitivity * moveY);
+                moveOffset += new Vector2(ArrowKeySensitivity * moveX, ArrowKeySensitivity * moveY);
                 moveCamera = moveX != 0 || moveY != 0;
             }
         }
@@ -286,20 +295,20 @@ public static class CenterCamera {
                 screenOffset -= (MouseButtons.Position - MouseButtons.LastPosition) / scale;
                 moveScreenCamera = true;
             } else {
-                offset -= (MouseButtons.Position - MouseButtons.LastPosition) / scale;
+                moveOffset -= (MouseButtons.Position - MouseButtons.LastPosition) / scale;
                 moveCamera = true;
             }
         }
 
         if (lastPlayerPosition is { } playerPosition && level.Session.MapData.Bounds is var bounds) {
             if (moveCamera) {
-                Vector2 result = (playerPosition + offset).Clamp(bounds.X, bounds.Y, bounds.Right, bounds.Bottom);
-                offset = result - playerPosition;
+                Vector2 result = (playerPosition + moveOffset).Clamp(bounds.X, bounds.Y, bounds.Right, bounds.Bottom);
+                moveOffset = result - playerPosition;
             }
 
             if (moveScreenCamera) {
-                Vector2 result = (playerPosition + offset + screenOffset).Clamp(bounds.X, bounds.Y, bounds.Right, bounds.Bottom);
-                screenOffset = result - playerPosition - offset;
+                Vector2 result = (playerPosition + moveOffset + screenOffset).Clamp(bounds.X, bounds.Y, bounds.Right, bounds.Bottom);
+                screenOffset = result - playerPosition - moveOffset;
             }
         }
     }

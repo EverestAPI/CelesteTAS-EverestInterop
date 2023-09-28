@@ -19,14 +19,6 @@ public static class Pico8Fixer {
         On.Celeste.Pico8.Classic.Update += ClassicOnUpdate;
     }
 
-    private static void ClassicOnUpdate(On.Celeste.Pico8.Classic.orig_Update orig, Celeste.Pico8.Classic self) {
-        orig(self);
-
-        if (self.level_index() < 30) {
-            Frames = self.frames;
-        }
-    }
-
     [Unload]
     private static void Unload() {
         On.Celeste.Pico8.Classic.balloon.init -= BalloonOnInit;
@@ -73,6 +65,14 @@ public static class Pico8Fixer {
             bool doubleJump = levelIndex is > 21 and < 31;
             self.max_djump = doubleJump ? 2 : 1;
             self.new_bg = doubleJump;
+        }
+    }
+
+    private static void ClassicOnUpdate(On.Celeste.Pico8.Classic.orig_Update orig, Celeste.Pico8.Classic self) {
+        orig(self);
+
+        if (self.level_index() < 30) {
+            Frames = self.frames;
         }
     }
 }

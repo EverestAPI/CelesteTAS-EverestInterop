@@ -108,6 +108,7 @@ namespace CelesteStudio {
             this.commentUncommentTextToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.insertRoomNameToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.insertCurrentInGameTimeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.removeAllTimestampsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.insertModInfoStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.insertConsoleLoadCommandToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.insertSimpleConsoleLoadCommandToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -173,7 +174,7 @@ namespace CelesteStudio {
             this.statusPanel = new System.Windows.Forms.Panel();
             this.statusBar = new System.Windows.Forms.StatusStrip();
             this.lblStatus = new System.Windows.Forms.ToolStripStatusLabel();
-            this.removeAllTimestampsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.centerCameraHorizontallyOnlyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusBarContextMenuStrip.SuspendLayout();
             this.menuStrip.SuspendLayout();
             this.tasTextContextMenuStrip.SuspendLayout();
@@ -458,7 +459,7 @@ namespace CelesteStudio {
             // 
             // toggleToolStripMenuItem
             // 
-            this.toggleToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.toggleHitboxesToolStripMenuItem, this.toggleTriggerHitboxesToolStripMenuItem, this.unloadedRoomsHitboxesToolStripMenuItem, this.cameraHitboxesToolStripMenuItem, this.toggleSimplifiedHitboxesToolStripMenuItem, this.switchActualCollideHitboxesToolStripMenuItem, this.toolStripSeparator8, this.toggleSimplifiedGraphicsToolStripMenuItem, this.toggleGameplayToolStripMenuItem, this.toolStripSeparator10, this.toggleCenterCameraToolStripMenuItem, this.toolStripSeparator9, this.switchInfoHUDToolStripMenuItem, this.tASInputInfoToolStripMenuItem, this.gameInfoToolStripMenuItem, this.watchEntityInfoToolStripMenuItem, this.customInfoToolStripMenuItem, this.subpixelIndicatorToolStripMenuItem, this.toolStripSeparator1, this.positionDecimalsToolStripMenuItem, this.speedDecimalsToolStripMenuItem, this.velocityDecimalsToolStripMenuItem, this.angleDecimalsToolStripMenuItem, this.customInfoDecimalsToolStripMenuItem, this.subpixelIndicatorDecimalsToolStripMenuItem, this.unitOfSpeedToolStripMenuItem, this.toolStripSeparator19, this.fastForwardSpeedToolStripMenuItem, this.slowForwardSpeedToolStripMenuItem});
+            this.toggleToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.toggleHitboxesToolStripMenuItem, this.toggleTriggerHitboxesToolStripMenuItem, this.unloadedRoomsHitboxesToolStripMenuItem, this.cameraHitboxesToolStripMenuItem, this.toggleSimplifiedHitboxesToolStripMenuItem, this.switchActualCollideHitboxesToolStripMenuItem, this.toolStripSeparator8, this.toggleSimplifiedGraphicsToolStripMenuItem, this.toggleGameplayToolStripMenuItem, this.toolStripSeparator10, this.toggleCenterCameraToolStripMenuItem, this.centerCameraHorizontallyOnlyToolStripMenuItem, this.toolStripSeparator9, this.switchInfoHUDToolStripMenuItem, this.tASInputInfoToolStripMenuItem, this.gameInfoToolStripMenuItem, this.watchEntityInfoToolStripMenuItem, this.customInfoToolStripMenuItem, this.subpixelIndicatorToolStripMenuItem, this.toolStripSeparator1, this.positionDecimalsToolStripMenuItem, this.speedDecimalsToolStripMenuItem, this.velocityDecimalsToolStripMenuItem, this.angleDecimalsToolStripMenuItem, this.customInfoDecimalsToolStripMenuItem, this.subpixelIndicatorDecimalsToolStripMenuItem, this.unitOfSpeedToolStripMenuItem, this.toolStripSeparator19, this.fastForwardSpeedToolStripMenuItem, this.slowForwardSpeedToolStripMenuItem});
             this.toggleToolStripMenuItem.Name = "toggleToolStripMenuItem";
             this.toggleToolStripMenuItem.Size = new System.Drawing.Size(76, 20);
             this.toggleToolStripMenuItem.Text = "&Toggles";
@@ -466,193 +467,193 @@ namespace CelesteStudio {
             // toggleHitboxesToolStripMenuItem
             // 
             this.toggleHitboxesToolStripMenuItem.Name = "toggleHitboxesToolStripMenuItem";
-            this.toggleHitboxesToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.toggleHitboxesToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
             this.toggleHitboxesToolStripMenuItem.Text = "&Hitboxes";
             this.toggleHitboxesToolStripMenuItem.Click += new System.EventHandler(this.toggleHitboxesToolStripMenuItem_Click);
             // 
             // toggleTriggerHitboxesToolStripMenuItem
             // 
             this.toggleTriggerHitboxesToolStripMenuItem.Name = "toggleTriggerHitboxesToolStripMenuItem";
-            this.toggleTriggerHitboxesToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.toggleTriggerHitboxesToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
             this.toggleTriggerHitboxesToolStripMenuItem.Text = "&Trigger Hitboxes";
             this.toggleTriggerHitboxesToolStripMenuItem.Click += new System.EventHandler(this.toggleTriggerHitboxesToolStripMenuItem_Click);
             // 
             // unloadedRoomsHitboxesToolStripMenuItem
             // 
             this.unloadedRoomsHitboxesToolStripMenuItem.Name = "unloadedRoomsHitboxesToolStripMenuItem";
-            this.unloadedRoomsHitboxesToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.unloadedRoomsHitboxesToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
             this.unloadedRoomsHitboxesToolStripMenuItem.Text = "Unloaded Rooms Hitboxes";
             this.unloadedRoomsHitboxesToolStripMenuItem.Click += new System.EventHandler(this.unloadedRoomsHitboxesToolStripMenuItem_Click);
             // 
             // cameraHitboxesToolStripMenuItem
             // 
             this.cameraHitboxesToolStripMenuItem.Name = "cameraHitboxesToolStripMenuItem";
-            this.cameraHitboxesToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.cameraHitboxesToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
             this.cameraHitboxesToolStripMenuItem.Text = "Camera Hitboxes";
             this.cameraHitboxesToolStripMenuItem.Click += new System.EventHandler(this.cameraHitboxesToolStripMenuItem_Click);
             // 
             // toggleSimplifiedHitboxesToolStripMenuItem
             // 
             this.toggleSimplifiedHitboxesToolStripMenuItem.Name = "toggleSimplifiedHitboxesToolStripMenuItem";
-            this.toggleSimplifiedHitboxesToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.toggleSimplifiedHitboxesToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
             this.toggleSimplifiedHitboxesToolStripMenuItem.Text = "&Simplified Hitboxes";
             this.toggleSimplifiedHitboxesToolStripMenuItem.Click += new System.EventHandler(this.toggleSimplifiedHitboxesToolStripMenuItem_Click);
             // 
             // switchActualCollideHitboxesToolStripMenuItem
             // 
             this.switchActualCollideHitboxesToolStripMenuItem.Name = "switchActualCollideHitboxesToolStripMenuItem";
-            this.switchActualCollideHitboxesToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.switchActualCollideHitboxesToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
             this.switchActualCollideHitboxesToolStripMenuItem.Text = "&Actual Collide Hitboxes";
             this.switchActualCollideHitboxesToolStripMenuItem.Click += new System.EventHandler(this.switchActualCollideHitboxesToolStripMenuItem_Click);
             // 
             // toolStripSeparator8
             // 
             this.toolStripSeparator8.Name = "toolStripSeparator8";
-            this.toolStripSeparator8.Size = new System.Drawing.Size(289, 6);
+            this.toolStripSeparator8.Size = new System.Drawing.Size(321, 6);
             // 
             // toggleSimplifiedGraphicsToolStripMenuItem
             // 
             this.toggleSimplifiedGraphicsToolStripMenuItem.Name = "toggleSimplifiedGraphicsToolStripMenuItem";
-            this.toggleSimplifiedGraphicsToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.toggleSimplifiedGraphicsToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
             this.toggleSimplifiedGraphicsToolStripMenuItem.Text = "Simplified &Graphics";
             this.toggleSimplifiedGraphicsToolStripMenuItem.Click += new System.EventHandler(this.toggleSimplifiedGraphicsToolStripMenuItem_Click);
             // 
             // toggleGameplayToolStripMenuItem
             // 
             this.toggleGameplayToolStripMenuItem.Name = "toggleGameplayToolStripMenuItem";
-            this.toggleGameplayToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.toggleGameplayToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
             this.toggleGameplayToolStripMenuItem.Text = "Game&play";
             this.toggleGameplayToolStripMenuItem.Click += new System.EventHandler(this.toggleGameplayToolStripMenuItem_Click);
             // 
             // toolStripSeparator10
             // 
             this.toolStripSeparator10.Name = "toolStripSeparator10";
-            this.toolStripSeparator10.Size = new System.Drawing.Size(289, 6);
+            this.toolStripSeparator10.Size = new System.Drawing.Size(321, 6);
             // 
             // toggleCenterCameraToolStripMenuItem
             // 
             this.toggleCenterCameraToolStripMenuItem.Name = "toggleCenterCameraToolStripMenuItem";
-            this.toggleCenterCameraToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.toggleCenterCameraToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
             this.toggleCenterCameraToolStripMenuItem.Text = "&Center Camera";
             this.toggleCenterCameraToolStripMenuItem.Click += new System.EventHandler(this.toggleCenterCameraToolStripMenuItem_Click);
             // 
             // toolStripSeparator9
             // 
             this.toolStripSeparator9.Name = "toolStripSeparator9";
-            this.toolStripSeparator9.Size = new System.Drawing.Size(289, 6);
+            this.toolStripSeparator9.Size = new System.Drawing.Size(321, 6);
             // 
             // switchInfoHUDToolStripMenuItem
             // 
             this.switchInfoHUDToolStripMenuItem.Name = "switchInfoHUDToolStripMenuItem";
-            this.switchInfoHUDToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.switchInfoHUDToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
             this.switchInfoHUDToolStripMenuItem.Text = "&Info HUD";
             this.switchInfoHUDToolStripMenuItem.Click += new System.EventHandler(this.switchInfoHUDToolStripMenuItem_Click);
             // 
             // tASInputInfoToolStripMenuItem
             // 
             this.tASInputInfoToolStripMenuItem.Name = "tASInputInfoToolStripMenuItem";
-            this.tASInputInfoToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.tASInputInfoToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
             this.tASInputInfoToolStripMenuItem.Text = "TAS Input Info";
             this.tASInputInfoToolStripMenuItem.Click += new System.EventHandler(this.tASInputInfoToolStripMenuItem_Click);
             // 
             // gameInfoToolStripMenuItem
             // 
             this.gameInfoToolStripMenuItem.Name = "gameInfoToolStripMenuItem";
-            this.gameInfoToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.gameInfoToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
             this.gameInfoToolStripMenuItem.Text = "Game Info";
             this.gameInfoToolStripMenuItem.Click += new System.EventHandler(this.gameInfoToolStripMenuItem_Click);
             // 
             // watchEntityInfoToolStripMenuItem
             // 
             this.watchEntityInfoToolStripMenuItem.Name = "watchEntityInfoToolStripMenuItem";
-            this.watchEntityInfoToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.watchEntityInfoToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
             this.watchEntityInfoToolStripMenuItem.Text = "Watch Entity Info";
             this.watchEntityInfoToolStripMenuItem.Click += new System.EventHandler(this.watchEntityInfoToolStripMenuItem_Click);
             // 
             // customInfoToolStripMenuItem
             // 
             this.customInfoToolStripMenuItem.Name = "customInfoToolStripMenuItem";
-            this.customInfoToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.customInfoToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
             this.customInfoToolStripMenuItem.Text = "Custom Info";
             this.customInfoToolStripMenuItem.Click += new System.EventHandler(this.customInfoToolStripMenuItem_Click);
             // 
             // subpixelIndicatorToolStripMenuItem
             // 
             this.subpixelIndicatorToolStripMenuItem.Name = "subpixelIndicatorToolStripMenuItem";
-            this.subpixelIndicatorToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.subpixelIndicatorToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
             this.subpixelIndicatorToolStripMenuItem.Text = "Subpixel Indicator";
             this.subpixelIndicatorToolStripMenuItem.Click += new System.EventHandler(this.subpixelIndicatorToolStripMenuItem_Click);
             // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(289, 6);
+            this.toolStripSeparator1.Size = new System.Drawing.Size(321, 6);
             // 
             // positionDecimalsToolStripMenuItem
             // 
             this.positionDecimalsToolStripMenuItem.Name = "positionDecimalsToolStripMenuItem";
-            this.positionDecimalsToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.positionDecimalsToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
             this.positionDecimalsToolStripMenuItem.Text = "Position Decimals";
             this.positionDecimalsToolStripMenuItem.Click += new System.EventHandler(this.positionDecimalsToolStripMenuItem_Click);
             // 
             // speedDecimalsToolStripMenuItem
             // 
             this.speedDecimalsToolStripMenuItem.Name = "speedDecimalsToolStripMenuItem";
-            this.speedDecimalsToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.speedDecimalsToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
             this.speedDecimalsToolStripMenuItem.Text = "Speed Decimals";
             this.speedDecimalsToolStripMenuItem.Click += new System.EventHandler(this.speedDecimalsToolStripMenuItem_Click);
             // 
             // velocityDecimalsToolStripMenuItem
             // 
             this.velocityDecimalsToolStripMenuItem.Name = "velocityDecimalsToolStripMenuItem";
-            this.velocityDecimalsToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.velocityDecimalsToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
             this.velocityDecimalsToolStripMenuItem.Text = "Velocity Decimals";
             this.velocityDecimalsToolStripMenuItem.Click += new System.EventHandler(this.velocityDecimalsToolStripMenuItem_Click);
             // 
             // angleDecimalsToolStripMenuItem
             // 
             this.angleDecimalsToolStripMenuItem.Name = "angleDecimalsToolStripMenuItem";
-            this.angleDecimalsToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.angleDecimalsToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
             this.angleDecimalsToolStripMenuItem.Text = "Angle Decimals";
             this.angleDecimalsToolStripMenuItem.Click += new System.EventHandler(this.angleDecimalsToolStripMenuItem_Click);
             // 
             // customInfoDecimalsToolStripMenuItem
             // 
             this.customInfoDecimalsToolStripMenuItem.Name = "customInfoDecimalsToolStripMenuItem";
-            this.customInfoDecimalsToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.customInfoDecimalsToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
             this.customInfoDecimalsToolStripMenuItem.Text = "Custom Info Decimals";
             this.customInfoDecimalsToolStripMenuItem.Click += new System.EventHandler(this.customInfoDecimalsToolStripMenuItem_Click);
             // 
             // subpixelIndicatorDecimalsToolStripMenuItem
             // 
             this.subpixelIndicatorDecimalsToolStripMenuItem.Name = "subpixelIndicatorDecimalsToolStripMenuItem";
-            this.subpixelIndicatorDecimalsToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.subpixelIndicatorDecimalsToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
             this.subpixelIndicatorDecimalsToolStripMenuItem.Text = "Subpixel Indicator Decimals";
             this.subpixelIndicatorDecimalsToolStripMenuItem.Click += new System.EventHandler(this.subpixelIndicatorDecimalsToolStripMenuItem_Click);
             // 
             // unitOfSpeedToolStripMenuItem
             // 
             this.unitOfSpeedToolStripMenuItem.Name = "unitOfSpeedToolStripMenuItem";
-            this.unitOfSpeedToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.unitOfSpeedToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
             this.unitOfSpeedToolStripMenuItem.Text = "Unit of Speed";
             this.unitOfSpeedToolStripMenuItem.Click += new System.EventHandler(this.unitOfSpeedToolStripMenuItem_Click);
             // 
             // toolStripSeparator19
             // 
             this.toolStripSeparator19.Name = "toolStripSeparator19";
-            this.toolStripSeparator19.Size = new System.Drawing.Size(289, 6);
+            this.toolStripSeparator19.Size = new System.Drawing.Size(321, 6);
             // 
             // fastForwardSpeedToolStripMenuItem
             // 
             this.fastForwardSpeedToolStripMenuItem.Name = "fastForwardSpeedToolStripMenuItem";
-            this.fastForwardSpeedToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.fastForwardSpeedToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
             this.fastForwardSpeedToolStripMenuItem.Text = "Fast Forward Speed";
             this.fastForwardSpeedToolStripMenuItem.Click += new System.EventHandler(this.fastForwardSpeedToolStripMenuItem_Click);
             // 
             // slowForwardSpeedToolStripMenuItem
             // 
             this.slowForwardSpeedToolStripMenuItem.Name = "slowForwardSpeedToolStripMenuItem";
-            this.slowForwardSpeedToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            this.slowForwardSpeedToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
             this.slowForwardSpeedToolStripMenuItem.Text = "Slow Forward Speed";
             this.slowForwardSpeedToolStripMenuItem.Click += new System.EventHandler(this.slowForwardSpeedToolStripMenuItem_Click);
             // 
@@ -683,7 +684,7 @@ namespace CelesteStudio {
             // 
             this.tasTextContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.insertRemoveBreakPointToolStripMenuItem, this.insertRemoveSavestateBreakPointToolStripMenuItem, this.removeAllUncommentedBreakpointsToolStripMenuItem, this.removeAllBreakpointsToolStripMenuItem, this.commentUncommentAllBreakpointsToolStripMenuItem, this.toolStripSeparator2, this.commentUncommentTextToolStripMenuItem, this.insertRoomNameToolStripMenuItem, this.insertCurrentInGameTimeToolStripMenuItem, this.removeAllTimestampsToolStripMenuItem, this.insertModInfoStripMenuItem1, this.insertConsoleLoadCommandToolStripMenuItem, this.insertSimpleConsoleLoadCommandToolStripMenuItem, this.insertOtherCommandToolStripMenuItem, this.toolStripSeparator6, this.swapDashKeysStripMenuItem, this.swapJumpKeysToolStripMenuItem, this.swapSelectedLAndRToolStripMenuItem, this.combineConsecutiveSameInputsToolStripMenuItem, this.forceCombineInputsToolStripMenuItem, this.convertDashToDemoDashToolStripMenuItem, this.toolStripSeparator12, this.openReadFileToolStripMenuItem});
             this.tasTextContextMenuStrip.Name = "tasTextContextMenuStrip";
-            this.tasTextContextMenuStrip.Size = new System.Drawing.Size(426, 484);
+            this.tasTextContextMenuStrip.Size = new System.Drawing.Size(426, 462);
             // 
             // insertRemoveBreakPointToolStripMenuItem
             // 
@@ -753,6 +754,14 @@ namespace CelesteStudio {
             this.insertCurrentInGameTimeToolStripMenuItem.Size = new System.Drawing.Size(425, 22);
             this.insertCurrentInGameTimeToolStripMenuItem.Text = "Insert Current In-Game Time";
             this.insertCurrentInGameTimeToolStripMenuItem.Click += new System.EventHandler(this.insertCurrentInGameTimeToolStripMenuItem_Click);
+            // 
+            // removeAllTimestampsToolStripMenuItem
+            // 
+            this.removeAllTimestampsToolStripMenuItem.Name = "removeAllTimestampsToolStripMenuItem";
+            this.removeAllTimestampsToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys) (((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Shift) | System.Windows.Forms.Keys.T)));
+            this.removeAllTimestampsToolStripMenuItem.Size = new System.Drawing.Size(425, 22);
+            this.removeAllTimestampsToolStripMenuItem.Text = "Remove All Timestamps";
+            this.removeAllTimestampsToolStripMenuItem.Click += new System.EventHandler(this.removeAllTimestampsToolStripMenuItem_Click);
             // 
             // insertModInfoStripMenuItem1
             // 
@@ -1256,13 +1265,12 @@ namespace CelesteStudio {
             this.lblStatus.Text = "Searching...";
             this.lblStatus.TextAlign = System.Drawing.ContentAlignment.TopLeft;
             // 
-            // removeAllTimestampsToolStripMenuItem
+            // centerCameraHorizontallyOnlyToolStripMenuItem
             // 
-            this.removeAllTimestampsToolStripMenuItem.Name = "removeAllTimestampsToolStripMenuItem";
-            this.removeAllTimestampsToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys) (((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Shift) | System.Windows.Forms.Keys.T)));
-            this.removeAllTimestampsToolStripMenuItem.Size = new System.Drawing.Size(425, 22);
-            this.removeAllTimestampsToolStripMenuItem.Text = "Remove All Timestamps";
-            this.removeAllTimestampsToolStripMenuItem.Click += new System.EventHandler(this.removeAllTimestampsToolStripMenuItem_Click);
+            this.centerCameraHorizontallyOnlyToolStripMenuItem.Name = "centerCameraHorizontallyOnlyToolStripMenuItem";
+            this.centerCameraHorizontallyOnlyToolStripMenuItem.Size = new System.Drawing.Size(324, 22);
+            this.centerCameraHorizontallyOnlyToolStripMenuItem.Text = "Center Camera Horizontally Only";
+            this.centerCameraHorizontallyOnlyToolStripMenuItem.Click += new System.EventHandler(this.centerCameraHorizontallyOnlyToolStripMenuItem_Click);
             // 
             // Studio
             // 
@@ -1295,6 +1303,8 @@ namespace CelesteStudio {
             this.ResumeLayout(false);
             this.PerformLayout();
         }
+
+        private System.Windows.Forms.ToolStripMenuItem centerCameraHorizontallyOnlyToolStripMenuItem;
 
         private System.Windows.Forms.ToolStripMenuItem removeAllTimestampsToolStripMenuItem;
 

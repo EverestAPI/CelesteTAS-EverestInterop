@@ -96,7 +96,7 @@ public class CelesteTasSettings : EverestModuleSettings {
     [SettingName("TAS_KEY_CENTER_CAMERA")]
     [DefaultButtonBinding2(0, Keys.LeftControl, Keys.M)]
     public ButtonBinding KeyCamera { get; set; } = new(0, Keys.LeftControl, Keys.M);
-
+    
     [SettingName("TAS_KEY_LOCK_CAMERA")]
     [DefaultButtonBinding2(0, Keys.LeftControl, Keys.H)]
     public ButtonBinding KeyLockCamera { get; set; } = new(0, Keys.LeftControl, Keys.H);
@@ -312,6 +312,8 @@ public class CelesteTasSettings : EverestModuleSettings {
         get => Enabled && _CenterCamera;
         set => _CenterCamera = value;
     }
+
+    public bool CenterCameraHorizontallyOnly { get; set; } = false;
 
     public bool RestoreSettings { get; set; } = false;
     public bool LaunchStudioAtBoot { get; set; } = false;

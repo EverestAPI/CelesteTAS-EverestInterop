@@ -39,6 +39,8 @@ internal static class CelesteTasMenu {
         return new EaseInSubMenu("More Options".ToDialogText(), false).Apply(subMenu => {
             subMenu.Add(new TextMenu.OnOff("Center Camera".ToDialogText(), TasSettings.CenterCamera).Change(value =>
                 TasSettings.CenterCamera = value));
+            subMenu.Add(new TextMenu.OnOff("Center Camera Horizontally Only".ToDialogText(), TasSettings.CenterCameraHorizontallyOnly).Change(value =>
+                TasSettings.CenterCameraHorizontallyOnly = value));
             subMenu.Add(new TextMenu.OnOff("Restore Settings".ToDialogText(), TasSettings.RestoreSettings).Change(value =>
                 TasSettings.RestoreSettings = value));
             subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), TasSettings.LaunchStudioAtBoot).Change(value =>

@@ -1847,6 +1847,10 @@ public partial class Studio : BaseForm {
         ToggleGameSetting("CenterCamera", null, sender);
     }
 
+    private void centerCameraHorizontallyOnlyToolStripMenuItem_Click(object sender, EventArgs e) {
+        ToggleGameSetting("CenterCameraHorizontallyOnly", null, sender);
+    }
+
     private void switchInfoHUDToolStripMenuItem_Click(object sender, EventArgs e) {
         ToggleGameSetting("InfoHud", null, sender);
     }

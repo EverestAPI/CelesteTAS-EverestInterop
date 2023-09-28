@@ -97,6 +97,7 @@ TAS_HOTKEYS_DESCRIPTION= Binding multiple keys to a control will cause those key
 
 # ================================== More Options Submenu ==================================
 TAS_CENTER_CAMERA=                   Center Camera
+TAS_CENTER_CAMERA_HORIZONTALLY_ONLY= Center Camera Horizontally Only
 TAS_RESTORE_SETTINGS=                Restore All Settings when TAS Stop
 TAS_LAUNCH_STUDIO_AT_BOOT=           Launch Studio at Boot
 TAS_ATTEMPT_TO_CONNECT_TO_STUDIO=    Attempt To Connect To Studio
