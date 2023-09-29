@@ -87,6 +87,7 @@
   - `Set, Everest.ShowModOptionsInGame, false`
   - `Set, CelesteTAS.CenterCamera, true`
   - `Set, AnarchyCollab2022.LeftButton, Q, W`
+  - `Set, ExtendedVariantMode.DashCount, 3`
 
     Set helper's button, supporting keyboard and mouse. Then you can use the `P` custom key press modifier or the [Press](#press) command to press keys, use the [Mouse](#mouse) command to press and move mouse (available mouse buttons `Left`, `Right`, `Middle`, `X1`, `X2`).
     The setting is only valid when tas is running, it will be restored automatically when tas is stopped.
