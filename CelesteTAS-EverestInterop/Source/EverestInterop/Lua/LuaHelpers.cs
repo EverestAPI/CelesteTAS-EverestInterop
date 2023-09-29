@@ -10,6 +10,13 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Lua;
 
 public static class LuaHelpers {
+    public class ValueHolder<T> {
+        public T Value;
+
+        public ValueHolder(T value) {
+            Value = value;
+        }
+    }
 
     // can omit entityId
     public static Entity GetEntity(string typeNameWithId) {
@@ -70,6 +77,7 @@ public static class LuaHelpers {
 
     // Set field or property value
     public static void SetValue(object instanceOrTypeName, string memberName, object value) {
+        value.GetType().DebugLog();
         if (!TryGetTypeFromInstanceOrTypeName(instanceOrTypeName, out Type type, out bool staticMember)) {
             return;
         }
@@ -79,10 +87,18 @@ public static class LuaHelpers {
         if (memberInfo != null) {
             try {
                 if (memberInfo is FieldInfo fieldInfo) {
-                    value = ConvertType(value, type, fieldInfo.FieldType);
+                    if (value is ValueHolder<float> holder) {
+                        value = holder.Value;
+                    } else {
+                        value = ConvertType(value, type, fieldInfo.FieldType);
+                    }
                     fieldInfo.SetValue(obj, value);
                 } else if (memberInfo is PropertyInfo propertyInfo) {
-                    value = ConvertType(value, type, propertyInfo.PropertyType);
+                    if (value is ValueHolder<float> holder) {
+                        value = holder.Value;
+                    } else {
+                        value = ConvertType(value, type, propertyInfo.PropertyType);
+                    }
                     propertyInfo.SetValue(obj, value);
                 }
             } catch (Exception e) {
@@ -102,7 +118,9 @@ public static class LuaHelpers {
         if (methodInfo != null) {
             ParameterInfo[] parameterInfos = methodInfo.GetParameters();
             for (var i = 0; i < parameterInfos.Length; i++) {
-                if (i < parameters.Length) {
+                if (parameters[i] is ValueHolder<float> holder) {
+                    parameters[i] = holder.Value;
+                } else if (i < parameters.Length) {
                     parameters[i] = ConvertType(parameters[i], parameters[i]?.GetType(), parameterInfos[i].ParameterType);
                 }
             }
@@ -115,6 +133,10 @@ public static class LuaHelpers {
         }
 
         return null;
+    }
+
+    public static ValueHolder<float> ToFloat(double value) {
+        return new ValueHolder<float>((float) value);
     }
 
     private static object ConvertType(object value, Type valueType, Type type) {

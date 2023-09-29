@@ -35,6 +35,12 @@ local function invokeMethod(instanceOrTypeName, methodName, ...)
     return LuaHelpers.InvokeMethod(instanceOrTypeName, methodName, ...)
 end
 
+--- cast double value to float in c# side when calling invokeMethod() or setValue()
+--- e.g. invokeMethod("ExtendedVariants.UI.ModOptionsEntries", "SetVariantValue", getEnum("Variant", "Gravity"), toFloat(0.1))
+local function toFloat(doubleValue)
+    return LuaHelpers.ToFloat(doubleValue)
+end
+
 --- get enum value
 --- getEnum('Facings', 'Right') or getEnum('Facings', 1) 
 local function getEnum(enumTypeName, value)

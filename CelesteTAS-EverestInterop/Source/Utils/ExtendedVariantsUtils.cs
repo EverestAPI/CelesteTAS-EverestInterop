@@ -22,6 +22,7 @@ internal static class ExtendedVariantsUtils {
     // enum value might be different between different ExtendedVariantMode version, so we have to parse from string
     private static readonly Lazy<object> upsideDownVariant = new(ParseVariant("UpsideDown"));
     private static readonly Lazy<object> superDashingVariant = new(ParseVariant("SuperDashing"));
+    private static readonly object[] parameterless = { };
 
     public static Func<object> ParseVariant(string value) {
         return () => {
@@ -34,18 +35,20 @@ internal static class ExtendedVariantsUtils {
         };
     }
 
-    public static bool UpsideDown => GetCurrentVariantValue(upsideDownVariant) is { } value && (bool)value == true;
-    public static bool SuperDashing => GetCurrentVariantValue(superDashingVariant) is { } value && (bool)value == true;
+    public static bool UpsideDown => GetCurrentVariantValue(upsideDownVariant) is { } value && (bool) value;
+    public static bool SuperDashing => GetCurrentVariantValue(superDashingVariant) is { } value && (bool) value;
 
-    public static Type? GetVariantType(Lazy<object> variant) {
+    public static Type GetVariantType(Lazy<object> variant) {
         if (variant.Value is null) return null;
         object handler = dictionareGetItem.Value?.Invoke(variantHandlers.Value, variant.Value);
-        return (Type?)handler?.GetType()?.GetMethodInfo("GetVariantType")?.Invoke(handler, new object[] { });
+        return (Type) handler?.GetType().GetMethodInfo("GetVariantType")?.Invoke(handler, parameterless);
     }
-    public static object? GetCurrentVariantValue(Lazy<object> variant) {
+
+    public static object GetCurrentVariantValue(Lazy<object> variant) {
         if (variant.Value is null) return null;
         return getCurrentVariantValue.Value?.Invoke(triggerManager.Value, variant.Value);
     }
+
     public static void SetVariantValue(Lazy<object> variant, object value) {
         if (variant.Value is null) return;
         setVariantValue.Value?.Invoke(null, variant.Value, value);
