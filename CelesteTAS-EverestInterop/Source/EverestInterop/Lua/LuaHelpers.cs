@@ -77,7 +77,6 @@ public static class LuaHelpers {
 
     // Set field or property value
     public static void SetValue(object instanceOrTypeName, string memberName, object value) {
-        value.GetType().DebugLog();
         if (!TryGetTypeFromInstanceOrTypeName(instanceOrTypeName, out Type type, out bool staticMember)) {
             return;
         }
