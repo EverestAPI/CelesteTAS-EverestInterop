@@ -49,5 +49,7 @@ public static class HitboxMenu {
             subMenuItem.AddDescription(menu, "Hitbox Color Description 2".ToDialogText());
             subMenuItem.AddDescription(menu, "Hitbox Color Description 1".ToDialogText());
         }
+       
+        subMenuItem = null;
     }
 }

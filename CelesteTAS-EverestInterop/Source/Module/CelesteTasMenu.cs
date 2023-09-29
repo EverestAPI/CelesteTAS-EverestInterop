@@ -151,6 +151,8 @@ internal static class CelesteTasMenu {
     }
 
     public static void CreateMenu(EverestModule everestModule, TextMenu menu, bool inGame) {
+        menu.OnClose += () => options = null;
+
         List<TextMenuExt.EaseInSubHeaderExt> enabledDescriptions = new();
 
         TextMenuExt.EaseInSubHeaderExt AddEnabledDescription(TextMenu.Item enabledItem, TextMenu containingMenu, string description) {
@@ -197,6 +199,7 @@ internal static class CelesteTasMenu {
         HitboxMenu.AddSubMenuDescription(menu, inGame);
         InfoHud.AddSubMenuDescription(menu);
         hotkeysSubMenu.AddDescription(menu, "Hotkeys Description".ToDialogText());
+        hotkeysSubMenu = null;
     }
 
     private static IEnumerable<string> Split(string str, int n) {
