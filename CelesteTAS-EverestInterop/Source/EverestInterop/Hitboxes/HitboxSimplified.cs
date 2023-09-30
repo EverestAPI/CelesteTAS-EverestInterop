@@ -119,7 +119,7 @@ public static class HitboxSimplified {
 
         Entity entity = hitbox.Entity;
 
-        if (entity is FireBall {iceMode: false}) {
+        if (entity is FireBall {iceMode: false} or WallBooster {IceMode: false}) {
             return;
         }
 
