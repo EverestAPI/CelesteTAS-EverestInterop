@@ -157,9 +157,7 @@ public static class SimplifiedGraphicsFeature {
         On.Celeste.CrystalStaticSpinner.CreateSprites += CrystalStaticSpinner_CreateSprites;
         IL.Celeste.CrystalStaticSpinner.GetHue += CrystalStaticSpinnerOnGetHue;
 
-        On.Celeste.FloatingDebris.ctor_Vector2 += FloatingDebris_ctor;
-        On.Celeste.MoonCreature.ctor_Vector2 += MoonCreature_ctor;
-        On.Celeste.MirrorSurfaces.Render += MirrorSurfacesOnRender;
+        HookHelper.SkipMethod(t, nameof(IsSimplifiedGraphics), "Render", typeof(MirrorSurfaces));
 
         IL.Celeste.LightingRenderer.Render += LightingRenderer_Render;
         On.Celeste.ColorGrade.Set_MTexture_MTexture_float += ColorGradeOnSet_MTexture_MTexture_float;
@@ -206,8 +204,12 @@ public static class SimplifiedGraphicsFeature {
 
         HookHelper.SkipMethod(t, nameof(IsSimplifiedClutteredEntity), "Render",
             typeof(ReflectionTentacles), typeof(SummitCloud), typeof(TempleEye), typeof(Wire),
+            typeof(Cobweb), typeof(HangingLamp),
             typeof(DustGraphic).GetNestedType("Eyeballs", BindingFlags.NonPublic)
         );
+        On.Celeste.FloatingDebris.ctor_Vector2 += FloatingDebris_ctor;
+        On.Celeste.MoonCreature.ctor_Vector2 += MoonCreature_ctor;
+        On.Celeste.ResortLantern.ctor_Vector2 += ResortLantern_ctor;
 
         HookHelper.SkipMethod(
             t,
@@ -226,9 +228,6 @@ public static class SimplifiedGraphicsFeature {
         On.Celeste.Level.Update -= Level_Update;
         On.Celeste.CrystalStaticSpinner.CreateSprites -= CrystalStaticSpinner_CreateSprites;
         IL.Celeste.CrystalStaticSpinner.GetHue -= CrystalStaticSpinnerOnGetHue;
-        On.Celeste.FloatingDebris.ctor_Vector2 -= FloatingDebris_ctor;
-        On.Celeste.MoonCreature.ctor_Vector2 -= MoonCreature_ctor;
-        On.Celeste.MirrorSurfaces.Render -= MirrorSurfacesOnRender;
         IL.Celeste.LightingRenderer.Render -= LightingRenderer_Render;
         On.Celeste.LightningRenderer.Bolt.Render -= BoltOnRender;
         IL.Celeste.Level.Render -= LevelOnRender;
@@ -243,8 +242,13 @@ public static class SimplifiedGraphicsFeature {
         On.Celeste.DustStyles.Get_Session -= DustStyles_Get_Session;
         IL.Celeste.LightningRenderer.Render -= LightningRenderer_RenderIL;
         On.Celeste.Audio.Play_string -= AudioOnPlay_string;
+        On.Celeste.FloatingDebris.ctor_Vector2 -= FloatingDebris_ctor;
+        On.Celeste.MoonCreature.ctor_Vector2 -= MoonCreature_ctor;
+        On.Celeste.ResortLantern.ctor_Vector2 -= ResortLantern_ctor;
         On.Celeste.Spikes.ctor_Vector2_int_Directions_string -= SpikesOnCtor_Vector2_int_Directions_string;
     }
+
+    private static bool IsSimplifiedGraphics() => TasSettings.SimplifiedGraphics;
 
     private static bool IsSimplifiedParticle() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedParticle;
 
@@ -531,21 +535,22 @@ public static class SimplifiedGraphicsFeature {
 
     private static void FloatingDebris_ctor(On.Celeste.FloatingDebris.orig_ctor_Vector2 orig, FloatingDebris self, Vector2 position) {
         orig(self, position);
-        if (TasSettings.SimplifiedGraphics) {
+        if (IsSimplifiedClutteredEntity()) {
             self.Add(new RemoveSelfComponent());
         }
     }
 
     private static void MoonCreature_ctor(On.Celeste.MoonCreature.orig_ctor_Vector2 orig, MoonCreature self, Vector2 position) {
         orig(self, position);
-        if (TasSettings.SimplifiedGraphics) {
+        if (IsSimplifiedClutteredEntity()) {
             self.Add(new RemoveSelfComponent());
         }
     }
 
-    private static void MirrorSurfacesOnRender(On.Celeste.MirrorSurfaces.orig_Render orig, MirrorSurfaces self) {
-        if (!TasSettings.SimplifiedGraphics) {
-            orig(self);
+    private static void ResortLantern_ctor(On.Celeste.ResortLantern.orig_ctor_Vector2 orig, ResortLantern self, Vector2 position) {
+        orig(self, position);
+        if (IsSimplifiedClutteredEntity()) {
+            self.Add(new RemoveSelfComponent());
         }
     }
 
