@@ -1573,6 +1573,14 @@ public partial class Studio : BaseForm {
     private void stunPauseModeToolStripMenuItem_Click(object sender, EventArgs e) {
         InsertNewLine("StunPauseMode, Simulate/Input");
     }
+    
+    private void saveAndQuitReenterToolStripMenuItem_Click(object sender, EventArgs e) {
+        InsertNewLine("SaveAndQuitReenter");
+    }
+
+    private void saveAndQuitReenterModeToolStripMenuItem_Click(object sender, EventArgs e) {
+        InsertNewLine("SaveAndQuitReenterMode, Simulate/Input");
+    }
 
     private void autoInputToolStripMenuItem_Click(object sender, EventArgs e) {
         InsertNewLine("AutoInput, 2\n   1,S,N\n  10,O\nStartAutoInput\n\nEndAutoInput");
