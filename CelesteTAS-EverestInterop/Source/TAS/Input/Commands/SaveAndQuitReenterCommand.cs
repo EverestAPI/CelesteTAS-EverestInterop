@@ -204,7 +204,12 @@ public class SaveAndQuitReenterCommand {
             int frame = pair.Key;
             var commands = pair.Value;
 
-            if (frame <= atFrameCount) continue;
+            if (frame < atFrameCount) continue;
+            
+            // Remove all commands before SaveAndQuitReenter, since they already have executed
+            if (frame == atFrameCount) {
+                commands = commands.SkipWhile(x => x.Attribute.Name != "SaveAndQuitReenter").Skip(1).ToList();
+            }
             
             Manager.Controller.Commands[frame + totalFrames] = commands;
             Manager.Controller.Commands.Remove(frame);

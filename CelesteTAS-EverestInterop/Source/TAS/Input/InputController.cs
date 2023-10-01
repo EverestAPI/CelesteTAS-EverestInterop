@@ -250,12 +250,18 @@ public class InputController {
             return;
         }
 
-        CurrentCommands?.ForEach(command => {
-            if (command.Attribute.ExecuteTiming.Has(ExecuteTiming.Runtime) &&
-                (!EnforceLegalCommand.EnabledWhenRunning || command.Attribute.LegalInMainGame)) {
-                command.Invoke();
+        if (CurrentCommands != null) {
+            foreach (var command in CurrentCommands) {
+                if (command.Attribute.ExecuteTiming.Has(ExecuteTiming.Runtime) &&
+                    (!EnforceLegalCommand.EnabledWhenRunning || command.Attribute.LegalInMainGame)) {
+                    command.Invoke();
+                }
+
+                // SaveAndQuitReenter inserts inputs, so we can't continue executing the commands
+                // It already handles the moving of all following commands
+                if (command.Attribute.Name == "SaveAndQuitReenter") break;
             }
-        });
+        }
 
         if (!CanPlayback) {
             return;
