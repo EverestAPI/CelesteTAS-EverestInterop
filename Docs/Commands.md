@@ -234,7 +234,7 @@ Specify the default mode for `StunPause` command.
   ```
   1,S
   1,U
-  1,F,180
+  1,F,0
   #Press Save & Quit
   1,U,O
   SaveAndQuitReenter
