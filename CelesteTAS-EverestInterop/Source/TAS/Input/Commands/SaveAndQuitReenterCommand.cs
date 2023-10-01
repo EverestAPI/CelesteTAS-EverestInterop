@@ -89,6 +89,11 @@ public class SaveAndQuitReenterCommand {
         }
 
         if (ParsingCommand) {
+            if (Mode == SaveAndQuitReenterMode.Input && SafeCommand.DisallowUnsafeInputParsing) {
+                AbortTas("\"SaveAndQuitReenter, Input\" requires unsafe inputs");
+                return;
+            }
+            
             CommandData[studioLine] = new SaveAndQuitReenterData {
                 previousInput = Manager.Controller.Inputs.LastOrDefault(), 
                 frameCount = Manager.Controller.CurrentParsingFrame,
