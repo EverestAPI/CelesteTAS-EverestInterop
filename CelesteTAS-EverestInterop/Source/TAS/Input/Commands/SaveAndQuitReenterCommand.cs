@@ -66,7 +66,7 @@ public class SaveAndQuitReenterCommand {
             }
 
             SaveAndQuitReenterMode? globalMode = ParsingCommand ? globalModeParsing : globalModeRuntime;
-            return localMode ?? globalMode ?? SaveAndQuitReenterMode.Input;
+            return localMode ?? globalMode ?? SaveAndQuitReenterMode.Simulate;
         }
     }
     
