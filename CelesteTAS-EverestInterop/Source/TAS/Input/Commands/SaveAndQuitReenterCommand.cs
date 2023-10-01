@@ -13,8 +13,13 @@ namespace TAS.Input.Commands;
 
 public class SaveAndQuitReenterCommand {
     private record SaveAndQuitReenterData {
-        public InputFrame previousInput;
-        public int frameCount;
+        public InputFrame PreviousInput;
+        public int FrameCount;
+    }
+    
+    private record InsertionData {
+        public int Slot;
+        public SaveAndQuitReenterMode Mode;
     }
     
     private enum SaveAndQuitReenterMode {
@@ -71,11 +76,11 @@ public class SaveAndQuitReenterCommand {
     }
     
     private static readonly Dictionary<int, SaveAndQuitReenterData> CommandData = new();
-    private static readonly Dictionary<int, int?> InsertedInputs = new();
+    private static readonly Dictionary<int, InsertionData> InsertedData = new();
 
     [Load]
     private static void Load() {
-        typeof(Level) // '<>c__DisplayClass149_0'::'<Pause>b__8'
+        typeof(Level)
             .GetNestedType("<>c__DisplayClass149_0", BindingFlags.NonPublic)
             .GetMethod("<Pause>b__8", BindingFlags.NonPublic | BindingFlags.Instance)
             .IlHook(IlSaveAndQuit);
@@ -89,7 +94,7 @@ public class SaveAndQuitReenterCommand {
     [ClearInputs]
     private static void Clear() {
         CommandData.Clear();
-        InsertedInputs.Clear();
+        InsertedData.Clear();
     }
     
     [TasCommand("SaveAndQuitReenter", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
@@ -112,8 +117,8 @@ public class SaveAndQuitReenterCommand {
             }
             
             CommandData[studioLine] = new SaveAndQuitReenterData {
-                previousInput = Manager.Controller.Inputs.LastOrDefault(), 
-                frameCount = Manager.Controller.CurrentParsingFrame,
+                PreviousInput = Manager.Controller.Inputs.LastOrDefault(), 
+                FrameCount = Manager.Controller.CurrentParsingFrame,
             };
             return;
         }
@@ -148,26 +153,16 @@ public class SaveAndQuitReenterCommand {
             AbortTas("SaveAndQuitReenter can't be used outside levels");
             return;
         }
-        
-        Engine.TimeRate = 1f;
-        Audio.SetMusic(null);
-        Audio.BusStopAll("bus:/gameplay_sfx", immediate: true);
-        level.Session.InArea = true;
-        level.Session.Deaths++;
-        level.Session.DeathsInCurrentLevel++;
-        SaveData.Instance.AddDeath(level.Session.Area);
-        level.DoScreenWipe(wipeIn: false, delegate {
-            Engine.Scene = new LevelReenter(level.Session);
-        });
-        foreach (var component in level.Tracker.GetComponents<LevelEndingHook>()) {
-            ((LevelEndingHook) component)?.OnEnd();
-        }
 
-        var data = CommandData[studioLine];
-        InsertLines(new[] { "33" }, studioLine, data.previousInput, data.frameCount);
+        level.Wipe.OnComplete = delegate {
+            Engine.Scene = new LevelReenter(level.Session);
+        };
+
+        if (DontInsert(studioLine)) return;
         
-        // Our wipe starts a frame later then the S&Q one, so we need to adjust the session data by a frame
-        level.Session.Time -= TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks;
+        // Wait for the wipe
+        var data = CommandData[studioLine];
+        InsertLines(new[] { "32" }, studioLine, data.PreviousInput, data.FrameCount);
     }
     
     private static void ReenterInputs(int studioLine) {
@@ -177,8 +172,7 @@ public class SaveAndQuitReenterCommand {
         }
 
         int slot = SaveData.Instance.FileSlot;
-        if (InsertedInputs.GetValueOrDefault(studioLine) == slot) return;
-        InsertedInputs[studioLine] = slot;
+        if (DontInsert(studioLine)) return;
 
         List<string> lines = new();
         if (slot == -1) {
@@ -213,7 +207,7 @@ public class SaveAndQuitReenterCommand {
         }
 
         var data = CommandData[studioLine];
-        InsertLines(lines, studioLine, data.previousInput, data.frameCount);
+        InsertLines(lines, studioLine, data.PreviousInput, data.FrameCount);
     }
 
     private static void InsertLines(IEnumerable<string> lines, int studioLine, InputFrame previousInput, int atFrameCount) {
@@ -238,15 +232,31 @@ public class SaveAndQuitReenterCommand {
             int frame = pair.Key;
             var commands = pair.Value;
 
-            if (frame < atFrameCount) continue;
-            
-            // Remove all commands before SaveAndQuitReenter, since they already have executed
+            // Keep the commands before SaveAndQuitReenter, move those after
             if (frame == atFrameCount) {
-                commands = commands.SkipWhile(x => x.Attribute.Name != "SaveAndQuitReenter").Skip(1).ToList();
+                int commandIdx = commands.FindIndex(x => x.Attribute.Name == "SaveAndQuitReenter");
+                Manager.Controller.Commands[frame] = commands.Take(commandIdx + 1).ToList();
+                Manager.Controller.Commands[frame + totalFrames] = commands.Skip(commandIdx + 1).ToList();
+                break;
             }
             
             Manager.Controller.Commands[frame + totalFrames] = commands;
             Manager.Controller.Commands.Remove(frame);
         }
+    }
+
+    private static bool DontInsert(int studioLine) {
+        int slot = SaveData.Instance.FileSlot;
+        if (!InsertedData.ContainsKey(studioLine)) {
+            InsertedData[studioLine] = new InsertionData { Slot = slot, Mode = Mode };
+            return false;
+        }
+
+        var data = InsertedData[studioLine];
+        if (data.Slot == slot && data.Mode == Mode) return true;
+        
+        Manager.Controller.RefreshInputs(enableRun: false);
+        InsertedData[studioLine] = new InsertionData { Slot = slot, Mode = Mode };
+        return false;
     }
 }
