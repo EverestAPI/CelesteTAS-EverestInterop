@@ -129,8 +129,20 @@ public class SaveAndQuitReenterCommand {
             ReenterInputs(studioLine);
         }
     }
+    
+    [TasCommand("SaveAndQuitReenterMode", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
+    private static void StunPauseCommandMode(string[] args) {
+        if (args.IsNotEmpty() && Enum.TryParse(args[0], true, out SaveAndQuitReenterMode value)) {
+            if (ParsingCommand) {
+                globalModeParsing = value;
+            } else {
+                globalModeRuntime = value;
+            }
+        } else if (ParsingCommand) {
+            AbortTas("SaveAndQuitReenterMode command failed.\nMode must be Input or Simulate");
+        }
+    }
 
-    [Monocle.Command("snqsim", "")]
     private static void ReenterSimulate(int studioLine) {
         if (Engine.Scene is not Level level) {
             AbortTas("SaveAndQuitReenter can't be used outside levels");
