@@ -66,6 +66,9 @@ public static class Core {
             orig(self, gameTime);
             Manager.AdvanceThroughHiddenFrame = false;
 
+            if (!IsPause() && SaveAndQuitReenterCommand.JustPressedSnQ > 0)
+                SaveAndQuitReenterCommand.JustPressedSnQ--;
+
             if (TasSettings.HideFreezeFrames && oldFreezeTimer > 0f && oldFreezeTimer > Engine.FreezeTimer) {
                 Manager.AdvanceThroughHiddenFrame = true;
                 loops += 1;

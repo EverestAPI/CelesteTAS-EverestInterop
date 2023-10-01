@@ -1,12 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
+using System.Reflection;
 using Celeste;
-using Celeste.Mod;
 using Monocle;
-using StudioCommunication;
+using MonoMod.Cil;
+using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.Input.Commands; 
@@ -50,10 +50,14 @@ public class SaveAndQuitReenterCommand {
             LevelEnter.Go(SaveData.Instance.CurrentSession, fromSaveData: true);
         }
     }
+
+    // Cant be bool, because the update would set it to false, before the command gets executed
+    // 1 means that it was pressed on the previous frame
+    public static int JustPressedSnQ = 0;
     
-    private static SaveAndQuitReenterMode? LocalMode;
-    private static SaveAndQuitReenterMode? GlobalModeParsing;
-    private static SaveAndQuitReenterMode? GlobalModeRuntime;
+    private static SaveAndQuitReenterMode? localMode;
+    private static SaveAndQuitReenterMode? globalModeParsing;
+    private static SaveAndQuitReenterMode? globalModeRuntime;
 
     private static SaveAndQuitReenterMode Mode {
         get {
@@ -61,13 +65,26 @@ public class SaveAndQuitReenterCommand {
                 return SaveAndQuitReenterMode.Input;
             }
 
-            SaveAndQuitReenterMode? globalMode = ParsingCommand ? GlobalModeParsing : GlobalModeRuntime;
-            return LocalMode ?? globalMode ?? SaveAndQuitReenterMode.Input;
+            SaveAndQuitReenterMode? globalMode = ParsingCommand ? globalModeParsing : globalModeRuntime;
+            return localMode ?? globalMode ?? SaveAndQuitReenterMode.Input;
         }
     }
     
     private static readonly Dictionary<int, SaveAndQuitReenterData> CommandData = new();
     private static readonly Dictionary<int, int?> InsertedInputs = new();
+
+    [Load]
+    private static void Load() {
+        typeof(Level) // '<>c__DisplayClass149_0'::'<Pause>b__8'
+            .GetNestedType("<>c__DisplayClass149_0", BindingFlags.NonPublic)
+            .GetMethod("<Pause>b__8", BindingFlags.NonPublic | BindingFlags.Instance)
+            .IlHook(IlSaveAndQuit);
+    }
+
+    private static void IlSaveAndQuit(ILContext il) {
+        var cursor = new ILCursor(il);
+        cursor.EmitDelegate<Action>(() => JustPressedSnQ = 2);
+    }
 
     [ClearInputs]
     private static void Clear() {
@@ -77,11 +94,11 @@ public class SaveAndQuitReenterCommand {
     
     [TasCommand("SaveAndQuitReenter", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
     private static void SaveAndQuitReenter(string[] args, int studioLine, string filePath, int fileLine) {
-        LocalMode = null;
+        localMode = null;
 
         if (args.IsNotEmpty()) {
             if (Enum.TryParse(args[0], true, out SaveAndQuitReenterMode value)) {
-                LocalMode = value;
+                localMode = value;
             } else if (ParsingCommand) {
                 AbortTas("SaveAndQuitReenter command failed.\nMode must be Input or Simulate");
                 return;
@@ -98,6 +115,11 @@ public class SaveAndQuitReenterCommand {
                 previousInput = Manager.Controller.Inputs.LastOrDefault(), 
                 frameCount = Manager.Controller.CurrentParsingFrame,
             };
+            return;
+        }
+
+        if (JustPressedSnQ != 1) {
+            AbortTas("SaveAndQuitReenter must be exactly after pressing the \"Save & Quit\" button");
             return;
         }
 
