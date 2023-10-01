@@ -41,6 +41,8 @@ public class InputController {
     private int initializationFrameCount;
     private string savestateChecksum;
 
+    public int CurrentParsingFrame => initializationFrameCount;
+
     private static readonly string DefaultTasFilePath = Path.Combine(Directory.GetCurrentDirectory(), "Celeste.tas");
 
     public static string StudioTasFilePath {
