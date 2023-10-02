@@ -22,11 +22,12 @@ namespace TAS;
 /// Keys.I/Keys.K/Keys.J/Keys.L = Move Only Directions
 /// </summary>
 public static class LibTasHelper {
+    public static bool Exporting { get; private set; }
+    
     private static StreamWriter streamWriter;
     private static InputFrame skipInputFrame;
     private static string ltmFilePath = "";
     private static string inputsFilePath => Path.Combine(Path.GetDirectoryName(ltmFilePath), "intpus");
-    private static bool exporting;
     private static readonly List<string> keys = new();
     private static readonly char[] buttons = new char[15];
 
@@ -35,12 +36,12 @@ public static class LibTasHelper {
         ltmFilePath = path;
         streamWriter = new StreamWriter(inputsFilePath, false, new UTF8Encoding(false), 1 << 20);
         skipInputFrame = null;
-        exporting = true;
+        Exporting = true;
     }
 
     [ClearInputs]
     private static void RestartExport() {
-        if (exporting) {
+        if (Exporting) {
             StartExport(ltmFilePath);
         }
     }
@@ -51,16 +52,16 @@ public static class LibTasHelper {
         streamWriter?.Dispose();
         streamWriter = null;
         skipInputFrame = null;
-        if (exporting && File.Exists(inputsFilePath)) {
+        if (Exporting && File.Exists(inputsFilePath)) {
             CreateLibTasMovie();
             CreateResourceFile("settings.celeste", null, out _);
         }
 
-        exporting = false;
+        Exporting = false;
     }
 
     public static void WriteLibTasFrame(InputFrame inputFrame) {
-        if (!exporting || inputFrame == skipInputFrame) {
+        if (!Exporting || inputFrame == skipInputFrame) {
             return;
         }
 
@@ -73,7 +74,7 @@ public static class LibTasHelper {
     }
 
     public static void AddInputFrame(string inputText) {
-        if (!exporting) {
+        if (!Exporting) {
             return;
         }
 
@@ -83,7 +84,7 @@ public static class LibTasHelper {
     }
 
     private static void SkipNextInput() {
-        if (exporting) {
+        if (Exporting) {
             skipInputFrame = Manager.Controller.Current;
         }
     }

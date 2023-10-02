@@ -66,6 +66,10 @@ public class SaveAndQuitReenterCommand {
 
     private static SaveAndQuitReenterMode Mode {
         get {
+            if (LibTasHelper.Exporting) {
+                return SaveAndQuitReenterMode.Input;
+            }
+            
             if (EnforceLegalCommand.EnabledWhenParsing) {
                 return SaveAndQuitReenterMode.Input;
             }
@@ -77,6 +81,10 @@ public class SaveAndQuitReenterCommand {
 
     private static int ActiveFileSlot {
         get {
+            if (LibTasHelper.Exporting) {
+                return 0;
+            }
+            
             if (Engine.Scene is Overworld {Current: OuiFileSelect select}) {
                 $"Predicting: {select.SlotIndex}".DebugLog();
                 return select.SlotIndex;
@@ -128,6 +136,11 @@ public class SaveAndQuitReenterCommand {
                 // Wait for the Save & Quit wipe
                 Manager.Controller.AddFrames("32", studioLine);
             } else {
+                if (!SafeCommand.DisallowUnsafeInputParsing) {
+                    AbortTas("\"SaveAndQuitReenter, Input\" requires unsafe inputs");
+                    return;
+                }
+                
                 int slot = ActiveFileSlot;
                 if (InsertedSlots.TryGetValue(studioLine, out int prevSlot)) {
                     slot = prevSlot;
@@ -159,21 +172,6 @@ public class SaveAndQuitReenterCommand {
 
                 InsertedSlots[studioLine] = slot;
             }
-            
-            if (Mode == SaveAndQuitReenterMode.Input && SafeCommand.DisallowUnsafeInputParsing) {
-                AbortTas("\"SaveAndQuitReenter, Input\" requires unsafe inputs");
-                return;
-            }
-            
-            // For libTAS, always use the first save slot
-            LibTasHelper.AddInputFrame("31");
-            LibTasHelper.AddInputFrame("14");
-            LibTasHelper.AddInputFrame("1,O");
-            LibTasHelper.AddInputFrame("56");
-            LibTasHelper.AddInputFrame("1,O");
-            LibTasHelper.AddInputFrame("14");
-            LibTasHelper.AddInputFrame("1,O");
-            LibTasHelper.AddInputFrame("1");
             
             return;
         }
