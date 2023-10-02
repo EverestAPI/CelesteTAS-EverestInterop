@@ -72,7 +72,7 @@ public static class LibTasHelper {
         }
     }
 
-    private static void AddInputFrame(string inputText) {
+    public static void AddInputFrame(string inputText) {
         if (!exporting) {
             return;
         }

@@ -120,6 +120,17 @@ public class SaveAndQuitReenterCommand {
                 PreviousInput = Manager.Controller.Inputs.LastOrDefault(), 
                 FrameCount = Manager.Controller.CurrentParsingFrame,
             };
+            
+            // For libTAS, always use the first save slot
+            LibTasHelper.AddInputFrame("31");
+            LibTasHelper.AddInputFrame("14");
+            LibTasHelper.AddInputFrame("1,O");
+            LibTasHelper.AddInputFrame("56");
+            LibTasHelper.AddInputFrame("1,O");
+            LibTasHelper.AddInputFrame("14");
+            LibTasHelper.AddInputFrame("1,O");
+            LibTasHelper.AddInputFrame("1");
+            
             return;
         }
 
