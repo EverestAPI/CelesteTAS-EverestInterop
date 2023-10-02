@@ -75,6 +75,17 @@ public class SaveAndQuitReenterCommand {
         }
     }
 
+    private static int ActiveFileSlot {
+        get {
+            if (Engine.Scene is Overworld {Current: OuiFileSelect select}) {
+                $"Predicting: {select.SlotIndex}".DebugLog();
+                return select.SlotIndex;
+            }
+
+            return SaveData.Instance.FileSlot;
+        }
+    }
+
     private static bool preventClear = false;
     // Contains which slot was used for each command, to ensure that inputs before the current frame stay the same
     private static readonly Dictionary<int, int> InsertedSlots = new();
@@ -117,7 +128,7 @@ public class SaveAndQuitReenterCommand {
                 // Wait for the Save & Quit wipe
                 Manager.Controller.AddFrames("32", studioLine);
             } else {
-                int slot = SaveData.Instance.FileSlot;
+                int slot = ActiveFileSlot;
                 if (InsertedSlots.TryGetValue(studioLine, out int prevSlot)) {
                     slot = prevSlot;
                 }
@@ -184,8 +195,8 @@ public class SaveAndQuitReenterCommand {
             };
         } else {
             // Re-insert inputs of the save file slot changed
-            if (InsertedSlots.ContainsKey(studioLine) && InsertedSlots[studioLine] != SaveData.Instance.FileSlot) {
-                InsertedSlots[studioLine] = SaveData.Instance.FileSlot;
+            if (InsertedSlots.ContainsKey(studioLine) && InsertedSlots[studioLine] != ActiveFileSlot) {
+                InsertedSlots[studioLine] = ActiveFileSlot;
                 // Avoid clearing our InsertedSlots info
                 preventClear = true;
                 Manager.Controller.NeedsReload = true;
