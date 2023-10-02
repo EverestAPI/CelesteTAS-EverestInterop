@@ -86,7 +86,6 @@ public class SaveAndQuitReenterCommand {
             }
             
             if (Engine.Scene is Overworld {Current: OuiFileSelect select}) {
-                $"Predicting: {select.SlotIndex}".DebugLog();
                 return select.SlotIndex;
             }
 
