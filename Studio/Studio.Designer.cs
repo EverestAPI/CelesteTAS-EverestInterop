@@ -135,6 +135,9 @@ namespace CelesteStudio {
             this.endStunPauseToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.stunPauseModeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator23 = new System.Windows.Forms.ToolStripSeparator();
+            this.saveAndQuitReenterToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.saveAndQuitReenterModeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator26 = new System.Windows.Forms.ToolStripSeparator();
             this.autoInputToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.startAutoInputToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.endAutoInputToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -788,7 +791,7 @@ namespace CelesteStudio {
             // 
             // insertOtherCommandToolStripMenuItem
             // 
-            this.insertOtherCommandToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.enforceLegalToolStripMenuItem, this.unsafeToolStripMenuItem, this.safeToolStripMenuItem, this.toolStripSeparator18, this.readToolStripMenuItem, this.playToolStripMenuItem, this.toolStripSeparator17, this.repeatToolStripMenuItem, this.endRepeatToolStripMenuItem, this.toolStripSeparator16, this.setToolStripMenuItem, this.invokeToolStripMenuItem, this.evalLuaStripMenuItem, this.toolStripSeparator3, this.pressToolStripMenuItem, this.toolStripSeparator24, this.analogueModeToolStripMenuItem, this.toolStripSeparator4, this.stunPauseToolStripMenuItem, this.endStunPauseToolStripMenuItem, this.stunPauseModeToolStripMenuItem, this.toolStripSeparator23, this.autoInputToolStripMenuItem, this.startAutoInputToolStripMenuItem, this.endAutoInputToolStripMenuItem, this.skipAutoInputToolStripMenuItem, this.toolStripSeparator22, this.startExportToolStripMenuItem, this.finishExportToolStripMenuItem, this.toolStripSeparator14, this.startExportRoomInfoToolStripMenuItem, this.finishExportRoomInfoToolStripMenuItem, this.toolStripSeparator25, this.startRecordingToolStripMenuItem, this.stopRecordingToolStripMenuItem, this.toolStripSeparator5, this.addToolStripMenuItem, this.skipToolStripMenuItem, this.startExportLibTASToolStripMenuItem, this.finishExportLibTASToolStripMenuItem, this.toolStripSeparator13, this.completeInfoToolStripMenuItem, this.recordCountToolStripMenuItem, this.fileTimeToolStripMenuItem, this.chapterTimeToolStripMenuItem, this.toolStripSeparator21, this.exitGameToolStripMenuItem});
+            this.insertOtherCommandToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.enforceLegalToolStripMenuItem, this.unsafeToolStripMenuItem, this.safeToolStripMenuItem, this.toolStripSeparator18, this.readToolStripMenuItem, this.playToolStripMenuItem, this.toolStripSeparator17, this.repeatToolStripMenuItem, this.endRepeatToolStripMenuItem, this.toolStripSeparator16, this.setToolStripMenuItem, this.invokeToolStripMenuItem, this.evalLuaStripMenuItem, this.toolStripSeparator3, this.pressToolStripMenuItem, this.toolStripSeparator24, this.analogueModeToolStripMenuItem, this.toolStripSeparator4, this.stunPauseToolStripMenuItem, this.endStunPauseToolStripMenuItem, this.stunPauseModeToolStripMenuItem, this.toolStripSeparator23, this.autoInputToolStripMenuItem, this.startAutoInputToolStripMenuItem, this.endAutoInputToolStripMenuItem, this.skipAutoInputToolStripMenuItem, this.toolStripSeparator22, this.saveAndQuitReenterToolStripMenuItem, this.saveAndQuitReenterModeToolStripMenuItem, this.toolStripSeparator26, this.startExportToolStripMenuItem, this.finishExportToolStripMenuItem, this.toolStripSeparator14, this.startExportRoomInfoToolStripMenuItem, this.finishExportRoomInfoToolStripMenuItem, this.toolStripSeparator25, this.startRecordingToolStripMenuItem, this.stopRecordingToolStripMenuItem, this.toolStripSeparator5, this.addToolStripMenuItem, this.skipToolStripMenuItem, this.startExportLibTASToolStripMenuItem, this.finishExportLibTASToolStripMenuItem, this.toolStripSeparator13, this.completeInfoToolStripMenuItem, this.recordCountToolStripMenuItem, this.fileTimeToolStripMenuItem, this.chapterTimeToolStripMenuItem, this.toolStripSeparator21, this.exitGameToolStripMenuItem});
             this.insertOtherCommandToolStripMenuItem.Name = "insertOtherCommandToolStripMenuItem";
             this.insertOtherCommandToolStripMenuItem.Size = new System.Drawing.Size(425, 22);
             this.insertOtherCommandToolStripMenuItem.Text = "Insert Other Command";
@@ -947,6 +950,27 @@ namespace CelesteStudio {
             // 
             this.toolStripSeparator23.Name = "toolStripSeparator23";
             this.toolStripSeparator23.Size = new System.Drawing.Size(191, 6);
+            // 
+            // saveAndQuitReenterToolStripMenuItem
+            // 
+            this.saveAndQuitReenterToolStripMenuItem.Name = "saveAndQuitReenterToolStripMenuItem";
+            this.saveAndQuitReenterToolStripMenuItem.Size = new System.Drawing.Size(194, 22);
+            this.saveAndQuitReenterToolStripMenuItem.Text = "SaveAndQuitReenter";
+            this.saveAndQuitReenterToolStripMenuItem.ToolTipText = "Perform a Save && Quit and reenter the current save file.\nThis command must be placed directly after pressing the \"Save && Quit\" button";
+            this.saveAndQuitReenterToolStripMenuItem.Click += new System.EventHandler(this.saveAndQuitReenterToolStripMenuItem_Click);
+            // 
+            // saveAndQuitReenterModeToolStripMenuItem
+            // 
+            this.saveAndQuitReenterModeToolStripMenuItem.Name = "saveAndQuitReenterModeToolStripMenuItem";
+            this.saveAndQuitReenterModeToolStripMenuItem.Size = new System.Drawing.Size(194, 22);
+            this.saveAndQuitReenterModeToolStripMenuItem.Text = "SaveAndQuitReenterMode";
+            this.saveAndQuitReenterModeToolStripMenuItem.ToolTipText = "Specify the default mode for SaveAndQuitReenter command.\r\n";
+            this.saveAndQuitReenterModeToolStripMenuItem.Click += new System.EventHandler(this.saveAndQuitReenterModeToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator26
+            // 
+            this.toolStripSeparator26.Name = "toolStripSeparator26";
+            this.toolStripSeparator26.Size = new System.Drawing.Size(191, 6);
             // 
             // autoInputToolStripMenuItem
             // 
@@ -1330,6 +1354,10 @@ namespace CelesteStudio {
         private System.Windows.Forms.ToolStripMenuItem stunPauseToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem endStunPauseToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator22;
+        
+        private System.Windows.Forms.ToolStripMenuItem saveAndQuitReenterToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem saveAndQuitReenterModeToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator26;
 
         private System.Windows.Forms.ToolStripMenuItem invokeToolStripMenuItem;
 
