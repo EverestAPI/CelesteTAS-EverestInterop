@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using Celeste;
 using Monocle;
@@ -11,7 +10,7 @@ using TAS.Utils;
 
 namespace TAS.Input.Commands; 
 
-public class SaveAndQuitReenterCommand {
+public static class SaveAndQuitReenterCommand {
     private record SaveAndQuitReenterData {
         public InputFrame PreviousInput;
         public int FrameCount;
@@ -22,7 +21,7 @@ public class SaveAndQuitReenterCommand {
         public SaveAndQuitReenterMode Mode;
     }
     
-    private enum SaveAndQuitReenterMode {
+    public enum SaveAndQuitReenterMode {
         Input,
         Simulate
     }
@@ -60,9 +59,9 @@ public class SaveAndQuitReenterCommand {
     // 1 means that it was pressed on the previous frame
     public static int JustPressedSnQ = 0;
     
-    private static SaveAndQuitReenterMode? localMode;
-    private static SaveAndQuitReenterMode? globalModeParsing;
-    private static SaveAndQuitReenterMode? globalModeRuntime;
+    public static SaveAndQuitReenterMode? LocalMode;
+    public static SaveAndQuitReenterMode? GlobalModeParsing;
+    public static SaveAndQuitReenterMode? GlobalModeRuntime;
 
     private static SaveAndQuitReenterMode Mode {
         get {
@@ -74,8 +73,8 @@ public class SaveAndQuitReenterCommand {
                 return SaveAndQuitReenterMode.Input;
             }
 
-            SaveAndQuitReenterMode? globalMode = ParsingCommand ? globalModeParsing : globalModeRuntime;
-            return localMode ?? globalMode ?? SaveAndQuitReenterMode.Simulate;
+            SaveAndQuitReenterMode? globalMode = ParsingCommand ? GlobalModeParsing : GlobalModeRuntime;
+            return LocalMode ?? globalMode ?? SaveAndQuitReenterMode.Simulate;
         }
     }
 
@@ -89,13 +88,13 @@ public class SaveAndQuitReenterCommand {
                 return select.SlotIndex;
             }
 
-            return SaveData.Instance.FileSlot;
+            return SaveData.Instance?.FileSlot ?? -1;
         }
     }
 
     private static bool preventClear = false;
     // Contains which slot was used for each command, to ensure that inputs before the current frame stay the same
-    private static readonly Dictionary<int, int> InsertedSlots = new();
+    public static Dictionary<int, int> InsertedSlots = new();
     
     [Load]
     private static void Load() {
@@ -113,17 +112,29 @@ public class SaveAndQuitReenterCommand {
     [ClearInputs]
     private static void Clear() {
         if (preventClear) return;
-
         InsertedSlots.Clear();
+    }
+
+    [ClearInputs]
+    [ParseFileEnd]
+    private static void ParseFileEnd() {
+        GlobalModeParsing = null;
+    }
+
+    [DisableRun]
+    private static void DisableRun() {
+        LocalMode = null;
+        GlobalModeRuntime = null;
+        JustPressedSnQ = 0;
     }
     
     [TasCommand("SaveAndQuitReenter", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
     private static void SaveAndQuitReenter(string[] args, int studioLine, string filePath, int fileLine) {
-        localMode = null;
+        LocalMode = null;
 
         if (args.IsNotEmpty()) {
             if (Enum.TryParse(args[0], true, out SaveAndQuitReenterMode value)) {
-                localMode = value;
+                LocalMode = value;
             } else if (ParsingCommand) {
                 AbortTas("SaveAndQuitReenter command failed.\nMode must be Input or Simulate");
                 return;
@@ -135,7 +146,7 @@ public class SaveAndQuitReenterCommand {
                 // Wait for the Save & Quit wipe
                 Manager.Controller.AddFrames("32", studioLine);
             } else {
-                if (!SafeCommand.DisallowUnsafeInputParsing) {
+                if (SafeCommand.DisallowUnsafeInputParsing) {
                     AbortTas("\"SaveAndQuitReenter, Input\" requires unsafe inputs");
                     return;
                 }
@@ -145,17 +156,17 @@ public class SaveAndQuitReenterCommand {
                     slot = prevSlot;
                 }
 
+                LibTasHelper.AddInputFrame("58");
+                Manager.Controller.AddFrames("31", studioLine);
+                Manager.Controller.AddFrames("14", studioLine);
+
                 if (slot == -1) {
                     // Load debug slot
-                    Manager.Controller.AddFrames("31", studioLine);
-                    Manager.Controller.AddFrames("14", studioLine);
                     Manager.Controller.AddFrames("1,D", studioLine);
                     Manager.Controller.AddFrames("1,O", studioLine);
                     Manager.Controller.AddFrames("33", studioLine);
                 } else {
                     // Get to the save files screen
-                    Manager.Controller.AddFrames("31", studioLine);
-                    Manager.Controller.AddFrames("14", studioLine);
                     Manager.Controller.AddFrames("1,O", studioLine);
                     Manager.Controller.AddFrames("56", studioLine);
                     // Alternate 1,D and 1,F,180 to select the slot
@@ -167,6 +178,7 @@ public class SaveAndQuitReenterCommand {
                     Manager.Controller.AddFrames("14", studioLine);
                     Manager.Controller.AddFrames("1,O", studioLine);
                     Manager.Controller.AddFrames("1", studioLine);
+                    LibTasHelper.AddInputFrame("32");
                 }
 
                 InsertedSlots[studioLine] = slot;
@@ -192,7 +204,7 @@ public class SaveAndQuitReenterCommand {
             };
         } else {
             // Re-insert inputs of the save file slot changed
-            if (InsertedSlots.ContainsKey(studioLine) && InsertedSlots[studioLine] != ActiveFileSlot) {
+            if (InsertedSlots.TryGetValue(studioLine, out int slot) && slot != ActiveFileSlot) {
                 InsertedSlots[studioLine] = ActiveFileSlot;
                 // Avoid clearing our InsertedSlots info
                 preventClear = true;
@@ -207,9 +219,9 @@ public class SaveAndQuitReenterCommand {
     private static void StunPauseCommandMode(string[] args) {
         if (args.IsNotEmpty() && Enum.TryParse(args[0], true, out SaveAndQuitReenterMode value)) {
             if (ParsingCommand) {
-                globalModeParsing = value;
+                GlobalModeParsing = value;
             } else {
-                globalModeRuntime = value;
+                GlobalModeRuntime = value;
             }
         } else if (ParsingCommand) {
             AbortTas("SaveAndQuitReenterMode command failed.\nMode must be Input or Simulate");
