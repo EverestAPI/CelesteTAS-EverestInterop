@@ -3,8 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using Celeste;
+using Mono.Cecil.Cil;
 using Monocle;
-using MonoMod.Cil;
 using TAS.Module;
 using TAS.Utils;
 
@@ -42,10 +42,7 @@ public static class SaveAndQuitReenterCommand {
         }
     }
 
-    // Cant be bool, because the update would set it to false, before the command gets executed
-    // 1 means that it was pressed on the previous frame
-    public static int JustPressedSnQ = 0;
-    
+    private static bool justPressedSnQ = false;
     public static SaveAndQuitReenterMode? LocalMode;
     public static SaveAndQuitReenterMode? GlobalModeParsing;
     public static SaveAndQuitReenterMode? GlobalModeRuntime;
@@ -88,12 +85,11 @@ public static class SaveAndQuitReenterCommand {
         typeof(Level)
             .GetNestedType("<>c__DisplayClass149_0", BindingFlags.NonPublic)
             .GetMethod("<Pause>b__8", BindingFlags.NonPublic | BindingFlags.Instance)
-            .IlHook(IlSaveAndQuit);
-    }
-
-    private static void IlSaveAndQuit(ILContext il) {
-        var cursor = new ILCursor(il);
-        cursor.EmitDelegate<Action>(() => JustPressedSnQ = 2);
+            .IlHook((cursor, _) => cursor.Emit(OpCodes.Ldc_I4_1)
+                .Emit(OpCodes.Stsfld, typeof(SaveAndQuitReenterCommand).GetFieldInfo(nameof(justPressedSnQ))));
+        
+        typeof(Level).GetMethod("Update").IlHook((cursor, _) => cursor.Emit(OpCodes.Ldc_I4_0)
+                .Emit(OpCodes.Stsfld, typeof(SaveAndQuitReenterCommand).GetFieldInfo(nameof(justPressedSnQ))));
     }
 
     [ClearInputs]
@@ -112,7 +108,7 @@ public static class SaveAndQuitReenterCommand {
     private static void DisableRun() {
         LocalMode = null;
         GlobalModeRuntime = null;
-        JustPressedSnQ = 0;
+        justPressedSnQ = false;
     }
     
     [TasCommand("SaveAndQuitReenter", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
@@ -174,7 +170,7 @@ public static class SaveAndQuitReenterCommand {
             return;
         }
 
-        if (JustPressedSnQ != 1) {
+        if (!justPressedSnQ) {
             AbortTas("SaveAndQuitReenter must be exactly after pressing the \"Save & Quit\" button");
             return;
         }
