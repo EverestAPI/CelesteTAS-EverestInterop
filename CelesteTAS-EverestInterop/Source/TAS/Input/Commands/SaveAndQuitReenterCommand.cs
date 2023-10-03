@@ -11,27 +11,14 @@ using TAS.Utils;
 namespace TAS.Input.Commands; 
 
 public static class SaveAndQuitReenterCommand {
-    private record SaveAndQuitReenterData {
-        public InputFrame PreviousInput;
-        public int FrameCount;
-    }
-    
-    private record InsertionData {
-        public int Slot;
-        public SaveAndQuitReenterMode Mode;
-    }
-    
     public enum SaveAndQuitReenterMode {
         Input,
         Simulate
     }
     
     public class LevelReenter : Scene {
-        private readonly Session session;
-        
         public LevelReenter(Session session) {
             AreaData.Get(session).RestoreASideAreaData();
-            this.session = session;
         }
         
         public override void Begin() {
