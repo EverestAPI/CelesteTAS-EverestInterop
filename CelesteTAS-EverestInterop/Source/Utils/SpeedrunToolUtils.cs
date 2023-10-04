@@ -28,8 +28,6 @@ internal static class SpeedrunToolUtils {
     private static long? tasStartFileTime;
     private static MouseState mouseState;
     private static Dictionary<Follower, bool> followers;
-    private static SaveAndQuitReenterCommand.SaveAndQuitReenterMode? localSnQMode;
-    private static SaveAndQuitReenterCommand.SaveAndQuitReenterMode? globalSnQMode;
     private static Dictionary<int, int> insertedSlots = new();
     private static bool disallowUnsafeInput;
 
@@ -48,8 +46,6 @@ internal static class SpeedrunToolUtils {
             tasStartFileTime = MetadataCommands.TasStartFileTime;
             mouseState = MouseCommand.CurrentState;
             followers = HitboxSimplified.Followers.DeepCloneShared();
-            localSnQMode = SaveAndQuitReenterCommand.LocalMode;
-            globalSnQMode = SaveAndQuitReenterCommand.GlobalModeRuntime;
             insertedSlots = SaveAndQuitReenterCommand.InsertedSlots.DeepCloneShared();
             disallowUnsafeInput = SafeCommand.DisallowUnsafeInput;
         };
@@ -71,8 +67,6 @@ internal static class SpeedrunToolUtils {
             MetadataCommands.TasStartFileTime = tasStartFileTime;
             MouseCommand.CurrentState = mouseState;
             HitboxSimplified.Followers = followers.DeepCloneShared();
-            SaveAndQuitReenterCommand.LocalMode = localSnQMode;
-            SaveAndQuitReenterCommand.GlobalModeRuntime = globalSnQMode;
             SaveAndQuitReenterCommand.InsertedSlots = insertedSlots.DeepCloneShared();
             SafeCommand.DisallowUnsafeInput = disallowUnsafeInput;
         };

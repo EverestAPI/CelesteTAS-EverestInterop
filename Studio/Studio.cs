@@ -1578,10 +1578,6 @@ public partial class Studio : BaseForm {
         InsertNewLine("SaveAndQuitReenter");
     }
 
-    private void saveAndQuitReenterModeToolStripMenuItem_Click(object sender, EventArgs e) {
-        InsertNewLine("SaveAndQuitReenterMode, Simulate/Input");
-    }
-
     private void autoInputToolStripMenuItem_Click(object sender, EventArgs e) {
         InsertNewLine("AutoInput, 2\n   1,S,N\n  10,O\nStartAutoInput\n\nEndAutoInput");
     }

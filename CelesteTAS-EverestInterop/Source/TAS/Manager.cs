@@ -80,7 +80,7 @@ public static class Manager {
                 if (!canPlayback) {
                     DisableRun();
                 } else if (SafeCommand.DisallowUnsafeInput && Controller.CurrentFrameInTas > 1) {
-                    if (Engine.Scene is not (Level or LevelLoader or LevelExit or Emulator or LevelEnter or SaveAndQuitReenterCommand.LevelReenter)) {
+                    if (Engine.Scene is not (Level or LevelLoader or LevelExit or Emulator or LevelEnter)) {
                         DisableRun();
                     } else if (Engine.Scene is Level level && level.Tracker.GetEntity<TextMenu>() is { } menu) {
                         if (menu.Items.FirstOrDefault() is TextMenu.Header header && header.Title == Dialog.Clean("options_title") ||
@@ -248,7 +248,7 @@ public static class Manager {
             case Emulator emulator:
                 return emulator.game == null;
             default:
-                bool isLoading = Engine.Scene is LevelExit or LevelLoader or GameLoader or SaveAndQuitReenterCommand.LevelReenter || Engine.Scene.GetType().Name == "LevelExitToLobby";
+                bool isLoading = Engine.Scene is LevelExit or LevelLoader or GameLoader || Engine.Scene.GetType().Name == "LevelExitToLobby";
                 return isLoading;
         }
     }

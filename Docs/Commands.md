@@ -224,11 +224,10 @@ Specify the default mode for `StunPause` command.
 
 ### SaveAndQuitReenter
 - ```
-  SaveAndQuitReenter, (optional mode, Simulate or Input)
+  SaveAndQuitReenter
   ```
-- It is important to place the command directly after pressing the `Save & Quit` button
-- Simulate mode should be used for working on individual levels, since it doesn't require `Unsafe`.
-- Input mode should be used for a full-game run, by using `SaveAndQuitReenterMode`.
+- Inserts the inputs required to Save & Quit and to reenter the correct save file.
+- It is important to place the command directly after pressing the `Save & Quit` button.
 
   e.g.
   ```
@@ -241,16 +240,6 @@ Specify the default mode for `StunPause` command.
   #Respawn animation
   36
   ```
- 
-- The command's mode is determined by several things, the priority from high to low are:
-    1. [EnforceLegal](#enforcelegal) command force all the commands use `Input` mode
-    2. Mode specified by the `SaveAndQuitReenter` command
-    3. Mode specified by the `SaveAndQuitReenterMode` command
-    4. Default mode is `Simulate`
-
-### SaveAndQuitReenterMode
-Specify the default mode for `SaveAndQuitReenter` command.
-- `SaveAndQuitReenterMode, Simulate/Input`
 
 ### StartRecording and StopRecording
 NOTE: These commands require [TAS Recorder](https://gamebanana.com/tools/14085)!
