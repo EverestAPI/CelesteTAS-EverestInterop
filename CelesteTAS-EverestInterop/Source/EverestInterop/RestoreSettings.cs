@@ -66,8 +66,8 @@ public static class RestoreSettings {
             foreach (EverestModule module in Everest.Modules) {
                 try {
                     if (module?._Settings != null && origModSettings.TryGetValue(module, out object modSettings) && modSettings != null) {
-                        module._Settings.CopyAllProperties(modSettings);
-                        module._Settings.CopyAllFields(modSettings);
+                        module._Settings.CopyAllProperties(modSettings, true);
+                        module._Settings.CopyAllFields(modSettings, true);
                     }
                 } catch {
                     // ignored

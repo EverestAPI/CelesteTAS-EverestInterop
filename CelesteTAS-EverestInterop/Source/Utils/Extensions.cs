@@ -688,18 +688,22 @@ internal static class CloneUtil<T> {
 internal static class CloneUtil {
     public static T ShallowClone<T>(this T obj) => CloneUtil<T>.ShallowClone(obj);
 
-    public static void CopyAllFields(this object to, object from) {
+    public static void CopyAllFields(this object to, object from, bool onlyDifferent = false) {
         if (to.GetType() != from.GetType()) {
             throw new ArgumentException("object to and from must be the same type");
         }
 
         foreach (FieldInfo fieldInfo in to.GetType().GetAllFieldInfos()) {
             object fromValue = fieldInfo.GetValue(from);
+            if (onlyDifferent && fromValue == fieldInfo.GetValue(to)) {
+                continue; 
+            }
+
             fieldInfo.SetValue(to, fromValue);
         }
     }
 
-    public static void CopyAllProperties(this object to, object from) {
+    public static void CopyAllProperties(this object to, object from, bool onlyDifferent = false) {
         if (to.GetType() != from.GetType()) {
             throw new ArgumentException("object to and from must be the same type");
         }
@@ -710,6 +714,10 @@ internal static class CloneUtil {
             }
 
             object fromValue = propertyInfo.GetValue(from);
+            if (onlyDifferent && fromValue == propertyInfo.GetValue(to)) {
+               continue; 
+            }
+           
             propertyInfo.SetValue(to, fromValue);
         }
     }
