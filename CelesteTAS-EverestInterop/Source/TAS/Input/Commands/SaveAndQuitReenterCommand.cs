@@ -26,21 +26,20 @@ public static class SaveAndQuitReenterCommand {
         }
     }
 
-    private static bool preventClear = false;
-
     // Contains which slot was used for each command, to ensure that inputs before the current frame stay the same
     public static Dictionary<int, int> InsertedSlots = new();
 
     [Load]
     private static void Load() {
+        FieldInfo fieldInfo = typeof(SaveAndQuitReenterCommand).GetFieldInfo(nameof(justPressedSnQ));
+
         typeof(Level)
             .GetNestedType("<>c__DisplayClass149_0", BindingFlags.NonPublic)
             .GetMethod("<Pause>b__8", BindingFlags.NonPublic | BindingFlags.Instance)
-            .IlHook((cursor, _) => cursor.Emit(OpCodes.Ldc_I4_1)
-                .Emit(OpCodes.Stsfld, typeof(SaveAndQuitReenterCommand).GetFieldInfo(nameof(justPressedSnQ))));
+            .IlHook((cursor, _) => cursor.Emit(OpCodes.Ldc_I4_1).Emit(OpCodes.Stsfld,fieldInfo));
 
         typeof(Level).GetMethod("Update").IlHook((cursor, _) => cursor.Emit(OpCodes.Ldc_I4_0)
-            .Emit(OpCodes.Stsfld, typeof(SaveAndQuitReenterCommand).GetFieldInfo(nameof(justPressedSnQ))));
+            .Emit(OpCodes.Stsfld, fieldInfo));
     }
 
     [ClearInputs]
@@ -65,11 +64,13 @@ public static class SaveAndQuitReenterCommand {
                 InsertedSlots[studioLine] = slot;
             }
 
-            bool isSafe = SafeCommand.DisallowUnsafeInputParsing;
+            bool safe = SafeCommand.DisallowUnsafeInputParsing;
+            if (safe) {
+                Command.TryParse(controller, filePath, fileLine, "Unsafe", controller.CurrentParsingFrame, studioLine, out _);
+            }
 
             LibTasHelper.AddInputFrame("58");
             controller.AddFrames("31", studioLine);
-            Command.TryParse(controller, filePath, fileLine, "Unsafe", controller.CurrentParsingFrame, studioLine, out _);
             controller.AddFrames("14", studioLine);
             if (slot == -1) {
                 // Load debug slot
@@ -93,7 +94,9 @@ public static class SaveAndQuitReenterCommand {
                 LibTasHelper.AddInputFrame("32");
             }
 
-            Command.TryParse(controller, filePath, fileLine, isSafe ? "Safe" : "Unsafe", controller.CurrentParsingFrame, studioLine, out _);
+            if (safe) {
+                Command.TryParse(controller, filePath, fileLine, "Safe", controller.CurrentParsingFrame, studioLine, out _);
+            }
         } else {
             if (!justPressedSnQ) {
                 AbortTas("SaveAndQuitReenter must be exactly after pressing the \"Save & Quit\" button");
