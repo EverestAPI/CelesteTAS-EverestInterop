@@ -77,7 +77,7 @@ public static class Savestates {
             return;
         }
 
-        if (Hotkeys.Restart.Released) {
+        if (Hotkeys.Restart.Pressed) {
             Load();
             return;
         }

@@ -89,19 +89,16 @@ public static class BindingHelper {
     // ReSharper disable once UnusedMember.Local
     [DisableRun]
     private static void RestorePlayerBindings() {
-        GameInput.Initialize();
+        if (origKbTextInput.HasValue) {
+            GameInput.Initialize();
+            CoreModule.Settings.UseKeyboardForTextInput = origKbTextInput.Value;
+            MInput.GamePads[GameInput.Gamepad].Attached = origAttached.Value;
+            origKbTextInput = null;
+            origAttached = null;
+        }
+
         if (origControllerHasFocus.HasValue) {
             RestoreControllerHasFocus();
-        }
-
-        if (origKbTextInput.HasValue) {
-            CoreModule.Settings.UseKeyboardForTextInput = origKbTextInput.Value;
-            origKbTextInput = null;
-        }
-
-        if (origAttached.HasValue) {
-            MInput.GamePads[GameInput.Gamepad].Attached = origAttached.Value;
-            origAttached = null;
         }
     }
 
