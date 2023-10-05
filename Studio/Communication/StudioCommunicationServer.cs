@@ -105,7 +105,7 @@ public sealed class StudioCommunicationServer : StudioCommunicationBase {
 
         if (new Version(minStudioVersion + ".0") > Studio.Version) {
             MessageBox.Show(
-                $"CelesteTAS v{modVersion} require CelesteStudio v {minStudioVersion} at least. Please manually extract CelesteStudio from the \"game_path\\Mods\\CelesteTAS.zip\" file.",
+                $"CelesteTAS v{modVersion} require CelesteStudio v{minStudioVersion} at least. Please manually extract CelesteStudio from the \"game_path\\Mods\\CelesteTAS.zip\" file.",
                 "Communication Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             Application.Exit();
         }

@@ -287,7 +287,7 @@ NOTE: These commands require [TAS Recorder](https://gamebanana.com/tools/14085)!
 - `ExportGameInfo (Optional File Path) (Optional Entities Names)`
 - `EndExportGameInfo`
 - Dumps data to a file, which can be used to analyze desyncs.
-- Default filepath is `dump.txt`.
+- Default file path is `dump.txt`.
 - Keeps track of any additional entities specified - e.g. `ExportGameInfo additional.txt TheoCrystal Glider CustomSpinner@FrostTempleHelper` will keep track of Theo, Jellyfish, and custom spinners from the FrostHelper mod.
 - You can get the name of the entity by opening the console and clicking on it, the entity name will be displayed in the top left corner and output to log.txt.
 
@@ -295,7 +295,7 @@ NOTE: These commands require [TAS Recorder](https://gamebanana.com/tools/14085)!
 - `ExportRoomInfo (Optional File Path)`
 - `EndExportRoomInfo`
 - Dumps the elapsed time of each room to a file. which can be used to compare improvements.
-- Default filepath is `dump_room_info.txt`.
+- Default file path is `dump_room_info.txt`.
 
 ### CompleteInfo
 - `CompleteInfo, Side, SID/ID`
@@ -326,7 +326,7 @@ NOTE: These commands require [TAS Recorder](https://gamebanana.com/tools/14085)!
 ### ExportLibTAS and EndExportLibTAS
 - `ExportLibTAS, (Optional File Path)`
 - Converts the TAS to the inputs portion of a LibTAS movie file.
-- Default filepath is `libTAS_inputs.txt`
+- Default file path is `Celeste.ltm`
 - Odds are you don't need to worry about this.
 
 ### Add and Skip

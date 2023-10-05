@@ -177,6 +177,7 @@ namespace CelesteStudio {
             this.statusPanel = new System.Windows.Forms.Panel();
             this.statusBar = new System.Windows.Forms.StatusStrip();
             this.lblStatus = new System.Windows.Forms.ToolStripStatusLabel();
+            this.toolStripSeparator27 = new System.Windows.Forms.ToolStripSeparator();
             this.statusBarContextMenuStrip.SuspendLayout();
             this.menuStrip.SuspendLayout();
             this.tasTextContextMenuStrip.SuspendLayout();
@@ -268,7 +269,7 @@ namespace CelesteStudio {
             // 
             // fileToolStripMenuItem
             // 
-            this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.newFileToolStripMenuItem, this.toolStripSeparator7, this.openFileMenuItem, this.openPreviousFileToolStripMenuItem, this.openRecentMenuItem, this.openBackupToolStripMenuItem, this.toolStripSeparator15, this.saveAsToolStripMenuItem, this.integrateReadFilesToolStripMenuItem, this.recordTASToolStripMenuItem, this.convertToLibTASInputsToolStripMenuItem});
+            this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.newFileToolStripMenuItem, this.toolStripSeparator7, this.openFileMenuItem, this.openPreviousFileToolStripMenuItem, this.openRecentMenuItem, this.openBackupToolStripMenuItem, this.toolStripSeparator15, this.saveAsToolStripMenuItem, this.integrateReadFilesToolStripMenuItem, this.convertToLibTASInputsToolStripMenuItem, this.toolStripSeparator27, this.recordTASToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(70, 26);
             this.fileToolStripMenuItem.Text = "&File";
@@ -695,7 +696,7 @@ namespace CelesteStudio {
             // 
             this.tasTextContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.insertRemoveBreakPointToolStripMenuItem, this.insertRemoveSavestateBreakPointToolStripMenuItem, this.removeAllUncommentedBreakpointsToolStripMenuItem, this.removeAllBreakpointsToolStripMenuItem, this.commentUncommentAllBreakpointsToolStripMenuItem, this.toolStripSeparator2, this.commentUncommentTextToolStripMenuItem, this.insertRoomNameToolStripMenuItem, this.insertCurrentInGameTimeToolStripMenuItem, this.removeAllTimestampsToolStripMenuItem, this.insertModInfoStripMenuItem1, this.insertConsoleLoadCommandToolStripMenuItem, this.insertSimpleConsoleLoadCommandToolStripMenuItem, this.insertOtherCommandToolStripMenuItem, this.toolStripSeparator6, this.swapDashKeysStripMenuItem, this.swapJumpKeysToolStripMenuItem, this.swapSelectedLAndRToolStripMenuItem, this.combineConsecutiveSameInputsToolStripMenuItem, this.forceCombineInputsToolStripMenuItem, this.convertDashToDemoDashToolStripMenuItem, this.toolStripSeparator12, this.openReadFileToolStripMenuItem});
             this.tasTextContextMenuStrip.Name = "tasTextContextMenuStrip";
-            this.tasTextContextMenuStrip.Size = new System.Drawing.Size(595, 604);
+            this.tasTextContextMenuStrip.Size = new System.Drawing.Size(595, 582);
             // 
             // insertRemoveBreakPointToolStripMenuItem
             // 
@@ -1235,7 +1236,7 @@ namespace CelesteStudio {
             this.richText.Language = CelesteStudio.RichText.Language.TAS;
             this.richText.LineNumberColor = System.Drawing.Color.Black;
             this.richText.Location = new System.Drawing.Point(0, 36);
-            this.richText.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.richText.Margin = new System.Windows.Forms.Padding(4);
             this.richText.Name = "richText";
             this.richText.Paddings = new System.Windows.Forms.Padding(0);
             this.richText.PlayingLineBgColor = System.Drawing.Color.Lime;
@@ -1264,7 +1265,7 @@ namespace CelesteStudio {
             this.statusPanel.Controls.Add(this.statusBar);
             this.statusPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.statusPanel.Location = new System.Drawing.Point(0, 753);
-            this.statusPanel.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.statusPanel.Margin = new System.Windows.Forms.Padding(4);
             this.statusPanel.Name = "statusPanel";
             this.statusPanel.Size = new System.Drawing.Size(429, 150);
             this.statusPanel.TabIndex = 5;
@@ -1292,6 +1293,11 @@ namespace CelesteStudio {
             this.lblStatus.Text = "Searching...";
             this.lblStatus.TextAlign = System.Drawing.ContentAlignment.TopLeft;
             // 
+            // toolStripSeparator27
+            // 
+            this.toolStripSeparator27.Name = "toolStripSeparator27";
+            this.toolStripSeparator27.Size = new System.Drawing.Size(399, 6);
+            // 
             // Studio
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 18F);
@@ -1306,7 +1312,7 @@ namespace CelesteStudio {
             this.KeyPreview = true;
             this.Location = new System.Drawing.Point(0, 0);
             this.MainMenuStrip = this.menuStrip;
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.MinimumSize = new System.Drawing.Size(277, 281);
             this.Name = "Studio";
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
@@ -1324,6 +1330,8 @@ namespace CelesteStudio {
             this.ResumeLayout(false);
             this.PerformLayout();
         }
+
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator27;
 
         private System.Windows.Forms.ToolStripMenuItem centerCameraHorizontallyOnlyToolStripMenuItem;
 

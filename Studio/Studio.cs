@@ -1591,11 +1591,11 @@ public partial class Studio : BaseForm {
     }
 
     private void skipAutoInputToolStripMenuItem_Click(object sender, EventArgs e) {
-        InsertNewLine("SkipAutoInput");
+        InsertNewLine("SkipInput");
     }
 
     private void startExportToolStripMenuItem_Click(object sender, EventArgs e) {
-        InsertNewLine("ExportGameInfo (Path) (Entities)");
+        InsertNewLine("ExportGameInfo dump.txt");
     }
 
     private void finishExportToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -1627,7 +1627,7 @@ public partial class Studio : BaseForm {
     }
 
     private void startExportLibTASToolStripMenuItem_Click(object sender, EventArgs e) {
-        InsertNewLine("ExportLibTAS (Path)");
+        InsertNewLine("ExportLibTAS Celeste.ltm");
     }
 
     private void finishExportLibTASToolStripMenuItem_Click(object sender, EventArgs e) {

@@ -229,7 +229,7 @@ public static class LibTasHelper {
     // StartExportLibTAS (Optional Path)
     [TasCommand("StartExportLibTAS", AliasNames = new[] {"ExportLibTAS"}, ExecuteTiming = ExecuteTiming.Parse)]
     private static void StartExportLibTasCommand(string[] args) {
-        string path = "libTAS_inputs.txt";
+        string path = "Celeste.ltm";
         if (args.Length > 0) {
             path = args[0];
         }
