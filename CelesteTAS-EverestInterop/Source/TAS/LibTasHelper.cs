@@ -265,7 +265,10 @@ public static class LibTasHelper {
             inputsEntry.Name = "inputs";
             tarArchive.WriteEntry(inputsEntry, false);
 
-            tarArchive.WriteEntry(CreateTarEntry("config.ini", contents => string.Format(contents, File.ReadLines(inputsFilePath).Count())), false);
+            int frames = File.ReadLines(inputsFilePath).Count();
+            int nanosecond = (int) (1000000000 / 60.0 * (frames % 60));
+            int second = frames / 60;
+            tarArchive.WriteEntry(CreateTarEntry("config.ini", contents => string.Format(contents, frames, nanosecond, second)), false);
             tarArchive.WriteEntry(CreateTarEntry("editor.ini"), false);
             tarArchive.WriteEntry(CreateTarEntry("annotations.txt"), false);
 
