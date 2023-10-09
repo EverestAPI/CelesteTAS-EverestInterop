@@ -25,7 +25,7 @@ public static class LibTasHelper {
     public static bool Exporting { get; private set; }
     
     private static StreamWriter streamWriter;
-    private static InputFrame skipInputFrame;
+    private static bool skipNextInput;
     private static string ltmFilePath = "";
     private static string inputsFilePath => Path.Combine(Path.GetDirectoryName(ltmFilePath), "intpus");
     private static readonly List<string> keys = new();
@@ -35,7 +35,7 @@ public static class LibTasHelper {
         FinishExport();
         ltmFilePath = path;
         streamWriter = new StreamWriter(inputsFilePath, false, new UTF8Encoding(false), 1 << 20);
-        skipInputFrame = null;
+        skipNextInput = false;
         Exporting = true;
     }
 
@@ -51,7 +51,7 @@ public static class LibTasHelper {
         streamWriter?.Flush();
         streamWriter?.Dispose();
         streamWriter = null;
-        skipInputFrame = null;
+        skipNextInput = false;
         if (Exporting && File.Exists(inputsFilePath)) {
             CreateLibTasMovie();
             CreateResourceFile("settings.celeste", null, out _);
@@ -61,7 +61,12 @@ public static class LibTasHelper {
     }
 
     public static void WriteLibTasFrame(InputFrame inputFrame) {
-        if (!Exporting || inputFrame == skipInputFrame) {
+        if (!Exporting) {
+            return;
+        }
+
+        if (skipNextInput) {
+            skipNextInput = false;
             return;
         }
 
@@ -80,12 +85,6 @@ public static class LibTasHelper {
 
         if (InputFrame.TryParse(inputText, 0, null, out InputFrame inputFrame)) {
             WriteLibTasFrame(inputFrame);
-        }
-    }
-
-    private static void SkipNextInput() {
-        if (Exporting) {
-            skipInputFrame = Manager.Controller.Current;
         }
     }
 
@@ -252,7 +251,9 @@ public static class LibTasHelper {
 
     [TasCommand("Skip", ExecuteTiming = ExecuteTiming.Parse)]
     private static void SkipCommand() {
-        SkipNextInput();
+        if (Exporting) {
+            skipNextInput = true;
+        }
     }
 
     private static void CreateLibTasMovie() {
