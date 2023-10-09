@@ -329,11 +329,12 @@ NOTE: These commands require [TAS Recorder](https://gamebanana.com/tools/14085)!
 - Default file path is `Celeste.ltm`
 - Odds are you don't need to worry about this.
 
-### Add and Skip
+### Add, Skip and Marker
 - These commands appear in overworld menuing and do not do anything in-game.
 - Rather, they serve as instructions to the libTAS converter.
 - `Add, (input line)` adds a line to the libTAS output.
-- `Skip, (frames)` skips the next however many frames.
+- `Skip` skips the next input.
+- `Marker, (text)` adds a marker for auto pause on libTAS.
 - Odds are you don't need to worry about this.
 
 ### ExitGame

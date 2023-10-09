@@ -23,19 +23,23 @@ namespace TAS;
 /// </summary>
 public static class LibTasHelper {
     public static bool Exporting { get; private set; }
-    
+
     private static StreamWriter streamWriter;
     private static bool skipNextInput;
     private static string ltmFilePath = "";
     private static string inputsFilePath => Path.Combine(Path.GetDirectoryName(ltmFilePath), "intpus");
     private static readonly List<string> keys = new();
     private static readonly char[] buttons = new char[15];
+    private static readonly List<string> markers = new();
+    private static int frameCount = 0;
 
     private static void StartExport(string path) {
         FinishExport();
         ltmFilePath = path;
         streamWriter = new StreamWriter(inputsFilePath, false, new UTF8Encoding(false), 1 << 20);
         skipNextInput = false;
+        markers.Clear();
+        frameCount = 0;
         Exporting = true;
     }
 
@@ -57,6 +61,8 @@ public static class LibTasHelper {
             CreateResourceFile("settings.celeste", null, out _);
         }
 
+        markers.Clear();
+        frameCount = 0;
         Exporting = false;
     }
 
@@ -106,6 +112,8 @@ public static class LibTasHelper {
         } else {
             streamWriter.WriteLine($"|K{outputKeys}|C1{outputAxesLeft}:{outputAxesRight}:0:0:{outputButtons}|");
         }
+
+        frameCount++;
     }
 
     private static string LibTasKeys(InputFrame inputFrame) {
@@ -249,10 +257,21 @@ public static class LibTasHelper {
         }
     }
 
+    // Skip next input
     [TasCommand("Skip", ExecuteTiming = ExecuteTiming.Parse)]
     private static void SkipCommand() {
         if (Exporting) {
             skipNextInput = true;
+        }
+    }
+    
+    // Add a marker for auto pause on libTAS
+    [TasCommand("Marker", ExecuteTiming = ExecuteTiming.Parse)]
+    private static void MarkerCommand(string[] args) {
+        if (Exporting) {
+            string text = args.IsEmpty() ? "" : args[0];
+            int count = markers.Count + 1;
+            markers.Add($"{count}\\frame={frameCount}\n{count}\\text={text}");
         }
     }
 
@@ -266,11 +285,14 @@ public static class LibTasHelper {
             inputsEntry.Name = "inputs";
             tarArchive.WriteEntry(inputsEntry, false);
 
-            int frames = File.ReadLines(inputsFilePath).Count();
-            int nanosecond = (int) (1000000000 / 60.0 * (frames % 60));
-            int second = frames / 60;
-            tarArchive.WriteEntry(CreateTarEntry("config.ini", contents => string.Format(contents, frames, nanosecond, second)), false);
-            tarArchive.WriteEntry(CreateTarEntry("editor.ini"), false);
+            int nanosecond = (int) (1000000000 / 60.0 * (frameCount % 60));
+            int second = frameCount / 60;
+            tarArchive.WriteEntry(CreateTarEntry("config.ini", contents => string.Format(contents, frameCount, nanosecond, second)), false);
+
+            markers.Add($"size={markers.Count}");
+            string markersText = string.Join("\n", markers);
+            markersText.DebugLog();
+            tarArchive.WriteEntry(CreateTarEntry("editor.ini", contents => string.Format(contents, markersText)), false);
             tarArchive.WriteEntry(CreateTarEntry("annotations.txt"), false);
 
             tarArchive.Close();
@@ -296,7 +318,7 @@ public static class LibTasHelper {
         string directory = Path.GetDirectoryName(ltmFilePath);
         filePath = Path.Combine(directory, fileName);
         string contents = GetResourceFile(fileName);
-        File.WriteAllText(filePath, contentsSelector == null ? contents : contentsSelector(contents)); 
+        File.WriteAllText(filePath, contentsSelector == null ? contents : contentsSelector(contents));
     }
 
     private static string GetResourceFile(string name) {

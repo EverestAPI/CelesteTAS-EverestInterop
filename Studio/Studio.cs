@@ -1626,6 +1626,11 @@ public partial class Studio : BaseForm {
         InsertNewLine("Skip");
     }
 
+    private void markerToolStripMenuItem_Click(object sender, EventArgs e) {
+        InsertNewLine("Marker");
+    }
+
+
     private void startExportLibTASToolStripMenuItem_Click(object sender, EventArgs e) {
         InsertNewLine("ExportLibTAS Celeste.ltm");
     }
