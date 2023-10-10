@@ -83,8 +83,11 @@ public static class Manager {
                     if (Engine.Scene is not (Level or LevelLoader or LevelExit or Emulator or LevelEnter)) {
                         DisableRun();
                     } else if (Engine.Scene is Level level && level.Tracker.GetEntity<TextMenu>() is { } menu) {
-                        if (menu.Items.FirstOrDefault() is TextMenu.Header header && header.Title == Dialog.Clean("options_title") ||
-                            menu.Items.FirstOrDefault() is TextMenuExt.HeaderImage {Image: "menu/everest"}) {
+                        TextMenu.Item item = menu.Items.FirstOrDefault();
+                        if (item is TextMenu.Header {Title: { } title} &&
+                            (title == Dialog.Clean("OPTIONS_TITLE") || title == Dialog.Clean("MENU_VARIANT_TITLE") ||
+                             title == Dialog.Clean("MODOPTIONS_EXTENDEDVARIANTS_PAUSEMENU_BUTTON").ToUpperInvariant()) ||
+                            item is TextMenuExt.HeaderImage {Image: "menu/everest"}) {
                             DisableRun();
                         }
                     }
