@@ -291,7 +291,6 @@ public static class LibTasHelper {
 
             markers.Add($"size={markers.Count}");
             string markersText = string.Join("\n", markers);
-            markersText.DebugLog();
             tarArchive.WriteEntry(CreateTarEntry("editor.ini", contents => string.Format(contents, markersText)), false);
             tarArchive.WriteEntry(CreateTarEntry("annotations.txt"), false);
 
