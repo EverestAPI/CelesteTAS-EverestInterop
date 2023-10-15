@@ -90,7 +90,10 @@ public static class LibTasHelper {
         }
 
         if (InputFrame.TryParse(inputText, 0, null, out InputFrame inputFrame)) {
+            bool orig = skipNextInput;
+            skipNextInput = false;
             WriteLibTasFrame(inputFrame);
+            skipNextInput = orig;
         }
     }
 
