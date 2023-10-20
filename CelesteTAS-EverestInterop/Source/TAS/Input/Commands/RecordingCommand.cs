@@ -8,13 +8,13 @@ using TAS.Utils;
 namespace TAS.Input.Commands;
 
 public static class RecordingCommand {
-    private record RecordingTime {
+    internal record RecordingTime {
         public int StartFrame = int.MaxValue;
         public int StopFrame = int.MaxValue;
         public int Duration => StopFrame - StartFrame;
     }
 
-    private static readonly Dictionary<int, RecordingTime> RecordingTimes = new();
+    internal static readonly Dictionary<int, RecordingTime> RecordingTimes = new();
 
     // workaround the first few frames get skipped when there is a breakpoint after StartRecording command
     public static bool StopFastForward {
