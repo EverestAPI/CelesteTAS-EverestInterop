@@ -45,7 +45,7 @@ public static class RecordingCommand {
             if (StudioCommunicationBase.Initialized && Manager.Running) {
                 if (!TASRecorderUtils.Installed) {
                     StudioCommunicationClient.Instance?.SendRecordingFailed(RecordingFailedReason.TASRecorderNotInstalled);
-                } else if (!TASRecorderUtils.IsFFmpegInstalled()) {
+                } else if (!TASRecorderUtils.FFmpegInstalled) {
                     StudioCommunicationClient.Instance?.SendRecordingFailed(RecordingFailedReason.FFmpegNotInstalled);
                 }
             }
@@ -55,7 +55,7 @@ public static class RecordingCommand {
                 return;
             }
 
-            if (!TASRecorderUtils.IsFFmpegInstalled()) {
+            if (!TASRecorderUtils.FFmpegInstalled) {
                 AbortTas("FFmpeg libraries aren't properly installed");
                 return;
             }
@@ -75,10 +75,9 @@ public static class RecordingCommand {
                 framesToRecord = time.Duration;
             }
 
+            TASRecorderUtils.StartRecording();
             if (framesToRecord > 0) {
-                TASRecorderUtils.RecordFrames(framesToRecord);
-            } else {
-                TASRecorderUtils.StartRecording();
+                TASRecorderUtils.SetDurationEstimate(framesToRecord);
             }
 
             Manager.States &= ~States.FrameStep;

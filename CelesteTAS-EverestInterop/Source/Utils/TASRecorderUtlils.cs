@@ -1,6 +1,6 @@
 using System;
 using System.Runtime.CompilerServices;
-using Celeste.Mod.TASRecorder.Interop;
+using Celeste.Mod.TASRecorder;
 
 namespace TAS.Utils;
 
@@ -14,27 +14,21 @@ internal static class TASRecorderUtils {
     public static void StopRecording() {
         if (installed.Value) stopRecording();
     }
-    public static void RecordFrames(int frames, string fileName = null) {
-        if (installed.Value) recordFrames(frames, fileName);
+    public static void SetDurationEstimate(int frames) {
+        if (installed.Value) setDurationEstimate(frames);
     }
-    public static bool IsFFmpegInstalled() {
-        if (installed.Value) return ffmpegInstalled();
-        return false;
-    }
-
-    public static bool IsRecording() {
-        if (installed.Value) return recording();
-        return false;
-    }
+    
+    public static bool Recording => installed.Value && isRecording();
+    public static bool FFmpegInstalled => installed.Value && isFFmpegInstalled();
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void startRecording(string fileName = null) => TASRecorderInterop.StartRecording(fileName);
+    private static void startRecording(string fileName = null) => TASRecorderAPI.StartRecording(fileName);
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void stopRecording() => TASRecorderInterop.StopRecording();
+    private static void stopRecording() => TASRecorderAPI.StopRecording();
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void recordFrames(int frames, string fileName = null) => TASRecorderInterop.RecordFrames(frames, fileName);
+    private static void setDurationEstimate(int frames) => TASRecorderAPI.SetDurationEstimate(frames);
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool ffmpegInstalled() => TASRecorderInterop.IsFFmpegInstalled();
+    private static bool isRecording() => TASRecorderAPI.IsRecording();
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool recording() => TASRecorderInterop.IsRecording();
+    private static bool isFFmpegInstalled() => TASRecorderAPI.IsFFmpegInstalled();
 }
