@@ -56,13 +56,11 @@ public static class StunPauseCommand {
         orig(self);
 
         if (SimulatePauses && self is Level level) {
-            if (CanPause(level) && (SkipFrames < 0 || WaitingFrames >= 0)) {
+            if (SkipFrames < 0 || WaitingFrames >= 0) {
                 PauseOnCurrentFrame = !PauseOnCurrentFrame;
-                if (PauseOnCurrentFrame) {
+                if (PauseOnCurrentFrame && CanPause(level)) {
                     UpdateTime(level, orig);
                 }
-            } else {
-                PauseOnCurrentFrame = false;
             }
         }
     }
