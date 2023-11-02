@@ -20,7 +20,7 @@ public static class Manager {
     private static readonly ConcurrentQueue<Action> mainThreadActions = new();
 
     public static bool Running;
-    public static bool Recording => TASRecorderUtils.IsRecording();
+    public static bool Recording => TASRecorderUtils.Recording;
     public static readonly InputController Controller = new();
     public static States LastStates, States, NextStates;
     public static float FrameLoops { get; private set; } = 1f;

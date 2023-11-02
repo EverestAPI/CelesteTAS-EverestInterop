@@ -378,12 +378,16 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
             return;
         }
 
-        if (!TASRecorderUtils.IsFFmpegInstalled()) {
+        if (!TASRecorderUtils.FFmpegInstalled) {
             SendRecordingFailed(RecordingFailedReason.FFmpegNotInstalled);
             return;
         }
 
         Manager.Controller.RefreshInputs(enableRun: true);
+        if (RecordingCommand.RecordingTimes.IsNotEmpty()) {
+            AbortTas("Can't use StartRecording/StopRecording with \"Record TAS\"");
+            return;
+        }
         Manager.NextStates |= States.Enable;
 
         int totalFrames = Manager.Controller.Inputs.Count;
@@ -394,7 +398,8 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
             fileName = null;
         }
 
-        TASRecorderUtils.RecordFrames(totalFrames, fileName);
+        TASRecorderUtils.StartRecording(fileName);
+        TASRecorderUtils.SetDurationEstimate(totalFrames);
 
         if (!Manager.Controller.Commands.TryGetValue(0, out var commands)) return;
         bool startsWithConsoleLoad = commands.Any(c => c.Attribute.Name.Equals("Console", StringComparison.OrdinalIgnoreCase) &&

@@ -419,7 +419,9 @@ public static class SetCommand {
         Type nullableType = type;
         type = Nullable.GetUnderlyingType(type) ?? type;
 
-        if (values.Length == 2 && type == typeof(Vector2)) {
+        if (type == typeof(string)) {
+            return string.Join(" ", values);
+        } if (values.Length == 2 && type == typeof(Vector2)) {
             float.TryParse(values[0], out float x);
             float.TryParse(values[1], out float y);
             return new Vector2(x, y);
