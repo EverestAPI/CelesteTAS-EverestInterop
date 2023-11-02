@@ -162,7 +162,8 @@ public static class Manager {
     }
 
     private static void CheckToEnable() {
-        if (!Savestates.SpeedrunToolInstalled && Hotkeys.Restart.Pressed) {
+        // Do not use Hotkeys.Restart.Pressed unless the fast forwarding optimization in Hotkeys.Update() is removed
+        if (!Savestates.SpeedrunToolInstalled && Hotkeys.Restart.Released) {
             DisableRun();
             EnableRun();
             return;

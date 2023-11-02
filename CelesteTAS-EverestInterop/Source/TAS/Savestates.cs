@@ -77,7 +77,8 @@ public static class Savestates {
             return;
         }
 
-        if (Hotkeys.Restart.Pressed) {
+        // Do not use Hotkeys.Restart.Pressed unless the fast forwarding optimization in Hotkeys.Update() is removed
+        if (Hotkeys.Restart.Released) {
             Load();
             return;
         }
