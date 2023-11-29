@@ -308,6 +308,11 @@ NOTE: These commands require [TAS Recorder](https://gamebanana.com/tools/14085)!
 - e.g. `ChapterTime: 0:49.334(2902)`
 - After completing the whole level from the beginning, auto updating the chapter time.
 
+### MidwayFileTime / MidwayChapterTime
+- e.g. `MidwayFileTime: 1:04.107(3771)`
+- e.g. `MidwayChapterTime: 1:41.677(5981)`
+- Same as `FileTime`/`ChapterTime`, except it updates when the command is executed. 
+
 ### AnalogueMode
 - `AnalogueMode, (Mode)`
 - `AnalogMode, (Mode)` also works
