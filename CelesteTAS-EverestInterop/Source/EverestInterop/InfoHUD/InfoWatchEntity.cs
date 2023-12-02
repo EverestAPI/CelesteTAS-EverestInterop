@@ -216,7 +216,7 @@ public static class InfoWatchEntity {
     }
 
     private static void PrintAllSimpleValues(Entity entity) {
-        ("Info of Clicked Entity:\n" + GetEntityValues(entity, WatchEntityType.All)).Log(true);
+        ("Info of Clicked Entity:\n" + GetEntityValues(entity, WatchEntityType.All)).Log(false);
     }
 
     private static string GetEntityValues(Entity entity, WatchEntityType watchEntityType, string separator = "\n", int decimals = 2) {
