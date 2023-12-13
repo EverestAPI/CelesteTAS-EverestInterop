@@ -114,7 +114,6 @@ namespace CelesteStudio {
             this.insertModInfoStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.insertConsoleLoadCommandToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.insertSimpleConsoleLoadCommandToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator6 = new System.Windows.Forms.ToolStripSeparator();
             this.insertOtherCommandToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.enforceLegalToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.unsafeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -164,8 +163,11 @@ namespace CelesteStudio {
             this.recordCountToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.fileTimeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.chapterTimeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.midwayFileTimeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.midwayChapterTimeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator21 = new System.Windows.Forms.ToolStripSeparator();
             this.exitGameToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator6 = new System.Windows.Forms.ToolStripSeparator();
             this.swapSelectedLAndRToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.swapDashKeysStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.swapJumpKeysToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -698,9 +700,9 @@ namespace CelesteStudio {
             // 
             // tasTextContextMenuStrip
             // 
-            this.tasTextContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.insertRemoveBreakPointToolStripMenuItem, this.insertRemoveSavestateBreakPointToolStripMenuItem, this.removeAllUncommentedBreakpointsToolStripMenuItem, this.removeAllBreakpointsToolStripMenuItem, this.commentUncommentAllBreakpointsToolStripMenuItem, this.toolStripSeparator2, this.commentUncommentTextToolStripMenuItem, this.insertRoomNameToolStripMenuItem, this.insertCurrentInGameTimeToolStripMenuItem, this.removeAllTimestampsToolStripMenuItem, this.insertModInfoStripMenuItem1, this.insertConsoleLoadCommandToolStripMenuItem, this.insertSimpleConsoleLoadCommandToolStripMenuItem, this.toolStripSeparator6, this.insertOtherCommandToolStripMenuItem, this.swapSelectedLAndRToolStripMenuItem, this.swapDashKeysStripMenuItem, this.swapJumpKeysToolStripMenuItem, this.combineConsecutiveSameInputsToolStripMenuItem, this.forceCombineInputsToolStripMenuItem, this.convertDashToDemoDashToolStripMenuItem, this.toolStripSeparator12, this.openReadFileToolStripMenuItem});
+            this.tasTextContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.insertRemoveBreakPointToolStripMenuItem, this.insertRemoveSavestateBreakPointToolStripMenuItem, this.removeAllUncommentedBreakpointsToolStripMenuItem, this.removeAllBreakpointsToolStripMenuItem, this.commentUncommentAllBreakpointsToolStripMenuItem, this.toolStripSeparator2, this.commentUncommentTextToolStripMenuItem, this.insertRoomNameToolStripMenuItem, this.insertCurrentInGameTimeToolStripMenuItem, this.removeAllTimestampsToolStripMenuItem, this.insertModInfoStripMenuItem1, this.insertConsoleLoadCommandToolStripMenuItem, this.insertSimpleConsoleLoadCommandToolStripMenuItem, this.insertOtherCommandToolStripMenuItem, this.toolStripSeparator6, this.swapSelectedLAndRToolStripMenuItem, this.swapDashKeysStripMenuItem, this.swapJumpKeysToolStripMenuItem, this.combineConsecutiveSameInputsToolStripMenuItem, this.forceCombineInputsToolStripMenuItem, this.convertDashToDemoDashToolStripMenuItem, this.toolStripSeparator12, this.openReadFileToolStripMenuItem});
             this.tasTextContextMenuStrip.Name = "tasTextContextMenuStrip";
-            this.tasTextContextMenuStrip.Size = new System.Drawing.Size(426, 462);
+            this.tasTextContextMenuStrip.Size = new System.Drawing.Size(426, 484);
             // 
             // insertRemoveBreakPointToolStripMenuItem
             // 
@@ -802,14 +804,9 @@ namespace CelesteStudio {
             this.insertSimpleConsoleLoadCommandToolStripMenuItem.Text = "Insert Simple Console Load Command";
             this.insertSimpleConsoleLoadCommandToolStripMenuItem.Click += new System.EventHandler(this.insertSimpleConsoleLoadCommandToolStripMenuItem_Click);
             // 
-            // toolStripSeparator6
-            // 
-            this.toolStripSeparator6.Name = "toolStripSeparator6";
-            this.toolStripSeparator6.Size = new System.Drawing.Size(422, 6);
-            // 
             // insertOtherCommandToolStripMenuItem
             // 
-            this.insertOtherCommandToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.enforceLegalToolStripMenuItem, this.unsafeToolStripMenuItem, this.safeToolStripMenuItem, this.toolStripSeparator18, this.readToolStripMenuItem, this.playToolStripMenuItem, this.toolStripSeparator17, this.repeatToolStripMenuItem, this.endRepeatToolStripMenuItem, this.toolStripSeparator16, this.setToolStripMenuItem, this.invokeToolStripMenuItem, this.evalLuaStripMenuItem, this.toolStripSeparator3, this.pressToolStripMenuItem, this.toolStripSeparator24, this.analogueModeToolStripMenuItem, this.toolStripSeparator4, this.stunPauseToolStripMenuItem, this.endStunPauseToolStripMenuItem, this.stunPauseModeToolStripMenuItem, this.toolStripSeparator23, this.autoInputToolStripMenuItem, this.startAutoInputToolStripMenuItem, this.endAutoInputToolStripMenuItem, this.skipAutoInputToolStripMenuItem, this.toolStripSeparator22, this.saveAndQuitReenterToolStripMenuItem, this.toolStripSeparator26, this.startExportToolStripMenuItem, this.finishExportToolStripMenuItem, this.toolStripSeparator14, this.startExportRoomInfoToolStripMenuItem, this.finishExportRoomInfoToolStripMenuItem, this.toolStripSeparator25, this.startRecordingToolStripMenuItem, this.stopRecordingToolStripMenuItem, this.toolStripSeparator5, this.addToolStripMenuItem, this.skipToolStripMenuItem, this.markerToolStripMenuItem, this.startExportLibTASToolStripMenuItem, this.finishExportLibTASToolStripMenuItem, this.toolStripSeparator13, this.completeInfoToolStripMenuItem, this.recordCountToolStripMenuItem, this.fileTimeToolStripMenuItem, this.chapterTimeToolStripMenuItem, this.toolStripSeparator21, this.exitGameToolStripMenuItem});
+            this.insertOtherCommandToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.enforceLegalToolStripMenuItem, this.unsafeToolStripMenuItem, this.safeToolStripMenuItem, this.toolStripSeparator18, this.readToolStripMenuItem, this.playToolStripMenuItem, this.toolStripSeparator17, this.repeatToolStripMenuItem, this.endRepeatToolStripMenuItem, this.toolStripSeparator16, this.setToolStripMenuItem, this.invokeToolStripMenuItem, this.evalLuaStripMenuItem, this.toolStripSeparator3, this.pressToolStripMenuItem, this.toolStripSeparator24, this.analogueModeToolStripMenuItem, this.toolStripSeparator4, this.stunPauseToolStripMenuItem, this.endStunPauseToolStripMenuItem, this.stunPauseModeToolStripMenuItem, this.toolStripSeparator23, this.autoInputToolStripMenuItem, this.startAutoInputToolStripMenuItem, this.endAutoInputToolStripMenuItem, this.skipAutoInputToolStripMenuItem, this.toolStripSeparator22, this.saveAndQuitReenterToolStripMenuItem, this.toolStripSeparator26, this.startExportToolStripMenuItem, this.finishExportToolStripMenuItem, this.toolStripSeparator14, this.startExportRoomInfoToolStripMenuItem, this.finishExportRoomInfoToolStripMenuItem, this.toolStripSeparator25, this.startRecordingToolStripMenuItem, this.stopRecordingToolStripMenuItem, this.toolStripSeparator5, this.addToolStripMenuItem, this.skipToolStripMenuItem, this.markerToolStripMenuItem, this.startExportLibTASToolStripMenuItem, this.finishExportLibTASToolStripMenuItem, this.toolStripSeparator13, this.completeInfoToolStripMenuItem, this.recordCountToolStripMenuItem, this.fileTimeToolStripMenuItem, this.chapterTimeToolStripMenuItem, this.midwayFileTimeToolStripMenuItem, this.midwayChapterTimeToolStripMenuItem, this.toolStripSeparator21, this.exitGameToolStripMenuItem});
             this.insertOtherCommandToolStripMenuItem.Name = "insertOtherCommandToolStripMenuItem";
             this.insertOtherCommandToolStripMenuItem.Size = new System.Drawing.Size(425, 22);
             this.insertOtherCommandToolStripMenuItem.Text = "Insert Other Command";
@@ -1019,6 +1016,22 @@ namespace CelesteStudio {
             this.toolStripSeparator26.Name = "toolStripSeparator26";
             this.toolStripSeparator26.Size = new System.Drawing.Size(192, 6);
             // 
+            // midwayFileTimeToolStripMenuItem
+            // 
+            this.midwayFileTimeToolStripMenuItem.Name = "midwayFileTimeToolStripMenuItem";
+            this.midwayFileTimeToolStripMenuItem.Size = new System.Drawing.Size(195, 22);
+            this.midwayFileTimeToolStripMenuItem.Text = "Midway File Time";
+            this.midwayFileTimeToolStripMenuItem.ToolTipText = "Same as FileTime, except it updates when the command is executed.";
+            this.midwayFileTimeToolStripMenuItem.Click += new System.EventHandler(this.midwayFileTimeToolStripMenuItem_Click);
+            // 
+            // midwayChapterTimeToolStripMenuItem
+            // 
+            this.midwayChapterTimeToolStripMenuItem.Name = "midwayChapterTimeToolStripMenuItem";
+            this.midwayChapterTimeToolStripMenuItem.Size = new System.Drawing.Size(195, 22);
+            this.midwayChapterTimeToolStripMenuItem.Text = "Midway Chapter Time";
+            this.midwayChapterTimeToolStripMenuItem.ToolTipText = "Same as ChapterTime, except it updates when the command is executed.";
+            this.midwayChapterTimeToolStripMenuItem.Click += new System.EventHandler(this.midwayChapterTimeToolStripMenuItem_Click);
+            // 
             // startExportToolStripMenuItem
             // 
             this.startExportToolStripMenuItem.Name = "startExportToolStripMenuItem";
@@ -1172,6 +1185,11 @@ namespace CelesteStudio {
             this.exitGameToolStripMenuItem.ToolTipText = "Used to force the game when recording video with .kkapture to finish recording.";
             this.exitGameToolStripMenuItem.Click += new System.EventHandler(this.exitGameToolStripMenuItem_Click);
             // 
+            // toolStripSeparator6
+            // 
+            this.toolStripSeparator6.Name = "toolStripSeparator6";
+            this.toolStripSeparator6.Size = new System.Drawing.Size(422, 6);
+            // 
             // swapSelectedLAndRToolStripMenuItem
             // 
             this.swapSelectedLAndRToolStripMenuItem.Name = "swapSelectedLAndRToolStripMenuItem";
@@ -1225,7 +1243,7 @@ namespace CelesteStudio {
             // 
             this.openReadFileToolStripMenuItem.Name = "openReadFileToolStripMenuItem";
             this.openReadFileToolStripMenuItem.Size = new System.Drawing.Size(425, 22);
-            this.openReadFileToolStripMenuItem.Text = "Open Read File / Go to Play Line";
+            this.openReadFileToolStripMenuItem.Text = "Open Read File / Go to Play Line (Ctrl + Left Click)";
             this.openReadFileToolStripMenuItem.Click += new System.EventHandler(this.openReadFileToolStripMenuItem_Click);
             // 
             // richText
@@ -1333,6 +1351,10 @@ namespace CelesteStudio {
             this.ResumeLayout(false);
             this.PerformLayout();
         }
+
+        private System.Windows.Forms.ToolStripMenuItem midwayFileTimeToolStripMenuItem;
+
+        private System.Windows.Forms.ToolStripMenuItem midwayChapterTimeToolStripMenuItem;
 
         private System.Windows.Forms.ToolStripMenuItem markerToolStripMenuItem;
 

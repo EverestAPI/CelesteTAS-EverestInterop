@@ -1654,6 +1654,14 @@ public partial class Studio : BaseForm {
     private void chapterTimeToolStripMenuItem_Click(object sender, EventArgs e) {
         InsertNewLine("ChapterTime:");
     }
+    
+    private void midwayChapterTimeToolStripMenuItem_Click(object sender, EventArgs e) {
+        InsertNewLine("MidwayChapterTime:");
+    }
+
+    private void midwayFileTimeToolStripMenuItem_Click(object sender, EventArgs e) {
+        InsertNewLine("MidwayFileTime:");
+    }
 
     private void repeatToolStripMenuItem_Click(object sender, EventArgs e) {
         InsertNewLine("Repeat 2\n\nEndRepeat");
