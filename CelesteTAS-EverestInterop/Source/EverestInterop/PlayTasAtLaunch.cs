@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Celeste;
@@ -38,11 +39,17 @@ public static class PlayTasAtLaunch {
 
             if (arg == "--tas" && queue.Count >= 1) {
                 string tasPath = queue.Dequeue();
+                
+                // fix: https://github.com/EverestAPI/CelesteTAS-EverestInterop/issues/62
+                while (Environment.OSVersion.Platform != PlatformID.Win32NT && queue.Count >= 1 && !tasPath.EndsWith(".tas", StringComparison.OrdinalIgnoreCase)) {
+                    tasPath += " " + queue.Dequeue();
+                }
+
                 if (File.Exists(tasPath)) {
                     InputController.StudioTasFilePath = tasPath;
                     WaitToPlayTas = true;
                 } else {
-                    $"TAS file '{tasPath}' not exist.".Log(LogLevel.Warn);
+                    $"TAS file '{tasPath}' does not exist.".Log(LogLevel.Warn);
                 }
             }
         }
