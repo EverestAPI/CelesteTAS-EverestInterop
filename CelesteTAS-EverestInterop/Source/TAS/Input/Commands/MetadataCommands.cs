@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Celeste;
 using Celeste.Mod;
+using Monocle;
 using TAS.Communication;
 using TAS.Module;
 using TAS.Utils;
@@ -67,12 +68,31 @@ public static class MetadataCommands {
         // dummy
     }
 
+    [TasCommand("MidwayFileTime", AliasNames = new[] {"MidwayFileTime:", "MidwayFileTime："}, CalcChecksum = false)]
+    private static void MidwayFileTimeCommand() {
+        if (TasStartFileTime != null && SaveData.Instance != null) {
+            UpdateAllMetadata("MidwayFileTime", 
+                _ => GameInfo.FormatTime(SaveData.Instance.Time - TasStartFileTime.Value), 
+                command => Manager.Controller.CurrentCommands.Contains(command));
+        }
+    }
+
+    [TasCommand("MidwayChapterTime", AliasNames = new[] {"MidwayChapterTime:", "MidwayChapterTime："}, CalcChecksum = false)]
+    private static void MidwayChapterTimeCommand() {
+        if (!Manager.Running || Engine.Scene is not Level level || !level.Session.StartedFromBeginning) {
+            return;
+        }
+        UpdateAllMetadata("MidwayChapterTime", 
+            _ => GameInfo.GetChapterTime(level), 
+            command => Manager.Controller.CurrentCommands.Contains(command));
+    }
+
     private static void UpdateChapterTime(Level level) {
         if (!Manager.Running || !level.Session.StartedFromBeginning) {
             return;
         }
 
-        UpdateAllMetadata("ChapterTime", command => GameInfo.GetChapterTime(level));
+        UpdateAllMetadata("ChapterTime", _ => GameInfo.GetChapterTime(level));
     }
 
     public static void UpdateRecordCount(InputController inputController) {
