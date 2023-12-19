@@ -75,11 +75,13 @@ public static class DesyncFixer {
         // System.IndexOutOfRangeException: Index was outside the bounds of the array.
         // https://discord.com/channels/403698615446536203/1148931167983251466/1148931167983251466
         On.Celeste.LightingRenderer.SetOccluder += IgnoreSetOccluderCrash;
+        On.Celeste.LightingRenderer.SetCutout += IgnoreSetCutoutCrash;
     }
 
     [Unload]
     private static void Unload() {
         On.Celeste.LightingRenderer.SetOccluder -= IgnoreSetOccluderCrash;
+        On.Celeste.LightingRenderer.SetCutout -= IgnoreSetCutoutCrash;
     }
 
     private static void FixDreamMirrorDesync(DreamMirror mirror) {
@@ -190,6 +192,18 @@ public static class DesyncFixer {
     private static void IgnoreSetOccluderCrash(On.Celeste.LightingRenderer.orig_SetOccluder orig, LightingRenderer self, Vector3 center, Color mask, Vector2 light, Vector2 edgeA, Vector2 edgeB) {
         try {
             orig(self, center, mask, light, edgeA, edgeB);
+        } catch (IndexOutOfRangeException e) {
+            if (Manager.Running) {
+                e.Log(LogLevel.Debug);
+            } else {
+                throw;
+            }
+        }
+    }
+
+    private static void IgnoreSetCutoutCrash(On.Celeste.LightingRenderer.orig_SetCutout orig, LightingRenderer self, Vector3 center, Color mask, Vector2 light, float x, float y, float width, float height) {
+        try {
+            orig(self, center, mask, light, x, y, width, height);
         } catch (IndexOutOfRangeException e) {
             if (Manager.Running) {
                 e.Log(LogLevel.Debug);
