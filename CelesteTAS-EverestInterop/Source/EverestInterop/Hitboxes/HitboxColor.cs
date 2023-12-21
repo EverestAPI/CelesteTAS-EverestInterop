@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Celeste;
@@ -18,6 +18,7 @@ public static class HitboxColor {
     public static readonly Color RespawnTriggerColor = Color.YellowGreen;
     public static readonly Color PufferHeightCheckColor = Color.WhiteSmoke;
     public static readonly Color PufferPushRadiusColor = Color.DarkRed;
+    public static readonly Color CameraTriggerColor = Color.Goldenrod;
 
     private static readonly Regex HexChar = new(@"^[0-9a-f]*$", RegexOptions.IgnoreCase);
 
@@ -138,13 +139,18 @@ public static class HitboxColor {
             return color;
         }
 
-        Color customColor = entity switch {
-            ChangeRespawnTrigger => RespawnTriggerColor,
-            Trigger => TasSettings.TriggerHitboxColor,
-            Platform => TasSettings.PlatformHitboxColor,
-            LookoutBlocker => Color.Green,
-            _ => TasSettings.EntityHitboxColor
-        };
+        Color customColor;
+        if (HitboxTrigger.IsCameraTrigger(entity)) {
+            customColor = CameraTriggerColor;
+        } else {
+            customColor = entity switch {
+                ChangeRespawnTrigger => RespawnTriggerColor,
+                Trigger => TasSettings.TriggerHitboxColor,
+                Platform => TasSettings.PlatformHitboxColor,
+                LookoutBlocker => Color.Green,
+                _ => TasSettings.EntityHitboxColor
+            };
+        }
 
         if (!entity.Collidable) {
             customColor *= UnCollidableAlpha;

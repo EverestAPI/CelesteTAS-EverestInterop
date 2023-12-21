@@ -47,7 +47,7 @@
     </ItemGroup>
     <ItemGroup>
         <Reference Include="Celeste">
-            <HintPath>lib-stripped\Celeste-nstrip.exe</HintPath>
+          <HintPath>lib-stripped\Celeste-nstrip.exe</HintPath>
         </Reference>
         <Reference Include="FNA">
             <HintPath>lib-stripped\FNA.dll</HintPath>
