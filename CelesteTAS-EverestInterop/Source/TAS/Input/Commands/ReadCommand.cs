@@ -83,10 +83,13 @@ public static class ReadCommand {
             if (fileDirectory != null) {
                 // Path.Combine can handle the case when filePath is an absolute path
                 string absoluteOrRelativePath = Path.Combine(fileDirectory, filePath);
+                if (!absoluteOrRelativePath.EndsWith(".tas", StringComparison.InvariantCulture)) {
+                    absoluteOrRelativePath += ".tas";
+                }
                 if (File.Exists(absoluteOrRelativePath)) {
                     filePath = absoluteOrRelativePath;
                 } else if (Directory.GetParent(absoluteOrRelativePath) is { } directoryInfo && Directory.Exists(directoryInfo.ToString())) {
-                    List<string> files = Directory.GetFiles(directoryInfo.ToString(), $"{Path.GetFileName(filePath)}*.tas").ToList();
+                    List<string> files = Directory.GetFiles(directoryInfo.ToString(), $"{Path.GetFileNameWithoutExtension(filePath)}*.tas").ToList();
                     files.Sort((s1, s2) => string.Compare(s1, s2, StringComparison.InvariantCulture));
                     if (files.FirstOrDefault() is { } shortenedFilePath) {
                         filePath = shortenedFilePath;
