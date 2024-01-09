@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Celeste;
 using Celeste.Pico8;
@@ -54,10 +54,28 @@ public static class InfoSubPixelIndicator {
             _ => decimals
         };
 
-        string left = subPixelLeft.ToFormattedString(hDecimals).PadLeft(TasSettings.SubpixelIndicatorDecimals + 2, ' ');
-        string right = subPixelRight.ToFormattedString(hDecimals);
-        string top = subPixelTop.ToFormattedString(vDecimals).PadLeft(TasSettings.SubpixelIndicatorDecimals / 2 + 2, ' ');
-        string bottom = subPixelBottom.ToFormattedString(vDecimals).PadLeft(TasSettings.SubpixelIndicatorDecimals / 2 + 2, ' ');
+        string left, right, top, bottom;
+        if (useDegreeFormat) {
+            int totalDigits = degreeDecimals < 4 ? 3 * degreeDecimals : degreeDecimals + 7;
+            left = subPixelLeft.ToDegreeString(degreeDecimals).PadLeft(totalDigits, ' ');
+            right = subPixelRight.ToDegreeString(degreeDecimals);
+            top = subPixelTop.ToDegreeString(degreeDecimals).PadLeft(totalDigits, ' ');
+            bottom = subPixelBottom.ToDegreeString(degreeDecimals).PadLeft(totalDigits, ' ');
+        }
+        else {
+            if (applyMul60) {
+                subPixelLeft *= 60;
+                subPixelRight *= 60;
+                subPixelTop *= 60;
+                subPixelBottom *= 60;
+            }
+            
+            left = subPixelLeft.ToFormattedString(hDecimals).PadLeft(TasSettings.SubpixelIndicatorDecimals + 2, ' ');
+            right = subPixelRight.ToFormattedString(hDecimals);
+            top = subPixelTop.ToFormattedString(vDecimals).PadLeft(TasSettings.SubpixelIndicatorDecimals / 2 + 2, ' ');
+            bottom = subPixelBottom.ToFormattedString(vDecimals).PadLeft(TasSettings.SubpixelIndicatorDecimals / 2 + 2, ' ');
+        }
+
 
         JetBrainsMonoFont.Draw(left, new Vector2(x - textWidth - padding / 2f, y + (rectSide - textHeight) / 2f),
             Vector2.Zero, new Vector2(GetSubPixelFontSize()), Color.White * alpha);
@@ -70,6 +88,12 @@ public static class InfoSubPixelIndicator {
         JetBrainsMonoFont.Draw(bottom, new Vector2(x + (rectSide - textWidth) / 2f - tweakX, y + rectSide + padding / 2f),
             Vector2.Zero, new Vector2(GetSubPixelFontSize()), Color.White * alpha);
     }
+
+    public static int degreeDecimals = 2;
+
+    public static bool useDegreeFormat = false;
+
+    public static bool applyMul60 = true;
 
     public static Vector2 TryExpandSize(Vector2 size, float padding) {
         if (TasSettings.InfoSubpixelIndicator) {
@@ -94,6 +118,14 @@ public static class InfoSubPixelIndicator {
 
     private static Vector2 GetSubPixelTextSize() {
         if (TasSettings.InfoSubpixelIndicator) {
+            if (useDegreeFormat) {
+                int totalDigits = degreeDecimals < 4 ? 3 * degreeDecimals : degreeDecimals + 7;
+                return JetBrainsMonoFont.Measure("".PadRight(totalDigits, '0')) * GetSubPixelFontSize();
+            }
+            if (applyMul60) {
+                return JetBrainsMonoFont.Measure("0.".PadRight(TasSettings.SubpixelIndicatorDecimals + 3, '0')) * GetSubPixelFontSize();
+            }
+
             return JetBrainsMonoFont.Measure("0.".PadRight(TasSettings.SubpixelIndicatorDecimals + 2, '0')) * GetSubPixelFontSize();
         } else {
             return default;

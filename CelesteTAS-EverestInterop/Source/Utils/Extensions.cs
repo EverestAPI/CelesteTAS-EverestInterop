@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -522,6 +522,77 @@ internal static class Vector2DoubleExtension {
 
 internal static class NumberExtensions {
     private static readonly string format = "0.".PadRight(339, '#');
+
+
+    private static string firstLevel = "°";
+
+    private static string secondLevel = "'";
+
+    private static string thirdLevel = "\"";
+
+    private const int floatToFirstLevel = 60;
+
+    private const int firstToSecond = 100;
+
+    private const int secondToThird = 100;
+
+    // unfortunately we can not use triple prime ‴ coz the font does not support it
+    public static string ToDegreeString(this float value, int digits = 2) {
+        if (digits <= 0) {
+            throw new Exception("Unexcepted Argument");
+        }
+        value *= floatToFirstLevel;
+        if (digits == 1) {
+            return $"{Math.Round(value, 0, MidpointRounding.AwayFromZero)}{firstLevel}";
+        }
+        else if (digits == 2) {
+            int firstValue = (int) Math.Floor(value);
+            value = (value - firstValue) * firstToSecond;
+            int secondValue = (int)Math.Round(value, 0, MidpointRounding.AwayFromZero);
+            if (secondValue == firstToSecond) {
+                firstValue++;
+                secondValue = 0;
+            }
+            return $"{firstValue}{firstLevel}{secondValue.ToString("00")}{secondLevel}";
+        }
+        else if (digits == 3) {
+            int firstValue = (int) Math.Floor(value);
+            value = (value - firstValue) * firstToSecond;
+            int secondValue = (int) Math.Floor(value);
+            value = (value - secondValue) * secondToThird;
+            int thirdValue = (int) Math.Round(value, 0, MidpointRounding.AwayFromZero);
+            if (thirdValue == secondToThird) {
+                secondValue++;
+                thirdValue = 0;
+                if (secondValue == firstToSecond) {
+                    firstValue++;
+                    secondValue = 0;
+                }
+            }
+            return $"{firstValue}{firstLevel}{secondValue.ToString("00")}{secondLevel}{thirdValue.ToString("00")}{thirdLevel}";
+        }
+        else {
+            int firstValue = (int) Math.Floor(value);
+            value = (value - firstValue) * firstToSecond;
+            int secondValue = (int) Math.Floor(value);
+            value = (value - secondValue) * secondToThird;
+            int thirdValue = (int) Math.Floor(value);
+            double remain = Math.Round(value - thirdValue, digits - 3);
+            if (remain == 1) {
+                thirdValue++;
+                remain = 0;
+                if (thirdValue == secondToThird) {
+                    secondValue++;
+                    thirdValue = 0;
+                    if (secondValue == firstToSecond) {
+                        firstValue++;
+                        secondValue = 0;
+                    }
+                }
+            }
+            return $"{firstValue}{firstLevel}{secondValue.ToString("00")}{secondLevel}{thirdValue.ToString("00")}{thirdLevel}{remain.ToString(".".PadRight(digits - 3, '#'))}";
+        }
+    }
 
     public static string ToFormattedString(this float value, int decimals) {
         if (decimals == 0) {

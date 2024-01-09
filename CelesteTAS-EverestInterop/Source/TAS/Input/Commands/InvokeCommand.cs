@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -85,7 +85,7 @@ public static class InvokeCommand {
         if (memberNames.IsEmpty() &&
             type.GetMethodInfo(lastMemberName, null) is {IsStatic: true}) {
             objType = type;
-        } else if (memberNames.IsNotEmpty() && type.GetMethodInfo(memberNames.First(), null) is {IsStatic: true}) {
+        } else if (memberNames.IsNotEmpty() && type.GetMethodInfo(memberNames.First(), null) is { IsStatic: true }) {
             obj = InfoCustom.GetMemberValue(type, null, memberNames);
             if (TryPrintErrorLog()) {
                 return nonReturnObject;
