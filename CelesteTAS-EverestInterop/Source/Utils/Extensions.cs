@@ -90,10 +90,16 @@ internal static class FastReflection {
 }
 
 internal static class ReflectionExtensions {
-    private const BindingFlags StaticInstanceAnyVisibility =
+    internal const BindingFlags InstanceAnyVisibility =
+        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+    
+    internal const BindingFlags StaticAnyVisibility =
+        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+
+    internal const BindingFlags StaticInstanceAnyVisibility =
         BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
-    private const BindingFlags InstanceAnyVisibilityDeclaredOnly =
+    internal const BindingFlags InstanceAnyVisibilityDeclaredOnly =
         BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
 
     private static readonly object[] NullArgs = {null};
@@ -125,53 +131,53 @@ internal static class ReflectionExtensions {
     private static readonly ConcurrentDictionary<AllMemberKey, IEnumerable<FieldInfo>> CachedAllFieldInfos = new();
     private static readonly ConcurrentDictionary<AllMemberKey, IEnumerable<PropertyInfo>> CachedAllPropertyInfos = new();
 
-    public static MemberInfo GetMemberInfo(this Type type, string name) {
+    public static MemberInfo GetMemberInfo(this Type type, string name, BindingFlags bindingAttr = StaticInstanceAnyVisibility) {
         var key = new MemberKey(type, name);
         if (CachedMemberInfos.TryGetValue(key, out var result)) {
             return result;
         }
 
         do {
-            result = type.GetMember(name, StaticInstanceAnyVisibility).FirstOrDefault();
+            result = type.GetMember(name, bindingAttr).FirstOrDefault();
         } while (result == null && (type = type.BaseType) != null);
 
         return CachedMemberInfos[key] = result;
     }
 
-    public static FieldInfo GetFieldInfo(this Type type, string name) {
+    public static FieldInfo GetFieldInfo(this Type type, string name, BindingFlags bindingAttr = StaticInstanceAnyVisibility) {
         var key = new MemberKey(type, name);
         if (CachedFieldInfos.TryGetValue(key, out var result)) {
             return result;
         }
 
         do {
-            result = type.GetField(name, StaticInstanceAnyVisibility);
+            result = type.GetField(name, bindingAttr);
         } while (result == null && (type = type.BaseType) != null);
 
         return CachedFieldInfos[key] = result;
     }
 
-    public static PropertyInfo GetPropertyInfo(this Type type, string name) {
+    public static PropertyInfo GetPropertyInfo(this Type type, string name, BindingFlags bindingAttr = StaticInstanceAnyVisibility) {
         var key = new MemberKey(type, name);
         if (CachedPropertyInfos.TryGetValue(key, out var result)) {
             return result;
         }
 
         do {
-            result = type.GetProperty(name, StaticInstanceAnyVisibility);
+            result = type.GetProperty(name, bindingAttr);
         } while (result == null && (type = type.BaseType) != null);
 
         return CachedPropertyInfos[key] = result;
     }
 
-    public static MethodInfo GetMethodInfo(this Type type, string name, Type[] types = null) {
+    public static MethodInfo GetMethodInfo(this Type type, string name, Type[] types = null, BindingFlags bindingAttr = StaticInstanceAnyVisibility) {
         var key = new MethodKey(type, name, types.GetCustomHashCode());
         if (CachedMethodInfos.TryGetValue(key, out MethodInfo result)) {
             return result;
         }
 
         do {
-            MethodInfo[] methodInfos = type.GetMethods(StaticInstanceAnyVisibility);
+            MethodInfo[] methodInfos = type.GetMethods(bindingAttr);
             result = methodInfos.FirstOrDefault(info =>
                 info.Name == name && types?.SequenceEqual(info.GetParameters().Select(i => i.ParameterType)) != false);
         } while (result == null && (type = type.BaseType) != null);
@@ -179,27 +185,27 @@ internal static class ReflectionExtensions {
         return CachedMethodInfos[key] = result;
     }
 
-    public static MethodInfo GetGetMethod(this Type type, string propertyName) {
+    public static MethodInfo GetGetMethod(this Type type, string propertyName, BindingFlags bindingAttr = StaticInstanceAnyVisibility) {
         var key = new MemberKey(type, propertyName);
         if (CachedGetMethodInfos.TryGetValue(key, out var result)) {
             return result;
         }
 
         do {
-            result = type.GetPropertyInfo(propertyName)?.GetGetMethod(true);
+            result = type.GetPropertyInfo(propertyName, bindingAttr)?.GetGetMethod(true);
         } while (result == null && (type = type.BaseType) != null);
 
         return CachedGetMethodInfos[key] = result;
     }
 
-    public static MethodInfo GetSetMethod(this Type type, string propertyName) {
+    public static MethodInfo GetSetMethod(this Type type, string propertyName, BindingFlags bindingAttr = StaticInstanceAnyVisibility) {
         var key = new MemberKey(type, propertyName);
         if (CachedSetMethodInfos.TryGetValue(key, out var result)) {
             return result;
         }
 
         do {
-            result = type.GetPropertyInfo(propertyName)?.GetSetMethod(true);
+            result = type.GetPropertyInfo(propertyName, bindingAttr)?.GetSetMethod(true);
         } while (result == null && (type = type.BaseType) != null);
 
         return CachedSetMethodInfos[key] = result;
@@ -376,6 +382,11 @@ internal static class TypeExtensions {
     public static bool IsConst(this FieldInfo fieldInfo) {
         return fieldInfo.IsLiteral && !fieldInfo.IsInitOnly;
     }
+}
+
+internal static class PropertyInfoExtensions {
+    public static bool IsStatic(this PropertyInfo source, bool nonPublic = true) 
+        => source.GetAccessors(nonPublic).Any(x => x.IsStatic);
 }
 
 internal static class CommonExtensions {

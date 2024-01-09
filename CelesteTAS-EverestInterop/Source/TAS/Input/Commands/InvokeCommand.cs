@@ -82,11 +82,10 @@ public static class InvokeCommand {
 
         Type objType;
         object obj = null;
-        if (memberNames.IsEmpty() &&
-            type.GetMethodInfo(lastMemberName, null) is {IsStatic: true}) {
+        if (memberNames.IsEmpty() && type.GetMethodInfo(lastMemberName) is {IsStatic: true}) {
             objType = type;
-        } else if (memberNames.IsNotEmpty() && type.GetMethodInfo(memberNames.First(), null) is {IsStatic: true}) {
-            obj = InfoCustom.GetMemberValue(type, null, memberNames);
+        } else if (memberNames.IsNotEmpty() && InfoCustom.GetMemberValue(type, null, memberNames) is { } value) {
+            obj = value;
             if (TryPrintErrorLog()) {
                 return nonReturnObject;
             }
@@ -217,6 +216,7 @@ public static class InvokeCommand {
         }
 
     }
+
     private static string LogId(this string entityId) {
         return entityId.IsNullOrEmpty() ? "" : $"[{entityId}]";
     }
