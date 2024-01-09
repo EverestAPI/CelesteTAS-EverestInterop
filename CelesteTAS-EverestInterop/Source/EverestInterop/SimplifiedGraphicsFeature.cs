@@ -220,7 +220,7 @@ public static class SimplifiedGraphicsFeature {
             ModUtils.GetType("Monika's D-Sides", "Celeste.Mod.RubysEntities.AltHeightDisplay")
         );
 
-        On.Celeste.Spikes.ctor_Vector2_int_Directions_string += SpikesOnCtor_Vector2_int_Directions_string;
+        On.Celeste.Spikes.Added += SpikesOnAdded;
     }
 
     [Unload]
@@ -245,7 +245,7 @@ public static class SimplifiedGraphicsFeature {
         On.Celeste.FloatingDebris.ctor_Vector2 -= FloatingDebris_ctor;
         On.Celeste.MoonCreature.ctor_Vector2 -= MoonCreature_ctor;
         On.Celeste.ResortLantern.ctor_Vector2 -= ResortLantern_ctor;
-        On.Celeste.Spikes.ctor_Vector2_int_Directions_string -= SpikesOnCtor_Vector2_int_Directions_string;
+        On.Celeste.Spikes.Added -= SpikesOnAdded;
     }
 
     private static bool IsSimplifiedGraphics() => TasSettings.SimplifiedGraphics;
@@ -611,15 +611,19 @@ public static class SimplifiedGraphicsFeature {
         return result;
     }
 
-    private static void SpikesOnCtor_Vector2_int_Directions_string(On.Celeste.Spikes.orig_ctor_Vector2_int_Directions_string orig, Spikes self,
-        Vector2 position, int size, Spikes.Directions direction, string type) {
+    private static void SpikesOnAdded(On.Celeste.Spikes.orig_Added orig, Spikes self, Scene scene) {
         if (TasSettings.SimplifiedGraphics && TasSettings.SimplifiedSpikes) {
-            if (self.GetType().FullName != "VivHelper.Entities.AnimatedSpikes") {
-                type = "outline";
+            string spikeType = AreaData.Get(scene).Spike;
+            if (!string.IsNullOrEmpty(self.overrideType) && !self.overrideType.Equals("default")) {
+                spikeType = self.overrideType;
+            }
+
+            if (spikeType != "tentacles" && self.GetType().FullName != "VivHelper.Entities.AnimatedSpikes") {
+                self.overrideType = "outline";
             }
         }
 
-        orig(self, position, size, direction, type);
+        orig(self, scene);
     }
 
     private static void ModCustomSpinnerColor(ILContext il) {
