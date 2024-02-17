@@ -104,9 +104,9 @@ public static class InfoHud {
 
         Rectangle bgRect = new((int) x, (int) y, (int) (Size.X + padding * 2), (int) (Size.Y + padding * 2));
 
-        if (!Hotkeys.InfoHud.Check && (scene.Paused && !Celeste.Input.MenuJournal.Check || scene is Level level && CollidePlayer(level, bgRect))) {
+        if (TasSettings.InfoMaskedOpacity < 10 && !Hotkeys.InfoHud.Check && (scene.Paused && !Celeste.Input.MenuJournal.Check || scene is Level level && CollidePlayer(level, bgRect))) {
             alpha *= TasSettings.InfoMaskedOpacity / 10f;
-            infoAlpha *= alpha;
+            infoAlpha = alpha;
         }
 
         Draw.SpriteBatch.Begin();

@@ -128,7 +128,7 @@ public static class ExportGameInfo {
 
             output = string.Join("\t",
                 inputFrame.Line + 1, $"{controller.CurrentFrameInInput}/{inputFrame}", controller.CurrentFrameInTas, time, pos, speed,
-                PlayerStates.GetStateName(player.StateMachine.State),
+                PlayerStates.GetCurrentStateName(player),
                 statuses);
 
             foreach (string typeName in trackedEntities.Keys) {
