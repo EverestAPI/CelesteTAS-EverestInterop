@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -30,6 +30,7 @@ internal static class SpeedrunToolUtils {
     private static Dictionary<Follower, bool> followers;
     private static Dictionary<int, int> insertedSlots = new();
     private static bool disallowUnsafeInput;
+    private static Random auraRandom;
 
     public static void AddSaveLoadAction() {
         Action<Dictionary<Type, Dictionary<string, object>>, Level> save = (_, _) => {
@@ -48,6 +49,7 @@ internal static class SpeedrunToolUtils {
             followers = HitboxSimplified.Followers.DeepCloneShared();
             insertedSlots = SaveAndQuitReenterCommand.InsertedSlots.DeepCloneShared();
             disallowUnsafeInput = SafeCommand.DisallowUnsafeInput;
+            auraRandom = DesyncFixer.AuraHelperSharedRandom.DeepCloneShared();
         };
         Action<Dictionary<Type, Dictionary<string, object>>, Level> load = (_, _) => {
             EntityDataHelper.CachedEntityData = savedEntityData.DeepCloneShared();
@@ -69,12 +71,14 @@ internal static class SpeedrunToolUtils {
             HitboxSimplified.Followers = followers.DeepCloneShared();
             SaveAndQuitReenterCommand.InsertedSlots = insertedSlots.DeepCloneShared();
             SafeCommand.DisallowUnsafeInput = disallowUnsafeInput;
+            DesyncFixer.AuraHelperSharedRandom = auraRandom.DeepCloneShared();
         };
         Action clear = () => {
             savedEntityData = null;
             pressKeys = null;
             followers = null;
             InfoWatchEntity.SavedRequireWatchEntities.Clear();
+            auraRandom = null;
         };
 
         ConstructorInfo constructor = typeof(SaveLoadAction).GetConstructors()[0];

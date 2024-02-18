@@ -237,7 +237,7 @@ public static class DesyncFixer {
         return binding.Pressed ? count : 0;
     }
 
-    private static Random AuraHelperSharedRandom = new Random(1234); // this random needs to be used all through aura entity's lifetime
+    internal static Random AuraHelperSharedRandom = new Random(1234); // this random needs to be used all through aura entity's lifetime
 
     private static void SetupAuraHelperRandom(ILContext il) {
         ILCursor cursor = new ILCursor(il);
