@@ -202,6 +202,7 @@ public static class SimplifiedGraphicsFeature {
             ModUtils.GetType("ContortHelper", "ContortHelper.BetterLightningStrike")
         );
 
+
         HookHelper.SkipMethod(t, nameof(IsSimplifiedClutteredEntity), "Render",
             typeof(ReflectionTentacles), typeof(SummitCloud), typeof(TempleEye), typeof(Wire),
             typeof(Cobweb), typeof(HangingLamp),
