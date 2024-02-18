@@ -56,6 +56,12 @@ public static class DesyncFixer {
         if (ModUtils.GetType("EmoteMod", "Celeste.Mod.EmoteMod.EmoteWheelModule") is { } emoteModuleType) {
             emoteModuleType.GetMethodInfo("Player_Update")?.IlHook(PreventEmoteMod);
         }
+
+        if (ModUtils.GetType("AuraHelper", "AuraHelper.Lantern") is { } auraLanternType) {
+            auraLanternType.GetConstructor(new Type[] { typeof(Vector2), typeof(string), typeof(int) })?.IlHook(SetupAuraHelperRandom);
+            auraLanternType.GetMethod("Update")?.IlHook(FixAuraEntityDesync);
+            ModUtils.GetType("AuraHelper", "AuraHelper.Generator")?.GetMethod("Update")?.IlHook(FixAuraEntityDesync);
+        }
     }
 
     [Load]
@@ -229,5 +235,44 @@ public static class DesyncFixer {
 
     private static int IsEmoteWheelBindingPressed(ButtonBinding binding, int count) {
         return binding.Pressed ? count : 0;
+    }
+
+    private static Random AuraHelperSharedRandom = new Random(1234); // this random needs to be used all through aura entity's lifetime
+
+    private static void SetupAuraHelperRandom(ILContext il) {
+        ILCursor cursor = new ILCursor(il);
+        cursor.Emit(OpCodes.Ldarg_1);
+        cursor.EmitDelegate(CreateAuraHelperRandom);
+    }
+
+    private static void CreateAuraHelperRandom(Vector2 vector2) {
+        if (Manager.Running) {
+            int seed = vector2.GetHashCode();
+            if (Engine.Scene is Level level) {
+                seed += level.Session.LevelData.LoadSeed;
+            }
+            AuraHelperSharedRandom = new Random(seed);
+        }
+    }
+
+    private static void FixAuraEntityDesync(ILContext il) {
+        ILCursor cursor = new ILCursor(il);
+        cursor.EmitDelegate(AuraPushRandom);
+        while (cursor.TryGotoNext(MoveType.AfterLabel, i => i.OpCode == OpCodes.Ret)) {
+            cursor.EmitDelegate(AuraPopRandom);
+            cursor.Index++;
+        }
+    }
+
+    private static void AuraPushRandom() {
+        if (Manager.Running) {
+            Calc.PushRandom(AuraHelperSharedRandom);
+        }
+    }
+
+    private static void AuraPopRandom() {
+        if (Manager.Running) {
+            Calc.PopRandom();
+        }
     }
 }
