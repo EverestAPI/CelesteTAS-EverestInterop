@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -202,10 +202,15 @@ public static class SimplifiedGraphicsFeature {
             ModUtils.GetType("ContortHelper", "ContortHelper.BetterLightningStrike")
         );
 
+
         HookHelper.SkipMethod(t, nameof(IsSimplifiedClutteredEntity), "Render",
             typeof(ReflectionTentacles), typeof(SummitCloud), typeof(TempleEye), typeof(Wire),
             typeof(Cobweb), typeof(HangingLamp),
-            typeof(DustGraphic).GetNestedType("Eyeballs", BindingFlags.NonPublic)
+            typeof(DustGraphic).GetNestedType("Eyeballs", BindingFlags.NonPublic),
+            ModUtils.GetType("BrokemiaHelper", "BrokemiaHelper.PixelRendered.PixelComponent")
+        );
+        HookHelper.SkipMethod(t, nameof(IsSimplifiedClutteredEntity), "DebugRender",
+            ModUtils.GetType("BrokemiaHelper", "BrokemiaHelper.PixelRendered.PixelComponent")
         );
         On.Celeste.FloatingDebris.ctor_Vector2 += FloatingDebris_ctor;
         On.Celeste.MoonCreature.ctor_Vector2 += MoonCreature_ctor;
