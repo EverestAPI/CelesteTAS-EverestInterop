@@ -18,6 +18,9 @@ public static class DesyncFixer {
     private const string pushedRandomFlag = "CelesteTAS_PushedRandom";
     private static int debrisAmount;
 
+    // this random needs to be used all through aura entity's lifetime
+    internal static Random AuraHelperSharedRandom = new Random(1234);
+
     [Initialize]
     private static void Initialize() {
         Dictionary<MethodInfo, int> methods = new() {
@@ -237,8 +240,6 @@ public static class DesyncFixer {
         return binding.Pressed ? count : 0;
     }
 
-    internal static Random AuraHelperSharedRandom = new Random(1234); // this random needs to be used all through aura entity's lifetime
-
     private static void SetupAuraHelperRandom(ILContext il) {
         ILCursor cursor = new ILCursor(il);
         cursor.Emit(OpCodes.Ldarg_1);
@@ -248,7 +249,7 @@ public static class DesyncFixer {
     private static void CreateAuraHelperRandom(Vector2 vector2) {
         if (Manager.Running) {
             int seed = vector2.GetHashCode();
-            if (Engine.Scene is Level level) {
+            if (Engine.Scene.GetLevel() is { } level) {
                 seed += level.Session.LevelData.LoadSeed;
             }
             AuraHelperSharedRandom = new Random(seed);
