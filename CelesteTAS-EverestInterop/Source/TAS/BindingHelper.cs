@@ -58,6 +58,8 @@ public static class BindingHelper {
     private static bool? origControllerHasFocus;
     private static bool? origKbTextInput;
     private static bool? origAttached;
+    private static int? origCrouchDashMode;
+    private static int? origGrabMode;
 
     // ReSharper disable once UnusedMember.Local
     [EnableRun]
@@ -84,6 +86,10 @@ public static class BindingHelper {
 
         origAttached = MInput.GamePads[GameInput.Gamepad].Attached;
         MInput.GamePads[GameInput.Gamepad].Attached = true;
+
+        if (typeof(Settings).GetFieldInfo("CrouchDashMode") != null && typeof(Settings).GetFieldInfo("GrabMode") != null) {
+            SetDashGrabMode();
+        }
     }
 
     // ReSharper disable once UnusedMember.Local
@@ -99,6 +105,10 @@ public static class BindingHelper {
 
         if (origControllerHasFocus.HasValue) {
             RestoreControllerHasFocus();
+        }
+
+        if (origCrouchDashMode.HasValue) {
+            RestoreDashGrabMode();
         }
     }
 
@@ -201,5 +211,20 @@ public static class BindingHelper {
         binding.Add(keys);
         binding.Add(buttons);
         Settings.Instance.GetDynamicDataInstance().Set(fieldName, binding);
+    }
+
+    private static void SetDashGrabMode() {
+        origCrouchDashMode = (int?) Settings.Instance.CrouchDashMode;
+        Settings.Instance.CrouchDashMode = CrouchDashModes.Press;
+
+        origGrabMode = (int?) Settings.Instance.GrabMode;
+        Settings.Instance.GrabMode = GrabModes.Hold;
+    }
+    
+    private static void RestoreDashGrabMode() {
+        Settings.Instance.CrouchDashMode = (CrouchDashModes) origCrouchDashMode.Value;
+        Settings.Instance.GrabMode = (GrabModes) origGrabMode.Value;
+        origCrouchDashMode = null;
+        origGrabMode = null;
     }
 }
