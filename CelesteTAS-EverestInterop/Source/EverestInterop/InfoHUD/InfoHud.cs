@@ -12,6 +12,7 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD;
 
+// TODO show info hud on overworld
 public static class InfoHud {
     private static EaseInSubMenu subMenuItem;
     public static Vector2 Size { get; private set; }
@@ -140,6 +141,7 @@ public static class InfoHud {
         return playerRect.Intersects(bgRect);
     }
 
+    // TODO add a setting 'InfoTasInputLines'
     private static void WriteTasInput(StringBuilder stringBuilder) {
         InputController controller = Manager.Controller;
         List<InputFrame> inputs = controller.Inputs;
