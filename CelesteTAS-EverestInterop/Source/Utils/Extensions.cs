@@ -364,7 +364,7 @@ internal static class HashCodeExtensions {
 
 internal static class TypeExtensions {
     public static bool IsSameOrSubclassOf(this Type potentialDescendant, Type potentialBase) {
-        return potentialDescendant.IsSubclassOf(potentialBase) || potentialDescendant == potentialBase;
+        return potentialDescendant == potentialBase || potentialDescendant.IsSubclassOf(potentialBase);
     }
 
     public static bool IsSameOrSubclassOf(this Type potentialDescendant, params Type[] potentialBases) {
