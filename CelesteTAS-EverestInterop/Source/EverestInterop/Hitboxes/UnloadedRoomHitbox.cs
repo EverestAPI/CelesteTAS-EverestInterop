@@ -34,7 +34,8 @@ public static class UnloadedRoomHitbox {
         typeof(TempleMirror),
         typeof(Torch),
         typeof(Trapdoor),
-        typeof(Wire)
+        typeof(Wire),
+        typeof(Killbox),
     };
 
     private static readonly Dictionary<LevelData, List<Action>> DecalActions = new();
@@ -114,7 +115,14 @@ public static class UnloadedRoomHitbox {
                     continue;
                 }
 
-                if (dataName.Contains("Spinner") || dataName.Contains("spinner")) {
+                string lowercaseDataName = dataName.ToLowerInvariant();
+
+                if (lowercaseDataName.Contains("controller")) {
+                    IgnoreTypes.Add(type);
+                    continue;
+                }
+
+                if (lowercaseDataName.Contains("spinner")) {
                     if (type.IsSameOrSubclassOf(typeof(Bumper))) {
                         rect = Rectangle.Empty;
                         actions.Add((level) => Draw.Circle(position, 12, HitboxColor.EntityColor, 4));
@@ -290,7 +298,7 @@ public static class UnloadedRoomHitbox {
                     color = Color.HotPink;
 
                     textureId = "characters/oshiro/boss12";
-                } else if (type.IsSameOrSubclassOf(typeof(Booster))) {
+                } else if (type.IsSameOrSubclassOf(typeof(Booster)) || lowercaseDataName.EndsWith("booster")) {
                     rect = Rectangle.Empty;
                     actions.Add((level) => Draw.Circle(position + new Vector2(0, 2), 10, HitboxColor.EntityColor * colorAlpha, 4));
                     if (data.Bool("red")) {
@@ -479,13 +487,9 @@ public static class UnloadedRoomHitbox {
                     });
                     continue;
                 }
+            } else {
+                type = null;
             }
-
-#if RELEASE
-            if (rect.Width == 0 || rect.Height == 0) {
-                continue;
-            }
-#endif
 
             if (textureId.IsNotEmpty()) {
                 MTexture texture = GFX.Game[textureId];
@@ -494,6 +498,16 @@ public static class UnloadedRoomHitbox {
                 } else {
                     actions.Insert(0, (level) => texture.DrawCentered(position + textureOffset, Color.White, scale, (float) rotation));
                 }
+            }
+
+            if (rect.Width == 0 || rect.Height == 0) {
+#if RELEASE
+                continue;
+#else
+                if (textureId.IsEmpty()) {
+                    $"[UnloadedRoomHitbox] This entity is not drawn: entityName={dataName}; className={type?.FullName}".DebugLog();
+                }
+#endif
             }
 
             actions.Add((level) => { Draw.HollowRect(rect, color); });
