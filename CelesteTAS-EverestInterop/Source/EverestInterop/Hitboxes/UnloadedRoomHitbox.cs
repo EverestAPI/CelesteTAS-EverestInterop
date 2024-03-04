@@ -298,7 +298,7 @@ public static class UnloadedRoomHitbox {
                     color = Color.HotPink;
 
                     textureId = "characters/oshiro/boss12";
-                } else if (type.IsSameOrSubclassOf(typeof(Booster)) || lowercaseDataName.EndsWith("booster")) {
+                } else if (type.IsSameOrSubclassOf(typeof(Booster)) || lowercaseDataName.EndsWith("booster") && !lowercaseDataName.EndsWith("wallbooster")) {
                     rect = Rectangle.Empty;
                     actions.Add((level) => Draw.Circle(position + new Vector2(0, 2), 10, HitboxColor.EntityColor * colorAlpha, 4));
                     if (data.Bool("red")) {
