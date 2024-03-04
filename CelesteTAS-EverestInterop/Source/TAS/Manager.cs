@@ -153,7 +153,7 @@ public static class Manager {
                     NextStates &= ~States.FrameStep;
                 }
             } else if (LastStates.Has(States.FrameStep) && States.Has(States.FrameStep) &&
-                       (Hotkeys.FastForward.Check || Hotkeys.SlowForward.Check && Engine.FrameCounter % 10 == 0) &&
+                       (Hotkeys.FastForward.Check || Hotkeys.SlowForward.Check && Engine.FrameCounter % Math.Round(4 / TasSettings.SlowForwardSpeed) == 0) &&
                        !Hotkeys.FastForwardComment.Check) {
                 States &= ~States.FrameStep;
                 NextStates |= States.FrameStep;
