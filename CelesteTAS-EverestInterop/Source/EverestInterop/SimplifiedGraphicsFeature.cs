@@ -629,6 +629,7 @@ public static class SimplifiedGraphicsFeature {
         return result;
     }
 
+
     private static void SpikesOnAdded(On.Celeste.Spikes.orig_Added orig, Spikes self, Scene scene) {
         if (TasSettings.SimplifiedGraphics && TasSettings.SimplifiedSpikes) {
             string spikeType = AreaData.Get(scene).Spike;
@@ -638,6 +639,10 @@ public static class SimplifiedGraphicsFeature {
 
             if (spikeType != "tentacles" && self.GetType().FullName != "VivHelper.Entities.AnimatedSpikes") {
                 self.overrideType = "outline";
+            }
+
+            if (self.GetType().FullName == "Celeste.Mod.NerdHelper.Entities.DashThroughSpikes") {
+                self.overrideType = "Kalobi/NerdHelper/dashthroughspike";
             }
         }
 
