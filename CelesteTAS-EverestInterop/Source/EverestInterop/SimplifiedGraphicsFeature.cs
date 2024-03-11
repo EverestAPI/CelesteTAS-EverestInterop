@@ -639,6 +639,10 @@ public static class SimplifiedGraphicsFeature {
             if (spikeType != "tentacles" && self.GetType().FullName != "VivHelper.Entities.AnimatedSpikes") {
                 self.overrideType = "outline";
             }
+
+            if (self.GetType().FullName == "Celeste.Mod.NerdHelper.Entities.DashThroughSpikes") {
+                self.overrideType = "Kalobi/NerdHelper/dashthroughspike";
+            }
         }
 
         orig(self, scene);
