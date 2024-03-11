@@ -629,7 +629,6 @@ public static class SimplifiedGraphicsFeature {
         return result;
     }
 
-
     private static void SpikesOnAdded(On.Celeste.Spikes.orig_Added orig, Spikes self, Scene scene) {
         if (TasSettings.SimplifiedGraphics && TasSettings.SimplifiedSpikes) {
             string spikeType = AreaData.Get(scene).Spike;
