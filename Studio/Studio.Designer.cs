@@ -112,6 +112,7 @@ namespace CelesteStudio {
             this.insertCurrentInGameTimeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.removeAllTimestampsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.insertModInfoStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+            this.insertRequireDependencyStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.insertConsoleLoadCommandToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.insertSimpleConsoleLoadCommandToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.insertOtherCommandToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -700,7 +701,7 @@ namespace CelesteStudio {
             // 
             // tasTextContextMenuStrip
             // 
-            this.tasTextContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.insertRemoveBreakPointToolStripMenuItem, this.insertRemoveSavestateBreakPointToolStripMenuItem, this.removeAllUncommentedBreakpointsToolStripMenuItem, this.removeAllBreakpointsToolStripMenuItem, this.commentUncommentAllBreakpointsToolStripMenuItem, this.toolStripSeparator2, this.commentUncommentTextToolStripMenuItem, this.insertRoomNameToolStripMenuItem, this.insertCurrentInGameTimeToolStripMenuItem, this.removeAllTimestampsToolStripMenuItem, this.insertModInfoStripMenuItem1, this.insertConsoleLoadCommandToolStripMenuItem, this.insertSimpleConsoleLoadCommandToolStripMenuItem, this.insertOtherCommandToolStripMenuItem, this.toolStripSeparator6, this.swapSelectedLAndRToolStripMenuItem, this.swapDashKeysStripMenuItem, this.swapJumpKeysToolStripMenuItem, this.combineConsecutiveSameInputsToolStripMenuItem, this.forceCombineInputsToolStripMenuItem, this.convertDashToDemoDashToolStripMenuItem, this.toolStripSeparator12, this.openReadFileToolStripMenuItem});
+            this.tasTextContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {this.insertRemoveBreakPointToolStripMenuItem, this.insertRemoveSavestateBreakPointToolStripMenuItem, this.removeAllUncommentedBreakpointsToolStripMenuItem, this.removeAllBreakpointsToolStripMenuItem, this.commentUncommentAllBreakpointsToolStripMenuItem, this.toolStripSeparator2, this.commentUncommentTextToolStripMenuItem, this.insertRoomNameToolStripMenuItem, this.insertCurrentInGameTimeToolStripMenuItem, this.removeAllTimestampsToolStripMenuItem, this.insertModInfoStripMenuItem1, this.insertRequireDependencyStripMenuItem, this.insertConsoleLoadCommandToolStripMenuItem, this.insertSimpleConsoleLoadCommandToolStripMenuItem, this.insertOtherCommandToolStripMenuItem, this.toolStripSeparator6, this.swapSelectedLAndRToolStripMenuItem, this.swapDashKeysStripMenuItem, this.swapJumpKeysToolStripMenuItem, this.combineConsecutiveSameInputsToolStripMenuItem, this.forceCombineInputsToolStripMenuItem, this.convertDashToDemoDashToolStripMenuItem, this.toolStripSeparator12, this.openReadFileToolStripMenuItem});
             this.tasTextContextMenuStrip.Name = "tasTextContextMenuStrip";
             this.tasTextContextMenuStrip.Size = new System.Drawing.Size(426, 484);
             // 
@@ -787,6 +788,13 @@ namespace CelesteStudio {
             this.insertModInfoStripMenuItem1.Size = new System.Drawing.Size(425, 22);
             this.insertModInfoStripMenuItem1.Text = "Insert Mod Info";
             this.insertModInfoStripMenuItem1.Click += new System.EventHandler(this.insertModInfoStripMenuItem1_Click);
+            // 
+            // insertRequireDependencyStripMenuItem
+            // 
+            this.insertRequireDependencyStripMenuItem.Name = "insertRequireDependencyItem";
+            this.insertRequireDependencyStripMenuItem.Size = new System.Drawing.Size(425, 22);
+            this.insertRequireDependencyStripMenuItem.Text = "Insert Require Dependency";
+            this.insertRequireDependencyStripMenuItem.Click += new System.EventHandler(this.insertRequireDependencyStripMenuItem_Click);
             // 
             // insertConsoleLoadCommandToolStripMenuItem
             // 
@@ -1531,8 +1539,10 @@ namespace CelesteStudio {
 
         private System.Windows.Forms.ToolStripMenuItem insertModInfoStripMenuItem1;
 
+        private System.Windows.Forms.ToolStripMenuItem insertRequireDependencyStripMenuItem;
+
         #endregion
-		public CelesteStudio.RichText.RichText richText;
+        public CelesteStudio.RichText.RichText richText;
         private System.Windows.Forms.ToolTip hotkeyToolTip;
         private System.Windows.Forms.ContextMenuStrip statusBarContextMenuStrip;
         private System.Windows.Forms.ToolStripMenuItem copyGameDataMenuItem;

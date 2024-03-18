@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace StudioCommunication;
 
@@ -97,6 +97,7 @@ public enum GameDataType : byte {
     SettingValue,
     CompleteInfoCommand,
     ModUrl,
+    RequireDependency,
 }
 
 public enum RecordingFailedReason : byte {

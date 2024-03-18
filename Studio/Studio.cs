@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -1707,6 +1707,10 @@ public partial class Studio : BaseForm {
 
     private void insertModInfoStripMenuItem1_Click(object sender, EventArgs e) {
         InsertDataFromGame(GameDataType.ModInfo);
+    }
+
+    private void insertRequireDependencyStripMenuItem_Click(object sender, EventArgs e) {
+        InsertDataFromGame(GameDataType.RequireDependency);
     }
 
     private void SwapActionKeys(char key1, char key2) {
