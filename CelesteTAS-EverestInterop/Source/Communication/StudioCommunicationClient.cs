@@ -147,6 +147,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
             GameDataType.SettingValue => GetSettingValue((string) objects[1]),
             GameDataType.CompleteInfoCommand => AreaCompleteInfo.CreateCommand(),
             GameDataType.ModUrl => GetModUrl(),
+            GameDataType.RequireDependency => GetRequireDependency(),
             _ => string.Empty
         };
 
@@ -193,6 +194,11 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         }
 
         string modInfo = "";
+
+        if (mapMeta != null) {
+            modInfo += DependencyToString(mapMeta);
+            modInfo += "\n";
+        }
 
         EverestModuleMetadata celesteMeta = metas.First(metadata => metadata.Name == "Celeste");
         EverestModuleMetadata everestMeta = metas.First(metadata => metadata.Name == "Everest");
@@ -249,6 +255,29 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         }
 
         return modInfo;
+    }
+
+    private string GetRequireDependency() {
+        if (Engine.Scene is not Level level) {
+            return string.Empty;
+        }
+
+        AreaData areaData = AreaData.Get(level);
+        string moduleName = string.Empty;
+        EverestModuleMetadata mapMeta = null;
+        if (Everest.Content.TryGet<AssetTypeMap>("Maps/" + areaData.SID, out ModAsset mapModAsset) && mapModAsset.Source != null) {
+            moduleName = mapModAsset.Source.Name;
+            mapMeta = Everest.Modules.Select(module => module.Metadata).FirstOrDefault(meta => meta.Name == moduleName);
+            if (mapMeta != null) {
+                return DependencyToString(mapMeta);
+            }
+        }
+
+        return string.Empty;
+    }
+
+    private string DependencyToString(EverestModuleMetadata metadata) {
+        return $"{RequireDependencyCommand.CommandName} {metadata.Name} {metadata.VersionString}\n";
     }
 
     private string GetSettingValue(string settingName) {
