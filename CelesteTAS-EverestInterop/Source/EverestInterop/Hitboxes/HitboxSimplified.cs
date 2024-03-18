@@ -41,6 +41,7 @@ public static class HitboxSimplified {
         "Celeste.Mod.JungleHelper.Entities.Firefly",
         "Celeste.Mod.ClutterHelper.CustomClutter",
         "Celeste.Mod.HonlyHelper.FloatyBgTile",
+        "BrokemiaHelper.PixelRendered.Vineinator",
     };
 
     public static Dictionary<Follower, bool> Followers = new();
@@ -52,7 +53,13 @@ public static class HitboxSimplified {
                 UselessTypes.Add(type);
             }
         }
+        
+        HookHelper.SkipMethod(typeof(HitboxSimplified), nameof(IsSimplifiedHitboxes), "DebugRender",
+            ModUtils.GetType("FemtoHelper", "CustomMoonCreature")
+        );
     }
+
+    private static bool IsSimplifiedHitboxes() => TasSettings.ShowHitboxes && TasSettings.SimplifiedHitboxes;
 
     [Load]
     private static void Load() {

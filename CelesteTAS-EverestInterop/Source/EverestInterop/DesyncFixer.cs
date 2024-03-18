@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using Celeste;
 using Celeste.Mod;
+using Celeste.Mod.Entities;
 using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
@@ -250,9 +251,11 @@ public static class DesyncFixer {
         if (Manager.Running) {
             int seed = vector2.GetHashCode();
             if (Engine.Scene.GetLevel() is { } level) {
+                LogUtil.Log(seed, true);
                 seed += level.Session.LevelData.LoadSeed;
             }
             AuraHelperSharedRandom = new Random(seed);
+            LogUtil.Log(seed, true);
         }
     }
 
@@ -276,4 +279,346 @@ public static class DesyncFixer {
             Calc.PopRandom();
         }
     }
+}
+
+
+internal static class DesyncFinder {
+    /*
+    [CustomEntity(new string[] { "AuraHelper/Lantern" })]
+    [Tracked(false)]
+    public class Lantern : Entity {
+        public int index = 1;
+
+        public bool dead = false;
+
+        public int hp = 6;
+
+        public bool attacked = false;
+
+        public int colddown = 0;
+
+        public Generator gene;
+
+        public Line line;
+
+        public int res = 10;
+
+        public bool ok = false;
+
+        public bool ok2 = false;
+
+        public bool lineok = false;
+
+        public Cracker cracker;
+
+        public string DesFlag;
+
+        public Sprite sprite;
+
+        public int AnimationType = 1;
+
+        public Lantern(Vector2 position, string flag, int HP) {
+            Position = position;
+            base.Depth = -100000;
+            DesFlag = flag;
+            hp = HP;
+            Hitbox hitbox = new Hitbox(27f, 31f);
+            base.Collider = hitbox;
+            Add(sprite = new Sprite(GFX.Game, "objects/monsters/lantern/idle"));
+            sprite.Position.X -= 5f;
+            sprite.Position.Y -= 6f;
+            sprite.AddLoop("idle", "", 0.1f);
+            sprite.Play("idle");
+        }
+
+        public Lantern(EntityData data, Vector2 offset)
+            : this(data.Position + offset, data.Attr("flag"), data.Int("HP")) {
+        }
+
+        public override void Update() {
+            base.Update();
+            Player entity = base.Scene.Tracker.GetEntity<Player>();
+            Shovel entity2 = base.Scene.Tracker.GetEntity<Shovel>();
+            Level level = SceneAs<Level>();
+            if (entity2.attack && CollideCheck(entity2) && !dead && !attacked) {
+                Audio.Play("event:/game/06_reflection/pinballbumper_hit", Position);
+                index = 0;
+                hp--;
+                attacked = true;
+                Remove(sprite);
+                AnimationType = 3;
+                Add(sprite = new Sprite(GFX.Game, "objects/monsters/lantern/hurt"));
+                sprite.Position.X -= 5f;
+                sprite.Position.Y -= 6f;
+                sprite.Add("hurt", "", 0.05f);
+                sprite.Play("hurt");
+                if (hp == 5) {
+                    colddown = 400;
+                }
+                if (hp == 4) {
+                    colddown = 600;
+                }
+                if (hp == 3) {
+                    colddown = 600;
+                }
+                if (hp == 2) {
+                    colddown = 600;
+                }
+                if (hp == 1) {
+                    colddown = 600;
+                }
+            }
+            Vector2 position = Position;
+            if (hp == 5 && colddown > 0 && colddown % 40 == 0) {
+                if (AnimationType == 1) {
+                    Remove(sprite);
+                    Add(sprite = new Sprite(GFX.Game, "objects/monsters/lantern/attack"));
+                    sprite.Position.X -= 5f;
+                    sprite.Position.Y -= 6f;
+                    sprite.Add("attack", "", 0.1f);
+                    sprite.Play("attack");
+                }
+                AnimationType = 1;
+                Audio.Play("event:/game/general/strawberry_touch", Position);
+                Random random = Calc.Random;
+                gene = new Generator(position);
+                base.Scene.Add(gene);
+                gene.Position.X = random.Next((int) Position.X - 110, (int) Position.X + 110);
+                gene.Position.Y -= 200f;
+            }
+            if (hp == 4 && colddown > 0) {
+                lineok = false;
+                ok = false;
+                if (colddown % 80 >= 10 && colddown % 80 <= 19 && colddown <= 560 && colddown >= 80) {
+                    Audio.Play("event:/game/05_mirror_temple/torch_activate", Position);
+                    Random random2 = Calc.Random;
+                    position.X = random2.Next((int) Position.X - 118, (int) Position.X + 154);
+                    position.Y -= 85f;
+                    line = new Line(position);
+                    base.Scene.Add(line);
+                }
+                if (colddown % 80 == 5) {
+                    lineok = true;
+                }
+                if (colddown % 80 == 0) {
+                    ok = true;
+                }
+                if (colddown % 80 == 19 && colddown < 560 && colddown >= 80) {
+                    if (AnimationType == 1) {
+                        Remove(sprite);
+                        Add(sprite = new Sprite(GFX.Game, "objects/monsters/lantern/attack"));
+                        sprite.Position.X -= 5f;
+                        sprite.Position.Y -= 6f;
+                        sprite.Add("attack", "", 0.1f);
+                        sprite.Play("attack");
+                    }
+                    AnimationType = 1;
+                }
+            }
+            if (hp == 3 && colddown > 0) {
+                ok2 = false;
+                if (colddown % 80 == 0 && colddown <= 500) {
+                    Audio.Play("event:/game/09_core/iceblock_reappear", Position);
+                    if (AnimationType == 1) {
+                        Remove(sprite);
+                        Add(sprite = new Sprite(GFX.Game, "objects/monsters/lantern/attack"));
+                        sprite.Position.X -= 5f;
+                        sprite.Position.Y -= 6f;
+                        sprite.Add("attack", "", 0.1f);
+                        sprite.Play("attack");
+                    }
+                    AnimationType = 1;
+                    position.X += 9f;
+                    position.Y += 10f;
+                    cracker = new Cracker(position);
+                    base.Scene.Add(cracker);
+                    cracker.forward = true;
+                    cracker.Position.X -= 8f;
+                    cracker.Position.Y -= 16f;
+                    cracker = new Cracker(position);
+                    base.Scene.Add(cracker);
+                    cracker.forward = true;
+                    cracker.Position.X -= 8f;
+                    cracker.Position.Y += 16f;
+                    cracker = new Cracker(position);
+                    base.Scene.Add(cracker);
+                    cracker.forward = true;
+                    cracker.Position.X -= 16f;
+                    cracker.Position.Y -= 8f;
+                    cracker = new Cracker(position);
+                    base.Scene.Add(cracker);
+                    cracker.forward = true;
+                    cracker.Position.X -= 16f;
+                    cracker.Position.Y += 8f;
+                    cracker = new Cracker(position);
+                    base.Scene.Add(cracker);
+                    cracker.forward = true;
+                    cracker.Position.X += 16f;
+                    cracker.Position.Y += 8f;
+                    cracker = new Cracker(position);
+                    base.Scene.Add(cracker);
+                    cracker.forward = true;
+                    cracker.Position.X += 16f;
+                    cracker.Position.Y -= 8f;
+                    cracker = new Cracker(position);
+                    base.Scene.Add(cracker);
+                    cracker.forward = true;
+                    cracker.Position.X += 8f;
+                    cracker.Position.Y -= 16f;
+                    cracker = new Cracker(position);
+                    base.Scene.Add(cracker);
+                    cracker.forward = true;
+                    cracker.Position.X += 8f;
+                    cracker.Position.Y += 16f;
+                }
+                if (colddown % 80 == 40) {
+                    ok2 = true;
+                }
+            }
+            if (hp == 2 && colddown > 0) {
+                ok = false;
+                lineok = false;
+                if (colddown % 80 >= 10 && colddown % 80 <= 19 && colddown <= 560 && colddown >= 80) {
+                    Audio.Play("event:/game/05_mirror_temple/torch_activate", Position);
+                    Random random3 = Calc.Random;
+                    position.X = random3.Next((int) Position.X - 116, (int) Position.X + 148);
+                    position.Y -= 85f;
+                    line = new Line(position);
+                    base.Scene.Add(line);
+                }
+                if (colddown % 80 == 5) {
+                    lineok = true;
+                }
+                if (colddown % 80 == 0) {
+                    ok = true;
+                }
+                if (colddown % 80 == 19 && colddown < 560 && colddown >= 80) {
+                    if (AnimationType == 1) {
+                        Remove(sprite);
+                        Add(sprite = new Sprite(GFX.Game, "objects/monsters/lantern/attack"));
+                        sprite.Position.X -= 5f;
+                        sprite.Position.Y -= 6f;
+                        sprite.Add("attack", "", 0.1f);
+                        sprite.Play("attack");
+                    }
+                    AnimationType = 1;
+                }
+            }
+            if (hp == 1 && colddown > 0 && colddown % 40 == 0) {
+                if (AnimationType == 1) {
+                    Remove(sprite);
+                    Add(sprite = new Sprite(GFX.Game, "objects/monsters/lantern/attack"));
+                    sprite.Position.X -= 5f;
+                    sprite.Position.Y -= 6f;
+                    sprite.Add("attack", "", 0.1f);
+                    sprite.Play("attack");
+                }
+                AnimationType = 1;
+                Audio.Play("event:/game/general/strawberry_touch", Position);
+                Random random4 = Calc.Random;
+                gene = new Generator(position);
+                base.Scene.Add(gene);
+                gene.Position.X = random4.Next((int) Position.X - 118, (int) Position.X + 154);
+                gene.Position.Y -= 200f;
+            }
+            if ((hp == 2 || hp == 1) && colddown > 0) {
+                ok2 = false;
+                if (colddown % 80 == 0 && colddown <= 500) {
+                    Audio.Play("event:/game/09_core/iceblock_reappear", Position);
+                    if (AnimationType == 1) {
+                        Remove(sprite);
+                        Add(sprite = new Sprite(GFX.Game, "objects/monsters/lantern/attack"));
+                        sprite.Position.X -= 5f;
+                        sprite.Position.Y -= 6f;
+                        sprite.Add("attack", "", 0.1f);
+                        sprite.Play("attack");
+                    }
+                    AnimationType = 1;
+                    position.X += 9f;
+                    position.Y += 10f;
+                    cracker = new Cracker(position);
+                    base.Scene.Add(cracker);
+                    cracker.forward = true;
+                    cracker.Position.X -= 8f;
+                    cracker.Position.Y -= 16f;
+                    cracker = new Cracker(position);
+                    base.Scene.Add(cracker);
+                    cracker.forward = true;
+                    cracker.Position.X -= 8f;
+                    cracker.Position.Y += 16f;
+                    cracker = new Cracker(position);
+                    base.Scene.Add(cracker);
+                    cracker.forward = true;
+                    cracker.Position.X -= 16f;
+                    cracker.Position.Y -= 8f;
+                    cracker = new Cracker(position);
+                    base.Scene.Add(cracker);
+                    cracker.forward = true;
+                    cracker.Position.X -= 16f;
+                    cracker.Position.Y += 8f;
+                    cracker = new Cracker(position);
+                    base.Scene.Add(cracker);
+                    cracker.forward = true;
+                    cracker.Position.X += 16f;
+                    cracker.Position.Y += 8f;
+                    cracker = new Cracker(position);
+                    base.Scene.Add(cracker);
+                    cracker.forward = true;
+                    cracker.Position.X += 16f;
+                    cracker.Position.Y -= 8f;
+                    cracker = new Cracker(position);
+                    base.Scene.Add(cracker);
+                    cracker.forward = true;
+                    cracker.Position.X += 8f;
+                    cracker.Position.Y -= 16f;
+                    cracker = new Cracker(position);
+                    base.Scene.Add(cracker);
+                    cracker.forward = true;
+                    cracker.Position.X += 8f;
+                    cracker.Position.Y += 16f;
+                }
+                if (colddown % 80 == 40) {
+                    ok2 = true;
+                }
+            }
+            if (colddown > 0) {
+                colddown--;
+            } else {
+                attacked = false;
+            }
+            if (hp == 0 && !dead) {
+                Audio.Play("event:/game/06_reflection/boss_spikes_burst", Position);
+                dead = true;
+            }
+            if (!dead) {
+                if ((AnimationType == 1 || AnimationType == 3) && !sprite.Animating) {
+                    Remove(sprite);
+                    Add(sprite = new Sprite(GFX.Game, "objects/monsters/lantern/idle"));
+                    sprite.Position.X -= 5f;
+                    sprite.Position.Y -= 6f;
+                    sprite.AddLoop("idle", "", 0.1f);
+                    sprite.Play("idle");
+                    AnimationType = 1;
+                }
+                if (entity != null && CollideCheck(entity)) {
+                    entity.Die(Vector2.Zero);
+                }
+                return;
+            }
+            if (AnimationType != 4) {
+                Remove(sprite);
+                Add(sprite = new Sprite(GFX.Game, "objects/monsters/lantern/death"));
+                sprite.Position.X -= 5f;
+                sprite.Position.Y -= 6f;
+                sprite.Add("death", "", 0.1f);
+                sprite.Play("death");
+                level.Session.SetFlag(DesFlag);
+            }
+            AnimationType = 4;
+            if (!sprite.Animating) {
+                RemoveSelf();
+            }
+        }
+    }
+    */
 }

@@ -33,6 +33,10 @@ public static class SimplifiedGraphicsFeature {
         "4-cliffside/bridge_a",
     };
 
+    private static readonly List<Type> ClutteredTypes = new() {
+        typeof(FloatingDebris), typeof(MoonCreature), typeof(ResortLantern)
+    };
+
     private static bool lastSimplifiedGraphics = TasSettings.SimplifiedGraphics;
     private static SolidTilesStyle currentSolidTilesStyle;
     private static bool creatingSolidTiles;
@@ -202,19 +206,20 @@ public static class SimplifiedGraphicsFeature {
             ModUtils.GetType("ContortHelper", "ContortHelper.BetterLightningStrike")
         );
 
-
         HookHelper.SkipMethod(t, nameof(IsSimplifiedClutteredEntity), "Render",
             typeof(ReflectionTentacles), typeof(SummitCloud), typeof(TempleEye), typeof(Wire),
             typeof(Cobweb), typeof(HangingLamp),
             typeof(DustGraphic).GetNestedType("Eyeballs", BindingFlags.NonPublic),
             ModUtils.GetType("BrokemiaHelper", "BrokemiaHelper.PixelRendered.PixelComponent")
         );
-        HookHelper.SkipMethod(t, nameof(IsSimplifiedClutteredEntity), "DebugRender",
-            ModUtils.GetType("BrokemiaHelper", "BrokemiaHelper.PixelRendered.PixelComponent")
-        );
         On.Celeste.FloatingDebris.ctor_Vector2 += FloatingDebris_ctor;
         On.Celeste.MoonCreature.ctor_Vector2 += MoonCreature_ctor;
         On.Celeste.ResortLantern.ctor_Vector2 += ResortLantern_ctor;
+        if (ModUtils.GetType("FemtoHelper", "CustomMoonCreature") is { } customMoonCreatureType
+            && customMoonCreatureType.GetMethodInfo("Added") is { } customMoonCreatureAdded) {
+            customMoonCreatureAdded.HookAfter<Entity>(CustomMoonCreatureAdded);
+            ClutteredTypes.Add(customMoonCreatureType);
+        }
 
         HookHelper.SkipMethod(
             t,
@@ -282,9 +287,11 @@ public static class SimplifiedGraphicsFeature {
             return;
         }
 
-        if (simplifiedGraphics) {
-            level.Tracker.GetEntities<FloatingDebris>().ForEach(debris => debris.RemoveSelf());
-            level.Entities.FindAll<MoonCreature>().ForEach(creature => creature.RemoveSelf());
+        if (simplifiedGraphics && TasSettings.SimplifiedClutteredEntity) {
+            IEnumerable<Entity> clutteredEntities = level.Entities.Where(e => ClutteredTypes.Any(t => e.GetType().IsSameOrSubclassOf(t)));
+            foreach (Entity entity in clutteredEntities) {
+                entity.RemoveSelf();
+            }
         }
 
         if (simplifiedGraphics && currentSolidTilesStyle != TasSettings.SimplifiedSolidTilesStyle ||
@@ -559,6 +566,12 @@ public static class SimplifiedGraphicsFeature {
         }
     }
 
+    private static void CustomMoonCreatureAdded(Entity customMoonCreature) {
+        if (IsSimplifiedClutteredEntity()) {
+            customMoonCreature.Add(new RemoveSelfComponent());
+        }
+    }
+
     private static void LightningRenderer_RenderIL(ILContext il) {
         ILCursor c = new(il);
         if (c.TryGotoNext(i => i.MatchLdfld<Entity>("Visible"))) {
@@ -625,6 +638,10 @@ public static class SimplifiedGraphicsFeature {
 
             if (spikeType != "tentacles" && self.GetType().FullName != "VivHelper.Entities.AnimatedSpikes") {
                 self.overrideType = "outline";
+            }
+
+            if (self.GetType().FullName == "Celeste.Mod.NerdHelper.Entities.DashThroughSpikes") {
+                self.overrideType = "Kalobi/NerdHelper/dashthroughspike";
             }
         }
 

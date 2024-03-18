@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Celeste;
 using Celeste.Mod;
@@ -228,31 +229,29 @@ internal static class EntityTypeHelper {
         }
 
         foreach (Type type in FakeAssembly.GetFakeEntryAssembly().GetTypesSafe()) {
-            CheckType(type);
+            CheckCustomEntity(type);
         }
+    }
 
-        void CheckType(Type type) {
-            foreach (CustomEntityAttribute customEntityAttribute in type.GetCustomAttributes<CustomEntityAttribute>()) {
-                foreach (string idFull in customEntityAttribute.IDs) {
-                    string id;
-                    string[] split = idFull.Split('=');
+    private static void CheckCustomEntity(Type type) {
+        foreach (string idFull in type.GetCustomAttributes<CustomEntityAttribute>().SelectMany(a => a.IDs)) {
+            string id;
+            string[] split = idFull.Split('=');
 
-                    if (split.Length is 1 or 2) {
-                        id = split[0];
-                    } else {
-                        // invalid
-                        continue;
-                    }
-
-                    string idTrim = id.Trim();
-                    if (vanillaEntityNameToType.TryGetValue(idTrim, out Type vanillaType)) {
-                        $"Found duplicate entity name {idTrim} - {type.FullName} vs {vanillaType.FullName}"
-                            .Log(LogLevel.Warn);
-                    }
-
-                    modEntityNameToType[idTrim] = type;
-                }
+            if (split.Length is 1 or 2) {
+                id = split[0];
+            } else {
+                // invalid
+                continue;
             }
+
+            string idTrim = id.Trim();
+            if (vanillaEntityNameToType.TryGetValue(idTrim, out Type vanillaType)) {
+                $"Found duplicate entity name {idTrim} - {type.FullName} vs {vanillaType.FullName}"
+                    .Log(LogLevel.Warn);
+            }
+
+            modEntityNameToType[idTrim] = type;
         }
     }
 }
