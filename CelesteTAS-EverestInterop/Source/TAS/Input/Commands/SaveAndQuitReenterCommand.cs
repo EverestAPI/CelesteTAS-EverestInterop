@@ -90,6 +90,11 @@ public static class SaveAndQuitReenterCommand {
             if (slot == -1) {
                 // Load debug slot
                 controller.AddFrames("1,D", studioLine);
+                // The Randomizer adds a new menu entry between CLIMB and ~DEBUG~
+                if (ModUtils.IsInstalled("Randomizer")) {
+                    controller.AddFrames("1,F,180", studioLine);
+                    controller.AddFrames("1", studioLine);
+                }
                 controller.AddFrames("1,O", studioLine);
                 controller.AddFrames("33", studioLine);
             } else {
