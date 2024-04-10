@@ -212,6 +212,13 @@ public static class SimplifiedGraphicsFeature {
             typeof(DustGraphic).GetNestedType("Eyeballs", BindingFlags.NonPublic),
             ModUtils.GetType("BrokemiaHelper", "BrokemiaHelper.PixelRendered.PixelComponent")
         );
+        typeof(SinkingPlatform).GetMethodInfo("Render").IlHook((cursor, _) => {
+            if (cursor.TryGotoNext(MoveType.After, ins => ins.MatchLdfld<Shaker>(nameof(Shaker.Value)))) {
+                cursor.EmitDelegate(IsSimplifiedClutteredEntity);
+                cursor.EmitDelegate((Vector2 vec, bool b) => b ? Vector2.Zero: vec);
+            }
+        });
+
         On.Celeste.FloatingDebris.ctor_Vector2 += FloatingDebris_ctor;
         On.Celeste.MoonCreature.ctor_Vector2 += MoonCreature_ctor;
         On.Celeste.ResortLantern.ctor_Vector2 += ResortLantern_ctor;
