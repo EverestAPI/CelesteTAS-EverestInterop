@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
@@ -271,6 +271,10 @@ public static class CenterCamera {
             moveX += 1;
         }
 
+        if (ExtendedVariantsUtils.UpsideDown) {
+            moveY *= -1;
+        }
+
         if (Hotkeys.InfoHud.Check) {
             moveOffset += new Vector2(ArrowKeySensitivity * moveX, ArrowKeySensitivity * moveY);
             moveCamera = moveX != 0 || moveY != 0;
@@ -292,10 +296,22 @@ public static class CenterCamera {
 
             float scale = LevelZoom * level.Camera.Zoom * 6f * Engine.ViewWidth / Engine.Width;
             if (Hotkeys.FreeCamera.Check && LevelZoomOut) {
-                screenOffset -= (MouseButtons.Position - MouseButtons.LastPosition) / scale;
+                Vector2 screenOffsetDelta = (MouseButtons.Position - MouseButtons.LastPosition) / scale;
+
+                if (ExtendedVariantsUtils.UpsideDown) {
+                    screenOffset -= Vector2.Reflect(screenOffsetDelta, Vector2.UnitY);
+                } else {
+                    screenOffset -= screenOffsetDelta;
+                }
                 moveScreenCamera = true;
             } else {
-                moveOffset -= (MouseButtons.Position - MouseButtons.LastPosition) / scale;
+                Vector2 moveOffsetDelta = (MouseButtons.Position - MouseButtons.LastPosition) / scale;
+
+                if (ExtendedVariantsUtils.UpsideDown) {
+                    moveOffset -= Vector2.Reflect(moveOffsetDelta, Vector2.UnitY);
+                } else {
+                    moveOffset -= moveOffsetDelta;
+                }
                 moveCamera = true;
             }
         }
