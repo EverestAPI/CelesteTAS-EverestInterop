@@ -140,3 +140,4 @@ Here are some examples:
 - [.kkapture](https://github.com/DemoJameson/kkapture/wiki): Record high quality smooth tas video on low end PC, Windows only.
 - [ldcapture](https://github.com/psyGamer/ldcapture): Record high quality smooth tas video on low end PC, Linux only.
 - [GhostMod](https://github.com/DemoJameson/GhostMod): Used to compare old and new tas.
+- [GhostModForTas](https://github.com/LozenChen/GhostMod): A successor of GhostMod, also used to compare old and new tas.
