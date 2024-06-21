@@ -1,0 +1,83 @@
+name: CelesteStudio Build
+
+on:
+  push:
+    branches:
+      - '*'
+    paths:
+      - Studio
+      - .github/workflows/CelesteStudio.Build.yml
+  pull_request:
+    branches:
+      - '*'
+    paths:
+      - Studio
+      - .github/workflows/CelesteStudio.Build.yml
+
+jobs: 
+  build-windows:
+    runs-on: windows-latest
+        
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '8.0'
+
+      - name: Publish x64
+        run: dotnet publish Studio/CelesteStudio.WPF -c Release -r win-x64 --self-contained=false /p:PublishSingleFile=true --output publish-win-x64
+
+      - name: Upload x64
+        uses: actions/upload-artifact@v2
+        with:
+          name: CelesteStudio-windows-x64
+          path: publish-win-x64/**/*
+        
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '8.0'
+
+      - name: Publish x64
+        run: dotnet publish Studio/CelesteStudio.GTK -c Release -r linux-x64 --self-contained=false /p:PublishSingleFile=true --output publish-linux-x64
+
+      - name: Upload x64
+        uses: actions/upload-artifact@v2
+        with:
+          name: CelesteStudio-linux-x64
+          path: publish-linux-x64/**/*
+        
+  build-mac:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '8.0'
+
+      - name: Publish x64
+        run: dotnet publish Studio/CelesteStudio.Mac -c Release -r osx-x64 --self-contained=false /p:PublishSingleFile=true --output publish-osx-x64
+      - name: Publish ARM64
+        run: dotnet publish Studio/CelesteStudio.Mac -c Release -r osx-arm64 --self-contained=false /p:PublishSingleFile=true --output publish-osx-arm64
+
+      - name: Upload x64
+        uses: actions/upload-artifact@v2
+        with:
+          name: CelesteStudio-osx-x64
+          path: publish-osx-x64/**/*
+      - name: Upload ARM64
+        uses: actions/upload-artifact@v2
+        with:
+          name: CelesteStudio-osx-arm64
+          path: publish-osx-arm64/**/*
