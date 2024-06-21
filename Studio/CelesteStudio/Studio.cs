@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Text;
 using Eto.Forms;
 using Eto.Drawing;
+using Eto.Forms.ThemedControls;
 using StudioCommunication;
 
 namespace CelesteStudio;
@@ -43,15 +44,24 @@ public partial class Studio : Form {
         
         MinimumSize = new Size(200, 200);
         
+        var scrollable = new Scrollable() {
+            Width = 300,
+            Height = 500,
+        };
+        var editor = new Editor(scrollable);
+        scrollable.Content = editor;
+        
         Content = new StackLayout {
             Padding = 10,
             Items = {
-                "Hello World!",
+                "Hello World!!!",
                 // add more controls here
                 (chapterTimeLabel = new Label() {
                     Text = "hai",
                 }),
-                new Editor()
+                "aa",
+                //new TextArea() { Height = 300 },
+                scrollable
             }
         };
         
