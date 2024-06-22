@@ -9,7 +9,7 @@ using StudioCommunication;
 namespace CelesteStudio.Util;
 
 public struct ActionLine {
-    private const char Delimiter = ',';
+    public const char Delimiter = ',';
     public const int MaxFrames = 9999;
     public const int MaxFramesDigits = 4;
 

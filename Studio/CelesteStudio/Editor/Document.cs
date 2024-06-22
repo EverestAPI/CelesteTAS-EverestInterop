@@ -2,19 +2,48 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using CelesteStudio.Util;
 
 namespace CelesteStudio;
 
+public struct CaretPosition(int row = 0, int col = 0)
+{
+    public int Row = row, Col = col;
+    
+    public static bool operator==(CaretPosition lhs, CaretPosition rhs) => lhs.Row == rhs.Row && lhs.Col == rhs.Col;
+    public static bool operator !=(CaretPosition lhs, CaretPosition rhs) => !(lhs == rhs);
+}
+
+public enum CaretMovementType {
+    None,
+    CharLeft,
+    CharRight,
+    // Backspace,
+    WordLeft,
+    WordRight,
+    LineUp,
+    LineDown,
+    PageUp,
+    PageDown,
+    LineStart,
+    LineEnd,
+    DocumentStart,
+    DocumentEnd,
+}
+
+public struct Selection()
+{
+    public CaretPosition Start = new(), End = new();
+    public bool Empty => Start == End;
+}
+
 public class Document {
-    public struct CaretPosition(int row = 0, int col = 0)
-    {
-        public int Row = row, Col = col;
-    }
     
     //private const string EmptyDocument = "RecordCount: 1\n\n#Start\n";
     private const string EmptyDocument = "";
 
     public CaretPosition Caret = new();
+    public Selection Selection = new();
     
     public string? FilePath { get; set; }
     public string? FileName => FilePath == null ? null : Path.GetFileName(FilePath);
@@ -81,10 +110,48 @@ public class Document {
         TextChanged.Invoke(this);
     }
     
-    public void Replace(int row, string text)
+    public void ReplaceLine(int row, string text)
     {
         lines[row] = text;
-        Caret.Col = text.Length;
+        
+        TextChanged.Invoke(this);
+    }
+    
+    public void RemoveSelectedText() => RemoveRange(Selection.Start, Selection.End);
+    public void RemoveRange(CaretPosition start, CaretPosition end)
+    {
+        lines[start.Row] = lines[start.Row][..start.Col];
+        lines[end.Row] = lines[end.Row][end.Col..];
+        for (int i = start.Row + 1; i < end.Row; i++)
+            lines.RemoveAt(i);
+        
+        TextChanged.Invoke(this);
+    }
+
+    public void ReplaceRange(CaretPosition start, CaretPosition end, string text)
+    {
+        // Remove old text
+        RemoveRange(start, end);
+        
+        // Insert new text
+        var newLines = text.Split('\n', '\r');
+        if (newLines.Length == 0)
+            return;
+        
+        lines[start.Row] = lines[start.Row] + newLines[0];
+        for (int i = 1; i < newLines.Length - 1; i++)
+            lines.Insert(start.Row + i, newLines[i]);
+        lines[start.Row + newLines.Length - 1] = newLines[^1] + lines[start.Row + newLines.Length - 1];
+        
+        TextChanged.Invoke(this);
+    }
+    
+    public void ReplaceRangeInLine(int line, int startCol, int endCol, string text)
+    {
+        if (startCol > endCol)
+            (endCol, startCol) = (startCol, endCol);
+        
+        lines[line] = lines[line].ReplaceRange(startCol, endCol - startCol, text);
         
         TextChanged.Invoke(this);
     }
