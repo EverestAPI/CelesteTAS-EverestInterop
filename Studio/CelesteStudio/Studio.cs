@@ -55,18 +55,12 @@ public partial class Studio : Form {
         scrollable.Content = editor;
         
         Content = new StackLayout {
-            Padding = 10,
-            Items = {
-                "Hello World!!!",
-                // add more controls here
-                (chapterTimeLabel = new Label() {
-                    Text = "hai",
-                }),
-                "aa",
-                //new TextArea() { Height = 300 },
-                scrollable
-            }
+            Padding = 0,
+            Items = { scrollable }
         };
+
+        const int ExtraHeight = 30; // The horizontal scrollbar is not included in the Size? TODO: Figure out correct value for other platforms
+        SizeChanged += (_, _) => scrollable.Size = new Size(Size.Width, Size.Height - ExtraHeight);
         
         CelesteService.Server.StateUpdated += state =>
         {
@@ -74,10 +68,6 @@ public partial class Studio : Form {
                 chapterTimeLabel.Text = state.ChapterTime;    
             });
         };
-        
-        // create a few commands that can be used for the menu and toolbar
-        var clickMe = new Command {MenuText = "Click Me!", ToolBarText = "Click Me!"};
-        clickMe.Executed += (sender, e) => MessageBox.Show(this, "I was clicked!");
         
         var quitCommand = new Command {MenuText = "Quit", Shortcut = Application.Instance.CommonModifier | Keys.Q};
         quitCommand.Executed += (sender, e) => Application.Instance.Quit();
@@ -116,8 +106,8 @@ public partial class Studio : Form {
         Menu = new MenuBar {
             Items = {
                 // File submenu
-                new SubMenuItem {Text = "&File", Items = {clickMe}},
-                new SubMenuItem {Text = "&Settings", Items = {clickMe}},
+                new SubMenuItem {Text = "&File", Items = {}},
+                new SubMenuItem {Text = "&Settings", Items = {}},
                 new SubMenuItem {Text = "&Toggles", Items =
                 {
                     CreateToggle("&Hitboxes", CelesteService.GetHitboxes, CelesteService.ToggleHitboxes),
@@ -161,8 +151,5 @@ public partial class Studio : Form {
         };
         
         Menu.HelpItems.Insert(0, homeCommand);
-        
-        // create toolbar			
-        ToolBar = new ToolBar {Items = {clickMe}};
     }
 }
