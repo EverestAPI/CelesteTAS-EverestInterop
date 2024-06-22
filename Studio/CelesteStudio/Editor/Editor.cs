@@ -74,12 +74,15 @@ public class Editor : Drawable {
         case Keys.Delete:
             OnDelete(e.Control ? CaretMovementType.WordRight : CaretMovementType.CharRight);
             break;
+        case Keys.Enter:
+            OnEnter();
+            break;
         default:
             base.OnKeyDown(e);
             break;
         }
         
-        Invalidate();
+        Recalc();
     }
 
     protected override void OnTextInput(TextInputEventArgs e) {
@@ -316,6 +319,19 @@ public class Editor : Drawable {
             Document.RemoveSelectedText();
         }
     }
+    
+    private void OnEnter()
+    {
+        var line = Document.Lines[Document.Caret.Row];
+        
+        if (ActionLine.TryParse(line, out var actionLine)) {
+            // Don't split frame count and action
+            Document.InsertNewLine(Document.Caret.Row + 1, string.Empty);
+            Document.Caret.Row++;
+        } else {
+            Document.Insert(Environment.NewLine);
+        }
+    }
 
     #endregion
     
@@ -325,9 +341,15 @@ public class Editor : Drawable {
     {
         // Wrap around to prev/next line
         if (position.Col < 0)
+        {
             position.Row--;
+            position.Col = Document.Lines[position.Row].Length;
+        }
         else if (position.Row < Document.Lines.Count && position.Col > Document.Lines[position.Row].Length)
+        {
             position.Row++;
+            position.Col = 0;
+        }
         
         // Clamp to document
         position.Row = Math.Clamp(position.Row, 0, Document.Lines.Count - 1);

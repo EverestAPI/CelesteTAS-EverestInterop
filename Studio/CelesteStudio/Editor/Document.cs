@@ -101,11 +101,37 @@ public class Document {
 
     #region Text Manipulation Helpers
 
-    public void Insert(string text) => Insert(Caret, text);
-    public void Insert(CaretPosition pos, string text)
+    public void Insert(string text) => Caret = Insert(Caret, text);
+    public CaretPosition Insert(CaretPosition pos, string text)
     {
-        lines[Caret.Row] = lines[Caret.Row].Insert(Caret.Col, text);
-        Caret.Col += text.Length;
+        var newLines = text.Split('\n', '\r');
+        if (newLines.Length == 0)
+            return pos;
+
+        if (newLines.Length == 1)
+        {
+            lines[pos.Row] = lines[pos.Row].Insert(pos.Col, text);
+            pos.Col += text.Length;
+        }
+        else
+        {
+            string left  = lines[pos.Row][..pos.Col];
+            string right = lines[pos.Row][pos.Col..];
+        
+            lines[pos.Row] = left + newLines[0];
+            for (int i = 1; i < newLines.Length; i++)
+                lines.Insert(pos.Row + i, newLines[i]);
+            pos.Row += newLines.Length - 1;
+            pos.Col = newLines[^1].Length;
+            lines[pos.Row] += right;
+        }
+        
+        TextChanged.Invoke(this);
+        return pos;
+    }
+    public void InsertNewLine(int line, string text)
+    {
+        lines.Insert(line, text);
         
         TextChanged.Invoke(this);
     }
