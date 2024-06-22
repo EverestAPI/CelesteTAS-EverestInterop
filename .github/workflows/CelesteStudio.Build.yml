@@ -56,30 +56,40 @@ jobs:
           path: publish-linux-x64/**/*
         
   build-mac:
-    runs-on: macos-latest
+    runs-on: macos-13
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup .NET Core
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0'
       - name: Install macOS workflow
         run: dotnet workload install macos
+      - name: Switch XCode
+        run: sudo xcode-select -switch /Applications/Xcode_15.1.app/Contents/Developer
 
-      - name: Publish x64
-        run: dotnet publish Studio/CelesteStudio.Mac -c Release -r osx-x64 --self-contained=true /p:PublishSingleFile=true --output publish-osx-x64
-      - name: Publish ARM64
-        run: dotnet publish Studio/CelesteStudio.Mac -c Release -r osx-arm64 --self-contained=true /p:PublishSingleFile=true --output publish-osx-arm64
+      - name: Build
+        run: dotnet build Studio/CelesteStudio.Mac -c Release
+
+      # GitHub can't manage to keep the file permissions, so we have to do this..
+      - name: Create .zip files
+        run: |
+          pushd Studio/CelesteStudio.Mac/bin/Release/net7.0/osx-x64
+          zip -r CelesteStudio-osx-x64.zip **
+          popd
+          pushd Studio/CelesteStudio.Mac/bin/Release/net7.0/osx-arm64
+          zip -r CelesteStudio-osx-arm64.zip **
+          popd
 
       - name: Upload x64
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: CelesteStudio-osx-x64
-          path: publish-osx-x64/**/*
+          path: Studio/CelesteStudio.Mac/bin/Release/net7.0/osx-x64/CelesteStudio-osx-x64.zip
       - name: Upload ARM64
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: CelesteStudio-osx-arm64
-          path: publish-osx-arm64/**/*
+          path: Studio/CelesteStudio.Mac/bin/Release/net7.0/osx-arm64/CelesteStudio-osx-arm64.zip

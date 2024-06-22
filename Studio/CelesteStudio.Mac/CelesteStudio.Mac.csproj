@@ -6,11 +6,12 @@
 
         <SupportedOSPlatformVersion>10.15</SupportedOSPlatformVersion>
         <RuntimeIdentifiers>osx-x64;osx-arm64</RuntimeIdentifiers>
+        <RollForward>LatestMajor</RollForward>
     </PropertyGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\CelesteStudio\CelesteStudio.csproj"/>
-        <PackageReference Include="Eto.Platform.macOS" Version="2.8.3"/>
+        <PackageReference Include="Eto.Platform.Mac64" Version="2.8.3"/>
     </ItemGroup>
 
 </Project>
