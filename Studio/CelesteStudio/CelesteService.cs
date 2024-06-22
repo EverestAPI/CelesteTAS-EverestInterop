@@ -37,6 +37,35 @@ public class CelesteService {
     public string LevelName => Connected ? _state.LevelName : string.Empty;
     public string ChapterTime => Connected ? _state.ChapterTime : string.Empty;
 
+    private bool GetToggle(string settingName)
+    {
+        if (Server.GetDataFromGame(GameDataType.SettingValue, settingName) is { } settingValue &&
+            bool.TryParse(settingValue, out var value))
+        {
+            return value;
+        }
+        
+        return false;
+    }
+    
+    public bool GetHitboxes() => GetToggle("ShowHitboxes");
+    public bool GetTriggerHitboxes() => GetToggle("ShowTriggerHitboxes");
+    public bool GetUnloadedRoomsHitboxes() => GetToggle("ShowUnloadedRoomsHitboxes");
+    public bool GetCameraHitboxes() => GetToggle("ShowCameraHitboxes");
+    public bool GetSimplifiedHitboxes() => GetToggle("SimplifiedHitboxes");
+    public bool GetActualCollideHitboxes() => GetToggle("ShowActualCollideHitboxes");
+    public bool GetSimplifiedGraphics() => GetToggle("SimplifiedGraphics");
+    public bool GetGameplay() => GetToggle("ShowGameplay");
+    public bool GetCenterCamera() => GetToggle("CenterCamera");
+    public bool GetCenterCameraHorizontallyOnly() => GetToggle("CenterCameraHorizontallyOnly");
+    public bool GetInfoHud() => GetToggle("InfoHud");
+    public bool GetInfoTasInput() => GetToggle("InfoTasInput");
+    public bool GetInfoGame() => GetToggle("InfoGame");
+    public bool GetInfoWatchEntity() => GetToggle("InfoWatchEntity");
+    public bool GetInfoCustom() => GetToggle("InfoCustom");
+    public bool GetInfoSubpixelIndicator() => GetToggle("InfoSubpixelIndicator");
+    public bool GetSpeedUnit() => GetToggle("SpeedUnit");
+    
     public void ToggleHitboxes() => Server.ToggleGameSetting("ShowHitboxes", null);
     public void ToggleTriggerHitboxes() => Server.ToggleGameSetting("ShowTriggerHitboxes", null);
     public void ToggleUnloadedRoomsHitboxes() => Server.ToggleGameSetting("ShowUnloadedRoomsHitboxes", null);
@@ -46,6 +75,7 @@ public class CelesteService {
     public void ToggleSimplifiedGraphics() => Server.ToggleGameSetting("SimplifiedGraphics", null);
     public void ToggleGameplay() => Server.ToggleGameSetting("ShowGameplay", null);
     public void ToggleCenterCamera() => Server.ToggleGameSetting("CenterCamera", null);
+    public void ToggleCenterCameraHorizontallyOnly() => Server.ToggleGameSetting("CenterCameraHorizontallyOnly", null);
     public void ToggleInfoHud() => Server.ToggleGameSetting("InfoHud", null);
     public void ToggleInfoTasInput() => Server.ToggleGameSetting("InfoTasInput", null);
     public void ToggleInfoGame() => Server.ToggleGameSetting("InfoGame", null);
@@ -57,7 +87,7 @@ public class CelesteService {
     private const int DefaultDecimals = 2;
     private const int DefaultFastForwardSpeed = 10;
     private const float DefaultSlowForwardSpeed = 0.1f;
-
+    
     private int GetDecimals(string settingName) {
         string decimals = DefaultDecimals.ToString();
         if (Server.GetDataFromGame(GameDataType.SettingValue, settingName) is { } settingValue) {

@@ -10,7 +10,7 @@ on:
       - LICENSE
       - README.md
       - 'Docs/*.md'
-      - Studio
+      - 'Studio/**'
   pull_request:
     branches:
       - '*'

@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using CelesteStudio.Util;
 using Eto.Forms;
 using Eto.Drawing;
 using Eto.Forms.ThemedControls;
@@ -82,13 +84,57 @@ public partial class Studio : Form {
         var aboutCommand = new Command {MenuText = "About..."};
         aboutCommand.Executed += (sender, e) => new AboutDialog().ShowDialog(this);
         
+        var homeCommand = new Command {MenuText = "Home"};
+        homeCommand.Executed += (sender, e) => URIHelper.OpenInBrowser("https://github.com/EverestAPI/CelesteTAS-EverestInterop");
+        
+        static MenuItem CreateToggle(string text, Func<bool> getFn, Action toggleFn)
+        {
+            var cmd = new CheckCommand { MenuText = text };
+            cmd.Executed += (_, _) => toggleFn();
+            
+            // TODO: Convert to CheckMenuItem
+            return new ButtonMenuItem(cmd);
+        }
+        
         // create menu
         Menu = new MenuBar {
             Items = {
                 // File submenu
                 new SubMenuItem {Text = "&File", Items = {clickMe}},
-                // new SubMenuItem { Text = "&Edit", Items = { /* commands/items */ } },
-                // new SubMenuItem { Text = "&View", Items = { /* commands/items */ } },
+                new SubMenuItem {Text = "&Settings", Items = {clickMe}},
+                new SubMenuItem {Text = "&Toggles", Items =
+                {
+                    CreateToggle("&Hitboxes", CelesteService.GetHitboxes, CelesteService.ToggleHitboxes),
+                    CreateToggle("&Trigger Hitboxes", CelesteService.GetTriggerHitboxes, CelesteService.ToggleTriggerHitboxes),
+                    CreateToggle("Unloaded Room Hitboxes", CelesteService.GetUnloadedRoomsHitboxes, CelesteService.ToggleUnloadedRoomsHitboxes),
+                    CreateToggle("Camera Hitboxes", CelesteService.GetCameraHitboxes, CelesteService.ToggleCameraHitboxes),
+                    CreateToggle("&Simplified Hitboxes", CelesteService.GetSimplifiedHitboxes, CelesteService.ToggleSimplifiedHitboxes),
+                    CreateToggle("&Actual Collide Hitboxes", CelesteService.GetActualCollideHitboxes, CelesteService.ToggleActualCollideHitboxes),
+                    new SeparatorMenuItem(),
+                    CreateToggle("&Simplified &Graphics", CelesteService.GetSimplifiedGraphics, CelesteService.ToggleSimplifiedGraphics),
+                    CreateToggle("Game&play", CelesteService.GetGameplay, CelesteService.ToggleGameplay),
+                    new SeparatorMenuItem(),
+                    CreateToggle("&Center Camera", CelesteService.GetCenterCamera, CelesteService.ToggleCenterCamera),
+                    CreateToggle("Center Camera Horizontally Only", CelesteService.GetCenterCameraHorizontallyOnly, CelesteService.ToggleCenterCameraHorizontallyOnly),
+                    new SeparatorMenuItem(),
+                    CreateToggle("&Info HUD", CelesteService.GetInfoHud, CelesteService.ToggleInfoHud),
+                    CreateToggle("TAS Input Info", CelesteService.GetInfoTasInput, CelesteService.ToggleInfoTasInput),
+                    CreateToggle("Game Info", CelesteService.GetInfoGame, CelesteService.ToggleInfoGame),
+                    CreateToggle("Watch Entity Info", CelesteService.GetInfoWatchEntity, CelesteService.ToggleInfoWatchEntity),
+                    CreateToggle("Custom Info", CelesteService.GetInfoCustom, CelesteService.ToggleInfoCustom),
+                    CreateToggle("Subpixel Indicator", CelesteService.GetInfoSubpixelIndicator, CelesteService.ToggleInfoSubpixelIndicator),
+                    new SeparatorMenuItem(),
+                    // CreateToggleCommand("Position Decimals", CelesteService.ToggleHitboxes),
+                    // CreateToggleCommand("Speed Decimals", CelesteService.ToggleHitboxes),
+                    // CreateToggleCommand("Velocity Decimals", CelesteService.ToggleHitboxes),
+                    // CreateToggleCommand("Angle Decimals", CelesteService.ToggleHitboxes),
+                    // CreateToggleCommand("Custom Info Decimals", CelesteService.ToggleHitboxes),
+                    // CreateToggleCommand("Subpixel Indicator Decimals", CelesteService.ToggleHitboxes),
+                    CreateToggle("Unit of Speed", CelesteService.GetSpeedUnit, CelesteService.ToggleSpeedUnit),
+                    new SeparatorMenuItem(),
+                    // CreateToggleCommand("Fast Forward Speed", CelesteService.ToggleHitboxes),
+                    // CreateToggleCommand("Slow Forward Speed", CelesteService.ToggleHitboxes),
+                }},
             },
             ApplicationItems = {
                 // application (OS X) or file menu (others)
@@ -97,6 +143,8 @@ public partial class Studio : Form {
             QuitItem = quitCommand,
             AboutItem = aboutCommand
         };
+        
+        Menu.HelpItems.Insert(0, homeCommand);
         
         // create toolbar			
         ToolBar = new ToolBar {Items = {clickMe}};

@@ -20,7 +20,7 @@ public class Editor : Drawable {
         this.scrollable = scrollable;
 
         CanFocus = true;
-        BackgroundColor = Colors.Transparent;
+        BackgroundColor = Colors.Black;
         
         Recalc();
     }
@@ -63,7 +63,18 @@ public class Editor : Drawable {
         
         // needRecalc = false;
     }
-    
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        if (e.Key == Keys.A)
+        {
+            e.Handled = true;
+            return;
+        } 
+            
+        base.OnKeyDown(e);
+    }
+
     protected override void OnTextInput(TextInputEventArgs e) {
         Console.WriteLine(e.Text);
         
