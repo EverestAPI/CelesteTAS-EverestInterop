@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
 using StudioCommunication;
@@ -18,6 +20,7 @@ public class Editor : Drawable {
 
         CanFocus = true;
         BackgroundColor = Colors.Black;
+        Cursor = Cursors.IBeam;
         
         Recalc();
     }
@@ -71,7 +74,128 @@ public class Editor : Drawable {
     }
 
     protected override void OnTextInput(TextInputEventArgs e) {
-        Document.Insert(e.Text);
+        var line = Document.Lines[Document.Caret.Row];
+        
+        char typedCharacter = char.ToUpper(e.Text[0]);
+        int leadingSpaces = line.Length - line.TrimStart().Length;
+        bool startOfLine = Document.Caret.Col <= leadingSpaces + 1;
+        
+        // If it's an action line, handle it ourselves
+        if (ActionLine.TryParse(line, out var actionLine) && e.Text.Length == 1) 
+        {
+            // Handle custom bindings
+            int customBindStart = GetColumnOfAction(actionLine, Actions.PressedKey);
+            int customBindEnd = customBindStart + actionLine.CustomBindings.Count;
+            if (customBindStart != -1 && Document.Caret.Col >= customBindStart && Document.Caret.Col <= customBindEnd && typedCharacter is >= 'A' and <= 'Z') {
+                bool alreadyExists = !actionLine.CustomBindings.Add(typedCharacter);
+                if (alreadyExists) {
+                    actionLine.CustomBindings.Remove(typedCharacter);
+                    Document.Caret.Col = customBindEnd - 1;
+                } else {
+                    Document.Caret.Col = customBindEnd + 1;
+                }
+
+                goto FinishEdit; // Skip regular logic
+            }
+
+            var typedAction = typedCharacter.ActionForChar();
+
+            // Handle feather inputs
+            int featherStartColumn = GetColumnOfAction(actionLine, Actions.Feather);
+            if (featherStartColumn >= 1 && Document.Caret.Col > featherStartColumn && (typedCharacter is '.' or ',' or (>= '0' and <= '9'))) {
+                line = line.Insert(Document.Caret.Col - 1, typedCharacter.ToString());
+                if (ActionLine.TryParse(line, out var newActionLine, ignoreInvalidFloats: false)) {
+                    actionLine = newActionLine;
+                    Document.Caret.Col++;
+                }
+            }
+            // Handle dash-only/move-only/custom bindings
+            else if (typedAction is Actions.DashOnly or Actions.MoveOnly or Actions.PressedKey) {
+                actionLine.Actions = actionLine.Actions.ToggleAction(typedAction);
+                Document.Caret.Col = GetColumnOfAction(actionLine, typedAction);
+            }
+            // Handle regular inputs
+            else if (typedAction != Actions.None) {
+                int dashOnlyStart = GetColumnOfAction(actionLine, Actions.DashOnly);
+                int dashOnlyEnd = dashOnlyStart + actionLine.Actions.GetDashOnly().Count();
+                if (dashOnlyStart != -1 && Document.Caret.Col >= dashOnlyStart && Document.Caret.Col <= dashOnlyEnd)
+                    typedAction = typedAction.ToDashOnlyActions();
+
+                int moveOnlyStart = GetColumnOfAction(actionLine, Actions.MoveOnly);
+                int moveOnlyEnd = moveOnlyStart + actionLine.Actions.GetMoveOnly().Count();
+                if (moveOnlyStart != -1 && Document.Caret.Col >= moveOnlyStart && Document.Caret.Col <= moveOnlyEnd)
+                    typedAction = typedAction.ToMoveOnlyActions();
+
+                // Toggle it
+                actionLine.Actions = actionLine.Actions.ToggleAction(typedAction);
+
+                // Warp the cursor after the number
+                if (typedAction == Actions.Feather && actionLine.Actions.HasFlag(Actions.Feather)) {
+                    Document.Caret.Col = GetColumnOfAction(actionLine, Actions.Feather) + 1;
+                } else if (typedAction == Actions.Feather && !actionLine.Actions.HasFlag(Actions.Feather)) {
+                    actionLine.FeatherAngle = null;
+                    actionLine.FeatherMagnitude = null;
+                    Document.Caret.Col = ActionLine.MaxFramesDigits + 1;
+                } else if (typedAction is Actions.LeftDashOnly or Actions.RightDashOnly or Actions.UpDashOnly or Actions.DownDashOnly) {
+                    Document.Caret.Col = GetColumnOfAction(actionLine, Actions.DashOnly) + actionLine.Actions.GetDashOnly().Count();
+                } else if (typedAction is Actions.LeftMoveOnly or Actions.RightMoveOnly or Actions.UpMoveOnly or Actions.DownMoveOnly) {
+                    Document.Caret.Col = GetColumnOfAction(actionLine, Actions.MoveOnly) + actionLine.Actions.GetMoveOnly().Count();
+                } else {
+                    Document.Caret.Col = ActionLine.MaxFramesDigits + 1;
+                }
+            }
+            // If the key we entered is a number
+            else if (typedCharacter is >= '0' and <= '9') {
+                int cursorPosition = Document.Caret.Col - leadingSpaces - 1;
+
+                // Entering a zero at the start should do nothing but format
+                if (cursorPosition == 0 && typedCharacter == '0') {
+                    Document.Caret.Col = ActionLine.MaxFramesDigits - actionLine.Frames.Digits() + 1;
+                }
+                // If we have a 0, just force the new number
+                else if (actionLine.Frames == 0) {
+                    actionLine.Frames = int.Parse(typedCharacter.ToString());
+                    Document.Caret.Col = ActionLine.MaxFramesDigits + 1;
+                } else {
+                    // Jam the number into the current position
+                    string leftOfCursor = line[..(Document.Caret.Col - 1)];
+                    string rightOfCursor = line[(Document.Caret.Col - 1)..];
+                    line = $"{leftOfCursor}{typedCharacter}{rightOfCursor}";
+
+                    // Reparse
+                    ActionLine.TryParse(line, out actionLine);
+
+                    // Cap at max frames
+                    if (actionLine.Frames > ActionLine.MaxFrames) {
+                        actionLine.Frames = ActionLine.MaxFrames;
+                        Document.Caret.Col = ActionLine.MaxFramesDigits + 1;
+                    } else {
+                        Document.Caret.Col = ActionLine.MaxFramesDigits - actionLine.Frames.Digits() + cursorPosition + 2;
+                    }
+                }
+            }
+
+            FinishEdit:
+            Document.Replace(Document.Caret.Row, actionLine.ToString());
+
+        }
+        // Start an action line if we should
+        else if (startOfLine && e.Text.Length == 1 && e.Text[0] is >= '0' and <= '9') 
+        {
+            string newLine = typedCharacter.ToString().PadLeft(ActionLine.MaxFramesDigits);
+            if (line.Trim().Length == 0)
+                Document.Replace(Document.Caret.Row, newLine);
+            else
+                Document.Insert(new Document.CaretPosition(Document.Caret.Row, 0), newLine + "\n");
+            Document.Caret.Col = ActionLine.MaxFramesDigits + 1;
+
+        }
+        // Just write it as text
+        else
+        {
+            Document.Insert(e.Text);
+        }
+        
         Recalc();
     }
     
@@ -371,4 +495,26 @@ public class Editor : Drawable {
     //     
     //     return i;
     // }
+    
+    private static int GetColumnOfAction(ActionLine actionLine, Actions action) {
+        int index = actionLine.Actions.Sorted().IndexOf(action);
+        if (index < 0) return -1;
+
+        int dashOnlyIndex = actionLine.Actions.Sorted().IndexOf(Actions.DashOnly);
+        int moveOnlyIndex = actionLine.Actions.Sorted().IndexOf(Actions.MoveOnly);
+        int customBindingIndex = actionLine.Actions.Sorted().IndexOf(Actions.PressedKey);
+
+        int additionalOffset = 0;
+
+        if (dashOnlyIndex != -1 && index > dashOnlyIndex)
+            additionalOffset += actionLine.Actions.GetDashOnly().Count();
+        if (moveOnlyIndex != -1 && index > moveOnlyIndex)
+            additionalOffset += actionLine.Actions.GetMoveOnly().Count();
+        if (customBindingIndex != -1 && index > customBindingIndex)
+            additionalOffset += actionLine.CustomBindings.Count;
+
+        Console.WriteLine($"Line '{actionLine}' Action: '{action}' = {ActionLine.MaxFramesDigits + (index + 1) * 2 + additionalOffset}");
+        return ActionLine.MaxFramesDigits + (index + 1) * 2 + additionalOffset;
+    }
+
 }

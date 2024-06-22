@@ -8,7 +8,7 @@ using StudioCommunication;
 
 namespace CelesteStudio.Util;
 
-public class InputRecord {
+public struct ActionLine {
     private const char Delimiter = ',';
     public const int MaxFrames = 9999;
     public const int MaxFramesDigits = 4;
@@ -21,11 +21,11 @@ public class InputRecord {
 
     public HashSet<char> CustomBindings;
 
-    public static bool TryParse(string line, out InputRecord value, bool ignoreInvalidFloats = true) {
+    public static bool TryParse(string line, out ActionLine value, bool ignoreInvalidFloats = true) {
         value = default;
         value.CustomBindings = new HashSet<char>();
 
-        string[] tokens = line.Trim().Split(",", StringSplitOptions.TrimEntries);
+        string[] tokens = line.Trim().Split(Delimiter, StringSplitOptions.TrimEntries);
         if (tokens.Length == 0) return false;
 
         if (!int.TryParse(tokens[0], CultureInfo.InvariantCulture, out value.Frames)) return false;
@@ -107,14 +107,14 @@ public class InputRecord {
         customBindings.Sort();
 
         string frames = Frames.ToString().PadLeft(MaxFramesDigits);
-        string actions = Actions.Sorted().Aggregate("", (s, a) => $"{s},{a switch {
+        string actions = Actions.Sorted().Aggregate("", (s, a) => $"{s}{Delimiter}{a switch {
             Actions.DashOnly => $"{Actions.DashOnly.CharForAction()}{string.Join("", tasActions.GetDashOnly().Select(ActionsUtils.CharForAction))}",
             Actions.MoveOnly => $"{Actions.MoveOnly.CharForAction()}{string.Join("", tasActions.GetMoveOnly().Select(ActionsUtils.CharForAction))}",
             Actions.PressedKey => $"{Actions.PressedKey.CharForAction()}{string.Join("", customBindings)}",
             _ => a.CharForAction().ToString(),
         }}");
-        string featherAngle = Actions.HasFlag(Actions.Feather) ? $",{FeatherAngle ?? ""}" : string.Empty;
-        string featherMagnitude = Actions.HasFlag(Actions.Feather) && FeatherMagnitude != null ? $",{FeatherMagnitude}" : string.Empty;
+        string featherAngle = Actions.HasFlag(Actions.Feather) ? $"{Delimiter}{FeatherAngle ?? ""}" : string.Empty;
+        string featherMagnitude = Actions.HasFlag(Actions.Feather) && FeatherMagnitude != null ? $"{Delimiter}{FeatherMagnitude}" : string.Empty;
 
         return $"{frames}{actions}{featherAngle}{featherMagnitude}";
     }

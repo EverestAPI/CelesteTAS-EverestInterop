@@ -11,7 +11,8 @@ public class Document {
         public int Row = row, Col = col;
     }
     
-    private const string EmptyDocument = "RecordCount: 1\n\n#Start\n";
+    //private const string EmptyDocument = "RecordCount: 1\n\n#Start\n";
+    private const string EmptyDocument = "";
 
     public CaretPosition Caret = new();
     
@@ -25,7 +26,7 @@ public class Document {
 
     public bool Dirty { get; private set; }
     
-    public event Action TextChanged = () => {};
+    public event Action<Document> TextChanged = doc => doc.Dirty = true;
 
     private Document(string contents) {
         lines = contents.Split('\n', '\r').ToList();
@@ -76,6 +77,16 @@ public class Document {
     {
         lines[Caret.Row] = lines[Caret.Row].Insert(Caret.Col, text);
         Caret.Col += text.Length;
+        
+        TextChanged.Invoke(this);
+    }
+    
+    public void Replace(int row, string text)
+    {
+        lines[row] = text;
+        Caret.Col = text.Length;
+        
+        TextChanged.Invoke(this);
     }
 
     #endregion

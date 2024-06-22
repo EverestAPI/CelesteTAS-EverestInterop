@@ -20,13 +20,13 @@ public sealed partial class Studio : Form {
     public static CelesteService CelesteService = new();
 
     private Editor? editor = null;
-    private string TitleBarText => $"{editor?.Document.FileName ?? "Celeste.tas"} - Studio v{Version.ToString(3)}   {editor?.Document.FilePath ?? string.Empty}";
+    private string TitleBarText => $"{editor?.Document.FileName ?? "Celeste.tas"}{((editor?.Document.Dirty ?? false) ? "*" : string.Empty)} - Studio v{Version.ToString(3)}   {editor?.Document.FilePath ?? string.Empty}";
     
     public Studio() {
         Instance = this;
         Version = Assembly.GetExecutingAssembly().GetName().Version!;
         
-        var scrollable = new Scrollable() {
+        var scrollable = new Scrollable {
             Width = 300,
             Height = 500,
         };
@@ -43,6 +43,7 @@ public sealed partial class Studio : Form {
         
         Menu = CreateMenu();
         Title = TitleBarText;
+        editor.Document.TextChanged += _ => Title = TitleBarText;
     }
     
     private MenuBar CreateMenu()
