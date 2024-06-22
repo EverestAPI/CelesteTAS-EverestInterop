@@ -106,6 +106,9 @@ public class CelesteService {
 
     public int GetVelocityDecimals() => GetDecimals("VelocityDecimals");
     public void SetVelocityDecimals(int value) => Server.ToggleGameSetting("VelocityDecimals", value);
+    
+    public int GetAngleDecimals() => GetDecimals("AngleDecimals");
+    public void SetAngleDecimals(int value) => Server.ToggleGameSetting("AngleDecimals", value);
 
     public int GetCustomInfoDecimals() => GetDecimals("CustomInfoDecimals");
     public void SetCustomInfoDecimals(int value) => Server.ToggleGameSetting("CustomInfoDecimals", value);

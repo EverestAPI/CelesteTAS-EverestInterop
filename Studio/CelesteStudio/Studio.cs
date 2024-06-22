@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Numerics;
 using System.Reflection;
 using System.Text;
 using CelesteStudio.Util;
@@ -96,6 +97,21 @@ public partial class Studio : Form {
             return new ButtonMenuItem(cmd);
         }
         
+        static MenuItem CreateNumberInput<T>(string text, Func<T> getFn, Action<T> setFn, T minValue, T maxValue, T step) where T : INumber<T>
+        {
+            var cmd = new Command { MenuText = text };
+            cmd.Executed += (_, _) => setFn(DialogUtil.ShowNumberInputDialog(text, getFn(), minValue, maxValue, step));
+            
+            return new ButtonMenuItem(cmd);
+        }
+        
+        const int MinDecimals = 2;
+        const int MaxDecimals = 12;
+        const int MinFastForwardSpeed = 2;
+        const int MaxFastForwardSpeed = 30;
+        const float MinSlowForwardSpeed = 0.1f;
+        const float MaxSlowForwardSpeed = 0.9f;
+        
         // create menu
         Menu = new MenuBar {
             Items = {
@@ -124,16 +140,16 @@ public partial class Studio : Form {
                     CreateToggle("Custom Info", CelesteService.GetInfoCustom, CelesteService.ToggleInfoCustom),
                     CreateToggle("Subpixel Indicator", CelesteService.GetInfoSubpixelIndicator, CelesteService.ToggleInfoSubpixelIndicator),
                     new SeparatorMenuItem(),
-                    // CreateToggleCommand("Position Decimals", CelesteService.ToggleHitboxes),
-                    // CreateToggleCommand("Speed Decimals", CelesteService.ToggleHitboxes),
-                    // CreateToggleCommand("Velocity Decimals", CelesteService.ToggleHitboxes),
-                    // CreateToggleCommand("Angle Decimals", CelesteService.ToggleHitboxes),
-                    // CreateToggleCommand("Custom Info Decimals", CelesteService.ToggleHitboxes),
-                    // CreateToggleCommand("Subpixel Indicator Decimals", CelesteService.ToggleHitboxes),
+                    CreateNumberInput("Position Decimals", CelesteService.GetPositionDecimals, CelesteService.SetPositionDecimals, MinDecimals, MaxDecimals, 1),
+                    CreateNumberInput("Speed Decimals", CelesteService.GetSpeedDecimals, CelesteService.SetSpeedDecimals, MinDecimals, MaxDecimals, 1),
+                    CreateNumberInput("Velocity Decimals", CelesteService.GetVelocityDecimals, CelesteService.SetVelocityDecimals, MinDecimals, MaxDecimals, 1),
+                    CreateNumberInput("Angle Decimals", CelesteService.GetAngleDecimals, CelesteService.SetAngleDecimals, MinDecimals, MaxDecimals, 1),
+                    CreateNumberInput("Custom Info Decimals", CelesteService.GetCustomInfoDecimals, CelesteService.SetCustomInfoDecimals, MinDecimals, MaxDecimals, 1),
+                    CreateNumberInput("Subpixel Indicator Decimals", CelesteService.GetSubpixelIndicatorDecimals, CelesteService.SetSubpixelIndicatorDecimals, MinDecimals, MaxDecimals, 1),
                     CreateToggle("Unit of Speed", CelesteService.GetSpeedUnit, CelesteService.ToggleSpeedUnit),
                     new SeparatorMenuItem(),
-                    // CreateToggleCommand("Fast Forward Speed", CelesteService.ToggleHitboxes),
-                    // CreateToggleCommand("Slow Forward Speed", CelesteService.ToggleHitboxes),
+                    CreateNumberInput("Fast Forward Speed", CelesteService.GetFastForwardSpeed, CelesteService.SetFastForwardSpeed, MinFastForwardSpeed, MaxFastForwardSpeed, 1),
+                    CreateNumberInput("Slow Forward Speed", CelesteService.GetSlowForwardSpeed, CelesteService.SetSlowForwardSpeed, MinSlowForwardSpeed, MaxSlowForwardSpeed, 0.1f),
                 }},
             },
             ApplicationItems = {
