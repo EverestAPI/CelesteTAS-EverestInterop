@@ -27,7 +27,7 @@ jobs:
           dotnet-version: '8.0'
 
       - name: Publish x64
-        run: dotnet publish Studio/CelesteStudio.WPF -c Release -r win-x64 --self-contained=false /p:PublishSingleFile=true --output publish-win-x64
+        run: dotnet publish Studio/CelesteStudio.WPF -c Release -r win-x64 --self-contained=true /p:PublishSingleFile=true --output publish-win-x64
 
       - name: Upload x64
         uses: actions/upload-artifact@v2
@@ -47,7 +47,7 @@ jobs:
           dotnet-version: '8.0'
 
       - name: Publish x64
-        run: dotnet publish Studio/CelesteStudio.GTK -c Release -r linux-x64 --self-contained=false /p:PublishSingleFile=true --output publish-linux-x64
+        run: dotnet publish Studio/CelesteStudio.GTK -c Release -r linux-x64 --self-contained=true /p:PublishSingleFile=true --output publish-linux-x64
 
       - name: Upload x64
         uses: actions/upload-artifact@v2
@@ -56,7 +56,7 @@ jobs:
           path: publish-linux-x64/**/*
         
   build-mac:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     steps:
       - name: Checkout
@@ -65,11 +65,13 @@ jobs:
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: '8.0'
+      - name: Install macOS workflow
+        run: dotnet workload install macos
 
       - name: Publish x64
-        run: dotnet publish Studio/CelesteStudio.Mac -c Release -r osx-x64 --self-contained=false /p:PublishSingleFile=true --output publish-osx-x64
+        run: dotnet publish Studio/CelesteStudio.Mac -c Release -r osx-x64 --self-contained=true /p:PublishSingleFile=true --output publish-osx-x64
       - name: Publish ARM64
-        run: dotnet publish Studio/CelesteStudio.Mac -c Release -r osx-arm64 --self-contained=false /p:PublishSingleFile=true --output publish-osx-arm64
+        run: dotnet publish Studio/CelesteStudio.Mac -c Release -r osx-arm64 --self-contained=true /p:PublishSingleFile=true --output publish-osx-arm64
 
       - name: Upload x64
         uses: actions/upload-artifact@v2
