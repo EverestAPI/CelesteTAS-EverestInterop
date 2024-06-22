@@ -13,45 +13,24 @@ using StudioCommunication;
 
 namespace CelesteStudio;
 
-public partial class Studio : Form {
+public sealed partial class Studio : Form {
     public static Studio Instance;
     public static Version Version { get; private set; }
     
     public static CelesteService CelesteService = new();
-    
-    private States tasStates;
-    
-    private bool DisableTyping => tasStates.HasFlag(States.Enable) && 
-                                  !tasStates.HasFlag(States.FrameStep) && 
-                                  StudioCommunicationBase.Initialized;
-    
-    private string TitleBarText =>
-        (string.IsNullOrEmpty(CurrentFileName) ? "Celeste.tas" : Path.GetFileName(CurrentFileName))
-        + " - Studio v"
-        + Version.ToString(3)
-        + (string.IsNullOrEmpty(CurrentFileName) ? string.Empty : "   " + CurrentFileName);
-    
-    private string CurrentFileName {
-        // get => richText.CurrentFileName;
-        // set => richText.CurrentFileName = value;
-        get => "Test.tas";
-        set {}
-    }
-    
-    private Label chapterTimeLabel;
+
+    private Editor? editor = null;
+    private string TitleBarText => $"{editor?.Document.FileName ?? "Celeste.tas"} - Studio v{Version.ToString(3)}   {editor?.Document.FilePath ?? string.Empty}";
     
     public Studio() {
         Instance = this;
-        Version = Assembly.GetExecutingAssembly().GetName().Version;
-        Title = TitleBarText;
-        
-        MinimumSize = new Size(200, 200);
+        Version = Assembly.GetExecutingAssembly().GetName().Version!;
         
         var scrollable = new Scrollable() {
             Width = 300,
             Height = 500,
         };
-        var editor = new Editor(scrollable);
+        editor = new Editor(Document.CreateBlank(), scrollable);
         scrollable.Content = editor;
         
         Content = new StackLayout {
@@ -62,22 +41,12 @@ public partial class Studio : Form {
         const int ExtraHeight = 30; // The horizontal scrollbar is not included in the Size? TODO: Figure out correct value for other platforms
         SizeChanged += (_, _) => scrollable.Size = new Size(Size.Width, Size.Height - ExtraHeight);
         
-        CelesteService.Server.StateUpdated += state =>
-        {
-            Application.Instance.Invoke(() => {
-                chapterTimeLabel.Text = state.ChapterTime;    
-            });
-        };
-        
-        var quitCommand = new Command {MenuText = "Quit", Shortcut = Application.Instance.CommonModifier | Keys.Q};
-        quitCommand.Executed += (sender, e) => Application.Instance.Quit();
-        
-        var aboutCommand = new Command {MenuText = "About..."};
-        aboutCommand.Executed += (sender, e) => new AboutDialog().ShowDialog(this);
-        
-        var homeCommand = new Command {MenuText = "Home"};
-        homeCommand.Executed += (sender, e) => URIHelper.OpenInBrowser("https://github.com/EverestAPI/CelesteTAS-EverestInterop");
-        
+        Menu = CreateMenu();
+        Title = TitleBarText;
+    }
+    
+    private MenuBar CreateMenu()
+    {
         static MenuItem CreateToggle(string text, Func<bool> getFn, Action toggleFn)
         {
             var cmd = new CheckCommand { MenuText = text };
@@ -102,8 +71,16 @@ public partial class Studio : Form {
         const float MinSlowForwardSpeed = 0.1f;
         const float MaxSlowForwardSpeed = 0.9f;
         
-        // create menu
-        Menu = new MenuBar {
+        var quitCommand = new Command {MenuText = "Quit", Shortcut = Application.Instance.CommonModifier | Keys.Q};
+        quitCommand.Executed += (sender, e) => Application.Instance.Quit();
+        
+        var aboutCommand = new Command {MenuText = "About..."};
+        aboutCommand.Executed += (sender, e) => new AboutDialog().ShowDialog(this);
+        
+        var homeCommand = new Command {MenuText = "Home"};
+        homeCommand.Executed += (sender, e) => URIHelper.OpenInBrowser("https://github.com/EverestAPI/CelesteTAS-EverestInterop");
+        
+        var menu = new MenuBar {
             Items = {
                 // File submenu
                 new SubMenuItem {Text = "&File", Items = {}},
@@ -150,6 +127,8 @@ public partial class Studio : Form {
             AboutItem = aboutCommand
         };
         
-        Menu.HelpItems.Insert(0, homeCommand);
+        menu.HelpItems.Insert(0, homeCommand); // The "About" is automatically inserted
+        
+        return menu;
     }
 }

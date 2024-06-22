@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace StudioCommunication;
 
@@ -81,6 +82,94 @@ public static class ActionsUtils {
     public static bool TryParse(char c, out Actions actions) {
         return Chars.TryGetValue(c, out actions);
     }
+    
+    public static Actions ActionForChar(this char c) =>
+        c.ToString().ToUpper()[0] switch {
+            'R' => Actions.Right,
+            'L' => Actions.Left,
+            'U' => Actions.Up,
+            'D' => Actions.Down,
+            'J' => Actions.Jump,
+            'K' => Actions.Jump2,
+            'X' => Actions.Dash,
+            'C' => Actions.Dash2,
+            'Z' => Actions.DemoDash,
+            'V' => Actions.DemoDash2,
+            'G' => Actions.Grab,
+            'H' => Actions.Grab2,
+            'S' => Actions.Start,
+            'Q' => Actions.Restart,
+            'N' => Actions.Journal,
+            'O' => Actions.Confirm,
+            'A' => Actions.DashOnly,
+            'M' => Actions.MoveOnly,
+            'P' => Actions.PressedKey,
+            'F' => Actions.Feather,
+            _ => Actions.None,
+        };
+    
+    public static char CharForAction(this Actions actions) =>
+        actions switch {
+            Actions.Right or Actions.RightDashOnly or Actions.RightMoveOnly => 'R',
+            Actions.Left or Actions.LeftDashOnly or Actions.LeftMoveOnly => 'L',
+            Actions.Up or Actions.UpDashOnly or Actions.UpMoveOnly => 'U',
+            Actions.Down or Actions.DownDashOnly or Actions.DownMoveOnly => 'D',
+            Actions.Jump => 'J',
+            Actions.Jump2 => 'K',
+            Actions.Dash => 'X',
+            Actions.Dash2 => 'C',
+            Actions.DemoDash => 'Z',
+            Actions.DemoDash2 => 'V',
+            Actions.Grab => 'G',
+            Actions.Grab2 => 'H',
+            Actions.Start => 'S',
+            Actions.Restart => 'Q',
+            Actions.Journal => 'N',
+            Actions.Confirm => 'O',
+            Actions.DashOnly => 'A',
+            Actions.MoveOnly => 'M',
+            Actions.PressedKey => 'P',
+            Actions.Feather => 'F',
+            _ => ' ',
+        };
+    
+    public static IEnumerable<Actions> Sorted(this Actions actions) => new[] {
+        Actions.Left,
+        Actions.Right,
+        Actions.Up,
+        Actions.Down,
+        Actions.Jump,
+        Actions.Jump2,
+        Actions.Dash,
+        Actions.Dash2,
+        Actions.DemoDash,
+        Actions.DemoDash2,
+        Actions.Grab,
+        Actions.Grab2,
+        Actions.Start,
+        Actions.Restart,
+        Actions.Journal,
+        Actions.Confirm,
+        Actions.DashOnly,
+        Actions.MoveOnly,
+        Actions.PressedKey,
+        Actions.Feather,
+    }.Where(e => actions.HasFlag(e));
+
+    public static IEnumerable<Actions> GetDashOnly(this Actions actions) => new[] {
+        Actions.LeftDashOnly,
+        Actions.RightDashOnly,
+        Actions.UpDashOnly,
+        Actions.DownDashOnly,
+    }.Where(e => actions.HasFlag(e));
+
+    public static IEnumerable<Actions> GetMoveOnly(this Actions actions) => new[] {
+        Actions.LeftMoveOnly,
+        Actions.RightMoveOnly,
+        Actions.UpMoveOnly,
+        Actions.DownMoveOnly,
+    }.Where(e => actions.HasFlag(e));
+
 
     public static Actions ToDashOnlyActions(this Actions actions) {
         return actions switch {

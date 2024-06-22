@@ -7,16 +7,13 @@ using StudioCommunication;
 namespace CelesteStudio;
 
 public class Editor : Drawable {
+    public readonly Document Document;
     
-    private struct CaretPosition { public int Row, Col; }
-    
-    private CaretPosition Caret = new() { Row = 0, Col = 0 };
-    private readonly List<string> Lines = [];
-    
-    private Font font = new Font(new FontFamily("JetBrains Mono"), 12.0f);
+    private Font font = new(new FontFamily("JetBrains Mono"), 12.0f);
     private readonly Scrollable scrollable;
     
-    public Editor(Scrollable scrollable) {
+    public Editor(Document document, Scrollable scrollable) {
+        this.Document = document;
         this.scrollable = scrollable;
 
         CanFocus = true;
@@ -27,32 +24,30 @@ public class Editor : Drawable {
     
     // private bool needRecalc = true;
     private void Recalc() {
-        // Need at least 1 line
-        if (Lines.Count == 0)
-            Lines.Add("");
-        
         // Snap caret
-        Caret.Row = Math.Clamp(Caret.Row, 0, Lines.Count - 1);
-        Caret.Col = Math.Clamp(Caret.Col, 0, Lines[Caret.Row].Length);
+        Document.Caret.Row = Math.Clamp(Document.Caret.Row, 0, Document.Lines.Count - 1);
+        Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length);
         
         // Calculate bounds
-        Width = 0;
-        Height = 0;
+        float width = 0.0f, height = 0.0f;
 
-        foreach (var line in Lines) {
-            var size = font.MeasureString(line);            
-            Width = Math.Max(Width, (int)size.Width);
-            Height += (int)size.Height;
+        foreach (var line in Document.Lines) {
+            var size = font.MeasureString(line);
+            Console.WriteLine($"{line}: {size} ({width}x{height})");
+            width = Math.Max(width, size.Width);
+            height += size.Height;
+            Console.WriteLine($"{line}: {size} ({width}x{height})");
         }
         
+        Size = new((int)width, (int)height);
         Invalidate();
         
         // Bring caret into view
         const float xLookAhead = 1;
         const float yLookAhead = 1;
         
-        float carX = font.MeasureString(Lines[Caret.Row][..Caret.Col]).Width;
-        float carY = font.LineHeight * Caret.Row;
+        float carX = font.MeasureString(Document.Lines[Document.Caret.Row][..Document.Caret.Col]).Width;
+        float carY = font.LineHeight * Document.Caret.Row;
         // scrollable.ScrollPosition = new Point(
         //     Math.Clamp(scrollable.ScrollPosition.X, (int)(carX - xLookAhead), (int)(carX + xLookAhead)),
         //     Math.Clamp(scrollable.ScrollPosition.Y, (int)(carY - yLookAhead), (int)(carY + yLookAhead)));
@@ -76,11 +71,7 @@ public class Editor : Drawable {
     }
 
     protected override void OnTextInput(TextInputEventArgs e) {
-        Console.WriteLine(e.Text);
-        
-        Lines[Caret.Row] = Lines[Caret.Row].Insert(Caret.Col, e.Text);
-        Caret.Col += e.Text.Length;
-        
+        Document.Insert(e.Text);
         Recalc();
     }
     
@@ -110,15 +101,15 @@ public class Editor : Drawable {
         
         // Draw text
         float y = 0.0f;
-        foreach (var line in Lines) {
+        foreach (var line in Document.Lines) {
             e.Graphics.DrawText(font, Colors.White, 0.0f, y, line);
             y += font.LineHeight;
         }
         
         if (HasFocus) {
             // Draw caret
-            float carX = font.MeasureString(Lines[Caret.Row][..Caret.Col]).Width;
-            float carY = font.LineHeight * Caret.Row;
+            float carX = font.MeasureString(Document.Lines[Document.Caret.Row][..Document.Caret.Col]).Width;
+            float carY = font.LineHeight * Document.Caret.Row;
             using (Pen pen = new(Colors.Red)) {
                 e.Graphics.DrawLine(pen, carX, carY, carX, carY + font.LineHeight - 1);
             }
