@@ -442,23 +442,43 @@ public class Editor : Drawable {
             CaretMovementType.DocumentEnd => ClampCaret(new CaretPosition(Document.Lines.Count - 1, Document.Lines[^1].Length), wrapLine: false),
             _ => throw new UnreachableException()
         };
-
+    
+    private enum CharType { Alphanumeric, Symbol, Whitespace }
     private CaretPosition GetNextWordCaretPosition(int dir) {
         var newPosition = Document.Caret;
         var line = Document.Lines[newPosition.Row];
         
-        newPosition.Col += dir;
-        while (newPosition.Col >= 0 && newPosition.Col < line.Length && char.IsLetter(line[newPosition.Col]))
-            newPosition.Col += dir;
-        while (newPosition.Col >= 0 && newPosition.Col < line.Length && char.IsWhiteSpace(line[newPosition.Col]))
-            newPosition.Col += dir;
+        // Prepare wrap-around for ClampCaret()
+        if (dir == -1 && Document.Caret.Col == 0)
+            return new CaretPosition(Document.Caret.Row, -1);
+        if (dir == 1 && Document.Caret.Col == line.Length)
+            return new CaretPosition(Document.Caret.Row, line.Length + 1);
         
-        // Fix an off-by-on error when deleting to the left?
-        // TODO: Figure out why lol
-        if (dir == -1)
-            newPosition.Col += 1;
+        // The caret is to the left of the character. So offset 1 to the left when going that direction 
+        int offset = dir == -1 ? -1 : 0;
+        
+        CharType type;
+        if (char.IsLetterOrDigit(line[newPosition.Col + offset]))
+            type = CharType.Alphanumeric;
+        else if (char.IsWhiteSpace(line[newPosition.Col + offset]))
+            type = CharType.Whitespace;
+        else
+            // Probably a symbol  
+            type = CharType.Symbol;
+        
+        while (newPosition.Col + offset >= 0 && newPosition.Col + offset < line.Length && IsSame(line[newPosition.Col + offset], type))
+            newPosition.Col += dir;
         
         return newPosition;
+        
+        static bool IsSame(char c, CharType type) {
+            return type switch {
+                CharType.Alphanumeric => char.IsLetterOrDigit(c),
+                CharType.Whitespace => char.IsWhiteSpace(c),
+                CharType.Symbol => !char.IsLetterOrDigit(c) && !char.IsWhiteSpace(c), // Everything not alphanumeric of whitespace is considered a symbol
+                _ => throw new UnreachableException(),
+            };
+        }
     }
 
     #endregion
