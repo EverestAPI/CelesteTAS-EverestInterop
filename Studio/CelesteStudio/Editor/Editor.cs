@@ -374,18 +374,14 @@ public sealed class Editor : Drawable {
             FinishEdit:
             Document.ReplaceLine(Document.Caret.Row, actionLine.ToString());
         }
-        // Start an action line if we should
-        else if (startOfLine && e.Text.Length == 1 && e.Text[0] is >= '0' and <= '9') {
-            string newLine = typedCharacter.ToString().PadLeft(ActionLine.MaxFramesDigits);
-            if (line.Trim().Length == 0)
-                Document.ReplaceLine(Document.Caret.Row, newLine);
-            else
-                Document.Insert(new CaretPosition(Document.Caret.Row, 0), newLine + "\n");
-            Document.Caret.Col = ActionLine.MaxFramesDigits;
-        }
         // Just write it as text
         else {
             Document.Insert(e.Text);
+            
+            // But turn it into an action line if possible
+            if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out var newActionLine)) {
+                Document.ReplaceLine(Document.Caret.Row, newActionLine.ToString());
+            }
         }
         
         ScrollCaretIntoView();
