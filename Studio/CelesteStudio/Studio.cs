@@ -121,7 +121,8 @@ public sealed class Studio : Form {
                 new ButtonMenuItem {Text = "&Preferences..."},
             },
             QuitItem = quitCommand,
-            AboutItem = aboutCommand
+            AboutItem = aboutCommand,
+            IncludeSystemItems = MenuBarSystemItems.None,
         };
         
         menu.HelpItems.Insert(0, homeCommand); // The "About" is automatically inserted
