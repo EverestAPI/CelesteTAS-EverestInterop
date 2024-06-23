@@ -381,6 +381,7 @@ public sealed class Editor : Drawable {
             // But turn it into an action line if possible
             if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out var newActionLine)) {
                 Document.ReplaceLine(Document.Caret.Row, newActionLine.ToString());
+                Document.Caret.Col = ActionLine.MaxFramesDigits;
             }
         }
         
