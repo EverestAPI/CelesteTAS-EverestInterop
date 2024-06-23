@@ -78,6 +78,30 @@ public class Editor : Drawable {
         case Keys.Enter:
             OnEnter();
             break;
+        case Keys.Left:
+            MoveCaret(e.Control ? CaretMovementType.WordLeft : CaretMovementType.CharLeft);
+            break;
+        case Keys.Right:
+            MoveCaret(e.Control ? CaretMovementType.WordRight : CaretMovementType.CharRight);
+            break;
+        case Keys.Up:
+            MoveCaret(CaretMovementType.LineUp);
+            break;
+        case Keys.Down:
+            MoveCaret(CaretMovementType.LineDown);
+            break;
+        case Keys.PageUp:
+            MoveCaret(CaretMovementType.PageUp);
+            break;
+        case Keys.PageDown:
+            MoveCaret(CaretMovementType.PageDown);
+            break;
+        case Keys.Home:
+            MoveCaret(CaretMovementType.LineStart);
+            break;
+        case Keys.End:
+            MoveCaret(CaretMovementType.LineEnd);
+            break;
         default:
             base.OnKeyDown(e);
             break;
@@ -310,10 +334,12 @@ public class Editor : Drawable {
                 Document.ReplaceLine(caret.Row, line);
                 Document.Caret = ClampCaret(caret);
             } else {
-                var newCaret = GetNewCaretPosition(direction);
+                var newCaret = GetNewTextCaretPosition(direction);
                 
                 if (caret.Row == newCaret.Row)
                     Document.ReplaceRangeInLine(caret.Row, caret.Col, newCaret.Col, string.Empty);
+                
+                newCaret.Col = Math.Min(newCaret.Col, caret.Col);
                 Document.Caret = ClampCaret(newCaret); 
             }
         } else {
@@ -341,7 +367,7 @@ public class Editor : Drawable {
     private CaretPosition ClampCaret(CaretPosition position)
     {
         // Wrap around to prev/next line
-        if (position.Col < 0)
+        if (position.Col < 0 && position.Row > 0)
         {
             position.Row--;
             position.Col = Document.Lines[position.Row].Length;
@@ -359,7 +385,38 @@ public class Editor : Drawable {
         return position;
     }
     
-    private CaretPosition GetNewCaretPosition(CaretMovementType direction) =>
+    private void MoveCaret(CaretMovementType direction)
+    {
+        var line = Document.Lines[Document.Caret.Row];
+        if (!ActionLine.TryParse(line, out var actionLine)) {
+            Document.Caret = GetNewTextCaretPosition(direction);
+            return;
+        }
+        
+        Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
+        int leadingSpaces = ActionLine.MaxFramesDigits - actionLine.Frames.Digits();
+        
+        var caret = Document.Caret;
+        var newCaret = ClampCaret(direction switch {
+            CaretMovementType.CharLeft => new CaretPosition(caret.Row, GetSoftSnapColumns(actionLine).Reverse().FirstOrDefault(c => c < caret.Col, caret.Col)),
+            CaretMovementType.CharRight => new CaretPosition(caret.Row, GetSoftSnapColumns(actionLine).FirstOrDefault(c => c > caret.Col, caret.Col)),
+            CaretMovementType.WordLeft => new CaretPosition(caret.Row, GetHardSnapColumns(actionLine).Reverse().FirstOrDefault(c => c < caret.Col, caret.Col)),
+            CaretMovementType.WordRight => new CaretPosition(caret.Row, GetHardSnapColumns(actionLine).FirstOrDefault(c => c > caret.Col, caret.Col)),
+            CaretMovementType.LineStart => new CaretPosition(caret.Row, leadingSpaces + 1),
+            CaretMovementType.LineEnd => new CaretPosition(caret.Row, line.Length + 1),
+            _ => GetNewTextCaretPosition(direction),
+        });
+        
+        var newLine = Document.Lines[newCaret.Row];
+        if (!ActionLine.TryParse(line, out var newActionLine)) {
+            newCaret.Col = SnapColumnToActionLine(newActionLine, newCaret.Col);
+        }
+        
+        Document.Caret = newCaret;
+    }
+    
+    // For regular text movement
+    private CaretPosition GetNewTextCaretPosition(CaretMovementType direction) =>
         ClampCaret(direction switch
         {
             CaretMovementType.None => Document.Caret,
@@ -389,6 +446,11 @@ public class Editor : Drawable {
             newPosition.Col += dir;
         while (newPosition.Col >= 0 && newPosition.Col < line.Length && char.IsWhiteSpace(line[newPosition.Col]))
             newPosition.Col += dir;
+        
+        // Fix an off-by-on error when deleting to the left?
+        // TODO: Figure out why lol
+        if (dir == -1)
+            newPosition.Col += 1;
         
         return newPosition;
     }
