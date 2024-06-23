@@ -15,6 +15,23 @@ public sealed class Studio : Form {
     public static Version Version { get; private set; } = null!;
     
     public static readonly CelesteService CelesteService = new();
+    
+    // Some platforms report the window larger than it actually is, so there need to be some offsets.
+    // The values are chosen by fine-tuning manually.
+    public static float BorderRightOffset {
+        get {
+            if (Eto.Platform.Instance.IsGtk)
+                return 40.0f;
+            return 0.0f;
+        }
+    }
+    public static float BorderBottomOffset {
+        get {
+            if (Eto.Platform.Instance.IsGtk)
+                return 30.0f;
+            return 0.0f;
+        }
+    }
 
     public Editor Editor { get; private set; }
     private string TitleBarText => $"{Editor.Document.FileName}{(Editor.Document.Dirty ? "*" : string.Empty)} - Studio v{Version.ToString(3)}   {Editor.Document.FilePath}";
@@ -24,20 +41,21 @@ public sealed class Studio : Form {
         Version = Assembly.GetExecutingAssembly().GetName().Version!;
         
         // Setup editor
-        var scrollable = new Scrollable {
-            Width = 400,
-            Height = 800,
-        };
-        Editor = new Editor(Document.Dummy, scrollable);
-        scrollable.Content = Editor;
-        
-        Content = new StackLayout {
-            Padding = 0,
-            Items = { scrollable }
-        };
-
-        const int extraHeight = 30; // The horizontal scrollbar is not included in the Size? TODO: Figure out correct value for other platforms
-        SizeChanged += (_, _) => scrollable.Size = new Size(Size.Width, Size.Height - extraHeight);
+        {
+            var scrollable = new Scrollable {
+                Width = 400,
+                Height = 800,
+            };
+            Editor = new Editor(Document.Dummy, scrollable);
+            scrollable.Content = Editor;
+            
+            Content = new StackLayout {
+                Padding = 0,
+                Items = { scrollable }
+            };
+            
+            SizeChanged += (_, _) => scrollable.Size = new Size(Size.Width, (int)(Size.Height - BorderBottomOffset));
+        }
         
         NewFile();
         

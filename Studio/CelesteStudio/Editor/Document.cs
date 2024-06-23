@@ -100,7 +100,7 @@ public class Document {
     public event Action<Document> TextChanged = doc => doc.Dirty = true;
     
     private Document(string contents) {
-        undoStack.Stack[undoStack.Curr] = new UndoStack.Entry(contents.SplitLines().ToList(), Caret);
+        undoStack.Stack[undoStack.Curr] = new UndoStack.Entry(contents.SplitLines(StringSplitOptions.RemoveEmptyEntries).ToList(), Caret);
         
         Studio.CelesteService.Server.LinesUpdated += OnLinesUpdated;
     }
