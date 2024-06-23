@@ -120,6 +120,7 @@ public class Editor : Drawable {
     protected override void OnTextInput(TextInputEventArgs e) {
         if (!Document.Selection.Empty) {
             Document.RemoveSelectedText();
+            Document.Caret = Document.Selection.Min;
             Document.Selection.Clear();
         }
         
@@ -249,6 +250,7 @@ public class Editor : Drawable {
     private void OnDelete(CaretMovementType direction) {
         if (!Document.Selection.Empty) {
             Document.RemoveSelectedText();
+            Document.Caret = Document.Selection.Min;
             Document.Selection.Clear();
             return;
         }
@@ -491,6 +493,69 @@ public class Editor : Drawable {
         }
     }
 
+    #endregion
+    
+    #region Mouse Interactions
+    
+    private bool primaryMouseButtonDown = false;
+    
+    protected override void OnMouseDown(MouseEventArgs e) {
+        if (e.Buttons.HasFlag(MouseButtons.Primary)) {
+            primaryMouseButtonDown = true;
+            
+            var oldCaret = Document.Caret;
+            SetCaretPosition(e.Location);
+            
+            if (e.Modifiers.HasFlag(Keys.Shift)) {
+                if (Document.Selection.Empty)
+                    Document.Selection.Start = oldCaret;
+                Document.Selection.End = Document.Caret;
+            } else {
+                Document.Selection.Start = Document.Selection.End = Document.Caret;
+            }
+            
+            Recalc();
+        }
+        
+        base.OnMouseDown(e);
+    }
+    protected override void OnMouseUp(MouseEventArgs e) {
+        if (e.Buttons.HasFlag(MouseButtons.Primary)) {
+            primaryMouseButtonDown = false;
+            
+            Recalc();
+        }
+
+        base.OnMouseUp(e);
+    }
+    protected override void OnMouseMove(MouseEventArgs e) {
+        if (primaryMouseButtonDown) {
+            SetCaretPosition(e.Location);
+            Document.Selection.End = Document.Caret;
+            
+            Recalc();
+        }
+        
+        base.OnMouseMove(e);
+    }
+    
+    private void SetCaretPosition(PointF location) {
+        var abs = location + scrollable.ScrollPosition;
+        
+        int row = Math.Clamp((int) MathF.Floor(abs.Y / font.LineHeight), 0, Document.Lines.Count - 1);
+        var line = Document.Lines[row];
+        
+        // Since we use a monospace font, we can just calculate the column
+        int col = Math.Clamp((int) MathF.Floor(abs.X / font.MeasureString("X").Width), 0, line.Length);
+        
+        Document.Caret = ClampCaret(new CaretPosition(row, col), wrapLine: false);
+        
+        var newLine = Document.Lines[Document.Caret.Row];
+        if (ActionLine.TryParse(newLine, out var actionLine)) {
+            Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
+        }
+    }
+    
     #endregion
     
     protected override void OnPaint(PaintEventArgs e) {
