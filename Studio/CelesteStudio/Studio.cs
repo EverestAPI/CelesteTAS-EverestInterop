@@ -62,6 +62,13 @@ public sealed class Studio : Form {
             return new ButtonMenuItem(cmd);
         }
         
+        static MenuItem CreateAction(string text, Keys shortcut = Keys.None, Action? action = null) {
+            var cmd = new Command { MenuText = text, Shortcut = shortcut, Enabled = action != null };
+            cmd.Executed += (_, _) => action?.Invoke();
+            
+            return cmd;
+        }
+        
         const int MinDecimals = 2;
         const int MaxDecimals = 12;
         const int MinFastForwardSpeed = 2;
@@ -80,9 +87,45 @@ public sealed class Studio : Form {
         
         var menu = new MenuBar {
             Items = {
-                // File submenu
-                new SubMenuItem {Text = "&File", Items = {}},
-                new SubMenuItem {Text = "&Settings", Items = {}},
+                new SubMenuItem {Text = "&File", Items = {
+                    CreateAction("&New File", Application.Instance.CommonModifier | Keys.N),
+                    new SeparatorMenuItem(),
+                    CreateAction("&Open File...", Application.Instance.CommonModifier | Keys.O),
+                    CreateAction("Open &Previous File", Keys.Alt | Keys.O),
+                    CreateAction("Open &Recent"),
+                    CreateAction("Open &Backup"),
+                    new SeparatorMenuItem(),
+                    CreateAction("Save", Application.Instance.CommonModifier | Keys.S),
+                    CreateAction("&Save As...", Application.Instance.CommonModifier | Keys.Shift | Keys.S),
+                    new SeparatorMenuItem(),
+                    CreateAction("&Integrate Read Files"),
+                    CreateAction("&Convert to LibTAS Movie..."),
+                    new SeparatorMenuItem(),
+                    CreateAction("&Record TAS..."),
+                }},
+                new SubMenuItem {Text = "&Settings", Items = {
+                    CreateToggle("&Send Inputs to Celeste", CelesteService.GetGameplay, CelesteService.ToggleGameplay),
+                    CreateToggle("Auto Remove Mutually Exclusive Actions", CelesteService.GetGameplay, CelesteService.ToggleGameplay),
+                    CreateToggle("Show Game Info", CelesteService.GetGameplay, CelesteService.ToggleGameplay),
+                    CreateToggle("Always on Top", CelesteService.GetGameplay, CelesteService.ToggleGameplay),
+                    new SubMenuItem {
+                        Text = "Automatic Backups",
+                        Items = {
+                            CreateToggle("Enabled", CelesteService.GetGameplay, CelesteService.ToggleGameplay),
+                            CreateNumberInput("Backup Rate (minutes)", CelesteService.GetPositionDecimals, CelesteService.SetPositionDecimals, MinDecimals, MaxDecimals, 1),
+                            CreateNumberInput("Backup File Count", CelesteService.GetPositionDecimals, CelesteService.SetPositionDecimals, MinDecimals, MaxDecimals, 1),
+                        }
+                    },
+                    CreateAction("Font..."),
+                    new SubMenuItem {
+                        Text = "Theme",
+                        Items = {
+                            new RadioMenuItem { Text = "Light" },
+                            new RadioMenuItem { Text = "Dark" },
+                        }
+                    },
+                    CreateAction("Open Settings File..."),
+                }},
                 new SubMenuItem {Text = "&Toggles", Items = {
                     CreateToggle("&Hitboxes", CelesteService.GetHitboxes, CelesteService.ToggleHitboxes),
                     CreateToggle("&Trigger Hitboxes", CelesteService.GetTriggerHitboxes, CelesteService.ToggleTriggerHitboxes),
@@ -118,7 +161,6 @@ public sealed class Studio : Form {
             },
             ApplicationItems = {
                 // application (OS X) or file menu (others)
-                new ButtonMenuItem {Text = "&Preferences..."},
             },
             QuitItem = quitCommand,
             AboutItem = aboutCommand,
@@ -128,5 +170,9 @@ public sealed class Studio : Form {
         menu.HelpItems.Insert(0, homeCommand); // The "About" is automatically inserted
         
         return menu;
+    }
+    
+    protected override void OnKeyDown(KeyEventArgs e) {
+        base.OnKeyDown(e);
     }
 }
