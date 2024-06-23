@@ -14,6 +14,7 @@ public struct CaretPosition(int row = 0, int col = 0) {
     public static bool operator >(CaretPosition lhs, CaretPosition rhs) => lhs.Row > rhs.Row || (lhs.Row == rhs.Row && lhs.Col > rhs.Col);
     public static bool operator <(CaretPosition lhs, CaretPosition rhs) => lhs.Row < rhs.Row || (lhs.Row == rhs.Row && lhs.Col < rhs.Col);
     
+    public override string ToString() => $"{Row}:{Col}";
     public override bool Equals(object? obj) => obj is CaretPosition other && Row == other.Row && Col == other.Col;
     public override int GetHashCode() => HashCode.Combine(Row, Col);
 }
@@ -106,8 +107,10 @@ public class Document {
         contents = contents.ReplaceLineEndings(NewLine.ToString());
         undoStack.Stack[undoStack.Curr] = new UndoStack.Entry(contents.SplitDocumentLines().ToList(), Caret);
         
-        // Save with the new line endings
-        Save();
+        if (!string.IsNullOrWhiteSpace(FilePath) && File.Exists(FilePath)) {
+            // Save with the new line endings
+            Save();    
+        }
         
         Studio.CelesteService.Server.LinesUpdated += OnLinesUpdated;
     }
@@ -185,13 +188,13 @@ public class Document {
     public void InsertLineAbove(string text) => InsertNewLine(Caret.Row, text);
     public void InsertLineBelow(string text) => InsertNewLine(Caret.Row + 1, text);
     public void InsertNewLine(int line, string text) {
+        undoStack.Push(Caret);
+
         var newLines = text.SplitDocumentLines();
         if (newLines.Length == 0)
-            return;
-        
-        undoStack.Push(Caret);
-        
-        CurrentLines.InsertRange(line, newLines);
+            CurrentLines.Insert(line, string.Empty);
+        else
+            CurrentLines.InsertRange(line, newLines);
         
         TextChanged.Invoke(this);
     }

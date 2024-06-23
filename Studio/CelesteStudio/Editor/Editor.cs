@@ -381,8 +381,7 @@ public sealed class Editor : Drawable {
                 Document.ReplaceLine(Document.Caret.Row, newLine);
             else
                 Document.Insert(new CaretPosition(Document.Caret.Row, 0), newLine + "\n");
-            Document.Caret.Col = ActionLine.MaxFramesDigits + 1;
-
+            Document.Caret.Col = ActionLine.MaxFramesDigits;
         }
         // Just write it as text
         else {
@@ -508,6 +507,12 @@ public sealed class Editor : Drawable {
             if (caret.Row == newCaret.Row) {
                 Document.ReplaceRangeInLine(caret.Row, caret.Col, newCaret.Col, string.Empty);
                 newCaret.Col = Math.Min(newCaret.Col, caret.Col);
+            } else {
+                var min = newCaret < caret ? newCaret : caret;
+                var max = newCaret < caret ? caret : newCaret;
+                
+                Document.RemoveRange(min, max);
+                newCaret = min;
             }
             
             Document.Caret = ClampCaret(newCaret);
@@ -521,6 +526,7 @@ public sealed class Editor : Drawable {
             // Don't split frame count and action
             Document.InsertLineBelow(string.Empty);
             Document.Caret.Row++;
+            Document.Caret.Col = 0;
         } else {
             Document.Insert(Document.NewLine.ToString());
         }
