@@ -56,8 +56,9 @@ public class Editor : Drawable {
         // scrollable.ScrollPosition = new Point(
         //     Math.Clamp(scrollable.ScrollPosition.X, (int)(carX - xLookAhead), (int)(carX + xLookAhead)),
         //     Math.Clamp(scrollable.ScrollPosition.Y, (int)(carY - yLookAhead), (int)(carY + yLookAhead)));
-        scrollable.ScrollPosition = new Point((int)carX + 50, (int)carY);
-        scrollable.Padding = new(0);
+        // TODO: Properly scroll caret into view (NOTE: macOS doesn't clamp on it's own!)
+        // scrollable.ScrollPosition = new Point((int)carX + 50, (int)carY);
+        // scrollable.Padding = new(0);
         
         Console.WriteLine($"w: {Width} h: {Height} x: {scrollable.ScrollPosition.X}");
         
@@ -226,7 +227,7 @@ public class Editor : Drawable {
                 if (caret.Col == ActionLine.MaxFramesDigits && direction is CaretMovementType.WordLeft or CaretMovementType.CharLeft ||
                     caret.Col < ActionLine.MaxFramesDigits) {
                     int leadingSpaces = line.Length - line.TrimStart().Length;
-                    int cursorIndex = Math.Clamp(caret.Col - leadingSpaces, 0, actionLine.Frames.Digits()) + 1;
+                    int cursorIndex = Math.Clamp(caret.Col - leadingSpaces, 0, actionLine.Frames.Digits());
 
                     string framesString = actionLine.Frames.ToString();
                     string leftOfCursor = framesString[..cursorIndex];
