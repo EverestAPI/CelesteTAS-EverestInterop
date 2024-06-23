@@ -79,14 +79,14 @@ public class UndoStack(int stackSize = 256) {
 }
 
 public class Document {
-    //private const string EmptyDocument = "RecordCount: 1\n\n#Start\n";
-    private const string EmptyDocument = "";
-
+    // Should only be used while an actual document is being loaded
+    public static readonly Document Dummy = new(string.Empty);
+    
     public CaretPosition Caret = new();
     public Selection Selection = new();
     
-    public string? FilePath { get; set; }
-    public string? FileName => FilePath == null ? null : Path.GetFileName(FilePath);
+    public string FilePath { get; set; }
+    public string FileName => FilePath == null ? null : Path.GetFileName(FilePath);
 
     private readonly UndoStack undoStack = new();
 
@@ -109,8 +109,6 @@ public class Document {
         Studio.CelesteService.Server.LinesUpdated -= OnLinesUpdated;
     }
 
-    public static Document CreateBlank() => new(EmptyDocument);
-
     public static Document? Load(string path) {
         try {
             string text = File.ReadAllText(path);
@@ -125,13 +123,11 @@ public class Document {
     }
 
     public void Save() {
-        if (FilePath != null) {
-            try {
-                File.WriteAllText(FilePath, Text);
-                Dirty = false;
-            } catch (Exception e) {
-                Console.WriteLine(e);
-            }
+        try {
+            File.WriteAllText(FilePath, Text);
+            Dirty = false;
+        } catch (Exception e) {
+            Console.WriteLine(e);
         }
     }
 

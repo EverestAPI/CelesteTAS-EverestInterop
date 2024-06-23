@@ -127,8 +127,13 @@ public class StudioCommunicationServer : StudioCommunicationBase {
         studio.ReadMessage();
         studio.WriteMessageGuaranteed(new Message(MessageID.EstablishConnection, new byte[0]));
         // celeste.ReadMessageGuaranteed();
-
-        studio.SendPathNow("Celeste.tas", false);
+        
+        // During startup the editor might be null, so just check to be sure
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+        if (Studio.Instance.Editor != null)
+            studio.SendPathNow(Studio.Instance.Editor.Document.FilePath, false);
+        else
+            studio.SendPathNow("Celeste.tas", false);
         // lastMessage = celeste.ReadMessageGuaranteed();
 
 

@@ -1,49 +1,47 @@
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using System.Reflection;
-using System.Text;
 using CelesteStudio.Util;
 using Eto.Forms;
 using Eto.Drawing;
-using Eto.Forms.ThemedControls;
 using StudioCommunication;
 
 namespace CelesteStudio;
 
 public sealed class Studio : Form {
-    public static Studio Instance;
-    public static Version Version { get; private set; }
+    public static Studio Instance = null!;
+    public static Version Version { get; private set; } = null!;
     
-    public static CelesteService CelesteService = new();
+    public static readonly CelesteService CelesteService = new();
 
-    private Editor? editor = null;
-    private string TitleBarText => $"{editor?.Document.FileName ?? "Celeste.tas"}{((editor?.Document.Dirty ?? false) ? "*" : string.Empty)} - Studio v{Version.ToString(3)}   {editor?.Document.FilePath ?? string.Empty}";
+    public Editor Editor { get; private set; }
+    private string TitleBarText => $"{Editor.Document.FileName}{(Editor.Document.Dirty ? "*" : string.Empty)} - Studio v{Version.ToString(3)}   {Editor.Document.FilePath}";
     
     public Studio() {
         Instance = this;
         Version = Assembly.GetExecutingAssembly().GetName().Version!;
         
+        // Setup editor
         var scrollable = new Scrollable {
-            Width = 300,
-            Height = 500,
+            Width = 400,
+            Height = 800,
         };
-        editor = new Editor(Document.CreateBlank(), scrollable);
-        scrollable.Content = editor;
+        Editor = new Editor(Document.Dummy, scrollable);
+        scrollable.Content = Editor;
         
         Content = new StackLayout {
             Padding = 0,
             Items = { scrollable }
         };
 
-        const int ExtraHeight = 30; // The horizontal scrollbar is not included in the Size? TODO: Figure out correct value for other platforms
-        SizeChanged += (_, _) => scrollable.Size = new Size(Size.Width, Size.Height - ExtraHeight);
+        const int extraHeight = 30; // The horizontal scrollbar is not included in the Size? TODO: Figure out correct value for other platforms
+        SizeChanged += (_, _) => scrollable.Size = new Size(Size.Width, Size.Height - extraHeight);
+        
+        NewFile();
         
         Menu = CreateMenu();
-        Title = TitleBarText;
-        editor.Document.TextChanged += _ => Title = TitleBarText;
     }
     
     private MenuBar CreateMenu() {
@@ -69,34 +67,57 @@ public sealed class Studio : Form {
             return cmd;
         }
         
-        const int MinDecimals = 2;
-        const int MaxDecimals = 12;
-        const int MinFastForwardSpeed = 2;
-        const int MaxFastForwardSpeed = 30;
-        const float MinSlowForwardSpeed = 0.1f;
-        const float MaxSlowForwardSpeed = 0.9f;
+        const int minDecimals = 2;
+        const int maxDecimals = 12;
+        const int minFastForwardSpeed = 2;
+        const int maxFastForwardSpeed = 30;
+        const float minSlowForwardSpeed = 0.1f;
+        const float maxSlowForwardSpeed = 0.9f;
         
         var quitCommand = new Command {MenuText = "Quit", Shortcut = Application.Instance.CommonModifier | Keys.Q};
-        quitCommand.Executed += (sender, e) => Application.Instance.Quit();
+        quitCommand.Executed += (_, _) => Application.Instance.Quit();
         
         var aboutCommand = new Command {MenuText = "About..."};
-        aboutCommand.Executed += (sender, e) => new AboutDialog().ShowDialog(this);
+        aboutCommand.Executed += (_, _) => new AboutDialog().ShowDialog(this);
         
         var homeCommand = new Command {MenuText = "Home"};
-        homeCommand.Executed += (sender, e) => URIHelper.OpenInBrowser("https://github.com/EverestAPI/CelesteTAS-EverestInterop");
+        homeCommand.Executed += (_, _) => URIHelper.OpenInBrowser("https://github.com/EverestAPI/CelesteTAS-EverestInterop");
         
         var menu = new MenuBar {
             Items = {
                 new SubMenuItem {Text = "&File", Items = {
-                    CreateAction("&New File", Application.Instance.CommonModifier | Keys.N),
+                    CreateAction("&New File", Application.Instance.CommonModifier | Keys.N, NewFile),
                     new SeparatorMenuItem(),
-                    CreateAction("&Open File...", Application.Instance.CommonModifier | Keys.O),
+                    CreateAction("&Open File...", Application.Instance.CommonModifier | Keys.O, () => {
+                        var dialog = new OpenFileDialog {
+                            Filters = { new FileFilter("TAS", ".tas") },
+                            MultiSelect = false,
+                            Directory = new Uri(Path.GetDirectoryName(Editor.Document.FilePath)!),
+                        };
+                        
+                        if (dialog.ShowDialog(this) == DialogResult.Ok) {
+                            OpenFile(dialog.Filenames.First());
+                        }
+                    }),
                     CreateAction("Open &Previous File", Keys.Alt | Keys.O),
                     CreateAction("Open &Recent"),
                     CreateAction("Open &Backup"),
                     new SeparatorMenuItem(),
-                    CreateAction("Save", Application.Instance.CommonModifier | Keys.S),
-                    CreateAction("&Save As...", Application.Instance.CommonModifier | Keys.Shift | Keys.S),
+                    CreateAction("Save", Application.Instance.CommonModifier | Keys.S, SaveFile),
+                    CreateAction("&Save As...", Application.Instance.CommonModifier | Keys.Shift | Keys.S, () => {
+                        var dialog = new SaveFileDialog() {
+                            Filters = { new FileFilter("TAS", ".tas") },
+                            Directory = new Uri(Path.GetDirectoryName(Editor.Document.FilePath)!),
+                        };
+                        
+                        if (dialog.ShowDialog(this) == DialogResult.Ok) {
+                            var fileName = dialog.FileName;
+                            if (Path.GetExtension(fileName) != ".tas")
+                                fileName += ".tas";
+                            
+                            SaveFileAs(fileName);
+                        }
+                    }),
                     new SeparatorMenuItem(),
                     CreateAction("&Integrate Read Files"),
                     CreateAction("&Convert to LibTAS Movie..."),
@@ -108,22 +129,16 @@ public sealed class Studio : Form {
                     CreateToggle("Auto Remove Mutually Exclusive Actions", CelesteService.GetGameplay, CelesteService.ToggleGameplay),
                     CreateToggle("Show Game Info", CelesteService.GetGameplay, CelesteService.ToggleGameplay),
                     CreateToggle("Always on Top", CelesteService.GetGameplay, CelesteService.ToggleGameplay),
-                    new SubMenuItem {
-                        Text = "Automatic Backups",
-                        Items = {
-                            CreateToggle("Enabled", CelesteService.GetGameplay, CelesteService.ToggleGameplay),
-                            CreateNumberInput("Backup Rate (minutes)", CelesteService.GetPositionDecimals, CelesteService.SetPositionDecimals, MinDecimals, MaxDecimals, 1),
-                            CreateNumberInput("Backup File Count", CelesteService.GetPositionDecimals, CelesteService.SetPositionDecimals, MinDecimals, MaxDecimals, 1),
-                        }
-                    },
+                    new SubMenuItem {Text = "Automatic Backups", Items = {
+                        CreateToggle("Enabled", CelesteService.GetGameplay, CelesteService.ToggleGameplay),
+                        CreateNumberInput("Backup Rate (minutes)", CelesteService.GetPositionDecimals, CelesteService.SetPositionDecimals, minDecimals, maxDecimals, 1),
+                        CreateNumberInput("Backup File Count", CelesteService.GetPositionDecimals, CelesteService.SetPositionDecimals, minDecimals, maxDecimals, 1),
+                    }},
                     CreateAction("Font..."),
-                    new SubMenuItem {
-                        Text = "Theme",
-                        Items = {
-                            new RadioMenuItem { Text = "Light" },
-                            new RadioMenuItem { Text = "Dark" },
-                        }
-                    },
+                    new SubMenuItem {Text = "Theme", Items = {
+                        new RadioMenuItem { Text = "Light" },
+                        new RadioMenuItem { Text = "Dark" },
+                    }},
                     CreateAction("Open Settings File..."),
                 }},
                 new SubMenuItem {Text = "&Toggles", Items = {
@@ -147,16 +162,16 @@ public sealed class Studio : Form {
                     CreateToggle("Custom Info", CelesteService.GetInfoCustom, CelesteService.ToggleInfoCustom),
                     CreateToggle("Subpixel Indicator", CelesteService.GetInfoSubpixelIndicator, CelesteService.ToggleInfoSubpixelIndicator),
                     new SeparatorMenuItem(),
-                    CreateNumberInput("Position Decimals", CelesteService.GetPositionDecimals, CelesteService.SetPositionDecimals, MinDecimals, MaxDecimals, 1),
-                    CreateNumberInput("Speed Decimals", CelesteService.GetSpeedDecimals, CelesteService.SetSpeedDecimals, MinDecimals, MaxDecimals, 1),
-                    CreateNumberInput("Velocity Decimals", CelesteService.GetVelocityDecimals, CelesteService.SetVelocityDecimals, MinDecimals, MaxDecimals, 1),
-                    CreateNumberInput("Angle Decimals", CelesteService.GetAngleDecimals, CelesteService.SetAngleDecimals, MinDecimals, MaxDecimals, 1),
-                    CreateNumberInput("Custom Info Decimals", CelesteService.GetCustomInfoDecimals, CelesteService.SetCustomInfoDecimals, MinDecimals, MaxDecimals, 1),
-                    CreateNumberInput("Subpixel Indicator Decimals", CelesteService.GetSubpixelIndicatorDecimals, CelesteService.SetSubpixelIndicatorDecimals, MinDecimals, MaxDecimals, 1),
+                    CreateNumberInput("Position Decimals", CelesteService.GetPositionDecimals, CelesteService.SetPositionDecimals, minDecimals, maxDecimals, 1),
+                    CreateNumberInput("Speed Decimals", CelesteService.GetSpeedDecimals, CelesteService.SetSpeedDecimals, minDecimals, maxDecimals, 1),
+                    CreateNumberInput("Velocity Decimals", CelesteService.GetVelocityDecimals, CelesteService.SetVelocityDecimals, minDecimals, maxDecimals, 1),
+                    CreateNumberInput("Angle Decimals", CelesteService.GetAngleDecimals, CelesteService.SetAngleDecimals, minDecimals, maxDecimals, 1),
+                    CreateNumberInput("Custom Info Decimals", CelesteService.GetCustomInfoDecimals, CelesteService.SetCustomInfoDecimals, minDecimals, maxDecimals, 1),
+                    CreateNumberInput("Subpixel Indicator Decimals", CelesteService.GetSubpixelIndicatorDecimals, CelesteService.SetSubpixelIndicatorDecimals, minDecimals, maxDecimals, 1),
                     CreateToggle("Unit of Speed", CelesteService.GetSpeedUnit, CelesteService.ToggleSpeedUnit),
                     new SeparatorMenuItem(),
-                    CreateNumberInput("Fast Forward Speed", CelesteService.GetFastForwardSpeed, CelesteService.SetFastForwardSpeed, MinFastForwardSpeed, MaxFastForwardSpeed, 1),
-                    CreateNumberInput("Slow Forward Speed", CelesteService.GetSlowForwardSpeed, CelesteService.SetSlowForwardSpeed, MinSlowForwardSpeed, MaxSlowForwardSpeed, 0.1f),
+                    CreateNumberInput("Fast Forward Speed", CelesteService.GetFastForwardSpeed, CelesteService.SetFastForwardSpeed, minFastForwardSpeed, maxFastForwardSpeed, 1),
+                    CreateNumberInput("Slow Forward Speed", CelesteService.GetSlowForwardSpeed, CelesteService.SetSlowForwardSpeed, minSlowForwardSpeed, maxSlowForwardSpeed, 0.1f),
                 }},
             },
             ApplicationItems = {
@@ -172,7 +187,77 @@ public sealed class Studio : Form {
         return menu;
     }
     
-    protected override void OnKeyDown(KeyEventArgs e) {
-        base.OnKeyDown(e);
+    public override void Close() {
+        CelesteService.SendPath(string.Empty);
+        
+        base.Close();
+    }
+    
+    private void NewFile() {
+        // TODO: Add "discard changes" prompt
+        
+        int index = 1;
+        string gamePath = Path.Combine(Directory.GetCurrentDirectory(), "TAS Files");
+        if (!Directory.Exists(gamePath)) {
+            Directory.CreateDirectory(gamePath);
+        }
+        
+        string initText = $"RecordCount: 1{Environment.NewLine}";
+        if (CelesteService.Connected) {
+            if (CelesteService.Server.GetDataFromGame(GameDataType.ConsoleCommand, true) is { } simpleConsoleCommand) {
+                initText += $"{Environment.NewLine}{simpleConsoleCommand}{Environment.NewLine}   1{Environment.NewLine}";
+                if (CelesteService.Server.GetDataFromGame(GameDataType.ModUrl) is { } modUrl) {
+                    initText = modUrl + initText;
+                }
+            }
+        }
+        
+        initText += $"{Environment.NewLine}#Start{Environment.NewLine}";
+        
+        string filePath = Path.Combine(gamePath, $"Untitled-{index}.tas");
+        while (File.Exists(filePath) && File.ReadAllText(filePath) != initText) {
+            index++;
+            filePath = Path.Combine(gamePath, $"Untitled-{index}.tas");
+        }
+        
+        File.WriteAllText(filePath, initText);
+        
+        OpenFile(filePath);
+    }
+    
+    private void OpenFile(string filePath) {
+        if (filePath == Editor.Document.FilePath) {
+            return;
+        }
+        
+        CelesteService.WriteWait();
+        
+        var document = Document.Load(filePath);
+        if (document == null) {
+            MessageBox.Show($"An unexpected error occured while trying to open the file '{filePath}'", MessageBoxButtons.OK, MessageBoxType.Error);
+            return;
+        }
+        
+        Editor.Document = document;
+        Editor.Document.TextChanged += _ => Title = TitleBarText;
+
+        Title = TitleBarText;
+        
+        CelesteService.SendPath(Editor.Document.FilePath);
+    }
+    
+    private void SaveFile() {
+        Editor.Document.Save();
+        Title = TitleBarText;
+    }
+    
+    private void SaveFileAs(string filePath) {
+        CelesteService.WriteWait();
+        
+        Editor.Document.FilePath = filePath;
+        Editor.Document.Save();
+        Title = TitleBarText;
+        
+        CelesteService.SendPath(Editor.Document.FilePath);
     }
 }

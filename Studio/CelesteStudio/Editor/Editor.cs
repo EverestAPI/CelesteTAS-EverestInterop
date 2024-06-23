@@ -10,13 +10,27 @@ using StudioCommunication;
 namespace CelesteStudio;
 
 public sealed class Editor : Drawable {
-    public readonly Document Document;
+    private Document document;
+    public Document Document {
+        get => document;
+        set {
+            document = value;
+            
+            // Jump to end when file only 10 lines, else the start
+            if (document.Lines.Count <= 10)
+                document.Caret = new CaretPosition(document.Lines.Count - 1, document.Lines[^1].Length);
+            else
+                document.Caret = new CaretPosition(0, 0);
+            
+            Recalc();
+        }
+    }
     
     private Font font = new(new FontFamily("JetBrains Mono"), 12.0f);
     private readonly Scrollable scrollable;
     
     public Editor(Document document, Scrollable scrollable) {
-        this.Document = document;
+        this.document = document;
         this.scrollable = scrollable;
 
         CanFocus = true;
@@ -51,60 +65,57 @@ public sealed class Editor : Drawable {
                 CreateAction("Insert Mod Info"),
                 CreateAction("Insert Console Load Command"),
                 CreateAction("Insert Simple Console Load Command"),
-                new SubMenuItem {
-                    Text = "Insert Other Command",
-                    Items = {
-                        CreateCommandInsert("EnforceLegal", "EnforceLegal"),
-                        CreateCommandInsert("Unsafe", "Unsafe"),
-                        CreateCommandInsert("Safe", "Safe"),
-                        new SeparatorMenuItem(),
-                        CreateCommandInsert("Read", "Read, File Name, Starting Line, (Ending Line)"),
-                        CreateCommandInsert("Player", "Play, Starting Line"),
-                        new SeparatorMenuItem(),
-                        CreateCommandInsert("Repeat", "Repeat 2\n\nEndRepeat"),
-                        CreateCommandInsert("EndRepeat", "EndRepeat"),
-                        new SeparatorMenuItem(),
-                        CreateCommandInsert("Set", "Set, (Mod).Setting, Value"),
-                        CreateCommandInsert("Invoke", "Invoke, Entity.Method, Parameter"),
-                        CreateCommandInsert("EvalLua", "EvalLua, Code"),
-                        new SeparatorMenuItem(),
-                        CreateCommandInsert("Press", "Press, Key1, Key2..."),
-                        new SeparatorMenuItem(),
-                        CreateCommandInsert("AnalogMode", "AnalogMode, Ignore/Circle/Square/Precise"),
-                        new SeparatorMenuItem(),
-                        CreateCommandInsert("StunPause", "StunPause\n\nEndStunPause"),
-                        CreateCommandInsert("EndStunPause", "EndStunPause"),
-                        CreateCommandInsert("StunPauseMode", "StunPauseMode, Simulate/Input"),
-                        new SeparatorMenuItem(),
-                        CreateCommandInsert("AutoInput", "AutoInput, 2\n   1,S,N\n  10,O\nStartAutoInput\n\nEndAutoInput"),
-                        CreateCommandInsert("StartAutoInput", "StartAutoInput"),
-                        CreateCommandInsert("EndAutoInput", "EndAutoInput"),
-                        CreateCommandInsert("SkipInput", "SkipInput"),
-                        new SeparatorMenuItem(),
-                        CreateCommandInsert("SaveAndQuitReenter", "SaveAndQuitReenter"),
-                        new SeparatorMenuItem(),
-                        CreateCommandInsert("ExportGameInfo", "ExportGameInfo dump.txt"),
-                        CreateCommandInsert("EndExportGameInfo", "EndExportGameInfo"),
-                        new SeparatorMenuItem(),
-                        CreateCommandInsert("StartRecording", "StartRecording"),
-                        CreateCommandInsert("StopRecording", "StopRecording"),
-                        new SeparatorMenuItem(),
-                        CreateCommandInsert("Add", "Add, (input line"),
-                        CreateCommandInsert("Skip", "Skip"),
-                        CreateCommandInsert("Marker", "Marker"),
-                        CreateCommandInsert("ExportLibTAS", "ExportLibTAS Celeste.ltm"),
-                        CreateCommandInsert("EndExportLibTAS", "EndExportLibTAS"),
-                        new SeparatorMenuItem(),
-                        CreateCommandInsert("CompleteInfo", "CompleteInfo A 1"),
-                        CreateCommandInsert("RecordCount", "RecordCount: 1"),
-                        CreateCommandInsert("FileTime", "FileTime:"),
-                        CreateCommandInsert("ChapterTime", "ChapterTime:"),
-                        CreateCommandInsert("MidwayFileTime", "MidwayFileTime:"),
-                        CreateCommandInsert("MidwayChapterTime", "MidwayChapterTime:"),
-                        new SeparatorMenuItem(),
-                        CreateCommandInsert("ExitGame", "ExitGame"),
-                    }
-                },
+                new SubMenuItem {Text = "Insert Other Command", Items = {
+                    CreateCommandInsert("EnforceLegal", "EnforceLegal"),
+                    CreateCommandInsert("Unsafe", "Unsafe"),
+                    CreateCommandInsert("Safe", "Safe"),
+                    new SeparatorMenuItem(),
+                    CreateCommandInsert("Read", "Read, File Name, Starting Line, (Ending Line)"),
+                    CreateCommandInsert("Player", "Play, Starting Line"),
+                    new SeparatorMenuItem(),
+                    CreateCommandInsert("Repeat", "Repeat 2\n\nEndRepeat"),
+                    CreateCommandInsert("EndRepeat", "EndRepeat"),
+                    new SeparatorMenuItem(),
+                    CreateCommandInsert("Set", "Set, (Mod).Setting, Value"),
+                    CreateCommandInsert("Invoke", "Invoke, Entity.Method, Parameter"),
+                    CreateCommandInsert("EvalLua", "EvalLua, Code"),
+                    new SeparatorMenuItem(),
+                    CreateCommandInsert("Press", "Press, Key1, Key2..."),
+                    new SeparatorMenuItem(),
+                    CreateCommandInsert("AnalogMode", "AnalogMode, Ignore/Circle/Square/Precise"),
+                    new SeparatorMenuItem(),
+                    CreateCommandInsert("StunPause", "StunPause\n\nEndStunPause"),
+                    CreateCommandInsert("EndStunPause", "EndStunPause"),
+                    CreateCommandInsert("StunPauseMode", "StunPauseMode, Simulate/Input"),
+                    new SeparatorMenuItem(),
+                    CreateCommandInsert("AutoInput", "AutoInput, 2\n   1,S,N\n  10,O\nStartAutoInput\n\nEndAutoInput"),
+                    CreateCommandInsert("StartAutoInput", "StartAutoInput"),
+                    CreateCommandInsert("EndAutoInput", "EndAutoInput"),
+                    CreateCommandInsert("SkipInput", "SkipInput"),
+                    new SeparatorMenuItem(),
+                    CreateCommandInsert("SaveAndQuitReenter", "SaveAndQuitReenter"),
+                    new SeparatorMenuItem(),
+                    CreateCommandInsert("ExportGameInfo", "ExportGameInfo dump.txt"),
+                    CreateCommandInsert("EndExportGameInfo", "EndExportGameInfo"),
+                    new SeparatorMenuItem(),
+                    CreateCommandInsert("StartRecording", "StartRecording"),
+                    CreateCommandInsert("StopRecording", "StopRecording"),
+                    new SeparatorMenuItem(),
+                    CreateCommandInsert("Add", "Add, (input line"),
+                    CreateCommandInsert("Skip", "Skip"),
+                    CreateCommandInsert("Marker", "Marker"),
+                    CreateCommandInsert("ExportLibTAS", "ExportLibTAS Celeste.ltm"),
+                    CreateCommandInsert("EndExportLibTAS", "EndExportLibTAS"),
+                    new SeparatorMenuItem(),
+                    CreateCommandInsert("CompleteInfo", "CompleteInfo A 1"),
+                    CreateCommandInsert("RecordCount", "RecordCount: 1"),
+                    CreateCommandInsert("FileTime", "FileTime:"),
+                    CreateCommandInsert("ChapterTime", "ChapterTime:"),
+                    CreateCommandInsert("MidwayFileTime", "MidwayFileTime:"),
+                    CreateCommandInsert("MidwayChapterTime", "MidwayChapterTime:"),
+                    new SeparatorMenuItem(),
+                    CreateCommandInsert("ExitGame", "ExitGame"),
+                }},
                 new SeparatorMenuItem(),
                 CreateAction("Swap Selected X and C"),
                 CreateAction("Swap Selected J and K"),
