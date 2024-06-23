@@ -29,10 +29,13 @@ public sealed class Editor : Drawable {
                 CreateAction("Copy", Application.Instance.CommonModifier | Keys.C),
                 CreateAction("Paste", Application.Instance.CommonModifier | Keys.V),
                 new SeparatorMenuItem(),
-                CreateAction("Undo", Application.Instance.CommonModifier | Keys.Z),
-                CreateAction("Redo", Application.Instance.CommonModifier | Keys.Z | Keys.Shift),
+                CreateAction("Undo", Application.Instance.CommonModifier | Keys.Z, () => Document.Undo()),
+                CreateAction("Redo", Application.Instance.CommonModifier | Keys.Z | Keys.Shift, () => Document.Redo()),
                 new SeparatorMenuItem(),
-                CreateAction("Select All", Application.Instance.CommonModifier | Keys.A),
+                CreateAction("Select All", Application.Instance.CommonModifier | Keys.A, () => {
+                    Document.Selection.Start = new CaretPosition(0, 0);
+                    Document.Selection.End = new CaretPosition(Document.Lines.Count - 1, Document.Lines[^1].Length);
+                }),
                 CreateAction("Select Block", Application.Instance.CommonModifier | Keys.W),
                 new SeparatorMenuItem(),
                 CreateAction("Insert/Remove Breakpoint"),
@@ -207,14 +210,18 @@ public sealed class Editor : Drawable {
                 MoveCaret(CaretMovementType.LineEnd, updateSelection: e.Shift);
                 break;
             default:
-                // Hotkeys
-                if (e is { Key: Keys.Z, Control: true}) {
-                    Document.Undo();
-                    break;
-                }
-                if (e is { Key: Keys.Z, Control: true, Shift: true} or { Key: Keys.Y, Control: true}) {
-                    Document.Redo();
-                    break;
+                var key = e.Key;
+                if (e.Shift) key |= Keys.Shift;
+                if (e.Control) key |= Keys.Control;
+                if (e.Alt) key |= Keys.Alt;
+                
+                // Search through context menu for hotkeys
+                foreach (var item in ContextMenu.Items)
+                {
+                    if (item.Shortcut == key) {
+                        item.PerformClick();
+                        break;
+                    }
                 }
                 
                 base.OnKeyDown(e);
