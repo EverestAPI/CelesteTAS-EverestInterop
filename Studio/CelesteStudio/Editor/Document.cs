@@ -79,28 +79,35 @@ public class UndoStack(int stackSize = 256) {
 }
 
 public class Document {
+    // Unify all TASes to use a single line separator
+    public const char NewLine = '\n';
+    
     // Should only be used while an actual document is being loaded
     public static readonly Document Dummy = new(string.Empty);
     
     public CaretPosition Caret = new();
     public Selection Selection = new();
     
-    public string FilePath { get; set; }
-    public string FileName => FilePath == null ? null : Path.GetFileName(FilePath);
+    public string FilePath { get; set; } = string.Empty;
+    public string FileName => Path.GetFileName(FilePath);
 
     private readonly UndoStack undoStack = new();
 
     private List<string> CurrentLines => undoStack.Stack[undoStack.Curr].Lines;
     public IReadOnlyList<string> Lines => CurrentLines.AsReadOnly();
     
-    public string Text => string.Join(Environment.NewLine, CurrentLines);
+    public string Text => string.Join(NewLine, CurrentLines);
 
     public bool Dirty { get; private set; }
     
     public event Action<Document> TextChanged = doc => doc.Dirty = true;
     
     private Document(string contents) {
-        undoStack.Stack[undoStack.Curr] = new UndoStack.Entry(contents.SplitLines(StringSplitOptions.RemoveEmptyEntries).ToList(), Caret);
+        contents = contents.ReplaceLineEndings(NewLine.ToString());
+        undoStack.Stack[undoStack.Curr] = new UndoStack.Entry(contents.SplitDocumentLines().ToList(), Caret);
+        
+        // Save with the new line endings
+        Save();
         
         Studio.CelesteService.Server.LinesUpdated += OnLinesUpdated;
     }
@@ -150,7 +157,7 @@ public class Document {
     
     public void Insert(string text) => Caret = Insert(Caret, text);
     public CaretPosition Insert(CaretPosition pos, string text) {
-        var newLines = text.SplitLines();
+        var newLines = text.SplitDocumentLines();
         if (newLines.Length == 0)
             return pos;
         
@@ -178,7 +185,7 @@ public class Document {
     public void InsertLineAbove(string text) => InsertNewLine(Caret.Row, text);
     public void InsertLineBelow(string text) => InsertNewLine(Caret.Row + 1, text);
     public void InsertNewLine(int line, string text) {
-        var newLines = text.SplitLines();
+        var newLines = text.SplitDocumentLines();
         if (newLines.Length == 0)
             return;
         
@@ -229,7 +236,7 @@ public class Document {
         }
         
         // Insert new text
-        var newLines = text.SplitLines();
+        var newLines = text.SplitDocumentLines();
         if (newLines.Length == 0)
             return;
         

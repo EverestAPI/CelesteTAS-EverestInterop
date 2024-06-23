@@ -220,17 +220,17 @@ public sealed class Studio : Form {
             Directory.CreateDirectory(gamePath);
         }
         
-        string initText = $"RecordCount: 1{Environment.NewLine}";
+        string initText = $"RecordCount: 1{Document.NewLine}";
         if (CelesteService.Connected) {
             if (CelesteService.Server.GetDataFromGame(GameDataType.ConsoleCommand, true) is { } simpleConsoleCommand) {
-                initText += $"{Environment.NewLine}{simpleConsoleCommand}{Environment.NewLine}   1{Environment.NewLine}";
+                initText += $"{Document.NewLine}{simpleConsoleCommand}{Document.NewLine}   1{Document.NewLine}";
                 if (CelesteService.Server.GetDataFromGame(GameDataType.ModUrl) is { } modUrl) {
                     initText = modUrl + initText;
                 }
             }
         }
         
-        initText += $"{Environment.NewLine}#Start{Environment.NewLine}";
+        initText += $"{Document.NewLine}#Start{Document.NewLine}";
         
         string filePath = Path.Combine(gamePath, $"Untitled-{index}.tas");
         while (File.Exists(filePath) && File.ReadAllText(filePath) != initText) {

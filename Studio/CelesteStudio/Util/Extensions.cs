@@ -6,7 +6,8 @@ namespace CelesteStudio.Util;
 
 public static class Extensions
 {
-    public static string[] SplitLines(this string self, StringSplitOptions options = StringSplitOptions.None) => self.Split(["\n", "\r", "\n\r"], options);
+    public static string[] SplitDocumentLines(this string self, StringSplitOptions options = StringSplitOptions.None) => self.Split(Document.NewLine, options);
+
     public static int Digits(this int self) => Math.Abs(self).ToString().Length;
     
     public static string ReplaceRange(this string self, int startIndex, int count, string replacement) => self.Remove(startIndex, count).Insert(startIndex, replacement);

@@ -517,12 +517,12 @@ public sealed class Editor : Drawable {
     private void OnEnter() {
         var line = Document.Lines[Document.Caret.Row];
         
-        if (ActionLine.TryParse(line, out var actionLine)) {
+        if (ActionLine.TryParse(line, out _)) {
             // Don't split frame count and action
-            Document.InsertNewLine(Document.Caret.Row + 1, string.Empty);
+            Document.InsertLineBelow(string.Empty);
             Document.Caret.Row++;
         } else {
-            Document.Insert(Environment.NewLine);
+            Document.Insert(Document.NewLine.ToString());
         }
         
         ScrollCaretIntoView();
