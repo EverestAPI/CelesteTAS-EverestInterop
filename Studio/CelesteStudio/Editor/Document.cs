@@ -40,6 +40,8 @@ public struct Selection() {
     public CaretPosition Min => Start < End ? Start : End;
     public CaretPosition Max => Start < End ? End : Start;
     public bool Empty => Start == End;
+    
+    public void Clear() => Start = End = new();
 }
 
 public class Document {
@@ -141,12 +143,14 @@ public class Document {
         TextChanged.Invoke(this);
     }
     
-    public void RemoveSelectedText() => RemoveRange(Selection.Start, Selection.End);
+    public void RemoveSelectedText() => RemoveRange(Selection.Min, Selection.Max);
     public void RemoveRange(CaretPosition start, CaretPosition end) {
-        lines[start.Row] = lines[start.Row][..start.Col];
-        lines[end.Row] = lines[end.Row][end.Col..];
-        for (int i = start.Row + 1; i < end.Row; i++)
-            lines.RemoveAt(i);
+        if (start.Row == end.Row) {
+            lines[start.Row] = lines[start.Row].Remove(start.Col, end.Col - start.Col);
+        } else {
+            lines[start.Row] = lines[start.Row][..start.Col] + lines[end.Row][end.Col..];
+            lines.RemoveRange(start.Row + 1, end.Row - start.Row);
+        }
         
         TextChanged.Invoke(this);
     }

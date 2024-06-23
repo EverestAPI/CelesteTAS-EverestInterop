@@ -108,6 +108,11 @@ public class Editor : Drawable {
     }
 
     protected override void OnTextInput(TextInputEventArgs e) {
+        if (!Document.Selection.Empty) {
+            Document.RemoveSelectedText();
+            Document.Selection.Clear();
+        }
+        
         var line = Document.Lines[Document.Caret.Row];
         
         char typedCharacter = char.ToUpper(e.Text[0]);
@@ -232,113 +237,117 @@ public class Editor : Drawable {
     #region Editing Actions
     
     private void OnDelete(CaretMovementType direction) {
-        if (Document.Selection.Empty) {
-            var caret = Document.Caret;
-            var line = Document.Lines[Document.Caret.Row];
-
-            if (ActionLine.TryParse(line, out var actionLine)) {
-                caret.Col = SnapColumnToActionLine(actionLine, caret.Col);
-
-                var lineStartPosition = new CaretPosition(caret.Row, 0);
-
-                // Handle frame count
-                if (caret.Col == ActionLine.MaxFramesDigits && direction is CaretMovementType.WordLeft or CaretMovementType.CharLeft ||
-                    caret.Col < ActionLine.MaxFramesDigits) {
-                    int leadingSpaces = line.Length - line.TrimStart().Length;
-                    int cursorIndex = Math.Clamp(caret.Col - leadingSpaces, 0, actionLine.Frames.Digits());
-
-                    string framesString = actionLine.Frames.ToString();
-                    string leftOfCursor = framesString[..cursorIndex];
-                    string rightOfCursor = framesString[cursorIndex..];
-
-                    if (actionLine.Frames == 0) {
-                        line = string.Empty;
-                    } else if (leftOfCursor.Length == 0 && direction is CaretMovementType.WordLeft or CaretMovementType.CharLeft ||
-                        rightOfCursor.Length == 0 && direction is CaretMovementType.WordRight or CaretMovementType.CharRight) {
-                        line = string.Empty;
-                    } else {
-                        string newFramesString = string.Empty;
-                        if (direction == CaretMovementType.WordLeft) {
-                            newFramesString = rightOfCursor;
-                            cursorIndex = 0;
-                        } else if (direction == CaretMovementType.WordRight) {
-                            newFramesString = leftOfCursor;
-                        } else if (direction == CaretMovementType.CharLeft) {
-                            newFramesString = $"{leftOfCursor[..^1]}{rightOfCursor}";
-                            cursorIndex--;
-                        } else if (direction == CaretMovementType.CharRight) {
-                            newFramesString = $"{leftOfCursor}{rightOfCursor[1..]}";
-                        }
-
-                        actionLine.Frames = Math.Clamp(int.TryParse(newFramesString, out int value) ? value : 0, 0, ActionLine.MaxFrames);
-                        line = actionLine.ToString();
-                        caret.Col = actionLine.Frames == 0
-                            ? ActionLine.MaxFramesDigits
-                            : ActionLine.MaxFramesDigits - actionLine.Frames.Digits() + cursorIndex;
-                    }
-                    goto FinishDeletion; // Skip regular deletion behaviour
-                }
-
-                // Handle feather angle/magnitude
-                int featherColumn = GetColumnOfAction(actionLine, Actions.Feather);
-                if (featherColumn != -1 && caret.Col >= featherColumn) {
-                    int angleMagnitudeCommaColumn = featherColumn + 2;
-                    while (angleMagnitudeCommaColumn <= line.Length + 1 && line[angleMagnitudeCommaColumn - 2] != ActionLine.Delimiter) {
-                        angleMagnitudeCommaColumn++;
-                    }
-
-                    if (caret.Col == featherColumn + 1 && direction is CaretMovementType.CharLeft or CaretMovementType.WordLeft) {
-                        var actions = GetActionsFromColumn(actionLine, caret.Col - 1, direction);
-                        actionLine.Actions &= ~actions;
-                        line = actionLine.ToString();
-                        goto FinishDeletion;
-                    } else if (caret.Col == featherColumn && direction is CaretMovementType.CharRight or CaretMovementType.WordRight ||
-                        caret.Col == angleMagnitudeCommaColumn && direction is CaretMovementType.CharLeft or CaretMovementType.WordLeft) {
-                        actionLine.FeatherAngle = actionLine.FeatherMagnitude;
-                        actionLine.FeatherMagnitude = null;
-                        caret.Col = featherColumn;
-                        line = actionLine.ToString();
-                        goto FinishDeletion;
-                    } else if (caret.Col == angleMagnitudeCommaColumn - 1 && direction is CaretMovementType.CharRight or CaretMovementType.WordRight) {
-                        actionLine.FeatherMagnitude = null;
-                        line = actionLine.ToString();
-                        goto FinishDeletion;
-                    }
-                }
-
-                int newColumn = direction switch {
-                    CaretMovementType.CharLeft  => GetSoftSnapColumns(actionLine).Reverse().FirstOrDefault(c => c < caret.Col, caret.Col),
-                    CaretMovementType.WordLeft  => GetHardSnapColumns(actionLine).Reverse().FirstOrDefault(c => c < caret.Col, caret.Col),
-                    CaretMovementType.CharRight => GetSoftSnapColumns(actionLine).FirstOrDefault(c => c > caret.Col, caret.Col),
-                    CaretMovementType.WordRight => GetHardSnapColumns(actionLine).FirstOrDefault(c => c > caret.Col, caret.Col),
-                    _ => caret.Col,
-                };
-                Console.WriteLine($"From '{line}' from at {Math.Min(newColumn, caret.Col)} by {Math.Abs(newColumn - caret.Col)}");
-                line = line.Remove(Math.Min(newColumn, caret.Col), Math.Abs(newColumn - caret.Col));
-                caret.Col = Math.Min(newColumn, caret.Col);
-
-                FinishDeletion:
-                if (ActionLine.TryParse(line, out var newActionLine)) {
-                    line = newActionLine.ToString();
-                } else if (string.IsNullOrWhiteSpace(line)) {
-                    line = string.Empty;
-                    caret = lineStartPosition;
-                }
-
-                Document.ReplaceLine(caret.Row, line);
-                Document.Caret = ClampCaret(caret);
-            } else {
-                var newCaret = GetNewTextCaretPosition(direction);
-                
-                if (caret.Row == newCaret.Row) {
-                    Document.ReplaceRangeInLine(caret.Row, caret.Col, newCaret.Col, string.Empty);
-                    newCaret.Col = Math.Min(newCaret.Col, caret.Col);    
-                }
-                
-                Document.Caret = ClampCaret(newCaret); 
-            }
-        } else {
+        if (!Document.Selection.Empty) {
             Document.RemoveSelectedText();
+            Document.Selection.Clear();
+            return;
+        }
+        
+        var caret = Document.Caret;
+        var line = Document.Lines[Document.Caret.Row];
+        
+        if (ActionLine.TryParse(line, out var actionLine)) {
+            caret.Col = SnapColumnToActionLine(actionLine, caret.Col);
+            
+            var lineStartPosition = new CaretPosition(caret.Row, 0);
+            
+            // Handle frame count
+            if (caret.Col == ActionLine.MaxFramesDigits && direction is CaretMovementType.WordLeft or CaretMovementType.CharLeft ||
+                caret.Col < ActionLine.MaxFramesDigits) {
+                int leadingSpaces = line.Length - line.TrimStart().Length;
+                int cursorIndex = Math.Clamp(caret.Col - leadingSpaces, 0, actionLine.Frames.Digits());
+                
+                string framesString = actionLine.Frames.ToString();
+                string leftOfCursor = framesString[..cursorIndex];
+                string rightOfCursor = framesString[cursorIndex..];
+                
+                if (actionLine.Frames == 0) {
+                    line = string.Empty;
+                } else if (leftOfCursor.Length == 0 && direction is CaretMovementType.WordLeft or CaretMovementType.CharLeft ||
+                           rightOfCursor.Length == 0 && direction is CaretMovementType.WordRight or CaretMovementType.CharRight) {
+                    line = string.Empty;
+                } else {
+                    string newFramesString = string.Empty;
+                    if (direction == CaretMovementType.WordLeft) {
+                        newFramesString = rightOfCursor;
+                        cursorIndex = 0;
+                    } else if (direction == CaretMovementType.WordRight) {
+                        newFramesString = leftOfCursor;
+                    } else if (direction == CaretMovementType.CharLeft) {
+                        newFramesString = $"{leftOfCursor[..^1]}{rightOfCursor}";
+                        cursorIndex--;
+                    } else if (direction == CaretMovementType.CharRight) {
+                        newFramesString = $"{leftOfCursor}{rightOfCursor[1..]}";
+                    }
+                    
+                    actionLine.Frames = Math.Clamp(int.TryParse(newFramesString, out int value) ? value : 0, 0, ActionLine.MaxFrames);
+                    line = actionLine.ToString();
+                    caret.Col = actionLine.Frames == 0
+                        ? ActionLine.MaxFramesDigits
+                        : ActionLine.MaxFramesDigits - actionLine.Frames.Digits() + cursorIndex;
+                }
+                
+                goto FinishDeletion; // Skip regular deletion behaviour
+            }
+            
+            // Handle feather angle/magnitude
+            int featherColumn = GetColumnOfAction(actionLine, Actions.Feather);
+            if (featherColumn != -1 && caret.Col >= featherColumn) {
+                int angleMagnitudeCommaColumn = featherColumn + 2;
+                while (angleMagnitudeCommaColumn <= line.Length + 1 && line[angleMagnitudeCommaColumn - 2] != ActionLine.Delimiter) {
+                    angleMagnitudeCommaColumn++;
+                }
+                
+                if (caret.Col == featherColumn + 1 && direction is CaretMovementType.CharLeft or CaretMovementType.WordLeft) {
+                    var actions = GetActionsFromColumn(actionLine, caret.Col - 1, direction);
+                    actionLine.Actions &= ~actions;
+                    line = actionLine.ToString();
+                    goto FinishDeletion;
+                } else if (caret.Col == featherColumn && direction is CaretMovementType.CharRight or CaretMovementType.WordRight ||
+                           caret.Col == angleMagnitudeCommaColumn && direction is CaretMovementType.CharLeft or CaretMovementType.WordLeft) {
+                    actionLine.FeatherAngle = actionLine.FeatherMagnitude;
+                    actionLine.FeatherMagnitude = null;
+                    caret.Col = featherColumn;
+                    line = actionLine.ToString();
+                    goto FinishDeletion;
+                } else if (caret.Col == angleMagnitudeCommaColumn - 1 &&
+                           direction is CaretMovementType.CharRight or CaretMovementType.WordRight) {
+                    actionLine.FeatherMagnitude = null;
+                    line = actionLine.ToString();
+                    goto FinishDeletion;
+                }
+            }
+            
+            int newColumn = direction switch {
+                CaretMovementType.CharLeft => GetSoftSnapColumns(actionLine).Reverse().FirstOrDefault(c => c < caret.Col, caret.Col),
+                CaretMovementType.WordLeft => GetHardSnapColumns(actionLine).Reverse().FirstOrDefault(c => c < caret.Col, caret.Col),
+                CaretMovementType.CharRight => GetSoftSnapColumns(actionLine).FirstOrDefault(c => c > caret.Col, caret.Col),
+                CaretMovementType.WordRight => GetHardSnapColumns(actionLine).FirstOrDefault(c => c > caret.Col, caret.Col),
+                _ => caret.Col,
+            };
+            Console.WriteLine($"From '{line}' from at {Math.Min(newColumn, caret.Col)} by {Math.Abs(newColumn - caret.Col)}");
+            line = line.Remove(Math.Min(newColumn, caret.Col), Math.Abs(newColumn - caret.Col));
+            caret.Col = Math.Min(newColumn, caret.Col);
+            
+            FinishDeletion:
+            if (ActionLine.TryParse(line, out var newActionLine)) {
+                line = newActionLine.ToString();
+            } else if (string.IsNullOrWhiteSpace(line)) {
+                line = string.Empty;
+                caret = lineStartPosition;
+            }
+            
+            Document.ReplaceLine(caret.Row, line);
+            Document.Caret = ClampCaret(caret);
+        } else {
+            var newCaret = GetNewTextCaretPosition(direction);
+            
+            if (caret.Row == newCaret.Row) {
+                Document.ReplaceRangeInLine(caret.Row, caret.Col, newCaret.Col, string.Empty);
+                newCaret.Col = Math.Min(newCaret.Col, caret.Col);
+            }
+            
+            Document.Caret = ClampCaret(newCaret);
         }
     }
     
@@ -388,8 +397,8 @@ public class Editor : Drawable {
                 CaretMovementType.CharRight => ClampCaret(new CaretPosition(newCaret.Row, GetSoftSnapColumns(actionLine).FirstOrDefault(c => c > newCaret.Col, newCaret.Col))),
                 CaretMovementType.WordLeft  => ClampCaret(new CaretPosition(newCaret.Row, GetHardSnapColumns(actionLine).Reverse().FirstOrDefault(c => c < newCaret.Col, newCaret.Col))),
                 CaretMovementType.WordRight => ClampCaret(new CaretPosition(newCaret.Row, GetHardSnapColumns(actionLine).FirstOrDefault(c => c > newCaret.Col, newCaret.Col))),
-                CaretMovementType.LineStart => ClampCaret(new CaretPosition(newCaret.Row, leadingSpaces + 1)),
-                CaretMovementType.LineEnd   => ClampCaret(new CaretPosition(newCaret.Row, line.Length + 1)),
+                CaretMovementType.LineStart => ClampCaret(new CaretPosition(newCaret.Row, leadingSpaces + 1), wrapLine: false),
+                CaretMovementType.LineEnd   => ClampCaret(new CaretPosition(newCaret.Row, line.Length + 1), wrapLine: false),
                 _ => GetNewTextCaretPosition(direction),
             };
         } else {
@@ -408,7 +417,7 @@ public class Editor : Drawable {
             
             Document.Selection.End = newCaret;
         } else {
-            Document.Selection.Start = Document.Selection.End = newCaret;
+            Document.Selection.Clear();
         }
         
         Document.Caret = newCaret;
