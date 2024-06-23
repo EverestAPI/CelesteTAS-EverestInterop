@@ -98,9 +98,9 @@ public class Document {
     public bool Dirty { get; private set; }
     
     public event Action<Document> TextChanged = doc => doc.Dirty = true;
-
+    
     private Document(string contents) {
-        undoStack.Stack[undoStack.Curr] = new UndoStack.Entry(contents.Split('\n', '\r').ToList(), Caret);
+        undoStack.Stack[undoStack.Curr] = new UndoStack.Entry(contents.SplitLines().ToList(), Caret);
         
         Studio.CelesteService.Server.LinesUpdated += OnLinesUpdated;
     }
@@ -150,7 +150,7 @@ public class Document {
     
     public void Insert(string text) => Caret = Insert(Caret, text);
     public CaretPosition Insert(CaretPosition pos, string text) {
-        var newLines = text.Split('\n', '\r');
+        var newLines = text.SplitLines();
         if (newLines.Length == 0)
             return pos;
         
@@ -178,7 +178,7 @@ public class Document {
     public void InsertLineAbove(string text) => InsertNewLine(Caret.Row, text);
     public void InsertLineBelow(string text) => InsertNewLine(Caret.Row + 1, text);
     public void InsertNewLine(int line, string text) {
-        var newLines = text.Split('\n', '\r');
+        var newLines = text.SplitLines();
         if (newLines.Length == 0)
             return;
         
@@ -229,7 +229,7 @@ public class Document {
         }
         
         // Insert new text
-        var newLines = text.Split('\n', '\r');
+        var newLines = text.SplitLines();
         if (newLines.Length == 0)
             return;
         
