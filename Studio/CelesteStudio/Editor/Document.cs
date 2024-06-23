@@ -44,6 +44,40 @@ public struct Selection() {
     public void Clear() => Start = End = new();
 }
 
+public class UndoStack(int stackSize = 256) {
+    public struct Entry(List<string> lines, CaretPosition caret) {
+        public readonly List<string> Lines = lines;
+        public CaretPosition Caret = caret;
+    }
+    
+    public int Curr = 0;
+    public readonly Entry[] Stack = new Entry[stackSize];
+    
+    private int head = 0, tail = 0;
+    
+    public void Push(CaretPosition caret) {
+        head = (Curr + 1) % stackSize;
+        if (head == tail)
+            tail = (tail + 1) % stackSize; // Discard the oldest entry
+        
+        Stack[Curr].Caret = caret;
+        Stack[head] = new Entry(
+            [..Stack[Curr].Lines], // Make sure to copy    
+            caret // Will be overwritten later, so it doesn't matter what's used
+        );
+        Curr = head;
+    }
+    
+    public void Undo() {
+        if (Curr == tail) return;
+        Curr = (Curr - 1) % stackSize;
+    }
+    public void Redo() {
+        if (Curr == head) return;
+        Curr = (Curr + 1) % stackSize;
+    }
+}
+
 public class Document {
     //private const string EmptyDocument = "RecordCount: 1\n\n#Start\n";
     private const string EmptyDocument = "";
@@ -54,17 +88,19 @@ public class Document {
     public string? FilePath { get; set; }
     public string? FileName => FilePath == null ? null : Path.GetFileName(FilePath);
 
-    private readonly List<string> lines;
-    public IReadOnlyList<string> Lines => lines.AsReadOnly();
+    private readonly UndoStack undoStack = new();
+
+    private List<string> CurrentLines => undoStack.Stack[undoStack.Curr].Lines;
+    public IReadOnlyList<string> Lines => CurrentLines.AsReadOnly();
     
-    public string Text => string.Join(Environment.NewLine, lines);
+    public string Text => string.Join(Environment.NewLine, CurrentLines);
 
     public bool Dirty { get; private set; }
     
     public event Action<Document> TextChanged = doc => doc.Dirty = true;
 
     private Document(string contents) {
-        lines = contents.Split('\n', '\r').ToList();
+        undoStack.Stack[undoStack.Curr] = new UndoStack.Entry(contents.Split('\n', '\r').ToList(), Caret);
         
         Studio.CelesteService.Server.LinesUpdated += OnLinesUpdated;
     }
@@ -101,82 +137,114 @@ public class Document {
 
     private void OnLinesUpdated(Dictionary<int, string> newLines) {
         foreach ((int lineNum, string newText) in newLines) {
-            lines[lineNum] = newText;
+            CurrentLines[lineNum] = newText;
         }
     }
 
     #region Text Manipulation Helpers
-
+    
+    public void Undo() {
+        undoStack.Undo();
+        Caret = undoStack.Stack[undoStack.Curr].Caret;
+    }
+    public void Redo() {
+        undoStack.Redo();
+        Caret = undoStack.Stack[undoStack.Curr].Caret;
+    }
+    
     public void Insert(string text) => Caret = Insert(Caret, text);
     public CaretPosition Insert(CaretPosition pos, string text) {
+        undoStack.Push(Caret);
+        
         var newLines = text.Split('\n', '\r');
         if (newLines.Length == 0)
             return pos;
 
         if (newLines.Length == 1) {
-            lines[pos.Row] = lines[pos.Row].Insert(pos.Col, text);
+            CurrentLines[pos.Row] = CurrentLines[pos.Row].Insert(pos.Col, text);
             pos.Col += text.Length;
         } else {
-            string left  = lines[pos.Row][..pos.Col];
-            string right = lines[pos.Row][pos.Col..];
+            string left  = CurrentLines[pos.Row][..pos.Col];
+            string right = CurrentLines[pos.Row][pos.Col..];
         
-            lines[pos.Row] = left + newLines[0];
+            CurrentLines[pos.Row] = left + newLines[0];
             for (int i = 1; i < newLines.Length; i++)
-                lines.Insert(pos.Row + i, newLines[i]);
+                CurrentLines.Insert(pos.Row + i, newLines[i]);
             pos.Row += newLines.Length - 1;
             pos.Col = newLines[^1].Length;
-            lines[pos.Row] += right;
+            CurrentLines[pos.Row] += right;
         }
         
         TextChanged.Invoke(this);
         return pos;
     }
     public void InsertNewLine(int line, string text) {
-        lines.Insert(line, text);
+        undoStack.Push(Caret);
+        
+        CurrentLines.Insert(line, text);
         
         TextChanged.Invoke(this);
     }
     
     public void ReplaceLine(int row, string text) {
-        lines[row] = text;
+        undoStack.Push(Caret);
+        
+        CurrentLines[row] = text;
         
         TextChanged.Invoke(this);
     }
     
     public void RemoveSelectedText() => RemoveRange(Selection.Min, Selection.Max);
     public void RemoveRange(CaretPosition start, CaretPosition end) {
+        undoStack.Push(Caret);
+        
+        if (start > end)
+            (end, start) = (start, end);
+        
         if (start.Row == end.Row) {
-            lines[start.Row] = lines[start.Row].Remove(start.Col, end.Col - start.Col);
+            CurrentLines[start.Row] = CurrentLines[start.Row].Remove(start.Col, end.Col - start.Col);
         } else {
-            lines[start.Row] = lines[start.Row][..start.Col] + lines[end.Row][end.Col..];
-            lines.RemoveRange(start.Row + 1, end.Row - start.Row);
+            CurrentLines[start.Row] = CurrentLines[start.Row][..start.Col] + CurrentLines[end.Row][end.Col..];
+            CurrentLines.RemoveRange(start.Row + 1, end.Row - start.Row);
         }
         
         TextChanged.Invoke(this);
     }
 
     public void ReplaceRange(CaretPosition start, CaretPosition end, string text) {
+        undoStack.Push(Caret);
+
+        if (start > end)
+            (end, start) = (start, end);
+        
         // Remove old text
-        RemoveRange(start, end);
+        if (start.Row == end.Row) {
+            CurrentLines[start.Row] = CurrentLines[start.Row].Remove(start.Col, end.Col - start.Col);
+        } else {
+            CurrentLines[start.Row] = CurrentLines[start.Row][..start.Col] + CurrentLines[end.Row][end.Col..];
+            CurrentLines.RemoveRange(start.Row + 1, end.Row - start.Row);
+        }
         
         // Insert new text
         var newLines = text.Split('\n', '\r');
         if (newLines.Length == 0)
             return;
         
-        lines[start.Row] = lines[start.Row] + newLines[0];
+        CurrentLines[start.Row] = CurrentLines[start.Row] + newLines[0];
         for (int i = 1; i < newLines.Length - 1; i++)
-            lines.Insert(start.Row + i, newLines[i]);
-        lines[start.Row + newLines.Length - 1] = newLines[^1] + lines[start.Row + newLines.Length - 1];
+            CurrentLines.Insert(start.Row + i, newLines[i]);
+        CurrentLines[start.Row + newLines.Length - 1] = newLines[^1] + CurrentLines[start.Row + newLines.Length - 1];
         
         TextChanged.Invoke(this);
     }
     
     public void ReplaceRangeInLine(int line, int startCol, int endCol, string text) {
+        undoStack.Push(Caret);
+
         if (startCol > endCol)
             (endCol, startCol) = (startCol, endCol);
         
-        lines[line] = lines[line].ReplaceRange(startCol, endCol - startCol, text);
+        CurrentLines[line] = CurrentLines[line].ReplaceRange(startCol, endCol - startCol, text);
         
         TextChanged.Invoke(this);
     }

@@ -100,6 +100,16 @@ public class Editor : Drawable {
                 MoveCaret(CaretMovementType.LineEnd, updateSelection: e.Shift);
                 break;
             default:
+                // Hotkeys
+                if (e is { Key: Keys.Z, Control: true}) {
+                    Document.Undo();
+                    break;
+                }
+                if (e is { Key: Keys.Z, Control: true, Shift: true} or { Key: Keys.Y, Control: true}) {
+                    Document.Redo();
+                    break;
+                }
+                
                 base.OnKeyDown(e);
                 break;
         }
