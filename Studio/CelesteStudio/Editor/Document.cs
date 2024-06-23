@@ -154,11 +154,11 @@ public class Document {
     
     public void Insert(string text) => Caret = Insert(Caret, text);
     public CaretPosition Insert(CaretPosition pos, string text) {
-        undoStack.Push(Caret);
-        
         var newLines = text.Split('\n', '\r');
         if (newLines.Length == 0)
             return pos;
+        
+        undoStack.Push(Caret);
 
         if (newLines.Length == 1) {
             CurrentLines[pos.Row] = CurrentLines[pos.Row].Insert(pos.Col, text);
@@ -178,10 +178,17 @@ public class Document {
         TextChanged.Invoke(this);
         return pos;
     }
+    
+    public void InsertLineAbove(string text) => InsertNewLine(Caret.Row, text);
+    public void InsertLineBelow(string text) => InsertNewLine(Caret.Row + 1, text);
     public void InsertNewLine(int line, string text) {
+        var newLines = text.Split('\n', '\r');
+        if (newLines.Length == 0)
+            return;
+        
         undoStack.Push(Caret);
         
-        CurrentLines.Insert(line, text);
+        CurrentLines.InsertRange(line, newLines);
         
         TextChanged.Invoke(this);
     }

@@ -9,7 +9,7 @@ using StudioCommunication;
 
 namespace CelesteStudio;
 
-public class Editor : Drawable {
+public sealed class Editor : Drawable {
     public readonly Document Document;
     
     private Font font = new(new FontFamily("JetBrains Mono"), 12.0f);
@@ -23,7 +23,114 @@ public class Editor : Drawable {
         BackgroundColor = Colors.Black;
         Cursor = Cursors.IBeam;
         
+        ContextMenu = new ContextMenu {
+            Items = {
+                CreateAction("Cut", Application.Instance.CommonModifier | Keys.X),
+                CreateAction("Copy", Application.Instance.CommonModifier | Keys.C),
+                CreateAction("Paste", Application.Instance.CommonModifier | Keys.V),
+                new SeparatorMenuItem(),
+                CreateAction("Undo", Application.Instance.CommonModifier | Keys.Z),
+                CreateAction("Redo", Application.Instance.CommonModifier | Keys.Z | Keys.Shift),
+                new SeparatorMenuItem(),
+                CreateAction("Select All", Application.Instance.CommonModifier | Keys.A),
+                CreateAction("Select Block", Application.Instance.CommonModifier | Keys.W),
+                new SeparatorMenuItem(),
+                CreateAction("Insert/Remove Breakpoint"),
+                CreateAction("Insert/Remove Savestate Breakpoint"),
+                CreateAction("Remove All Uncommented Breakpoints"),
+                CreateAction("Remove All Breakpoints"),
+                CreateAction("Comment/Uncomment All Breakpoints"),
+                CreateAction("Comment/Uncomment Inputs", Application.Instance.CommonModifier | Keys.K),
+                CreateAction("Comment/Uncomment Text", Application.Instance.CommonModifier | Keys.K | Keys.Shift),
+                new SeparatorMenuItem(),
+                CreateAction("Insert Room Name", Application.Instance.CommonModifier | Keys.R),
+                CreateAction("Insert Time", Application.Instance.CommonModifier | Keys.T),
+                CreateAction("Insert Mod Info"),
+                CreateAction("Insert Console Load Command"),
+                CreateAction("Insert Simple Console Load Command"),
+                new SubMenuItem {
+                    Text = "Insert Other Command",
+                    Items = {
+                        CreateCommandInsert("EnforceLegal", "EnforceLegal"),
+                        CreateCommandInsert("Unsafe", "Unsafe"),
+                        CreateCommandInsert("Safe", "Safe"),
+                        new SeparatorMenuItem(),
+                        CreateCommandInsert("Read", "Read, File Name, Starting Line, (Ending Line)"),
+                        CreateCommandInsert("Player", "Play, Starting Line"),
+                        new SeparatorMenuItem(),
+                        CreateCommandInsert("Repeat", "Repeat 2\n\nEndRepeat"),
+                        CreateCommandInsert("EndRepeat", "EndRepeat"),
+                        new SeparatorMenuItem(),
+                        CreateCommandInsert("Set", "Set, (Mod).Setting, Value"),
+                        CreateCommandInsert("Invoke", "Invoke, Entity.Method, Parameter"),
+                        CreateCommandInsert("EvalLua", "EvalLua, Code"),
+                        new SeparatorMenuItem(),
+                        CreateCommandInsert("Press", "Press, Key1, Key2..."),
+                        new SeparatorMenuItem(),
+                        CreateCommandInsert("AnalogMode", "AnalogMode, Ignore/Circle/Square/Precise"),
+                        new SeparatorMenuItem(),
+                        CreateCommandInsert("StunPause", "StunPause\n\nEndStunPause"),
+                        CreateCommandInsert("EndStunPause", "EndStunPause"),
+                        CreateCommandInsert("StunPauseMode", "StunPauseMode, Simulate/Input"),
+                        new SeparatorMenuItem(),
+                        CreateCommandInsert("AutoInput", "AutoInput, 2\n   1,S,N\n  10,O\nStartAutoInput\n\nEndAutoInput"),
+                        CreateCommandInsert("StartAutoInput", "StartAutoInput"),
+                        CreateCommandInsert("EndAutoInput", "EndAutoInput"),
+                        CreateCommandInsert("SkipInput", "SkipInput"),
+                        new SeparatorMenuItem(),
+                        CreateCommandInsert("SaveAndQuitReenter", "SaveAndQuitReenter"),
+                        new SeparatorMenuItem(),
+                        CreateCommandInsert("ExportGameInfo", "ExportGameInfo dump.txt"),
+                        CreateCommandInsert("EndExportGameInfo", "EndExportGameInfo"),
+                        new SeparatorMenuItem(),
+                        CreateCommandInsert("StartRecording", "StartRecording"),
+                        CreateCommandInsert("StopRecording", "StopRecording"),
+                        new SeparatorMenuItem(),
+                        CreateCommandInsert("Add", "Add, (input line"),
+                        CreateCommandInsert("Skip", "Skip"),
+                        CreateCommandInsert("Marker", "Marker"),
+                        CreateCommandInsert("ExportLibTAS", "ExportLibTAS Celeste.ltm"),
+                        CreateCommandInsert("EndExportLibTAS", "EndExportLibTAS"),
+                        new SeparatorMenuItem(),
+                        CreateCommandInsert("CompleteInfo", "CompleteInfo A 1"),
+                        CreateCommandInsert("RecordCount", "RecordCount: 1"),
+                        CreateCommandInsert("FileTime", "FileTime:"),
+                        CreateCommandInsert("ChapterTime", "ChapterTime:"),
+                        CreateCommandInsert("MidwayFileTime", "MidwayFileTime:"),
+                        CreateCommandInsert("MidwayChapterTime", "MidwayChapterTime:"),
+                        new SeparatorMenuItem(),
+                        CreateCommandInsert("ExitGame", "ExitGame"),
+                    }
+                },
+                new SeparatorMenuItem(),
+                CreateAction("Swap Selected X and C"),
+                CreateAction("Swap Selected J and K"),
+                CreateAction("Combine Consecutive Same Inputs"),
+                CreateAction("Force Combine Input Frames"),
+                CreateAction("Convert Dash to Demo Dash"),
+                new SeparatorMenuItem(),
+                CreateAction("Open Read File / Go to Play Line"),
+            }
+        };
+        
         Recalc();
+        
+        static MenuItem CreateAction(string text, Keys shortcut = Keys.None, Action? action = null) {
+            var cmd = new Command { MenuText = text, Shortcut = shortcut, Enabled = action != null };
+            cmd.Executed += (_, _) => action?.Invoke();
+
+            return cmd; 
+        }
+        
+        MenuItem CreateCommandInsert(string commandName, string commandInsert) {
+            var cmd = new Command { MenuText = commandName, Shortcut = Keys.None };
+            cmd.Executed += (_, _) => {
+                Document.InsertLineAbove(commandInsert);
+                Recalc();
+            };
+            
+            return cmd;
+        }
     }
     
     // private bool needRecalc = true;
@@ -515,6 +622,9 @@ public class Editor : Drawable {
             }
             
             Recalc();
+        }
+        if (e.Buttons.HasFlag(MouseButtons.Alternate)) {
+            ContextMenu.Show();
         }
         
         base.OnMouseDown(e);
