@@ -76,28 +76,28 @@ public class Editor : Drawable {
                 OnEnter();
                 break;
             case Keys.Left:
-                MoveCaret(e.Control ? CaretMovementType.WordLeft : CaretMovementType.CharLeft);
+                MoveCaret(e.Control ? CaretMovementType.WordLeft : CaretMovementType.CharLeft, updateSelection: e.Shift);
                 break;
             case Keys.Right:
-                MoveCaret(e.Control ? CaretMovementType.WordRight : CaretMovementType.CharRight);
+                MoveCaret(e.Control ? CaretMovementType.WordRight : CaretMovementType.CharRight, updateSelection: e.Shift);
                 break;
             case Keys.Up:
-                MoveCaret(CaretMovementType.LineUp);
+                MoveCaret(CaretMovementType.LineUp, updateSelection: e.Shift);
                 break;
             case Keys.Down:
-                MoveCaret(CaretMovementType.LineDown);
+                MoveCaret(CaretMovementType.LineDown, updateSelection: e.Shift);
                 break;
             case Keys.PageUp:
-                MoveCaret(CaretMovementType.PageUp);
+                MoveCaret(CaretMovementType.PageUp, updateSelection: e.Shift);
                 break;
             case Keys.PageDown:
-                MoveCaret(CaretMovementType.PageDown);
+                MoveCaret(CaretMovementType.PageDown, updateSelection: e.Shift);
                 break;
             case Keys.Home:
-                MoveCaret(CaretMovementType.LineStart);
+                MoveCaret(CaretMovementType.LineStart, updateSelection: e.Shift);
                 break;
             case Keys.End:
-                MoveCaret(CaretMovementType.LineEnd);
+                MoveCaret(CaretMovementType.LineEnd, updateSelection: e.Shift);
                 break;
             default:
                 base.OnKeyDown(e);
@@ -358,12 +358,12 @@ public class Editor : Drawable {
     
     #region Caret Movement
     
-    private CaretPosition ClampCaret(CaretPosition position) {
+    private CaretPosition ClampCaret(CaretPosition position, bool wrapLine = true) {
         // Wrap around to prev/next line
-        if (position.Row > 0 && position.Col < 0) {
+        if (wrapLine && position.Row > 0 && position.Col < 0) {
             position.Row--;
             position.Col = Document.Lines[position.Row].Length;
-        } else if (position.Row < Document.Lines.Count && position.Col > Document.Lines[position.Row].Length) {
+        } else if (wrapLine && position.Row < Document.Lines.Count && position.Col > Document.Lines[position.Row].Length) {
             position.Row++;
             position.Col = 0;
         }
@@ -375,30 +375,40 @@ public class Editor : Drawable {
         return position;
     }
     
-    private void MoveCaret(CaretMovementType direction) {
+    private void MoveCaret(CaretMovementType direction, bool updateSelection) {
+        var newCaret = Document.Caret;
+        
         var line = Document.Lines[Document.Caret.Row];
-        if (!ActionLine.TryParse(line, out var actionLine)) {
-            Document.Caret = GetNewTextCaretPosition(direction);
-            return;
+        if (ActionLine.TryParse(line, out var actionLine)) {
+            newCaret.Col = SnapColumnToActionLine(actionLine, newCaret.Col);
+            int leadingSpaces = ActionLine.MaxFramesDigits - actionLine.Frames.Digits();
+            
+            newCaret = direction switch {
+                CaretMovementType.CharLeft  => ClampCaret(new CaretPosition(newCaret.Row, GetSoftSnapColumns(actionLine).Reverse().FirstOrDefault(c => c < newCaret.Col, newCaret.Col))),
+                CaretMovementType.CharRight => ClampCaret(new CaretPosition(newCaret.Row, GetSoftSnapColumns(actionLine).FirstOrDefault(c => c > newCaret.Col, newCaret.Col))),
+                CaretMovementType.WordLeft  => ClampCaret(new CaretPosition(newCaret.Row, GetHardSnapColumns(actionLine).Reverse().FirstOrDefault(c => c < newCaret.Col, newCaret.Col))),
+                CaretMovementType.WordRight => ClampCaret(new CaretPosition(newCaret.Row, GetHardSnapColumns(actionLine).FirstOrDefault(c => c > newCaret.Col, newCaret.Col))),
+                CaretMovementType.LineStart => ClampCaret(new CaretPosition(newCaret.Row, leadingSpaces + 1)),
+                CaretMovementType.LineEnd   => ClampCaret(new CaretPosition(newCaret.Row, line.Length + 1)),
+                _ => GetNewTextCaretPosition(direction),
+            };
+        } else {
+            // Regular text movement
+            newCaret = GetNewTextCaretPosition(direction);
         }
         
-        Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
-        int leadingSpaces = ActionLine.MaxFramesDigits - actionLine.Frames.Digits();
-        
-        var caret = Document.Caret;
-        var newCaret = ClampCaret(direction switch {
-            CaretMovementType.CharLeft => new CaretPosition(caret.Row, GetSoftSnapColumns(actionLine).Reverse().FirstOrDefault(c => c < caret.Col, caret.Col)),
-            CaretMovementType.CharRight => new CaretPosition(caret.Row, GetSoftSnapColumns(actionLine).FirstOrDefault(c => c > caret.Col, caret.Col)),
-            CaretMovementType.WordLeft => new CaretPosition(caret.Row, GetHardSnapColumns(actionLine).Reverse().FirstOrDefault(c => c < caret.Col, caret.Col)),
-            CaretMovementType.WordRight => new CaretPosition(caret.Row, GetHardSnapColumns(actionLine).FirstOrDefault(c => c > caret.Col, caret.Col)),
-            CaretMovementType.LineStart => new CaretPosition(caret.Row, leadingSpaces + 1),
-            CaretMovementType.LineEnd => new CaretPosition(caret.Row, line.Length + 1),
-            _ => GetNewTextCaretPosition(direction),
-        });
-        
         var newLine = Document.Lines[newCaret.Row];
-        if (!ActionLine.TryParse(newLine, out var newActionLine)) {
+        if (ActionLine.TryParse(newLine, out var newActionLine)) {
             newCaret.Col = SnapColumnToActionLine(newActionLine, newCaret.Col);
+        }
+        
+        if (updateSelection) {
+            if (Document.Selection.Empty)
+                Document.Selection.Start = Document.Caret;    
+            
+            Document.Selection.End = newCaret;
+        } else {
+            Document.Selection.Start = Document.Selection.End = newCaret;
         }
         
         Document.Caret = newCaret;
@@ -406,23 +416,23 @@ public class Editor : Drawable {
     
     // For regular text movement
     private CaretPosition GetNewTextCaretPosition(CaretMovementType direction) =>
-        ClampCaret(direction switch {
+        direction switch {
             CaretMovementType.None => Document.Caret,
-            CaretMovementType.CharLeft => new CaretPosition(Document.Caret.Row, Document.Caret.Col - 1),
-            CaretMovementType.CharRight => new CaretPosition(Document.Caret.Row, Document.Caret.Col + 1),
-            CaretMovementType.WordLeft => GetNextWordCaretPosition(-1),
-            CaretMovementType.WordRight => GetNextWordCaretPosition(1),
-            CaretMovementType.LineUp => new CaretPosition(Document.Caret.Row - 1, Document.Caret.Col),
-            CaretMovementType.LineDown => new CaretPosition(Document.Caret.Row + 1, Document.Caret.Col),
+            CaretMovementType.CharLeft => ClampCaret(new CaretPosition(Document.Caret.Row, Document.Caret.Col - 1)),
+            CaretMovementType.CharRight => ClampCaret(new CaretPosition(Document.Caret.Row, Document.Caret.Col + 1)),
+            CaretMovementType.WordLeft => ClampCaret(GetNextWordCaretPosition(-1)),
+            CaretMovementType.WordRight => ClampCaret(GetNextWordCaretPosition(1)),
+            CaretMovementType.LineUp => ClampCaret(new CaretPosition(Document.Caret.Row - 1, Document.Caret.Col), wrapLine: false),
+            CaretMovementType.LineDown => ClampCaret(new CaretPosition(Document.Caret.Row + 1, Document.Caret.Col), wrapLine: false),
             // TODO: Page Up / Page Down
-            CaretMovementType.PageUp => new CaretPosition(Document.Caret.Row - 1, Document.Caret.Col),
-            CaretMovementType.PageDown => new CaretPosition(Document.Caret.Row + 1, Document.Caret.Col),
-            CaretMovementType.LineStart => new CaretPosition(Document.Caret.Row, 0),
-            CaretMovementType.LineEnd => new CaretPosition(Document.Caret.Row, Document.Lines[Document.Caret.Row].Length),
-            CaretMovementType.DocumentStart => new CaretPosition(0, 0),
-            CaretMovementType.DocumentEnd => new CaretPosition(Document.Lines.Count - 1, Document.Lines[^1].Length),
+            CaretMovementType.PageUp => ClampCaret(new CaretPosition(Document.Caret.Row - 1, Document.Caret.Col), wrapLine: false),
+            CaretMovementType.PageDown => ClampCaret(new CaretPosition(Document.Caret.Row + 1, Document.Caret.Col), wrapLine: false),
+            CaretMovementType.LineStart => ClampCaret(new CaretPosition(Document.Caret.Row, 0), wrapLine: false),
+            CaretMovementType.LineEnd => ClampCaret(new CaretPosition(Document.Caret.Row, Document.Lines[Document.Caret.Row].Length), wrapLine: false),
+            CaretMovementType.DocumentStart => ClampCaret(new CaretPosition(0, 0), wrapLine: false),
+            CaretMovementType.DocumentEnd => ClampCaret(new CaretPosition(Document.Lines.Count - 1, Document.Lines[^1].Length), wrapLine: false),
             _ => throw new UnreachableException()
-        });
+        };
 
     private CaretPosition GetNextWordCaretPosition(int dir) {
         var newPosition = Document.Caret;
@@ -469,10 +479,10 @@ public class Editor : Drawable {
         #endif
         
         // Draw text
-        float y = 0.0f;
+        float yPos = 0.0f;
         foreach (var line in Document.Lines) {
-            e.Graphics.DrawText(font, Colors.White, 0.0f, y, line);
-            y += font.LineHeight;
+            e.Graphics.DrawText(font, Colors.White, 0.0f, yPos, line);
+            yPos += font.LineHeight;
         }
         
         if (HasFocus) {
@@ -481,6 +491,38 @@ public class Editor : Drawable {
             float carY = font.LineHeight * Document.Caret.Row;
             using (Pen pen = new(Colors.Red)) {
                 e.Graphics.DrawLine(pen, carX, carY, carX, carY + font.LineHeight - 1);
+            }
+        }
+        
+        // Draw selection
+        if (!Document.Selection.Empty) {
+            var min = Document.Selection.Min;
+            var max = Document.Selection.Max;
+            Console.WriteLine($"Selection: {min.Row},{min.Col} -> {max.Row},{max.Col} @ {Document.Caret.Row},{Document.Caret.Col}");
+            
+            var color = Color.FromArgb(0x00, 0x00, 0xFF, 0x7F);
+            
+            if (min.Row == max.Row) {
+                float x = font.MeasureString(Document.Lines[min.Row][..min.Col]).Width;
+                float w = font.MeasureString(Document.Lines[min.Row][min.Col..max.Col]).Width;
+                float y = font.LineHeight * min.Row;
+                float h = font.LineHeight;
+                e.Graphics.FillRectangle(color, x, y, w, h);
+            } else {
+                float x = font.MeasureString(Document.Lines[min.Row][..min.Col]).Width;
+                float w = font.MeasureString(Document.Lines[min.Row][min.Col..]).Width;
+                float y = font.LineHeight * min.Row;
+                e.Graphics.FillRectangle(color, x, y, w, font.LineHeight);
+                
+                for (int i = min.Row + 1; i < max.Row; i++) {
+                    w = font.MeasureString(Document.Lines[i]).Width;
+                    y = font.LineHeight * i;
+                    e.Graphics.FillRectangle(color, 0.0f, y, w, font.LineHeight);
+                }
+                
+                w = font.MeasureString(Document.Lines[max.Row][..max.Col]).Width;
+                y = font.LineHeight * max.Row;
+                e.Graphics.FillRectangle(color, 0.0f, y, w, font.LineHeight);
             }
         }
         

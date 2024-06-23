@@ -9,8 +9,10 @@ namespace CelesteStudio;
 public struct CaretPosition(int row = 0, int col = 0) {
     public int Row = row, Col = col;
     
-    public static bool operator==(CaretPosition lhs, CaretPosition rhs) => lhs.Row == rhs.Row && lhs.Col == rhs.Col;
+    public static bool operator ==(CaretPosition lhs, CaretPosition rhs) => lhs.Row == rhs.Row && lhs.Col == rhs.Col;
     public static bool operator !=(CaretPosition lhs, CaretPosition rhs) => !(lhs == rhs);
+    public static bool operator >(CaretPosition lhs, CaretPosition rhs) => lhs.Row > rhs.Row || (lhs.Row == rhs.Row && lhs.Col > rhs.Col);
+    public static bool operator <(CaretPosition lhs, CaretPosition rhs) => lhs.Row < rhs.Row || (lhs.Row == rhs.Row && lhs.Col < rhs.Col);
     
     public override bool Equals(object? obj) => obj is CaretPosition other && Row == other.Row && Col == other.Col;
     public override int GetHashCode() => HashCode.Combine(Row, Col);
@@ -34,6 +36,9 @@ public enum CaretMovementType {
 
 public struct Selection() {
     public CaretPosition Start = new(), End = new();
+    
+    public CaretPosition Min => Start < End ? Start : End;
+    public CaretPosition Max => Start < End ? End : Start;
     public bool Empty => Start == End;
 }
 
