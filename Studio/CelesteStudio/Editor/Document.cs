@@ -6,19 +6,20 @@ using CelesteStudio.Util;
 
 namespace CelesteStudio;
 
-public struct CaretPosition(int row = 0, int col = 0)
-{
+public struct CaretPosition(int row = 0, int col = 0) {
     public int Row = row, Col = col;
     
     public static bool operator==(CaretPosition lhs, CaretPosition rhs) => lhs.Row == rhs.Row && lhs.Col == rhs.Col;
     public static bool operator !=(CaretPosition lhs, CaretPosition rhs) => !(lhs == rhs);
+    
+    public override bool Equals(object? obj) => obj is CaretPosition other && Row == other.Row && Col == other.Col;
+    public override int GetHashCode() => HashCode.Combine(Row, Col);
 }
 
 public enum CaretMovementType {
     None,
     CharLeft,
     CharRight,
-    // Backspace,
     WordLeft,
     WordRight,
     LineUp,
@@ -31,14 +32,12 @@ public enum CaretMovementType {
     DocumentEnd,
 }
 
-public struct Selection()
-{
+public struct Selection() {
     public CaretPosition Start = new(), End = new();
     public bool Empty => Start == End;
 }
 
 public class Document {
-    
     //private const string EmptyDocument = "RecordCount: 1\n\n#Start\n";
     private const string EmptyDocument = "";
 
@@ -48,7 +47,7 @@ public class Document {
     public string? FilePath { get; set; }
     public string? FileName => FilePath == null ? null : Path.GetFileName(FilePath);
 
-    private readonly List<string> lines = [];
+    private readonly List<string> lines;
     public IReadOnlyList<string> Lines => lines.AsReadOnly();
     
     public string Text => string.Join(Environment.NewLine, lines);
@@ -102,19 +101,15 @@ public class Document {
     #region Text Manipulation Helpers
 
     public void Insert(string text) => Caret = Insert(Caret, text);
-    public CaretPosition Insert(CaretPosition pos, string text)
-    {
+    public CaretPosition Insert(CaretPosition pos, string text) {
         var newLines = text.Split('\n', '\r');
         if (newLines.Length == 0)
             return pos;
 
-        if (newLines.Length == 1)
-        {
+        if (newLines.Length == 1) {
             lines[pos.Row] = lines[pos.Row].Insert(pos.Col, text);
             pos.Col += text.Length;
-        }
-        else
-        {
+        } else {
             string left  = lines[pos.Row][..pos.Col];
             string right = lines[pos.Row][pos.Col..];
         
@@ -129,23 +124,20 @@ public class Document {
         TextChanged.Invoke(this);
         return pos;
     }
-    public void InsertNewLine(int line, string text)
-    {
+    public void InsertNewLine(int line, string text) {
         lines.Insert(line, text);
         
         TextChanged.Invoke(this);
     }
     
-    public void ReplaceLine(int row, string text)
-    {
+    public void ReplaceLine(int row, string text) {
         lines[row] = text;
         
         TextChanged.Invoke(this);
     }
     
     public void RemoveSelectedText() => RemoveRange(Selection.Start, Selection.End);
-    public void RemoveRange(CaretPosition start, CaretPosition end)
-    {
+    public void RemoveRange(CaretPosition start, CaretPosition end) {
         lines[start.Row] = lines[start.Row][..start.Col];
         lines[end.Row] = lines[end.Row][end.Col..];
         for (int i = start.Row + 1; i < end.Row; i++)
@@ -154,8 +146,7 @@ public class Document {
         TextChanged.Invoke(this);
     }
 
-    public void ReplaceRange(CaretPosition start, CaretPosition end, string text)
-    {
+    public void ReplaceRange(CaretPosition start, CaretPosition end, string text) {
         // Remove old text
         RemoveRange(start, end);
         
@@ -172,8 +163,7 @@ public class Document {
         TextChanged.Invoke(this);
     }
     
-    public void ReplaceRangeInLine(int line, int startCol, int endCol, string text)
-    {
+    public void ReplaceRangeInLine(int line, int startCol, int endCol, string text) {
         if (startCol > endCol)
             (endCol, startCol) = (startCol, endCol);
         

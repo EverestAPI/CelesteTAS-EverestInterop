@@ -13,7 +13,7 @@ using StudioCommunication;
 
 namespace CelesteStudio;
 
-public sealed partial class Studio : Form {
+public sealed class Studio : Form {
     public static Studio Instance;
     public static Version Version { get; private set; }
     
@@ -46,10 +46,8 @@ public sealed partial class Studio : Form {
         editor.Document.TextChanged += _ => Title = TitleBarText;
     }
     
-    private MenuBar CreateMenu()
-    {
-        static MenuItem CreateToggle(string text, Func<bool> getFn, Action toggleFn)
-        {
+    private MenuBar CreateMenu() {
+        static MenuItem CreateToggle(string text, Func<bool> getFn, Action toggleFn) {
             var cmd = new CheckCommand { MenuText = text };
             cmd.Executed += (_, _) => toggleFn();
             
@@ -57,8 +55,7 @@ public sealed partial class Studio : Form {
             return new ButtonMenuItem(cmd);
         }
         
-        static MenuItem CreateNumberInput<T>(string text, Func<T> getFn, Action<T> setFn, T minValue, T maxValue, T step) where T : INumber<T>
-        {
+        static MenuItem CreateNumberInput<T>(string text, Func<T> getFn, Action<T> setFn, T minValue, T maxValue, T step) where T : INumber<T> {
             var cmd = new Command { MenuText = text };
             cmd.Executed += (_, _) => setFn(DialogUtil.ShowNumberInputDialog(text, getFn(), minValue, maxValue, step));
             
@@ -86,8 +83,7 @@ public sealed partial class Studio : Form {
                 // File submenu
                 new SubMenuItem {Text = "&File", Items = {}},
                 new SubMenuItem {Text = "&Settings", Items = {}},
-                new SubMenuItem {Text = "&Toggles", Items =
-                {
+                new SubMenuItem {Text = "&Toggles", Items = {
                     CreateToggle("&Hitboxes", CelesteService.GetHitboxes, CelesteService.ToggleHitboxes),
                     CreateToggle("&Trigger Hitboxes", CelesteService.GetTriggerHitboxes, CelesteService.ToggleTriggerHitboxes),
                     CreateToggle("Unloaded Room Hitboxes", CelesteService.GetUnloadedRoomsHitboxes, CelesteService.ToggleUnloadedRoomsHitboxes),

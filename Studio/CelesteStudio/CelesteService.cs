@@ -37,10 +37,9 @@ public class CelesteService {
     public string LevelName => Connected ? _state.LevelName : string.Empty;
     public string ChapterTime => Connected ? _state.ChapterTime : string.Empty;
 
-    private bool GetToggle(string settingName)
-    {
+    private bool GetToggle(string settingName) {
         if (Server.GetDataFromGame(GameDataType.SettingValue, settingName) is { } settingValue &&
-            bool.TryParse(settingValue, out var value))
+            bool.TryParse(settingValue, out var value)) 
         {
             return value;
         }

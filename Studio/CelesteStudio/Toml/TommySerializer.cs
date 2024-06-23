@@ -10,6 +10,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 
+#nullable disable
+
 // ReSharper disable ClassNeverInstantiated.Global
 // ReSharper disable MemberCanBePrivate.Global
 

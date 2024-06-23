@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using CelesteStudio.Util;
@@ -65,46 +64,44 @@ public class Editor : Drawable {
         // needRecalc = false;
     }
 
-    protected override void OnKeyDown(KeyEventArgs e)
-    {
-        switch (e.Key)
-        {
-        case Keys.Backspace:
-            OnDelete(e.Control ? CaretMovementType.WordLeft : CaretMovementType.CharLeft);
-            break;
-        case Keys.Delete:
-            OnDelete(e.Control ? CaretMovementType.WordRight : CaretMovementType.CharRight);
-            break;
-        case Keys.Enter:
-            OnEnter();
-            break;
-        case Keys.Left:
-            MoveCaret(e.Control ? CaretMovementType.WordLeft : CaretMovementType.CharLeft);
-            break;
-        case Keys.Right:
-            MoveCaret(e.Control ? CaretMovementType.WordRight : CaretMovementType.CharRight);
-            break;
-        case Keys.Up:
-            MoveCaret(CaretMovementType.LineUp);
-            break;
-        case Keys.Down:
-            MoveCaret(CaretMovementType.LineDown);
-            break;
-        case Keys.PageUp:
-            MoveCaret(CaretMovementType.PageUp);
-            break;
-        case Keys.PageDown:
-            MoveCaret(CaretMovementType.PageDown);
-            break;
-        case Keys.Home:
-            MoveCaret(CaretMovementType.LineStart);
-            break;
-        case Keys.End:
-            MoveCaret(CaretMovementType.LineEnd);
-            break;
-        default:
-            base.OnKeyDown(e);
-            break;
+    protected override void OnKeyDown(KeyEventArgs e) {
+        switch (e.Key) {
+            case Keys.Backspace:
+                OnDelete(e.Control ? CaretMovementType.WordLeft : CaretMovementType.CharLeft);
+                break;
+            case Keys.Delete:
+                OnDelete(e.Control ? CaretMovementType.WordRight : CaretMovementType.CharRight);
+                break;
+            case Keys.Enter:
+                OnEnter();
+                break;
+            case Keys.Left:
+                MoveCaret(e.Control ? CaretMovementType.WordLeft : CaretMovementType.CharLeft);
+                break;
+            case Keys.Right:
+                MoveCaret(e.Control ? CaretMovementType.WordRight : CaretMovementType.CharRight);
+                break;
+            case Keys.Up:
+                MoveCaret(CaretMovementType.LineUp);
+                break;
+            case Keys.Down:
+                MoveCaret(CaretMovementType.LineDown);
+                break;
+            case Keys.PageUp:
+                MoveCaret(CaretMovementType.PageUp);
+                break;
+            case Keys.PageDown:
+                MoveCaret(CaretMovementType.PageDown);
+                break;
+            case Keys.Home:
+                MoveCaret(CaretMovementType.LineStart);
+                break;
+            case Keys.End:
+                MoveCaret(CaretMovementType.LineEnd);
+                break;
+            default:
+                base.OnKeyDown(e);
+                break;
         }
         
         Recalc();
@@ -118,8 +115,7 @@ public class Editor : Drawable {
         bool startOfLine = Document.Caret.Col <= leadingSpaces + 1;
         
         // If it's an action line, handle it ourselves
-        if (ActionLine.TryParse(line, out var actionLine) && e.Text.Length == 1) 
-        {
+        if (ActionLine.TryParse(line, out var actionLine) && e.Text.Length == 1) {
             // Handle custom bindings
             int customBindStart = GetColumnOfAction(actionLine, Actions.PressedKey);
             int customBindEnd = customBindStart + actionLine.CustomBindings.Count;
@@ -216,8 +212,7 @@ public class Editor : Drawable {
             Document.ReplaceLine(Document.Caret.Row, actionLine.ToString());
         }
         // Start an action line if we should
-        else if (startOfLine && e.Text.Length == 1 && e.Text[0] is >= '0' and <= '9') 
-        {
+        else if (startOfLine && e.Text.Length == 1 && e.Text[0] is >= '0' and <= '9') {
             string newLine = typedCharacter.ToString().PadLeft(ActionLine.MaxFramesDigits);
             if (line.Trim().Length == 0)
                 Document.ReplaceLine(Document.Caret.Row, newLine);
@@ -227,8 +222,7 @@ public class Editor : Drawable {
 
         }
         // Just write it as text
-        else
-        {
+        else {
             Document.Insert(e.Text);
         }
         
@@ -336,10 +330,11 @@ public class Editor : Drawable {
             } else {
                 var newCaret = GetNewTextCaretPosition(direction);
                 
-                if (caret.Row == newCaret.Row)
+                if (caret.Row == newCaret.Row) {
                     Document.ReplaceRangeInLine(caret.Row, caret.Col, newCaret.Col, string.Empty);
+                    newCaret.Col = Math.Min(newCaret.Col, caret.Col);    
+                }
                 
-                newCaret.Col = Math.Min(newCaret.Col, caret.Col);
                 Document.Caret = ClampCaret(newCaret); 
             }
         } else {
@@ -347,8 +342,7 @@ public class Editor : Drawable {
         }
     }
     
-    private void OnEnter()
-    {
+    private void OnEnter() {
         var line = Document.Lines[Document.Caret.Row];
         
         if (ActionLine.TryParse(line, out var actionLine)) {
@@ -364,16 +358,12 @@ public class Editor : Drawable {
     
     #region Caret Movement
     
-    private CaretPosition ClampCaret(CaretPosition position)
-    {
+    private CaretPosition ClampCaret(CaretPosition position) {
         // Wrap around to prev/next line
-        if (position.Col < 0 && position.Row > 0)
-        {
+        if (position.Row > 0 && position.Col < 0) {
             position.Row--;
             position.Col = Document.Lines[position.Row].Length;
-        }
-        else if (position.Row < Document.Lines.Count && position.Col > Document.Lines[position.Row].Length)
-        {
+        } else if (position.Row < Document.Lines.Count && position.Col > Document.Lines[position.Row].Length) {
             position.Row++;
             position.Col = 0;
         }
@@ -385,8 +375,7 @@ public class Editor : Drawable {
         return position;
     }
     
-    private void MoveCaret(CaretMovementType direction)
-    {
+    private void MoveCaret(CaretMovementType direction) {
         var line = Document.Lines[Document.Caret.Row];
         if (!ActionLine.TryParse(line, out var actionLine)) {
             Document.Caret = GetNewTextCaretPosition(direction);
@@ -408,7 +397,7 @@ public class Editor : Drawable {
         });
         
         var newLine = Document.Lines[newCaret.Row];
-        if (!ActionLine.TryParse(line, out var newActionLine)) {
+        if (!ActionLine.TryParse(newLine, out var newActionLine)) {
             newCaret.Col = SnapColumnToActionLine(newActionLine, newCaret.Col);
         }
         
@@ -417,8 +406,7 @@ public class Editor : Drawable {
     
     // For regular text movement
     private CaretPosition GetNewTextCaretPosition(CaretMovementType direction) =>
-        ClampCaret(direction switch
-        {
+        ClampCaret(direction switch {
             CaretMovementType.None => Document.Caret,
             CaretMovementType.CharLeft => new CaretPosition(Document.Caret.Row, Document.Caret.Col - 1),
             CaretMovementType.CharRight => new CaretPosition(Document.Caret.Row, Document.Caret.Col + 1),
@@ -436,8 +424,7 @@ public class Editor : Drawable {
             _ => throw new UnreachableException()
         });
 
-    private CaretPosition GetNextWordCaretPosition(int dir)
-    {
+    private CaretPosition GetNextWordCaretPosition(int dir) {
         var newPosition = Document.Caret;
         var line = Document.Lines[newPosition.Row];
         
