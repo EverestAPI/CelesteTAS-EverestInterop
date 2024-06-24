@@ -204,12 +204,15 @@ public class Document {
     public void InsertLineBelow(string text) => InsertNewLine(Caret.Row + 1, text);
     public void InsertNewLine(int row, string text) {
         undoStack.Push(Caret);
-
+        
         var newLines = text.SplitDocumentLines();
         if (newLines.Length == 0)
             CurrentLines.Insert(row, string.Empty);
         else
             CurrentLines.InsertRange(row, newLines);
+        
+        if (Caret.Row >= row)
+            Caret.Row += newLines.Length;
         
         OnTextChanged(new CaretPosition(row, 0), new CaretPosition(row + newLines.Length, CurrentLines[row + newLines.Length].Length));
     }

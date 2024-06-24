@@ -23,7 +23,10 @@ public sealed class Editor : Drawable {
                 document.Caret = new CaretPosition(0, 0);
             
             // Try to reparse into action lines on change
-            document.TextChanged += (_, min, max) => ConvertToActionLines(min, max);
+            document.TextChanged += (_, min, max) => {
+                ConvertToActionLines(min, max);
+                Recalc();
+            };
             
             Recalc();
         }
@@ -80,11 +83,11 @@ public sealed class Editor : Drawable {
                 CreateAction("Comment/Uncomment Inputs", Application.Instance.CommonModifier | Keys.K, OnToggleCommentInputs),
                 CreateAction("Comment/Uncomment Text", Application.Instance.CommonModifier | Keys.K | Keys.Shift, OnToggleCommentText),
                 new SeparatorMenuItem(),
-                CreateAction("Insert Room Name", Application.Instance.CommonModifier | Keys.R),
-                CreateAction("Insert Time", Application.Instance.CommonModifier | Keys.T),
-                CreateAction("Insert Mod Info"),
-                CreateAction("Insert Console Load Command"),
-                CreateAction("Insert Simple Console Load Command"),
+                CreateAction("Insert Room Name", Application.Instance.CommonModifier | Keys.R, OnInsertRoomName),
+                CreateAction("Insert Time", Application.Instance.CommonModifier | Keys.T, OnInsertTime),
+                CreateAction("Insert Mod Info", Keys.None, OnInsertModInfo),
+                CreateAction("Insert Console Load Command", Keys.None, OnInsertConsoleLoadCommand),
+                CreateAction("Insert Simple Console Load Command", Keys.None, OnInsertSimpleConsoleLoadCommand),
                 new SubMenuItem {Text = "Insert Other Command", Items = {
                     CreateCommandInsert("EnforceLegal", "EnforceLegal"),
                     CreateCommandInsert("Unsafe", "Unsafe"),
@@ -158,10 +161,7 @@ public sealed class Editor : Drawable {
         
         MenuItem CreateCommandInsert(string commandName, string commandInsert) {
             var cmd = new Command { MenuText = commandName, Shortcut = Keys.None };
-            cmd.Executed += (_, _) => {
-                Document.InsertLineAbove(commandInsert);
-                Recalc();
-            };
+            cmd.Executed += (_, _) => Document.InsertLineAbove(commandInsert);
             
             return cmd;
         }
@@ -269,7 +269,6 @@ public sealed class Editor : Drawable {
             }
         }
     }
-    
     
     protected override void OnTextInput(TextInputEventArgs e) {
         if (!Document.Selection.Empty) {
@@ -652,6 +651,25 @@ public sealed class Editor : Drawable {
             }
         }
         Document.OnTextChanged(new CaretPosition(minRow, 0), new CaretPosition(maxRow, Document.Lines[maxRow].Length));
+    }
+    
+    private void OnInsertRoomName() => Document.InsertLineAbove($"#{Studio.CelesteService.LevelName}");
+
+    private void OnInsertTime() => Document.InsertLineAbove($"#{Studio.CelesteService.ChapterTime}");
+    
+    private void OnInsertModInfo() {
+        if (Studio.CelesteService.Server.GetDataFromGame(GameDataType.ModInfo) is { } modInfo)
+            Document.InsertLineAbove(modInfo);
+    }
+    
+    private void OnInsertConsoleLoadCommand() {
+        if (Studio.CelesteService.Server.GetDataFromGame(GameDataType.ConsoleCommand, false) is { } command)
+            Document.InsertLineAbove(command);
+    }
+    
+    private void OnInsertSimpleConsoleLoadCommand() {
+        if (Studio.CelesteService.Server.GetDataFromGame(GameDataType.ConsoleCommand, true) is { } command)
+            Document.InsertLineAbove(command);
     }
 
     #endregion

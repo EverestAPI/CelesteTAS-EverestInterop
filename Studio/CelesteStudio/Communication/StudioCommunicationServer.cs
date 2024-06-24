@@ -18,7 +18,7 @@ public class StudioCommunicationServer : StudioCommunicationBase {
     protected virtual void OnBindingsUpdated(Dictionary<HotkeyID, List<Keys>> obj) => BindingsUpdated?.Invoke(obj);
     protected virtual void OnLinesUpdated(Dictionary<int, string> lines) => LinesUpdated?.Invoke(lines);
 
-    private string _returnData;
+    private string? _returnData;
 
     internal void Run() {
         Thread updateThread = new(UpdateLoop) {
@@ -164,7 +164,7 @@ public class StudioCommunicationServer : StudioCommunicationBase {
     public void ToggleGameSetting(string settingName, object value) => PendingWrite = () => ToggleGameSettingNow(settingName, value);
     public void RequestDataFromGame(GameDataType gameDataType, object arg) => PendingWrite = () => RequestGameDataNow(gameDataType, arg);
 
-    public string GetDataFromGame(GameDataType gameDataType, object arg = null) {
+    public string GetDataFromGame(GameDataType gameDataType, object? arg = null) {
         _returnData = null;
         RequestDataFromGame(gameDataType, arg);
 
