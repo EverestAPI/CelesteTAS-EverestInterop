@@ -40,6 +40,8 @@ public sealed class Studio : Form {
         Instance = this;
         Version = Assembly.GetExecutingAssembly().GetName().Version!;
         
+        Settings.Load();
+        
         // Setup editor
         {
             var scrollable = new Scrollable {
@@ -69,6 +71,21 @@ public sealed class Studio : Form {
             
             // TODO: Convert to CheckMenuItem
             return new ButtonMenuItem(cmd);
+        }
+        
+        static MenuItem CreateSettingToggle(string text, string settingName) {
+            var property = typeof(Settings).GetField(settingName)!;
+            
+            var cmd = new CheckCommand { MenuText = text };
+            cmd.Checked = (bool)property.GetValue(Settings.Instance)!;
+            cmd.Executed += (_, _) => {
+                bool value = (bool)property.GetValue(Settings.Instance)!;
+                property.SetValue(Settings.Instance, !value);
+
+                Settings.Save();
+            };
+            
+            return new CheckMenuItem(cmd);
         }
         
         static MenuItem CreateNumberInput<T>(string text, Func<T> getFn, Action<T> setFn, T minValue, T maxValue, T step) where T : INumber<T> {
@@ -123,7 +140,7 @@ public sealed class Studio : Form {
                     new SeparatorMenuItem(),
                     CreateAction("Save", Application.Instance.CommonModifier | Keys.S, SaveFile),
                     CreateAction("&Save As...", Application.Instance.CommonModifier | Keys.Shift | Keys.S, () => {
-                        var dialog = new SaveFileDialog() {
+                        var dialog = new SaveFileDialog {
                             Filters = { new FileFilter("TAS", ".tas") },
                             Directory = new Uri(Path.GetDirectoryName(Editor.Document.FilePath)!),
                         };
@@ -143,7 +160,7 @@ public sealed class Studio : Form {
                     CreateAction("&Record TAS..."),
                 }},
                 new SubMenuItem {Text = "&Settings", Items = {
-                    CreateToggle("&Send Inputs to Celeste", CelesteService.GetGameplay, CelesteService.ToggleGameplay),
+                    CreateSettingToggle("&Send Inputs to Celeste", nameof(Settings.SendInputsToCeleste)),
                     CreateToggle("Auto Remove Mutually Exclusive Actions", CelesteService.GetGameplay, CelesteService.ToggleGameplay),
                     CreateToggle("Show Game Info", CelesteService.GetGameplay, CelesteService.ToggleGameplay),
                     CreateToggle("Always on Top", CelesteService.GetGameplay, CelesteService.ToggleGameplay),
@@ -207,6 +224,7 @@ public sealed class Studio : Form {
     
     public override void Close() {
         CelesteService.SendPath(string.Empty);
+        Settings.Save();
         
         base.Close();
     }
