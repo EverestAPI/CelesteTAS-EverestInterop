@@ -752,6 +752,17 @@ public sealed class Editor : Drawable {
             yPos += font.LineHeight;
         }
         
+        // Draw suffix text
+        if (Studio.CelesteService.Connected) {
+            const float padding = 10.0f;
+            float suffixWidth = font.MeasureString(Studio.CelesteService.CurrentLineSuffix).Width; 
+            
+            e.Graphics.DrawText(font, Colors.Orange,
+                x: scrollable.ScrollPosition.X + scrollable.Width - suffixWidth - padding,
+                y: Studio.CelesteService.CurrentLine * font.LineHeight,
+                Studio.CelesteService.CurrentLineSuffix);
+        }
+        
         float carX = font.MeasureString(Document.Lines[Document.Caret.Row][..Document.Caret.Col]).Width + textOffsetX;
         float carY = font.LineHeight * Document.Caret.Row;
 
@@ -802,13 +813,30 @@ public sealed class Editor : Drawable {
                 width: textOffsetX - LineNumberPadding,
                 height: scrollable.Size.Height);
             
-            // Highlight playing line
-            if (Studio.CelesteService.Connected && Studio.CelesteService.CurrentLine != -1) {
-                e.Graphics.FillRectangle(Colors.Green,
-                    x: scrollable.ScrollPosition.X,
-                    y: Studio.CelesteService.CurrentLine * font.LineHeight,
-                    width: textOffsetX - LineNumberPadding,
-                    height: font.LineHeight);
+            // Highlight playing / savestate line
+            if (Studio.CelesteService.Connected) {
+                if (Studio.CelesteService.CurrentLine != -1) {
+                    e.Graphics.FillRectangle(Colors.Green,
+                        x: scrollable.ScrollPosition.X,
+                        y: Studio.CelesteService.CurrentLine * font.LineHeight,
+                        width: textOffsetX - LineNumberPadding,
+                        height: font.LineHeight);
+                }
+                if (Studio.CelesteService.SaveStateLine != -1) {
+                    if (Studio.CelesteService.SaveStateLine == Studio.CelesteService.CurrentLine) {
+                        e.Graphics.FillRectangle(Colors.Blue,
+                            x: scrollable.ScrollPosition.X,
+                            y: Studio.CelesteService.CurrentLine * font.LineHeight,
+                            width: 15.0f,
+                            height: font.LineHeight);
+                    } else {
+                        e.Graphics.FillRectangle(Colors.Blue,
+                            x: scrollable.ScrollPosition.X,
+                            y: Studio.CelesteService.CurrentLine * font.LineHeight,
+                            width: textOffsetX - LineNumberPadding,
+                            height: font.LineHeight);
+                    }
+                }
             }
             
             yPos = 0.0f;
