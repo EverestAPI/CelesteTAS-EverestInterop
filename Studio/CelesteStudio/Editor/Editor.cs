@@ -73,8 +73,8 @@ public sealed class Editor : Drawable {
                 CreateAction("Remove All Uncommented Breakpoints"),
                 CreateAction("Remove All Breakpoints"),
                 CreateAction("Comment/Uncomment All Breakpoints"),
-                CreateAction("Comment/Uncomment Inputs", Application.Instance.CommonModifier | Keys.K),
-                CreateAction("Comment/Uncomment Text", Application.Instance.CommonModifier | Keys.K | Keys.Shift),
+                CreateAction("Comment/Uncomment Inputs", Application.Instance.CommonModifier | Keys.K, OnToggleCommentInputs),
+                CreateAction("Comment/Uncomment Text", Application.Instance.CommonModifier | Keys.K | Keys.Shift, OnToggleCommentText),
                 new SeparatorMenuItem(),
                 CreateAction("Insert Room Name", Application.Instance.CommonModifier | Keys.R),
                 CreateAction("Insert Time", Application.Instance.CommonModifier | Keys.T),
@@ -191,41 +191,6 @@ public sealed class Editor : Drawable {
         Size = new((int)(width + textOffsetX + paddingRight), (int)(height + paddingBottom));
 
         Invalidate();
-    }
-
-    private void ScrollCaretIntoView(bool center = false) {
-        // Clamp just to be sure
-        Document.Caret = ClampCaret(Document.Caret, wrapLine: false);
-        
-        // Minimum distance to the edges
-        const float xLookAhead = 50.0f;
-        const float yLookAhead = 50.0f;
-        
-        float carX = font.MeasureString(Document.Lines[Document.Caret.Row][..Document.Caret.Col]).Width;
-        float carY = font.LineHeight * Document.Caret.Row;
-        
-        float top = scrollable.ScrollPosition.Y;
-        float bottom = (scrollable.Size.Height - Studio.BorderBottomOffset) + scrollable.ScrollPosition.Y;
-        
-        // Always scroll horizontally, since we want to stay as left as possible
-        int scrollX = (int)((carX + xLookAhead) - (scrollable.Size.Width - Studio.BorderRightOffset));
-        
-        int scrollY = scrollable.ScrollPosition.Y;
-        
-        if (center) {
-            // Keep line in the center
-            scrollY = (int)(carY - scrollable.Size.Height / 2.0f);
-        } else {
-            // Scroll up/down when near the top/bottom
-            if (top - carY > -yLookAhead)
-                scrollY = (int)(carY - yLookAhead);
-            else if (bottom - carY < yLookAhead)
-                scrollY = (int)(carY + yLookAhead - (scrollable.Size.Height - Studio.BorderBottomOffset));
-        }
-        
-        scrollable.ScrollPosition = new Point(
-            Math.Max(0, scrollX),
-            Math.Max(0, scrollY));
     }
 
     protected override void OnKeyDown(KeyEventArgs e) {
@@ -631,6 +596,59 @@ public sealed class Editor : Drawable {
         Document.Selection.Start = new CaretPosition(above, 0);
         Document.Selection.End = new CaretPosition(below, Document.Lines[below].Length);
     }
+    
+    private void OnToggleCommentInputs() {
+        int minRow = Document.Selection.Min.Row;
+        int maxRow = Document.Selection.Max.Row;
+        if (Document.Selection.Empty) {
+            minRow = maxRow = Document.Caret.Row;
+        }
+        
+        Document.PushUndoState();
+        for (int row = minRow; row <= maxRow; row++) {
+            var line = Document.Lines[row];
+
+            if (line.TrimStart().StartsWith('#')) {
+                int hashIdx = line.IndexOf('#');
+                Document.ReplaceLine(row, line.Remove(hashIdx, 1), raiseEvents: false);
+            } else {
+                Document.ReplaceLine(row, $"#{line}", raiseEvents: false);
+            }
+        }
+        Document.OnTextChanged();
+    }
+    
+    private void OnToggleCommentText() {
+        int minRow = Document.Selection.Min.Row;
+        int maxRow = Document.Selection.Max.Row;
+        if (Document.Selection.Empty) {
+            minRow = maxRow = Document.Caret.Row;
+        }
+        
+        // Only remove # when all lines start with it. Otherwise, add another
+        bool allCommented = true;
+        for (int row = minRow; row <= maxRow; row++) {
+            var line = Document.Lines[row];
+
+            if (!line.TrimStart().StartsWith('#')) {
+                allCommented = false;
+                break;
+            }
+        }
+        
+        Document.PushUndoState();
+        for (int row = minRow; row <= maxRow; row++) {
+            var line = Document.Lines[row];
+
+            if (allCommented) {
+                int hashIdx = line.IndexOf('#');
+                Document.ReplaceLine(row, line.Remove(hashIdx, 1), raiseEvents: false);
+            } else {
+                Document.ReplaceLine(row, $"#{line}", raiseEvents: false);
+            }
+        }
+        Document.OnTextChanged();
+    }
 
     #endregion
     
@@ -651,6 +669,41 @@ public sealed class Editor : Drawable {
         position.Col = Math.Clamp(position.Col, 0, Document.Lines[position.Row].Length);
         
         return position;
+    }
+    
+    private void ScrollCaretIntoView(bool center = false) {
+        // Clamp just to be sure
+        Document.Caret = ClampCaret(Document.Caret, wrapLine: false);
+        
+        // Minimum distance to the edges
+        const float xLookAhead = 50.0f;
+        const float yLookAhead = 50.0f;
+        
+        float carX = font.MeasureString(Document.Lines[Document.Caret.Row][..Document.Caret.Col]).Width;
+        float carY = font.LineHeight * Document.Caret.Row;
+        
+        float top = scrollable.ScrollPosition.Y;
+        float bottom = (scrollable.Size.Height - Studio.BorderBottomOffset) + scrollable.ScrollPosition.Y;
+        
+        // Always scroll horizontally, since we want to stay as left as possible
+        int scrollX = (int)((carX + xLookAhead) - (scrollable.Size.Width - Studio.BorderRightOffset));
+        
+        int scrollY = scrollable.ScrollPosition.Y;
+        
+        if (center) {
+            // Keep line in the center
+            scrollY = (int)(carY - scrollable.Size.Height / 2.0f);
+        } else {
+            // Scroll up/down when near the top/bottom
+            if (top - carY > -yLookAhead)
+                scrollY = (int)(carY - yLookAhead);
+            else if (bottom - carY < yLookAhead)
+                scrollY = (int)(carY + yLookAhead - (scrollable.Size.Height - Studio.BorderBottomOffset));
+        }
+        
+        scrollable.ScrollPosition = new Point(
+            Math.Max(0, scrollX),
+            Math.Max(0, scrollY));
     }
     
     private void MoveCaret(CaretMovementType direction, bool updateSelection) {
@@ -822,6 +875,8 @@ public sealed class Editor : Drawable {
     
     #endregion
     
+    #region Drawing
+    
     protected override void OnPaint(PaintEventArgs e) {
         e.Graphics.AntiAlias = true;
         
@@ -932,6 +987,8 @@ public sealed class Editor : Drawable {
         
         base.OnPaint(e);
     }
+    
+    #endregion
     
     #region Helper Methods
     

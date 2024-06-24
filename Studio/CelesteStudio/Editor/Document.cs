@@ -102,6 +102,7 @@ public class Document {
     public bool Dirty { get; private set; }
     
     public event Action<Document> TextChanged = doc => doc.Dirty = true;
+    public void OnTextChanged() => TextChanged.Invoke(this);
     
     private Document(string contents) {
         contents = contents.ReplaceLineEndings(NewLine.ToString());
@@ -164,6 +165,9 @@ public class Document {
         undoStack.Redo();
         Caret = undoStack.Stack[undoStack.Curr].Caret;
     }
+    public void PushUndoState() {
+        undoStack.Push(Caret);
+    }
     
     public void Insert(string text) => Caret = Insert(Caret, text);
     public CaretPosition Insert(CaretPosition pos, string text) {
@@ -188,7 +192,7 @@ public class Document {
             CurrentLines[pos.Row] += right;
         }
         
-        TextChanged.Invoke(this);
+        OnTextChanged();
         return pos;
     }
     
@@ -203,7 +207,7 @@ public class Document {
         else
             CurrentLines.InsertRange(line, newLines);
         
-        TextChanged.Invoke(this);
+        OnTextChanged();
     }
     
     public void ReplaceLine(int row, string text, bool raiseEvents = true) {
@@ -211,7 +215,7 @@ public class Document {
         
         CurrentLines[row] = text;
         
-        if (raiseEvents) TextChanged.Invoke(this);
+        if (raiseEvents) OnTextChanged();
     }
     
     public void RemoveSelectedText() => RemoveRange(Selection.Min, Selection.Max);
@@ -228,7 +232,7 @@ public class Document {
             CurrentLines.RemoveRange(start.Row + 1, end.Row - start.Row);
         }
         
-        TextChanged.Invoke(this);
+        OnTextChanged();
     }
 
     public void ReplaceRange(CaretPosition start, CaretPosition end, string text) {
@@ -255,7 +259,7 @@ public class Document {
             CurrentLines.Insert(start.Row + i, newLines[i]);
         CurrentLines[start.Row + newLines.Length - 1] = newLines[^1] + CurrentLines[start.Row + newLines.Length - 1];
         
-        TextChanged.Invoke(this);
+        OnTextChanged();
     }
     
     public void ReplaceRangeInLine(int line, int startCol, int endCol, string text) {
@@ -266,7 +270,7 @@ public class Document {
         
         CurrentLines[line] = CurrentLines[line].ReplaceRange(startCol, endCol - startCol, text);
         
-        TextChanged.Invoke(this);
+        OnTextChanged();
     }
     
     public string GetSelectedText() => GetTextInRange(Selection.Start, Selection.End);
