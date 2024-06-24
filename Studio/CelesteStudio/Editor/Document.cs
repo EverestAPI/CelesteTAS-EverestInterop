@@ -118,6 +118,10 @@ public class Document {
     ~Document() {
         Studio.CelesteService.Server.LinesUpdated -= OnLinesUpdated;
     }
+    
+    public void Dispose() {
+        Studio.CelesteService.Server.LinesUpdated -= OnLinesUpdated;
+    }
 
     public static Document? Load(string path) {
         try {
@@ -143,6 +147,9 @@ public class Document {
 
     private void OnLinesUpdated(Dictionary<int, string> newLines) {
         foreach ((int lineNum, string newText) in newLines) {
+            if (lineNum < 0 || lineNum >= CurrentLines.Count)
+                continue;
+            
             CurrentLines[lineNum] = newText;
         }
     }

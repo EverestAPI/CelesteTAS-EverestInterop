@@ -256,12 +256,21 @@ public sealed class Studio : Form {
             return;
         }
         
+        if (Editor.Document is { } doc) {
+            doc.Dispose();
+            doc.TextChanged -= UpdateTitle;
+        }
+        
         Editor.Document = document;
-        Editor.Document.TextChanged += _ => Title = TitleBarText;
+        Editor.Document.TextChanged += UpdateTitle;
 
         Title = TitleBarText;
         
         CelesteService.SendPath(Editor.Document.FilePath);
+        
+        void UpdateTitle(Document _) {
+            Title = TitleBarText;
+        }
     }
     
     private void SaveFile() {
