@@ -58,12 +58,12 @@ public sealed class Editor : Drawable {
         
         ContextMenu = new ContextMenu {
             Items = {
-                CreateAction("Cut", Application.Instance.CommonModifier | Keys.X),
-                CreateAction("Copy", Application.Instance.CommonModifier | Keys.C),
-                CreateAction("Paste", Application.Instance.CommonModifier | Keys.V),
+                CreateAction("Cut", Application.Instance.CommonModifier | Keys.X, OnCut),
+                CreateAction("Copy", Application.Instance.CommonModifier | Keys.C, OnCopy),
+                CreateAction("Paste", Application.Instance.CommonModifier | Keys.V, OnPaste),
                 new SeparatorMenuItem(),
-                CreateAction("Undo", Application.Instance.CommonModifier | Keys.Z, () => Document.Undo()),
-                CreateAction("Redo", Application.Instance.CommonModifier | Keys.Z | Keys.Shift, () => Document.Redo()),
+                CreateAction("Undo", Application.Instance.CommonModifier | Keys.Z, OnUndo),
+                CreateAction("Redo", Application.Instance.CommonModifier | Keys.Z | Keys.Shift, OnRedo),
                 new SeparatorMenuItem(),
                 CreateAction("Select All", Application.Instance.CommonModifier | Keys.A, () => {
                     Document.Selection.Start = new CaretPosition(0, 0);
@@ -284,7 +284,24 @@ public sealed class Editor : Drawable {
         
         Recalc();
     }
+    
+    #region Editing Actions
 
+    private void ConvertToActionLines(CaretPosition start, CaretPosition end) {
+        // Convert to action lines if possible
+        int minRow = Math.Min(start.Row, end.Row);
+        int maxRow = Math.Max(start.Row, end.Row);
+        
+        for (int row = minRow; row <= maxRow; row++) {
+            if (ActionLine.TryParse(Document.Lines[row], out var newActionLine)) {
+                Document.ReplaceLine(row, newActionLine.ToString(), raiseEvents: false);
+                if (Document.Caret.Row == row)
+                    Document.Caret.Col = ActionLine.MaxFramesDigits;
+            }
+        }
+    }
+    
+    
     protected override void OnTextInput(TextInputEventArgs e) {
         if (!Document.Selection.Empty) {
             Document.RemoveSelectedText();
@@ -411,14 +428,15 @@ public sealed class Editor : Drawable {
         Recalc();
     }
     
-    #region Editing Actions
-    
     private void OnDelete(CaretMovementType direction) {
         if (!Document.Selection.Empty) {
+            var oldCaret = Document.Caret;
+            
             Document.RemoveSelectedText();
             Document.Caret = Document.Selection.Min;
             Document.Selection.Clear();
             
+            ConvertToActionLines(oldCaret, Document.Caret);
             ScrollCaretIntoView();
             return;
         }
@@ -505,7 +523,7 @@ public sealed class Editor : Drawable {
                 CaretMovementType.WordRight => GetHardSnapColumns(actionLine).FirstOrDefault(c => c > caret.Col, caret.Col),
                 _ => caret.Col,
             };
-            Console.WriteLine($"From '{line}' from at {Math.Min(newColumn, caret.Col)} by {Math.Abs(newColumn - caret.Col)}");
+            
             line = line.Remove(Math.Min(newColumn, caret.Col), Math.Abs(newColumn - caret.Col));
             caret.Col = Math.Min(newColumn, caret.Col);
             
@@ -549,6 +567,49 @@ public sealed class Editor : Drawable {
             Document.Insert(Document.NewLine.ToString());
         }
         
+        ScrollCaretIntoView();
+    }
+    
+    private void OnUndo() {
+        var oldCaret = Document.Caret;
+        Document.Undo();
+        
+        ConvertToActionLines(oldCaret, Document.Caret);
+        ScrollCaretIntoView();
+    }
+    
+    private void OnRedo() {
+        var oldCaret = Document.Caret;
+        Document.Redo();
+        
+        ConvertToActionLines(oldCaret, Document.Caret);
+        ScrollCaretIntoView();
+    }
+    
+    private void OnCut() {
+        if (Document.Selection.Empty)
+            return;
+        
+        OnCopy();
+        OnDelete(CaretMovementType.None);
+    }
+    
+    private void OnCopy() {
+        if (Document.Selection.Empty)
+            return;
+        
+        Clipboard.Instance.Clear();
+        Clipboard.Instance.Text = Document.GetSelectedText();
+    }
+    
+    private void OnPaste() {
+        if (!Clipboard.Instance.ContainsText)
+            return;
+        
+        var oldCaret = Document.Caret;
+        Document.Insert(Clipboard.Instance.Text);
+        
+        ConvertToActionLines(oldCaret, Document.Caret);
         ScrollCaretIntoView();
     }
 
