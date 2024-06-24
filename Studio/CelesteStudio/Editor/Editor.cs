@@ -198,6 +198,11 @@ public sealed class Editor : Drawable {
     }
 
     protected override void OnKeyDown(KeyEventArgs e) {
+        if (Settings.Instance.SendInputsToCeleste && Studio.CelesteService.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
+            e.Handled = true;
+            return;
+        }
+        
         switch (e.Key) {
             case Keys.Backspace:
                 OnDelete(e.Control ? CaretMovementType.WordLeft : CaretMovementType.CharLeft);
@@ -252,6 +257,15 @@ public sealed class Editor : Drawable {
         }
         
         Recalc();
+    }
+    
+    protected override void OnKeyUp(KeyEventArgs e) {
+        if (Settings.Instance.SendInputsToCeleste && Studio.CelesteService.SendKeyEvent(e.Key, e.Modifiers, released: true)) {
+            e.Handled = true;
+            return;
+        }
+        
+        base.OnKeyUp(e);
     }
     
     #region Editing Actions

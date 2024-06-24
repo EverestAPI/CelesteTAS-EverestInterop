@@ -1,13 +1,16 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using StudioCommunication;
 using CelesteStudio.Communication;
+using CelesteStudio.Util;
 using Eto.Forms;
 
 namespace CelesteStudio;
 
 public class CelesteService {
-    private Dictionary<HotkeyID, List<Keys>> _bindings;
+    private Dictionary<HotkeyID, List<WinFormsKeys>> _bindings;
     public StudioInfo State { get; private set; }
 
     public StudioCommunicationServer Server { get; }
@@ -21,6 +24,54 @@ public class CelesteService {
 
     public void WriteWait() => Server.WriteWait();
     public void SendPath(string path) => Server.SendPath(path);
+    
+    public bool SendKeyEvent(Keys key, Keys modifiers, bool released) {
+        var winFormsKey = key.ToWinForms();
+        
+        foreach (HotkeyID hotkeyIDs in _bindings.Keys) {
+            var bindingKeys = _bindings[hotkeyIDs];
+            if (bindingKeys.Count == 0) continue;
+            
+            // Require the key without any modifiers (or the modifier being the same as the key)
+            if (bindingKeys.Count == 1) {
+                if ((bindingKeys[0] == winFormsKey) &&
+                    ((modifiers == Keys.None) ||
+                     (modifiers == Keys.Shift && key is Keys.Shift or Keys.LeftShift or Keys.RightShift) ||
+                     (modifiers == Keys.Control && key is Keys.Control or Keys.LeftControl or Keys.RightControl) ||
+                     (modifiers == Keys.Alt && key is Keys.Alt or Keys.LeftAlt or Keys.RightAlt)))
+                {
+                    Server.SendHotkeyPressed(hotkeyIDs, released);
+                    return true;
+                }
+                
+                continue;
+            }
+            
+            // Binding has > 1 keys
+            foreach (var bind in bindingKeys) {
+                if (bind == winFormsKey)
+                    continue;
+                
+                if (bind is WinFormsKeys.Shift or WinFormsKeys.LShiftKey or WinFormsKeys.RShiftKey && modifiers.HasFlag(Keys.Shift))
+                    continue;
+                if (bind is WinFormsKeys.Control or WinFormsKeys.LControlKey or WinFormsKeys.RControlKey && modifiers.HasFlag(Keys.Control))
+                    continue;
+                if (bind is WinFormsKeys.Menu or WinFormsKeys.LMenu or WinFormsKeys.RMenu && modifiers.HasFlag(Keys.Alt))
+                    continue;
+            
+                // If only labeled for-loops would exist...
+                goto NextIter;
+            }
+            
+            Server.SendHotkeyPressed(hotkeyIDs, released);
+            return true;
+            
+            NextIter:; // Yes, that ";" is required..
+        }
+        
+        return false;
+    }
+
 
     public void Play() {
     }

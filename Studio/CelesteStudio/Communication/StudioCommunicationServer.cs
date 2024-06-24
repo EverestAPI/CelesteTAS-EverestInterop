@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using CelesteStudio.Util;
 using Eto.Forms;
 using StudioCommunication;
 
@@ -11,11 +12,11 @@ namespace CelesteStudio.Communication;
 
 public class StudioCommunicationServer : StudioCommunicationBase {
     public event Action<StudioInfo> StateUpdated;
-    public event Action<Dictionary<HotkeyID, List<Keys>>> BindingsUpdated;
+    public event Action<Dictionary<HotkeyID, List<WinFormsKeys>>> BindingsUpdated;
     public event Action<Dictionary<int, string>> LinesUpdated;
 
     protected virtual void OnStateUpdated(StudioInfo obj) => StateUpdated?.Invoke(obj);
-    protected virtual void OnBindingsUpdated(Dictionary<HotkeyID, List<Keys>> obj) => BindingsUpdated?.Invoke(obj);
+    protected virtual void OnBindingsUpdated(Dictionary<HotkeyID, List<WinFormsKeys>> obj) => BindingsUpdated?.Invoke(obj);
     protected virtual void OnLinesUpdated(Dictionary<int, string> lines) => LinesUpdated?.Invoke(lines);
 
     private string? _returnData;
@@ -83,7 +84,7 @@ public class StudioCommunicationServer : StudioCommunicationBase {
 
     private void ProcessSendCurrentBindings(byte[] data) {
         Dictionary<int, List<int>> nativeBindings = BinaryFormatterHelper.FromByteArray<Dictionary<int, List<int>>>(data);
-        Dictionary<HotkeyID, List<Keys>> bindings = nativeBindings.ToDictionary(pair => (HotkeyID) pair.Key, pair => pair.Value.Cast<Keys>().ToList());
+        Dictionary<HotkeyID, List<WinFormsKeys>> bindings = nativeBindings.ToDictionary(pair => (HotkeyID) pair.Key, pair => pair.Value.Cast<WinFormsKeys>().ToList());
         foreach (var pair in bindings) {
             Log(pair.ToString());
         }
