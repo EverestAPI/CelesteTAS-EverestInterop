@@ -22,6 +22,9 @@ public sealed class Editor : Drawable {
             else
                 document.Caret = new CaretPosition(0, 0);
             
+            // Try to reparse into action lines on change
+            document.TextChanged += (_, min, max) => ConvertToActionLines(min, max);
+            
             Recalc();
         }
     }
@@ -42,6 +45,7 @@ public sealed class Editor : Drawable {
         
         // Need to redraw the line numbers
         scrollable.Scroll += (_, _) => Invalidate();
+
         Studio.CelesteService.Server.StateUpdated += state => {
             if (state.CurrentLine != -1) {
                 Document.Caret.Row = state.CurrentLine;
@@ -615,7 +619,7 @@ public sealed class Editor : Drawable {
                 Document.ReplaceLine(row, $"#{line}", raiseEvents: false);
             }
         }
-        Document.OnTextChanged();
+        Document.OnTextChanged(new CaretPosition(minRow, 0), new CaretPosition(maxRow, Document.Lines[maxRow].Length));
     }
     
     private void OnToggleCommentText() {
@@ -647,7 +651,7 @@ public sealed class Editor : Drawable {
                 Document.ReplaceLine(row, $"#{line}", raiseEvents: false);
             }
         }
-        Document.OnTextChanged();
+        Document.OnTextChanged(new CaretPosition(minRow, 0), new CaretPosition(maxRow, Document.Lines[maxRow].Length));
     }
 
     #endregion

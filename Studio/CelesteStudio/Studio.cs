@@ -268,7 +268,7 @@ public sealed class Studio : Form {
         
         CelesteService.SendPath(Editor.Document.FilePath);
         
-        void UpdateTitle(Document _) {
+        void UpdateTitle(Document _0, CaretPosition _1, CaretPosition _2) {
             Title = TitleBarText;
         }
     }

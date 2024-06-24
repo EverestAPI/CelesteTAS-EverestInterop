@@ -101,8 +101,8 @@ public class Document {
 
     public bool Dirty { get; private set; }
     
-    public event Action<Document> TextChanged = doc => doc.Dirty = true;
-    public void OnTextChanged() => TextChanged.Invoke(this);
+    public event Action<Document, CaretPosition, CaretPosition> TextChanged = (doc, _, _) => doc.Dirty = true;
+    public void OnTextChanged(CaretPosition min, CaretPosition max) => TextChanged.Invoke(this, min, max);
     
     private Document(string contents) {
         contents = contents.ReplaceLineEndings(NewLine.ToString());
@@ -175,6 +175,7 @@ public class Document {
         if (newLines.Length == 0)
             return pos;
         
+        var oldPos = pos;
         undoStack.Push(Caret);
 
         if (newLines.Length == 1) {
@@ -192,22 +193,25 @@ public class Document {
             CurrentLines[pos.Row] += right;
         }
         
-        OnTextChanged();
+        if (oldPos < pos)
+            OnTextChanged(oldPos, pos);
+        else
+            OnTextChanged(pos, oldPos);
         return pos;
     }
     
     public void InsertLineAbove(string text) => InsertNewLine(Caret.Row, text);
     public void InsertLineBelow(string text) => InsertNewLine(Caret.Row + 1, text);
-    public void InsertNewLine(int line, string text) {
+    public void InsertNewLine(int row, string text) {
         undoStack.Push(Caret);
 
         var newLines = text.SplitDocumentLines();
         if (newLines.Length == 0)
-            CurrentLines.Insert(line, string.Empty);
+            CurrentLines.Insert(row, string.Empty);
         else
-            CurrentLines.InsertRange(line, newLines);
+            CurrentLines.InsertRange(row, newLines);
         
-        OnTextChanged();
+        OnTextChanged(new CaretPosition(row, 0), new CaretPosition(row + newLines.Length, CurrentLines[row + newLines.Length].Length));
     }
     
     public void ReplaceLine(int row, string text, bool raiseEvents = true) {
@@ -215,7 +219,7 @@ public class Document {
         
         CurrentLines[row] = text;
         
-        if (raiseEvents) OnTextChanged();
+        if (raiseEvents) OnTextChanged(new CaretPosition(row, 0), new CaretPosition(row, text.Length));
     }
     
     public void RemoveSelectedText() => RemoveRange(Selection.Min, Selection.Max);
@@ -232,45 +236,45 @@ public class Document {
             CurrentLines.RemoveRange(start.Row + 1, end.Row - start.Row);
         }
         
-        OnTextChanged();
+        OnTextChanged(start, start);
     }
 
-    public void ReplaceRange(CaretPosition start, CaretPosition end, string text) {
-        undoStack.Push(Caret);
-
-        if (start > end)
-            (end, start) = (start, end);
-        
-        // Remove old text
-        if (start.Row == end.Row) {
-            CurrentLines[start.Row] = CurrentLines[start.Row].Remove(start.Col, end.Col - start.Col);
-        } else {
-            CurrentLines[start.Row] = CurrentLines[start.Row][..start.Col] + CurrentLines[end.Row][end.Col..];
-            CurrentLines.RemoveRange(start.Row + 1, end.Row - start.Row);
-        }
-        
-        // Insert new text
-        var newLines = text.SplitDocumentLines();
-        if (newLines.Length == 0)
-            return;
-        
-        CurrentLines[start.Row] = CurrentLines[start.Row] + newLines[0];
-        for (int i = 1; i < newLines.Length - 1; i++)
-            CurrentLines.Insert(start.Row + i, newLines[i]);
-        CurrentLines[start.Row + newLines.Length - 1] = newLines[^1] + CurrentLines[start.Row + newLines.Length - 1];
-        
-        OnTextChanged();
-    }
+    // public void ReplaceRange(CaretPosition start, CaretPosition end, string text) {
+    //     undoStack.Push(Caret);
+    //
+    //     if (start > end)
+    //         (end, start) = (start, end);
+    //     
+    //     // Remove old text
+    //     if (start.Row == end.Row) {
+    //         CurrentLines[start.Row] = CurrentLines[start.Row].Remove(start.Col, end.Col - start.Col);
+    //     } else {
+    //         CurrentLines[start.Row] = CurrentLines[start.Row][..start.Col] + CurrentLines[end.Row][end.Col..];
+    //         CurrentLines.RemoveRange(start.Row + 1, end.Row - start.Row);
+    //     }
+    //     
+    //     // Insert new text
+    //     var newLines = text.SplitDocumentLines();
+    //     if (newLines.Length == 0)
+    //         return;
+    //     
+    //     CurrentLines[start.Row] = CurrentLines[start.Row] + newLines[0];
+    //     for (int i = 1; i < newLines.Length - 1; i++)
+    //         CurrentLines.Insert(start.Row + i, newLines[i]);
+    //     CurrentLines[start.Row + newLines.Length - 1] = newLines[^1] + CurrentLines[start.Row + newLines.Length - 1];
+    //     
+    //     OnTextChanged();
+    // }
     
-    public void ReplaceRangeInLine(int line, int startCol, int endCol, string text) {
+    public void ReplaceRangeInLine(int row, int startCol, int endCol, string text) {
         undoStack.Push(Caret);
 
         if (startCol > endCol)
             (endCol, startCol) = (startCol, endCol);
         
-        CurrentLines[line] = CurrentLines[line].ReplaceRange(startCol, endCol - startCol, text);
+        CurrentLines[row] = CurrentLines[row].ReplaceRange(startCol, endCol - startCol, text);
         
-        OnTextChanged();
+        OnTextChanged(new CaretPosition(row, startCol), new CaretPosition(row, startCol + text.Length));
     }
     
     public string GetSelectedText() => GetTextInRange(Selection.Start, Selection.End);
@@ -288,7 +292,6 @@ public class Document {
             lines[i] = CurrentLines[row];
         lines[^1] = CurrentLines[end.Row][..end.Col];
         
-        Console.WriteLine($"Copied: '{string.Join("|", lines)}'");
         return string.Join(Environment.NewLine, lines);
     }
 
