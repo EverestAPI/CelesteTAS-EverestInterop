@@ -65,11 +65,8 @@ public sealed class Editor : Drawable {
                 CreateAction("Undo", Application.Instance.CommonModifier | Keys.Z, OnUndo),
                 CreateAction("Redo", Application.Instance.CommonModifier | Keys.Z | Keys.Shift, OnRedo),
                 new SeparatorMenuItem(),
-                CreateAction("Select All", Application.Instance.CommonModifier | Keys.A, () => {
-                    Document.Selection.Start = new CaretPosition(0, 0);
-                    Document.Selection.End = new CaretPosition(Document.Lines.Count - 1, Document.Lines[^1].Length);
-                }),
-                CreateAction("Select Block", Application.Instance.CommonModifier | Keys.W),
+                CreateAction("Select All", Application.Instance.CommonModifier | Keys.A, OnSelectAll),
+                CreateAction("Select Block", Application.Instance.CommonModifier | Keys.W, OnSelectBlock),
                 new SeparatorMenuItem(),
                 CreateAction("Insert/Remove Breakpoint"),
                 CreateAction("Insert/Remove Savestate Breakpoint"),
@@ -195,8 +192,11 @@ public sealed class Editor : Drawable {
 
         Invalidate();
     }
-    
+
     private void ScrollCaretIntoView(bool center = false) {
+        // Clamp just to be sure
+        Document.Caret = ClampCaret(Document.Caret, wrapLine: false);
+        
         // Minimum distance to the edges
         const float xLookAhead = 50.0f;
         const float yLookAhead = 50.0f;
@@ -292,7 +292,7 @@ public sealed class Editor : Drawable {
         int minRow = Math.Min(start.Row, end.Row);
         int maxRow = Math.Max(start.Row, end.Row);
         
-        for (int row = minRow; row <= maxRow; row++) {
+        for (int row = minRow; row <= Math.Min(maxRow, Document.Lines.Count - 1); row++) {
             if (ActionLine.TryParse(Document.Lines[row], out var newActionLine)) {
                 Document.ReplaceLine(row, newActionLine.ToString(), raiseEvents: false);
                 if (Document.Caret.Row == row)
@@ -611,6 +611,25 @@ public sealed class Editor : Drawable {
         
         ConvertToActionLines(oldCaret, Document.Caret);
         ScrollCaretIntoView();
+    }
+    
+    private void OnSelectAll() {
+        Document.Selection.Start = new CaretPosition(0, 0);
+        Document.Selection.End = new CaretPosition(Document.Lines.Count - 1, Document.Lines[^1].Length);
+    }
+    
+    private void OnSelectBlock() {
+        // Search first empty line above/below caret
+        int above = Document.Caret.Row;
+        while (above > 0 && !string.IsNullOrWhiteSpace(Document.Lines[above]))
+            above--;
+
+        int below = Document.Caret.Row;
+        while (below < Document.Lines.Count - 1 && !string.IsNullOrWhiteSpace(Document.Lines[below]))
+            below++;
+        
+        Document.Selection.Start = new CaretPosition(above, 0);
+        Document.Selection.End = new CaretPosition(below, Document.Lines[below].Length);
     }
 
     #endregion
