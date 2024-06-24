@@ -8,14 +8,14 @@ namespace CelesteStudio;
 
 public class CelesteService {
     private Dictionary<HotkeyID, List<Keys>> _bindings;
-    private StudioInfo _state;
+    public StudioInfo State { get; private set; }
 
     public StudioCommunicationServer Server { get; }
 
     public CelesteService() {
         Server = new StudioCommunicationServer();
         Server.BindingsUpdated += bindings => _bindings = bindings;
-        Server.StateUpdated += state => _state = state;
+        Server.StateUpdated += state => State = state;
         Server.Run();
     }
 
@@ -27,15 +27,15 @@ public class CelesteService {
 
     public bool Connected => StudioCommunicationBase.Initialized;
 
-    public int CurrentLine => Connected ? _state.CurrentLine : -1;
-    public string CurrentLineSuffix => Connected ? _state.CurrentLineSuffix : string.Empty;
-    public int CurrentFrameInTas => Connected ? _state.CurrentFrameInTas : -1;
-    public int TotalFrames => Connected ? _state.TotalFrames : -1;
-    public int SaveStateLine => Connected ? _state.SaveStateLine : -1;
-    public States TasStates => Connected ? (States) _state.tasStates : States.None;
-    public string GameInfo => Connected ? _state.GameInfo : string.Empty;
-    public string LevelName => Connected ? _state.LevelName : string.Empty;
-    public string ChapterTime => Connected ? _state.ChapterTime : string.Empty;
+    public int CurrentLine => Connected ? State.CurrentLine : -1;
+    public string CurrentLineSuffix => Connected ? State.CurrentLineSuffix : string.Empty;
+    public int CurrentFrameInTas => Connected ? State.CurrentFrameInTas : -1;
+    public int TotalFrames => Connected ? State.TotalFrames : -1;
+    public int SaveStateLine => Connected ? State.SaveStateLine : -1;
+    public States TasStates => Connected ? (States) State.tasStates : States.None;
+    public string GameInfo => Connected ? State.GameInfo : string.Empty;
+    public string LevelName => Connected ? State.LevelName : string.Empty;
+    public string ChapterTime => Connected ? State.ChapterTime : string.Empty;
 
     private bool GetToggle(string settingName) {
         if (Server.GetDataFromGame(GameDataType.SettingValue, settingName) is { } settingValue &&

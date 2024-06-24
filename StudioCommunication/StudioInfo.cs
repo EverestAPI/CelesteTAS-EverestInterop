@@ -1,4 +1,6 @@
-﻿namespace StudioCommunication;
+﻿using System;
+
+namespace StudioCommunication;
 
 // ReSharper disable once StructCanBeMadeReadOnly
 public record struct StudioInfo {
@@ -57,5 +59,31 @@ public record struct StudioInfo {
             values[7] as string,
             values[8] as string
         );
+    }
+    
+    public readonly bool Equals(StudioInfo other) => 
+        CurrentLine == other.CurrentLine && 
+        CurrentLineSuffix == other.CurrentLineSuffix && 
+        CurrentFrameInTas == other.CurrentFrameInTas && 
+        TotalFrames == other.TotalFrames && 
+        SaveStateLine == other.SaveStateLine && 
+        tasStates == other.tasStates && 
+        GameInfo == other.GameInfo && 
+        LevelName == other.LevelName && 
+        ChapterTime == other.ChapterTime;
+    
+    public override readonly int GetHashCode()
+    {
+        var hashCode = new HashCode();
+        hashCode.Add(CurrentLine);
+        hashCode.Add(CurrentLineSuffix);
+        hashCode.Add(CurrentFrameInTas);
+        hashCode.Add(TotalFrames);
+        hashCode.Add(SaveStateLine);
+        hashCode.Add(tasStates);
+        hashCode.Add(GameInfo);
+        hashCode.Add(LevelName);
+        hashCode.Add(ChapterTime);
+        return hashCode.ToHashCode();
     }
 }

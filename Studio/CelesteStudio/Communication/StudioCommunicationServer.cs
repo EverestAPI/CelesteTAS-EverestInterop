@@ -68,7 +68,9 @@ public class StudioCommunicationServer : StudioCommunicationBase {
     private void ProcessSendState(byte[] data) {
         try {
             var studioInfo = StudioInfo.FromByteArray(data);
-            OnStateUpdated(studioInfo);
+            
+            if (!Studio.CelesteService.State.Equals(studioInfo))
+                OnStateUpdated(studioInfo);
             // CommunicationWrapper.StudioInfo = studioInfo;
         } catch (InvalidCastException) {
             // string studioVersion = Studio.Version.ToString(3);
