@@ -33,7 +33,10 @@ public sealed class Studio : Form {
         }
     }
 
-    public Editor Editor { get; private set; }
+    public readonly Editor Editor;
+    private readonly Scrollable EditorScrollable;
+    private readonly GameInfoPanel GameInfoPanel;
+
     private string TitleBarText => $"{Editor.Document.FileName}{(Editor.Document.Dirty ? "*" : string.Empty)} - Studio v{Version.ToString(3)}   {Editor.Document.FilePath}";
     
     public Studio() {
@@ -44,91 +47,37 @@ public sealed class Studio : Form {
         
         // Setup editor
         {
-            var scrollable = new Scrollable {
+            EditorScrollable = new Scrollable {
                 Width = 400,
                 Height = 800,
             };
-            Editor = new Editor(Document.Dummy, scrollable);
-            scrollable.Content = Editor;
+            Editor = new Editor(Document.Dummy, EditorScrollable);
+            EditorScrollable.Content = Editor;
             
-            var gameInfoLabel = new Label {
-                Text = "Searching...",
-                TextColor = Colors.White,
-                Font = new(new FontFamily("JetBrains Mono"), 9.0f),
-            };
-            var gameInfoPanel = new Panel {
-                Padding = 5,
-                BackgroundColor = Colors.Black,
-                Content = gameInfoLabel,
-            };
+            GameInfoPanel = new GameInfoPanel();
             
             Content = new StackLayout {
                 Padding = 0,
                 Items = {
-                    scrollable,
-                    gameInfoPanel
+                    EditorScrollable,
+                    GameInfoPanel
                 }
             };
             
-            SizeChanged += (_, _) => {
-                gameInfoPanel.Width = Width;
-                scrollable.Size = new Size(Width, (int)(Height - gameInfoPanel.Height - BorderBottomOffset));
-            };
-            CelesteService.Server.StateUpdated += _ => Application.Instance.InvokeAsync(UpdateGameInfo);
-            CelesteService.Server.Reset += () => Application.Instance.InvokeAsync(UpdateGameInfo);
+            SizeChanged += (_, _) => RecalculateLayout();
             
             NewFile();
-            
-            void UpdateGameInfo() {
-                gameInfoLabel.Text = CelesteService.Connected ? CelesteService.State.GameInfo.Trim() : "Searching...";
-                
-                int extraHeight = gameInfoPanel.Height - gameInfoLabel.Height;
-                var newHeight = gameInfoLabel.Font.MeasureString(gameInfoLabel.Text).Height + extraHeight;
-                scrollable.Height = (int)(Height - newHeight - BorderBottomOffset);
-            }
         }
         
         Menu = CreateMenu();
     }
     
+    public void RecalculateLayout() {
+        GameInfoPanel.Width = Width;
+        EditorScrollable.Size = new Size(Width, (int)(Height - GameInfoPanel.Height - BorderBottomOffset));
+    }
+    
     private MenuBar CreateMenu() {
-        static MenuItem CreateToggle(string text, Func<bool> getFn, Action toggleFn) {
-            var cmd = new CheckCommand { MenuText = text };
-            cmd.Executed += (_, _) => toggleFn();
-            
-            // TODO: Convert to CheckMenuItem
-            return new ButtonMenuItem(cmd);
-        }
-        
-        static MenuItem CreateSettingToggle(string text, string settingName) {
-            var property = typeof(Settings).GetField(settingName)!;
-            
-            var cmd = new CheckCommand { MenuText = text };
-            cmd.Checked = (bool)property.GetValue(Settings.Instance)!;
-            cmd.Executed += (_, _) => {
-                bool value = (bool)property.GetValue(Settings.Instance)!;
-                property.SetValue(Settings.Instance, !value);
-
-                Settings.Save();
-            };
-            
-            return new CheckMenuItem(cmd);
-        }
-        
-        static MenuItem CreateNumberInput<T>(string text, Func<T> getFn, Action<T> setFn, T minValue, T maxValue, T step) where T : INumber<T> {
-            var cmd = new Command { MenuText = text };
-            cmd.Executed += (_, _) => setFn(DialogUtil.ShowNumberInputDialog(text, getFn(), minValue, maxValue, step));
-            
-            return new ButtonMenuItem(cmd);
-        }
-        
-        static MenuItem CreateAction(string text, Keys shortcut = Keys.None, Action? action = null) {
-            var cmd = new Command { MenuText = text, Shortcut = shortcut, Enabled = action != null };
-            cmd.Executed += (_, _) => action?.Invoke();
-            
-            return cmd;
-        }
-        
         const int minDecimals = 2;
         const int maxDecimals = 12;
         const int minFastForwardSpeed = 2;
@@ -143,14 +92,14 @@ public sealed class Studio : Form {
         aboutCommand.Executed += (_, _) => new AboutDialog().ShowDialog(this);
         
         var homeCommand = new Command {MenuText = "Home"};
-        homeCommand.Executed += (_, _) => URIHelper.OpenInBrowser("https://github.com/EverestAPI/CelesteTAS-EverestInterop");
+        homeCommand.Executed += (_, _) => ProcessHelper.OpenInBrowser("https://github.com/EverestAPI/CelesteTAS-EverestInterop");
         
         var menu = new MenuBar {
             Items = {
                 new SubMenuItem {Text = "&File", Items = {
-                    CreateAction("&New File", Application.Instance.CommonModifier | Keys.N, NewFile),
+                    MenuUtils.CreateAction("&New File", Application.Instance.CommonModifier | Keys.N, NewFile),
                     new SeparatorMenuItem(),
-                    CreateAction("&Open File...", Application.Instance.CommonModifier | Keys.O, () => {
+                    MenuUtils.CreateAction("&Open File...", Application.Instance.CommonModifier | Keys.O, () => {
                         var dialog = new OpenFileDialog {
                             Filters = { new FileFilter("TAS", ".tas") },
                             MultiSelect = false,
@@ -161,12 +110,12 @@ public sealed class Studio : Form {
                             OpenFile(dialog.Filenames.First());
                         }
                     }),
-                    CreateAction("Open &Previous File", Keys.Alt | Keys.O),
-                    CreateAction("Open &Recent"),
-                    CreateAction("Open &Backup"),
+                    MenuUtils.CreateAction("Open &Previous File", Keys.Alt | Keys.O),
+                    MenuUtils.CreateAction("Open &Recent"),
+                    MenuUtils.CreateAction("Open &Backup"),
                     new SeparatorMenuItem(),
-                    CreateAction("Save", Application.Instance.CommonModifier | Keys.S, SaveFile),
-                    CreateAction("&Save As...", Application.Instance.CommonModifier | Keys.Shift | Keys.S, () => {
+                    MenuUtils.CreateAction("Save", Application.Instance.CommonModifier | Keys.S, SaveFile),
+                    MenuUtils.CreateAction("&Save As...", Application.Instance.CommonModifier | Keys.Shift | Keys.S, () => {
                         var dialog = new SaveFileDialog {
                             Filters = { new FileFilter("TAS", ".tas") },
                             Directory = new Uri(Path.GetDirectoryName(Editor.Document.FilePath)!),
@@ -181,59 +130,59 @@ public sealed class Studio : Form {
                         }
                     }),
                     new SeparatorMenuItem(),
-                    CreateAction("&Integrate Read Files"),
-                    CreateAction("&Convert to LibTAS Movie..."),
+                    MenuUtils.CreateAction("&Integrate Read Files"),
+                    MenuUtils.CreateAction("&Convert to LibTAS Movie..."),
                     new SeparatorMenuItem(),
-                    CreateAction("&Record TAS..."),
+                    MenuUtils.CreateAction("&Record TAS..."),
                 }},
                 new SubMenuItem {Text = "&Settings", Items = {
-                    CreateSettingToggle("&Send Inputs to Celeste", nameof(Settings.SendInputsToCeleste)),
-                    CreateToggle("Auto Remove Mutually Exclusive Actions", CelesteService.GetGameplay, CelesteService.ToggleGameplay),
-                    CreateToggle("Show Game Info", CelesteService.GetGameplay, CelesteService.ToggleGameplay),
-                    CreateToggle("Always on Top", CelesteService.GetGameplay, CelesteService.ToggleGameplay),
+                    MenuUtils.CreateSettingToggle("&Send Inputs to Celeste", nameof(Settings.SendInputsToCeleste), Application.Instance.CommonModifier | Keys.D),
+                    MenuUtils.CreateSettingToggle("Auto Remove Mutually Exclusive Actions", nameof(Settings.AutoRemoveMutuallyExclusiveActions)),
+                    MenuUtils.CreateSettingToggle("Show Game Info", nameof(Settings.ShowGameInfo)),
+                    MenuUtils.CreateSettingToggle("Always on Top", nameof(Settings.AlwaysOnTop)),
                     new SubMenuItem {Text = "Automatic Backups", Items = {
-                        CreateToggle("Enabled", CelesteService.GetGameplay, CelesteService.ToggleGameplay),
-                        CreateNumberInput("Backup Rate (minutes)", CelesteService.GetPositionDecimals, CelesteService.SetPositionDecimals, minDecimals, maxDecimals, 1),
-                        CreateNumberInput("Backup File Count", CelesteService.GetPositionDecimals, CelesteService.SetPositionDecimals, minDecimals, maxDecimals, 1),
+                        MenuUtils.CreateToggle("Enabled", CelesteService.GetGameplay, CelesteService.ToggleGameplay),
+                        MenuUtils.CreateNumberInput("Backup Rate (minutes)", CelesteService.GetPositionDecimals, CelesteService.SetPositionDecimals, minDecimals, maxDecimals, 1),
+                        MenuUtils.CreateNumberInput("Backup File Count", CelesteService.GetPositionDecimals, CelesteService.SetPositionDecimals, minDecimals, maxDecimals, 1),
                     }},
-                    CreateAction("Font..."),
+                    MenuUtils.CreateAction("Font..."),
                     new SubMenuItem {Text = "Theme", Items = {
                         new RadioMenuItem { Text = "Light" },
                         new RadioMenuItem { Text = "Dark" },
                     }},
-                    CreateAction("Open Settings File..."),
+                    MenuUtils.CreateAction("Open Settings File...", Keys.None, () => ProcessHelper.OpenInEditor(Settings.SavePath)),
                 }},
                 new SubMenuItem {Text = "&Toggles", Items = {
-                    CreateToggle("&Hitboxes", CelesteService.GetHitboxes, CelesteService.ToggleHitboxes),
-                    CreateToggle("&Trigger Hitboxes", CelesteService.GetTriggerHitboxes, CelesteService.ToggleTriggerHitboxes),
-                    CreateToggle("Unloaded Room Hitboxes", CelesteService.GetUnloadedRoomsHitboxes, CelesteService.ToggleUnloadedRoomsHitboxes),
-                    CreateToggle("Camera Hitboxes", CelesteService.GetCameraHitboxes, CelesteService.ToggleCameraHitboxes),
-                    CreateToggle("&Simplified Hitboxes", CelesteService.GetSimplifiedHitboxes, CelesteService.ToggleSimplifiedHitboxes),
-                    CreateToggle("&Actual Collide Hitboxes", CelesteService.GetActualCollideHitboxes, CelesteService.ToggleActualCollideHitboxes),
+                    MenuUtils.CreateToggle("&Hitboxes", CelesteService.GetHitboxes, CelesteService.ToggleHitboxes),
+                    MenuUtils.CreateToggle("&Trigger Hitboxes", CelesteService.GetTriggerHitboxes, CelesteService.ToggleTriggerHitboxes),
+                    MenuUtils.CreateToggle("Unloaded Room Hitboxes", CelesteService.GetUnloadedRoomsHitboxes, CelesteService.ToggleUnloadedRoomsHitboxes),
+                    MenuUtils.CreateToggle("Camera Hitboxes", CelesteService.GetCameraHitboxes, CelesteService.ToggleCameraHitboxes),
+                    MenuUtils.CreateToggle("&Simplified Hitboxes", CelesteService.GetSimplifiedHitboxes, CelesteService.ToggleSimplifiedHitboxes),
+                    MenuUtils.CreateToggle("&Actual Collide Hitboxes", CelesteService.GetActualCollideHitboxes, CelesteService.ToggleActualCollideHitboxes),
                     new SeparatorMenuItem(),
-                    CreateToggle("&Simplified &Graphics", CelesteService.GetSimplifiedGraphics, CelesteService.ToggleSimplifiedGraphics),
-                    CreateToggle("Game&play", CelesteService.GetGameplay, CelesteService.ToggleGameplay),
+                    MenuUtils.CreateToggle("&Simplified &Graphics", CelesteService.GetSimplifiedGraphics, CelesteService.ToggleSimplifiedGraphics),
+                    MenuUtils.CreateToggle("Game&play", CelesteService.GetGameplay, CelesteService.ToggleGameplay),
                     new SeparatorMenuItem(),
-                    CreateToggle("&Center Camera", CelesteService.GetCenterCamera, CelesteService.ToggleCenterCamera),
-                    CreateToggle("Center Camera Horizontally Only", CelesteService.GetCenterCameraHorizontallyOnly, CelesteService.ToggleCenterCameraHorizontallyOnly),
+                    MenuUtils.CreateToggle("&Center Camera", CelesteService.GetCenterCamera, CelesteService.ToggleCenterCamera),
+                    MenuUtils.CreateToggle("Center Camera Horizontally Only", CelesteService.GetCenterCameraHorizontallyOnly, CelesteService.ToggleCenterCameraHorizontallyOnly),
                     new SeparatorMenuItem(),
-                    CreateToggle("&Info HUD", CelesteService.GetInfoHud, CelesteService.ToggleInfoHud),
-                    CreateToggle("TAS Input Info", CelesteService.GetInfoTasInput, CelesteService.ToggleInfoTasInput),
-                    CreateToggle("Game Info", CelesteService.GetInfoGame, CelesteService.ToggleInfoGame),
-                    CreateToggle("Watch Entity Info", CelesteService.GetInfoWatchEntity, CelesteService.ToggleInfoWatchEntity),
-                    CreateToggle("Custom Info", CelesteService.GetInfoCustom, CelesteService.ToggleInfoCustom),
-                    CreateToggle("Subpixel Indicator", CelesteService.GetInfoSubpixelIndicator, CelesteService.ToggleInfoSubpixelIndicator),
+                    MenuUtils.CreateToggle("&Info HUD", CelesteService.GetInfoHud, CelesteService.ToggleInfoHud),
+                    MenuUtils.CreateToggle("TAS Input Info", CelesteService.GetInfoTasInput, CelesteService.ToggleInfoTasInput),
+                    MenuUtils.CreateToggle("Game Info", CelesteService.GetInfoGame, CelesteService.ToggleInfoGame),
+                    MenuUtils.CreateToggle("Watch Entity Info", CelesteService.GetInfoWatchEntity, CelesteService.ToggleInfoWatchEntity),
+                    MenuUtils.CreateToggle("Custom Info", CelesteService.GetInfoCustom, CelesteService.ToggleInfoCustom),
+                    MenuUtils.CreateToggle("Subpixel Indicator", CelesteService.GetInfoSubpixelIndicator, CelesteService.ToggleInfoSubpixelIndicator),
                     new SeparatorMenuItem(),
-                    CreateNumberInput("Position Decimals", CelesteService.GetPositionDecimals, CelesteService.SetPositionDecimals, minDecimals, maxDecimals, 1),
-                    CreateNumberInput("Speed Decimals", CelesteService.GetSpeedDecimals, CelesteService.SetSpeedDecimals, minDecimals, maxDecimals, 1),
-                    CreateNumberInput("Velocity Decimals", CelesteService.GetVelocityDecimals, CelesteService.SetVelocityDecimals, minDecimals, maxDecimals, 1),
-                    CreateNumberInput("Angle Decimals", CelesteService.GetAngleDecimals, CelesteService.SetAngleDecimals, minDecimals, maxDecimals, 1),
-                    CreateNumberInput("Custom Info Decimals", CelesteService.GetCustomInfoDecimals, CelesteService.SetCustomInfoDecimals, minDecimals, maxDecimals, 1),
-                    CreateNumberInput("Subpixel Indicator Decimals", CelesteService.GetSubpixelIndicatorDecimals, CelesteService.SetSubpixelIndicatorDecimals, minDecimals, maxDecimals, 1),
-                    CreateToggle("Unit of Speed", CelesteService.GetSpeedUnit, CelesteService.ToggleSpeedUnit),
+                    MenuUtils.CreateNumberInput("Position Decimals", CelesteService.GetPositionDecimals, CelesteService.SetPositionDecimals, minDecimals, maxDecimals, 1),
+                    MenuUtils.CreateNumberInput("Speed Decimals", CelesteService.GetSpeedDecimals, CelesteService.SetSpeedDecimals, minDecimals, maxDecimals, 1),
+                    MenuUtils.CreateNumberInput("Velocity Decimals", CelesteService.GetVelocityDecimals, CelesteService.SetVelocityDecimals, minDecimals, maxDecimals, 1),
+                    MenuUtils.CreateNumberInput("Angle Decimals", CelesteService.GetAngleDecimals, CelesteService.SetAngleDecimals, minDecimals, maxDecimals, 1),
+                    MenuUtils.CreateNumberInput("Custom Info Decimals", CelesteService.GetCustomInfoDecimals, CelesteService.SetCustomInfoDecimals, minDecimals, maxDecimals, 1),
+                    MenuUtils.CreateNumberInput("Subpixel Indicator Decimals", CelesteService.GetSubpixelIndicatorDecimals, CelesteService.SetSubpixelIndicatorDecimals, minDecimals, maxDecimals, 1),
+                    MenuUtils.CreateToggle("Unit of Speed", CelesteService.GetSpeedUnit, CelesteService.ToggleSpeedUnit),
                     new SeparatorMenuItem(),
-                    CreateNumberInput("Fast Forward Speed", CelesteService.GetFastForwardSpeed, CelesteService.SetFastForwardSpeed, minFastForwardSpeed, maxFastForwardSpeed, 1),
-                    CreateNumberInput("Slow Forward Speed", CelesteService.GetSlowForwardSpeed, CelesteService.SetSlowForwardSpeed, minSlowForwardSpeed, maxSlowForwardSpeed, 0.1f),
+                    MenuUtils.CreateNumberInput("Fast Forward Speed", CelesteService.GetFastForwardSpeed, CelesteService.SetFastForwardSpeed, minFastForwardSpeed, maxFastForwardSpeed, 1),
+                    MenuUtils.CreateNumberInput("Slow Forward Speed", CelesteService.GetSlowForwardSpeed, CelesteService.SetSlowForwardSpeed, minSlowForwardSpeed, maxSlowForwardSpeed, 0.1f),
                 }},
             },
             ApplicationItems = {

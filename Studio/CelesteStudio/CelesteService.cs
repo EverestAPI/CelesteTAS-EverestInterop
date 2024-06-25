@@ -187,4 +187,9 @@ public class CelesteService {
         return success ? result : DefaultSlowForwardSpeed;
     }
     public void SetSlowForwardSpeed(float value) => Server.ToggleGameSetting("SlowForwardSpeed", value);
+    
+    public void CopyCustomInfoTemplateToClipboard() => Server.ToggleGameSetting("Copy Custom Info Template to Clipboard", null);
+    public void SetCustomInfoTemplateFromClipboard() => Server.ToggleGameSetting("Set Custom Info Template From Clipboard", null);
+    public void ClearCustomInfoTemplate() => Server.ToggleGameSetting("Clear Custom Info Template", null);
+    public void ClearWatchEntityInfo() => Server.ToggleGameSetting("Clear Watch Entity Info", null);
 }

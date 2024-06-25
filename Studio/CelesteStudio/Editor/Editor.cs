@@ -65,29 +65,29 @@ public sealed class Editor : Drawable {
         
         ContextMenu = new ContextMenu {
             Items = {
-                CreateAction("Cut", Application.Instance.CommonModifier | Keys.X, OnCut),
-                CreateAction("Copy", Application.Instance.CommonModifier | Keys.C, OnCopy),
-                CreateAction("Paste", Application.Instance.CommonModifier | Keys.V, OnPaste),
+                MenuUtils.CreateAction("Cut", Application.Instance.CommonModifier | Keys.X, OnCut),
+                MenuUtils.CreateAction("Copy", Application.Instance.CommonModifier | Keys.C, OnCopy),
+                MenuUtils.CreateAction("Paste", Application.Instance.CommonModifier | Keys.V, OnPaste),
                 new SeparatorMenuItem(),
-                CreateAction("Undo", Application.Instance.CommonModifier | Keys.Z, OnUndo),
-                CreateAction("Redo", Application.Instance.CommonModifier | Keys.Z | Keys.Shift, OnRedo),
+                MenuUtils.CreateAction("Undo", Application.Instance.CommonModifier | Keys.Z, OnUndo),
+                MenuUtils.CreateAction("Redo", Application.Instance.CommonModifier | Keys.Z | Keys.Shift, OnRedo),
                 new SeparatorMenuItem(),
-                CreateAction("Select All", Application.Instance.CommonModifier | Keys.A, OnSelectAll),
-                CreateAction("Select Block", Application.Instance.CommonModifier | Keys.W, OnSelectBlock),
+                MenuUtils.CreateAction("Select All", Application.Instance.CommonModifier | Keys.A, OnSelectAll),
+                MenuUtils.CreateAction("Select Block", Application.Instance.CommonModifier | Keys.W, OnSelectBlock),
                 new SeparatorMenuItem(),
-                CreateAction("Insert/Remove Breakpoint"),
-                CreateAction("Insert/Remove Savestate Breakpoint"),
-                CreateAction("Remove All Uncommented Breakpoints"),
-                CreateAction("Remove All Breakpoints"),
-                CreateAction("Comment/Uncomment All Breakpoints"),
-                CreateAction("Comment/Uncomment Inputs", Application.Instance.CommonModifier | Keys.K, OnToggleCommentInputs),
-                CreateAction("Comment/Uncomment Text", Application.Instance.CommonModifier | Keys.K | Keys.Shift, OnToggleCommentText),
+                MenuUtils.CreateAction("Insert/Remove Breakpoint"),
+                MenuUtils.CreateAction("Insert/Remove Savestate Breakpoint"),
+                MenuUtils.CreateAction("Remove All Uncommented Breakpoints"),
+                MenuUtils.CreateAction("Remove All Breakpoints"),
+                MenuUtils.CreateAction("Comment/Uncomment All Breakpoints"),
+                MenuUtils.CreateAction("Comment/Uncomment Inputs", Application.Instance.CommonModifier | Keys.K, OnToggleCommentInputs),
+                MenuUtils.CreateAction("Comment/Uncomment Text", Application.Instance.CommonModifier | Keys.K | Keys.Shift, OnToggleCommentText),
                 new SeparatorMenuItem(),
-                CreateAction("Insert Room Name", Application.Instance.CommonModifier | Keys.R, OnInsertRoomName),
-                CreateAction("Insert Time", Application.Instance.CommonModifier | Keys.T, OnInsertTime),
-                CreateAction("Insert Mod Info", Keys.None, OnInsertModInfo),
-                CreateAction("Insert Console Load Command", Keys.None, OnInsertConsoleLoadCommand),
-                CreateAction("Insert Simple Console Load Command", Keys.None, OnInsertSimpleConsoleLoadCommand),
+                MenuUtils.CreateAction("Insert Room Name", Application.Instance.CommonModifier | Keys.R, OnInsertRoomName),
+                MenuUtils.CreateAction("Insert Time", Application.Instance.CommonModifier | Keys.T, OnInsertTime),
+                MenuUtils.CreateAction("Insert Mod Info", Keys.None, OnInsertModInfo),
+                MenuUtils.CreateAction("Insert Console Load Command", Keys.None, OnInsertConsoleLoadCommand),
+                MenuUtils.CreateAction("Insert Simple Console Load Command", Keys.None, OnInsertSimpleConsoleLoadCommand),
                 new SubMenuItem {Text = "Insert Other Command", Items = {
                     CreateCommandInsert("EnforceLegal", "EnforceLegal"),
                     CreateCommandInsert("Unsafe", "Unsafe"),
@@ -140,24 +140,17 @@ public sealed class Editor : Drawable {
                     CreateCommandInsert("ExitGame", "ExitGame"),
                 }},
                 new SeparatorMenuItem(),
-                CreateAction("Swap Selected X and C"),
-                CreateAction("Swap Selected J and K"),
-                CreateAction("Combine Consecutive Same Inputs"),
-                CreateAction("Force Combine Input Frames"),
-                CreateAction("Convert Dash to Demo Dash"),
+                MenuUtils.CreateAction("Swap Selected X and C"),
+                MenuUtils.CreateAction("Swap Selected J and K"),
+                MenuUtils.CreateAction("Combine Consecutive Same Inputs"),
+                MenuUtils.CreateAction("Force Combine Input Frames"),
+                MenuUtils.CreateAction("Convert Dash to Demo Dash"),
                 new SeparatorMenuItem(),
-                CreateAction("Open Read File / Go to Play Line"),
+                MenuUtils.CreateAction("Open Read File / Go to Play Line"),
             }
         };
         
         Recalc();
-        
-        static MenuItem CreateAction(string text, Keys shortcut = Keys.None, Action? action = null) {
-            var cmd = new Command { MenuText = text, Shortcut = shortcut, Enabled = action != null };
-            cmd.Executed += (_, _) => action?.Invoke();
-
-            return cmd; 
-        }
         
         MenuItem CreateCommandInsert(string commandName, string commandInsert) {
             var cmd = new Command { MenuText = commandName, Shortcut = Keys.None };

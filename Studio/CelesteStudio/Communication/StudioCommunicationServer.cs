@@ -162,7 +162,7 @@ public class StudioCommunicationServer : StudioCommunicationBase {
     public void SendPath(string path) => PendingWrite = () => SendPathNow(path, false);
     public void ConvertToLibTas(string path) => PendingWrite = () => ConvertToLibTasNow(path);
     public void SendHotkeyPressed(HotkeyID hotkey, bool released = false) => PendingWrite = () => SendHotkeyPressedNow(hotkey, released);
-    public void ToggleGameSetting(string settingName, object value) => PendingWrite = () => ToggleGameSettingNow(settingName, value);
+    public void ToggleGameSetting(string settingName, object? value) => PendingWrite = () => ToggleGameSettingNow(settingName, value);
     public void RequestDataFromGame(GameDataType gameDataType, object arg) => PendingWrite = () => RequestGameDataNow(gameDataType, arg);
 
     public string GetDataFromGame(GameDataType gameDataType, object? arg = null) {
@@ -209,7 +209,7 @@ public class StudioCommunicationServer : StudioCommunicationBase {
         WriteMessageGuaranteed(new Message(MessageID.SendHotkeyPressed, hotkeyBytes));
     }
 
-    private void ToggleGameSettingNow(string settingName, object value) {
+    private void ToggleGameSettingNow(string settingName, object? value) {
         if (!Initialized) {
             return;
         }

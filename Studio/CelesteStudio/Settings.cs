@@ -10,7 +10,17 @@ public class Settings {
     public static string SavePath => Path.Combine(EtoEnvironment.GetFolderPath(EtoSpecialFolder.ApplicationSettings), "CelesteStudio", "Settings.toml");
     public static Settings Instance { get; private set; } = new();
     
+    public static event Action? Changed;
+    public virtual void OnChanged() => Changed?.Invoke();
+    
     public bool SendInputsToCeleste = true;
+    public bool ShowGameInfo = true;
+    public bool AutoRemoveMutuallyExclusiveActions = true;
+    public bool AlwaysOnTop = false;
+    public bool AutoBackupEnabled = true;
+    public int AutoBackupRate = 1;
+    public int AutoBackupCount = 100;
+    public bool FindMatchCase;
 
     public static void Load() {
         if (File.Exists(SavePath)) {
