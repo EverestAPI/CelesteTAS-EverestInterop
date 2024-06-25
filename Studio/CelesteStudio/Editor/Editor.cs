@@ -198,7 +198,7 @@ public sealed class Editor : Drawable {
     }
 
     protected override void OnKeyDown(KeyEventArgs e) {
-        if (Settings.Instance.SendInputsToCeleste && Studio.CelesteService.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
+        if (Settings.Instance.SendInputsToCeleste && Studio.CelesteService.Connected && Studio.CelesteService.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
             e.Handled = true;
             return;
         }
@@ -260,7 +260,7 @@ public sealed class Editor : Drawable {
     }
     
     protected override void OnKeyUp(KeyEventArgs e) {
-        if (Settings.Instance.SendInputsToCeleste && Studio.CelesteService.SendKeyEvent(e.Key, e.Modifiers, released: true)) {
+        if (Settings.Instance.SendInputsToCeleste && Studio.CelesteService.Connected && Studio.CelesteService.SendKeyEvent(e.Key, e.Modifiers, released: true)) {
             e.Handled = true;
             return;
         }
