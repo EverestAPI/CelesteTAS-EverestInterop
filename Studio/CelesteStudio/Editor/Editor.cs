@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.RegularExpressions;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
@@ -37,6 +38,11 @@ public sealed class Editor : Drawable {
     
     private const float LineNumberPadding = 5.0f;
     private float textOffsetX;
+    
+    private static readonly Regex UncommentedBreakpointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
+    private static readonly Regex CommentedBreakpointRegex = new(@"^\s*#+\*\*\*", RegexOptions.Compiled);
+    private static readonly Regex AllBreakpointRegex = new(@"^\s*#*\*\*\*", RegexOptions.Compiled);
+    private static readonly Regex TimestampRegex = new(@"^\s*#+\s*(\d+:)?\d{1,2}:\d{2}\.\d{3}\(\d+\)", RegexOptions.Compiled);
     
     public Editor(Document document, Scrollable scrollable) {
         this.document = document;
@@ -75,19 +81,23 @@ public sealed class Editor : Drawable {
                 MenuUtils.CreateAction("Select All", Application.Instance.CommonModifier | Keys.A, OnSelectAll),
                 MenuUtils.CreateAction("Select Block", Application.Instance.CommonModifier | Keys.W, OnSelectBlock),
                 new SeparatorMenuItem(),
-                MenuUtils.CreateAction("Insert/Remove Breakpoint"),
-                MenuUtils.CreateAction("Insert/Remove Savestate Breakpoint"),
-                MenuUtils.CreateAction("Remove All Uncommented Breakpoints"),
-                MenuUtils.CreateAction("Remove All Breakpoints"),
-                MenuUtils.CreateAction("Comment/Uncomment All Breakpoints"),
+                MenuUtils.CreateAction("Delete Selected Lines", Application.Instance.CommonModifier | Keys.Y, OnDeleteSelectedLines),
+                new SeparatorMenuItem(),
+                MenuUtils.CreateAction("Insert/Remove Breakpoint", Application.Instance.CommonModifier | Keys.Period, () => InsertOrRemoveText(UncommentedBreakpointRegex, "***")),
+                // TODO: This shortcut doesn't seem to work on GTK?
+                MenuUtils.CreateAction("Insert/Remove Savestate Breakpoint", Application.Instance.CommonModifier | Keys.Shift | Keys.Period, () => InsertOrRemoveText(UncommentedBreakpointRegex, "***S")),
+                MenuUtils.CreateAction("Remove All Uncommented Breakpoints", Application.Instance.CommonModifier | Keys.P, () => RemoveLinesMatching(UncommentedBreakpointRegex)),
+                MenuUtils.CreateAction("Remove All Breakpoints", Application.Instance.CommonModifier | Keys.Shift | Keys.P, () => RemoveLinesMatching(AllBreakpointRegex)),
+                MenuUtils.CreateAction("Comment/Uncomment All Breakpoints", Application.Instance.CommonModifier | Keys.Alt | Keys.P, OnToggleCommentBreakpoints),
                 MenuUtils.CreateAction("Comment/Uncomment Inputs", Application.Instance.CommonModifier | Keys.K, OnToggleCommentInputs),
                 MenuUtils.CreateAction("Comment/Uncomment Text", Application.Instance.CommonModifier | Keys.K | Keys.Shift, OnToggleCommentText),
                 new SeparatorMenuItem(),
                 MenuUtils.CreateAction("Insert Room Name", Application.Instance.CommonModifier | Keys.R, OnInsertRoomName),
-                MenuUtils.CreateAction("Insert Time", Application.Instance.CommonModifier | Keys.T, OnInsertTime),
+                MenuUtils.CreateAction("Insert Current In-Game Time", Application.Instance.CommonModifier | Keys.T, OnInsertTime),
+                MenuUtils.CreateAction("Remove All Timestamps", Application.Instance.CommonModifier | Keys.Shift | Keys.T, () => RemoveLinesMatching(TimestampRegex)),
                 MenuUtils.CreateAction("Insert Mod Info", Keys.None, OnInsertModInfo),
-                MenuUtils.CreateAction("Insert Console Load Command", Keys.None, OnInsertConsoleLoadCommand),
-                MenuUtils.CreateAction("Insert Simple Console Load Command", Keys.None, OnInsertSimpleConsoleLoadCommand),
+                MenuUtils.CreateAction("Insert Console Load Command", Application.Instance.CommonModifier | Keys.Shift | Keys.R, OnInsertConsoleLoadCommand),
+                MenuUtils.CreateAction("Insert Simple Console Load Command", Application.Instance.CommonModifier | Keys.Alt | Keys.R, OnInsertSimpleConsoleLoadCommand),
                 new SubMenuItem {Text = "Insert Other Command", Items = {
                     CreateCommandInsert("EnforceLegal", "EnforceLegal"),
                     CreateCommandInsert("Unsafe", "Unsafe"),
@@ -140,11 +150,13 @@ public sealed class Editor : Drawable {
                     CreateCommandInsert("ExitGame", "ExitGame"),
                 }},
                 new SeparatorMenuItem(),
-                MenuUtils.CreateAction("Swap Selected X and C"),
-                MenuUtils.CreateAction("Swap Selected J and K"),
-                MenuUtils.CreateAction("Combine Consecutive Same Inputs"),
-                MenuUtils.CreateAction("Force Combine Input Frames"),
-                MenuUtils.CreateAction("Convert Dash to Demo Dash"),
+                MenuUtils.CreateAction("Swap Selected L and R", Keys.None, () => SwapSelectedActions(Actions.Left, Actions.Right)),
+                MenuUtils.CreateAction("Swap Selected J and K", Keys.None, () => SwapSelectedActions(Actions.Jump, Actions.Jump2)),
+                MenuUtils.CreateAction("Swap Selected X and C", Keys.None, () => SwapSelectedActions(Actions.Dash, Actions.Dash2)),
+                MenuUtils.CreateAction("Combine Consecutive Same Inputs", Application.Instance.CommonModifier | Keys.L, () => CombineInputs(sameActions: true)),
+                MenuUtils.CreateAction("Force Combine Input Frames", Application.Instance.CommonModifier | Keys.Shift | Keys.L, () => CombineInputs(sameActions: false)),
+                // TODO: Is this feature even unused?
+                // MenuUtils.CreateAction("Convert Dash to Demo Dash"),
                 new SeparatorMenuItem(),
                 MenuUtils.CreateAction("Open Read File / Go to Play Line"),
             }
@@ -189,7 +201,7 @@ public sealed class Editor : Drawable {
 
         Invalidate();
     }
-
+    
     protected override void OnKeyDown(KeyEventArgs e) {
         if (Settings.Instance.SendInputsToCeleste && Studio.CelesteService.Connected && Studio.CelesteService.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
             e.Handled = true;
@@ -231,15 +243,10 @@ public sealed class Editor : Drawable {
                 MoveCaret(CaretMovementType.LineEnd, updateSelection: e.Shift);
                 break;
             default:
-                var key = e.Key;
-                if (e.Shift) key |= Keys.Shift;
-                if (e.Control) key |= Keys.Control;
-                if (e.Alt) key |= Keys.Alt;
-                
                 // Search through context menu for hotkeys
                 foreach (var item in ContextMenu.Items)
                 {
-                    if (item.Shortcut == key) {
+                    if (item.Shortcut == e.KeyData) {
                         item.PerformClick();
                         break;
                     }
@@ -608,6 +615,41 @@ public sealed class Editor : Drawable {
         Document.Selection.End = new CaretPosition(below, Document.Lines[below].Length);
     }
     
+    private void OnDeleteSelectedLines() {
+        int minRow = Document.Selection.Min.Row;
+        int maxRow = Document.Selection.Max.Row;
+        if (Document.Selection.Empty) {
+            minRow = maxRow = Document.Caret.Row;
+        }
+        
+        Document.RemoveLines(minRow, maxRow);
+        Document.Selection.Clear();
+        Document.Caret.Row = minRow;
+        
+        ScrollCaretIntoView();
+    }
+    
+    private void OnToggleCommentBreakpoints() {
+        int minRow = Document.Selection.Min.Row;
+        int maxRow = Document.Selection.Max.Row;
+        if (Document.Selection.Empty) {
+            minRow = 0;
+            maxRow = Document.Lines.Count - 1;
+        }
+        
+        Document.PushUndoState();
+        for (int row = minRow; row <= maxRow; row++) {
+            var line = Document.Lines[row];
+            if (CommentedBreakpointRegex.IsMatch(line)) {
+                int hashIdx = line.IndexOf('#');
+                Document.ReplaceLine(row, line.Remove(hashIdx, 1), raiseEvents: false);
+            } else if (UncommentedBreakpointRegex.IsMatch(line)) {
+                Document.ReplaceLine(row, $"#{line}", raiseEvents: false);
+            }
+        }
+        Document.OnTextChanged(new CaretPosition(minRow, 0), new CaretPosition(maxRow, Document.Lines[maxRow].Length));
+    }
+    
     private void OnToggleCommentInputs() {
         int minRow = Document.Selection.Min.Row;
         int maxRow = Document.Selection.Max.Row;
@@ -678,6 +720,191 @@ public sealed class Editor : Drawable {
     private void OnInsertSimpleConsoleLoadCommand() {
         if (Studio.CelesteService.Server.GetDataFromGame(GameDataType.ConsoleCommand, true) is { } command)
             Document.InsertLineAbove(command);
+    }
+    
+    private void InsertOrRemoveText(Regex regex, string text) {
+        // Check current line
+        if (regex.IsMatch(Document.Lines[Document.Caret.Row])) {
+            Document.RemoveLine(Document.Caret.Row);
+        }
+        // Check line above as well
+        else if (Document.Caret.Row > 0 && regex.IsMatch(Document.Lines[Document.Caret.Row - 1])) {
+            Document.RemoveLine(Document.Caret.Row - 1);
+        }
+        // Otherwise insert new breakpoint
+        else {
+            Document.InsertLineAbove(text);
+        }
+        
+        ScrollCaretIntoView();
+    }
+    
+    private void RemoveLinesMatching(Regex regex) {
+        bool changed = false;
+        
+        for (int row = Document.Lines.Count - 1; row >= 0; row--) {
+            if (!regex.IsMatch(Document.Lines[row]))
+                continue;
+            
+            if (!changed)
+                Document.PushUndoState();
+            changed = true;
+            
+            Document.RemoveLine(row, raiseEvents: false);
+        }
+        
+        if (changed)
+            Document.OnTextChanged(new CaretPosition(0, 0), new CaretPosition(Document.Lines.Count - 1, Document.Lines[^1].Length));
+    }
+    
+    private void SwapSelectedActions(Actions a, Actions b) {
+        if (Document.Selection.Empty)
+            return;
+        
+        int minRow = Document.Selection.Min.Row;
+        int maxRow = Document.Selection.Max.Row;
+        
+        bool changed = false;
+        
+        for (int row = minRow; row <= maxRow; row++) {
+            if (!ActionLine.TryParse(Document.Lines[row], out var actionLine))
+                continue;
+            
+            if (actionLine.Actions.HasFlag(a) && actionLine.Actions.HasFlag(b))
+                continue; // Nothing to do
+            
+            if (actionLine.Actions.HasFlag(a))
+                actionLine.Actions = actionLine.Actions & ~a | b;
+            else if (actionLine.Actions.HasFlag(b))
+                actionLine.Actions = actionLine.Actions & ~b | a;
+            
+            if (!changed)
+                Document.PushUndoState();
+            changed = true;
+            
+            Document.ReplaceLine(row, actionLine.ToString(), raiseEvents: false);
+        }
+        
+        if (changed)
+            Document.OnTextChanged(new CaretPosition(minRow, 0), new CaretPosition(maxRow, Document.Lines[maxRow].Length));
+    }
+    
+    private void CombineInputs(bool sameActions) {
+        if (Document.Selection.Empty) {
+            // Merge current input with surrounding inputs
+            // Don't allow this without sameActions
+            if (!sameActions) return;
+            
+            int curr = Document.Caret.Row;
+            if (!ActionLine.TryParse(Document.Lines[curr], out var currActionLine))
+                return;
+            
+            // Above
+            int above = curr - 1;
+            for (; above >= 0; above--) {
+                if (!ActionLine.TryParse(Document.Lines[above], out var otherActionLine))
+                    break;
+                
+                if (currActionLine.Actions != otherActionLine.Actions ||
+                     currActionLine.FeatherAngle != otherActionLine.FeatherAngle ||
+                     currActionLine.FeatherMagnitude != otherActionLine.FeatherMagnitude) 
+                {
+                    break;
+                }
+                
+                currActionLine.Frames += otherActionLine.Frames;
+            }
+            
+            // Below
+            int below = curr + 1;
+            for (; below < Document.Lines.Count; below++) {
+                if (!ActionLine.TryParse(Document.Lines[below], out var otherActionLine))
+                    break;
+                
+                if (currActionLine.Actions != otherActionLine.Actions ||
+                    currActionLine.FeatherAngle != otherActionLine.FeatherAngle ||
+                    currActionLine.FeatherMagnitude != otherActionLine.FeatherMagnitude)
+                {
+                    break;
+                }
+                
+                currActionLine.Frames += otherActionLine.Frames;
+            }
+            
+            // Account for overshoot by 1
+            above = Math.Min(Document.Lines.Count, above + 1);
+            below = Math.Max(0, below - 1);
+            
+            Document.PushUndoState();
+            Document.RemoveLines(above, below, raiseEvents: false);
+            Document.InsertNewLine(above, currActionLine.ToString(), raiseEvents: false);
+            Document.OnTextChanged(new CaretPosition(above, 0), new CaretPosition(above, Document.Lines[above].Length));
+            
+            Document.Caret.Row = above;
+            Document.Caret.Col = SnapColumnToActionLine(currActionLine, Document.Caret.Col);
+        } else {
+            // Merge everything inside the selection
+            int minRow = Document.Selection.Min.Row;
+            int maxRow = Document.Selection.Max.Row;
+            
+            Document.PushUndoState();
+            
+            ActionLine? activeActionLine = null;
+            int activeRowStart = -1;
+            
+            for (int row = minRow; row <= maxRow; row++) {
+                if (!ActionLine.TryParse(Document.Lines[row], out var currActionLine))
+                    continue; // Skip non-input lines
+                
+                if (activeActionLine == null) {
+                    activeActionLine = currActionLine;
+                    activeRowStart = row;
+                    continue;
+                }
+                
+                if (!sameActions) {
+                    // Just merge them, regardless if they are the same actions
+                    activeActionLine = activeActionLine.Value with { Frames = activeActionLine.Value.Frames + currActionLine.Frames };
+                    continue;
+                }
+                
+                if (currActionLine.Actions == activeActionLine.Value.Actions &&
+                    currActionLine.FeatherAngle == activeActionLine.Value.FeatherAngle &&
+                    currActionLine.FeatherMagnitude == activeActionLine.Value.FeatherMagnitude) 
+                {
+                    activeActionLine = activeActionLine.Value with { Frames = activeActionLine.Value.Frames + currActionLine.Frames };
+                    continue;
+                }
+                
+                // Current line is different, so change the active one
+                Document.RemoveLines(activeRowStart, row - 1, raiseEvents: false);
+                Document.InsertNewLine(activeRowStart, activeActionLine.Value.ToString(), raiseEvents: false);
+                
+                activeActionLine = currActionLine;
+                activeRowStart++;
+                
+                // Account for changed line counts
+                maxRow -= row - activeRowStart;
+                row = activeRowStart;
+            }
+            
+            // "Flush" the remaining line
+            if (activeActionLine != null) {
+                Document.RemoveLines(activeRowStart, maxRow, raiseEvents: false);
+                Document.InsertNewLine(activeRowStart, activeActionLine.Value.ToString(), raiseEvents: false);
+                
+                maxRow = activeRowStart;
+            }
+            
+            Document.OnTextChanged(new CaretPosition(minRow, 0), new CaretPosition(maxRow, Document.Lines[maxRow].Length));
+            Document.Selection.Clear();
+            
+            Document.Caret.Row = maxRow;
+            if (ActionLine.TryParse(Document.Lines[maxRow], out var actionLine))
+                Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
+            
+            ScrollCaretIntoView();
+        }
     }
 
     #endregion
