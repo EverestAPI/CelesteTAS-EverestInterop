@@ -51,15 +51,42 @@ public sealed class Studio : Form {
             Editor = new Editor(Document.Dummy, scrollable);
             scrollable.Content = Editor;
             
-            Content = new StackLayout {
-                Padding = 0,
-                Items = { scrollable }
+            var gameInfoLabel = new Label {
+                Text = "Searching...",
+                TextColor = Colors.White,
+                Font = new(new FontFamily("JetBrains Mono"), 9.0f),
+            };
+            var gameInfoPanel = new Panel {
+                Padding = 5,
+                BackgroundColor = Colors.Black,
+                Content = gameInfoLabel,
             };
             
-            SizeChanged += (_, _) => scrollable.Size = new Size(Size.Width, (int)(Size.Height - BorderBottomOffset));
+            Content = new StackLayout {
+                Padding = 0,
+                Items = {
+                    scrollable,
+                    gameInfoPanel
+                }
+            };
+            
+            SizeChanged += (_, _) => {
+                gameInfoPanel.Width = Width;
+                scrollable.Size = new Size(Width, (int)(Height - gameInfoPanel.Height - BorderBottomOffset));
+            };
+            CelesteService.Server.StateUpdated += _ => Application.Instance.InvokeAsync(UpdateGameInfo);
+            CelesteService.Server.Reset += () => Application.Instance.InvokeAsync(UpdateGameInfo);
+            
+            NewFile();
+            
+            void UpdateGameInfo() {
+                gameInfoLabel.Text = CelesteService.Connected ? CelesteService.State.GameInfo.Trim() : "Searching...";
+                
+                int extraHeight = gameInfoPanel.Height - gameInfoLabel.Height;
+                var newHeight = gameInfoLabel.Font.MeasureString(gameInfoLabel.Text).Height + extraHeight;
+                scrollable.Height = (int)(Height - newHeight - BorderBottomOffset);
+            }
         }
-        
-        NewFile();
         
         Menu = CreateMenu();
     }

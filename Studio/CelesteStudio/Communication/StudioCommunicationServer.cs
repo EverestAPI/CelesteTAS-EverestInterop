@@ -15,9 +15,9 @@ public class StudioCommunicationServer : StudioCommunicationBase {
     public event Action<Dictionary<HotkeyID, List<WinFormsKeys>>> BindingsUpdated;
     public event Action<Dictionary<int, string>> LinesUpdated;
 
-    protected virtual void OnStateUpdated(StudioInfo obj) => StateUpdated?.Invoke(obj);
-    protected virtual void OnBindingsUpdated(Dictionary<HotkeyID, List<WinFormsKeys>> obj) => BindingsUpdated?.Invoke(obj);
-    protected virtual void OnLinesUpdated(Dictionary<int, string> lines) => LinesUpdated?.Invoke(lines);
+    public virtual void OnStateUpdated(StudioInfo obj) => StateUpdated?.Invoke(obj);
+    public virtual void OnBindingsUpdated(Dictionary<HotkeyID, List<WinFormsKeys>> obj) => BindingsUpdated?.Invoke(obj);
+    public virtual void OnLinesUpdated(Dictionary<int, string> lines) => LinesUpdated?.Invoke(lines);
 
     private string? _returnData;
 

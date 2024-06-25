@@ -18,6 +18,8 @@ public class StudioCommunicationBase {
 
     private static readonly List<StudioCommunicationBase> AttachedCom = new();
     private readonly Mutex mutex;
+    
+    public event Action Reset;
 
     //I gave up on using pipes.
     //Don't know whether i was doing something horribly wrong or if .net pipes are just *that* bad.
@@ -231,6 +233,7 @@ public class StudioCommunicationBase {
         PendingWrite = null;
         timeoutCount++;
         Log($"Exception thrown - {e.Message}");
+        Reset?.Invoke();
         //Ensure the first byte of the mmf is reset
         using (MemoryMappedViewStream stream = sharedMemory.CreateViewStream()) {
             mutex.WaitOne();
