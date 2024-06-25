@@ -156,9 +156,12 @@ public static class ActionsUtils {
         Actions.Feather,
     }.Where(e => actions.HasFlag(e));
     
-    public static Actions ToggleAction(this Actions actions, Actions other) {
+    public static Actions ToggleAction(this Actions actions, Actions other, bool removeMutuallyExclusive) {
         if (actions.HasFlag(other))
             return actions & ~other;
+        
+        if (!removeMutuallyExclusive)
+            return actions | other;
         
         // Replace mutually exclusive inputs
         return other switch {

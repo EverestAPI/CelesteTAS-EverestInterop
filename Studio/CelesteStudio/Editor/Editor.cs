@@ -269,10 +269,11 @@ public sealed class Editor : Drawable {
         int maxRow = Math.Max(start.Row, end.Row);
         
         for (int row = minRow; row <= Math.Min(maxRow, Document.Lines.Count - 1); row++) {
-            if (ActionLine.TryParse(Document.Lines[row], out var newActionLine)) {
-                Document.ReplaceLine(row, newActionLine.ToString(), raiseEvents: false);
+            if (ActionLine.TryParse(Document.Lines[row], out var actionLine)) {
+                Document.ReplaceLine(row, actionLine.ToString(), raiseEvents: false);
+                
                 if (Document.Caret.Row == row)
-                    Document.Caret.Col = ActionLine.MaxFramesDigits;
+                    Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
             }
         }
     }
@@ -320,7 +321,7 @@ public sealed class Editor : Drawable {
             }
             // Handle dash-only/move-only/custom bindings
             else if (typedAction is Actions.DashOnly or Actions.MoveOnly or Actions.PressedKey) {
-                actionLine.Actions = actionLine.Actions.ToggleAction(typedAction);
+                actionLine.Actions = actionLine.Actions.ToggleAction(typedAction, Settings.Instance.AutoRemoveMutuallyExclusiveActions);
                 Document.Caret.Col = GetColumnOfAction(actionLine, typedAction);
             }
             // Handle regular inputs
@@ -336,7 +337,7 @@ public sealed class Editor : Drawable {
                     typedAction = typedAction.ToMoveOnlyActions();
 
                 // Toggle it
-                actionLine.Actions = actionLine.Actions.ToggleAction(typedAction);
+                actionLine.Actions = actionLine.Actions.ToggleAction(typedAction, Settings.Instance.AutoRemoveMutuallyExclusiveActions);
 
                 // Warp the cursor after the number
                 if (typedAction == Actions.Feather && actionLine.Actions.HasFlag(Actions.Feather)) {
