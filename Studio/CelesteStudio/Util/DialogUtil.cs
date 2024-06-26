@@ -66,6 +66,6 @@ public static class DialogUtil
             return;
         }
 
-        Studio.CelesteService.Server.RecordTAS(textBox.Text);
+        Studio.CommunicationWrapper.Server.RecordTAS(textBox.Text);
     }
 }

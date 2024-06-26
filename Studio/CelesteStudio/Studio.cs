@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
+using CelesteStudio.Communication;
 using CelesteStudio.Util;
 using Eto.Forms;
 using Eto.Drawing;
@@ -14,7 +15,7 @@ public sealed class Studio : Form {
     public static Studio Instance = null!;
     public static Version Version { get; private set; } = null!;
     
-    public static readonly CelesteService CelesteService = new();
+    public static readonly CommunicationWrapper CommunicationWrapper = new();
     
     // Some platforms report the window larger than it actually is, so there need to be some offsets.
     // The values are chosen by fine-tuning manually.
@@ -183,7 +184,7 @@ public sealed class Studio : Form {
                     MenuUtils.CreateAction("&Convert to LibTAS Movie..."),
                     new SeparatorMenuItem(),
                     MenuUtils.CreateAction("&Record TAS...", Keys.None, () => {
-                        if (!CelesteService.Connected) {
+                        if (!CommunicationWrapper.Connected) {
                             MessageBox.Show("This feature requires the support of the CelesteTAS mod, please launch the game.", MessageBoxButtons.OK);
                             // return;
                         }
@@ -210,36 +211,36 @@ public sealed class Studio : Form {
                     MenuUtils.CreateAction("Open Settings File...", Keys.None, () => ProcessHelper.OpenInDefaultApp(Settings.SavePath)),
                 }},
                 new SubMenuItem {Text = "&Toggles", Items = {
-                    MenuUtils.CreateToggle("&Hitboxes", CelesteService.GetHitboxes, CelesteService.ToggleHitboxes),
-                    MenuUtils.CreateToggle("&Trigger Hitboxes", CelesteService.GetTriggerHitboxes, CelesteService.ToggleTriggerHitboxes),
-                    MenuUtils.CreateToggle("Unloaded Room Hitboxes", CelesteService.GetUnloadedRoomsHitboxes, CelesteService.ToggleUnloadedRoomsHitboxes),
-                    MenuUtils.CreateToggle("Camera Hitboxes", CelesteService.GetCameraHitboxes, CelesteService.ToggleCameraHitboxes),
-                    MenuUtils.CreateToggle("&Simplified Hitboxes", CelesteService.GetSimplifiedHitboxes, CelesteService.ToggleSimplifiedHitboxes),
-                    MenuUtils.CreateToggle("&Actual Collide Hitboxes", CelesteService.GetActualCollideHitboxes, CelesteService.ToggleActualCollideHitboxes),
+                    MenuUtils.CreateToggle("&Hitboxes", CommunicationWrapper.GetHitboxes, CommunicationWrapper.ToggleHitboxes),
+                    MenuUtils.CreateToggle("&Trigger Hitboxes", CommunicationWrapper.GetTriggerHitboxes, CommunicationWrapper.ToggleTriggerHitboxes),
+                    MenuUtils.CreateToggle("Unloaded Room Hitboxes", CommunicationWrapper.GetUnloadedRoomsHitboxes, CommunicationWrapper.ToggleUnloadedRoomsHitboxes),
+                    MenuUtils.CreateToggle("Camera Hitboxes", CommunicationWrapper.GetCameraHitboxes, CommunicationWrapper.ToggleCameraHitboxes),
+                    MenuUtils.CreateToggle("&Simplified Hitboxes", CommunicationWrapper.GetSimplifiedHitboxes, CommunicationWrapper.ToggleSimplifiedHitboxes),
+                    MenuUtils.CreateToggle("&Actual Collide Hitboxes", CommunicationWrapper.GetActualCollideHitboxes, CommunicationWrapper.ToggleActualCollideHitboxes),
                     new SeparatorMenuItem(),
-                    MenuUtils.CreateToggle("&Simplified &Graphics", CelesteService.GetSimplifiedGraphics, CelesteService.ToggleSimplifiedGraphics),
-                    MenuUtils.CreateToggle("Game&play", CelesteService.GetGameplay, CelesteService.ToggleGameplay),
+                    MenuUtils.CreateToggle("&Simplified &Graphics", CommunicationWrapper.GetSimplifiedGraphics, CommunicationWrapper.ToggleSimplifiedGraphics),
+                    MenuUtils.CreateToggle("Game&play", CommunicationWrapper.GetGameplay, CommunicationWrapper.ToggleGameplay),
                     new SeparatorMenuItem(),
-                    MenuUtils.CreateToggle("&Center Camera", CelesteService.GetCenterCamera, CelesteService.ToggleCenterCamera),
-                    MenuUtils.CreateToggle("Center Camera Horizontally Only", CelesteService.GetCenterCameraHorizontallyOnly, CelesteService.ToggleCenterCameraHorizontallyOnly),
+                    MenuUtils.CreateToggle("&Center Camera", CommunicationWrapper.GetCenterCamera, CommunicationWrapper.ToggleCenterCamera),
+                    MenuUtils.CreateToggle("Center Camera Horizontally Only", CommunicationWrapper.GetCenterCameraHorizontallyOnly, CommunicationWrapper.ToggleCenterCameraHorizontallyOnly),
                     new SeparatorMenuItem(),
-                    MenuUtils.CreateToggle("&Info HUD", CelesteService.GetInfoHud, CelesteService.ToggleInfoHud),
-                    MenuUtils.CreateToggle("TAS Input Info", CelesteService.GetInfoTasInput, CelesteService.ToggleInfoTasInput),
-                    MenuUtils.CreateToggle("Game Info", CelesteService.GetInfoGame, CelesteService.ToggleInfoGame),
-                    MenuUtils.CreateToggle("Watch Entity Info", CelesteService.GetInfoWatchEntity, CelesteService.ToggleInfoWatchEntity),
-                    MenuUtils.CreateToggle("Custom Info", CelesteService.GetInfoCustom, CelesteService.ToggleInfoCustom),
-                    MenuUtils.CreateToggle("Subpixel Indicator", CelesteService.GetInfoSubpixelIndicator, CelesteService.ToggleInfoSubpixelIndicator),
+                    MenuUtils.CreateToggle("&Info HUD", CommunicationWrapper.GetInfoHud, CommunicationWrapper.ToggleInfoHud),
+                    MenuUtils.CreateToggle("TAS Input Info", CommunicationWrapper.GetInfoTasInput, CommunicationWrapper.ToggleInfoTasInput),
+                    MenuUtils.CreateToggle("Game Info", CommunicationWrapper.GetInfoGame, CommunicationWrapper.ToggleInfoGame),
+                    MenuUtils.CreateToggle("Watch Entity Info", CommunicationWrapper.GetInfoWatchEntity, CommunicationWrapper.ToggleInfoWatchEntity),
+                    MenuUtils.CreateToggle("Custom Info", CommunicationWrapper.GetInfoCustom, CommunicationWrapper.ToggleInfoCustom),
+                    MenuUtils.CreateToggle("Subpixel Indicator", CommunicationWrapper.GetInfoSubpixelIndicator, CommunicationWrapper.ToggleInfoSubpixelIndicator),
                     new SeparatorMenuItem(),
-                    MenuUtils.CreateNumberInput("Position Decimals", CelesteService.GetPositionDecimals, CelesteService.SetPositionDecimals, minDecimals, maxDecimals, 1),
-                    MenuUtils.CreateNumberInput("Speed Decimals", CelesteService.GetSpeedDecimals, CelesteService.SetSpeedDecimals, minDecimals, maxDecimals, 1),
-                    MenuUtils.CreateNumberInput("Velocity Decimals", CelesteService.GetVelocityDecimals, CelesteService.SetVelocityDecimals, minDecimals, maxDecimals, 1),
-                    MenuUtils.CreateNumberInput("Angle Decimals", CelesteService.GetAngleDecimals, CelesteService.SetAngleDecimals, minDecimals, maxDecimals, 1),
-                    MenuUtils.CreateNumberInput("Custom Info Decimals", CelesteService.GetCustomInfoDecimals, CelesteService.SetCustomInfoDecimals, minDecimals, maxDecimals, 1),
-                    MenuUtils.CreateNumberInput("Subpixel Indicator Decimals", CelesteService.GetSubpixelIndicatorDecimals, CelesteService.SetSubpixelIndicatorDecimals, minDecimals, maxDecimals, 1),
-                    MenuUtils.CreateToggle("Unit of Speed", CelesteService.GetSpeedUnit, CelesteService.ToggleSpeedUnit),
+                    MenuUtils.CreateNumberInput("Position Decimals", CommunicationWrapper.GetPositionDecimals, CommunicationWrapper.SetPositionDecimals, minDecimals, maxDecimals, 1),
+                    MenuUtils.CreateNumberInput("Speed Decimals", CommunicationWrapper.GetSpeedDecimals, CommunicationWrapper.SetSpeedDecimals, minDecimals, maxDecimals, 1),
+                    MenuUtils.CreateNumberInput("Velocity Decimals", CommunicationWrapper.GetVelocityDecimals, CommunicationWrapper.SetVelocityDecimals, minDecimals, maxDecimals, 1),
+                    MenuUtils.CreateNumberInput("Angle Decimals", CommunicationWrapper.GetAngleDecimals, CommunicationWrapper.SetAngleDecimals, minDecimals, maxDecimals, 1),
+                    MenuUtils.CreateNumberInput("Custom Info Decimals", CommunicationWrapper.GetCustomInfoDecimals, CommunicationWrapper.SetCustomInfoDecimals, minDecimals, maxDecimals, 1),
+                    MenuUtils.CreateNumberInput("Subpixel Indicator Decimals", CommunicationWrapper.GetSubpixelIndicatorDecimals, CommunicationWrapper.SetSubpixelIndicatorDecimals, minDecimals, maxDecimals, 1),
+                    MenuUtils.CreateToggle("Unit of Speed", CommunicationWrapper.GetSpeedUnit, CommunicationWrapper.ToggleSpeedUnit),
                     new SeparatorMenuItem(),
-                    MenuUtils.CreateNumberInput("Fast Forward Speed", CelesteService.GetFastForwardSpeed, CelesteService.SetFastForwardSpeed, minFastForwardSpeed, maxFastForwardSpeed, 1),
-                    MenuUtils.CreateNumberInput("Slow Forward Speed", CelesteService.GetSlowForwardSpeed, CelesteService.SetSlowForwardSpeed, minSlowForwardSpeed, maxSlowForwardSpeed, 0.1f),
+                    MenuUtils.CreateNumberInput("Fast Forward Speed", CommunicationWrapper.GetFastForwardSpeed, CommunicationWrapper.SetFastForwardSpeed, minFastForwardSpeed, maxFastForwardSpeed, 1),
+                    MenuUtils.CreateNumberInput("Slow Forward Speed", CommunicationWrapper.GetSlowForwardSpeed, CommunicationWrapper.SetSlowForwardSpeed, minSlowForwardSpeed, maxSlowForwardSpeed, 0.1f),
                 }},
             },
             ApplicationItems = {
@@ -256,7 +257,7 @@ public sealed class Studio : Form {
     }
     
     public override void Close() {
-        CelesteService.SendPath(string.Empty);
+        CommunicationWrapper.SendPath(string.Empty);
         Settings.Save();
         
         base.Close();
@@ -272,10 +273,10 @@ public sealed class Studio : Form {
         }
         
         string initText = $"RecordCount: 1{Document.NewLine}";
-        if (CelesteService.Connected) {
-            if (CelesteService.Server.GetDataFromGame(GameDataType.ConsoleCommand, true) is { } simpleConsoleCommand) {
+        if (CommunicationWrapper.Connected) {
+            if (CommunicationWrapper.Server.GetDataFromGame(GameDataType.ConsoleCommand, true) is { } simpleConsoleCommand) {
                 initText += $"{Document.NewLine}{simpleConsoleCommand}{Document.NewLine}   1{Document.NewLine}";
-                if (CelesteService.Server.GetDataFromGame(GameDataType.ModUrl) is { } modUrl) {
+                if (CommunicationWrapper.Server.GetDataFromGame(GameDataType.ModUrl) is { } modUrl) {
                     initText = modUrl + initText;
                 }
             }
@@ -302,7 +303,7 @@ public sealed class Studio : Form {
         if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
             Settings.Instance.AddRecentFile(filePath);
         
-        CelesteService.WriteWait();
+        CommunicationWrapper.WriteWait();
         
         var document = Document.Load(filePath);
         if (document == null) {
@@ -321,7 +322,7 @@ public sealed class Studio : Form {
         Title = TitleBarText;
         Menu = CreateMenu(); // Recreate menu to reflect changed "Recent Files"
         
-        CelesteService.SendPath(Editor.Document.FilePath);
+        CommunicationWrapper.SendPath(Editor.Document.FilePath);
         
         void UpdateTitle(Document _0, CaretPosition _1, CaretPosition _2) {
             Title = TitleBarText;
@@ -334,12 +335,12 @@ public sealed class Studio : Form {
     }
     
     private void SaveFileAs(string filePath) {
-        CelesteService.WriteWait();
+        CommunicationWrapper.WriteWait();
         
         Editor.Document.FilePath = filePath;
         Editor.Document.Save();
         Title = TitleBarText;
         
-        CelesteService.SendPath(Editor.Document.FilePath);
+        CommunicationWrapper.SendPath(Editor.Document.FilePath);
     }
 }

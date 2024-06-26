@@ -28,29 +28,29 @@ public class GameInfoPanel : Panel {
         ContextMenu = new ContextMenu {
             Items = {
                 MenuUtils.CreateAction("Copy Game Info to Clipboard", Application.Instance.CommonModifier | Keys.Shift | Keys.C, () => {
-                    if (Studio.CelesteService.Server.GetDataFromGame(GameDataType.ExactGameInfo) is { } exactGameInfo) {
+                    if (Studio.CommunicationWrapper.Server.GetDataFromGame(GameDataType.ExactGameInfo) is { } exactGameInfo) {
                         Clipboard.Instance.Clear();
                         Clipboard.Instance.Text = exactGameInfo;
                     }
                 }),
-                MenuUtils.CreateAction("Reconnect Studio and Celeste", Application.Instance.CommonModifier | Keys.Shift | Keys.D, () => Studio.CelesteService.Server.ExternalReset()),
+                MenuUtils.CreateAction("Reconnect Studio and Celeste", Application.Instance.CommonModifier | Keys.Shift | Keys.D, () => Studio.CommunicationWrapper.Server.ExternalReset()),
                 new SeparatorMenuItem(),
-                MenuUtils.CreateAction("Copy Custom Info Template to Clipboard", Keys.None, () => Studio.CelesteService.CopyCustomInfoTemplateToClipboard()),
-                MenuUtils.CreateAction("Set Custom Info Template from Clipboard", Keys.None, () => Studio.CelesteService.SetCustomInfoTemplateFromClipboard()),
-                MenuUtils.CreateAction("Clear Custom Info Template", Keys.None, () => Studio.CelesteService.ClearCustomInfoTemplate()),
+                MenuUtils.CreateAction("Copy Custom Info Template to Clipboard", Keys.None, () => Studio.CommunicationWrapper.CopyCustomInfoTemplateToClipboard()),
+                MenuUtils.CreateAction("Set Custom Info Template from Clipboard", Keys.None, () => Studio.CommunicationWrapper.SetCustomInfoTemplateFromClipboard()),
+                MenuUtils.CreateAction("Clear Custom Info Template", Keys.None, () => Studio.CommunicationWrapper.ClearCustomInfoTemplate()),
                 new SeparatorMenuItem(),
-                MenuUtils.CreateAction("Clear Watch Entity Info", Keys.None, () => Studio.CelesteService.ClearWatchEntityInfo()),
+                MenuUtils.CreateAction("Clear Watch Entity Info", Keys.None, () => Studio.CommunicationWrapper.ClearWatchEntityInfo()),
             }
         };
         
-        Studio.CelesteService.Server.StateUpdated += _ => Application.Instance.InvokeAsync(UpdateGameInfo);
-        Studio.CelesteService.Server.Reset += () => Application.Instance.InvokeAsync(UpdateGameInfo);
+        Studio.CommunicationWrapper.Server.StateUpdated += _ => Application.Instance.InvokeAsync(UpdateGameInfo);
+        Studio.CommunicationWrapper.Server.Reset += () => Application.Instance.InvokeAsync(UpdateGameInfo);
         
         Settings.Changed += () => Visible = Settings.Instance.ShowGameInfo;
         
         void UpdateGameInfo() {
             int oldLineCount = label.Text.Split(["\n", "\r", "\n\r", Environment.NewLine], StringSplitOptions.None).Length;
-            label.Text = Studio.CelesteService.Connected ? Studio.CelesteService.State.GameInfo.Trim() : DisconnectedText;
+            label.Text = Studio.CommunicationWrapper.Connected ? Studio.CommunicationWrapper.State.GameInfo.Trim() : DisconnectedText;
             int newLineCount = label.Text.Split(["\n", "\r", "\n\r", Environment.NewLine], StringSplitOptions.None).Length;
             
             if (oldLineCount != newLineCount)

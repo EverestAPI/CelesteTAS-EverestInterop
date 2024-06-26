@@ -7,15 +7,15 @@ using CelesteStudio.Communication;
 using CelesteStudio.Util;
 using Eto.Forms;
 
-namespace CelesteStudio;
+namespace CelesteStudio.Communication;
 
-public class CelesteService {
-    private Dictionary<HotkeyID, List<WinFormsKeys>> _bindings;
+public class CommunicationWrapper {
+    private Dictionary<HotkeyID, List<WinFormsKeys>> _bindings = new();
     public StudioInfo State { get; private set; }
 
     public StudioCommunicationServer Server { get; }
 
-    public CelesteService() {
+    public CommunicationWrapper() {
         Server = new StudioCommunicationServer();
         Server.BindingsUpdated += bindings => _bindings = bindings;
         Server.StateUpdated += state => State = state;

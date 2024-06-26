@@ -136,15 +136,15 @@ public class Document {
             Save();    
         }
         
-        Studio.CelesteService.Server.LinesUpdated += OnLinesUpdated;
+        Studio.CommunicationWrapper.Server.LinesUpdated += OnLinesUpdated;
     }
 
     ~Document() {
-        Studio.CelesteService.Server.LinesUpdated -= OnLinesUpdated;
+        Studio.CommunicationWrapper.Server.LinesUpdated -= OnLinesUpdated;
     }
     
     public void Dispose() {
-        Studio.CelesteService.Server.LinesUpdated -= OnLinesUpdated;
+        Studio.CommunicationWrapper.Server.LinesUpdated -= OnLinesUpdated;
     }
 
     public static Document? Load(string path) {

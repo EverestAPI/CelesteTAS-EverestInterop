@@ -70,7 +70,7 @@ public class StudioCommunicationServer : StudioCommunicationBase {
         try {
             var studioInfo = StudioInfo.FromByteArray(data);
             
-            if (!Studio.CelesteService.State.Equals(studioInfo))
+            if (!Studio.CommunicationWrapper.State.Equals(studioInfo))
                 OnStateUpdated(studioInfo);
             // CommunicationWrapper.StudioInfo = studioInfo;
         } catch (InvalidCastException) {

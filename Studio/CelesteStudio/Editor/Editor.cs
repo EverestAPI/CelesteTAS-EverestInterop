@@ -62,7 +62,7 @@ public sealed class Editor : Drawable {
         // Need to redraw the line numbers
         scrollable.Scroll += (_, _) => Invalidate();
 
-        Studio.CelesteService.Server.StateUpdated += state => {
+        Studio.CommunicationWrapper.Server.StateUpdated += state => {
             if (state.CurrentLine != -1) {
                 Document.Caret.Row = state.CurrentLine;
                 Document.Caret.Col = ActionLine.MaxFramesDigits;
@@ -210,7 +210,7 @@ public sealed class Editor : Drawable {
     }
     
     protected override void OnKeyDown(KeyEventArgs e) {
-        if (Settings.Instance.SendInputsToCeleste && Studio.CelesteService.Connected && Studio.CelesteService.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
+        if (Settings.Instance.SendInputsToCeleste && Studio.CommunicationWrapper.Connected && Studio.CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
             e.Handled = true;
             return;
         }
@@ -267,7 +267,7 @@ public sealed class Editor : Drawable {
     }
     
     protected override void OnKeyUp(KeyEventArgs e) {
-        if (Settings.Instance.SendInputsToCeleste && Studio.CelesteService.Connected && Studio.CelesteService.SendKeyEvent(e.Key, e.Modifiers, released: true)) {
+        if (Settings.Instance.SendInputsToCeleste && Studio.CommunicationWrapper.Connected && Studio.CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: true)) {
             e.Handled = true;
             return;
         }
@@ -710,22 +710,22 @@ public sealed class Editor : Drawable {
         Document.OnTextChanged(new CaretPosition(minRow, 0), new CaretPosition(maxRow, Document.Lines[maxRow].Length));
     }
     
-    private void OnInsertRoomName() => Document.InsertLineAbove($"#lvl_{Studio.CelesteService.LevelName}");
+    private void OnInsertRoomName() => Document.InsertLineAbove($"#lvl_{Studio.CommunicationWrapper.LevelName}");
 
-    private void OnInsertTime() => Document.InsertLineAbove($"#{Studio.CelesteService.ChapterTime}");
+    private void OnInsertTime() => Document.InsertLineAbove($"#{Studio.CommunicationWrapper.ChapterTime}");
     
     private void OnInsertModInfo() {
-        if (Studio.CelesteService.Server.GetDataFromGame(GameDataType.ModInfo) is { } modInfo)
+        if (Studio.CommunicationWrapper.Server.GetDataFromGame(GameDataType.ModInfo) is { } modInfo)
             Document.InsertLineAbove(modInfo);
     }
     
     private void OnInsertConsoleLoadCommand() {
-        if (Studio.CelesteService.Server.GetDataFromGame(GameDataType.ConsoleCommand, false) is { } command)
+        if (Studio.CommunicationWrapper.Server.GetDataFromGame(GameDataType.ConsoleCommand, false) is { } command)
             Document.InsertLineAbove(command);
     }
     
     private void OnInsertSimpleConsoleLoadCommand() {
-        if (Studio.CelesteService.Server.GetDataFromGame(GameDataType.ConsoleCommand, true) is { } command)
+        if (Studio.CommunicationWrapper.Server.GetDataFromGame(GameDataType.ConsoleCommand, true) is { } command)
             Document.InsertLineAbove(command);
     }
     
@@ -1152,14 +1152,14 @@ public sealed class Editor : Drawable {
         }
         
         // Draw suffix text
-        if (Studio.CelesteService.Connected) {
+        if (Studio.CommunicationWrapper.Connected) {
             const float padding = 10.0f;
-            float suffixWidth = font.MeasureString(Studio.CelesteService.CurrentLineSuffix).Width; 
+            float suffixWidth = font.MeasureString(Studio.CommunicationWrapper.CurrentLineSuffix).Width; 
             
             e.Graphics.DrawText(font, Settings.Instance.Theme.PlayingFrame,
                 x: scrollable.ScrollPosition.X + scrollable.Width - suffixWidth - padding,
-                y: Studio.CelesteService.CurrentLine * font.LineHeight,
-                Studio.CelesteService.CurrentLineSuffix);
+                y: Studio.CommunicationWrapper.CurrentLine * font.LineHeight,
+                Studio.CommunicationWrapper.CurrentLineSuffix);
         }
         
         float carX = font.MeasureString(Document.Lines[Document.Caret.Row][..Document.Caret.Col]).Width + textOffsetX;
@@ -1211,25 +1211,25 @@ public sealed class Editor : Drawable {
                 height: scrollable.Size.Height);
             
             // Highlight playing / savestate line
-            if (Studio.CelesteService.Connected) {
-                if (Studio.CelesteService.CurrentLine != -1) {
+            if (Studio.CommunicationWrapper.Connected) {
+                if (Studio.CommunicationWrapper.CurrentLine != -1) {
                     e.Graphics.FillRectangle(Settings.Instance.Theme.PlayingLine,
                         x: scrollable.ScrollPosition.X,
-                        y: Studio.CelesteService.CurrentLine * font.LineHeight,
+                        y: Studio.CommunicationWrapper.CurrentLine * font.LineHeight,
                         width: textOffsetX - LineNumberPadding,
                         height: font.LineHeight);
                 }
-                if (Studio.CelesteService.SaveStateLine != -1) {
-                    if (Studio.CelesteService.SaveStateLine == Studio.CelesteService.CurrentLine) {
+                if (Studio.CommunicationWrapper.SaveStateLine != -1) {
+                    if (Studio.CommunicationWrapper.SaveStateLine == Studio.CommunicationWrapper.CurrentLine) {
                         e.Graphics.FillRectangle(Settings.Instance.Theme.Savestate,
                             x: scrollable.ScrollPosition.X,
-                            y: Studio.CelesteService.CurrentLine * font.LineHeight,
+                            y: Studio.CommunicationWrapper.CurrentLine * font.LineHeight,
                             width: 15.0f,
                             height: font.LineHeight);
                     } else {
                         e.Graphics.FillRectangle(Settings.Instance.Theme.Savestate,
                             x: scrollable.ScrollPosition.X,
-                            y: Studio.CelesteService.CurrentLine * font.LineHeight,
+                            y: Studio.CommunicationWrapper.CurrentLine * font.LineHeight,
                             width: textOffsetX - LineNumberPadding,
                             height: font.LineHeight);
                     }
