@@ -20,10 +20,10 @@ public struct Theme {
     public Style Frame;
     
     public static readonly Theme Dark = new() {
-        Action = new Style(Color.FromRgb(0x2222FF)),
+        Action = new Style(Color.FromRgb(0x2222FF), null, FontStyle.Bold),
         Angle = new Style(Color.FromRgb(0xEE22EE)),
-        Breakpoint = new Style(Color.FromRgb(0xFFFFFF), Color.FromRgb(0xFF5555)),
-        Savestate = new Style(Color.FromRgb(0xFFFFFF), Color.FromRgb(0x4682B4)),
+        Breakpoint = new Style(Color.FromRgb(0xFFFFFF), Color.FromRgb(0xFF5555), FontStyle.Bold),
+        Savestate = new Style(Color.FromRgb(0xFFFFFF), Color.FromRgb(0x4682B4), FontStyle.Bold),
         Delimiter = new Style(Color.FromRgb(0x808080)),
         Command = new Style(Color.FromRgb(0xD2691E)),
         Comment = new Style(Color.FromRgb(0x00A000)),

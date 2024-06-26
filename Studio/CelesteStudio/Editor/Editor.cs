@@ -33,8 +33,10 @@ public sealed class Editor : Drawable {
         }
     }
     
-    private readonly Font font = new(new FontFamily("JetBrains Mono"), 12.0f);
     private readonly Scrollable scrollable;
+    
+    private readonly Font font;
+    private readonly SyntaxHighlighter highlighter;
     
     private const float LineNumberPadding = 5.0f;
     private float textOffsetX;
@@ -48,6 +50,9 @@ public sealed class Editor : Drawable {
         this.document = document;
         this.scrollable = scrollable;
 
+        font = new(new FontFamily("JetBrains Mono"), 12.0f);
+        highlighter = new(Theme.Dark, font);
+        
         CanFocus = true;
         BackgroundColor = Colors.Black;
         Cursor = Cursors.IBeam;
@@ -1140,7 +1145,7 @@ public sealed class Editor : Drawable {
         // Draw text
         float yPos = 0.0f;
         foreach (var line in Document.Lines) {
-            e.Graphics.DrawText(font, Colors.White, textOffsetX, yPos, line);
+            highlighter.DrawLine(e.Graphics, textOffsetX, yPos, line);
             yPos += font.LineHeight;
         }
         
