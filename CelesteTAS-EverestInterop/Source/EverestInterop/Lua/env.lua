@@ -4,6 +4,9 @@ local TAS = require("#TAS")
 local Vector2 = require("#Microsoft.Xna.Framework.Vector2")
 local LuaHelpers = require("#TAS.EverestInterop.Lua.LuaHelpers")
 
+--- use nullValue instead of nil when using setValue/invokeMethod
+local nullValue = LuaHelpers.NullValue
+
 --- log message
 local function log(message, tag)
     Celeste.Mod.Logger.Log(Celeste.Mod.LogLevel.Info, tag or "CelesteTAS", tostring(message))
@@ -26,11 +29,13 @@ local function getValue(instanceOrTypeName, memberName)
 end
 
 --- set field or property value
+--- use nullValue instead of nil if you want to pass null to c#
 local function setValue(instanceOrTypeName, memberName, value)
     return LuaHelpers.SetValue(instanceOrTypeName, memberName, value)
 end
 
---- parameters = {parameter1, parameter2, ...}
+--- parameters = parameter1, parameter2, ...
+--- use nullValue instead of nil if you want to pass null to c#
 local function invokeMethod(instanceOrTypeName, methodName, ...)
     return LuaHelpers.InvokeMethod(instanceOrTypeName, methodName, ...)
 end

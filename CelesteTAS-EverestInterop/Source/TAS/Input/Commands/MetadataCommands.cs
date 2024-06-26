@@ -128,8 +128,11 @@ public static class MetadataCommands {
         }
 
         string[] allLines = File.ReadAllLines(tasFilePath);
+        int allLinesLength = allLines.Length;
         foreach (int lineNumber in updateLines.Keys) {
-            allLines[lineNumber] = updateLines[lineNumber];
+            if (lineNumber >= 0 && lineNumber < allLinesLength) {
+                allLines[lineNumber] = updateLines[lineNumber];
+            }
         }
 
         bool needsReload = Manager.Controller.NeedsReload;

@@ -12,6 +12,7 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD;
 
+// TODO show info hud on overworld
 public static class InfoHud {
     private static EaseInSubMenu subMenuItem;
     public static Vector2 Size { get; private set; }
@@ -104,9 +105,9 @@ public static class InfoHud {
 
         Rectangle bgRect = new((int) x, (int) y, (int) (Size.X + padding * 2), (int) (Size.Y + padding * 2));
 
-        if (!Hotkeys.InfoHud.Check && (scene.Paused && !Celeste.Input.MenuJournal.Check || scene is Level level && CollidePlayer(level, bgRect))) {
+        if (TasSettings.InfoMaskedOpacity < 10 && !Hotkeys.InfoHud.Check && (scene.Paused && !Celeste.Input.MenuJournal.Check || scene is Level level && CollidePlayer(level, bgRect))) {
             alpha *= TasSettings.InfoMaskedOpacity / 10f;
-            infoAlpha *= alpha;
+            infoAlpha = alpha;
         }
 
         Draw.SpriteBatch.Begin();
@@ -140,6 +141,7 @@ public static class InfoHud {
         return playerRect.Intersects(bgRect);
     }
 
+    // TODO add a setting 'InfoTasInputLines'
     private static void WriteTasInput(StringBuilder stringBuilder) {
         InputController controller = Manager.Controller;
         List<InputFrame> inputs = controller.Inputs;

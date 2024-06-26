@@ -18,6 +18,8 @@ public static class LuaHelpers {
         }
     }
 
+    public static readonly object NullValue = new ValueHolder<object>(null);
+
     // can omit entityId
     public static Entity GetEntity(string typeNameWithId) {
         if (TryGetEntityTypeWithId(typeNameWithId, out Type type, out string entityId)) {
@@ -26,6 +28,7 @@ public static class LuaHelpers {
             return null;
         }
     }
+
     public static List<Entity> GetEntities(string typeNameWithId) {
         if (TryGetEntityTypeWithId(typeNameWithId, out Type type, out string entityId)) {
             return InfoCustom.FindEntities(type, entityId);
@@ -34,8 +37,7 @@ public static class LuaHelpers {
         }
     }
 
-    // entityTypeName can be "Player" or "Celeste.Player"
-
+    // e.g. entityTypeName can be "Player" or "Celeste.Player"
     private static bool TryGetEntityTypeWithId(string entityTypeName, out Type type, out string entityId) {
         if (InfoCustom.TryParseTypes(entityTypeName, out List<Type> types, out string id)) {
             type = types.FirstOrDefault(t => t.IsSameOrSubclassOf(typeof(Entity)));
@@ -86,18 +88,10 @@ public static class LuaHelpers {
         if (memberInfo != null) {
             try {
                 if (memberInfo is FieldInfo fieldInfo) {
-                    if (value is ValueHolder<float> holder) {
-                        value = holder.Value;
-                    } else {
-                        value = ConvertType(value, type, fieldInfo.FieldType);
-                    }
+                    value = ConvertType(value, type, fieldInfo.FieldType);
                     fieldInfo.SetValue(obj, value);
                 } else if (memberInfo is PropertyInfo propertyInfo) {
-                    if (value is ValueHolder<float> holder) {
-                        value = holder.Value;
-                    } else {
-                        value = ConvertType(value, type, propertyInfo.PropertyType);
-                    }
+                    value = ConvertType(value, type, propertyInfo.PropertyType);
                     propertyInfo.SetValue(obj, value);
                 }
             } catch (Exception e) {
@@ -116,11 +110,13 @@ public static class LuaHelpers {
         MethodInfo methodInfo = type.GetMethodInfo(methodName);
         if (methodInfo != null) {
             ParameterInfo[] parameterInfos = methodInfo.GetParameters();
-            for (var i = 0; i < parameterInfos.Length; i++) {
-                if (parameters[i] is ValueHolder<float> holder) {
-                    parameters[i] = holder.Value;
-                } else if (i < parameters.Length) {
-                    parameters[i] = ConvertType(parameters[i], parameters[i]?.GetType(), parameterInfos[i].ParameterType);
+            for (int i = 0; i < parameterInfos.Length; i++) {
+                ParameterInfo parameterInfo = parameterInfos[i];
+                if (i < parameters.Length) {
+                    parameters[i] = ConvertType(parameters[i], parameters[i]?.GetType(), parameterInfo.ParameterType);
+                } else if (parameterInfo.HasDefaultValue) {
+                    Array.Resize(ref parameters, parameters.Length + 1);
+                    parameters[i] = parameterInfo.DefaultValue;
                 }
             }
 
@@ -129,6 +125,8 @@ public static class LuaHelpers {
             } catch (Exception e) {
                 EvalLuaCommand.Log(e);
             }
+        } else {
+            $"Method '{methodName}' can't be found in type '{type.FullName}'".Log(true);
         }
 
         return null;
@@ -139,6 +137,12 @@ public static class LuaHelpers {
     }
 
     private static object ConvertType(object value, Type valueType, Type type) {
+        if (value is ValueHolder<float> floatHolder) {
+            return floatHolder.Value;
+        } else if (value is ValueHolder<object> objectHolder) {
+            return objectHolder.Value;
+        }
+
         if (valueType != null && type.IsSameOrSubclassOf(valueType)) {
             return value;
         }

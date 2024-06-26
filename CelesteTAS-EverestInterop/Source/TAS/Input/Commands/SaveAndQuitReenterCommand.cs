@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using Celeste;
+using Celeste.Mod;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Utils;
@@ -33,10 +34,24 @@ public static class SaveAndQuitReenterCommand {
     private static void Load() {
         FieldInfo fieldInfo = typeof(SaveAndQuitReenterCommand).GetFieldInfo(nameof(justPressedSnQ));
 
-        typeof(Level)
+        // v1400
+        MethodInfo pauseMethod = typeof(Level)
             .GetNestedType("<>c__DisplayClass149_0", BindingFlags.NonPublic)
-            .GetMethod("<Pause>b__8", BindingFlags.NonPublic | BindingFlags.Instance)
-            .IlHook((cursor, _) => cursor.Emit(OpCodes.Ldc_I4_1).Emit(OpCodes.Stsfld,fieldInfo));
+            ?.GetMethodInfo("<Pause>b__8");
+
+        // v1312
+        if (pauseMethod == null) {
+            pauseMethod = typeof(Level)
+                .GetNestedType("<>c__DisplayClass146_5", BindingFlags.NonPublic)
+                ?.GetMethodInfo("<Pause>b__11");
+        }
+
+        if (pauseMethod == null) {
+            "[SaveAndQuitReenterCommand] Failed to hook pause action".Log(LogLevel.Warn);
+            return;
+        }
+
+        pauseMethod.IlHook((cursor, _) => cursor.Emit(OpCodes.Ldc_I4_1).Emit(OpCodes.Stsfld,fieldInfo));
 
         typeof(Level).GetMethod("Update").IlHook((cursor, _) => cursor.Emit(OpCodes.Ldc_I4_0)
             .Emit(OpCodes.Stsfld, fieldInfo));
@@ -75,6 +90,11 @@ public static class SaveAndQuitReenterCommand {
             if (slot == -1) {
                 // Load debug slot
                 controller.AddFrames("1,D", studioLine);
+                // The Randomizer adds a new menu entry between CLIMB and ~DEBUG~
+                if (ModUtils.IsInstalled("Randomizer")) {
+                    controller.AddFrames("1,F,180", studioLine);
+                    controller.AddFrames("1", studioLine);
+                }
                 controller.AddFrames("1,O", studioLine);
                 controller.AddFrames("33", studioLine);
             } else {

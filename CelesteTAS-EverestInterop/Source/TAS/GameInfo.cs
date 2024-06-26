@@ -230,7 +230,7 @@ public static class GameInfo {
                 string miscStats = $"Stamina: {player.Stamina:F2} "
                                    + (player.WallJumpCheck(1) ? "Wall-R " : string.Empty)
                                    + (player.WallJumpCheck(-1) ? "Wall-L " : string.Empty)
-                                   + PlayerStates.GetStateName(player.StateMachine.State);
+                                   + PlayerStates.GetCurrentStateName(player);
 
                 int dashCooldown = player.dashCooldownTimer.ToFloorFrames();
 
@@ -453,7 +453,7 @@ public static class GameInfo {
         builder.AppendLine(velocity);
 
         if (player.StateMachine.State == Player.StStarFly
-            || PlayerStates.GetStateName(player.StateMachine.State) == "Custom Feather"
+            || PlayerStates.GetCurrentStateName(player) == "Custom Feather"
             || playerSeeker != null
             || SaveData.Instance.Assists.ThreeSixtyDashing
             || SaveData.Instance.Assists.SuperDashing
@@ -595,6 +595,8 @@ public static class GameInfo {
 }
 
 public static class PlayerStates {
+    private static readonly Func<StateMachine, string> GetCurrentStateNameFunc = typeof(StateMachine).GetMethod("GetCurrentStateName")?.CreateDelegate<Func<StateMachine, string>>();
+    
     private static readonly IDictionary<int, string> States = new Dictionary<int, string> {
         {Player.StNormal, nameof(Player.StNormal)},
         {Player.StClimb, nameof(Player.StClimb)},
@@ -624,8 +626,18 @@ public static class PlayerStates {
         {Player.StIntroThinkForABit, nameof(Player.StIntroThinkForABit)},
     };
 
+    [Obsolete("GetStateName(int) is deprecated, please use GetCurrentStateName(Player) instead.")]
     public static string GetStateName(int state) {
         return States.TryGetValue(state, out string name) ? name : state.ToString();
+    }
+
+    public static string GetCurrentStateName(Player player) {
+        StateMachine stateMachine = player.StateMachine;
+        if (States.TryGetValue(stateMachine.state, out string name)) {
+            return name;
+        } else {
+            return GetCurrentStateNameFunc?.Invoke(stateMachine) ?? stateMachine.state.ToString();
+        }
     }
 
     // ReSharper disable once UnusedMember.Global
