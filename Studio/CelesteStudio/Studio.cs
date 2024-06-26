@@ -66,10 +66,12 @@ public sealed class Studio : Form {
             
             SizeChanged += (_, _) => RecalculateLayout();
             
-            NewFile();
+            // Re-open last file if possible
+            if (Settings.Instance.RecentFiles.Count > 0 && !string.IsNullOrWhiteSpace(Settings.Instance.RecentFiles[0]) && File.Exists(Settings.Instance.RecentFiles[0]))
+                OpenFile(Settings.Instance.RecentFiles[0]);
+            else
+                NewFile();
         }
-        
-        Menu = CreateMenu();
     }
     
     public void RecalculateLayout() {
@@ -94,9 +96,30 @@ public sealed class Studio : Form {
         var homeCommand = new Command {MenuText = "Home"};
         homeCommand.Executed += (_, _) => ProcessHelper.OpenInBrowser("https://github.com/EverestAPI/CelesteTAS-EverestInterop");
         
+        // NOTE: Index 0 is the recent files is the current file, so that is skipped
+        var openPreviousFile = MenuUtils.CreateAction("Open &Previous File", Keys.Alt | Keys.Left, () => {
+            OpenFile(Settings.Instance.RecentFiles[1]);
+        });
+        openPreviousFile.Enabled = Settings.Instance.RecentFiles.Count > 1;
+        
+        var recentFilesMenu = new SubMenuItem {Text = "Open &Recent",};
+        for (int i = 1; i < Settings.Instance.RecentFiles.Count; i++) {
+            string filePath = Settings.Instance.RecentFiles[i];
+            recentFilesMenu.Items.Add(MenuUtils.CreateAction(filePath, Keys.None, () => OpenFile(filePath)));
+        }
+        recentFilesMenu.Items.Add(new SeparatorMenuItem());
+        recentFilesMenu.Items.Add(new Command((_, _) => {
+            var confirm = MessageBox.Show("Are you sure you want to clear your recent files list?", MessageBoxButtons.YesNo, MessageBoxType.Question, MessageBoxDefaultButton.No);
+            if (confirm == DialogResult.Yes) {
+                Settings.Instance.ClearRecentFiles();
+                Menu = CreateMenu();
+            }
+        }) { MenuText = "Clear" });
+        recentFilesMenu.Enabled = Settings.Instance.RecentFiles.Count > 1;
+        
         var menu = new MenuBar {
             Items = {
-                new SubMenuItem {Text = "&File", Items = {
+                new SubMenuItem { Text = "&File", Items = {
                     MenuUtils.CreateAction("&New File", Application.Instance.CommonModifier | Keys.N, NewFile),
                     new SeparatorMenuItem(),
                     MenuUtils.CreateAction("&Open File...", Application.Instance.CommonModifier | Keys.O, () => {
@@ -110,8 +133,8 @@ public sealed class Studio : Form {
                             OpenFile(dialog.Filenames.First());
                         }
                     }),
-                    MenuUtils.CreateAction("Open &Previous File", Keys.Alt | Keys.O),
-                    MenuUtils.CreateAction("Open &Recent"),
+                    openPreviousFile,
+                    recentFilesMenu,
                     MenuUtils.CreateAction("Open &Backup"),
                     new SeparatorMenuItem(),
                     MenuUtils.CreateAction("Save", Application.Instance.CommonModifier | Keys.S, SaveFile),
@@ -242,6 +265,9 @@ public sealed class Studio : Form {
             return;
         }
         
+        if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
+            Settings.Instance.AddRecentFile(filePath);
+        
         CelesteService.WriteWait();
         
         var document = Document.Load(filePath);
@@ -259,6 +285,7 @@ public sealed class Studio : Form {
         Editor.Document.TextChanged += UpdateTitle;
 
         Title = TitleBarText;
+        Menu = CreateMenu(); // Recreate menu to reflect changed "Recent Files"
         
         CelesteService.SendPath(Editor.Document.FilePath);
         

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Eto;
 using Tommy.Serializer;
@@ -21,7 +22,32 @@ public class Settings {
     public int AutoBackupRate = 1;
     public int AutoBackupCount = 100;
     public bool FindMatchCase;
-
+    
+    private const int MaxRecentFiles = 20;
+    private readonly List<string> recentFiles = [];
+    
+    [TommyIgnore]
+    public IReadOnlyList<string> RecentFiles => recentFiles.AsReadOnly();
+    
+    public void AddRecentFile(string filePath) {
+        // Avoid duplicates
+        recentFiles.Remove(filePath);
+        
+        recentFiles.Insert(0, filePath);
+        if (recentFiles.Count > MaxRecentFiles) {
+            recentFiles.RemoveRange(MaxRecentFiles, recentFiles.Count - MaxRecentFiles);
+        }
+        
+        OnChanged();
+        Save();
+    }
+    public void ClearRecentFiles() {
+        recentFiles.Clear();
+        
+        OnChanged();
+        Save();
+    }
+    
     public static void Load() {
         if (File.Exists(SavePath)) {
             try {
