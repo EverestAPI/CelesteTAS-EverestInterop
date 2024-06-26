@@ -95,8 +95,8 @@ public class StudioCommunicationServer : StudioCommunicationBase {
     }
 
     private void ProcessVersionInfo(byte[] data) {
-        // string[] versionInfos = BinaryFormatterHelper.FromByteArray<string[]>(data);
-        // string modVersion = ErrorLog.ModVersion = versionInfos[0];
+        string[] versionInfos = BinaryFormatterHelper.FromByteArray<string[]>(data);
+        string modVersion = ErrorLog.ModVersion = versionInfos[0];
         // string minStudioVersion = versionInfos[1];
         //
         // if (new Version(minStudioVersion + ".0") > Studio.Version) {

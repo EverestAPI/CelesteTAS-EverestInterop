@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using CelesteStudio.Util;
 
 namespace CelesteStudio;
 
@@ -9,6 +10,8 @@ public static class ErrorLog {
     private const string Filename = "celeste_studio_log.txt";
     private const string Marker = "==========================================";
     public static string ModVersion = "Unknown";
+    
+    private static string FilePath => Path.Combine(Settings.BaseConfigPath, Filename);
 
     public static void Write(Exception e) {
         Write(e.ToString());
@@ -17,15 +20,9 @@ public static class ErrorLog {
     public static void Write(string str) {
         StringBuilder stringBuilder = new();
         string text = "";
-        if (Path.IsPathRooted(Filename)) {
-            string directoryName = Path.GetDirectoryName(Filename);
-            if (!Directory.Exists(directoryName)) {
-                Directory.CreateDirectory(directoryName);
-            }
-        }
-
-        if (File.Exists(Filename)) {
-            text = File.ReadAllText(Filename);
+        
+        if (File.Exists(FilePath)) {
+            text = File.ReadAllText(FilePath);
             if (!text.Contains(Marker)) {
                 text = "";
             }
@@ -42,19 +39,19 @@ public static class ErrorLog {
         stringBuilder.AppendLine(DateTime.Now.ToString());
         stringBuilder.AppendLine(str);
         if (text != "") {
-            int startIndex = text.IndexOf(Marker) + Marker.Length;
+            int startIndex = text.IndexOf(Marker, StringComparison.Ordinal) + Marker.Length;
             string value = text.Substring(startIndex);
             stringBuilder.AppendLine(value);
         }
 
-        StreamWriter streamWriter = new(Filename, append: false);
+        StreamWriter streamWriter = new(FilePath, append: false);
         streamWriter.Write(stringBuilder.ToString());
         streamWriter.Close();
     }
 
     public static void Open() {
-        if (File.Exists(Filename)) {
-            Process.Start(Filename);
+        if (File.Exists(FilePath)) {
+            ProcessHelper.OpenInDefaultApp(FilePath);
         }
     }
 }
