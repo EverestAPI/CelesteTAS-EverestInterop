@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Reflection;
 using System.Threading.Tasks;
 using Eto;
 using Eto.Drawing;
@@ -44,16 +45,17 @@ public static class DialogUtil
     
     private class FontPreview : Drawable {
         private Font font = null!;
-        public Font Font {
-            get => font;
-            set {
-                font = value;
-                highlighter = new SyntaxHighlighter(value);
-                Invalidate();
-            }
-        }
-        
         private SyntaxHighlighter? highlighter;
+        
+        public void SetFont(string fontFamily, float size) {
+            font = FontManager.CreateFont(fontFamily, size);
+            highlighter = new SyntaxHighlighter(font,
+                FontManager.CreateFont(fontFamily, size, FontStyle.Bold),
+                FontManager.CreateFont(fontFamily, size, FontStyle.Italic),
+                FontManager.CreateFont(fontFamily, size, FontStyle.Bold | FontStyle.Italic));
+            
+            Invalidate();
+        }
         
         public FontPreview() {
             BackgroundColor = Settings.Instance.Theme.Background;
@@ -90,12 +92,13 @@ public static class DialogUtil
         }
     }
     
-    private static string[]? fontList = null;
+    private static string[]? cachedFontFamilys;
     
     public static void ShowFontDialog() {
-        var preview = new FontPreview {
-            Font = new Font(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize),
-        };
+        var preview = new FontPreview();
+        preview.SetFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize);
+        string fontFamily = Settings.Instance.FontFamily;
+        
         var editorFontSize = new NumericStepper {
             Value = Settings.Instance.EditorFontSize,
             MinValue = 1.0f,
@@ -123,18 +126,18 @@ public static class DialogUtil
         dialog.NegativeButtons.Add(dialog.AbortButton);
         
         // Fetch font list asynchronously
-        if (fontList == null) {
+        if (cachedFontFamilys == null) {
             Task.Run(() => {
                 var fonts = new List<string>();
-                foreach (var fontFamily in Fonts.AvailableFontFamilies) {
+                foreach (var family in Fonts.AvailableFontFamilies) {
                     // Check if the font is monospaced
-                    var font = new Font(fontFamily, 12.0f);
+                    var font = new Font(family, 12.0f);
                     if (Math.Abs(font.MeasureString("I").Width - font.MeasureString("X").Width) > 0.01f)
                         continue;
                     
-                    fonts.Add(fontFamily.Name);
+                    fonts.Add(family.Name);
                 }
-                fontList = fonts.ToArray();
+                cachedFontFamilys = fonts.ToArray();
                 dialog.Content = CreateDialogContent();
             });
         }
@@ -142,7 +145,7 @@ public static class DialogUtil
         if (!dialog.ShowModal())
             return;
         
-        Settings.Instance.FontFamily = preview.Font.FamilyName;
+        Settings.Instance.FontFamily = fontFamily;
         Settings.Instance.EditorFontSize = (float)editorFontSize.Value;
         Settings.Instance.StatusFontSize = (float)statusFontSize.Value;
         Settings.Instance.OnFontChanged();
@@ -176,11 +179,29 @@ public static class DialogUtil
                 }
             };
             
-            if (fontList != null) {
+            if (cachedFontFamilys != null) {
                 var list = new ListBox { Width = 250, Height = 330 };
                 list.SelectedValue = Settings.Instance.FontFamily;
-                foreach (var fontFamily in fontList) {
-                    list.Items.Add(new ListItem { Text = fontFamily });
+                
+                // Add built-in font
+                list.Items.Add(new ListItem {
+                    Text = FontManager.FontFamilyBuiltinDisplayName,
+                    Key = FontManager.FontFamilyBuiltin,
+                });
+                foreach (var family in cachedFontFamilys) {
+                    list.Items.Add(new ListItem {
+                        Text = family,
+                        Key = family,
+                    });
+                }
+                
+                // Select current font
+                foreach (var item in list.Items) {
+                    if (item.Key == Settings.Instance.FontFamily) {
+                        list.SelectedValue = item;
+                        break;
+                    }
+                        
                 }
                 
                 editorFontSize.ValueChanged += (_, _) => UpdateFont();
@@ -196,7 +217,8 @@ public static class DialogUtil
                     if (list.SelectedValue is not ListItem item)
                         return;
                     
-                    preview.Font = new Font(item.Text, (float)editorFontSize.Value);
+                    fontFamily = item.Key;
+                    preview.SetFont(item.Key, (float)editorFontSize.Value);
                 }
             } else {
                 var loadingPanel = new StackLayout {

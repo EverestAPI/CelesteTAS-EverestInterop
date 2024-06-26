@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Reflection;
+using CelesteStudio.Util;
 using Eto;
 using Eto.Drawing;
 using Tommy.Serializer;
@@ -25,11 +28,8 @@ public sealed class Settings {
     public static event Action? ThemeChanged;
     private void OnThemeChanged() => ThemeChanged?.Invoke();
     
-    public static event Action? FontChanged;
-    public void OnFontChanged() {
-        editorFont = statusFont = null;
-        FontChanged?.Invoke();
-    }
+    public static event Action FontChanged = FontManager.OnFontChanged;
+    public void OnFontChanged() => FontChanged.Invoke();
     
     [TommyIgnore]
     public Theme Theme => ThemeType switch {
@@ -57,14 +57,7 @@ public sealed class Settings {
     public int AutoBackupCount = 100;
     public bool FindMatchCase;
     
-    [TommyIgnore]
-    private Font? editorFont, statusFont;
-    [TommyIgnore]
-    public Font EditorFont => editorFont ??= new Font(FontFamily, EditorFontSize);
-    [TommyIgnore]
-    public Font StatusFont => statusFont ??= new Font(FontFamily, StatusFontSize);
-    
-    public string FontFamily = "JetBrains Mono";
+    public string FontFamily = FontManager.FontFamilyBuiltin;
     public float EditorFontSize = 12.0f;
     public float StatusFontSize = 9.0f;
     

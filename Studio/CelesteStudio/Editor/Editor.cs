@@ -35,7 +35,7 @@ public sealed class Editor : Drawable {
     
     private readonly Scrollable scrollable;
     
-    private Font Font => Settings.Instance.EditorFont;
+    private Font Font => FontManager.EditorFontRegular;
     private SyntaxHighlighter highlighter;
     
     private const float LineNumberPadding = 5.0f;
@@ -50,9 +50,9 @@ public sealed class Editor : Drawable {
         this.document = document;
         this.scrollable = scrollable;
 
-        highlighter = new(Font);
+        highlighter = new(FontManager.EditorFontRegular, FontManager.EditorFontBold, FontManager.EditorFontItalic, FontManager.EditorFontBoldItalic);
         Settings.FontChanged += () => {
-            highlighter = new(Font);
+            highlighter = new(FontManager.EditorFontRegular, FontManager.EditorFontBold, FontManager.EditorFontItalic, FontManager.EditorFontBoldItalic);
             Recalc();
         };
         

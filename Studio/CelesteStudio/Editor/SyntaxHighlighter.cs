@@ -38,14 +38,14 @@ public class SyntaxHighlighter {
     private readonly Font italicFont;
     private readonly Font boldItalicFont;
     
-    public SyntaxHighlighter(Font font) {
+    public SyntaxHighlighter(Font regularFont, Font boldFont, Font italicFont, Font boldItalicFont) {
         LoadTheme(Settings.Instance.Theme);
         Settings.ThemeChanged += () => LoadTheme(Settings.Instance.Theme);;
         
-        regularFont = font;
-        boldFont = new Font(font.Family, font.Size, FontStyle.Bold);
-        italicFont = new Font(font.Family, font.Size, FontStyle.Italic);
-        boldItalicFont = new Font(font.Family, font.Size, FontStyle.Bold | FontStyle.Italic);
+        this.regularFont = regularFont;
+        this.boldFont = boldFont;
+        this.italicFont = italicFont;
+        this.boldItalicFont = boldItalicFont;
     }
     
     private void LoadTheme(Theme theme) {

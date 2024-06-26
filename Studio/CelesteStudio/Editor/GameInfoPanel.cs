@@ -14,7 +14,7 @@ public class GameInfoPanel : Panel {
         var label = new Label {
             Text = DisconnectedText,
             TextColor = Settings.Instance.Theme.StatusFg,
-            Font = Settings.Instance.StatusFont,
+            Font = FontManager.StatusFont,
         };
         
         BackgroundColor = Settings.Instance.Theme.StatusBg;
@@ -23,8 +23,7 @@ public class GameInfoPanel : Panel {
             BackgroundColor = Settings.Instance.Theme.StatusBg;
         };
         Settings.FontChanged += () => {
-            label.Font = Settings.Instance.StatusFont;
-            Invalidate();
+            label.Font = FontManager.StatusFont;
         };
         
         Padding = 5;
