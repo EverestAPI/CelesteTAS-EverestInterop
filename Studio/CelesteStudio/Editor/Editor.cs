@@ -1370,9 +1370,11 @@ public sealed class Editor : Drawable {
         [
             leadingSpaces,
             ActionLine.MaxFramesDigits,
-            // Actions
-            GetColumnOfAction(actionLine, actionLine.Actions.Sorted().Last()) + actionLine.CustomBindings.Count
         ];
+        
+        // Actions
+        if (actionLine.Actions != Actions.None) {
+            hardSnapColumns.Add(GetColumnOfAction(actionLine, actionLine.Actions.Sorted().Last()) + actionLine.CustomBindings.Count);
 
         // Feather angle/magnitude
         if (actionLine.Actions.HasFlag(Actions.Feather)) {
@@ -1403,7 +1405,7 @@ public sealed class Editor : Drawable {
                 hardSnapColumns.Add(decimalColumn + 1);
             }
             hardSnapColumns.Add(line.Length + 1);
-        }
+        }}
 
         return hardSnapColumns.AsReadOnly();
     }
