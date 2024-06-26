@@ -254,10 +254,10 @@ public sealed class Editor : Drawable {
                 MoveCaret(CaretMovementType.PageDown, updateSelection: e.Shift);
                 break;
             case Keys.Home:
-                MoveCaret(CaretMovementType.LineStart, updateSelection: e.Shift);
+                MoveCaret(e.Control ? CaretMovementType.DocumentStart : CaretMovementType.LineStart, updateSelection: e.Shift);
                 break;
             case Keys.End:
-                MoveCaret(CaretMovementType.LineEnd, updateSelection: e.Shift);
+                MoveCaret(e.Control ? CaretMovementType.DocumentEnd : CaretMovementType.LineEnd, updateSelection: e.Shift);
                 break;
             default:
                 // Search through context menu for hotkeys
@@ -996,6 +996,10 @@ public sealed class Editor : Drawable {
         position.Row = Math.Clamp(position.Row, 0, Document.Lines.Count - 1);
         position.Col = Math.Clamp(position.Col, 0, Document.Lines[position.Row].Length);
         
+        // Clamp to action line if possible
+        if (ActionLine.TryParse(Document.Lines[position.Row], out var actionLine))
+            position.Col = SnapColumnToActionLine(actionLine, position.Col);
+        
         return position;
     }
     
@@ -1047,8 +1051,8 @@ public sealed class Editor : Drawable {
                 CaretMovementType.CharRight => ClampCaret(new CaretPosition(newCaret.Row, GetSoftSnapColumns(actionLine).FirstOrDefault(c => c > newCaret.Col, newCaret.Col))),
                 CaretMovementType.WordLeft  => ClampCaret(new CaretPosition(newCaret.Row, GetHardSnapColumns(actionLine).Reverse().FirstOrDefault(c => c < newCaret.Col, newCaret.Col))),
                 CaretMovementType.WordRight => ClampCaret(new CaretPosition(newCaret.Row, GetHardSnapColumns(actionLine).FirstOrDefault(c => c > newCaret.Col, newCaret.Col))),
-                CaretMovementType.LineStart => ClampCaret(new CaretPosition(newCaret.Row, leadingSpaces + 1), wrapLine: false),
-                CaretMovementType.LineEnd   => ClampCaret(new CaretPosition(newCaret.Row, line.Length + 1), wrapLine: false),
+                CaretMovementType.LineStart => ClampCaret(new CaretPosition(newCaret.Row, leadingSpaces), wrapLine: false),
+                CaretMovementType.LineEnd   => ClampCaret(new CaretPosition(newCaret.Row, line.Length), wrapLine: false),
                 _ => GetNewTextCaretPosition(direction),
             };
         } else {

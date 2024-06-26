@@ -54,6 +54,8 @@ public sealed class Studio : Form {
             };
             Editor = new Editor(Document.Dummy, EditorScrollable);
             EditorScrollable.Content = Editor;
+            // Prevent the scrollable from reacting to keys by itself. (like scrolling with Home/End for example)
+            EditorScrollable.KeyDown += (_, e) => e.Handled = true;
             
             GameInfoPanel = new GameInfoPanel();
             
