@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Numerics;
+using System.Threading.Tasks;
 using Eto;
 using Eto.Drawing;
 using Eto.Forms;
@@ -88,11 +90,12 @@ public static class DialogUtil
         }
     }
     
+    private static string[]? fontList = null;
+    
     public static void ShowFontDialog() {
         var preview = new FontPreview {
             Font = new Font(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize),
         };
-        
         var editorFontSize = new NumericStepper {
             Value = Settings.Instance.EditorFontSize,
             MinValue = 1.0f,
@@ -108,60 +111,9 @@ public static class DialogUtil
             Width = 100,
         };
         
-        var list = new ListBox { Width = 250, Height = 330 };
-        list.SelectedValue = Settings.Instance.FontFamily;
-        
-        editorFontSize.ValueChanged += (_, _) => UpdateFont();
-        list.SelectedValueChanged += (_, _) => UpdateFont();
-        
-        void UpdateFont() {
-            if (list.SelectedValue is not ListItem item)
-                return;
-            
-            preview.Font = new Font(item.Text, (float)editorFontSize.Value);
-        }
-        
-        foreach (var fontFamily in Fonts.AvailableFontFamilies) {
-            // Check if the font is monospaced
-            var font = new Font(fontFamily, 12.0f);
-            if (Math.Abs(font.MeasureString("I").Width - font.MeasureString("X").Width) > 0.01f)
-                continue;
-            
-            list.Items.Add(new ListItem { Text = fontFamily.Name });
-        }
-        
-        var settingsPanel = new StackLayout {
-            Padding = 10,
-            Spacing = 10,
-            Items = {
-                new StackLayout {
-                    Spacing = 10,
-                    VerticalContentAlignment = VerticalAlignment.Center,
-                    Orientation = Orientation.Horizontal,
-                    Items = { new Label { Text = "Editor Font Size" }, editorFontSize },
-                },
-                new StackLayout {
-                    Spacing = 10,
-                    VerticalContentAlignment = VerticalAlignment.Center,
-                    Orientation = Orientation.Horizontal,
-                    Items = { new Label { Text = "Status Font Size" }, statusFontSize },
-                },
-                new Label { Text = "  Preview:" }.WithFontStyle(FontStyle.Bold),
-                new Scrollable {
-                    Content = preview,
-                    Width = 250,
-                    Height = 200,
-                }
-            }
-        };
-        
         var dialog = new Dialog<bool> {
             Title = "Font",
-            Content = new StackLayout {
-                Padding = 10,
-                Orientation = Orientation.Horizontal,
-                Items = { list, settingsPanel }
-            }
+            Content = CreateDialogContent(),
         };
         
         dialog.DefaultButton = new Button((_, _) => dialog.Close(true)) { Text = "&OK" };
@@ -169,6 +121,23 @@ public static class DialogUtil
         
         dialog.PositiveButtons.Add(dialog.DefaultButton);
         dialog.NegativeButtons.Add(dialog.AbortButton);
+        
+        // Fetch font list asynchronously
+        if (fontList == null) {
+            Task.Run(() => {
+                var fonts = new List<string>();
+                foreach (var fontFamily in Fonts.AvailableFontFamilies) {
+                    // Check if the font is monospaced
+                    var font = new Font(fontFamily, 12.0f);
+                    if (Math.Abs(font.MeasureString("I").Width - font.MeasureString("X").Width) > 0.01f)
+                        continue;
+                    
+                    fonts.Add(fontFamily.Name);
+                }
+                fontList = fonts.ToArray();
+                dialog.Content = CreateDialogContent();
+            });
+        }
         
         if (!dialog.ShowModal())
             return;
@@ -178,6 +147,77 @@ public static class DialogUtil
         Settings.Instance.StatusFontSize = (float)statusFontSize.Value;
         Settings.Instance.OnFontChanged();
         Settings.Save();
+        
+        return;
+        
+        Control CreateDialogContent() {
+            var settingsPanel = new StackLayout {
+                Padding = 10,
+                Spacing = 10,
+                Items = {
+                    new StackLayout {
+                        Spacing = 10,
+                        VerticalContentAlignment = VerticalAlignment.Center,
+                        Orientation = Orientation.Horizontal,
+                        Items = { new Label { Text = "Editor Font Size" }, editorFontSize },
+                    },
+                    new StackLayout {
+                        Spacing = 10,
+                        VerticalContentAlignment = VerticalAlignment.Center,
+                        Orientation = Orientation.Horizontal,
+                        Items = { new Label { Text = "Status Font Size" }, statusFontSize },
+                    },
+                    new Label { Text = "  Preview:" }.WithFontStyle(FontStyle.Bold),
+                    new Scrollable {
+                        Content = preview,
+                        Width = 250,
+                        Height = 200,
+                    }
+                }
+            };
+            
+            if (fontList != null) {
+                var list = new ListBox { Width = 250, Height = 330 };
+                list.SelectedValue = Settings.Instance.FontFamily;
+                foreach (var fontFamily in fontList) {
+                    list.Items.Add(new ListItem { Text = fontFamily });
+                }
+                
+                editorFontSize.ValueChanged += (_, _) => UpdateFont();
+                list.SelectedValueChanged += (_, _) => UpdateFont();
+                
+                return new StackLayout {
+                    Padding = 10,
+                    Orientation = Orientation.Horizontal,
+                    Items = { list, settingsPanel }
+                };
+                
+                void UpdateFont() {
+                    if (list.SelectedValue is not ListItem item)
+                        return;
+                    
+                    preview.Font = new Font(item.Text, (float)editorFontSize.Value);
+                }
+            } else {
+                var loadingPanel = new StackLayout {
+                    Spacing = 10,
+                    Width = 250, 
+                    Height = 330,
+                    HorizontalContentAlignment = HorizontalAlignment.Center,
+                    VerticalContentAlignment = VerticalAlignment.Center,
+                    Items = {
+                        new Spinner { Enabled = true },
+                        new Label { Text = "Loading font list..." }.WithFontStyle(FontStyle.Italic),
+                    },
+                };
+                
+                return new StackLayout {
+                    Padding = 10,
+                    Orientation = Orientation.Horizontal,
+                    Items = { loadingPanel, settingsPanel }
+                };
+            }
+        }
     }
     
     public static void ShowRecordDialog() {
