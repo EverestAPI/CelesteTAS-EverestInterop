@@ -147,7 +147,7 @@ namespace Tommy.Serializer {
 
                 // -- Check each property type in order to
                 // -- determine which type of TomlNode to create
-                if (propertyType == typeof(string) || (propertyType.GetInterface(nameof(IEnumerable)) == null && !propertyType.IsArray)) {
+                if (propertyType == typeof(string) || propertyType.IsEnum || (propertyType.GetInterface(nameof(IEnumerable)) == null && !propertyType.IsArray)) {
                     TomlNode valueNode = GetTomlNode(propertyValue, propertyType);
                     valueNode.Comment = comment;
 
@@ -196,8 +196,10 @@ namespace Tommy.Serializer {
                 if (!tableData[key].HasValue && !tableData[key].IsTable) continue;
 
                 // -- Determine if property is not a collection or table -------
-                if (propertyType == typeof(string) && tableData[key].IsString || !tableData[key].IsArray && !tableData[key].IsTable)
+                if (propertyType == typeof(string) && (tableData[key].IsString || !tableData[key].IsArray && !tableData[key].IsTable))
                     dataClass.SetPropertyValue(key, GetValueByType(tableData[key], propertyType));
+                if (propertyType.IsEnum && (tableData[key].IsString || !tableData[key].IsArray && !tableData[key].IsTable))
+                    dataClass.SetFieldValue(key, Enum.Parse(propertyType, (string)GetValueByType(tableData[key], propertyType)));
 
                 // -- Determine if property is a Toml Table/IDictionary --------
                 else if (tableData[key].IsTable && propertyType.GetInterface(nameof(IEnumerable)) != null &&
@@ -244,7 +246,7 @@ namespace Tommy.Serializer {
 
                 // -- Check each property type in order to
                 // -- determine which type of TomlNode to create
-                if (fieldType == typeof(string) || (fieldType.GetInterface(nameof(IEnumerable)) == null && !fieldType.IsArray)) {
+                if (fieldType == typeof(string) || fieldType.IsEnum || (fieldType.GetInterface(nameof(IEnumerable)) == null && !fieldType.IsArray)) {
                     TomlNode valueNode = GetTomlNode(fieldValue, fieldType);
                     valueNode.Comment = comment;
 
@@ -292,8 +294,10 @@ namespace Tommy.Serializer {
                 if (!tableData[key].HasValue && !tableData[key].IsTable) continue;
 
                 // -- Determine if property is not a collection or table -------
-                if (fieldType == typeof(string) && tableData[key].IsString || !tableData[key].IsArray && !tableData[key].IsTable)
+                if (fieldType == typeof(string) && (tableData[key].IsString || !tableData[key].IsArray && !tableData[key].IsTable))
                     dataClass.SetFieldValue(key, GetValueByType(tableData[key], fieldType));
+                if (fieldType.IsEnum && (tableData[key].IsString || !tableData[key].IsArray && !tableData[key].IsTable))
+                    dataClass.SetFieldValue(key, Enum.Parse(fieldType, (string)GetValueByType(tableData[key], fieldType)));
 
                 // -- Determine if property is a Toml Table/IDictionary --------
                 else if (tableData[key].IsTable && fieldType.GetInterface(nameof(IEnumerable)) != null &&
@@ -468,7 +472,7 @@ namespace Tommy.Serializer {
 
             return valueType switch {
                 { } v when v == typeof(bool) => new TomlBoolean {Value = (bool) obj},
-                { } v when v == typeof(string) => new TomlString {Value = (string) obj != null ? obj.ToString() : ""},
+                { } v when v == typeof(string) || v.IsEnum => new TomlString {Value = obj != null ? obj.ToString() : ""},
                 { } v when v.IsFloat() => new TomlFloat {Value = FloatConverter(valueType, obj)},
                 { } v when v.IsInteger() => new TomlInteger {Value = (long) Convert.ChangeType(obj, TypeCode.Int64)},
                 { } v when v == typeof(DateTime) => new TomlDateTimeLocal {Value = (DateTime) obj},
