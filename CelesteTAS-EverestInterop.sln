@@ -5,19 +5,15 @@ VisualStudioVersion = 17.4.33213.308
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CelesteTAS-EverestInterop", "CelesteTAS-EverestInterop\CelesteTAS-EverestInterop.csproj", "{12CEFB4D-5E61-4F7E-93A6-637D96AB0139}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CelesteStudio", "Studio\CelesteStudio.csproj", "{51388820-C0EE-420A-BB43-94C7F75145FC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CelesteStudio", "Studio\CelesteStudio\CelesteStudio.csproj", "{EC404784-4D2E-4A49-AA0E-F19400998C69}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F7CE669A-946E-425F-9C3F-657A88DBF4B1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CelesteStudio.GTK", "Studio\CelesteStudio.GTK\CelesteStudio.GTK.csproj", "{EC404784-4D2E-4A49-AA0E-F19400998C69}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CelesteStudio.Mac", "Studio\CelesteStudio.Mac\CelesteStudio.Mac.csproj", "{FA6B0E7D-C70A-4ED5-99E2-019C9B60E52C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CelesteStudio.WPF", "Studio\CelesteStudio.WPF\CelesteStudio.WPF.csproj", "{95582142-D687-4D70-9933-7FF6B2E52B3A}"
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "StudioCommunication", "StudioCommunication\StudioCommunication.shproj", "{6B20B22D-D4C8-4F9D-A84A-E340551AE591}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CelesteStudio2", "CelesteStudio2\CelesteStudio2\CelesteStudio2.csproj", "{79FA6C1E-18B1-4BF4-AE57-1BA1BFC6609A}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CelesteStudio2.Gtk", "CelesteStudio2\CelesteStudio2.Gtk\CelesteStudio2.Gtk.csproj", "{EC404784-4D2E-4A49-AA0E-F19400998C69}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CelesteStudio2.Mac", "CelesteStudio2\CelesteStudio2.Mac\CelesteStudio2.Mac.csproj", "{FA6B0E7D-C70A-4ED5-99E2-019C9B60E52C}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CelesteStudio2.Wpf", "CelesteStudio2\CelesteStudio2.Wpf\CelesteStudio2.Wpf.csproj", "{95582142-D687-4D70-9933-7FF6B2E52B3A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

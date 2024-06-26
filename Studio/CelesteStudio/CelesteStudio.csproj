@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <Version>3.0.0</Version>
+
+        <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Eto.Forms" Version="2.8.3"/>
+    </ItemGroup>
+
+    <Import Project="..\..\StudioCommunication\StudioCommunication.projitems" Label="Shared" />
+
+</Project>

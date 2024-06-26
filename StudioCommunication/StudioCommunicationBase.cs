@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace StudioCommunication;
@@ -33,9 +34,11 @@ public class StudioCommunicationBase {
     private bool waiting;
 
     protected StudioCommunicationBase(string target = "CelesteTAS") {
-        if (PlatformUtils.Wine || PlatformUtils.NonWindows) {
-            string sharedFilePath = Path.Combine("/tmp", $"{target}.share");
-
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+            sharedMemory = MemoryMappedFile.CreateOrOpen(target, BufferSize);
+        } else {
+            string sharedFilePath = Path.Combine(Path.GetTempPath(), $"{target}.share");
+        
             FileStream fs;
             if (File.Exists(sharedFilePath)) {
                 fs = new FileStream(sharedFilePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
@@ -43,11 +46,8 @@ public class StudioCommunicationBase {
                 fs = new FileStream(sharedFilePath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
                 fs.SetLength(BufferSize);
             }
-
-            sharedMemory = MemoryMappedFile.CreateFromFile(fs, null, fs.Length, MemoryMappedFileAccess.ReadWrite, null, HandleInheritability.None,
-                true);
-        } else {
-            sharedMemory = MemoryMappedFile.CreateOrOpen(target, BufferSize);
+        
+            sharedMemory = MemoryMappedFile.CreateFromFile(fs, null, fs.Length, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true);
         }
 
         string mutexName = $"{target}_Mutex";
