@@ -62,8 +62,15 @@ public sealed class Editor : Drawable {
         CanFocus = true;
         Cursor = Cursors.IBeam;
         
-        // Need to redraw the line numbers
-        scrollable.Scroll += (_, _) => Invalidate();
+        // Need to redraw the line numbers when scrolling horizontally
+        int prevHScroll = scrollable.ScrollPosition.X;
+        scrollable.Scroll += (_, _) => {
+            if (prevHScroll == scrollable.ScrollPosition.X)
+                return;
+            
+            prevHScroll = scrollable.ScrollPosition.X;
+            Invalidate();
+        };
 
         Studio.CommunicationWrapper.Server.StateUpdated += state => {
             if (state.CurrentLine != -1) {
@@ -208,7 +215,7 @@ public sealed class Editor : Drawable {
         const float paddingRight = 50.0f;
         const float paddingBottom = 100.0f;
         Size = new((int)(width + textOffsetX + paddingRight), (int)(height + paddingBottom));
-
+        
         Invalidate();
     }
     
@@ -1177,6 +1184,12 @@ public sealed class Editor : Drawable {
         base.OnMouseMove(e);
     }
     
+    protected override void OnMouseWheel(MouseEventArgs e) {
+        e.Handled = true;
+        
+        base.OnMouseWheel(e);
+    }
+    
     private void SetCaretPosition(PointF location) {
         location.X -= textOffsetX;
         
@@ -1201,9 +1214,15 @@ public sealed class Editor : Drawable {
     protected override void OnPaint(PaintEventArgs e) {
         e.Graphics.AntiAlias = true;
         
+        const int offscreenLinePadding = 3;
+        
+        int topLine = Math.Max(0, (int)(scrollable.ScrollPosition.Y / Font.LineHeight) - offscreenLinePadding);
+        int bottomLine = Math.Min(Document.Lines.Count - 1, (int)((scrollable.ScrollPosition.Y + scrollable.Height) / Font.LineHeight) + offscreenLinePadding);
+        
         // Draw text
-        float yPos = 0.0f;
-        foreach (var line in Document.Lines) {
+        float yPos = topLine * Font.LineHeight;
+        for (int i = topLine; i <= bottomLine; i++) {
+            string? line = Document.Lines[i];
             highlighter.DrawLine(e.Graphics, textOffsetX, yPos, line);
             yPos += Font.LineHeight;
         }
@@ -1293,9 +1312,9 @@ public sealed class Editor : Drawable {
                 }
             }
             
-            yPos = 0.0f;
-            for (int i = 1; i <= Document.Lines.Count; i++) {
-                e.Graphics.DrawText(Font, Settings.Instance.Theme.LineNumber, scrollable.ScrollPosition.X + LineNumberPadding, yPos, i.ToString());
+            yPos = topLine * Font.LineHeight;
+            for (int i = topLine; i <= bottomLine; i++) {
+                e.Graphics.DrawText(Font, Settings.Instance.Theme.LineNumber, scrollable.ScrollPosition.X + LineNumberPadding, yPos, (i + 1).ToString());
                 yPos += Font.LineHeight;
             }
             
