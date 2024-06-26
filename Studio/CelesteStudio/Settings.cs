@@ -21,6 +21,7 @@ public sealed class Settings {
     [TommyIgnore]
     public Theme Theme => Theme.Dark;
     
+    public bool AutoSave = true;
     public bool SendInputsToCeleste = true;
     public bool ShowGameInfo = true;
     public bool AutoRemoveMutuallyExclusiveActions = true;

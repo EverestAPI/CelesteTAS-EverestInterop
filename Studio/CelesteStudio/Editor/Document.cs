@@ -117,7 +117,14 @@ public class Document {
 
     public bool Dirty { get; private set; }
     
-    public event Action<Document, CaretPosition, CaretPosition> TextChanged = (doc, _, _) => doc.Dirty = true;
+    public event Action<Document, CaretPosition, CaretPosition> TextChanged = (doc, _, _) => {
+        if (Settings.Instance.AutoSave) {
+            doc.Save();
+            return;
+        }
+        
+        doc.Dirty = true;
+    };
     public void OnTextChanged(CaretPosition min, CaretPosition max) => TextChanged.Invoke(this, min, max);
     
     private Document(string contents) {

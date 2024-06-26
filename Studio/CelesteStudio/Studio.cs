@@ -192,6 +192,7 @@ public sealed class Studio : Form {
                     }),
                 }},
                 new SubMenuItem {Text = "&Settings", Items = {
+                    MenuUtils.CreateSettingToggle("&Auto Save File", nameof(Settings.AutoSave)),
                     MenuUtils.CreateSettingToggle("&Send Inputs to Celeste", nameof(Settings.SendInputsToCeleste), Application.Instance.CommonModifier | Keys.D),
                     MenuUtils.CreateSettingToggle("Auto Remove Mutually Exclusive Actions", nameof(Settings.AutoRemoveMutuallyExclusiveActions)),
                     MenuUtils.CreateSettingToggle("Show Game Info", nameof(Settings.ShowGameInfo)),
