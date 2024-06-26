@@ -14,13 +14,17 @@ public class GameInfoPanel : Panel {
         var label = new Label {
             Text = DisconnectedText,
             TextColor = Settings.Instance.Theme.StatusFg,
-            Font = new(new FontFamily("JetBrains Mono"), 9.0f),
+            Font = Settings.Instance.StatusFont,
         };
         
         BackgroundColor = Settings.Instance.Theme.StatusBg;
         Settings.ThemeChanged += () => {
             label.TextColor = Settings.Instance.Theme.StatusFg;
             BackgroundColor = Settings.Instance.Theme.StatusBg;
+        };
+        Settings.FontChanged += () => {
+            label.Font = Settings.Instance.StatusFont;
+            Invalidate();
         };
         
         Padding = 5;

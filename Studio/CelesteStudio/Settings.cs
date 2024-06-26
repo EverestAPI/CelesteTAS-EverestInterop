@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Eto;
+using Eto.Drawing;
 using Tommy.Serializer;
 
 namespace CelesteStudio;
@@ -23,6 +24,12 @@ public sealed class Settings {
     
     public static event Action? ThemeChanged;
     private void OnThemeChanged() => ThemeChanged?.Invoke();
+    
+    public static event Action? FontChanged;
+    public void OnFontChanged() {
+        editorFont = statusFont = null;
+        FontChanged?.Invoke();
+    }
     
     [TommyIgnore]
     public Theme Theme => ThemeType switch {
@@ -49,6 +56,17 @@ public sealed class Settings {
     public int AutoBackupRate = 1;
     public int AutoBackupCount = 100;
     public bool FindMatchCase;
+    
+    [TommyIgnore]
+    private Font? editorFont, statusFont;
+    [TommyIgnore]
+    public Font EditorFont => editorFont ??= new Font(FontFamily, EditorFontSize);
+    [TommyIgnore]
+    public Font StatusFont => statusFont ??= new Font(FontFamily, StatusFontSize);
+    
+    public string FontFamily = "JetBrains Mono";
+    public float EditorFontSize = 12.0f;
+    public float StatusFontSize = 9.0f;
     
     private const int MaxRecentFiles = 20;
     public readonly List<string> RecentFiles = [];

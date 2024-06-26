@@ -203,7 +203,7 @@ public sealed class Studio : Form {
                         MenuUtils.CreateSettingNumberInput("Backup Rate (minutes)", nameof(Settings.AutoBackupRate), 0, int.MaxValue, 1),
                         MenuUtils.CreateSettingNumberInput("Backup File Count", nameof(Settings.AutoBackupCount), 0, int.MaxValue, 1),
                     }},
-                    MenuUtils.CreateAction("Font..."),
+                    MenuUtils.CreateAction("Font...", Keys.None, () => DialogUtil.ShowFontDialog()),
                     MenuUtils.CreateSettingEnum<ThemeType>("Theme", nameof(Settings.ThemeType), ["Light", "Dark"]),
                     MenuUtils.CreateAction("Open Settings File...", Keys.None, () => ProcessHelper.OpenInDefaultApp(Settings.SavePath)),
                 }},

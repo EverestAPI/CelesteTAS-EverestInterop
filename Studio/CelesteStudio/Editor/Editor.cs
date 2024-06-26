@@ -35,8 +35,8 @@ public sealed class Editor : Drawable {
     
     private readonly Scrollable scrollable;
     
-    private readonly Font font;
-    private readonly SyntaxHighlighter highlighter;
+    private Font Font => Settings.Instance.EditorFont;
+    private SyntaxHighlighter highlighter;
     
     private const float LineNumberPadding = 5.0f;
     private float textOffsetX;
@@ -50,8 +50,11 @@ public sealed class Editor : Drawable {
         this.document = document;
         this.scrollable = scrollable;
 
-        font = new(new FontFamily("JetBrains Mono"), 12.0f);
-        highlighter = new(font);
+        highlighter = new(Font);
+        Settings.FontChanged += () => {
+            highlighter = new(Font);
+            Recalc();
+        };
         
         BackgroundColor = Settings.Instance.Theme.Background;
         Settings.ThemeChanged += () => BackgroundColor = Settings.Instance.Theme.Background;
@@ -191,13 +194,13 @@ public sealed class Editor : Drawable {
         Document.Caret.Row = Math.Clamp(Document.Caret.Row, 0, Document.Lines.Count - 1);
         Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length);
         
-        textOffsetX = font.MeasureString("X").Width * Document.Lines.Count.Digits() + LineNumberPadding * 3.0f;
+        textOffsetX = Font.MeasureString("X").Width * Document.Lines.Count.Digits() + LineNumberPadding * 3.0f;
         
         // Calculate bounds
         float width = 0.0f, height = 0.0f;
 
         foreach (var line in Document.Lines) {
-            var size = font.MeasureString(line);
+            var size = Font.MeasureString(line);
             width = Math.Max(width, size.Width);
             height += size.Height;
         }
@@ -997,8 +1000,8 @@ public sealed class Editor : Drawable {
         const float xLookAhead = 50.0f;
         const float yLookAhead = 50.0f;
         
-        float carX = font.MeasureString(Document.Lines[Document.Caret.Row][..Document.Caret.Col]).Width;
-        float carY = font.LineHeight * Document.Caret.Row;
+        float carX = Font.MeasureString(Document.Lines[Document.Caret.Row][..Document.Caret.Col]).Width;
+        float carY = Font.LineHeight * Document.Caret.Row;
         
         float top = scrollable.ScrollPosition.Y;
         float bottom = (scrollable.Size.Height - Studio.BorderBottomOffset) + scrollable.ScrollPosition.Y;
@@ -1177,11 +1180,11 @@ public sealed class Editor : Drawable {
     private void SetCaretPosition(PointF location) {
         location.X -= textOffsetX;
         
-        int row = Math.Clamp((int) MathF.Floor(location.Y / font.LineHeight), 0, Document.Lines.Count - 1);
+        int row = Math.Clamp((int) MathF.Floor(location.Y / Font.LineHeight), 0, Document.Lines.Count - 1);
         var line = Document.Lines[row];
         
         // Since we use a monospace font, we can just calculate the column
-        int col = Math.Clamp((int) MathF.Floor(location.X / font.MeasureString("X").Width), 0, line.Length);
+        int col = Math.Clamp((int) MathF.Floor(location.X / Font.MeasureString("X").Width), 0, line.Length);
         
         Document.Caret = ClampCaret(new CaretPosition(row, col), wrapLine: false);
         
@@ -1202,29 +1205,29 @@ public sealed class Editor : Drawable {
         float yPos = 0.0f;
         foreach (var line in Document.Lines) {
             highlighter.DrawLine(e.Graphics, textOffsetX, yPos, line);
-            yPos += font.LineHeight;
+            yPos += Font.LineHeight;
         }
         
         // Draw suffix text
         if (Studio.CommunicationWrapper.Connected) {
             const float padding = 10.0f;
-            float suffixWidth = font.MeasureString(Studio.CommunicationWrapper.CurrentLineSuffix).Width; 
+            float suffixWidth = Font.MeasureString(Studio.CommunicationWrapper.CurrentLineSuffix).Width; 
             
-            e.Graphics.DrawText(font, Settings.Instance.Theme.PlayingFrame,
+            e.Graphics.DrawText(Font, Settings.Instance.Theme.PlayingFrame,
                 x: scrollable.ScrollPosition.X + scrollable.Width - suffixWidth - padding,
-                y: Studio.CommunicationWrapper.CurrentLine * font.LineHeight,
+                y: Studio.CommunicationWrapper.CurrentLine * Font.LineHeight,
                 Studio.CommunicationWrapper.CurrentLineSuffix);
         }
         
-        float carX = font.MeasureString(Document.Lines[Document.Caret.Row][..Document.Caret.Col]).Width + textOffsetX;
-        float carY = font.LineHeight * Document.Caret.Row;
+        float carX = Font.MeasureString(Document.Lines[Document.Caret.Row][..Document.Caret.Col]).Width + textOffsetX;
+        float carY = Font.LineHeight * Document.Caret.Row;
 
         // Highlight caret line
-        e.Graphics.FillRectangle(Settings.Instance.Theme.CurrentLine, 0.0f, carY, scrollable.Width, font.LineHeight);
+        e.Graphics.FillRectangle(Settings.Instance.Theme.CurrentLine, 0.0f, carY, scrollable.Width, Font.LineHeight);
         
         // Draw caret
         if (HasFocus) {
-            e.Graphics.DrawLine(Settings.Instance.Theme.Caret, carX, carY, carX, carY + font.LineHeight - 1);
+            e.Graphics.DrawLine(Settings.Instance.Theme.Caret, carX, carY, carX, carY + Font.LineHeight - 1);
         }
         
         // Draw selection
@@ -1233,26 +1236,26 @@ public sealed class Editor : Drawable {
             var max = Document.Selection.Max;
             
             if (min.Row == max.Row) {
-                float x = font.MeasureString(Document.Lines[min.Row][..min.Col]).Width + textOffsetX;
-                float w = font.MeasureString(Document.Lines[min.Row][min.Col..max.Col]).Width;
-                float y = font.LineHeight * min.Row;
-                float h = font.LineHeight;
+                float x = Font.MeasureString(Document.Lines[min.Row][..min.Col]).Width + textOffsetX;
+                float w = Font.MeasureString(Document.Lines[min.Row][min.Col..max.Col]).Width;
+                float y = Font.LineHeight * min.Row;
+                float h = Font.LineHeight;
                 e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w, h);
             } else {
-                float x = font.MeasureString(Document.Lines[min.Row][..min.Col]).Width + textOffsetX;
-                float w = font.MeasureString(Document.Lines[min.Row][min.Col..]).Width;
-                float y = font.LineHeight * min.Row;
-                e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w, font.LineHeight);
+                float x = Font.MeasureString(Document.Lines[min.Row][..min.Col]).Width + textOffsetX;
+                float w = Font.MeasureString(Document.Lines[min.Row][min.Col..]).Width;
+                float y = Font.LineHeight * min.Row;
+                e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w, Font.LineHeight);
                 
                 for (int i = min.Row + 1; i < max.Row; i++) {
-                    w = font.MeasureString(Document.Lines[i]).Width;
-                    y = font.LineHeight * i;
-                    e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX, y, w, font.LineHeight);
+                    w = Font.MeasureString(Document.Lines[i]).Width;
+                    y = Font.LineHeight * i;
+                    e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX, y, w, Font.LineHeight);
                 }
                 
-                w = font.MeasureString(Document.Lines[max.Row][..max.Col]).Width;
-                y = font.LineHeight * max.Row;
-                e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX, y, w, font.LineHeight);
+                w = Font.MeasureString(Document.Lines[max.Row][..max.Col]).Width;
+                y = Font.LineHeight * max.Row;
+                e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX, y, w, Font.LineHeight);
             }
         }
         
@@ -1269,31 +1272,31 @@ public sealed class Editor : Drawable {
                 if (Studio.CommunicationWrapper.CurrentLine != -1) {
                     e.Graphics.FillRectangle(Settings.Instance.Theme.PlayingLine,
                         x: scrollable.ScrollPosition.X,
-                        y: Studio.CommunicationWrapper.CurrentLine * font.LineHeight,
+                        y: Studio.CommunicationWrapper.CurrentLine * Font.LineHeight,
                         width: textOffsetX - LineNumberPadding,
-                        height: font.LineHeight);
+                        height: Font.LineHeight);
                 }
                 if (Studio.CommunicationWrapper.SaveStateLine != -1) {
                     if (Studio.CommunicationWrapper.SaveStateLine == Studio.CommunicationWrapper.CurrentLine) {
                         e.Graphics.FillRectangle(Settings.Instance.Theme.Savestate,
                             x: scrollable.ScrollPosition.X,
-                            y: Studio.CommunicationWrapper.CurrentLine * font.LineHeight,
+                            y: Studio.CommunicationWrapper.CurrentLine * Font.LineHeight,
                             width: 15.0f,
-                            height: font.LineHeight);
+                            height: Font.LineHeight);
                     } else {
                         e.Graphics.FillRectangle(Settings.Instance.Theme.Savestate,
                             x: scrollable.ScrollPosition.X,
-                            y: Studio.CommunicationWrapper.CurrentLine * font.LineHeight,
+                            y: Studio.CommunicationWrapper.CurrentLine * Font.LineHeight,
                             width: textOffsetX - LineNumberPadding,
-                            height: font.LineHeight);
+                            height: Font.LineHeight);
                     }
                 }
             }
             
             yPos = 0.0f;
             for (int i = 1; i <= Document.Lines.Count; i++) {
-                e.Graphics.DrawText(font, Settings.Instance.Theme.LineNumber, scrollable.ScrollPosition.X + LineNumberPadding, yPos, i.ToString());
-                yPos += font.LineHeight;
+                e.Graphics.DrawText(Font, Settings.Instance.Theme.LineNumber, scrollable.ScrollPosition.X + LineNumberPadding, yPos, i.ToString());
+                yPos += Font.LineHeight;
             }
             
             e.Graphics.DrawLine(Settings.Instance.Theme.ServiceLine,
