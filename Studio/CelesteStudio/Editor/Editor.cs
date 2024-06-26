@@ -637,6 +637,8 @@ public sealed class Editor : Drawable {
     }
     
     private void OnToggleCommentBreakpoints() {
+        Document.Selection.Normalize();
+        
         int minRow = Document.Selection.Min.Row;
         int maxRow = Document.Selection.Max.Row;
         if (Document.Selection.Empty) {
@@ -650,14 +652,32 @@ public sealed class Editor : Drawable {
             if (CommentedBreakpointRegex.IsMatch(line)) {
                 int hashIdx = line.IndexOf('#');
                 Document.ReplaceLine(row, line.Remove(hashIdx, 1), raiseEvents: false);
+                
+                // Shift everything over
+                if (row == minRow)
+                    Document.Selection.Start.Col--;
+                if (row == maxRow)
+                    Document.Selection.End.Col--;
+                if (row == Document.Caret.Row)
+                    Document.Caret.Col--;
             } else if (UncommentedBreakpointRegex.IsMatch(line)) {
                 Document.ReplaceLine(row, $"#{line}", raiseEvents: false);
+                
+                // Shift everything over
+                if (row == minRow)
+                    Document.Selection.Start.Col++;
+                if (row == maxRow)
+                    Document.Selection.End.Col++;
+                if (row == Document.Caret.Row)
+                    Document.Caret.Col++;
             }
         }
         Document.OnTextChanged(new CaretPosition(minRow, 0), new CaretPosition(maxRow, Document.Lines[maxRow].Length));
     }
     
     private void OnToggleCommentInputs() {
+        Document.Selection.Normalize();
+
         int minRow = Document.Selection.Min.Row;
         int maxRow = Document.Selection.Max.Row;
         if (Document.Selection.Empty) {
@@ -671,14 +691,32 @@ public sealed class Editor : Drawable {
             if (line.TrimStart().StartsWith('#')) {
                 int hashIdx = line.IndexOf('#');
                 Document.ReplaceLine(row, line.Remove(hashIdx, 1), raiseEvents: false);
+                
+                // Shift everything over
+                if (row == minRow)
+                    Document.Selection.Start.Col--;
+                if (row == maxRow)
+                    Document.Selection.End.Col--;
+                if (row == Document.Caret.Row)
+                    Document.Caret.Col--;
             } else {
                 Document.ReplaceLine(row, $"#{line}", raiseEvents: false);
+                
+                // Shift everything over
+                if (row == minRow)
+                    Document.Selection.Start.Col++;
+                if (row == maxRow)
+                    Document.Selection.End.Col++;
+                if (row == Document.Caret.Row)
+                    Document.Caret.Col++;
             }
         }
         Document.OnTextChanged(new CaretPosition(minRow, 0), new CaretPosition(maxRow, Document.Lines[maxRow].Length));
     }
     
     private void OnToggleCommentText() {
+        Document.Selection.Normalize();
+
         int minRow = Document.Selection.Min.Row;
         int maxRow = Document.Selection.Max.Row;
         if (Document.Selection.Empty) {
@@ -703,8 +741,24 @@ public sealed class Editor : Drawable {
             if (allCommented) {
                 int hashIdx = line.IndexOf('#');
                 Document.ReplaceLine(row, line.Remove(hashIdx, 1), raiseEvents: false);
+                
+                // Shift everything over
+                if (row == minRow)
+                    Document.Selection.Start.Col--;
+                if (row == maxRow)
+                    Document.Selection.End.Col--;
+                if (row == Document.Caret.Row)
+                    Document.Caret.Col--;
             } else {
                 Document.ReplaceLine(row, $"#{line}", raiseEvents: false);
+                
+                // Shift everything over
+                if (row == minRow)
+                    Document.Selection.Start.Col++;
+                if (row == maxRow)
+                    Document.Selection.End.Col++;
+                if (row == Document.Caret.Row)
+                    Document.Caret.Col++;
             }
         }
         Document.OnTextChanged(new CaretPosition(minRow, 0), new CaretPosition(maxRow, Document.Lines[maxRow].Length));

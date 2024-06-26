@@ -44,6 +44,11 @@ public struct Selection() {
     public bool Empty => Start == End;
     
     public void Clear() => Start = End = new();
+    public void Normalize() {
+        // Ensures that Start <= End
+        if (Start < End)
+            (Start, End) = (End, Start);
+    }
 }
 
 public class UndoStack(int stackSize = 256) {
