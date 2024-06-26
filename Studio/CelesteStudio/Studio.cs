@@ -65,6 +65,7 @@ public sealed class Studio : Form {
             };
             
             SizeChanged += (_, _) => RecalculateLayout();
+            Settings.Changed += () => Menu = CreateMenu(); // Recreate menu to reflect changes
             
             // Re-open last file if possible
             if (Settings.Instance.RecentFiles.Count > 0 && !string.IsNullOrWhiteSpace(Settings.Instance.RecentFiles[0]) && File.Exists(Settings.Instance.RecentFiles[0]))
@@ -102,7 +103,7 @@ public sealed class Studio : Form {
         });
         openPreviousFile.Enabled = Settings.Instance.RecentFiles.Count > 1;
         
-        var recentFilesMenu = new SubMenuItem {Text = "Open &Recent",};
+        var recentFilesMenu = new SubMenuItem { Text = "Open &Recent" };
         for (int i = 1; i < Settings.Instance.RecentFiles.Count; i++) {
             string filePath = Settings.Instance.RecentFiles[i];
             recentFilesMenu.Items.Add(MenuUtils.CreateAction(filePath, Keys.None, () => OpenFile(filePath)));
@@ -116,6 +117,31 @@ public sealed class Studio : Form {
             }
         }) { MenuText = "Clear" });
         recentFilesMenu.Enabled = Settings.Instance.RecentFiles.Count > 1;
+        
+        var backupsMenu = new SubMenuItem { Text = "Open &Backup" };
+        var backupDir = Editor.Document.BackupDirectory;
+        var backupFiles = Directory.Exists(backupDir) ? Directory.GetFiles(backupDir) : [];
+        for (int i = 0; i < backupFiles.Length; i++) {
+            if (i >= 20 && backupFiles.Length - i >= 2) { // Only trigger where there are also at least 2 more files left
+                backupsMenu.Items.Add(new ButtonMenuItem { Text = $"{backupFiles.Length - i} files remaining...", Enabled = false });
+                break;
+            }
+            
+            string filePath = backupFiles[i];
+            backupsMenu.Items.Add(MenuUtils.CreateAction(Path.GetFileName(filePath), Keys.None, () => OpenFile(filePath)));
+        }
+        backupsMenu.Items.Add(new SeparatorMenuItem());
+        backupsMenu.Items.Add(new Command((_, _) => ProcessHelper.OpenInDefaultApp(backupDir)) { MenuText = "Show All Files" });
+        backupsMenu.Items.Add(new Command((_, _) => {
+            var confirm = MessageBox.Show("Are you sure you want to delete all backups for this file?", MessageBoxButtons.YesNo, MessageBoxType.Question, MessageBoxDefaultButton.No);
+            if (confirm == DialogResult.Yes) {
+                foreach (var file in backupFiles) {
+                    File.Delete(file);
+                }
+                Menu = CreateMenu();
+            }
+        }) { MenuText = "Delete All Files" });
+        backupsMenu.Enabled = backupFiles.Length != 0;
         
         var menu = new MenuBar {
             Items = {
@@ -135,7 +161,7 @@ public sealed class Studio : Form {
                     }),
                     openPreviousFile,
                     recentFilesMenu,
-                    MenuUtils.CreateAction("Open &Backup"),
+                    backupsMenu,
                     new SeparatorMenuItem(),
                     MenuUtils.CreateAction("Save", Application.Instance.CommonModifier | Keys.S, SaveFile),
                     MenuUtils.CreateAction("&Save As...", Application.Instance.CommonModifier | Keys.Shift | Keys.S, () => {
@@ -164,16 +190,16 @@ public sealed class Studio : Form {
                     MenuUtils.CreateSettingToggle("Show Game Info", nameof(Settings.ShowGameInfo)),
                     MenuUtils.CreateSettingToggle("Always on Top", nameof(Settings.AlwaysOnTop)),
                     new SubMenuItem {Text = "Automatic Backups", Items = {
-                        MenuUtils.CreateToggle("Enabled", CelesteService.GetGameplay, CelesteService.ToggleGameplay),
-                        MenuUtils.CreateNumberInput("Backup Rate (minutes)", CelesteService.GetPositionDecimals, CelesteService.SetPositionDecimals, minDecimals, maxDecimals, 1),
-                        MenuUtils.CreateNumberInput("Backup File Count", CelesteService.GetPositionDecimals, CelesteService.SetPositionDecimals, minDecimals, maxDecimals, 1),
+                        MenuUtils.CreateSettingToggle("Enabled", nameof(Settings.AutoBackupEnabled)),
+                        MenuUtils.CreateSettingNumberInput("Backup Rate (minutes)", nameof(Settings.AutoBackupRate), 0, int.MaxValue, 1),
+                        MenuUtils.CreateSettingNumberInput("Backup File Count", nameof(Settings.AutoBackupCount), 0, int.MaxValue, 1),
                     }},
                     MenuUtils.CreateAction("Font..."),
                     new SubMenuItem {Text = "Theme", Items = {
                         new RadioMenuItem { Text = "Light" },
                         new RadioMenuItem { Text = "Dark" },
                     }},
-                    MenuUtils.CreateAction("Open Settings File...", Keys.None, () => ProcessHelper.OpenInEditor(Settings.SavePath)),
+                    MenuUtils.CreateAction("Open Settings File...", Keys.None, () => ProcessHelper.OpenInDefaultApp(Settings.SavePath)),
                 }},
                 new SubMenuItem {Text = "&Toggles", Items = {
                     MenuUtils.CreateToggle("&Hitboxes", CelesteService.GetHitboxes, CelesteService.ToggleHitboxes),

@@ -8,7 +8,8 @@ namespace CelesteStudio;
 
 [TommyTableName("Settings")]
 public class Settings {
-    public static string SavePath => Path.Combine(EtoEnvironment.GetFolderPath(EtoSpecialFolder.ApplicationSettings), "CelesteStudio", "Settings.toml");
+    public static string BaseConfigPath => Path.Combine(EtoEnvironment.GetFolderPath(EtoSpecialFolder.ApplicationSettings), "CelesteStudio"); 
+    public static string SavePath => Path.Combine(BaseConfigPath, "Settings.toml");
     public static Settings Instance { get; private set; } = new();
     
     public static event Action? Changed;
@@ -24,25 +25,22 @@ public class Settings {
     public bool FindMatchCase;
     
     private const int MaxRecentFiles = 20;
-    private readonly List<string> recentFiles = [];
-    
-    [TommyIgnore]
-    public IReadOnlyList<string> RecentFiles => recentFiles.AsReadOnly();
+    public readonly List<string> RecentFiles = [];
     
     public void AddRecentFile(string filePath) {
         // Avoid duplicates
-        recentFiles.Remove(filePath);
+        RecentFiles.Remove(filePath);
         
-        recentFiles.Insert(0, filePath);
-        if (recentFiles.Count > MaxRecentFiles) {
-            recentFiles.RemoveRange(MaxRecentFiles, recentFiles.Count - MaxRecentFiles);
+        RecentFiles.Insert(0, filePath);
+        if (RecentFiles.Count > MaxRecentFiles) {
+            RecentFiles.RemoveRange(MaxRecentFiles, RecentFiles.Count - MaxRecentFiles);
         }
         
         OnChanged();
         Save();
     }
     public void ClearRecentFiles() {
-        recentFiles.Clear();
+        RecentFiles.Clear();
         
         OnChanged();
         Save();

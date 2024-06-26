@@ -45,4 +45,19 @@ public class MenuUtils {
         
         return new ButtonMenuItem(cmd);
     }
+    
+    public static MenuItem CreateSettingNumberInput<T>(string text, string settingName, T minValue, T maxValue, T step) where T : INumber<T>  {
+        var property = typeof(Settings).GetField(settingName)!;
+        
+        var cmd = new Command { MenuText = $"{text}: {property.GetValue(Settings.Instance)!}" };
+        cmd.Executed += (_, _) => {
+            T value = (T)property.GetValue(Settings.Instance)!;
+            property.SetValue(Settings.Instance, DialogUtil.ShowNumberInputDialog(text, value, minValue, maxValue, step));
+            
+            Settings.Instance.OnChanged();
+            Settings.Save();
+        };
+        
+        return new ButtonMenuItem(cmd);
+    }
 }

@@ -19,7 +19,7 @@ public static class ProcessHelper
         }
     }
     
-    public static void OpenInEditor(string filePath) {
+    public static void OpenInDefaultApp(string filePath) {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
             Process.Start(new ProcessStartInfo("cmd", $"/c start {filePath}"));
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using CelesteStudio.Util;
+using Eto;
 
 namespace CelesteStudio;
 
@@ -91,6 +92,21 @@ public class Document {
     
     public string FilePath { get; set; } = string.Empty;
     public string FileName => Path.GetFileName(FilePath);
+    public string BackupDirectory {
+        get {
+            if (string.IsNullOrWhiteSpace(FilePath))
+                return string.Empty;
+            
+            var backupBaseDir = Path.Combine(Settings.BaseConfigPath, "Backups");
+            bool isBackupFile = Directory.GetParent(FilePath) is { } dir && dir.Parent?.FullName == backupBaseDir;
+            
+            string backupSubDir = isBackupFile 
+                ? Directory.GetParent(FilePath)!.FullName 
+                : $"{FileName}_{FilePath.GetStableHashCode()}";
+            
+            return Path.Combine(backupBaseDir, backupSubDir);
+        }
+    }
 
     private readonly UndoStack undoStack = new();
 
@@ -141,9 +157,48 @@ public class Document {
         try {
             File.WriteAllText(FilePath, Text);
             Dirty = false;
+            
+            if (Settings.Instance.AutoBackupEnabled && !string.IsNullOrWhiteSpace(FilePath))
+                CreateBackup();
         } catch (Exception e) {
             Console.WriteLine(e);
         }
+    }
+    
+    private void CreateBackup() {
+        var backupDir = BackupDirectory;
+        if (!Directory.Exists(backupDir))
+            Directory.CreateDirectory(backupDir);
+        
+        string[] files = Directory.GetFiles(backupDir);
+        if (files.Length > 0) {
+            var lastFileTime = File.GetLastWriteTime(files.Last());
+            
+            // Wait until next interval
+            if (Settings.Instance.AutoBackupRate > 0 && lastFileTime.AddMinutes(Settings.Instance.AutoBackupRate) >= DateTime.Now) {
+                return;
+            }
+            
+            // Delete the oldest backups until the desired count is reached
+            if (Settings.Instance.AutoBackupCount > 0 && files.Length >= Settings.Instance.AutoBackupCount) {
+                // Sort for oldest first
+                Array.Sort(files, (a, b) => (File.GetLastWriteTime(b) - File.GetLastWriteTime(a)).Milliseconds);
+                
+                foreach (string path in files.Take(files.Length - Settings.Instance.AutoBackupCount + 1)) {
+                    File.Delete(path);
+                }
+            }
+        }
+        
+        string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(FilePath);
+        
+        // Apparently legacy Studio had a limit of 24 characters for the file name?
+        // if (CurrentFileIsBackup() && fileNameWithoutExtension.Length > 24) {
+        //     fileNameWithoutExtension = fileNameWithoutExtension.Substring(0, fileNameWithoutExtension.Length - 24);
+        // }
+        
+        string backupFileName = Path.Combine(backupDir, fileNameWithoutExtension + DateTime.Now.ToString("_yyyy-MM-dd_HH-mm-ss-fff") + ".tas");
+        File.Copy(FilePath, Path.Combine(backupDir, backupFileName));
     }
 
     private void OnLinesUpdated(Dictionary<int, string> newLines) {
