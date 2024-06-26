@@ -32,6 +32,28 @@ public struct Theme {
     public Style Comment;
     public Style Frame;
     
+    public static readonly Theme Light = new() {
+        Background = Color.FromRgb(0xFFFFFF),
+        Caret = Color.FromRgb(0x000000),
+        CurrentLine = Color.FromArgb(0x20000000),
+        LineNumber = Color.FromRgb(0x000000),
+        PlayingFrame = Color.FromRgb(0x22A022),
+        PlayingLine = Color.FromRgb(0x55FF55),
+        Selection = Color.FromArgb(0x20000000),
+        Savestate = Color.FromRgb(0x4682B4),
+        ServiceLine = Color.FromRgb(0xC0C0C0),
+        StatusFg = Color.FromRgb(0x000000),
+        StatusBg = Color.FromRgb(0xF2F2F2),
+        
+        Action = new Style(Color.FromRgb(0x2222FF)),
+        Angle = new Style(Color.FromRgb(0xEE22EE)),
+        Breakpoint = new Style(Color.FromRgb(0xFFFFFF), Color.FromRgb(0xFF5555), FontStyle.Bold),
+        SavestateBreakpoint = new Style(Color.FromRgb(0xFFFFFF), Color.FromRgb(0x4682B4), FontStyle.Bold),
+        Delimiter = new Style(Color.FromRgb(0x808080)),
+        Command = new Style(Color.FromRgb(0xD2691E)),
+        Comment = new Style(Color.FromRgb(0x00A000)),
+        Frame = new Style(Color.FromRgb(0xFF2222)),
+    };
     public static readonly Theme Dark = new() {
         Background = Color.FromRgb(0x282A36),
         Caret = Color.FromRgb(0xAEAFAD),

@@ -1,10 +1,16 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using Eto;
 using Tommy.Serializer;
 
 namespace CelesteStudio;
+
+public enum ThemeType {
+    Light,
+    Dark,
+}
 
 [TommyTableName("Settings")]
 public sealed class Settings {
@@ -19,7 +25,20 @@ public sealed class Settings {
     private void OnThemeChanged() => ThemeChanged?.Invoke();
     
     [TommyIgnore]
-    public Theme Theme => Theme.Dark;
+    public Theme Theme => ThemeType switch {
+        ThemeType.Light => Theme.Light,    
+        ThemeType.Dark => Theme.Dark,
+        _ => throw new UnreachableException(),
+    };
+    
+    private ThemeType themeType = ThemeType.Light;
+    public ThemeType ThemeType {
+        get => themeType;
+        set {
+            themeType = value;
+            OnThemeChanged();
+        }
+    }
     
     public bool AutoSave = true;
     public bool SendInputsToCeleste = true;

@@ -204,10 +204,7 @@ public sealed class Studio : Form {
                         MenuUtils.CreateSettingNumberInput("Backup File Count", nameof(Settings.AutoBackupCount), 0, int.MaxValue, 1),
                     }},
                     MenuUtils.CreateAction("Font..."),
-                    new SubMenuItem {Text = "Theme", Items = {
-                        new RadioMenuItem { Text = "Light" },
-                        new RadioMenuItem { Text = "Dark" },
-                    }},
+                    MenuUtils.CreateSettingEnum<ThemeType>("Theme", nameof(Settings.ThemeType), ["Light", "Dark"]),
                     MenuUtils.CreateAction("Open Settings File...", Keys.None, () => ProcessHelper.OpenInDefaultApp(Settings.SavePath)),
                 }},
                 new SubMenuItem {Text = "&Toggles", Items = {
