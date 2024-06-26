@@ -7,13 +7,19 @@ using Tommy.Serializer;
 namespace CelesteStudio;
 
 [TommyTableName("Settings")]
-public class Settings {
+public sealed class Settings {
     public static string BaseConfigPath => Path.Combine(EtoEnvironment.GetFolderPath(EtoSpecialFolder.ApplicationSettings), "CelesteStudio"); 
     public static string SavePath => Path.Combine(BaseConfigPath, "Settings.toml");
     public static Settings Instance { get; private set; } = new();
     
     public static event Action? Changed;
-    public virtual void OnChanged() => Changed?.Invoke();
+    public void OnChanged() => Changed?.Invoke();
+    
+    public static event Action? ThemeChanged;
+    private void OnThemeChanged() => ThemeChanged?.Invoke();
+    
+    [TommyIgnore]
+    public Theme Theme => Theme.Dark;
     
     public bool SendInputsToCeleste = true;
     public bool ShowGameInfo = true;

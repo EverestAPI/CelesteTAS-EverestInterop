@@ -51,10 +51,12 @@ public sealed class Editor : Drawable {
         this.scrollable = scrollable;
 
         font = new(new FontFamily("JetBrains Mono"), 12.0f);
-        highlighter = new(Theme.Dark, font);
+        highlighter = new(font);
+        
+        BackgroundColor = Settings.Instance.Theme.Background;
+        Settings.ThemeChanged += () => BackgroundColor = Settings.Instance.Theme.Background;
         
         CanFocus = true;
-        BackgroundColor = Colors.Black;
         Cursor = Cursors.IBeam;
         
         // Need to redraw the line numbers
@@ -1154,7 +1156,7 @@ public sealed class Editor : Drawable {
             const float padding = 10.0f;
             float suffixWidth = font.MeasureString(Studio.CelesteService.CurrentLineSuffix).Width; 
             
-            e.Graphics.DrawText(font, Colors.Orange,
+            e.Graphics.DrawText(font, Settings.Instance.Theme.PlayingFrame,
                 x: scrollable.ScrollPosition.X + scrollable.Width - suffixWidth - padding,
                 y: Studio.CelesteService.CurrentLine * font.LineHeight,
                 Studio.CelesteService.CurrentLineSuffix);
@@ -1164,11 +1166,11 @@ public sealed class Editor : Drawable {
         float carY = font.LineHeight * Document.Caret.Row;
 
         // Highlight caret line
-        e.Graphics.FillRectangle(Color.FromGrayscale(0.9f, 0.1f), 0.0f, carY, scrollable.Width, font.LineHeight);
+        e.Graphics.FillRectangle(Settings.Instance.Theme.CurrentLine, 0.0f, carY, scrollable.Width, font.LineHeight);
         
         // Draw caret
         if (HasFocus) {
-            e.Graphics.DrawLine(Colors.Red, carX, carY, carX, carY + font.LineHeight - 1);
+            e.Graphics.DrawLine(Settings.Instance.Theme.Caret, carX, carY, carX, carY + font.LineHeight - 1);
         }
         
         // Draw selection
@@ -1176,29 +1178,27 @@ public sealed class Editor : Drawable {
             var min = Document.Selection.Min;
             var max = Document.Selection.Max;
             
-            var color = Color.FromArgb(0x00, 0x00, 0xFF, 0x7F);
-            
             if (min.Row == max.Row) {
                 float x = font.MeasureString(Document.Lines[min.Row][..min.Col]).Width + textOffsetX;
                 float w = font.MeasureString(Document.Lines[min.Row][min.Col..max.Col]).Width;
                 float y = font.LineHeight * min.Row;
                 float h = font.LineHeight;
-                e.Graphics.FillRectangle(color, x, y, w, h);
+                e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w, h);
             } else {
                 float x = font.MeasureString(Document.Lines[min.Row][..min.Col]).Width + textOffsetX;
                 float w = font.MeasureString(Document.Lines[min.Row][min.Col..]).Width;
                 float y = font.LineHeight * min.Row;
-                e.Graphics.FillRectangle(color, x, y, w, font.LineHeight);
+                e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w, font.LineHeight);
                 
                 for (int i = min.Row + 1; i < max.Row; i++) {
                     w = font.MeasureString(Document.Lines[i]).Width;
                     y = font.LineHeight * i;
-                    e.Graphics.FillRectangle(color, textOffsetX, y, w, font.LineHeight);
+                    e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX, y, w, font.LineHeight);
                 }
                 
                 w = font.MeasureString(Document.Lines[max.Row][..max.Col]).Width;
                 y = font.LineHeight * max.Row;
-                e.Graphics.FillRectangle(color, textOffsetX, y, w, font.LineHeight);
+                e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX, y, w, font.LineHeight);
             }
         }
         
@@ -1213,7 +1213,7 @@ public sealed class Editor : Drawable {
             // Highlight playing / savestate line
             if (Studio.CelesteService.Connected) {
                 if (Studio.CelesteService.CurrentLine != -1) {
-                    e.Graphics.FillRectangle(Colors.Green,
+                    e.Graphics.FillRectangle(Settings.Instance.Theme.PlayingLine,
                         x: scrollable.ScrollPosition.X,
                         y: Studio.CelesteService.CurrentLine * font.LineHeight,
                         width: textOffsetX - LineNumberPadding,
@@ -1221,13 +1221,13 @@ public sealed class Editor : Drawable {
                 }
                 if (Studio.CelesteService.SaveStateLine != -1) {
                     if (Studio.CelesteService.SaveStateLine == Studio.CelesteService.CurrentLine) {
-                        e.Graphics.FillRectangle(Colors.Blue,
+                        e.Graphics.FillRectangle(Settings.Instance.Theme.Savestate,
                             x: scrollable.ScrollPosition.X,
                             y: Studio.CelesteService.CurrentLine * font.LineHeight,
                             width: 15.0f,
                             height: font.LineHeight);
                     } else {
-                        e.Graphics.FillRectangle(Colors.Blue,
+                        e.Graphics.FillRectangle(Settings.Instance.Theme.Savestate,
                             x: scrollable.ScrollPosition.X,
                             y: Studio.CelesteService.CurrentLine * font.LineHeight,
                             width: textOffsetX - LineNumberPadding,
@@ -1238,11 +1238,11 @@ public sealed class Editor : Drawable {
             
             yPos = 0.0f;
             for (int i = 1; i <= Document.Lines.Count; i++) {
-                e.Graphics.DrawText(font, Colors.White, scrollable.ScrollPosition.X + LineNumberPadding, yPos, i.ToString());
+                e.Graphics.DrawText(font, Settings.Instance.Theme.LineNumber, scrollable.ScrollPosition.X + LineNumberPadding, yPos, i.ToString());
                 yPos += font.LineHeight;
             }
             
-            e.Graphics.DrawLine(Colors.White,
+            e.Graphics.DrawLine(Settings.Instance.Theme.ServiceLine,
                 scrollable.ScrollPosition.X + textOffsetX - LineNumberPadding, 0.0f,
                 scrollable.ScrollPosition.X + textOffsetX - LineNumberPadding, yPos + scrollable.Size.Height);
         }

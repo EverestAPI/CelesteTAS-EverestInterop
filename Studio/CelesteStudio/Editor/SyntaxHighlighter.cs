@@ -30,7 +30,7 @@ public struct LineStyle {
 public class SyntaxHighlighter {
     private const int MaxCacheSize = 32767;
     
-    private Dictionary<string, LineStyle> cache = new();
+    private readonly Dictionary<string, LineStyle> cache = new();
     private Style[] styles = [];
     
     private readonly Font regularFont;
@@ -38,8 +38,9 @@ public class SyntaxHighlighter {
     private readonly Font italicFont;
     private readonly Font boldItalicFont;
     
-    public SyntaxHighlighter(Theme theme, Font font) {
-        LoadTheme(theme);
+    public SyntaxHighlighter(Font font) {
+        LoadTheme(Settings.Instance.Theme);
+        Settings.ThemeChanged += () => LoadTheme(Settings.Instance.Theme);;
         
         regularFont = font;
         boldFont = new Font(font.Family, font.Size, FontStyle.Bold);
@@ -47,9 +48,9 @@ public class SyntaxHighlighter {
         boldItalicFont = new Font(font.Family, font.Size, FontStyle.Bold | FontStyle.Italic);
     }
     
-    public void LoadTheme(Theme theme) {
+    private void LoadTheme(Theme theme) {
         // IMPORTANT: Must be the same order as the StyleType enum!
-        styles = [theme.Action, theme.Angle, theme.Breakpoint, theme.Savestate, theme.Delimiter, theme.Command, theme.Comment, theme.Frame];
+        styles = [theme.Action, theme.Angle, theme.Breakpoint, theme.SavestateBreakpoint, theme.Delimiter, theme.Command, theme.Comment, theme.Frame];
     }
     
     public void DrawLine(Graphics graphics, float x, float y, string line) {

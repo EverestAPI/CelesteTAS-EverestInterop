@@ -13,12 +13,17 @@ public class GameInfoPanel : Panel {
     public GameInfoPanel() {
         var label = new Label {
             Text = DisconnectedText,
-            TextColor = Colors.White,
+            TextColor = Settings.Instance.Theme.StatusFg,
             Font = new(new FontFamily("JetBrains Mono"), 9.0f),
         };
         
+        BackgroundColor = Settings.Instance.Theme.StatusBg;
+        Settings.ThemeChanged += () => {
+            label.TextColor = Settings.Instance.Theme.StatusFg;
+            BackgroundColor = Settings.Instance.Theme.StatusBg;
+        };
+        
         Padding = 5;
-        BackgroundColor = Colors.Black;
         Content = label;
         ContextMenu = new ContextMenu {
             Items = {
