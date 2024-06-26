@@ -164,6 +164,7 @@ public class StudioCommunicationServer : StudioCommunicationBase {
     public void SendHotkeyPressed(HotkeyID hotkey, bool released = false) => PendingWrite = () => SendHotkeyPressedNow(hotkey, released);
     public void ToggleGameSetting(string settingName, object? value) => PendingWrite = () => ToggleGameSettingNow(settingName, value);
     public void RequestDataFromGame(GameDataType gameDataType, object arg) => PendingWrite = () => RequestGameDataNow(gameDataType, arg);
+    public void RecordTAS(string fileName) => PendingWrite = () => RecordTASNow(fileName);
 
     public string GetDataFromGame(GameDataType gameDataType, object? arg = null) {
         _returnData = null;
@@ -225,6 +226,16 @@ public class StudioCommunicationServer : StudioCommunicationBase {
 
         byte[] bytes = BinaryFormatterHelper.ToByteArray(new[] { (byte) gameDataType, arg });
         WriteMessageGuaranteed(new Message(MessageID.GetData, bytes));
+    }
+    
+    private void RecordTASNow(string fileName) {
+        if (!Initialized) {
+            return;
+        }
+        
+        byte[] fileNameBytes = string.IsNullOrEmpty(fileName) ? [] : Encoding.UTF8.GetBytes(fileName);
+        
+        WriteMessageGuaranteed(new Message(MessageID.RecordTAS, fileNameBytes));
     }
 
     #endregion

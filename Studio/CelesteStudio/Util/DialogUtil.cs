@@ -1,3 +1,4 @@
+using System;
 using System.Numerics;
 using Eto.Forms;
 
@@ -27,13 +28,44 @@ public static class DialogUtil
             }
         };
 
-        dialog.DefaultButton = new Button((_, _) => dialog.Close(T.CreateChecked(stepper.Value))) { Text = "OK" };
-        dialog.AbortButton = new Button((_, _) => dialog.Close()) { Text = "Cancel" };
+        dialog.DefaultButton = new Button((_, _) => dialog.Close(T.CreateChecked(stepper.Value))) { Text = "&OK" };
+        dialog.AbortButton = new Button((_, _) => dialog.Close()) { Text = "&Cancel" };
         
         dialog.PositiveButtons.Add(dialog.DefaultButton);
         dialog.NegativeButtons.Add(dialog.AbortButton);
         dialog.Result = input;
             
         return dialog.ShowModal();
+    }
+    
+    public static void ShowRecordDialog() {
+        var textBox = new TextBox { Text = $"{DateTime.Now:yyyy-MM-dd_HH-mm-ss}", Width = 200 };
+        
+        var dialog = new Dialog<bool> {
+            Title = "Record TAS",
+            Content = new StackLayout {
+                Padding = 10,
+                Spacing = 10,
+                VerticalContentAlignment = VerticalAlignment.Center, 
+                Orientation = Orientation.Horizontal,
+                Items = { new Label { Text = "File Name" }, textBox },
+            }
+        };
+        
+        dialog.DefaultButton = new Button((_, _) => dialog.Close(true)) { Text = "&Record" };
+        dialog.AbortButton = new Button((_, _) => dialog.Close(false)) { Text = "&Cancel" };
+        
+        dialog.PositiveButtons.Add(dialog.DefaultButton);
+        dialog.NegativeButtons.Add(dialog.AbortButton);
+        
+        if (!dialog.ShowModal())
+            return;
+        
+        if (string.IsNullOrWhiteSpace(textBox.Text)) {
+            MessageBox.Show("An empty file name is not valid!", MessageBoxButtons.OK, MessageBoxType.Error);
+            return;
+        }
+
+        Studio.CelesteService.Server.RecordTAS(textBox.Text);
     }
 }

@@ -182,7 +182,14 @@ public sealed class Studio : Form {
                     MenuUtils.CreateAction("&Integrate Read Files"),
                     MenuUtils.CreateAction("&Convert to LibTAS Movie..."),
                     new SeparatorMenuItem(),
-                    MenuUtils.CreateAction("&Record TAS..."),
+                    MenuUtils.CreateAction("&Record TAS...", Keys.None, () => {
+                        if (!CelesteService.Connected) {
+                            MessageBox.Show("This feature requires the support of the CelesteTAS mod, please launch the game.", MessageBoxButtons.OK);
+                            // return;
+                        }
+                        
+                        DialogUtil.ShowRecordDialog();
+                    }),
                 }},
                 new SubMenuItem {Text = "&Settings", Items = {
                     MenuUtils.CreateSettingToggle("&Send Inputs to Celeste", nameof(Settings.SendInputsToCeleste), Application.Instance.CommonModifier | Keys.D),
