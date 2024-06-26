@@ -710,7 +710,7 @@ public sealed class Editor : Drawable {
         Document.OnTextChanged(new CaretPosition(minRow, 0), new CaretPosition(maxRow, Document.Lines[maxRow].Length));
     }
     
-    private void OnInsertRoomName() => Document.InsertLineAbove($"#{Studio.CelesteService.LevelName}");
+    private void OnInsertRoomName() => Document.InsertLineAbove($"#lvl_{Studio.CelesteService.LevelName}");
 
     private void OnInsertTime() => Document.InsertLineAbove($"#{Studio.CelesteService.ChapterTime}");
     
