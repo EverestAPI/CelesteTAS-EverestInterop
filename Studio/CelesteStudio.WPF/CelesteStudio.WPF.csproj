@@ -7,7 +7,8 @@
 
     <ItemGroup>
         <ProjectReference Include="..\CelesteStudio\CelesteStudio.csproj"/>
-        <PackageReference Include="Eto.Platform.Wpf" Version="2.8.3"/>
+<!--        <PackageReference Include="Eto.Platform.Wpf" Version="2.8.3"/>-->
+        <ProjectReference Include="..\Eto\src\Eto.Mac\Eto.Wpf.csproj"/>
     </ItemGroup>
 
 </Project>
