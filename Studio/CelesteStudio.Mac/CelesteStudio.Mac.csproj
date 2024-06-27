@@ -11,8 +11,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\CelesteStudio\CelesteStudio.csproj"/>
-<!--        <PackageReference Include="Eto.Platform.Mac64" Version="2.8.3"/>-->
-        <ProjectReference Include="..\Eto\src\Eto.Mac\Eto.Mac64.csproj"/>
+        <PackageReference Include="Eto.Platform.Mac64" Version="2.8.3"/>
     </ItemGroup>
 
 </Project>

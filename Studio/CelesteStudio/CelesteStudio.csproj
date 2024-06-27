@@ -11,8 +11,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-<!--        <PackageReference Include="Eto.Forms" Version="2.8.3"/>-->
-        <ProjectReference Include="..\Eto\src\Eto\Eto.csproj"/>
+        <PackageReference Include="Eto.Forms" Version="2.8.3"/>
     </ItemGroup>
 
     <ItemGroup>

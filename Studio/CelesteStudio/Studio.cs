@@ -28,11 +28,23 @@ public sealed class Studio : Form {
     }
     public static float BorderBottomOffset {
         get {
+            if (Eto.Platform.Instance.IsWpf)
+                return 57.0f;
             if (Eto.Platform.Instance.IsGtk)
                 return 30.0f;
             return 0.0f;
         }
     }
+    public static int WidthRightOffset {
+        get {
+            if (Eto.Platform.Instance.IsWpf)
+                return 16;
+            return 0;
+        }
+    }
+
+    private const int DefaultWidth = 400;
+    private const int DefaultHeight = 800;
 
     public readonly Editor Editor;
     private readonly Scrollable EditorScrollable;
@@ -49,13 +61,16 @@ public sealed class Studio : Form {
         // Setup editor
         {
             EditorScrollable = new Scrollable {
-                Width = 400,
-                Height = 800,
+                Width = DefaultWidth,
+                Height = DefaultHeight,
             };
             Editor = new Editor(Document.Dummy, EditorScrollable);
             EditorScrollable.Content = Editor;
-            // Prevent the scrollable from reacting to keys by itself. (like scrolling with Home/End for example)
-            EditorScrollable.KeyDown += (_, e) => e.Handled = true;
+
+            // On GTK, prevent the scrollable from reacting to Home/End
+            if (Eto.Platform.Instance.IsGtk) {
+                EditorScrollable.KeyDown += (_, e) => e.Handled = true;
+            }
             
             GameInfoPanel = new GameInfoPanel();
             
@@ -76,11 +91,15 @@ public sealed class Studio : Form {
             else
                 NewFile();
         }
+
+        Size = new Size(DefaultWidth, DefaultHeight);
     }
     
     public void RecalculateLayout() {
         GameInfoPanel.Width = Width;
-        EditorScrollable.Size = new Size(Width, (int)(Height - GameInfoPanel.Height - BorderBottomOffset));
+        EditorScrollable.Size = new Size(
+            Math.Max(0, Width - WidthRightOffset), 
+            Math.Max(0, (int)(Height - GameInfoPanel.Height - BorderBottomOffset)));
     }
     
     private MenuBar CreateMenu() {

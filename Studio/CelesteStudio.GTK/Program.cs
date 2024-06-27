@@ -9,6 +9,7 @@ public static class Program {
         try {
             new Application(Eto.Platforms.Gtk).Run(new Studio());
         } catch (Exception ex) {
+            Console.Error.WriteLine(ex);
             ErrorLog.Write(ex);
             ErrorLog.Open();
         }
