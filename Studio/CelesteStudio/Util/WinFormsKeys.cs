@@ -577,6 +577,10 @@ public static class KeysExtensions {
         // Keys.FnRightArrow => Keys.FnRightArrow,
         // Keys.FnUpArrow => Keys.FnUpArrow,
         // Keys.FnDownArrow => Keys.FnDownArrow,
+        Keys.Grave => WinFormsKeys.Oemtilde,
+        Keys.PrintScreen => WinFormsKeys.PrintScreen,
+        // Keys.ContextMenu => ,
+        Keys.Application => WinFormsKeys.LWin,
         _ => throw new ArgumentOutOfRangeException(nameof(keys), keys, null)
     };
 }
