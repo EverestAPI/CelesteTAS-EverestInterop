@@ -57,6 +57,7 @@ public sealed class Studio : Form {
     public Studio() {
         Instance = this;
         Version = Assembly.GetExecutingAssembly().GetName().Version!;
+        Icon = Icon.FromResource("Icon.ico"); 
         
         Settings.Load();
         

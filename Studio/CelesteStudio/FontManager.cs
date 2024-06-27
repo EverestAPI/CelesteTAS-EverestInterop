@@ -1,9 +1,8 @@
 using System.Linq;
 using System.Reflection;
 using Eto.Drawing;
-using Tommy.Serializer;
 
-namespace CelesteStudio.Util;
+namespace CelesteStudio;
 
 public static class FontManager {
     public const string FontFamilyBuiltin = "<builtin>";
@@ -22,7 +21,7 @@ public static class FontManager {
         if (fontFamily == FontFamilyBuiltin) {
             var asm = Assembly.GetExecutingAssembly();
             builtinFontFamily ??= FontFamily.FromStreams(asm.GetManifestResourceNames()
-                .Where(name => name.StartsWith("Assets/JetBrainsMono/") || name.StartsWith("Assets\\JetBrainsMono\\"))
+                .Where(name => name.StartsWith("JetBrainsMono/"))
                 .Select(name => asm.GetManifestResourceStream(name)));
             
             return new Font(builtinFontFamily, size, style);
