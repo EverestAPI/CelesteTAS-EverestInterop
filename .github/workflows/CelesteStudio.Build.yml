@@ -1,6 +1,10 @@
-name: CelesteStudio Build
+name: Build Celeste Studio
 
 on:
+  workflow_call:
+    outputs:
+      runid:
+        value: ${{ jobs.build-linux.outputs.runid }}
   push:
     branches:
       - '*'
@@ -44,8 +48,14 @@ jobs:
         
   build-linux:
     runs-on: ubuntu-latest
+    outputs: 
+      runid: ${{ steps.runid.outputs.runid }}
 
     steps:
+      - name: Get Run ID
+        id: runid
+        run: echo "runid=${{ github.run_id }}" >> $GITHUB_OUTPUT 
+
       - name: Checkout
         uses: actions/checkout@v3
       - name: Setup .NET Core
@@ -96,21 +106,6 @@ jobs:
       - name: Publish ARM64
         run: dotnet publish Studio/CelesteStudio.Mac -c Release -r osx-arm64 --self-contained=true /p:PublishSingleFile=true --output build-arm64
         
-      - name: Fix .app bundle
-        run: |
-          xattr -c build-x64/CelesteStudio.Mac.app
-          xattr -c build-arm64/CelesteStudio.Mac.app
-
-      # GitHub can't manage to keep the file permissions, so we have to do this..
-      - name: Create tarballs
-        run: |
-          pushd build-x64
-          tar czf CelesteStudio-osx-x64.tar.gz CelesteStudio.Mac.app
-          popd
-          pushd build-arm64
-          tar czf CelesteStudio-osx-arm64.tar.gz CelesteStudio.Mac.app
-          popd
-
       - name: Upload x64
         uses: actions/upload-artifact@v4
         with:
