@@ -32,6 +32,8 @@ public sealed class Studio : Form {
                 return 57.0f;
             if (Eto.Platform.Instance.IsGtk)
                 return 30.0f;
+            if (Eto.Platform.Instance.IsMac)
+                return 22.0f;
             return 0.0f;
         }
     }
