@@ -1,0 +1,144 @@
+﻿# ================================== Menu ==================================
+TAS_ENABLED=                    开关
+TAS_ENABLED_DESCRIPTION=        TAS 文件路径：
+TAS_SHOW_HITBOXES=              碰撞箱
+TAS_HITBOX_COLOR_DESCRIPTION_1= 请到标题页 Mod 菜单中修改碰撞箱颜色
+TAS_HITBOX_COLOR_DESCRIPTION_2= 或者在控制台中使用 entity/trigger/platform_hitbox_color 命令
+TAS_SIMPLIFIED_GRAPHICS=        简化图形
+TAS_INFO_HUD=                   信息面板
+TAS_INFO_HUD_DESCRIPTION_1=     按住信息面板快捷键和鼠标左键然后拖放移动信息面板
+TAS_INFO_HUD_DESCRIPTION_2=     双击信息面板快捷键开关信息面板
+TAS_INFO_HUD_DESCRIPTION_3=     按住信息面板快捷键然后用鼠标左键点击监视实体
+TAS_ROUND_VALUES=               数值精度
+TAS_FORWARD_SPEED=              快进速度
+TAS_MORE_OPTIONS=               更多选项
+
+# ================================== Hitbox Submenu ==================================
+TAS_ACTUAL_COLLIDE_HITBOXES=        实际碰撞箱
+TAS_SHOW_TRIGGER_HITBOXES=          触发区域碰撞箱
+TAS_SHOW_UNLOADED_ROOMS_HITBOXES=   未加载房间碰撞箱
+TAS_SHOW_CAMERA_HITBOXES=           镜头碰撞箱
+TAS_SHOW_CYCLE_HITBOX_COLORS=       周期性实体颜色
+TAS_SIMPLIFIED_HITBOXES=            简化碰撞箱
+TAS_UN_COLLIDABLE_HITBOXES_OPACITY= 不可碰撞的实体碰撞箱透明度
+TAS_ENTITY_HITBOX_COLOR=            实体碰撞箱颜色
+TAS_TRIGGER_HITBOX_COLOR=           触发区域碰撞箱颜色
+TAS_PLATFORM_HITBOX_COLOR=          平台碰撞箱颜色
+TAS_CYCLE1_HITBOX_COLOR=            周期 1 颜色
+TAS_CYCLE2_HITBOX_COLOR=            周期 2 颜色
+TAS_CYCLE3_HITBOX_COLOR=            周期 3 颜色
+TAS_CYCLE4_HITBOX_COLOR=            其它周期颜色
+
+# ================================== Simplified Graphics Submenu ==================================
+TAS_GAMEPLAY=                     游戏内容
+TAS_LIGHTING=                     亮度
+TAS_BLOOM_BASE=                   泛光基本值
+TAS_BLOOM_STRENGTH=               泛光强度
+TAS_SPINNER_COLOR=                圆刺颜色
+TAS_DUST_SPRITE_EDGE=             煤球红边
+TAS_SCREEN_WIPE=                  转场黑屏
+TAS_COLOR_GRADE=                  颜色滤镜
+TAS_SOLID_TILES_STYLE=            前景砖块样式
+TAS_BACKGROUND_TILES=             背景砖块
+TAS_BACKDROP=                     背景
+TAS_DECAL=                        贴图
+TAS_PARTICLE=                     粒子
+TAS_DISTORT=                      扭曲特效
+TAS_MINI_TEXT_BOX=                迷你对话框
+TAS_LIGHTNING_STRIKE=             闪电
+TAS_CLUTTERED_ENTITY=             杂乱的实体
+TAS_CLUTTERED_ENTITY_DESCRIPTION= 触手、山顶云朵和眼球
+TAS_HUD=                          HUD
+TAS_HUD_DESCRIPTION=              交谈图标、鸟的教程和一些文字
+TAS_WAVED_EDGE=                   波状边缘
+TAS_SPIKES=                       尖刺
+
+# ================================== Info HUD ==================================
+TAS_INFO_GAME=                             游戏数据
+TAS_INFO_TAS_INPUT=                        TAS 语句
+TAS_INFO_SUBPIXEL_INDICATOR=               亚像素指示器
+TAS_INFO_CUSTOM=                           自定义数据
+TAS_INFO_COPY_CUSTOM_TEMPLATE=             复制自定义数据模板到剪贴板
+TAS_INFO_SET_CUSTOM_TEMPLATE=              读取剪贴板设置自定义数据模板
+TAS_INFO_WATCH_ENTITY=                     监视实体
+TAS_INFO_WATCH_ENTITY_TYPE=                监视实体信息
+TAS_INFO_WATCH_ENTITY_POSITION=            位置
+TAS_INFO_WATCH_ENTITY_DECLARED_ONLY=       特有
+TAS_INFO_WATCH_ENTITY_ALL=                 所有
+TAS_INFO_TEXT_SIZE=                        文字大小
+TAS_INFO_SUBPIXEL_INDICATOR_SIZE=          亚像素指示器大小
+TAS_INFO_OPACITY=                          不透明度
+TAS_INFO_MASKED_OPACITY=                   遮挡人物时的不透明度
+
+# ================================== Info HUD Options ==================================
+TAS_INFO_HUD_OPTIONS_OFF=         关
+TAS_INFO_HUD_OPTIONS_HUD_ONLY=    信息面板
+TAS_INFO_HUD_OPTIONS_STUDIO_ONLY= Studio
+TAS_INFO_HUD_OPTIONS_BOTH=        同时显示
+
+# ================================== Round Values ==================================
+TAS_POSITION_DECIMALS=           坐标小数位数
+TAS_SPEED_DECIMALS=              速度小数位数
+TAS_VELOCITY_DECIMALS=           位移速度小数位数
+TAS_ANGLE_DECIMALS=              角度小数位数
+TAS_CUSTOM_INFO_DECIMALS=        自定义数据小数位数
+TAS_SUBPIXEL_INDICATOR_DECIMALS= 亚像素指示器小数位数
+TAS_SPEED_UNIT=                  速度单位
+TAS_PIXELS_PER_SECOND=           像素/秒
+TAS_PIXELS_PER_FRAME=            像素/帧
+
+# ================================== Fast Forward Submenu ==================================
+TAS_FAST_FORWARD_SPEED=       快进速度
+TAS_SLOW_FORWARD_SPEED=       慢进速度
+
+# ================================== Hotkeys Submenu ==================================
+TAS_HOTKEYS=             快捷键
+TAS_HOTKEYS_DESCRIPTION= 绑定多个按键表示组合键，需要同时按下才能触发相应操作
+
+# ================================== More Options Submenu ==================================
+TAS_CENTER_CAMERA=                   镜头居中
+TAS_CENTER_CAMERA_HORIZONTALLY_ONLY= 镜头只水平居中
+TAS_RESTORE_SETTINGS=                TAS 停止时恢复所有设置
+TAS_LAUNCH_STUDIO_AT_BOOT=           启动游戏时打开 Studio
+TAS_ATTEMPT_TO_CONNECT_TO_STUDIO=    尝试连接 Studio
+TAS_HIDE_FREEZE_FRAMES=              TAS 时跳过冻结帧
+TAS_HIDE_FREEZE_FRAMES_DESCRIPTION_1=运行到冻结帧时自动跳过进入下一帧
+TAS_HIDE_FREEZE_FRAMES_DESCRIPTION_2=仅在 TAS 时启用
+TAS_MOD_9D_LIGHTING=                 修改 9D 亮度
+TAS_IGNORE_GC_COLLECT=               快进时忽略内存回收
+TAS_IGNORE_GC_COLLECT_DESCRIPTION_1= 加快多个章节长度TAS的快进
+TAS_IGNORE_GC_COLLECT_DESCRIPTION_2= 不过会增加内存使用量并可能造成内存不足异常
+
+# ================================== Hotkey Config ==================================
+TAS_KEY_START_STOP=           运行/停止
+TAS_KEY_RESTART=              重新运行
+TAS_KEY_FAST_FORWARD=         快进
+TAS_KEY_FAST_FORWARD_COMMENT= 快进到下一注释
+TAS_KEY_SLOW_FORWARD=         慢进
+TAS_KEY_FRAME_ADVANCE=        步进
+TAS_KEY_PAUSE_RESUME=         暂停/继续
+TAS_KEY_HITBOXES=             碰撞箱
+TAS_KEY_TRIGGER_HITBOXES=     触发区域碰撞箱
+TAS_KEY_SIMPLIFIED_GRAPHICS=  简化图形
+TAS_KEY_CENTER_CAMERA=        镜头居中
+TAS_KEY_LOCK_CAMERA=          锁定镜头
+TAS_KEY_SAVE_STATE=           保存状态
+TAS_KEY_CLEAR_STATE=          清除状态
+TAS_KEY_INFO_HUD=             信息面板
+TAS_KEY_FREE_CAMERA=          镜头控制
+
+# ================================== Option Values ==================================
+TAS_DEFAULT=                  默认
+TAS_HIDE=                     隐藏
+TAS_SIMPLIFY=                 简化
+TAS_RED=                      红色
+TAS_GREEN=                    绿色
+TAS_BLUE=                     蓝色
+TAS_YELLOW=                   黄色
+TAS_PURPLE=                   紫色
+TAS_WHITE=                    白色
+TAS_BLACK=                    黑色
+TAS_TRANSPARENT=              透明
+TAS_OFF=                      关
+TAS_OVERRIDE=                 覆盖
+TAS_APPEND=                   附加

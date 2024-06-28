@@ -36,24 +36,23 @@ public class StudioCommunicationBase {
     private bool waiting;
 
     protected StudioCommunicationBase(string target = "CelesteTAS") {
-        if (PlatformUtils.Mono || PlatformUtils.NonWindows) {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+            sharedMemory = MemoryMappedFile.CreateOrOpen(target, BufferSize);
+        } else {
             string sharedFilePath = Path.Combine(Path.GetTempPath(), $"{target}.share");
-        
+
             FileStream fs;
-            if (File.Exists(sharedFilePath)) {
+            if (File.Exists(sharedFilePath))
+            {
                 fs = new FileStream(sharedFilePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
-            } else {
+            }
+            else
+            {
                 fs = new FileStream(sharedFilePath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
                 fs.SetLength(BufferSize);
             }
-        
-            #if NET7_0
+
             sharedMemory = MemoryMappedFile.CreateFromFile(fs, null, fs.Length, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true);
-            #else
-            sharedMemory = MemoryMappedFile.CreateFromFile(fs, null, fs.Length, MemoryMappedFileAccess.ReadWrite, null, HandleInheritability.None, true);
-            #endif
-        } else {
-            sharedMemory = MemoryMappedFile.CreateOrOpen(target, BufferSize);
         }
 
         string mutexName = $"{target}_Mutex";
