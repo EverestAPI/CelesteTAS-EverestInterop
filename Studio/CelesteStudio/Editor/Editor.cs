@@ -74,13 +74,13 @@ public sealed class Editor : Drawable {
                 Document.Caret.Row = state.CurrentLine;
                 Document.Caret.Col = ActionLine.MaxFramesDigits;
                 Document.Caret = ClampCaret(Document.Caret, wrapLine: false);
+                
+                // Need to redraw the current state
+                Application.Instance.InvokeAsync(() => {
+                    ScrollCaretIntoView(center: true);
+                    Invalidate();
+                });
             }
-            
-            // Need to redraw the current state
-            Application.Instance.InvokeAsync(() => {
-                ScrollCaretIntoView(center: true);
-                Invalidate();
-            });
         };
         
         ContextMenu = new ContextMenu {
@@ -1045,7 +1045,7 @@ public sealed class Editor : Drawable {
             else if (bottom - carY < yLookAhead)
                 scrollY = (int)(carY + yLookAhead - (scrollable.Size.Height - Studio.BorderBottomOffset));
         }
-        
+
         scrollable.ScrollPosition = new Point(
             Math.Max(0, scrollX),
             Math.Max(0, scrollY));
