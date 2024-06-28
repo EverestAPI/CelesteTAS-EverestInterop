@@ -62,6 +62,8 @@ public static class StudioHelper {
     
     [Initialize]
     private static void Initialize() {
+        // INSTALL_STUDIO is only set during builds from Release.yml, since otherwise the URLs / checksums are invalid
+#if INSTALL_STUDIO
         // Check if studio is already up-to-date
         if (!File.Exists(VersionFile) || File.ReadAllText(VersionFile) != CurrentStudioVersion) {
             $"Celeste Studio is outdated. Installing latest version: '{CurrentStudioVersion}'".Log();
@@ -73,6 +75,7 @@ public static class StudioHelper {
             
             DownloadStudio();
         }
+#endif
         
         if (TasSettings.Enabled && TasSettings.LaunchStudioAtBoot) {
             LaunchStudio();

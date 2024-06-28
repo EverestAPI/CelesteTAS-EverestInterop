@@ -1,7 +1,6 @@
 name: Release
 
 on:
-  workflow_dispatch: 
   push:
     tags:
       - "v*.*.*"
@@ -12,29 +11,61 @@ jobs:
   
   release:
     runs-on: ubuntu-latest
-    needs: [build-studio]
+    needs: build-studio
 
     steps:
-      - name: Download studio artifacts
+      - name: Checkout
+        uses: actions/checkout@v3
+            
+      - name: Download Windows x64
         uses: actions/download-artifact@v4
         with:
-          run-id: ${{ needs.build-studio.outputs.runid }}
-        
-      - name: Calculate MD5 checksums
+          name: CelesteStudio-windows-x64
+          path: CelesteStudio-windows-x64
+      - name: Download Linux x64
+        uses: actions/download-artifact@v4
+        with:
+          name: CelesteStudio-linux-x64
+          path: CelesteStudio-linux-x64
+      - name: Download OSX x64
+        uses: actions/download-artifact@v4
+        with:
+          name: CelesteStudio-osx-x64
+          path: CelesteStudio-osx-x64
+
+      # download-artifact automatically unzips them, so we need to re-zip
+      - name: Re-zip artifacts
         run: |
-          md5sum CelesteStudio-windows-x64.zip
-          md5sum CelesteStudio-windows-arm64.zip
-          md5sum CelesteStudio-linux-x64.zip
-          md5sum CelesteStudio-linux-arm.zip
-          md5sum CelesteStudio-linux-arm64.zip
-          md5sum CelesteStudio-osx-x64.zip
-          md5sum CelesteStudio-osx-arm64.zip
+          pushd CelesteStudio-windows-x64
+          zip CelesteStudio-windows-x64.zip **
+          popd
+          pushd CelesteStudio-linux-x64
+          zip CelesteStudio-linux-x64.zip **
+          popd
+          pushd CelesteStudio-osx-x64
+          zip CelesteStudio-osx-x64.zip CelesteStudio.Mac.app
+          popd
       
-      # TOOD: Embed the MD5 checksums into CelesteTAS before building and create a release
-      
-#      - name: Create Release
-#        uses: marvinpinto/action-automatic-releases@latest
-#        with:
-#          repo_token: ${{ secrets.GITHUB_TOKEN }}
-#          prerelease: false
-#          files: CelesteTAS_${{github.ref_name}}.zip
+      - name: Fill-in release info
+        run: |
+          sed -i "s/##STUDIO_VERSION##/{{ github.ref_name }}/" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
+          sed -i "s/##URL_WINDOWS_x64##/https:\/\/github.com\/{{ github.repository }}\/releases\/download\/{{ github.ref_name }}\/CelesteStudio-windows-x64.zip/" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
+          sed -i "s/##URL_LINUX_x64##/https:\/\/github.com\/{{ github.repository }}\/releases\/download\/{{ github.ref_name }}\/CelesteStudio-linux-x64.zip/" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
+          sed -i "s/##URL_OSX_x64##/https:\/\/github.com\/{{ github.repository }}\/releases\/download\/{{ github.ref_name }}\/CelesteStudio-osx-x64.zip/" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
+          sed -i "s/##CHECKSUM_WINDOWS_x64##/$(md5sum CelesteStudio-windows-x64/CelesteStudio-windows-x64.zip | head -c 32)/" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
+          sed -i "s/##CHECKSUM_LINUX_x64##/$(md5sum CelesteStudio-linux-x64/CelesteStudio-linux-x64.zip | head -c 32)/" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
+          sed -i "s/##CHECKSUM_OSX_x64##/$(md5sum CelesteStudio-osx-x64/CelesteStudio-osx-x64.zip | head -c 32)/" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
+
+      - name: Build
+        run: dotnet build CelesteTAS-EverestInterop -c Release -p:DefineConstants=INSTALL_STUDIO
+          
+      - name: Create release
+        uses: marvinpinto/action-automatic-releases@latest
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: false
+          files: |
+            CelesteTAS-EverestInterop.zip 
+            CelesteStudio-windows-x64/CelesteStudio-windows-x64.zip
+            CelesteStudio-linux-x64/CelesteStudio-linux-x64.zip
+            CelesteStudio-osx-x64/CelesteStudio-osx-x64.zip

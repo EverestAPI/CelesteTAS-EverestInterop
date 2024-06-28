@@ -2,9 +2,6 @@ name: Build Celeste Studio
 
 on:
   workflow_call:
-    outputs:
-      runid:
-        value: ${{ jobs.build-linux.outputs.runid }}
   push:
     branches:
       - '*'
@@ -21,70 +18,64 @@ on:
 jobs: 
   build-windows:
     runs-on: windows-latest
-        
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup .NET Core
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0'
 
       - name: Publish x64
         run: dotnet publish Studio/CelesteStudio.WPF -c Release -r win-x64 --self-contained=true /p:PublishSingleFile=true --output build-x64
-      - name: Publish ARM64
-        run: dotnet publish Studio/CelesteStudio.WPF -c Release -r win-arm64 --self-contained=true /p:PublishSingleFile=true --output build-arm64
+#      - name: Publish ARM64
+#        run: dotnet publish Studio/CelesteStudio.WPF -c Release -r win-arm64 --self-contained=true /p:PublishSingleFile=true --output build-arm64
 
       - name: Upload x64
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: CelesteStudio-windows-x64
           path: build-x64/**/*
-      - name: Upload ARM64
-        uses: actions/upload-artifact@v2
-        with:
-            name: CelesteStudio-windows-arm64
-            path: build-arm64/**/*
+#      - name: Upload ARM64
+#        uses: actions/upload-artifact@v4
+#        with:
+#            name: CelesteStudio-windows-arm64
+#            path: build-arm64/**/*
         
   build-linux:
     runs-on: ubuntu-latest
-    outputs: 
-      runid: ${{ steps.runid.outputs.runid }}
 
     steps:
-      - name: Get Run ID
-        id: runid
-        run: echo "runid=${{ github.run_id }}" >> $GITHUB_OUTPUT 
-
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup .NET Core
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0'
 
       - name: Publish x64
         run: dotnet publish Studio/CelesteStudio.GTK -c Release -r linux-x64 --self-contained=true /p:PublishSingleFile=true --output build-x64
-      - name: Publish ARM
-        run: dotnet publish Studio/CelesteStudio.GTK -c Release -r linux-arm --self-contained=true /p:PublishSingleFile=true --output build-arm
-      - name: Publish ARM64
-        run: dotnet publish Studio/CelesteStudio.GTK -c Release -r linux-arm64 --self-contained=true /p:PublishSingleFile=true --output build-arm64
+#      - name: Publish ARM
+#        run: dotnet publish Studio/CelesteStudio.GTK -c Release -r linux-arm --self-contained=true /p:PublishSingleFile=true --output build-arm
+#      - name: Publish ARM64
+#        run: dotnet publish Studio/CelesteStudio.GTK -c Release -r linux-arm64 --self-contained=true /p:PublishSingleFile=true --output build-arm64
 
       - name: Upload x64
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: CelesteStudio-linux-x64
           path: build-x64/**/*
-      - name: Upload ARM
-        uses: actions/upload-artifact@v2
-        with:
-          name: CelesteStudio-linux-arm
-          path: build-arm/**/*
-      - name: Upload ARM64
-        uses: actions/upload-artifact@v2
-        with:
-          name: CelesteStudio-linux-arm64
-          path: build-arm64/**/*
+#      - name: Upload ARM
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: CelesteStudio-linux-arm
+#          path: build-arm/**/*
+#      - name: Upload ARM64
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: CelesteStudio-linux-arm64
+#          path: build-arm64/**/*
         
   build-mac:
     runs-on: macos-13
@@ -103,16 +94,16 @@ jobs:
 
       - name: Publish x64
         run: dotnet publish Studio/CelesteStudio.Mac -c Release -r osx-x64 --self-contained=true /p:PublishSingleFile=true --output build-x64
-      - name: Publish ARM64
-        run: dotnet publish Studio/CelesteStudio.Mac -c Release -r osx-arm64 --self-contained=true /p:PublishSingleFile=true --output build-arm64
-        
+#      - name: Publish ARM64
+#        run: dotnet publish Studio/CelesteStudio.Mac -c Release -r osx-arm64 --self-contained=true /p:PublishSingleFile=true --output build-arm64
+
       - name: Upload x64
         uses: actions/upload-artifact@v4
         with:
           name: CelesteStudio-osx-x64
-          path: build-x64/CelesteStudio-osx-x64.tar.gz
-      - name: Upload ARM64
-        uses: actions/upload-artifact@v4
-        with:
-          name: CelesteStudio-osx-arm64
-          path: build-arm64/CelesteStudio-osx-arm64.tar.gz
+          path: build-x64/**/*
+#      - name: Upload ARM64
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: CelesteStudio-osx-arm64
+#          path: build-arm64/**/*

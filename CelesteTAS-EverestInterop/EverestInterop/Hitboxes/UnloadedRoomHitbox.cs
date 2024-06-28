@@ -501,12 +501,12 @@ public static class UnloadedRoomHitbox {
             }
 
             if (rect.Width == 0 || rect.Height == 0) {
-#if RELEASE
-                continue;
-#else
+#if DEBUG
                 if (textureId.IsEmpty()) {
                     $"[UnloadedRoomHitbox] This entity is not drawn: entityName={dataName}; className={type?.FullName}".DebugLog();
                 }
+#else
+                continue;
 #endif
             }
 

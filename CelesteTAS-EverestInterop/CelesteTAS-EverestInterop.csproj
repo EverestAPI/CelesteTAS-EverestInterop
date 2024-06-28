@@ -55,4 +55,66 @@
         <Copy SourceFiles="$(OutputPath)JetBrains.Profiler.Api.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug'" />
     </Target>
 
+    <Target Name="PackageMod" AfterTargets="CopyFiles" Inputs="$(ZippedFiles)" Outputs="..\CelesteMod.zip" Condition="'$(Configuration)' == 'Release'">
+        <ItemGroup>
+            <FilesToPackage Include="..\everest.yaml;..\bin\**\*.*;..\Audio\**\*.*;..\Dialog\**\*.*;..\Graphics\**\*.*;..\Ahorn\**\*.*;..\Loenn\**\*.*" />
+        </ItemGroup>
+        <PackageMod Files="@(FilesToPackage)" OutputPath="..\CelesteTAS-EverestInterop.zip" />
+    </Target>
+
+    <!-- Inline task used to create a .zip for the mod -->
+    <UsingTask TaskName="PackageMod"
+               TaskFactory="RoslynCodeTaskFactory"
+               AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll" >
+        <ParameterGroup>
+            <Files ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+            <OutputPath ParameterType="System.String" Required="true" />
+        </ParameterGroup>
+        <Task>
+            <Using Namespace="System.IO" />
+            <Using Namespace="System.IO.Compression" />
+            <Code Type="Fragment" Language="cs">
+                <![CDATA[
+                var projectDir = Path.Combine(@"$(ProjectDir)", ".."); // Go one level up, since we're inside the 'Source' directory
+                projectDir = Uri.UnescapeDataString(projectDir);
+            
+                if (File.Exists(OutputPath))
+                    File.Delete(OutputPath);
+
+                using (ZipArchive zip = ZipFile.Open(OutputPath, ZipArchiveMode.Create))
+                {
+                    foreach (var file in Files)
+                    {
+                        string filePath = file.GetMetadata("FullPath");
+                        string entryName = GetRelativePath(projectDir, filePath);
+                        
+                        zip.CreateEntryFromFile(filePath, entryName);
+                    }
+                }
+    
+                string GetRelativePath(string fromPath, string toPath)
+                {
+                    if (string.IsNullOrEmpty(fromPath)) throw new ArgumentNullException(nameof(fromPath));
+                    if (string.IsNullOrEmpty(toPath))   throw new ArgumentNullException(nameof(toPath));
+                
+                    Uri fromUri = new Uri(fromPath);
+                    Uri toUri = new Uri(toPath);
+                
+                    if (fromUri.Scheme != toUri.Scheme) { return toPath; } // path can't be made relative.
+                
+                    Uri relativeUri = fromUri.MakeRelativeUri(toUri);
+                    string relativePath = Uri.UnescapeDataString(relativeUri.ToString());
+                
+                    if (toUri.Scheme.Equals("file", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        relativePath = relativePath.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                    }
+                
+                    return relativePath;
+                }
+            ]]>
+            </Code>
+        </Task>
+    </UsingTask>
+
 </Project>
