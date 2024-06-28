@@ -14,6 +14,7 @@ using StudioCommunication;
 using TAS.Communication;
 using TAS.Module;
 using TAS.Utils;
+using XNAKeys = Microsoft.Xna.Framework.Input.Keys;
 using InputButtons = Microsoft.Xna.Framework.Input.Buttons;
 using Hud = TAS.EverestInterop.InfoHUD.InfoHud;
 using Camera = TAS.EverestInterop.CenterCamera;
@@ -448,9 +449,9 @@ public static class MouseButtons {
 }
 
 public class DefaultButtonBinding2Attribute : DefaultButtonBindingAttribute {
-    public readonly Keys ExtraKey;
+    public readonly XNAKeys ExtraKey;
 
-    public DefaultButtonBinding2Attribute(Buttons button, params Keys[] keys) : base(button, keys.IsEmpty() ? Keys.None : keys[0]) {
-        ExtraKey = keys.Length > 1 ? keys[1] : Keys.None;
+    public DefaultButtonBinding2Attribute(Buttons button, params XNAKeys[] keys) : base(button, keys.IsEmpty() ? XNAKeys.None : keys[0]) {
+        ExtraKey = keys.Length > 1 ? keys[1] : XNAKeys.None;
     }
 }
