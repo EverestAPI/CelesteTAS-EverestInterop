@@ -72,15 +72,15 @@ public class SyntaxHighlighter {
             };
             
             var str = line[segment.StartIdx..(segment.EndIdx + 1)];
-            var size = font.MeasureString(str);
+            float width = font.MeasureWidth(str);
             
             if (style.BackgroundColor is { } bgColor) {
-                graphics.FillRectangle(bgColor, x + xOff, y, size.Width, size.Height);
+                graphics.FillRectangle(bgColor, x + xOff, y, width, font.LineHeight());
             }
             
             graphics.DrawText(font, style.ForegroundColor, x + xOff, y, str);
             
-            xOff += size.Width;
+            xOff += width;
         }
     }
     

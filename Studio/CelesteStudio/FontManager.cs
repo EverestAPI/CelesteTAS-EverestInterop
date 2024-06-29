@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Mime;
 using System.Reflection;
 using Eto.Drawing;
 
@@ -48,11 +49,7 @@ public static class FontManager {
 
         return font.LineHeight;
     }
-    public static SizeF MeasureText(this Font font, string text) {
-        // Can't just use MeasureString, since WPF seems like it reports the smallest possible height?
-        float width = font.MeasureString(text).Width;
-        return new SizeF(width, font.LineHeight());
-    }
+    public static float MeasureWidth(this Font font, string text) => font.CharWidth() * text.Length; 
 
     public static void OnFontChanged() {
         // Clear cached fonts

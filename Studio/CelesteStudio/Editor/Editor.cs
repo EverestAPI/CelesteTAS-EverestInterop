@@ -209,7 +209,7 @@ public sealed class Editor : Drawable {
         Document.Caret.Row = Math.Clamp(Document.Caret.Row, 0, Document.Lines.Count - 1);
         Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length);
         
-        textOffsetX = Font.MeasureText("X").Width * Document.Lines.Count.Digits() + LineNumberPadding * 3.0f;
+        textOffsetX = Font.CharWidth() * Document.Lines.Count.Digits() + LineNumberPadding * 3.0f;
         
         // Calculate bounds and apply wrapping
         commentLineWraps.Clear();
@@ -272,17 +272,15 @@ public sealed class Editor : Drawable {
                     var subLine = line[startIdx..endIdx];
                     wrappedLines.Add((subLine, startIdx));
 
-                    var size = Font.MeasureText(subLine);
-                    width = Math.Max(width, size.Width);
-                    height += size.Height;
+                    width = Math.Max(width, Font.MeasureWidth(subLine));
+                    height += Font.LineHeight();
                 }
                 
                 commentLineWraps.Add(row, (startOffset, wrappedLines.ToArray()));
                 visualRow += wrappedLines.Count;
             } else {
-                var size = Font.MeasureText(line);
-                width = Math.Max(width, size.Width);
-                height += size.Height;
+                width = Math.Max(width, Font.MeasureWidth(line));
+                height += Font.LineHeight();
                 visualRow += 1;
             }
         }
@@ -1169,7 +1167,7 @@ public sealed class Editor : Drawable {
         
         // Always scroll horizontally, since we want to stay as left as possible
         const float scrollStopPadding = 10.0f;
-        int scrollX = Font.CharWidth() * GetVisualLine(caretPos.Row).Length < (scrollable.Width - Studio.BorderRightOffset - scrollStopPadding)
+        int scrollX = Font.MeasureWidth(GetVisualLine(caretPos.Row)) < (scrollable.Width - Studio.BorderRightOffset - scrollStopPadding)
             ? 0 // Don't scroll when the line is shorter anyway
             : (int)((carX + xLookAhead) - (scrollable.Size.Width - Studio.BorderRightOffset));
         int scrollY = scrollablePosition.Y;
@@ -1399,7 +1397,7 @@ public sealed class Editor : Drawable {
         // Draw suffix text
         if (Studio.CommunicationWrapper.Connected) {
             const float padding = 10.0f;
-            float suffixWidth = Font.MeasureText(Studio.CommunicationWrapper.CurrentLineSuffix).Width; 
+            float suffixWidth = Font.MeasureWidth(Studio.CommunicationWrapper.CurrentLineSuffix); 
             
             e.Graphics.DrawText(Font, Settings.Instance.Theme.PlayingFrame,
                 x: scrollablePosition.X + scrollable.Width - suffixWidth - padding,
@@ -1432,17 +1430,17 @@ public sealed class Editor : Drawable {
                 e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w, h);
             } else {
                 float x = Font.CharWidth() * min.Col + textOffsetX;
-                float w = Font.CharWidth() * GetVisualLine(min.Row)[min.Col..].Length;
+                float w = Font.MeasureWidth(GetVisualLine(min.Row)[min.Col..]);
                 float y = Font.LineHeight() * min.Row;
                 e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w, Font.LineHeight());
                 
                 for (int i = min.Row + 1; i < max.Row; i++) {
-                    w = Font.CharWidth() * GetVisualLine(i).Length;
+                    w = Font.MeasureWidth(GetVisualLine(i));
                     y = Font.LineHeight() * i;
                     e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX, y, w, Font.LineHeight());
                 }
                 
-                w = Font.CharWidth() * GetVisualLine(max.Row)[..max.Col].Length;
+                w = Font.MeasureWidth(GetVisualLine(max.Row)[..max.Col]);
                 y = Font.LineHeight() * max.Row;
                 e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX, y, w, Font.LineHeight());
             }

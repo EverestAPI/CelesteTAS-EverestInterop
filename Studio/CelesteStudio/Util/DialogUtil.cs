@@ -82,8 +82,8 @@ public static class DialogUtil
             float maxWidth = 0.0f;
             foreach (var line in previewText) {
                 highlighter.DrawLine(e.Graphics, 0.0f, yPos, line);
+                maxWidth = Math.Max(maxWidth, font.MeasureWidth(line));
                 yPos += font.LineHeight();
-                maxWidth = Math.Max(maxWidth, font.MeasureString(line).Width);
             }
             
             Size = new((int)maxWidth, (int)yPos);
