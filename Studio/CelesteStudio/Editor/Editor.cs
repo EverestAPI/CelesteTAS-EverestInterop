@@ -565,11 +565,22 @@ public sealed class Editor : Drawable {
         }
         // Just write it as text
         else {
-            if (e.Text == "#")
-                // Encourage having a space before comments (so they aren't labels)
-                Document.Insert("# ");
-            else
+            // Encourage having a space before comments (so they aren't labels)
+            // However still allow easily inserting multiple #'s
+            if (e.Text == "#") {
+                var currLine = Document.Lines[Document.Caret.Row];
+                bool onlyComment = currLine.All(c => char.IsWhiteSpace(c) || c == '#');
+
+                if (onlyComment) {
+                    var newLine = $"{currLine.TrimEnd()}# ";
+                    Document.ReplaceLine(Document.Caret.Row, newLine);
+                    Document.Caret.Col = desiredVisualCol = newLine.Length;
+                } else {
+                    Document.Insert("#");    
+                }
+            } else {
                 Document.Insert(e.Text);
+            }
             
             // But turn it into an action line if possible
             if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out var newActionLine)) {
