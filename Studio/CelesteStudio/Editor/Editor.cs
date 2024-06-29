@@ -336,7 +336,7 @@ public sealed class Editor : Drawable {
                 return row - 1;
             }
         }
-        return row;
+        return row - 1;
     }
     private string GetVisualLine(int visualRow) {
         int row = GetActualRow(visualRow);
