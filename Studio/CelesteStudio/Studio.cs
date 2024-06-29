@@ -86,7 +86,9 @@ public sealed class Studio : Form {
             };
             
             SizeChanged += (_, _) => RecalculateLayout();
-            Settings.Changed += () => Menu = CreateMenu(); // Recreate menu to reflect changes
+            
+            ApplySettings();
+            Settings.Changed += ApplySettings;
             
             // Re-open last file if possible
             if (Settings.Instance.RecentFiles.Count > 0 && !string.IsNullOrWhiteSpace(Settings.Instance.RecentFiles[0]) && File.Exists(Settings.Instance.RecentFiles[0]))
@@ -103,6 +105,11 @@ public sealed class Studio : Form {
         EditorScrollable.Size = new Size(
             Math.Max(0, Width - WidthRightOffset), 
             Math.Max(0, (int)(Height - GameInfoPanel.Height - BorderBottomOffset)));
+    }
+    
+    private void ApplySettings() {
+        Topmost = Settings.Instance.AlwaysOnTop;
+        Menu = CreateMenu(); // Recreate menu to reflect changes
     }
     
     private MenuBar CreateMenu() {
