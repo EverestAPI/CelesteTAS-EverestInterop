@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Eto.Drawing;
@@ -30,6 +31,15 @@ public static class FontManager {
         }
     }
     
+    private static readonly Dictionary<Font, float> charWidthCache = new();
+    public static float CharWidth(this Font font) {
+        if (charWidthCache.TryGetValue(font, out float width))
+            return width;
+        
+        width = font.MeasureString("X").Width;
+        charWidthCache.Add(font, width);
+        return width;
+    } 
     public static float LineHeight(this Font font) {
         if (Eto.Platform.Instance.IsWpf) {
             // WPF reports the line height a bit to small for some reason?

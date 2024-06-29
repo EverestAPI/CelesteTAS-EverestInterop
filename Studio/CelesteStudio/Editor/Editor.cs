@@ -7,6 +7,8 @@ using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
 using StudioCommunication;
+using WrapLine = (string Line, int Index);
+using WrapEntry = (int StartOffset, (string Line, int Index)[] Lines);
 
 namespace CelesteStudio;
 
@@ -42,6 +44,10 @@ public sealed class Editor : Drawable {
     private const float LineNumberPadding = 5.0f;
     private float textOffsetX;
     
+    private readonly Dictionary<int, WrapEntry> commentLineWraps = new();
+    // Wrapping causes the internal vs. visual rows to change
+    private int[] visualRows = [];
+    
     private static readonly Regex UncommentedBreakpointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
     private static readonly Regex CommentedBreakpointRegex = new(@"^\s*#+\*\*\*", RegexOptions.Compiled);
     private static readonly Regex AllBreakpointRegex = new(@"^\s*#*\*\*\*", RegexOptions.Compiled);
@@ -68,6 +74,8 @@ public sealed class Editor : Drawable {
             scrollablePosition = e.ScrollPosition;
             Invalidate();
         };
+        // Update wrapped lines
+        scrollable.SizeChanged += (_, _) => Recalc();
 
         Studio.CommunicationWrapper.Server.StateUpdated += state => {
             if (state.CurrentLine != -1) {
@@ -200,13 +208,78 @@ public sealed class Editor : Drawable {
         
         textOffsetX = Font.MeasureText("X").Width * Document.Lines.Count.Digits() + LineNumberPadding * 3.0f;
         
-        // Calculate bounds
+        // Calculate bounds and apply wrapping
+        commentLineWraps.Clear();
+        Array.Resize(ref visualRows, Document.Lines.Count);
+        
         float width = 0.0f, height = 0.0f;
+        
+        for (int row = 0, visualRow = 0; row < Document.Lines.Count; row++) {
+            string line = Document.Lines[row];
+            visualRows[row] = visualRow;
 
-        foreach (var line in Document.Lines) {
-            var size = Font.MeasureText(line);
-            width = Math.Max(width, size.Width);
-            height += size.Height;
+            if (line.TrimStart().StartsWith("#")) {
+                // Wrap comments into multiple lines when hitting the left edge
+                var wrappedLines = new List<WrapLine>();
+                float charWidth = (scrollable.Width - Studio.BorderRightOffset) / Font.CharWidth() - 1.0f; // The font is monospace
+                
+                int idx = 0;
+                int startOffset = -1;
+                while (idx < line.Length) {
+                    int subIdx = 0;
+                    int startIdx = idx;
+                    int endIdx = -1;
+                    for (; idx < line.Length; idx++, subIdx++) {
+                        char c = line[idx];
+                        
+                        // Skip first #'s and whitespace
+                        if (startOffset == -1) {
+                            if (c == '#' || char.IsWhiteSpace(c))
+                                continue;
+                            startOffset = idx;
+                            charWidth -= startOffset;
+                        }
+                        
+                        // End the line if we're beyond the width and have reached whitespace
+                        if (char.IsWhiteSpace(c)) {
+                            endIdx = idx;
+                        }
+                        if (idx == line.Length - 1) {
+                            endIdx = line.Length;
+                        }
+                        
+                        if (endIdx != -1 && subIdx >= charWidth) {
+                            break;
+                        }
+                    }
+                    
+                    // The comment only contains #'s and whitespace. Abort wrapping
+                    if (endIdx == -1) {
+                        wrappedLines = [(line, 0)];
+                        break;
+                    }
+                    
+                    if (idx != line.Length) {
+                        // Snap index back to line break
+                        idx = endIdx + 1;
+                    }
+                    
+                    var subLine = line[startIdx..endIdx];
+                    wrappedLines.Add((subLine, startIdx));
+
+                    var size = Font.MeasureText(subLine);
+                    width = Math.Max(width, size.Width);
+                    height += size.Height;
+                }
+                
+                commentLineWraps.Add(row, (startOffset, wrappedLines.ToArray()));
+                visualRow += wrappedLines.Count;
+            } else {
+                var size = Font.MeasureText(line);
+                width = Math.Max(width, size.Width);
+                height += size.Height;
+                visualRow += 1;
+            }
         }
         
         const float paddingRight = 50.0f;
@@ -219,6 +292,67 @@ public sealed class Editor : Drawable {
             Size = new((int)(width + textOffsetX + paddingRight), (int)(height + paddingBottom));
         
         Invalidate();
+    }
+    
+    private CaretPosition GetVisualPosition(CaretPosition position) {
+        if (!commentLineWraps.TryGetValue(position.Row, out var wrap))
+            return new CaretPosition(visualRows[position.Row], position.Col);
+        
+        // for (int i = wrap.Lines.Length - 1; i >= 0; i--) {
+        //     var line = wrap.Lines[i];
+        //     if (line.Index > )
+        // }
+        
+        // TODO: Maybe don't use LINQ here for performance?
+        var (line, lineIdx) = wrap.Lines
+            .Select((line, idx) => (line, idx))
+            .Reverse()
+            .FirstOrDefault(line => line.line.Index <= position.Col);
+        
+        int xIdent = lineIdx == 0 ? 0 : wrap.StartOffset;
+        
+        return new CaretPosition(
+            visualRows[position.Row] + lineIdx,
+            position.Col - line.Index + xIdent);
+    }
+    private CaretPosition GetActualPosition(CaretPosition position) {
+        int row = GetActualRow(position.Row);
+        
+        int col = position.Col;
+        if (commentLineWraps.TryGetValue(row, out var wrap)) {
+            int idx = position.Row - visualRows[row];
+            int xIdent = idx == 0 ? 0 : wrap.StartOffset;
+            col += wrap.Lines[idx].Index - xIdent;
+        }
+        
+        return new CaretPosition(row, col);
+    }
+    
+    private int GetActualRow(int visualRow) {
+        // There is no good way to find the reverse other than just iterating all lines
+        // TODO: Maybe improve this?
+        int row = 0;
+        for (; row < Document.Lines.Count; row++) {
+            if (visualRows[row] > visualRow) {
+                // We just overshot it by 1
+                return row - 1;
+            }
+        }
+        return row;
+    }
+    private string GetVisualLine(int visualRow) {
+        int row = GetActualRow(visualRow);
+        
+        if (commentLineWraps.TryGetValue(row, out var wrap)) {
+            int idx = visualRow - visualRows[row];
+            if (idx == 0) {
+                return wrap.Lines[idx].Line;
+            } else {
+                return $"{new string(' ', wrap.StartOffset)}{wrap.Lines[idx].Line}";
+            }            
+        }
+        
+        return Document.Lines[row];
     }
     
     protected override void OnKeyDown(KeyEventArgs e) {
@@ -327,7 +461,6 @@ public sealed class Editor : Drawable {
         
         char typedCharacter = char.ToUpper(e.Text[0]);
         int leadingSpaces = line.Length - line.TrimStart().Length;
-        bool startOfLine = Document.Caret.Col <= leadingSpaces + 1;
         
         // If it's an action line, handle it ourselves
         if (ActionLine.TryParse(line, out var actionLine) && e.Text.Length == 1) {
@@ -1025,13 +1158,15 @@ public sealed class Editor : Drawable {
         const float xLookAhead = 50.0f;
         const float yLookAhead = 50.0f;
         
-        float carX = Font.MeasureText(Document.Lines[Document.Caret.Row][..Document.Caret.Col]).Width;
-        float carY = Font.LineHeight() * Document.Caret.Row;
+        var caretPos = GetVisualPosition(Document.Caret);
+        float carX = Font.CharWidth() * caretPos.Col;
+        float carY = Font.LineHeight() * caretPos.Row;
         
         float top = scrollablePosition.Y;
         float bottom = (scrollable.Size.Height - Studio.BorderBottomOffset) + scrollablePosition.Y;
         
         // Always scroll horizontally, since we want to stay as left as possible
+        // TODO: Don't apply x look-ahead if the line is shorter anyway
         int scrollX = (int)((carX + xLookAhead) - (scrollable.Size.Width - Studio.BorderRightOffset));
         int scrollY = scrollablePosition.Y;
         
@@ -1099,11 +1234,11 @@ public sealed class Editor : Drawable {
             CaretMovementType.CharRight => ClampCaret(new CaretPosition(Document.Caret.Row, Document.Caret.Col + 1)),
             CaretMovementType.WordLeft => ClampCaret(GetNextWordCaretPosition(-1)),
             CaretMovementType.WordRight => ClampCaret(GetNextWordCaretPosition(1)),
-            CaretMovementType.LineUp => ClampCaret(new CaretPosition(Document.Caret.Row - 1, Document.Caret.Col), wrapLine: false),
-            CaretMovementType.LineDown => ClampCaret(new CaretPosition(Document.Caret.Row + 1, Document.Caret.Col), wrapLine: false),
+            CaretMovementType.LineUp => ClampCaret(GetNextVisualLinePosition(-1), wrapLine: false),
+            CaretMovementType.LineDown => ClampCaret(GetNextVisualLinePosition(1), wrapLine: false),
             // TODO: Page Up / Page Down
-            CaretMovementType.PageUp => ClampCaret(new CaretPosition(Document.Caret.Row - 1, Document.Caret.Col), wrapLine: false),
-            CaretMovementType.PageDown => ClampCaret(new CaretPosition(Document.Caret.Row + 1, Document.Caret.Col), wrapLine: false),
+            CaretMovementType.PageUp => ClampCaret(GetNextVisualLinePosition(-1), wrapLine: false),
+            CaretMovementType.PageDown => ClampCaret(GetNextVisualLinePosition(1), wrapLine: false),
             CaretMovementType.LineStart => ClampCaret(new CaretPosition(Document.Caret.Row, 0), wrapLine: false),
             CaretMovementType.LineEnd => ClampCaret(new CaretPosition(Document.Caret.Row, Document.Lines[Document.Caret.Row].Length), wrapLine: false),
             CaretMovementType.DocumentStart => ClampCaret(new CaretPosition(0, 0), wrapLine: false),
@@ -1147,6 +1282,11 @@ public sealed class Editor : Drawable {
                 _ => throw new UnreachableException(),
             };
         }
+    }
+    
+    private CaretPosition GetNextVisualLinePosition(int dist) {
+        var visualPos = GetVisualPosition(Document.Caret);
+        return GetActualPosition(new CaretPosition(visualPos.Row + dist, visualPos.Col));
     }
 
     #endregion
@@ -1204,13 +1344,11 @@ public sealed class Editor : Drawable {
     private void SetCaretPosition(PointF location) {
         location.X -= textOffsetX;
         
-        int row = Math.Clamp((int) MathF.Floor(location.Y / Font.LineHeight()), 0, Document.Lines.Count - 1);
-        var line = Document.Lines[row];
-        
+        int visualRow = (int)(location.Y / Font.LineHeight());
         // Since we use a monospace font, we can just calculate the column
-        int col = Math.Clamp((int) MathF.Floor(location.X / Font.MeasureText("X").Width), 0, line.Length);
+        int visualCol = (int)(location.X / Font.CharWidth());
         
-        Document.Caret = ClampCaret(new CaretPosition(row, col), wrapLine: false);
+        Document.Caret = ClampCaret(GetActualPosition(new CaretPosition(visualRow, visualCol)), wrapLine: false);
         
         var newLine = Document.Lines[Document.Caret.Row];
         if (ActionLine.TryParse(newLine, out var actionLine)) {
@@ -1225,17 +1363,33 @@ public sealed class Editor : Drawable {
     protected override void OnPaint(PaintEventArgs e) {
         e.Graphics.AntiAlias = true;
         
+        // To be reused below. Kinda annoying how C# handles out parameter confilics
+        WrapEntry wrap;
+        
         const int offscreenLinePadding = 3;
 
-        int topLine = Math.Max(0, (int)(scrollablePosition.Y / Font.LineHeight()) - offscreenLinePadding);
-        int bottomLine = Math.Min(Document.Lines.Count - 1, (int)((scrollablePosition.Y + scrollable.Height) / Font.LineHeight()) + offscreenLinePadding);
+        int topRow = Math.Max(0, (int)(scrollablePosition.Y / Font.LineHeight()) - offscreenLinePadding);
+        int bottomRow = Math.Min(Document.Lines.Count - 1, (int)((scrollablePosition.Y + scrollable.Height) / Font.LineHeight()) + offscreenLinePadding);
         
         // Draw text
-        float yPos = topLine * Font.LineHeight();
-        for (int i = topLine; i <= bottomLine; i++) {
-            string line = Document.Lines[i];
-            highlighter.DrawLine(e.Graphics, textOffsetX, yPos, line);
-            yPos += Font.LineHeight();
+        using var commentBrush = new SolidBrush(Settings.Instance.Theme.Comment.ForegroundColor);
+        
+        float yPos = topRow * Font.LineHeight();
+        for (int row = topRow; row <= bottomRow; row++) {
+            string line = Document.Lines[row];
+            
+            if (commentLineWraps.TryGetValue(row, out wrap)) {
+                for (int i = 0; i < wrap.Lines.Length; i++) {
+                    var subLine = wrap.Lines[i].Line;
+                    float xIdent = i == 0 ? 0 : wrap.StartOffset * Font.CharWidth();
+                    
+                    e.Graphics.DrawText(Font, commentBrush, textOffsetX + xIdent, yPos, subLine);
+                    yPos += Font.LineHeight();
+                }
+            } else {
+                highlighter.DrawLine(e.Graphics, textOffsetX, yPos, line);
+                yPos += Font.LineHeight();
+            }
         }
         
         // Draw suffix text
@@ -1249,9 +1403,10 @@ public sealed class Editor : Drawable {
                 Studio.CommunicationWrapper.CurrentLineSuffix);
         }
         
-        float carX = Font.MeasureText(Document.Lines[Document.Caret.Row][..Document.Caret.Col]).Width + textOffsetX;
-        float carY = Font.LineHeight() * Document.Caret.Row;
-
+        var caretPos = GetVisualPosition(Document.Caret);
+        float carX = Font.CharWidth() * caretPos.Col + textOffsetX;
+        float carY = Font.LineHeight() * caretPos.Row;
+        
         // Highlight caret line
         e.Graphics.FillRectangle(Settings.Instance.Theme.CurrentLine, 0.0f, carY, scrollable.Width, Font.LineHeight());
         
@@ -1262,28 +1417,28 @@ public sealed class Editor : Drawable {
         
         // Draw selection
         if (!Document.Selection.Empty) {
-            var min = Document.Selection.Min;
-            var max = Document.Selection.Max;
+            var min = GetVisualPosition(Document.Selection.Min);
+            var max = GetVisualPosition(Document.Selection.Max);
             
             if (min.Row == max.Row) {
-                float x = Font.MeasureText(Document.Lines[min.Row][..min.Col]).Width + textOffsetX;
-                float w = Font.MeasureText(Document.Lines[min.Row][min.Col..max.Col]).Width;
+                float x = Font.CharWidth() * min.Col + textOffsetX;
+                float w = Font.CharWidth() * (max.Col - min.Col);
                 float y = Font.LineHeight() * min.Row;
                 float h = Font.LineHeight();
                 e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w, h);
             } else {
-                float x = Font.MeasureText(Document.Lines[min.Row][..min.Col]).Width + textOffsetX;
-                float w = Font.MeasureText(Document.Lines[min.Row][min.Col..]).Width;
+                float x = Font.CharWidth() * min.Col + textOffsetX;
+                float w = Font.CharWidth() * GetVisualLine(min.Row)[min.Col..].Length;
                 float y = Font.LineHeight() * min.Row;
                 e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w, Font.LineHeight());
                 
                 for (int i = min.Row + 1; i < max.Row; i++) {
-                    w = Font.MeasureText(Document.Lines[i]).Width;
+                    w = Font.CharWidth() * GetVisualLine(i).Length;
                     y = Font.LineHeight() * i;
                     e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX, y, w, Font.LineHeight());
                 }
                 
-                w = Font.MeasureText(Document.Lines[max.Row][..max.Col]).Width;
+                w = Font.CharWidth() * GetVisualLine(max.Row)[..max.Col].Length;
                 y = Font.LineHeight() * max.Row;
                 e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX, y, w, Font.LineHeight());
             }
@@ -1323,10 +1478,15 @@ public sealed class Editor : Drawable {
                 }
             }
             
-            yPos = topLine * Font.LineHeight();
-            for (int i = topLine; i <= bottomLine; i++) {
-                e.Graphics.DrawText(Font, Settings.Instance.Theme.LineNumber, scrollablePosition.X + LineNumberPadding, yPos, (i + 1).ToString());
-                yPos += Font.LineHeight();
+            yPos = topRow * Font.LineHeight();
+            for (int row = topRow; row <= bottomRow; row++) {
+                e.Graphics.DrawText(Font, Settings.Instance.Theme.LineNumber, scrollablePosition.X + LineNumberPadding, yPos, (row + 1).ToString());
+                
+                if (commentLineWraps.TryGetValue(row, out wrap)) {
+                    yPos += Font.LineHeight() * wrap.Lines.Length;
+                } else {
+                    yPos += Font.LineHeight();
+                }
             }
             
             e.Graphics.DrawLine(Settings.Instance.Theme.ServiceLine,
