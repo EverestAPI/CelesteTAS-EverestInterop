@@ -56,6 +56,7 @@ public sealed class Settings {
     public int AutoBackupRate = 1;
     public int AutoBackupCount = 100;
     public bool FindMatchCase;
+    public bool WordWrapComments = true;
     
     public string FontFamily = FontManager.FontFamilyBuiltin;
     public float EditorFontSize = 12.0f;

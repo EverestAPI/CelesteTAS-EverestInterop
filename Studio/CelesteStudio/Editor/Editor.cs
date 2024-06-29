@@ -56,7 +56,10 @@ public sealed class Editor : Drawable {
     public Editor(Document document, Scrollable scrollable) {
         this.document = document;
         this.scrollable = scrollable;
-
+        
+        // Reflect setting changes
+        Settings.Changed += Recalc;
+        
         highlighter = new(FontManager.EditorFontRegular, FontManager.EditorFontBold, FontManager.EditorFontItalic, FontManager.EditorFontBoldItalic);
         Settings.FontChanged += () => {
             highlighter = new(FontManager.EditorFontRegular, FontManager.EditorFontBold, FontManager.EditorFontItalic, FontManager.EditorFontBoldItalic);
@@ -218,7 +221,7 @@ public sealed class Editor : Drawable {
             string line = Document.Lines[row];
             visualRows[row] = visualRow;
 
-            if (line.TrimStart().StartsWith("#")) {
+            if (Settings.Instance.WordWrapComments && line.TrimStart().StartsWith("#")) {
                 // Wrap comments into multiple lines when hitting the left edge
                 var wrappedLines = new List<WrapLine>();
                 float charWidth = (scrollable.Width - Studio.BorderRightOffset) / Font.CharWidth() - 1.0f; // The font is monospace

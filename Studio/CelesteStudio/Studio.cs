@@ -222,6 +222,7 @@ public sealed class Studio : Form {
                     MenuUtils.CreateSettingToggle("Auto Remove Mutually Exclusive Actions", nameof(Settings.AutoRemoveMutuallyExclusiveActions)),
                     MenuUtils.CreateSettingToggle("Show Game Info", nameof(Settings.ShowGameInfo)),
                     MenuUtils.CreateSettingToggle("Always on Top", nameof(Settings.AlwaysOnTop)),
+                    MenuUtils.CreateSettingToggle("Word Wrap Comments", nameof(Settings.WordWrapComments)),
                     new SubMenuItem {Text = "Automatic Backups", Items = {
                         MenuUtils.CreateSettingToggle("Enabled", nameof(Settings.AutoBackupEnabled)),
                         MenuUtils.CreateSettingNumberInput("Backup Rate (minutes)", nameof(Settings.AutoBackupRate), 0, int.MaxValue, 1),
