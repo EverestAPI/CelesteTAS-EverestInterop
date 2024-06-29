@@ -562,7 +562,11 @@ public sealed class Editor : Drawable {
         }
         // Just write it as text
         else {
-            Document.Insert(e.Text);
+            if (e.Text == "#")
+                // Encourage having a space before comments (so they aren't labels)
+                Document.Insert("# ");
+            else
+                Document.Insert(e.Text);
             
             // But turn it into an action line if possible
             if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out var newActionLine)) {
