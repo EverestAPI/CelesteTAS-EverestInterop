@@ -411,9 +411,12 @@ public sealed class Editor : Drawable {
                 break;
             default:
                 // Search through context menu for hotkeys
-                foreach (var item in ContextMenu.Items)
-                {
-                    if (item.Shortcut == e.KeyData) {
+                if (e.Key != Keys.None) {
+                    foreach (var item in ContextMenu.Items) {
+                        if (item.Shortcut != e.KeyData) {
+                            continue;
+                        }
+                        
                         item.PerformClick();
                         e.Handled = true;
                         break;
