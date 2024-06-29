@@ -224,7 +224,9 @@ public sealed class Editor : Drawable {
             if (Settings.Instance.WordWrapComments && line.TrimStart().StartsWith("#")) {
                 // Wrap comments into multiple lines when hitting the left edge
                 var wrappedLines = new List<WrapLine>();
-                float charWidth = (scrollable.Width - Studio.BorderRightOffset) / Font.CharWidth() - 1.0f; // The font is monospace
+
+                const int charPadding = 1;
+                float charWidth = (scrollable.Width - Studio.BorderRightOffset) / Font.CharWidth() - 1 - charPadding; // -1 because we overshoot by 1 while iterating
                 
                 int idx = 0;
                 int startOffset = -1;
@@ -300,11 +302,6 @@ public sealed class Editor : Drawable {
     private CaretPosition GetVisualPosition(CaretPosition position) {
         if (!commentLineWraps.TryGetValue(position.Row, out var wrap))
             return new CaretPosition(visualRows[position.Row], position.Col);
-        
-        // for (int i = wrap.Lines.Length - 1; i >= 0; i--) {
-        //     var line = wrap.Lines[i];
-        //     if (line.Index > )
-        // }
         
         // TODO: Maybe don't use LINQ here for performance?
         var (line, lineIdx) = wrap.Lines
@@ -577,7 +574,6 @@ public sealed class Editor : Drawable {
         }
         
         ScrollCaretIntoView();
-        
         Recalc();
     }
     
@@ -1172,8 +1168,10 @@ public sealed class Editor : Drawable {
         float bottom = (scrollable.Size.Height - Studio.BorderBottomOffset) + scrollablePosition.Y;
         
         // Always scroll horizontally, since we want to stay as left as possible
-        // TODO: Don't apply x look-ahead if the line is shorter anyway
-        int scrollX = (int)((carX + xLookAhead) - (scrollable.Size.Width - Studio.BorderRightOffset));
+        const float scrollStopPadding = 10.0f;
+        int scrollX = Font.CharWidth() * GetVisualLine(caretPos.Row).Length < (scrollable.Width - Studio.BorderRightOffset - scrollStopPadding)
+            ? 0 // Don't scroll when the line is shorter anyway
+            : (int)((carX + xLookAhead) - (scrollable.Size.Width - Studio.BorderRightOffset));
         int scrollY = scrollablePosition.Y;
         
         if (center) {
