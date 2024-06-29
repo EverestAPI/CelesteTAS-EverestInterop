@@ -44,6 +44,9 @@ public sealed class Editor : Drawable {
     private const float LineNumberPadding = 5.0f;
     private float textOffsetX;
     
+    // When editing a long line and moving to a short line, "remember" the column on the long line, unless the caret has been moved. 
+    private int desiredVisualCol;
+    
     private readonly Dictionary<int, WrapEntry> commentLineWraps = new();
     // Wrapping causes the internal vs. visual rows to change
     private int[] visualRows = [];
@@ -83,7 +86,7 @@ public sealed class Editor : Drawable {
         Studio.CommunicationWrapper.Server.StateUpdated += state => {
             if (state.CurrentLine != -1) {
                 Document.Caret.Row = state.CurrentLine;
-                Document.Caret.Col = ActionLine.MaxFramesDigits;
+                Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
                 Document.Caret = ClampCaret(Document.Caret, wrapLine: false);
                 
                 // Need to redraw the current state
@@ -472,9 +475,9 @@ public sealed class Editor : Drawable {
                 bool alreadyExists = !actionLine.CustomBindings.Add(typedCharacter);
                 if (alreadyExists) {
                     actionLine.CustomBindings.Remove(typedCharacter);
-                    Document.Caret.Col = customBindEnd - 1;
+                    Document.Caret.Col = desiredVisualCol = customBindEnd - 1;
                 } else {
-                    Document.Caret.Col = customBindEnd + 1;
+                    Document.Caret.Col = desiredVisualCol = customBindEnd + 1;
                 }
 
                 goto FinishEdit; // Skip regular logic
@@ -494,7 +497,7 @@ public sealed class Editor : Drawable {
             // Handle dash-only/move-only/custom bindings
             else if (typedAction is Actions.DashOnly or Actions.MoveOnly or Actions.PressedKey) {
                 actionLine.Actions = actionLine.Actions.ToggleAction(typedAction, Settings.Instance.AutoRemoveMutuallyExclusiveActions);
-                Document.Caret.Col = GetColumnOfAction(actionLine, typedAction);
+                Document.Caret.Col = desiredVisualCol = GetColumnOfAction(actionLine, typedAction);
             }
             // Handle regular inputs
             else if (typedAction != Actions.None) {
@@ -513,17 +516,17 @@ public sealed class Editor : Drawable {
 
                 // Warp the cursor after the number
                 if (typedAction == Actions.Feather && actionLine.Actions.HasFlag(Actions.Feather)) {
-                    Document.Caret.Col = GetColumnOfAction(actionLine, Actions.Feather) + 1;
+                    Document.Caret.Col = desiredVisualCol = GetColumnOfAction(actionLine, Actions.Feather) + 1;
                 } else if (typedAction == Actions.Feather && !actionLine.Actions.HasFlag(Actions.Feather)) {
                     actionLine.FeatherAngle = null;
                     actionLine.FeatherMagnitude = null;
-                    Document.Caret.Col = ActionLine.MaxFramesDigits;
+                    Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
                 } else if (typedAction is Actions.LeftDashOnly or Actions.RightDashOnly or Actions.UpDashOnly or Actions.DownDashOnly) {
-                    Document.Caret.Col = GetColumnOfAction(actionLine, Actions.DashOnly) + actionLine.Actions.GetDashOnly().Count();
+                    Document.Caret.Col = desiredVisualCol = GetColumnOfAction(actionLine, Actions.DashOnly) + actionLine.Actions.GetDashOnly().Count();
                 } else if (typedAction is Actions.LeftMoveOnly or Actions.RightMoveOnly or Actions.UpMoveOnly or Actions.DownMoveOnly) {
-                    Document.Caret.Col = GetColumnOfAction(actionLine, Actions.MoveOnly) + actionLine.Actions.GetMoveOnly().Count();
+                    Document.Caret.Col = desiredVisualCol = GetColumnOfAction(actionLine, Actions.MoveOnly) + actionLine.Actions.GetMoveOnly().Count();
                 } else {
-                    Document.Caret.Col = ActionLine.MaxFramesDigits;
+                    Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
                 }
             }
             // If the key we entered is a number
@@ -532,12 +535,12 @@ public sealed class Editor : Drawable {
 
                 // Entering a zero at the start should do nothing but format
                 if (cursorPosition == 0 && typedCharacter == '0') {
-                    Document.Caret.Col = ActionLine.MaxFramesDigits - actionLine.Frames.Digits();
+                    Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits - actionLine.Frames.Digits();
                 }
                 // If we have a 0, just force the new number
                 else if (actionLine.Frames == 0) {
                     actionLine.Frames = int.Parse(typedCharacter.ToString());
-                    Document.Caret.Col = ActionLine.MaxFramesDigits;
+                    Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
                 } else {
                     // Jam the number into the current position
                     string leftOfCursor = line[..(Document.Caret.Col)];
@@ -550,9 +553,9 @@ public sealed class Editor : Drawable {
                     // Cap at max frames
                     if (actionLine.Frames > ActionLine.MaxFrames) {
                         actionLine.Frames = ActionLine.MaxFrames;
-                        Document.Caret.Col = ActionLine.MaxFramesDigits;
+                        Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
                     } else {
-                        Document.Caret.Col = ActionLine.MaxFramesDigits - actionLine.Frames.Digits() + cursorPosition + 1;
+                        Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits - actionLine.Frames.Digits() + cursorPosition + 1;
                     }
                 }
             }
@@ -571,7 +574,7 @@ public sealed class Editor : Drawable {
             // But turn it into an action line if possible
             if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out var newActionLine)) {
                 Document.ReplaceLine(Document.Caret.Row, newActionLine.ToString());
-                Document.Caret.Col = ActionLine.MaxFramesDigits;
+                Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
             }
         }
         
@@ -713,7 +716,7 @@ public sealed class Editor : Drawable {
             // Don't split frame count and action
             Document.InsertLineBelow(string.Empty);
             Document.Caret.Row++;
-            Document.Caret.Col = 0;
+            Document.Caret.Col = desiredVisualCol = 0;
         } else {
             Document.Insert(Document.NewLine.ToString());
         }
@@ -1214,6 +1217,16 @@ public sealed class Editor : Drawable {
             newCaret = GetNewTextCaretPosition(direction);
         }
         
+        // Apply / Update desired column
+        var oldVisualPos = GetVisualPosition(Document.Caret);
+        var newVisualPos = GetVisualPosition(newCaret);
+        if (oldVisualPos.Row != newVisualPos.Row) {
+            newVisualPos.Col = desiredVisualCol;
+        } else {
+            desiredVisualCol = newVisualPos.Col;
+        }
+        newCaret = GetActualPosition(newVisualPos);
+        
         var newLine = Document.Lines[newCaret.Row];
         if (ActionLine.TryParse(newLine, out var newActionLine)) {
             newCaret.Col = SnapColumnToActionLine(newActionLine, newCaret.Col);
@@ -1355,6 +1368,7 @@ public sealed class Editor : Drawable {
         int visualCol = (int)(location.X / Font.CharWidth());
         
         Document.Caret = ClampCaret(GetActualPosition(new CaretPosition(visualRow, visualCol)), wrapLine: false);
+        desiredVisualCol = Document.Caret.Col;
         
         var newLine = Document.Lines[Document.Caret.Row];
         if (ActionLine.TryParse(newLine, out var actionLine)) {
@@ -1368,6 +1382,7 @@ public sealed class Editor : Drawable {
     
     protected override void OnPaint(PaintEventArgs e) {
         e.Graphics.AntiAlias = true;
+        Console.WriteLine($"{Document.Caret} vs {desiredVisualCol}");
         
         // To be reused below. Kinda annoying how C# handles out parameter conflicts
         WrapEntry wrap;
