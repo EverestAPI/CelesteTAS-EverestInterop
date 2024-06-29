@@ -1393,7 +1393,6 @@ public sealed class Editor : Drawable {
     
     protected override void OnPaint(PaintEventArgs e) {
         e.Graphics.AntiAlias = true;
-        Console.WriteLine($"{Document.Caret} vs {desiredVisualCol}");
         
         // To be reused below. Kinda annoying how C# handles out parameter conflicts
         WrapEntry wrap;

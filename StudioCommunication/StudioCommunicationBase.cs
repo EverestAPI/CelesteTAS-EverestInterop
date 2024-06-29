@@ -6,6 +6,8 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+#nullable disable
+
 namespace StudioCommunication;
 
 public class StudioCommunicationBase {

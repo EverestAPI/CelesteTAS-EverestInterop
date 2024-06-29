@@ -11,9 +11,9 @@ using StudioCommunication;
 namespace CelesteStudio.Communication;
 
 public class StudioCommunicationServer : StudioCommunicationBase {
-    public event Action<StudioInfo> StateUpdated;
-    public event Action<Dictionary<HotkeyID, List<WinFormsKeys>>> BindingsUpdated;
-    public event Action<Dictionary<int, string>> LinesUpdated;
+    public event Action<StudioInfo>? StateUpdated;
+    public event Action<Dictionary<HotkeyID, List<WinFormsKeys>>>? BindingsUpdated;
+    public event Action<Dictionary<int, string>>? LinesUpdated;
 
     public virtual void OnStateUpdated(StudioInfo obj) => StateUpdated?.Invoke(obj);
     public virtual void OnBindingsUpdated(Dictionary<HotkeyID, List<WinFormsKeys>> obj) => BindingsUpdated?.Invoke(obj);
@@ -163,10 +163,10 @@ public class StudioCommunicationServer : StudioCommunicationBase {
     public void ConvertToLibTas(string path) => PendingWrite = () => ConvertToLibTasNow(path);
     public void SendHotkeyPressed(HotkeyID hotkey, bool released = false) => PendingWrite = () => SendHotkeyPressedNow(hotkey, released);
     public void ToggleGameSetting(string settingName, object? value) => PendingWrite = () => ToggleGameSettingNow(settingName, value);
-    public void RequestDataFromGame(GameDataType gameDataType, object arg) => PendingWrite = () => RequestGameDataNow(gameDataType, arg);
+    public void RequestDataFromGame(GameDataType gameDataType, object? arg) => PendingWrite = () => RequestGameDataNow(gameDataType, arg);
     public void RecordTAS(string fileName) => PendingWrite = () => RecordTASNow(fileName);
 
-    public string GetDataFromGame(GameDataType gameDataType, object? arg = null) {
+    public string? GetDataFromGame(GameDataType gameDataType, object? arg = null) {
         _returnData = null;
         RequestDataFromGame(gameDataType, arg);
 
@@ -219,7 +219,7 @@ public class StudioCommunicationServer : StudioCommunicationBase {
         WriteMessageGuaranteed(new Message(MessageID.ToggleGameSetting, bytes));
     }
 
-    private void RequestGameDataNow(GameDataType gameDataType, object arg) {
+    private void RequestGameDataNow(GameDataType gameDataType, object? arg) {
         if (!Initialized) {
             return;
         }

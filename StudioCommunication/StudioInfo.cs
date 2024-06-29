@@ -1,5 +1,7 @@
 ﻿using System;
 
+#nullable disable
+
 namespace StudioCommunication;
 
 // ReSharper disable once StructCanBeMadeReadOnly
