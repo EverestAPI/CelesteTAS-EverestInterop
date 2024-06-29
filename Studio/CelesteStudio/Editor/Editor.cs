@@ -1369,18 +1369,18 @@ public sealed class Editor : Drawable {
     protected override void OnPaint(PaintEventArgs e) {
         e.Graphics.AntiAlias = true;
         
-        // To be reused below. Kinda annoying how C# handles out parameter confilics
+        // To be reused below. Kinda annoying how C# handles out parameter conflicts
         WrapEntry wrap;
         
         const int offscreenLinePadding = 3;
 
-        int topRow = Math.Max(0, (int)(scrollablePosition.Y / Font.LineHeight()) - offscreenLinePadding);
-        int bottomRow = Math.Min(Document.Lines.Count - 1, (int)((scrollablePosition.Y + scrollable.Height) / Font.LineHeight()) + offscreenLinePadding);
+        int topRow = Math.Max(0, GetActualRow((int)(scrollablePosition.Y / Font.LineHeight()) - offscreenLinePadding));
+        int bottomRow = Math.Min(Document.Lines.Count - 1, GetActualRow((int)((scrollablePosition.Y + scrollable.Height) / Font.LineHeight()) + offscreenLinePadding));
         
         // Draw text
         using var commentBrush = new SolidBrush(Settings.Instance.Theme.Comment.ForegroundColor);
         
-        float yPos = topRow * Font.LineHeight();
+        float yPos = visualRows[topRow] * Font.LineHeight();
         for (int row = topRow; row <= bottomRow; row++) {
             string line = Document.Lines[row];
             
@@ -1484,7 +1484,7 @@ public sealed class Editor : Drawable {
                 }
             }
             
-            yPos = topRow * Font.LineHeight();
+            yPos = visualRows[topRow] * Font.LineHeight();
             for (int row = topRow; row <= bottomRow; row++) {
                 e.Graphics.DrawText(Font, Settings.Instance.Theme.LineNumber, scrollablePosition.X + LineNumberPadding, yPos, (row + 1).ToString());
                 
