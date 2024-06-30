@@ -21,6 +21,21 @@ public static class Extensions
         return self;
     }
     
+    public static string FormatShortcut(this Keys shortcut, string delimiter) {
+        var keys = new List<Keys>();
+        if (shortcut.HasFlag(Keys.Application))
+            keys.Add(Keys.Application);
+        if (shortcut.HasFlag(Keys.Control))
+            keys.Add(Keys.Control);
+        if (shortcut.HasFlag(Keys.Alt))
+            keys.Add(Keys.Alt);
+        if (shortcut.HasFlag(Keys.Shift))
+            keys.Add(Keys.Shift);
+        keys.Add(shortcut & Keys.KeyMask);
+        
+        return string.Join(delimiter, keys);
+    }
+    
     public static int IndexOf<T>(this IEnumerable<T> obj, T value) => obj.IndexOf(value, EqualityComparer<T>.Default);
     public static int IndexOf<T>(this IEnumerable<T> obj, T value, IEqualityComparer<T> comparer) {
         using var iter = obj.GetEnumerator();

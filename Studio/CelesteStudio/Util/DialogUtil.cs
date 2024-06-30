@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using CelesteStudio.Editing;
 using Eto.Drawing;
@@ -243,7 +244,7 @@ public static class DialogUtil
         }
     }
     
-    private class BindingCell : CustomCell {
+    private class BindingCell(List<Snippet> allSnippets) : CustomCell {
         private static readonly PropertyInfo p_CellEventArgs_IsEditing = typeof(CellEventArgs).GetProperty(nameof(CellEventArgs.IsEditing))!;
         
         protected override Control OnCreateCell(CellEventArgs args) {
@@ -264,6 +265,22 @@ public static class DialogUtil
                           or Keys.LeftApplication or Keys.RightApplication) 
                 {
                     return;
+                }
+                
+                // Check for conflicts
+                var conflicts = allSnippets.Where(other => other.Shortcut == e.KeyData).ToArray();
+                if (conflicts.Length != 0) {
+                    var sb = new StringBuilder();
+                    sb.AppendLine($"The following other snippets already use this shortcut ({e.KeyData.FormatShortcut(" + ")}):");
+                    foreach (var conflict in conflicts) {
+                        sb.AppendLine($" - \"{conflict.Text}\"");
+                    }
+                    sb.AppendLine(string.Empty);
+                    sb.AppendLine("Are you sure you want to use this shortcut?");
+                    
+                    var confirm = MessageBox.Show(sb.ToString(), MessageBoxButtons.YesNo, MessageBoxType.Question, MessageBoxDefaultButton.No);
+                    if (confirm == DialogResult.No)
+                        return;
                 }
                 
                 // We cannot just call grid.CommitEdit() to end the editing...
@@ -290,8 +307,8 @@ public static class DialogUtil
                 ? SystemFonts.Bold().WithFontStyle(FontStyle.Bold | FontStyle.Italic)
                 : SystemFonts.Bold();
             string text = editing
-                ? $"{snippet.Shortcut.ToString()}..."
-                : snippet.Shortcut.ToString();
+                ? $"{snippet.Shortcut.FormatShortcut(" + ")}..."
+                : snippet.Shortcut.FormatShortcut(" + ");
             
             graphics.DrawText(font, SystemColors.ControlText, x, y, text);
         }
@@ -304,7 +321,7 @@ public static class DialogUtil
         var grid = new GridView<Snippet> { DataStore = snippets };
         grid.Columns.Add(new GridColumn {
             HeaderText = "Shortcut",
-            DataCell = new BindingCell(),
+            DataCell = new BindingCell(snippets),
             Editable = true,
             Width = 200
         });
@@ -315,6 +332,21 @@ public static class DialogUtil
             Width = 200
         });
         
+        var addButton = new Button { Text = "Add" };
+        addButton.Click += (_, _) => {
+            snippets.Add(new());
+            grid.DataStore = snippets;
+        };
+        
+        var removeButton = new Button { Text = "Remove" };
+        removeButton.Click += (_, _) => {
+            var confirm = MessageBox.Show("Are you sure you want to delete the selected snippet?", MessageBoxButtons.YesNo, MessageBoxType.Question, MessageBoxDefaultButton.Yes);
+            if (confirm == DialogResult.Yes) {
+                snippets.Remove(grid.SelectedItem);
+                grid.DataStore = snippets;
+            }
+        };
+        
         var dialog = new Dialog<bool> {
             Title = "Snippets",
             Content = new StackLayout {
@@ -324,19 +356,7 @@ public static class DialogUtil
                     new StackLayout {
                         Orientation = Orientation.Horizontal,
                         Spacing = 10,
-                        Items = {
-                            new Button((_, _) => {
-                                snippets.Add(new());
-                                grid.DataStore = snippets;
-                            }) { Text = "Add" },
-                            new Button((_, _) => {
-                                var confirm = MessageBox.Show("Are you sure you want to delete the selected snippet?", MessageBoxButtons.YesNo, MessageBoxType.Question, MessageBoxDefaultButton.Yes);
-                                if (confirm == DialogResult.Yes) {
-                                    snippets.Remove(grid.SelectedItem);
-                                    grid.DataStore = snippets;
-                                }
-                            }) { Text = "Remove" },
-                        }
+                        Items = { addButton, removeButton }
                     },
                     grid
                 }

@@ -140,20 +140,7 @@ public sealed class Settings {
                                   """;
             var snippetTableData = new TomlTable();
             foreach (var snippet in Snippets) {
-                // Create human-readable comment
-                var keys = new List<Keys>();
-                if (snippet.Shortcut.HasFlag(Keys.Application))
-                    keys.Add(Keys.Application);
-                if (snippet.Shortcut.HasFlag(Keys.Control))
-                    keys.Add(Keys.Control);
-                if (snippet.Shortcut.HasFlag(Keys.Alt))
-                    keys.Add(Keys.Alt);
-                if (snippet.Shortcut.HasFlag(Keys.Shift))
-                    keys.Add(Keys.Shift);
-                keys.Add(snippet.Shortcut & Keys.KeyMask);
-                
-                var shortcutName = string.Join("+", keys);
-                snippetTableData[shortcutName] = new TomlString { Value = snippet.Text };
+                snippetTableData[snippet.Shortcut.FormatShortcut("+")] = new TomlString { Value = snippet.Text };
             }
             snippetTable["Snippets"] = snippetTableData;
             TommySerializer.WriteToDisk(snippetTable, SnippetsPath);
