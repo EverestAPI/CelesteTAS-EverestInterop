@@ -336,31 +336,31 @@ namespace Tommy.Serializer {
 
         #region I/O
 
-        internal static void WriteToDisk(TomlTable tomlTable, string path) {
+        public static void WriteToDisk(TomlTable tomlTable, string path) {
             // @formatter:off -- Writes the Toml file to disk ------------
             try { using (StreamWriter writer = new StreamWriter(path, false))
                 { tomlTable.WriteTo(writer); writer.Flush(); }
                 Console.WriteLine($"File saved to: {path}"); }
             catch (Exception e) { Console.WriteLine(e); throw; }
         } // @formatter:on
-
-        internal static MemoryStream WriteToMemory(TomlTable tomlTable) {
+        
+        public static MemoryStream WriteToMemory(TomlTable tomlTable) {
             // @formatter:off -- Writes the Toml file to disk ------------
             try { MemoryStream streamMem = new MemoryStream();
                 using (StreamWriter writer = new StreamWriter(streamMem))
                 { tomlTable.WriteTo(writer); writer.Flush(); } return streamMem;
             } catch (Exception e) { Console.WriteLine(e); throw; }
         } // @formatter:on
-
-        internal static TomlTable ReadFromMemory(MemoryStream memoryStream) {
+        
+        public static TomlTable ReadFromMemory(MemoryStream memoryStream) {
             // @formatter:off  -- Read the Toml file from Memory ------------
             try { using (Stream stream = new MemoryStream(memoryStream.ToArray(), false)) {
                     using (StreamReader reader = new StreamReader(stream)) {
                         using (TOMLParser parser = new TOMLParser(reader)) { return parser.Parse(); }}}}
             catch (Exception e) { Console.WriteLine(e); throw; }
         } // @formatter:on
-
-        internal static TomlTable ReadFromDisk(string path) {
+        
+        public static TomlTable ReadFromDisk(string path) {
             // @formatter:off -- Read the Toml file from Disk ------------
             try { using (Stream stream = File.OpenRead(path)) {
                     using (StreamReader reader = new StreamReader(stream)) {

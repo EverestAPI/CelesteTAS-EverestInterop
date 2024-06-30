@@ -22,16 +22,16 @@ public class MenuUtils {
     }
     
     public static MenuItem CreateSettingToggle(string text, string settingName, Keys shortcut = Keys.None) {
-        var field = typeof(Settings).GetField(settingName)!;
+        var property = typeof(Settings).GetProperty(settingName)!;
         
         var cmd = new CheckCommand {
             MenuText = text,
             Shortcut = shortcut,
-            Checked = (bool)field.GetValue(Settings.Instance)!
+            Checked = (bool)property.GetValue(Settings.Instance)!
         };
         cmd.Executed += (_, _) => {
-            bool value = (bool)field.GetValue(Settings.Instance)!;
-            field.SetValue(Settings.Instance, !value);
+            bool value = (bool)property.GetValue(Settings.Instance)!;
+            property.SetValue(Settings.Instance, !value);
             
             Settings.Instance.OnChanged();
             Settings.Save();
@@ -48,12 +48,12 @@ public class MenuUtils {
     }
     
     public static MenuItem CreateSettingNumberInput<T>(string text, string settingName, T minValue, T maxValue, T step) where T : INumber<T>  {
-        var field = typeof(Settings).GetField(settingName)!;
+        var property = typeof(Settings).GetProperty(settingName)!;
         
-        var cmd = new Command { MenuText = $"{text}: {field.GetValue(Settings.Instance)!}" };
+        var cmd = new Command { MenuText = $"{text}: {property.GetValue(Settings.Instance)!}" };
         cmd.Executed += (_, _) => {
-            T value = (T)field.GetValue(Settings.Instance)!;
-            field.SetValue(Settings.Instance, DialogUtil.ShowNumberInputDialog(text, value, minValue, maxValue, step));
+            T value = (T)property.GetValue(Settings.Instance)!;
+            property.SetValue(Settings.Instance, DialogUtil.ShowNumberInputDialog(text, value, minValue, maxValue, step));
             
             Settings.Instance.OnChanged();
             Settings.Save();

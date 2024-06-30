@@ -238,7 +238,7 @@ public sealed class Studio : Form {
                     }},
                     MenuUtils.CreateAction("Font...", Keys.None, () => DialogUtil.ShowFontDialog()),
                     MenuUtils.CreateSettingEnum<ThemeType>("Theme", nameof(Settings.ThemeType), ["Light", "Dark"]),
-                    MenuUtils.CreateAction("Open Settings File...", Keys.None, () => ProcessHelper.OpenInDefaultApp(Settings.SavePath)),
+                    MenuUtils.CreateAction("Open Settings File...", Keys.None, () => ProcessHelper.OpenInDefaultApp(Settings.SettingsPath)),
                 }},
                 new SubMenuItem {Text = "&Toggles", Items = {
                     MenuUtils.CreateToggle("&Hitboxes", CommunicationWrapper.GetHitboxes, CommunicationWrapper.ToggleHitboxes),
