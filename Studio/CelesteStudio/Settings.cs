@@ -26,7 +26,7 @@ public sealed class Settings {
     public static string SnippetsPath => Path.Combine(BaseConfigPath, "Snippets.toml");
     
     public static Settings Instance { get; private set; } = new();
-    public static readonly List<Snippet> Snippets = [new Snippet { Shortcut = Keys.C | Keys.Control | Keys.Application, Text = "Set, Player.X, "} ];
+    public static readonly List<Snippet> Snippets = [];
     
     public static event Action? Changed;
     public void OnChanged() => Changed?.Invoke();
@@ -110,9 +110,6 @@ public sealed class Settings {
                         Snippets.Add(new Snippet { Shortcut = (Keys)shortcut, Text = value});
                     }
                 }
-                
-                var s = Snippets[0];
-                Console.WriteLine($"{s.Shortcut} | '{s.Text}'");
             } catch (Exception ex) {
                 Console.Error.WriteLine($"Failed to read settings file from path '{SettingsPath}'");
                 Console.Error.WriteLine(ex);
@@ -133,6 +130,14 @@ public sealed class Settings {
             TommySerializer.ToTomlFile([Instance], SettingsPath);
             
             var snippetTable = new TomlTable();
+            snippetTable.Comment= """
+                                  Snippets are in the format of shortcut = inserted text.
+                                  A list of all available keys can be found here: https://github.com/picoe/Eto/blob/develop/src/Eto/Forms/Key.cs
+                                  Example configuration:
+                                  
+                                  [Snippets]
+                                  "Control+Alt+X" = "Set, Player.X, "
+                                  """;
             var snippetTableData = new TomlTable();
             foreach (var snippet in Snippets) {
                 // Create human-readable comment
