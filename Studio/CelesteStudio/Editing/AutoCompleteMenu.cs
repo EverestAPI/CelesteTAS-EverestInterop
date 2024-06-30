@@ -13,7 +13,15 @@ public class AutoCompleteMenu {
         public required Action OnUse;
     }
     
-    public bool Visible = false;
+    private bool visible = false;
+    public bool Visible {
+        get => visible;
+        set {
+            visible = value;
+            Filter = string.Empty;
+            SelectedEntry = 0;
+        }
+    }
     
     private string filter = string.Empty;
     public string Filter {
