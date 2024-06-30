@@ -422,7 +422,7 @@ public sealed class Editor : Drawable {
                     
                     // Try to paste snippets
                     foreach (var snippet in Settings.Snippets) {
-                        if (snippet.Shortcut != e.KeyData) {
+                        if (!snippet.Enabled || snippet.Shortcut != e.KeyData) {
                             continue;
                         }
                         

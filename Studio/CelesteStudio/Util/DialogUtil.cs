@@ -320,6 +320,12 @@ public static class DialogUtil
         
         var grid = new GridView<Snippet> { DataStore = snippets };
         grid.Columns.Add(new GridColumn {
+            HeaderText = "Enabled",
+            DataCell = new CheckBoxCell(nameof(Snippet.Enabled)),
+            Editable = true,
+            Width = 50
+        });
+        grid.Columns.Add(new GridColumn {
             HeaderText = "Shortcut",
             DataCell = new BindingCell(snippets),
             Editable = true,

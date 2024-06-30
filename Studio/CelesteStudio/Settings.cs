@@ -96,7 +96,8 @@ public sealed class Settings {
                 Instance = TommySerializer.FromTomlFile<Settings>(SettingsPath);
                 
                 var snippetTable = TommySerializer.ReadFromDisk(SnippetsPath)["Snippets"];
-                if (snippetTable.Keys.Any()) {
+                var disabledSnippetTableData = TommySerializer.ReadFromDisk(SnippetsPath)["DisabledSnippets"];
+                if (snippetTable.Keys.Any() || disabledSnippetTableData.Keys.Any()) {
                     Snippets.Clear();
                     foreach (var key in snippetTable.Keys) {
                         var value = snippetTable[key];
@@ -107,7 +108,18 @@ public sealed class Settings {
                             .Select(keyName => Enum.TryParse<Keys>(keyName, out var k) ? k : Keys.None)
                             .Aggregate((a, b) => a | b);
                         
-                        Snippets.Add(new Snippet { Shortcut = (Keys)shortcut, Text = value});
+                        Snippets.Add(new Snippet { Shortcut = shortcut, Text = value, Enabled = true });
+                    }
+                    foreach (var key in disabledSnippetTableData.Keys) {
+                        var value = disabledSnippetTableData[key];
+                        if (!value.IsString)
+                            continue;
+                        
+                        var shortcut = key.Split('+')
+                            .Select(keyName => Enum.TryParse<Keys>(keyName, out var k) ? k : Keys.None)
+                            .Aggregate((a, b) => a | b);
+                        
+                        Snippets.Add(new Snippet { Shortcut = shortcut, Text = value, Enabled = false });
                     }
                 }
             } catch (Exception ex) {
@@ -129,20 +141,28 @@ public sealed class Settings {
 
             TommySerializer.ToTomlFile([Instance], SettingsPath);
             
-            var snippetTable = new TomlTable();
-            snippetTable.Comment= """
-                                  Snippets are in the format of shortcut = inserted text.
-                                  A list of all available keys can be found here: https://github.com/picoe/Eto/blob/develop/src/Eto/Forms/Key.cs
-                                  Example configuration:
-                                  
-                                  [Snippets]
-                                  "Control+Alt+X" = "Set, Player.X, "
-                                  """;
+            var snippetTable = new TomlTable {
+                Comment = """
+                          Snippets are in the format of shortcut = inserted text.
+                          A list of all available keys can be found here: https://github.com/picoe/Eto/blob/develop/src/Eto/Forms/Key.cs
+                          Example configuration:
+                          
+                          [Snippets]
+                          "Control+Alt+X" = "Set, Player.X, "
+                          """
+            };
             var snippetTableData = new TomlTable();
+            var disabledSnippetTableData = new TomlTable();
             foreach (var snippet in Snippets) {
-                snippetTableData[snippet.Shortcut.FormatShortcut("+")] = new TomlString { Value = snippet.Text };
+                var key = snippet.Shortcut.FormatShortcut("+");
+                if (snippet.Enabled) {
+                    snippetTableData[key] = new TomlString { Value = snippet.Text };
+                } else {
+                    disabledSnippetTableData[key] = new TomlString { Value = snippet.Text };
+                }
             }
             snippetTable["Snippets"] = snippetTableData;
+            snippetTable["DisabledSnippets"] = disabledSnippetTableData;
             TommySerializer.WriteToDisk(snippetTable, SnippetsPath);
         } catch (Exception ex) {
             Console.Error.WriteLine($"Failed to write settings file to path '{SettingsPath}'");
