@@ -172,6 +172,15 @@ public sealed class Editor : Drawable {
             }
         };
         
+        var commandsMenu = new SubMenuItem { Text = "Insert Other Command" };        
+        foreach (var command in CommandInfo.AllCommands) {
+            if (command == null) {
+                commandsMenu.Items.Add(new SeparatorMenuItem());
+            } else {
+                commandsMenu.Items.Add(CreateCommandInsert(command.Value));
+            }
+        }
+        
         ContextMenu = new ContextMenu {
             Items = {
                 MenuUtils.CreateAction("Cut", Application.Instance.CommonModifier | Keys.X, OnCut),
@@ -190,7 +199,6 @@ public sealed class Editor : Drawable {
                 MenuUtils.CreateAction("Delete Selected Lines", Application.Instance.CommonModifier | Keys.Y, OnDeleteSelectedLines),
                 new SeparatorMenuItem(),
                 MenuUtils.CreateAction("Insert/Remove Breakpoint", Application.Instance.CommonModifier | Keys.Period, () => InsertOrRemoveText(UncommentedBreakpointRegex, "***")),
-                // TODO: This shortcut doesn't seem to work on GTK?
                 MenuUtils.CreateAction("Insert/Remove Savestate Breakpoint", Application.Instance.CommonModifier | Keys.Shift | Keys.Period, () => InsertOrRemoveText(UncommentedBreakpointRegex, "***S")),
                 MenuUtils.CreateAction("Remove All Uncommented Breakpoints", Application.Instance.CommonModifier | Keys.P, () => RemoveLinesMatching(UncommentedBreakpointRegex)),
                 MenuUtils.CreateAction("Remove All Breakpoints", Application.Instance.CommonModifier | Keys.Shift | Keys.P, () => RemoveLinesMatching(AllBreakpointRegex)),
@@ -204,57 +212,7 @@ public sealed class Editor : Drawable {
                 MenuUtils.CreateAction("Insert Mod Info", Keys.None, OnInsertModInfo),
                 MenuUtils.CreateAction("Insert Console Load Command", Application.Instance.CommonModifier | Keys.Shift | Keys.R, OnInsertConsoleLoadCommand),
                 MenuUtils.CreateAction("Insert Simple Console Load Command", Application.Instance.CommonModifier | Keys.Alt | Keys.R, OnInsertSimpleConsoleLoadCommand),
-                new SubMenuItem {Text = "Insert Other Command", Items = {
-                    CreateCommandInsert("EnforceLegal", "EnforceLegal"),
-                    CreateCommandInsert("Unsafe", "Unsafe"),
-                    CreateCommandInsert("Safe", "Safe"),
-                    new SeparatorMenuItem(),
-                    CreateCommandInsert("Read", "Read, File Name, Starting Line, (Ending Line)"),
-                    CreateCommandInsert("Player", "Play, Starting Line"),
-                    new SeparatorMenuItem(),
-                    CreateCommandInsert("Repeat", "Repeat 2\n\nEndRepeat"),
-                    CreateCommandInsert("EndRepeat", "EndRepeat"),
-                    new SeparatorMenuItem(),
-                    CreateCommandInsert("Set", "Set, (Mod).Setting, Value"),
-                    CreateCommandInsert("Invoke", "Invoke, Entity.Method, Parameter"),
-                    CreateCommandInsert("EvalLua", "EvalLua, Code"),
-                    new SeparatorMenuItem(),
-                    CreateCommandInsert("Press", "Press, Key1, Key2..."),
-                    new SeparatorMenuItem(),
-                    CreateCommandInsert("AnalogMode", "AnalogMode, Ignore/Circle/Square/Precise"),
-                    new SeparatorMenuItem(),
-                    CreateCommandInsert("StunPause", "StunPause\n\nEndStunPause"),
-                    CreateCommandInsert("EndStunPause", "EndStunPause"),
-                    CreateCommandInsert("StunPauseMode", "StunPauseMode, Simulate/Input"),
-                    new SeparatorMenuItem(),
-                    CreateCommandInsert("AutoInput", "AutoInput, 2\n   1,S,N\n  10,O\nStartAutoInput\n\nEndAutoInput"),
-                    CreateCommandInsert("StartAutoInput", "StartAutoInput"),
-                    CreateCommandInsert("EndAutoInput", "EndAutoInput"),
-                    CreateCommandInsert("SkipInput", "SkipInput"),
-                    new SeparatorMenuItem(),
-                    CreateCommandInsert("SaveAndQuitReenter", "SaveAndQuitReenter"),
-                    new SeparatorMenuItem(),
-                    CreateCommandInsert("ExportGameInfo", "ExportGameInfo dump.txt"),
-                    CreateCommandInsert("EndExportGameInfo", "EndExportGameInfo"),
-                    new SeparatorMenuItem(),
-                    CreateCommandInsert("StartRecording", "StartRecording"),
-                    CreateCommandInsert("StopRecording", "StopRecording"),
-                    new SeparatorMenuItem(),
-                    CreateCommandInsert("Add", "Add, (input line"),
-                    CreateCommandInsert("Skip", "Skip"),
-                    CreateCommandInsert("Marker", "Marker"),
-                    CreateCommandInsert("ExportLibTAS", "ExportLibTAS Celeste.ltm"),
-                    CreateCommandInsert("EndExportLibTAS", "EndExportLibTAS"),
-                    new SeparatorMenuItem(),
-                    CreateCommandInsert("CompleteInfo", "CompleteInfo A 1"),
-                    CreateCommandInsert("RecordCount", "RecordCount: 1"),
-                    CreateCommandInsert("FileTime", "FileTime:"),
-                    CreateCommandInsert("ChapterTime", "ChapterTime:"),
-                    CreateCommandInsert("MidwayFileTime", "MidwayFileTime:"),
-                    CreateCommandInsert("MidwayChapterTime", "MidwayChapterTime:"),
-                    new SeparatorMenuItem(),
-                    CreateCommandInsert("ExitGame", "ExitGame"),
-                }},
+                commandsMenu,
                 new SeparatorMenuItem(),
                 MenuUtils.CreateAction("Swap Selected L and R", Keys.None, () => SwapSelectedActions(Actions.Left, Actions.Right)),
                 MenuUtils.CreateAction("Swap Selected J and K", Keys.None, () => SwapSelectedActions(Actions.Jump, Actions.Jump2)),
@@ -270,11 +228,15 @@ public sealed class Editor : Drawable {
         
         Recalc();
         
-        MenuItem CreateCommandInsert(string commandName, string commandInsert) {
-            var cmd = new Command { MenuText = commandName, Shortcut = Keys.None };
-            cmd.Executed += (_, _) => Document.InsertLineAbove(commandInsert);
+        MenuItem CreateCommandInsert(CommandInfo info) {
+            var cmd = new Command { Shortcut = Keys.None };
+            cmd.Executed += (_, _) => {
+                Document.InsertLineAbove(info.Insert);
+                // TODO: Support quick-edits here
+                Recalc();
+            };
             
-            return cmd;
+            return new ButtonMenuItem(cmd) { Text = info.Name, ToolTip = info.Description };
         }
     }
     
