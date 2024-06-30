@@ -357,8 +357,6 @@ public sealed class Editor : Drawable {
     }
     
     protected override void OnKeyDown(KeyEventArgs e) {
-        Console.WriteLine($"{e.Key} | {e.Modifiers}");
-        
         if (Settings.Instance.SendInputsToCeleste && Studio.CommunicationWrapper.Connected && Studio.CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
             e.Handled = true;
             return;
@@ -410,8 +408,8 @@ public sealed class Editor : Drawable {
                 e.Handled = true;
                 break;
             default:
-                // Search through context menu for hotkeys
                 if (e.Key != Keys.None) {
+                    // Search through context menu for hotkeys
                     foreach (var item in ContextMenu.Items) {
                         if (item.Shortcut != e.KeyData) {
                             continue;
@@ -420,6 +418,22 @@ public sealed class Editor : Drawable {
                         item.PerformClick();
                         e.Handled = true;
                         break;
+                    }
+                    
+                    // Try to paste snippets
+                    foreach (var snippet in Settings.Snippets) {
+                        if (snippet.Shortcut != e.KeyData) {
+                            continue;
+                        }
+                        
+                        if (Document.Lines[Document.Caret.Row].Trim().Length == 0) {
+                            Document.ReplaceLine(Document.Caret.Row, snippet.Text);
+                        } else {
+                            Document.InsertLineBelow(snippet.Text);
+                            Document.Caret.Row++;
+                        }
+                        
+                        Document.Caret.Col = desiredVisualCol = snippet.Text.Length;
                     }
                 }
                 
