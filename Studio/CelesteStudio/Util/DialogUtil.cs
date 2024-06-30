@@ -327,8 +327,17 @@ public static class DialogUtil
                         Orientation = Orientation.Horizontal,
                         Spacing = 10,
                         Items = {
-                            new Button() { Text = "Add" },
-                        new Button() { Text = "Remove" },
+                            new Button((_, _) => {
+                                snippets.Add(new());
+                                grid.DataStore = snippets;
+                            }) { Text = "Add" },
+                            new Button((_, _) => {
+                                var confirm = MessageBox.Show("Are you sure you want to delete the selected snippet?", MessageBoxButtons.YesNo, MessageBoxType.Question, MessageBoxDefaultButton.Yes);
+                                if (confirm == DialogResult.Yes) {
+                                    snippets.Remove(grid.SelectedItem);
+                                    grid.DataStore = snippets;
+                                }
+                            }) { Text = "Remove" },
                         }
                     },
                     grid
@@ -344,6 +353,11 @@ public static class DialogUtil
         
         if (!dialog.ShowModal())
             return;
+        
+        foreach (Snippet snippet in snippets)
+        {
+            Console.WriteLine($"{snippet.Shortcut} -> {snippet.Text}");
+        }
         
         Settings.Snippets = snippets;
         Settings.Instance.OnChanged();
