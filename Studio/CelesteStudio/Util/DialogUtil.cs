@@ -323,7 +323,7 @@ public static class DialogUtil
             HeaderText = "Enabled",
             DataCell = new CheckBoxCell(nameof(Snippet.Enabled)),
             Editable = true,
-            Width = 50
+            Width = 65
         });
         grid.Columns.Add(new GridColumn {
             HeaderText = "Shortcut",

@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Numerics;
 using System.Reflection;
 using CelesteStudio.Communication;
 using CelesteStudio.Editing;
@@ -121,15 +120,6 @@ public sealed class Studio : Form {
         const float minSlowForwardSpeed = 0.1f;
         const float maxSlowForwardSpeed = 0.9f;
         
-        var quitCommand = new Command {MenuText = "Quit", Shortcut = Application.Instance.CommonModifier | Keys.Q};
-        quitCommand.Executed += (_, _) => Application.Instance.Quit();
-        
-        var aboutCommand = new Command {MenuText = "About..."};
-        aboutCommand.Executed += (_, _) => new AboutDialog().ShowDialog(this);
-        
-        var homeCommand = new Command {MenuText = "Home"};
-        homeCommand.Executed += (_, _) => ProcessHelper.OpenInBrowser("https://github.com/EverestAPI/CelesteTAS-EverestInterop");
-        
         // NOTE: Index 0 is the recent files is the current file, so that is skipped
         var openPreviousFile = MenuUtils.CreateAction("Open &Previous File", Keys.Alt | Keys.Left, () => {
             OpenFile(Settings.Instance.RecentFiles[1]);
@@ -236,13 +226,10 @@ public sealed class Studio : Form {
                         MenuUtils.CreateSettingNumberInput("Backup Rate (minutes)", nameof(Settings.AutoBackupRate), 0, int.MaxValue, 1),
                         MenuUtils.CreateSettingNumberInput("Backup File Count", nameof(Settings.AutoBackupCount), 0, int.MaxValue, 1),
                     }},
-                    MenuUtils.CreateAction("Snippets...", Keys.None, () => DialogUtil.ShowSnippetDialog()),
-                    MenuUtils.CreateAction("Font...", Keys.None, () => DialogUtil.ShowFontDialog()),
+                    MenuUtils.CreateAction("Snippets...", Keys.None, DialogUtil.ShowSnippetDialog),
+                    MenuUtils.CreateAction("Font...", Keys.None, DialogUtil.ShowFontDialog),
                     MenuUtils.CreateSettingEnum<ThemeType>("Theme", nameof(Settings.ThemeType), ["Light", "Dark"]),
                     MenuUtils.CreateAction("Open Settings File...", Keys.None, () => ProcessHelper.OpenInDefaultApp(Settings.SettingsPath)),
-                    // TODO: This is temporary while the snippet dialog is being worked on
-                    MenuUtils.CreateAction("Open Snippets File...", Keys.None, () => ProcessHelper.OpenInDefaultApp(Settings.SnippetsPath)),
-                    MenuUtils.CreateAction("Reload Settings", Keys.None, () => Settings.Load()),
                 }},
                 new SubMenuItem {Text = "&Toggles", Items = {
                     MenuUtils.CreateToggle("&Hitboxes", CommunicationWrapper.GetHitboxes, CommunicationWrapper.ToggleHitboxes),
@@ -280,12 +267,13 @@ public sealed class Studio : Form {
             ApplicationItems = {
                 // application (OS X) or file menu (others)
             },
-            QuitItem = quitCommand,
-            AboutItem = aboutCommand,
+            QuitItem = MenuUtils.CreateAction("Quit", Keys.None, Application.Instance.Quit),
+            AboutItem = MenuUtils.CreateAction("About...", Keys.None, () => new AboutDialog().ShowDialog(this)),
             IncludeSystemItems = MenuBarSystemItems.None,
         };
         
-        menu.HelpItems.Insert(0, homeCommand); // The "About" is automatically inserted
+        // The "About" is automatically inserted
+        menu.HelpItems.Insert(0, MenuUtils.CreateAction("Home", Keys.None, () => ProcessHelper.OpenInBrowser("https://github.com/EverestAPI/CelesteTAS-EverestInterop")));
         
         return menu;
     }
