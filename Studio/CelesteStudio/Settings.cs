@@ -26,7 +26,7 @@ public sealed class Settings {
     public static string SnippetsPath => Path.Combine(BaseConfigPath, "Snippets.toml");
     
     public static Settings Instance { get; private set; } = new();
-    public static readonly List<Snippet> Snippets = [];
+    public static List<Snippet> Snippets = [];
     
     public static event Action? Changed;
     public void OnChanged() => Changed?.Invoke();

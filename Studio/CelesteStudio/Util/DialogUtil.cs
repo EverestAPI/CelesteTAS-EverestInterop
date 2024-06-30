@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -245,6 +246,12 @@ public static class DialogUtil
     }
     
     private class BindingCell : CustomCell {
+        public BindingCell() {
+            BeginEdit += (_, _) => Console.WriteLine("BeginEdit");
+            CancelEdit += (_, _) => Console.WriteLine("CancelEdit");
+            CommitEdit += (_, _) => Console.WriteLine("CommitEdit");
+        }
+        
         protected override Control OnCreateCell(CellEventArgs args) {
             var snippet = (Snippet)args.Item;
             var drawable = new Drawable();
@@ -252,6 +259,24 @@ public static class DialogUtil
             // The clip-rect is different between OnCreateCell and OnPaint.
             // Surely this offset isn't platform dependant..
             drawable.Paint += (_, e) => Draw(e.Graphics, snippet, args.IsEditing, e.ClipRectangle.X + 4.0f, e.ClipRectangle.Y + 4.0f);
+            drawable.KeyDown += (_, e) => {
+                if (!args.IsEditing)
+                    return;
+                
+                // Don't allow binding modifiers by themselves
+                if (e.Key is Keys.LeftShift or Keys.RightShift 
+                          or Keys.LeftControl or Keys.RightControl
+                          or Keys.LeftAlt or Keys.RightAlt
+                          or Keys.LeftApplication or Keys.RightApplication) 
+                {
+                    return;
+                }
+                
+                snippet.Shortcut = e.KeyData;
+                drawable.Invalidate();
+            };
+            drawable.CanFocus = true;
+            drawable.Focus();
             
             return drawable;
         }
@@ -263,10 +288,11 @@ public static class DialogUtil
         }
         
         private void Draw(Graphics graphics, Snippet snippet, bool editing, float x, float y) {
-            var font = SystemFonts.Bold();
-            
+            var font = editing 
+                ? SystemFonts.Bold().WithFontStyle(FontStyle.Bold | FontStyle.Italic)
+                : SystemFonts.Bold();
             string text = editing
-                ? "Press a shortcut..."
+                ? $"{snippet.Shortcut.ToString()}..."
                 : snippet.Shortcut.ToString();
             
             graphics.DrawText(font, SystemColors.ControlText, x, y, text);
@@ -274,7 +300,10 @@ public static class DialogUtil
     }
     
     public static void ShowSnippetDialog() {
-        var grid = new GridView<Snippet> { DataStore = Settings.Snippets };
+        // Create a copy, to not modify the list in Settings before confirming
+        var snippets = Settings.Snippets.Select(snippet => snippet.Clone()).ToList();
+        
+        var grid = new GridView<Snippet> { DataStore = snippets };
         grid.Columns.Add(new GridColumn {
             HeaderText = "Shortcut",
             DataCell = new BindingCell(),
@@ -315,6 +344,10 @@ public static class DialogUtil
         
         if (!dialog.ShowModal())
             return;
+        
+        Settings.Snippets = snippets;
+        Settings.Instance.OnChanged();
+        Settings.Save();
     }
     
     public static void ShowRecordDialog() {

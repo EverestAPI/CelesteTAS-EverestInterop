@@ -15,8 +15,9 @@ public static class Extensions
     
     public static string ReplaceRange(this string self, int startIndex, int count, string replacement) => self.Remove(startIndex, count).Insert(startIndex, replacement);
     
+    public static Font WithFontStyle(this Font font, FontStyle style) => new(font.Family, font.Size, style);
     public static CommonControl WithFontStyle(this CommonControl self, FontStyle style) {
-        self.Font = new Font(self.Font.Family, self.Font.Size, style);
+        self.Font = self.Font.WithFontStyle(style);
         return self;
     }
     
