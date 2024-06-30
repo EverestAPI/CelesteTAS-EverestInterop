@@ -301,9 +301,6 @@ public class Document {
         
         int newLineCount = Math.Max(0, newLines.Length - 1);
         
-        if (Caret.Row >= row)
-            Caret.Row += newLineCount;
-        
         if (raiseEvents) OnTextChanged(new CaretPosition(row, 0), new CaretPosition(row + newLineCount, CurrentLines[row + newLineCount].Length));
     }
     
