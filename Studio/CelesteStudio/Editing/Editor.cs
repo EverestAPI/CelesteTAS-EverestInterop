@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
+using CelesteStudio.Dialog;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
@@ -108,6 +109,9 @@ public sealed class Editor : Drawable {
                 new SeparatorMenuItem(),
                 MenuUtils.CreateAction("Select All", Application.Instance.CommonModifier | Keys.A, OnSelectAll),
                 MenuUtils.CreateAction("Select Block", Application.Instance.CommonModifier | Keys.W, OnSelectBlock),
+                new SeparatorMenuItem(),
+                MenuUtils.CreateAction("Find...", Application.Instance.CommonModifier | Keys.F, OnFind),
+                MenuUtils.CreateAction("Go To...", Application.Instance.CommonModifier | Keys.G, OnGoTo),
                 new SeparatorMenuItem(),
                 MenuUtils.CreateAction("Delete Selected Lines", Application.Instance.CommonModifier | Keys.Y, OnDeleteSelectedLines),
                 new SeparatorMenuItem(),
@@ -811,6 +815,21 @@ public sealed class Editor : Drawable {
         
         Document.Selection.Start = new CaretPosition(above, 0);
         Document.Selection.End = new CaretPosition(below, Document.Lines[below].Length);
+    }
+    
+    private void OnFind() {
+        
+    }
+    
+    private void OnGoTo() {
+        Document.Caret.Row = GoToDialog.Show(Document);
+        Document.Caret = ClampCaret(Document.Caret, wrapLine: false);
+        Document.Selection.Clear();
+        
+        if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out var actionLine))
+            Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
+        
+        ScrollCaretIntoView();
     }
     
     private void OnDeleteSelectedLines() {
