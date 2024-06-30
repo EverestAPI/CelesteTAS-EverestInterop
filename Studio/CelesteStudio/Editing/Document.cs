@@ -159,7 +159,7 @@ public class Document {
                 FilePath = path,
             };
         } catch (Exception e) {
-            Console.WriteLine(e);
+            Console.Error.WriteLine(e);
         }
 
         return null;
@@ -173,7 +173,7 @@ public class Document {
             if (Settings.Instance.AutoBackupEnabled && !string.IsNullOrWhiteSpace(FilePath))
                 CreateBackup();
         } catch (Exception e) {
-            Console.WriteLine(e);
+            Console.Error.WriteLine(e);
         }
     }
     

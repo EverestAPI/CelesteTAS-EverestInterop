@@ -2,7 +2,7 @@ using Eto.Forms;
 
 namespace CelesteStudio.Editing;
 
-public struct Snippet {
-    public string Text;
-    public Keys Shortcut;
+public class Snippet {
+    public string Text { get; set; } = string.Empty;
+    public Keys Shortcut { get; set; } = Keys.None;
 }

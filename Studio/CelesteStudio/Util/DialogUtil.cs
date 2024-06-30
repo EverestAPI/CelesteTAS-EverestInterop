@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Numerics;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -241,6 +242,79 @@ public static class DialogUtil
                 };
             }
         }
+    }
+    
+    private class BindingCell : CustomCell {
+        protected override Control OnCreateCell(CellEventArgs args) {
+            var snippet = (Snippet)args.Item;
+            var drawable = new Drawable();
+            
+            // The clip-rect is different between OnCreateCell and OnPaint.
+            // Surely this offset isn't platform dependant..
+            drawable.Paint += (_, e) => Draw(e.Graphics, snippet, args.IsEditing, e.ClipRectangle.X + 4.0f, e.ClipRectangle.Y + 4.0f);
+            
+            return drawable;
+        }
+        
+        protected override void OnPaint(CellPaintEventArgs args)
+        {
+            var snippet = (Snippet)args.Item;
+            Draw(args.Graphics, snippet, args.IsEditing, args.ClipRectangle.X, args.ClipRectangle.Y);
+        }
+        
+        private void Draw(Graphics graphics, Snippet snippet, bool editing, float x, float y) {
+            var font = SystemFonts.Bold();
+            
+            string text = editing
+                ? "Press a shortcut..."
+                : snippet.Shortcut.ToString();
+            
+            graphics.DrawText(font, SystemColors.ControlText, x, y, text);
+        }
+    }
+    
+    public static void ShowSnippetDialog() {
+        var grid = new GridView<Snippet> { DataStore = Settings.Snippets };
+        grid.Columns.Add(new GridColumn {
+            HeaderText = "Shortcut",
+            DataCell = new BindingCell(),
+            Editable = true,
+            Width = 200
+        });
+        grid.Columns.Add(new GridColumn {
+            HeaderText = "Content", 
+            DataCell = new TextBoxCell(nameof(Snippet.Text)),
+            Editable = true,
+            Width = 200
+        });
+        
+        var dialog = new Dialog<bool> {
+            Title = "Snippets",
+            Content = new StackLayout {
+                Padding = 10,
+                Spacing = 10,
+                Items = {
+                    new StackLayout {
+                        Orientation = Orientation.Horizontal,
+                        Spacing = 10,
+                        Items = {
+                            new Button() { Text = "Add" },
+                        new Button() { Text = "Remove" },
+                        }
+                    },
+                    grid
+                }
+            }
+        };
+        
+        dialog.DefaultButton = new Button((_, _) => dialog.Close(true)) { Text = "&OK" };
+        dialog.AbortButton = new Button((_, _) => dialog.Close(false)) { Text = "&Cancel" };
+        
+        dialog.PositiveButtons.Add(dialog.DefaultButton);
+        dialog.NegativeButtons.Add(dialog.AbortButton);
+        
+        if (!dialog.ShowModal())
+            return;
     }
     
     public static void ShowRecordDialog() {
