@@ -194,12 +194,17 @@ namespace Tommy.Serializer {
                 Type propertyType = property.PropertyType;
 
                 if (!tableData[key].HasValue && !tableData[key].IsTable) continue;
+                
+                if (propertyType.GetCustomAttribute<TommyCustomSerializer>() is { } attr) {
+                    dataClass.SetPropertyValue(key, attr.Deserialize(tableData[key]));
+                    continue;
+                }
 
                 // -- Determine if property is not a collection or table -------
                 if (propertyType == typeof(string) && (tableData[key].IsString || !tableData[key].IsArray && !tableData[key].IsTable))
                     dataClass.SetPropertyValue(key, GetValueByType(tableData[key], propertyType));
                 if (propertyType.IsEnum && (tableData[key].IsString || !tableData[key].IsArray && !tableData[key].IsTable))
-                    dataClass.SetFieldValue(key, Enum.Parse(propertyType, (string)GetValueByType(tableData[key], propertyType)));
+                    dataClass.SetPropertyValue(key, Enum.Parse(propertyType, (string)GetValueByType(tableData[key], propertyType)));
 
                 // -- Determine if property is a Toml Table/IDictionary --------
                 else if (tableData[key].IsTable && propertyType.GetInterface(nameof(IEnumerable)) != null &&
@@ -293,6 +298,11 @@ namespace Tommy.Serializer {
 
                 if (!tableData[key].HasValue && !tableData[key].IsTable) continue;
 
+                if (fieldType.GetCustomAttribute<TommyCustomSerializer>() is { } attr) {
+                    dataClass.SetFieldValue(key, attr.Deserialize(tableData[key]));
+                    continue;
+                }
+                
                 // -- Determine if property is not a collection or table -------
                 if (fieldType == typeof(string) && (tableData[key].IsString || !tableData[key].IsArray && !tableData[key].IsTable))
                     dataClass.SetFieldValue(key, GetValueByType(tableData[key], fieldType));
@@ -476,6 +486,7 @@ namespace Tommy.Serializer {
                 { } v when v.IsFloat() => new TomlFloat {Value = FloatConverter(valueType, obj)},
                 { } v when v.IsInteger() => new TomlInteger {Value = (long) Convert.ChangeType(obj, TypeCode.Int64)},
                 { } v when v == typeof(DateTime) => new TomlDateTimeLocal {Value = (DateTime) obj},
+                { } v when v.GetCustomAttribute<TommyCustomSerializer>() is { } attr => attr.Serialize(obj),
                 _ => throw new Exception($"Was not able to process item {valueType.Name}")
             }; // @formatter:on
         }
@@ -626,6 +637,21 @@ namespace Tommy.Serializer {
     /// <summary> When applied to a property, the property will be ignored when loading or saving Toml to disk </summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public class TommyIgnore : Attribute { }
+    
+    /// <summary> Allows users to implement a custom (de)serialization algorithm </summary>
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum)]
+    public class TommyCustomSerializer(Type type) : Attribute {
+        private readonly MethodInfo m_Serialize = type.GetMethod(nameof(ICustomSerializer<object>.Serialize), BindingFlags.Public | BindingFlags.Static);
+        private readonly MethodInfo m_Deserialize = type.GetMethod(nameof(ICustomSerializer<object>.Deserialize), BindingFlags.Public | BindingFlags.Static);
+        
+        public TomlNode Serialize(object obj) => (TomlNode)m_Serialize.Invoke(null, [obj]);
+        public object Deserialize(TomlNode node) => m_Deserialize.Invoke(null, [node]);
+    }
+    
+    public interface ICustomSerializer<T> {
+        public abstract static TomlNode Serialize(T value);
+        public abstract static T Deserialize(TomlNode node);
+    }
 
     #endregion
 }
