@@ -3,11 +3,13 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using CelesteStudio.Communication;
+using CelesteStudio.Dialog;
 using CelesteStudio.Editing;
 using CelesteStudio.Util;
 using Eto.Forms;
 using Eto.Drawing;
 using StudioCommunication;
+using FontDialog = CelesteStudio.Dialog.FontDialog;
 
 namespace CelesteStudio;
 
@@ -208,10 +210,10 @@ public sealed class Studio : Form {
                     MenuUtils.CreateAction("&Record TAS...", Keys.None, () => {
                         if (!CommunicationWrapper.Connected) {
                             MessageBox.Show("This feature requires the support of the CelesteTAS mod, please launch the game.", MessageBoxButtons.OK);
-                            // return;
+                            return;
                         }
                         
-                        DialogUtil.ShowRecordDialog();
+                        RecordDialog.Show();
                     }),
                 }},
                 new SubMenuItem {Text = "&Settings", Items = {
@@ -226,8 +228,8 @@ public sealed class Studio : Form {
                         MenuUtils.CreateSettingNumberInput("Backup Rate (minutes)", nameof(Settings.AutoBackupRate), 0, int.MaxValue, 1),
                         MenuUtils.CreateSettingNumberInput("Backup File Count", nameof(Settings.AutoBackupCount), 0, int.MaxValue, 1),
                     }},
-                    MenuUtils.CreateAction("Snippets...", Keys.None, DialogUtil.ShowSnippetDialog),
-                    MenuUtils.CreateAction("Font...", Keys.None, DialogUtil.ShowFontDialog),
+                    MenuUtils.CreateAction("Snippets...", Keys.None, SnippetDialog.Show),
+                    MenuUtils.CreateAction("Font...", Keys.None, FontDialog.Show),
                     MenuUtils.CreateSettingEnum<ThemeType>("Theme", nameof(Settings.ThemeType), ["Light", "Dark"]),
                     MenuUtils.CreateAction("Open Settings File...", Keys.None, () => ProcessHelper.OpenInDefaultApp(Settings.SettingsPath)),
                 }},

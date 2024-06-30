@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Numerics;
+using CelesteStudio.Dialog;
 using Eto.Forms;
 
 namespace CelesteStudio.Util;
@@ -42,7 +43,7 @@ public class MenuUtils {
     
     public static MenuItem CreateNumberInput<T>(string text, Func<T> getFn, Action<T> setFn, T minValue, T maxValue, T step) where T : INumber<T> {
         var cmd = new Command { MenuText = text };
-        cmd.Executed += (_, _) => setFn(DialogUtil.ShowNumberInputDialog(text, getFn(), minValue, maxValue, step));
+        cmd.Executed += (_, _) => setFn(NumberInputDialog<T>.Show(text, getFn(), minValue, maxValue, step));
         
         return new ButtonMenuItem(cmd);
     }
@@ -53,7 +54,7 @@ public class MenuUtils {
         var cmd = new Command { MenuText = $"{text}: {property.GetValue(Settings.Instance)!}" };
         cmd.Executed += (_, _) => {
             T value = (T)property.GetValue(Settings.Instance)!;
-            property.SetValue(Settings.Instance, DialogUtil.ShowNumberInputDialog(text, value, minValue, maxValue, step));
+            property.SetValue(Settings.Instance, NumberInputDialog<T>.Show(text, value, minValue, maxValue, step));
             
             Settings.Instance.OnChanged();
             Settings.Save();
