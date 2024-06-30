@@ -21,6 +21,9 @@ public struct Theme {
     public Color ServiceLine;
     public Color StatusFg;
     public Color StatusBg;
+    public Color AutoCompleteFg;
+    public Color AutoCompleteBg;
+    public Color AutoCompleteBorder;
     
     // Text styles
     public Style Action;
@@ -66,6 +69,9 @@ public struct Theme {
         ServiceLine = Color.FromRgb(0x44475A),
         StatusFg = Color.FromRgb(0xF8F8F2),
         StatusBg = Color.FromRgb(0x383A46),
+        AutoCompleteFg = Color.FromRgb(0xCFCFCF),
+        AutoCompleteBg = Color.FromRgb(0x141414),
+        AutoCompleteBorder = Color.FromRgb(0xFFFFFF),
         
         Action = new Style(Color.FromRgb(0x8BE9FD)),
         Angle = new Style(Color.FromRgb(0xFF79C6)),

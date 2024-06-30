@@ -41,8 +41,8 @@ public sealed class Editor : Drawable {
     
     private Font Font => FontManager.EditorFontRegular;
     private SyntaxHighlighter highlighter;
-    
     private const float LineNumberPadding = 5.0f;
+    
     private float textOffsetX;
     
     // When editing a long line and moving to a short line, "remember" the column on the long line, unless the caret has been moved. 
@@ -1558,6 +1558,28 @@ public sealed class Editor : Drawable {
             e.Graphics.DrawLine(Settings.Instance.Theme.ServiceLine,
                 scrollablePosition.X + textOffsetX - LineNumberPadding, 0.0f,
                 scrollablePosition.X + textOffsetX - LineNumberPadding, yPos + scrollable.Size.Height);
+        }
+        
+        // Draw autocomplete popup
+        const float autocompleteXPos = 8.0f;
+        const float autocompleteYOffset = 7.0f;
+        const float autocompletePadding = 5.0f;
+        const float autocompleteBorder = 2.0f;
+        
+        string[] autocompleteTests = ["Set", "Invoke", "Repeat"];
+        
+        float boxX = scrollablePosition.X + textOffsetX + autocompleteXPos;
+        float boxY = carY + Font.LineHeight() + autocompleteYOffset; 
+        float boxW = Font.CharWidth() * autocompleteTests.Select(entry => entry.Length).Aggregate(Math.Max) + autocompletePadding * 2.0f;
+        float boxH = Font.LineHeight() * autocompleteTests.Length + autocompletePadding * 2.0f;
+        
+        e.Graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteBorder, boxX - autocompleteBorder, boxY - autocompleteBorder, boxW + autocompleteBorder * 2.0f, boxH + autocompleteBorder * 2.0f);
+        e.Graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteBg, boxX, boxY, boxW, boxH);
+        
+        
+        foreach (var entry in autocompleteTests) {
+            e.Graphics.DrawText(Font, Settings.Instance.Theme.AutoCompleteFg, boxX + autocompletePadding, boxY + autocompletePadding, entry);
+            boxY += Font.LineHeight();
         }
         
         base.OnPaint(e);
