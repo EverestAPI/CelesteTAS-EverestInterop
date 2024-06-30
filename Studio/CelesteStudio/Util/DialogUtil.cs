@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Threading.Tasks;
 using CelesteStudio.Editing;
-using Eto;
 using Eto.Drawing;
 using Eto.Forms;
 
@@ -246,18 +244,14 @@ public static class DialogUtil
     }
     
     private class BindingCell : CustomCell {
-        public BindingCell() {
-            BeginEdit += (_, _) => Console.WriteLine("BeginEdit");
-            CancelEdit += (_, _) => Console.WriteLine("CancelEdit");
-            CommitEdit += (_, _) => Console.WriteLine("CommitEdit");
-        }
+        private static readonly PropertyInfo p_CellEventArgs_IsEditing = typeof(CellEventArgs).GetProperty(nameof(CellEventArgs.IsEditing))!;
         
         protected override Control OnCreateCell(CellEventArgs args) {
             var snippet = (Snippet)args.Item;
             var drawable = new Drawable();
             
             // The clip-rect is different between OnCreateCell and OnPaint.
-            // Surely this offset isn't platform dependant..
+            // Surely this offset isn't platform dependant...
             drawable.Paint += (_, e) => Draw(e.Graphics, snippet, args.IsEditing, e.ClipRectangle.X + 4.0f, e.ClipRectangle.Y + 4.0f);
             drawable.KeyDown += (_, e) => {
                 if (!args.IsEditing)
@@ -271,6 +265,10 @@ public static class DialogUtil
                 {
                     return;
                 }
+                
+                // We cannot just call grid.CommitEdit() to end the editing...
+                // So we kinda need to do this weird workaround
+                p_CellEventArgs_IsEditing.SetValue(args, false);
                 
                 snippet.Shortcut = e.KeyData;
                 drawable.Invalidate();
