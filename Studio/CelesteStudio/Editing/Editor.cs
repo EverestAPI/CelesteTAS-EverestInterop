@@ -818,7 +818,7 @@ public sealed class Editor : Drawable {
     }
     
     private void OnFind() {
-        
+        FindDialog.Show(this);
     }
     
     private void OnGoTo() {
@@ -1203,7 +1203,7 @@ public sealed class Editor : Drawable {
         return position;
     }
     
-    private void ScrollCaretIntoView(bool center = false) {
+    public void ScrollCaretIntoView(bool center = false) {
         // Clamp just to be sure
         Document.Caret = ClampCaret(Document.Caret, wrapLine: false);
         
