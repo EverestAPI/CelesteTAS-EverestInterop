@@ -43,6 +43,8 @@ public sealed class Editor : Drawable {
     private SyntaxHighlighter highlighter;
     private const float LineNumberPadding = 5.0f;
     
+    private readonly AutoCompleteMenu autoCompleteMenu;
+    
     private float textOffsetX;
     
     // When editing a long line and moving to a short line, "remember" the column on the long line, unless the caret has been moved. 
@@ -69,6 +71,20 @@ public sealed class Editor : Drawable {
             highlighter = new(FontManager.EditorFontRegular, FontManager.EditorFontBold, FontManager.EditorFontItalic, FontManager.EditorFontBoldItalic);
             Recalc();
         };
+        
+        autoCompleteMenu = new();
+        foreach (var command in CommandInfo.AllCommands) {
+            if (command == null)
+                continue;
+            
+            autoCompleteMenu.Entries.Add(new AutoCompleteMenu.Entry {
+                DisplayText = command.Value.Name,
+                OnUse = () => {
+                    Document.ReplaceLine(Document.Caret.Row, command.Value.Insert);
+                    Document.Caret.Col = Document.Lines[Document.Caret.Row].Length;
+                },
+            });
+        }
         
         BackgroundColor = Settings.Instance.Theme.Background;
         Settings.ThemeChanged += () => BackgroundColor = Settings.Instance.Theme.Background;
@@ -361,6 +377,16 @@ public sealed class Editor : Drawable {
     }
     
     protected override void OnKeyDown(KeyEventArgs e) {
+        if (autoCompleteMenu.OnKeyDown(e)) { 
+            e.Handled = true;
+            Recalc();
+            return;
+        }
+        if (e.Key == Keys.Space && e.Modifiers == Keys.Control) {
+            autoCompleteMenu.Visible = true;
+            autoCompleteMenu.Filter = Document.Lines[Document.Caret.Row][..Document.Caret.Col];
+        }
+        
         if (Settings.Instance.SendInputsToCeleste && Studio.CommunicationWrapper.Connected && Studio.CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
             e.Handled = true;
             return;
@@ -600,6 +626,10 @@ public sealed class Editor : Drawable {
                 }
             } else {
                 Document.Insert(e.Text);
+                
+                // Update auto completion
+                autoCompleteMenu.Visible = true;
+                autoCompleteMenu.Filter = Document.Lines[Document.Caret.Row];
             }
             
             // But turn it into an action line if possible
@@ -612,7 +642,7 @@ public sealed class Editor : Drawable {
         ScrollCaretIntoView();
         Recalc();
     }
-    
+
     private void OnDelete(CaretMovementType direction) {
         if (!Document.Selection.Empty) {
             var oldCaret = Document.Caret;
@@ -728,12 +758,16 @@ public sealed class Editor : Drawable {
             if (caret.Row == newCaret.Row) {
                 Document.ReplaceRangeInLine(caret.Row, caret.Col, newCaret.Col, string.Empty);
                 newCaret.Col = Math.Min(newCaret.Col, caret.Col);
+                
+                autoCompleteMenu.Filter = Document.Lines[Document.Caret.Row];
             } else {
                 var min = newCaret < caret ? newCaret : caret;
                 var max = newCaret < caret ? caret : newCaret;
                 
                 Document.RemoveRange(min, max);
                 newCaret = min;
+                
+                autoCompleteMenu.Visible = false;
             }
             
             Document.Caret = ClampCaret(newCaret);
@@ -1271,7 +1305,7 @@ public sealed class Editor : Drawable {
         } else {
             desiredVisualCol = newVisualPos.Col;
         }
-        newCaret = GetActualPosition(newVisualPos);
+        newCaret = ClampCaret(GetActualPosition(newVisualPos), wrapLine: false);
         
         var newLine = Document.Lines[newCaret.Row];
         if (ActionLine.TryParse(newLine, out var newActionLine)) {
@@ -1286,6 +1320,8 @@ public sealed class Editor : Drawable {
         } else {
             Document.Selection.Clear();
         }
+        
+        autoCompleteMenu.Visible = false;
         
         Document.Caret = newCaret;
         ScrollCaretIntoView();
@@ -1420,6 +1456,8 @@ public sealed class Editor : Drawable {
         if (ActionLine.TryParse(newLine, out var actionLine)) {
             Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
         }
+        
+        autoCompleteMenu.Visible = false;
     }
     
     #endregion
@@ -1493,8 +1531,9 @@ public sealed class Editor : Drawable {
                 float h = Font.LineHeight();
                 e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w, h);
             } else {
+                var visualLine = GetVisualLine(min.Row);
                 float x = Font.CharWidth() * min.Col + textOffsetX;
-                float w = Font.MeasureWidth(GetVisualLine(min.Row)[min.Col..]);
+                float w = visualLine.Length == 0 ? 0.0f : Font.MeasureWidth(visualLine[min.Col..]);
                 float y = Font.LineHeight() * min.Row;
                 e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w, Font.LineHeight());
                 
@@ -1563,24 +1602,10 @@ public sealed class Editor : Drawable {
         // Draw autocomplete popup
         const float autocompleteXPos = 8.0f;
         const float autocompleteYOffset = 7.0f;
-        const float autocompletePadding = 5.0f;
-        const float autocompleteBorder = 2.0f;
-        
-        string[] autocompleteTests = ["Set", "Invoke", "Repeat"];
-        
-        float boxX = scrollablePosition.X + textOffsetX + autocompleteXPos;
-        float boxY = carY + Font.LineHeight() + autocompleteYOffset; 
-        float boxW = Font.CharWidth() * autocompleteTests.Select(entry => entry.Length).Aggregate(Math.Max) + autocompletePadding * 2.0f;
-        float boxH = Font.LineHeight() * autocompleteTests.Length + autocompletePadding * 2.0f;
-        
-        e.Graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteBorder, boxX - autocompleteBorder, boxY - autocompleteBorder, boxW + autocompleteBorder * 2.0f, boxH + autocompleteBorder * 2.0f);
-        e.Graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteBg, boxX, boxY, boxW, boxH);
-        
-        
-        foreach (var entry in autocompleteTests) {
-            e.Graphics.DrawText(Font, Settings.Instance.Theme.AutoCompleteFg, boxX + autocompletePadding, boxY + autocompletePadding, entry);
-            boxY += Font.LineHeight();
-        }
+
+        autoCompleteMenu.Draw(e.Graphics, Font,
+            scrollablePosition.X + textOffsetX + autocompleteXPos,
+            carY + Font.LineHeight() + autocompleteYOffset);
         
         base.OnPaint(e);
     }

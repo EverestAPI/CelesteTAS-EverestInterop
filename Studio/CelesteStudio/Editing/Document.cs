@@ -267,8 +267,8 @@ public class Document {
         return pos;
     }
     
-    public void InsertLineAbove(string text) => InsertNewLine(Caret.Row, text);
-    public void InsertLineBelow(string text) => InsertNewLine(Caret.Row + 1, text);
+    public void InsertLineAbove(string text, bool raiseEvents = false) => InsertNewLine(Caret.Row, text, raiseEvents);
+    public void InsertLineBelow(string text, bool raiseEvents = false) => InsertNewLine(Caret.Row + 1, text, raiseEvents);
     public void InsertNewLine(int row, string text, bool raiseEvents = false) {
         if (raiseEvents) undoStack.Push(Caret);
         
@@ -289,9 +289,22 @@ public class Document {
     public void ReplaceLine(int row, string text, bool raiseEvents = true) {
         if (raiseEvents) undoStack.Push(Caret);
         
-        CurrentLines[row] = text;
+        var newLines = text.SplitDocumentLines();
+        if (newLines.Length == 0) {
+            CurrentLines[row] = string.Empty;
+        } else if (newLines.Length == 1) {
+            CurrentLines[row] = newLines[0];
+        } else {
+            CurrentLines[row] = newLines[0];
+            CurrentLines.InsertRange(row + 1, newLines[1..]);
+        }
         
-        if (raiseEvents) OnTextChanged(new CaretPosition(row, 0), new CaretPosition(row, text.Length));
+        int newLineCount = Math.Max(0, newLines.Length - 1);
+        
+        if (Caret.Row >= row)
+            Caret.Row += newLineCount;
+        
+        if (raiseEvents) OnTextChanged(new CaretPosition(row, 0), new CaretPosition(row + newLineCount, CurrentLines[row + newLineCount].Length));
     }
     
     public void RemoveSelectedText() => RemoveRange(Selection.Min, Selection.Max);

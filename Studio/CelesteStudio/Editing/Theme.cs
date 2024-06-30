@@ -23,6 +23,7 @@ public struct Theme {
     public Color StatusBg;
     public Color AutoCompleteFg;
     public Color AutoCompleteBg;
+    public Color AutoCompleteSelected;
     public Color AutoCompleteBorder;
     
     // Text styles
@@ -71,6 +72,7 @@ public struct Theme {
         StatusBg = Color.FromRgb(0x383A46),
         AutoCompleteFg = Color.FromRgb(0xCFCFCF),
         AutoCompleteBg = Color.FromRgb(0x141414),
+        AutoCompleteSelected = Color.FromArgb(0x7F0000FF),
         AutoCompleteBorder = Color.FromRgb(0xFFFFFF),
         
         Action = new Style(Color.FromRgb(0x8BE9FD)),
