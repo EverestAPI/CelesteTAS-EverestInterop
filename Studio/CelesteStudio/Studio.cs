@@ -239,6 +239,9 @@ public sealed class Studio : Form {
                     MenuUtils.CreateAction("Font...", Keys.None, () => DialogUtil.ShowFontDialog()),
                     MenuUtils.CreateSettingEnum<ThemeType>("Theme", nameof(Settings.ThemeType), ["Light", "Dark"]),
                     MenuUtils.CreateAction("Open Settings File...", Keys.None, () => ProcessHelper.OpenInDefaultApp(Settings.SettingsPath)),
+                    // TODO: This is temporary while the snippet dialog is being worked on
+                    MenuUtils.CreateAction("Open Snippets File...", Keys.None, () => ProcessHelper.OpenInDefaultApp(Settings.SnippetsPath)),
+                    MenuUtils.CreateAction("Reload Settings", Keys.None, () => Settings.Load()),
                 }},
                 new SubMenuItem {Text = "&Toggles", Items = {
                     MenuUtils.CreateToggle("&Hitboxes", CommunicationWrapper.GetHitboxes, CommunicationWrapper.ToggleHitboxes),
