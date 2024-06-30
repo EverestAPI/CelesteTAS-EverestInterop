@@ -1,6 +1,6 @@
 using Eto.Drawing;
 
-namespace CelesteStudio;
+namespace CelesteStudio.Editing;
 
 public struct Style(Color foregroundColor, Color? backgroundColor = null, FontStyle fontStyle = FontStyle.None) {
     public Color ForegroundColor = foregroundColor;

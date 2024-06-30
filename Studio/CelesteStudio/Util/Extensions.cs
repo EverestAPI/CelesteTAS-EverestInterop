@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using CelesteStudio.Editing;
 using Eto.Drawing;
 using Eto.Forms;
 

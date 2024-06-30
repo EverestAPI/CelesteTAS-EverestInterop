@@ -10,7 +10,7 @@ using StudioCommunication;
 using WrapLine = (string Line, int Index);
 using WrapEntry = (int StartOffset, (string Line, int Index)[] Lines);
 
-namespace CelesteStudio;
+namespace CelesteStudio.Editing;
 
 public sealed class Editor : Drawable {
     private Document document;
@@ -357,6 +357,8 @@ public sealed class Editor : Drawable {
     }
     
     protected override void OnKeyDown(KeyEventArgs e) {
+        Console.WriteLine($"{e.Key} | {e.Modifiers}");
+        
         if (Settings.Instance.SendInputsToCeleste && Studio.CommunicationWrapper.Connected && Studio.CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
             e.Handled = true;
             return;

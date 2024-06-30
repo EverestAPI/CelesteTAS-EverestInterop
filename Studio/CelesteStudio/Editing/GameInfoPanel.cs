@@ -5,7 +5,7 @@ using Eto.Drawing;
 using Eto.Forms;
 using StudioCommunication;
 
-namespace CelesteStudio;
+namespace CelesteStudio.Editing;
 
 public class GameInfoPanel : Panel {
     private const string DisconnectedText = "Searching...";

@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 using CelesteStudio.Util;
 using Eto.Drawing;
 
-namespace CelesteStudio;
+namespace CelesteStudio.Editing;
 
 public enum StyleType : byte {
     Action,

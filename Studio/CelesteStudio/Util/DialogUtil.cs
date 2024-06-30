@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Reflection;
 using System.Threading.Tasks;
+using CelesteStudio.Editing;
 using Eto;
 using Eto.Drawing;
 using Eto.Forms;

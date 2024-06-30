@@ -5,7 +5,7 @@ using System.Linq;
 using CelesteStudio.Util;
 using Eto;
 
-namespace CelesteStudio;
+namespace CelesteStudio.Editing;
 
 public struct CaretPosition(int row = 0, int col = 0) {
     public int Row = row, Col = col;
