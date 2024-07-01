@@ -41,9 +41,23 @@ public struct CommandInfo() {
             ]
         },
         null,
-        new CommandInfo { Name = "StunPause", Insert = $"StunPause{Document.NewLine}    [0]{Document.NewLine}EndStunPause", Description = "Automate pausing every other frame without doing the actual pause inputs.\nThe Simulate mode should only be used to test routes." },
+        new CommandInfo { 
+            Name = "StunPause", 
+            Description = "Automate pausing every other frame without doing the actual pause inputs.\nThe Simulate mode should only be used to test routes.",
+            Insert = $"StunPause [1]{Document.NewLine}    [0]{Document.NewLine}EndStunPause", 
+            AutoCompleteEntires = [
+                _ => ["Simulate", "Input"]
+            ]
+        },
         new CommandInfo { Name = "EndStunPause", Insert = "EndStunPause", Description = "Automate pausing every other frame without doing the actual pause inputs.\nThe Simulate mode should only be used to test routes."  },
-        new CommandInfo { Name = "StunPauseMode", Insert = "StunPauseMode, [0;Simulate/Input]", Description = "Specify the default mode for StunPause command." },
+        new CommandInfo {
+            Name = "StunPauseMode", 
+            Description = "Specify the default mode for StunPause command.",
+            Insert = "StunPauseMode, [0;Simulate/Input]",
+            AutoCompleteEntires = [
+                _ => ["Simulate", "Input"]
+            ]
+        },
         null,
         new CommandInfo { Name = "AutoInput", Insert = $"AutoInput, 2{Document.NewLine}   1,S,N{Document.NewLine}  10,O{Document.NewLine}StartAutoInput{Document.NewLine}    [0]{Document.NewLine}EndAutoInput", Description = "Inserts the auto inputs every cycle length frames that is played through inputs."  },
         new CommandInfo { Name = "StartAutoInput", Insert = "StartAutoInput", Description = "Inserts the auto inputs every cycle length frames that is played through inputs." },

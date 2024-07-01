@@ -58,6 +58,7 @@ public class Anchor {
     public object? UserData;
     public Action? OnRemoved;
     
+    public bool IsPositionInside(CaretPosition position) => position.Row == Row && position.Col >= MinCol && position.Col <= MaxCol;
     public Anchor Clone() => new() { Row = Row, MinCol = MinCol, MaxCol = MaxCol, UserData = UserData, OnRemoved = OnRemoved };
 }
 
@@ -531,6 +532,35 @@ public class Document {
 
         if (startCol > endCol)
             (endCol, startCol) = (startCol, endCol);
+        
+        // Update anchors
+        if (CurrentAnchors.TryGetValue(row, out var anchors)) {
+            for (int i = anchors.Count - 1; i >= 0; i--) {
+                var anchor = anchors[i];
+                
+                // Invalidate when range partially intersects
+                if (startCol < anchor.MinCol && endCol > anchor.MinCol ||
+                    startCol < anchor.MaxCol && endCol > anchor.MaxCol)
+                {
+                    anchor.OnRemoved?.Invoke();
+                    anchors.Remove(anchor);
+                }
+                
+                if (anchor.MinCol == anchor.MaxCol) {
+                    // Paste the new text into the anchor
+                    anchor.MaxCol += text.Length;
+                } else {
+                    if (endCol <= anchor.MinCol) {
+                        anchor.MinCol -= endCol - startCol;
+                        anchor.MinCol += text.Length;
+                    }
+                    if (endCol <= anchor.MaxCol) {
+                        anchor.MaxCol -= endCol - startCol;
+                        anchor.MaxCol += text.Length;
+                    }
+                }
+            }
+        }
         
         CurrentLines[row] = CurrentLines[row].ReplaceRange(startCol, endCol - startCol, text);
         

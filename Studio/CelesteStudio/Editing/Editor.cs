@@ -94,11 +94,14 @@ public sealed class Editor : Drawable {
                     ClearQuickEdits();
                     for (int i = 0; i < quickEdit.Selections.Length; i++) {
                         Selection selection = quickEdit.Selections[i];
+                        
+                        var defaultText = quickEdit.ActualText.SplitDocumentLines()[selection.Min.Row][selection.Min.Col..selection.Max.Col];
+                        
                         // Quick-edit selections are relative, not absolute
                         Document.AddAnchor(new Anchor {
                             Row = selection.Min.Row + Document.Caret.Row,
                             MinCol = selection.Min.Col, MaxCol = selection.Max.Col,
-                            UserData = new QuickEditIndex { Index = i },
+                            UserData = new QuickEditData { Index = i, DefaultText = defaultText },
                         });
                     }
                     SelectQuickEdit(0);
@@ -401,33 +404,43 @@ public sealed class Editor : Drawable {
                 autoCompleteMenu.Entries = entries.Select(entry => new AutoCompleteMenu.Entry {
                     DisplayText = entry,
                     OnUse = () => {
-                        ClearQuickEdits();
-                        
                         var commandLine = Document.Lines[Document.Caret.Row];
                         
                         if (command.Value.AutoCompleteEntires.Length != commandArgs.Length) {
                             // Include separator for next argument
-                            Document.ReplaceLine(Document.Caret.Row, commandLine[..lastArgStart] + entry + separatorMatch.Value);
+                            Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, entry + separatorMatch.Value);
                             UpdateAutoComplete();
                         } else {
-                            Document.ReplaceLine(Document.Caret.Row, commandLine[..lastArgStart] + entry);
+                            Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, entry);
                             autoCompleteMenu.Visible = false;
                         }
                         
                         Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+                        Document.Selection.Clear();
                     },
                 }).ToList();
             } else {
                 autoCompleteMenu.Entries = [];
             }
             
-            autoCompleteMenu.Filter = args[^1];
+            if (GetSelectedQuickEdit() is { } quickEdit && args[^1] == quickEdit.DefaultText) {
+                // Display all entries which quick-edit still contains default
+                autoCompleteMenu.Filter = string.Empty;
+            } else {
+                autoCompleteMenu.Filter = args[^1];
+            }
         }
     }
     
     #endregion
     
     protected override void OnKeyDown(KeyEventArgs e) {
+        if (autoCompleteMenu.OnKeyDown(e)) {
+            e.Handled = true;
+            Recalc();
+            return;
+        }
+        
         if (GetQuickEdits().Any()) {
             // Cycle
             if (e.Key == Keys.Tab) {
@@ -436,6 +449,8 @@ public sealed class Editor : Drawable {
                 } else {
                     SelectNextQuickEdit();
                 }
+                
+                UpdateAutoComplete();
 
                 e.Handled = true;
                 Recalc();
@@ -463,12 +478,6 @@ public sealed class Editor : Drawable {
             }
         }
         
-        if (autoCompleteMenu.OnKeyDown(e)) { 
-            e.Handled = true;
-            Recalc();
-            return;
-        }
-
         if (e is { Key: Keys.Space, Control: true}) {
             UpdateAutoComplete();
 
@@ -576,7 +585,7 @@ public sealed class Editor : Drawable {
     #region Quick Edit
     
     private record struct QuickEdit { public required string ActualText; public Selection[] Selections; }
-    private record struct QuickEditIndex { public required int Index; }
+    private record struct QuickEditData { public required int Index; public required string DefaultText; }
     
     private readonly Dictionary<string, QuickEdit> quickEditCache = new();  
     private QuickEdit ParseQuickEdit(string text) {
@@ -637,7 +646,7 @@ public sealed class Editor : Drawable {
     private void SelectQuickEdit(int index) {
         quickEditIndex = index;
 
-        var quickEdit = Document.FindFirstAnchor(anchor => anchor.UserData is QuickEditIndex idx && idx.Index == index);
+        var quickEdit = Document.FindFirstAnchor(anchor => anchor.UserData is QuickEditData idx && idx.Index == index);
         if (quickEdit == null) {
             ClearQuickEdits();
             return;
@@ -651,8 +660,9 @@ public sealed class Editor : Drawable {
         };
     }
     
-    private IEnumerable<Anchor> GetQuickEdits() => Document.FindAnchors(anchor => anchor.UserData is QuickEditIndex);
-    private void ClearQuickEdits() => Document.RemoveAnchorsIf(anchor => anchor.UserData is QuickEditIndex);
+    private QuickEditData? GetSelectedQuickEdit() => GetQuickEdits().FirstOrDefault(anchor => anchor.IsPositionInside(Document.Caret))?.UserData as QuickEditData?;
+    private IEnumerable<Anchor> GetQuickEdits() => Document.FindAnchors(anchor => anchor.UserData is QuickEditData);
+    private void ClearQuickEdits() => Document.RemoveAnchorsIf(anchor => anchor.UserData is QuickEditData);
     
     #endregion
     
