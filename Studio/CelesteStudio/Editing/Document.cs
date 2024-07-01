@@ -254,6 +254,28 @@ public class Document {
             }
         }
     }
+    public void RemoveAnchorsIf(Predicate<Anchor> predicate) {
+        foreach ((int _, List<Anchor> list) in CurrentAnchors) {
+            list.RemoveAll(predicate);
+        }
+    }
+    public Anchor? FindFirstAnchor(Func<Anchor, bool> predicate) {
+        foreach ((int _, List<Anchor> list) in CurrentAnchors) {
+            if (list.FirstOrDefault(predicate) is { } anchor) {
+                return anchor;
+            }
+        }
+        return null;
+    }
+    public IEnumerable<Anchor> FindAnchors(Func<Anchor, bool> predicate) {
+        foreach ((int _, List<Anchor> list) in CurrentAnchors) {
+            foreach (var anchor in list) {
+                if (predicate(anchor)) {
+                    yield return anchor;
+                }
+            }
+        }
+    }
 
     #region Text Manipulation Helpers
     

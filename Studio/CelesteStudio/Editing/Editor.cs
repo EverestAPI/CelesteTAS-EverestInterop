@@ -46,10 +46,9 @@ public sealed class Editor : Drawable {
     
     private readonly AutoCompleteMenu autoCompleteMenu;
     
-    // List of selection to switch through with tab and edit
+    // Quick-edits are anchors to switch through with tab and edit
     // Used by auto-complete snippets
-    // TODO: Support more than the initial selection. This is difficult, because we somehow need to anchor the selections to the text.
-    // private Selection[] currentQuickEdits = [];
+    private int quickEditIndex = 0;
     
     private float textOffsetX;
     
@@ -83,68 +82,26 @@ public sealed class Editor : Drawable {
             if (command == null)
                 continue;
             
-            // Parse quick-edit positions
-            var actualInsert = new StringBuilder(capacity: command.Value.Insert.Length);
-            var quickEditSpots = new Dictionary<int, Selection>();
-            
-            int row = 0;
-            int col = 0;
-            for (int i = 0; i < command.Value.Insert.Length; i++, col++) {
-                char c = command.Value.Insert[i];
-                if (c == Document.NewLine) {
-                    row++;
-                    col = 0;
-                }
-                if (c != '[') {
-                    actualInsert.Append(c);
-                    continue;
-                }
-                
-                int endIdx = command.Value.Insert.IndexOf(']', i);
-                var quickEdit = command.Value.Insert[(i + 1)..endIdx];
-                
-                int delimIdx = quickEdit.IndexOf(';');
-                if (delimIdx < 0) {
-                    int idx = int.Parse(quickEdit);
-                    quickEditSpots[idx] = new Selection { Start = new CaretPosition(row, col), End = new CaretPosition(row, col) };
-                } else {
-                    int idx = int.Parse(quickEdit[..delimIdx]);
-                    var text = quickEdit[(delimIdx + 1)..];
-                    quickEditSpots[idx] = new Selection { Start = new CaretPosition(row, col), End = new CaretPosition(row, col + text.Length) };
-                    actualInsert.Append(text);
-                    col += text.Length;
-                }
-                
-                i = endIdx;
-            }
-            
-            // Convert to actual array
-            var quickEdits = new Selection[quickEditSpots.Count]; 
-            for (int i = 0; i < quickEdits.Length; i++) {
-                quickEdits[i] = quickEditSpots[i];
-            }
+            var quickEdit = ParseQuickEdit(command.Value.Insert);
             
             autoCompleteMenu.Entries.Add(new AutoCompleteMenu.Entry {
                 DisplayText = command.Value.Name,
                 OnUse = () => {
-                    Document.ReplaceLine(Document.Caret.Row, actualInsert.ToString());
+                    Document.ReplaceLine(Document.Caret.Row, quickEdit.ActualText);
                     Document.Caret.Col = Document.Lines[Document.Caret.Row].Length;
                     
-                    // TODO: Support more than 1 quick-edit
-                    if (quickEdits.Length != 0) {
-                        Document.AddAnchor(new Anchor {
-                            Row = Document.Caret.Row,
-                            MinCol = 2, MaxCol = 4,
-                        });
-                        
+                    ClearQuickEdits();
+                    for (int i = 0; i < quickEdit.Selections.Length; i++) {
+                        Selection selection = quickEdit.Selections[i];
                         // Quick-edit selections are relative, not absolute
-                        var quickEdit = quickEdits[0];
-                        Document.Selection = new Selection {
-                            Start = new CaretPosition(quickEdit.Start.Row + Document.Caret.Row, quickEdit.Start.Col),
-                            End = new CaretPosition(quickEdit.End.Row + Document.Caret.Row, quickEdit.End.Col),
-                        };
-                        Document.Caret = Document.Selection.Start;
+                        Document.AddAnchor(new Anchor {
+                            Row = selection.Min.Row + Document.Caret.Row,
+                            MinCol = selection.Min.Col, MaxCol = selection.Max.Col,
+                            UserData = new QuickEditIndex { Index = i },
+                        });
                     }
+                    
+                    SelectQuickEdit(0);
                 },
             });
         }
@@ -402,6 +359,23 @@ public sealed class Editor : Drawable {
     }
     
     protected override void OnKeyDown(KeyEventArgs e) {
+        if (GetQuickEdits().Any()) {
+            if (e.Key == Keys.Tab) {
+                if (e.Shift) {
+                    SelectPrevQuickEdit();
+                } else {
+                    SelectNextQuickEdit();
+                }
+                Recalc();
+                e.Handled = true;
+                return;
+            }
+            if (e.Key == Keys.Escape) {
+                ClearQuickEdits();
+                Document.Selection.Clear();
+            }
+        }
+        
         if (autoCompleteMenu.OnKeyDown(e)) { 
             e.Handled = true;
             Recalc();
@@ -507,6 +481,89 @@ public sealed class Editor : Drawable {
         
         base.OnKeyUp(e);
     }
+    
+    #region Quick Edit
+    
+    private record struct QuickEdit { public required string ActualText; public Selection[] Selections; }
+    private record struct QuickEditIndex { public required int Index; }
+    
+    private readonly Dictionary<string, QuickEdit> quickEditCache = new();  
+    private QuickEdit ParseQuickEdit(string text) {
+        if (quickEditCache.TryGetValue(text, out var quickEdit)) {
+            return quickEdit;
+        }
+        
+        var actualText = new StringBuilder(capacity: text.Length);
+        var quickEditSpots = new Dictionary<int, Selection>();
+        
+        int row = 0;
+        int col = 0;
+        for (int i = 0; i < text.Length; i++) {
+            char c = text[i];
+            if (c == Document.NewLine) {
+                row++;
+                col = 0;
+            }
+            if (c != '[') {
+                actualText.Append(c);
+                col++;
+                continue;
+            }
+            
+            int endIdx = text.IndexOf(']', i);
+            var quickEditText = text[(i + 1)..endIdx];
+            
+            int delimIdx = quickEditText.IndexOf(';');
+            if (delimIdx < 0) {
+                int idx = int.Parse(quickEditText);
+                quickEditSpots[idx] = new Selection { Start = new CaretPosition(row, col), End = new CaretPosition(row, col) };
+            } else {
+                int idx = int.Parse(quickEditText[..delimIdx]);
+                var editableText = quickEditText[(delimIdx + 1)..];
+                quickEditSpots[idx] = new Selection { Start = new CaretPosition(row, col), End = new CaretPosition(row, col + editableText.Length) };
+                actualText.Append(editableText);
+                col += editableText.Length;
+            }
+            
+            i = endIdx;
+        }
+        
+        // Convert to actual array
+        var quickEditSelections = new Selection[quickEditSpots.Count];
+        for (int i = 0; i < quickEditSelections.Length; i++) {
+            quickEditSelections[i] = quickEditSpots[i];
+        }
+        
+        quickEdit = new QuickEdit { ActualText = actualText.ToString(), Selections = quickEditSelections };
+        quickEditCache[text] = quickEdit;
+        return quickEdit;
+    }
+    
+    private void SelectNextQuickEdit() => SelectQuickEdit((quickEditIndex + 1).Mod(GetQuickEdits().Count()));
+    private void SelectPrevQuickEdit() => SelectQuickEdit((quickEditIndex - 1).Mod(GetQuickEdits().Count()));
+    private void SelectQuickEdit(int index) {
+        quickEditIndex = index;
+
+        var quickEdit = Document.FindFirstAnchor(anchor => anchor.UserData is QuickEditIndex idx && idx.Index == index);
+        Console.WriteLine($"Quick {quickEdit}");
+        if (quickEdit == null) {
+            ClearQuickEdits();
+            return;
+        }
+        
+        Document.Caret.Row = quickEdit.Row;
+        Document.Caret.Col = quickEdit.MinCol;
+        Document.Selection = new Selection {
+            Start = new CaretPosition(quickEdit.Row, quickEdit.MinCol),
+            End = new CaretPosition(quickEdit.Row, quickEdit.MaxCol),
+        };
+        Console.WriteLine($"{Document.Selection.Min}->{Document.Selection.Max} @ {Document.Caret}");
+    }
+    
+    private IEnumerable<Anchor> GetQuickEdits() => Document.FindAnchors(anchor => anchor.UserData is QuickEditIndex);
+    private void ClearQuickEdits() => Document.RemoveAnchorsIf(anchor => anchor.UserData is QuickEditIndex);
+    
+    #endregion
     
     #region Editing Actions
 
@@ -1527,7 +1584,11 @@ public sealed class Editor : Drawable {
             float x = Font.CharWidth() * anchor.MinCol;
             float w = Font.CharWidth() * anchor.MaxCol - x;
             
-            using var pen = new Pen(Colors.White, 3.0f);
+            bool selected = Document.Caret.Row == anchor.Row && 
+                            Document.Caret.Col >= anchor.MinCol &&
+                            Document.Caret.Col <= anchor.MaxCol;
+            
+            using var pen = new Pen(selected ? Colors.White : Colors.Gray, selected ? 2.0f : 1.0f);
             e.Graphics.DrawRectangle(pen, x + textOffsetX, y, w, Font.LineHeight());
         }
         
