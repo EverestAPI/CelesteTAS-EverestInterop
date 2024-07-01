@@ -21,18 +21,26 @@ public static class Win32Api {
     private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
     
     public static void SetDarkTitleBar(bool enabled) {
-        uint currentProcess = GetCurrentProcessId();
-        EnumWindows((hWnd, _) => {
-            // Check if this is our window
-            uint windowProcess = GetWindowThreadProcessId(hWnd);
-            if (currentProcess == windowProcess) {
-                int useImmersiveDarkMode = enabled ? 1 : 0;
-                DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref useImmersiveDarkMode, sizeof(int));
+        try {
+            uint currentProcess = GetCurrentProcessId();
+            EnumWindows((hWnd, _) => {
+                // Check if this is our window
+                try {
+                    uint windowProcess = GetWindowThreadProcessId(hWnd);
+                    if (currentProcess == windowProcess) {
+                        int useImmersiveDarkMode = enabled ? 1 : 0;
+                        DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref useImmersiveDarkMode, sizeof(int));
+                        
+                        return false;
+                    }
+                } catch {
+                    // ignore
+                }
                 
-                return false;
-            }
-            
-            return true;
-        }, IntPtr.Zero);
+                return true;
+            }, IntPtr.Zero);
+        } catch (Exception ex) {
+            Console.Error.WriteLine($"Failed to set immersive dark mode: {ex}");
+        }
     }
 }
