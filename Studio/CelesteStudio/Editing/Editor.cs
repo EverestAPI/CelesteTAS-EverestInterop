@@ -132,6 +132,11 @@ public sealed class Editor : Drawable {
                     
                     // TODO: Support more than 1 quick-edit
                     if (quickEdits.Length != 0) {
+                        Document.AddAnchor(new Anchor {
+                            Row = Document.Caret.Row,
+                            MinCol = 2, MaxCol = 4,
+                        });
+                        
                         // Quick-edit selections are relative, not absolute
                         var quickEdit = quickEdits[0];
                         Document.Selection = new Selection {
@@ -1514,6 +1519,16 @@ public sealed class Editor : Drawable {
                 highlighter.DrawLine(e.Graphics, textOffsetX, yPos, line);
                 yPos += Font.LineHeight();
             }
+        }
+        
+        // Draw anchors
+        foreach (var anchor in Document.Anchors) {
+            float y = Font.LineHeight() * anchor.Row;
+            float x = Font.CharWidth() * anchor.MinCol;
+            float w = Font.CharWidth() * anchor.MaxCol - x;
+            
+            using var pen = new Pen(Colors.White, 3.0f);
+            e.Graphics.DrawRectangle(pen, x + textOffsetX, y, w, Font.LineHeight());
         }
         
         // Draw suffix text

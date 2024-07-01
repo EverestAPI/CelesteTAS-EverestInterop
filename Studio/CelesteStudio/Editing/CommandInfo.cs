@@ -15,7 +15,7 @@ public struct CommandInfo {
         new CommandInfo { Name = "Read", Insert = "Read, [0;File Name], [1;Starting Line], [2;(Ending Line)]", Description = "Will read inputs from the specified file." },
         new CommandInfo { Name = "Play", Insert = "Play, [0;Starting Line]", Description = "A simplified Read command which skips to the starting line in the current file.\nUseful for splitting a large level into larger chunks."},
         null,
-        new CommandInfo { Name = "Repeat", Insert = $"Repeat, 2{Document.NewLine}    [0]{Document.NewLine}EndRepeat", Description = "Repeat the inputs between \"Repeat\" and \"EndRepeat\" several times, nesting is not supported."  },
+        new CommandInfo { Name = "Repeat", Insert = $"Repeat, [0;2]{Document.NewLine}    [1]{Document.NewLine}EndRepeat", Description = "Repeat the inputs between \"Repeat\" and \"EndRepeat\" several times, nesting is not supported."  },
         new CommandInfo { Name = "EndRepeat", Insert = "EndRepeat", Description = "Repeat the inputs between \"Repeat\" and \"EndRepeat\" several times, nesting is not supported." },
         null,
         new CommandInfo { Name = "Set", Insert = "Set, [0;(Mod).Setting], [1;Value]", Description = "Sets the specified setting to the specified value." },

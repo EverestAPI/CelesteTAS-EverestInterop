@@ -1,4 +1,4 @@
-using System;
+    using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -49,6 +49,14 @@ public struct Selection() {
         if (Start > End)
             (Start, End) = (End, Start);
     }
+}
+
+public struct Anchor {
+    public int Row;
+    public int MinCol, MaxCol;
+    
+    public object UserData;
+    public Action OnRemoved;
 }
 
 public class UndoStack(int stackSize = 256) {
@@ -117,9 +125,15 @@ public class Document {
 
     private List<string> CurrentLines => undoStack.Stack[undoStack.Curr].Lines;
     public IReadOnlyList<string> Lines => CurrentLines.AsReadOnly();
+
+    // An anchor is a part of the document, which will move with the text its placed on.
+    // They can hold arbitrary user data.
+    // As their text gets deleted, they will shrink in size or removed entirely
+    // NOTE: Currently only supports movement within their original line, and they also can't span over multiple lines
+    private readonly Dictionary<int, List<Anchor>> anchors = new();
+    public IEnumerable<Anchor> Anchors => anchors.SelectMany(pair => pair.Value);
     
     public string Text => string.Join(NewLine, CurrentLines);
-
     public bool Dirty { get; private set; }
     
     public event Action<Document, CaretPosition, CaretPosition> TextChanged = (doc, _, _) => {
@@ -219,6 +233,27 @@ public class Document {
                 continue;
             
             CurrentLines[lineNum] = newText;
+        }
+    }
+    
+    public void AddAnchor(Anchor anchor) {
+        anchors.TryAdd(anchor.Row, []);
+        anchors[anchor.Row].Add(anchor);
+    }
+    public void RemoveAnchor(Anchor anchor) {
+        int removeRow = -1;
+        foreach ((int row, List<Anchor> list) in anchors) {
+            if (!list.Remove(anchor)) {
+                continue;
+            }
+            if (list.Count == 0) {
+                removeRow = row;
+            }
+        }
+        
+        // Don't leave empty list
+        if (removeRow != -1) {
+            anchors.Remove(removeRow);
         }
     }
 
