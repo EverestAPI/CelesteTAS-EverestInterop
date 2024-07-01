@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using CelesteStudio.Communication;
 using CelesteStudio.Dialog;
 using CelesteStudio.Editing;
@@ -62,6 +63,12 @@ public sealed class Studio : Form {
         Icon = Icon.FromResource("Icon.ico"); 
         
         Settings.Load();
+        
+        // Fix titlebar dark-mode on windows
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+            Win32Api.SetDarkTitleBar(Settings.Instance.ThemeType == ThemeType.Dark);
+            Settings.Changed += () => Win32Api.SetDarkTitleBar(Settings.Instance.ThemeType == ThemeType.Dark);
+        }
         
         // Setup editor
         {
