@@ -1,9 +1,13 @@
+using System;
+
 namespace CelesteStudio.Editing;
 
-public struct CommandInfo {
+public struct CommandInfo() {
     public string Name;
     public string Description;
     public string Insert;
+    
+    public Func<string[], string[]>[] AutoCompleteEntires = [];
     
     // nulls are visual separators in the insert menu
     // [] are "quick-edit" positions, with the format [index;text]. The text part is optional
@@ -24,7 +28,18 @@ public struct CommandInfo {
         null,
         new CommandInfo { Name = "Press", Insert = "Press, [0;Key1, Key2...]", Description = "Press the specified keys with the next input." },
         null,
-        new CommandInfo { Name = "AnalogMode", Insert = "AnalogMode, [0;Ignore/Circle/Square/Precise]", Description = "Circle, Square and Precise are make sure the analogue inputs sent to the game are actually possible,\nlocking it to a circular or square deadzone, or calculating the closest position possible on a controller.\nOdds are you don't need to worry about this." },
+        new CommandInfo {
+            Name = "AnalogMode", 
+            Description = """
+                          Circle, Square and Precise are make sure the analogue inputs sent to the game are actually possible,
+                          locking it to a circular or square deadzone, or calculating the closest position possible on a controller.
+                          Odds are you don't need to worry about this.
+                          """,
+            Insert = "AnalogMode, ",
+            AutoCompleteEntires = [
+                _ => ["Ignore", "Circle", "Square", "Precise"]
+            ]
+        },
         null,
         new CommandInfo { Name = "StunPause", Insert = $"StunPause{Document.NewLine}    [0]{Document.NewLine}EndStunPause", Description = "Automate pausing every other frame without doing the actual pause inputs.\nThe Simulate mode should only be used to test routes." },
         new CommandInfo { Name = "EndStunPause", Insert = "EndStunPause", Description = "Automate pausing every other frame without doing the actual pause inputs.\nThe Simulate mode should only be used to test routes."  },

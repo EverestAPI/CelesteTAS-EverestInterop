@@ -22,10 +22,9 @@ public sealed class Editor : Drawable {
             document = value;
             
             // Jump to end when file only 10 lines, else the start
-            if (document.Lines.Count <= 10)
-                document.Caret = new CaretPosition(document.Lines.Count - 1, document.Lines[^1].Length);
-            else
-                document.Caret = new CaretPosition(0, 0);
+            document.Caret = document.Lines.Count <= 10 
+                ? new CaretPosition(document.Lines.Count - 1, document.Lines[^1].Length) 
+                : new CaretPosition(0, 0);
             
             // Try to reparse into action lines on change
             document.TextChanged += (_, min, max) => {
@@ -45,11 +44,13 @@ public sealed class Editor : Drawable {
     private const float LineNumberPadding = 5.0f;
     
     private readonly AutoCompleteMenu autoCompleteMenu;
+    private readonly List<AutoCompleteMenu.Entry> commandEntries = [];
     
     // Quick-edits are anchors to switch through with tab and edit
     // Used by auto-complete snippets
-    private int quickEditIndex = 0;
+    private int quickEditIndex;
     
+    // Offset from the left accounting for line numbers
     private float textOffsetX;
     
     // When editing a long line and moving to a short line, "remember" the column on the long line, unless the caret has been moved. 
@@ -84,11 +85,11 @@ public sealed class Editor : Drawable {
             
             var quickEdit = ParseQuickEdit(command.Value.Insert);
             
-            autoCompleteMenu.Entries.Add(new AutoCompleteMenu.Entry {
+            commandEntries.Add(new AutoCompleteMenu.Entry {
                 DisplayText = command.Value.Name,
                 OnUse = () => {
                     Document.ReplaceLine(Document.Caret.Row, quickEdit.ActualText);
-                    Document.Caret.Col = Document.Lines[Document.Caret.Row].Length;
+                    Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
                     
                     ClearQuickEdits();
                     for (int i = 0; i < quickEdit.Selections.Length; i++) {
@@ -100,8 +101,14 @@ public sealed class Editor : Drawable {
                             UserData = new QuickEditIndex { Index = i },
                         });
                     }
-                    
                     SelectQuickEdit(0);
+                    
+                    if (command.Value.AutoCompleteEntires.Length != 0) {
+                        // Keep open for argument
+                        UpdateAutoComplete();
+                    } else {
+                        autoCompleteMenu.Visible = false;                    
+                    }
                 },
             });
         }
@@ -201,6 +208,8 @@ public sealed class Editor : Drawable {
             return new ButtonMenuItem(cmd) { Text = info.Name, ToolTip = info.Description };
         }
     }
+    
+    #region General Helper Methods
     
     /// <summary>
     /// Recalculates all values and invalidates the paint.
@@ -358,6 +367,66 @@ public sealed class Editor : Drawable {
         return Document.Lines[row];
     }
     
+    // Matches against command or space or both as a separator
+    private static readonly Regex SeparatorRegex = new(@"(?:\s+)|(?:\s*,\s*)", RegexOptions.Compiled);
+    
+    private void UpdateAutoComplete() {
+        var line = Document.Lines[Document.Caret.Row];
+        
+        // Don't auto-complete on comments or action lines
+        if (line.StartsWith('#') || ActionLine.TryParse(line, out _)) {
+            autoCompleteMenu.Visible = false;
+            return;
+        }
+        
+        autoCompleteMenu.Visible = true;
+        
+        // Use auto-complete entries for current command
+
+        // Split by the first separator
+        var separatorMatch = SeparatorRegex.Match(line);
+        var args = line.Split(separatorMatch.Value);
+        
+        if (args.Length <= 1) {
+            autoCompleteMenu.Entries = commandEntries;
+            autoCompleteMenu.Filter = line;    
+        } else {
+            var command = CommandInfo.AllCommands.FirstOrDefault(cmd => cmd?.Name == args[0]);
+            var commandArgs = args[1..];
+            
+            if (command != null && command.Value.AutoCompleteEntires.Length >= commandArgs.Length) {
+                int lastArgStart = line.LastIndexOf(args[^1], StringComparison.Ordinal);
+                var entries = command.Value.AutoCompleteEntires[commandArgs.Length - 1](commandArgs);
+                
+                autoCompleteMenu.Entries = entries.Select(entry => new AutoCompleteMenu.Entry {
+                    DisplayText = entry,
+                    OnUse = () => {
+                        ClearQuickEdits();
+                        
+                        var commandLine = Document.Lines[Document.Caret.Row];
+                        
+                        if (command.Value.AutoCompleteEntires.Length != commandArgs.Length) {
+                            // Include separator for next argument
+                            Document.ReplaceLine(Document.Caret.Row, commandLine[..lastArgStart] + entry + separatorMatch.Value);
+                            UpdateAutoComplete();
+                        } else {
+                            Document.ReplaceLine(Document.Caret.Row, commandLine[..lastArgStart] + entry);
+                            autoCompleteMenu.Visible = false;
+                        }
+                        
+                        Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+                    },
+                }).ToList();
+            } else {
+                autoCompleteMenu.Entries = [];
+            }
+            
+            autoCompleteMenu.Filter = args[^1];
+        }
+    }
+    
+    #endregion
+    
     protected override void OnKeyDown(KeyEventArgs e) {
         if (GetQuickEdits().Any()) {
             // Cycle
@@ -400,9 +469,12 @@ public sealed class Editor : Drawable {
             return;
         }
 
-        if (e.Key == Keys.Space && e.Modifiers == Keys.Control) {
-            autoCompleteMenu.Visible = true;
-            autoCompleteMenu.Filter = Document.Lines[Document.Caret.Row][..Document.Caret.Col];
+        if (e is { Key: Keys.Space, Control: true}) {
+            UpdateAutoComplete();
+
+            e.Handled = true;
+            Recalc();
+            return;
         }
         
         if (Settings.Instance.SendInputsToCeleste && Studio.CommunicationWrapper.Connected && Studio.CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
@@ -566,19 +638,17 @@ public sealed class Editor : Drawable {
         quickEditIndex = index;
 
         var quickEdit = Document.FindFirstAnchor(anchor => anchor.UserData is QuickEditIndex idx && idx.Index == index);
-        Console.WriteLine($"Quick {quickEdit}");
         if (quickEdit == null) {
             ClearQuickEdits();
             return;
         }
         
         Document.Caret.Row = quickEdit.Row;
-        Document.Caret.Col = quickEdit.MinCol;
+        Document.Caret.Col = desiredVisualCol = quickEdit.MinCol;
         Document.Selection = new Selection {
             Start = new CaretPosition(quickEdit.Row, quickEdit.MinCol),
             End = new CaretPosition(quickEdit.Row, quickEdit.MaxCol),
         };
-        Console.WriteLine($"{Document.Selection.Min}->{Document.Selection.Max} @ {Document.Caret}");
     }
     
     private IEnumerable<Anchor> GetQuickEdits() => Document.FindAnchors(anchor => anchor.UserData is QuickEditIndex);
@@ -731,10 +801,6 @@ public sealed class Editor : Drawable {
                 }
             } else {
                 Document.Insert(e.Text);
-                
-                // Update auto completion
-                autoCompleteMenu.Visible = true;
-                autoCompleteMenu.Filter = Document.Lines[Document.Caret.Row];
             }
             
             // But turn it into an action line if possible
@@ -746,6 +812,7 @@ public sealed class Editor : Drawable {
             }
         }
         
+        UpdateAutoComplete();
         ScrollCaretIntoView();
         Recalc();
     }
@@ -866,7 +933,7 @@ public sealed class Editor : Drawable {
                 Document.RemoveRangeInLine(caret.Row, caret.Col, newCaret.Col);
                 newCaret.Col = Math.Min(newCaret.Col, caret.Col);
                 
-                autoCompleteMenu.Filter = Document.Lines[Document.Caret.Row];
+                UpdateAutoComplete();
             } else {
                 var min = newCaret < caret ? newCaret : caret;
                 var max = newCaret < caret ? caret : newCaret;
@@ -1725,7 +1792,7 @@ public sealed class Editor : Drawable {
         // Draw autocomplete popup
         const float autocompleteXPos = 8.0f;
         const float autocompleteYOffset = 7.0f;
-
+        
         autoCompleteMenu.Draw(e.Graphics, Font,
             scrollablePosition.X + textOffsetX + autocompleteXPos,
             carY + Font.LineHeight() + autocompleteYOffset);

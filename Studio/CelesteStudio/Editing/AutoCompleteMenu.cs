@@ -18,9 +18,32 @@ public class AutoCompleteMenu {
         get => visible;
         set {
             visible = value;
-            Filter = string.Empty;
-            SelectedEntry = 0;
+            filter = string.Empty;
+            selectedEntry = 0;
         }
+    }
+    
+    private List<Entry> entries = [];
+    public List<Entry> Entries {
+        get => entries;
+        set {
+            entries = value;
+            shownEntries = Entries.Where(entry => entry.DisplayText.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase)).ToArray();
+            if (shownEntries.Length == 0) {
+                visible = false;
+                return;
+            }
+            
+            selectedEntry = Math.Clamp(selectedEntry, 0, shownEntries.Length - 1);
+        }
+    }
+    
+    private Entry[] shownEntries = [];
+    
+    private int selectedEntry;
+    public int SelectedEntry {
+        get => selectedEntry;
+        set => selectedEntry = Math.Clamp(value, 0, shownEntries.Length);
     }
     
     private string filter = string.Empty;
@@ -30,22 +53,13 @@ public class AutoCompleteMenu {
             filter = value;
             shownEntries = Entries.Where(entry => entry.DisplayText.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase)).ToArray();
             if (shownEntries.Length == 0) {
-                Visible = false;
+                visible = false;
                 return;
             }
             
             selectedEntry = Math.Clamp(selectedEntry, 0, shownEntries.Length - 1);
         }
     }
-    
-    private int selectedEntry;
-    public int SelectedEntry {
-        get => selectedEntry;
-        set => selectedEntry = Math.Clamp(value, 0, shownEntries.Length);
-    }
-    
-    public readonly List<Entry> Entries = [];
-    private Entry[] shownEntries = [];
     
     public bool OnKeyDown(KeyEventArgs e) {
         if (!Visible)
@@ -61,7 +75,6 @@ public class AutoCompleteMenu {
         }
         if (e.Key == Keys.Enter) {
             shownEntries[SelectedEntry].OnUse();
-            Visible = false;
             return true;
         }
         
