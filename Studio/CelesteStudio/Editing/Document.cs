@@ -51,17 +51,20 @@ public struct Selection() {
     }
 }
 
-public struct Anchor {
+public class Anchor {
     public int Row;
     public int MinCol, MaxCol;
     
-    public object UserData;
-    public Action OnRemoved;
+    public object? UserData;
+    public Action? OnRemoved;
+    
+    public Anchor Clone() => new() { Row = Row, MinCol = MinCol, MaxCol = MaxCol, UserData = UserData, OnRemoved = OnRemoved };
 }
 
 public class UndoStack(int stackSize = 256) {
-    public struct Entry(List<string> lines, CaretPosition caret) {
+    public struct Entry(List<string> lines, Dictionary<int, List<Anchor>> anchors, CaretPosition caret) {
         public readonly List<string> Lines = lines;
+        public readonly Dictionary<int, List<Anchor>> Anchors = anchors;
         public CaretPosition Caret = caret;
     }
     
@@ -77,8 +80,11 @@ public class UndoStack(int stackSize = 256) {
         
         Stack[Curr].Caret = caret;
         Stack[head] = new Entry(
-            [..Stack[Curr].Lines], // Make sure to copy    
-            caret // Will be overwritten later, so it doesn't matter what's used
+            // Make sure to copy lines / anchors
+            [..Stack[Curr].Lines],
+            Stack[Curr].Anchors.ToDictionary(entry => entry.Key, entry => entry.Value.Select(anchor => anchor.Clone()).ToList()),
+            // Will be overwritten later, so it doesn't matter what's used
+            caret 
         );
         Curr = head;
     }
@@ -128,10 +134,9 @@ public class Document {
 
     // An anchor is a part of the document, which will move with the text its placed on.
     // They can hold arbitrary user data.
-    // As their text gets deleted, they will shrink in size or removed entirely
-    // NOTE: Currently only supports movement within their original line, and they also can't span over multiple lines
-    private readonly Dictionary<int, List<Anchor>> anchors = new();
-    public IEnumerable<Anchor> Anchors => anchors.SelectMany(pair => pair.Value);
+    // As their text gets edited, they will grow / shrink in size or removed entirely.
+    private Dictionary<int, List<Anchor>> CurrentAnchors => undoStack.Stack[undoStack.Curr].Anchors;
+    public IEnumerable<Anchor> Anchors => CurrentAnchors.SelectMany(pair => pair.Value);
     
     public string Text => string.Join(NewLine, CurrentLines);
     public bool Dirty { get; private set; }
@@ -148,7 +153,7 @@ public class Document {
     
     private Document(string contents) {
         contents = contents.ReplaceLineEndings(NewLine.ToString());
-        undoStack.Stack[undoStack.Curr] = new UndoStack.Entry(contents.SplitDocumentLines().ToList(), Caret);
+        undoStack.Stack[undoStack.Curr] = new UndoStack.Entry(contents.SplitDocumentLines().ToList(), [], Caret);
         
         if (!string.IsNullOrWhiteSpace(FilePath) && File.Exists(FilePath)) {
             // Save with the new line endings
@@ -233,27 +238,20 @@ public class Document {
                 continue;
             
             CurrentLines[lineNum] = newText;
+            // Cannot properly update anchors
+            CurrentAnchors.Remove(lineNum);
         }
     }
     
     public void AddAnchor(Anchor anchor) {
-        anchors.TryAdd(anchor.Row, []);
-        anchors[anchor.Row].Add(anchor);
+        CurrentAnchors.TryAdd(anchor.Row, []);
+        CurrentAnchors[anchor.Row].Add(anchor);
     }
     public void RemoveAnchor(Anchor anchor) {
-        int removeRow = -1;
-        foreach ((int row, List<Anchor> list) in anchors) {
-            if (!list.Remove(anchor)) {
-                continue;
+        foreach ((int _, List<Anchor> list) in CurrentAnchors) {
+            if (list.Remove(anchor)) {
+                break;
             }
-            if (list.Count == 0) {
-                removeRow = row;
-            }
-        }
-        
-        // Don't leave empty list
-        if (removeRow != -1) {
-            anchors.Remove(removeRow);
         }
     }
 
@@ -281,17 +279,70 @@ public class Document {
         undoStack.Push(Caret);
 
         if (newLines.Length == 1) {
+            // Update anchors
+            if (CurrentAnchors.TryGetValue(pos.Row, out var anchors)) {
+                foreach (var anchor in anchors) {
+                    if (pos.Col < anchor.MinCol) {
+                        anchor.MinCol += text.Length;
+                    }
+                    if (pos.Col <= anchor.MaxCol) {
+                        anchor.MaxCol += text.Length;
+                    }
+                }
+            }
+            
             CurrentLines[pos.Row] = CurrentLines[pos.Row].Insert(pos.Col, text);
             pos.Col += text.Length;
         } else {
+            // Move anchors below down
+            for (int row = CurrentLines.Count - 1; row > pos.Row; row--) {
+                if (CurrentAnchors.Remove(row, out var aboveAnchors)) {
+                    CurrentAnchors[row + newLines.Length - 1] = aboveAnchors;
+                    foreach (var anchor in aboveAnchors) {
+                        anchor.Row += newLines.Length - 1;
+                    }
+                }
+            }
+            // Update anchors
+            if (CurrentAnchors.TryGetValue(pos.Row, out var anchors)) {
+                int newRow = pos.Row + newLines.Length - 1;
+                
+                CurrentAnchors.TryAdd(newRow, []);
+                var newAnchors = CurrentAnchors[newRow];
+                
+                for (int i = anchors.Count - 1; i >= 0; i--) {
+                    var anchor = anchors[i];
+
+                    // Invalidate in between
+                    if (pos.Col >= anchor.MinCol && pos.Col <= anchor.MaxCol) {
+                        anchor.OnRemoved?.Invoke();
+                        anchors.Remove(anchor);
+                        continue;
+                    }
+                    if (pos.Col >= anchor.MinCol) {
+                        continue;
+                    }
+                    
+                    int offset = anchor.MinCol - pos.Col;
+                    int len = anchor.MaxCol - anchor.MinCol;
+                    anchor.MinCol = offset + newLines[0].Length;
+                    anchor.MaxCol = offset + len + newLines[0].Length;
+                    anchor.Row = newRow;
+                    anchors.Remove(anchor);
+                    newAnchors.Add(anchor);
+                }
+            }
+            
             string left  = CurrentLines[pos.Row][..pos.Col];
             string right = CurrentLines[pos.Row][pos.Col..];
         
             CurrentLines[pos.Row] = left + newLines[0];
-            for (int i = 1; i < newLines.Length; i++)
+            for (int i = 1; i < newLines.Length; i++) {
                 CurrentLines.Insert(pos.Row + i, newLines[i]);
+            }
             pos.Row += newLines.Length - 1;
             pos.Col = newLines[^1].Length;
+
             CurrentLines[pos.Row] += right;
         }
         
@@ -341,19 +392,100 @@ public class Document {
     
     public void RemoveSelectedText() => RemoveRange(Selection.Min, Selection.Max);
     public void RemoveRange(CaretPosition start, CaretPosition end) {
+        if (start.Row == end.Row) {
+            RemoveRangeInLine(start.Row, start.Col, end.Col);
+            return;
+        }
+        
         undoStack.Push(Caret);
         
         if (start > end)
             (end, start) = (start, end);
         
-        if (start.Row == end.Row) {
-            CurrentLines[start.Row] = CurrentLines[start.Row].Remove(start.Col, end.Col - start.Col);
-        } else {
-            CurrentLines[start.Row] = CurrentLines[start.Row][..start.Col] + CurrentLines[end.Row][end.Col..];
-            CurrentLines.RemoveRange(start.Row + 1, end.Row - start.Row);
+        List<Anchor>? anchors;
+        // Invalidate in between
+        for (int row = start.Row; row <= end.Row; row++) {
+            if (CurrentAnchors.TryGetValue(row, out anchors)) {
+                for (int i = anchors.Count - 1; i >= 0; i--) {
+                    var anchor = anchors[i];
+                    
+                    if (row == start.Row && anchor.MaxCol <= start.Col ||
+                        row == end.Row && anchor.MinCol <= end.Col) 
+                    {
+                        continue;
+                    }
+                    
+                    anchor.OnRemoved?.Invoke();
+                    anchors.Remove(anchor);
+                }
+            }
+        }
+        // Update anchors
+        if (CurrentAnchors.TryGetValue(end.Row, out anchors)) {
+            CurrentAnchors.TryAdd(start.Row, []);
+            var newAnchors = CurrentAnchors[start.Row];
+            
+            for (int i = anchors.Count - 1; i >= 0; i--) {
+                var anchor = anchors[i];
+                
+                int offset = anchor.MinCol - end.Col;
+                int len = anchor.MaxCol - anchor.MinCol;
+                anchor.MinCol = offset + start.Col;
+                anchor.MaxCol = offset + len + start.Col;
+                anchor.Row = start.Row;
+                anchors.Remove(anchor);
+                newAnchors.Add(anchor);
+            }
+        }
+        // Move anchors below up
+        for (int row = end.Row + 1; row < CurrentLines.Count; row++) {
+            if (CurrentAnchors.Remove(row, out var aboveAnchors)) {
+                CurrentAnchors[row - (end.Row - start.Row)] = aboveAnchors;
+                foreach (var anchor in aboveAnchors) {
+                    anchor.Row -= end.Row - start.Row;
+                }
+            }
         }
         
+        CurrentLines[start.Row] = CurrentLines[start.Row][..start.Col] + CurrentLines[end.Row][end.Col..];
+        CurrentLines.RemoveRange(start.Row + 1, end.Row - start.Row);
+        
         OnTextChanged(start, start);
+    }
+    
+    public void RemoveRangeInLine(int row, int startCol, int endCol) {
+        undoStack.Push(Caret);
+        
+        if (startCol > endCol)
+            (endCol, startCol) = (startCol, endCol);
+        
+        // Update anchors
+        if (CurrentAnchors.TryGetValue(row, out var anchors)) {
+            for (int i = anchors.Count - 1; i >= 0; i--) {
+                var anchor = anchors[i];
+                
+                // Invalidate when range partially intersects
+                if (startCol < anchor.MinCol && endCol > anchor.MinCol ||
+                    startCol < anchor.MaxCol && endCol > anchor.MaxCol ||
+                    // Remove entirely when it's 0 wide
+                    anchor.MinCol == anchor.MaxCol && startCol <= anchor.MinCol && endCol <= anchor.MaxCol)
+                {
+                    anchor.OnRemoved?.Invoke();
+                    anchors.Remove(anchor);
+                }
+                
+                if (endCol <= anchor.MinCol) {
+                    anchor.MinCol -= endCol - startCol;
+                }
+                if (endCol <= anchor.MaxCol) {
+                    anchor.MaxCol -= endCol - startCol;
+                }
+            }
+        }
+        
+        CurrentLines[row] = CurrentLines[row].Remove(startCol, endCol - startCol);
+        
+        OnTextChanged(new CaretPosition(row, startCol), new CaretPosition(row, startCol));
     }
     
     public void RemoveLine(int row, bool raiseEvents = true) {
@@ -371,33 +503,6 @@ public class Document {
         
         if (raiseEvents) OnTextChanged(new CaretPosition(min, 0), new CaretPosition(min, 0));
     }
-
-    // public void ReplaceRange(CaretPosition start, CaretPosition end, string text) {
-    //     undoStack.Push(Caret);
-    //
-    //     if (start > end)
-    //         (end, start) = (start, end);
-    //     
-    //     // Remove old text
-    //     if (start.Row == end.Row) {
-    //         CurrentLines[start.Row] = CurrentLines[start.Row].Remove(start.Col, end.Col - start.Col);
-    //     } else {
-    //         CurrentLines[start.Row] = CurrentLines[start.Row][..start.Col] + CurrentLines[end.Row][end.Col..];
-    //         CurrentLines.RemoveRange(start.Row + 1, end.Row - start.Row);
-    //     }
-    //     
-    //     // Insert new text
-    //     var newLines = text.SplitDocumentLines();
-    //     if (newLines.Length == 0)
-    //         return;
-    //     
-    //     CurrentLines[start.Row] = CurrentLines[start.Row] + newLines[0];
-    //     for (int i = 1; i < newLines.Length - 1; i++)
-    //         CurrentLines.Insert(start.Row + i, newLines[i]);
-    //     CurrentLines[start.Row + newLines.Length - 1] = newLines[^1] + CurrentLines[start.Row + newLines.Length - 1];
-    //     
-    //     OnTextChanged();
-    // }
     
     public void ReplaceRangeInLine(int row, int startCol, int endCol, string text) {
         undoStack.Push(Caret);

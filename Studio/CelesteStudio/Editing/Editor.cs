@@ -781,7 +781,7 @@ public sealed class Editor : Drawable {
             var newCaret = GetNewTextCaretPosition(direction);
             
             if (caret.Row == newCaret.Row) {
-                Document.ReplaceRangeInLine(caret.Row, caret.Col, newCaret.Col, string.Empty);
+                Document.RemoveRangeInLine(caret.Row, caret.Col, newCaret.Col);
                 newCaret.Col = Math.Min(newCaret.Col, caret.Col);
                 
                 autoCompleteMenu.Filter = Document.Lines[Document.Caret.Row];
