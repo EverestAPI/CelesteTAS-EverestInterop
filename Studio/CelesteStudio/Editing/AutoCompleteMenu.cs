@@ -77,6 +77,10 @@ public class AutoCompleteMenu {
             shownEntries[SelectedEntry].OnUse();
             return true;
         }
+        if (e.Key == Keys.Escape) {
+            Visible = false;
+            return true;
+        }
         
         return false;
     }
