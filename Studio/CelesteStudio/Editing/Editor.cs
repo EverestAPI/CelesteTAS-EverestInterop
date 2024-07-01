@@ -360,19 +360,37 @@ public sealed class Editor : Drawable {
     
     protected override void OnKeyDown(KeyEventArgs e) {
         if (GetQuickEdits().Any()) {
+            // Cycle
             if (e.Key == Keys.Tab) {
                 if (e.Shift) {
                     SelectPrevQuickEdit();
                 } else {
                     SelectNextQuickEdit();
                 }
-                Recalc();
+
                 e.Handled = true;
+                Recalc();
                 return;
             }
+            // Cancel
             if (e.Key == Keys.Escape) {
                 ClearQuickEdits();
                 Document.Selection.Clear();
+                
+                e.Handled = true;
+                Recalc();
+                return;
+            }
+            // Finish + Go to end
+            if (e.Key == Keys.Enter) {
+                SelectQuickEdit(GetQuickEdits().Count() - 1);
+                ClearQuickEdits();
+                Document.Caret = Document.Selection.Max;
+                Document.Selection.Clear();
+                
+                e.Handled = true;
+                Recalc();
+                return;
             }
         }
         
@@ -381,6 +399,7 @@ public sealed class Editor : Drawable {
             Recalc();
             return;
         }
+
         if (e.Key == Keys.Space && e.Modifiers == Keys.Control) {
             autoCompleteMenu.Visible = true;
             autoCompleteMenu.Filter = Document.Lines[Document.Caret.Row][..Document.Caret.Col];
@@ -501,8 +520,10 @@ public sealed class Editor : Drawable {
         for (int i = 0; i < text.Length; i++) {
             char c = text[i];
             if (c == Document.NewLine) {
+                actualText.Append(c);
                 row++;
                 col = 0;
+                continue;
             }
             if (c != '[') {
                 actualText.Append(c);
@@ -596,6 +617,8 @@ public sealed class Editor : Drawable {
         
         // If it's an action line, handle it ourselves
         if (ActionLine.TryParse(line, out var actionLine) && e.Text.Length == 1) {
+            ClearQuickEdits();
+            
             // Handle custom bindings
             int customBindStart = GetColumnOfAction(actionLine, Actions.PressedKey);
             int customBindEnd = customBindStart + actionLine.CustomBindings.Count;
@@ -716,6 +739,8 @@ public sealed class Editor : Drawable {
             
             // But turn it into an action line if possible
             if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out var newActionLine)) {
+                ClearQuickEdits();
+                
                 Document.ReplaceLine(Document.Caret.Row, newActionLine.ToString());
                 Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
             }
@@ -1578,8 +1603,10 @@ public sealed class Editor : Drawable {
             }
         }
         
-        // Draw anchors
-        foreach (var anchor in Document.Anchors) {
+        // Draw quick-edits
+        foreach (var anchor in GetQuickEdits()) {
+            const float padding = 1.0f;
+            
             float y = Font.LineHeight() * anchor.Row;
             float x = Font.CharWidth() * anchor.MinCol;
             float w = Font.CharWidth() * anchor.MaxCol - x;
@@ -1589,7 +1616,7 @@ public sealed class Editor : Drawable {
                             Document.Caret.Col <= anchor.MaxCol;
             
             using var pen = new Pen(selected ? Colors.White : Colors.Gray, selected ? 2.0f : 1.0f);
-            e.Graphics.DrawRectangle(pen, x + textOffsetX, y, w, Font.LineHeight());
+            e.Graphics.DrawRectangle(pen, x + textOffsetX - padding, y - padding, w + padding * 2.0f, Font.LineHeight() + padding * 2.0f);
         }
         
         // Draw suffix text
