@@ -1009,6 +1009,12 @@ public sealed class Editor : Drawable {
         if (!Clipboard.Instance.ContainsText)
             return;
         
+        if (!Document.Selection.Empty) {
+            Document.RemoveSelectedText();
+            Document.Caret = Document.Selection.Min;
+            Document.Selection.Clear();
+        }
+        
         var oldCaret = Document.Caret;
         Document.Insert(Clipboard.Instance.Text);
         
