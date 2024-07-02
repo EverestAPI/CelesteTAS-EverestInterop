@@ -130,8 +130,8 @@ public sealed class Editor : Drawable {
         // Update wrapped lines
         scrollable.SizeChanged += (_, _) => Recalc();
 
-        Studio.CommunicationWrapper.Server.StateUpdated += state => {
-            if (state.CurrentLine != -1) {
+        Studio.CommunicationWrapper.Server.StateUpdated += (prevState, state) => {
+            if (state.CurrentLine != -1 && prevState.CurrentLine != state.CurrentLine) {
                 Document.Caret.Row = state.CurrentLine;
                 Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
                 Document.Caret = ClampCaret(Document.Caret, wrapLine: false);

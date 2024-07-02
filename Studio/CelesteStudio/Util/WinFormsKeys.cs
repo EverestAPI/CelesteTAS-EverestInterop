@@ -545,6 +545,7 @@ public static class KeysExtensions {
         Keys.Comma => WinFormsKeys.Oemcomma,
         Keys.Minus => WinFormsKeys.OemMinus,
         Keys.Period => WinFormsKeys.OemPeriod,
+        Keys.Slash => WinFormsKeys.OemQuestion,
         // Keys.Question => WinFormsKeys.OemQuestion,
         // Keys.Tilde => WinFormsKeys.Oemtilde,
         // Keys.AbntC1 => Keys.AbntC1,

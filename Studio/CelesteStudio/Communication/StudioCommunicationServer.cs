@@ -11,11 +11,11 @@ using StudioCommunication;
 namespace CelesteStudio.Communication;
 
 public class StudioCommunicationServer : StudioCommunicationBase {
-    public event Action<StudioInfo>? StateUpdated;
+    public event Action<StudioInfo, StudioInfo>? StateUpdated;
     public event Action<Dictionary<HotkeyID, List<WinFormsKeys>>>? BindingsUpdated;
     public event Action<Dictionary<int, string>>? LinesUpdated;
 
-    public virtual void OnStateUpdated(StudioInfo obj) => StateUpdated?.Invoke(obj);
+    public virtual void OnStateUpdated(StudioInfo prev, StudioInfo next) => StateUpdated?.Invoke(prev, next);
     public virtual void OnBindingsUpdated(Dictionary<HotkeyID, List<WinFormsKeys>> obj) => BindingsUpdated?.Invoke(obj);
     public virtual void OnLinesUpdated(Dictionary<int, string> lines) => LinesUpdated?.Invoke(lines);
 
@@ -71,7 +71,7 @@ public class StudioCommunicationServer : StudioCommunicationBase {
             var studioInfo = StudioInfo.FromByteArray(data);
             
             if (!Studio.CommunicationWrapper.State.Equals(studioInfo))
-                OnStateUpdated(studioInfo);
+                OnStateUpdated(Studio.CommunicationWrapper.State, studioInfo);
             // CommunicationWrapper.StudioInfo = studioInfo;
         } catch (InvalidCastException) {
             // string studioVersion = Studio.Version.ToString(3);

@@ -18,7 +18,7 @@ public class CommunicationWrapper {
     public CommunicationWrapper() {
         Server = new StudioCommunicationServer();
         Server.BindingsUpdated += bindings => _bindings = bindings;
-        Server.StateUpdated += state => State = state;
+        Server.StateUpdated += (_, state) => State = state;
         Server.Run();
     }
 

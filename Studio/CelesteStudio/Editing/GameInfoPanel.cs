@@ -46,7 +46,12 @@ public class GameInfoPanel : Panel {
             }
         };
         
-        Studio.CommunicationWrapper.Server.StateUpdated += _ => Application.Instance.InvokeAsync(UpdateGameInfo);
+        Studio.CommunicationWrapper.Server.StateUpdated += (prevState, state) => {
+            if (prevState.GameInfo == state.GameInfo)
+                return;
+            
+            Application.Instance.InvokeAsync(UpdateGameInfo);
+        };
         Studio.CommunicationWrapper.Server.Reset += () => Application.Instance.InvokeAsync(UpdateGameInfo);
         
         Settings.Changed += () => Visible = Settings.Instance.ShowGameInfo;
@@ -56,10 +61,10 @@ public class GameInfoPanel : Panel {
             label.Text = Studio.CommunicationWrapper.Connected ? Studio.CommunicationWrapper.State.GameInfo.Trim() : DisconnectedText;
             int newLineCount = label.Text.Split(["\n", "\r", "\n\r", Environment.NewLine], StringSplitOptions.None).Length;
             
-            if (oldLineCount != newLineCount)
+            if (oldLineCount != newLineCount) {
                 UpdateLayout();
-            
-            Studio.Instance.RecalculateLayout();
+                Studio.Instance.RecalculateLayout();
+            }
         }
     }
     
