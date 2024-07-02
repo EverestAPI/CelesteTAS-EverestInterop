@@ -243,7 +243,7 @@ public sealed class Editor : Drawable {
                 var wrappedLines = new List<WrapLine>();
 
                 const int charPadding = 1;
-                float charWidth = (scrollable.Width - Studio.BorderRightOffset) / Font.CharWidth() - 1 - charPadding; // -1 because we overshoot by 1 while iterating
+                float charWidth = (scrollable.Width - Studio.BorderRightOffset - Studio.WidthRightOffset) / Font.CharWidth() - 1 - charPadding; // -1 because we overshoot by 1 while iterating
                 
                 int idx = 0;
                 int startOffset = -1;
@@ -970,7 +970,6 @@ public sealed class Editor : Drawable {
             Document.Insert(Document.NewLine.ToString());
         }
         
-        Recalc();
         ScrollCaretIntoView();
     }
     
@@ -1439,9 +1438,9 @@ public sealed class Editor : Drawable {
         
         // Always scroll horizontally, since we want to stay as left as possible
         const float scrollStopPadding = 10.0f;
-        int scrollX = Font.MeasureWidth(GetVisualLine(caretPos.Row)) < (scrollable.Width - Studio.BorderRightOffset - scrollStopPadding)
+        int scrollX = Font.MeasureWidth(GetVisualLine(caretPos.Row)) < (scrollable.Width - Studio.BorderRightOffset - Studio.WidthRightOffset - scrollStopPadding)
             ? 0 // Don't scroll when the line is shorter anyway
-            : (int)((carX + xLookAhead) - (scrollable.Size.Width - Studio.BorderRightOffset));
+            : (int)((carX + xLookAhead) - (scrollable.Size.Width - Studio.BorderRightOffset - Studio.WidthRightOffset));
         int scrollY = scrollablePosition.Y;
         
         if (center) {
@@ -1703,7 +1702,7 @@ public sealed class Editor : Drawable {
             float suffixWidth = Font.MeasureWidth(Studio.CommunicationWrapper.CurrentLineSuffix); 
             
             e.Graphics.DrawText(Font, Settings.Instance.Theme.PlayingFrame,
-                x: scrollablePosition.X + scrollable.Width - suffixWidth - padding,
+                x: scrollablePosition.X + scrollable.Width - Studio.WidthRightOffset - suffixWidth - padding,
                 y: Studio.CommunicationWrapper.CurrentLine * Font.LineHeight(),
                 Studio.CommunicationWrapper.CurrentLineSuffix);
         }

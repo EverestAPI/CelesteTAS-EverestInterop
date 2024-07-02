@@ -24,6 +24,8 @@ public sealed class Studio : Form {
     // The values are chosen by fine-tuning manually.
     public static float BorderRightOffset {
         get {
+            if (Eto.Platform.Instance.IsWpf)
+                return 10.0f;
             if (Eto.Platform.Instance.IsGtk)
                 return 40.0f;
             return 0.0f;
