@@ -336,8 +336,10 @@ public sealed class Editor : Drawable {
         int col = position.Col;
         if (commentLineWraps.TryGetValue(row, out var wrap)) {
             int idx = position.Row - visualRows[row];
-            int xIdent = idx == 0 ? 0 : wrap.StartOffset;
-            col += wrap.Lines[idx].Index - xIdent;
+            if (idx < wrap.Lines.Length) {
+                int xIdent = idx == 0 ? 0 : wrap.StartOffset;
+                col += wrap.Lines[idx].Index - xIdent;       
+            }
         }
         
         return new CaretPosition(row, col);
@@ -1107,6 +1109,11 @@ public sealed class Editor : Drawable {
             }
         }
         Document.OnTextChanged(new CaretPosition(minRow, 0), new CaretPosition(maxRow, Document.Lines[maxRow].Length));
+        
+        // Clamp new column
+        Document.Selection.Start.Col = Math.Clamp(Document.Selection.Start.Col, 0, Document.Lines[Document.Selection.Start.Row].Length); 
+        Document.Selection.End.Col = Math.Clamp(Document.Selection.End.Col, 0, Document.Lines[Document.Selection.End.Row].Length); 
+        Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length); 
     }
     
     private void OnToggleCommentInputs() {
@@ -1146,6 +1153,11 @@ public sealed class Editor : Drawable {
             }
         }
         Document.OnTextChanged(new CaretPosition(minRow, 0), new CaretPosition(maxRow, Document.Lines[maxRow].Length));
+        
+        // Clamp new column
+        Document.Selection.Start.Col = Math.Clamp(Document.Selection.Start.Col, 0, Document.Lines[Document.Selection.Start.Row].Length);
+        Document.Selection.End.Col = Math.Clamp(Document.Selection.End.Col, 0, Document.Lines[Document.Selection.End.Row].Length);
+        Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length); 
     }
     
     private void OnToggleCommentText() {
@@ -1196,6 +1208,11 @@ public sealed class Editor : Drawable {
             }
         }
         Document.OnTextChanged(new CaretPosition(minRow, 0), new CaretPosition(maxRow, Document.Lines[maxRow].Length));
+        
+        // Clamp new column
+        Document.Selection.Start.Col = Math.Clamp(Document.Selection.Start.Col, 0, Document.Lines[Document.Selection.Start.Row].Length);
+        Document.Selection.End.Col = Math.Clamp(Document.Selection.End.Col, 0, Document.Lines[Document.Selection.End.Row].Length);
+        Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length); 
     }
     
     private void OnInsertRoomName() => Document.InsertLineAbove($"#lvl_{Studio.CommunicationWrapper.LevelName}");
