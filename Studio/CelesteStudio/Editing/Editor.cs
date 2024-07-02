@@ -980,6 +980,7 @@ public sealed class Editor : Drawable {
         Document.Undo();
         
         ConvertToActionLines(oldCaret, Document.Caret);
+        Recalc();
         ScrollCaretIntoView();
     }
     
@@ -988,6 +989,7 @@ public sealed class Editor : Drawable {
         Document.Redo();
         
         ConvertToActionLines(oldCaret, Document.Caret);
+        Recalc();
         ScrollCaretIntoView();
     }
     
@@ -1021,6 +1023,7 @@ public sealed class Editor : Drawable {
         Document.Insert(Clipboard.Instance.Text);
         
         ConvertToActionLines(oldCaret, Document.Caret);
+        Recalc();
         ScrollCaretIntoView();
     }
     

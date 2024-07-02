@@ -125,7 +125,7 @@ public class SyntaxHighlighter {
             return new LineStyle { Segments = [new LineStyle.Segment { StartIdx = 0, EndIdx = line.Length - 1, Type = StyleType.Command } ] };
         
         var segments = new List<LineStyle.Segment> {
-            new() { StartIdx = 0, EndIdx = ActionLine.MaxFramesDigits - 1, Type = StyleType.Frame }
+            new() { StartIdx = 0, EndIdx = Math.Min(line.Length - 1, ActionLine.MaxFramesDigits - 1), Type = StyleType.Frame }
         };
         
         for (int idx = ActionLine.MaxFramesDigits; idx < line.Length; idx++) {
