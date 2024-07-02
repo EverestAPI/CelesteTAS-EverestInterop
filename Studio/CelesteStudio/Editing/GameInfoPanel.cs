@@ -47,14 +47,17 @@ public class GameInfoPanel : Panel {
         };
         
         Studio.CommunicationWrapper.Server.StateUpdated += (prevState, state) => {
-            if (prevState.GameInfo == state.GameInfo)
+            if (!Visible || prevState.GameInfo == state.GameInfo)
                 return;
             
             Application.Instance.InvokeAsync(UpdateGameInfo);
         };
         Studio.CommunicationWrapper.Server.Reset += () => Application.Instance.InvokeAsync(UpdateGameInfo);
         
-        Settings.Changed += () => Visible = Settings.Instance.ShowGameInfo;
+        Settings.Changed += () => {
+            Visible = Settings.Instance.ShowGameInfo;
+            UpdateGameInfo();
+        };
         
         void UpdateGameInfo() {
             int oldLineCount = label.Text.Split(["\n", "\r", "\n\r", Environment.NewLine], StringSplitOptions.None).Length;

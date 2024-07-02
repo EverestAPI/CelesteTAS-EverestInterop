@@ -67,6 +67,9 @@ public sealed class Settings {
     public string FontFamily { get; set; } = FontManager.FontFamilyBuiltin;
     public float EditorFontSize { get; set; } = 12.0f;
     public float StatusFontSize { get; set; } = 9.0f;
+    // Zoom is temporary, so not saved
+    [TommyIgnore]
+    public float FontZoom { get; set; } = 1.0f;
     
     private const int MaxRecentFiles = 20;
     public List<string> RecentFiles { get; set; } = [];

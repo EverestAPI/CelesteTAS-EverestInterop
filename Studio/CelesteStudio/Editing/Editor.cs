@@ -1648,6 +1648,22 @@ public sealed class Editor : Drawable {
         
         base.OnMouseMove(e);
     }
+
+    protected override void OnMouseWheel(MouseEventArgs e) {
+        if (e.Modifiers.HasFlag(Keys.Control)) {
+            const float scrollSpeed = 0.1f;
+            if (e.Delta.Height < 0.0f) {
+                Settings.Instance.FontZoom *= 1.0f - scrollSpeed;
+            } else if (e.Delta.Height > 0.0f) {
+                Settings.Instance.FontZoom *= 1.0f + scrollSpeed;
+            }
+            Settings.Instance.OnFontChanged();
+            
+            e.Handled = true;
+            return;
+        }
+        base.OnMouseWheel(e);
+    }
     
     private void SetCaretPosition(PointF location) {
         location.X -= textOffsetX;

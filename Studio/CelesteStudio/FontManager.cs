@@ -12,10 +12,10 @@ public static class FontManager {
     
     private static Font? editorFontRegular, editorFontBold, editorFontItalic, editorFontBoldItalic, statusFont;
 
-    public static Font EditorFontRegular => editorFontRegular ??= CreateFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize);
-    public static Font EditorFontBold => editorFontBold ??= CreateFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize, FontStyle.Bold);
-    public static Font EditorFontItalic => editorFontItalic ??= CreateFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize, FontStyle.Italic);
-    public static Font EditorFontBoldItalic => editorFontBoldItalic ??= CreateFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize, FontStyle.Bold | FontStyle.Italic);
+    public static Font EditorFontRegular => editorFontRegular ??= CreateFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom);
+    public static Font EditorFontBold => editorFontBold ??= CreateFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom, FontStyle.Bold);
+    public static Font EditorFontItalic => editorFontItalic ??= CreateFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom, FontStyle.Italic);
+    public static Font EditorFontBoldItalic => editorFontBoldItalic ??= CreateFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom, FontStyle.Bold | FontStyle.Italic);
     public static Font StatusFont => statusFont ??= CreateFont(Settings.Instance.FontFamily, Settings.Instance.StatusFontSize);
     
     private static FontFamily? builtinFontFamily;
