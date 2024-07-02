@@ -1697,13 +1697,13 @@ public sealed class Editor : Drawable {
         }
         
         // Draw suffix text
-        if (Studio.CommunicationWrapper.Connected) {
+        if (Studio.CommunicationWrapper.Connected && Studio.CommunicationWrapper.CurrentLine != -1 && Studio.CommunicationWrapper.CurrentLine < visualRows.Length) {
             const float padding = 10.0f;
             float suffixWidth = Font.MeasureWidth(Studio.CommunicationWrapper.CurrentLineSuffix); 
             
             e.Graphics.DrawText(Font, Settings.Instance.Theme.PlayingFrame,
                 x: scrollablePosition.X + scrollable.Width - Studio.WidthRightOffset - suffixWidth - padding,
-                y: Studio.CommunicationWrapper.CurrentLine * Font.LineHeight(),
+                y: visualRows[Studio.CommunicationWrapper.CurrentLine] * Font.LineHeight(),
                 Studio.CommunicationWrapper.CurrentLineSuffix);
         }
         
@@ -1759,24 +1759,24 @@ public sealed class Editor : Drawable {
             
             // Highlight playing / savestate line
             if (Studio.CommunicationWrapper.Connected) {
-                if (Studio.CommunicationWrapper.CurrentLine != -1) {
+                if (Studio.CommunicationWrapper.CurrentLine != -1 && Studio.CommunicationWrapper.CurrentLine < visualRows.Length) {
                     e.Graphics.FillRectangle(Settings.Instance.Theme.PlayingLine,
                         x: scrollablePosition.X,
-                        y: Studio.CommunicationWrapper.CurrentLine * Font.LineHeight(),
+                        y: visualRows[Studio.CommunicationWrapper.CurrentLine] * Font.LineHeight(),
                         width: textOffsetX - LineNumberPadding,
                         height: Font.LineHeight());
                 }
-                if (Studio.CommunicationWrapper.SaveStateLine != -1) {
+                if (Studio.CommunicationWrapper.SaveStateLine != -1 && Studio.CommunicationWrapper.SaveStateLine < visualRows.Length) {
                     if (Studio.CommunicationWrapper.SaveStateLine == Studio.CommunicationWrapper.CurrentLine) {
                         e.Graphics.FillRectangle(Settings.Instance.Theme.Savestate,
                             x: scrollablePosition.X,
-                            y: Studio.CommunicationWrapper.CurrentLine * Font.LineHeight(),
+                            y: visualRows[Studio.CommunicationWrapper.SaveStateLine] * Font.LineHeight(),
                             width: 15.0f,
                             height: Font.LineHeight());
                     } else {
                         e.Graphics.FillRectangle(Settings.Instance.Theme.Savestate,
                             x: scrollablePosition.X,
-                            y: Studio.CommunicationWrapper.CurrentLine * Font.LineHeight(),
+                            y: visualRows[Studio.CommunicationWrapper.SaveStateLine] * Font.LineHeight(),
                             width: textOffsetX - LineNumberPadding,
                             height: Font.LineHeight());
                     }
