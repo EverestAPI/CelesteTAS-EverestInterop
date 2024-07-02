@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using CelesteStudio.Communication;
 using CelesteStudio.Dialog;
 using CelesteStudio.Editing;
@@ -50,9 +49,6 @@ public sealed class Studio : Form {
         }
     }
 
-    private const int DefaultWidth = 400;
-    private const int DefaultHeight = 800;
-
     public readonly Editor Editor;
     private readonly Scrollable EditorScrollable;
     private readonly GameInfoPanel GameInfoPanel;
@@ -66,11 +62,16 @@ public sealed class Studio : Form {
         
         Settings.Load();
         
+        if (!Settings.Instance.LastLocation.IsZero) {
+            Location = Settings.Instance.LastLocation;
+        }
+        Size = Settings.Instance.LastSize;
+        
         // Setup editor
         {
             EditorScrollable = new Scrollable {
-                Width = DefaultWidth,
-                Height = DefaultHeight,
+                Width = Size.Width,
+                Height = Size.Height,
             };
             Editor = new Editor(Document.Dummy, EditorScrollable);
             EditorScrollable.Content = Editor;
@@ -101,8 +102,6 @@ public sealed class Studio : Form {
             else
                 NewFile();
         }
-
-        Size = new Size(DefaultWidth, DefaultHeight);
     }
     
     public void RecalculateLayout() {
@@ -283,11 +282,14 @@ public sealed class Studio : Form {
         return menu;
     }
     
-    public override void Close() {
-        CommunicationWrapper.SendPath(string.Empty);
+    protected override void OnClosed(EventArgs e) {
+        Settings.Instance.LastLocation = Location;
+        Settings.Instance.LastSize = Size;
         Settings.Save();
         
-        base.Close();
+        CommunicationWrapper.SendPath(string.Empty);
+        
+        base.OnClosed(e);
     }
     
     private void NewFile() {

@@ -201,10 +201,10 @@ namespace Tommy.Serializer {
                 }
 
                 // -- Determine if property is not a collection or table -------
-                if (propertyType == typeof(string) && (tableData[key].IsString || !tableData[key].IsArray && !tableData[key].IsTable))
-                    dataClass.SetPropertyValue(key, GetValueByType(tableData[key], propertyType));
-                if (propertyType.IsEnum && (tableData[key].IsString || !tableData[key].IsArray && !tableData[key].IsTable))
+                if (propertyType.IsEnum && tableData[key].IsString)
                     dataClass.SetPropertyValue(key, Enum.Parse(propertyType, (string)GetValueByType(tableData[key], propertyType)));
+                else if (propertyType == typeof(string) && tableData[key].IsString || !tableData[key].IsArray && !tableData[key].IsTable)
+                    dataClass.SetPropertyValue(key, GetValueByType(tableData[key], propertyType));
 
                 // -- Determine if property is a Toml Table/IDictionary --------
                 else if (tableData[key].IsTable && propertyType.GetInterface(nameof(IEnumerable)) != null &&
@@ -304,10 +304,10 @@ namespace Tommy.Serializer {
                 }
                 
                 // -- Determine if property is not a collection or table -------
-                if (fieldType == typeof(string) && (tableData[key].IsString || !tableData[key].IsArray && !tableData[key].IsTable))
-                    dataClass.SetFieldValue(key, GetValueByType(tableData[key], fieldType));
-                if (fieldType.IsEnum && (tableData[key].IsString || !tableData[key].IsArray && !tableData[key].IsTable))
+                if (fieldType.IsEnum && tableData[key].IsString)
                     dataClass.SetFieldValue(key, Enum.Parse(fieldType, (string)GetValueByType(tableData[key], fieldType)));
+                else if (fieldType == typeof(string) && tableData[key].IsString || !tableData[key].IsArray && !tableData[key].IsTable)
+                    dataClass.SetFieldValue(key, GetValueByType(tableData[key], fieldType));
 
                 // -- Determine if property is a Toml Table/IDictionary --------
                 else if (tableData[key].IsTable && fieldType.GetInterface(nameof(IEnumerable)) != null &&

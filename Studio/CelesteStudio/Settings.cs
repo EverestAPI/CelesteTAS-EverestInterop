@@ -53,6 +53,27 @@ public sealed class Settings {
         }
     }
     
+    private int LastX { get; set; } = 0;
+    private int LastY { get; set; } = 0;
+    private int LastW { get; set; } = 400;
+    private int LastH { get; set; } = 800;
+    [TommyIgnore]
+    public Point LastLocation {
+        get => new(LastX, LastY);
+        set {
+            LastX = value.X;
+            LastY = value.Y;
+        }
+    }
+    [TommyIgnore]
+    public Size LastSize {
+        get => new(LastW, LastH);
+        set {
+            LastW = value.Width;
+            LastH = value.Height;
+        }
+    }
+    
     public bool AutoSave { get; set; } = true;
     public bool SendInputsToCeleste { get; set; } = true;
     public bool ShowGameInfo { get; set; } = true;
