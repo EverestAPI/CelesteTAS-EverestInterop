@@ -21,6 +21,7 @@ public struct ActionLine {
 
     public HashSet<char> CustomBindings;
 
+    public static ActionLine? Parse(string line, bool ignoreInvalidFloats = true) => TryParse(line, out var actionLine, ignoreInvalidFloats) ? actionLine : null; 
     public static bool TryParse(string line, out ActionLine value, bool ignoreInvalidFloats = true) {
         value = default;
         value.CustomBindings = new HashSet<char>();

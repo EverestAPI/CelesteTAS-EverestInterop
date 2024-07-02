@@ -11,12 +11,11 @@ public static class FontManager {
     public const string FontFamilyBuiltinDisplayName = "JetBrains Mono (builtin)";
     
     private static Font? editorFontRegular, editorFontBold, editorFontItalic, editorFontBoldItalic, statusFont;
-
-    public static Font EditorFontRegular => editorFontRegular ??= CreateFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom);
-    public static Font EditorFontBold => editorFontBold ??= CreateFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom, FontStyle.Bold);
-    public static Font EditorFontItalic => editorFontItalic ??= CreateFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom, FontStyle.Italic);
-    public static Font EditorFontBoldItalic => editorFontBoldItalic ??= CreateFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom, FontStyle.Bold | FontStyle.Italic);
-    public static Font StatusFont => statusFont ??= CreateFont(Settings.Instance.FontFamily, Settings.Instance.StatusFontSize);
+    public static Font EditorFontRegular    => editorFontRegular    ??= CreateEditor(FontStyle.None);
+    public static Font EditorFontBold       => editorFontBold       ??= CreateEditor(FontStyle.Bold);
+    public static Font EditorFontItalic     => editorFontItalic     ??= CreateEditor(FontStyle.Italic);
+    public static Font EditorFontBoldItalic => editorFontBoldItalic ??= CreateEditor(FontStyle.Bold | FontStyle.Italic);
+    public static Font StatusFont           => statusFont           ??= CreateStatus();
     
     private static FontFamily? builtinFontFamily;
     public static Font CreateFont(string fontFamily, float size, FontStyle style = FontStyle.None) {
@@ -55,4 +54,7 @@ public static class FontManager {
         // Clear cached fonts
         editorFontRegular = editorFontBold = editorFontItalic = editorFontBoldItalic = statusFont = null;
     }
+    
+    private static Font CreateEditor(FontStyle style) => CreateFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom, style);
+    private static Font CreateStatus() => CreateFont(Settings.Instance.FontFamily, Settings.Instance.StatusFontSize);
 }

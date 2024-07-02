@@ -1608,8 +1608,11 @@ public sealed class Editor : Drawable {
             primaryMouseButtonDown = true;
             
             var oldCaret = Document.Caret;
-            SetCaretPosition(e.Location);
+            (Document.Caret, var visual) = LocationToCaretPosition(e.Location);
+            desiredVisualCol = visual.Col;
             ScrollCaretIntoView();
+            
+            autoCompleteMenu.Visible = false;
             
             if (e.Modifiers.HasFlag(Keys.Shift)) {
                 if (Document.Selection.Empty)
@@ -1638,8 +1641,11 @@ public sealed class Editor : Drawable {
     }
     protected override void OnMouseMove(MouseEventArgs e) {
         if (primaryMouseButtonDown) {
-            SetCaretPosition(e.Location);
+            (Document.Caret, var visual) = LocationToCaretPosition(e.Location);
+            desiredVisualCol = visual.Col;
             ScrollCaretIntoView();
+            
+            autoCompleteMenu.Visible = false;
 
             Document.Selection.End = Document.Caret;
             
@@ -1650,37 +1656,84 @@ public sealed class Editor : Drawable {
     }
 
     protected override void OnMouseWheel(MouseEventArgs e) {
+        // Adjust frame count
+        if (e.Modifiers.HasFlag(Keys.Shift)) {
+            var (position, _) = LocationToCaretPosition(e.Location);
+            
+            var selectedLine = ActionLine.Parse(Document.Lines[Document.Caret.Row]);
+            var hoveredLine = ActionLine.Parse(Document.Lines[position.Row]);
+            
+            if (selectedLine == null && hoveredLine == null)
+                return;
+            
+            // Adjust single line
+            if (Document.Caret.Row == position.Row ||
+                selectedLine == null && hoveredLine != null ||
+                hoveredLine == null && selectedLine != null) 
+            {
+                var line = selectedLine ?? hoveredLine!.Value;
+                int row = selectedLine != null ? Document.Caret.Row : position.Row;
+                    
+                if (e.Delta.Height > 0.0f) {
+                    Document.ReplaceLine(row, (line with { Frames = Math.Min(line.Frames + 1, ActionLine.MaxFrames) }).ToString()); 
+                } else if (e.Delta.Height < 0.0f) {
+                    Document.ReplaceLine(row, (line with { Frames = Math.Max(line.Frames - 1, 0) }).ToString());
+                }
+            }
+            // Move frames between lines (always in the direction of the scroll wheel)
+            else {
+                var topLine = Document.Caret.Row < position.Row ? selectedLine!.Value : hoveredLine!.Value;
+                var bottomLine = Document.Caret.Row < position.Row ? hoveredLine!.Value : selectedLine!.Value;
+                int topRow = Math.Min(Document.Caret.Row, position.Row);
+                int bottomRow = Math.Max(Document.Caret.Row, position.Row);
+                
+                if (e.Delta.Height > 0.0f && bottomLine.Frames > 0 && topLine.Frames < ActionLine.MaxFrames) {
+                    Document.PushUndoState();
+                    Document.ReplaceLine(topRow,    (topLine    with { Frames = Math.Min(topLine.Frames    + 1, ActionLine.MaxFrames)  }).ToString(), raiseEvents: false);
+                    Document.ReplaceLine(bottomRow, (bottomLine with { Frames = Math.Max(bottomLine.Frames - 1, 0)                     }).ToString(), raiseEvents: false);
+                    Document.OnTextChanged(new CaretPosition(topRow, 0), new CaretPosition(bottomRow, Document.Lines[bottomRow].Length));
+                } else if (e.Delta.Height < 0.0f && bottomLine.Frames < ActionLine.MaxFrames && topLine.Frames > 0) {
+                    Document.ReplaceLine(topRow,    (topLine    with { Frames = Math.Max(topLine.Frames    - 1, 0)                    }).ToString(), raiseEvents: false);
+                    Document.ReplaceLine(bottomRow, (bottomLine with { Frames = Math.Min(bottomLine.Frames + 1, ActionLine.MaxFrames) }).ToString(), raiseEvents: false);
+                    Document.OnTextChanged(new CaretPosition(topRow, 0), new CaretPosition(bottomRow, Document.Lines[bottomRow].Length));
+                }
+            }
+            
+            e.Handled = true;
+            return;
+        }
+        // Zoom in/out
         if (e.Modifiers.HasFlag(Keys.Control)) {
             const float scrollSpeed = 0.1f;
-            if (e.Delta.Height < 0.0f) {
-                Settings.Instance.FontZoom *= 1.0f - scrollSpeed;
-            } else if (e.Delta.Height > 0.0f) {
+            if (e.Delta.Height > 0.0f) {
                 Settings.Instance.FontZoom *= 1.0f + scrollSpeed;
+            } else if (e.Delta.Height < 0.0f) {
+                Settings.Instance.FontZoom *= 1.0f - scrollSpeed;
             }
             Settings.Instance.OnFontChanged();
             
             e.Handled = true;
             return;
         }
+        
         base.OnMouseWheel(e);
     }
     
-    private void SetCaretPosition(PointF location) {
+    private (CaretPosition Actual, CaretPosition Visual) LocationToCaretPosition(PointF location) {
         location.X -= textOffsetX;
         
         int visualRow = (int)(location.Y / Font.LineHeight());
         // Since we use a monospace font, we can just calculate the column
         int visualCol = (int)(location.X / Font.CharWidth());
         
-        Document.Caret = ClampCaret(GetActualPosition(new CaretPosition(visualRow, visualCol)), wrapLine: false);
-        desiredVisualCol = Document.Caret.Col;
+        var position = ClampCaret(GetActualPosition(new CaretPosition(visualRow, visualCol)), wrapLine: false);
         
         var newLine = Document.Lines[Document.Caret.Row];
         if (ActionLine.TryParse(newLine, out var actionLine)) {
-            Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
+            position.Col = SnapColumnToActionLine(actionLine, position.Col);
         }
         
-        autoCompleteMenu.Visible = false;
+        return (position, new CaretPosition(visualRow, visualCol));
     }
     
     #endregion
