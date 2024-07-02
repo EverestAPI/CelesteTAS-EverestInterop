@@ -64,12 +64,6 @@ public sealed class Studio : Form {
         
         Settings.Load();
         
-        // Fix titlebar dark-mode on windows
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-            Win32Api.SetDarkTitleBar(Settings.Instance.ThemeType == ThemeType.Dark);
-            Settings.Changed += () => Win32Api.SetDarkTitleBar(Settings.Instance.ThemeType == ThemeType.Dark);
-        }
-        
         // Setup editor
         {
             EditorScrollable = new Scrollable {
