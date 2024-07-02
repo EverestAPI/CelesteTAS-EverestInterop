@@ -970,6 +970,7 @@ public sealed class Editor : Drawable {
             Document.Insert(Document.NewLine.ToString());
         }
         
+        Recalc();
         ScrollCaretIntoView();
     }
     
