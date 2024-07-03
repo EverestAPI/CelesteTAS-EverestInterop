@@ -47,7 +47,7 @@ public class GameInfoPanel : Panel {
         };
         
         Studio.CommunicationWrapper.Server.StateUpdated += (prevState, state) => {
-            if (!Visible || prevState.GameInfo == state.GameInfo)
+            if (!Settings.Instance.ShowGameInfo || prevState.GameInfo == state.GameInfo)
                 return;
             
             Application.Instance.InvokeAsync(UpdateGameInfo);

@@ -70,8 +70,7 @@ public class StudioCommunicationServer : StudioCommunicationBase {
         try {
             var studioInfo = StudioInfo.FromByteArray(data);
             
-            if (!Studio.CommunicationWrapper.State.Equals(studioInfo))
-                OnStateUpdated(Studio.CommunicationWrapper.State, studioInfo);
+            OnStateUpdated(Studio.CommunicationWrapper.State, studioInfo);
             // CommunicationWrapper.StudioInfo = studioInfo;
         } catch (InvalidCastException) {
             // string studioVersion = Studio.Version.ToString(3);
