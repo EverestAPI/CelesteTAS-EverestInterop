@@ -457,6 +457,45 @@ public sealed class Editor : Drawable {
         return (autoCompleteX, autoCompleteY, autoCompleteMaxH);
     }
     
+    private void AdjustFrameCounts(int rowA, int rowB, int dir) {
+        int topRow = Math.Min(rowA, rowB);
+        int bottomRow = Math.Max(rowA, rowB);
+        
+        var topLine = ActionLine.Parse(Document.Lines[topRow]);
+        var bottomLine = ActionLine.Parse(Document.Lines[bottomRow]);
+        
+        if (topLine == null && bottomLine == null || dir == 0)
+            return;
+        
+        // Adjust single line
+        if (topRow == bottomRow ||
+            topLine == null && bottomLine != null ||
+            bottomLine == null && topLine != null) 
+        {
+            var line = topLine ?? bottomLine!.Value;
+            int row = topLine != null ? topRow : bottomRow;
+                
+            if (dir > 0) {
+                Document.ReplaceLine(row, (line with { Frames = Math.Min(line.Frames + 1, ActionLine.MaxFrames) }).ToString()); 
+            } else {
+                Document.ReplaceLine(row, (line with { Frames = Math.Max(line.Frames - 1, 0) }).ToString());
+            }
+        }
+        // Move frames between lines
+        else {
+            if (dir > 0 && bottomLine!.Value.Frames > 0 && topLine!.Value.Frames < ActionLine.MaxFrames) {
+                Document.PushUndoState();
+                Document.ReplaceLine(topRow,    (topLine.Value    with { Frames = Math.Min(topLine.Value.Frames    + 1, ActionLine.MaxFrames)  }).ToString(), raiseEvents: false);
+                Document.ReplaceLine(bottomRow, (bottomLine.Value with { Frames = Math.Max(bottomLine.Value.Frames - 1, 0)                     }).ToString(), raiseEvents: false);
+                Document.OnTextChanged(new CaretPosition(topRow, 0), new CaretPosition(bottomRow, Document.Lines[bottomRow].Length));
+            } else if (dir < 0 && bottomLine!.Value.Frames < ActionLine.MaxFrames && topLine!.Value.Frames > 0) {
+                Document.ReplaceLine(topRow,    (topLine.Value    with { Frames = Math.Max(topLine.Value.Frames    - 1, 0)                    }).ToString(), raiseEvents: false);
+                Document.ReplaceLine(bottomRow, (bottomLine.Value with { Frames = Math.Min(bottomLine.Value.Frames + 1, ActionLine.MaxFrames) }).ToString(), raiseEvents: false);
+                Document.OnTextChanged(new CaretPosition(topRow, 0), new CaretPosition(bottomRow, Document.Lines[bottomRow].Length));
+            }
+        }
+    }
+    
     #endregion
     
     protected override void OnKeyDown(KeyEventArgs e) {
@@ -538,7 +577,15 @@ public sealed class Editor : Drawable {
                 e.Handled = true;
                 break;
             case Keys.Up:
-                if (e.Alt) {
+                if (e.Control && e.Shift) {
+                    // Adjust frame count
+                    if (Document.Selection.Empty) {
+                        AdjustFrameCounts(Document.Caret.Row, Document.Caret.Row, 1);
+                    } else {
+                        AdjustFrameCounts(Document.Selection.Start.Row, Document.Selection.End.Row, 1);
+                    }
+                } else if (e.Alt) {
+                    // Move lines
                     if (Document.Caret.Row > 0 && Document.Selection is { Empty: false, Min.Row: > 0 }) {
                         Document.PushUndoState();
                         var line = Document.Lines[Document.Selection.Min.Row - 1];
@@ -561,7 +608,15 @@ public sealed class Editor : Drawable {
                 e.Handled = true;
                 break;
             case Keys.Down:
-                if (e.Alt) {
+                if (e.Control && e.Shift) {
+                    // Adjust frame count
+                    if (Document.Selection.Empty) {
+                        AdjustFrameCounts(Document.Caret.Row, Document.Caret.Row, -1);
+                    } else {
+                        AdjustFrameCounts(Document.Selection.Start.Row, Document.Selection.End.Row, -1);
+                    }
+                } else if (e.Alt) {
+                    // Move lines
                     if (Document.Caret.Row < Document.Lines.Count - 1 && !Document.Selection.Empty && Document.Selection.Max.Row < Document.Lines.Count - 1) {
                         Document.PushUndoState();
                         var line = Document.Lines[Document.Selection.Max.Row + 1];
@@ -1804,46 +1859,8 @@ public sealed class Editor : Drawable {
         // Adjust frame count
         if (e.Modifiers.HasFlag(Keys.Shift)) {
             var (position, _) = LocationToCaretPosition(e.Location);
-            
-            var selectedLine = ActionLine.Parse(Document.Lines[Document.Caret.Row]);
-            var hoveredLine = ActionLine.Parse(Document.Lines[position.Row]);
-            
-            if (selectedLine == null && hoveredLine == null)
-                return;
-            
-            // Adjust single line
-            if (Document.Caret.Row == position.Row ||
-                selectedLine == null && hoveredLine != null ||
-                hoveredLine == null && selectedLine != null) 
-            {
-                var line = selectedLine ?? hoveredLine!.Value;
-                int row = selectedLine != null ? Document.Caret.Row : position.Row;
-                    
-                if (e.Delta.Height > 0.0f) {
-                    Document.ReplaceLine(row, (line with { Frames = Math.Min(line.Frames + 1, ActionLine.MaxFrames) }).ToString()); 
-                } else if (e.Delta.Height < 0.0f) {
-                    Document.ReplaceLine(row, (line with { Frames = Math.Max(line.Frames - 1, 0) }).ToString());
-                }
-            }
-            // Move frames between lines (always in the direction of the scroll wheel)
-            else {
-                var topLine = Document.Caret.Row < position.Row ? selectedLine!.Value : hoveredLine!.Value;
-                var bottomLine = Document.Caret.Row < position.Row ? hoveredLine!.Value : selectedLine!.Value;
-                int topRow = Math.Min(Document.Caret.Row, position.Row);
-                int bottomRow = Math.Max(Document.Caret.Row, position.Row);
-                
-                if (e.Delta.Height > 0.0f && bottomLine.Frames > 0 && topLine.Frames < ActionLine.MaxFrames) {
-                    Document.PushUndoState();
-                    Document.ReplaceLine(topRow,    (topLine    with { Frames = Math.Min(topLine.Frames    + 1, ActionLine.MaxFrames)  }).ToString(), raiseEvents: false);
-                    Document.ReplaceLine(bottomRow, (bottomLine with { Frames = Math.Max(bottomLine.Frames - 1, 0)                     }).ToString(), raiseEvents: false);
-                    Document.OnTextChanged(new CaretPosition(topRow, 0), new CaretPosition(bottomRow, Document.Lines[bottomRow].Length));
-                } else if (e.Delta.Height < 0.0f && bottomLine.Frames < ActionLine.MaxFrames && topLine.Frames > 0) {
-                    Document.ReplaceLine(topRow,    (topLine    with { Frames = Math.Max(topLine.Frames    - 1, 0)                    }).ToString(), raiseEvents: false);
-                    Document.ReplaceLine(bottomRow, (bottomLine with { Frames = Math.Min(bottomLine.Frames + 1, ActionLine.MaxFrames) }).ToString(), raiseEvents: false);
-                    Document.OnTextChanged(new CaretPosition(topRow, 0), new CaretPosition(bottomRow, Document.Lines[bottomRow].Length));
-                }
-            }
-            
+            AdjustFrameCounts(Document.Caret.Row, position.Row, Math.Sign(e.Delta.Height));
+
             e.Handled = true;
             return;
         }
