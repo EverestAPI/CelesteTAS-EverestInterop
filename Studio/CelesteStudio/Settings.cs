@@ -74,6 +74,8 @@ public sealed class Settings {
         }
     }
     
+    public string LastSaveDirectory { get; set; } = string.Empty;
+    
     public bool AutoSave { get; set; } = true;
     public bool SendInputsToCeleste { get; set; } = true;
     public bool ShowGameInfo { get; set; } = true;

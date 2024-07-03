@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -53,7 +54,9 @@ public sealed class Studio : Form {
     private readonly Scrollable EditorScrollable;
     private readonly GameInfoPanel GameInfoPanel;
 
-    private string TitleBarText => $"{Editor.Document.FileName}{(Editor.Document.Dirty ? "*" : string.Empty)} - Studio v{Version.ToString(3)}   {Editor.Document.FilePath}";
+    private string TitleBarText => Editor.Document.FilePath == Document.TemporaryFile 
+        ? $"<Unsaved> - Studio v{Version.ToString(3)}" 
+        : $"{Editor.Document.FileName}{(Editor.Document.Dirty ? "*" : string.Empty)} - Studio v{Version.ToString(3)}   {Editor.Document.FilePath}";
     
     public Studio() {
         Instance = this;
@@ -100,7 +103,7 @@ public sealed class Studio : Form {
             if (Settings.Instance.RecentFiles.Count > 0 && !string.IsNullOrWhiteSpace(Settings.Instance.RecentFiles[0]) && File.Exists(Settings.Instance.RecentFiles[0]))
                 OpenFile(Settings.Instance.RecentFiles[0]);
             else
-                NewFile();
+                OnNewFile();
         }
     }
     
@@ -173,38 +176,15 @@ public sealed class Studio : Form {
         var menu = new MenuBar {
             Items = {
                 new SubMenuItem { Text = "&File", Items = {
-                    MenuUtils.CreateAction("&New File", Application.Instance.CommonModifier | Keys.N, NewFile),
+                    MenuUtils.CreateAction("&New File", Application.Instance.CommonModifier | Keys.N, OnNewFile),
                     new SeparatorMenuItem(),
-                    MenuUtils.CreateAction("&Open File...", Application.Instance.CommonModifier | Keys.O, () => {
-                        var dialog = new OpenFileDialog {
-                            Filters = { new FileFilter("TAS", ".tas") },
-                            MultiSelect = false,
-                            Directory = new Uri(Path.GetDirectoryName(Editor.Document.FilePath)!),
-                        };
-                        
-                        if (dialog.ShowDialog(this) == DialogResult.Ok) {
-                            OpenFile(dialog.Filenames.First());
-                        }
-                    }),
+                    MenuUtils.CreateAction("&Open File...", Application.Instance.CommonModifier | Keys.O, OnOpenFile),
                     openPreviousFile,
                     recentFilesMenu,
                     backupsMenu,
                     new SeparatorMenuItem(),
-                    MenuUtils.CreateAction("Save", Application.Instance.CommonModifier | Keys.S, SaveFile),
-                    MenuUtils.CreateAction("&Save As...", Application.Instance.CommonModifier | Keys.Shift | Keys.S, () => {
-                        var dialog = new SaveFileDialog {
-                            Filters = { new FileFilter("TAS", ".tas") },
-                            Directory = new Uri(Path.GetDirectoryName(Editor.Document.FilePath)!),
-                        };
-                        
-                        if (dialog.ShowDialog(this) == DialogResult.Ok) {
-                            var fileName = dialog.FileName;
-                            if (Path.GetExtension(fileName) != ".tas")
-                                fileName += ".tas";
-                            
-                            SaveFileAs(fileName);
-                        }
-                    }),
+                    MenuUtils.CreateAction("Save", Application.Instance.CommonModifier | Keys.S, OnSaveFile),
+                    MenuUtils.CreateAction("&Save As...", Application.Instance.CommonModifier | Keys.Shift | Keys.S, OnSaveFileAs),
                     new SeparatorMenuItem(),
                     MenuUtils.CreateAction("&Integrate Read Files"),
                     MenuUtils.CreateAction("&Convert to LibTAS Movie..."),
@@ -282,24 +262,49 @@ public sealed class Studio : Form {
         return menu;
     }
     
-    protected override void OnClosed(EventArgs e) {
+    protected override void OnClosing(CancelEventArgs e) {
+        if (!ShouldDiscardChanges()) {
+            e.Cancel = true;
+            return;
+        }
+        
         Settings.Instance.LastLocation = Location;
         Settings.Instance.LastSize = Size;
         Settings.Save();
         
         CommunicationWrapper.SendPath(string.Empty);
         
-        base.OnClosed(e);
+        base.OnClosing(e);
     }
     
-    private void NewFile() {
-        // TODO: Add "discard changes" prompt
-        
-        int index = 1;
-        string gamePath = Path.Combine(Directory.GetCurrentDirectory(), "TAS Files");
-        if (!Directory.Exists(gamePath)) {
-            Directory.CreateDirectory(gamePath);
+    private bool ShouldDiscardChanges() {
+        if (Editor.Document.Dirty || Editor.Document.FilePath == Document.TemporaryFile) {
+            var confirm = MessageBox.Show($"You have unsaved changes.{Environment.NewLine}Are you sure you want to discard them?", MessageBoxButtons.YesNo, MessageBoxType.Question, MessageBoxDefaultButton.No);
+            return confirm == DialogResult.Yes;
         }
+        
+        return true;
+    }
+    
+    private string GetFilePickerDirectory() {
+        var fallbackDir = string.IsNullOrWhiteSpace(Settings.Instance.LastSaveDirectory)
+            ? Path.Combine(Directory.GetCurrentDirectory(), "TAS Files")
+            : Settings.Instance.LastSaveDirectory;
+        
+        var dir = Editor.Document.FilePath == Document.TemporaryFile
+            ? fallbackDir
+            : Path.GetDirectoryName(Editor.Document.FilePath) ?? fallbackDir;
+        
+        if (!Directory.Exists(dir)) {
+            Directory.CreateDirectory(dir);
+        }
+        
+        return dir;
+    }
+    
+    private void OnNewFile() {
+        if (!ShouldDiscardChanges())
+            return;
         
         string initText = $"RecordCount: 1{Document.NewLine}";
         if (CommunicationWrapper.Connected) {
@@ -310,24 +315,30 @@ public sealed class Studio : Form {
                 }
             }
         }
-        
         initText += $"{Document.NewLine}#Start{Document.NewLine}";
         
-        string filePath = Path.Combine(gamePath, $"Untitled-{index}.tas");
-        while (File.Exists(filePath) && File.ReadAllText(filePath) != initText) {
-            index++;
-            filePath = Path.Combine(gamePath, $"Untitled-{index}.tas");
+        File.WriteAllText(Document.TemporaryFile, initText);
+        OpenFile(Document.TemporaryFile);
+    }
+    
+    private void OnOpenFile() {
+        if (!ShouldDiscardChanges())
+            return;
+        
+        var dialog = new OpenFileDialog {
+            Filters = { new FileFilter("TAS", ".tas") },
+            MultiSelect = false,
+            Directory = new Uri(GetFilePickerDirectory()),
+        };
+        
+        if (dialog.ShowDialog(this) == DialogResult.Ok) {
+            OpenFile(dialog.Filenames.First());
         }
-        
-        File.WriteAllText(filePath, initText);
-        
-        OpenFile(filePath);
     }
     
     private void OpenFile(string filePath) {
-        if (filePath == Editor.Document.FilePath) {
+        if (filePath == Editor.Document.FilePath)
             return;
-        }
         
         if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
             Settings.Instance.AddRecentFile(filePath);
@@ -353,17 +364,38 @@ public sealed class Studio : Form {
         
         CommunicationWrapper.SendPath(Editor.Document.FilePath);
         
+        if (filePath != Document.TemporaryFile) {
+            Settings.Instance.LastSaveDirectory = Path.GetDirectoryName(filePath)!;
+        }
+        
         void UpdateTitle(Document _0, CaretPosition _1, CaretPosition _2) {
             Title = TitleBarText;
         }
     }
     
-    private void SaveFile() {
+    private void OnSaveFile() {
+        if (Editor.Document.FilePath == Document.TemporaryFile) {
+            OnSaveFileAs();
+            return;
+        }
+        
         Editor.Document.Save();
         Title = TitleBarText;
     }
     
-    private void SaveFileAs(string filePath) {
+    private void OnSaveFileAs() {
+        var dialog = new SaveFileDialog {
+            Filters = { new FileFilter("TAS", ".tas") },
+            Directory = new Uri(GetFilePickerDirectory()),
+        };
+        
+        if (dialog.ShowDialog(this) != DialogResult.Ok) 
+            return;
+        
+        var filePath = dialog.FileName;
+        if (Path.GetExtension(filePath) != ".tas")
+            filePath += ".tas";
+        
         CommunicationWrapper.WriteWait();
         
         Editor.Document.FilePath = filePath;
