@@ -248,7 +248,7 @@ public sealed class Editor : Drawable {
         commentLineWraps.Clear();
         foldings.Clear();
         
-        int collapsedStart = -1;
+        var activeCollapses = new HashSet<int>();
         var activeFoldings = new Dictionary<int, int>(); // depth -> startRow
         
         Array.Resize(ref visualRows, Document.Lines.Count);
@@ -259,7 +259,7 @@ public sealed class Editor : Drawable {
             visualRows[row] = visualRow;
             
             if (Document.FindFirstAnchor(anchor => anchor.Row == row && anchor.UserData is FoldingAnchorData) != null) {
-                collapsedStart = row;
+                activeCollapses.Add(row);
             }
             
             // Create foldings for lines with the same amount of #'s (minimum 2)
@@ -290,15 +290,13 @@ public sealed class Editor : Drawable {
                         DisplayText = startLine + "..."
                     });
                     
-                    if (collapsedStart == startRow) {
-                        collapsedStart = -1;
-                    }
+                    activeCollapses.Remove(startRow);
                 } else {
                     activeFoldings[depth] = row;
                 }
             }
             
-            if (collapsedStart != -1) {
+            if (activeCollapses.Any()) {
                 continue;
             }
             
@@ -1669,8 +1667,8 @@ public sealed class Editor : Drawable {
         int maxVisualRow = GetActualRow(visualRows[^1]);
         
         // Clamp to document (also visually)
-        position.Row = Math.Clamp(position.Row, 0, Document.Lines.Count - 1);
-        position.Col = Math.Clamp(position.Col, 0, Math.Min(maxVisualRow, Document.Lines[position.Row].Length));
+        position.Row = Math.Clamp(position.Row, 0, Math.Min(maxVisualRow, Document.Lines.Count - 1));
+        position.Col = Math.Clamp(position.Col, 0, Document.Lines[position.Row].Length);
         
         // Clamp to action line if possible
         if (ActionLine.TryParse(Document.Lines[position.Row], out var actionLine))
