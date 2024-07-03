@@ -15,13 +15,6 @@ using WrapEntry = (int StartOffset, (string Line, int Index)[] Lines);
 namespace CelesteStudio.Editing;
 
 public sealed class Editor : Drawable {
-    private struct Folding {
-        public int MinRow, MaxRow;
-        
-        public int StartCol;
-        public string DisplayText;
-    }
-    
     private Document document;
     public Document Document {
         get => document;
@@ -69,7 +62,6 @@ public sealed class Editor : Drawable {
     
     // Foldings can collapse sections of the document
     private readonly List<Folding> foldings = [];
-    private readonly HashSet<int> collapsedFoldings = []; // Contains MinRows which are currently collapsed
 
     // Visual lines are all lines shown in the editor
     // A single actual line may occupy multiple visual lines
@@ -268,8 +260,7 @@ public sealed class Editor : Drawable {
             visualRows[row] = visualRow;
             
             bool collapsed = collapsedStart != -1; // Done before reassignment, so that it only affects the next line 
-            if (collapsedFoldings.Contains(row)) {
-                Console.WriteLine($"collapse at {row}");
+            if (Document.FindFirstAnchor(anchor => anchor.Row == row && anchor.UserData is FoldingAnchorData) != null) {
                 collapsedStart = row;
             }
             
@@ -300,10 +291,8 @@ public sealed class Editor : Drawable {
                         StartCol = startIdx,
                         DisplayText = startLine + "..."
                     });
-                    Console.WriteLine($"foldoing: {startIdx} {startRow} -> {row} '{startLine}'");
                     
                     if (collapsedStart == startRow) {
-                        Console.WriteLine($"uncollapse at {row}");
                         collapsedStart = -1;
                     }
                 } else {
@@ -570,8 +559,7 @@ public sealed class Editor : Drawable {
     protected override void OnKeyDown(KeyEventArgs e) {
         // DEBUG TESTING
         if (e.Key == Keys.Minus) {
-            if (!collapsedFoldings.Remove(Document.Caret.Row))
-                collapsedFoldings.Add(Document.Caret.Row);
+            SetFolding(Document.Caret.Row, GetCollapse(Document.Caret.Row) == null);
             
             e.Handled = true;
             Recalc();
@@ -861,6 +849,42 @@ public sealed class Editor : Drawable {
     private QuickEditData? GetSelectedQuickEdit() => GetQuickEdits().FirstOrDefault(anchor => anchor.IsPositionInside(Document.Caret))?.UserData as QuickEditData?;
     private IEnumerable<Anchor> GetQuickEdits() => Document.FindAnchors(anchor => anchor.UserData is QuickEditData);
     private void ClearQuickEdits() => Document.RemoveAnchorsIf(anchor => anchor.UserData is QuickEditData);
+    
+    #endregion
+    
+    #region Folding
+    
+    private struct Folding {
+        public int MinRow, MaxRow;
+        
+        public int StartCol;
+        public string DisplayText;
+    }
+    private struct FoldingAnchorData;
+    
+    private void SetFolding(int row, bool fold) {
+        if (fold && Document.FindFirstAnchor(anchor => anchor.Row == row && anchor.UserData is FoldingAnchorData) == null) {
+            Document.AddAnchor(new Anchor {
+                MinCol = 0, MaxCol = Document.Lines[row].Length,
+                Row = row,
+                UserData = new FoldingAnchorData()
+            });
+        } else {
+            Document.RemoveAnchorsIf(anchor => anchor.Row == row && anchor.UserData is FoldingAnchorData);
+        }
+    }
+    private Folding? GetCollapse(int row) {
+        if (Document.FindFirstAnchor(anchor => anchor.Row == row && anchor.UserData is FoldingAnchorData) == null) {
+            return null;
+        }
+        
+        var folding = foldings.FirstOrDefault(fold => fold.MinRow == row);
+        if (folding.MinRow == folding.MaxRow) {
+            return null;
+        }
+        
+        return folding;
+    }
     
     #endregion
     
@@ -2000,14 +2024,14 @@ public sealed class Editor : Drawable {
         for (int row = topRow; row <= bottomRow; row++) {
             string line = Document.Lines[row];
 
-            if (collapsedFoldings.Contains(row) && foldings.FirstOrDefault(f => f.MinRow == row) is var folding && folding.MinRow != folding.MaxRow) {
+            if (GetCollapse(row) is { } collapse) {
                 const float foldingPadding = 1.0f;
                 
-                highlighter.DrawLine(e.Graphics, textOffsetX, yPos, folding.DisplayText);
-                e.Graphics.DrawRectangle(Colors.White, Font.CharWidth() * folding.StartCol + textOffsetX - foldingPadding, yPos - foldingPadding, Font.MeasureWidth(folding.DisplayText) - Font.CharWidth() * folding.StartCol + foldingPadding * 2.0f, Font.LineHeight() + foldingPadding * 2.0f);
+                highlighter.DrawLine(e.Graphics, textOffsetX, yPos, collapse.DisplayText);
+                e.Graphics.DrawRectangle(Colors.White, Font.CharWidth() * collapse.StartCol + textOffsetX - foldingPadding, yPos - foldingPadding, Font.MeasureWidth(collapse.DisplayText) - Font.CharWidth() * collapse.StartCol + foldingPadding * 2.0f, Font.LineHeight() + foldingPadding * 2.0f);
                 
                 yPos += Font.LineHeight();
-                row = folding.MaxRow;
+                row = collapse.MaxRow;
                 continue;
             }
             
@@ -2138,8 +2162,8 @@ public sealed class Editor : Drawable {
                     yPos += Font.LineHeight();
                 }
                 
-                if (collapsedFoldings.Contains(row) && foldings.FirstOrDefault(f => f.MinRow == row) is var folding && folding.MinRow != folding.MaxRow) {
-                    row = folding.MaxRow;
+                if (GetCollapse(row) is { } collapse) {
+                    row = collapse.MaxRow;
                 }
             }
             
