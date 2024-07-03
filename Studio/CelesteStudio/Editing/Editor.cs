@@ -228,7 +228,7 @@ public sealed class Editor : Drawable {
     private void Recalc() {
         // Ensure there is always at least 1 line
         if (Document.Lines.Count == 0)
-            Document.InsertNewLine(0, string.Empty);
+            Document.InsertLine(0, string.Empty);
         
         // Snap caret
         Document.Caret.Row = Math.Clamp(Document.Caret.Row, 0, Document.Lines.Count - 1);
@@ -538,9 +538,21 @@ public sealed class Editor : Drawable {
                 e.Handled = true;
                 break;
             case Keys.Up:
-                if (e.Alt && Document.Caret.Row > 0) {
-                    Document.SwapLines(Document.Caret.Row, Document.Caret.Row - 1);
-                    Document.Caret.Row--;
+                if (e.Alt) {
+                    if (Document.Caret.Row > 0 && Document.Selection is { Empty: false, Min.Row: > 0 }) {
+                        Document.PushUndoState();
+                        var line = Document.Lines[Document.Selection.Min.Row - 1];
+                        Document.RemoveLine(Document.Selection.Min.Row - 1, raiseEvents: false);
+                        Document.InsertLine(Document.Selection.Max.Row, line, raiseEvents: false);
+                        Document.OnTextChanged(new CaretPosition(Document.Selection.Min.Row - 1, 0), new CaretPosition(Document.Selection.Max.Row, Document.Lines[Document.Selection.Max.Row].Length));
+                        
+                        Document.Selection.Start.Row--;
+                        Document.Selection.End.Row--;
+                        Document.Caret.Row--;
+                    } else if (Document.Caret.Row > 0 && Document.Selection.Empty) {
+                        Document.SwapLines(Document.Caret.Row, Document.Caret.Row - 1);
+                        Document.Caret.Row--;    
+                    }
                     ScrollCaretIntoView();
                 } else {
                     MoveCaret(e.Control ? CaretMovementType.LabelUp : CaretMovementType.LineUp, updateSelection: e.Shift);
@@ -549,9 +561,21 @@ public sealed class Editor : Drawable {
                 e.Handled = true;
                 break;
             case Keys.Down:
-                if (e.Alt && Document.Caret.Row < Document.Lines.Count - 1) {
-                    Document.SwapLines(Document.Caret.Row, Document.Caret.Row + 1);
-                    Document.Caret.Row++;
+                if (e.Alt) {
+                    if (Document.Caret.Row < Document.Lines.Count - 1 && !Document.Selection.Empty && Document.Selection.Max.Row < Document.Lines.Count - 1) {
+                        Document.PushUndoState();
+                        var line = Document.Lines[Document.Selection.Max.Row + 1];
+                        Document.RemoveLine(Document.Selection.Max.Row + 1, raiseEvents: false);
+                        Document.InsertLine(Document.Selection.Min.Row, line, raiseEvents: false);
+                        Document.OnTextChanged(new CaretPosition(Document.Selection.Min.Row, 0), new CaretPosition(Document.Selection.Max.Row + 1, Document.Lines[Document.Selection.Max.Row + 1].Length));
+                        
+                        Document.Selection.Start.Row++;
+                        Document.Selection.End.Row++;
+                        Document.Caret.Row++;
+                    } else if (Document.Caret.Row < Document.Lines.Count - 1 && Document.Selection.Empty) {
+                        Document.SwapLines(Document.Caret.Row, Document.Caret.Row + 1);
+                        Document.Caret.Row++;
+                    }
                     ScrollCaretIntoView();
                 } else {
                     MoveCaret(e.Control ? CaretMovementType.LabelDown : CaretMovementType.LineDown, updateSelection: e.Shift);
@@ -1393,7 +1417,7 @@ public sealed class Editor : Drawable {
             
             Document.PushUndoState();
             Document.RemoveLines(above, below, raiseEvents: false);
-            Document.InsertNewLine(above, currActionLine.ToString(), raiseEvents: false);
+            Document.InsertLine(above, currActionLine.ToString(), raiseEvents: false);
             Document.OnTextChanged(new CaretPosition(above, 0), new CaretPosition(above, Document.Lines[above].Length));
             
             Document.Caret.Row = above;
@@ -1434,7 +1458,7 @@ public sealed class Editor : Drawable {
                 
                 // Current line is different, so change the active one
                 Document.RemoveLines(activeRowStart, row - 1, raiseEvents: false);
-                Document.InsertNewLine(activeRowStart, activeActionLine.Value.ToString(), raiseEvents: false);
+                Document.InsertLine(activeRowStart, activeActionLine.Value.ToString(), raiseEvents: false);
                 
                 activeActionLine = currActionLine;
                 activeRowStart++;
@@ -1447,7 +1471,7 @@ public sealed class Editor : Drawable {
             // "Flush" the remaining line
             if (activeActionLine != null) {
                 Document.RemoveLines(activeRowStart, maxRow, raiseEvents: false);
-                Document.InsertNewLine(activeRowStart, activeActionLine.Value.ToString(), raiseEvents: false);
+                Document.InsertLine(activeRowStart, activeActionLine.Value.ToString(), raiseEvents: false);
                 
                 maxRow = activeRowStart;
             }

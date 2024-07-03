@@ -385,9 +385,9 @@ public class Document {
         return pos;
     }
     
-    public void InsertLineAbove(string text, bool raiseEvents = true) => InsertNewLine(Caret.Row, text, raiseEvents);
-    public void InsertLineBelow(string text, bool raiseEvents = true) => InsertNewLine(Caret.Row + 1, text, raiseEvents);
-    public void InsertNewLine(int row, string text, bool raiseEvents = true) {
+    public void InsertLineAbove(string text, bool raiseEvents = true) => InsertLine(Caret.Row, text, raiseEvents);
+    public void InsertLineBelow(string text, bool raiseEvents = true) => InsertLine(Caret.Row + 1, text, raiseEvents);
+    public void InsertLine(int row, string text, bool raiseEvents = true) {
         if (raiseEvents) undoStack.Push(Caret);
         
         var newLines = text.SplitDocumentLines();
