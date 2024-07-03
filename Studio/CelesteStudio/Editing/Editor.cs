@@ -131,19 +131,17 @@ public sealed class Editor : Drawable {
         // Update wrapped lines
         scrollable.SizeChanged += (_, _) => Recalc();
 
-        Studio.CommunicationWrapper.Server.StateUpdated += (prevState, state) => {
-            if (state.CurrentLine != -1 && prevState.CurrentLine != state.CurrentLine) {
+        Studio.CommunicationWrapper.Server.StateUpdated += (prevState, state) =>  Application.Instance.InvokeAsync(() => {
+            if (state.CurrentLine != -1) {
                 Document.Caret.Row = state.CurrentLine;
                 Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
                 Document.Caret = ClampCaret(Document.Caret, wrapLine: false);
                 
                 // Need to redraw the current state
-                Application.Instance.InvokeAsync(() => {
-                    ScrollCaretIntoView(center: true);
-                    Invalidate();
-                });
+                ScrollCaretIntoView(center: true);
+                Invalidate();
             }
-        };
+        });
         
         var commandsMenu = new SubMenuItem { Text = "Insert Other Command" };        
         foreach (var command in CommandInfo.AllCommands) {
@@ -696,6 +694,7 @@ public sealed class Editor : Drawable {
             Document.Selection.Clear();
         }
         
+        Document.Caret = ClampCaret(Document.Caret, wrapLine: false);
         var line = Document.Lines[Document.Caret.Row];
         
         char typedCharacter = char.ToUpper(e.Text[0]);
