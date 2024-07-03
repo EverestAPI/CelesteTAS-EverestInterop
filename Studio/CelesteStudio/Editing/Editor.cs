@@ -383,7 +383,7 @@ public sealed class Editor : Drawable {
     // Matches against command or space or both as a separator
     private static readonly Regex SeparatorRegex = new(@"(?:\s+)|(?:\s*,\s*)", RegexOptions.Compiled);
     
-    private void UpdateAutoComplete() {
+    private void UpdateAutoComplete(bool open = true) {
         var line = Document.Lines[Document.Caret.Row];
         
         // Don't auto-complete on comments or action lines
@@ -392,7 +392,10 @@ public sealed class Editor : Drawable {
             return;
         }
         
-        autoCompleteMenu.Visible = true;
+        autoCompleteMenu.Visible |= open;
+        if (!autoCompleteMenu.Visible) {
+            return;
+        }
         
         // Use auto-complete entries for current command
 
@@ -957,7 +960,7 @@ public sealed class Editor : Drawable {
                 Document.RemoveRangeInLine(caret.Row, caret.Col, newCaret.Col);
                 newCaret.Col = Math.Min(newCaret.Col, caret.Col);
                 
-                UpdateAutoComplete();
+                UpdateAutoComplete(open: false);
             } else {
                 var min = newCaret < caret ? newCaret : caret;
                 var max = newCaret < caret ? caret : newCaret;
