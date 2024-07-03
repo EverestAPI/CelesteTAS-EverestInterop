@@ -1913,9 +1913,10 @@ public sealed class Editor : Drawable {
         const float autocompleteXPos = 8.0f;
         const float autocompleteYOffset = 7.0f;
         
-        autoCompleteMenu.Draw(e.Graphics, Font,
-            scrollablePosition.X + textOffsetX + autocompleteXPos,
-            carY + Font.LineHeight() + autocompleteYOffset);
+        float autoCompleteX = scrollablePosition.X + textOffsetX + autocompleteXPos;
+        float autoCompleteY = carY + Font.LineHeight() + autocompleteYOffset;
+        float autoCompleteMaxH = (scrollablePosition.Y + scrollable.Height - Font.LineHeight()) - autoCompleteY;
+        autoCompleteMenu.Draw(e.Graphics, Font, autoCompleteX, autoCompleteY, autoCompleteMaxH);
         
         base.OnPaint(e);
     }

@@ -20,6 +20,7 @@ public class AutoCompleteMenu {
             visible = value;
             filter = string.Empty;
             selectedEntry = 0;
+            scrollOffset = 0;
         }
     }
     
@@ -61,16 +62,21 @@ public class AutoCompleteMenu {
         }
     }
     
+    private int maxEntries = 0;
+    private float scrollOffset = 0.0f;
+    
     public bool OnKeyDown(KeyEventArgs e) {
         if (!Visible)
             return false;
         
         if (e.Key == Keys.Up) {
-            SelectedEntry = (SelectedEntry - 1).Mod(shownEntries.Length); 
+            SelectedEntry = (SelectedEntry - 1).Mod(shownEntries.Length);
+            ScrollIntoView();
             return true;
         }
         if (e.Key == Keys.Down) {
             SelectedEntry = (SelectedEntry + 1).Mod(shownEntries.Length);
+            ScrollIntoView();
             return true;
         }
         if (e.Key == Keys.Enter) {
@@ -85,25 +91,58 @@ public class AutoCompleteMenu {
         return false;
     }
     
-    public void Draw(Graphics graphics, Font font, float x, float y) {
+    public void Draw(Graphics graphics, Font font, float x, float y, float maxHeight) {
         if (!Visible)
             return;
         
+        const float extraHeight = 0.25f;
         const float entryPadding = 2.0f;
         const float borderWidth = 2.0f;
         
+        maxEntries = (int)Math.Floor((maxHeight - entryPadding) / (font.LineHeight() + entryPadding));
+        ScrollIntoView();
+        
+        float boxX = x;
+        float boxY = y;
         float boxW = font.CharWidth() * shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max) + entryPadding * 2.0f;
-        float boxH = (font.LineHeight() + entryPadding) * shownEntries.Length + entryPadding;
+        float boxH = (font.LineHeight() + entryPadding) * maxEntries + entryPadding;
         
-        graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteBorder, x - borderWidth, y - borderWidth, boxW + borderWidth * 2.0f, boxH + borderWidth * 2.0f);
-        graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteBg, x, y, boxW, boxH);
+        // Shown next entries when you can scroll
+        if (scrollOffset > 0.0f) {
+            y += extraHeight * 2.0f * font.LineHeight();
+            boxH += extraHeight * 2.0f * font.LineHeight();
+        }
+        if (maxEntries + scrollOffset < shownEntries.Length) {
+            boxH += extraHeight * 2.0f * font.LineHeight();
+        }
         
-        float yOff = entryPadding;
+        graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteBorder, boxX - borderWidth, boxY - borderWidth, boxW + borderWidth * 2.0f, boxH + borderWidth * 2.0f);
+        graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteBg, boxX, boxY, boxW, boxH);
+
+        graphics.SetClip(new RectangleF(boxX, boxY, boxW, boxH));
+        float yOff = entryPadding - scrollOffset * (font.LineHeight() + entryPadding);
         foreach (var entry in shownEntries) {
             graphics.DrawText(font, Settings.Instance.Theme.AutoCompleteFg, x + entryPadding, y + yOff, entry.DisplayText);
             yOff += font.LineHeight() + entryPadding;
         }
+        graphics.ResetClip();
         
-        graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteSelected, x, y + (font.LineHeight() + entryPadding) * SelectedEntry, boxW, font.LineHeight() + entryPadding * 2.0f);
+        graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteSelected, x, y + (font.LineHeight() + entryPadding) * (SelectedEntry - scrollOffset), boxW, font.LineHeight() + entryPadding * 2.0f);
+    }
+    
+    private void ScrollIntoView() {
+        if (maxEntries == 0) {
+            // The actual size hasn't been determined yet
+            return;
+        }
+        
+        const int lookAhead = 1;
+        int visualEntry = (int)(SelectedEntry - scrollOffset);
+        
+        if (visualEntry > maxEntries - 1 - lookAhead) {
+            scrollOffset = Math.Min(shownEntries.Length - maxEntries, scrollOffset + (visualEntry - (maxEntries - 1 - lookAhead)));
+        } else if (visualEntry < lookAhead) {
+            scrollOffset = Math.Max(0, scrollOffset + (visualEntry - lookAhead));
+        }
     }
 }
