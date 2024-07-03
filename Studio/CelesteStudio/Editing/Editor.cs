@@ -445,10 +445,22 @@ public sealed class Editor : Drawable {
         }
     }
     
+    private (float X, float Y, float MaxHeight) GetAutoCompleteMenuLocation() {
+        const float autocompleteXPos = 8.0f;
+        const float autocompleteYOffset = 7.0f;
+        
+        float carY = Font.LineHeight() * Document.Caret.Row;
+        float autoCompleteX = scrollablePosition.X + textOffsetX + autocompleteXPos;
+        float autoCompleteY = carY + Font.LineHeight() + autocompleteYOffset;
+        float autoCompleteMaxH = (scrollablePosition.Y + scrollable.Height - Font.LineHeight()) - autoCompleteY;
+        
+        return (autoCompleteX, autoCompleteY, autoCompleteMaxH);
+    }
+    
     #endregion
     
     protected override void OnKeyDown(KeyEventArgs e) {
-        if (autoCompleteMenu.OnKeyDown(e)) {
+        if (autoCompleteMenu.HandleKeyDown(e)) {
             e.Handled = true;
             Recalc();
             return;
@@ -1623,6 +1635,25 @@ public sealed class Editor : Drawable {
     
     protected override void OnMouseDown(MouseEventArgs e) {
         if (e.Buttons.HasFlag(MouseButtons.Primary)) {
+            if (autoCompleteMenu.Visible) {
+                var (autoCompleteX, autoCompleteY, autoCompleteMaxH) = GetAutoCompleteMenuLocation();
+                // NOTE: Here we actually want the position to be changed for the down event
+                (autoCompleteX, autoCompleteY, float autoCompleteW, float autoCompleteH) = autoCompleteMenu.Measure(Font, autoCompleteX, autoCompleteY, autoCompleteMaxH);
+                if (e.Location.X >= autoCompleteX && e.Location.X <= autoCompleteX + autoCompleteW &&
+                    e.Location.Y >= autoCompleteY && e.Location.Y <= autoCompleteY + autoCompleteH &&
+                    autoCompleteMenu.HandleMouseDown(e.Location, Font, autoCompleteX, autoCompleteY, autoCompleteW, autoCompleteH))
+                {
+                    // Reset cursor if something was selected
+                    if (!autoCompleteMenu.Visible) {
+                        Cursor = Cursors.IBeam;
+                    }
+                    
+                    e.Handled = true;
+                    Recalc();
+                    return;
+                }
+            }
+            
             primaryMouseButtonDown = true;
             
             var oldCaret = Document.Caret;
@@ -1640,24 +1671,36 @@ public sealed class Editor : Drawable {
                 Document.Selection.Start = Document.Selection.End = Document.Caret;
             }
             
+            e.Handled = true;
             Recalc();
+            return;
         }
+
         if (e.Buttons.HasFlag(MouseButtons.Alternate)) {
             ContextMenu.Show();
+            e.Handled = true;
+            return;
         }
         
         base.OnMouseDown(e);
     }
     protected override void OnMouseUp(MouseEventArgs e) {
         if (e.Buttons.HasFlag(MouseButtons.Primary)) {
-            primaryMouseButtonDown = false;
+            if (autoCompleteMenu.Visible && autoCompleteMenu.HandleMouseUp()) {
+                e.Handled = true;
+                Invalidate();
+                return;
+            }
             
-            Recalc();
+            primaryMouseButtonDown = false;
+            e.Handled = true;
         }
 
         base.OnMouseUp(e);
     }
     protected override void OnMouseMove(MouseEventArgs e) {
+        autoCompleteMenu.MouseLocation = e.Location;
+        
         if (primaryMouseButtonDown) {
             (Document.Caret, var visual) = LocationToCaretPosition(e.Location);
             desiredVisualCol = visual.Col;
@@ -1670,10 +1713,38 @@ public sealed class Editor : Drawable {
             Recalc();
         }
         
+        Cursor = Cursors.IBeam;
+        if (autoCompleteMenu.Visible) {
+            var (autoCompleteX, autoCompleteY, autoCompleteMaxH) = GetAutoCompleteMenuLocation();
+            (_, _, float autoCompleteW, float autoCompleteH) = autoCompleteMenu.Measure(Font, autoCompleteX, autoCompleteY, autoCompleteMaxH);
+            if (e.Location.X >= autoCompleteX && e.Location.X <= autoCompleteX + autoCompleteW &&
+                e.Location.Y >= autoCompleteY && e.Location.Y <= autoCompleteY + autoCompleteH ||
+                autoCompleteMenu.DraggingScrollBar)
+            {
+                autoCompleteMenu.HandleMouseMove(e.Location, Font, autoCompleteX, autoCompleteY, autoCompleteW, autoCompleteH, out var cursor);
+                Cursor = cursor;
+                Invalidate();
+            }
+        }
+        
         base.OnMouseMove(e);
     }
 
     protected override void OnMouseWheel(MouseEventArgs e) {
+        if (autoCompleteMenu.Visible) {
+            var (autoCompleteX, autoCompleteY, autoCompleteMaxH) = GetAutoCompleteMenuLocation();
+            (_, _, float autoCompleteW, float autoCompleteH) = autoCompleteMenu.Measure(Font, autoCompleteX, autoCompleteY, autoCompleteMaxH);
+            if (e.Location.X >= autoCompleteX && e.Location.X <= autoCompleteX + autoCompleteW &&
+                e.Location.Y >= autoCompleteY && e.Location.Y <= autoCompleteY + autoCompleteH)
+            {
+                autoCompleteMenu.HandleMouseWheel(e.Delta.Height);
+                
+                e.Handled = true;
+                Invalidate();
+                return;
+            }
+        }
+        
         // Adjust frame count
         if (e.Modifiers.HasFlag(Keys.Shift)) {
             var (position, _) = LocationToCaretPosition(e.Location);
@@ -1910,12 +1981,7 @@ public sealed class Editor : Drawable {
         }
         
         // Draw autocomplete popup
-        const float autocompleteXPos = 8.0f;
-        const float autocompleteYOffset = 7.0f;
-        
-        float autoCompleteX = scrollablePosition.X + textOffsetX + autocompleteXPos;
-        float autoCompleteY = carY + Font.LineHeight() + autocompleteYOffset;
-        float autoCompleteMaxH = (scrollablePosition.Y + scrollable.Height - Font.LineHeight()) - autoCompleteY;
+        var (autoCompleteX, autoCompleteY, autoCompleteMaxH) = GetAutoCompleteMenuLocation();
         autoCompleteMenu.Draw(e.Graphics, Font, autoCompleteX, autoCompleteY, autoCompleteMaxH);
         
         base.OnPaint(e);

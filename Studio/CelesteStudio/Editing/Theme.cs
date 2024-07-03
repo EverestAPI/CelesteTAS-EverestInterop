@@ -25,6 +25,9 @@ public struct Theme {
     public Color AutoCompleteBg;
     public Color AutoCompleteBorder;
     public Color AutoCompleteSelected;
+    public Color AutoCompleteHovered;
+    public Color AutoCompleteScrollBar;
+    public Color AutoCompleteScrollBarHovered;
     
     // Text styles
     public Style Action;
@@ -52,6 +55,9 @@ public struct Theme {
         AutoCompleteBg = Color.FromRgb(0xE9E9E9),
         AutoCompleteBorder = Color.FromRgb(0xA2A2A2),
         AutoCompleteSelected = Color.FromArgb(0x44, 0x44, 0x44, 0x3F),
+        AutoCompleteHovered = Color.FromArgb(0x44, 0x44, 0x44, 0x1F),
+        AutoCompleteScrollBar = Color.FromRgb(0xC7C7C7),
+        AutoCompleteScrollBarHovered = Color.FromRgb(0xA8A8A8),
         
         Action = new Style(Color.FromRgb(0x2222FF)),
         Angle = new Style(Color.FromRgb(0xEE22EE)),
@@ -78,6 +84,9 @@ public struct Theme {
         AutoCompleteBg = Color.FromRgb(0x2F303B),
         AutoCompleteBorder = Color.FromRgb(0x3B3C46),
         AutoCompleteSelected = Color.FromArgb(0xBB, 0xBB, 0xC4, 0x4F),
+        AutoCompleteHovered = Color.FromArgb(0xBB, 0xBB, 0xC4, 0x2F),
+        AutoCompleteScrollBar = Color.FromRgb(0x868690),
+        AutoCompleteScrollBarHovered = Color.FromRgb(0xBBBBC5),
         
         Action = new Style(Color.FromRgb(0x8BE9FD)),
         Angle = new Style(Color.FromRgb(0xFF79C6)),
