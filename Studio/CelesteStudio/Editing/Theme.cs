@@ -23,8 +23,8 @@ public struct Theme {
     public Color StatusBg;
     public Color AutoCompleteFg;
     public Color AutoCompleteBg;
-    public Color AutoCompleteSelected;
     public Color AutoCompleteBorder;
+    public Color AutoCompleteSelected;
     
     // Text styles
     public Style Action;
@@ -48,6 +48,10 @@ public struct Theme {
         ServiceLine = Color.FromRgb(0xC0C0C0),
         StatusFg = Color.FromRgb(0x000000),
         StatusBg = Color.FromRgb(0xF2F2F2),
+        AutoCompleteFg = Color.FromRgb(0x121212),
+        AutoCompleteBg = Color.FromRgb(0xE9E9E9),
+        AutoCompleteBorder = Color.FromRgb(0xA2A2A2),
+        AutoCompleteSelected = Color.FromArgb(0x44, 0x44, 0x44, 0x3F),
         
         Action = new Style(Color.FromRgb(0x2222FF)),
         Angle = new Style(Color.FromRgb(0xEE22EE)),
@@ -70,10 +74,10 @@ public struct Theme {
         ServiceLine = Color.FromRgb(0x44475A),
         StatusFg = Color.FromRgb(0xF8F8F2),
         StatusBg = Color.FromRgb(0x383A46),
-        AutoCompleteFg = Color.FromRgb(0xCFCFCF),
-        AutoCompleteBg = Color.FromRgb(0x141414),
-        AutoCompleteSelected = Color.FromArgb(0x7F0000FF),
-        AutoCompleteBorder = Color.FromRgb(0xFFFFFF),
+        AutoCompleteFg = Color.FromRgb(0xDFDFDF),
+        AutoCompleteBg = Color.FromRgb(0x2F303B),
+        AutoCompleteBorder = Color.FromRgb(0x3B3C46),
+        AutoCompleteSelected = Color.FromArgb(0xBB, 0xBB, 0xC4, 0x4F),
         
         Action = new Style(Color.FromRgb(0x8BE9FD)),
         Angle = new Style(Color.FromRgb(0xFF79C6)),

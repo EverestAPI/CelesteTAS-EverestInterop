@@ -89,21 +89,21 @@ public class AutoCompleteMenu {
         if (!Visible)
             return;
         
-        const float autocompletePadding = 5.0f;
-        const float autocompleteBorder = 2.0f;
+        const float entryPadding = 2.0f;
+        const float borderWidth = 2.0f;
         
-        float boxW = font.CharWidth() * shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max) + autocompletePadding * 2.0f;
-        float boxH = font.LineHeight() * shownEntries.Length + autocompletePadding * 2.0f;
+        float boxW = font.CharWidth() * shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max) + entryPadding * 2.0f;
+        float boxH = (font.LineHeight() + entryPadding) * shownEntries.Length + entryPadding;
         
-        graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteBorder, x - autocompleteBorder, y - autocompleteBorder, boxW + autocompleteBorder * 2.0f, boxH + autocompleteBorder * 2.0f);
+        graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteBorder, x - borderWidth, y - borderWidth, boxW + borderWidth * 2.0f, boxH + borderWidth * 2.0f);
         graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteBg, x, y, boxW, boxH);
         
-        float yOff = 0.0f;
+        float yOff = entryPadding;
         foreach (var entry in shownEntries) {
-            graphics.DrawText(font, Settings.Instance.Theme.AutoCompleteFg, x + autocompletePadding, y + yOff + autocompletePadding, entry.DisplayText);
-            yOff += font.LineHeight();
+            graphics.DrawText(font, Settings.Instance.Theme.AutoCompleteFg, x + entryPadding, y + yOff, entry.DisplayText);
+            yOff += font.LineHeight() + entryPadding;
         }
         
-        graphics.FillRectangle(Color.FromArgb(0x7F0000FF), x, y + SelectedEntry * font.LineHeight() + autocompletePadding, boxW, font.LineHeight());
+        graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteSelected, x, y + (font.LineHeight() + entryPadding) * SelectedEntry, boxW, font.LineHeight() + entryPadding * 2.0f);
     }
 }
