@@ -422,6 +422,14 @@ public class Document {
         if (raiseEvents) OnTextChanged(new CaretPosition(row, 0), new CaretPosition(row + newLineCount, CurrentLines[row + newLineCount].Length));
     }
     
+    public void SwapLines(int rowA, int rowB, bool raiseEvents = true) {
+        if (raiseEvents) undoStack.Push(Caret);
+        
+        (CurrentLines[rowA], CurrentLines[rowB]) = (CurrentLines[rowB], CurrentLines[rowA]); 
+        
+        if (raiseEvents) OnTextChanged(new CaretPosition(rowA, 0), new CaretPosition(rowB, CurrentLines[rowB].Length));
+    }
+    
     public void RemoveSelectedText(bool raiseEvents = true) => RemoveRange(Selection.Min, Selection.Max, raiseEvents);
     public void RemoveRange(CaretPosition start, CaretPosition end, bool raiseEvents = true) {
         if (start.Row == end.Row) {

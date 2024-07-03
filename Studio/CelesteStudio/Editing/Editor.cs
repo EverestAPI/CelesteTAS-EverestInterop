@@ -538,11 +538,25 @@ public sealed class Editor : Drawable {
                 e.Handled = true;
                 break;
             case Keys.Up:
-                MoveCaret(e.Control ? CaretMovementType.LabelUp : CaretMovementType.LineUp, updateSelection: e.Shift);
+                if (e.Alt && Document.Caret.Row > 0) {
+                    Document.SwapLines(Document.Caret.Row, Document.Caret.Row - 1);
+                    Document.Caret.Row--;
+                    ScrollCaretIntoView();
+                } else {
+                    MoveCaret(e.Control ? CaretMovementType.LabelUp : CaretMovementType.LineUp, updateSelection: e.Shift);
+                }
+                
                 e.Handled = true;
                 break;
             case Keys.Down:
-                MoveCaret(e.Control ? CaretMovementType.LabelDown : CaretMovementType.LineDown, updateSelection: e.Shift);
+                if (e.Alt && Document.Caret.Row < Document.Lines.Count - 1) {
+                    Document.SwapLines(Document.Caret.Row, Document.Caret.Row + 1);
+                    Document.Caret.Row++;
+                    ScrollCaretIntoView();
+                } else {
+                    MoveCaret(e.Control ? CaretMovementType.LabelDown : CaretMovementType.LineDown, updateSelection: e.Shift);
+                }
+
                 e.Handled = true;
                 break;
             case Keys.PageUp:
