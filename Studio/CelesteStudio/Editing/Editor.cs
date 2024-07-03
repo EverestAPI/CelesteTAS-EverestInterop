@@ -538,11 +538,11 @@ public sealed class Editor : Drawable {
                 e.Handled = true;
                 break;
             case Keys.Up:
-                MoveCaret(CaretMovementType.LineUp, updateSelection: e.Shift);
+                MoveCaret(e.Control ? CaretMovementType.LabelUp : CaretMovementType.LineUp, updateSelection: e.Shift);
                 e.Handled = true;
                 break;
             case Keys.Down:
-                MoveCaret(CaretMovementType.LineDown, updateSelection: e.Shift);
+                MoveCaret(e.Control ? CaretMovementType.LabelDown : CaretMovementType.LineDown, updateSelection: e.Shift);
                 e.Handled = true;
                 break;
             case Keys.PageUp:
@@ -1561,7 +1561,7 @@ public sealed class Editor : Drawable {
         autoCompleteMenu.Visible = false;
         
         Document.Caret = newCaret;
-        ScrollCaretIntoView();
+        ScrollCaretIntoView(center: direction is CaretMovementType.LabelUp or CaretMovementType.LabelDown);
     }
     
     // For regular text movement
@@ -1574,6 +1574,8 @@ public sealed class Editor : Drawable {
             CaretMovementType.WordRight => ClampCaret(GetNextWordCaretPosition(1)),
             CaretMovementType.LineUp => ClampCaret(GetNextVisualLinePosition(-1), wrapLine: false),
             CaretMovementType.LineDown => ClampCaret(GetNextVisualLinePosition(1), wrapLine: false),
+            CaretMovementType.LabelUp => ClampCaret(GetLabelPosition(-1), wrapLine: false),
+            CaretMovementType.LabelDown => ClampCaret(GetLabelPosition(1), wrapLine: false),
             // TODO: Page Up / Page Down
             CaretMovementType.PageUp => ClampCaret(GetNextVisualLinePosition(-1), wrapLine: false),
             CaretMovementType.PageDown => ClampCaret(GetNextVisualLinePosition(1), wrapLine: false),
@@ -1625,6 +1627,22 @@ public sealed class Editor : Drawable {
     private CaretPosition GetNextVisualLinePosition(int dist) {
         var visualPos = GetVisualPosition(Document.Caret);
         return GetActualPosition(new CaretPosition(visualPos.Row + dist, visualPos.Col));
+    }
+    
+    private CaretPosition GetLabelPosition(int dir) {
+        int row = Document.Caret.Row;
+        
+        row += dir;
+        while (row >= 0 && row < Document.Lines.Count && !IsLabel(Document.Lines[row]))
+            row += dir;
+        
+        return new CaretPosition(row, Document.Caret.Col);
+        
+        static bool IsLabel(string line) {
+            // All labels need to start with a # and immediately follow with the text
+            return line.Length >= 2 && line[0] == '#' && char.IsLetter(line[1]) ||
+                   line.TrimStart().StartsWith("***");
+        }
     }
 
     #endregion

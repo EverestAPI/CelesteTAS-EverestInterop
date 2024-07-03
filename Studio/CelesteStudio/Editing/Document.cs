@@ -28,6 +28,9 @@ public enum CaretMovementType {
     WordRight,
     LineUp,
     LineDown,
+    // Labels include #'s with no space and breakpoints
+    LabelUp,
+    LabelDown,
     PageUp,
     PageDown,
     LineStart,
