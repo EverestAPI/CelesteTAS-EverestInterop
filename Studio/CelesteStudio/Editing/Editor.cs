@@ -15,6 +15,11 @@ using WrapEntry = (int StartOffset, (string Line, int Index)[] Lines);
 namespace CelesteStudio.Editing;
 
 public sealed class Editor : Drawable {
+    private struct Folding {
+        public int MinRow, MaxRow;
+        public string DisplayText;
+    }
+    
     private Document document;
     public Document Document {
         get => document;
@@ -57,8 +62,15 @@ public sealed class Editor : Drawable {
     // When editing a long line and moving to a short line, "remember" the column on the long line, unless the caret has been moved. 
     private int desiredVisualCol;
     
+    // Wrap long lines into multiple visual lines
     private readonly Dictionary<int, WrapEntry> commentLineWraps = new();
-    // Wrapping causes the internal vs. visual rows to change
+    
+    // Foldings can collapse sections of the document
+    private readonly List<Folding> foldings = [];
+    private readonly HashSet<int> collapsed = []; // Contains MinRows which are currently collapsed
+
+    // Visual lines are all lines shown in the editor
+    // A single actual line may occupy multiple visual lines
     private int[] visualRows = [];
     
     private static readonly Regex UncommentedBreakpointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
@@ -237,17 +249,40 @@ public sealed class Editor : Drawable {
         textOffsetX = Font.CharWidth() * Document.Lines.Count.Digits() + LineNumberPadding * 3.0f;
         
         // Calculate bounds and apply wrapping
-        commentLineWraps.Clear();
-        Array.Resize(ref visualRows, Document.Lines.Count);
-        
         float width = 0.0f, height = 0.0f;
-        
-        for (int row = 0, visualRow = 0; row < Document.Lines.Count; row++) {
-            string line = Document.Lines[row];
-            visualRows[row] = visualRow;
 
-            if (Settings.Instance.WordWrapComments && line.TrimStart().StartsWith("#")) {
-                // Wrap comments into multiple lines when hitting the left edge
+        commentLineWraps.Clear();
+        foldings.Clear();
+        
+        var activeFoldings = new Dictionary<int, int>(); // depth -> startRow
+        
+        Array.Resize(ref visualRows, Document.Lines.Count);
+        for (int row = 0, visualRow = 0; row < Document.Lines.Count; row++) {
+            var line = Document.Lines[row];
+            var trimmed = line.TrimStart();
+            
+            visualRows[row] = visualRow;
+            
+            // Create foldings for lines with the same amount of #'s (minimum 2)
+            if (trimmed.StartsWith("##")) {
+                int depth = 0;
+                for (int i = 2; i < trimmed.Length; i++) {
+                    if (trimmed[i] == '#') {
+                        depth++;
+                        continue;
+                    }
+                    break;
+                }
+                
+                if (activeFoldings.Remove(depth, out int startRow)) {
+                    foldings.Add(new Folding { MinRow = startRow, MaxRow = row, DisplayText = Document.Lines[startRow] });       
+                } else {
+                    activeFoldings[depth] = row;
+                }
+            }
+            
+            // Wrap comments into multiple lines when hitting the left edge
+            if (Settings.Instance.WordWrapComments && trimmed.StartsWith("#")) {
                 var wrappedLines = new List<WrapLine>();
 
                 const int charPadding = 1;
