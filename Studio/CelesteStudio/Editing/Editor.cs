@@ -17,6 +17,8 @@ namespace CelesteStudio.Editing;
 public sealed class Editor : Drawable {
     private struct Folding {
         public int MinRow, MaxRow;
+        
+        public int StartCol;
         public string DisplayText;
     }
     
@@ -67,7 +69,7 @@ public sealed class Editor : Drawable {
     
     // Foldings can collapse sections of the document
     private readonly List<Folding> foldings = [];
-    private readonly HashSet<int> collapsed = []; // Contains MinRows which are currently collapsed
+    private readonly HashSet<int> collapsedFoldings = []; // Contains MinRows which are currently collapsed
 
     // Visual lines are all lines shown in the editor
     // A single actual line may occupy multiple visual lines
@@ -248,12 +250,14 @@ public sealed class Editor : Drawable {
         
         textOffsetX = Font.CharWidth() * Document.Lines.Count.Digits() + LineNumberPadding * 3.0f;
         
-        // Calculate bounds and apply wrapping
+        // Calculate bounds, apply wrapping, create foldings
         float width = 0.0f, height = 0.0f;
 
         commentLineWraps.Clear();
         foldings.Clear();
         
+        int collapsedStart = -1;
+        var newFoldings = new List<Folding>();
         var activeFoldings = new Dictionary<int, int>(); // depth -> startRow
         
         Array.Resize(ref visualRows, Document.Lines.Count);
@@ -262,6 +266,12 @@ public sealed class Editor : Drawable {
             var trimmed = line.TrimStart();
             
             visualRows[row] = visualRow;
+            
+            bool collapsed = collapsedStart != -1; // Done before reassignment, so that it only affects the next line 
+            if (collapsedFoldings.Contains(row)) {
+                Console.WriteLine($"collapse at {row}");
+                collapsedStart = row;
+            }
             
             // Create foldings for lines with the same amount of #'s (minimum 2)
             if (trimmed.StartsWith("##")) {
@@ -275,10 +285,34 @@ public sealed class Editor : Drawable {
                 }
                 
                 if (activeFoldings.Remove(depth, out int startRow)) {
-                    foldings.Add(new Folding { MinRow = startRow, MaxRow = row, DisplayText = Document.Lines[startRow] });       
+                    // Find begging of text
+                    var startLine = Document.Lines[startRow];
+                    int startIdx = 0;
+                    for (; startIdx < startLine.Length; startIdx++) {
+                        char c = startLine[startIdx]; 
+                        if (c != '#' && !char.IsWhiteSpace(c)) {
+                            break;
+                        }
+                    }
+                    
+                    foldings.Add(new Folding {
+                        MinRow = startRow, MaxRow = row,
+                        StartCol = startIdx,
+                        DisplayText = startLine + "..."
+                    });
+                    Console.WriteLine($"foldoing: {startIdx} {startRow} -> {row} '{startLine}'");
+                    
+                    if (collapsedStart == startRow) {
+                        Console.WriteLine($"uncollapse at {row}");
+                        collapsedStart = -1;
+                    }
                 } else {
                     activeFoldings[depth] = row;
                 }
+            }
+            
+            if (collapsed) {
+                continue;
             }
             
             // Wrap comments into multiple lines when hitting the left edge
@@ -534,6 +568,17 @@ public sealed class Editor : Drawable {
     #endregion
     
     protected override void OnKeyDown(KeyEventArgs e) {
+        // DEBUG TESTING
+        if (e.Key == Keys.Minus) {
+            if (!collapsedFoldings.Remove(Document.Caret.Row))
+                collapsedFoldings.Add(Document.Caret.Row);
+            
+            e.Handled = true;
+            Recalc();
+            return;
+        }
+        //
+        
         if (autoCompleteMenu.HandleKeyDown(e)) {
             e.Handled = true;
             Recalc();
@@ -1954,6 +1999,17 @@ public sealed class Editor : Drawable {
         float yPos = visualRows[topRow] * Font.LineHeight();
         for (int row = topRow; row <= bottomRow; row++) {
             string line = Document.Lines[row];
+
+            if (collapsedFoldings.Contains(row) && foldings.FirstOrDefault(f => f.MinRow == row) is var folding && folding.MinRow != folding.MaxRow) {
+                const float foldingPadding = 1.0f;
+                
+                highlighter.DrawLine(e.Graphics, textOffsetX, yPos, folding.DisplayText);
+                e.Graphics.DrawRectangle(Colors.White, Font.CharWidth() * folding.StartCol + textOffsetX - foldingPadding, yPos - foldingPadding, Font.MeasureWidth(folding.DisplayText) - Font.CharWidth() * folding.StartCol + foldingPadding * 2.0f, Font.LineHeight() + foldingPadding * 2.0f);
+                
+                yPos += Font.LineHeight();
+                row = folding.MaxRow;
+                continue;
+            }
             
             if (commentLineWraps.TryGetValue(row, out wrap)) {
                 for (int i = 0; i < wrap.Lines.Length; i++) {
@@ -2080,6 +2136,10 @@ public sealed class Editor : Drawable {
                     yPos += Font.LineHeight() * wrap.Lines.Length;
                 } else {
                     yPos += Font.LineHeight();
+                }
+                
+                if (collapsedFoldings.Contains(row) && foldings.FirstOrDefault(f => f.MinRow == row) is var folding && folding.MinRow != folding.MaxRow) {
+                    row = folding.MaxRow;
                 }
             }
             
