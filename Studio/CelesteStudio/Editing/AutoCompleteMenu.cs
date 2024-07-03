@@ -171,7 +171,7 @@ public class AutoCompleteMenu {
         maxEntries = (int)Math.Floor((maxHeight - EntryPadding) / (font.LineHeight() + EntryPadding));
         
         float boxW = font.CharWidth() * shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max) + EntryPadding * 2.0f;
-        float boxH = (font.LineHeight() + EntryPadding) * maxEntries + EntryPadding;
+        float boxH = (font.LineHeight() + EntryPadding) * Math.Min(shownEntries.Length, maxEntries) + EntryPadding;
         
         // Shown next entries when you can scroll
         if (scrollOffset > 0.0f) {
