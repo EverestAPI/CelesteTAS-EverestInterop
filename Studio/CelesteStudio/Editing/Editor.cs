@@ -32,6 +32,7 @@ public sealed class Editor : Drawable {
                 Recalc();
             };
             
+            ConvertToActionLines(new CaretPosition(0, 0), new CaretPosition(document.Lines.Count - 1, 0));
             Recalc();
         }
     }
@@ -686,8 +687,11 @@ public sealed class Editor : Drawable {
     }
     
     protected override void OnTextInput(TextInputEventArgs e) {
+        var oldCaret = Document.Caret;
+        
+        Document.PushUndoState();
         if (!Document.Selection.Empty) {
-            Document.RemoveSelectedText();
+            Document.RemoveSelectedText(raiseEvents: false);
             Document.Caret = Document.Selection.Min;
             Document.Selection.Clear();
         }
@@ -794,7 +798,7 @@ public sealed class Editor : Drawable {
             }
 
             FinishEdit:
-            Document.ReplaceLine(Document.Caret.Row, actionLine.ToString());
+            Document.ReplaceLine(Document.Caret.Row, actionLine.ToString(), raiseEvents: false);
         }
         // Just write it as text
         else {
@@ -806,7 +810,7 @@ public sealed class Editor : Drawable {
 
                 if (onlyComment) {
                     var newLine = $"{currLine.TrimEnd()}# ";
-                    Document.ReplaceLine(Document.Caret.Row, newLine);
+                    Document.ReplaceLine(Document.Caret.Row, newLine, raiseEvents: false);
                     Document.Caret.Col = desiredVisualCol = newLine.Length;
                 } else {
                     Document.Insert("#");    
@@ -819,14 +823,14 @@ public sealed class Editor : Drawable {
             if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out var newActionLine)) {
                 ClearQuickEdits();
                 
-                Document.ReplaceLine(Document.Caret.Row, newActionLine.ToString());
+                Document.ReplaceLine(Document.Caret.Row, newActionLine.ToString(), raiseEvents: false);
                 Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
             }
         }
-        
+     
+        Document.OnTextChanged(oldCaret, Document.Caret);
         UpdateAutoComplete();
         ScrollCaretIntoView();
-        Recalc();
     }
 
     private void OnDelete(CaretMovementType direction) {
@@ -1013,17 +1017,17 @@ public sealed class Editor : Drawable {
         if (!Clipboard.Instance.ContainsText)
             return;
         
+        Document.PushUndoState();
         if (!Document.Selection.Empty) {
-            Document.RemoveSelectedText();
+            Document.RemoveSelectedText(raiseEvents: false);
             Document.Caret = Document.Selection.Min;
             Document.Selection.Clear();
         }
         
         var oldCaret = Document.Caret;
-        Document.Insert(Clipboard.Instance.Text);
+        Document.Insert(Clipboard.Instance.Text, raiseEvents: false);
+        Document.OnTextChanged(oldCaret, Document.Caret);
         
-        ConvertToActionLines(oldCaret, Document.Caret);
-        Recalc();
         ScrollCaretIntoView();
     }
     
