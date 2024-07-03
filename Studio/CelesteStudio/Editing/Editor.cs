@@ -249,7 +249,6 @@ public sealed class Editor : Drawable {
         foldings.Clear();
         
         int collapsedStart = -1;
-        var newFoldings = new List<Folding>();
         var activeFoldings = new Dictionary<int, int>(); // depth -> startRow
         
         Array.Resize(ref visualRows, Document.Lines.Count);
@@ -259,7 +258,6 @@ public sealed class Editor : Drawable {
             
             visualRows[row] = visualRow;
             
-            bool collapsed = collapsedStart != -1; // Done before reassignment, so that it only affects the next line 
             if (Document.FindFirstAnchor(anchor => anchor.Row == row && anchor.UserData is FoldingAnchorData) != null) {
                 collapsedStart = row;
             }
@@ -300,7 +298,7 @@ public sealed class Editor : Drawable {
                 }
             }
             
-            if (collapsed) {
+            if (collapsedStart != -1) {
                 continue;
             }
             
@@ -360,13 +358,18 @@ public sealed class Editor : Drawable {
                 }
                 
                 commentLineWraps.Add(row, (startOffset, wrappedLines.ToArray()));
+                
                 visualRow += wrappedLines.Count;
             } else {
                 width = Math.Max(width, Font.MeasureWidth(line));
                 height += Font.LineHeight();
+                
                 visualRow += 1;
             }
         }
+        
+        // Clear invalid foldings
+        Document.RemoveAnchorsIf(anchor => anchor.UserData is FoldingAnchorData && foldings.All(fold => fold.MinRow != anchor.Row));
         
         const float paddingRight = 50.0f;
         const float paddingBottom = 100.0f;
@@ -416,6 +419,9 @@ public sealed class Editor : Drawable {
         // TODO: Maybe improve this?
         int row = 0;
         for (; row < Document.Lines.Count; row++) {
+            if (visualRows[row] == visualRow) {
+                return row;
+            }
             if (visualRows[row] > visualRow) {
                 // We just overshot it by 1
                 return row - 1;
@@ -1660,9 +1666,11 @@ public sealed class Editor : Drawable {
             position.Col = 0;
         }
         
-        // Clamp to document
+        int maxVisualRow = GetActualRow(visualRows[^1]);
+        
+        // Clamp to document (also visually)
         position.Row = Math.Clamp(position.Row, 0, Document.Lines.Count - 1);
-        position.Col = Math.Clamp(position.Col, 0, Document.Lines[position.Row].Length);
+        position.Col = Math.Clamp(position.Col, 0, Math.Min(maxVisualRow, Document.Lines[position.Row].Length));
         
         // Clamp to action line if possible
         if (ActionLine.TryParse(Document.Lines[position.Row], out var actionLine))
