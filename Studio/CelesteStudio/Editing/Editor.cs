@@ -522,7 +522,7 @@ public sealed class Editor : Drawable {
                 e.Handled = true;
                 break;
             case Keys.Enter:
-                OnEnter();
+                OnEnter(e.Control);
                 e.Handled = true;
                 break;
             case Keys.Left:
@@ -1275,10 +1275,10 @@ public sealed class Editor : Drawable {
         }
     }
     
-    private void OnEnter() {
+    private void OnEnter(bool splitLines) {
         var line = Document.Lines[Document.Caret.Row];
         
-        if (ActionLine.TryParse(line, out _)) {
+        if (!splitLines || ActionLine.TryParse(line, out _)) {
             // Don't split frame count and action
             Document.InsertLineBelow(string.Empty);
             Document.Caret.Row++;
