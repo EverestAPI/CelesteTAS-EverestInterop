@@ -107,8 +107,7 @@ public class FontDialog : Dialog<bool> {
                     fonts.Add(family.Name);
                 }
                 cachedFontFamilies = fonts.ToArray();
-                Content = CreateDialogContent();
-                Invalidate();
+                Application.Instance.Invoke(() => Content = CreateDialogContent());
             });
         }
     }
