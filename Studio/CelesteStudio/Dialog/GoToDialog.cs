@@ -32,7 +32,9 @@ public class GoToDialog : Dialog<int> {
             
             // Find current label
             dropdown.SelectedKey = labels.Reverse().FirstOrDefault(pair => pair.row <= document.Caret.Row, labels[0]).row.ToString();
-            dropdown.SelectedKeyChanged += (_, _) => lineSelector.Value = int.Parse(dropdown.SelectedKey);
+            // TODO: Make this a user preference
+            // dropdown.SelectedKeyChanged += (_, _) => lineSelector.Value = int.Parse(dropdown.SelectedKey);
+            dropdown.SelectedKeyChanged += (_, _) => Close(int.Parse(dropdown.SelectedKey));
         }
         
         Title = "Go To";
