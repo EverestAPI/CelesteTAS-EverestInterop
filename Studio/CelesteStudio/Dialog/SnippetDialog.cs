@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Threading.Channels;
 using CelesteStudio.Editing;
 using CelesteStudio.Util;
 using Eto.Drawing;
@@ -17,9 +17,11 @@ public class SnippetDialog : Dialog<bool> {
         snippets = Settings.Instance.Snippets.Select(snippet => snippet.Clone()).ToList();
 
         var list = new StackLayout {
+            MinimumSize = new Size(500, 0),
             Padding = 10,
             Spacing = 10,
         };
+        
         GenerateListEntries(list.Items);
         
         var addButton = new Button { Text = "Add new Snippet" };
@@ -52,9 +54,6 @@ public class SnippetDialog : Dialog<bool> {
         
         PositiveButtons.Add(DefaultButton);
         NegativeButtons.Add(AbortButton);
-        
-        // Prevent handling key presses which were meant for a hotkey button
-        KeyDown += (_, e) => e.Handled = true;
     }
     
     private void GenerateListEntries(ICollection<StackLayoutItem> items) {
@@ -70,63 +69,47 @@ public class SnippetDialog : Dialog<bool> {
             var enabledCheckBox = new CheckBox {Checked = snippet.Enabled};
             enabledCheckBox.CheckedChanged += (_, _) => snippet.Enabled = enabledCheckBox.Checked.Value;
             
-            bool ignoreFocusLoss = false; // Used to prevent the message box from causing an unfocus
-            var hotkeyButton = new Button {Text = snippet.Hotkey.ToShortcutString(), ToolTip = "Use the right mouse button to clear a hotkey!", Font = SystemFonts.Bold(), Width = 150};
-            hotkeyButton.GotFocus += (_, _) => {
-                hotkeyButton.Text = "Press a hotkey...";
-                hotkeyButton.Font = SystemFonts.Bold().WithFontStyle(FontStyle.Italic);
-            };
-            hotkeyButton.LostFocus += (_, _) => {
-                if (ignoreFocusLoss) {
-                    return;
-                }
-                
-                hotkeyButton.Text = snippet.Hotkey.ToShortcutString();
-                hotkeyButton.Font = SystemFonts.Bold();
-            };
-            hotkeyButton.KeyDown += (_, e) => {
-                // Don't allow binding modifiers by themselves
-                if (e.Key is Keys.LeftShift or Keys.RightShift
-                    or Keys.LeftControl or Keys.RightControl
-                    or Keys.LeftAlt or Keys.RightAlt
-                    or Keys.LeftApplication or Keys.RightApplication) {
-                    return;
-                }
-                
-                // Check for conflicts
-                if (snippets.Any(other => other.Hotkey == e.KeyData)) 
-                {
-                    ignoreFocusLoss = true;
-                    var confirm = MessageBox.Show($"Another snippet already uses this hotkey ({e.KeyData.ToShortcutString()}).{Environment.NewLine}Are you sure you to use this hotkey?", MessageBoxButtons.YesNo, MessageBoxType.Question, MessageBoxDefaultButton.Yes);
-                    ignoreFocusLoss = false;
-                    
-                    if (confirm != DialogResult.Yes) {
+            var hotkeyButton = new Button { Text = snippet.Hotkey.ToShortcutString(), ToolTip = "Use the right mouse button to clear a hotkey!", Font = SystemFonts.Bold(), Width = 150};
+            hotkeyButton.Click += (_, _) => {
+                var inputDialog = new Eto.Forms.Dialog {
+                    Content = new Panel {
+                        Padding = 10,
+                        Content = new Label { Text = "Press a hotkey...", Font = SystemFonts.Bold().WithFontStyle(FontStyle.Italic) }
+                    }
+                };
+                inputDialog.KeyDown += (_, e) => {
+                    // Don't allow binding modifiers by themselves
+                    if (e.Key is Keys.LeftShift or Keys.RightShift
+                        or Keys.LeftControl or Keys.RightControl
+                        or Keys.LeftAlt or Keys.RightAlt
+                        or Keys.LeftApplication or Keys.RightApplication) {
                         return;
                     }
-                }
-                
-                snippet.Hotkey = e.KeyData;
-                unfocuser.Focus();
-                
-                // Set again in case we already lost focus through the message box
-                hotkeyButton.Text = snippet.Hotkey.ToShortcutString();
-                hotkeyButton.Font = SystemFonts.Bold();
-            };
-            hotkeyButton.MouseDown += (_, e) => {
-                if (e.Buttons.HasFlag(MouseButtons.Alternate)) {
-                    snippet.Hotkey = Keys.None;
-                    unfocuser.Focus();
                     
-                    // Set again in case we already lost focus through the message box
+                    // Check for conflicts
+                    if (snippets.Any(other => other.Hotkey == e.KeyData))
+                    {
+                        var confirm = MessageBox.Show($"Another snippet already uses this hotkey ({e.KeyData.ToShortcutString()}).{Environment.NewLine}Are you sure you to use this hotkey?", MessageBoxButtons.YesNo, MessageBoxType.Question, MessageBoxDefaultButton.Yes);
+                        
+                        if (confirm != DialogResult.Yes) {
+                            return;
+                        }
+                    }
+                    
+                    //Application.Instance.Invoke()
+                    snippet.Hotkey = e.KeyData;
                     hotkeyButton.Text = snippet.Hotkey.ToShortcutString();
-                    hotkeyButton.Font = SystemFonts.Bold();
                     
-                    e.Handled = true;
-                }
+                    inputDialog.Close();
+                };
+                inputDialog.ShowModal();
             };
             
             var shortcutTextBox = new TextBox { Text = snippet.Shortcut };
             shortcutTextBox.TextChanged += (_, _) => snippet.Shortcut = shortcutTextBox.Text.ReplaceLineEndings(Document.NewLine.ToString());
+            
+            shortcutTextBox.KeyDown += (_, e) => Console.WriteLine($"Key {e.Key} | {e.Modifiers}");
+            shortcutTextBox.TextInput += (_, e) => Console.WriteLine($"Text Input '{e.Text}'");
             
             var textArea = new TextArea {Text = snippet.Insert, Font = FontManager.EditorFontRegular, Width = 500 };
             textArea.TextChanged += (_, _) => snippet.Insert = textArea.Text.ReplaceLineEndings(Document.NewLine.ToString());
