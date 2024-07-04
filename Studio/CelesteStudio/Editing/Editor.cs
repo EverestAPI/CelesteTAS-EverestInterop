@@ -349,63 +349,42 @@ public sealed class Editor : Drawable {
         Invalidate();
     }
     
-    private void GenerateBaseAutoCompleteEntries() {
-        baseAutoCompleteEntries.Clear();
-
-        foreach (var snippet in Settings.Instance.Snippets) {
-            if (string.IsNullOrWhiteSpace(snippet.Shortcut))
-                continue;
-            baseAutoCompleteEntries.Add(CreateEntry(snippet.Shortcut, snippet.Insert, []));
-        }
-        foreach (var command in CommandInfo.AllCommands) {
-            if (command == null)
-                continue;
-            baseAutoCompleteEntries.Add(CreateEntry(command.Value.Name, command.Value.Insert, command.Value.AutoCompleteEntries));
-        }
+    private void AdjustFrameCounts(int rowA, int rowB, int dir) {
+        int topRow = Math.Min(rowA, rowB);
+        int bottomRow = Math.Max(rowA, rowB);
         
-        return;
+        var topLine = ActionLine.Parse(Document.Lines[topRow]);
+        var bottomLine = ActionLine.Parse(Document.Lines[bottomRow]);
         
-        AutoCompleteMenu.Entry CreateEntry(string name, string insert, Func<string[], string[]>[] commandAutoCompleteEntries) {
-            var quickEdit = ParseQuickEdit(insert);
-            
-            return new AutoCompleteMenu.Entry {
-                DisplayText = name,
-                OnUse = () => {
-                    Document.ReplaceLine(Document.Caret.Row, quickEdit.ActualText);
-                    
-                    ClearQuickEdits();
-                    
-                    if (quickEdit.Selections.Length > 0) {
-                        for (int i = 0; i < quickEdit.Selections.Length; i++) {
-                            Selection selection = quickEdit.Selections[i];
-                            
-                            var defaultText = quickEdit.ActualText.SplitDocumentLines()[selection.Min.Row][selection.Min.Col..selection.Max.Col];
-                            
-                            // Quick-edit selections are relative, not absolute
-                            Document.AddAnchor(new Anchor {
-                                Row = selection.Min.Row + Document.Caret.Row,
-                                MinCol = selection.Min.Col, MaxCol = selection.Max.Col,
-                                UserData = new QuickEditData { Index = i, DefaultText = defaultText },
-                                OnRemoved = ClearQuickEdits,
-                            });
-                        }
-                        SelectQuickEdit(0);
-                    } else {
-                        // Just jump to the end of the insert
-                        int newLines = quickEdit.ActualText.Count(c => c == Document.NewLine);
-                        
-                        Document.Caret.Row = Math.Min(Document.Lines.Count - 1, Document.Caret.Row + newLines);
-                        Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
-                    }
-                    
-                    if (commandAutoCompleteEntries.Length != 0) {
-                        // Keep open for argument
-                        UpdateAutoComplete();
-                    } else {
-                        autoCompleteMenu.Visible = false;
-                    }
-                },
-            };
+        if (topLine == null && bottomLine == null || dir == 0)
+            return;
+        
+        // Adjust single line
+        if (topRow == bottomRow ||
+            topLine == null && bottomLine != null ||
+            bottomLine == null && topLine != null) 
+        {
+            var line = topLine ?? bottomLine!.Value;
+            int row = topLine != null ? topRow : bottomRow;
+                
+            if (dir > 0) {
+                Document.ReplaceLine(row, (line with { Frames = Math.Min(line.Frames + 1, ActionLine.MaxFrames) }).ToString()); 
+            } else {
+                Document.ReplaceLine(row, (line with { Frames = Math.Max(line.Frames - 1, 0) }).ToString());
+            }
+        }
+        // Move frames between lines
+        else {
+            if (dir > 0 && bottomLine!.Value.Frames > 0 && topLine!.Value.Frames < ActionLine.MaxFrames) {
+                Document.PushUndoState();
+                Document.ReplaceLine(topRow,    (topLine.Value    with { Frames = Math.Min(topLine.Value.Frames    + 1, ActionLine.MaxFrames)  }).ToString(), raiseEvents: false);
+                Document.ReplaceLine(bottomRow, (bottomLine.Value with { Frames = Math.Max(bottomLine.Value.Frames - 1, 0)                     }).ToString(), raiseEvents: false);
+                Document.OnTextChanged(new CaretPosition(topRow, 0), new CaretPosition(bottomRow, Document.Lines[bottomRow].Length));
+            } else if (dir < 0 && bottomLine!.Value.Frames < ActionLine.MaxFrames && topLine!.Value.Frames > 0) {
+                Document.ReplaceLine(topRow,    (topLine.Value    with { Frames = Math.Max(topLine.Value.Frames    - 1, 0)                    }).ToString(), raiseEvents: false);
+                Document.ReplaceLine(bottomRow, (bottomLine.Value with { Frames = Math.Min(bottomLine.Value.Frames + 1, ActionLine.MaxFrames) }).ToString(), raiseEvents: false);
+                Document.OnTextChanged(new CaretPosition(topRow, 0), new CaretPosition(bottomRow, Document.Lines[bottomRow].Length));
+            }
         }
     }
     
@@ -468,122 +447,6 @@ public sealed class Editor : Drawable {
         }
         
         return Document.Lines[row];
-    }
-    
-    // Matches against command or space or both as a separator
-    private static readonly Regex SeparatorRegex = new(@"(?:\s+)|(?:\s*,\s*)", RegexOptions.Compiled);
-    
-    private void UpdateAutoComplete(bool open = true) {
-        var line = Document.Lines[Document.Caret.Row];
-        
-        // Don't auto-complete on comments or action lines
-        if (line.StartsWith('#') || ActionLine.TryParse(line, out _)) {
-            autoCompleteMenu.Visible = false;
-            return;
-        }
-        
-        autoCompleteMenu.Visible |= open;
-        if (!autoCompleteMenu.Visible) {
-            return;
-        }
-        
-        // Use auto-complete entries for current command
-
-        // Split by the first separator
-        var separatorMatch = SeparatorRegex.Match(line);
-        var args = line.Split(separatorMatch.Value);
-        
-        if (args.Length <= 1) {
-            autoCompleteMenu.Entries = baseAutoCompleteEntries;
-            autoCompleteMenu.Filter = line;    
-        } else {
-            var command = CommandInfo.AllCommands.FirstOrDefault(cmd => cmd?.Name == args[0]);
-            var commandArgs = args[1..];
-            
-            if (command != null && command.Value.AutoCompleteEntries.Length >= commandArgs.Length) {
-                int lastArgStart = line.LastIndexOf(args[^1], StringComparison.Ordinal);
-                var entries = command.Value.AutoCompleteEntries[commandArgs.Length - 1](commandArgs);
-                
-                autoCompleteMenu.Entries = entries.Select(entry => new AutoCompleteMenu.Entry {
-                    DisplayText = entry,
-                    OnUse = () => {
-                        var commandLine = Document.Lines[Document.Caret.Row];
-                        
-                        if (command.Value.AutoCompleteEntries.Length != commandArgs.Length) {
-                            // Include separator for next argument
-                            Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, entry + separatorMatch.Value);
-                            UpdateAutoComplete();
-                        } else {
-                            Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, entry);
-                            autoCompleteMenu.Visible = false;
-                        }
-                        
-                        Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
-                        Document.Selection.Clear();
-                    },
-                }).ToList();
-            } else {
-                autoCompleteMenu.Entries = [];
-            }
-            
-            if (GetSelectedQuickEdit() is { } quickEdit && args[^1] == quickEdit.DefaultText) {
-                // Display all entries which quick-edit still contains default
-                autoCompleteMenu.Filter = string.Empty;
-            } else {
-                autoCompleteMenu.Filter = args[^1];
-            }
-        }
-    }
-    
-    private (float X, float Y, float MaxHeight) GetAutoCompleteMenuLocation() {
-        const float autocompleteXPos = 8.0f;
-        const float autocompleteYOffset = 7.0f;
-        
-        float carY = Font.LineHeight() * Document.Caret.Row;
-        float autoCompleteX = scrollablePosition.X + textOffsetX + autocompleteXPos;
-        float autoCompleteY = carY + Font.LineHeight() + autocompleteYOffset;
-        float autoCompleteMaxH = (scrollablePosition.Y + scrollable.Height - Font.LineHeight()) - autoCompleteY;
-        
-        return (autoCompleteX, autoCompleteY, autoCompleteMaxH);
-    }
-    
-    private void AdjustFrameCounts(int rowA, int rowB, int dir) {
-        int topRow = Math.Min(rowA, rowB);
-        int bottomRow = Math.Max(rowA, rowB);
-        
-        var topLine = ActionLine.Parse(Document.Lines[topRow]);
-        var bottomLine = ActionLine.Parse(Document.Lines[bottomRow]);
-        
-        if (topLine == null && bottomLine == null || dir == 0)
-            return;
-        
-        // Adjust single line
-        if (topRow == bottomRow ||
-            topLine == null && bottomLine != null ||
-            bottomLine == null && topLine != null) 
-        {
-            var line = topLine ?? bottomLine!.Value;
-            int row = topLine != null ? topRow : bottomRow;
-                
-            if (dir > 0) {
-                Document.ReplaceLine(row, (line with { Frames = Math.Min(line.Frames + 1, ActionLine.MaxFrames) }).ToString()); 
-            } else {
-                Document.ReplaceLine(row, (line with { Frames = Math.Max(line.Frames - 1, 0) }).ToString());
-            }
-        }
-        // Move frames between lines
-        else {
-            if (dir > 0 && bottomLine!.Value.Frames > 0 && topLine!.Value.Frames < ActionLine.MaxFrames) {
-                Document.PushUndoState();
-                Document.ReplaceLine(topRow,    (topLine.Value    with { Frames = Math.Min(topLine.Value.Frames    + 1, ActionLine.MaxFrames)  }).ToString(), raiseEvents: false);
-                Document.ReplaceLine(bottomRow, (bottomLine.Value with { Frames = Math.Max(bottomLine.Value.Frames - 1, 0)                     }).ToString(), raiseEvents: false);
-                Document.OnTextChanged(new CaretPosition(topRow, 0), new CaretPosition(bottomRow, Document.Lines[bottomRow].Length));
-            } else if (dir < 0 && bottomLine!.Value.Frames < ActionLine.MaxFrames && topLine!.Value.Frames > 0) {
-                Document.ReplaceLine(topRow,    (topLine.Value    with { Frames = Math.Max(topLine.Value.Frames    - 1, 0)                    }).ToString(), raiseEvents: false);
-                Document.ReplaceLine(bottomRow, (bottomLine.Value with { Frames = Math.Min(bottomLine.Value.Frames + 1, ActionLine.MaxFrames) }).ToString(), raiseEvents: false);
-                Document.OnTextChanged(new CaretPosition(topRow, 0), new CaretPosition(bottomRow, Document.Lines[bottomRow].Length));
-            }
-        }
     }
     
     #endregion
@@ -799,6 +662,147 @@ public sealed class Editor : Drawable {
         
         base.OnKeyUp(e);
     }
+    
+    #region Auto Complete
+    
+    private void GenerateBaseAutoCompleteEntries() {
+        baseAutoCompleteEntries.Clear();
+
+        foreach (var snippet in Settings.Instance.Snippets) {
+            if (string.IsNullOrWhiteSpace(snippet.Shortcut) || !snippet.Enabled)
+                continue;
+            baseAutoCompleteEntries.Add(CreateEntry(snippet.Shortcut, snippet.Insert, []));
+        }
+        foreach (var command in CommandInfo.AllCommands) {
+            if (command == null)
+                continue;
+            baseAutoCompleteEntries.Add(CreateEntry(command.Value.Name, command.Value.Insert, command.Value.AutoCompleteEntries));
+        }
+        
+        return;
+        
+        AutoCompleteMenu.Entry CreateEntry(string name, string insert, Func<string[], string[]>[] commandAutoCompleteEntries) {
+            var quickEdit = ParseQuickEdit(insert);
+            
+            return new AutoCompleteMenu.Entry {
+                DisplayText = name,
+                OnUse = () => {
+                    Document.ReplaceLine(Document.Caret.Row, quickEdit.ActualText);
+                    
+                    ClearQuickEdits();
+                    
+                    if (quickEdit.Selections.Length > 0) {
+                        for (int i = 0; i < quickEdit.Selections.Length; i++) {
+                            Selection selection = quickEdit.Selections[i];
+                            
+                            var defaultText = quickEdit.ActualText.SplitDocumentLines()[selection.Min.Row][selection.Min.Col..selection.Max.Col];
+                            
+                            // Quick-edit selections are relative, not absolute
+                            Document.AddAnchor(new Anchor {
+                                Row = selection.Min.Row + Document.Caret.Row,
+                                MinCol = selection.Min.Col, MaxCol = selection.Max.Col,
+                                UserData = new QuickEditData { Index = i, DefaultText = defaultText },
+                                OnRemoved = ClearQuickEdits,
+                            });
+                        }
+                        SelectQuickEdit(0);
+                    } else {
+                        // Just jump to the end of the insert
+                        int newLines = quickEdit.ActualText.Count(c => c == Document.NewLine);
+                        
+                        Document.Caret.Row = Math.Min(Document.Lines.Count - 1, Document.Caret.Row + newLines);
+                        Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+                    }
+                    
+                    if (commandAutoCompleteEntries.Length != 0) {
+                        // Keep open for argument
+                        UpdateAutoComplete();
+                    } else {
+                        autoCompleteMenu.Visible = false;
+                    }
+                },
+            };
+        }
+    }
+    
+    // Matches against command or space or both as a separator
+    private static readonly Regex SeparatorRegex = new(@"(?:\s+)|(?:\s*,\s*)", RegexOptions.Compiled);
+    
+    private void UpdateAutoComplete(bool open = true) {
+        var line = Document.Lines[Document.Caret.Row].TrimStart();
+        
+        // Don't auto-complete on comments or action lines
+        if (line.StartsWith('#') || ActionLine.TryParse(line, out _)) {
+            autoCompleteMenu.Visible = false;
+            return;
+        }
+        
+        autoCompleteMenu.Visible |= open;
+        if (!autoCompleteMenu.Visible) {
+            return;
+        }
+        
+        // Use auto-complete entries for current command
+
+        // Split by the first separator
+        var separatorMatch = SeparatorRegex.Match(line);
+        var args = line.Split(separatorMatch.Value);
+        
+        if (args.Length <= 1) {
+            autoCompleteMenu.Entries = baseAutoCompleteEntries;
+            autoCompleteMenu.Filter = line;    
+        } else {
+            var command = CommandInfo.AllCommands.FirstOrDefault(cmd => cmd?.Name == args[0]);
+            var commandArgs = args[1..];
+            
+            if (command != null && command.Value.AutoCompleteEntries.Length >= commandArgs.Length) {
+                int lastArgStart = line.LastIndexOf(args[^1], StringComparison.Ordinal);
+                var entries = command.Value.AutoCompleteEntries[commandArgs.Length - 1](commandArgs);
+                
+                autoCompleteMenu.Entries = entries.Select(entry => new AutoCompleteMenu.Entry {
+                    DisplayText = entry,
+                    OnUse = () => {
+                        var commandLine = Document.Lines[Document.Caret.Row];
+                        
+                        if (command.Value.AutoCompleteEntries.Length != commandArgs.Length) {
+                            // Include separator for next argument
+                            Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, entry + separatorMatch.Value);
+                            UpdateAutoComplete();
+                        } else {
+                            Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, entry);
+                            autoCompleteMenu.Visible = false;
+                        }
+                        
+                        Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+                        Document.Selection.Clear();
+                    },
+                }).ToList();
+            } else {
+                autoCompleteMenu.Entries = [];
+            }
+            
+            if (GetSelectedQuickEdit() is { } quickEdit && args[^1] == quickEdit.DefaultText) {
+                // Display all entries which quick-edit still contains default
+                autoCompleteMenu.Filter = string.Empty;
+            } else {
+                autoCompleteMenu.Filter = args[^1];
+            }
+        }
+    }
+    
+    private (float X, float Y, float MaxHeight) GetAutoCompleteMenuLocation() {
+        const float autocompleteXPos = 8.0f;
+        const float autocompleteYOffset = 7.0f;
+        
+        float carY = Font.LineHeight() * Document.Caret.Row;
+        float autoCompleteX = scrollablePosition.X + textOffsetX + autocompleteXPos;
+        float autoCompleteY = carY + Font.LineHeight() + autocompleteYOffset;
+        float autoCompleteMaxH = (scrollablePosition.Y + scrollable.Height - Font.LineHeight()) - autoCompleteY;
+        
+        return (autoCompleteX, autoCompleteY, autoCompleteMaxH);
+    }
+    
+    #endregion
     
     #region Quick Edit
     

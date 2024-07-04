@@ -40,7 +40,8 @@ public class SnippetDialog : Dialog<bool> {
                     Items = { addButton, new  LinkButton { Text = "Open documentation (TODO)" } }
                 },
                 new Scrollable {
-                    MinimumSize = new Size(300, 300),
+                    Width = list.Width,
+                    Height = 500,
                     Content = list,
                 }
             }
