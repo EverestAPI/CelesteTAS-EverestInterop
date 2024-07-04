@@ -2070,8 +2070,12 @@ public sealed class Editor : Drawable {
         
         // Adjust frame count
         if (e.Modifiers.HasFlag(Keys.Shift)) {
-            var (position, _) = LocationToCaretPosition(e.Location);
-            AdjustFrameCounts(Document.Caret.Row, position.Row, Math.Sign(e.Delta.Height));
+            if (Document.Selection.Empty) {
+                var (position, _) = LocationToCaretPosition(e.Location);
+                AdjustFrameCounts(Document.Caret.Row, position.Row, Math.Sign(e.Delta.Height));    
+            } else {
+                AdjustFrameCounts(Document.Selection.Start.Row, Document.Selection.End.Row, Math.Sign(e.Delta.Height));
+            }
 
             e.Handled = true;
             return;
