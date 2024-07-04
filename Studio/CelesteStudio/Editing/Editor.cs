@@ -386,6 +386,7 @@ public sealed class Editor : Drawable {
                                 Row = selection.Min.Row + Document.Caret.Row,
                                 MinCol = selection.Min.Col, MaxCol = selection.Max.Col,
                                 UserData = new QuickEditData { Index = i, DefaultText = defaultText },
+                                OnRemoved = ClearQuickEdits,
                             });
                         }
                         SelectQuickEdit(0);

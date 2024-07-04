@@ -339,7 +339,7 @@ public class Document {
                 CurrentAnchors.TryAdd(newRow, []);
                 var newAnchors = CurrentAnchors[newRow];
                 
-                for (int i = anchors.Count - 1; i >= 0; i--) {
+                for (int i = anchors.Count - 1; i >= 0; i = Math.Min(i - 1, anchors.Count - 1)) {
                     var anchor = anchors[i];
 
                     // Invalidate in between
@@ -446,7 +446,7 @@ public class Document {
         // Invalidate in between
         for (int row = start.Row; row <= end.Row; row++) {
             if (CurrentAnchors.TryGetValue(row, out anchors)) {
-                for (int i = anchors.Count - 1; i >= 0; i--) {
+                for (int i = anchors.Count - 1; i >= 0; i = Math.Min(i - 1, anchors.Count - 1)) {
                     var anchor = anchors[i];
                     
                     if (row == start.Row && anchor.MaxCol <= start.Col ||
@@ -465,7 +465,7 @@ public class Document {
             CurrentAnchors.TryAdd(start.Row, []);
             var newAnchors = CurrentAnchors[start.Row];
             
-            for (int i = anchors.Count - 1; i >= 0; i--) {
+            for (int i = anchors.Count - 1; i >= 0; i = Math.Min(i - 1, anchors.Count - 1)) {
                 var anchor = anchors[i];
                 
                 int offset = anchor.MinCol - end.Col;
@@ -501,14 +501,14 @@ public class Document {
         
         // Update anchors
         if (CurrentAnchors.TryGetValue(row, out var anchors)) {
-            for (int i = anchors.Count - 1; i >= 0; i--) {
+            for (int i = anchors.Count - 1; i >= 0; i = Math.Min(i - 1, anchors.Count - 1)) {
                 var anchor = anchors[i];
                 
                 // Invalidate when range partially intersects
                 if (startCol < anchor.MinCol && endCol > anchor.MinCol ||
                     startCol < anchor.MaxCol && endCol > anchor.MaxCol ||
                     // Remove entirely when it's 0 wide
-                    anchor.MinCol == anchor.MaxCol && startCol <= anchor.MinCol && endCol <= anchor.MaxCol)
+                    anchor.MinCol == anchor.MaxCol && startCol <= anchor.MinCol && endCol >= anchor.MaxCol)
                 {
                     anchor.OnRemoved?.Invoke();
                     anchors.Remove(anchor);
@@ -552,7 +552,7 @@ public class Document {
         
         // Update anchors
         if (CurrentAnchors.TryGetValue(row, out var anchors)) {
-            for (int i = anchors.Count - 1; i >= 0; i--) {
+            for (int i = anchors.Count - 1; i >= 0; i = Math.Min(i - 1, anchors.Count - 1)) {
                 var anchor = anchors[i];
                 
                 // Invalidate when range partially intersects
