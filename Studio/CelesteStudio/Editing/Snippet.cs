@@ -3,9 +3,11 @@ using Eto.Forms;
 namespace CelesteStudio.Editing;
 
 public class Snippet {
-    public bool Enabled { get; set; } = true;
-    public string Text { get; set; } = string.Empty;
-    public Keys Shortcut { get; set; } = Keys.None;
+    public bool Enabled = true;
+    public string Insert = string.Empty;
+
+    public Keys Hotkey = Keys.None;
+    public string Shortcut = string.Empty;
     
-    public Snippet Clone() => new() { Text = Text, Shortcut = Shortcut, Enabled = Enabled };
+    public Snippet Clone() => new() { Enabled = Enabled, Insert = Insert, Hotkey = Hotkey, Shortcut = Shortcut };
 }

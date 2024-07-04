@@ -741,18 +741,18 @@ public sealed class Editor : Drawable {
                     
                     // Try to paste snippets
                     foreach (var snippet in Settings.Instance.Snippets) {
-                        if (!snippet.Enabled || snippet.Shortcut != e.KeyData) {
+                        if (!snippet.Enabled || snippet.Hotkey != e.KeyData) {
                             continue;
                         }
                         
                         if (Document.Lines[Document.Caret.Row].Trim().Length == 0) {
-                            Document.ReplaceLine(Document.Caret.Row, snippet.Text);
+                            Document.ReplaceLine(Document.Caret.Row, snippet.Insert);
                         } else {
-                            Document.InsertLineBelow(snippet.Text);
+                            Document.InsertLineBelow(snippet.Insert);
                             Document.Caret.Row++;
                         }
                         
-                        Document.Caret.Col = desiredVisualCol = snippet.Text.Length;
+                        Document.Caret.Col = desiredVisualCol = snippet.Insert.Length;
                     }
                 }
                 

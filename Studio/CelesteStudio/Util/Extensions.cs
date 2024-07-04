@@ -45,7 +45,10 @@ public static class Extensions
                 .Select(Enum.Parse<Keys>)
                 .ToArray();
         
-        var hotkey = keys.First(key => (key & Keys.KeyMask) != Keys.None);
+        var hotkey = keys.FirstOrDefault(key => (key & Keys.KeyMask) != Keys.None, Keys.None);
+        if (hotkey == Keys.None)
+            return Keys.None;
+        
         if (keys.Any(key => key == Keys.Application))
             hotkey |= Keys.Application;
         if (keys.Any(key => key == Keys.Control))

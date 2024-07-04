@@ -34,7 +34,6 @@ public sealed class Settings {
     public static event Action FontChanged = FontManager.OnFontChanged;
     public static void OnFontChanged() => FontChanged.Invoke();
     
-    [TomlPrecedingComment("A list of all available keys can be found here: https://github.com/picoe/Eto/blob/develop/src/Eto/Forms/Key.cs")]
     public List<Snippet> Snippets { get; set; } = [];
     
     [TomlNonSerialized]
@@ -126,8 +125,9 @@ public sealed class Settings {
         TomletMain.RegisterMapper(
             snippet => new TomlTable { Entries = {
                 { "Enabled", TomlBoolean.ValueOf(snippet!.Enabled) }, 
-                { "Hotkey", new TomlString(snippet.Shortcut.HotkeyToString("+")) }, 
-                { "Insert", new TomlString(snippet.Text) }
+                { "Hotkey", new TomlString(snippet.Hotkey.HotkeyToString("+")) }, 
+                { "Shortcut", new TomlString(snippet.Shortcut) }, 
+                { "Insert", new TomlString(snippet.Insert) }
             } },
             tomlValue => {
                 if (tomlValue is not TomlTable table)
@@ -136,9 +136,11 @@ public sealed class Settings {
                     throw new TomlTypeMismatchException(typeof(TomlBoolean), table.GetValue("Enabled").GetType(), typeof(bool));
                 if (table.GetValue("Hotkey") is not TomlString hotkey)
                     throw new TomlTypeMismatchException(typeof(TomlString), table.GetValue("Hotkey").GetType(), typeof(Keys));
+                if (table.GetValue("Shortcut") is not TomlString shortcut)
+                    throw new TomlTypeMismatchException(typeof(TomlString), table.GetValue("Shortcut").GetType(), typeof(string));
                 if (table.GetValue("Insert") is not TomlString insert)
                     throw new TomlTypeMismatchException(typeof(TomlString), table.GetValue("Insert").GetType(), typeof(string));
-                return new Snippet { Enabled = enabled.Value, Shortcut = hotkey.Value.HotkeyFromString("+"), Text = insert.Value };
+                return new Snippet { Enabled = enabled.Value, Insert = insert.Value, Hotkey = hotkey.Value.HotkeyFromString("+"), Shortcut = shortcut.Value };
             });
         
         if (File.Exists(SettingsPath)) {
