@@ -123,7 +123,6 @@ public class AutoCompleteMenu {
         int idx = (int)((location.Y - y) / (font.LineHeight() + EntryPadding) + scrollOffset);
         if (idx >= 0 && idx < shownEntries.Length) {
             shownEntries[idx].OnUse();
-            Visible = false;
             return true;
         }
         
