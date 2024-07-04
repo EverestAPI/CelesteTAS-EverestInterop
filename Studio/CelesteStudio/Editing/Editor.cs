@@ -2111,7 +2111,7 @@ public sealed class Editor : Drawable {
         
         var position = ClampCaret(GetActualPosition(new CaretPosition(visualRow, visualCol)), wrapLine: false);
         
-        var newLine = Document.Lines[Document.Caret.Row];
+        var newLine = Document.Lines[position.Row];
         if (ActionLine.TryParse(newLine, out var actionLine)) {
             position.Col = SnapColumnToActionLine(actionLine, position.Col);
         }
@@ -2302,7 +2302,6 @@ public sealed class Editor : Drawable {
                 if (foldings.FirstOrDefault(fold => fold.MinRow == oldRow) is var folding && folding.MinRow != folding.MaxRow) {
                     e.Graphics.DrawText(Font, Settings.Instance.Theme.LineNumber, scrollablePosition.X + textOffsetX - LineNumberPadding * 2.0f - Font.CharWidth(), yPos, collapsed ? "\ud83d\udf82" : "\ud83d\udf83");
                 }
-                
                 
                 if (commentLineWraps.TryGetValue(row, out wrap)) {
                     yPos += Font.LineHeight() * wrap.Lines.Length;
