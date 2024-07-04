@@ -1174,7 +1174,8 @@ public sealed class Editor : Drawable {
                 string leftOfCursor = framesString[..cursorIndex];
                 string rightOfCursor = framesString[cursorIndex..];
                 
-                if (actionLine.Frames == 0) {
+                // To avoid old muscle memory from accidentally deleting lines, require the actions to be empty as well
+                if (actionLine.Frames == 0 && actionLine.Actions == Actions.None) {
                     line = string.Empty;
                 } else if (leftOfCursor.Length == 0 && direction is CaretMovementType.WordLeft or CaretMovementType.CharLeft ||
                            rightOfCursor.Length == 0 && direction is CaretMovementType.WordRight or CaretMovementType.CharRight) {
