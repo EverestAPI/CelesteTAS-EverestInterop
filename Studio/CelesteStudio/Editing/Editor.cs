@@ -611,6 +611,12 @@ public sealed class Editor : Drawable {
                 MoveCaret(e.Control ? CaretMovementType.DocumentEnd : CaretMovementType.LineEnd, updateSelection: e.Shift);
                 e.Handled = true;
                 break;
+            case Keys.C when e.Control && e.Alt:
+                Clipboard.Instance.Clear();
+                Clipboard.Instance.Text = Document.FilePath;
+                
+                e.Handled = true;
+                break;
             default:
                 if (e.Key != Keys.None) {
                     // Search through context menu for hotkeys
