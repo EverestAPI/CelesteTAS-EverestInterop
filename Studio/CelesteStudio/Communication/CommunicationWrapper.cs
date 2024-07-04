@@ -28,8 +28,8 @@ public class CommunicationWrapper {
     public void SendPath(string path) => Server.SendPath(path);
     
     // If key events are sent too fast, CelesteTAS can't keep up, so we need to slow down
-    // The limit appears to be somewhere between 30 and 20 keys / second.
-    private static readonly TimeSpan keyEventDelay = TimeSpan.FromMilliseconds(50);
+    // The limit appears to be somewhere between 30 and 10 keys / second.
+    private static readonly TimeSpan keyEventDelay = TimeSpan.FromMilliseconds(75);
     private readonly Stopwatch lastKeyEvent = Stopwatch.StartNew();
     
     public bool SendKeyEvent(Keys key, Keys modifiers, bool released) {
