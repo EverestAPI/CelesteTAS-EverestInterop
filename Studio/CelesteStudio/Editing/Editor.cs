@@ -149,6 +149,7 @@ public sealed class Editor : Drawable {
                 new SeparatorMenuItem(),
                 MenuUtils.CreateAction("Find...", Application.Instance.CommonModifier | Keys.F, OnFind),
                 MenuUtils.CreateAction("Go To...", Application.Instance.CommonModifier | Keys.G, OnGoTo),
+                MenuUtils.CreateAction("Toggle Folding", Application.Instance.CommonModifier | Keys.Minus, OnToggleFolding),
                 new SeparatorMenuItem(),
                 MenuUtils.CreateAction("Delete Selected Lines", Application.Instance.CommonModifier | Keys.Y, OnDeleteSelectedLines),
                 new SeparatorMenuItem(),
@@ -336,8 +337,9 @@ public sealed class Editor : Drawable {
         Document.RemoveAnchorsIf(anchor => anchor.UserData is FoldingAnchorData && foldings.All(fold => fold.MinRow != anchor.Row));
         
         // Calculate line numbers width
+        const float foldButtonPadding = 5.0f;
         bool hasFoldings = foldings.Count != 0;
-        textOffsetX = Font.CharWidth() * (Document.Lines.Count.Digits() + (hasFoldings ? 1 : 0)) + LineNumberPadding * 3.0f;
+        textOffsetX = Font.CharWidth() * Document.Lines.Count.Digits() + (hasFoldings ? Font.CharWidth() + foldButtonPadding : 0.0f) + LineNumberPadding * 3.0f;
         
         const float paddingRight = 50.0f;
         const float paddingBottom = 100.0f;
@@ -454,16 +456,6 @@ public sealed class Editor : Drawable {
     #endregion
     
     protected override void OnKeyDown(KeyEventArgs e) {
-        // DEBUG TESTING
-        if (e.Key == Keys.Minus) {
-            ToggleFolding(Document.Caret.Row);
-            
-            e.Handled = true;
-            Recalc();
-            return;
-        }
-        //
-        
         if (autoCompleteMenu.HandleKeyDown(e)) {
             e.Handled = true;
             Recalc();
@@ -1332,6 +1324,19 @@ public sealed class Editor : Drawable {
             Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
         
         ScrollCaretIntoView();
+    }
+    
+    private void OnToggleFolding() {
+        // Find current region
+        var folding = foldings.FirstOrDefault(fold => fold.MinRow <= Document.Caret.Row && fold.MaxRow >= Document.Caret.Row);
+        Console.WriteLine($"f {folding}");
+        if (folding.MinRow == folding.MaxRow) {
+            return;
+        }
+        
+        ToggleFolding(folding.MinRow);
+        Document.Caret.Row = folding.MinRow;
+        Document.Caret.Col = Document.Lines[folding.MinRow].Length;
     }
     
     private void OnDeleteSelectedLines() {
@@ -2246,7 +2251,7 @@ public sealed class Editor : Drawable {
                     collapsed = true;
                 }
                 if (foldings.FirstOrDefault(fold => fold.MinRow == oldRow) is var folding && folding.MinRow != folding.MaxRow) {
-                    e.Graphics.DrawText(Font, Settings.Instance.Theme.LineNumber, scrollablePosition.X + textOffsetX - LineNumberPadding * 1.75f - Font.CharWidth(), yPos, collapsed ? "\ud83d\udf82" : "\ud83d\udf83");
+                    e.Graphics.DrawText(Font, Settings.Instance.Theme.LineNumber, scrollablePosition.X + textOffsetX - LineNumberPadding * 2.0f - Font.CharWidth(), yPos, collapsed ? "\ud83d\udf82" : "\ud83d\udf83");
                 }
                 
                 
