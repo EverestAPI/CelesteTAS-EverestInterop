@@ -164,7 +164,9 @@ public class AutoCompleteMenu {
     }
     
     public void HandleMouseWheel(float delta) {
-        scrollOffset = Math.Clamp(scrollOffset - delta, 0.0f, shownEntries.Length - maxEntries);
+        if (maxEntries < shownEntries.Length) {
+            scrollOffset = Math.Clamp(scrollOffset - delta, 0.0f, shownEntries.Length - maxEntries);
+        }
     }
     
     public (float X, float Y, float Width, float Height) Measure(Font font, float x, float y, float maxHeight) {
