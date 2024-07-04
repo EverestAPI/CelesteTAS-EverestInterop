@@ -22,15 +22,6 @@ public sealed class Studio : Form {
     
     // Some platforms report the window larger than it actually is, so there need to be some offsets.
     // The values are chosen by fine-tuning manually.
-    public static float BorderRightOffset {
-        get {
-            if (Eto.Platform.Instance.IsWpf)
-                return 10.0f;
-            if (Eto.Platform.Instance.IsGtk)
-                return 40.0f;
-            return 0.0f;
-        }
-    }
     public static float BorderBottomOffset {
         get {
             if (Eto.Platform.Instance.IsWpf)
