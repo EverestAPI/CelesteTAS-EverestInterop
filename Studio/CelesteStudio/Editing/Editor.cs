@@ -723,7 +723,7 @@ public sealed class Editor : Drawable {
     private static readonly Regex SeparatorRegex = new(@"(?:\s+)|(?:\s*,\s*)", RegexOptions.Compiled);
     
     private void UpdateAutoComplete(bool open = true) {
-        var line = Document.Lines[Document.Caret.Row].TrimStart();
+        var line = Document.Lines[Document.Caret.Row][..Document.Caret.Col].TrimStart();
         
         // Don't auto-complete on comments or action lines
         if (line.StartsWith('#') || ActionLine.TryParse(line, out _)) {
@@ -758,17 +758,30 @@ public sealed class Editor : Drawable {
                     OnUse = () => {
                         var commandLine = Document.Lines[Document.Caret.Row];
                         
-                        if (command.Value.AutoCompleteEntries.Length != commandArgs.Length) {
-                            // Include separator for next argument
-                            Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, entry + separatorMatch.Value);
+                        var selectedQuickEdit = GetQuickEdits()
+                            .FirstOrDefault(anchor => Document.Caret.Row == anchor.Row &&
+                                                      Document.Caret.Col >= anchor.MinCol &&
+                                                      Document.Caret.Col <= anchor.MaxCol);
+                        
+                        if (selectedQuickEdit != null) {
+                            // Replace the current quick-edit instead
+                            Document.ReplaceRangeInLine(selectedQuickEdit.Row, selectedQuickEdit.MinCol, selectedQuickEdit.MaxCol, entry);
+                            SelectNextQuickEdit();
+                            
                             UpdateAutoComplete();
                         } else {
-                            Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, entry);
-                            autoCompleteMenu.Visible = false;
+                            if (command.Value.AutoCompleteEntries.Length != commandArgs.Length) {
+                                // Include separator for next argument
+                                Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, entry + separatorMatch.Value);
+                                UpdateAutoComplete();
+                            } else {
+                                Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, entry);
+                                autoCompleteMenu.Visible = false;
+                            }
+                            
+                            Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+                            Document.Selection.Clear();
                         }
-                        
-                        Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
-                        Document.Selection.Clear();
                     },
                 }).ToList();
             } else {
@@ -776,7 +789,7 @@ public sealed class Editor : Drawable {
             }
             
             if (GetSelectedQuickEdit() is { } quickEdit && args[^1] == quickEdit.DefaultText) {
-                // Display all entries which quick-edit still contains default
+                // Display all entries when quick-edit still contains the default
                 autoCompleteMenu.Filter = string.Empty;
             } else {
                 autoCompleteMenu.Filter = args[^1];
@@ -2114,7 +2127,7 @@ public sealed class Editor : Drawable {
                 const float foldingPadding = 1.0f;
                 
                 highlighter.DrawLine(e.Graphics, textOffsetX, yPos, collapse.DisplayText);
-                e.Graphics.DrawRectangle(Colors.White, Font.CharWidth() * collapse.StartCol + textOffsetX - foldingPadding, yPos - foldingPadding, Font.MeasureWidth(collapse.DisplayText) - Font.CharWidth() * collapse.StartCol + foldingPadding * 2.0f, Font.LineHeight() + foldingPadding * 2.0f);
+                e.Graphics.DrawRectangle(Settings.Instance.Theme.Comment.ForegroundColor, Font.CharWidth() * collapse.StartCol + textOffsetX - foldingPadding, yPos - foldingPadding, Font.MeasureWidth(collapse.DisplayText) - Font.CharWidth() * collapse.StartCol + foldingPadding * 2.0f, Font.LineHeight() + foldingPadding * 2.0f);
                 
                 yPos += Font.LineHeight();
                 row = collapse.MaxRow;
