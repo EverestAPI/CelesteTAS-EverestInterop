@@ -741,6 +741,7 @@ public sealed class Editor : Drawable {
         // Split by the first separator
         var separatorMatch = SeparatorRegex.Match(line);
         var args = line.Split(separatorMatch.Value);
+        var allArgs = Document.Lines[Document.Caret.Row].Split(separatorMatch.Value);
         
         if (args.Length <= 1) {
             autoCompleteMenu.Entries = baseAutoCompleteEntries;
@@ -756,7 +757,8 @@ public sealed class Editor : Drawable {
                 autoCompleteMenu.Entries = entries.Select(entry => new AutoCompleteMenu.Entry {
                     DisplayText = entry.Arg,
                     OnUse = () => {
-                        var commandLine = Document.Lines[Document.Caret.Row];
+                        var commandLine = Document.Lines[Document.Caret.Row][..(lastArgStart + args[^1].Length)];
+                        Console.WriteLine($"command line '{commandLine}'");
                         
                         var selectedQuickEdit = GetQuickEdits()
                             .FirstOrDefault(anchor => Document.Caret.Row == anchor.Row &&
@@ -787,20 +789,20 @@ public sealed class Editor : Drawable {
                         } else {
                             if (!entry.Done) {
                                 Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, entry.Arg);
-                                Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+                                Document.Caret.Col = desiredVisualCol = lastArgStart + entry.Arg.Length;
                                 Document.Selection.Clear();
                                 
                                 UpdateAutoComplete();
-                            } else if (command.Value.AutoCompleteEntries.Length != commandArgs.Length) {
+                            } else if (command.Value.AutoCompleteEntries.Length != allArgs.Length - 1) {
                                 // Include separator for next argument
                                 Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, entry.Arg + separatorMatch.Value);
-                                Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+                                Document.Caret.Col = desiredVisualCol = lastArgStart + entry.Arg.Length;
                                 Document.Selection.Clear();
                                 
                                 UpdateAutoComplete();
                             } else {
                                 Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, entry.Arg);
-                                Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+                                Document.Caret.Col = desiredVisualCol = lastArgStart + entry.Arg.Length;
                                 Document.Selection.Clear();
                                 
                                 autoCompleteMenu.Visible = false;
