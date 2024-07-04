@@ -48,6 +48,7 @@ public class SnippetDialog : Dialog<bool> {
                 }
             }
         };
+        Icon = Studio.Instance.Icon;
         
         DefaultButton = new Button((_, _) => Close(true)) { Text = "&OK" };
         AbortButton = new Button((_, _) => Close(false)) { Text = "&Cancel" };
@@ -75,7 +76,8 @@ public class SnippetDialog : Dialog<bool> {
                     Content = new Panel {
                         Padding = 10,
                         Content = new Label { Text = "Press a hotkey...", Font = SystemFonts.Bold().WithFontStyle(FontStyle.Italic) }
-                    }
+                    },
+                    Icon = Studio.Instance.Icon,
                 };
                 inputDialog.KeyDown += (_, e) => {
                     // Don't allow binding modifiers by themselves

@@ -56,6 +56,7 @@ public class GoToDialog : Dialog<int> {
                 }
             }
         };
+        Icon = Studio.Instance.Icon;
         
         DefaultButton = new Button((_, _) => Close((int)lineSelector.Value - 1)) { Text = "&Go" };
         AbortButton = new Button((_, _) => Close(document.Caret.Row)) { Text = "&Cancel" };
