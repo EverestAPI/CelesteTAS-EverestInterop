@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using StudioCommunication;
 using CelesteStudio.Communication;
 using CelesteStudio.Util;
@@ -25,6 +27,11 @@ public class CommunicationWrapper {
     public void WriteWait() => Server.WriteWait();
     public void SendPath(string path) => Server.SendPath(path);
     
+    // If key events are sent too fast, CelesteTAS can't keep up, so we need to slow down
+    // The limit appears to be somewhere between 30 and 20 keys / second.
+    private static readonly TimeSpan keyEventDelay = TimeSpan.FromMilliseconds(50);
+    private readonly Stopwatch lastKeyEvent = Stopwatch.StartNew();
+    
     public bool SendKeyEvent(Keys key, Keys modifiers, bool released) {
         var winFormsKey = key.ToWinForms();
         
@@ -40,7 +47,10 @@ public class CommunicationWrapper {
                      (modifiers == Keys.Control && key is Keys.Control or Keys.LeftControl or Keys.RightControl) ||
                      (modifiers == Keys.Alt && key is Keys.Alt or Keys.LeftAlt or Keys.RightAlt)))
                 {
-                    Server.SendHotkeyPressed(hotkeyIDs, released);
+                    if (lastKeyEvent.Elapsed >= keyEventDelay) {
+                        Server.SendHotkeyPressed(hotkeyIDs, released);
+                        lastKeyEvent.Restart();
+                    }
                     return true;
                 }
                 
@@ -63,7 +73,10 @@ public class CommunicationWrapper {
                 goto NextIter;
             }
             
-            Server.SendHotkeyPressed(hotkeyIDs, released);
+            if (lastKeyEvent.Elapsed >= keyEventDelay) {
+                Server.SendHotkeyPressed(hotkeyIDs, released);
+                lastKeyEvent.Restart();
+            }
             return true;
             
             NextIter:; // Yes, that ";" is required..

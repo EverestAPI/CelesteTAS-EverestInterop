@@ -2206,7 +2206,11 @@ public sealed class Editor : Drawable {
         }
         
         // Draw suffix text
-        if (Studio.CommunicationWrapper.Connected && Studio.CommunicationWrapper.CurrentLine != -1 && Studio.CommunicationWrapper.CurrentLine < visualRows.Length) {
+        if (Studio.CommunicationWrapper.Connected && 
+            Studio.CommunicationWrapper.CurrentLine != -1 && 
+            Studio.CommunicationWrapper.CurrentLine < visualRows.Length &&
+            Studio.CommunicationWrapper.CurrentLineSuffix != null) 
+        {
             const float padding = 10.0f;
             float suffixWidth = Font.MeasureWidth(Studio.CommunicationWrapper.CurrentLineSuffix); 
             

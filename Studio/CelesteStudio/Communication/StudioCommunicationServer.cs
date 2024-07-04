@@ -68,10 +68,8 @@ public class StudioCommunicationServer : StudioCommunicationBase {
 
     private void ProcessSendState(byte[] data) {
         try {
-            var studioInfo = StudioInfo.FromByteArray(data);
-            
+            var studioInfo = StudioInfo.FromByteArray(data);;
             OnStateUpdated(Studio.CommunicationWrapper.State, studioInfo);
-            // CommunicationWrapper.StudioInfo = studioInfo;
         } catch (InvalidCastException) {
             // string studioVersion = Studio.Version.ToString(3);
             // MessageBox.Show(
