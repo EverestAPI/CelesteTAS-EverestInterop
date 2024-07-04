@@ -7,7 +7,7 @@ public struct CommandInfo() {
     public string Description;
     public string Insert;
     
-    public Func<string[], string[]>[] AutoCompleteEntires = [];
+    public Func<string[], string[]>[] AutoCompleteEntries = [];
     
     // nulls are visual separators in the insert menu
     // [] are "quick-edit" positions, with the format [index;text]. The text part is optional
@@ -36,7 +36,7 @@ public struct CommandInfo() {
                           Odds are you don't need to worry about this.
                           """,
             Insert = "AnalogMode, ",
-            AutoCompleteEntires = [
+            AutoCompleteEntries = [
                 _ => ["Ignore", "Circle", "Square", "Precise"]
             ]
         },
@@ -45,7 +45,7 @@ public struct CommandInfo() {
             Name = "StunPause", 
             Description = "Automate pausing every other frame without doing the actual pause inputs.\nThe Simulate mode should only be used to test routes.",
             Insert = $"StunPause [1]{Document.NewLine}    [0]{Document.NewLine}EndStunPause", 
-            AutoCompleteEntires = [
+            AutoCompleteEntries = [
                 _ => ["Simulate", "Input"]
             ]
         },
@@ -54,7 +54,7 @@ public struct CommandInfo() {
             Name = "StunPauseMode", 
             Description = "Specify the default mode for StunPause command.",
             Insert = "StunPauseMode, [0;Simulate/Input]",
-            AutoCompleteEntires = [
+            AutoCompleteEntries = [
                 _ => ["Simulate", "Input"]
             ]
         },

@@ -45,7 +45,7 @@ public sealed class Editor : Drawable {
     private const float LineNumberPadding = 5.0f;
     
     private readonly AutoCompleteMenu autoCompleteMenu;
-    private readonly List<AutoCompleteMenu.Entry> commandEntries = [];
+    private readonly List<AutoCompleteMenu.Entry> baseAutoCompleteEntries = [];
     
     // Quick-edits are anchors to switch through with tab and edit
     // Used by auto-complete snippets
@@ -77,7 +77,10 @@ public sealed class Editor : Drawable {
         this.scrollable = scrollable;
         
         // Reflect setting changes
-        Settings.Changed += Recalc;
+        Settings.Changed += () => {
+            GenerateBaseAutoCompleteEntries();
+            Recalc();
+        };
         
         highlighter = new(FontManager.EditorFontRegular, FontManager.EditorFontBold, FontManager.EditorFontItalic, FontManager.EditorFontBoldItalic);
         Settings.FontChanged += () => {
@@ -86,42 +89,7 @@ public sealed class Editor : Drawable {
         };
         
         autoCompleteMenu = new();
-        foreach (var command in CommandInfo.AllCommands) {
-            if (command == null)
-                continue;
-            
-            var quickEdit = ParseQuickEdit(command.Value.Insert);
-            
-            commandEntries.Add(new AutoCompleteMenu.Entry {
-                DisplayText = command.Value.Name,
-                OnUse = () => {
-                    Document.ReplaceLine(Document.Caret.Row, quickEdit.ActualText);
-                    Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
-                    
-                    ClearQuickEdits();
-                    for (int i = 0; i < quickEdit.Selections.Length; i++) {
-                        Selection selection = quickEdit.Selections[i];
-                        
-                        var defaultText = quickEdit.ActualText.SplitDocumentLines()[selection.Min.Row][selection.Min.Col..selection.Max.Col];
-                        
-                        // Quick-edit selections are relative, not absolute
-                        Document.AddAnchor(new Anchor {
-                            Row = selection.Min.Row + Document.Caret.Row,
-                            MinCol = selection.Min.Col, MaxCol = selection.Max.Col,
-                            UserData = new QuickEditData { Index = i, DefaultText = defaultText },
-                        });
-                    }
-                    SelectQuickEdit(0);
-                    
-                    if (command.Value.AutoCompleteEntires.Length != 0) {
-                        // Keep open for argument
-                        UpdateAutoComplete();
-                    } else {
-                        autoCompleteMenu.Visible = false;                    
-                    }
-                },
-            });
-        }
+        GenerateBaseAutoCompleteEntries();
         
         BackgroundColor = Settings.Instance.Theme.Background;
         Settings.ThemeChanged += () => BackgroundColor = Settings.Instance.Theme.Background;
@@ -381,6 +349,65 @@ public sealed class Editor : Drawable {
         Invalidate();
     }
     
+    private void GenerateBaseAutoCompleteEntries() {
+        baseAutoCompleteEntries.Clear();
+
+        foreach (var snippet in Settings.Instance.Snippets) {
+            if (string.IsNullOrWhiteSpace(snippet.Shortcut))
+                continue;
+            baseAutoCompleteEntries.Add(CreateEntry(snippet.Shortcut, snippet.Insert, []));
+        }
+        foreach (var command in CommandInfo.AllCommands) {
+            if (command == null)
+                continue;
+            baseAutoCompleteEntries.Add(CreateEntry(command.Value.Name, command.Value.Insert, command.Value.AutoCompleteEntries));
+        }
+        
+        return;
+        
+        AutoCompleteMenu.Entry CreateEntry(string name, string insert, Func<string[], string[]>[] commandAutoCompleteEntries) {
+            var quickEdit = ParseQuickEdit(insert);
+            
+            return new AutoCompleteMenu.Entry {
+                DisplayText = name,
+                OnUse = () => {
+                    Document.ReplaceLine(Document.Caret.Row, quickEdit.ActualText);
+                    
+                    ClearQuickEdits();
+                    
+                    if (quickEdit.Selections.Length > 0) {
+                        for (int i = 0; i < quickEdit.Selections.Length; i++) {
+                            Selection selection = quickEdit.Selections[i];
+                            
+                            var defaultText = quickEdit.ActualText.SplitDocumentLines()[selection.Min.Row][selection.Min.Col..selection.Max.Col];
+                            
+                            // Quick-edit selections are relative, not absolute
+                            Document.AddAnchor(new Anchor {
+                                Row = selection.Min.Row + Document.Caret.Row,
+                                MinCol = selection.Min.Col, MaxCol = selection.Max.Col,
+                                UserData = new QuickEditData { Index = i, DefaultText = defaultText },
+                            });
+                        }
+                        SelectQuickEdit(0);
+                    } else {
+                        // Just jump to the end of the insert
+                        int newLines = quickEdit.ActualText.Count(c => c == Document.NewLine);
+                        
+                        Document.Caret.Row = Math.Max(Document.Lines.Count - 1, Document.Caret.Row + newLines);
+                        Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+                    }
+                    
+                    if (commandAutoCompleteEntries.Length != 0) {
+                        // Keep open for argument
+                        UpdateAutoComplete();
+                    } else {
+                        autoCompleteMenu.Visible = false;
+                    }
+                },
+            };
+        }
+    }
+    
     private CaretPosition GetVisualPosition(CaretPosition position) {
         if (!commentLineWraps.TryGetValue(position.Row, out var wrap))
             return new CaretPosition(visualRows[position.Row], position.Col);
@@ -466,22 +493,22 @@ public sealed class Editor : Drawable {
         var args = line.Split(separatorMatch.Value);
         
         if (args.Length <= 1) {
-            autoCompleteMenu.Entries = commandEntries;
+            autoCompleteMenu.Entries = baseAutoCompleteEntries;
             autoCompleteMenu.Filter = line;    
         } else {
             var command = CommandInfo.AllCommands.FirstOrDefault(cmd => cmd?.Name == args[0]);
             var commandArgs = args[1..];
             
-            if (command != null && command.Value.AutoCompleteEntires.Length >= commandArgs.Length) {
+            if (command != null && command.Value.AutoCompleteEntries.Length >= commandArgs.Length) {
                 int lastArgStart = line.LastIndexOf(args[^1], StringComparison.Ordinal);
-                var entries = command.Value.AutoCompleteEntires[commandArgs.Length - 1](commandArgs);
+                var entries = command.Value.AutoCompleteEntries[commandArgs.Length - 1](commandArgs);
                 
                 autoCompleteMenu.Entries = entries.Select(entry => new AutoCompleteMenu.Entry {
                     DisplayText = entry,
                     OnUse = () => {
                         var commandLine = Document.Lines[Document.Caret.Row];
                         
-                        if (command.Value.AutoCompleteEntires.Length != commandArgs.Length) {
+                        if (command.Value.AutoCompleteEntries.Length != commandArgs.Length) {
                             // Include separator for next argument
                             Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, entry + separatorMatch.Value);
                             UpdateAutoComplete();

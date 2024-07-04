@@ -124,10 +124,11 @@ public class SnippetDialog : Dialog<bool> {
                 }
             };
             
-            var shortcutTextBox = new TextBox();
+            var shortcutTextBox = new TextBox { Text = snippet.Shortcut };
+            shortcutTextBox.TextChanged += (_, _) => snippet.Shortcut = shortcutTextBox.Text.ReplaceLineEndings(Document.NewLine.ToString());
             
-            var textArea = new TextArea {Text = snippet.Insert, Font = FontManager.EditorFontRegular, Width = 300};
-            textArea.TextChanged += (_, _) => snippet.Insert = textArea.Text;
+            var textArea = new TextArea {Text = snippet.Insert, Font = FontManager.EditorFontRegular, Width = 500 };
+            textArea.TextChanged += (_, _) => snippet.Insert = textArea.Text.ReplaceLineEndings(Document.NewLine.ToString());
             
             int idx = i;
             var upButton = new Button { Text = "\u2bc5", Enabled = i != 0 };

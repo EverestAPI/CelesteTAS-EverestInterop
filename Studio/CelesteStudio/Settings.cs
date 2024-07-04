@@ -140,7 +140,12 @@ public sealed class Settings {
                     throw new TomlTypeMismatchException(typeof(TomlString), table.GetValue("Shortcut").GetType(), typeof(string));
                 if (table.GetValue("Insert") is not TomlString insert)
                     throw new TomlTypeMismatchException(typeof(TomlString), table.GetValue("Insert").GetType(), typeof(string));
-                return new Snippet { Enabled = enabled.Value, Insert = insert.Value, Hotkey = hotkey.Value.HotkeyFromString("+"), Shortcut = shortcut.Value };
+                return new Snippet {
+                    Enabled = enabled.Value, 
+                    Insert = insert.Value.ReplaceLineEndings(Document.NewLine.ToString()), 
+                    Hotkey = hotkey.Value.HotkeyFromString("+"), 
+                    Shortcut = shortcut.Value.ReplaceLineEndings(Document.NewLine.ToString())
+                };
             });
         
         if (File.Exists(SettingsPath)) {
