@@ -208,8 +208,6 @@ public sealed class Editor : Drawable {
         Document.Caret.Row = Math.Clamp(Document.Caret.Row, 0, Document.Lines.Count - 1);
         Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length);
         
-        textOffsetX = Font.CharWidth() * Document.Lines.Count.Digits() + LineNumberPadding * 3.0f;
-        
         // Calculate bounds, apply wrapping, create foldings
         float width = 0.0f, height = 0.0f;
 
@@ -337,6 +335,10 @@ public sealed class Editor : Drawable {
         // Clear invalid foldings
         Document.RemoveAnchorsIf(anchor => anchor.UserData is FoldingAnchorData && foldings.All(fold => fold.MinRow != anchor.Row));
         
+        // Calculate line numbers width
+        bool hasFoldings = foldings.Count != 0;
+        textOffsetX = Font.CharWidth() * (Document.Lines.Count.Digits() + (hasFoldings ? 1 : 0)) + LineNumberPadding * 3.0f;
+        
         const float paddingRight = 50.0f;
         const float paddingBottom = 100.0f;
 
@@ -454,7 +456,7 @@ public sealed class Editor : Drawable {
     protected override void OnKeyDown(KeyEventArgs e) {
         // DEBUG TESTING
         if (e.Key == Keys.Minus) {
-            SetFolding(Document.Caret.Row, GetCollapse(Document.Caret.Row) == null);
+            ToggleFolding(Document.Caret.Row);
             
             e.Handled = true;
             Recalc();
@@ -898,6 +900,17 @@ public sealed class Editor : Drawable {
     }
     private struct FoldingAnchorData;
     
+    private void ToggleFolding(int row) {
+        if (Document.FindFirstAnchor(anchor => anchor.Row == row && anchor.UserData is FoldingAnchorData) == null) {
+            Document.AddAnchor(new Anchor {
+                MinCol = 0, MaxCol = Document.Lines[row].Length,
+                Row = row,
+                UserData = new FoldingAnchorData()
+            });
+        } else {
+            Document.RemoveAnchorsIf(anchor => anchor.Row == row && anchor.UserData is FoldingAnchorData);
+        }
+    }
     private void SetFolding(int row, bool fold) {
         if (fold && Document.FindFirstAnchor(anchor => anchor.Row == row && anchor.UserData is FoldingAnchorData) == null) {
             Document.AddAnchor(new Anchor {
@@ -1907,6 +1920,14 @@ public sealed class Editor : Drawable {
                 }
             }
             
+            if (LocationToFolding(e.Location) is { } folding) {
+                ToggleFolding(folding.MinRow);
+                
+                e.Handled = true;
+                Recalc();
+                return;
+            }
+            
             primaryMouseButtonDown = true;
             
             var oldCaret = Document.Caret;
@@ -1966,7 +1987,12 @@ public sealed class Editor : Drawable {
             Recalc();
         }
         
-        Cursor = Cursors.IBeam;
+        if (LocationToFolding(e.Location) is { } folding) {
+            Cursor = Cursors.Pointer;
+        } else {
+            Cursor = Cursors.IBeam;    
+        }
+        
         if (autoCompleteMenu.Visible) {
             var (autoCompleteX, autoCompleteY, autoCompleteMaxH) = GetAutoCompleteMenuLocation();
             (_, _, float autoCompleteW, float autoCompleteH) = autoCompleteMenu.Measure(Font, autoCompleteX, autoCompleteY, autoCompleteMaxH);
@@ -2027,7 +2053,6 @@ public sealed class Editor : Drawable {
         location.X -= textOffsetX;
         
         int visualRow = (int)(location.Y / Font.LineHeight());
-        // Since we use a monospace font, we can just calculate the column
         int visualCol = (int)(location.X / Font.CharWidth());
         
         var position = ClampCaret(GetActualPosition(new CaretPosition(visualRow, visualCol)), wrapLine: false);
@@ -2038,6 +2063,24 @@ public sealed class Editor : Drawable {
         }
         
         return (position, new CaretPosition(visualRow, visualCol));
+    }
+    
+    private Folding? LocationToFolding(PointF location) {
+        // Extend range through entire line numbers
+        if (location.X >= scrollablePosition.X &&
+            location.X <= scrollablePosition.X + textOffsetX - LineNumberPadding)
+        {
+            int row = GetActualRow((int) (location.Y / Font.LineHeight()));
+            
+            var folding = foldings.FirstOrDefault(fold => fold.MinRow == row);
+            if (folding.MinRow == folding.MaxRow) {
+                return null;
+            }
+            
+            return folding;
+        }
+        
+        return null;
     }
     
     #endregion
@@ -2192,16 +2235,25 @@ public sealed class Editor : Drawable {
             
             yPos = visualRows[topRow] * Font.LineHeight();
             for (int row = topRow; row <= bottomRow; row++) {
-                e.Graphics.DrawText(Font, Settings.Instance.Theme.LineNumber, scrollablePosition.X + LineNumberPadding, yPos, (row + 1).ToString());
+                int oldRow = row;
+                var numberString = (row + 1).ToString();
+                
+                e.Graphics.DrawText(Font, Settings.Instance.Theme.LineNumber, scrollablePosition.X + LineNumberPadding, yPos, numberString);
+                
+                bool collapsed = false;
+                if (GetCollapse(row) is { } collapse) {
+                    row = collapse.MaxRow;
+                    collapsed = true;
+                }
+                if (foldings.FirstOrDefault(fold => fold.MinRow == oldRow) is var folding && folding.MinRow != folding.MaxRow) {
+                    e.Graphics.DrawText(Font, Settings.Instance.Theme.LineNumber, scrollablePosition.X + textOffsetX - LineNumberPadding * 1.75f - Font.CharWidth(), yPos, collapsed ? "\ud83d\udf82" : "\ud83d\udf83");
+                }
+                
                 
                 if (commentLineWraps.TryGetValue(row, out wrap)) {
                     yPos += Font.LineHeight() * wrap.Lines.Length;
                 } else {
                     yPos += Font.LineHeight();
-                }
-                
-                if (GetCollapse(row) is { } collapse) {
-                    row = collapse.MaxRow;
                 }
             }
             
