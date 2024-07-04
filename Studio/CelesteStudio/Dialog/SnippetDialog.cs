@@ -37,7 +37,7 @@ public class SnippetDialog : Dialog<bool> {
                 var conflicts = allSnippets.Where(other => other.Shortcut == e.KeyData).ToArray();
                 if (conflicts.Length != 0) {
                     var sb = new StringBuilder();
-                    sb.AppendLine($"The following other snippets already use this shortcut ({e.KeyData.FormatShortcut(" + ")}):");
+                    sb.AppendLine($"The following other snippets already use this shortcut ({e.KeyData.HotkeyToString(" + ")}):");
                     foreach (var conflict in conflicts) {
                         sb.AppendLine($" - \"{conflict.Text}\"");
                     }
@@ -73,8 +73,8 @@ public class SnippetDialog : Dialog<bool> {
                 ? SystemFonts.Bold().WithFontStyle(FontStyle.Bold | FontStyle.Italic)
                 : SystemFonts.Bold();
             string text = editing
-                ? $"{snippet.Shortcut.FormatShortcut(" + ")}..."
-                : snippet.Shortcut.FormatShortcut(" + ");
+                ? $"{snippet.Shortcut.HotkeyToString(" + ")}..."
+                : snippet.Shortcut.HotkeyToString(" + ");
             
             graphics.DrawText(font, SystemColors.ControlText, x, y, text);
         }
@@ -84,7 +84,7 @@ public class SnippetDialog : Dialog<bool> {
     
     public SnippetDialog() {
         // Create a copy, to not modify the list in Settings before confirming
-        snippets = Settings.Snippets.Select(snippet => snippet.Clone()).ToList();
+        snippets = Settings.Instance.Snippets.Select(snippet => snippet.Clone()).ToList();
         
         var grid = new GridView<Snippet> { DataStore = snippets };
         grid.Columns.Add(new GridColumn {
@@ -147,8 +147,8 @@ public class SnippetDialog : Dialog<bool> {
         if (!dialog.ShowModal())
             return;
         
-        Settings.Snippets = dialog.snippets;
-        Settings.Instance.OnChanged();
+        Settings.Instance.Snippets = dialog.snippets;
+        Settings.OnChanged();
         Settings.Save();
     }
 }

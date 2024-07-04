@@ -12,6 +12,7 @@
 
     <ItemGroup>
         <PackageReference Include="Eto.Forms" Version="2.8.3"/>
+        <PackageReference Include="Samboy063.Tomlet" Version="5.3.1" />
     </ItemGroup>
 
     <ItemGroup>

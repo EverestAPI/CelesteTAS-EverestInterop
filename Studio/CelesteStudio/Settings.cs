@@ -2,15 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using CelesteStudio.Editing;
 using CelesteStudio.Util;
 using Eto;
 using Eto.Drawing;
 using Eto.Forms;
-using Tommy;
-using Tommy.Serializer;
+using Tomlet;
+using Tomlet.Attributes;
+using Tomlet.Exceptions;
+using Tomlet.Models;
 
 namespace CelesteStudio;
 
@@ -19,31 +19,32 @@ public enum ThemeType {
     Dark,
 }
 
-[TommyTableName("Settings")]
 public sealed class Settings {
     public static string BaseConfigPath => Path.Combine(EtoEnvironment.GetFolderPath(EtoSpecialFolder.ApplicationSettings), "CelesteStudio"); 
     public static string SettingsPath => Path.Combine(BaseConfigPath, "Settings.toml");
-    public static string SnippetsPath => Path.Combine(BaseConfigPath, "Snippets.toml");
     
     public static Settings Instance { get; private set; } = new();
-    public static List<Snippet> Snippets = [];
     
     public static event Action? Changed;
-    public void OnChanged() => Changed?.Invoke();
+    public static void OnChanged() => Changed?.Invoke();
     
     public static event Action? ThemeChanged;
-    private void OnThemeChanged() => ThemeChanged?.Invoke();
+    private static void OnThemeChanged() => ThemeChanged?.Invoke();
     
     public static event Action FontChanged = FontManager.OnFontChanged;
-    public void OnFontChanged() => FontChanged.Invoke();
+    public static void OnFontChanged() => FontChanged.Invoke();
     
-    [TommyIgnore]
+    [TomlPrecedingComment("A list of all available keys can be found here: https://github.com/picoe/Eto/blob/develop/src/Eto/Forms/Key.cs")]
+    public List<Snippet> Snippets { get; set; } = [];
+    
+    [TomlNonSerialized]
     public Theme Theme => ThemeType switch {
         ThemeType.Light => Theme.Light,    
         ThemeType.Dark => Theme.Dark,
         _ => throw new UnreachableException(),
     };
     
+    [TomlNonSerialized]
     private ThemeType themeType = ThemeType.Light;
     public ThemeType ThemeType {
         get => themeType;
@@ -53,26 +54,8 @@ public sealed class Settings {
         }
     }
     
-    private int LastX { get; set; } = 0;
-    private int LastY { get; set; } = 0;
-    private int LastW { get; set; } = 400;
-    private int LastH { get; set; } = 800;
-    [TommyIgnore]
-    public Point LastLocation {
-        get => new(LastX, LastY);
-        set {
-            LastX = value.X;
-            LastY = value.Y;
-        }
-    }
-    [TommyIgnore]
-    public Size LastSize {
-        get => new(LastW, LastH);
-        set {
-            LastW = value.Width;
-            LastH = value.Height;
-        }
-    }
+    public Point LastLocation { get; set; } = Point.Empty;
+    public Size LastSize { get; set; } = new(400, 800);
     
     public string LastSaveDirectory { get; set; } = string.Empty;
     
@@ -91,7 +74,7 @@ public sealed class Settings {
     public float EditorFontSize { get; set; } = 12.0f;
     public float StatusFontSize { get; set; } = 9.0f;
     // Zoom is temporary, so not saved
-    [TommyIgnore]
+    [TomlNonSerialized]
     public float FontZoom { get; set; } = 1.0f;
     
     private const int MaxRecentFiles = 20;
@@ -117,37 +100,50 @@ public sealed class Settings {
     }
     
     public static void Load() {
+        // Register mappings
+        TomletMain.RegisterMapper(
+            point => new TomlTable { Entries = { { "X", new TomlLong(point.X) }, { "Y", new TomlLong(point.Y) } } },
+            tomlValue => {
+                if (tomlValue is not TomlTable table)
+                    throw new TomlTypeMismatchException(typeof(TomlTable), tomlValue.GetType(), typeof(Point));
+                if (table.GetValue("X") is not TomlLong x)
+                    throw new TomlTypeMismatchException(typeof(TomlLong), table.GetValue("X").GetType(), typeof(int));
+                if (table.GetValue("Y") is not TomlLong y)
+                    throw new TomlTypeMismatchException(typeof(TomlLong), table.GetValue("Y").GetType(), typeof(int));
+                return new Point((int)x.Value, (int)y.Value);
+            });
+        TomletMain.RegisterMapper(
+            size => new TomlTable { Entries = { { "W", new TomlLong(size.Width) }, { "H", new TomlLong(size.Height) } } },
+            tomlValue => {
+                if (tomlValue is not TomlTable table)
+                    throw new TomlTypeMismatchException(typeof(TomlTable), tomlValue.GetType(), typeof(Point));
+                if (table.GetValue("W") is not TomlLong w)
+                    throw new TomlTypeMismatchException(typeof(TomlLong), table.GetValue("W").GetType(), typeof(int));
+                if (table.GetValue("H") is not TomlLong h)
+                    throw new TomlTypeMismatchException(typeof(TomlLong), table.GetValue("H").GetType(), typeof(int));
+                return new Size((int)w.Value, (int)h.Value);
+            });
+        TomletMain.RegisterMapper(
+            snippet => new TomlTable { Entries = {
+                { "Enabled", TomlBoolean.ValueOf(snippet!.Enabled) }, 
+                { "Hotkey", new TomlString(snippet.Shortcut.HotkeyToString("+")) }, 
+                { "Insert", new TomlString(snippet.Text) }
+            } },
+            tomlValue => {
+                if (tomlValue is not TomlTable table)
+                    throw new TomlTypeMismatchException(typeof(TomlTable), tomlValue.GetType(), typeof(Point));
+                if (table.GetValue("Enabled") is not TomlBoolean enabled)
+                    throw new TomlTypeMismatchException(typeof(TomlBoolean), table.GetValue("Enabled").GetType(), typeof(bool));
+                if (table.GetValue("Hotkey") is not TomlString hotkey)
+                    throw new TomlTypeMismatchException(typeof(TomlString), table.GetValue("Hotkey").GetType(), typeof(Keys));
+                if (table.GetValue("Insert") is not TomlString insert)
+                    throw new TomlTypeMismatchException(typeof(TomlString), table.GetValue("Insert").GetType(), typeof(string));
+                return new Snippet { Enabled = enabled.Value, Shortcut = hotkey.Value.HotkeyFromString("+"), Text = insert.Value };
+            });
+        
         if (File.Exists(SettingsPath)) {
             try {
-                Instance = TommySerializer.FromTomlFile<Settings>(SettingsPath);
-                
-                var snippetTable = TommySerializer.ReadFromDisk(SnippetsPath)["Snippets"];
-                var disabledSnippetTableData = TommySerializer.ReadFromDisk(SnippetsPath)["DisabledSnippets"];
-                if (snippetTable.Keys.Any() || disabledSnippetTableData.Keys.Any()) {
-                    Snippets.Clear();
-                    foreach (var key in snippetTable.Keys) {
-                        var value = snippetTable[key];
-                        if (!value.IsString)
-                            continue;
-                        
-                        var shortcut = key.Split('+')
-                            .Select(keyName => Enum.TryParse<Keys>(keyName, out var k) ? k : Keys.None)
-                            .Aggregate((a, b) => a | b);
-                        
-                        Snippets.Add(new Snippet { Shortcut = shortcut, Text = value, Enabled = true });
-                    }
-                    foreach (var key in disabledSnippetTableData.Keys) {
-                        var value = disabledSnippetTableData[key];
-                        if (!value.IsString)
-                            continue;
-                        
-                        var shortcut = key.Split('+')
-                            .Select(keyName => Enum.TryParse<Keys>(keyName, out var k) ? k : Keys.None)
-                            .Aggregate((a, b) => a | b);
-                        
-                        Snippets.Add(new Snippet { Shortcut = shortcut, Text = value, Enabled = false });
-                    }
-                }
+                Instance = TomletMain.To<Settings>(TomlParser.ParseFile(SettingsPath), new TomlSerializerOptions());
             } catch (Exception ex) {
                 Console.Error.WriteLine($"Failed to read settings file from path '{SettingsPath}'");
                 Console.Error.WriteLine(ex);
@@ -164,32 +160,8 @@ public sealed class Settings {
             var dir = Path.GetDirectoryName(SettingsPath)!;
             if (!Directory.Exists(dir))
                 Directory.CreateDirectory(dir);
-
-            TommySerializer.ToTomlFile([Instance], SettingsPath);
             
-            var snippetTable = new TomlTable {
-                Comment = """
-                          Snippets are in the format of shortcut = inserted text.
-                          A list of all available keys can be found here: https://github.com/picoe/Eto/blob/develop/src/Eto/Forms/Key.cs
-                          Example configuration:
-                          
-                          [Snippets]
-                          "Control+Alt+X" = "Set, Player.X, "
-                          """
-            };
-            var snippetTableData = new TomlTable();
-            var disabledSnippetTableData = new TomlTable();
-            foreach (var snippet in Snippets) {
-                var key = snippet.Shortcut.FormatShortcut("+");
-                if (snippet.Enabled) {
-                    snippetTableData[key] = new TomlString { Value = snippet.Text };
-                } else {
-                    disabledSnippetTableData[key] = new TomlString { Value = snippet.Text };
-                }
-            }
-            snippetTable["Snippets"] = snippetTableData;
-            snippetTable["DisabledSnippets"] = disabledSnippetTableData;
-            TommySerializer.WriteToDisk(snippetTable, SnippetsPath);
+            File.WriteAllText(SettingsPath, TomletMain.DocumentFrom(Instance).SerializedValue);
         } catch (Exception ex) {
             Console.Error.WriteLine($"Failed to write settings file to path '{SettingsPath}'");
             Console.Error.WriteLine(ex);

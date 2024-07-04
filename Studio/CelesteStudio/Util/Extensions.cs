@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Text;
 using CelesteStudio.Editing;
 using Eto.Drawing;
 using Eto.Forms;
@@ -23,19 +24,38 @@ public static class Extensions
         return self;
     }
     
-    public static string FormatShortcut(this Keys shortcut, string delimiter) {
+    public static string HotkeyToString(this Keys hotkey, string separator) {
         var keys = new List<Keys>();
-        if (shortcut.HasFlag(Keys.Application))
+        if (hotkey.HasFlag(Keys.Application))
             keys.Add(Keys.Application);
-        if (shortcut.HasFlag(Keys.Control))
+        if (hotkey.HasFlag(Keys.Control))
             keys.Add(Keys.Control);
-        if (shortcut.HasFlag(Keys.Alt))
+        if (hotkey.HasFlag(Keys.Alt))
             keys.Add(Keys.Alt);
-        if (shortcut.HasFlag(Keys.Shift))
+        if (hotkey.HasFlag(Keys.Shift))
             keys.Add(Keys.Shift);
-        keys.Add(shortcut & Keys.KeyMask);
+        keys.Add(hotkey & Keys.KeyMask);
         
-        return string.Join(delimiter, keys);
+        return string.Join(separator, keys);
+    }
+    
+    public static Keys HotkeyFromString(this string hotkeyString, string separator) {
+        var keys = hotkeyString
+                .Split(separator)
+                .Select(Enum.Parse<Keys>)
+                .ToArray();
+        
+        var hotkey = keys.First(key => (key & Keys.KeyMask) != Keys.None);
+        if (keys.Any(key => key == Keys.Application))
+            hotkey |= Keys.Application;
+        if (keys.Any(key => key == Keys.Control))
+            hotkey |= Keys.Control;
+        if (keys.Any(key => key == Keys.Alt))
+            hotkey |= Keys.Alt;
+        if (keys.Any(key => key == Keys.Shift))
+            hotkey |= Keys.Shift;
+        
+        return hotkey;
     }
     
     public static int IndexOf<T>(this IEnumerable<T> obj, T value) => obj.IndexOf(value, EqualityComparer<T>.Default);

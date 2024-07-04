@@ -34,7 +34,7 @@ public class MenuUtils {
             bool value = (bool)property.GetValue(Settings.Instance)!;
             property.SetValue(Settings.Instance, !value);
             
-            Settings.Instance.OnChanged();
+            Settings.OnChanged();
             Settings.Save();
         };
         
@@ -56,7 +56,7 @@ public class MenuUtils {
             T value = (T)property.GetValue(Settings.Instance)!;
             property.SetValue(Settings.Instance, NumberInputDialog<T>.Show(text, value, minValue, maxValue, step));
             
-            Settings.Instance.OnChanged();
+            Settings.OnChanged();
             Settings.Save();
         };
         
@@ -86,7 +86,7 @@ public class MenuUtils {
             item.Click += (_, _) => {
                 property.SetValue(Settings.Instance, value);
                 
-                Settings.Instance.OnChanged();
+                Settings.OnChanged();
                 Settings.Save();
             };
         }

@@ -209,7 +209,7 @@ public class FontDialog : Dialog<bool> {
         Settings.Instance.FontFamily = dialog.fontFamily;
         Settings.Instance.EditorFontSize = (float)dialog.editorFontSize.Value;
         Settings.Instance.StatusFontSize = (float)dialog.statusFontSize.Value;
-        Settings.Instance.OnFontChanged();
+        Settings.OnFontChanged();
         Settings.Save();
     }
 }

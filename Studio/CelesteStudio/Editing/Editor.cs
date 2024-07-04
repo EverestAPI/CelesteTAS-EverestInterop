@@ -740,7 +740,7 @@ public sealed class Editor : Drawable {
                     }
                     
                     // Try to paste snippets
-                    foreach (var snippet in Settings.Snippets) {
+                    foreach (var snippet in Settings.Instance.Snippets) {
                         if (!snippet.Enabled || snippet.Shortcut != e.KeyData) {
                             continue;
                         }
@@ -1982,7 +1982,7 @@ public sealed class Editor : Drawable {
             } else if (e.Delta.Height < 0.0f) {
                 Settings.Instance.FontZoom *= 1.0f - scrollSpeed;
             }
-            Settings.Instance.OnFontChanged();
+            Settings.OnFontChanged();
             
             e.Handled = true;
             return;
