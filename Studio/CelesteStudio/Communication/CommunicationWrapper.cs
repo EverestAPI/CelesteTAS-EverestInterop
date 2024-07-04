@@ -75,9 +75,13 @@ public class CommunicationWrapper {
 
     public void Play() {
     }
-
-    public bool Connected => StudioCommunicationBase.Initialized;
-
+    
+    // We have to do this ugly thing, because there might be a connection, but no studio info packet yet.
+    // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+#pragma warning disable CS8073
+    public bool Connected => StudioCommunicationBase.Initialized && State != null;
+#pragma warning restore CS8073
+    
     public int CurrentLine => Connected ? State.CurrentLine : -1;
     public string CurrentLineSuffix => Connected ? State.CurrentLineSuffix : string.Empty;
     public int CurrentFrameInTas => Connected ? State.CurrentFrameInTas : -1;
