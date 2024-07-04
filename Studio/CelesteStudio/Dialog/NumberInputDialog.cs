@@ -1,4 +1,6 @@
+using System;
 using System.Numerics;
+using Eto.Drawing;
 using Eto.Forms;
 
 namespace CelesteStudio.Dialog;
@@ -33,9 +35,10 @@ public class NumberInputDialog<T> : Dialog<T> where T : INumber<T> {
         NegativeButtons.Add(AbortButton);
         
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
+        Shown += (_, _) => Location = Studio.Instance.Location + new Point((Studio.Instance.Width - Width) / 2, (Studio.Instance.Height - Height) / 2);
     }
     
-    public static T Show<T>(string title, T input, T minValue, T maxValue, T step) where T : INumber<T> {
+    public static T Show(string title, T input, T minValue, T maxValue, T step) {
         return new NumberInputDialog<T>(title, input, minValue, maxValue, step).ShowModal();
     }
 }

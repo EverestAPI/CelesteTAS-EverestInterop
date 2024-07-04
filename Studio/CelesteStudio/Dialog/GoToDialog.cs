@@ -1,5 +1,6 @@
 using System.Linq;
 using CelesteStudio.Editing;
+using Eto.Drawing;
 using Eto.Forms;
 
 namespace CelesteStudio.Dialog;
@@ -67,6 +68,7 @@ public class GoToDialog : Dialog<int> {
         NegativeButtons.Add(AbortButton);
         
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
+        Shown += (_, _) => Location = Studio.Instance.Location + new Point((Studio.Instance.Width - Width) / 2, (Studio.Instance.Height - Height) / 2);
     }
     
     public static int Show(Document document) => new GoToDialog(document).ShowModal();

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CelesteStudio.Editing;
+using Eto.Drawing;
 using Eto.Forms;
 
 namespace CelesteStudio.Dialog;
@@ -49,6 +50,7 @@ public class FindDialog : Eto.Forms.Dialog {
         DefaultButton = nextButton;
 
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
+        Shown += (_, _) => Location = Studio.Instance.Location + new Point((Studio.Instance.Width - Width) / 2, (Studio.Instance.Height - Height) / 2);
     }
     
     private void SelectNext() {

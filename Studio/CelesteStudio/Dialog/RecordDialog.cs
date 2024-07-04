@@ -1,4 +1,5 @@
 using System;
+using Eto.Drawing;
 using Eto.Forms;
 
 namespace CelesteStudio.Dialog;
@@ -26,6 +27,7 @@ public class RecordDialog : Dialog<bool> {
         NegativeButtons.Add(AbortButton);
         
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
+        Shown += (_, _) => Location = Studio.Instance.Location + new Point((Studio.Instance.Width - Width) / 2, (Studio.Instance.Height - Height) / 2);
     }
     
     public static void Show() {

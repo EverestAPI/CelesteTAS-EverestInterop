@@ -113,6 +113,7 @@ public class FontDialog : Dialog<bool> {
         }
         
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
+        Shown += (_, _) => Location = Studio.Instance.Location + new Point((Studio.Instance.Width - Width) / 2, (Studio.Instance.Height - Height) / 2);
     }
     
     private Control CreateDialogContent() {
