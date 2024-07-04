@@ -24,6 +24,8 @@ public class RecordDialog : Dialog<bool> {
         
         PositiveButtons.Add(DefaultButton);
         NegativeButtons.Add(AbortButton);
+        
+        Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
     }
     
     public static void Show() {

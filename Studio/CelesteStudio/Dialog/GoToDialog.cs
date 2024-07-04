@@ -63,6 +63,8 @@ public class GoToDialog : Dialog<int> {
         
         PositiveButtons.Add(DefaultButton);
         NegativeButtons.Add(AbortButton);
+        
+        Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
     }
     
     public static int Show(Document document) => new GoToDialog(document).ShowModal();

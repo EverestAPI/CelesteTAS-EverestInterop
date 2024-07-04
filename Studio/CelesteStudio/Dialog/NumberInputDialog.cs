@@ -31,6 +31,8 @@ public class NumberInputDialog<T> : Dialog<T> where T : INumber<T> {
         
         PositiveButtons.Add(DefaultButton);
         NegativeButtons.Add(AbortButton);
+        
+        Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
     }
     
     public static T Show<T>(string title, T input, T minValue, T maxValue, T step) where T : INumber<T> {

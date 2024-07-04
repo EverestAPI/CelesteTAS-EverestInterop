@@ -7,7 +7,7 @@ public static class Program {
     [STAThread]
     public static void Main(string[] args) {
         try {
-            new Application(Eto.Platforms.Gtk).Run(new Studio());
+            new Application(Eto.Platforms.Gtk).Run(new Studio(_ => {}));
         } catch (Exception ex) {
             Console.Error.WriteLine(ex);
             ErrorLog.Write(ex);

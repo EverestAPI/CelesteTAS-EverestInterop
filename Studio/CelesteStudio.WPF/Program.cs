@@ -11,11 +11,14 @@ public static class Program {
     public static void Main(string[] args) {
         try {
             var app = new Application(Eto.Platforms.Wpf);
-            var studio = new Studio();
+            var studio = new Studio(window => {
+                var nativeWindow = ((IWpfWindow)window.Handler).Control;
+                DarkNet.Instance.SetWindowThemeWpf(nativeWindow, Settings.Instance.ThemeType == ThemeType.Dark ? Theme.Dark : Theme.Light);
+            });
             
             DarkNet.Instance.SetCurrentProcessTheme(Theme.Dark);
             
-            var window = ((FormHandler)studio.Handler).Control;
+            var window = ((IWpfWindow)studio.Handler).Control;
             studio.PreLoad += (_, _) => DarkNet.Instance.SetWindowThemeWpf(window, Settings.Instance.ThemeType == ThemeType.Dark ? Theme.Dark : Theme.Light);
             Settings.ThemeChanged += () => DarkNet.Instance.SetWindowThemeWpf(window, Settings.Instance.ThemeType == ThemeType.Dark ? Theme.Dark : Theme.Light);
             

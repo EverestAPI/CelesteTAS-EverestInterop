@@ -111,6 +111,8 @@ public class FontDialog : Dialog<bool> {
                 Application.Instance.Invoke(() => Content = CreateDialogContent());
             });
         }
+        
+        Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
     }
     
     private Control CreateDialogContent() {

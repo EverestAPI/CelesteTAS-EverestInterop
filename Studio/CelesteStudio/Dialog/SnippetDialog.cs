@@ -55,6 +55,8 @@ public class SnippetDialog : Dialog<bool> {
         
         PositiveButtons.Add(DefaultButton);
         NegativeButtons.Add(AbortButton);
+        
+        Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
     }
     
     private void GenerateListEntries(ICollection<StackLayoutItem> items) {
@@ -79,6 +81,7 @@ public class SnippetDialog : Dialog<bool> {
                     },
                     Icon = Studio.Instance.Icon,
                 };
+                inputDialog.Load += (_, _) => Studio.Instance.WindowCreationCallback(inputDialog);
                 inputDialog.KeyDown += (_, e) => {
                     // Don't allow binding modifiers by themselves
                     if (e.Key is Keys.LeftShift or Keys.RightShift

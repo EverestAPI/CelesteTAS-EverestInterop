@@ -40,6 +40,9 @@ public sealed class Studio : Form {
             return 0;
         }
     }
+    
+    // Platform-specific callback to handle new windows
+    public readonly Action<Window> WindowCreationCallback;
 
     public readonly Editor Editor;
     private readonly Scrollable EditorScrollable;
@@ -49,10 +52,12 @@ public sealed class Studio : Form {
         ? $"<Unsaved> - Studio v{Version.ToString(3)}" 
         : $"{Editor.Document.FileName}{(Editor.Document.Dirty ? "*" : string.Empty)} - Studio v{Version.ToString(3)}   {Editor.Document.FilePath}";
     
-    public Studio() {
+    public Studio(Action<Window> windowCreationCallback) {
         Instance = this;
         Version = Assembly.GetExecutingAssembly().GetName().Version!;
-        Icon = Icon.FromResource("Icon.ico"); 
+        Icon = Icon.FromResource("Icon.ico");
+        
+        WindowCreationCallback = windowCreationCallback;
         
         Settings.Load();
         

@@ -47,6 +47,8 @@ public class FindDialog : Eto.Forms.Dialog {
         Icon = Studio.Instance.Icon;
 
         DefaultButton = nextButton;
+
+        Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
     }
     
     private void SelectNext() {
