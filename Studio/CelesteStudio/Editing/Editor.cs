@@ -394,7 +394,7 @@ public sealed class Editor : Drawable {
                         // Just jump to the end of the insert
                         int newLines = quickEdit.ActualText.Count(c => c == Document.NewLine);
                         
-                        Document.Caret.Row = Math.Max(Document.Lines.Count - 1, Document.Caret.Row + newLines);
+                        Document.Caret.Row = Math.Min(Document.Lines.Count - 1, Document.Caret.Row + newLines);
                         Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
                     }
                     
