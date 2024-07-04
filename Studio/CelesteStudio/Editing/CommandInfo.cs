@@ -1,13 +1,23 @@
 using System;
+using System.IO;
+using System.Linq;
+using CelesteStudio.Util;
 
 namespace CelesteStudio.Editing;
 
 public struct CommandInfo() {
+    public struct AutoCompleteEntry {
+        public string Arg;
+        public bool Done;
+        
+        public static implicit operator AutoCompleteEntry(string arg) => new() { Arg = arg, Done = true };
+    }
+    
     public string Name;
     public string Description;
     public string Insert;
     
-    public Func<string[], string[]>[] AutoCompleteEntries = [];
+    public Func<string[], AutoCompleteEntry[]>[] AutoCompleteEntries = [];
     
     // nulls are visual separators in the insert menu
     // [] are "quick-edit" positions, with the format [index;text]. The text part is optional
@@ -16,7 +26,16 @@ public struct CommandInfo() {
         new CommandInfo { Name = "Unsafe", Insert = "Unsafe", Description = "The TAS will normally only run inside levels.\nConsole load normally forces the TAS to load the debug save.\nUnsafe allows the TAS to run anywhere, on any save."},
         new CommandInfo { Name = "Safe", Insert = "Safe", Description = "The TAS will only run inside levels.\nConsole load forces the TAS to load the debug save."},
         null,
-        new CommandInfo { Name = "Read", Insert = "Read, [0;File Name], [1;Starting Line], [2;(Ending Line)]", Description = "Will read inputs from the specified file." },
+        new CommandInfo {
+            Name = "Read", 
+            Description = "Will read inputs from the specified file.",
+            Insert = "Read, [0;File Name], [1;Starting Label], [2;(Ending Label)]",
+            AutoCompleteEntries = [
+                args => GetFilePathEntries(args[0]),
+                args => GetLabelEntries(args[0]),
+                args => GetLabelEntries(args[0], args[1]),
+            ]
+        },
         new CommandInfo { Name = "Play", Insert = "Play, [0;Starting Line]", Description = "A simplified Read command which skips to the starting line in the current file.\nUseful for splitting a large level into larger chunks."},
         null,
         new CommandInfo { Name = "Repeat", Insert = $"Repeat, [0;2]{Document.NewLine}    [1]{Document.NewLine}EndRepeat", Description = "Repeat the inputs between \"Repeat\" and \"EndRepeat\" several times, nesting is not supported."  },
@@ -90,4 +109,64 @@ public struct CommandInfo() {
         null,
         new CommandInfo { Name = "ExitGame", Insert = "ExitGame", Description = "Used to force the game when recording video with .kkapture to finish recording." },
     ];
+    
+    private static AutoCompleteEntry[] GetFilePathEntries(string arg) {
+        var documentPath = Studio.Instance.Editor.Document.FilePath;
+        if (documentPath == Document.TemporaryFile) {
+            return [];
+        }
+        
+        if (Path.GetDirectoryName(documentPath) is not { } documentDir) {
+            return [];
+        }
+        var subDir = Path.GetDirectoryName(arg) ?? string.Empty;
+        
+        var dir = Path.Combine(documentDir, subDir);
+        if (!Directory.Exists(dir)) {
+            return [];
+        }
+        
+        return ((AutoCompleteEntry[])[new AutoCompleteEntry { Arg = Path.Combine(subDir, "../").Replace('\\', '/'), Done = false }])
+            .Concat(Directory.GetDirectories(dir)
+                .Where(d => !Path.GetFileName(d).StartsWith('.'))
+                .Select(d => new AutoCompleteEntry {Arg = d[(documentDir.Length + "/".Length)..].Replace('\\', '/') + "/", Done = false})
+                .OrderBy(entry => entry.Arg))
+            .Concat(Directory.GetFiles(dir)
+                .Where(f => !Path.GetFileName(f).StartsWith('.') && Path.GetExtension(f) == ".tas")
+                .Select(f => new AutoCompleteEntry { Arg = f[(documentDir.Length + "/".Length)..^".tas".Length].Replace('\\', '/'), Done = true })
+                .OrderBy(entry => entry.Arg))
+            .ToArray();
+    }
+    
+    private static AutoCompleteEntry[] GetLabelEntries(string subPath, string after = "") {
+        var documentPath = Studio.Instance.Editor.Document.FilePath;
+        if (documentPath == Document.TemporaryFile) {
+            return [];
+        }
+        if (Path.GetDirectoryName(documentPath) is not { } documentDir) {
+            return [];
+        }
+        
+        var fullPath = Path.Combine(documentDir, $"{subPath}.tas");
+        if (!File.Exists(fullPath)) {
+            return [];
+        }
+        
+        var labels = File.ReadAllText(fullPath)
+            .ReplaceLineEndings(Document.NewLine.ToString())
+            .SplitDocumentLines()
+            .Where(line => line.Length >= 2 && line[0] == '#' && char.IsLetter(line[1]))
+            .Select(line => new AutoCompleteEntry { Arg = line[1..], Done = true }) 
+            .ToArray();
+        
+        if (after != string.Empty) {
+            for (int i = 0; i < labels.Length - 1; i++) {
+                if (labels[i].Arg == after) {
+                    return labels[(i + 1)..];
+                }
+            }
+        }
+        
+        return labels;
+    }
 }
