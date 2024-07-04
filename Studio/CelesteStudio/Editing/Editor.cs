@@ -992,6 +992,10 @@ public sealed class Editor : Drawable {
     }
     
     protected override void OnTextInput(TextInputEventArgs e) {
+        if (e.Text.Length == 0) {
+            return;
+        }
+        
         var oldCaret = Document.Caret;
         
         Document.PushUndoState();
