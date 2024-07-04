@@ -61,7 +61,9 @@ public class GameInfoPanel : Panel {
         
         void UpdateGameInfo() {
             int oldLineCount = label.Text.Split(["\n", "\r", "\n\r", Environment.NewLine], StringSplitOptions.None).Length;
-            label.Text = Studio.CommunicationWrapper.Connected ? Studio.CommunicationWrapper.State.GameInfo.Trim() : DisconnectedText;
+            label.Text = Studio.CommunicationWrapper.Connected && Studio.CommunicationWrapper.State.GameInfo is { } gameInfo 
+                ? gameInfo.Trim() 
+                : DisconnectedText;
             int newLineCount = label.Text.Split(["\n", "\r", "\n\r", Environment.NewLine], StringSplitOptions.None).Length;
             
             if (oldLineCount != newLineCount) {
