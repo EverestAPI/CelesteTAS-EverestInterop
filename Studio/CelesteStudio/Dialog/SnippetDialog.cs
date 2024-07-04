@@ -32,11 +32,12 @@ public class SnippetDialog : Dialog<bool> {
         Content = new StackLayout {
             Padding = 10,
             Spacing = 10,
+            VerticalContentAlignment = VerticalAlignment.Center,
             Items = {
                 new StackLayout {
                     Orientation = Orientation.Horizontal,
                     Spacing = 10,
-                    Items = { addButton }
+                    Items = { addButton, new  LinkButton { Text = "Open documentation (TODO)" } }
                 },
                 new Scrollable {
                     MinimumSize = new Size(300, 300),
@@ -69,7 +70,7 @@ public class SnippetDialog : Dialog<bool> {
             enabledCheckBox.CheckedChanged += (_, _) => snippet.Enabled = enabledCheckBox.Checked.Value;
             
             bool ignoreFocusLoss = false; // Used to prevent the message box from causing an unfocus
-            var hotkeyButton = new Button {Text = snippet.Hotkey.ToShortcutString(), Font = SystemFonts.Bold(), Width = 150};
+            var hotkeyButton = new Button {Text = snippet.Hotkey.ToShortcutString(), ToolTip = "Use the right mouse button to clear a hotkey!", Font = SystemFonts.Bold(), Width = 150};
             hotkeyButton.GotFocus += (_, _) => {
                 hotkeyButton.Text = "Press a hotkey...";
                 hotkeyButton.Font = SystemFonts.Bold().WithFontStyle(FontStyle.Italic);
@@ -109,6 +110,18 @@ public class SnippetDialog : Dialog<bool> {
                 // Set again in case we already lost focus through the message box
                 hotkeyButton.Text = snippet.Hotkey.ToShortcutString();
                 hotkeyButton.Font = SystemFonts.Bold();
+            };
+            hotkeyButton.MouseDown += (_, e) => {
+                if (e.Buttons.HasFlag(MouseButtons.Alternate)) {
+                    snippet.Hotkey = Keys.None;
+                    unfocuser.Focus();
+                    
+                    // Set again in case we already lost focus through the message box
+                    hotkeyButton.Text = snippet.Hotkey.ToShortcutString();
+                    hotkeyButton.Font = SystemFonts.Bold();
+                    
+                    e.Handled = true;
+                }
             };
             
             var shortcutTextBox = new TextBox();
