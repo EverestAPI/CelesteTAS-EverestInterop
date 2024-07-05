@@ -1082,7 +1082,11 @@ public sealed class Editor : Drawable {
             // Handle dash-only/move-only/custom bindings
             else if (typedAction is Actions.DashOnly or Actions.MoveOnly or Actions.PressedKey) {
                 actionLine.Actions = actionLine.Actions.ToggleAction(typedAction, Settings.Instance.AutoRemoveMutuallyExclusiveActions);
-                Document.Caret.Col = desiredVisualCol = GetColumnOfAction(actionLine, typedAction);
+                
+                if (actionLine.Actions.HasFlag(typedAction))
+                    Document.Caret.Col = desiredVisualCol = GetColumnOfAction(actionLine, typedAction);
+                else
+                    Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
             }
             // Handle regular inputs
             else if (typedAction != Actions.None) {
@@ -2415,7 +2419,7 @@ public sealed class Editor : Drawable {
         float carY = Font.LineHeight() * caretPos.Row;
         
         // Highlight caret line
-        e.Graphics.FillRectangle(Settings.Instance.Theme.CurrentLine, 0.0f, carY, scrollable.Width, Font.LineHeight());
+        e.Graphics.FillRectangle(Settings.Instance.Theme.CurrentLine, scrollablePosition.X, carY, scrollable.Width, Font.LineHeight());
         
         // Draw caret
         if (HasFocus) {
