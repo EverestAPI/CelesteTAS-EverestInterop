@@ -228,6 +228,7 @@ public sealed class Studio : Form {
                     MenuUtils.CreateSettingToggle("&Auto Save File", nameof(Settings.AutoSave)),
                     MenuUtils.CreateSettingToggle("Auto Remove Mutually Exclusive Actions", nameof(Settings.AutoRemoveMutuallyExclusiveActions)),
                     MenuUtils.CreateSettingToggle("Always on Top", nameof(Settings.AlwaysOnTop)),
+                    MenuUtils.CreateSettingEnum<CaretInsertPosition>("Caret Insert Position", nameof(Settings.CaretInsertPosition), ["After Inserted Text", "Keep at Previous Position"]),
                 }},
                 new SubMenuItem { Text = "&View", Items = {
                     MenuUtils.CreateSettingToggle("Show Game Info", nameof(Settings.ShowGameInfo)),

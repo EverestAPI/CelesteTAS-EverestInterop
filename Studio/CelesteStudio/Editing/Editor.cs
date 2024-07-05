@@ -186,7 +186,7 @@ public sealed class Editor : Drawable {
         MenuItem CreateCommandInsert(CommandInfo info) {
             var cmd = new Command { Shortcut = Keys.None };
             cmd.Executed += (_, _) => {
-                Document.InsertLineAbove(info.Insert);
+                InsertLine(info.Insert);
                 // TODO: Support quick-edits here
                 Recalc();
             };
@@ -1546,37 +1546,52 @@ public sealed class Editor : Drawable {
         Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length); 
     }
     
-    private void OnInsertRoomName() => Document.InsertLineAbove($"#lvl_{Studio.CommunicationWrapper.LevelName}");
+    private void OnInsertRoomName() => InsertLine($"#lvl_{Studio.CommunicationWrapper.LevelName}");
 
-    private void OnInsertTime() => Document.InsertLineAbove($"#{Studio.CommunicationWrapper.ChapterTime}");
+    private void OnInsertTime() => InsertLine($"#{Studio.CommunicationWrapper.ChapterTime}");
     
     private void OnInsertModInfo() {
         if (Studio.CommunicationWrapper.Server.GetDataFromGame(GameDataType.ModInfo) is { } modInfo)
-            Document.InsertLineAbove(modInfo);
+            InsertLine(modInfo);
     }
     
     private void OnInsertConsoleLoadCommand() {
         if (Studio.CommunicationWrapper.Server.GetDataFromGame(GameDataType.ConsoleCommand, false) is { } command)
-            Document.InsertLineAbove(command);
+            InsertLine(command);
     }
     
     private void OnInsertSimpleConsoleLoadCommand() {
         if (Studio.CommunicationWrapper.Server.GetDataFromGame(GameDataType.ConsoleCommand, true) is { } command)
-            Document.InsertLineAbove(command);
+            InsertLine(command);
+    }
+    
+    private void InsertLine(string text) {
+        int prevCol = Document.Caret.Col;
+        Document.InsertLineAbove(text);
+        
+        if (Settings.Instance.CaretInsertPosition == CaretInsertPosition.AfterInsert) {
+            Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+        } else if (Settings.Instance.CaretInsertPosition == CaretInsertPosition.PreviousPosition) {
+            int newLines = text.Count(c => c == Document.NewLine) + 1;
+            Document.Caret.Row += newLines;
+            Document.Caret.Col = desiredVisualCol = prevCol;
+        }
     }
     
     private void InsertOrRemoveText(Regex regex, string text) {
         // Check current line
         if (regex.IsMatch(Document.Lines[Document.Caret.Row])) {
             Document.RemoveLine(Document.Caret.Row);
+            Document.Caret.Row--;   
         }
         // Check line above as well
         else if (Document.Caret.Row > 0 && regex.IsMatch(Document.Lines[Document.Caret.Row - 1])) {
             Document.RemoveLine(Document.Caret.Row - 1);
+            Document.Caret.Row--;
         }
         // Otherwise insert new breakpoint
         else {
-            Document.InsertLineAbove(text);
+            InsertLine(text);
         }
         
         ScrollCaretIntoView();
@@ -1594,6 +1609,9 @@ public sealed class Editor : Drawable {
             changed = true;
             
             Document.RemoveLine(row, raiseEvents: false);
+            
+            if (Document.Caret.Row >= row)
+                Document.Caret.Row--;
         }
         
         if (changed)

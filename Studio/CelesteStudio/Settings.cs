@@ -14,10 +14,8 @@ using Tomlet.Models;
 
 namespace CelesteStudio;
 
-public enum ThemeType {
-    Light,
-    Dark,
-}
+public enum ThemeType { Light, Dark }
+public enum CaretInsertPosition { AfterInsert, PreviousPosition }
 
 public sealed class Settings {
     public static string BaseConfigPath => Path.Combine(EtoEnvironment.GetFolderPath(EtoSpecialFolder.ApplicationSettings), "CelesteStudio"); 
@@ -68,13 +66,11 @@ public sealed class Settings {
     #endregion
     #region Preferences
     
-    public enum CaretInsertPositionType { AfterInsert, PreviousPosition }
-    
     public bool AutoSave { get; set; } = true;
     public bool AutoRemoveMutuallyExclusiveActions { get; set; } = true;
     public bool AlwaysOnTop { get; set; } = false;
     
-    public CaretInsertPositionType CaretInsertPosition { get; set; } = CaretInsertPositionType.PreviousPosition;
+    public CaretInsertPosition CaretInsertPosition { get; set; } = CaretInsertPosition.PreviousPosition;
     
     #endregion
     #region View
