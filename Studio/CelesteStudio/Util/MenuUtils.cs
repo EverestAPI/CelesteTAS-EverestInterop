@@ -22,7 +22,7 @@ public class MenuUtils {
         return new ButtonMenuItem(cmd);
     }
     
-    public static MenuItem CreateSettingToggle(string text, string settingName, Keys shortcut = Keys.None) {
+    public static MenuItem CreateSettingToggle(string text, string settingName, Keys shortcut = Keys.None, Action<bool>? onChanged = null) {
         var property = typeof(Settings).GetProperty(settingName)!;
         
         var cmd = new CheckCommand {
@@ -33,9 +33,11 @@ public class MenuUtils {
         cmd.Executed += (_, _) => {
             bool value = (bool)property.GetValue(Settings.Instance)!;
             property.SetValue(Settings.Instance, !value);
+            onChanged?.Invoke(!value);
             
             Settings.OnChanged();
             Settings.Save();
+            
         };
         
         return new CheckMenuItem(cmd);

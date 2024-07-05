@@ -234,7 +234,9 @@ public sealed class Studio : Form {
                     recordTasButton,
                 }},
                 new SubMenuItem {Text = "&Settings", Items = {
-                    MenuUtils.CreateSettingToggle("&Send Inputs to Celeste", nameof(Settings.SendInputsToCeleste), Application.Instance.CommonModifier | Keys.D),
+                    MenuUtils.CreateSettingToggle("&Send Inputs to Celeste", nameof(Settings.SendInputsToCeleste), Application.Instance.CommonModifier | Keys.D, enabled => {
+                        Editor.ShowToastMessage($"{(enabled ? "Enabled" : "Disabled")} Sending Inputs to Celeste", Editor.DefaultToastTime);
+                    }),
                     new SubMenuItem {Text = "Automatic Backups", Items = {
                         MenuUtils.CreateSettingToggle("Enabled", nameof(Settings.AutoBackupEnabled)),
                         MenuUtils.CreateSettingNumberInput("Backup Rate (minutes)", nameof(Settings.AutoBackupRate), 0, int.MaxValue, 1),

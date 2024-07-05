@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using CelesteStudio.Dialog;
 using CelesteStudio.Util;
 using Eto.Drawing;
@@ -94,6 +95,9 @@ public sealed class Editor : Drawable {
     // Visual lines are all lines shown in the editor
     // A single actual line may occupy multiple visual lines
     private int[] visualRows = [];
+    
+    // A toast is a small message box which is temporarily shown in the middle of the screen
+    private string toastMessage;
     
     private static readonly Regex UncommentedBreakpointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
     private static readonly Regex CommentedBreakpointRegex = new(@"^\s*#+\*\*\*", RegexOptions.Compiled);
@@ -229,6 +233,20 @@ public sealed class Editor : Drawable {
             
             return new ButtonMenuItem(cmd) { Text = info.Name, ToolTip = info.Description };
         }
+    }
+    
+    public static readonly TimeSpan DefaultToastTime = TimeSpan.FromSeconds(2);
+    public void ShowToastMessage(string message, TimeSpan time) {
+        toastMessage = message;
+        Invalidate();
+        
+        Task.Run(() => {
+            Task.Delay(time).Wait();
+            Application.Instance.Invoke(() => {
+                toastMessage = string.Empty;
+                Invalidate();
+            });
+        });
     }
     
     #region General Helper Methods
@@ -659,6 +677,7 @@ public sealed class Editor : Drawable {
             case Keys.C when e.Control && e.Alt:
                 Clipboard.Instance.Clear();
                 Clipboard.Instance.Text = Document.FilePath;
+                ShowToastMessage("Copied current file path to Clipboard", DefaultToastTime);
                 
                 e.Handled = true;
                 break;
@@ -2522,6 +2541,27 @@ public sealed class Editor : Drawable {
         // Draw autocomplete popup
         var (autoCompleteX, autoCompleteY, autoCompleteMaxH) = GetAutoCompleteMenuLocation();
         autoCompleteMenu.Draw(e.Graphics, Font, autoCompleteX, autoCompleteY, autoCompleteMaxH);
+        
+        // Draw toast message box
+        if (!string.IsNullOrWhiteSpace(toastMessage)) {
+            const float padding = 5.0f;
+            const float border = 2.0f;
+            
+            var lines = toastMessage.SplitDocumentLines();
+            
+            float width = FontManager.StatusFont.CharWidth() * lines.Select(line => line.Length).Aggregate(Math.Max);
+            float height = FontManager.StatusFont.LineHeight() * lines.Length;
+            float x = scrollablePosition.X + (scrollable.Width - width) / 2.0f;
+            float y = scrollablePosition.Y + (scrollable.Height - height) / 2.0f;
+            
+            e.Graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteBorder, x - padding - border, y - padding - border, width + padding * 2.0f + border * 2.0f, height + padding * 2.0f + border * 2.0f);
+            e.Graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteBg, x - padding, y - padding, width + padding * 2.0f, height + padding * 2.0f);
+            
+            foreach (var line in lines) {
+                e.Graphics.DrawText(FontManager.StatusFont, Settings.Instance.Theme.AutoCompleteFg, x, y, line);
+                y += Font.LineHeight();
+            }
+        }
         
         base.OnPaint(e);
     }
