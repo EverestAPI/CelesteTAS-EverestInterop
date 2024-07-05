@@ -57,6 +57,7 @@ public class SnippetDialog : Dialog<bool> {
         NegativeButtons.Add(AbortButton);
         
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
+        Shown += (_, _) => Location = Studio.Instance.Location + new Point((Studio.Instance.Width - Width) / 2, (Studio.Instance.Height - Height) / 2);
     }
     
     private void GenerateListEntries(ICollection<StackLayoutItem> items) {
@@ -82,6 +83,7 @@ public class SnippetDialog : Dialog<bool> {
                     Icon = Studio.Instance.Icon,
                 };
                 inputDialog.Load += (_, _) => Studio.Instance.WindowCreationCallback(inputDialog);
+                inputDialog.Shown += (_, _) => inputDialog.Location = Location + new Point((Width - inputDialog.Width) / 2, (Height - inputDialog.Height) / 2);
                 inputDialog.KeyDown += (_, e) => {
                     // Don't allow binding modifiers by themselves
                     if (e.Key is Keys.LeftShift or Keys.RightShift

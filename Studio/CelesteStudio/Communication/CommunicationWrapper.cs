@@ -27,10 +27,10 @@ public class CommunicationWrapper {
     public void WriteWait() => Server.WriteWait();
     public void SendPath(string path) => Server.SendPath(path);
     
-    // If key events are sent too fast, CelesteTAS can't keep up, so we need to slow down
-    // The limit appears to be somewhere between 30 and 10 keys / second.
-    private static readonly TimeSpan keyEventDelay = TimeSpan.FromMilliseconds(75);
-    private readonly Stopwatch lastKeyEvent = Stopwatch.StartNew();
+    // Prevent key-repeat events from being forwarded.
+    // If there are too many, the communication will crash
+    // TODO: Rewrite the studio communication, accounting for something like this
+    private readonly HashSet<HotkeyID> pressedHotkeys = new();
     
     public bool SendKeyEvent(Keys key, Keys modifiers, bool released) {
         var winFormsKey = key.ToWinForms();
@@ -47,10 +47,18 @@ public class CommunicationWrapper {
                      (modifiers == Keys.Control && key is Keys.Control or Keys.LeftControl or Keys.RightControl) ||
                      (modifiers == Keys.Alt && key is Keys.Alt or Keys.LeftAlt or Keys.RightAlt)))
                 {
-                    if (lastKeyEvent.Elapsed >= keyEventDelay) {
-                        Server.SendHotkeyPressed(hotkeyIDs, released);
-                        lastKeyEvent.Restart();
+                    if (!released && pressedHotkeys.Contains(hotkeyIDs)) {
+                        return true;
                     }
+                    
+                    Server.SendHotkeyPressed(hotkeyIDs, released);
+                    
+                    if (released) {
+                        pressedHotkeys.Remove(hotkeyIDs);
+                    } else {
+                        pressedHotkeys.Add(hotkeyIDs);
+                    }
+
                     return true;
                 }
                 
@@ -73,10 +81,18 @@ public class CommunicationWrapper {
                 goto NextIter;
             }
             
-            if (lastKeyEvent.Elapsed >= keyEventDelay) {
-                Server.SendHotkeyPressed(hotkeyIDs, released);
-                lastKeyEvent.Restart();
+            if (!released && pressedHotkeys.Contains(hotkeyIDs)) {
+                return true;
             }
+            
+            Server.SendHotkeyPressed(hotkeyIDs, released);
+            
+            if (released) {
+                pressedHotkeys.Remove(hotkeyIDs);
+            } else {
+                pressedHotkeys.Add(hotkeyIDs);
+            }
+
             return true;
             
             NextIter:; // Yes, that ";" is required..
