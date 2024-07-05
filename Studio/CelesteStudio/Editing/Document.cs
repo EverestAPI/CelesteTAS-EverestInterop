@@ -150,7 +150,8 @@ public class Document {
     
     private QueuedUpdate? queuedUpdate = null;
     
-    public event Action<Document, CaretPosition, CaretPosition> TextChanged = (doc, _, _) => {
+    // NOTE: The min/max rows may contain more than what was actually changed
+    public event Action<Document, int, int> TextChanged = (doc, _, _) => {
         if (Settings.Instance.AutoSave) {
             doc.Save();
             return;
@@ -158,7 +159,7 @@ public class Document {
         
         doc.Dirty = true;
     };
-    private void OnTextChanged(CaretPosition min, CaretPosition max) => TextChanged.Invoke(this, min, max);
+    private void OnTextChanged(int minRow, int maxRow) => TextChanged.Invoke(this, minRow, maxRow);
     
     private Document(string contents) {
         contents = contents.ReplaceLineEndings(NewLine.ToString());
@@ -314,7 +315,7 @@ public class Document {
                 return;
             }
             
-            document.OnTextChanged(new CaretPosition(Math.Max(0, currMinRow), 0), new CaretPosition(Math.Min(document.Lines.Count, currMaxRow), 0));
+            document.OnTextChanged(Math.Max(0, currMinRow), Math.Min(document.Lines.Count, currMaxRow));
         }
     }
     
@@ -341,20 +342,20 @@ public class Document {
         if (queuedUpdate != null)
             queuedUpdate.PushChange(minRow, maxRow);
         else
-            OnTextChanged(new CaretPosition(minRow, 0), new CaretPosition(maxRow, 0));
+            OnTextChanged(minRow, maxRow);
     }
     
     public void Undo() {
         undoStack.Undo();
         Caret = undoStack.Stack[undoStack.Curr].Caret;
         
-        OnTextChanged(new CaretPosition(0, 0), new CaretPosition(CurrentLines.Count - 1, 0));
+        OnTextChanged(0, CurrentLines.Count - 1);
     }
     public void Redo() {
         undoStack.Redo();
         Caret = undoStack.Stack[undoStack.Curr].Caret;
         
-        OnTextChanged(new CaretPosition(0, 0), new CaretPosition(CurrentLines.Count - 1, 0));
+        OnTextChanged(0, CurrentLines.Count - 1);
     }
     
     public void Insert(string text) => Caret = Insert(Caret, text);

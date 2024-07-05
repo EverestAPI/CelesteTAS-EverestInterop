@@ -411,7 +411,7 @@ public sealed class Studio : Form {
             Settings.Instance.LastSaveDirectory = Path.GetDirectoryName(filePath)!;
         }
         
-        void UpdateTitle(Document _0, CaretPosition _1, CaretPosition _2) {
+        void UpdateTitle(Document _0, int _1, int _2) {
             Title = TitleBarText;
         }
     }

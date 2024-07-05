@@ -16,10 +16,14 @@ using WrapEntry = (int StartOffset, (string Line, int Index)[] Lines);
 namespace CelesteStudio.Editing;
 
 public sealed class Editor : Drawable {
-    private Document document;
+    private Document? document;
     public Document Document {
-        get => document;
+        get => document!;
         set {
+            if (document != null) {
+                document.TextChanged -= HandleTextChanged;
+            }
+            
             document = value;
             
             // Jump to end when file only 10 lines, else the start
@@ -27,9 +31,15 @@ public sealed class Editor : Drawable {
                 ? new CaretPosition(document.Lines.Count - 1, document.Lines[^1].Length) 
                 : new CaretPosition(0, 0);
             
-            // Try to reparse into action lines on change
-            document.TextChanged += (_, min, max) => {
-                ConvertToActionLines(min, max);
+            // Ensure everything is still valid when something has changed
+            document.TextChanged += HandleTextChanged;
+
+            ConvertToActionLines(0, document.Lines.Count - 1);
+            Recalc();
+            ScrollCaretIntoView();
+            
+            void HandleTextChanged(Document _, int minRow, int maxRow) {
+                ConvertToActionLines(minRow, maxRow);
                 Recalc();
                 ScrollCaretIntoView();
                 
@@ -43,11 +53,8 @@ public sealed class Editor : Drawable {
                 }
                 Studio.Instance.GameInfoPanel.TotalFrames = totalFrames;
                 Studio.Instance.GameInfoPanel.UpdateGameInfo();
-            };
-            
-            ConvertToActionLines(new CaretPosition(0, 0), new CaretPosition(document.Lines.Count - 1, 0));
-            Recalc();
-            ScrollCaretIntoView();
+            }
+                
         }
     }
     
@@ -1029,13 +1036,13 @@ public sealed class Editor : Drawable {
     
     #region Editing Actions
 
-    private void ConvertToActionLines(CaretPosition start, CaretPosition end) {
-        // Convert to action lines if possible
-        int minRow = Math.Min(start.Row, end.Row);
-        int maxRow = Math.Max(start.Row, end.Row);
+    private void ConvertToActionLines(int startRow, int endRow) {
+        int minRow = Math.Min(startRow, endRow);
+        int maxRow = Math.Max(startRow, endRow);
         
         using var __ = Document.Update(raiseEvents: false);
         
+        // Convert to action lines, if possible
         for (int row = minRow; row <= Math.Min(maxRow, Document.Lines.Count - 1); row++) {
             var line = Document.Lines[row];
             if (ActionLine.TryParse(line, out var actionLine)) {
