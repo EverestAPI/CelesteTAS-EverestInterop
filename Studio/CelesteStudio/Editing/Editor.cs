@@ -1861,13 +1861,26 @@ public sealed class Editor : Drawable {
         float top = scrollablePosition.Y;
         float bottom = (scrollable.Size.Height - Studio.BorderBottomOffset) + scrollablePosition.Y;
         
-        // Always scroll horizontally, since we want to stay as left as possible
         const float scrollStopPadding = 10.0f;
-        int scrollX = Font.MeasureWidth(GetVisualLine(caretPos.Row)) < (scrollable.Width - textOffsetX - Studio.WidthRightOffset - scrollStopPadding)
-            ? 0 // Don't scroll when the line is shorter anyway
-            : (int)((carX + xLookAhead) - (scrollable.Size.Width - textOffsetX - Studio.WidthRightOffset));
-        int scrollY = scrollablePosition.Y;
         
+        int scrollX = scrollablePosition.X;
+        if (Font.MeasureWidth(GetVisualLine(caretPos.Row)) < (scrollable.Width - textOffsetX - Studio.WidthRightOffset - scrollStopPadding)) {
+            // Don't scroll when the line is shorter anyway
+            scrollX = 0;
+        } else if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _)) {
+            // Always scroll horizontally on action lines, since we want to stay as left as possible
+            scrollX = (int)((carX + xLookAhead) - (scrollable.Size.Width - textOffsetX - Studio.WidthRightOffset));
+        } else {
+            // Just scroll left/right when near the edge
+            float left = scrollablePosition.X;
+            float right = scrollablePosition.X + scrollable.Width - textOffsetX - Studio.WidthRightOffset;
+            if (left - carX > -xLookAhead)
+                scrollX = (int)(carX - xLookAhead);
+            else if (right - carX < xLookAhead)
+                scrollX = (int)(carX + xLookAhead - (scrollable.Size.Width - textOffsetX - Studio.WidthRightOffset));
+        }
+            
+        int scrollY = scrollablePosition.Y;
         if (center) {
             // Keep line in the center
             scrollY = (int)(carY - scrollable.Size.Height / 2.0f);
