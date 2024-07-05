@@ -11,8 +11,11 @@ namespace CelesteStudio.Editing;
 public class GameInfoPanel : Panel {
     private const string DisconnectedText = "Searching...";
     
+    public int TotalFrames;
+    private readonly Label label;
+    
     public GameInfoPanel() {
-        var label = new Label {
+        label = new Label {
             Text = DisconnectedText,
             TextColor = Settings.Instance.Theme.StatusFg,
             Font = FontManager.StatusFont,
@@ -61,57 +64,48 @@ public class GameInfoPanel : Panel {
             if (!Settings.Instance.ShowGameInfo || prevState.GameInfo == state.GameInfo)
                 return;
             
+            if (prevState.TotalFrames != state.TotalFrames)
+                TotalFrames = state.TotalFrames;
+            
             UpdateGameInfo();
         };
         Studio.CommunicationWrapper.Server.Reset += UpdateGameInfo;
+    }
         
-        void UpdateGameInfo() {
-            var frameInfo = new StringBuilder();
-            if (Studio.CommunicationWrapper.State.CurrentFrameInTas > 0) {
-                frameInfo.Append($"{Studio.CommunicationWrapper.State.CurrentFrameInTas}/");
-            }
-            if (Studio.CommunicationWrapper.Connected) {
-                frameInfo.Append(Studio.CommunicationWrapper.State.TotalFrames.ToString());
-            } else {
-                int totalFrames = 0;
-                foreach (var line in Studio.Instance.Editor.Document.Lines) {
-                    if (!ActionLine.TryParse(line, out var actionLine)) {
-                        continue;
-                    }
-                    totalFrames += actionLine.Frames;
-                }
-                
-                frameInfo.Append(totalFrames.ToString());
-            }
-            
-            if (!Studio.Instance.Editor.Document.Selection.Empty) {
-                int minRow = Studio.Instance.Editor.Document.Selection.Min.Row;
-                int maxRow = Studio.Instance.Editor.Document.Selection.Max.Row;
-                
-                int selectedFrames = 0;
-                for (int row = minRow; row <= maxRow; row++) {
-                    if (!ActionLine.TryParse(Studio.Instance.Editor.Document.Lines[row], out var actionLine)) {
-                        continue;
-                    }
-                    selectedFrames += actionLine.Frames;
-                }
-                
-                frameInfo.Append($" Selected: {selectedFrames}");
-            }
-            
-            Application.Instance.InvokeAsync(() => {
-                int oldLineCount = label.Text.Split(["\n", "\r", "\n\r", Environment.NewLine], StringSplitOptions.None).Length;
-                label.Text = $"{frameInfo}{Environment.NewLine}" + (Studio.CommunicationWrapper.Connected && Studio.CommunicationWrapper.State.GameInfo is { } gameInfo
-                    ? gameInfo.Trim()
-                    : DisconnectedText);
-                int newLineCount = label.Text.Split(["\n", "\r", "\n\r", Environment.NewLine], StringSplitOptions.None).Length;
-                
-                if (oldLineCount != newLineCount) {
-                    UpdateLayout();
-                    Studio.Instance.RecalculateLayout();
-                }
-            });
+    public void UpdateGameInfo() {
+        var frameInfo = new StringBuilder();
+        if (Studio.CommunicationWrapper.State.CurrentFrameInTas > 0) {
+            frameInfo.Append($"{Studio.CommunicationWrapper.State.CurrentFrameInTas}/");
         }
+        frameInfo.Append(TotalFrames.ToString());
+        
+        if (!Studio.Instance.Editor.Document.Selection.Empty) {
+            int minRow = Studio.Instance.Editor.Document.Selection.Min.Row;
+            int maxRow = Studio.Instance.Editor.Document.Selection.Max.Row;
+            
+            int selectedFrames = 0;
+            for (int row = minRow; row <= maxRow; row++) {
+                if (!ActionLine.TryParse(Studio.Instance.Editor.Document.Lines[row], out var actionLine)) {
+                    continue;
+                }
+                selectedFrames += actionLine.Frames;
+            }
+            
+            frameInfo.Append($" Selected: {selectedFrames}");
+        }
+        
+        Application.Instance.InvokeAsync(() => {
+            int oldLineCount = label.Text.Split(["\n", "\r", "\n\r", Environment.NewLine], StringSplitOptions.None).Length;
+            label.Text = $"{frameInfo}{Environment.NewLine}" + (Studio.CommunicationWrapper.Connected && Studio.CommunicationWrapper.State.GameInfo is { } gameInfo
+                ? gameInfo.Trim()
+                : DisconnectedText);
+            int newLineCount = label.Text.Split(["\n", "\r", "\n\r", Environment.NewLine], StringSplitOptions.None).Length;
+            
+            if (oldLineCount != newLineCount) {
+                UpdateLayout();
+                Studio.Instance.RecalculateLayout();
+            }
+        });
     }
     
     protected override void OnMouseDown(MouseEventArgs e) {

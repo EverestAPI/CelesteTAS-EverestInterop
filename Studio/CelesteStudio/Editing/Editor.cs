@@ -31,6 +31,17 @@ public sealed class Editor : Drawable {
             document.TextChanged += (_, min, max) => {
                 ConvertToActionLines(min, max);
                 Recalc();
+                
+                // Need to update total frame count
+                int totalFrames = 0;
+                foreach (var line in Studio.Instance.Editor.Document.Lines) {
+                    if (!ActionLine.TryParse(line, out var actionLine)) {
+                        continue;
+                    }
+                    totalFrames += actionLine.Frames;
+                }
+                Studio.Instance.GameInfoPanel.TotalFrames = totalFrames;
+                Studio.Instance.GameInfoPanel.UpdateGameInfo();
             };
             
             ConvertToActionLines(new CaretPosition(0, 0), new CaretPosition(document.Lines.Count - 1, 0));
