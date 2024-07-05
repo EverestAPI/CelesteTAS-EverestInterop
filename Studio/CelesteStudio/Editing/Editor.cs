@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -47,6 +48,9 @@ public sealed class Editor : Drawable {
     private readonly AutoCompleteMenu autoCompleteMenu;
     private readonly List<AutoCompleteMenu.Entry> baseAutoCompleteEntries = [];
     
+    // Kinda weird that it's stored in the auto-complete menu and not here, but ¯\_(ツ)_/¯
+    private PointF MouseLocation => autoCompleteMenu.MouseLocation;
+    
     // Quick-edits are anchors to switch through with tab and edit
     // Used by auto-complete snippets
     private int quickEditIndex;
@@ -62,6 +66,10 @@ public sealed class Editor : Drawable {
     
     // Foldings can collapse sections of the document
     private readonly List<Folding> foldings = [];
+    
+    // When the current line under the mouse cursor is a clickable link with Ctrl+Click
+    // Updated (confusingly) inside UpdateMouseCursor()..
+    private int lineLinkRow = -1;
 
     // Visual lines are all lines shown in the editor
     // A single actual line may occupy multiple visual lines
@@ -425,7 +433,7 @@ public sealed class Editor : Drawable {
         return new CaretPosition(row, col);
     }
     
-    private int GetActualRow(int visualRow) {
+    private int GetActualRow(int visualRow, int? defaultRow = null) {
         // There is no good way to find the reverse other than just iterating all lines
         // TODO: Maybe improve this?
         int row = 0;
@@ -438,6 +446,10 @@ public sealed class Editor : Drawable {
                 return row - 1;
             }
         }
+        
+        if (defaultRow.HasValue)
+            return defaultRow.Value;
+        
         return row - 1;
     }
     private string GetVisualLine(int visualRow) {
@@ -458,6 +470,13 @@ public sealed class Editor : Drawable {
     #endregion
     
     protected override void OnKeyDown(KeyEventArgs e) {
+        var mods = e.Modifiers;
+        if (e.Key is Keys.LeftShift or Keys.RightShift) mods |= Keys.Shift;
+        if (e.Key is Keys.LeftControl or Keys.RightControl) mods |= Keys.Control;
+        if (e.Key is Keys.LeftAlt or Keys.RightAlt) mods |= Keys.Alt;
+        if (e.Key is Keys.LeftApplication or Keys.RightApplication) mods |= Keys.Application;
+        UpdateMouseCursor(MouseLocation, mods);
+        
         if (autoCompleteMenu.HandleKeyDown(e)) {
             e.Handled = true;
             Recalc();
@@ -656,6 +675,13 @@ public sealed class Editor : Drawable {
     }
     
     protected override void OnKeyUp(KeyEventArgs e) {
+        var mods = e.Modifiers;
+        if (e.Key is Keys.LeftShift or Keys.RightShift) mods &= ~Keys.Shift;
+        if (e.Key is Keys.LeftControl or Keys.RightControl) mods &= ~Keys.Control;
+        if (e.Key is Keys.LeftAlt or Keys.RightAlt) mods &= ~Keys.Alt;
+        if (e.Key is Keys.LeftApplication or Keys.RightApplication) mods &= ~Keys.Application;
+        UpdateMouseCursor(MouseLocation, mods);
+        
         if (Settings.Instance.SendInputsToCeleste && Studio.CommunicationWrapper.Connected && Studio.CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: true)) {
             e.Handled = true;
             return;
@@ -2015,6 +2041,13 @@ public sealed class Editor : Drawable {
                 return;
             }
             
+            if (lineLinkRow != -1 && GetLineLink(lineLinkRow) is { } lineLink) {
+                lineLink();
+                
+                e.Handled = true;
+                return;
+            }
+            
             primaryMouseButtonDown = true;
             
             var oldCaret = Document.Caret;
@@ -2074,11 +2107,7 @@ public sealed class Editor : Drawable {
             Recalc();
         }
         
-        if (LocationToFolding(e.Location) is { } folding) {
-            Cursor = Cursors.Pointer;
-        } else {
-            Cursor = Cursors.IBeam;    
-        }
+        UpdateMouseCursor(e.Location, e.Modifiers);
         
         if (autoCompleteMenu.Visible) {
             var (autoCompleteX, autoCompleteY, autoCompleteMaxH) = GetAutoCompleteMenuLocation();
@@ -2140,6 +2169,31 @@ public sealed class Editor : Drawable {
         base.OnMouseWheel(e);
     }
     
+    private void UpdateMouseCursor(PointF location, Keys modifiers) {
+        int prevLineLink = lineLinkRow;
+        if (modifiers.HasFlag(Keys.Control) && LocationToLineLink(location) is var row && row != -1) {
+            lineLinkRow = row;
+            Cursor = Cursors.Pointer;
+            
+            if (prevLineLink != lineLinkRow) {
+                Invalidate();
+            }
+            
+            return;
+        }
+        lineLinkRow = -1;
+        
+        if (prevLineLink != -1) {
+            Invalidate();
+        }
+        
+        if (LocationToFolding(location) != null) {
+            Cursor = Cursors.Pointer;
+        } else {
+            Cursor = Cursors.IBeam;
+        }
+    }
+    
     private (CaretPosition Actual, CaretPosition Visual) LocationToCaretPosition(PointF location) {
         location.X -= textOffsetX;
         
@@ -2178,6 +2232,76 @@ public sealed class Editor : Drawable {
         return null;
     }
     
+    private Action? GetLineLink(int row) {
+        var commandLine = Document.Lines[row];
+        
+        var separatorMatch = SeparatorRegex.Match(commandLine);
+        var args = commandLine.Split(separatorMatch.Value);
+        
+        // Check if the command is valid
+        if (args.Length >= 3 && string.Equals(args[0], "Read", StringComparison.OrdinalIgnoreCase)) {
+            var documentPath = Studio.Instance.Editor.Document.FilePath;
+            if (documentPath == Document.TemporaryFile) {
+                return null;
+            }
+            if (Path.GetDirectoryName(documentPath) is not { } documentDir) {
+                return null;
+            }
+            
+            var fullPath = Path.Combine(documentDir, $"{args[1]}.tas");
+            if (!File.Exists(fullPath)) {
+                return null;
+            }
+            
+            (var label, int labelRow) = File.ReadAllText(fullPath)
+                .ReplaceLineEndings(Document.NewLine.ToString())
+                .SplitDocumentLines()
+                .Select((line, i) => (line, i))
+                .FirstOrDefault(pair => pair.line == $"#{args[2]}");
+            if (label == null) {
+                return null;
+            }
+            
+            return () => {
+                Studio.Instance.OpenFile(fullPath);
+                Document.Caret.Row = labelRow;
+                Document.Caret.Col = desiredVisualCol = Document.Lines[labelRow].Length;
+            };
+        } else if (args.Length >= 2 && string.Equals(args[0], "Play", StringComparison.OrdinalIgnoreCase)) {
+            (var label, int labelRow) = Document.Lines
+                .Select((line, i) => (line, i))
+                .FirstOrDefault(pair => pair.line == $"#{args[1]}");
+            if (label == null) {
+                return null;
+            }
+            
+            return () => {
+                Document.Caret.Row = labelRow;
+                Document.Caret.Col = desiredVisualCol = Document.Lines[labelRow].Length;
+            };
+        }
+        
+        return null;
+    }
+    private int LocationToLineLink(PointF location) {
+        if (location.X < scrollablePosition.X + textOffsetX ||
+            location.X > scrollablePosition.X + scrollable.Width) 
+        {
+            return -1;
+        }
+        
+        int row = GetActualRow((int) (location.Y / Font.LineHeight()), -1);
+        if (row < 0) {
+            return -1;
+        }
+        
+        if (GetLineLink(row) != null) {
+            return row;
+        }
+        
+        return -1;
+    }
+    
     #endregion
     
     #region Drawing
@@ -2208,6 +2332,12 @@ public sealed class Editor : Drawable {
                 
                 yPos += Font.LineHeight();
                 row = collapse.MaxRow;
+                continue;
+            }
+            
+            if (row == lineLinkRow && GetLineLink(row) is { } lineLink) {
+                highlighter.DrawLine(e.Graphics, textOffsetX, yPos, line, underline: true);
+                yPos += Font.LineHeight();
                 continue;
             }
             

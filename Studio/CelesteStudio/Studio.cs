@@ -368,7 +368,7 @@ public sealed class Studio : Form {
         }
     }
     
-    private void OpenFile(string filePath) {
+    public void OpenFile(string filePath) {
         if (filePath == Editor.Document.FilePath)
             return;
         

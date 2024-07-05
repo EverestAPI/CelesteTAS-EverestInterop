@@ -53,7 +53,7 @@ public class SyntaxHighlighter {
         styles = [theme.Action, theme.Angle, theme.Breakpoint, theme.SavestateBreakpoint, theme.Delimiter, theme.Command, theme.Comment, theme.Frame];
     }
     
-    public void DrawLine(Graphics graphics, float x, float y, string line) {
+    public void DrawLine(Graphics graphics, float x, float y, string line, bool underline = false) {
         float xOff = 0.0f;
         
         foreach (var segment in GetLineStyle(line).Segments) {
@@ -78,7 +78,11 @@ public class SyntaxHighlighter {
                 graphics.FillRectangle(bgColor, x + xOff, y, width, font.LineHeight());
             }
             
-            graphics.DrawText(font, style.ForegroundColor, x + xOff, y, str);
+            if (underline) {
+                graphics.DrawText(font.WithFontDecoration(FontDecoration.Underline), style.ForegroundColor, x + xOff, y, str);
+            } else {
+                graphics.DrawText(font, style.ForegroundColor, x + xOff, y, str);
+            }
             
             xOff += width;
         }
