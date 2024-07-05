@@ -146,12 +146,19 @@ public sealed class Editor : Drawable {
             });
         };
         
-        var commandsMenu = new SubMenuItem { Text = "Insert Other Command" };        
-        foreach (var command in CommandInfo.AllCommands) {
-            if (command == null) {
-                commandsMenu.Items.Add(new SeparatorMenuItem());
-            } else {
-                commandsMenu.Items.Add(CreateCommandInsert(command.Value));
+        var commandsMenu = new SubMenuItem { Text = "Insert Other Command" };
+        
+        GenerateCommandMenu();
+        Settings.Changed += GenerateCommandMenu;
+
+        void GenerateCommandMenu() {
+            commandsMenu.Items.Clear();
+            foreach (var command in CommandInfo.AllCommands) {
+                if (command == null) {
+                    commandsMenu.Items.Add(new SeparatorMenuItem());
+                } else {
+                    commandsMenu.Items.Add(CreateCommandInsert(command.Value));
+                }
             }
         }
         

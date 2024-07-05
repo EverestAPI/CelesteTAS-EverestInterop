@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -66,6 +67,9 @@ public sealed class Studio : Form {
         }
         Size = Settings.Instance.LastSize;
         
+        // Needs to be registered before the editor is created 
+        Settings.Changed += ApplySettings;
+        
         // Setup editor
         {
             EditorScrollable = new Scrollable {
@@ -91,9 +95,8 @@ public sealed class Studio : Form {
             };
             
             SizeChanged += (_, _) => RecalculateLayout();
-            
+
             ApplySettings();
-            Settings.Changed += ApplySettings;
             
             // Only enable some settings while connected
             bool wasConnected = CommunicationWrapper.Connected;
@@ -128,6 +131,13 @@ public sealed class Studio : Form {
     private void ApplySettings() {
         Topmost = Settings.Instance.AlwaysOnTop;
         Menu = CreateMenu(); // Recreate menu to reflect changes
+        
+        CommandInfo.GenerateCommandInfos(Settings.Instance.CommandSeparator switch {
+            CommandSeparator.Space => " ",
+            CommandSeparator.Comma => ",",
+            CommandSeparator.CommaSpace => ", ",
+            _ => throw new UnreachableException()
+        });
     }
     
     private MenuBar CreateMenu() {
@@ -241,6 +251,7 @@ public sealed class Studio : Form {
                     MenuUtils.CreateSettingToggle("Always on Top", nameof(Settings.AlwaysOnTop)),
                     MenuUtils.CreateSettingEnum<InsertDirection>("Insert Direction", nameof(Settings.InsertDirection), ["Above Current Line", "Below Current Line"]),
                     MenuUtils.CreateSettingEnum<CaretInsertPosition>("Caret Insert Position", nameof(Settings.CaretInsertPosition), ["After Inserted Text", "Keep at Previous Position"]),
+                    MenuUtils.CreateSettingEnum<CommandSeparator>("Command Separator", nameof(Settings.CommandSeparator), ["Space (\" \")", "Comma (\",\")", "Space + Comma (\", \")"]),
                 }},
                 new SubMenuItem { Text = "&View", Items = {
                     MenuUtils.CreateSettingToggle("Show Game Info", nameof(Settings.ShowGameInfo)),

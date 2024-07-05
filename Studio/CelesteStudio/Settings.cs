@@ -17,6 +17,7 @@ namespace CelesteStudio;
 public enum ThemeType { Light, Dark }
 public enum InsertDirection { Above, Below }
 public enum CaretInsertPosition { AfterInsert, PreviousPosition }
+public enum CommandSeparator { Space, Comma, CommaSpace }
 
 public sealed class Settings {
     public static string BaseConfigPath => Path.Combine(EtoEnvironment.GetFolderPath(EtoSpecialFolder.ApplicationSettings), "CelesteStudio"); 
@@ -73,6 +74,7 @@ public sealed class Settings {
     
     public InsertDirection InsertDirection { get; set; } = InsertDirection.Above;
     public CaretInsertPosition CaretInsertPosition { get; set; } = CaretInsertPosition.PreviousPosition;
+    public CommandSeparator CommandSeparator { get; set; } = CommandSeparator.CommaSpace;
     
     #endregion
     #region View
