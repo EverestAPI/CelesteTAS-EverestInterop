@@ -339,7 +339,8 @@ public sealed class Editor : Drawable {
         // Calculate line numbers width
         const float foldButtonPadding = 5.0f;
         bool hasFoldings = Settings.Instance.ShowFoldIndicators && foldings.Count != 0;
-        textOffsetX = Font.CharWidth() * Document.Lines.Count.Digits() + (hasFoldings ? Font.CharWidth() + foldButtonPadding : 0.0f) + LineNumberPadding * 3.0f;
+        float foldingWidth = !hasFoldings ? 0.0f : Font.CharWidth() * (foldings[^1].MinRow.Digits() + 1) + foldButtonPadding;
+        textOffsetX = Math.Max(foldingWidth, Font.CharWidth() * Document.Lines.Count.Digits()) + LineNumberPadding * 3.0f;
         
         const float paddingRight = 50.0f;
         const float paddingBottom = 100.0f;
