@@ -31,10 +31,11 @@ public sealed class Editor : Drawable {
             document.TextChanged += (_, min, max) => {
                 ConvertToActionLines(min, max);
                 Recalc();
+                ScrollCaretIntoView();
                 
                 // Need to update total frame count
                 int totalFrames = 0;
-                foreach (var line in Studio.Instance.Editor.Document.Lines) {
+                foreach (var line in document.Lines) {
                     if (!ActionLine.TryParse(line, out var actionLine)) {
                         continue;
                     }
@@ -46,6 +47,7 @@ public sealed class Editor : Drawable {
             
             ConvertToActionLines(new CaretPosition(0, 0), new CaretPosition(document.Lines.Count - 1, 0));
             Recalc();
+            ScrollCaretIntoView();
         }
     }
     
@@ -391,33 +393,32 @@ public sealed class Editor : Drawable {
         if (topLine == null && bottomLine == null || dir == 0)
             return;
         
-        // Adjust single line
-        if (topRow == bottomRow ||
-            topLine == null && bottomLine != null ||
-            bottomLine == null && topLine != null) 
-        {
-            var line = topLine ?? bottomLine!.Value;
-            int row = topLine != null ? topRow : bottomRow;
+        using (Document.Update()) {
+            // Adjust single line
+            if (topRow == bottomRow ||
+                topLine == null && bottomLine != null ||
+                bottomLine == null && topLine != null)
+            {
+                var line = topLine ?? bottomLine!.Value;
+                int row = topLine != null ? topRow : bottomRow;
                 
-            if (dir > 0) {
-                Document.ReplaceLine(row, (line with { Frames = Math.Min(line.Frames + 1, ActionLine.MaxFrames) }).ToString()); 
-            } else {
-                Document.ReplaceLine(row, (line with { Frames = Math.Max(line.Frames - 1, 0) }).ToString());
+                if (dir > 0) {
+                    Document.ReplaceLine(row, (line with { Frames = Math.Min(line.Frames + 1, ActionLine.MaxFrames) }).ToString());
+                } else {
+                    Document.ReplaceLine(row, (line with { Frames = Math.Max(line.Frames - 1, 0) }).ToString());
+                }
             }
-        }
-        // Move frames between lines
-        else {
-            if (dir > 0 && bottomLine!.Value.Frames > 0 && topLine!.Value.Frames < ActionLine.MaxFrames) {
-                Document.PushUndoState();
-                Document.ReplaceLine(topRow,    (topLine.Value    with { Frames = Math.Min(topLine.Value.Frames    + 1, ActionLine.MaxFrames)  }).ToString(), raiseEvents: false);
-                Document.ReplaceLine(bottomRow, (bottomLine.Value with { Frames = Math.Max(bottomLine.Value.Frames - 1, 0)                     }).ToString(), raiseEvents: false);
-                Document.OnTextChanged(new CaretPosition(topRow, 0), new CaretPosition(bottomRow, Document.Lines[bottomRow].Length));
-            } else if (dir < 0 && bottomLine!.Value.Frames < ActionLine.MaxFrames && topLine!.Value.Frames > 0) {
-                Document.ReplaceLine(topRow,    (topLine.Value    with { Frames = Math.Max(topLine.Value.Frames    - 1, 0)                    }).ToString(), raiseEvents: false);
-                Document.ReplaceLine(bottomRow, (bottomLine.Value with { Frames = Math.Min(bottomLine.Value.Frames + 1, ActionLine.MaxFrames) }).ToString(), raiseEvents: false);
-                Document.OnTextChanged(new CaretPosition(topRow, 0), new CaretPosition(bottomRow, Document.Lines[bottomRow].Length));
+            // Move frames between lines
+            else {
+                if (dir > 0 && bottomLine!.Value.Frames > 0 && topLine!.Value.Frames < ActionLine.MaxFrames) {
+                    Document.ReplaceLine(topRow,    (topLine.Value    with { Frames = Math.Min(topLine.Value.Frames    + 1, ActionLine.MaxFrames)  }).ToString());
+                    Document.ReplaceLine(bottomRow, (bottomLine.Value with { Frames = Math.Max(bottomLine.Value.Frames - 1, 0)                     }).ToString());
+                } else if (dir < 0 && bottomLine!.Value.Frames < ActionLine.MaxFrames && topLine!.Value.Frames > 0) {
+                    Document.ReplaceLine(topRow,    (topLine.Value    with { Frames = Math.Max(topLine.Value.Frames    - 1, 0)                    }).ToString());
+                    Document.ReplaceLine(bottomRow, (bottomLine.Value with { Frames = Math.Min(bottomLine.Value.Frames + 1, ActionLine.MaxFrames) }).ToString());
+                }
             }
-        }
+        } 
     }
     
     private CaretPosition GetVisualPosition(CaretPosition position) {
@@ -582,21 +583,20 @@ public sealed class Editor : Drawable {
                     }
                 } else if (e.Alt) {
                     // Move lines
-                    if (Document.Caret.Row > 0 && Document.Selection is { Empty: false, Min.Row: > 0 }) {
-                        Document.PushUndoState();
-                        var line = Document.Lines[Document.Selection.Min.Row - 1];
-                        Document.RemoveLine(Document.Selection.Min.Row - 1, raiseEvents: false);
-                        Document.InsertLine(Document.Selection.Max.Row, line, raiseEvents: false);
-                        Document.OnTextChanged(new CaretPosition(Document.Selection.Min.Row - 1, 0), new CaretPosition(Document.Selection.Max.Row, Document.Lines[Document.Selection.Max.Row].Length));
-                        
-                        Document.Selection.Start.Row--;
-                        Document.Selection.End.Row--;
-                        Document.Caret.Row--;
-                    } else if (Document.Caret.Row > 0 && Document.Selection.Empty) {
-                        Document.SwapLines(Document.Caret.Row, Document.Caret.Row - 1);
-                        Document.Caret.Row--;    
+                    using (Document.Update()) {
+                        if (Document.Caret.Row > 0 && Document.Selection is { Empty: false, Min.Row: > 0 }) {
+                            var line = Document.Lines[Document.Selection.Min.Row - 1];
+                            Document.RemoveLine(Document.Selection.Min.Row - 1);
+                            Document.InsertLine(Document.Selection.Max.Row, line);
+                            
+                            Document.Selection.Start.Row--;
+                            Document.Selection.End.Row--;
+                            Document.Caret.Row--;
+                        } else if (Document.Caret.Row > 0 && Document.Selection.Empty) {
+                            Document.SwapLines(Document.Caret.Row, Document.Caret.Row - 1);
+                            Document.Caret.Row--;
+                        }
                     }
-                    ScrollCaretIntoView();
                 } else {
                     MoveCaret(e.Control ? CaretMovementType.LabelUp : CaretMovementType.LineUp, updateSelection: e.Shift);
                 }
@@ -613,21 +613,20 @@ public sealed class Editor : Drawable {
                     }
                 } else if (e.Alt) {
                     // Move lines
-                    if (Document.Caret.Row < Document.Lines.Count - 1 && !Document.Selection.Empty && Document.Selection.Max.Row < Document.Lines.Count - 1) {
-                        Document.PushUndoState();
-                        var line = Document.Lines[Document.Selection.Max.Row + 1];
-                        Document.RemoveLine(Document.Selection.Max.Row + 1, raiseEvents: false);
-                        Document.InsertLine(Document.Selection.Min.Row, line, raiseEvents: false);
-                        Document.OnTextChanged(new CaretPosition(Document.Selection.Min.Row, 0), new CaretPosition(Document.Selection.Max.Row + 1, Document.Lines[Document.Selection.Max.Row + 1].Length));
-                        
-                        Document.Selection.Start.Row++;
-                        Document.Selection.End.Row++;
-                        Document.Caret.Row++;
-                    } else if (Document.Caret.Row < Document.Lines.Count - 1 && Document.Selection.Empty) {
-                        Document.SwapLines(Document.Caret.Row, Document.Caret.Row + 1);
-                        Document.Caret.Row++;
+                    using (Document.Update()) {
+                        if (Document.Caret.Row < Document.Lines.Count - 1 && !Document.Selection.Empty && Document.Selection.Max.Row < Document.Lines.Count - 1) {
+                            var line = Document.Lines[Document.Selection.Max.Row + 1];
+                            Document.RemoveLine(Document.Selection.Max.Row + 1);
+                            Document.InsertLine(Document.Selection.Min.Row, line);
+                            
+                            Document.Selection.Start.Row++;
+                            Document.Selection.End.Row++;
+                            Document.Caret.Row++;
+                        } else if (Document.Caret.Row < Document.Lines.Count - 1 && Document.Selection.Empty) {
+                            Document.SwapLines(Document.Caret.Row, Document.Caret.Row + 1);
+                            Document.Caret.Row++;
+                        }
                     }
-                    ScrollCaretIntoView();
                 } else {
                     MoveCaret(e.Control ? CaretMovementType.LabelDown : CaretMovementType.LineDown, updateSelection: e.Shift);
                 }
@@ -1035,12 +1034,22 @@ public sealed class Editor : Drawable {
         int minRow = Math.Min(start.Row, end.Row);
         int maxRow = Math.Max(start.Row, end.Row);
         
+        using var __ = Document.Update(raiseEvents: false);
+        
         for (int row = minRow; row <= Math.Min(maxRow, Document.Lines.Count - 1); row++) {
-            if (ActionLine.TryParse(Document.Lines[row], out var actionLine)) {
-                Document.ReplaceLine(row, actionLine.ToString(), raiseEvents: false);
+            var line = Document.Lines[row];
+            if (ActionLine.TryParse(line, out var actionLine)) {
+                var newLine = actionLine.ToString();
                 
-                if (Document.Caret.Row == row)
-                    Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
+                if (Document.Caret.Row == row) {
+                    if (Document.Caret.Col == line.Length) {
+                        Document.Caret.Col = newLine.Length;
+                    } else {
+                        Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
+                    }
+                }
+                
+                Document.ReplaceLine(row, newLine);
             }
         }
     }
@@ -1050,11 +1059,10 @@ public sealed class Editor : Drawable {
             return;
         }
         
-        var oldCaret = Document.Caret;
+        using var __ = Document.Update();
         
-        Document.PushUndoState();
         if (!Document.Selection.Empty) {
-            Document.RemoveSelectedText(raiseEvents: false);
+            Document.RemoveSelectedText();
             Document.Caret = Document.Selection.Min;
             Document.Selection.Clear();
         }
@@ -1166,7 +1174,7 @@ public sealed class Editor : Drawable {
             }
 
             FinishEdit:
-            Document.ReplaceLine(Document.Caret.Row, actionLine.ToString(), raiseEvents: false);
+            Document.ReplaceLine(Document.Caret.Row, actionLine.ToString());
         }
         // Just write it as text
         else {
@@ -1178,7 +1186,7 @@ public sealed class Editor : Drawable {
 
                 if (onlyComment) {
                     var newLine = $"{currLine.TrimEnd()}# ";
-                    Document.ReplaceLine(Document.Caret.Row, newLine, raiseEvents: false);
+                    Document.ReplaceLine(Document.Caret.Row, newLine);
                     Document.Caret.Col = desiredVisualCol = newLine.Length;
                 } else {
                     Document.Insert("#");    
@@ -1191,26 +1199,21 @@ public sealed class Editor : Drawable {
             if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out var newActionLine)) {
                 ClearQuickEdits();
                 
-                Document.ReplaceLine(Document.Caret.Row, newActionLine.ToString(), raiseEvents: false);
+                Document.ReplaceLine(Document.Caret.Row, newActionLine.ToString());
                 Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
             }
         }
      
-        Document.OnTextChanged(oldCaret, Document.Caret);
         UpdateAutoComplete();
-        ScrollCaretIntoView();
     }
 
     private void OnDelete(CaretMovementType direction) {
+        using var __ = Document.Update();
+        
         if (!Document.Selection.Empty) {
-            var oldCaret = Document.Caret;
-            
             Document.RemoveSelectedText();
             Document.Caret = Document.Selection.Min;
             Document.Selection.Clear();
-            
-            ConvertToActionLines(oldCaret, Document.Caret);
-            ScrollCaretIntoView();
             return;
         }
         
@@ -1312,28 +1315,29 @@ public sealed class Editor : Drawable {
             Document.ReplaceLine(caret.Row, line);
             Document.Caret = ClampCaret(caret);
         } else {
-            var newCaret = GetNewTextCaretPosition(direction);
+            Document.Caret = GetNewTextCaretPosition(direction);
             
-            if (caret.Row == newCaret.Row) {
-                Document.RemoveRangeInLine(caret.Row, caret.Col, newCaret.Col);
-                newCaret.Col = Math.Min(newCaret.Col, caret.Col);
+            if (caret.Row == Document.Caret.Row) {
+                Document.RemoveRangeInLine(caret.Row, caret.Col, Document.Caret.Col);
+                Document.Caret.Col = Math.Min(Document.Caret.Col, caret.Col);
+                Document.Caret = ClampCaret(Document.Caret, wrapLine: true);
                 
                 UpdateAutoComplete(open: false);
             } else {
-                var min = newCaret < caret ? newCaret : caret;
-                var max = newCaret < caret ? caret : newCaret;
+                var min = Document.Caret < caret ? Document.Caret : caret;
+                var max = Document.Caret < caret ? caret : Document.Caret;
                 
                 Document.RemoveRange(min, max);
-                newCaret = min;
+                Document.Caret = min;
                 
                 autoCompleteMenu.Visible = false;
             }
-            
-            Document.Caret = ClampCaret(newCaret);
         }
     }
     
     private void OnEnter(bool splitLines) {
+        using var __ = Document.Update();
+        
         var line = Document.Lines[Document.Caret.Row];
         
         if (!splitLines || ActionLine.TryParse(line, out _)) {
@@ -1342,29 +1346,16 @@ public sealed class Editor : Drawable {
             Document.Caret.Row++;
             Document.Caret.Col = desiredVisualCol = 0;
         } else {
+            Document.RemoveSelectedText();
             Document.Insert(Document.NewLine.ToString());
         }
         
-        ScrollCaretIntoView();
+        Document.Selection.Clear();
     }
     
-    private void OnUndo() {
-        var oldCaret = Document.Caret;
-        Document.Undo();
-        
-        ConvertToActionLines(oldCaret, Document.Caret);
-        Recalc();
-        ScrollCaretIntoView();
-    }
-    
-    private void OnRedo() {
-        var oldCaret = Document.Caret;
-        Document.Redo();
-        
-        ConvertToActionLines(oldCaret, Document.Caret);
-        Recalc();
-        ScrollCaretIntoView();
-    }
+    private void OnUndo() => Document.Undo();
+
+    private void OnRedo() => Document.Redo();
     
     private void OnCut() {
         if (Document.Selection.Empty)
@@ -1386,18 +1377,15 @@ public sealed class Editor : Drawable {
         if (!Clipboard.Instance.ContainsText)
             return;
         
-        Document.PushUndoState();
+        using var __ = Document.Update();
+
         if (!Document.Selection.Empty) {
-            Document.RemoveSelectedText(raiseEvents: false);
+            Document.RemoveSelectedText();
             Document.Caret = Document.Selection.Min;
             Document.Selection.Clear();
         }
-        
-        var oldCaret = Document.Caret;
-        Document.Insert(Clipboard.Instance.Text, raiseEvents: false);
-        Document.OnTextChanged(oldCaret, Document.Caret);
-        
-        ScrollCaretIntoView();
+
+        Document.Insert(Clipboard.Instance.Text);
     }
     
     private void OnSelectAll() {
@@ -1448,6 +1436,8 @@ public sealed class Editor : Drawable {
     }
     
     private void OnDeleteSelectedLines() {
+        using var __ = Document.Update();
+        
         int minRow = Document.Selection.Min.Row;
         int maxRow = Document.Selection.Max.Row;
         if (Document.Selection.Empty) {
@@ -1457,11 +1447,11 @@ public sealed class Editor : Drawable {
         Document.RemoveLines(minRow, maxRow);
         Document.Selection.Clear();
         Document.Caret.Row = minRow;
-        
-        ScrollCaretIntoView();
     }
     
     private void OnToggleCommentBreakpoints() {
+        using var __ = Document.Update();
+        
         Document.Selection.Normalize();
         
         int minRow = Document.Selection.Min.Row;
@@ -1471,12 +1461,11 @@ public sealed class Editor : Drawable {
             maxRow = Document.Lines.Count - 1;
         }
         
-        Document.PushUndoState();
         for (int row = minRow; row <= maxRow; row++) {
             var line = Document.Lines[row];
             if (CommentedBreakpointRegex.IsMatch(line)) {
                 int hashIdx = line.IndexOf('#');
-                Document.ReplaceLine(row, line.Remove(hashIdx, 1), raiseEvents: false);
+                Document.ReplaceLine(row, line.Remove(hashIdx, 1));
                 
                 // Shift everything over
                 if (row == minRow)
@@ -1486,7 +1475,7 @@ public sealed class Editor : Drawable {
                 if (row == Document.Caret.Row)
                     Document.Caret.Col--;
             } else if (UncommentedBreakpointRegex.IsMatch(line)) {
-                Document.ReplaceLine(row, $"#{line}", raiseEvents: false);
+                Document.ReplaceLine(row, $"#{line}");
                 
                 // Shift everything over
                 if (row == minRow)
@@ -1497,7 +1486,6 @@ public sealed class Editor : Drawable {
                     Document.Caret.Col++;
             }
         }
-        Document.OnTextChanged(new CaretPosition(minRow, 0), new CaretPosition(maxRow, Document.Lines[maxRow].Length));
         
         // Clamp new column
         Document.Selection.Start.Col = Math.Clamp(Document.Selection.Start.Col, 0, Document.Lines[Document.Selection.Start.Row].Length); 
@@ -1506,6 +1494,8 @@ public sealed class Editor : Drawable {
     }
     
     private void OnToggleCommentInputs() {
+        using var __ = Document.Update();
+        
         Document.Selection.Normalize();
 
         int minRow = Document.Selection.Min.Row;
@@ -1514,13 +1504,12 @@ public sealed class Editor : Drawable {
             minRow = maxRow = Document.Caret.Row;
         }
         
-        Document.PushUndoState();
         for (int row = minRow; row <= maxRow; row++) {
             var line = Document.Lines[row];
 
             if (line.TrimStart().StartsWith('#')) {
                 int hashIdx = line.IndexOf('#');
-                Document.ReplaceLine(row, line.Remove(hashIdx, 1), raiseEvents: false);
+                Document.ReplaceLine(row, line.Remove(hashIdx, 1));
                 
                 // Shift everything over
                 if (row == minRow)
@@ -1530,7 +1519,7 @@ public sealed class Editor : Drawable {
                 if (row == Document.Caret.Row)
                     Document.Caret.Col--;
             } else {
-                Document.ReplaceLine(row, $"#{line}", raiseEvents: false);
+                Document.ReplaceLine(row, $"#{line}");
                 
                 // Shift everything over
                 if (row == minRow)
@@ -1541,7 +1530,6 @@ public sealed class Editor : Drawable {
                     Document.Caret.Col++;
             }
         }
-        Document.OnTextChanged(new CaretPosition(minRow, 0), new CaretPosition(maxRow, Document.Lines[maxRow].Length));
         
         // Clamp new column
         Document.Selection.Start.Col = Math.Clamp(Document.Selection.Start.Col, 0, Document.Lines[Document.Selection.Start.Row].Length);
@@ -1550,6 +1538,8 @@ public sealed class Editor : Drawable {
     }
     
     private void OnToggleCommentText() {
+        using var __ = Document.Update();
+        
         Document.Selection.Normalize();
 
         int minRow = Document.Selection.Min.Row;
@@ -1569,13 +1559,12 @@ public sealed class Editor : Drawable {
             }
         }
         
-        Document.PushUndoState();
         for (int row = minRow; row <= maxRow; row++) {
             var line = Document.Lines[row];
 
             if (allCommented) {
                 int hashIdx = line.IndexOf('#');
-                Document.ReplaceLine(row, line.Remove(hashIdx, 1), raiseEvents: false);
+                Document.ReplaceLine(row, line.Remove(hashIdx, 1));
                 
                 // Shift everything over
                 if (row == minRow)
@@ -1585,7 +1574,7 @@ public sealed class Editor : Drawable {
                 if (row == Document.Caret.Row)
                     Document.Caret.Col--;
             } else {
-                Document.ReplaceLine(row, $"#{line}", raiseEvents: false);
+                Document.ReplaceLine(row, $"#{line}");
                 
                 // Shift everything over
                 if (row == minRow)
@@ -1596,7 +1585,6 @@ public sealed class Editor : Drawable {
                     Document.Caret.Col++;
             }
         }
-        Document.OnTextChanged(new CaretPosition(minRow, 0), new CaretPosition(maxRow, Document.Lines[maxRow].Length));
         
         // Clamp new column
         Document.Selection.Start.Col = Math.Clamp(Document.Selection.Start.Col, 0, Document.Lines[Document.Selection.Start.Row].Length);
@@ -1609,21 +1597,26 @@ public sealed class Editor : Drawable {
     private void OnInsertTime() => InsertLine($"#{Studio.CommunicationWrapper.ChapterTime}");
     
     private void OnInsertModInfo() {
-        if (Studio.CommunicationWrapper.Server.GetDataFromGame(GameDataType.ModInfo) is { } modInfo)
+        if (Studio.CommunicationWrapper.Server.GetDataFromGame(GameDataType.ModInfo) is { } modInfo) {
             InsertLine(modInfo);
+        }
     }
     
     private void OnInsertConsoleLoadCommand() {
-        if (Studio.CommunicationWrapper.Server.GetDataFromGame(GameDataType.ConsoleCommand, false) is { } command)
+        if (Studio.CommunicationWrapper.Server.GetDataFromGame(GameDataType.ConsoleCommand, false) is { } command) {
             InsertLine(command);
+        }
     }
     
     private void OnInsertSimpleConsoleLoadCommand() {
-        if (Studio.CommunicationWrapper.Server.GetDataFromGame(GameDataType.ConsoleCommand, true) is { } command)
+        if (Studio.CommunicationWrapper.Server.GetDataFromGame(GameDataType.ConsoleCommand, true) is { } command) {
             InsertLine(command);
+        }
     }
     
     private void InsertLine(string text) {
+        using var __ = Document.Update();
+        
         if (Settings.Instance.InsertDirection == InsertDirection.Above) {
             int prevCol = Document.Caret.Col;
 
@@ -1648,6 +1641,8 @@ public sealed class Editor : Drawable {
     }
     
     private void InsertOrRemoveText(Regex regex, string text) {
+        using var __ = Document.Update();
+        
         int insertDir = Settings.Instance.InsertDirection == InsertDirection.Above ? -1 : 1; 
         
         // Check current line
@@ -1664,39 +1659,34 @@ public sealed class Editor : Drawable {
         else {
             InsertLine(text);
         }
-        
-        ScrollCaretIntoView();
     }
     
     private void RemoveLinesMatching(Regex regex) {
-        bool changed = false;
+        using var __ = Document.Update();
         
         for (int row = Document.Lines.Count - 1; row >= 0; row--) {
             if (!regex.IsMatch(Document.Lines[row]))
                 continue;
             
-            if (!changed)
-                Document.PushUndoState();
-            changed = true;
-            
-            Document.RemoveLine(row, raiseEvents: false);
+            Document.RemoveLine(row);
             
             if (Document.Caret.Row >= row)
                 Document.Caret.Row--;
+            if (Document.Selection.Start.Row >= row)
+                Document.Selection.Start.Row--;
+            if (Document.Selection.End.Row >= row)
+                Document.Selection.End.Row--;
         }
-        
-        if (changed)
-            Document.OnTextChanged(new CaretPosition(0, 0), new CaretPosition(Document.Lines.Count - 1, Document.Lines[^1].Length));
     }
     
     private void SwapSelectedActions(Actions a, Actions b) {
+        using var __ = Document.Update();
+        
         if (Document.Selection.Empty)
             return;
         
         int minRow = Document.Selection.Min.Row;
         int maxRow = Document.Selection.Max.Row;
-        
-        bool changed = false;
         
         for (int row = minRow; row <= maxRow; row++) {
             if (!ActionLine.TryParse(Document.Lines[row], out var actionLine))
@@ -1710,18 +1700,13 @@ public sealed class Editor : Drawable {
             else if (actionLine.Actions.HasFlag(b))
                 actionLine.Actions = actionLine.Actions & ~b | a;
             
-            if (!changed)
-                Document.PushUndoState();
-            changed = true;
-            
-            Document.ReplaceLine(row, actionLine.ToString(), raiseEvents: false);
+            Document.ReplaceLine(row, actionLine.ToString());
         }
-        
-        if (changed)
-            Document.OnTextChanged(new CaretPosition(minRow, 0), new CaretPosition(maxRow, Document.Lines[maxRow].Length));
     }
     
     private void CombineInputs(bool sameActions) {
+        using var __ = Document.Update();
+        
         if (Document.Selection.Empty) {
             // Merge current input with surrounding inputs
             // Don't allow this without sameActions
@@ -1767,10 +1752,8 @@ public sealed class Editor : Drawable {
             above = Math.Min(Document.Lines.Count, above + 1);
             below = Math.Max(0, below - 1);
             
-            Document.PushUndoState();
-            Document.RemoveLines(above, below, raiseEvents: false);
-            Document.InsertLine(above, currActionLine.ToString(), raiseEvents: false);
-            Document.OnTextChanged(new CaretPosition(above, 0), new CaretPosition(above, Document.Lines[above].Length));
+            Document.RemoveLines(above, below);
+            Document.InsertLine(above, currActionLine.ToString());
             
             Document.Caret.Row = above;
             Document.Caret.Col = SnapColumnToActionLine(currActionLine, Document.Caret.Col);
@@ -1778,8 +1761,6 @@ public sealed class Editor : Drawable {
             // Merge everything inside the selection
             int minRow = Document.Selection.Min.Row;
             int maxRow = Document.Selection.Max.Row;
-            
-            Document.PushUndoState();
             
             ActionLine? activeActionLine = null;
             int activeRowStart = -1;
@@ -1809,8 +1790,8 @@ public sealed class Editor : Drawable {
                 }
                 
                 // Current line is different, so change the active one
-                Document.RemoveLines(activeRowStart, row - 1, raiseEvents: false);
-                Document.InsertLine(activeRowStart, activeActionLine.Value.ToString(), raiseEvents: false);
+                Document.RemoveLines(activeRowStart, row - 1);
+                Document.InsertLine(activeRowStart, activeActionLine.Value.ToString());
                 
                 activeActionLine = currActionLine;
                 activeRowStart++;
@@ -1822,20 +1803,17 @@ public sealed class Editor : Drawable {
             
             // "Flush" the remaining line
             if (activeActionLine != null) {
-                Document.RemoveLines(activeRowStart, maxRow, raiseEvents: false);
-                Document.InsertLine(activeRowStart, activeActionLine.Value.ToString(), raiseEvents: false);
+                Document.RemoveLines(activeRowStart, maxRow);
+                Document.InsertLine(activeRowStart, activeActionLine.Value.ToString());
                 
                 maxRow = activeRowStart;
             }
             
-            Document.OnTextChanged(new CaretPosition(minRow, 0), new CaretPosition(maxRow, Document.Lines[maxRow].Length));
-            Document.Selection.Clear();
             
+            Document.Selection.Clear();
             Document.Caret.Row = maxRow;
             if (ActionLine.TryParse(Document.Lines[maxRow], out var actionLine))
                 Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
-            
-            ScrollCaretIntoView();
         }
     }
 

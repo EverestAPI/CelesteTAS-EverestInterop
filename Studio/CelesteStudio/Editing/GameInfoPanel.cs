@@ -79,13 +79,14 @@ public class GameInfoPanel : Panel {
         }
         frameInfo.Append(TotalFrames.ToString());
         
-        if (!Studio.Instance.Editor.Document.Selection.Empty) {
-            int minRow = Studio.Instance.Editor.Document.Selection.Min.Row;
-            int maxRow = Studio.Instance.Editor.Document.Selection.Max.Row;
+        var document = Application.Instance.Invoke(() => Studio.Instance.Editor.Document);
+        if (!document.Selection.Empty) {
+            int minRow = document.Selection.Min.Row;
+            int maxRow = document.Selection.Max.Row;
             
             int selectedFrames = 0;
             for (int row = minRow; row <= maxRow; row++) {
-                if (!ActionLine.TryParse(Studio.Instance.Editor.Document.Lines[row], out var actionLine)) {
+                if (!ActionLine.TryParse(document.Lines[row], out var actionLine)) {
                     continue;
                 }
                 selectedFrames += actionLine.Frames;
