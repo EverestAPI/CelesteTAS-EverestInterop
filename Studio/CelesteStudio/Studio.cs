@@ -228,6 +228,7 @@ public sealed class Studio : Form {
                     MenuUtils.CreateSettingToggle("&Auto Save File", nameof(Settings.AutoSave)),
                     MenuUtils.CreateSettingToggle("Auto Remove Mutually Exclusive Actions", nameof(Settings.AutoRemoveMutuallyExclusiveActions)),
                     MenuUtils.CreateSettingToggle("Always on Top", nameof(Settings.AlwaysOnTop)),
+                    MenuUtils.CreateSettingEnum<InsertDirection>("Insert Direction", nameof(Settings.InsertDirection), ["Above Current Line", "Below Current Line"]),
                     MenuUtils.CreateSettingEnum<CaretInsertPosition>("Caret Insert Position", nameof(Settings.CaretInsertPosition), ["After Inserted Text", "Keep at Previous Position"]),
                 }},
                 new SubMenuItem { Text = "&View", Items = {

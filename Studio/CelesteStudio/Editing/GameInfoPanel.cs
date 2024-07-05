@@ -18,12 +18,22 @@ public class GameInfoPanel : Panel {
         };
         
         BackgroundColor = Settings.Instance.Theme.StatusBg;
+        
+        Settings.Changed += () => {
+            Visible = Settings.Instance.ShowGameInfo;
+            UpdateLayout();
+            Studio.Instance.RecalculateLayout();
+        };
         Settings.ThemeChanged += () => {
             label.TextColor = Settings.Instance.Theme.StatusFg;
             BackgroundColor = Settings.Instance.Theme.StatusBg;
+            UpdateLayout();
+            Studio.Instance.RecalculateLayout();
         };
         Settings.FontChanged += () => {
             label.Font = FontManager.StatusFont;
+            UpdateLayout();
+            Studio.Instance.RecalculateLayout();
         };
         
         Padding = 5;
@@ -53,12 +63,6 @@ public class GameInfoPanel : Panel {
             Application.Instance.InvokeAsync(UpdateGameInfo);
         };
         Studio.CommunicationWrapper.Server.Reset += () => Application.Instance.InvokeAsync(UpdateGameInfo);
-        
-        Settings.Changed += () => {
-            Visible = Settings.Instance.ShowGameInfo;
-            UpdateLayout();
-            Studio.Instance.RecalculateLayout();
-        };
         
         void UpdateGameInfo() {
             int oldLineCount = label.Text.Split(["\n", "\r", "\n\r", Environment.NewLine], StringSplitOptions.None).Length;

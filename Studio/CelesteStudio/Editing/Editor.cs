@@ -639,8 +639,7 @@ public sealed class Editor : Drawable {
                         if (Document.Lines[Document.Caret.Row].Trim().Length == 0) {
                             Document.ReplaceLine(Document.Caret.Row, snippet.Insert);
                         } else {
-                            Document.InsertLineBelow(snippet.Insert);
-                            Document.Caret.Row++;
+                            InsertLine(snippet.Insert);
                         }
                         
                         Document.Caret.Col = desiredVisualCol = snippet.Insert.Length;
@@ -1566,28 +1565,41 @@ public sealed class Editor : Drawable {
     }
     
     private void InsertLine(string text) {
-        int prevCol = Document.Caret.Col;
-        Document.InsertLineAbove(text);
-        
-        if (Settings.Instance.CaretInsertPosition == CaretInsertPosition.AfterInsert) {
-            Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
-        } else if (Settings.Instance.CaretInsertPosition == CaretInsertPosition.PreviousPosition) {
-            int newLines = text.Count(c => c == Document.NewLine) + 1;
-            Document.Caret.Row += newLines;
-            Document.Caret.Col = desiredVisualCol = prevCol;
+        if (Settings.Instance.InsertDirection == InsertDirection.Above) {
+            int prevCol = Document.Caret.Col;
+
+            Document.InsertLineAbove(text);
+            
+            if (Settings.Instance.CaretInsertPosition == CaretInsertPosition.AfterInsert) {
+                Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+            } else if (Settings.Instance.CaretInsertPosition == CaretInsertPosition.PreviousPosition) {
+                int newLines = text.Count(c => c == Document.NewLine) + 1;
+                Document.Caret.Row += newLines;
+                Document.Caret.Col = desiredVisualCol = prevCol;
+            }
+        } else if (Settings.Instance.InsertDirection == InsertDirection.Below) {
+            Document.InsertLineBelow(text);
+            
+            if (Settings.Instance.CaretInsertPosition == CaretInsertPosition.AfterInsert) {
+                int newLines = text.Count(c => c == Document.NewLine) + 1;
+                Document.Caret.Row += newLines;
+                Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+            }
         }
     }
     
     private void InsertOrRemoveText(Regex regex, string text) {
+        int insertDir = Settings.Instance.InsertDirection == InsertDirection.Above ? -1 : 1; 
+        
         // Check current line
         if (regex.IsMatch(Document.Lines[Document.Caret.Row])) {
             Document.RemoveLine(Document.Caret.Row);
-            Document.Caret.Row--;   
         }
-        // Check line above as well
-        else if (Document.Caret.Row > 0 && regex.IsMatch(Document.Lines[Document.Caret.Row - 1])) {
-            Document.RemoveLine(Document.Caret.Row - 1);
-            Document.Caret.Row--;
+        // Check line in insert direction as well
+        else if (Document.Caret.Row + insertDir >= 0 && Document.Caret.Row + insertDir < Document.Lines.Count && regex.IsMatch(Document.Lines[Document.Caret.Row + insertDir])) {
+            Document.RemoveLine(Document.Caret.Row + insertDir);
+            if (Settings.Instance.InsertDirection == InsertDirection.Above)
+                Document.Caret.Row--;
         }
         // Otherwise insert new breakpoint
         else {

@@ -15,6 +15,7 @@ using Tomlet.Models;
 namespace CelesteStudio;
 
 public enum ThemeType { Light, Dark }
+public enum InsertDirection { Above, Below }
 public enum CaretInsertPosition { AfterInsert, PreviousPosition }
 
 public sealed class Settings {
@@ -70,6 +71,7 @@ public sealed class Settings {
     public bool AutoRemoveMutuallyExclusiveActions { get; set; } = true;
     public bool AlwaysOnTop { get; set; } = false;
     
+    public InsertDirection InsertDirection { get; set; } = InsertDirection.Above;
     public CaretInsertPosition CaretInsertPosition { get; set; } = CaretInsertPosition.PreviousPosition;
     
     #endregion
