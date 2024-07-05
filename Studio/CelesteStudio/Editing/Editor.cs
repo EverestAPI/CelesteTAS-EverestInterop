@@ -118,6 +118,7 @@ public sealed class Editor : Drawable {
                     Document.Caret.Row = state.CurrentLine;
                     Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
                     Document.Caret = ClampCaret(Document.Caret, wrapLine: false);
+                    Document.Selection.Clear();
                     
                     ScrollCaretIntoView(center: true);
                 }
