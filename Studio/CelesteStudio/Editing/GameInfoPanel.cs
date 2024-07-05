@@ -56,7 +56,8 @@ public class GameInfoPanel : Panel {
         
         Settings.Changed += () => {
             Visible = Settings.Instance.ShowGameInfo;
-            UpdateGameInfo();
+            UpdateLayout();
+            Studio.Instance.RecalculateLayout();
         };
         
         void UpdateGameInfo() {

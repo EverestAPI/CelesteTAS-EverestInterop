@@ -34,11 +34,11 @@ public sealed class Settings {
     public static event Action FontChanged = FontManager.OnFontChanged;
     public static void OnFontChanged() => FontChanged.Invoke();
     
-    public List<Snippet> Snippets { get; set; } = [];
+    #region Settings
     
     [TomlNonSerialized]
     public Theme Theme => ThemeType switch {
-        ThemeType.Light => Theme.Light,    
+        ThemeType.Light => Theme.Light,
         ThemeType.Dark => Theme.Dark,
         _ => throw new UnreachableException(),
     };
@@ -53,25 +53,45 @@ public sealed class Settings {
         }
     }
     
+    public List<Snippet> Snippets { get; set; } = [];
+    
+    public bool SendInputsToCeleste { get; set; } = true;
+    
+    public bool AutoBackupEnabled { get; set; } = true;
+    public int AutoBackupRate { get; set; } = 1;
+    public int AutoBackupCount { get; set; } = 100;
+    
+    public string FontFamily { get; set; } = FontManager.FontFamilyBuiltin;
+    public float EditorFontSize { get; set; } = 12.0f;
+    public float StatusFontSize { get; set; } = 9.0f;
+    
+    #endregion
+    #region Preferences
+    
+    public enum CaretInsertPositionType { AfterInsert, PreviousPosition }
+    
+    public bool AutoSave { get; set; } = true;
+    public bool AutoRemoveMutuallyExclusiveActions { get; set; } = true;
+    public bool AlwaysOnTop { get; set; } = false;
+    
+    public CaretInsertPositionType CaretInsertPosition { get; set; } = CaretInsertPositionType.PreviousPosition;
+    
+    #endregion
+    #region View
+    
+    public bool ShowGameInfo { get; set; } = true;
+    public bool WordWrapComments { get; set; } = true;
+    
+    #endregion
+    #region Other
+    
     public Point LastLocation { get; set; } = Point.Empty;
     public Size LastSize { get; set; } = new(400, 800);
     
     public string LastSaveDirectory { get; set; } = string.Empty;
     
-    public bool AutoSave { get; set; } = true;
-    public bool SendInputsToCeleste { get; set; } = true;
-    public bool ShowGameInfo { get; set; } = true;
-    public bool AutoRemoveMutuallyExclusiveActions { get; set; } = true;
-    public bool AlwaysOnTop { get; set; } = false;
-    public bool AutoBackupEnabled { get; set; } = true;
-    public int AutoBackupRate { get; set; } = 1;
-    public int AutoBackupCount { get; set; } = 100;
     public bool FindMatchCase { get; set; }
-    public bool WordWrapComments { get; set; } = true;
     
-    public string FontFamily { get; set; } = FontManager.FontFamilyBuiltin;
-    public float EditorFontSize { get; set; } = 12.0f;
-    public float StatusFontSize { get; set; } = 9.0f;
     // Zoom is temporary, so not saved
     [TomlNonSerialized]
     public float FontZoom { get; set; } = 1.0f;
@@ -97,6 +117,8 @@ public sealed class Settings {
         OnChanged();
         Save();
     }
+    
+    #endregion
     
     public static void Load() {
         // Register mappings

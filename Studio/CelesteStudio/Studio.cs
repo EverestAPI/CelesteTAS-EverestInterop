@@ -95,6 +95,21 @@ public sealed class Studio : Form {
             ApplySettings();
             Settings.Changed += ApplySettings;
             
+            // Only enable some settings while connected
+            bool wasConnected = CommunicationWrapper.Connected;
+            CommunicationWrapper.Server.StateUpdated += (_, _) => {
+                if (wasConnected != CommunicationWrapper.Connected) {
+                    Menu = CreateMenu();
+                    wasConnected = CommunicationWrapper.Connected;
+                }
+            };
+            CommunicationWrapper.Server.Reset += () => {
+                if (wasConnected != CommunicationWrapper.Connected) {
+                    Menu = CreateMenu();
+                    wasConnected = CommunicationWrapper.Connected;
+                }
+            };
+            
             // Re-open last file if possible
             if (Settings.Instance.RecentFiles.Count > 0 && !string.IsNullOrWhiteSpace(Settings.Instance.RecentFiles[0]) && File.Exists(Settings.Instance.RecentFiles[0]))
                 OpenFile(Settings.Instance.RecentFiles[0]);
@@ -122,6 +137,16 @@ public sealed class Studio : Form {
         const int maxFastForwardSpeed = 30;
         const float minSlowForwardSpeed = 0.1f;
         const float maxSlowForwardSpeed = 0.9f;
+        
+        var recordTasButton = MenuUtils.CreateAction("&Record TAS...", Keys.None, () => {
+            if (!CommunicationWrapper.Connected) {
+                MessageBox.Show("This feature requires the support of the CelesteTAS mod, please launch the game.", MessageBoxButtons.OK);
+                return;
+            }
+            
+            RecordDialog.Show();
+        });
+        recordTasButton.Enabled = CommunicationWrapper.Connected;
         
         // NOTE: Index 0 is the recent files is the current file, so that is skipped
         var openPreviousFile = MenuUtils.CreateAction("Open &Previous File", Keys.Alt | Keys.Left, () => {
@@ -185,22 +210,10 @@ public sealed class Studio : Form {
                     MenuUtils.CreateAction("&Integrate Read Files"),
                     MenuUtils.CreateAction("&Convert to LibTAS Movie..."),
                     new SeparatorMenuItem(),
-                    MenuUtils.CreateAction("&Record TAS...", Keys.None, () => {
-                        if (!CommunicationWrapper.Connected) {
-                            MessageBox.Show("This feature requires the support of the CelesteTAS mod, please launch the game.", MessageBoxButtons.OK);
-                            return;
-                        }
-                        
-                        RecordDialog.Show();
-                    }),
+                    recordTasButton,
                 }},
                 new SubMenuItem {Text = "&Settings", Items = {
-                    MenuUtils.CreateSettingToggle("&Auto Save File", nameof(Settings.AutoSave)),
                     MenuUtils.CreateSettingToggle("&Send Inputs to Celeste", nameof(Settings.SendInputsToCeleste), Application.Instance.CommonModifier | Keys.D),
-                    MenuUtils.CreateSettingToggle("Auto Remove Mutually Exclusive Actions", nameof(Settings.AutoRemoveMutuallyExclusiveActions)),
-                    MenuUtils.CreateSettingToggle("Show Game Info", nameof(Settings.ShowGameInfo)),
-                    MenuUtils.CreateSettingToggle("Always on Top", nameof(Settings.AlwaysOnTop)),
-                    MenuUtils.CreateSettingToggle("Word Wrap Comments", nameof(Settings.WordWrapComments)),
                     new SubMenuItem {Text = "Automatic Backups", Items = {
                         MenuUtils.CreateSettingToggle("Enabled", nameof(Settings.AutoBackupEnabled)),
                         MenuUtils.CreateSettingNumberInput("Backup Rate (minutes)", nameof(Settings.AutoBackupRate), 0, int.MaxValue, 1),
@@ -211,7 +224,16 @@ public sealed class Studio : Form {
                     MenuUtils.CreateSettingEnum<ThemeType>("Theme", nameof(Settings.ThemeType), ["Light", "Dark"]),
                     MenuUtils.CreateAction("Open Settings File...", Keys.None, () => ProcessHelper.OpenInDefaultApp(Settings.SettingsPath)),
                 }},
-                new SubMenuItem {Text = "&Toggles", Items = {
+                new SubMenuItem { Text = "&Preferences", Items = {
+                    MenuUtils.CreateSettingToggle("&Auto Save File", nameof(Settings.AutoSave)),
+                    MenuUtils.CreateSettingToggle("Auto Remove Mutually Exclusive Actions", nameof(Settings.AutoRemoveMutuallyExclusiveActions)),
+                    MenuUtils.CreateSettingToggle("Always on Top", nameof(Settings.AlwaysOnTop)),
+                }},
+                new SubMenuItem { Text = "&View", Items = {
+                    MenuUtils.CreateSettingToggle("Show Game Info", nameof(Settings.ShowGameInfo)),
+                    MenuUtils.CreateSettingToggle("Word Wrap Comments", nameof(Settings.WordWrapComments)),
+                }},
+                new SubMenuItem {Text = "&Game Settings", Enabled = CommunicationWrapper.Connected, Items = {
                     MenuUtils.CreateToggle("&Hitboxes", CommunicationWrapper.GetHitboxes, CommunicationWrapper.ToggleHitboxes),
                     MenuUtils.CreateToggle("&Trigger Hitboxes", CommunicationWrapper.GetTriggerHitboxes, CommunicationWrapper.ToggleTriggerHitboxes),
                     MenuUtils.CreateToggle("Unloaded Room Hitboxes", CommunicationWrapper.GetUnloadedRoomsHitboxes, CommunicationWrapper.ToggleUnloadedRoomsHitboxes),
