@@ -100,18 +100,18 @@ public sealed class Studio : Form {
             
             // Only enable some settings while connected
             bool wasConnected = CommunicationWrapper.Connected;
-            CommunicationWrapper.Server.StateUpdated += (_, _) => {
+            CommunicationWrapper.Server.StateUpdated += (_, _) => Application.Instance.Invoke(() => {
                 if (wasConnected != CommunicationWrapper.Connected) {
                     Menu = CreateMenu();
                     wasConnected = CommunicationWrapper.Connected;
                 }
-            };
-            CommunicationWrapper.Server.Reset += () => {
+            });
+            CommunicationWrapper.Server.Reset += () => Application.Instance.Invoke(() => {
                 if (wasConnected != CommunicationWrapper.Connected) {
                     Menu = CreateMenu();
                     wasConnected = CommunicationWrapper.Connected;
                 }
-            };
+            });
             
             // Re-open last file if possible
             if (Settings.Instance.RecentFiles.Count > 0 && !string.IsNullOrWhiteSpace(Settings.Instance.RecentFiles[0]) && File.Exists(Settings.Instance.RecentFiles[0]))

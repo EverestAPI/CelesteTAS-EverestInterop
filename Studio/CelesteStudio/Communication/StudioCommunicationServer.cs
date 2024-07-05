@@ -176,7 +176,7 @@ public class StudioCommunicationServer : StudioCommunicationBase {
 
         if (_returnData == null && sleepTimeout <= 0) {
             Console.Error.WriteLine("Getting data from the game timed out.");
-            Studio.Instance.Editor.ShowToastMessage("Getting data from the game timed out.", Editor.DefaultToastTime);
+            Application.Instance.Invoke(() => Studio.Instance.Editor.ShowToastMessage("Getting data from the game timed out.", Editor.DefaultToastTime));
         }
 
         return _returnData == string.Empty ? null : _returnData;
