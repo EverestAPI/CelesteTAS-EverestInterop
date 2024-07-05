@@ -656,6 +656,15 @@ public sealed class Editor : Drawable {
                 
                 e.Handled = true;
                 break;
+            // Use Ctrl+/ as an alternative for Ctrl+K
+            case Keys.Slash when e.Control:
+                OnToggleCommentInputs();
+                e.Handled = true;
+                break;
+            case Keys.Slash when e.Shift && e.Control:
+                OnToggleCommentText();
+                e.Handled = true;
+                break;
             default:
                 if (e.Key != Keys.None) {
                     // Search through context menu for hotkeys
