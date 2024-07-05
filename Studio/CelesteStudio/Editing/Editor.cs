@@ -338,7 +338,7 @@ public sealed class Editor : Drawable {
         
         // Calculate line numbers width
         const float foldButtonPadding = 5.0f;
-        bool hasFoldings = foldings.Count != 0;
+        bool hasFoldings = Settings.Instance.ShowFoldIndicators && foldings.Count != 0;
         textOffsetX = Font.CharWidth() * Document.Lines.Count.Digits() + (hasFoldings ? Font.CharWidth() + foldButtonPadding : 0.0f) + LineNumberPadding * 3.0f;
         
         const float paddingRight = 50.0f;
@@ -2155,6 +2155,10 @@ public sealed class Editor : Drawable {
     }
     
     private Folding? LocationToFolding(PointF location) {
+        if (!Settings.Instance.ShowFoldIndicators) {
+            return null;
+        }
+        
         // Extend range through entire line numbers
         if (location.X >= scrollablePosition.X &&
             location.X <= scrollablePosition.X + textOffsetX - LineNumberPadding)
@@ -2338,7 +2342,7 @@ public sealed class Editor : Drawable {
                     row = collapse.MaxRow;
                     collapsed = true;
                 }
-                if (foldings.FirstOrDefault(fold => fold.MinRow == oldRow) is var folding && folding.MinRow != folding.MaxRow) {
+                if (Settings.Instance.ShowFoldIndicators && foldings.FirstOrDefault(fold => fold.MinRow == oldRow) is var folding && folding.MinRow != folding.MaxRow) {
                     e.Graphics.DrawText(Font, Settings.Instance.Theme.LineNumber, scrollablePosition.X + textOffsetX - LineNumberPadding * 2.0f - Font.CharWidth(), yPos, collapsed ? "\ud83d\udf82" : "\ud83d\udf83");
                 }
                 

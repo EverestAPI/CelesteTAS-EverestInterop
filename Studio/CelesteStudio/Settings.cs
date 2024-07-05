@@ -79,6 +79,7 @@ public sealed class Settings {
     
     public bool ShowGameInfo { get; set; } = true;
     public bool WordWrapComments { get; set; } = true;
+    public bool ShowFoldIndicators { get; set; } = true;
     
     #endregion
     #region Other

@@ -234,6 +234,7 @@ public sealed class Studio : Form {
                 new SubMenuItem { Text = "&View", Items = {
                     MenuUtils.CreateSettingToggle("Show Game Info", nameof(Settings.ShowGameInfo)),
                     MenuUtils.CreateSettingToggle("Word Wrap Comments", nameof(Settings.WordWrapComments)),
+                    MenuUtils.CreateSettingToggle("Show Fold Indicators", nameof(Settings.ShowFoldIndicators)),
                 }},
                 new SubMenuItem {Text = "&Game Settings", Enabled = CommunicationWrapper.Connected, Items = {
                     MenuUtils.CreateToggle("&Hitboxes", CommunicationWrapper.GetHitboxes, CommunicationWrapper.ToggleHitboxes),
