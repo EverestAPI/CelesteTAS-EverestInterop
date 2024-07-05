@@ -45,8 +45,8 @@ public sealed class Studio : Form {
     public readonly Action<Window> WindowCreationCallback;
 
     public readonly Editor Editor;
+    public readonly GameInfoPanel GameInfoPanel;
     private readonly Scrollable EditorScrollable;
-    private readonly GameInfoPanel GameInfoPanel;
 
     private string TitleBarText => Editor.Document.FilePath == Document.TemporaryFile 
         ? $"<Unsaved> - Studio v{Version.ToString(3)}" 
