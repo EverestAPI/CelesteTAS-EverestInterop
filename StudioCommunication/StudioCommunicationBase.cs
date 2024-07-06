@@ -85,6 +85,18 @@ public abstract class StudioCommunicationBase : IDisposable {
         writeFile = MemoryMappedFile.CreateFromFile(writeFs, null, BufferCapacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: false);
         readFile = MemoryMappedFile.CreateFromFile(readFs, null, BufferCapacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: false);
         
+        // Clean-up old data (only the header is important)
+        mutex.WaitOne();
+        using (var writeStream = writeFile.CreateViewStream()) {
+            writeStream.Position = 0;
+            writeStream.Write([0x00, 0x00, 0x00, 0x00, 0x00]);    
+        }
+        using (var readStream = readFile.CreateViewStream()) {
+            readStream.Position = 0;
+            readStream.Write([0x00, 0x00, 0x00, 0x00, 0x00]);    
+        }
+        mutex.ReleaseMutex();
+        
         // Start the communication thread
         thread = new Thread(() => {
             var lastCrash = DateTime.UtcNow;
@@ -96,7 +108,7 @@ public abstract class StudioCommunicationBase : IDisposable {
                 Log($"Thread crashed: {ex}");
                 
                 if (DateTime.UtcNow - lastCrash < TimeSpan.FromSeconds(5)) {
-                    Log($"Thread crashed again within 5 seconds. Aborting!");
+                    Log("Thread crashed again within 5 seconds. Aborting!");
                     return;
                 }
                 
