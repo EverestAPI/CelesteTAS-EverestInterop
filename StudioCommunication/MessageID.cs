@@ -9,7 +9,16 @@ public enum MessageID : byte {
     #region Celeste to Studio
     
     /// Sends the current game state to Studio
-    SendState = 0x02,
+    State = 0x02,
+    
+    /// Sends line to update to Studio (for example ChapterTime)
+    UpdateLines = 0x03,
+    
+    /// Sends the current bindings for all hotkeys to Studio
+    CurrentBindings = 0x04,
+    
+    /// Sends the error cause for the recording failure to Studio
+    RecordingFailed = 0x05,
     
     #endregion
     

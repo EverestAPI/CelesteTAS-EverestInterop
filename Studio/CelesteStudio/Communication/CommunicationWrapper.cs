@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CelesteStudio.Util;
 using Eto.Forms;
 using StudioCommunication;
 
@@ -9,6 +10,7 @@ namespace CelesteStudio.Communication;
 
 public sealed class CommunicationWrapper {
     public bool Connected => server.Connected;
+
     public StudioState State { get; private set; }
     
     public event Action<StudioState, StudioState>? StateUpdated;
@@ -16,15 +18,25 @@ public sealed class CommunicationWrapper {
     public event Action ConnectionChanged;
     
     private readonly StudioCommunicationServer server;
+    private Dictionary<HotkeyID, List<WinFormsKeys>> bindings = [];
     
     public CommunicationWrapper() {
-        server = new StudioCommunicationServer(OnStateChanged);
+        server = new StudioCommunicationServer(OnStateChanged, OnLinesChanged, OnBindingsChanged);
     }
     
-    private void OnStateChanged(StudioState state) {
+    private void OnStateChanged(StudioState newState) {
         var prevState = State;
-        State = state;
-        Application.Instance.AsyncInvoke(() => StateUpdated?.Invoke(prevState, state));
+        State = newState;
+        Application.Instance.AsyncInvoke(() => StateUpdated?.Invoke(prevState, newState));
+    }
+    private void OnLinesChanged(Dictionary<int, string> updateLines) {
+        Application.Instance.AsyncInvoke(() => LinesUpdated?.Invoke(updateLines));
+    }
+    private void OnBindingsChanged(Dictionary<HotkeyID, List<WinFormsKeys>> newBindings) {
+        bindings = newBindings;
+        foreach (var pair in bindings) {
+            Console.WriteLine(pair.ToString());
+        }
     }
     
     public void ForceReconnect() {

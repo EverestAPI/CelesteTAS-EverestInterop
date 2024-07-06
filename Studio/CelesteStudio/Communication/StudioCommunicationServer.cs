@@ -1,19 +1,38 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using CelesteStudio.Util;
 using StudioCommunication;
 
 #if REWRITE
 
 namespace CelesteStudio.Communication;
 
-public sealed class StudioCommunicationServer(Action<StudioState> stateChanged) : StudioCommunicationBase(Location.Studio) {
+public sealed class StudioCommunicationServer(
+    Action<StudioState> stateChanged, 
+    Action<Dictionary<int, string>> linesChanged, 
+    Action<Dictionary<HotkeyID, List<WinFormsKeys>>> bindingsChanged) : StudioCommunicationBase(Location.Studio) 
+{
     protected override void HandleMessage(MessageID messageId, BinaryReader reader) {
         switch (messageId) {
             case MessageID.Ping:
                 break;
-            case MessageID.SendState:
+            case MessageID.State:
                 var state = StudioState.Deserialize(reader);
                 stateChanged(state);
+                break;
+            case MessageID.UpdateLines:
+                var updateLines = BinaryHelper.DeserializeDictionary<int, string>(reader);
+                linesChanged(updateLines);
+                break;
+            case MessageID.CurrentBindings:
+                var bindings = BinaryHelper.DeserializeDictionary<int, List<int>>(reader)
+                    .ToDictionary(pair => (HotkeyID) pair.Key, pair => pair.Value.Cast<WinFormsKeys>().ToList());;
+                bindingsChanged(bindings);
+                break;
+            case MessageID.RecordingFailed:
+                // TODO
                 break;
             default:
                 Log($"Received unknown message ID: {messageId}");

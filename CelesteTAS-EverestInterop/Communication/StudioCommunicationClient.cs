@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Celeste.Mod;
 using StudioCommunication;
@@ -20,15 +21,37 @@ public sealed class StudioCommunicationClient() : StudioCommunicationBase(Locati
         }
     }
     
-    public void WriteSendState(StudioState state) {
-        using var writer = WriteMessage(MessageID.SendState);
+    public void WriteState(StudioState state) {
+        using var writer = WriteMessage(MessageID.State);
         if (writer == null) {
             return;
         }
         
         state.Serialize(writer);
+    }
+    public void WriteUpdateLines(Dictionary<int, string> updateLines) {
+        using var writer = WriteMessage(MessageID.UpdateLines);
+        if (writer == null) {
+            return;
+        }
         
-        Log("Sent message SendState");
+        BinaryHelper.SerializeDictionary(updateLines, writer);
+    }
+    public void WriteCurrentBindings(Dictionary<int, List<int>> nativeBindings) {
+        using var writer = WriteMessage(MessageID.CurrentBindings);
+        if (writer == null) {
+            return;
+        }
+        
+        BinaryHelper.SerializeDictionary(nativeBindings, writer);
+    }
+    public void WriteRecordingFailed(RecordingFailedReason reason) {
+        using var writer = WriteMessage(MessageID.RecordingFailed);
+        if (writer == null) {
+            return;
+        }
+        
+        writer.Write((byte)reason);
     }
     
     protected override void Log(string message) {

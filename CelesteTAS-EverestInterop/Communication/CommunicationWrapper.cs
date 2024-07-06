@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using System.Linq;
 using StudioCommunication;
+using TAS.EverestInterop;
 
 namespace TAS.Communication;
 
@@ -31,16 +33,29 @@ public static class CommunicationWrapper {
             return;
         }
         
-        client.WriteSendState(state);
+        client.WriteState(state);
     }
     public static void SendUpdateLines(Dictionary<int, string> updateLines) {
-        // stub
+        if (!Connected) {
+            return;
+        }
+        
+        client.WriteUpdateLines(updateLines);
     }
     public static void SendCurrentBindings() {
-        // stub
+        if (!Connected) {
+            return;
+        }
+        
+        Dictionary<int, List<int>> nativeBindings = Hotkeys.KeysInteractWithStudio.ToDictionary(pair => (int) pair.Key, pair => pair.Value.Cast<int>().ToList());
+        client.WriteCurrentBindings(nativeBindings);
     }
     public static void SendRecordingFailed(RecordingFailedReason reason) {
-        // stub
+        if (!Connected) {
+            return;
+        }
+        
+        client.WriteRecordingFailed(reason);
     }
     
     #endregion
