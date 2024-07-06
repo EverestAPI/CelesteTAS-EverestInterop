@@ -1,5 +1,7 @@
 ﻿#if REWRITE
 
+/// Identifiers for messages sent between Celeste and Studio.
+/// See the send / receive implementations for the attached data.
 public enum MessageID : byte {
     None = 0x00,
     
@@ -25,7 +27,7 @@ public enum MessageID : byte {
     RecordingFailed = 0x13,
     
     /// Response for the RequestGameData message to Studio
-    GameDataRespone = 0x14,
+    GameDataResponse = 0x14,
         
     #endregion
     

@@ -10,7 +10,7 @@ using StudioCommunication;
 
 namespace CelesteStudio.Communication;
 
-public sealed class StudioCommunicationServer(
+public sealed class StudioCommunicationStudio(
     Action connectionChanged,
     Action<StudioState> stateChanged, 
     Action<Dictionary<int, string>> linesChanged, 
@@ -22,10 +22,11 @@ public sealed class StudioCommunicationServer(
         if (Connected) {
             // During startup the editor might be null, so just check to be sure
             // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
-            if (Studio.Instance.Editor != null)
+            if (Studio.Instance.Editor != null) {
                 SendPath(Studio.Instance.Editor.Document.FilePath);
-            else
+            } else {
                 SendPath("Celeste.tas");
+            }
         }
         
         connectionChanged();
@@ -35,20 +36,22 @@ public sealed class StudioCommunicationServer(
         switch (messageId) {
             case MessageID.State:
                 var state = StudioState.Deserialize(reader);
+                LogVerbose("Received message State");
+
                 stateChanged(state);
                 break;
 
             case MessageID.UpdateLines:
                 var updateLines = BinaryHelper.DeserializeDictionary<int, string>(reader);
-                Log($"Received message UpdateLines: {updateLines.Count}");
+                LogVerbose($"Received message UpdateLines: {updateLines.Count}");
 
                 linesChanged(updateLines);
                 break;
 
             case MessageID.CurrentBindings:
                 var bindings = BinaryHelper.DeserializeDictionary<int, List<int>>(reader)
-                    .ToDictionary(pair => (HotkeyID) pair.Key, pair => pair.Value.Cast<WinFormsKeys>().ToList());;
-                Log($"Received message CurrentBindings: {bindings.Count}");
+                    .ToDictionary(pair => (HotkeyID) pair.Key, pair => pair.Value.Cast<WinFormsKeys>().ToList());
+                LogVerbose($"Received message CurrentBindings: {bindings.Count}");
 
                 bindingsChanged(bindings);
                 break;
@@ -57,25 +60,27 @@ public sealed class StudioCommunicationServer(
                 // TODO
                 break;
 
-            case MessageID.GameDataRespone:
+            case MessageID.GameDataResponse:
                 gameData = reader.ReadString();
-                Log($"Received message GameDataRespone: '{gameData}'");
+                LogVerbose($"Received message GameDataResponse: '{gameData}'");
                 break;
                 
             default:
-                Log($"Received unknown message ID: {messageId}");
+                LogError($"Received unknown message ID: {messageId}");
                 break;
         }
     }
     
     public void SendPath(string path) {
         QueueMessage(MessageID.FilePath, writer => writer.Write(path));
+        LogVerbose($"Sent message FilePath: '{path}'");
     }
     public void SendHotkey(HotkeyID hotkey, bool released) {
         QueueMessage(MessageID.Hotkey, writer => {
             writer.Write((byte) hotkey);
             writer.Write(released);
         });
+        LogVerbose($"Sent message Hotkey: {hotkey} ({(released ? "released" : "pressed")})");
     }
     public void SendSetting(string settingName, object? value) {
         QueueMessage(MessageID.SetSetting, writer => {
@@ -84,6 +89,7 @@ public sealed class StudioCommunicationServer(
                 BinaryHelper.SerializeObject(value, writer);
             }
         });
+        LogVerbose($"Sent message SetSetting: '{settingName}' = '{value}");
     }
 
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(1);
@@ -101,11 +107,12 @@ public sealed class StudioCommunicationServer(
                     break;
             }
         });
+        LogVerbose($"Sent message RequestGameData: {gameDataType} ('{arg}')");
         
         // Wait for data to arrive
         var start = DateTime.UtcNow;
         while (gameData == null) {
-            await Task.Delay(1).ConfigureAwait(false);
+            await Task.Delay(UpdateRate).ConfigureAwait(false);
             
             if (DateTime.UtcNow - start >= RequestTimeout) {
                 return null;
@@ -115,9 +122,9 @@ public sealed class StudioCommunicationServer(
         return gameData;
     }
     
-    protected override void Log(string message) {
-        Console.WriteLine($"Studio Communication @ Studio: {message}");
-    }
+    protected override void LogInfo(string message) => Console.WriteLine($"[Info] Studio Communication @ Studio: {message}");
+    protected override void LogVerbose(string message) => Console.WriteLine($"[Verbose] Studio Communication @ Studio: {message}");
+    protected override void LogError(string message) => Console.Error.WriteLine($"[Error] Studio Communication @ Studio: {message}");
 }
 
 #else

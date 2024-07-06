@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
@@ -11,7 +12,7 @@ using System.Threading;
 #nullable enable
 
 public abstract class StudioCommunicationBase : IDisposable {
-    protected enum Location { CelesteTAS, Studio }
+    protected enum Location { Celeste, Studio }
     
     private bool connected = false;
     public bool Connected {
@@ -21,7 +22,7 @@ public abstract class StudioCommunicationBase : IDisposable {
                 return;
             
             connected = value;
-            Log($"Connection changed: {value}");
+            LogInfo($"Connection changed: {value}");
             OnConnectionChanged();
         }
     }
@@ -66,7 +67,7 @@ public abstract class StudioCommunicationBase : IDisposable {
     private const string MutexName = "Global\\CelesteTAS_StudioCom";
     
     protected StudioCommunicationBase(Location location) {
-        Log("Starting communication...");
+        LogInfo("Starting communication...");
         
         // Get or create the shared mutex
         mutex = new Mutex(initiallyOwned: false, MutexName, out bool created);
@@ -75,8 +76,8 @@ public abstract class StudioCommunicationBase : IDisposable {
         }
         
         // Set up the memory mapped files
-        string writeName = $"CelesteTAS_{(location == Location.CelesteTAS ? "C2S" : "S2C")}";
-        string readName  = $"CelesteTAS_{(location == Location.CelesteTAS ? "S2C" : "C2S")}";
+        string writeName = $"CelesteTAS_{(location == Location.Celeste ? "C2S" : "S2C")}";
+        string readName  = $"CelesteTAS_{(location == Location.Celeste ? "S2C" : "C2S")}";
         
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
             writeFile = MemoryMappedFile.CreateOrOpen(writeName, BufferCapacity);
@@ -112,10 +113,10 @@ public abstract class StudioCommunicationBase : IDisposable {
             try {
                 UpdateThread();
             } catch (Exception ex) {
-                Log($"Thread crashed: {ex}");
+                LogInfo($"Thread crashed: {ex}");
                 
                 if (DateTime.UtcNow - lastCrash < TimeSpan.FromSeconds(5)) {
-                    Log("Thread crashed again within 5 seconds. Aborting!");
+                    LogInfo("Thread crashed again within 5 seconds. Aborting!");
                     return;
                 }
                 
@@ -127,10 +128,10 @@ public abstract class StudioCommunicationBase : IDisposable {
             Name = "StudioCom"
         };
         thread.Start();
-        Log("Communication started");
+        LogInfo("Communication started");
     }
     public void Dispose() {
-        Log("Stopping communication...");
+        LogInfo("Stopping communication...");
         GC.SuppressFinalize(this);
         
         runThread = false;
@@ -140,9 +141,11 @@ public abstract class StudioCommunicationBase : IDisposable {
         readFile.Dispose();
         
         mutex.Dispose();
-        Log("Communication stopped");
+        LogInfo("Communication stopped");
     }
     
+    /// Main thread of the studio communication.
+    /// Reads all messages which have been sent and writes any queued messages.
     private void UpdateThread() {
         bool mutexAcquired = false;
 
@@ -159,7 +162,6 @@ public abstract class StudioCommunicationBase : IDisposable {
                     using var readStream = readFile.CreateViewStream();
                     using var reader = new BinaryReader(readStream);
                     
-                    // Read all available messages
                     readStream.Seek(MessageCountOffset, SeekOrigin.Begin);
                     byte count = reader.ReadByte();
                     
@@ -172,6 +174,7 @@ public abstract class StudioCommunicationBase : IDisposable {
                     }
                     
                     if (Connected) {
+                        // Read all available messages
                         for (byte i = 0; i < Math.Min(count, MaxMessageCount); i++) {
                             if (readStream.Position >= MaxOffset) {
                                 break;
@@ -179,17 +182,18 @@ public abstract class StudioCommunicationBase : IDisposable {
                             
                             var messageId = (MessageID)reader.ReadByte();
                             if (messageId == MessageID.None) {
-                                Log("Messages ended early! Something probably got corrupted!");
+                                LogError("Messages ended early! Something probably got corrupted!");
                                 break;
                             } else if (messageId == MessageID.Ping) {
-                                // Just sent to keep up the connect
+                                // Just sent to keep up the connection
                             } else {
                                 HandleMessage(messageId, reader);
                             }
                         }
                         
                         // Reset write offset and message count
-                        readStream.Seek(0, SeekOrigin.Begin);
+                        Debug.Assert(MessagesOffset == 5);
+                        readStream.Position = 0;
                         readStream.Write([0x00, 0x00, 0x00, 0x00, 0x00], 0, 5);
                     }
                 }
@@ -197,6 +201,7 @@ public abstract class StudioCommunicationBase : IDisposable {
                 // Write
                 {
                     if (Connected) {
+                        // Write queued messages
                         lock(queuedWrites) {
                             foreach (var (messageId, serialize) in queuedWrites) {
                                 WriteMessage(messageId, serialize);
@@ -238,11 +243,13 @@ public abstract class StudioCommunicationBase : IDisposable {
         }
     }
     
+    /// Queues the message to be sent with the next update cycle.
     protected void QueueMessage(MessageID messageId, Action<BinaryWriter> serialize) {
         lock(queuedWrites) {
             queuedWrites.Add((messageId, serialize));
         }
     }
+    /// Immediately writes the message, blocking until it is written.
     protected void WriteMessageNow(MessageID messageId, Action<BinaryWriter> serialize) {
         mutex.WaitOne();
         WriteMessage(messageId, serialize);
@@ -254,7 +261,7 @@ public abstract class StudioCommunicationBase : IDisposable {
         using var reader = new BinaryReader(writeStream, Encoding.UTF8);
         using var writer = new BinaryWriter(writeStream);
         
-        // Set current write offset / message count
+        // Set current write offset / check message count
         writeStream.Position = 0;
         
         int offset = reader.ReadInt32() + MessagesOffset;
@@ -281,7 +288,9 @@ public abstract class StudioCommunicationBase : IDisposable {
     protected abstract void OnConnectionChanged();
     protected abstract void HandleMessage(MessageID messageId, BinaryReader reader);
     
-    protected abstract void Log(string message);
+    protected abstract void LogInfo(string message);
+    protected abstract void LogVerbose(string message);
+    protected abstract void LogError(string message);
 }
 
 #else

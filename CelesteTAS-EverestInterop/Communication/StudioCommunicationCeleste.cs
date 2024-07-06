@@ -14,7 +14,7 @@ using TAS.Utils;
 
 namespace TAS.Communication;
 
-public sealed class StudioCommunicationClient() : StudioCommunicationBase(Location.CelesteTAS) {
+public sealed class StudioCommunicationCeleste() : StudioCommunicationBase(Location.Celeste) {
     protected override void OnConnectionChanged() {
         if (Connected) {
             // Stall until input initialized to avoid sending invalid hotkey data
@@ -30,7 +30,7 @@ public sealed class StudioCommunicationClient() : StudioCommunicationBase(Locati
         switch (messageId) {
             case MessageID.FilePath:
                 string path = reader.ReadString();
-                Log($"Received message FilePath: '{path}'");
+                LogVerbose($"Received message FilePath: '{path}'");
 
                 InputController.StudioTasFilePath = path;
                 break;
@@ -38,12 +38,14 @@ public sealed class StudioCommunicationClient() : StudioCommunicationBase(Locati
             case MessageID.Hotkey:
                 var hotkey = (HotkeyID)reader.ReadByte();
                 bool released = reader.ReadBoolean();
+                LogVerbose($"Received message Hotkey: {hotkey} ({(released ? "released" : "pressed")})");
                 
                 Hotkeys.KeysDict[hotkey].OverrideCheck = !released;
                 break;
 
             case MessageID.SetSetting:
                 string settingName = reader.ReadString();
+                LogVerbose($"Received message Hotkey: '{settingName}'");
                 
                 if (typeof(CelesteTasSettings).GetProperty(settingName) is { } property) {
                     if (property.GetSetMethod(true) == null) {
@@ -78,7 +80,7 @@ public sealed class StudioCommunicationClient() : StudioCommunicationBase(Locati
             
             case MessageID.RequestGameData:
                 var gameDataType = (GameDataType)reader.ReadByte();
-                Log($"Received message RequestGameData: '{gameDataType}'");
+                LogVerbose($"Received message RequestGameData: '{gameDataType}'");
 
                 string gameData = gameDataType switch {
                     GameDataType.ConsoleCommand => GameData.GetConsoleCommand(reader.ReadBoolean()),
@@ -89,31 +91,37 @@ public sealed class StudioCommunicationClient() : StudioCommunicationBase(Locati
                     GameDataType.ModUrl => GameData.GetModUrl(),
                     _ => string.Empty
                 };
-                QueueMessage(MessageID.GameDataRespone, writer => writer.Write(gameData ?? string.Empty));
+                QueueMessage(MessageID.GameDataResponse, writer => writer.Write(gameData ?? string.Empty));
+                LogVerbose($"Sent message GameDataResponse: '{gameData}'");
+                
                 break;
             
             default:
-                Log($"Received unknown message ID: {messageId}");
+                LogError($"Received unknown message ID: {messageId}");
                 break;
         }
     }
     
     public void WriteState(StudioState state) {
         QueueMessage(MessageID.State, writer => state.Serialize(writer));
+        LogVerbose("Sent message State");
     }
     public void WriteUpdateLines(Dictionary<int, string> updateLines) {
         QueueMessage(MessageID.UpdateLines, writer => BinaryHelper.SerializeDictionary(updateLines, writer));
+        LogVerbose($"Sent message UpdateLines: {updateLines.Count}");
     }
     public void WriteCurrentBindings(Dictionary<int, List<int>> nativeBindings) {
         QueueMessage(MessageID.CurrentBindings, writer => BinaryHelper.SerializeDictionary(nativeBindings, writer));
+        LogVerbose($"Sent message CurrentBindings: {nativeBindings.Count}");
     }
     public void WriteRecordingFailed(RecordingFailedReason reason) {
         QueueMessage(MessageID.RecordingFailed, writer => writer.Write((byte)reason));
+        LogVerbose($"Sent message RecordingFailed: {reason}");
     }
     
-    protected override void Log(string message) {
-        Logger.Log(LogLevel.Info, "CelesteTAS/StudioCom", message);
-    }
+    protected override void LogInfo(string message) => Logger.Log(LogLevel.Info, "CelesteTAS/StudioCom", message);
+    protected override void LogVerbose(string message) => Logger.Log(LogLevel.Verbose, "CelesteTAS/StudioCom", message);
+    protected override void LogError(string message) => Logger.Log(LogLevel.Error, "CelesteTAS/StudioCom", message);
 }
 
 #else

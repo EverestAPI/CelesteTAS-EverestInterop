@@ -9,8 +9,8 @@ namespace TAS.Communication;
 
 public static class CommunicationWrapper {
     
-    public static bool Connected => client is { Connected: true };
-    private static StudioCommunicationClient client;
+    public static bool Connected => celeste is { Connected: true };
+    private static StudioCommunicationCeleste celeste;
     
     [Load]
     private static void Load() {
@@ -23,17 +23,17 @@ public static class CommunicationWrapper {
     }
     
     public static void Start() {
-        client = new StudioCommunicationClient();
+        celeste = new StudioCommunicationCeleste();
     }
     public static void Stop() {
-        client.Dispose();
-        client = null;
+        celeste.Dispose();
+        celeste = null;
     }
     
     public static void ChangeStatus() {
-        if (TasSettings.AttemptConnectStudio && client == null) {
+        if (TasSettings.AttemptConnectStudio && celeste == null) {
             Start();
-        } else if (client != null) {
+        } else if (celeste != null) {
             Stop();
         }
     }
@@ -45,14 +45,14 @@ public static class CommunicationWrapper {
             return;
         }
         
-        client.WriteState(state);
+        celeste.WriteState(state);
     }
     public static void SendUpdateLines(Dictionary<int, string> updateLines) {
         if (!Connected) {
             return;
         }
         
-        client.WriteUpdateLines(updateLines);
+        celeste.WriteUpdateLines(updateLines);
     }
     public static void SendCurrentBindings() {
         if (!Connected) {
@@ -60,14 +60,14 @@ public static class CommunicationWrapper {
         }
         
         Dictionary<int, List<int>> nativeBindings = Hotkeys.KeysInteractWithStudio.ToDictionary(pair => (int) pair.Key, pair => pair.Value.Cast<int>().ToList());
-        client.WriteCurrentBindings(nativeBindings);
+        celeste.WriteCurrentBindings(nativeBindings);
     }
     public static void SendRecordingFailed(RecordingFailedReason reason) {
         if (!Connected) {
             return;
         }
         
-        client.WriteRecordingFailed(reason);
+        celeste.WriteRecordingFailed(reason);
     }
     
     #endregion
