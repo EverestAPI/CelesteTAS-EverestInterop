@@ -6,6 +6,8 @@ using System.Threading;
 
 #if REWRITE
 
+#nullable enable
+
 public abstract class StudioCommunicationBase : IDisposable {
     protected enum Location { CelesteTAS, Studio }
     
@@ -24,7 +26,7 @@ public abstract class StudioCommunicationBase : IDisposable {
     // Interval for sending Ping messages. Must be greater than TimeoutDelay
     private static readonly TimeSpan PingInterval = TimeSpan.FromSeconds(1);
     // Amount of time to wait before disconnecting when not receiving messages.
-    private static readonly TimeSpan TimeoutDelay = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan TimeoutDelay = TimeSpan.FromSeconds(3);
     
     private DateTime lastPing = DateTime.UtcNow;
     private DateTime lastMessage = DateTime.UtcNow;
@@ -51,7 +53,12 @@ public abstract class StudioCommunicationBase : IDisposable {
     
     private const int BufferCapacity = 1024 * 1024; // 1MB should be enough for everything
     private const int UpdateRate = 1000 / 60;
-    private const string MutexName = "CelesteTAS_StudioCom";
+
+    // Safety caps to avoid any crashes
+    private const int MaxOffset = BufferCapacity - 4096;
+    private const byte MaxMessageCount = 100;
+
+    private const string MutexName = "Global\\CelesteTAS_StudioCom";
     
     protected StudioCommunicationBase(Location location) {
         Log("Starting communication...");
@@ -137,7 +144,11 @@ public abstract class StudioCommunicationBase : IDisposable {
             }
             
             if (Connected) {
-                for (byte i = 0; i < count; i++) {
+                for (byte i = 0; i < Math.Min(count, MaxMessageCount); i++) {
+                    if (readStream.Position >= MaxOffset) {
+                        break;
+                    }
+                    
                     var messageId = (MessageID)reader.ReadByte();
                     if (messageId == MessageID.None) {
                         Log("Messages ended early! Something probably got corrupted!");
@@ -184,15 +195,16 @@ public abstract class StudioCommunicationBase : IDisposable {
     protected class MessageWriter(Mutex mutex, MemoryMappedViewStream stream) : BinaryWriter(stream, Encoding.UTF8, leaveOpen: true), IDisposable {
         public new void Dispose() {
             // Update write offset (NOTE: We can't use the writer anymore, since it was already disposed)
-            stream.Seek(0, SeekOrigin.Begin);
-            stream.Write(BitConverter.GetBytes((int)stream.Position - MessagesOffset));
+            int offset = (int)stream.Position - MessagesOffset;
+            stream.Position = 0;
+            stream.Write(BitConverter.GetBytes(offset));
             
             stream.Dispose();
             mutex.ReleaseMutex();
         }
     }
     
-    protected MessageWriter WriteMessage(MessageID messageId) {
+    protected MessageWriter? WriteMessage(MessageID messageId) {
         var writeStream = writeFile.CreateViewStream();
         var writer = new MessageWriter(mutex, writeStream);
         
@@ -201,13 +213,22 @@ public abstract class StudioCommunicationBase : IDisposable {
         
         // Set current write offset / message count
         using var reader = new BinaryReader(writeStream, Encoding.UTF8, leaveOpen: true);
-        int offset = reader.ReadInt32();
+        writeStream.Position = 0;
+        
+        int offset = reader.ReadInt32() + MessagesOffset;
         byte count = reader.ReadByte();
         
-        writer.Seek(MessageCountOffset, SeekOrigin.Begin);
-        writer.Write(count + 1);
+        if (offset >= MaxOffset || count >= MaxMessageCount) {
+            // The other process probably was disconnected, but the timeout isn't done yet
+            writer.Dispose();
+            return null;
+        }
         
-        writer.Seek(offset + MessagesOffset, SeekOrigin.Begin);
+        writeStream.Position = MessageCountOffset;
+        writer.Write((byte)(count + 1));
+        // Thread.Sleep(30);
+        
+        writeStream.Position = offset;
         writer.Write((byte)messageId);
         return writer;
     }

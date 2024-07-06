@@ -21,10 +21,14 @@ public sealed class StudioCommunicationClient() : StudioCommunicationBase(Locati
     }
     
     public void WriteSendState(StudioState state) {
-        Log("Sending message SendState");
-        
         using var writer = WriteMessage(MessageID.SendState);
+        if (writer == null) {
+            return;
+        }
+        
         state.Serialize(writer);
+        
+        Log("Sent message SendState");
     }
     
     protected override void Log(string message) {
@@ -490,7 +494,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         Initialized = true;
     }
 
-    private void SendStateNow(StudioInfo studioInfo, bool canFail) {
+    private void SendStateNow(StudioState studioInfo, bool canFail) {
         if (Initialized) {
             byte[] data = studioInfo.ToByteArray();
             Message message = new(MessageID.SendState, data);
@@ -502,7 +506,7 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         }
     }
 
-    public void SendState(StudioInfo studioInfo, bool canFail) {
+    public void SendState(StudioState studioInfo, bool canFail) {
         PendingWrite = () => SendStateNow(studioInfo, canFail);
     }
 

@@ -190,7 +190,7 @@ namespace CelesteStudio.Communication;
 
 public class CommunicationWrapper {
     private Dictionary<HotkeyID, List<WinFormsKeys>> _bindings = new();
-    public StudioInfo State { get; private set; }
+    public StudioState State { get; private set; }
 
     public StudioCommunicationServer Server { get; }
 

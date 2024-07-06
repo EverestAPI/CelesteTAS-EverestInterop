@@ -62,7 +62,7 @@ public enum MessageID : byte {
 
     //Pure data transfer
     /// <summary>
-    /// Structure: object[] = StudioInfo
+    /// Structure: object[] = StudioState
     /// </summary>
     SendState = 0x10,
 

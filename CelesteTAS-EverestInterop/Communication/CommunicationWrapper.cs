@@ -5,7 +5,7 @@ namespace TAS.Communication;
 
 public static class CommunicationWrapper {
     
-    public static bool Connected => client != null; // TODO: Improve this check
+    public static bool Connected => client is { Connected: true };
     private static StudioCommunicationClient client;
     
     public static void Start() {
@@ -27,7 +27,9 @@ public static class CommunicationWrapper {
     #region Actions
     
     public static void SendState(StudioState state) {
-        if (!Connected) return;
+        if (!Connected) {
+            return;
+        }
         
         client.WriteSendState(state);
     }
