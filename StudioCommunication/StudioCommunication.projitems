@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Actions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BinaryHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)BinaryFormatterHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)HotkeyID.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MessageID.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PlatformUtils.cs" />

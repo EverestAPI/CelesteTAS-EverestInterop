@@ -36,4 +36,37 @@ public record struct StudioState() {
         LevelName = reader.ReadString(),
         ChapterTime = reader.ReadString()
     };
+    
+#if !REWRITE
+    // ReSharper disable once UnusedMember.Global
+    public byte[] ToByteArray() {
+        return BinaryFormatterHelper.ToByteArray(new object[] {
+            CurrentLine,
+            CurrentLineSuffix,
+            CurrentFrameInTas,
+            TotalFrames,
+            SaveStateLine,
+            (int)tasStates,
+            GameInfo,
+            LevelName,
+            ChapterTime,
+        });
+    }
+    
+    // ReSharper disable once UnusedMember.Global
+    public static StudioState FromByteArray(byte[] data) {
+        object[] values = BinaryFormatterHelper.FromByteArray<object[]>(data);
+        return new StudioState {
+            CurrentLine = (int) values[0],
+            CurrentLineSuffix = values[1] as string,
+            CurrentFrameInTas = (int) values[2],
+            TotalFrames = (int) values[3],
+            SaveStateLine = (int) values[4],
+            tasStates = (States) values[5],
+            GameInfo = values[6] as string,
+            LevelName = values[7] as string,
+            ChapterTime = values[8] as string
+        };
+    }
+#endif
 }

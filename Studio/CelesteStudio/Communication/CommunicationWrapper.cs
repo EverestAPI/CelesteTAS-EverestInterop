@@ -260,6 +260,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Xml.Schema;
 using StudioCommunication;
 using CelesteStudio.Communication;
 using CelesteStudio.Util;
@@ -270,16 +271,56 @@ namespace CelesteStudio.Communication;
 public class CommunicationWrapper {
     private Dictionary<HotkeyID, List<WinFormsKeys>> _bindings = new();
     public StudioState State { get; private set; }
-
+    
+    public event Action? ConnectionChanged;
+    public event Action<StudioState, StudioState>? StateUpdated;
+    public event Action<Dictionary<int, string>>? LinesUpdated;
+    
     public StudioCommunicationServer Server { get; }
 
     public CommunicationWrapper() {
         Server = new StudioCommunicationServer();
+        
+        bool wasConnected = Connected;
         Server.BindingsUpdated += bindings => _bindings = bindings;
-        Server.StateUpdated += (_, state) => State = state;
+        Server.StateUpdated += (_, state) => {
+            Application.Instance.Invoke(() => StateUpdated?.Invoke(State, state));
+            if (wasConnected != Connected) {
+                Application.Instance.Invoke(() => ConnectionChanged?.Invoke());
+                wasConnected = Connected;
+            }
+            
+            State = state;
+        };
+        Server.LinesUpdated += updateLines => Application.Instance.Invoke(() => LinesUpdated?.Invoke(updateLines));
+        Server.Reset += () => {
+            if (wasConnected != Connected) {
+                Application.Instance.Invoke(() => ConnectionChanged?.Invoke());
+                wasConnected = Connected;
+            }
+        }; 
         Server.Run();
     }
-
+    
+    public string GetConsoleCommand(bool simple) {
+        return Server.GetDataFromGame(GameDataType.ConsoleCommand, simple) ?? string.Empty;
+    }
+    public string GetModURL() {
+        return Server.GetDataFromGame(GameDataType.ModUrl) ?? string.Empty;
+    }
+    public string GetModInfo() {
+        return Server.GetDataFromGame(GameDataType.ModInfo) ?? string.Empty;
+    }
+    public string GetExactGameInfo() {
+        return Server.GetDataFromGame(GameDataType.ExactGameInfo) ?? string.Empty;
+    }
+    public void RecordTAS(string fileName) {
+        Server.RecordTAS(fileName);
+    }
+    public void ForceReconnect() {
+        Server.ExternalReset();
+    }
+    
     public void WriteWait() => Server.WriteWait();
     public void SendPath(string path) => Server.SendPath(path);
     
