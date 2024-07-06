@@ -144,86 +144,97 @@ public abstract class StudioCommunicationBase : IDisposable {
     }
     
     private void UpdateThread() {
-        while (runThread) {
-            Thread.Sleep(UpdateRate);
-            
-            var now = DateTime.UtcNow;
-            mutex.WaitOne();
-            
-            // Read
-            {
-                using var readStream = readFile.CreateViewStream();
-                using var reader = new BinaryReader(readStream);
+        bool mutexAcquired = false;
+
+        try {
+            while (runThread) {
+                Thread.Sleep(UpdateRate);
                 
-                // Read all available messages
-                readStream.Seek(MessageCountOffset, SeekOrigin.Begin);
-                byte count = reader.ReadByte();
+                var now = DateTime.UtcNow;
+                mutex.WaitOne();
+                mutexAcquired = true;
                 
-                // Handle timeout
-                if (count != 0) {
-                    lastMessage = now;
-                    Connected = true;
-                } else if (now - lastMessage > TimeoutDelay) {
-                    Connected = false;
-                }
-                
-                if (Connected) {
-                    for (byte i = 0; i < Math.Min(count, MaxMessageCount); i++) {
-                        if (readStream.Position >= MaxOffset) {
-                            break;
-                        }
-                        
-                        var messageId = (MessageID)reader.ReadByte();
-                        if (messageId == MessageID.None) {
-                            Log("Messages ended early! Something probably got corrupted!");
-                            break;
-                        } else if (messageId == MessageID.Ping) {
-                            // Just sent to keep up the connect
-                        } else {
-                            HandleMessage(messageId, reader);
-                        }
-                    }
+                // Read
+                {
+                    using var readStream = readFile.CreateViewStream();
+                    using var reader = new BinaryReader(readStream);
                     
-                    // Reset write offset and message count
-                    readStream.Seek(0, SeekOrigin.Begin);
-                    readStream.Write([0x00, 0x00, 0x00, 0x00, 0x00], 0, 5);
-                }
-            }
-            
-            // Write
-            {
-                if (Connected) {
-                    lock(queuedWrites) {
-                        foreach (var (messageId, serialize) in queuedWrites) {
-                            WriteMessage(messageId, serialize);
-                        }
-                        queuedWrites.Clear();
-                    }
-                }
-                
-                // Only send ping when there aren't any other messages (so they aren't spammed)
-                if (now - lastPing > PingInterval) {
-                    using var writeStream = writeFile.CreateViewStream();
-                    using var reader = new BinaryReader(writeStream);
-                    using var writer = new BinaryWriter(writeStream);
-                    
-                    // Set current write offset / message count
-                    writeStream.Position = MessageCountOffset;
+                    // Read all available messages
+                    readStream.Seek(MessageCountOffset, SeekOrigin.Begin);
                     byte count = reader.ReadByte();
                     
-                    if (count == 0) {
-                        // The Ping message has no data attached and there aren't any other messages
-                        writeStream.Position = 0;
-                        writer.Write(1);
-                        writer.Write((byte)1);
-                        writer.Write((byte)MessageID.Ping);
+                    // Handle timeout
+                    if (count != 0) {
+                        lastMessage = now;
+                        Connected = true;
+                    } else if (now - lastMessage > TimeoutDelay) {
+                        Connected = false;
                     }
                     
-                    lastPing = now;
+                    if (Connected) {
+                        for (byte i = 0; i < Math.Min(count, MaxMessageCount); i++) {
+                            if (readStream.Position >= MaxOffset) {
+                                break;
+                            }
+                            
+                            var messageId = (MessageID)reader.ReadByte();
+                            if (messageId == MessageID.None) {
+                                Log("Messages ended early! Something probably got corrupted!");
+                                break;
+                            } else if (messageId == MessageID.Ping) {
+                                // Just sent to keep up the connect
+                            } else {
+                                HandleMessage(messageId, reader);
+                            }
+                        }
+                        
+                        // Reset write offset and message count
+                        readStream.Seek(0, SeekOrigin.Begin);
+                        readStream.Write([0x00, 0x00, 0x00, 0x00, 0x00], 0, 5);
+                    }
                 }
+                
+                // Write
+                {
+                    if (Connected) {
+                        lock(queuedWrites) {
+                            foreach (var (messageId, serialize) in queuedWrites) {
+                                WriteMessage(messageId, serialize);
+                            }
+                            queuedWrites.Clear();
+                        }
+                    }
+                    
+                    // Only send ping when there aren't any other messages (so they aren't spammed)
+                    if (now - lastPing > PingInterval) {
+                        using var writeStream = writeFile.CreateViewStream();
+                        using var reader = new BinaryReader(writeStream);
+                        using var writer = new BinaryWriter(writeStream);
+                        
+                        // Set current write offset / message count
+                        writeStream.Position = MessageCountOffset;
+                        byte count = reader.ReadByte();
+                        
+                        if (count == 0) {
+                            // The Ping message has no data attached and there aren't any other messages
+                            writeStream.Position = 0;
+                            writer.Write(1);
+                            writer.Write((byte)1);
+                            writer.Write((byte)MessageID.Ping);
+                        }
+                        
+                        lastPing = now;
+                    }
+                }
+                
+                mutexAcquired = false;
+                mutex.ReleaseMutex();
             }
-            
-            mutex.ReleaseMutex();
+        } finally {
+            // Always make sure to release the mutex again
+            if (mutexAcquired) {
+                mutex.ReleaseMutex();
+            }
         }
     }
     
