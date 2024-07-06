@@ -4,7 +4,7 @@
         <AssemblyName>CelesteTAS-EverestInterop</AssemblyName>
         <RootNamespace>TAS</RootNamespace>
         <TargetFramework>net7.0</TargetFramework>
-        <LangVersion>11</LangVersion>
+        <LangVersion>latest</LangVersion>
 
         <CelestePrefix Condition="'$(CelestePrefix)' == '' And Exists('../../../Celeste.dll')">../../..</CelestePrefix>
         <CelestePrefix Condition="'$(CelestePrefix)' == ''">lib-stripped</CelestePrefix>
