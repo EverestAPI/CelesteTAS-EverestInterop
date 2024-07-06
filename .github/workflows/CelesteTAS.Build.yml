@@ -1,0 +1,36 @@
+name: Build CelesteTAS
+
+on:
+  workflow_call:
+  push:
+    branches:
+      - '*'
+    paths:
+      - 'CelesteTAS-EverestInterop/**'
+      - .github/workflows/CelesteTAS.Build.yml
+  pull_request:
+    branches:
+      - '*'
+    paths:
+      - 'CelesteTAS-EverestInterop/**'
+      - .github/workflows/CelesteTAS.Build.yml
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+           
+      - name: Build
+        run: dotnet build CelesteTAS-EverestInterop -c Release
+          
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CelesteStudio-osx-x64
+          path: |
+            everest.yaml
+            bin
+            Dialog
