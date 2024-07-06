@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Text;
@@ -48,6 +49,8 @@ public abstract class StudioCommunicationBase : IDisposable {
     private readonly MemoryMappedFile writeFile;
     private readonly MemoryMappedFile readFile;
     
+    private readonly List<(MessageID, Action<BinaryWriter>)> queuedWrites = [];
+    
     private const int MessageCountOffset = 4;
     private const int MessagesOffset = MessageCountOffset + 1;
     
@@ -88,7 +91,7 @@ public abstract class StudioCommunicationBase : IDisposable {
             
             Retry:
             try {
-                ReadThread();
+                UpdateThread();
             } catch (Exception ex) {
                 Log($"Thread crashed: {ex}");
                 
@@ -121,98 +124,106 @@ public abstract class StudioCommunicationBase : IDisposable {
         Log("Communication stopped");
     }
     
-    private void ReadThread() {
+    private void UpdateThread() {
         while (runThread) {
             Thread.Sleep(UpdateRate);
             
-            using var readStream = readFile.CreateViewStream();
-            using var reader = new BinaryReader(readStream);
-            
             mutex.WaitOne();
-            
-            // Read all available messages
-            readStream.Seek(MessageCountOffset, SeekOrigin.Begin);
-            byte count = reader.ReadByte();
-            
-            // Handle timeout
             var now = DateTime.UtcNow;
-            if (count != 0) {
-                lastMessage = DateTime.UtcNow;
-                Connected = true;
-            } else if (now - lastMessage > TimeoutDelay) {
-                Connected = false;
-            }
             
-            if (Connected) {
-                for (byte i = 0; i < Math.Min(count, MaxMessageCount); i++) {
-                    if (readStream.Position >= MaxOffset) {
-                        break;
-                    }
-                    
-                    var messageId = (MessageID)reader.ReadByte();
-                    if (messageId == MessageID.None) {
-                        Log("Messages ended early! Something probably got corrupted!");
-                        break;
-                    }
-                    
-                    HandleMessage(messageId, reader);
+            // Read
+            {
+                using var readStream = readFile.CreateViewStream();
+                using var reader = new BinaryReader(readStream);
+                
+                // Read all available messages
+                readStream.Seek(MessageCountOffset, SeekOrigin.Begin);
+                byte count = reader.ReadByte();
+                
+                // Handle timeout
+                if (count != 0) {
+                    lastMessage = now;
+                    Connected = true;
+                } else if (now - lastMessage > TimeoutDelay) {
+                    Connected = false;
                 }
                 
-                // Reset write offset and message count
-                readStream.Seek(0, SeekOrigin.Begin);
-                readStream.Write([0x00, 0x00, 0x00, 0x00, 0x00], 0, 5);
+                if (Connected) {
+                    for (byte i = 0; i < Math.Min(count, MaxMessageCount); i++) {
+                        if (readStream.Position >= MaxOffset) {
+                            break;
+                        }
+                        
+                        var messageId = (MessageID)reader.ReadByte();
+                        if (messageId == MessageID.None) {
+                            Log("Messages ended early! Something probably got corrupted!");
+                            break;
+                        }
+                        
+                        HandleMessage(messageId, reader);
+                    }
+                    
+                    // Reset write offset and message count
+                    readStream.Seek(0, SeekOrigin.Begin);
+                    readStream.Write([0x00, 0x00, 0x00, 0x00, 0x00], 0, 5);
+                }
             }
             
-            // Send ping when there aren't any other messages (don't spam them)
-            if (now - lastPing > PingInterval) {
-                using var writeStream = writeFile.CreateViewStream();
-                using var writer = new BinaryWriter(writeStream);
-                
-                // Set current write offset / message count
-                using var writeReader = new BinaryReader(writeStream);
-                int writeOffset = writeReader.ReadInt32();
-                byte writeCount = writeReader.ReadByte();
-                
-                if (writeCount == 0) {
-                    // The Ping message has no data attached and there aren't any other messages
-                    writer.Seek(0, SeekOrigin.Begin);
-                    writer.Write(1);
-                    
-                    writer.Seek(MessageCountOffset, SeekOrigin.Begin);
-                    writer.Write(writeCount + 1);
-                    
-                    writer.Seek(writeOffset + MessagesOffset, SeekOrigin.Begin);
-                    writer.Write((byte)MessageID.Ping);
+            // Write
+            {
+                if (Connected) {
+                    lock(queuedWrites) {
+                        foreach (var (messageId, serialize) in queuedWrites) {
+                            WriteMessage(messageId, serialize);
+                        }
+                        queuedWrites.Clear();
+                    }
                 }
                 
-                lastPing = now;
+                // Only send ping when there aren't any other messages (so they aren't spammed)
+                if (now - lastPing > PingInterval) {
+                    using var writeStream = writeFile.CreateViewStream();
+                    using var reader = new BinaryReader(writeStream);
+                    using var writer = new BinaryWriter(writeStream);
+                    
+                    // Set current write offset / message count
+                    writeStream.Position = MessageCountOffset;
+                    byte count = reader.ReadByte();
+                    
+                    if (count == 0) {
+                        // The Ping message has no data attached and there aren't any other messages
+                        writeStream.Position = 0;
+                        writer.Write(1);
+                        writer.Write((byte)1);
+                        writer.Write((byte)MessageID.Ping);
+                    }
+                    
+                    lastPing = now;
+                }
             }
             
             mutex.ReleaseMutex();
         }
     }
     
-    protected class MessageWriter(Mutex mutex, MemoryMappedViewStream stream) : BinaryWriter(stream, Encoding.UTF8, leaveOpen: true), IDisposable {
-        public new void Dispose() {
-            // Update write offset (NOTE: We can't use the writer anymore, since it was already disposed)
-            int offset = (int)stream.Position - MessagesOffset;
-            stream.Position = 0;
-            stream.Write(BitConverter.GetBytes(offset));
-            
-            stream.Dispose();
-            mutex.ReleaseMutex();
+    protected void QueueMessage(MessageID messageId, Action<BinaryWriter> serialize) {
+        lock(queuedWrites) {
+            queuedWrites.Add((messageId, serialize));
         }
     }
     
-    protected MessageWriter? WriteMessage(MessageID messageId) {
-        var writeStream = writeFile.CreateViewStream();
-        var writer = new MessageWriter(mutex, writeStream);
-        
-        // Mutex is released in MessageWriter.Dispose()
+    private void WriteMessageNow(MessageID messageId, Action<BinaryWriter> serialize) {
         mutex.WaitOne();
+        WriteMessage(messageId, serialize);
+        mutex.ReleaseMutex();
+    }
+    
+    private void WriteMessage(MessageID messageId, Action<BinaryWriter> serialize) {
+        using var writeStream = writeFile.CreateViewStream();
+        using var reader = new BinaryReader(writeStream, Encoding.UTF8);
+        using var writer = new BinaryWriter(writeStream);
         
         // Set current write offset / message count
-        using var reader = new BinaryReader(writeStream, Encoding.UTF8, leaveOpen: true);
         writeStream.Position = 0;
         
         int offset = reader.ReadInt32() + MessagesOffset;
@@ -220,17 +231,20 @@ public abstract class StudioCommunicationBase : IDisposable {
         
         if (offset >= MaxOffset || count >= MaxMessageCount) {
             // The other process probably was disconnected, but the timeout isn't done yet
-            writer.Dispose();
-            return null;
+            return;
         }
         
         writeStream.Position = MessageCountOffset;
         writer.Write((byte)(count + 1));
-        // Thread.Sleep(30);
         
         writeStream.Position = offset;
         writer.Write((byte)messageId);
-        return writer;
+        
+        serialize(writer);
+        
+        int newOffset = (int)writeStream.Position - MessagesOffset;
+        writeStream.Position = 0;
+        writeStream.Write(BitConverter.GetBytes(newOffset));
     }
     
     protected abstract void HandleMessage(MessageID messageId, BinaryReader reader);
