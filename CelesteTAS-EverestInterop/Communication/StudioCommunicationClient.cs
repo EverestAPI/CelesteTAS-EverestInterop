@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using Celeste.Mod;
 using StudioCommunication;
 using TAS.EverestInterop;
@@ -14,6 +15,17 @@ using TAS.Utils;
 namespace TAS.Communication;
 
 public sealed class StudioCommunicationClient() : StudioCommunicationBase(Location.CelesteTAS) {
+    protected override void OnConnectionChanged() {
+        if (Connected) {
+            // Stall until input initialized to avoid sending invalid hotkey data
+            while (Hotkeys.KeysDict == null) {
+                Thread.Sleep(UpdateRate);
+            }
+            
+            CommunicationWrapper.SendCurrentBindings();       
+        }
+    }
+    
     protected override void HandleMessage(MessageID messageId, BinaryReader reader) {
         switch (messageId) {
             case MessageID.FilePath:

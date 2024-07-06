@@ -13,17 +13,20 @@ public sealed class CommunicationWrapper {
 
     public StudioState State { get; private set; }
     
+    public event Action? ConnectionChanged;
     public event Action<StudioState, StudioState>? StateUpdated;
     public event Action<Dictionary<int, string>>? LinesUpdated;
-    public event Action ConnectionChanged;
     
     private readonly StudioCommunicationServer server;
     private Dictionary<HotkeyID, List<WinFormsKeys>> bindings = [];
     
     public CommunicationWrapper() {
-        server = new StudioCommunicationServer(OnStateChanged, OnLinesChanged, OnBindingsChanged);
+        server = new StudioCommunicationServer(OnConnectionChanged, OnStateChanged, OnLinesChanged, OnBindingsChanged);
     }
     
+    private void OnConnectionChanged() {
+        Application.Instance.AsyncInvoke(() => ConnectionChanged?.Invoke());
+    }
     private void OnStateChanged(StudioState newState) {
         var prevState = State;
         State = newState;

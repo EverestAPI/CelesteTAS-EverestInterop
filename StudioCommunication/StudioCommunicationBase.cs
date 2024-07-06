@@ -21,6 +21,7 @@ public abstract class StudioCommunicationBase : IDisposable {
             
             connected = value;
             Log($"Connection changed: {value}");
+            OnConnectionChanged();
         }
     }
     
@@ -55,7 +56,7 @@ public abstract class StudioCommunicationBase : IDisposable {
     private const int MessagesOffset = MessageCountOffset + 1;
     
     private const int BufferCapacity = 1024 * 1024; // 1MB should be enough for everything
-    private const int UpdateRate = 1000 / 60;
+    protected const int UpdateRate = 1000 / 60;
 
     // Safety caps to avoid any crashes
     private const int MaxOffset = BufferCapacity - 4096;
@@ -260,6 +261,7 @@ public abstract class StudioCommunicationBase : IDisposable {
         writeStream.Write(BitConverter.GetBytes(newOffset));
     }
     
+    protected abstract void OnConnectionChanged();
     protected abstract void HandleMessage(MessageID messageId, BinaryReader reader);
     
     protected abstract void Log(string message);

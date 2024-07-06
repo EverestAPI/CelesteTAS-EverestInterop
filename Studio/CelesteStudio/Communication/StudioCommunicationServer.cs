@@ -11,11 +11,25 @@ using StudioCommunication;
 namespace CelesteStudio.Communication;
 
 public sealed class StudioCommunicationServer(
+    Action connectionChanged,
     Action<StudioState> stateChanged, 
     Action<Dictionary<int, string>> linesChanged, 
     Action<Dictionary<HotkeyID, List<WinFormsKeys>>> bindingsChanged) : StudioCommunicationBase(Location.Studio) 
 {
     private string? gameData;
+    
+    protected override void OnConnectionChanged() {
+        if (Connected) {
+            // During startup the editor might be null, so just check to be sure
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+            if (Studio.Instance.Editor != null)
+                SendPath(Studio.Instance.Editor.Document.FilePath);
+            else
+                SendPath("Celeste.tas");
+        }
+        
+        connectionChanged();
+    }
     
     protected override void HandleMessage(MessageID messageId, BinaryReader reader) {
         switch (messageId) {
