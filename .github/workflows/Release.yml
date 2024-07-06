@@ -1,11 +1,19 @@
 name: Release
 
 on:
-
+  push:
+    tags:
+      - "v*.*.*"
 
 jobs:
-  build:
+  build-studio:
+    uses: ./.github/workflows/CelesteStudio.Build.yml
+    with:
+      rewrite: true
+  
+  release:
     runs-on: ubuntu-latest
+    needs: build-studio
 
     steps:
       - name: Checkout
