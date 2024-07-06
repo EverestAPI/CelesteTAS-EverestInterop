@@ -45,12 +45,12 @@ public class GameInfoPanel : Panel {
         ContextMenu = new ContextMenu {
             Items = {
                 MenuUtils.CreateAction("Copy Game Info to Clipboard", Application.Instance.CommonModifier | Keys.Shift | Keys.C, () => {
-                    if (Studio.CommunicationWrapper.Server.GetDataFromGame(GameDataType.ExactGameInfo) is { } exactGameInfo) {
+                    if (Studio.CommunicationWrapper.GetExactGameInfo() is var exactGameInfo && !string.IsNullOrWhiteSpace(exactGameInfo)) {
                         Clipboard.Instance.Clear();
                         Clipboard.Instance.Text = exactGameInfo;
                     }
                 }),
-                MenuUtils.CreateAction("Reconnect Studio and Celeste", Application.Instance.CommonModifier | Keys.Shift | Keys.D, () => Studio.CommunicationWrapper.Server.ExternalReset()),
+                MenuUtils.CreateAction("Reconnect Studio and Celeste", Application.Instance.CommonModifier | Keys.Shift | Keys.D, () => Studio.CommunicationWrapper.ForceReconnect()),
                 new SeparatorMenuItem(),
                 MenuUtils.CreateAction("Copy Custom Info Template to Clipboard", Keys.None, () => Studio.CommunicationWrapper.CopyCustomInfoTemplateToClipboard()),
                 MenuUtils.CreateAction("Set Custom Info Template from Clipboard", Keys.None, () => Studio.CommunicationWrapper.SetCustomInfoTemplateFromClipboard()),
@@ -60,7 +60,7 @@ public class GameInfoPanel : Panel {
             }
         };
         
-        Studio.CommunicationWrapper.Server.StateUpdated += (prevState, state) => {
+        Studio.CommunicationWrapper.StateUpdated += (prevState, state) => {
             if (!Settings.Instance.ShowGameInfo || prevState.GameInfo == state.GameInfo)
                 return;
             
@@ -69,7 +69,7 @@ public class GameInfoPanel : Panel {
             
             UpdateGameInfo();
         };
-        Studio.CommunicationWrapper.Server.Reset += UpdateGameInfo;
+        Studio.CommunicationWrapper.ConnectionChanged += UpdateGameInfo;
     }
         
     public void UpdateGameInfo() {

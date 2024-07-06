@@ -99,18 +99,8 @@ public sealed class Studio : Form {
             ApplySettings();
             
             // Only enable some settings while connected
-            bool wasConnected = CommunicationWrapper.Connected;
-            CommunicationWrapper.Server.StateUpdated += (_, _) => Application.Instance.Invoke(() => {
-                if (wasConnected != CommunicationWrapper.Connected) {
-                    Menu = CreateMenu();
-                    wasConnected = CommunicationWrapper.Connected;
-                }
-            });
-            CommunicationWrapper.Server.Reset += () => Application.Instance.Invoke(() => {
-                if (wasConnected != CommunicationWrapper.Connected) {
-                    Menu = CreateMenu();
-                    wasConnected = CommunicationWrapper.Connected;
-                }
+            CommunicationWrapper.ConnectionChanged += () => Application.Instance.Invoke(() => {
+                Menu = CreateMenu();
             });
             
             // Re-open last file if possible
@@ -353,9 +343,9 @@ public sealed class Studio : Form {
         
         string initText = $"RecordCount: 1{Document.NewLine}";
         if (CommunicationWrapper.Connected) {
-            if (CommunicationWrapper.Server.GetDataFromGame(GameDataType.ConsoleCommand, true) is { } simpleConsoleCommand) {
+            if (CommunicationWrapper.GetConsoleCommand(simple: true) is var simpleConsoleCommand && !string.IsNullOrWhiteSpace(simpleConsoleCommand)) {
                 initText += $"{Document.NewLine}{simpleConsoleCommand}{Document.NewLine}   1{Document.NewLine}";
-                if (CommunicationWrapper.Server.GetDataFromGame(GameDataType.ModUrl) is { } modUrl) {
+                if (CommunicationWrapper.GetModURL() is var modUrl && !string.IsNullOrWhiteSpace(modUrl)) {
                     initText = modUrl + initText;
                 }
             }
@@ -388,7 +378,7 @@ public sealed class Studio : Form {
         if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
             Settings.Instance.AddRecentFile(filePath);
         
-        CommunicationWrapper.WriteWait();
+        // CommunicationWrapper.WriteWait();
         
         var document = Document.Load(filePath);
         if (document == null) {
@@ -441,7 +431,7 @@ public sealed class Studio : Form {
         if (Path.GetExtension(filePath) != ".tas")
             filePath += ".tas";
         
-        CommunicationWrapper.WriteWait();
+        // CommunicationWrapper.WriteWait();
         
         Editor.Document.FilePath = filePath;
         Editor.Document.Save();

@@ -1,4 +1,12 @@
-﻿using System;
+﻿#if REWRITE
+
+public class StudioCommunicationBase {
+
+}
+
+#else
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
@@ -330,3 +338,5 @@ public class StudioCommunicationBase {
         public NeedsResetException(string message) : base(message) { }
     }
 }
+
+#endif

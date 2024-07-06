@@ -40,6 +40,6 @@ public class RecordDialog : Dialog<bool> {
             return;
         }
         
-        Studio.CommunicationWrapper.Server.RecordTAS(dialog.textBox.Text);
+        Studio.CommunicationWrapper.RecordTAS(dialog.textBox.Text);
     }
 }

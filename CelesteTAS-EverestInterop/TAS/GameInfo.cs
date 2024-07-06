@@ -11,6 +11,7 @@ using Monocle;
 using MonoMod.Cil;
 using MonoMod.Utils;
 using StudioCommunication;
+using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Module;
@@ -370,14 +371,14 @@ public static class GameInfo {
 
     private static void UpdateAdditionInfo() {
         if (TasSettings.InfoHud && (TasSettings.InfoWatchEntity & HudOptions.HudOnly) != 0 ||
-            (TasSettings.InfoWatchEntity & HudOptions.StudioOnly) != 0 && StudioCommunicationBase.Initialized) {
+            (TasSettings.InfoWatchEntity & HudOptions.StudioOnly) != 0 && CommunicationWrapper.Connected) {
             WatchingInfo = InfoWatchEntity.GetInfo();
         } else {
             WatchingInfo = string.Empty;
         }
 
         if (TasSettings.InfoHud && (TasSettings.InfoCustom & HudOptions.HudOnly) != 0 ||
-            (TasSettings.InfoCustom & HudOptions.StudioOnly) != 0 && StudioCommunicationBase.Initialized) {
+            (TasSettings.InfoCustom & HudOptions.StudioOnly) != 0 && CommunicationWrapper.Connected) {
             CustomInfo = InfoCustom.GetInfo();
         } else {
             CustomInfo = string.Empty;

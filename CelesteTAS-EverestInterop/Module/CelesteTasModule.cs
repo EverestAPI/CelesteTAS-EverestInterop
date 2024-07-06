@@ -26,7 +26,7 @@ public class CelesteTasModule : EverestModule {
 
         // required run after TasCommandAttribute.CollectMethods()
         if (TasSettings.AttemptConnectStudio) {
-            StudioCommunicationClient.Run();
+            CommunicationWrapper.Start();
         }
     }
 

@@ -34,11 +34,11 @@ public static class RecordingCommand {
     [TasCommand("StartRecording", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
     private static void StartRecording(string[] _1, int _2, string filePath, int fileLine) {
         if (ParsingCommand) {
-            if (StudioCommunicationBase.Initialized && Manager.Running) {
+            if (CommunicationWrapper.Connected && Manager.Running) {
                 if (!TASRecorderUtils.Installed) {
-                    StudioCommunicationClient.Instance?.SendRecordingFailed(RecordingFailedReason.TASRecorderNotInstalled);
+                    CommunicationWrapper.SendRecordingFailed(RecordingFailedReason.TASRecorderNotInstalled);
                 } else if (!TASRecorderUtils.FFmpegInstalled) {
-                    StudioCommunicationClient.Instance?.SendRecordingFailed(RecordingFailedReason.FFmpegNotInstalled);
+                    CommunicationWrapper.SendRecordingFailed(RecordingFailedReason.FFmpegNotInstalled);
                 }
             }
 

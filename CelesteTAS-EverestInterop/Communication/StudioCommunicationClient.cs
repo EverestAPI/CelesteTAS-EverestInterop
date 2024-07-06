@@ -1,3 +1,16 @@
+#if REWRITE
+
+namespace TAS.Communication;
+
+public sealed class StudioCommunicationClient : StudioCommunicationBase {
+    
+    
+    
+    
+}
+
+#else
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -543,3 +556,5 @@ class StudioMetadata {
         return DefaultVersion;
     }
 }
+
+#endif

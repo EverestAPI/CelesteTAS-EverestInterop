@@ -170,15 +170,15 @@ public class Document {
             Save();    
         }
         
-        Studio.CommunicationWrapper.Server.LinesUpdated += OnLinesUpdated;
+        Studio.CommunicationWrapper.LinesUpdated += OnLinesUpdated;
     }
 
     ~Document() {
-        Studio.CommunicationWrapper.Server.LinesUpdated -= OnLinesUpdated;
+        Studio.CommunicationWrapper.LinesUpdated -= OnLinesUpdated;
     }
     
     public void Dispose() {
-        Studio.CommunicationWrapper.Server.LinesUpdated -= OnLinesUpdated;
+        Studio.CommunicationWrapper.LinesUpdated -= OnLinesUpdated;
     }
 
     public static Document? Load(string path) {

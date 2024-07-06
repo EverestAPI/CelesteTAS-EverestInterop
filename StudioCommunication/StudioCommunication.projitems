@@ -18,7 +18,4 @@
     <Compile Include="$(MSBuildThisFileDirectory)StudioCommunicationBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)StudioInfo.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="$(MSBuildThisFileDirectory)StudioCommunication.csproj" />
-  </ItemGroup>
 </Project>

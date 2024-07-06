@@ -137,7 +137,7 @@ public sealed class Editor : Drawable {
         // Update wrapped lines
         scrollable.SizeChanged += (_, _) => Recalc();
 
-        Studio.CommunicationWrapper.Server.StateUpdated += (prevState, state) => {
+        Studio.CommunicationWrapper.StateUpdated += (prevState, state) => {
             if (prevState.CurrentLine == state.CurrentLine &&
                 prevState.SaveStateLine == state.SaveStateLine &&
                 prevState.CurrentLineSuffix == state.CurrentLineSuffix) {
@@ -1623,19 +1623,19 @@ public sealed class Editor : Drawable {
     private void OnInsertTime() => InsertLine($"#{Studio.CommunicationWrapper.ChapterTime}");
     
     private void OnInsertModInfo() {
-        if (Studio.CommunicationWrapper.Server.GetDataFromGame(GameDataType.ModInfo) is { } modInfo) {
+        if (Studio.CommunicationWrapper.GetModInfo() is var modInfo && !string.IsNullOrWhiteSpace(modInfo)) {
             InsertLine(modInfo);
         }
     }
     
     private void OnInsertConsoleLoadCommand() {
-        if (Studio.CommunicationWrapper.Server.GetDataFromGame(GameDataType.ConsoleCommand, false) is { } command) {
+        if (Studio.CommunicationWrapper.GetConsoleCommand(simple: false) is var command && !string.IsNullOrWhiteSpace(command)) {
             InsertLine(command);
         }
     }
     
     private void OnInsertSimpleConsoleLoadCommand() {
-        if (Studio.CommunicationWrapper.Server.GetDataFromGame(GameDataType.ConsoleCommand, true) is { } command) {
+        if (Studio.CommunicationWrapper.GetConsoleCommand(simple: true) is var command && !string.IsNullOrWhiteSpace(command)) {
             InsertLine(command);
         }
     }

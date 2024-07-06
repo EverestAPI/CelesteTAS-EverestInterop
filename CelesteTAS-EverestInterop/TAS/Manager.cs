@@ -236,7 +236,7 @@ public static class Manager {
             GameInfo.LevelName,
             GameInfo.ChapterTime
         );
-        StudioCommunicationClient.Instance?.SendState(studioInfo, !ShouldForceState);
+        CommunicationWrapper.SendState(studioInfo/*, !ShouldForceState*/); // TODO: Figure out this canFail
     }
 
     public static bool IsLoading() {

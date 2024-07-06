@@ -258,7 +258,7 @@ public static class Hotkeys {
 
     private static void InputOnInitialize(On.Celeste.Input.orig_Initialize orig) {
         orig();
-        StudioCommunicationClient.Instance?.SendCurrentBindings();
+        CommunicationWrapper.SendCurrentBindings();
     }
 
     private static void ModReload(ILContext il) {
