@@ -1,11 +1,15 @@
 #if REWRITE
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Celeste.Mod;
 using StudioCommunication;
 using TAS.EverestInterop;
+using TAS.EverestInterop.InfoHUD;
 using TAS.Input;
+using TAS.Module;
+using TAS.Utils;
 
 namespace TAS.Communication;
 
@@ -18,12 +22,48 @@ public sealed class StudioCommunicationClient() : StudioCommunicationBase(Locati
 
                 InputController.StudioTasFilePath = path;
                 break;
+
             case MessageID.Hotkey:
                 var hotkey = (HotkeyID)reader.ReadByte();
                 bool released = reader.ReadBoolean();
                 
                 Hotkeys.KeysDict[hotkey].OverrideCheck = !released;
                 break;
+
+            case MessageID.SetSetting:
+                string settingName = reader.ReadString();
+                
+                if (typeof(CelesteTasSettings).GetProperty(settingName) is { } property) {
+                    if (property.GetSetMethod(true) == null) {
+                        break;
+                    }
+                    
+                    object value = property.GetValue(TasSettings);
+                    bool modified = false;
+                    
+                    if (value is bool boolValue) {
+                        property.SetValue(TasSettings, !boolValue);
+                        modified = true;
+                    } else if (value is int) {
+                        property.SetValue(TasSettings, reader.ReadInt32());
+                        modified = true;
+                    } else if (value is float) {
+                        property.SetValue(TasSettings, reader.ReadSingle());
+                        modified = true;
+                    } else if (value is HudOptions hudOptions) {
+                        property.SetValue(TasSettings, hudOptions.Has(HudOptions.StudioOnly) ? HudOptions.Off : HudOptions.Both);
+                        modified = true;
+                    } else if (value is Enum) {
+                        property.SetValue(TasSettings, ((int)value + 1) % Enum.GetValues(property.PropertyType).Length);
+                        modified = true;
+                    }
+                    
+                    if (modified) {
+                        CelesteTasModule.Instance.SaveSettings();
+                    }
+                }
+                break;
+            
             case MessageID.RequestGameData:
                 var gameDataType = (GameDataType)reader.ReadByte();
                 Log($"Received message RequestGameData: '{gameDataType}'");
@@ -39,7 +79,7 @@ public sealed class StudioCommunicationClient() : StudioCommunicationBase(Locati
                 };
                 QueueMessage(MessageID.GameDataRespone, writer => writer.Write(gameData));
                 break;
-                
+            
             default:
                 Log($"Received unknown message ID: {messageId}");
                 break;

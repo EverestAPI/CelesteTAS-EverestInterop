@@ -23,12 +23,14 @@ public sealed class StudioCommunicationServer(
                 var state = StudioState.Deserialize(reader);
                 stateChanged(state);
                 break;
+
             case MessageID.UpdateLines:
                 var updateLines = BinaryHelper.DeserializeDictionary<int, string>(reader);
                 Log($"Received message UpdateLines: {updateLines.Count}");
 
                 linesChanged(updateLines);
                 break;
+
             case MessageID.CurrentBindings:
                 var bindings = BinaryHelper.DeserializeDictionary<int, List<int>>(reader)
                     .ToDictionary(pair => (HotkeyID) pair.Key, pair => pair.Value.Cast<WinFormsKeys>().ToList());;
@@ -36,9 +38,11 @@ public sealed class StudioCommunicationServer(
 
                 bindingsChanged(bindings);
                 break;
+
             case MessageID.RecordingFailed:
                 // TODO
                 break;
+
             case MessageID.GameDataRespone:
                 gameData = reader.ReadString();
                 Log($"Received message GameDataRespone: '{gameData}'");
@@ -57,6 +61,14 @@ public sealed class StudioCommunicationServer(
         QueueMessage(MessageID.Hotkey, writer => {
             writer.Write((byte) hotkey);
             writer.Write(released);
+        });
+    }
+    public void SendSetting(string settingName, object? value) {
+        QueueMessage(MessageID.SetSetting, writer => {
+            writer.Write(settingName);
+            if (value != null) {
+                BinaryHelper.SerializeObject(value, writer);
+            }
         });
     }
 

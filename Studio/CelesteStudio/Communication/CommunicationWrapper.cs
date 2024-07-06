@@ -148,83 +148,103 @@ public sealed class CommunicationWrapper {
     
     #region Settings
     
-    public bool GetHitboxes() => false; //GetToggle("ShowHitboxes");
-    public bool GetTriggerHitboxes() => false; //GetToggle("ShowTriggerHitboxes");
-    public bool GetUnloadedRoomsHitboxes() => false; //GetToggle("ShowUnloadedRoomsHitboxes");
-    public bool GetCameraHitboxes() => false; //GetToggle("ShowCameraHitboxes");
-    public bool GetSimplifiedHitboxes() => false; //GetToggle("SimplifiedHitboxes");
-    public bool GetActualCollideHitboxes() => false; //GetToggle("ShowActualCollideHitboxes");
-    public bool GetSimplifiedGraphics() => false; //GetToggle("SimplifiedGraphics");
-    public bool GetGameplay() => false; //GetToggle("ShowGameplay");
-    public bool GetCenterCamera() => false; //GetToggle("CenterCamera");
-    public bool GetCenterCameraHorizontallyOnly() => false; //GetToggle("CenterCameraHorizontallyOnly");
-    public bool GetInfoHud() => false; //GetToggle("InfoHud");
-    public bool GetInfoTasInput() => false; //GetToggle("InfoTasInput");
-    public bool GetInfoGame() => false; //GetToggle("InfoGame");
-    public bool GetInfoWatchEntity() => false; //GetToggle("InfoWatchEntity");
-    public bool GetInfoCustom() => false; //GetToggle("InfoCustom");
-    public bool GetInfoSubpixelIndicator() => false; //GetToggle("InfoSubpixelIndicator");
-    public bool GetSpeedUnit() => false; //GetToggle("SpeedUnit");
+    private const int DefaultDecimals = 2;
+    private const int DefaultFastForwardSpeed = 10;
+    private const float DefaultSlowForwardSpeed = 0.1f;
     
-    public void ToggleHitboxes() {} //=> Server.ToggleGameSetting("ShowHitboxes", null);
-    public void ToggleTriggerHitboxes() {} //=> Server.ToggleGameSetting("ShowTriggerHitboxes", null);
-    public void ToggleUnloadedRoomsHitboxes() {} //=> Server.ToggleGameSetting("ShowUnloadedRoomsHitboxes", null);
-    public void ToggleCameraHitboxes() {} //=> Server.ToggleGameSetting("ShowCameraHitboxes", null);
-    public void ToggleSimplifiedHitboxes() {} //=> Server.ToggleGameSetting("SimplifiedHitboxes", null);
-    public void ToggleActualCollideHitboxes() {} //=> Server.ToggleGameSetting("ShowActualCollideHitboxes", null);
-    public void ToggleSimplifiedGraphics() {} //=> Server.ToggleGameSetting("SimplifiedGraphics", null);
-    public void ToggleGameplay() {} //=> Server.ToggleGameSetting("ShowGameplay", null);
-    public void ToggleCenterCamera() {} //=> Server.ToggleGameSetting("CenterCamera", null);
-    public void ToggleCenterCameraHorizontallyOnly() {} //=> Server.ToggleGameSetting("CenterCameraHorizontallyOnly", null);
-    public void ToggleInfoHud() {} //=> Server.ToggleGameSetting("InfoHud", null);
-    public void ToggleInfoTasInput() {} //=> Server.ToggleGameSetting("InfoTasInput", null);
-    public void ToggleInfoGame() {} //=> Server.ToggleGameSetting("InfoGame", null);
-    public void ToggleInfoWatchEntity() {} //=> Server.ToggleGameSetting("InfoWatchEntity", null);
-    public void ToggleInfoCustom() {} //=> Server.ToggleGameSetting("InfoCustom", null);
-    public void ToggleInfoSubpixelIndicator() {} //=> Server.ToggleGameSetting("InfoSubpixelIndicator", null);
-    public void ToggleSpeedUnit() {} //=> Server.ToggleGameSetting("SpeedUnit", null);
-    
-    public int GetPositionDecimals() => 2; //("PositionDecimals");
-    public void SetPositionDecimals(int value) {} //=> Server.ToggleGameSetting("PositionDecimals", value);
-
-    public int GetSpeedDecimals() => 2; //("SpeedDecimals");
-    public void SetSpeedDecimals(int value) {} //=> Server.ToggleGameSetting("SpeedDecimals", value);
-
-    public int GetVelocityDecimals() => 2; //("VelocityDecimals");
-    public void SetVelocityDecimals(int value) {} //=> Server.ToggleGameSetting("VelocityDecimals", value);
-    
-    public int GetAngleDecimals() => 2; //("AngleDecimals");
-    public void SetAngleDecimals(int value) {} //=> Server.ToggleGameSetting("AngleDecimals", value);
-
-    public int GetCustomInfoDecimals() => 2; //("CustomInfoDecimals");
-    public void SetCustomInfoDecimals(int value) {} //=> Server.ToggleGameSetting("CustomInfoDecimals", value);
-
-    public int GetSubpixelIndicatorDecimals() => 2; //("SubpixelIndicatorDecimals");
-    public void SetSubpixelIndicatorDecimals(int value) {} //=> Server.ToggleGameSetting("SubpixelIndicatorDecimals", value);
-
-    public int GetFastForwardSpeed() {
-        return 10;
-        // string speed = DefaultFastForwardSpeed.ToString();
-        // if (Server.GetDataFromGame(GameDataType.SettingValue, "FastForwardSpeed") is { } settingValue) {
-        //     speed = settingValue;
-        // }
-        //
-        // bool success = int.TryParse(speed, out int result);
-        // return success ? result : DefaultFastForwardSpeed;
+    private void SetSetting(string settingName, object? value) {
+        if (Connected) {
+            server.SendSetting(settingName, value);
+        }
     }
-    public void SetFastForwardSpeed(int value) {} //=> Server.ToggleGameSetting("FastForwardSpeed", value);
 
-    public float GetSlowForwardSpeed() {
-        return 0.1f;
-        // string speed = DefaultSlowForwardSpeed.ToString(CultureInfo.InvariantCulture);
-        // if (Server.GetDataFromGame(GameDataType.SettingValue, "SlowForwardSpeed") is { } settingValue) {
-        //     speed = settingValue;
-        // }
-        //
-        // bool success = float.TryParse(speed, NumberStyles.None, CultureInfo.InvariantCulture, out float result);
-        // return success ? result : DefaultSlowForwardSpeed;
+    private bool GetBool(string settingName) {
+        if (server.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
+            bool.TryParse(settingValue, out bool value))
+        {
+            return value;
+        }
+        
+        return false;
     }
-    public void SetSlowForwardSpeed(float value) {} //=> Server.ToggleGameSetting("SlowForwardSpeed", value);
+    private int GetInt(string settingName, int defaultValue) {
+        if (server.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
+            int.TryParse(settingValue, out int value)) 
+        {
+            return value;
+        }
+        
+        return defaultValue;
+    }
+    private float GetFloat(string settingName, float defaultValue) {
+        if (server.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
+            float.TryParse(settingValue, out float value))
+        {
+            return value;
+        }
+        
+        return defaultValue;
+    }
+    
+    public bool GetHitboxes() => GetBool("ShowHitboxes");
+    public bool GetTriggerHitboxes() => GetBool("ShowTriggerHitboxes");
+    public bool GetUnloadedRoomsHitboxes() => GetBool("ShowUnloadedRoomsHitboxes");
+    public bool GetCameraHitboxes() => GetBool("ShowCameraHitboxes");
+    public bool GetSimplifiedHitboxes() => GetBool("SimplifiedHitboxes");
+    public bool GetActualCollideHitboxes() => GetBool("ShowActualCollideHitboxes");
+    public bool GetSimplifiedGraphics() => GetBool("SimplifiedGraphics");
+    public bool GetGameplay() => GetBool("ShowGameplay");
+    public bool GetCenterCamera() => GetBool("CenterCamera");
+    public bool GetCenterCameraHorizontallyOnly() => GetBool("CenterCameraHorizontallyOnly");
+    public bool GetInfoHud() => GetBool("InfoHud");
+    public bool GetInfoTasInput() => GetBool("InfoTasInput");
+    public bool GetInfoGame() => GetBool("InfoGame");
+    public bool GetInfoWatchEntity() => GetBool("InfoWatchEntity");
+    public bool GetInfoCustom() => GetBool("InfoCustom");
+    public bool GetInfoSubpixelIndicator() => GetBool("InfoSubpixelIndicator");
+    public bool GetSpeedUnit() => GetBool("SpeedUnit");
+    
+    public void ToggleHitboxes() => SetSetting("ShowHitboxes", null);
+    public void ToggleTriggerHitboxes() => SetSetting("ShowTriggerHitboxes", null);
+    public void ToggleUnloadedRoomsHitboxes() => SetSetting("ShowUnloadedRoomsHitboxes", null);
+    public void ToggleCameraHitboxes() => SetSetting("ShowCameraHitboxes", null);
+    public void ToggleSimplifiedHitboxes() => SetSetting("SimplifiedHitboxes", null);
+    public void ToggleActualCollideHitboxes() => SetSetting("ShowActualCollideHitboxes", null);
+    public void ToggleSimplifiedGraphics() => SetSetting("SimplifiedGraphics", null);
+    public void ToggleGameplay() => SetSetting("ShowGameplay", null);
+    public void ToggleCenterCamera() => SetSetting("CenterCamera", null);
+    public void ToggleCenterCameraHorizontallyOnly() => SetSetting("CenterCameraHorizontallyOnly", null);
+    public void ToggleInfoHud() => SetSetting("InfoHud", null);
+    public void ToggleInfoTasInput() => SetSetting("InfoTasInput", null);
+    public void ToggleInfoGame() => SetSetting("InfoGame", null);
+    public void ToggleInfoWatchEntity() => SetSetting("InfoWatchEntity", null);
+    public void ToggleInfoCustom() => SetSetting("InfoCustom", null);
+    public void ToggleInfoSubpixelIndicator() => SetSetting("InfoSubpixelIndicator", null);
+    public void ToggleSpeedUnit() => SetSetting("SpeedUnit", null);
+    
+    public int GetPositionDecimals() => GetInt("PositionDecimals", DefaultDecimals);
+    public void SetPositionDecimals(int value) => SetSetting("PositionDecimals", value);
+
+    public int GetSpeedDecimals() => GetInt("SpeedDecimals", DefaultDecimals);
+    public void SetSpeedDecimals(int value) => SetSetting("SpeedDecimals", value);
+
+    public int GetVelocityDecimals() => GetInt("VelocityDecimals", DefaultDecimals);
+    public void SetVelocityDecimals(int value) => SetSetting("VelocityDecimals", value);
+    
+    public int GetAngleDecimals() => GetInt("AngleDecimals", DefaultDecimals);
+    public void SetAngleDecimals(int value) => SetSetting("AngleDecimals", value);
+
+    public int GetCustomInfoDecimals() => GetInt("CustomInfoDecimals", DefaultDecimals);
+    public void SetCustomInfoDecimals(int value) => SetSetting("CustomInfoDecimals", value);
+
+    public int GetSubpixelIndicatorDecimals() => GetInt("SubpixelIndicatorDecimals", DefaultDecimals);
+    public void SetSubpixelIndicatorDecimals(int value) => SetSetting("SubpixelIndicatorDecimals", value);
+
+    public int GetFastForwardSpeed() => GetInt("FastForwardSpeed", DefaultFastForwardSpeed);
+    public void SetFastForwardSpeed(int value) => SetSetting("FastForwardSpeed", value);
+
+    public float GetSlowForwardSpeed() => GetFloat("SlowForwardSpeed", DefaultSlowForwardSpeed);
+    public void SetSlowForwardSpeed(float value) => SetSetting("SlowForwardSpeed", value);
     
     #endregion
 }

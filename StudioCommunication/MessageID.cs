@@ -40,6 +40,9 @@ public enum MessageID : byte {
     /// Sends a request for certain game data to Celeste
     RequestGameData = 0x22,
     
+    /// Sends a settings change to Celeste
+    SetSetting = 0x23,
+    
     #endregion
 }
 
