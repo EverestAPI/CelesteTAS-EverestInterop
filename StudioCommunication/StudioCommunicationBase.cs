@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 
@@ -74,17 +75,22 @@ public abstract class StudioCommunicationBase : IDisposable {
         }
         
         // Set up the memory mapped files
-        string writeSuffix = location == Location.CelesteTAS ? "C2S" : "S2C";
-        string readSuffix  = location == Location.CelesteTAS ? "S2C" : "C2S";
+        string writeName = $"CelesteTAS_{(location == Location.CelesteTAS ? "C2S" : "S2C")}";
+        string readName  = $"CelesteTAS_{(location == Location.CelesteTAS ? "S2C" : "C2S")}";
         
-        var writePath = Path.Combine(Path.GetTempPath(), $"CelesteTAS_{writeSuffix}.share");
-        var readPath  = Path.Combine(Path.GetTempPath(), $"CelesteTAS_{readSuffix}.share");
-        
-        var writeFs = File.Open(writePath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
-        var readFs = File.Open(readPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
-        
-        writeFile = MemoryMappedFile.CreateFromFile(writeFs, null, BufferCapacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: false);
-        readFile = MemoryMappedFile.CreateFromFile(readFs, null, BufferCapacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: false);
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+            writeFile = MemoryMappedFile.CreateOrOpen(writeName, BufferCapacity);
+            readFile = MemoryMappedFile.CreateOrOpen(readName, BufferCapacity);
+        } else {
+            var writePath = Path.Combine(Path.GetTempPath(), $"{writeName}.share");
+            var readPath  = Path.Combine(Path.GetTempPath(), $"{readName}.share");
+            
+            using var writeFs = File.Open(writePath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+            using var readFs = File.Open(readPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
+            
+            writeFile = MemoryMappedFile.CreateFromFile(writeFs, null, BufferCapacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: false);
+            readFile = MemoryMappedFile.CreateFromFile(readFs, null, BufferCapacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: false);
+        }
         
         // Clean-up old data (only the header is important)
         mutex.WaitOne();
