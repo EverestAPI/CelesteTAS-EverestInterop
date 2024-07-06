@@ -308,6 +308,7 @@ public sealed class Studio : Form {
         Settings.Save();
         
         CommunicationWrapper.SendPath(string.Empty);
+        CommunicationWrapper.Stop();
         
         base.OnClosing(e);
     }

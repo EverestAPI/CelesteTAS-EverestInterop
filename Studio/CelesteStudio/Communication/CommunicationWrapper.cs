@@ -23,6 +23,9 @@ public sealed class CommunicationWrapper {
     public CommunicationWrapper() {
         server = new StudioCommunicationServer(OnConnectionChanged, OnStateChanged, OnLinesChanged, OnBindingsChanged);
     }
+    public void Stop() {
+        server.Dispose();
+    }
     
     private void OnConnectionChanged() {
         Application.Instance.AsyncInvoke(() => ConnectionChanged?.Invoke());
@@ -300,6 +303,9 @@ public class CommunicationWrapper {
             }
         }; 
         Server.Run();
+    }
+    public void Stop() {
+        // stub
     }
     
     public string GetConsoleCommand(bool simple) {
