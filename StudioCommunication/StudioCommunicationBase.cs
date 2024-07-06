@@ -1,7 +1,164 @@
-﻿#if REWRITE
+﻿using System;
+using System.IO;
+using System.IO.MemoryMappedFiles;
+using System.Threading;
 
-public class StudioCommunicationBase {
+#if REWRITE
 
+public abstract class StudioCommunicationBase : IDisposable {
+    // Basically just a BinaryWriter with the mutex attached
+    protected class MessageWriter(Mutex mutex, Stream stream) : BinaryWriter(stream), IDisposable {
+        public new void Dispose() {
+            base.Dispose();
+            mutex.ReleaseMutex();
+        }
+    }
+    
+    protected enum Location { CelesteTAS, Studio }
+    
+    private const int BufferCapacity = 1024 * 1024; // 1MB should be enough for everything
+    private const int UpdateRate = 1000 / 60;
+    private const string MutexName = "CelesteTAS_StudioCom";
+    
+    private readonly Location location;
+    
+    private readonly Mutex mutex;
+    
+    private readonly Thread thread;
+    private bool runThread = true;
+    
+    /* Memory layout of the communication files:
+     *  - Write Offset (4 bytes): Offset for writing new messages
+     *  - Message Count (1 byte): Total amount of available messages
+     *  - List of messages
+     *
+     * Message:
+     *  - MessageID (1 byte)
+     *  - Data (undefined bytes)
+     */
+    private readonly MemoryMappedFile writeFile;
+    private readonly MemoryMappedFile readFile;
+    
+    private const int MessageCountOffset = 4;
+    private const int MessagesOffset = MessageCountOffset + 1;
+    
+    protected StudioCommunicationBase(Location location) {
+        Log("Starting communication...");
+        this.location = location;
+        
+        // Get or create the shared mutex
+        mutex = new Mutex(initiallyOwned: false, MutexName, out bool created);
+        if (!created) {
+            mutex = Mutex.OpenExisting(MutexName);
+        }
+        
+        // Set up the memory mapped files
+        string writeSuffix = location == Location.CelesteTAS ? "C2S" : "S2C";
+        string readSuffix  = location == Location.CelesteTAS ? "S2C" : "C2S";
+        
+        var writePath = Path.Combine(Path.GetTempPath(), $"CelesteTAS_{writeSuffix}.share");
+        var readPath  = Path.Combine(Path.GetTempPath(), $"CelesteTAS_{readSuffix}.share");
+        
+        var writeFs = File.Open(writePath, FileMode.Create, FileAccess.ReadWrite);
+        var readFs = File.Open(readPath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+        
+        writeFile = MemoryMappedFile.CreateFromFile(writeFs, null, BufferCapacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: false);
+        readFile = MemoryMappedFile.CreateFromFile(readFs, null, BufferCapacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: false);
+        
+        // Start the communication thread
+        thread = new Thread(() => {
+            var lastCrash = DateTime.UtcNow;
+            
+            Retry:
+            try {
+                ReadThread();
+            } catch (Exception ex) {
+                Log($"Thread crashed: {ex}");
+                
+                if (DateTime.UtcNow - lastCrash < TimeSpan.FromSeconds(5)) {
+                    Log($"Thread crashed again within 5 seconds. Aborting!");
+                    return;
+                }
+                
+                // Restart the thread when it crashed
+                lastCrash = DateTime.UtcNow;
+                goto Retry;
+            }
+        }) {
+            Name = "StudioCom"
+        };
+        thread.Start();
+        Log("Communication started");
+    }
+    public void Dispose() {
+        Log("Stopping communication...");
+        GC.SuppressFinalize(this);
+        
+        runThread = false;
+        thread.Join();
+        
+        writeFile.Dispose();
+        readFile.Dispose();
+        
+        mutex.Dispose();
+        Log("Communication stopped");
+    }
+    
+    private void ReadThread() {
+        while (runThread) {
+            using var readStream = readFile.CreateViewStream();
+            using var reader = new BinaryReader(readStream);
+            
+            mutex.WaitOne();
+            
+            // Read all available messages
+            readStream.Seek(MessageCountOffset, SeekOrigin.Begin);
+            byte count = reader.ReadByte();
+            
+            for (byte i = 0; i < count; i++) {
+                var messageId = (MessageID)reader.ReadByte();
+                if (messageId == MessageID.None) {
+                    Log("Messages ended early! Something probably got corrupted!");
+                    break;
+                }
+                
+                HandleMessage(messageId, reader);
+            }
+            
+            // Reset write offset and message count
+            readStream.Seek(0, SeekOrigin.Begin);
+            readStream.Write([0x00, 0x00, 0x00, 0x00, 0x00], 0, 5);
+            
+            mutex.ReleaseMutex();
+            
+            Thread.Sleep(UpdateRate);
+        }
+    }
+    
+    protected MessageWriter WriteMessage(MessageID messageId) {
+        using var writeStream = writeFile.CreateViewStream();
+        var writer = new MessageWriter(mutex, writeStream);
+        
+        // Mutex is released in MessageWriter.Dispose()
+        mutex.WaitOne();
+        
+        // Set current write offset / message count
+        using var reader = new BinaryReader(writeStream);
+        int offset = reader.ReadInt32();
+        byte count = reader.ReadByte();
+        
+        writer.Seek(0, SeekOrigin.Begin);
+        writer.Write(count + 1);
+        
+        writer.Seek(offset + MessagesOffset, SeekOrigin.Begin);
+        writer.Write((byte)messageId);
+        return writer;
+    }
+    
+    protected abstract void HandleMessage(MessageID messageId, BinaryReader reader);
+    
+    protected void Log(string message) => LogImpl($"Studio Communication @ {location}: {message}");
+    protected abstract void LogImpl(string message);
 }
 
 #else

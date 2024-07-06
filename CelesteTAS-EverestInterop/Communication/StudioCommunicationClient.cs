@@ -1,12 +1,31 @@
+using System;
+using System.IO;
+using Celeste.Mod;
+using TAS.Utils;
+
 #if REWRITE
 
 namespace TAS.Communication;
 
 public sealed class StudioCommunicationClient : StudioCommunicationBase {
+    public StudioCommunicationClient() : base(Location.CelesteTAS) {
+        
+    }
     
+    protected override void HandleMessage(MessageID messageId, BinaryReader reader) {
+        switch (messageId) {
+            case MessageID.Ping:
+                Log("Received ping");
+                break;
+            default:
+                Log($"Received unknown message ID: {messageId}");
+                break;
+        }
+    }
     
-    
-    
+    protected override void LogImpl(string message) {
+        message.Log(LogLevel.Info);
+    }
 }
 
 #else

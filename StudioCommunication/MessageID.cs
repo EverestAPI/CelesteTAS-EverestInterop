@@ -1,4 +1,14 @@
-﻿using System;
+﻿#if REWRITE
+
+public enum MessageID : byte {
+    None = 0x00,
+    
+    Ping = 0x01,
+}
+
+#else
+
+using System;
 
 namespace StudioCommunication;
 
@@ -99,7 +109,10 @@ public enum GameDataType : byte {
     ModUrl,
 }
 
+#endif
+
 public enum RecordingFailedReason : byte {
     TASRecorderNotInstalled,
     FFmpegNotInstalled,
 }
+

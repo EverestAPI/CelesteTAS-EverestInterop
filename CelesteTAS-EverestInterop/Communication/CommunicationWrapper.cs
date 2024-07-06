@@ -5,13 +5,15 @@ namespace TAS.Communication;
 
 public static class CommunicationWrapper {
     
-    public static bool Connected => false;
+    public static bool Connected => client != null; // TODO: Improve this check
+    private static StudioCommunicationClient client;
     
     public static void Start() {
-        
+        client = new StudioCommunicationClient();
     }
     public static void Stop() {
-        
+        client.Dispose();
+        client = null;
     }
     
     public static void ChangeStatus() {
