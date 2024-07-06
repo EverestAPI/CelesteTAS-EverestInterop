@@ -23,8 +23,8 @@ public sealed class StudioCommunicationClient : StudioCommunicationBase {
         }
     }
     
-    protected override void LogImpl(string message) {
-        message.Log(LogLevel.Info);
+    protected override void Log(string message) {
+        Logger.Log(LogLevel.Info, "CelesteTAS/StudioCom", message);
     }
 }
 

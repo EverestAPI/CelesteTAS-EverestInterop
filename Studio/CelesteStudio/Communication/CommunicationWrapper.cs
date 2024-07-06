@@ -9,12 +9,14 @@ namespace CelesteStudio.Communication;
 
 public class CommunicationWrapper {
     
-    public bool Connected => false;
+    public bool Connected => server.Connected;
     public StudioInfo State { get; private set; }
     
     public event Action<StudioInfo, StudioInfo>? StateUpdated;
     public event Action<Dictionary<int, string>>? LinesUpdated;
     public event Action ConnectionChanged;
+    
+    private readonly StudioCommunicationServer server = new();
     
     public void ForceReconnect() {
         // stub

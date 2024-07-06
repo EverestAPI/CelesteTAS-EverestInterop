@@ -1,4 +1,24 @@
+using System;
+using System.IO;
+
 #if REWRITE
+
+public sealed class StudioCommunicationServer() : StudioCommunicationBase(Location.Studio) {
+    protected override void HandleMessage(MessageID messageId, BinaryReader reader) {
+        switch (messageId) {
+            case MessageID.Ping:
+                Log("Received ping");
+                break;
+            default:
+                Log($"Received unknown message ID: {messageId}");
+                break;
+        }
+    }
+    
+    protected override void Log(string message) {
+        Console.WriteLine($"Studio Communication @ Studio: {message}");
+    }
+}
 
 #else
 

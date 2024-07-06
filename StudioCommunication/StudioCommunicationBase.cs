@@ -6,19 +6,27 @@ using System.Threading;
 #if REWRITE
 
 public abstract class StudioCommunicationBase : IDisposable {
-    // Basically just a BinaryWriter with the mutex attached
-    protected class MessageWriter(Mutex mutex, Stream stream) : BinaryWriter(stream), IDisposable {
-        public new void Dispose() {
-            base.Dispose();
-            mutex.ReleaseMutex();
+    protected enum Location { CelesteTAS, Studio }
+    
+    private bool connected = false;
+    public bool Connected {
+        get => connected;
+        private set {
+            if (connected == value) 
+                return;
+            
+            connected = value;
+            Log($"Connection changed: {value}");
         }
     }
     
-    protected enum Location { CelesteTAS, Studio }
+    // Interval for sending Ping messages. Must be greater than TimeoutDelay
+    private static readonly TimeSpan PingInterval = TimeSpan.FromSeconds(1);
+    // Amount of time to wait before disconnecting when not receiving messages.
+    private static readonly TimeSpan TimeoutDelay = TimeSpan.FromSeconds(5);
     
-    private const int BufferCapacity = 1024 * 1024; // 1MB should be enough for everything
-    private const int UpdateRate = 1000 / 60;
-    private const string MutexName = "CelesteTAS_StudioCom";
+    private DateTime lastPing = DateTime.UtcNow;
+    private DateTime lastMessage = DateTime.UtcNow;
     
     private readonly Location location;
     
@@ -42,6 +50,10 @@ public abstract class StudioCommunicationBase : IDisposable {
     private const int MessageCountOffset = 4;
     private const int MessagesOffset = MessageCountOffset + 1;
     
+    private const int BufferCapacity = 1024 * 1024; // 1MB should be enough for everything
+    private const int UpdateRate = 1000 / 60;
+    private const string MutexName = "CelesteTAS_StudioCom";
+    
     protected StudioCommunicationBase(Location location) {
         Log("Starting communication...");
         this.location = location;
@@ -59,8 +71,8 @@ public abstract class StudioCommunicationBase : IDisposable {
         var writePath = Path.Combine(Path.GetTempPath(), $"CelesteTAS_{writeSuffix}.share");
         var readPath  = Path.Combine(Path.GetTempPath(), $"CelesteTAS_{readSuffix}.share");
         
-        var writeFs = File.Open(writePath, FileMode.Create, FileAccess.ReadWrite);
-        var readFs = File.Open(readPath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+        var writeFs = File.Open(writePath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+        var readFs = File.Open(readPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
         
         writeFile = MemoryMappedFile.CreateFromFile(writeFs, null, BufferCapacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: false);
         readFile = MemoryMappedFile.CreateFromFile(readFs, null, BufferCapacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: false);
@@ -106,6 +118,8 @@ public abstract class StudioCommunicationBase : IDisposable {
     
     private void ReadThread() {
         while (runThread) {
+            Thread.Sleep(UpdateRate);
+            
             using var readStream = readFile.CreateViewStream();
             using var reader = new BinaryReader(readStream);
             
@@ -115,28 +129,74 @@ public abstract class StudioCommunicationBase : IDisposable {
             readStream.Seek(MessageCountOffset, SeekOrigin.Begin);
             byte count = reader.ReadByte();
             
-            for (byte i = 0; i < count; i++) {
-                var messageId = (MessageID)reader.ReadByte();
-                if (messageId == MessageID.None) {
-                    Log("Messages ended early! Something probably got corrupted!");
-                    break;
-                }
-                
-                HandleMessage(messageId, reader);
+            // Handle timeout
+            var now = DateTime.UtcNow;
+            if (count != 0) {
+                lastMessage = DateTime.UtcNow;
+                Connected = true;
+            } else if (now - lastMessage > TimeoutDelay) {
+                Connected = false;
             }
             
-            // Reset write offset and message count
-            readStream.Seek(0, SeekOrigin.Begin);
-            readStream.Write([0x00, 0x00, 0x00, 0x00, 0x00], 0, 5);
+            if (Connected) {
+                for (byte i = 0; i < count; i++) {
+                    var messageId = (MessageID)reader.ReadByte();
+                    if (messageId == MessageID.None) {
+                        Log("Messages ended early! Something probably got corrupted!");
+                        break;
+                    }
+                    
+                    HandleMessage(messageId, reader);
+                }
+                
+                // Reset write offset and message count
+                readStream.Seek(0, SeekOrigin.Begin);
+                readStream.Write([0x00, 0x00, 0x00, 0x00, 0x00], 0, 5);
+            }
+            
+            // Send ping when there aren't any other messages (don't spam them)
+            if (now - lastPing > PingInterval) {
+                using var writeStream = writeFile.CreateViewStream();
+                using var writer = new BinaryWriter(writeStream);
+                
+                // Set current write offset / message count
+                using var writeReader = new BinaryReader(writeStream);
+                int writeOffset = writeReader.ReadInt32();
+                byte writeCount = writeReader.ReadByte();
+                
+                if (writeCount == 0) {
+                    // The Ping message has no data attached and there aren't any other messages
+                    writer.Seek(0, SeekOrigin.Begin);
+                    writer.Write(1);
+                    
+                    writer.Seek(MessageCountOffset, SeekOrigin.Begin);
+                    writer.Write(writeCount + 1);
+                    
+                    writer.Seek(writeOffset + MessagesOffset, SeekOrigin.Begin);
+                    writer.Write((byte)MessageID.Ping);
+                }
+                
+                lastPing = now;
+            }
             
             mutex.ReleaseMutex();
+        }
+    }
+    
+    protected class MessageWriter(Mutex mutex, MemoryMappedViewStream stream) : BinaryWriter(stream), IDisposable {
+        public new void Dispose() {
+            // Update write offset
+            Seek(0, SeekOrigin.Begin);
+            Write((int)BaseStream.Position - MessagesOffset);
             
-            Thread.Sleep(UpdateRate);
+            base.Dispose();
+            stream.Dispose();
+            mutex.ReleaseMutex();
         }
     }
     
     protected MessageWriter WriteMessage(MessageID messageId) {
-        using var writeStream = writeFile.CreateViewStream();
+        var writeStream = writeFile.CreateViewStream();
         var writer = new MessageWriter(mutex, writeStream);
         
         // Mutex is released in MessageWriter.Dispose()
@@ -147,7 +207,7 @@ public abstract class StudioCommunicationBase : IDisposable {
         int offset = reader.ReadInt32();
         byte count = reader.ReadByte();
         
-        writer.Seek(0, SeekOrigin.Begin);
+        writer.Seek(MessageCountOffset, SeekOrigin.Begin);
         writer.Write(count + 1);
         
         writer.Seek(offset + MessagesOffset, SeekOrigin.Begin);
@@ -157,8 +217,7 @@ public abstract class StudioCommunicationBase : IDisposable {
     
     protected abstract void HandleMessage(MessageID messageId, BinaryReader reader);
     
-    protected void Log(string message) => LogImpl($"Studio Communication @ {location}: {message}");
-    protected abstract void LogImpl(string message);
+    protected abstract void Log(string message);
 }
 
 #else
