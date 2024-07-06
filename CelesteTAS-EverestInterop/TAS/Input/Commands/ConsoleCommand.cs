@@ -389,7 +389,7 @@ public static class ConsoleCommand {
         }
         
         if (Engine.Scene is not Level level) {
-            return null;
+            return string.Empty;
         }
 
         AreaKey area = level.Session.Area;

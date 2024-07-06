@@ -89,7 +89,7 @@ public sealed class StudioCommunicationClient() : StudioCommunicationBase(Locati
                     GameDataType.ModUrl => GameData.GetModUrl(),
                     _ => string.Empty
                 };
-                QueueMessage(MessageID.GameDataRespone, writer => writer.Write(gameData));
+                QueueMessage(MessageID.GameDataRespone, writer => writer.Write(gameData ?? string.Empty));
                 break;
             
             default:
