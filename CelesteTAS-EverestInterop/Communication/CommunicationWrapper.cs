@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
+using Celeste.Mod;
 using StudioCommunication;
 using TAS.EverestInterop;
+using TAS.Module;
 
 namespace TAS.Communication;
 
@@ -9,6 +11,16 @@ public static class CommunicationWrapper {
     
     public static bool Connected => client is { Connected: true };
     private static StudioCommunicationClient client;
+    
+    [Load]
+    private static void Load() {
+        Everest.Events.Celeste.OnExiting += Stop;
+    }
+    [Unload]
+    private static void Unload() {
+        Everest.Events.Celeste.OnExiting -= Stop;
+        Stop();
+    }
     
     public static void Start() {
         client = new StudioCommunicationClient();
@@ -19,9 +31,9 @@ public static class CommunicationWrapper {
     }
     
     public static void ChangeStatus() {
-        if (TasSettings.AttemptConnectStudio) {
+        if (TasSettings.AttemptConnectStudio && client == null) {
             Start();
-        } else {
+        } else if (client != null) {
             Stop();
         }
     }

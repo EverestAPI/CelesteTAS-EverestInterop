@@ -225,8 +225,7 @@ public abstract class StudioCommunicationBase : IDisposable {
             queuedWrites.Add((messageId, serialize));
         }
     }
-    
-    private void WriteMessageNow(MessageID messageId, Action<BinaryWriter> serialize) {
+    protected void WriteMessageNow(MessageID messageId, Action<BinaryWriter> serialize) {
         mutex.WaitOne();
         WriteMessage(messageId, serialize);
         mutex.ReleaseMutex();

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using CelesteStudio.Util;
 using StudioCommunication;
 
@@ -14,6 +15,8 @@ public sealed class StudioCommunicationServer(
     Action<Dictionary<int, string>> linesChanged, 
     Action<Dictionary<HotkeyID, List<WinFormsKeys>>> bindingsChanged) : StudioCommunicationBase(Location.Studio) 
 {
+    private string? gameData;
+    
     protected override void HandleMessage(MessageID messageId, BinaryReader reader) {
         switch (messageId) {
             case MessageID.State:
@@ -22,18 +25,25 @@ public sealed class StudioCommunicationServer(
                 break;
             case MessageID.UpdateLines:
                 var updateLines = BinaryHelper.DeserializeDictionary<int, string>(reader);
-                linesChanged(updateLines);
                 Log($"Received message UpdateLines: {updateLines.Count}");
+
+                linesChanged(updateLines);
                 break;
             case MessageID.CurrentBindings:
                 var bindings = BinaryHelper.DeserializeDictionary<int, List<int>>(reader)
                     .ToDictionary(pair => (HotkeyID) pair.Key, pair => pair.Value.Cast<WinFormsKeys>().ToList());;
-                bindingsChanged(bindings);
                 Log($"Received message CurrentBindings: {bindings.Count}");
+
+                bindingsChanged(bindings);
                 break;
             case MessageID.RecordingFailed:
                 // TODO
                 break;
+            case MessageID.GameDataRespone:
+                gameData = reader.ReadString();
+                Log($"Received message GameDataRespone: '{gameData}'");
+                break;
+                
             default:
                 Log($"Received unknown message ID: {messageId}");
                 break;
@@ -48,6 +58,35 @@ public sealed class StudioCommunicationServer(
             writer.Write((byte) hotkey);
             writer.Write(released);
         });
+    }
+
+    private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(1);
+    public async Task<string?> RequestGameData(GameDataType gameDataType, object? arg = null) {
+        gameData = null;
+        WriteMessageNow(MessageID.RequestGameData, writer => {
+            writer.Write((byte)gameDataType);
+            
+            switch (gameDataType) {
+                case GameDataType.ConsoleCommand:
+                    writer.Write((bool) arg!);
+                    break;
+                case GameDataType.SettingValue:
+                    writer.Write((string) arg!);
+                    break;
+            }
+        });
+        
+        // Wait for data to arrive
+        var start = DateTime.UtcNow;
+        while (gameData == null) {
+            await Task.Delay(1).ConfigureAwait(false);
+            
+            if (DateTime.UtcNow - start >= RequestTimeout) {
+                return null;
+            }
+        }
+        
+        return gameData;
     }
     
     protected override void Log(string message) {

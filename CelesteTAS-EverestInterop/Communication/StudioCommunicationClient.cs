@@ -1,11 +1,11 @@
+#if REWRITE
+
 using System.Collections.Generic;
 using System.IO;
 using Celeste.Mod;
 using StudioCommunication;
 using TAS.EverestInterop;
 using TAS.Input;
-
-#if REWRITE
 
 namespace TAS.Communication;
 
@@ -14,15 +14,32 @@ public sealed class StudioCommunicationClient() : StudioCommunicationBase(Locati
         switch (messageId) {
             case MessageID.FilePath:
                 string path = reader.ReadString();
+                Log($"Received message FilePath: '{path}'");
 
                 InputController.StudioTasFilePath = path;
                 break;
             case MessageID.Hotkey:
-                HotkeyID hotkey = (HotkeyID)reader.ReadByte();
+                var hotkey = (HotkeyID)reader.ReadByte();
                 bool released = reader.ReadBoolean();
                 
                 Hotkeys.KeysDict[hotkey].OverrideCheck = !released;
                 break;
+            case MessageID.RequestGameData:
+                var gameDataType = (GameDataType)reader.ReadByte();
+                Log($"Received message RequestGameData: '{gameDataType}'");
+
+                string gameData = gameDataType switch {
+                    GameDataType.ConsoleCommand => GameData.GetConsoleCommand(reader.ReadBoolean()),
+                    GameDataType.ModInfo => GameData.GetModInfo(),
+                    GameDataType.ExactGameInfo => GameInfo.ExactStudioInfo,
+                    GameDataType.SettingValue => GameData.GetSettingValue(reader.ReadString()),
+                    GameDataType.CompleteInfoCommand => AreaCompleteInfo.CreateCommand(),
+                    GameDataType.ModUrl => GameData.GetModUrl(),
+                    _ => string.Empty
+                };
+                QueueMessage(MessageID.GameDataRespone, writer => writer.Write(gameData));
+                break;
+                
             default:
                 Log($"Received unknown message ID: {messageId}");
                 break;

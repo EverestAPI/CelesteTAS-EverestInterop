@@ -111,20 +111,16 @@ public sealed class CommunicationWrapper {
     public string ChapterTime => Connected ? State.ChapterTime : string.Empty;
     
     public string GetConsoleCommand(bool simple) {
-        // stub
-        return string.Empty;
+        return server.RequestGameData(GameDataType.ConsoleCommand, simple).Result ?? string.Empty;
     }
     public string GetModURL() {
-        // stub
-        return string.Empty;
+        return server.RequestGameData(GameDataType.ModUrl).Result ?? string.Empty;
     }
     public string GetModInfo() {
-        // stub
-        return string.Empty;
+        return server.RequestGameData(GameDataType.ModInfo).Result ?? string.Empty;
     }
     public string GetExactGameInfo() {
-        // stub
-        return string.Empty;
+        return server.RequestGameData(GameDataType.ExactGameInfo).Result ?? string.Empty;
     }
     
     #endregion

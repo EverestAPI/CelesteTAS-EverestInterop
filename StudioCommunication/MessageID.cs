@@ -24,6 +24,9 @@ public enum MessageID : byte {
     /// Sends the error cause for the recording failure to Studio
     RecordingFailed = 0x13,
     
+    /// Response for the RequestGameData message to Studio
+    GameDataRespone = 0x14,
+        
     #endregion
     
     #region Studio to Celeste
@@ -33,6 +36,9 @@ public enum MessageID : byte {
     
     /// Sends a pressed hotkey to Celeste
     Hotkey = 0x21,
+    
+    /// Sends a request for certain game data to Celeste
+    RequestGameData = 0x22,
     
     #endregion
 }
@@ -131,16 +137,16 @@ public enum MessageID : byte {
     [HighPriority] RecordingFailed = 0x34,
 }
 
+#endif
+
 public enum GameDataType : byte {
     ConsoleCommand,
-    ModInfo,
-    ExactGameInfo,
     SettingValue,
     CompleteInfoCommand,
+    ModInfo,
     ModUrl,
+    ExactGameInfo,
 }
-
-#endif
 
 public enum RecordingFailedReason : byte {
     TASRecorderNotInstalled,
