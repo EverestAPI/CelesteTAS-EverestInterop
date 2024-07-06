@@ -225,18 +225,18 @@ public static class Manager {
         }
 
         InputFrame previous = Controller.Previous;
-        StudioInfo studioInfo = new(
-            previous?.Line ?? -1,
-            $"{Controller.CurrentFrameInInput + (previous?.FrameOffset ?? 0)}{previous?.RepeatString ?? ""}",
-            Controller.CurrentFrameInTas,
-            Controller.Inputs.Count,
-            Savestates.StudioHighlightLine,
-            (int) States,
-            GameInfo.StudioInfo,
-            GameInfo.LevelName,
-            GameInfo.ChapterTime
-        );
-        CommunicationWrapper.SendState(studioInfo/*, !ShouldForceState*/); // TODO: Figure out this canFail
+        StudioState state = new() {
+            CurrentLine = previous?.Line ?? -1,
+            CurrentLineSuffix = $"{Controller.CurrentFrameInInput + (previous?.FrameOffset ?? 0)}{previous?.RepeatString ?? ""}",
+            CurrentFrameInTas = Controller.CurrentFrameInTas,
+            TotalFrames = Controller.Inputs.Count,
+            SaveStateLine = Savestates.StudioHighlightLine,
+            tasStates = States,
+            GameInfo = GameInfo.StudioInfo,
+            LevelName = GameInfo.LevelName,
+            ChapterTime = GameInfo.ChapterTime,
+        };
+        CommunicationWrapper.SendState(state);
     }
 
     public static bool IsLoading() {

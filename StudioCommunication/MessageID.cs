@@ -3,7 +3,21 @@
 public enum MessageID : byte {
     None = 0x00,
     
+    /// Sent on a regular interval to keep up the connection
     Ping = 0x01,
+    
+    #region Celeste to Studio
+    
+    /// Sends the current game state to Studio
+    SendState = 0x02,
+    
+    #endregion
+    
+    #region Studio to Celeste
+    
+    
+    
+    #endregion
 }
 
 #else

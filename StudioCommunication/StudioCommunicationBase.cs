@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using System.Text;
 using System.Threading;
 
 #if REWRITE
@@ -28,8 +29,6 @@ public abstract class StudioCommunicationBase : IDisposable {
     private DateTime lastPing = DateTime.UtcNow;
     private DateTime lastMessage = DateTime.UtcNow;
     
-    private readonly Location location;
-    
     private readonly Mutex mutex;
     
     private readonly Thread thread;
@@ -56,7 +55,6 @@ public abstract class StudioCommunicationBase : IDisposable {
     
     protected StudioCommunicationBase(Location location) {
         Log("Starting communication...");
-        this.location = location;
         
         // Get or create the shared mutex
         mutex = new Mutex(initiallyOwned: false, MutexName, out bool created);
@@ -183,13 +181,12 @@ public abstract class StudioCommunicationBase : IDisposable {
         }
     }
     
-    protected class MessageWriter(Mutex mutex, MemoryMappedViewStream stream) : BinaryWriter(stream), IDisposable {
+    protected class MessageWriter(Mutex mutex, MemoryMappedViewStream stream) : BinaryWriter(stream, Encoding.UTF8, leaveOpen: true), IDisposable {
         public new void Dispose() {
-            // Update write offset
-            Seek(0, SeekOrigin.Begin);
-            Write((int)BaseStream.Position - MessagesOffset);
+            // Update write offset (NOTE: We can't use the writer anymore, since it was already disposed)
+            stream.Seek(0, SeekOrigin.Begin);
+            stream.Write(BitConverter.GetBytes((int)stream.Position - MessagesOffset));
             
-            base.Dispose();
             stream.Dispose();
             mutex.ReleaseMutex();
         }
@@ -203,7 +200,7 @@ public abstract class StudioCommunicationBase : IDisposable {
         mutex.WaitOne();
         
         // Set current write offset / message count
-        using var reader = new BinaryReader(writeStream);
+        using var reader = new BinaryReader(writeStream, Encoding.UTF8, leaveOpen: true);
         int offset = reader.ReadInt32();
         byte count = reader.ReadByte();
         

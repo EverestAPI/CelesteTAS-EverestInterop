@@ -1,13 +1,19 @@
 using System;
 using System.IO;
+using StudioCommunication;
 
 #if REWRITE
 
-public sealed class StudioCommunicationServer() : StudioCommunicationBase(Location.Studio) {
+namespace CelesteStudio.Communication;
+
+public sealed class StudioCommunicationServer(Action<StudioState> stateChanged) : StudioCommunicationBase(Location.Studio) {
     protected override void HandleMessage(MessageID messageId, BinaryReader reader) {
         switch (messageId) {
             case MessageID.Ping:
-                Log("Received ping");
+                break;
+            case MessageID.SendState:
+                var state = StudioState.Deserialize(reader);
+                stateChanged(state);
                 break;
             default:
                 Log($"Received unknown message ID: {messageId}");

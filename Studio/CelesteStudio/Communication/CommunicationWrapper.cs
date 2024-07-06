@@ -7,16 +7,25 @@ using StudioCommunication;
 
 namespace CelesteStudio.Communication;
 
-public class CommunicationWrapper {
-    
+public sealed class CommunicationWrapper {
     public bool Connected => server.Connected;
-    public StudioInfo State { get; private set; }
+    public StudioState State { get; private set; }
     
-    public event Action<StudioInfo, StudioInfo>? StateUpdated;
+    public event Action<StudioState, StudioState>? StateUpdated;
     public event Action<Dictionary<int, string>>? LinesUpdated;
     public event Action ConnectionChanged;
     
-    private readonly StudioCommunicationServer server = new();
+    private readonly StudioCommunicationServer server;
+    
+    public CommunicationWrapper() {
+        server = new StudioCommunicationServer(OnStateChanged);
+    }
+    
+    private void OnStateChanged(StudioState state) {
+        var prevState = State;
+        State = state;
+        Application.Instance.AsyncInvoke(() => StateUpdated?.Invoke(prevState, state));
+    }
     
     public void ForceReconnect() {
         // stub

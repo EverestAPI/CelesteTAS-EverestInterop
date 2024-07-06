@@ -10,12 +10,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Actions.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)BinaryFormatterHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)HotkeyID.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MessageID.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)PlatformUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)State.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)StudioCommunicationBase.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)StudioInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)StudioState.cs" />
   </ItemGroup>
 </Project>

@@ -26,8 +26,10 @@ public static class CommunicationWrapper {
     
     #region Actions
     
-    public static void SendState(StudioInfo info) {
-        // stub
+    public static void SendState(StudioState state) {
+        if (!Connected) return;
+        
+        client.WriteSendState(state);
     }
     public static void SendUpdateLines(Dictionary<int, string> updateLines) {
         // stub
