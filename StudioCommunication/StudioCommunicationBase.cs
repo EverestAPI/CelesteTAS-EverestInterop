@@ -140,8 +140,8 @@ public abstract class StudioCommunicationBase : IDisposable {
         while (runThread) {
             Thread.Sleep(UpdateRate);
             
-            mutex.WaitOne();
             var now = DateTime.UtcNow;
+            mutex.WaitOne();
             
             // Read
             {
@@ -170,9 +170,11 @@ public abstract class StudioCommunicationBase : IDisposable {
                         if (messageId == MessageID.None) {
                             Log("Messages ended early! Something probably got corrupted!");
                             break;
+                        } else if (messageId == MessageID.Ping) {
+                            // Just sent to keep up the connect
+                        } else {
+                            HandleMessage(messageId, reader);
                         }
-                        
-                        HandleMessage(messageId, reader);
                     }
                     
                     // Reset write offset and message count

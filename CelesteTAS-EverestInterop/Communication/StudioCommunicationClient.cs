@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using System.IO;
 using Celeste.Mod;
 using StudioCommunication;
+using TAS.EverestInterop;
+using TAS.Input;
 
 #if REWRITE
 
@@ -10,8 +12,16 @@ namespace TAS.Communication;
 public sealed class StudioCommunicationClient() : StudioCommunicationBase(Location.CelesteTAS) {
     protected override void HandleMessage(MessageID messageId, BinaryReader reader) {
         switch (messageId) {
-            case MessageID.Ping:
-                Log("Received message Ping");
+            case MessageID.FilePath:
+                string path = reader.ReadString();
+
+                InputController.StudioTasFilePath = path;
+                break;
+            case MessageID.Hotkey:
+                HotkeyID hotkey = (HotkeyID)reader.ReadByte();
+                bool released = reader.ReadBoolean();
+                
+                Hotkeys.KeysDict[hotkey].OverrideCheck = !released;
                 break;
             default:
                 Log($"Received unknown message ID: {messageId}");

@@ -3,28 +3,36 @@
 public enum MessageID : byte {
     None = 0x00,
     
+    #region Common
+    
     /// Sent on a regular interval to keep up the connection
     Ping = 0x01,
+    
+    #endregion
     
     #region Celeste to Studio
     
     /// Sends the current game state to Studio
-    State = 0x02,
+    State = 0x10,
     
     /// Sends line to update to Studio (for example ChapterTime)
-    UpdateLines = 0x03,
+    UpdateLines = 0x11,
     
     /// Sends the current bindings for all hotkeys to Studio
-    CurrentBindings = 0x04,
+    CurrentBindings = 0x12,
     
     /// Sends the error cause for the recording failure to Studio
-    RecordingFailed = 0x05,
+    RecordingFailed = 0x13,
     
     #endregion
     
     #region Studio to Celeste
     
+    /// Sends the currently edited file path to Celeste
+    FilePath = 0x20,
     
+    /// Sends a pressed hotkey to Celeste
+    Hotkey = 0x21,
     
     #endregion
 }

@@ -43,10 +43,58 @@ public sealed class CommunicationWrapper {
         // stub
     }
     public void SendPath(string path) {
-        // stub
+        if (Connected) {
+            server.SendPath(path);
+        }
     }
     public bool SendKeyEvent(Keys key, Keys modifiers, bool released) {
-        // stub
+        var winFormsKey = key.ToWinForms();
+        
+        foreach (HotkeyID hotkey in bindings.Keys) {
+            var bindingKeys = bindings[hotkey];
+            if (bindingKeys.Count == 0) continue;
+            
+            // Require the key without any modifiers (or the modifier being the same as the key)
+            if (bindingKeys.Count == 1) {
+                if ((bindingKeys[0] == winFormsKey) &&
+                    ((modifiers == Keys.None) ||
+                     (modifiers == Keys.Shift && key is Keys.Shift or Keys.LeftShift or Keys.RightShift) ||
+                     (modifiers == Keys.Control && key is Keys.Control or Keys.LeftControl or Keys.RightControl) ||
+                     (modifiers == Keys.Alt && key is Keys.Alt or Keys.LeftAlt or Keys.RightAlt)))
+                {
+                    if (Connected) {
+                        server.SendHotkey(hotkey, released);
+                    }
+                    return true;
+                }
+                
+                continue;
+            }
+            
+            // Binding has > 1 keys
+            foreach (var bind in bindingKeys) {
+                if (bind == winFormsKey)
+                    continue;
+                
+                if (bind is WinFormsKeys.Shift or WinFormsKeys.LShiftKey or WinFormsKeys.RShiftKey && modifiers.HasFlag(Keys.Shift))
+                    continue;
+                if (bind is WinFormsKeys.Control or WinFormsKeys.LControlKey or WinFormsKeys.RControlKey && modifiers.HasFlag(Keys.Control))
+                    continue;
+                if (bind is WinFormsKeys.Menu or WinFormsKeys.LMenu or WinFormsKeys.RMenu && modifiers.HasFlag(Keys.Alt))
+                    continue;
+            
+                // If only labeled for-loops would exist...
+                goto NextIter;
+            }
+            
+            if (Connected) {
+                server.SendHotkey(hotkey, released);
+            }
+            return true;
+            
+            NextIter:; // Yes, that ";" is required..
+        }
+        
         return false;
     }
     

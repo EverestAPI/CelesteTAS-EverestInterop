@@ -16,8 +16,6 @@ public sealed class StudioCommunicationServer(
 {
     protected override void HandleMessage(MessageID messageId, BinaryReader reader) {
         switch (messageId) {
-            case MessageID.Ping:
-                break;
             case MessageID.State:
                 var state = StudioState.Deserialize(reader);
                 stateChanged(state);
@@ -25,11 +23,13 @@ public sealed class StudioCommunicationServer(
             case MessageID.UpdateLines:
                 var updateLines = BinaryHelper.DeserializeDictionary<int, string>(reader);
                 linesChanged(updateLines);
+                Log($"Received message UpdateLines: {updateLines.Count}");
                 break;
             case MessageID.CurrentBindings:
                 var bindings = BinaryHelper.DeserializeDictionary<int, List<int>>(reader)
                     .ToDictionary(pair => (HotkeyID) pair.Key, pair => pair.Value.Cast<WinFormsKeys>().ToList());;
                 bindingsChanged(bindings);
+                Log($"Received message CurrentBindings: {bindings.Count}");
                 break;
             case MessageID.RecordingFailed:
                 // TODO
@@ -38,6 +38,16 @@ public sealed class StudioCommunicationServer(
                 Log($"Received unknown message ID: {messageId}");
                 break;
         }
+    }
+    
+    public void SendPath(string path) {
+        QueueMessage(MessageID.FilePath, writer => writer.Write(path));
+    }
+    public void SendHotkey(HotkeyID hotkey, bool released) {
+        QueueMessage(MessageID.Hotkey, writer => {
+            writer.Write((byte) hotkey);
+            writer.Write(released);
+        });
     }
     
     protected override void Log(string message) {
