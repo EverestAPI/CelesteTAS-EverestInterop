@@ -515,8 +515,6 @@ public sealed class Editor : Drawable {
     #endregion
     
     protected override void OnKeyDown(KeyEventArgs e) {
-        Console.WriteLine($"KeyDown: {e.Key} | {e.Modifiers} | {e.KeyData} | '{e.KeyChar}' = {(int)e.KeyChar}");
-        
         var mods = e.Modifiers;
         if (e.Key is Keys.LeftShift or Keys.RightShift) mods |= Keys.Shift;
         if (e.Key is Keys.LeftControl or Keys.RightControl) mods |= Keys.Control;
@@ -700,7 +698,6 @@ public sealed class Editor : Drawable {
                         .Concat(Studio.Instance.GameInfoPanel.ContextMenu.Items)
                         .Concat(Studio.Instance.Menu.Items);
                     foreach (var item in items) {
-                        Console.WriteLine($" - Shortcut: {item.Shortcut} vs {e.KeyData}");
                         if (item.Shortcut != e.KeyData) {
                             continue;
                         }
