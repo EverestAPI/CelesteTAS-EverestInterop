@@ -8,29 +8,23 @@ namespace CelesteStudio.Util;
 
 public class MenuUtils {
     public static MenuItem CreateAction(string text, Keys shortcut = Keys.None, Action? action = null) {
-        var cmd = new Command { MenuText = text, Shortcut = shortcut, Enabled = action != null };
-        cmd.Executed += (_, _) => action?.Invoke();
-        
-        return cmd;
+        return new ButtonMenuItem((_, _) => action?.Invoke()) { Text = text, Shortcut = shortcut, Enabled = action != null };
     }
     
     public static MenuItem CreateToggle(string text, Func<bool> getFn, Action toggleFn) {
-        var cmd = new CheckCommand { MenuText = text };
-        cmd.Executed += (_, _) => toggleFn();
-        
         // TODO: Convert to CheckMenuItem
-        return new ButtonMenuItem(cmd);
+        return new ButtonMenuItem((_, _) => toggleFn()) { Text = text };
     }
     
     public static MenuItem CreateSettingToggle(string text, string settingName, Keys shortcut = Keys.None, Action<bool>? onChanged = null) {
         var property = typeof(Settings).GetProperty(settingName)!;
         
-        var cmd = new CheckCommand {
-            MenuText = text,
+        var item = new CheckMenuItem {
+            Text = text,
             Shortcut = shortcut,
             Checked = (bool)property.GetValue(Settings.Instance)!
         };
-        cmd.Executed += (_, _) => {
+        item.Click += (_, _) => {
             bool value = (bool)property.GetValue(Settings.Instance)!;
             property.SetValue(Settings.Instance, !value);
             onChanged?.Invoke(!value);
@@ -40,21 +34,20 @@ public class MenuUtils {
             
         };
         
-        return new CheckMenuItem(cmd);
+        return item;
     }
     
     public static MenuItem CreateNumberInput<T>(string text, Func<T> getFn, Action<T> setFn, T minValue, T maxValue, T step) where T : INumber<T> {
-        var cmd = new Command { MenuText = text };
-        cmd.Executed += (_, _) => setFn(NumberInputDialog<T>.Show(text, getFn(), minValue, maxValue, step));
-        
-        return new ButtonMenuItem(cmd);
+        return new ButtonMenuItem((_, _) => setFn(NumberInputDialog<T>.Show(text, getFn(), minValue, maxValue, step))) { Text = text };
     }
     
     public static MenuItem CreateSettingNumberInput<T>(string text, string settingName, T minValue, T maxValue, T step) where T : INumber<T>  {
         var property = typeof(Settings).GetProperty(settingName)!;
         
-        var cmd = new Command { MenuText = $"{text}: {property.GetValue(Settings.Instance)!}" };
-        cmd.Executed += (_, _) => {
+        var item = new ButtonMenuItem {
+            Text = $"{text}: {property.GetValue(Settings.Instance)!}"
+        };
+        item.Click += (_, _) => {
             T value = (T)property.GetValue(Settings.Instance)!;
             property.SetValue(Settings.Instance, NumberInputDialog<T>.Show(text, value, minValue, maxValue, step));
             
@@ -62,7 +55,7 @@ public class MenuUtils {
             Settings.Save();
         };
         
-        return new ButtonMenuItem(cmd);
+        return item;
     }
     
     public static MenuItem CreateSettingEnum<T>(string text, string settingName, string[] entryNames) where T : struct, Enum {

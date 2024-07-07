@@ -515,7 +515,7 @@ public sealed class Editor : Drawable {
     #endregion
     
     protected override void OnKeyDown(KeyEventArgs e) {
-        Console.WriteLine($"KeyDown: {e.Key} | {e.Modifiers} | {e.KeyData} | '{e.KeyChar}'");
+        Console.WriteLine($"KeyDown: {e.Key} | {e.Modifiers} | {e.KeyData} | '{e.KeyChar}' = {(int)e.KeyChar}");
         
         var mods = e.Modifiers;
         if (e.Key is Keys.LeftShift or Keys.RightShift) mods |= Keys.Shift;
@@ -727,11 +727,16 @@ public sealed class Editor : Drawable {
                 }
                 
                 // macOS will make a beep sounds when the event isn't handled
+                // ..that also means OnTextInput won't be called..
                 if (Eto.Platform.Instance.IsMac) {
-                    e.Handled = true;    
+                    e.Handled = true;
+                    if (e.KeyChar != 65535) {
+                        OnTextInput(new TextInputEventArgs(e.KeyChar.ToString()));
+                    }
+                } else {
+                    base.OnKeyDown(e);    
                 }
                 
-                base.OnKeyDown(e);
                 break;
         }
         
