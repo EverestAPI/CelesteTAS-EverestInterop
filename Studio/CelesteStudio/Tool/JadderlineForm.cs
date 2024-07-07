@@ -120,14 +120,21 @@ public sealed class JadderlineForm : Form {
         run.Enabled = false;
         copyOutput.Enabled = false;
         
+        // Get the parameters here and capture them for the task, since it apparently can't access the fields?
+        float playerPosValue = (float)playerPos.Value;
+        float playerSpeedValue = (float)playerSpeed.Value;
+        float jelly2PosValue = (float)jelly2Pos.Value;
+        int laddersValue = (int)ladders.Value;
+        bool directionValue = direction.SelectedKey == "Right";
+        bool moveOnlyValue = moveOnly.Checked!.Value;
+        var additionalActions = Actions.None;
+        foreach (char c in additionalInputs.Text) {
+            additionalActions |= c.ActionForChar();
+        }
+        
         Task.Run(() => {
             try {
-                Actions additionalActions = Actions.None;
-                foreach (char c in additionalInputs.Text) {
-                    additionalActions |= c.ActionForChar();
-                }
-                
-                string result = Run((float)playerPos.Value, (float)playerSpeed.Value, (float)jelly2Pos.Value, (int)ladders.Value, direction.SelectedKey == "Right", moveOnly.Checked!.Value, additionalActions);
+                string result = Run(playerPosValue, playerSpeedValue, jelly2PosValue, laddersValue, directionValue, moveOnlyValue, additionalActions);
 
                 Application.Instance.Invoke(() => {
                     run.Enabled = true;
@@ -138,9 +145,9 @@ public sealed class JadderlineForm : Form {
                 Console.Error.WriteLine(ex);
                 
                 Application.Instance.Invoke(() => {
-                    MessageBox.Show($"Failed to calculate optimal jelly ladder:{Environment.NewLine}{ex.Message}", MessageBoxType.Error);
                     run.Enabled = true;
                     copyOutput.Enabled = false;
+                    MessageBox.Show($"Failed to calculate optimal jelly ladder:{Environment.NewLine}{ex.Message}", MessageBoxType.Error);
                 });
             }
         });
