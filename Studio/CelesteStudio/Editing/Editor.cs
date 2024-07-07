@@ -693,7 +693,10 @@ public sealed class Editor : Drawable {
             default:
                 if (e.Key != Keys.None) {
                     // Search through context menu for hotkeys
-                    foreach (var item in ContextMenu.Items.Concat(Studio.Instance.GameInfoPanel.ContextMenu.Items)) {
+                    var items = ContextMenu.Items
+                        .Concat(Studio.Instance.GameInfoPanel.ContextMenu.Items)
+                        .Concat(Studio.Instance.Menu.Items);
+                    foreach (var item in items) {
                         if (item.Shortcut != e.KeyData) {
                             continue;
                         }

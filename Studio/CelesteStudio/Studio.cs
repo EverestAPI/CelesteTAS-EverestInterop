@@ -130,6 +130,150 @@ public sealed class Studio : Form {
         });
     }
     
+    protected override void OnClosing(CancelEventArgs e) {
+        if (!ShouldDiscardChanges()) {
+            e.Cancel = true;
+            return;
+        }
+        
+        Settings.Instance.LastLocation = Location;
+        Settings.Instance.LastSize = Size;
+        Settings.Save();
+        
+        CommunicationWrapper.SendPath(string.Empty);
+        CommunicationWrapper.Stop();
+        
+        base.OnClosing(e);
+    }
+    
+    private bool ShouldDiscardChanges() {
+        if (Editor.Document.Dirty || Editor.Document.FilePath == Document.TemporaryFile) {
+            var confirm = MessageBox.Show($"You have unsaved changes.{Environment.NewLine}Are you sure you want to discard them?", MessageBoxButtons.YesNo, MessageBoxType.Question, MessageBoxDefaultButton.No);
+            return confirm == DialogResult.Yes;
+        }
+        
+        return true;
+    }
+    
+    private string GetFilePickerDirectory() {
+        var fallbackDir = string.IsNullOrWhiteSpace(Settings.Instance.LastSaveDirectory)
+            ? Path.Combine(Directory.GetCurrentDirectory(), "TAS Files")
+            : Settings.Instance.LastSaveDirectory;
+        
+        var dir = Editor.Document.FilePath == Document.TemporaryFile
+            ? fallbackDir
+            : Path.GetDirectoryName(Editor.Document.FilePath) ?? fallbackDir;
+        
+        if (!Directory.Exists(dir)) {
+            Directory.CreateDirectory(dir);
+        }
+        
+        return dir;
+    }
+    
+    private void OnNewFile() {
+        if (!ShouldDiscardChanges())
+            return;
+        
+        string initText = $"RecordCount: 1{Document.NewLine}";
+        if (CommunicationWrapper.Connected) {
+            if (CommunicationWrapper.GetConsoleCommand(simple: true) is var simpleConsoleCommand && !string.IsNullOrWhiteSpace(simpleConsoleCommand)) {
+                initText += $"{Document.NewLine}{simpleConsoleCommand}{Document.NewLine}   1{Document.NewLine}";
+                if (CommunicationWrapper.GetModURL() is var modUrl && !string.IsNullOrWhiteSpace(modUrl)) {
+                    initText = modUrl + initText;
+                }
+            }
+        }
+        initText += $"{Document.NewLine}#Start{Document.NewLine}";
+        
+        File.WriteAllText(Document.TemporaryFile, initText);
+        OpenFile(Document.TemporaryFile);
+    }
+    
+    private void OnOpenFile() {
+        if (!ShouldDiscardChanges())
+            return;
+        
+        var dialog = new OpenFileDialog {
+            Filters = { new FileFilter("TAS", ".tas") },
+            MultiSelect = false,
+            Directory = new Uri(GetFilePickerDirectory()),
+        };
+        
+        if (dialog.ShowDialog(this) == DialogResult.Ok) {
+            OpenFile(dialog.Filenames.First());
+        }
+    }
+    
+    public void OpenFile(string filePath) {
+        if (filePath == Editor.Document.FilePath)
+            return;
+        
+        if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
+            Settings.Instance.AddRecentFile(filePath);
+        
+        // CommunicationWrapper.WriteWait();
+        
+        var document = Document.Load(filePath);
+        if (document == null) {
+            MessageBox.Show($"An unexpected error occured while trying to open the file '{filePath}'", MessageBoxButtons.OK, MessageBoxType.Error);
+            return;
+        }
+        
+        if (Editor.Document is { } doc) {
+            doc.Dispose();
+            doc.TextChanged -= UpdateTitle;
+        }
+        
+        Editor.Document = document;
+        Editor.Document.TextChanged += UpdateTitle;
+
+        Title = TitleBarText;
+        Menu = CreateMenu(); // Recreate menu to reflect changed "Recent Files"
+        
+        CommunicationWrapper.SendPath(Editor.Document.FilePath);
+        
+        if (filePath != Document.TemporaryFile) {
+            Settings.Instance.LastSaveDirectory = Path.GetDirectoryName(filePath)!;
+        }
+        
+        void UpdateTitle(Document _0, int _1, int _2) {
+            Title = TitleBarText;
+        }
+    }
+    
+    private void OnSaveFile() {
+        if (Editor.Document.FilePath == Document.TemporaryFile) {
+            OnSaveFileAs();
+            return;
+        }
+        
+        Editor.Document.Save();
+        Title = TitleBarText;
+    }
+    
+    private void OnSaveFileAs() {
+        var dialog = new SaveFileDialog {
+            Filters = { new FileFilter("TAS", ".tas") },
+            Directory = new Uri(GetFilePickerDirectory()),
+        };
+        
+        if (dialog.ShowDialog(this) != DialogResult.Ok) 
+            return;
+        
+        var filePath = dialog.FileName;
+        if (Path.GetExtension(filePath) != ".tas")
+            filePath += ".tas";
+        
+        // CommunicationWrapper.WriteWait();
+        
+        Editor.Document.FilePath = filePath;
+        Editor.Document.Save();
+        Title = TitleBarText;
+        
+        CommunicationWrapper.SendPath(Editor.Document.FilePath);
+    }
+    
     private MenuBar CreateMenu() {
         const int minDecimals = 2;
         const int maxDecimals = 12;
@@ -295,149 +439,5 @@ public sealed class Studio : Form {
         menu.HelpItems.Insert(0, MenuUtils.CreateAction("Home", Keys.None, () => ProcessHelper.OpenInBrowser("https://github.com/EverestAPI/CelesteTAS-EverestInterop")));
         
         return menu;
-    }
-    
-    protected override void OnClosing(CancelEventArgs e) {
-        if (!ShouldDiscardChanges()) {
-            e.Cancel = true;
-            return;
-        }
-        
-        Settings.Instance.LastLocation = Location;
-        Settings.Instance.LastSize = Size;
-        Settings.Save();
-        
-        CommunicationWrapper.SendPath(string.Empty);
-        CommunicationWrapper.Stop();
-        
-        base.OnClosing(e);
-    }
-    
-    private bool ShouldDiscardChanges() {
-        if (Editor.Document.Dirty || Editor.Document.FilePath == Document.TemporaryFile) {
-            var confirm = MessageBox.Show($"You have unsaved changes.{Environment.NewLine}Are you sure you want to discard them?", MessageBoxButtons.YesNo, MessageBoxType.Question, MessageBoxDefaultButton.No);
-            return confirm == DialogResult.Yes;
-        }
-        
-        return true;
-    }
-    
-    private string GetFilePickerDirectory() {
-        var fallbackDir = string.IsNullOrWhiteSpace(Settings.Instance.LastSaveDirectory)
-            ? Path.Combine(Directory.GetCurrentDirectory(), "TAS Files")
-            : Settings.Instance.LastSaveDirectory;
-        
-        var dir = Editor.Document.FilePath == Document.TemporaryFile
-            ? fallbackDir
-            : Path.GetDirectoryName(Editor.Document.FilePath) ?? fallbackDir;
-        
-        if (!Directory.Exists(dir)) {
-            Directory.CreateDirectory(dir);
-        }
-        
-        return dir;
-    }
-    
-    private void OnNewFile() {
-        if (!ShouldDiscardChanges())
-            return;
-        
-        string initText = $"RecordCount: 1{Document.NewLine}";
-        if (CommunicationWrapper.Connected) {
-            if (CommunicationWrapper.GetConsoleCommand(simple: true) is var simpleConsoleCommand && !string.IsNullOrWhiteSpace(simpleConsoleCommand)) {
-                initText += $"{Document.NewLine}{simpleConsoleCommand}{Document.NewLine}   1{Document.NewLine}";
-                if (CommunicationWrapper.GetModURL() is var modUrl && !string.IsNullOrWhiteSpace(modUrl)) {
-                    initText = modUrl + initText;
-                }
-            }
-        }
-        initText += $"{Document.NewLine}#Start{Document.NewLine}";
-        
-        File.WriteAllText(Document.TemporaryFile, initText);
-        OpenFile(Document.TemporaryFile);
-    }
-    
-    private void OnOpenFile() {
-        if (!ShouldDiscardChanges())
-            return;
-        
-        var dialog = new OpenFileDialog {
-            Filters = { new FileFilter("TAS", ".tas") },
-            MultiSelect = false,
-            Directory = new Uri(GetFilePickerDirectory()),
-        };
-        
-        if (dialog.ShowDialog(this) == DialogResult.Ok) {
-            OpenFile(dialog.Filenames.First());
-        }
-    }
-    
-    public void OpenFile(string filePath) {
-        if (filePath == Editor.Document.FilePath)
-            return;
-        
-        if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
-            Settings.Instance.AddRecentFile(filePath);
-        
-        // CommunicationWrapper.WriteWait();
-        
-        var document = Document.Load(filePath);
-        if (document == null) {
-            MessageBox.Show($"An unexpected error occured while trying to open the file '{filePath}'", MessageBoxButtons.OK, MessageBoxType.Error);
-            return;
-        }
-        
-        if (Editor.Document is { } doc) {
-            doc.Dispose();
-            doc.TextChanged -= UpdateTitle;
-        }
-        
-        Editor.Document = document;
-        Editor.Document.TextChanged += UpdateTitle;
-
-        Title = TitleBarText;
-        Menu = CreateMenu(); // Recreate menu to reflect changed "Recent Files"
-        
-        CommunicationWrapper.SendPath(Editor.Document.FilePath);
-        
-        if (filePath != Document.TemporaryFile) {
-            Settings.Instance.LastSaveDirectory = Path.GetDirectoryName(filePath)!;
-        }
-        
-        void UpdateTitle(Document _0, int _1, int _2) {
-            Title = TitleBarText;
-        }
-    }
-    
-    private void OnSaveFile() {
-        if (Editor.Document.FilePath == Document.TemporaryFile) {
-            OnSaveFileAs();
-            return;
-        }
-        
-        Editor.Document.Save();
-        Title = TitleBarText;
-    }
-    
-    private void OnSaveFileAs() {
-        var dialog = new SaveFileDialog {
-            Filters = { new FileFilter("TAS", ".tas") },
-            Directory = new Uri(GetFilePickerDirectory()),
-        };
-        
-        if (dialog.ShowDialog(this) != DialogResult.Ok) 
-            return;
-        
-        var filePath = dialog.FileName;
-        if (Path.GetExtension(filePath) != ".tas")
-            filePath += ".tas";
-        
-        // CommunicationWrapper.WriteWait();
-        
-        Editor.Document.FilePath = filePath;
-        Editor.Document.Save();
-        Title = TitleBarText;
-        
-        CommunicationWrapper.SendPath(Editor.Document.FilePath);
     }
 }
