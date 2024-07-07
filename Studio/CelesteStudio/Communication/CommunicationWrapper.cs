@@ -56,7 +56,7 @@ public static class CommunicationWrapper {
     }
     
     public static void ForceReconnect() {
-        // stub
+        comm?.ForceReconnect();
     }
     public static void SendPath(string path) {
         if (Connected) {

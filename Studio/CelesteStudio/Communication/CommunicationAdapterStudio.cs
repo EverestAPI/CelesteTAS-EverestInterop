@@ -18,6 +18,19 @@ public sealed class CommunicationAdapterStudio(
 {
     private string? gameData;
     
+    public void ForceReconnect() {
+        if (Connected) {
+            WriteMessageNow(MessageID.Reset, _ => {});
+            LogVerbose("Sent message Reset");
+        }
+        FullReset();
+    }
+    
+    protected override void FullReset() {
+        CommunicationWrapper.Stop();
+        CommunicationWrapper.Start();
+    }
+    
     protected override void OnConnectionChanged() {
         if (Connected) {
             // During startup the editor might be null, so just check to be sure

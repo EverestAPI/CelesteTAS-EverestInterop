@@ -6,6 +6,7 @@ using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 #if REWRITE
 
@@ -113,15 +114,18 @@ public abstract class CommunicationAdapterBase : IDisposable {
             try {
                 UpdateThread();
             } catch (Exception ex) {
-                LogInfo($"Thread crashed: {ex}");
+                LogError($"Thread crashed: {ex}");
                 
-                if (DateTime.UtcNow - lastCrash < TimeSpan.FromSeconds(5)) {
-                    LogInfo("Thread crashed again within 5 seconds. Aborting!");
+                var now = DateTime.UtcNow;
+                if (now - lastCrash < TimeSpan.FromSeconds(5)) {
+                    // "try turning it off and on again"
+                    LogError("Thread crashed again within 5 seconds. Resetting communication...");
+                    Task.Run(FullReset);
                     return;
                 }
                 
                 // Restart the thread when it crashed
-                lastCrash = DateTime.UtcNow;
+                lastCrash = now;
                 goto Retry;
             }
         }) {
@@ -186,6 +190,12 @@ public abstract class CommunicationAdapterBase : IDisposable {
                                 break;
                             } else if (messageId == MessageID.Ping) {
                                 // Just sent to keep up the connection
+                            } else if (messageId == MessageID.Reset) {
+                                LogVerbose("Received message Reset");
+                                // Fully restart ourselves. Called async to avoid deadlocks
+                                Connected = false;
+                                Task.Run(FullReset);
+                                return;
                             } else {
                                 HandleMessage(messageId, reader);
                             }
@@ -285,6 +295,7 @@ public abstract class CommunicationAdapterBase : IDisposable {
         writeStream.Write(BitConverter.GetBytes(newOffset));
     }
     
+    protected abstract void FullReset();
     protected abstract void OnConnectionChanged();
     protected abstract void HandleMessage(MessageID messageId, BinaryReader reader);
     

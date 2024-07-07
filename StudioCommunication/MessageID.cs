@@ -10,6 +10,9 @@ public enum MessageID : byte {
     /// Sent on a regular interval to keep up the connection
     Ping = 0x01,
     
+    /// Indicates the adapter should completely restart itself
+    Reset = 0x02,
+    
     #endregion
     
     #region Celeste to Studio
