@@ -596,7 +596,7 @@ public sealed class Editor : Drawable {
                 OnEnter(e.HasCommonModifier());
                 e.Handled = true;
                 break;
-            case Keys.Left:
+            case Keys.Left when !e.HasAlternateModifier(): // Prevent Alt+Left from getting handled
                 MoveCaret(e.HasCommonModifier() ? CaretMovementType.WordLeft : CaretMovementType.CharLeft, updateSelection: e.Shift);
                 e.Handled = true;
                 break;
