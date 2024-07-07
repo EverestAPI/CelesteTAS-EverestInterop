@@ -471,7 +471,12 @@ public sealed class Editor : Drawable {
             int idx = position.Row - visualRows[row];
             if (idx < wrap.Lines.Length) {
                 int xIdent = idx == 0 ? 0 : wrap.StartOffset;
-                col += wrap.Lines[idx].Index - xIdent;       
+                
+                if (col < xIdent) {
+                    col += wrap.Lines[idx].Index;    
+                } else {
+                    col += wrap.Lines[idx].Index - xIdent;       
+                }
             }
         }
         
@@ -857,7 +862,6 @@ public sealed class Editor : Drawable {
                     DisplayText = entry.Arg,
                     OnUse = () => {
                         var commandLine = Document.Lines[Document.Caret.Row][..(lastArgStart + args[^1].Length)];
-                        Console.WriteLine($"command line '{commandLine}'");
                         
                         var selectedQuickEdit = GetQuickEdits()
                             .FirstOrDefault(anchor => Document.Caret.Row == anchor.Row &&
@@ -1465,7 +1469,6 @@ public sealed class Editor : Drawable {
     private void OnToggleFolding() {
         // Find current region
         var folding = foldings.FirstOrDefault(fold => fold.MinRow <= Document.Caret.Row && fold.MaxRow >= Document.Caret.Row);
-        Console.WriteLine($"f {folding}");
         if (folding.MinRow == folding.MaxRow) {
             return;
         }
@@ -1936,54 +1939,69 @@ public sealed class Editor : Drawable {
     }
     
     private void MoveCaret(CaretMovementType direction, bool updateSelection) {
-        var newCaret = Document.Caret;
-        
         var line = Document.Lines[Document.Caret.Row];
+        var oldCaret = Document.Caret;
+        
         if (ActionLine.TryParse(line, out var actionLine)) {
-            newCaret.Col = SnapColumnToActionLine(actionLine, newCaret.Col);
+            Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
             int leadingSpaces = ActionLine.MaxFramesDigits - actionLine.Frames.Digits();
             
-            newCaret = direction switch {
-                CaretMovementType.CharLeft  => ClampCaret(new CaretPosition(newCaret.Row, GetSoftSnapColumns(actionLine).Reverse().FirstOrDefault(c => c < newCaret.Col, newCaret.Col)), wrapLine: true),
-                CaretMovementType.CharRight => ClampCaret(new CaretPosition(newCaret.Row, GetSoftSnapColumns(actionLine).FirstOrDefault(c => c > newCaret.Col, newCaret.Col)), wrapLine: true),
-                CaretMovementType.WordLeft  => ClampCaret(new CaretPosition(newCaret.Row, GetHardSnapColumns(actionLine).Reverse().FirstOrDefault(c => c < newCaret.Col, newCaret.Col)), wrapLine: true),
-                CaretMovementType.WordRight => ClampCaret(new CaretPosition(newCaret.Row, GetHardSnapColumns(actionLine).FirstOrDefault(c => c > newCaret.Col, newCaret.Col)), wrapLine: true),
-                CaretMovementType.LineStart => ClampCaret(new CaretPosition(newCaret.Row, leadingSpaces)),
-                CaretMovementType.LineEnd   => ClampCaret(new CaretPosition(newCaret.Row, line.Length)),
-                _ => GetNewTextCaretPosition(direction),
-            };
+            // Line wrapping
+            if (Document.Caret.Row > 0 && Document.Caret.Col == leadingSpaces && 
+                direction is CaretMovementType.CharLeft or CaretMovementType.WordLeft) 
+            {
+                Document.Caret.Row--;
+                Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+            } else if (Document.Caret.Row < Document.Lines.Count - 1 && Document.Caret.Col == Document.Lines[Document.Caret.Row].Length && 
+                       direction is CaretMovementType.CharRight or CaretMovementType.WordRight)
+            {
+                Document.Caret.Row++;
+                Document.Caret.Col = desiredVisualCol = 0;
+            } else {
+                // Regular action line movement
+                Document.Caret = direction switch {
+                    CaretMovementType.CharLeft  => ClampCaret(new CaretPosition(Document.Caret.Row, GetSoftSnapColumns(actionLine).Reverse().FirstOrDefault(c => c < Document.Caret.Col, Document.Caret.Col)), wrapLine: true),
+                    CaretMovementType.CharRight => ClampCaret(new CaretPosition(Document.Caret.Row, GetSoftSnapColumns(actionLine).FirstOrDefault(c => c > Document.Caret.Col, Document.Caret.Col)), wrapLine: true),
+                    CaretMovementType.WordLeft  => ClampCaret(new CaretPosition(Document.Caret.Row, GetHardSnapColumns(actionLine).Reverse().FirstOrDefault(c => c < Document.Caret.Col, Document.Caret.Col)), wrapLine: true),
+                    CaretMovementType.WordRight => ClampCaret(new CaretPosition(Document.Caret.Row, GetHardSnapColumns(actionLine).FirstOrDefault(c => c > Document.Caret.Col, Document.Caret.Col)), wrapLine: true),
+                    CaretMovementType.LineStart => ClampCaret(new CaretPosition(Document.Caret.Row, leadingSpaces)),
+                    CaretMovementType.LineEnd   => ClampCaret(new CaretPosition(Document.Caret.Row, line.Length)),
+                    _ => GetNewTextCaretPosition(direction),
+                };
+            }
         } else {
             // Regular text movement
-            newCaret = GetNewTextCaretPosition(direction);
+            Document.Caret = GetNewTextCaretPosition(direction);
         }
         
         // Apply / Update desired column
-        var oldVisualPos = GetVisualPosition(Document.Caret);
-        var newVisualPos = GetVisualPosition(newCaret);
-        if (oldVisualPos.Row != newVisualPos.Row) {
+        var oldVisualPos = GetVisualPosition(oldCaret);
+        var newVisualPos = GetVisualPosition(Document.Caret);
+        if (oldCaret.Row != Document.Caret.Row) {
             newVisualPos.Col = desiredVisualCol;
         } else {
             desiredVisualCol = newVisualPos.Col;
         }
-        newCaret = ClampCaret(GetActualPosition(newVisualPos));
+        Document.Caret = ClampCaret(GetActualPosition(newVisualPos));
         
-        var newLine = Document.Lines[newCaret.Row];
+        var newLine = Document.Lines[Document.Caret.Row];
         if (ActionLine.TryParse(newLine, out var newActionLine)) {
-            newCaret.Col = SnapColumnToActionLine(newActionLine, newCaret.Col);
+            Document.Caret.Col = SnapColumnToActionLine(newActionLine, Document.Caret.Col);
         }
         
         if (updateSelection) {
-            if (Document.Selection.Empty)
-                Document.Selection.Start = Document.Caret;    
+            if (Document.Selection.Empty) {
+                Document.Selection.Start = oldCaret;
+            }
             
-            Document.Selection.End = newCaret;
+            Document.Selection.End = Document.Caret;
         } else {
             Document.Selection.Clear();
         }
         
         autoCompleteMenu.Visible = false;
         
-        Document.Caret = newCaret;
+        Document.Caret = Document.Caret;
         ScrollCaretIntoView(center: direction is CaretMovementType.LabelUp or CaretMovementType.LabelDown);
     }
     
