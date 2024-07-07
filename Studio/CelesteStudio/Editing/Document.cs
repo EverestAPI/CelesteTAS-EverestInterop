@@ -110,7 +110,7 @@ public class Document {
     public const char NewLine = '\n';
     
     // Used while the document isn't saved yet
-    public static string TemporaryFile => Path.Combine(Settings.BaseConfigPath, ".temp.tas"); 
+    public static string ScratchFile => Path.Combine(Settings.BaseConfigPath, ".temp.tas"); 
     
     // Should only be used while an actual document is being loaded
     public static readonly Document Dummy = new(string.Empty);

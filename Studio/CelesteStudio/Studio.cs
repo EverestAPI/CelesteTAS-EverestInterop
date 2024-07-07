@@ -50,8 +50,8 @@ public sealed class Studio : Form {
     
     private JadderlineForm? jadderlineForm;
 
-    private string TitleBarText => Editor.Document.FilePath == Document.TemporaryFile 
-        ? $"<Unsaved> - Studio v{Version.ToString(3)}" 
+    private string TitleBarText => Editor.Document.FilePath == Document.ScratchFile 
+        ? $"<Scratch> - Studio v{Version.ToString(3)}" 
         : $"{Editor.Document.FileName}{(Editor.Document.Dirty ? "*" : string.Empty)} - Studio v{Version.ToString(3)}   {Editor.Document.FilePath}";
     
     public Studio(Action<Window> windowCreationCallback) {
@@ -105,10 +105,11 @@ public sealed class Studio : Form {
             });
             
             // Re-open last file if possible
-            if (Settings.Instance.RecentFiles.Count > 0 && !string.IsNullOrWhiteSpace(Settings.Instance.RecentFiles[0]) && File.Exists(Settings.Instance.RecentFiles[0]))
+            if (Settings.Instance.RecentFiles.Count > 0 && !string.IsNullOrWhiteSpace(Settings.Instance.RecentFiles[0]) && File.Exists(Settings.Instance.RecentFiles[0])) {
                 OpenFile(Settings.Instance.RecentFiles[0]);
-            else
+            } else {
                 OnNewFile();
+            }
         }
         
         CommunicationWrapper.Start();
@@ -134,7 +135,7 @@ public sealed class Studio : Form {
     }
     
     protected override void OnClosing(CancelEventArgs e) {
-        if (!ShouldDiscardChanges()) {
+        if (!ShouldDiscardChanges(checkTempFile: false)) {
             e.Cancel = true;
             return;
         }
@@ -149,8 +150,8 @@ public sealed class Studio : Form {
         base.OnClosing(e);
     }
     
-    private bool ShouldDiscardChanges() {
-        if (Editor.Document.Dirty || Editor.Document.FilePath == Document.TemporaryFile) {
+    private bool ShouldDiscardChanges(bool checkTempFile = true) {
+        if (Editor.Document.Dirty || checkTempFile && Editor.Document.FilePath == Document.ScratchFile) {
             var confirm = MessageBox.Show($"You have unsaved changes.{Environment.NewLine}Are you sure you want to discard them?", MessageBoxButtons.YesNo, MessageBoxType.Question, MessageBoxDefaultButton.No);
             return confirm == DialogResult.Yes;
         }
@@ -163,7 +164,7 @@ public sealed class Studio : Form {
             ? Path.Combine(Directory.GetCurrentDirectory(), "TAS Files")
             : Settings.Instance.LastSaveDirectory;
         
-        var dir = Editor.Document.FilePath == Document.TemporaryFile
+        var dir = Editor.Document.FilePath == Document.ScratchFile
             ? fallbackDir
             : Path.GetDirectoryName(Editor.Document.FilePath) ?? fallbackDir;
         
@@ -189,8 +190,8 @@ public sealed class Studio : Form {
         }
         initText += $"{Document.NewLine}#Start{Document.NewLine}";
         
-        File.WriteAllText(Document.TemporaryFile, initText);
-        OpenFile(Document.TemporaryFile);
+        File.WriteAllText(Document.ScratchFile, initText);
+        OpenFile(Document.ScratchFile);
     }
     
     private void OnOpenFile() {
@@ -209,13 +210,11 @@ public sealed class Studio : Form {
     }
     
     public void OpenFile(string filePath) {
-        if (filePath == Editor.Document.FilePath)
+        if (filePath == Editor.Document.FilePath && filePath != Document.ScratchFile)
             return;
         
         if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
             Settings.Instance.AddRecentFile(filePath);
-        
-        // CommunicationWrapper.WriteWait();
         
         var document = Document.Load(filePath);
         if (document == null) {
@@ -236,7 +235,7 @@ public sealed class Studio : Form {
         
         CommunicationWrapper.SendPath(Editor.Document.FilePath);
         
-        if (filePath != Document.TemporaryFile) {
+        if (filePath != Document.ScratchFile) {
             Settings.Instance.LastSaveDirectory = Path.GetDirectoryName(filePath)!;
         }
         
@@ -246,7 +245,7 @@ public sealed class Studio : Form {
     }
     
     private void OnSaveFile() {
-        if (Editor.Document.FilePath == Document.TemporaryFile) {
+        if (Editor.Document.FilePath == Document.ScratchFile) {
             OnSaveFileAs();
             return;
         }
@@ -268,13 +267,13 @@ public sealed class Studio : Form {
         if (Path.GetExtension(filePath) != ".tas")
             filePath += ".tas";
         
-        // CommunicationWrapper.WriteWait();
+        // Remove scratch file from recent files
+        if (Settings.Instance.RecentFiles.FirstOrDefault() == Document.ScratchFile) {
+            Settings.Instance.RecentFiles.RemoveAt(0);
+        }
         
-        Editor.Document.FilePath = filePath;
-        Editor.Document.Save();
-        Title = TitleBarText;
-        
-        CommunicationWrapper.SendPath(Editor.Document.FilePath);
+        File.WriteAllText(filePath, Editor.Document.Text);
+        OpenFile(filePath);
     }
     
     private MenuBar CreateMenu() {

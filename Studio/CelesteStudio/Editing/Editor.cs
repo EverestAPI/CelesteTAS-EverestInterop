@@ -2344,7 +2344,7 @@ public sealed class Editor : Drawable {
         // Check if the command is valid
         if (args.Length >= 3 && string.Equals(args[0], "Read", StringComparison.OrdinalIgnoreCase)) {
             var documentPath = Studio.Instance.Editor.Document.FilePath;
-            if (documentPath == Document.TemporaryFile) {
+            if (documentPath == Document.ScratchFile) {
                 return null;
             }
             if (Path.GetDirectoryName(documentPath) is not { } documentDir) {

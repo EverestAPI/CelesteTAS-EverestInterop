@@ -114,7 +114,7 @@ public struct CommandInfo() {
     
     private static AutoCompleteEntry[] GetFilePathEntries(string arg) {
         var documentPath = Studio.Instance.Editor.Document.FilePath;
-        if (documentPath == Document.TemporaryFile) {
+        if (documentPath == Document.ScratchFile) {
             return [];
         }
         
@@ -142,7 +142,7 @@ public struct CommandInfo() {
     
     private static AutoCompleteEntry[] GetLabelEntries(string subPath, string after = "") {
         var documentPath = Studio.Instance.Editor.Document.FilePath;
-        if (documentPath == Document.TemporaryFile) {
+        if (documentPath == Document.ScratchFile) {
             return [];
         }
         if (Path.GetDirectoryName(documentPath) is not { } documentDir) {
