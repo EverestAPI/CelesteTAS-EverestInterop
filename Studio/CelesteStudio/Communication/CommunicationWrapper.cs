@@ -1,59 +1,69 @@
+#if REWRITE
 using System;
 using System.Collections.Generic;
 using CelesteStudio.Util;
 using Eto.Forms;
 using StudioCommunication;
 
-#if REWRITE
-
 namespace CelesteStudio.Communication;
 
-public sealed class CommunicationWrapper {
-    public bool Connected => comm.Connected;
-
-    public StudioState State { get; private set; }
+public static class CommunicationWrapper {
+    public static bool Connected => comm is { Connected: true };
     
-    public event Action? ConnectionChanged;
-    public event Action<StudioState, StudioState>? StateUpdated;
-    public event Action<Dictionary<int, string>>? LinesUpdated;
+    public static event Action? ConnectionChanged;
+    public static event Action<StudioState, StudioState>? StateUpdated;
+    public static event Action<Dictionary<int, string>>? LinesUpdated;
     
-    private readonly CommunicationAdapterStudio comm;
-    private Dictionary<HotkeyID, List<WinFormsKeys>> bindings = [];
+    private static CommunicationAdapterStudio? comm;
     
-    public CommunicationWrapper() {
+    private static StudioState state;
+    private static Dictionary<HotkeyID, List<WinFormsKeys>> bindings = [];
+    
+    public static void Start() {
+        if (comm != null) {
+            Console.Error.WriteLine("Tried to start the communication adapter while already running!");
+            return;
+        }
+        
         comm = new CommunicationAdapterStudio(OnConnectionChanged, OnStateChanged, OnLinesChanged, OnBindingsChanged);
     }
-    public void Stop() {
+    public static void Stop() {
+        if (comm == null) {
+            Console.Error.WriteLine("Tried to stop the communication adapter while not running!");
+            return;
+        }
+        
         comm.Dispose();
+        comm = null;
     }
     
-    private void OnConnectionChanged() {
+    private static void OnConnectionChanged() {
         Application.Instance.AsyncInvoke(() => ConnectionChanged?.Invoke());
     }
-    private void OnStateChanged(StudioState newState) {
-        var prevState = State;
-        State = newState;
+    private static void OnStateChanged(StudioState newState) {
+        var prevState = state;
+        state = newState;
         Application.Instance.AsyncInvoke(() => StateUpdated?.Invoke(prevState, newState));
     }
-    private void OnLinesChanged(Dictionary<int, string> updateLines) {
+    private static void OnLinesChanged(Dictionary<int, string> updateLines) {
         Application.Instance.AsyncInvoke(() => LinesUpdated?.Invoke(updateLines));
     }
-    private void OnBindingsChanged(Dictionary<HotkeyID, List<WinFormsKeys>> newBindings) {
+    private static void OnBindingsChanged(Dictionary<HotkeyID, List<WinFormsKeys>> newBindings) {
         bindings = newBindings;
         foreach (var pair in bindings) {
             Console.WriteLine(pair.ToString());
         }
     }
     
-    public void ForceReconnect() {
+    public static void ForceReconnect() {
         // stub
     }
-    public void SendPath(string path) {
+    public static void SendPath(string path) {
         if (Connected) {
-            comm.SendPath(path);
+            comm!.SendPath(path);
         }
     }
-    public bool SendKeyEvent(Keys key, Keys modifiers, bool released) {
+    public static bool SendKeyEvent(Keys key, Keys modifiers, bool released) {
         var winFormsKey = key.ToWinForms();
         
         foreach (HotkeyID hotkey in bindings.Keys) {
@@ -69,7 +79,7 @@ public sealed class CommunicationWrapper {
                      (modifiers == Keys.Alt && key is Keys.Alt or Keys.LeftAlt or Keys.RightAlt)))
                 {
                     if (Connected) {
-                        comm.SendHotkey(hotkey, released);
+                        comm!.SendHotkey(hotkey, released);
                     }
                     return true;
                 }
@@ -94,7 +104,7 @@ public sealed class CommunicationWrapper {
             }
             
             if (Connected) {
-                comm.SendHotkey(hotkey, released);
+                comm!.SendHotkey(hotkey, released);
             }
             return true;
             
@@ -106,47 +116,47 @@ public sealed class CommunicationWrapper {
     
     #region Data
     
-    public int CurrentLine => Connected ? State.CurrentLine : -1;
-    public string CurrentLineSuffix => Connected ? State.CurrentLineSuffix : string.Empty;
-    public int CurrentFrameInTas => Connected ? State.CurrentFrameInTas : -1;
-    public int TotalFrames => Connected ? State.TotalFrames : -1;
-    public int SaveStateLine => Connected ? State.SaveStateLine : -1;
-    public States TasStates => Connected ? (States) State.tasStates : States.None;
-    public string GameInfo => Connected ? State.GameInfo : string.Empty;
-    public string LevelName => Connected ? State.LevelName : string.Empty;
-    public string ChapterTime => Connected ? State.ChapterTime : string.Empty;
+    public static int CurrentLine => Connected ? state.CurrentLine : -1;
+    public static string CurrentLineSuffix => Connected ? state.CurrentLineSuffix : string.Empty;
+    public static int CurrentFrameInTas => Connected ? state.CurrentFrameInTas : -1;
+    public static int TotalFrames => Connected ? state.TotalFrames : -1;
+    public static int SaveStateLine => Connected ? state.SaveStateLine : -1;
+    public static States TasStates => Connected ? (States) state.tasStates : States.None;
+    public static string GameInfo => Connected ? state.GameInfo : string.Empty;
+    public static string LevelName => Connected ? state.LevelName : string.Empty;
+    public static string ChapterTime => Connected ? state.ChapterTime : string.Empty;
     
-    public string GetConsoleCommand(bool simple) {
-        return comm.RequestGameData(GameDataType.ConsoleCommand, simple).Result ?? string.Empty;
+    public static string GetConsoleCommand(bool simple) {
+        return comm?.RequestGameData(GameDataType.ConsoleCommand, simple).Result ?? string.Empty;
     }
-    public string GetModURL() {
-        return comm.RequestGameData(GameDataType.ModUrl).Result ?? string.Empty;
+    public static string GetModURL() {
+        return comm?.RequestGameData(GameDataType.ModUrl).Result ?? string.Empty;
     }
-    public string GetModInfo() {
-        return comm.RequestGameData(GameDataType.ModInfo).Result ?? string.Empty;
+    public static string GetModInfo() {
+        return comm?.RequestGameData(GameDataType.ModInfo).Result ?? string.Empty;
     }
-    public string GetExactGameInfo() {
-        return comm.RequestGameData(GameDataType.ExactGameInfo).Result ?? string.Empty;
+    public static string GetExactGameInfo() {
+        return comm?.RequestGameData(GameDataType.ExactGameInfo).Result ?? string.Empty;
     }
     
     #endregion
     
     #region Actions
     
-    public void CopyCustomInfoTemplateToClipboard() {
+    public static void CopyCustomInfoTemplateToClipboard() {
         // stub
     }
-    public void SetCustomInfoTemplateFromClipboard() {
+    public static void SetCustomInfoTemplateFromClipboard() {
         // stub
     }
-    public void ClearCustomInfoTemplate() {
+    public static void ClearCustomInfoTemplate() {
         // stub
     }
-    public void ClearWatchEntityInfo() {
+    public static void ClearWatchEntityInfo() {
         // stub
     }
     
-    public void RecordTAS(string fileName) {
+    public static void RecordTAS(string fileName) {
         // stub
     }
     
@@ -158,14 +168,14 @@ public sealed class CommunicationWrapper {
     private const int DefaultFastForwardSpeed = 10;
     private const float DefaultSlowForwardSpeed = 0.1f;
     
-    private void SetSetting(string settingName, object? value) {
+    private static void SetSetting(string settingName, object? value) {
         if (Connected) {
-            comm.SendSetting(settingName, value);
+            comm!.SendSetting(settingName, value);
         }
     }
 
-    private bool GetBool(string settingName) {
-        if (comm.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
+    private static bool GetBool(string settingName) {
+        if (comm?.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
             bool.TryParse(settingValue, out bool value))
         {
             return value;
@@ -173,8 +183,8 @@ public sealed class CommunicationWrapper {
         
         return false;
     }
-    private int GetInt(string settingName, int defaultValue) {
-        if (comm.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
+    private static int GetInt(string settingName, int defaultValue) {
+        if (comm?.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
             int.TryParse(settingValue, out int value)) 
         {
             return value;
@@ -182,8 +192,8 @@ public sealed class CommunicationWrapper {
         
         return defaultValue;
     }
-    private float GetFloat(string settingName, float defaultValue) {
-        if (comm.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
+    private static float GetFloat(string settingName, float defaultValue) {
+        if (comm?.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
             float.TryParse(settingValue, out float value))
         {
             return value;
@@ -192,65 +202,65 @@ public sealed class CommunicationWrapper {
         return defaultValue;
     }
     
-    public bool GetHitboxes() => GetBool("ShowHitboxes");
-    public bool GetTriggerHitboxes() => GetBool("ShowTriggerHitboxes");
-    public bool GetUnloadedRoomsHitboxes() => GetBool("ShowUnloadedRoomsHitboxes");
-    public bool GetCameraHitboxes() => GetBool("ShowCameraHitboxes");
-    public bool GetSimplifiedHitboxes() => GetBool("SimplifiedHitboxes");
-    public bool GetActualCollideHitboxes() => GetBool("ShowActualCollideHitboxes");
-    public bool GetSimplifiedGraphics() => GetBool("SimplifiedGraphics");
-    public bool GetGameplay() => GetBool("ShowGameplay");
-    public bool GetCenterCamera() => GetBool("CenterCamera");
-    public bool GetCenterCameraHorizontallyOnly() => GetBool("CenterCameraHorizontallyOnly");
-    public bool GetInfoHud() => GetBool("InfoHud");
-    public bool GetInfoTasInput() => GetBool("InfoTasInput");
-    public bool GetInfoGame() => GetBool("InfoGame");
-    public bool GetInfoWatchEntity() => GetBool("InfoWatchEntity");
-    public bool GetInfoCustom() => GetBool("InfoCustom");
-    public bool GetInfoSubpixelIndicator() => GetBool("InfoSubpixelIndicator");
-    public bool GetSpeedUnit() => GetBool("SpeedUnit");
+    public static bool GetHitboxes() => GetBool("ShowHitboxes");
+    public static bool GetTriggerHitboxes() => GetBool("ShowTriggerHitboxes");
+    public static bool GetUnloadedRoomsHitboxes() => GetBool("ShowUnloadedRoomsHitboxes");
+    public static bool GetCameraHitboxes() => GetBool("ShowCameraHitboxes");
+    public static bool GetSimplifiedHitboxes() => GetBool("SimplifiedHitboxes");
+    public static bool GetActualCollideHitboxes() => GetBool("ShowActualCollideHitboxes");
+    public static bool GetSimplifiedGraphics() => GetBool("SimplifiedGraphics");
+    public static bool GetGameplay() => GetBool("ShowGameplay");
+    public static bool GetCenterCamera() => GetBool("CenterCamera");
+    public static bool GetCenterCameraHorizontallyOnly() => GetBool("CenterCameraHorizontallyOnly");
+    public static bool GetInfoHud() => GetBool("InfoHud");
+    public static bool GetInfoTasInput() => GetBool("InfoTasInput");
+    public static bool GetInfoGame() => GetBool("InfoGame");
+    public static bool GetInfoWatchEntity() => GetBool("InfoWatchEntity");
+    public static bool GetInfoCustom() => GetBool("InfoCustom");
+    public static bool GetInfoSubpixelIndicator() => GetBool("InfoSubpixelIndicator");
+    public static bool GetSpeedUnit() => GetBool("SpeedUnit");
     
-    public void ToggleHitboxes() => SetSetting("ShowHitboxes", null);
-    public void ToggleTriggerHitboxes() => SetSetting("ShowTriggerHitboxes", null);
-    public void ToggleUnloadedRoomsHitboxes() => SetSetting("ShowUnloadedRoomsHitboxes", null);
-    public void ToggleCameraHitboxes() => SetSetting("ShowCameraHitboxes", null);
-    public void ToggleSimplifiedHitboxes() => SetSetting("SimplifiedHitboxes", null);
-    public void ToggleActualCollideHitboxes() => SetSetting("ShowActualCollideHitboxes", null);
-    public void ToggleSimplifiedGraphics() => SetSetting("SimplifiedGraphics", null);
-    public void ToggleGameplay() => SetSetting("ShowGameplay", null);
-    public void ToggleCenterCamera() => SetSetting("CenterCamera", null);
-    public void ToggleCenterCameraHorizontallyOnly() => SetSetting("CenterCameraHorizontallyOnly", null);
-    public void ToggleInfoHud() => SetSetting("InfoHud", null);
-    public void ToggleInfoTasInput() => SetSetting("InfoTasInput", null);
-    public void ToggleInfoGame() => SetSetting("InfoGame", null);
-    public void ToggleInfoWatchEntity() => SetSetting("InfoWatchEntity", null);
-    public void ToggleInfoCustom() => SetSetting("InfoCustom", null);
-    public void ToggleInfoSubpixelIndicator() => SetSetting("InfoSubpixelIndicator", null);
-    public void ToggleSpeedUnit() => SetSetting("SpeedUnit", null);
+    public static void ToggleHitboxes() => SetSetting("ShowHitboxes", null);
+    public static void ToggleTriggerHitboxes() => SetSetting("ShowTriggerHitboxes", null);
+    public static void ToggleUnloadedRoomsHitboxes() => SetSetting("ShowUnloadedRoomsHitboxes", null);
+    public static void ToggleCameraHitboxes() => SetSetting("ShowCameraHitboxes", null);
+    public static void ToggleSimplifiedHitboxes() => SetSetting("SimplifiedHitboxes", null);
+    public static void ToggleActualCollideHitboxes() => SetSetting("ShowActualCollideHitboxes", null);
+    public static void ToggleSimplifiedGraphics() => SetSetting("SimplifiedGraphics", null);
+    public static void ToggleGameplay() => SetSetting("ShowGameplay", null);
+    public static void ToggleCenterCamera() => SetSetting("CenterCamera", null);
+    public static void ToggleCenterCameraHorizontallyOnly() => SetSetting("CenterCameraHorizontallyOnly", null);
+    public static void ToggleInfoHud() => SetSetting("InfoHud", null);
+    public static void ToggleInfoTasInput() => SetSetting("InfoTasInput", null);
+    public static void ToggleInfoGame() => SetSetting("InfoGame", null);
+    public static void ToggleInfoWatchEntity() => SetSetting("InfoWatchEntity", null);
+    public static void ToggleInfoCustom() => SetSetting("InfoCustom", null);
+    public static void ToggleInfoSubpixelIndicator() => SetSetting("InfoSubpixelIndicator", null);
+    public static void ToggleSpeedUnit() => SetSetting("SpeedUnit", null);
     
-    public int GetPositionDecimals() => GetInt("PositionDecimals", DefaultDecimals);
-    public void SetPositionDecimals(int value) => SetSetting("PositionDecimals", value);
+    public static int GetPositionDecimals() => GetInt("PositionDecimals", DefaultDecimals);
+    public static void SetPositionDecimals(int value) => SetSetting("PositionDecimals", value);
 
-    public int GetSpeedDecimals() => GetInt("SpeedDecimals", DefaultDecimals);
-    public void SetSpeedDecimals(int value) => SetSetting("SpeedDecimals", value);
+    public static int GetSpeedDecimals() => GetInt("SpeedDecimals", DefaultDecimals);
+    public static void SetSpeedDecimals(int value) => SetSetting("SpeedDecimals", value);
 
-    public int GetVelocityDecimals() => GetInt("VelocityDecimals", DefaultDecimals);
-    public void SetVelocityDecimals(int value) => SetSetting("VelocityDecimals", value);
+    public static int GetVelocityDecimals() => GetInt("VelocityDecimals", DefaultDecimals);
+    public static void SetVelocityDecimals(int value) => SetSetting("VelocityDecimals", value);
     
-    public int GetAngleDecimals() => GetInt("AngleDecimals", DefaultDecimals);
-    public void SetAngleDecimals(int value) => SetSetting("AngleDecimals", value);
+    public static int GetAngleDecimals() => GetInt("AngleDecimals", DefaultDecimals);
+    public static void SetAngleDecimals(int value) => SetSetting("AngleDecimals", value);
 
-    public int GetCustomInfoDecimals() => GetInt("CustomInfoDecimals", DefaultDecimals);
-    public void SetCustomInfoDecimals(int value) => SetSetting("CustomInfoDecimals", value);
+    public static int GetCustomInfoDecimals() => GetInt("CustomInfoDecimals", DefaultDecimals);
+    public static void SetCustomInfoDecimals(int value) => SetSetting("CustomInfoDecimals", value);
 
-    public int GetSubpixelIndicatorDecimals() => GetInt("SubpixelIndicatorDecimals", DefaultDecimals);
-    public void SetSubpixelIndicatorDecimals(int value) => SetSetting("SubpixelIndicatorDecimals", value);
+    public static int GetSubpixelIndicatorDecimals() => GetInt("SubpixelIndicatorDecimals", DefaultDecimals);
+    public static void SetSubpixelIndicatorDecimals(int value) => SetSetting("SubpixelIndicatorDecimals", value);
 
-    public int GetFastForwardSpeed() => GetInt("FastForwardSpeed", DefaultFastForwardSpeed);
-    public void SetFastForwardSpeed(int value) => SetSetting("FastForwardSpeed", value);
+    public static int GetFastForwardSpeed() => GetInt("FastForwardSpeed", DefaultFastForwardSpeed);
+    public static void SetFastForwardSpeed(int value) => SetSetting("FastForwardSpeed", value);
 
-    public float GetSlowForwardSpeed() => GetFloat("SlowForwardSpeed", DefaultSlowForwardSpeed);
-    public void SetSlowForwardSpeed(float value) => SetSetting("SlowForwardSpeed", value);
+    public static float GetSlowForwardSpeed() => GetFloat("SlowForwardSpeed", DefaultSlowForwardSpeed);
+    public static void SetSlowForwardSpeed(float value) => SetSetting("SlowForwardSpeed", value);
     
     #endregion
 }
@@ -272,21 +282,21 @@ using Eto.Forms;
 namespace CelesteStudio.Communication;
 
 public class CommunicationWrapper {
-    private Dictionary<HotkeyID, List<WinFormsKeys>> _bindings = new();
-    public StudioState State { get; private set; }
+    private static Dictionary<HotkeyID, List<WinFormsKeys>> _bindings = new();
+    public static StudioState State { get; private set; }
     
-    public event Action? ConnectionChanged;
-    public event Action<StudioState, StudioState>? StateUpdated;
-    public event Action<Dictionary<int, string>>? LinesUpdated;
+    public static event Action? ConnectionChanged;
+    public static event Action<StudioState, StudioState>? StateUpdated;
+    public static event Action<Dictionary<int, string>>? LinesUpdated;
     
-    public StudioCommunicationServer Server { get; }
+    private static StudioCommunicationServer? server;
 
-    public CommunicationWrapper() {
-        Server = new StudioCommunicationServer();
+    public static void Start() {
+        server = new StudioCommunicationServer();
         
         bool wasConnected = Connected;
-        Server.BindingsUpdated += bindings => _bindings = bindings;
-        Server.StateUpdated += (_, state) => {
+        server.BindingsUpdated += bindings => _bindings = bindings;
+        server.StateUpdated += (_, state) => {
             Application.Instance.Invoke(() => StateUpdated?.Invoke(State, state));
             if (wasConnected != Connected) {
                 Application.Instance.Invoke(() => ConnectionChanged?.Invoke());
@@ -295,47 +305,59 @@ public class CommunicationWrapper {
             
             State = state;
         };
-        Server.LinesUpdated += updateLines => Application.Instance.Invoke(() => LinesUpdated?.Invoke(updateLines));
-        Server.Reset += () => {
+        server.LinesUpdated += updateLines => Application.Instance.Invoke(() => LinesUpdated?.Invoke(updateLines));
+        server.Reset += () => {
             if (wasConnected != Connected) {
                 Application.Instance.Invoke(() => ConnectionChanged?.Invoke());
                 wasConnected = Connected;
             }
         }; 
-        Server.Run();
+        server.Run();
     }
-    public void Stop() {
-        // stub
-    }
-    
-    public string GetConsoleCommand(bool simple) {
-        return Server.GetDataFromGame(GameDataType.ConsoleCommand, simple) ?? string.Empty;
-    }
-    public string GetModURL() {
-        return Server.GetDataFromGame(GameDataType.ModUrl) ?? string.Empty;
-    }
-    public string GetModInfo() {
-        return Server.GetDataFromGame(GameDataType.ModInfo) ?? string.Empty;
-    }
-    public string GetExactGameInfo() {
-        return Server.GetDataFromGame(GameDataType.ExactGameInfo) ?? string.Empty;
-    }
-    public void RecordTAS(string fileName) {
-        Server.RecordTAS(fileName);
-    }
-    public void ForceReconnect() {
-        Server.ExternalReset();
+    public static void Stop() {
+        server = null;
     }
     
-    public void WriteWait() => Server.WriteWait();
-    public void SendPath(string path) => Server.SendPath(path);
+    public static string GetConsoleCommand(bool simple) {
+        return server?.GetDataFromGame(GameDataType.ConsoleCommand, simple) ?? string.Empty;
+    }
+    public static string GetModURL() {
+        return server?.GetDataFromGame(GameDataType.ModUrl) ?? string.Empty;
+    }
+    public static string GetModInfo() {
+        return server?.GetDataFromGame(GameDataType.ModInfo) ?? string.Empty;
+    }
+    public static string GetExactGameInfo() {
+        return server?.GetDataFromGame(GameDataType.ExactGameInfo) ?? string.Empty;
+    }
+    public static void RecordTAS(string fileName) {
+        if (Connected) {
+            server!.RecordTAS(fileName);
+        }
+    }
+    public static void ForceReconnect() {
+        if (Connected) {
+            server!.ExternalReset();
+        }
+    }
+    
+    public static void WriteWait() {
+        if (Connected) {
+            server!.WriteWait();
+        }
+    }
+    public static void SendPath(string path) {
+        if (Connected) {
+            server!.SendPath(path);
+        }
+    }
     
     // Prevent key-repeat events from being forwarded.
     // If there are too many, the communication will crash
     // TODO: Rewrite the studio communication, accounting for something like this
-    private readonly HashSet<HotkeyID> pressedHotkeys = new();
+    private static readonly HashSet<HotkeyID> pressedHotkeys = new();
     
-    public bool SendKeyEvent(Keys key, Keys modifiers, bool released) {
+    public static bool SendKeyEvent(Keys key, Keys modifiers, bool released) {
         var winFormsKey = key.ToWinForms();
         
         foreach (HotkeyID hotkeyIDs in _bindings.Keys) {
@@ -354,7 +376,9 @@ public class CommunicationWrapper {
                         return true;
                     }
                     
-                    Server.SendHotkeyPressed(hotkeyIDs, released);
+                    if (Connected) {
+                        server!.SendHotkeyPressed(hotkeyIDs, released);
+                    }
                     
                     if (released) {
                         pressedHotkeys.Remove(hotkeyIDs);
@@ -388,7 +412,9 @@ public class CommunicationWrapper {
                 return true;
             }
             
-            Server.SendHotkeyPressed(hotkeyIDs, released);
+            if (Connected) { 
+                server!.SendHotkeyPressed(hotkeyIDs, released);
+            }
             
             if (released) {
                 pressedHotkeys.Remove(hotkeyIDs);
@@ -405,23 +431,23 @@ public class CommunicationWrapper {
     }
 
 
-    public void Play() {
+    public static void Play() {
     }
     
-    public bool Connected => StudioCommunicationBase.Initialized;
+    public static bool Connected => StudioCommunicationBase.Initialized;
     
-    public int CurrentLine => Connected ? State.CurrentLine : -1;
-    public string CurrentLineSuffix => Connected ? State.CurrentLineSuffix : string.Empty;
-    public int CurrentFrameInTas => Connected ? State.CurrentFrameInTas : -1;
-    public int TotalFrames => Connected ? State.TotalFrames : -1;
-    public int SaveStateLine => Connected ? State.SaveStateLine : -1;
-    public States TasStates => Connected ? (States) State.tasStates : States.None;
-    public string GameInfo => Connected ? State.GameInfo : string.Empty;
-    public string LevelName => Connected ? State.LevelName : string.Empty;
-    public string ChapterTime => Connected ? State.ChapterTime : string.Empty;
+    public static int CurrentLine => Connected ? State.CurrentLine : -1;
+    public static string CurrentLineSuffix => Connected ? State.CurrentLineSuffix : string.Empty;
+    public static int CurrentFrameInTas => Connected ? State.CurrentFrameInTas : -1;
+    public static int TotalFrames => Connected ? State.TotalFrames : -1;
+    public static int SaveStateLine => Connected ? State.SaveStateLine : -1;
+    public static States TasStates => Connected ? (States) State.tasStates : States.None;
+    public static string GameInfo => Connected ? State.GameInfo : string.Empty;
+    public static string LevelName => Connected ? State.LevelName : string.Empty;
+    public static string ChapterTime => Connected ? State.ChapterTime : string.Empty;
 
-    private bool GetToggle(string settingName) {
-        if (Server.GetDataFromGame(GameDataType.SettingValue, settingName) is { } settingValue &&
+    private static bool GetToggle(string settingName) {
+        if (server?.GetDataFromGame(GameDataType.SettingValue, settingName) is { } settingValue &&
             bool.TryParse(settingValue, out var value)) 
         {
             return value;
@@ -430,49 +456,49 @@ public class CommunicationWrapper {
         return false;
     }
     
-    public bool GetHitboxes() => GetToggle("ShowHitboxes");
-    public bool GetTriggerHitboxes() => GetToggle("ShowTriggerHitboxes");
-    public bool GetUnloadedRoomsHitboxes() => GetToggle("ShowUnloadedRoomsHitboxes");
-    public bool GetCameraHitboxes() => GetToggle("ShowCameraHitboxes");
-    public bool GetSimplifiedHitboxes() => GetToggle("SimplifiedHitboxes");
-    public bool GetActualCollideHitboxes() => GetToggle("ShowActualCollideHitboxes");
-    public bool GetSimplifiedGraphics() => GetToggle("SimplifiedGraphics");
-    public bool GetGameplay() => GetToggle("ShowGameplay");
-    public bool GetCenterCamera() => GetToggle("CenterCamera");
-    public bool GetCenterCameraHorizontallyOnly() => GetToggle("CenterCameraHorizontallyOnly");
-    public bool GetInfoHud() => GetToggle("InfoHud");
-    public bool GetInfoTasInput() => GetToggle("InfoTasInput");
-    public bool GetInfoGame() => GetToggle("InfoGame");
-    public bool GetInfoWatchEntity() => GetToggle("InfoWatchEntity");
-    public bool GetInfoCustom() => GetToggle("InfoCustom");
-    public bool GetInfoSubpixelIndicator() => GetToggle("InfoSubpixelIndicator");
-    public bool GetSpeedUnit() => GetToggle("SpeedUnit");
+    public static bool GetHitboxes() => GetToggle("ShowHitboxes");
+    public static bool GetTriggerHitboxes() => GetToggle("ShowTriggerHitboxes");
+    public static bool GetUnloadedRoomsHitboxes() => GetToggle("ShowUnloadedRoomsHitboxes");
+    public static bool GetCameraHitboxes() => GetToggle("ShowCameraHitboxes");
+    public static bool GetSimplifiedHitboxes() => GetToggle("SimplifiedHitboxes");
+    public static bool GetActualCollideHitboxes() => GetToggle("ShowActualCollideHitboxes");
+    public static bool GetSimplifiedGraphics() => GetToggle("SimplifiedGraphics");
+    public static bool GetGameplay() => GetToggle("ShowGameplay");
+    public static bool GetCenterCamera() => GetToggle("CenterCamera");
+    public static bool GetCenterCameraHorizontallyOnly() => GetToggle("CenterCameraHorizontallyOnly");
+    public static bool GetInfoHud() => GetToggle("InfoHud");
+    public static bool GetInfoTasInput() => GetToggle("InfoTasInput");
+    public static bool GetInfoGame() => GetToggle("InfoGame");
+    public static bool GetInfoWatchEntity() => GetToggle("InfoWatchEntity");
+    public static bool GetInfoCustom() => GetToggle("InfoCustom");
+    public static bool GetInfoSubpixelIndicator() => GetToggle("InfoSubpixelIndicator");
+    public static bool GetSpeedUnit() => GetToggle("SpeedUnit");
     
-    public void ToggleHitboxes() => Server.ToggleGameSetting("ShowHitboxes", null);
-    public void ToggleTriggerHitboxes() => Server.ToggleGameSetting("ShowTriggerHitboxes", null);
-    public void ToggleUnloadedRoomsHitboxes() => Server.ToggleGameSetting("ShowUnloadedRoomsHitboxes", null);
-    public void ToggleCameraHitboxes() => Server.ToggleGameSetting("ShowCameraHitboxes", null);
-    public void ToggleSimplifiedHitboxes() => Server.ToggleGameSetting("SimplifiedHitboxes", null);
-    public void ToggleActualCollideHitboxes() => Server.ToggleGameSetting("ShowActualCollideHitboxes", null);
-    public void ToggleSimplifiedGraphics() => Server.ToggleGameSetting("SimplifiedGraphics", null);
-    public void ToggleGameplay() => Server.ToggleGameSetting("ShowGameplay", null);
-    public void ToggleCenterCamera() => Server.ToggleGameSetting("CenterCamera", null);
-    public void ToggleCenterCameraHorizontallyOnly() => Server.ToggleGameSetting("CenterCameraHorizontallyOnly", null);
-    public void ToggleInfoHud() => Server.ToggleGameSetting("InfoHud", null);
-    public void ToggleInfoTasInput() => Server.ToggleGameSetting("InfoTasInput", null);
-    public void ToggleInfoGame() => Server.ToggleGameSetting("InfoGame", null);
-    public void ToggleInfoWatchEntity() => Server.ToggleGameSetting("InfoWatchEntity", null);
-    public void ToggleInfoCustom() => Server.ToggleGameSetting("InfoCustom", null);
-    public void ToggleInfoSubpixelIndicator() => Server.ToggleGameSetting("InfoSubpixelIndicator", null);
-    public void ToggleSpeedUnit() => Server.ToggleGameSetting("SpeedUnit", null);
+    public static void ToggleHitboxes() => server?.ToggleGameSetting("ShowHitboxes", null);
+    public static void ToggleTriggerHitboxes() => server?.ToggleGameSetting("ShowTriggerHitboxes", null);
+    public static void ToggleUnloadedRoomsHitboxes() => server?.ToggleGameSetting("ShowUnloadedRoomsHitboxes", null);
+    public static void ToggleCameraHitboxes() => server?.ToggleGameSetting("ShowCameraHitboxes", null);
+    public static void ToggleSimplifiedHitboxes() => server?.ToggleGameSetting("SimplifiedHitboxes", null);
+    public static void ToggleActualCollideHitboxes() => server?.ToggleGameSetting("ShowActualCollideHitboxes", null);
+    public static void ToggleSimplifiedGraphics() => server?.ToggleGameSetting("SimplifiedGraphics", null);
+    public static void ToggleGameplay() => server?.ToggleGameSetting("ShowGameplay", null);
+    public static void ToggleCenterCamera() => server?.ToggleGameSetting("CenterCamera", null);
+    public static void ToggleCenterCameraHorizontallyOnly() => server?.ToggleGameSetting("CenterCameraHorizontallyOnly", null);
+    public static void ToggleInfoHud() => server?.ToggleGameSetting("InfoHud", null);
+    public static void ToggleInfoTasInput() => server?.ToggleGameSetting("InfoTasInput", null);
+    public static void ToggleInfoGame() => server?.ToggleGameSetting("InfoGame", null);
+    public static void ToggleInfoWatchEntity() => server?.ToggleGameSetting("InfoWatchEntity", null);
+    public static void ToggleInfoCustom() => server?.ToggleGameSetting("InfoCustom", null);
+    public static void ToggleInfoSubpixelIndicator() => server?.ToggleGameSetting("InfoSubpixelIndicator", null);
+    public static void ToggleSpeedUnit() => server?.ToggleGameSetting("SpeedUnit", null);
 
     private const int DefaultDecimals = 2;
     private const int DefaultFastForwardSpeed = 10;
     private const float DefaultSlowForwardSpeed = 0.1f;
     
-    private int GetDecimals(string settingName) {
+    private static int GetDecimals(string settingName) {
         string decimals = DefaultDecimals.ToString();
-        if (Server.GetDataFromGame(GameDataType.SettingValue, settingName) is { } settingValue) {
+        if (server?.GetDataFromGame(GameDataType.SettingValue, settingName) is { } settingValue) {
             decimals = settingValue;
         }
 
@@ -480,50 +506,50 @@ public class CommunicationWrapper {
         return success ? result : DefaultDecimals;
     }
 
-    public int GetPositionDecimals() => GetDecimals("PositionDecimals");
-    public void SetPositionDecimals(int value) => Server.ToggleGameSetting("PositionDecimals", value);
+    public static int GetPositionDecimals() => GetDecimals("PositionDecimals");
+    public static void SetPositionDecimals(int value) => server?.ToggleGameSetting("PositionDecimals", value);
 
-    public int GetSpeedDecimals() => GetDecimals("SpeedDecimals");
-    public void SetSpeedDecimals(int value) => Server.ToggleGameSetting("SpeedDecimals", value);
+    public static int GetSpeedDecimals() => GetDecimals("SpeedDecimals");
+    public static void SetSpeedDecimals(int value) => server?.ToggleGameSetting("SpeedDecimals", value);
 
-    public int GetVelocityDecimals() => GetDecimals("VelocityDecimals");
-    public void SetVelocityDecimals(int value) => Server.ToggleGameSetting("VelocityDecimals", value);
+    public static int GetVelocityDecimals() => GetDecimals("VelocityDecimals");
+    public static void SetVelocityDecimals(int value) => server?.ToggleGameSetting("VelocityDecimals", value);
     
-    public int GetAngleDecimals() => GetDecimals("AngleDecimals");
-    public void SetAngleDecimals(int value) => Server.ToggleGameSetting("AngleDecimals", value);
+    public static int GetAngleDecimals() => GetDecimals("AngleDecimals");
+    public static void SetAngleDecimals(int value) => server?.ToggleGameSetting("AngleDecimals", value);
 
-    public int GetCustomInfoDecimals() => GetDecimals("CustomInfoDecimals");
-    public void SetCustomInfoDecimals(int value) => Server.ToggleGameSetting("CustomInfoDecimals", value);
+    public static int GetCustomInfoDecimals() => GetDecimals("CustomInfoDecimals");
+    public static void SetCustomInfoDecimals(int value) => server?.ToggleGameSetting("CustomInfoDecimals", value);
 
-    public int GetSubpixelIndicatorDecimals() => GetDecimals("SubpixelIndicatorDecimals");
-    public void SetSubpixelIndicatorDecimals(int value) => Server.ToggleGameSetting("SubpixelIndicatorDecimals", value);
+    public static int GetSubpixelIndicatorDecimals() => GetDecimals("SubpixelIndicatorDecimals");
+    public static void SetSubpixelIndicatorDecimals(int value) => server?.ToggleGameSetting("SubpixelIndicatorDecimals", value);
 
-    public int GetFastForwardSpeed() {
+    public static int GetFastForwardSpeed() {
         string speed = DefaultFastForwardSpeed.ToString();
-        if (Server.GetDataFromGame(GameDataType.SettingValue, "FastForwardSpeed") is { } settingValue) {
+        if (server?.GetDataFromGame(GameDataType.SettingValue, "FastForwardSpeed") is { } settingValue) {
             speed = settingValue;
         }
 
         bool success = int.TryParse(speed, out int result);
         return success ? result : DefaultFastForwardSpeed;
     }
-    public void SetFastForwardSpeed(int value) => Server.ToggleGameSetting("FastForwardSpeed", value);
+    public static void SetFastForwardSpeed(int value) => server?.ToggleGameSetting("FastForwardSpeed", value);
 
-    public float GetSlowForwardSpeed() {
+    public static float GetSlowForwardSpeed() {
         string speed = DefaultSlowForwardSpeed.ToString(CultureInfo.InvariantCulture);
-        if (Server.GetDataFromGame(GameDataType.SettingValue, "SlowForwardSpeed") is { } settingValue) {
+        if (server?.GetDataFromGame(GameDataType.SettingValue, "SlowForwardSpeed") is { } settingValue) {
             speed = settingValue;
         }
 
         bool success = float.TryParse(speed, NumberStyles.None, CultureInfo.InvariantCulture, out float result);
         return success ? result : DefaultSlowForwardSpeed;
     }
-    public void SetSlowForwardSpeed(float value) => Server.ToggleGameSetting("SlowForwardSpeed", value);
+    public static void SetSlowForwardSpeed(float value) => server?.ToggleGameSetting("SlowForwardSpeed", value);
     
-    public void CopyCustomInfoTemplateToClipboard() => Server.ToggleGameSetting("Copy Custom Info Template to Clipboard", null);
-    public void SetCustomInfoTemplateFromClipboard() => Server.ToggleGameSetting("Set Custom Info Template From Clipboard", null);
-    public void ClearCustomInfoTemplate() => Server.ToggleGameSetting("Clear Custom Info Template", null);
-    public void ClearWatchEntityInfo() => Server.ToggleGameSetting("Clear Watch Entity Info", null);
+    public static void CopyCustomInfoTemplateToClipboard() => server?.ToggleGameSetting("Copy Custom Info Template to Clipboard", null);
+    public static void SetCustomInfoTemplateFromClipboard() => server?.ToggleGameSetting("Set Custom Info Template From Clipboard", null);
+    public static void ClearCustomInfoTemplate() => server?.ToggleGameSetting("Clear Custom Info Template", null);
+    public static void ClearWatchEntityInfo() => server?.ToggleGameSetting("Clear Watch Entity Info", null);
 }
 
 #endif

@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Text;
+using CelesteStudio.Communication;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
@@ -45,22 +46,22 @@ public class GameInfoPanel : Panel {
         ContextMenu = new ContextMenu {
             Items = {
                 MenuUtils.CreateAction("Copy Game Info to Clipboard", Application.Instance.CommonModifier | Keys.Shift | Keys.C, () => {
-                    if (Studio.CommunicationWrapper.GetExactGameInfo() is var exactGameInfo && !string.IsNullOrWhiteSpace(exactGameInfo)) {
+                    if (CommunicationWrapper.GetExactGameInfo() is var exactGameInfo && !string.IsNullOrWhiteSpace(exactGameInfo)) {
                         Clipboard.Instance.Clear();
                         Clipboard.Instance.Text = exactGameInfo;
                     }
                 }),
-                MenuUtils.CreateAction("Reconnect Studio and Celeste", Application.Instance.CommonModifier | Keys.Shift | Keys.D, () => Studio.CommunicationWrapper.ForceReconnect()),
+                MenuUtils.CreateAction("Reconnect Studio and Celeste", Application.Instance.CommonModifier | Keys.Shift | Keys.D, () => CommunicationWrapper.ForceReconnect()),
                 new SeparatorMenuItem(),
-                MenuUtils.CreateAction("Copy Custom Info Template to Clipboard", Keys.None, () => Studio.CommunicationWrapper.CopyCustomInfoTemplateToClipboard()),
-                MenuUtils.CreateAction("Set Custom Info Template from Clipboard", Keys.None, () => Studio.CommunicationWrapper.SetCustomInfoTemplateFromClipboard()),
-                MenuUtils.CreateAction("Clear Custom Info Template", Keys.None, () => Studio.CommunicationWrapper.ClearCustomInfoTemplate()),
+                MenuUtils.CreateAction("Copy Custom Info Template to Clipboard", Keys.None, () => CommunicationWrapper.CopyCustomInfoTemplateToClipboard()),
+                MenuUtils.CreateAction("Set Custom Info Template from Clipboard", Keys.None, () => CommunicationWrapper.SetCustomInfoTemplateFromClipboard()),
+                MenuUtils.CreateAction("Clear Custom Info Template", Keys.None, () => CommunicationWrapper.ClearCustomInfoTemplate()),
                 new SeparatorMenuItem(),
-                MenuUtils.CreateAction("Clear Watch Entity Info", Keys.None, () => Studio.CommunicationWrapper.ClearWatchEntityInfo()),
+                MenuUtils.CreateAction("Clear Watch Entity Info", Keys.None, () => CommunicationWrapper.ClearWatchEntityInfo()),
             }
         };
         
-        Studio.CommunicationWrapper.StateUpdated += (prevState, state) => {
+        CommunicationWrapper.StateUpdated += (prevState, state) => {
             if (!Settings.Instance.ShowGameInfo || prevState.GameInfo == state.GameInfo)
                 return;
             
@@ -69,13 +70,13 @@ public class GameInfoPanel : Panel {
             
             UpdateGameInfo();
         };
-        Studio.CommunicationWrapper.ConnectionChanged += UpdateGameInfo;
+        CommunicationWrapper.ConnectionChanged += UpdateGameInfo;
     }
         
     public void UpdateGameInfo() {
         var frameInfo = new StringBuilder();
-        if (Studio.CommunicationWrapper.State.CurrentFrameInTas > 0) {
-            frameInfo.Append($"{Studio.CommunicationWrapper.State.CurrentFrameInTas}/");
+        if (CommunicationWrapper.CurrentFrameInTas > 0) {
+            frameInfo.Append($"{CommunicationWrapper.CurrentFrameInTas}/");
         }
         frameInfo.Append(TotalFrames.ToString());
         
@@ -97,7 +98,7 @@ public class GameInfoPanel : Panel {
         
         Application.Instance.InvokeAsync(() => {
             int oldLineCount = label.Text.Split(["\n", "\r", "\n\r", Environment.NewLine], StringSplitOptions.None).Length;
-            label.Text = $"{frameInfo}{Environment.NewLine}" + (Studio.CommunicationWrapper.Connected && Studio.CommunicationWrapper.State.GameInfo is { } gameInfo
+            label.Text = $"{frameInfo}{Environment.NewLine}" + (CommunicationWrapper.Connected && CommunicationWrapper.GameInfo is { } gameInfo
                 ? gameInfo.Trim()
                 : DisconnectedText);
             int newLineCount = label.Text.Split(["\n", "\r", "\n\r", Environment.NewLine], StringSplitOptions.None).Length;

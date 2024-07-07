@@ -19,8 +19,6 @@ public sealed class Studio : Form {
     public static Studio Instance = null!;
     public static Version Version { get; private set; } = null!;
     
-    public static readonly CommunicationWrapper CommunicationWrapper = new();
-    
     // Some platforms report the window larger than it actually is, so there need to be some offsets.
     // The values are chosen by fine-tuning manually.
     public static float BorderBottomOffset {
@@ -109,6 +107,8 @@ public sealed class Studio : Form {
             else
                 OnNewFile();
         }
+        
+        CommunicationWrapper.Start();
     }
     
     public void RecalculateLayout() {

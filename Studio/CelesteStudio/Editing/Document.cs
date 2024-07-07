@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using CelesteStudio.Communication;
 using CelesteStudio.Util;
 using Eto;
 
@@ -170,15 +171,15 @@ public class Document {
             Save();    
         }
         
-        Studio.CommunicationWrapper.LinesUpdated += OnLinesUpdated;
+        CommunicationWrapper.LinesUpdated += OnLinesUpdated;
     }
 
     ~Document() {
-        Studio.CommunicationWrapper.LinesUpdated -= OnLinesUpdated;
+        CommunicationWrapper.LinesUpdated -= OnLinesUpdated;
     }
     
     public void Dispose() {
-        Studio.CommunicationWrapper.LinesUpdated -= OnLinesUpdated;
+        CommunicationWrapper.LinesUpdated -= OnLinesUpdated;
     }
 
     public static Document? Load(string path) {

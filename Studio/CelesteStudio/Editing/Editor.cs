@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using CelesteStudio.Communication;
 using CelesteStudio.Dialog;
 using CelesteStudio.Util;
 using Eto.Drawing;
@@ -97,7 +98,7 @@ public sealed class Editor : Drawable {
     private int[] visualRows = [];
     
     // A toast is a small message box which is temporarily shown in the middle of the screen
-    private string toastMessage;
+    private string toastMessage = string.Empty;
     
     private static readonly Regex UncommentedBreakpointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
     private static readonly Regex CommentedBreakpointRegex = new(@"^\s*#+\*\*\*", RegexOptions.Compiled);
@@ -137,7 +138,7 @@ public sealed class Editor : Drawable {
         // Update wrapped lines
         scrollable.SizeChanged += (_, _) => Recalc();
 
-        Studio.CommunicationWrapper.StateUpdated += (prevState, state) => {
+        CommunicationWrapper.StateUpdated += (prevState, state) => {
             if (prevState.CurrentLine == state.CurrentLine &&
                 prevState.SaveStateLine == state.SaveStateLine &&
                 prevState.CurrentLineSuffix == state.CurrentLineSuffix) {
@@ -572,7 +573,7 @@ public sealed class Editor : Drawable {
             return;
         }
         
-        if (Settings.Instance.SendInputsToCeleste && Studio.CommunicationWrapper.Connected && Studio.CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
+        if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
             e.Handled = true;
             return;
         }
@@ -737,7 +738,7 @@ public sealed class Editor : Drawable {
         if (e.Key is Keys.LeftApplication or Keys.RightApplication) mods &= ~Keys.Application;
         UpdateMouseCursor(MouseLocation, mods);
         
-        if (Settings.Instance.SendInputsToCeleste && Studio.CommunicationWrapper.Connected && Studio.CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: true)) {
+        if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: true)) {
             e.Handled = true;
             return;
         }
@@ -1621,24 +1622,24 @@ public sealed class Editor : Drawable {
         Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length); 
     }
     
-    private void OnInsertRoomName() => InsertLine($"#lvl_{Studio.CommunicationWrapper.LevelName}");
+    private void OnInsertRoomName() => InsertLine($"#lvl_{CommunicationWrapper.LevelName}");
 
-    private void OnInsertTime() => InsertLine($"#{Studio.CommunicationWrapper.ChapterTime}");
+    private void OnInsertTime() => InsertLine($"#{CommunicationWrapper.ChapterTime}");
     
     private void OnInsertModInfo() {
-        if (Studio.CommunicationWrapper.GetModInfo() is var modInfo && !string.IsNullOrWhiteSpace(modInfo)) {
+        if (CommunicationWrapper.GetModInfo() is var modInfo && !string.IsNullOrWhiteSpace(modInfo)) {
             InsertLine(modInfo);
         }
     }
     
     private void OnInsertConsoleLoadCommand() {
-        if (Studio.CommunicationWrapper.GetConsoleCommand(simple: false) is var command && !string.IsNullOrWhiteSpace(command)) {
+        if (CommunicationWrapper.GetConsoleCommand(simple: false) is var command && !string.IsNullOrWhiteSpace(command)) {
             InsertLine(command);
         }
     }
     
     private void OnInsertSimpleConsoleLoadCommand() {
-        if (Studio.CommunicationWrapper.GetConsoleCommand(simple: true) is var command && !string.IsNullOrWhiteSpace(command)) {
+        if (CommunicationWrapper.GetConsoleCommand(simple: true) is var command && !string.IsNullOrWhiteSpace(command)) {
             InsertLine(command);
         }
     }
@@ -2423,18 +2424,18 @@ public sealed class Editor : Drawable {
         }
         
         // Draw suffix text
-        if (Studio.CommunicationWrapper.Connected && 
-            Studio.CommunicationWrapper.CurrentLine != -1 && 
-            Studio.CommunicationWrapper.CurrentLine < visualRows.Length &&
-            Studio.CommunicationWrapper.CurrentLineSuffix != null) 
+        if (CommunicationWrapper.Connected && 
+            CommunicationWrapper.CurrentLine != -1 && 
+            CommunicationWrapper.CurrentLine < visualRows.Length &&
+            CommunicationWrapper.CurrentLineSuffix != null) 
         {
             const float padding = 10.0f;
-            float suffixWidth = Font.MeasureWidth(Studio.CommunicationWrapper.CurrentLineSuffix); 
+            float suffixWidth = Font.MeasureWidth(CommunicationWrapper.CurrentLineSuffix); 
             
             e.Graphics.DrawText(Font, Settings.Instance.Theme.PlayingFrame,
                 x: scrollablePosition.X + scrollable.Width - Studio.WidthRightOffset - suffixWidth - padding,
-                y: visualRows[Studio.CommunicationWrapper.CurrentLine] * Font.LineHeight(),
-                Studio.CommunicationWrapper.CurrentLineSuffix);
+                y: visualRows[CommunicationWrapper.CurrentLine] * Font.LineHeight(),
+                CommunicationWrapper.CurrentLineSuffix);
         }
         
         var caretPos = GetVisualPosition(Document.Caret);
@@ -2488,25 +2489,25 @@ public sealed class Editor : Drawable {
                 height: scrollable.Size.Height);
             
             // Highlight playing / savestate line
-            if (Studio.CommunicationWrapper.Connected) {
-                if (Studio.CommunicationWrapper.CurrentLine != -1 && Studio.CommunicationWrapper.CurrentLine < visualRows.Length) {
+            if (CommunicationWrapper.Connected) {
+                if (CommunicationWrapper.CurrentLine != -1 && CommunicationWrapper.CurrentLine < visualRows.Length) {
                     e.Graphics.FillRectangle(Settings.Instance.Theme.PlayingLine,
                         x: scrollablePosition.X,
-                        y: visualRows[Studio.CommunicationWrapper.CurrentLine] * Font.LineHeight(),
+                        y: visualRows[CommunicationWrapper.CurrentLine] * Font.LineHeight(),
                         width: textOffsetX - LineNumberPadding,
                         height: Font.LineHeight());
                 }
-                if (Studio.CommunicationWrapper.SaveStateLine != -1 && Studio.CommunicationWrapper.SaveStateLine < visualRows.Length) {
-                    if (Studio.CommunicationWrapper.SaveStateLine == Studio.CommunicationWrapper.CurrentLine) {
+                if (CommunicationWrapper.SaveStateLine != -1 && CommunicationWrapper.SaveStateLine < visualRows.Length) {
+                    if (CommunicationWrapper.SaveStateLine == CommunicationWrapper.CurrentLine) {
                         e.Graphics.FillRectangle(Settings.Instance.Theme.Savestate,
                             x: scrollablePosition.X,
-                            y: visualRows[Studio.CommunicationWrapper.SaveStateLine] * Font.LineHeight(),
+                            y: visualRows[CommunicationWrapper.SaveStateLine] * Font.LineHeight(),
                             width: 15.0f,
                             height: Font.LineHeight());
                     } else {
                         e.Graphics.FillRectangle(Settings.Instance.Theme.Savestate,
                             x: scrollablePosition.X,
-                            y: visualRows[Studio.CommunicationWrapper.SaveStateLine] * Font.LineHeight(),
+                            y: visualRows[CommunicationWrapper.SaveStateLine] * Font.LineHeight(),
                             width: textOffsetX - LineNumberPadding,
                             height: Font.LineHeight());
                     }

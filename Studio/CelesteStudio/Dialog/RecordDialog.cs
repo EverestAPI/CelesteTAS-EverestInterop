@@ -1,4 +1,5 @@
 using System;
+using CelesteStudio.Communication;
 using Eto.Drawing;
 using Eto.Forms;
 
@@ -40,6 +41,6 @@ public class RecordDialog : Dialog<bool> {
             return;
         }
         
-        Studio.CommunicationWrapper.RecordTAS(dialog.textBox.Text);
+        CommunicationWrapper.RecordTAS(dialog.textBox.Text);
     }
 }
