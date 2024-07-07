@@ -293,7 +293,7 @@ public sealed class Studio : Form {
         recordTasButton.Enabled = CommunicationWrapper.Connected;
         
         // NOTE: Index 0 is the recent files is the current file, so that is skipped
-        var openPreviousFile = MenuUtils.CreateAction("Open &Previous File", Keys.Alt | Keys.Left, () => {
+        var openPreviousFile = MenuUtils.CreateAction("Open &Previous File", Application.Instance.AlternateModifier | Keys.Left, () => {
             OpenFile(Settings.Instance.RecentFiles[1]);
         });
         openPreviousFile.Enabled = Settings.Instance.RecentFiles.Count > 1;

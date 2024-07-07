@@ -198,7 +198,7 @@ public sealed class Editor : Drawable {
                 MenuUtils.CreateAction("Insert/Remove Savestate Breakpoint", Application.Instance.CommonModifier | Keys.Shift | Keys.Period, () => InsertOrRemoveText(UncommentedBreakpointRegex, "***S")),
                 MenuUtils.CreateAction("Remove All Uncommented Breakpoints", Application.Instance.CommonModifier | Keys.P, () => RemoveLinesMatching(UncommentedBreakpointRegex)),
                 MenuUtils.CreateAction("Remove All Breakpoints", Application.Instance.CommonModifier | Keys.Shift | Keys.P, () => RemoveLinesMatching(AllBreakpointRegex)),
-                MenuUtils.CreateAction("Comment/Uncomment All Breakpoints", Application.Instance.CommonModifier | Keys.Alt | Keys.P, OnToggleCommentBreakpoints),
+                MenuUtils.CreateAction("Comment/Uncomment All Breakpoints", Application.Instance.CommonModifier | Application.Instance.AlternateModifier | Keys.P, OnToggleCommentBreakpoints),
                 MenuUtils.CreateAction("Comment/Uncomment Inputs", Application.Instance.CommonModifier | Keys.K, OnToggleCommentInputs),
                 MenuUtils.CreateAction("Comment/Uncomment Text", Application.Instance.CommonModifier | Keys.K | Keys.Shift, OnToggleCommentText),
                 new SeparatorMenuItem(),
@@ -207,7 +207,7 @@ public sealed class Editor : Drawable {
                 MenuUtils.CreateAction("Remove All Timestamps", Application.Instance.CommonModifier | Keys.Shift | Keys.T, () => RemoveLinesMatching(TimestampRegex)),
                 MenuUtils.CreateAction("Insert Mod Info", Keys.None, OnInsertModInfo),
                 MenuUtils.CreateAction("Insert Console Load Command", Application.Instance.CommonModifier | Keys.Shift | Keys.R, OnInsertConsoleLoadCommand),
-                MenuUtils.CreateAction("Insert Simple Console Load Command", Application.Instance.CommonModifier | Keys.Alt | Keys.R, OnInsertSimpleConsoleLoadCommand),
+                MenuUtils.CreateAction("Insert Simple Console Load Command", Application.Instance.CommonModifier | Application.Instance.AlternateModifier | Keys.R, OnInsertSimpleConsoleLoadCommand),
                 commandsMenu,
                 new SeparatorMenuItem(),
                 MenuUtils.CreateAction("Swap Selected L and R", Keys.None, () => SwapSelectedActions(Actions.Left, Actions.Right)),
@@ -567,7 +567,7 @@ public sealed class Editor : Drawable {
             }
         }
         
-        if (e is { Key: Keys.Space, Control: true}) {
+        if (e.Key == Keys.Space && e.HasCommonModifier()) {
             UpdateAutoComplete();
 
             e.Handled = true;
@@ -582,34 +582,34 @@ public sealed class Editor : Drawable {
         
         switch (e.Key) {
             case Keys.Backspace:
-                OnDelete(e.Control ? CaretMovementType.WordLeft : CaretMovementType.CharLeft);
+                OnDelete(e.HasCommonModifier() ? CaretMovementType.WordLeft : CaretMovementType.CharLeft);
                 e.Handled = true;
                 break;
             case Keys.Delete:
-                OnDelete(e.Control ? CaretMovementType.WordRight : CaretMovementType.CharRight);
+                OnDelete(e.HasCommonModifier() ? CaretMovementType.WordRight : CaretMovementType.CharRight);
                 e.Handled = true;
                 break;
             case Keys.Enter:
-                OnEnter(e.Control);
+                OnEnter(e.HasCommonModifier());
                 e.Handled = true;
                 break;
             case Keys.Left:
-                MoveCaret(e.Control ? CaretMovementType.WordLeft : CaretMovementType.CharLeft, updateSelection: e.Shift);
+                MoveCaret(e.HasCommonModifier() ? CaretMovementType.WordLeft : CaretMovementType.CharLeft, updateSelection: e.Shift);
                 e.Handled = true;
                 break;
             case Keys.Right:
-                MoveCaret(e.Control ? CaretMovementType.WordRight : CaretMovementType.CharRight, updateSelection: e.Shift);
+                MoveCaret(e.HasCommonModifier() ? CaretMovementType.WordRight : CaretMovementType.CharRight, updateSelection: e.Shift);
                 e.Handled = true;
                 break;
             case Keys.Up:
-                if (e.Control && e.Shift) {
+                if (e.HasCommonModifier() && e.Shift) {
                     // Adjust frame count
                     if (Document.Selection.Empty) {
                         AdjustFrameCounts(Document.Caret.Row, Document.Caret.Row, 1);
                     } else {
                         AdjustFrameCounts(Document.Selection.Start.Row, Document.Selection.End.Row, 1);
                     }
-                } else if (e.Alt) {
+                } else if (e.HasAlternateModifier()) {
                     // Move lines
                     using (Document.Update()) {
                         if (Document.Caret.Row > 0 && Document.Selection is { Empty: false, Min.Row: > 0 }) {
@@ -626,20 +626,20 @@ public sealed class Editor : Drawable {
                         }
                     }
                 } else {
-                    MoveCaret(e.Control ? CaretMovementType.LabelUp : CaretMovementType.LineUp, updateSelection: e.Shift);
+                    MoveCaret(e.HasCommonModifier() ? CaretMovementType.LabelUp : CaretMovementType.LineUp, updateSelection: e.Shift);
                 }
                 
                 e.Handled = true;
                 break;
             case Keys.Down:
-                if (e.Control && e.Shift) {
+                if (e.HasCommonModifier() && e.Shift) {
                     // Adjust frame count
                     if (Document.Selection.Empty) {
                         AdjustFrameCounts(Document.Caret.Row, Document.Caret.Row, -1);
                     } else {
                         AdjustFrameCounts(Document.Selection.Start.Row, Document.Selection.End.Row, -1);
                     }
-                } else if (e.Alt) {
+                } else if (e.HasAlternateModifier()) {
                     // Move lines
                     using (Document.Update()) {
                         if (Document.Caret.Row < Document.Lines.Count - 1 && !Document.Selection.Empty && Document.Selection.Max.Row < Document.Lines.Count - 1) {
@@ -656,7 +656,7 @@ public sealed class Editor : Drawable {
                         }
                     }
                 } else {
-                    MoveCaret(e.Control ? CaretMovementType.LabelDown : CaretMovementType.LineDown, updateSelection: e.Shift);
+                    MoveCaret(e.HasCommonModifier() ? CaretMovementType.LabelDown : CaretMovementType.LineDown, updateSelection: e.Shift);
                 }
 
                 e.Handled = true;
@@ -670,14 +670,14 @@ public sealed class Editor : Drawable {
                 e.Handled = true;
                 break;
             case Keys.Home:
-                MoveCaret(e.Control ? CaretMovementType.DocumentStart : CaretMovementType.LineStart, updateSelection: e.Shift);
+                MoveCaret(e.HasCommonModifier() ? CaretMovementType.DocumentStart : CaretMovementType.LineStart, updateSelection: e.Shift);
                 e.Handled = true;
                 break;
             case Keys.End:
-                MoveCaret(e.Control ? CaretMovementType.DocumentEnd : CaretMovementType.LineEnd, updateSelection: e.Shift);
+                MoveCaret(e.HasCommonModifier() ? CaretMovementType.DocumentEnd : CaretMovementType.LineEnd, updateSelection: e.Shift);
                 e.Handled = true;
                 break;
-            case Keys.C when e.Control && e.Alt:
+            case Keys.C when e.HasCommonModifier() && e.HasAlternateModifier():
                 Clipboard.Instance.Clear();
                 Clipboard.Instance.Text = Document.FilePath;
                 ShowToastMessage("Copied current file path to Clipboard", DefaultToastTime);
@@ -685,11 +685,11 @@ public sealed class Editor : Drawable {
                 e.Handled = true;
                 break;
             // Use Ctrl+/ as an alternative for Ctrl+K
-            case Keys.Slash when e.Control:
+            case Keys.Slash when e.HasCommonModifier():
                 OnToggleCommentInputs();
                 e.Handled = true;
                 break;
-            case Keys.Slash when e.Shift && e.Control:
+            case Keys.Slash when e.Shift && e.HasCommonModifier():
                 OnToggleCommentText();
                 e.Handled = true;
                 break;
@@ -2213,7 +2213,7 @@ public sealed class Editor : Drawable {
             return;
         }
         // Zoom in/out
-        if (e.Modifiers.HasFlag(Keys.Control)) {
+        if (e.HasCommonModifier()) {
             const float scrollSpeed = 0.1f;
             if (e.Delta.Height > 0.0f) {
                 Settings.Instance.FontZoom *= 1.0f + scrollSpeed;
@@ -2231,7 +2231,7 @@ public sealed class Editor : Drawable {
     
     private void UpdateMouseCursor(PointF location, Keys modifiers) {
         int prevLineLink = lineLinkRow;
-        if (modifiers.HasFlag(Keys.Control) && LocationToLineLink(location) is var row && row != -1) {
+        if (modifiers.HasCommonModifier() && LocationToLineLink(location) is var row && row != -1) {
             lineLinkRow = row;
             Cursor = Cursors.Pointer;
             
