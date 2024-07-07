@@ -453,7 +453,7 @@ public class Document {
         else
             CurrentLines.InsertRange(row, newLines);
         
-        int newLineCount = Math.Max(0, newLines.Length - 1);
+        int newLineCount = text.Count(c => c == NewLine) + 1;
         
         if (Caret.Row >= row)
             Caret.Row += newLineCount;
@@ -474,7 +474,10 @@ public class Document {
             CurrentLines.InsertRange(row + 1, newLines[1..]);
         }
         
-        int newLineCount = Math.Max(0, newLines.Length - 1);
+        int newLineCount = text.Count(c => c == NewLine);
+        
+        if (Caret.Row >= row)
+            Caret.Row += newLineCount;
         
         ChangedText(row, row + newLineCount);
     }

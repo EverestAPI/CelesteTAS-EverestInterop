@@ -1402,19 +1402,31 @@ public sealed class Editor : Drawable {
     private void OnRedo() => Document.Redo();
     
     private void OnCut() {
-        if (Document.Selection.Empty)
-            return;
+        using var __ = Document.Update();
         
         OnCopy();
-        OnDelete(CaretMovementType.None);
+        
+        if (Document.Selection.Empty) {
+            Document.RemoveLine(Document.Caret.Row);
+        } else if (Document.Selection.Min.Col == 0 && Document.Selection.Max.Col == Document.Lines[Document.Selection.Max.Row].Length) {
+            // Remove the lines entirely when the selection is the full range
+            Document.RemoveLines(Document.Selection.Min.Row, Document.Selection.Max.Row);
+            Document.Caret = Document.Selection.Min;
+            Document.Selection.Clear();
+        } else {
+            OnDelete(CaretMovementType.None);
+        }
     }
     
     private void OnCopy() {
-        if (Document.Selection.Empty)
-            return;
-        
-        Clipboard.Instance.Clear();
-        Clipboard.Instance.Text = Document.GetSelectedText();
+        if (Document.Selection.Empty) {
+            // Just copy entire line
+            Clipboard.Instance.Clear();
+            Clipboard.Instance.Text = Document.Lines[Document.Caret.Row] + Document.NewLine;
+        } else {
+            Clipboard.Instance.Clear();
+            Clipboard.Instance.Text = Document.GetSelectedText();       
+        }
     }
     
     private void OnPaste() {
@@ -1428,8 +1440,12 @@ public sealed class Editor : Drawable {
             Document.Caret = Document.Selection.Min;
             Document.Selection.Clear();
         }
-
-        Document.Insert(Clipboard.Instance.Text);
+        
+        if (ActionLine.Parse(Document.Lines[Document.Caret.Row]) != null) {
+            InsertLine(Clipboard.Instance.Text.ReplaceLineEndings(Document.NewLine.ToString()).Trim(Document.NewLine));
+        } else {
+            Document.Insert(Clipboard.Instance.Text.ReplaceLineEndings(Document.NewLine.ToString()));
+        }
     }
     
     private void OnSelectAll() {
@@ -1661,16 +1677,11 @@ public sealed class Editor : Drawable {
         using var __ = Document.Update();
         
         if (Settings.Instance.InsertDirection == InsertDirection.Above) {
-            int prevCol = Document.Caret.Col;
-
             Document.InsertLineAbove(text);
             
             if (Settings.Instance.CaretInsertPosition == CaretInsertPosition.AfterInsert) {
+                Document.Caret.Row--;
                 Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
-            } else if (Settings.Instance.CaretInsertPosition == CaretInsertPosition.PreviousPosition) {
-                int newLines = text.Count(c => c == Document.NewLine) + 1;
-                Document.Caret.Row += newLines;
-                Document.Caret.Col = desiredVisualCol = prevCol;
             }
         } else if (Settings.Instance.InsertDirection == InsertDirection.Below) {
             Document.InsertLineBelow(text);
