@@ -50,8 +50,9 @@ public struct Selection() {
     public void Clear() => Start = End = new();
     public void Normalize() {
         // Ensures that Start <= End
-        if (Start > End)
+        if (Start > End) {
             (Start, End) = (End, Start);
+        }
     }
 }
 

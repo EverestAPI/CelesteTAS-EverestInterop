@@ -1995,6 +1995,18 @@ public sealed class Editor : Drawable {
             }
             
             Document.Selection.End = Document.Caret;
+            
+            // If the selection is multi-line, always select the entire start/end line if it's an action line
+            if (Document.Selection.Start.Row != Document.Selection.End.Row) {
+                var startLine = Document.Lines[Document.Selection.Start.Row];
+                var endLine = Document.Lines[Document.Selection.End.Row];
+                if (ActionLine.Parse(startLine) != null) {
+                    Document.Selection.Start.Col = Document.Selection.Start < Document.Selection.End ? 0 : startLine.Length;
+                }
+                if (ActionLine.Parse(Document.Lines[Document.Selection.End.Row]) != null) {
+                    Document.Selection.End.Col = Document.Selection.Start < Document.Selection.End ? endLine.Length : 0;
+                }
+            }
         } else {
             Document.Selection.Clear();
         }
