@@ -12,7 +12,7 @@ using StudioCommunication;
 namespace CelesteStudio.Tool;
 
 public sealed class JadderlineForm : Form {
-    private const string Version = "1.0.0";
+    private const string Version = "1.0.1";
     
     private readonly NumericStepper playerPos;
     private readonly NumericStepper playerSpeed;
@@ -59,7 +59,7 @@ public sealed class JadderlineForm : Form {
         };
         moveOnly = new CheckBox { Width = rowWidth };
         additionalInputs = new TextBox { Width = rowWidth };
-        output = new TextArea { ReadOnly = true, Font = FontManager.EditorFontRegular };
+        output = new TextArea { ReadOnly = true, Font = FontManager.EditorFontRegular, Width = 250 };
         
         var layout = new DynamicLayout { DefaultSpacing = new Size(10, 10) };
         layout.BeginHorizontal();
@@ -89,10 +89,7 @@ public sealed class JadderlineForm : Form {
         layout.EndHorizontal();
         layout.EndVertical();
         
-        layout.Add(new Scrollable {
-            Width = 250, 
-            Content = output
-        }, yscale: true);
+        layout.Add(output);
         
         layout.EndHorizontal();
         
@@ -169,17 +166,9 @@ public sealed class JadderlineForm : Form {
     // Additionally, jelly2 is the one on cooldown (jelly1 is the one about to be grabbed, and as such, doesnt need to be inputted)
     // The additional inputs may or may not need commas, not 100% sure
     // This doesnt go back a frame if an impossible frame is reached, but ive never seen it ever go back in jadderline so its not too much of a priority currently
-    private static string Run(float playerPos, float playerSpeed, float jelly2Pos, int ladders, bool direction, bool moveOnly, Actions additionalActions) {
+    public static string Run(float playerPos, float playerSpeed, float jelly2Pos, int ladders, bool direction, bool moveOnly, Actions additionalActions) {
         if (ladders < 2) { // Because we calculate the jelly ladders in 2 regrab windows
             throw new ArgumentException("Must calculate at least 2 ladders");
-        }
-
-        if (playerSpeed > 0f || (playerSpeed == 0f && direction)) { // Jelly positions should be on one edge, and player position should be on the other
-            jelly2Pos = float.Round(jelly2Pos) + 9.5f;
-            playerPos -= 4f;
-        } else {
-            jelly2Pos = float.Round(jelly2Pos) - 10.5f;
-            playerPos += 3f;
         }
         float jelly1Pos = playerPos; // Since this is the one we are about to grab
         // Get all 262144 candidates for inputs
@@ -189,14 +178,14 @@ public sealed class JadderlineForm : Form {
                 potential.Add((ToBits(j), ToBits(k)));
             }
         }
-        List<float> results = new(new float[512*512]);
+        List<float> results = new(new float[262144]);
         List<bool[]> inputs = new();
         for (int i = 0; i < ladders; i++) {
             // Remove last entry since we arent at the end yet
             if (inputs.Count != 0) {
                 inputs.RemoveAt(inputs.Count - 1);
             }
-            Parallel.For(0, 512*512, j => {
+            Parallel.For(0, 262144, j => {
                 results[j] = Eval(potential[j], playerPos, playerSpeed, jelly1Pos, jelly2Pos, direction);
             });
             int max;
@@ -211,11 +200,7 @@ public sealed class JadderlineForm : Form {
             inputs.Add(potential[max].Item1);
             inputs.Add(potential[max].Item2);
             (playerPos, playerSpeed, jelly1Pos) = MoveVars(potential[max].Item1, playerPos, playerSpeed, jelly1Pos, direction); // Save the result of the chosen input
-            if (playerSpeed > 0f || (playerSpeed == 0f && direction)) { // Make jelly1 the new jelly2
-                jelly2Pos = float.Round(jelly1Pos) + 13.5f;
-            } else {
-                jelly2Pos = float.Round(jelly1Pos) - 13.5f;
-            }
+            jelly2Pos = float.Round(jelly1Pos); // Make jelly1 the new jelly2
             jelly1Pos = playerPos;
         }
         return Format(inputs, moveOnly, direction, additionalActions);
@@ -226,16 +211,9 @@ public sealed class JadderlineForm : Form {
     private static float Eval((bool[], bool[]) inputs, float playerPos, float playerSpeed, float jelly1Pos, float jelly2Pos, bool direction) {
         (float playerPosNew, float playerSpeedNew, float jelly1PosNew) = MoveVars(inputs.Item1, playerPos, playerSpeed, jelly1Pos, direction);
         bool wentOver; // Went past jelly
-        float jelly2PosNew; // New jelly2 position
-        if (playerSpeedNew > 0f || (playerSpeedNew == 0f && direction)) { // Also make jelly1 the new jelly2
-            wentOver = playerPosNew >= jelly2Pos;
-            jelly2PosNew = float.Round(jelly1PosNew) + 13.5f;
-        } else {
-            wentOver = playerPosNew < jelly2Pos;
-            jelly2PosNew = float.Round(jelly1PosNew) - 13.5f;
-        }
+        float jelly2PosNew = float.Round(jelly1PosNew); // New jelly2 position
         jelly1PosNew = playerPosNew;
-        if (wentOver) {
+        if (playerPosNew >= jelly2Pos + 13.5f || playerPosNew < jelly2Pos - 13.5f) {
             if (direction) {
                 return float.NegativeInfinity;
             } else {
@@ -243,12 +221,7 @@ public sealed class JadderlineForm : Form {
             }
         }
         (playerPosNew, _, _) = MoveVars(inputs.Item2, playerPosNew, playerSpeedNew, jelly1PosNew, direction);  
-        if (playerSpeedNew > 0f || (playerSpeedNew == 0f && direction)) { // And again
-            wentOver = playerPosNew >= jelly2PosNew;
-        } else {
-            wentOver = playerPosNew < jelly2PosNew;
-        }
-        if (wentOver) {
+        if (playerPosNew >= jelly2PosNew + 13.5f || playerPosNew < jelly2PosNew - 13.5f) {
             if (direction) {
                 return float.NegativeInfinity;
             } else {
@@ -294,21 +267,20 @@ public sealed class JadderlineForm : Form {
         } else {
             mult = -1f;
         }
-        playerSpeed = float.Abs(playerSpeed);
         if (!input) { // Holding neutral
             playerSpeed -= frictionNorm * DeltaTime * mult;
             if (playerSpeed * mult < 0f) {
                 playerSpeed = 0f;
             }
-        } else if (playerSpeed <= max) { // Coming up to max speed
+        } else if (playerSpeed * mult <= max) { // Coming up to max speed
             playerSpeed += frictionNorm * DeltaTime * mult;
             if (playerSpeed * mult > max) {
-                playerSpeed = max;
+                playerSpeed = max * mult;
             }
         } else { // Over max speed
             playerSpeed -= frictionOverMax * DeltaTime * mult;
             if (playerSpeed * mult < max) {
-                playerSpeed = max;
+                playerSpeed = max * mult;
             }
         }
         playerPos += playerSpeed * DeltaTime;
@@ -324,6 +296,7 @@ public sealed class JadderlineForm : Form {
         }
         return bits;
     }
+
 
     // Formats the inputs to be copy and pasted into Studio
     private static string Format(List<bool[]> inputs, bool moveOnly, bool direction, Actions additionalActions) {
@@ -344,7 +317,7 @@ public sealed class JadderlineForm : Form {
                 var actionLine = new ActionLine { Frames = f.Frames, Actions = Actions.Grab | additionalActions };
                 if (f.HoldDir) {
                     if (moveOnly) {
-                        actionLine.Actions |= direction ? Actions.RightMoveOnly : Actions.LeftMoveOnly;
+                        actionLine.Actions |= Actions.MoveOnly | (direction ? Actions.RightMoveOnly : Actions.LeftMoveOnly);
                     } else {
                         actionLine.Actions |= direction ? Actions.Right : Actions.Left;
                     }
@@ -353,15 +326,14 @@ public sealed class JadderlineForm : Form {
                 result.AppendLine(actionLine.ToString());
             }
             
-            var lastActionLine = new ActionLine { Frames = 1, Actions = Actions.Down | additionalActions };
+            var lastActionLine = new ActionLine { Frames = 1, Actions = additionalActions };
             if (input[8]) {
                 if (moveOnly) {
-                    lastActionLine.Actions |= direction ? Actions.RightMoveOnly : Actions.LeftMoveOnly;
+                    lastActionLine.Actions |= Actions.MoveOnly | Actions.DownMoveOnly | (direction ? Actions.RightMoveOnly : Actions.LeftMoveOnly);
                 } else {
-                    lastActionLine.Actions |= direction ? Actions.Right : Actions.Left;
+                    lastActionLine.Actions |= Actions.Down | (direction ? Actions.Right : Actions.Left);
                 }
             }
-            
             result.AppendLine(lastActionLine.ToString());
         }
 
