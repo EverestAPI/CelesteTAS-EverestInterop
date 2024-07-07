@@ -7,6 +7,7 @@ using System.Reflection;
 using CelesteStudio.Communication;
 using CelesteStudio.Dialog;
 using CelesteStudio.Editing;
+using CelesteStudio.Tool;
 using CelesteStudio.Util;
 using Eto.Forms;
 using Eto.Drawing;
@@ -46,6 +47,8 @@ public sealed class Studio : Form {
     public readonly Editor Editor;
     public readonly GameInfoPanel GameInfoPanel;
     private readonly Scrollable EditorScrollable;
+    
+    private JadderlineForm? jadderlineForm;
 
     private string TitleBarText => Editor.Document.FilePath == Document.TemporaryFile 
         ? $"<Unsaved> - Studio v{Version.ToString(3)}" 
@@ -425,6 +428,13 @@ public sealed class Studio : Form {
                     new SeparatorMenuItem(),
                     MenuUtils.CreateNumberInput("Fast Forward Speed", CommunicationWrapper.GetFastForwardSpeed, CommunicationWrapper.SetFastForwardSpeed, minFastForwardSpeed, maxFastForwardSpeed, 1),
                     MenuUtils.CreateNumberInput("Slow Forward Speed", CommunicationWrapper.GetSlowForwardSpeed, CommunicationWrapper.SetSlowForwardSpeed, minSlowForwardSpeed, maxSlowForwardSpeed, 0.1f),
+                }},
+                new SubMenuItem { Text = "&Tools", Items = {
+                    MenuUtils.CreateAction("Jadderline", Keys.None, () => {
+                        jadderlineForm ??= new();
+                        jadderlineForm.Show();
+                        jadderlineForm.Closed += (_, _) => jadderlineForm = null;
+                    }),
                 }},
             },
             ApplicationItems = {

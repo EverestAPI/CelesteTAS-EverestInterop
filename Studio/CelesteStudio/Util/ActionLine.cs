@@ -8,7 +8,7 @@ using StudioCommunication;
 
 namespace CelesteStudio.Util;
 
-public struct ActionLine {
+public struct ActionLine() {
     public const char Delimiter = ',';
     public const int MaxFrames = 9999;
     public const int MaxFramesDigits = 4;
@@ -19,7 +19,7 @@ public struct ActionLine {
     public string? FeatherAngle;
     public string? FeatherMagnitude;
 
-    public HashSet<char> CustomBindings;
+    public HashSet<char> CustomBindings = [];
 
     public static ActionLine? Parse(string line, bool ignoreInvalidFloats = true) => TryParse(line, out var actionLine, ignoreInvalidFloats) ? actionLine : null; 
     public static bool TryParse(string line, out ActionLine value, bool ignoreInvalidFloats = true) {
