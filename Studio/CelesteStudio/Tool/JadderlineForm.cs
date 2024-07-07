@@ -326,15 +326,19 @@ public sealed class JadderlineForm : Form {
                 result.AppendLine(actionLine.ToString());
             }
             
-            var lastActionLine = new ActionLine { Frames = 1, Actions = additionalActions };
-            if (input[8]) {
-                if (moveOnly) {
-                    lastActionLine.Actions |= Actions.MoveOnly | Actions.DownMoveOnly | (direction ? Actions.RightMoveOnly : Actions.LeftMoveOnly);
-                } else {
-                    lastActionLine.Actions |= Actions.Down | (direction ? Actions.Right : Actions.Left);
+            var dropActionLine = new ActionLine { Frames = 1, Actions = additionalActions };
+            if (moveOnly) {
+                dropActionLine.Actions |= Actions.MoveOnly | Actions.DownMoveOnly;
+                if (input[8]) {
+                    dropActionLine.Actions |= direction ? Actions.RightMoveOnly : Actions.LeftMoveOnly;
+                }
+            } else {
+                dropActionLine.Actions |= Actions.Down;
+                if (input[8]) {
+                    dropActionLine.Actions |= direction ? Actions.Right : Actions.Left;
                 }
             }
-            result.AppendLine(lastActionLine.ToString());
+            result.AppendLine(dropActionLine.ToString());
         }
 
         return result.ToString();
