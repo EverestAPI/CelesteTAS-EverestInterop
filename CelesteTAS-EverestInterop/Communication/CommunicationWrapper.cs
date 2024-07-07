@@ -9,8 +9,8 @@ namespace TAS.Communication;
 
 public static class CommunicationWrapper {
     
-    public static bool Connected => celeste is { Connected: true };
-    private static StudioCommunicationCeleste celeste;
+    public static bool Connected => comm is { Connected: true };
+    private static CommunicationAdapterCeleste comm;
     
     [Load]
     private static void Load() {
@@ -23,17 +23,17 @@ public static class CommunicationWrapper {
     }
     
     public static void Start() {
-        celeste = new StudioCommunicationCeleste();
+        comm = new CommunicationAdapterCeleste();
     }
     public static void Stop() {
-        celeste.Dispose();
-        celeste = null;
+        comm.Dispose();
+        comm = null;
     }
     
     public static void ChangeStatus() {
-        if (TasSettings.AttemptConnectStudio && celeste == null) {
+        if (TasSettings.AttemptConnectStudio && comm == null) {
             Start();
-        } else if (celeste != null) {
+        } else if (comm != null) {
             Stop();
         }
     }
@@ -45,14 +45,14 @@ public static class CommunicationWrapper {
             return;
         }
         
-        celeste.WriteState(state);
+        comm.WriteState(state);
     }
     public static void SendUpdateLines(Dictionary<int, string> updateLines) {
         if (!Connected) {
             return;
         }
         
-        celeste.WriteUpdateLines(updateLines);
+        comm.WriteUpdateLines(updateLines);
     }
     public static void SendCurrentBindings() {
         if (!Connected) {
@@ -60,14 +60,14 @@ public static class CommunicationWrapper {
         }
         
         Dictionary<int, List<int>> nativeBindings = Hotkeys.KeysInteractWithStudio.ToDictionary(pair => (int) pair.Key, pair => pair.Value.Cast<int>().ToList());
-        celeste.WriteCurrentBindings(nativeBindings);
+        comm.WriteCurrentBindings(nativeBindings);
     }
     public static void SendRecordingFailed(RecordingFailedReason reason) {
         if (!Connected) {
             return;
         }
         
-        celeste.WriteRecordingFailed(reason);
+        comm.WriteRecordingFailed(reason);
     }
     
     #endregion

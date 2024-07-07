@@ -14,7 +14,7 @@ using TAS.Utils;
 
 namespace TAS.Communication;
 
-public sealed class StudioCommunicationCeleste() : StudioCommunicationBase(Location.Celeste) {
+public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Location.Celeste) {
     protected override void OnConnectionChanged() {
         if (Connected) {
             // Stall until input initialized to avoid sending invalid hotkey data

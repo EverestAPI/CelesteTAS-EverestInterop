@@ -11,7 +11,7 @@ using System.Threading;
 
 #nullable enable
 
-public abstract class StudioCommunicationBase : IDisposable {
+public abstract class CommunicationAdapterBase : IDisposable {
     protected enum Location { Celeste, Studio }
     
     private bool connected = false;
@@ -66,7 +66,7 @@ public abstract class StudioCommunicationBase : IDisposable {
 
     private const string MutexName = "Global\\CelesteTAS_StudioCom";
     
-    protected StudioCommunicationBase(Location location) {
+    protected CommunicationAdapterBase(Location location) {
         LogInfo("Starting communication...");
         
         // Get or create the shared mutex

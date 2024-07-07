@@ -16,7 +16,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)MessageID.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PlatformUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)State.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)StudioCommunicationBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CommunicationAdapterBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)StudioState.cs" />
   </ItemGroup>
 </Project>

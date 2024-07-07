@@ -10,11 +10,11 @@ using StudioCommunication;
 
 namespace CelesteStudio.Communication;
 
-public sealed class StudioCommunicationStudio(
+public sealed class CommunicationAdapterStudio(
     Action connectionChanged,
     Action<StudioState> stateChanged, 
     Action<Dictionary<int, string>> linesChanged, 
-    Action<Dictionary<HotkeyID, List<WinFormsKeys>>> bindingsChanged) : StudioCommunicationBase(Location.Studio) 
+    Action<Dictionary<HotkeyID, List<WinFormsKeys>>> bindingsChanged) : CommunicationAdapterBase(Location.Studio) 
 {
     private string? gameData;
     
@@ -123,7 +123,7 @@ public sealed class StudioCommunicationStudio(
     }
     
     protected override void LogInfo(string message) => Console.WriteLine($"[Info] Studio Communication @ Studio: {message}");
-    protected override void LogVerbose(string message) => Console.WriteLine($"[Verbose] Studio Communication @ Studio: {message}");
+    protected override void LogVerbose(string message) {} /*=> Console.WriteLine($"[Verbose] Studio Communication @ Studio: {message}");*/
     protected override void LogError(string message) => Console.Error.WriteLine($"[Error] Studio Communication @ Studio: {message}");
 }
 

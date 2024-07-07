@@ -9,7 +9,7 @@ using StudioCommunication;
 namespace CelesteStudio.Communication;
 
 public sealed class CommunicationWrapper {
-    public bool Connected => studio.Connected;
+    public bool Connected => comm.Connected;
 
     public StudioState State { get; private set; }
     
@@ -17,14 +17,14 @@ public sealed class CommunicationWrapper {
     public event Action<StudioState, StudioState>? StateUpdated;
     public event Action<Dictionary<int, string>>? LinesUpdated;
     
-    private readonly StudioCommunicationStudio studio;
+    private readonly CommunicationAdapterStudio comm;
     private Dictionary<HotkeyID, List<WinFormsKeys>> bindings = [];
     
     public CommunicationWrapper() {
-        studio = new StudioCommunicationStudio(OnConnectionChanged, OnStateChanged, OnLinesChanged, OnBindingsChanged);
+        comm = new CommunicationAdapterStudio(OnConnectionChanged, OnStateChanged, OnLinesChanged, OnBindingsChanged);
     }
     public void Stop() {
-        studio.Dispose();
+        comm.Dispose();
     }
     
     private void OnConnectionChanged() {
@@ -50,7 +50,7 @@ public sealed class CommunicationWrapper {
     }
     public void SendPath(string path) {
         if (Connected) {
-            studio.SendPath(path);
+            comm.SendPath(path);
         }
     }
     public bool SendKeyEvent(Keys key, Keys modifiers, bool released) {
@@ -69,7 +69,7 @@ public sealed class CommunicationWrapper {
                      (modifiers == Keys.Alt && key is Keys.Alt or Keys.LeftAlt or Keys.RightAlt)))
                 {
                     if (Connected) {
-                        studio.SendHotkey(hotkey, released);
+                        comm.SendHotkey(hotkey, released);
                     }
                     return true;
                 }
@@ -94,7 +94,7 @@ public sealed class CommunicationWrapper {
             }
             
             if (Connected) {
-                studio.SendHotkey(hotkey, released);
+                comm.SendHotkey(hotkey, released);
             }
             return true;
             
@@ -117,16 +117,16 @@ public sealed class CommunicationWrapper {
     public string ChapterTime => Connected ? State.ChapterTime : string.Empty;
     
     public string GetConsoleCommand(bool simple) {
-        return studio.RequestGameData(GameDataType.ConsoleCommand, simple).Result ?? string.Empty;
+        return comm.RequestGameData(GameDataType.ConsoleCommand, simple).Result ?? string.Empty;
     }
     public string GetModURL() {
-        return studio.RequestGameData(GameDataType.ModUrl).Result ?? string.Empty;
+        return comm.RequestGameData(GameDataType.ModUrl).Result ?? string.Empty;
     }
     public string GetModInfo() {
-        return studio.RequestGameData(GameDataType.ModInfo).Result ?? string.Empty;
+        return comm.RequestGameData(GameDataType.ModInfo).Result ?? string.Empty;
     }
     public string GetExactGameInfo() {
-        return studio.RequestGameData(GameDataType.ExactGameInfo).Result ?? string.Empty;
+        return comm.RequestGameData(GameDataType.ExactGameInfo).Result ?? string.Empty;
     }
     
     #endregion
@@ -160,12 +160,12 @@ public sealed class CommunicationWrapper {
     
     private void SetSetting(string settingName, object? value) {
         if (Connected) {
-            studio.SendSetting(settingName, value);
+            comm.SendSetting(settingName, value);
         }
     }
 
     private bool GetBool(string settingName) {
-        if (studio.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
+        if (comm.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
             bool.TryParse(settingValue, out bool value))
         {
             return value;
@@ -174,7 +174,7 @@ public sealed class CommunicationWrapper {
         return false;
     }
     private int GetInt(string settingName, int defaultValue) {
-        if (studio.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
+        if (comm.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
             int.TryParse(settingValue, out int value)) 
         {
             return value;
@@ -183,7 +183,7 @@ public sealed class CommunicationWrapper {
         return defaultValue;
     }
     private float GetFloat(string settingName, float defaultValue) {
-        if (studio.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
+        if (comm.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
             float.TryParse(settingValue, out float value))
         {
             return value;
