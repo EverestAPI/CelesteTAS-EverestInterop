@@ -515,6 +515,8 @@ public sealed class Editor : Drawable {
     #endregion
     
     protected override void OnKeyDown(KeyEventArgs e) {
+        Console.WriteLine($"KeyDown: {e.Key} | {e.Modifiers} | {e.KeyData} | '{e.KeyChar}'");
+        
         var mods = e.Modifiers;
         if (e.Key is Keys.LeftShift or Keys.RightShift) mods |= Keys.Shift;
         if (e.Key is Keys.LeftControl or Keys.RightControl) mods |= Keys.Control;
@@ -698,6 +700,7 @@ public sealed class Editor : Drawable {
                         .Concat(Studio.Instance.GameInfoPanel.ContextMenu.Items)
                         .Concat(Studio.Instance.Menu.Items);
                     foreach (var item in items) {
+                        Console.WriteLine($" - Shortcut: {item.Shortcut} vs {e.KeyData}");
                         if (item.Shortcut != e.KeyData) {
                             continue;
                         }
@@ -721,6 +724,11 @@ public sealed class Editor : Drawable {
                         
                         Document.Caret.Col = desiredVisualCol = snippet.Insert.Length;
                     }
+                }
+                
+                // macOS will make a beep sounds when the event isn't handled
+                if (Eto.Platform.Instance.IsMac) {
+                    e.Handled = true;    
                 }
                 
                 base.OnKeyDown(e);
