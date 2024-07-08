@@ -22,7 +22,7 @@ public static class InfoCustom {
     private static readonly Regex TypeNameRegex = new(@"^([.\w=+<>]+)(\[(.+?)\])?(@([^.]*))?$", RegexOptions.Compiled);
     private static readonly Regex TypeNameSeparatorRegex = new(@"^[.+]", RegexOptions.Compiled);
     private static readonly Regex MethodRegex = new(@"^(.+)\((.*)\)$", RegexOptions.Compiled);
-    private static readonly Dictionary<string, Type> AllTypes = new();
+    internal static readonly Dictionary<string, Type> AllTypes = new();
     private static readonly Dictionary<string, List<Type>> CachedParsedTypes = new();
     private static bool EnforceLegal => EnforceLegalCommand.EnabledWhenRunning && !AssertCommand.Running;
 

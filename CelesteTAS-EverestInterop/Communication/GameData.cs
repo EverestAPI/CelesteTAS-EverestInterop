@@ -5,6 +5,7 @@ using Celeste;
 using Celeste.Mod;
 using Celeste.Mod.Helpers;
 using Monocle;
+using TAS.EverestInterop.InfoHUD;
 using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
@@ -153,5 +154,25 @@ public static class GameData {
         }
 
         return string.Empty;
+    }
+    
+    public static string GetSetCommandAutoCompleteOptions(string currentInput) {
+        var final = new List<string>();
+        var nonFinal = new List<string>();
+        
+        if (currentInput.Contains(".")) {
+            // Vanilla game settings or mod settings type or a base type
+            final.AddRange(typeof(Settings).GetFields().Select(f => f.Name));
+            final.AddRange(typeof(SaveData).GetFields().Select(f => f.Name));
+            final.AddRange(typeof(Assists).GetFields().Select(f => f.Name));
+            
+            nonFinal.AddRange(Everest.Modules.Where(mod => mod.SettingsType != null).Select(mod => mod.Metadata.Name));
+            
+            nonFinal.AddRange(InfoCustom.AllTypes.Keys);
+        } else {
+            // TODO
+        }
+        
+        return string.Join(';', final) + '#' + string.Join(';', nonFinal);
     }
 }

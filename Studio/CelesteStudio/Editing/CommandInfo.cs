@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using CelesteStudio.Communication;
 using CelesteStudio.Util;
 
 namespace CelesteStudio.Editing;
@@ -43,7 +44,14 @@ public struct CommandInfo() {
         new CommandInfo { Name = "Repeat", Insert = $"Repeat{separator}[0;2]{Document.NewLine}    [1]{Document.NewLine}EndRepeat", Description = "Repeat the inputs between \"Repeat\" and \"EndRepeat\" several times, nesting is not supported."  },
         new CommandInfo { Name = "EndRepeat", Insert = "EndRepeat", Description = "Repeat the inputs between \"Repeat\" and \"EndRepeat\" several times, nesting is not supported." },
         null,
-        new CommandInfo { Name = "Set", Insert = $"Set{separator}[0;(Mod).Setting]{separator}[1;Value]", Description = "Sets the specified setting to the specified value." },
+        new CommandInfo { 
+            Name = "Set", 
+            Description = "Sets the specified setting to the specified value.",
+            Insert = $"Set{separator}[0;(Mod).Setting]{separator}[1;Value]",
+            AutoCompleteEntries = [
+                args => GetSetEntries(args[0])
+            ]
+        },
         new CommandInfo { Name = "Invoke", Insert = $"Invoke{separator}[0;Entity.Method]{separator}[1;Parameter]", Description = "Similar to the set command, but used to invoke the method"},
         new CommandInfo { Name = "EvalLua", Insert = $"EvalLua{separator}[0;Code]", Description = "Evaluate Lua code"},
         null,
@@ -170,5 +178,32 @@ public struct CommandInfo() {
         }
         
         return labels;
+    }
+    
+    private static AutoCompleteEntry[] lastSetCommandEntries = [];
+    private static string[] lastSetCommandArgs = ["<non-exsistant>"];
+    private static AutoCompleteEntry[] GetSetEntries(string currentInput) {
+        var args = currentInput.Split('.').SkipLast(1).ToArray();
+        Console.WriteLine("args: ");
+        foreach (string se in args)
+        {
+            Console.WriteLine($" - {se}");
+        }
+        Console.WriteLine("lastArgs: ");
+        foreach (string se in lastSetCommandArgs)
+        {
+            Console.WriteLine($" * {se}");
+        }
+        if (args.SequenceEqual(lastSetCommandArgs)) {
+            lastSetCommandArgs = args;
+            return lastSetCommandEntries;
+        }
+        lastSetCommandArgs = args;
+        
+        var (final, nonFinal) = CommunicationWrapper.GetSetCommandAutoCompleteOptions(currentInput);
+        
+        return (lastSetCommandEntries = final.Select(s => new AutoCompleteEntry {Arg = s, Done = true})
+            .Concat(nonFinal.Select(s => new AutoCompleteEntry {Arg = s + '.', Done = false}))
+            .ToArray());
     }
 }

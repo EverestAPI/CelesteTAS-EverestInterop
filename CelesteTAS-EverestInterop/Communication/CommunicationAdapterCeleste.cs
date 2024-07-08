@@ -120,7 +120,8 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                     GameDataType.SettingValue => GameData.GetSettingValue(reader.ReadString()),
                     GameDataType.CompleteInfoCommand => AreaCompleteInfo.CreateCommand(),
                     GameDataType.ModUrl => GameData.GetModUrl(),
-                    GameDataType.CustomInfoTemplate => !string.IsNullOrWhiteSpace(TasSettings.InfoCustomTemplate) ? TasSettings.InfoCustomTemplate : string.Empty, 
+                    GameDataType.CustomInfoTemplate => !string.IsNullOrWhiteSpace(TasSettings.InfoCustomTemplate) ? TasSettings.InfoCustomTemplate : string.Empty,
+                    GameDataType.SetCommandAutoCompleteOptions => GameData.GetSetCommandAutoCompleteOptions(reader.ReadString()),
                     _ => string.Empty
                 };
                 QueueMessage(MessageID.GameDataResponse, writer => writer.Write(gameData ?? string.Empty));

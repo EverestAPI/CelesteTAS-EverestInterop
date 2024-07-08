@@ -154,6 +154,18 @@ public static class CommunicationWrapper {
         
         return comm!.RequestGameData(GameDataType.ExactGameInfo).Result ?? string.Empty;
     }
+    public static (IEnumerable<string> Final, IEnumerable<string> NonFinal) GetSetCommandAutoCompleteOptions(string currentInput) {
+        if (!Connected) {
+            return ([], []);
+        }
+        
+        var options = comm!.RequestGameData(GameDataType.SetCommandAutoCompleteOptions).Result?.Split('#');
+        if (options is not { Length: 2 }) {
+            return ([], []);
+        }
+        
+        return (options[0].Split(';'), options[1].Split(';'));
+    }
     
     #endregion
     
