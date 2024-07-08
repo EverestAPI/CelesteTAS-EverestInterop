@@ -8,6 +8,7 @@ using Celeste.Mod;
 using Celeste.Mod.Helpers;
 using Monocle;
 using TAS.EverestInterop;
+using TAS.EverestInterop.InfoHUD;
 using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
@@ -190,7 +191,9 @@ public static class GameData {
         var final = new List<string>();
         var nonFinal = new List<string>();
         
-        if (!currentInput.Contains(".")) {
+        var args = currentInput.Split('.');
+        
+        if (args.Length == 1) {
             // Vanilla game settings or mod settings type or a base type
             final.AddRange(typeof(Settings).GetFields().Select(f => f.Name));
             final.AddRange(typeof(SaveData).GetFields().Select(f => f.Name));
@@ -202,7 +205,7 @@ public static class GameData {
             var allTypes = ModUtils.GetTypes();
             var filteredTypes = allTypes 
                 .Where(t => t.FullName != null && t.Namespace != null && ignoredNamespaces.All(ns => !t.Namespace.StartsWith(ns))) // Filter-out types which probably aren't useful
-                .Where(t => t.GetCustomAttribute<CompilerGeneratedAttribute>() == null && !t.FullName.Contains('<') && !t.FullName.Contains('>')) // Filter-out compiler generated types
+                .Where(t => t.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !t.FullName.Contains('<') && !t.FullName.Contains('>')) // Filter-out compiler generated types
                 .Select(t => {
                     // Strip the namespace and add the @modname suffix if the typename isn't unique
                     var currName = t.FullName![(t.Namespace!.Length + 1)..];
@@ -223,8 +226,32 @@ public static class GameData {
                 .ToArray();
                 
             nonFinal.AddRange(filteredTypes);
-        } else {
-            // TODO
+        } else if (InfoCustom.TryParseTypes(args[0], out var types, out _, out _)) {
+            // Let's just assume the first type
+            var type = types[0];
+            // Recurse down to current type
+            for (int i = 1; i < args.Length - 1; i++) {
+                if (type.GetFieldInfo(args[i]) is { } field) {
+                    type = field.FieldType;
+                    continue;
+                }
+                if (type.GetPropertyInfo(args[i]) is { } property && property.GetSetMethod() != null) {
+                    type = property.PropertyType;
+                    continue;
+                }
+                return "#"; // Invalid type
+            }
+            
+            final.AddRange(type.GetAllProperties()
+                .Where(p => p.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !p.Name.Contains('<') && !p.Name.Contains('>')) // Filter-out compiler generated properties
+                .Where(p => p.GetSetMethod() != null) // Require settable property
+                .Select(p => p.Name)
+                .Order());
+            
+            final.AddRange(type.GetAllFieldInfos()
+                .Where(f => f.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !f.Name.Contains('<') && !f.Name.Contains('>')) // Filter-out compiler generated fields
+                .Select(f => f.Name)
+                .Order());
         }
         
         return string.Join(';', final) + '#' + string.Join(';', nonFinal);

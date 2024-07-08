@@ -783,6 +783,7 @@ public sealed class Editor : Drawable {
             var quickEdit = ParseQuickEdit(insert);
             
             return new AutoCompleteMenu.Entry {
+                SearchText = name,
                 DisplayText = name,
                 OnUse = () => {
                     Document.ReplaceLine(Document.Caret.Row, quickEdit.ActualText);
@@ -857,10 +858,13 @@ public sealed class Editor : Drawable {
             if (command != null && command.Value.AutoCompleteEntries.Length >= commandArgs.Length) {
                 int lastArgStart = line.LastIndexOf(args[^1], StringComparison.Ordinal);
                 var entries = command.Value.AutoCompleteEntries[commandArgs.Length - 1](commandArgs);
+                Console.WriteLine($"entries: {entries.Length}");
                 
                 autoCompleteMenu.Entries = entries.Select(entry => new AutoCompleteMenu.Entry {
+                    SearchText = entry.Prefix + entry.Arg,
                     DisplayText = entry.Arg,
                     OnUse = () => {
+                        var insert = entry.Prefix + entry.Arg;
                         var commandLine = Document.Lines[Document.Caret.Row][..(lastArgStart + args[^1].Length)];
                         
                         var selectedQuickEdit = GetQuickEdits()
@@ -870,7 +874,7 @@ public sealed class Editor : Drawable {
                         
                         if (selectedQuickEdit != null) {
                             // Replace the current quick-edit instead
-                            Document.ReplaceRangeInLine(selectedQuickEdit.Row, selectedQuickEdit.MinCol, selectedQuickEdit.MaxCol, entry.Arg);
+                            Document.ReplaceRangeInLine(selectedQuickEdit.Row, selectedQuickEdit.MinCol, selectedQuickEdit.MaxCol, insert);
                             
                             if (entry.Done) {
                                 if (quickEditIndex == GetQuickEdits().Count() - 1) {
@@ -885,27 +889,27 @@ public sealed class Editor : Drawable {
                                 }
                             } else {
                                 Document.Selection.Clear();
-                                Document.Caret.Col = selectedQuickEdit.MinCol + entry.Arg.Length;
+                                Document.Caret.Col = selectedQuickEdit.MinCol + insert.Length;
                                 
                                 UpdateAutoComplete();
                             }
                         } else {
                             if (!entry.Done) {
-                                Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, entry.Arg);
-                                Document.Caret.Col = desiredVisualCol = lastArgStart + entry.Arg.Length;
+                                Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, insert);
+                                Document.Caret.Col = desiredVisualCol = lastArgStart + insert.Length;
                                 Document.Selection.Clear();
                                 
                                 UpdateAutoComplete();
                             } else if (command.Value.AutoCompleteEntries.Length != allArgs.Length - 1) {
                                 // Include separator for next argument
-                                Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, entry.Arg + separatorMatch.Value);
-                                Document.Caret.Col = desiredVisualCol = lastArgStart + entry.Arg.Length;
+                                Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, insert + separatorMatch.Value);
+                                Document.Caret.Col = desiredVisualCol = lastArgStart + insert.Length;
                                 Document.Selection.Clear();
                                 
                                 UpdateAutoComplete();
                             } else {
-                                Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, entry.Arg);
-                                Document.Caret.Col = desiredVisualCol = lastArgStart + entry.Arg.Length;
+                                Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, insert);
+                                Document.Caret.Col = desiredVisualCol = lastArgStart + insert.Length;
                                 Document.Selection.Clear();
                                 
                                 autoCompleteMenu.Visible = false;

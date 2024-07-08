@@ -122,19 +122,24 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 
                 // Gathering data from the game can sometimes take a while (and cause a timeout)
                 Task.Run(() => {
-                    string gameData = gameDataType switch {
-                        GameDataType.ConsoleCommand => GameData.GetConsoleCommand((bool)arg!),
-                        GameDataType.ModInfo => GameData.GetModInfo(),
-                        GameDataType.ExactGameInfo => GameInfo.ExactStudioInfo,
-                        GameDataType.SettingValue => GameData.GetSettingValue((string)arg!),
-                        GameDataType.CompleteInfoCommand => AreaCompleteInfo.CreateCommand(),
-                        GameDataType.ModUrl => GameData.GetModUrl(),
-                        GameDataType.CustomInfoTemplate => !string.IsNullOrWhiteSpace(TasSettings.InfoCustomTemplate) ? TasSettings.InfoCustomTemplate : string.Empty,
-                        GameDataType.SetCommandAutoCompleteOptions => GameData.GetSetCommandAutoCompleteOptions((string)arg!),
-                        _ => string.Empty
-                    };
-                    QueueMessage(MessageID.GameDataResponse, writer => writer.Write(gameData ?? string.Empty));
-                    LogVerbose($"Sent message GameDataResponse: '{gameData}'");
+                    try {
+                        string gameData = gameDataType switch {
+                            GameDataType.ConsoleCommand => GameData.GetConsoleCommand((bool)arg!),
+                            GameDataType.ModInfo => GameData.GetModInfo(),
+                            GameDataType.ExactGameInfo => GameInfo.ExactStudioInfo,
+                            GameDataType.SettingValue => GameData.GetSettingValue((string)arg!),
+                            GameDataType.CompleteInfoCommand => AreaCompleteInfo.CreateCommand(),
+                            GameDataType.ModUrl => GameData.GetModUrl(),
+                            GameDataType.CustomInfoTemplate => !string.IsNullOrWhiteSpace(TasSettings.InfoCustomTemplate) ? TasSettings.InfoCustomTemplate : string.Empty,
+                            GameDataType.SetCommandAutoCompleteOptions => GameData.GetSetCommandAutoCompleteOptions((string)arg!),
+                            _ => string.Empty
+                        };
+                        QueueMessage(MessageID.GameDataResponse, writer => writer.Write(gameData ?? string.Empty));
+                        LogVerbose($"Sent message GameDataResponse: '{gameData}'");
+                    } catch (Exception ex) {
+                        Console.WriteLine(ex);
+                    }
+                    
                 });
                 break;
             

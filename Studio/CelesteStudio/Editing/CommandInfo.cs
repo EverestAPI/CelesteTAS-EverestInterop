@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using CelesteStudio.Communication;
@@ -7,9 +8,10 @@ using CelesteStudio.Util;
 namespace CelesteStudio.Editing;
 
 public struct CommandInfo() {
-    public struct AutoCompleteEntry {
+    public struct AutoCompleteEntry() {
+        public string Prefix = string.Empty;
         public string Arg;
-        public bool Done;
+        public bool Done = true;
         
         public static implicit operator AutoCompleteEntry(string arg) => new() { Arg = arg, Done = true };
     }
@@ -120,6 +122,10 @@ public struct CommandInfo() {
         new CommandInfo { Name = "ExitGame", Insert = "ExitGame", Description = "Used to force the game when recording video with .kkapture to finish recording." },
     ];
     
+    public static void ResetCache() {
+        setCommandCache.Clear();
+    }
+    
     private static AutoCompleteEntry[] GetFilePathEntries(string arg) {
         var documentPath = Studio.Instance.Editor.Document.FilePath;
         if (documentPath == Document.ScratchFile) {
@@ -180,30 +186,21 @@ public struct CommandInfo() {
         return labels;
     }
     
-    private static AutoCompleteEntry[] lastSetCommandEntries = [];
-    private static string[] lastSetCommandArgs = ["<non-exsistant>"];
+    private readonly static Dictionary<string, AutoCompleteEntry[]> setCommandCache = [];
     private static AutoCompleteEntry[] GetSetEntries(string currentInput) {
-        var args = currentInput.Split('.').SkipLast(1).ToArray();
-        Console.WriteLine("args: ");
-        foreach (string se in args)
-        {
-            Console.WriteLine($" - {se}");
+        var args = string.Join('.', currentInput.Split('.').SkipLast(1));
+        if (setCommandCache.TryGetValue(args, out var entries)) {
+            return entries;
         }
-        Console.WriteLine("lastArgs: ");
-        foreach (string se in lastSetCommandArgs)
-        {
-            Console.WriteLine($" * {se}");
-        }
-        if (args.SequenceEqual(lastSetCommandArgs)) {
-            lastSetCommandArgs = args;
-            return lastSetCommandEntries;
-        }
-        lastSetCommandArgs = args;
         
         var (final, nonFinal) = CommunicationWrapper.GetSetCommandAutoCompleteOptions(currentInput);
+
+        var prefix = args.Length > 0 ? args + '.' : args;
+        entries = final.Select(s => new AutoCompleteEntry { Prefix = prefix, Arg = s, Done = true })
+            .Concat(nonFinal.Select(s => new AutoCompleteEntry { Prefix = prefix, Arg = s + '.', Done = false }))
+            .ToArray();
+        setCommandCache[args] = entries;
         
-        return (lastSetCommandEntries = final.Select(s => new AutoCompleteEntry {Arg = s, Done = true})
-            .Concat(nonFinal.Select(s => new AutoCompleteEntry {Arg = s + '.', Done = false}))
-            .ToArray());
+        return entries;
     }
 }

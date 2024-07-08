@@ -162,10 +162,11 @@ public static class CommunicationWrapper {
         // This is pretty heavy computationally, so we need a higher timeout
         var options = comm!.RequestGameData(GameDataType.SetCommandAutoCompleteOptions, currentInput, TimeSpan.FromSeconds(15)).Result?.Split('#');
         if (options is not { Length: 2 }) {
+            Console.WriteLine("bad");
             return ([], []);
         }
         
-        return (options[0].Split(';'), options[1].Split(';'));
+        return (options[0].Split(';', StringSplitOptions.RemoveEmptyEntries), options[1].Split(';', StringSplitOptions.RemoveEmptyEntries));
     }
     
     #endregion

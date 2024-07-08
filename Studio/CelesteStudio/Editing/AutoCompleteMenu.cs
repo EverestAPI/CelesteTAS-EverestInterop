@@ -9,6 +9,7 @@ namespace CelesteStudio.Editing;
 
 public class AutoCompleteMenu {
     public record Entry {
+        public required string SearchText;
         public required string DisplayText;
         public required Action OnUse;
     }
@@ -29,7 +30,7 @@ public class AutoCompleteMenu {
         get => entries;
         set {
             entries = value;
-            shownEntries = Entries.Where(entry => entry.DisplayText.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase)).ToArray();
+            shownEntries = Entries.Where(entry => entry.SearchText.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase)).ToArray();
             if (shownEntries.Length == 0) {
                 visible = false;
                 return;
@@ -52,7 +53,7 @@ public class AutoCompleteMenu {
         get => filter;
         set {
             filter = value;
-            shownEntries = Entries.Where(entry => entry.DisplayText.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase)).ToArray();
+            shownEntries = Entries.Where(entry => entry.SearchText.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase)).ToArray();
             if (shownEntries.Length == 0) {
                 visible = false;
                 return;
