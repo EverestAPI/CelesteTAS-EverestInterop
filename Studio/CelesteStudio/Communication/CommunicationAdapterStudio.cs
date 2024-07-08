@@ -49,7 +49,7 @@ public sealed class CommunicationAdapterStudio(
         switch (messageId) {
             case MessageID.State:
                 var state = StudioState.Deserialize(reader);
-                LogVerbose("Received message State");
+                // LogVerbose("Received message State");
 
                 stateChanged(state);
                 break;
@@ -117,29 +117,34 @@ public sealed class CommunicationAdapterStudio(
         LogVerbose($"Sent message RecordTAS: '{fileName}'");
     }
 
-    private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(1);
-    public async Task<string?> RequestGameData(GameDataType gameDataType, object? arg = null) {
+    private static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromSeconds(1);
+    public async Task<string?> RequestGameData(GameDataType gameDataType, object? arg = null, TimeSpan? timeout = null) {
         gameData = null;
         WriteMessageNow(MessageID.RequestGameData, writer => {
             writer.Write((byte)gameDataType);
             
             switch (gameDataType) {
                 case GameDataType.ConsoleCommand:
-                    writer.Write((bool) arg!);
+                    writer.Write((bool)arg!);
                     break;
                 case GameDataType.SettingValue:
-                    writer.Write((string) arg!);
+                    writer.Write((string)arg!);
+                    break;
+                case GameDataType.SetCommandAutoCompleteOptions:
+                    writer.Write((string)arg!);
                     break;
             }
         });
-        LogVerbose($"Sent message RequestGameData: {gameDataType} ('{arg}')");
+        LogVerbose($"Sent message RequestGameData: {gameDataType} ('{arg ?? "<null>"}')");
         
         // Wait for data to arrive
+        timeout ??= DefaultRequestTimeout;
         var start = DateTime.UtcNow;
         while (gameData == null) {
             await Task.Delay(UpdateRate).ConfigureAwait(false);
             
-            if (DateTime.UtcNow - start >= RequestTimeout) {
+            if (DateTime.UtcNow - start >= timeout) {
+                LogError("Timed-out while requesting data from game");
                 return null;
             }
         }
@@ -148,7 +153,7 @@ public sealed class CommunicationAdapterStudio(
     }
     
     protected override void LogInfo(string message) => Console.WriteLine($"[Info] Studio Communication @ Studio: {message}");
-    protected override void LogVerbose(string message) {} /*=> Console.WriteLine($"[Verbose] Studio Communication @ Studio: {message}");*/
+    protected override void LogVerbose(string message) => Console.WriteLine($"[Verbose] Studio Communication @ Studio: {message}");
     protected override void LogError(string message) => Console.Error.WriteLine($"[Error] Studio Communication @ Studio: {message}");
 }
 

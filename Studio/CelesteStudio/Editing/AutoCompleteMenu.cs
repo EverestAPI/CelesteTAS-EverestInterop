@@ -204,6 +204,12 @@ public class AutoCompleteMenu {
         graphics.SetClip(new RectangleF(boxX, boxY, boxW, boxH));
         float yOff = EntryPadding - scrollOffset * (font.LineHeight() + EntryPadding);
         foreach (var entry in shownEntries) {
+            // Cull off-screen entries
+            if (y + yOff + font.LineHeight() + EntryPadding < boxY || y + yOff > boxY + boxH) {
+                yOff += font.LineHeight() + EntryPadding;
+                continue;
+            }
+            
             graphics.DrawText(font, Settings.Instance.Theme.AutoCompleteFg, x + EntryPadding, y + yOff, entry.DisplayText);
             yOff += font.LineHeight() + EntryPadding;
         }

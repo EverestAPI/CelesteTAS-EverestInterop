@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Celeste;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using Celeste; 
 using Celeste.Mod;
 using Celeste.Mod.Helpers;
 using Monocle;
-using TAS.EverestInterop.InfoHUD;
+using TAS.EverestInterop;
 using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
@@ -156,11 +158,39 @@ public static class GameData {
         return string.Empty;
     }
     
+    // Sorts types by namespace into Celeste -> Monocle -> other (alphabetically)
+    // Inside the namespace it's sorted alphabetically
+    private class NamespaceComparer : IComparer<(string Name, Type Type)> {
+        public int Compare((string Name, Type Type) x, (string Name, Type Type) y) {
+            if (x.Type == null || y.Type == null || x.Type.Namespace == null || y.Type.Namespace == null) {
+                // Should never happen to use anyway
+                return 0;
+            }
+            
+            int namespaceCompare = CompareNamespace(x.Type.Namespace, y.Type.Namespace);
+            if (namespaceCompare != 0) {
+                return namespaceCompare;
+            }
+            
+            return StringComparer.Ordinal.Compare(x.Name, y.Name); 
+        }
+        
+        private int CompareNamespace(string x, string y) {
+            if (x.StartsWith("Celeste") && y.StartsWith("Celeste")) return 0;
+            if (x.StartsWith("Celeste")) return -1;
+            if (y.StartsWith("Celeste")) return  1;
+            if (x.StartsWith("Monocle") && y.StartsWith("Monocle")) return 0;
+            if (x.StartsWith("Monocle")) return -1;
+            if (y.StartsWith("Monocle")) return  1;
+            return StringComparer.Ordinal.Compare(x, y);
+        }
+    }
+    
     public static string GetSetCommandAutoCompleteOptions(string currentInput) {
         var final = new List<string>();
         var nonFinal = new List<string>();
         
-        if (currentInput.Contains(".")) {
+        if (!currentInput.Contains(".")) {
             // Vanilla game settings or mod settings type or a base type
             final.AddRange(typeof(Settings).GetFields().Select(f => f.Name));
             final.AddRange(typeof(SaveData).GetFields().Select(f => f.Name));
@@ -168,7 +198,31 @@ public static class GameData {
             
             nonFinal.AddRange(Everest.Modules.Where(mod => mod.SettingsType != null).Select(mod => mod.Metadata.Name));
             
-            nonFinal.AddRange(InfoCustom.AllTypes.Keys);
+            string[] ignoredNamespaces = ["System", "StudioCommunication", "TAS", "SimplexNoise", "FMOD", "MonoMod"];
+            var allTypes = ModUtils.GetTypes();
+            var filteredTypes = allTypes 
+                .Where(t => t.FullName != null && t.Namespace != null && ignoredNamespaces.All(ns => !t.Namespace.StartsWith(ns))) // Filter-out types which probably aren't useful
+                .Where(t => t.GetCustomAttribute<CompilerGeneratedAttribute>() == null && !t.FullName.Contains('<') && !t.FullName.Contains('>')) // Filter-out compiler generated types
+                .Select(t => {
+                    // Strip the namespace and add the @modname suffix if the typename isn't unique
+                    var currName = t.FullName![(t.Namespace!.Length + 1)..];
+                    foreach (var type in allTypes) {
+                        if (type.FullName == null || type.Namespace == null) {
+                            continue;
+                        }
+                        
+                        var otherName = type.FullName![(type.Namespace.Length + 1)..];
+                        if (t != type && currName == otherName) {
+                            return ($"{currName}@{ConsoleEnhancements.GetModName(t)} ", t);
+                        }
+                    }
+                    return (currName, t);
+                })
+                .Order(new NamespaceComparer())
+                .Select(pair => pair.Item1)
+                .ToArray();
+                
+            nonFinal.AddRange(filteredTypes);
         } else {
             // TODO
         }

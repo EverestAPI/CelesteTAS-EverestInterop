@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Celeste;
 using Celeste.Mod;
 using StudioCommunication;
@@ -111,22 +112,30 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
             
             case MessageID.RequestGameData:
                 var gameDataType = (GameDataType)reader.ReadByte();
-                LogVerbose($"Received message RequestGameData: '{gameDataType}'");
-
-                string gameData = gameDataType switch {
-                    GameDataType.ConsoleCommand => GameData.GetConsoleCommand(reader.ReadBoolean()),
-                    GameDataType.ModInfo => GameData.GetModInfo(),
-                    GameDataType.ExactGameInfo => GameInfo.ExactStudioInfo,
-                    GameDataType.SettingValue => GameData.GetSettingValue(reader.ReadString()),
-                    GameDataType.CompleteInfoCommand => AreaCompleteInfo.CreateCommand(),
-                    GameDataType.ModUrl => GameData.GetModUrl(),
-                    GameDataType.CustomInfoTemplate => !string.IsNullOrWhiteSpace(TasSettings.InfoCustomTemplate) ? TasSettings.InfoCustomTemplate : string.Empty,
-                    GameDataType.SetCommandAutoCompleteOptions => GameData.GetSetCommandAutoCompleteOptions(reader.ReadString()),
-                    _ => string.Empty
+                object? arg = gameDataType switch {
+                    GameDataType.ConsoleCommand => reader.ReadBoolean(),
+                    GameDataType.SettingValue => reader.ReadString(),
+                    GameDataType.SetCommandAutoCompleteOptions => reader.ReadString(),
+                    _ => null,
                 };
-                QueueMessage(MessageID.GameDataResponse, writer => writer.Write(gameData ?? string.Empty));
-                LogVerbose($"Sent message GameDataResponse: '{gameData}'");
+                LogVerbose($"Received message RequestGameData: '{gameDataType}' ('{arg ?? "<null>"}')");
                 
+                // Gathering data from the game can sometimes take a while (and cause a timeout)
+                Task.Run(() => {
+                    string gameData = gameDataType switch {
+                        GameDataType.ConsoleCommand => GameData.GetConsoleCommand((bool)arg!),
+                        GameDataType.ModInfo => GameData.GetModInfo(),
+                        GameDataType.ExactGameInfo => GameInfo.ExactStudioInfo,
+                        GameDataType.SettingValue => GameData.GetSettingValue((string)arg!),
+                        GameDataType.CompleteInfoCommand => AreaCompleteInfo.CreateCommand(),
+                        GameDataType.ModUrl => GameData.GetModUrl(),
+                        GameDataType.CustomInfoTemplate => !string.IsNullOrWhiteSpace(TasSettings.InfoCustomTemplate) ? TasSettings.InfoCustomTemplate : string.Empty,
+                        GameDataType.SetCommandAutoCompleteOptions => GameData.GetSetCommandAutoCompleteOptions((string)arg!),
+                        _ => string.Empty
+                    };
+                    QueueMessage(MessageID.GameDataResponse, writer => writer.Write(gameData ?? string.Empty));
+                    LogVerbose($"Sent message GameDataResponse: '{gameData}'");
+                });
                 break;
             
             default:
@@ -137,7 +146,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
     
     public void WriteState(StudioState state) {
         QueueMessage(MessageID.State, writer => state.Serialize(writer));
-        LogVerbose("Sent message State");
+        // LogVerbose("Sent message State");
     }
     public void WriteUpdateLines(Dictionary<int, string> updateLines) {
         QueueMessage(MessageID.UpdateLines, writer => BinaryHelper.SerializeDictionary(updateLines, writer));
