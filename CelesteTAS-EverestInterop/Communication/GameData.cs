@@ -6,12 +6,14 @@ using System.Runtime.CompilerServices;
 using Celeste; 
 using Celeste.Mod;
 using Celeste.Mod.Helpers;
+using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
+using Type = System.Type;
 
 namespace TAS.Communication;
 
@@ -242,18 +244,32 @@ public static class GameData {
                 return "#"; // Invalid type
             }
             
-            final.AddRange(type.GetAllProperties()
+            var properties = type.GetAllProperties()
                 .Where(p => p.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !p.Name.Contains('<') && !p.Name.Contains('>')) // Filter-out compiler generated properties
                 .Where(p => p.GetSetMethod() != null) // Require settable property
-                .Select(p => p.Name)
-                .Order());
-            
-            final.AddRange(type.GetAllFieldInfos()
+                .OrderBy(p => p.Name);
+            var fields = type.GetAllFieldInfos()
                 .Where(f => f.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !f.Name.Contains('<') && !f.Name.Contains('>')) // Filter-out compiler generated fields
-                .Select(f => f.Name)
-                .Order());
+                .OrderBy(f => f.Name);
+            
+            foreach (var property in properties) {
+                if (IsFinal(property.PropertyType)) {
+                    final.Add(property.Name);
+                } else {
+                    nonFinal.Add(property.Name);
+                }
+            }
+            foreach (var field in fields) {
+                if (IsFinal(field.FieldType)) {
+                    final.Add(field.Name);
+                } else {
+                    nonFinal.Add(field.Name);
+                }
+            }
         }
         
         return string.Join(';', final) + '#' + string.Join(';', nonFinal);
+        
+        static bool IsFinal(Type type) => type == typeof(string) || type == typeof(Vector2) || type == typeof(Random) || type.IsEnum || type.IsPrimitive;
     }
 }

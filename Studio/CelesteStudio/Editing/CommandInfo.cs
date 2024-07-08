@@ -51,7 +51,9 @@ public struct CommandInfo() {
             Description = "Sets the specified setting to the specified value.",
             Insert = $"Set{separator}[0;(Mod).Setting]{separator}[1;Value]",
             AutoCompleteEntries = [
-                args => GetSetEntries(args[0])
+                args => GetSetEntries(args[0]),
+                _ => [],
+                _ => [],
             ]
         },
         new CommandInfo { Name = "Invoke", Insert = $"Invoke{separator}[0;Entity.Method]{separator}[1;Parameter]", Description = "Similar to the set command, but used to invoke the method"},
