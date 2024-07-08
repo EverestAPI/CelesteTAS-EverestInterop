@@ -3,12 +3,16 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Text;
 using System.Threading;
+using Celeste;
 using Celeste.Mod;
 using StudioCommunication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Input;
+using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
 
@@ -83,6 +87,28 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 }
                 break;
             
+            case MessageID.SetCustomInfoTemplate:
+                var customInfoTemplate = reader.ReadString();
+                LogVerbose($"Received message SetCustomInfoTemplate: '{customInfoTemplate}'");
+                
+                TasSettings.InfoCustomTemplate = customInfoTemplate;
+                GameInfo.Update();
+                break;
+            
+            case MessageID.ClearWatchEntityInfo:
+                LogVerbose("Received message ClearWatchEntityInfo");
+                
+                InfoWatchEntity.ClearWatchEntities();
+                GameInfo.Update();
+                break;
+            
+            case MessageID.RecordTAS:
+                var fileName = reader.ReadString();
+                LogVerbose($"Received message RecordTAS: '{fileName}'");
+                
+                ProcessRecordTAS(fileName);
+                break;
+            
             case MessageID.RequestGameData:
                 var gameDataType = (GameDataType)reader.ReadByte();
                 LogVerbose($"Received message RequestGameData: '{gameDataType}'");
@@ -94,6 +120,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                     GameDataType.SettingValue => GameData.GetSettingValue(reader.ReadString()),
                     GameDataType.CompleteInfoCommand => AreaCompleteInfo.CreateCommand(),
                     GameDataType.ModUrl => GameData.GetModUrl(),
+                    GameDataType.CustomInfoTemplate => !string.IsNullOrWhiteSpace(TasSettings.InfoCustomTemplate) ? TasSettings.InfoCustomTemplate : string.Empty, 
                     _ => string.Empty
                 };
                 QueueMessage(MessageID.GameDataResponse, writer => writer.Write(gameData ?? string.Empty));
@@ -122,6 +149,43 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
     public void WriteRecordingFailed(RecordingFailedReason reason) {
         QueueMessage(MessageID.RecordingFailed, writer => writer.Write((byte)reason));
         LogVerbose($"Sent message RecordingFailed: {reason}");
+    }
+    
+    private void ProcessRecordTAS(string fileName) {
+        if (!TASRecorderUtils.Installed) {
+            WriteRecordingFailed(RecordingFailedReason.TASRecorderNotInstalled);
+            return;
+        }
+        if (!TASRecorderUtils.FFmpegInstalled) {
+            WriteRecordingFailed(RecordingFailedReason.FFmpegNotInstalled);
+            return;
+        }
+        
+        Manager.Controller.RefreshInputs(enableRun: true);
+        if (RecordingCommand.RecordingTimes.IsNotEmpty()) {
+            AbortTas("Can't use StartRecording/StopRecording with \"Record TAS\"");
+            return;
+        }
+        Manager.NextStates |= States.Enable;
+        
+        int totalFrames = Manager.Controller.Inputs.Count;
+        if (totalFrames <= 0) return;
+        
+        TASRecorderUtils.StartRecording(fileName);
+        TASRecorderUtils.SetDurationEstimate(totalFrames);
+        
+        if (!Manager.Controller.Commands.TryGetValue(0, out var commands)) return;
+        bool startsWithConsoleLoad = commands.Any(c => 
+            c.Attribute.Name.Equals("Console", StringComparison.OrdinalIgnoreCase) &&
+            c.Args.Length >= 1 &&
+            ConsoleCommand.LoadCommandRegex.Match(c.Args[0].ToLower()) is {Success: true});
+
+        if (startsWithConsoleLoad) {
+            // Restart the music when we enter the level
+            Audio.SetMusic(null, startPlaying: false, allowFadeOut: false);
+            Audio.SetAmbience(null, startPlaying: false);
+            Audio.BusStopAll(Buses.GAMEPLAY, immediate: true);
+        }
     }
     
     protected override void LogInfo(string message) => Logger.Log(LogLevel.Info, "CelesteTAS/StudioCom", message);

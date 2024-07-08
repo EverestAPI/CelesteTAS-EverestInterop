@@ -48,6 +48,15 @@ public enum MessageID : byte {
     /// Sends a settings change to Celeste
     SetSetting = 0x23,
     
+    /// Sends a new custom info template to Celeste
+    SetCustomInfoTemplate = 0x24,
+    
+    /// Clears the currently watched entities in Celeste
+    ClearWatchEntityInfo = 0x25,
+    
+    /// Starts recording the current TAS with TAS Recorder
+    RecordTAS = 0x26,
+    
     #endregion
 }
 
@@ -154,6 +163,7 @@ public enum GameDataType : byte {
     ModInfo,
     ModUrl,
     ExactGameInfo,
+    CustomInfoTemplate,
 }
 
 public enum RecordingFailedReason : byte {

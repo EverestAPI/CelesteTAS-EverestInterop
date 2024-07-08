@@ -121,22 +121,38 @@ public static class CommunicationWrapper {
     public static int CurrentFrameInTas => Connected ? state.CurrentFrameInTas : -1;
     public static int TotalFrames => Connected ? state.TotalFrames : -1;
     public static int SaveStateLine => Connected ? state.SaveStateLine : -1;
-    public static States TasStates => Connected ? (States) state.tasStates : States.None;
+    public static States TasStates => Connected ? state.tasStates : States.None;
     public static string GameInfo => Connected ? state.GameInfo : string.Empty;
     public static string LevelName => Connected ? state.LevelName : string.Empty;
     public static string ChapterTime => Connected ? state.ChapterTime : string.Empty;
     
     public static string GetConsoleCommand(bool simple) {
-        return comm?.RequestGameData(GameDataType.ConsoleCommand, simple).Result ?? string.Empty;
+        if (!Connected) {
+            return string.Empty;
+        }
+        
+        return comm!.RequestGameData(GameDataType.ConsoleCommand, simple).Result ?? string.Empty;
     }
     public static string GetModURL() {
-        return comm?.RequestGameData(GameDataType.ModUrl).Result ?? string.Empty;
+        if (!Connected) {
+            return string.Empty;
+        }
+        
+        return comm!.RequestGameData(GameDataType.ModUrl).Result ?? string.Empty;
     }
     public static string GetModInfo() {
-        return comm?.RequestGameData(GameDataType.ModInfo).Result ?? string.Empty;
+        if (!Connected) {
+            return string.Empty;
+        }
+        
+        return comm!.RequestGameData(GameDataType.ModInfo).Result ?? string.Empty;
     }
     public static string GetExactGameInfo() {
-        return comm?.RequestGameData(GameDataType.ExactGameInfo).Result ?? string.Empty;
+        if (!Connected) {
+            return string.Empty;
+        }
+        
+        return comm!.RequestGameData(GameDataType.ExactGameInfo).Result ?? string.Empty;
     }
     
     #endregion
@@ -144,20 +160,42 @@ public static class CommunicationWrapper {
     #region Actions
     
     public static void CopyCustomInfoTemplateToClipboard() {
-        // stub
+        if (!Connected) {
+            return;
+        }
+        
+        var customInfoTemplate = comm!.RequestGameData(GameDataType.CustomInfoTemplate).Result;
+        Clipboard.Instance.Clear();
+        Clipboard.Instance.Text = customInfoTemplate;
     }
     public static void SetCustomInfoTemplateFromClipboard() {
-        // stub
+        if (!Connected) {
+            return;
+        }
+        
+        comm!.SendCustomInfoTemplate(Clipboard.Instance.Text);
     }
     public static void ClearCustomInfoTemplate() {
-        // stub
+        if (!Connected) {
+            return;
+        }
+        
+        comm!.SendCustomInfoTemplate(string.Empty);
     }
     public static void ClearWatchEntityInfo() {
-        // stub
+        if (!Connected) {
+            return;
+        }
+        
+        comm!.SendClearWatchEntityInfo();
     }
     
     public static void RecordTAS(string fileName) {
-        // stub
+        if (!Connected) {
+            return;
+        }
+        
+        comm!.SendRecordTAS(fileName);
     }
     
     #endregion
@@ -175,7 +213,11 @@ public static class CommunicationWrapper {
     }
 
     private static bool GetBool(string settingName) {
-        if (comm?.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
+        if (!Connected) {
+            return false;
+        }
+        
+        if (comm!.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
             bool.TryParse(settingValue, out bool value))
         {
             return value;
@@ -184,7 +226,11 @@ public static class CommunicationWrapper {
         return false;
     }
     private static int GetInt(string settingName, int defaultValue) {
-        if (comm?.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
+        if (!Connected) {
+            return defaultValue;
+        }
+        
+        if (comm!.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
             int.TryParse(settingValue, out int value)) 
         {
             return value;
@@ -193,7 +239,11 @@ public static class CommunicationWrapper {
         return defaultValue;
     }
     private static float GetFloat(string settingName, float defaultValue) {
-        if (comm?.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
+        if (!Connected) {
+            return defaultValue;
+        }
+        
+        if (comm!.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
             float.TryParse(settingValue, out float value))
         {
             return value;

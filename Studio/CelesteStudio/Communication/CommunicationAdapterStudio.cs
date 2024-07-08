@@ -104,6 +104,18 @@ public sealed class CommunicationAdapterStudio(
         });
         LogVerbose($"Sent message SetSetting: '{settingName}' = '{value}");
     }
+    public void SendCustomInfoTemplate(string customInfoTemplate) {
+        QueueMessage(MessageID.SetCustomInfoTemplate, writer => writer.Write(customInfoTemplate));
+        LogVerbose($"Sent message SetCustomInfoTemplate: '{customInfoTemplate}'");
+    }
+    public void SendClearWatchEntityInfo() {
+        QueueMessage(MessageID.ClearWatchEntityInfo, _ => {});
+        LogVerbose("Sent message ClearWatchEntityInfo");
+    }
+    public void SendRecordTAS(string fileName) {
+        QueueMessage(MessageID.RecordTAS, writer => writer.Write(fileName));
+        LogVerbose($"Sent message RecordTAS: '{fileName}'");
+    }
 
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(1);
     public async Task<string?> RequestGameData(GameDataType gameDataType, object? arg = null) {
