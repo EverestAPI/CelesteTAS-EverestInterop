@@ -1401,9 +1401,15 @@ public sealed class Editor : Drawable {
         Document.Selection.Clear();
     }
     
-    private void OnUndo() => Document.Undo();
-
-    private void OnRedo() => Document.Redo();
+    private void OnUndo() {
+        Document.Selection.Clear();
+        Document.Undo();
+    }
+    
+    private void OnRedo() {
+        Document.Selection.Clear();
+        Document.Redo();
+    }
     
     private void OnCut() {
         using var __ = Document.Update();
