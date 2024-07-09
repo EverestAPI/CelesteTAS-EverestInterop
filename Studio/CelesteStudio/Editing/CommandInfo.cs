@@ -56,7 +56,6 @@ public struct CommandInfo() {
             AutoCompleteEntries = [
                 args => GetSetEntries(args[0]),
                 args => GetParameterEntries("Set", args[0]),
-                args => GetParameterEntries("Set", args[0]),
             ]
         },
         new CommandInfo { 

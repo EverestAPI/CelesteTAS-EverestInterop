@@ -868,6 +868,9 @@ public sealed class Editor : Drawable {
                     OnUse = () => {
                         var insert = entry.Prefix + entry.Arg;
                         var commandLine = Document.Lines[Document.Caret.Row][..(lastArgStart + args[^1].Length)];
+                        if (allArgs.Length != args.Length) {
+                            commandLine += separatorMatch.Value;
+                        }
                         
                         var selectedQuickEdit = GetQuickEdits()
                             .FirstOrDefault(anchor => Document.Caret.Row == anchor.Row &&
@@ -902,10 +905,10 @@ public sealed class Editor : Drawable {
                                 Document.Selection.Clear();
                                 
                                 UpdateAutoComplete();
-                            } else if (command.Value.AutoCompleteEntries.Length != allArgs.Length - 1) {
+                            } else if (entry.HasNextArg ?? command.Value.AutoCompleteEntries.Length != allArgs.Length - 1) {
                                 // Include separator for next argument
                                 Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, insert + separatorMatch.Value);
-                                Document.Caret.Col = desiredVisualCol = lastArgStart + insert.Length;
+                                Document.Caret.Col = desiredVisualCol = lastArgStart + insert.Length + separatorMatch.Value.Length;
                                 Document.Selection.Clear();
                                 
                                 UpdateAutoComplete();
