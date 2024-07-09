@@ -128,9 +128,8 @@ public sealed class CommunicationAdapterStudio(
                     writer.Write((bool)arg!);
                     break;
                 case GameDataType.SettingValue:
-                    writer.Write((string)arg!);
-                    break;
                 case GameDataType.SetCommandAutoCompleteEntries:
+                case GameDataType.ParameterAutoCompleteEntries:
                     writer.Write((string)arg!);
                     break;
             }

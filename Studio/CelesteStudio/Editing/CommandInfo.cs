@@ -53,8 +53,8 @@ public struct CommandInfo() {
             Insert = $"Set{separator}[0;(Mod).Setting]{separator}[1;Value]",
             AutoCompleteEntries = [
                 args => GetSetEntries(args[0]),
-                _ => [],
-                _ => [],
+                args => GetParameterEntries("Set", args[0]),
+                args => GetParameterEntries("Set", args[0]),
             ]
         },
         new CommandInfo { Name = "Invoke", Insert = $"Invoke{separator}[0;Entity.Method]{separator}[1;Parameter]", Description = "Similar to the set command, but used to invoke the method"},
@@ -191,29 +191,48 @@ public struct CommandInfo() {
     }
     
     private static readonly Dictionary<string, AutoCompleteEntry[]> setCommandCache = [];
-    private static AutoCompleteEntry[] GetSetEntries(string currentInput) {
-        var args = string.Join('.', currentInput.Split('.').SkipLast(1));
+    private static AutoCompleteEntry[] GetSetEntries(string argsText) {
+        var args = string.Join('.', argsText.Split('.').SkipLast(1));
         if (setCommandCache.TryGetValue(args, out var entries)) {
             return entries;
         }
         
         var prefix = args.Length > 0 ? args + '.' : args;
-        entries = CommunicationWrapper.GetSetCommandAutoCompleteEntries(currentInput)
+        entries = CommunicationWrapper.GetSetCommandAutoCompleteEntries(argsText)
             .Select(entry => {
                 bool final = entry[0] == '!';
                 var parts = entry.Split('#');
-                var memberName = parts[0][1..];
-                var memberExtra = parts[1];
-                var memberType = parts[2];
                 return new AutoCompleteEntry {
                     Prefix = prefix, 
-                    Arg = memberName + (final ? "" : "."),
-                    Extra = memberExtra,
+                    Arg = parts[0][1..] + (final ? "" : "."),
+                    Extra = parts[1],
                     Done = final
                 };
             })
             .ToArray();
         setCommandCache[args] = entries;
+        
+        return entries;
+    }
+    
+    private static readonly Dictionary<string, AutoCompleteEntry[]> parameterCache = [];
+    private static AutoCompleteEntry[] GetParameterEntries(string commandType, string argsText, int index = 0) {
+        var args = string.Join('.', argsText.Split('.'));
+        if (parameterCache.TryGetValue(args, out var entries)) {
+            return entries;
+        }
+        
+        entries = CommunicationWrapper.GetParameterAutoCompleteEntries($"{commandType};{argsText};{index}")
+            .Select(entry => {
+                var parts = entry.Split('#');
+                return new AutoCompleteEntry {
+                    Arg = parts[0][1..],
+                    Extra = parts[1],
+                    Done = entry[0] == '!'
+                };
+            })
+            .ToArray();
+        parameterCache[args] = entries;
         
         return entries;
     }

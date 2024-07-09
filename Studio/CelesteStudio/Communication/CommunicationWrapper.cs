@@ -154,13 +154,26 @@ public static class CommunicationWrapper {
         
         return comm!.RequestGameData(GameDataType.ExactGameInfo).Result ?? string.Empty;
     }
-    public static IEnumerable<string> GetSetCommandAutoCompleteEntries(string currentInput) {
+    public static IEnumerable<string> GetSetCommandAutoCompleteEntries(string argsText) {
         if (!Connected) {
             return [];
         }
         
         // This is pretty heavy computationally, so we need a higher timeout
-        var entries = comm!.RequestGameData(GameDataType.SetCommandAutoCompleteEntries, currentInput, TimeSpan.FromSeconds(15)).Result;
+        var entries = comm!.RequestGameData(GameDataType.SetCommandAutoCompleteEntries, argsText, TimeSpan.FromSeconds(15)).Result;
+        if (entries == null) {
+            return [];
+        }
+        
+        return entries.Split(';', StringSplitOptions.RemoveEmptyEntries);
+    }
+    public static IEnumerable<string> GetParameterAutoCompleteEntries(string argsText) {
+        if (!Connected) {
+            return [];
+        }
+        
+        // This is pretty heavy computationally, so we need a higher timeout
+        var entries = comm!.RequestGameData(GameDataType.ParameterAutoCompleteEntries, argsText, TimeSpan.FromSeconds(15)).Result;
         if (entries == null) {
             return [];
         }

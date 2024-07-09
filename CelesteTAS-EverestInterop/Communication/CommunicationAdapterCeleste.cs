@@ -114,8 +114,9 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 var gameDataType = (GameDataType)reader.ReadByte();
                 object? arg = gameDataType switch {
                     GameDataType.ConsoleCommand => reader.ReadBoolean(),
-                    GameDataType.SettingValue => reader.ReadString(),
-                    GameDataType.SetCommandAutoCompleteEntries => reader.ReadString(),
+                    GameDataType.SettingValue or
+                    GameDataType.SetCommandAutoCompleteEntries or
+                    GameDataType.ParameterAutoCompleteEntries => reader.ReadString(),
                     _ => null,
                 };
                 LogVerbose($"Received message RequestGameData: '{gameDataType}' ('{arg ?? "<null>"}')");
@@ -132,6 +133,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                             GameDataType.ModUrl => GameData.GetModUrl(),
                             GameDataType.CustomInfoTemplate => !string.IsNullOrWhiteSpace(TasSettings.InfoCustomTemplate) ? TasSettings.InfoCustomTemplate : string.Empty,
                             GameDataType.SetCommandAutoCompleteEntries => GameData.GetSetCommandAutoCompleteEntries((string)arg!),
+                            GameDataType.ParameterAutoCompleteEntries => GameData.GetParameterAutoCompleteEntries((string)arg!),
                             _ => string.Empty
                         };
                         QueueMessage(MessageID.GameDataResponse, writer => writer.Write(gameData ?? string.Empty));
