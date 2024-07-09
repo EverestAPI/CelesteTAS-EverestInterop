@@ -213,7 +213,7 @@ public static class GameData {
                 .Where(mod => mod.SettingsType.GetAllFieldInfos().Any() || mod.SettingsType.GetAllProperties().Any(p => p.GetSetMethod() != null)) // Require at least 1 settable field / property
                 .Select(mod => new AutoCompleteEntry { Final = true, MemberName = mod.Metadata.Name, MemberType = "<ModSetting>" }));
             
-            string[] ignoredNamespaces = ["System", "StudioCommunication", "TAS", "SimplexNoise", "FMOD", "MonoMod"];
+            string[] ignoredNamespaces = ["System", "StudioCommunication", "TAS", "SimplexNoise", "FMOD", "MonoMod", "Snowberry"];
             var allTypes = ModUtils.GetTypes();
             var filteredTypes = allTypes 
                 .Where(t => t.FullName != null && t.Namespace != null && ignoredNamespaces.All(ns => !t.Namespace.StartsWith(ns))) // Filter-out types which probably aren't useful
@@ -258,16 +258,49 @@ public static class GameData {
                 .Where(p => p.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !p.Name.Contains('<') && !p.Name.Contains('>')) // Filter-out compiler generated properties
                 .Where(p => p.GetSetMethod() != null) // Require settable property
                 .OrderBy(p => p.Name)
-                .Select(p => new AutoCompleteEntry { Final = IsFinal(p.PropertyType), MemberName = p.Name, MemberType = p.PropertyType.FullName }));
+                .Select(p => new AutoCompleteEntry { Final = IsFinal(p.PropertyType), MemberName = p.Name, MemberType = CSharpTypeName(p.PropertyType) }));
             
             entries.AddRange(type.GetAllFieldInfos()
                 .Where(f => f.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !f.Name.Contains('<') && !f.Name.Contains('>')) // Filter-out compiler generated fields
                 .OrderBy(f => f.Name)
-                .Select(f => new AutoCompleteEntry { Final = IsFinal(f.FieldType), MemberName = f.Name, MemberType = f.FieldType.FullName }));
+                .Select(f => new AutoCompleteEntry { Final = IsFinal(f.FieldType), MemberName = f.Name, MemberType = CSharpTypeName(f.FieldType) }));
         }
         
         return string.Join(';', entries.Select(entry => $"{(entry.Final ? "!" : ".")}{entry.MemberName}#{entry.MemberType}"));
         
         static bool IsFinal(Type type) => type == typeof(string) || type == typeof(Vector2) || type == typeof(Random) || type.IsEnum || type.IsPrimitive;
+    }
+    
+    private static readonly Dictionary<Type, string> shorthandMap = new() {
+        { typeof(bool), "bool" },
+        { typeof(byte), "byte" },
+        { typeof(char), "char" },
+        { typeof(decimal), "decimal" },
+        { typeof(double), "double" },
+        { typeof(float), "float" },
+        { typeof(int), "int" },
+        { typeof(long), "long" },
+        { typeof(sbyte), "sbyte" },
+        { typeof(short), "short" },
+        { typeof(string), "string" },
+        { typeof(uint), "uint" },
+        { typeof(ulong), "ulong" },
+        { typeof(ushort), "ushort" },
+    };
+    private static string CSharpTypeName(Type type, bool isOut = false) {
+        if (type.IsByRef) {
+            return $"{(isOut ? "out" : "ref")} {CSharpTypeName(type.GetElementType())}";
+        }
+        if (type.IsGenericType) {
+            if (type.GetGenericTypeDefinition() == typeof(Nullable<>)) {
+                return $"{CSharpTypeName(Nullable.GetUnderlyingType(type))}?";
+            }
+            return $"{type.Name.Split('`')[0]}<{string.Join(", ", type.GenericTypeArguments.Select(a => CSharpTypeName(a)).ToArray())}>";
+        }
+        if (type.IsArray) {
+            return $"{CSharpTypeName(type.GetElementType())}[]";
+        }
+        
+        return shorthandMap.TryGetValue(type, out string value) ? value : type.Name;
     }
 }

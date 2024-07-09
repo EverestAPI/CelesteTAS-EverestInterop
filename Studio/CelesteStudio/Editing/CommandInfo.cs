@@ -11,6 +11,7 @@ public struct CommandInfo() {
     public struct AutoCompleteEntry() {
         public string Prefix = string.Empty;
         public string Arg;
+        public string Extra = string.Empty;
         public bool Done = true;
         
         public static implicit operator AutoCompleteEntry(string arg) => new() { Arg = arg, Done = true };
@@ -203,7 +204,18 @@ public struct CommandInfo() {
                 bool final = entry[0] == '!';
                 var memberName = entry[1..idx];
                 var memberType = entry[(idx + 1)..];
-                return new AutoCompleteEntry { Prefix = prefix, Arg = memberName + (final ? "." : ""), Done = final };
+                return new AutoCompleteEntry {
+                    Prefix = prefix, 
+                    Arg = memberName + (final ? "." : ""),
+                    Extra = memberType switch {
+                        "<Settings>" => "Settings",
+                        "<SaveData>" => "SaveData",
+                        "<Assists>" => "Assists",
+                        "<ModSetting>" => "ModSetting",
+                        _ => memberType.StartsWith("<NS:") ? memberType["<NS:".Length..^1] : memberType
+                    },
+                    Done = final
+                };
             })
             .ToArray();
         setCommandCache[args] = entries;

@@ -11,6 +11,7 @@ public class AutoCompleteMenu {
     public record Entry {
         public required string SearchText;
         public required string DisplayText;
+        public required string ExtraText;
         public required Action OnUse;
     }
     
@@ -97,7 +98,8 @@ public class AutoCompleteMenu {
     private const float BorderWidth = 2.0f;
     private const float ScrollBarPadding = 5.0f;
     private const float ScrollBarWidth = 20.0f;
-    private const float ScrollBarExtend = 5.0f; 
+    private const float ScrollBarExtend = 5.0f;
+    private const int ExtraPadding = 1;
     
     public PointF MouseLocation;
     public bool DraggingScrollBar { get; private set; } = false;
@@ -172,7 +174,9 @@ public class AutoCompleteMenu {
     public (float X, float Y, float Width, float Height) Measure(Font font, float x, float y, float maxHeight) {
         maxEntries = (int)Math.Floor((maxHeight - EntryPadding) / (font.LineHeight() + EntryPadding));
         
-        float boxW = font.CharWidth() * shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max) + EntryPadding * 2.0f;
+        int maxDisplayLen = shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
+        int maxExtraLen = shownEntries.Select(entry => entry.ExtraText.Length).Aggregate(Math.Max);
+        float boxW = font.CharWidth() * (maxDisplayLen + ExtraPadding + maxExtraLen) + EntryPadding * 2.0f;
         float boxH = (font.LineHeight() + EntryPadding) * Math.Min(shownEntries.Length, maxEntries) + EntryPadding;
         
         // Shown next entries when you can scroll
@@ -198,6 +202,7 @@ public class AutoCompleteMenu {
         float boxX = x;
         float boxY = y;
         (x, y, float boxW, float boxH) = Measure(font, x, y, maxHeight);
+        int maxDisplayLen = shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
         
         graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteBorder, boxX - BorderWidth, boxY - BorderWidth, boxW + BorderWidth * 2.0f, boxH + BorderWidth * 2.0f);
         graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteBg, boxX, boxY, boxW, boxH);
@@ -212,6 +217,7 @@ public class AutoCompleteMenu {
             }
             
             graphics.DrawText(font, Settings.Instance.Theme.AutoCompleteFg, x + EntryPadding, y + yOff, entry.DisplayText);
+            graphics.DrawText(font, Settings.Instance.Theme.AutoCompleteFgExtra, x + EntryPadding + (maxDisplayLen + ExtraPadding) * font.CharWidth(), y + yOff, entry.ExtraText);
             yOff += font.LineHeight() + EntryPadding;
         }
         yOff = EntryPadding - scrollOffset * (font.LineHeight() + EntryPadding);

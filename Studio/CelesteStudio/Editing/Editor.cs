@@ -769,22 +769,23 @@ public sealed class Editor : Drawable {
         foreach (var snippet in Settings.Instance.Snippets) {
             if (string.IsNullOrWhiteSpace(snippet.Shortcut) || !snippet.Enabled)
                 continue;
-            baseAutoCompleteEntries.Add(CreateEntry(snippet.Shortcut, snippet.Insert, []));
+            baseAutoCompleteEntries.Add(CreateEntry(snippet.Shortcut, snippet.Insert, "Snippet", []));
         }
         foreach (var command in CommandInfo.AllCommands) {
             if (command == null)
                 continue;
-            baseAutoCompleteEntries.Add(CreateEntry(command.Value.Name, command.Value.Insert, command.Value.AutoCompleteEntries));
+            baseAutoCompleteEntries.Add(CreateEntry(command.Value.Name, command.Value.Insert, "Command", command.Value.AutoCompleteEntries));
         }
         
         return;
         
-        AutoCompleteMenu.Entry CreateEntry(string name, string insert, Func<string[], CommandInfo.AutoCompleteEntry[]>[] commandAutoCompleteEntries) {
+        AutoCompleteMenu.Entry CreateEntry(string name, string insert, string extra, Func<string[], CommandInfo.AutoCompleteEntry[]>[] commandAutoCompleteEntries) {
             var quickEdit = ParseQuickEdit(insert);
             
             return new AutoCompleteMenu.Entry {
                 SearchText = name,
                 DisplayText = name,
+                ExtraText = extra,
                 OnUse = () => {
                     Document.ReplaceLine(Document.Caret.Row, quickEdit.ActualText);
                     
@@ -863,6 +864,7 @@ public sealed class Editor : Drawable {
                 autoCompleteMenu.Entries = entries.Select(entry => new AutoCompleteMenu.Entry {
                     SearchText = entry.Prefix + entry.Arg,
                     DisplayText = entry.Arg,
+                    ExtraText = entry.Extra,
                     OnUse = () => {
                         var insert = entry.Prefix + entry.Arg;
                         var commandLine = Document.Lines[Document.Caret.Row][..(lastArgStart + args[^1].Length)];
