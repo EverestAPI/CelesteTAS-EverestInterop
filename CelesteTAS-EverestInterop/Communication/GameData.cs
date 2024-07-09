@@ -7,6 +7,7 @@ using Celeste;
 using Celeste.Mod;
 using Celeste.Mod.Helpers;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using Monocle;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
@@ -406,6 +407,17 @@ public static class GameData {
             if (type == typeof(bool)) {
                 yield return new AutoCompleteEntry { Final = true, MemberName = "true", MemberExtra = CSharpTypeName(type) };
                 yield return new AutoCompleteEntry { Final = true, MemberName = "false", MemberExtra = CSharpTypeName(type) };
+            } else if (type == typeof(ButtonBinding)) {
+                foreach (var button in Enum.GetValues<MButtons>()) {
+                    yield return new AutoCompleteEntry { Final = true, MemberName = button.ToString(), MemberExtra = "Mouse" };
+                }
+                foreach (var key in Enum.GetValues<Keys>()) {
+                    if (key is Keys.Left or Keys.Right) {
+                        // These keys can't be used, since the mouse buttons already use that name
+                        continue;
+                    }
+                    yield return new AutoCompleteEntry { Final = true, MemberName = key.ToString(), MemberExtra = "Key" };
+                }
             } else if (type.IsEnum) {
                 foreach (var value in Enum.GetValues(type)) {
                     yield return new AutoCompleteEntry { Final = true, MemberName = value.ToString(), MemberExtra = CSharpTypeName(type) };
@@ -414,7 +426,7 @@ public static class GameData {
         }
     }
     
-    private static bool IsFinal(Type type) => type == typeof(string) || type == typeof(Vector2) || type == typeof(Random) || type.IsEnum || type.IsPrimitive;
+    private static bool IsFinal(Type type) => type == typeof(string) || type == typeof(Vector2) || type == typeof(Random) || type == typeof(ButtonBinding) || type.IsEnum || type.IsPrimitive;
     private static bool IsSettableType(Type type) => !type.IsSameOrSubclassOf(typeof(Delegate));
     private static bool IsInvokableMethod(MethodInfo info) => !info.IsGenericMethod && info.GetParameters().All(p => IsSettableType(p.ParameterType) || p.HasDefaultValue);
     
