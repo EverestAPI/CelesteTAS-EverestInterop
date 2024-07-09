@@ -206,7 +206,7 @@ public struct CommandInfo() {
                 var memberType = entry[(idx + 1)..];
                 return new AutoCompleteEntry {
                     Prefix = prefix, 
-                    Arg = memberName + (final ? "." : ""),
+                    Arg = memberName + (final ? "" : "."),
                     Extra = memberType switch {
                         "<Settings>" => "Settings",
                         "<SaveData>" => "SaveData",

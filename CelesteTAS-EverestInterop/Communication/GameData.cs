@@ -210,31 +210,38 @@ public static class GameData {
             // Mod settings
             entries.AddRange(Everest.Modules
                 .Where(mod => mod.SettingsType != null)
-                .Where(mod => mod.SettingsType.GetAllFieldInfos().Any() || mod.SettingsType.GetAllProperties().Any(p => p.GetSetMethod() != null)) // Require at least 1 settable field / property
+                // Require at least 1 settable field / property
+                .Where(mod => mod.SettingsType.GetAllFieldInfos().Any() || mod.SettingsType.GetAllProperties().Any(p => p.GetSetMethod() != null))
                 .Select(mod => new AutoCompleteEntry { Final = true, MemberName = mod.Metadata.Name, MemberType = "<ModSetting>" }));
             
             string[] ignoredNamespaces = ["System", "StudioCommunication", "TAS", "SimplexNoise", "FMOD", "MonoMod", "Snowberry"];
             var allTypes = ModUtils.GetTypes();
-            var filteredTypes = allTypes 
-                .Where(t => t.FullName != null && t.Namespace != null && ignoredNamespaces.All(ns => !t.Namespace.StartsWith(ns))) // Filter-out types which probably aren't useful
-                .Where(t => t.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !t.FullName.Contains('<') && !t.FullName.Contains('>')) // Filter-out compiler generated types
-                .Select(t => {
-                    // Strip the namespace and add the @modname suffix if the typename isn't unique
-                    var currName = t.FullName![(t.Namespace!.Length + 1)..];
-                    foreach (var type in allTypes) {
-                        if (type.FullName == null || type.Namespace == null) {
+            var filteredTypes = allTypes
+                // Filter-out types which probably aren't useful
+                .Where(t => t.IsClass && t.IsPublic && t.FullName != null && t.Namespace != null && ignoredNamespaces.All(ns => !t.Namespace.StartsWith(ns)))
+                // Filter-out compiler generated types
+                .Where(t => t.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !t.FullName.Contains('<') && !t.FullName.Contains('>'))
+                // Require either an entity, level, session or type with static variables
+                .Where(t => t.IsSameOrSubclassOf(typeof(Entity)) || t.IsSameOrSubclassOf(typeof(Level)) || t.IsSameOrSubclassOf(typeof(Session)) ||
+                            t.GetFields(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public).Any(f => !f.IsInitOnly && !IsUnSettableType(f.FieldType)) ||
+                            t.GetProperties(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public).Any(p => !IsUnSettableType(p.PropertyType) && p.GetSetMethod() != null))
+                // Strip the namespace and add the @modname suffix if the typename isn't unique
+                .Select(currType => {
+                    var currName = CSharpTypeName(currType);
+                    foreach (var otherType in allTypes) {
+                        if (otherType.FullName == null || otherType.Namespace == null) {
                             continue;
                         }
                         
-                        var otherName = type.FullName![(type.Namespace.Length + 1)..];
-                        if (t != type && currName == otherName) {
-                            return ($"{currName}@{ConsoleEnhancements.GetModName(t)} ", t);
+                        var otherName = CSharpTypeName(otherType);
+                        if (currType != otherType && currName == otherName) {
+                            return ($"{currName}@{ConsoleEnhancements.GetModName(currType)} ", currType);
                         }
                     }
-                    return (currName, t);
+                    return (currName, currType);
                 })
                 .Order(new NamespaceComparer())
-                .Select(pair => new AutoCompleteEntry { Final = true, MemberName = pair.Item1, MemberType = $"<NS:{pair.Item2.Namespace ?? string.Empty}>" })
+                .Select(pair => new AutoCompleteEntry { Final = false, MemberName = pair.Item1, MemberType = $"<NS:{pair.Item2.Namespace ?? string.Empty}>" })
                 .ToArray();
             
             entries.AddRange(filteredTypes);
@@ -254,14 +261,22 @@ public static class GameData {
                 return "#"; // Invalid type
             }
             
-            entries.AddRange(type.GetAllProperties()
-                .Where(p => p.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !p.Name.Contains('<') && !p.Name.Contains('>')) // Filter-out compiler generated properties
-                .Where(p => p.GetSetMethod() != null) // Require settable property
+            bool staticMembers = !(type.IsSameOrSubclassOf(typeof(Entity)) || type.IsSameOrSubclassOf(typeof(Level)) || type.IsSameOrSubclassOf(typeof(Session)));
+            var bindingFlags = staticMembers
+                ? BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public
+                : BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+                
+            entries.AddRange(type.GetProperties(bindingFlags)
+                // Filter-out compiler generated properties
+                .Where(p => p.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !p.Name.Contains('<') && !p.Name.Contains('>'))
+                .Where(p => !IsUnSettableType(p.PropertyType) && p.GetSetMethod() != null) 
                 .OrderBy(p => p.Name)
                 .Select(p => new AutoCompleteEntry { Final = IsFinal(p.PropertyType), MemberName = p.Name, MemberType = CSharpTypeName(p.PropertyType) }));
             
-            entries.AddRange(type.GetAllFieldInfos()
-                .Where(f => f.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !f.Name.Contains('<') && !f.Name.Contains('>')) // Filter-out compiler generated fields
+            entries.AddRange(type.GetFields(bindingFlags)
+                // Filter-out compiler generated fields
+                .Where(f => f.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !f.Name.Contains('<') && !f.Name.Contains('>'))
+                .Where(f => !f.IsInitOnly && !IsUnSettableType(f.FieldType))
                 .OrderBy(f => f.Name)
                 .Select(f => new AutoCompleteEntry { Final = IsFinal(f.FieldType), MemberName = f.Name, MemberType = CSharpTypeName(f.FieldType) }));
         }
@@ -269,6 +284,7 @@ public static class GameData {
         return string.Join(';', entries.Select(entry => $"{(entry.Final ? "!" : ".")}{entry.MemberName}#{entry.MemberType}"));
         
         static bool IsFinal(Type type) => type == typeof(string) || type == typeof(Vector2) || type == typeof(Random) || type.IsEnum || type.IsPrimitive;
+        static bool IsUnSettableType(Type type) => type.IsSameOrSubclassOf(typeof(Delegate));
     }
     
     private static readonly Dictionary<Type, string> shorthandMap = new() {
@@ -301,6 +317,16 @@ public static class GameData {
             return $"{CSharpTypeName(type.GetElementType())}[]";
         }
         
-        return shorthandMap.TryGetValue(type, out string value) ? value : type.Name;
-    }
+        if (shorthandMap.TryGetValue(type, out string shorthand)) {
+            return shorthand;
+        }
+        if (type.FullName == null) {
+            return type.Name;    
+        }
+        
+        int namespaceLen = type.Namespace != null
+            ? type.Namespace.Length + 1
+            : 0;
+        return type.FullName[namespaceLen..];
+    }  
 }
