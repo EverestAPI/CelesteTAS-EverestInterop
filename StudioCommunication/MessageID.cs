@@ -164,7 +164,7 @@ public enum GameDataType : byte {
     ModUrl,
     ExactGameInfo,
     CustomInfoTemplate,
-    SetCommandAutoCompleteOptions,
+    SetCommandAutoCompleteEntries,
 }
 
 public enum RecordingFailedReason : byte {

@@ -189,19 +189,29 @@ public static class GameData {
         }
     }
     
-    public static string GetSetCommandAutoCompleteOptions(string currentInput) {
-        var final = new List<string>();
-        var nonFinal = new List<string>();
+    // Each entry is separated by a ';' and has the format: <'!' = final, '.' = non-final><displayed member name>#<type of member>
+    // Special type names are inside angle-brackets
+    private struct AutoCompleteEntry {
+        public bool Final;
+        public string MemberName;
+        public string MemberType;
+    }
+    
+    public static string GetSetCommandAutoCompleteEntries(string currentInput) {
+        var entries = new List<AutoCompleteEntry>();
         
         var args = currentInput.Split('.');
-        
         if (args.Length == 1) {
             // Vanilla game settings or mod settings type or a base type
-            final.AddRange(typeof(Settings).GetFields().Select(f => f.Name));
-            final.AddRange(typeof(SaveData).GetFields().Select(f => f.Name));
-            final.AddRange(typeof(Assists).GetFields().Select(f => f.Name));
+            entries.AddRange(typeof(Settings).GetFields().Select(f => new AutoCompleteEntry { Final = true, MemberName = f.Name, MemberType = "<Settings>" }));
+            entries.AddRange(typeof(SaveData).GetFields().Select(f => new AutoCompleteEntry { Final = true, MemberName = f.Name, MemberType = "<SaveData>" }));
+            entries.AddRange(typeof(Assists).GetFields().Select(f => new AutoCompleteEntry { Final = true, MemberName = f.Name, MemberType = "<Assists>" }));
             
-            nonFinal.AddRange(Everest.Modules.Where(mod => mod.SettingsType != null).Select(mod => mod.Metadata.Name));
+            // Mod settings
+            entries.AddRange(Everest.Modules
+                .Where(mod => mod.SettingsType != null)
+                .Where(mod => mod.SettingsType.GetAllFieldInfos().Any() || mod.SettingsType.GetAllProperties().Any(p => p.GetSetMethod() != null)) // Require at least 1 settable field / property
+                .Select(mod => new AutoCompleteEntry { Final = true, MemberName = mod.Metadata.Name, MemberType = "<ModSetting>" }));
             
             string[] ignoredNamespaces = ["System", "StudioCommunication", "TAS", "SimplexNoise", "FMOD", "MonoMod"];
             var allTypes = ModUtils.GetTypes();
@@ -224,10 +234,10 @@ public static class GameData {
                     return (currName, t);
                 })
                 .Order(new NamespaceComparer())
-                .Select(pair => pair.Item1)
+                .Select(pair => new AutoCompleteEntry { Final = true, MemberName = pair.Item1, MemberType = $"<NS:{pair.Item2.Namespace ?? string.Empty}>" })
                 .ToArray();
-                
-            nonFinal.AddRange(filteredTypes);
+            
+            entries.AddRange(filteredTypes);
         } else if (InfoCustom.TryParseTypes(args[0], out var types, out _, out _)) {
             // Let's just assume the first type
             var type = types[0];
@@ -244,31 +254,19 @@ public static class GameData {
                 return "#"; // Invalid type
             }
             
-            var properties = type.GetAllProperties()
+            entries.AddRange(type.GetAllProperties()
                 .Where(p => p.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !p.Name.Contains('<') && !p.Name.Contains('>')) // Filter-out compiler generated properties
                 .Where(p => p.GetSetMethod() != null) // Require settable property
-                .OrderBy(p => p.Name);
-            var fields = type.GetAllFieldInfos()
-                .Where(f => f.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !f.Name.Contains('<') && !f.Name.Contains('>')) // Filter-out compiler generated fields
-                .OrderBy(f => f.Name);
+                .OrderBy(p => p.Name)
+                .Select(p => new AutoCompleteEntry { Final = IsFinal(p.PropertyType), MemberName = p.Name, MemberType = p.PropertyType.FullName }));
             
-            foreach (var property in properties) {
-                if (IsFinal(property.PropertyType)) {
-                    final.Add(property.Name);
-                } else {
-                    nonFinal.Add(property.Name);
-                }
-            }
-            foreach (var field in fields) {
-                if (IsFinal(field.FieldType)) {
-                    final.Add(field.Name);
-                } else {
-                    nonFinal.Add(field.Name);
-                }
-            }
+            entries.AddRange(type.GetAllFieldInfos()
+                .Where(f => f.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !f.Name.Contains('<') && !f.Name.Contains('>')) // Filter-out compiler generated fields
+                .OrderBy(f => f.Name)
+                .Select(f => new AutoCompleteEntry { Final = IsFinal(f.FieldType), MemberName = f.Name, MemberType = f.FieldType.FullName }));
         }
         
-        return string.Join(';', final) + '#' + string.Join(';', nonFinal);
+        return string.Join(';', entries.Select(entry => $"{(entry.Final ? "!" : ".")}{entry.MemberName}#{entry.MemberType}"));
         
         static bool IsFinal(Type type) => type == typeof(string) || type == typeof(Vector2) || type == typeof(Random) || type.IsEnum || type.IsPrimitive;
     }

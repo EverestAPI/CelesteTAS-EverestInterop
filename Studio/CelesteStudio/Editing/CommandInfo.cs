@@ -183,23 +183,28 @@ public struct CommandInfo() {
                     return labels[(i + 1)..];
                 }
             }
+            
         }
         
         return labels;
     }
     
-    private readonly static Dictionary<string, AutoCompleteEntry[]> setCommandCache = [];
+    private static readonly Dictionary<string, AutoCompleteEntry[]> setCommandCache = [];
     private static AutoCompleteEntry[] GetSetEntries(string currentInput) {
         var args = string.Join('.', currentInput.Split('.').SkipLast(1));
         if (setCommandCache.TryGetValue(args, out var entries)) {
             return entries;
         }
         
-        var (final, nonFinal) = CommunicationWrapper.GetSetCommandAutoCompleteOptions(currentInput);
-
         var prefix = args.Length > 0 ? args + '.' : args;
-        entries = final.Select(s => new AutoCompleteEntry { Prefix = prefix, Arg = s, Done = true })
-            .Concat(nonFinal.Select(s => new AutoCompleteEntry { Prefix = prefix, Arg = s + '.', Done = false }))
+        entries = CommunicationWrapper.GetSetCommandAutoCompleteEntries(currentInput)
+            .Select(entry => {
+                int idx = entry.IndexOf('#');
+                bool final = entry[0] == '!';
+                var memberName = entry[1..idx];
+                var memberType = entry[(idx + 1)..];
+                return new AutoCompleteEntry { Prefix = prefix, Arg = memberName + (final ? "." : ""), Done = final };
+            })
             .ToArray();
         setCommandCache[args] = entries;
         
