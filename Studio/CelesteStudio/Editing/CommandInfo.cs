@@ -200,20 +200,15 @@ public struct CommandInfo() {
         var prefix = args.Length > 0 ? args + '.' : args;
         entries = CommunicationWrapper.GetSetCommandAutoCompleteEntries(currentInput)
             .Select(entry => {
-                int idx = entry.IndexOf('#');
                 bool final = entry[0] == '!';
-                var memberName = entry[1..idx];
-                var memberType = entry[(idx + 1)..];
+                var parts = entry.Split('#');
+                var memberName = parts[0][1..];
+                var memberExtra = parts[1];
+                var memberType = parts[2];
                 return new AutoCompleteEntry {
                     Prefix = prefix, 
                     Arg = memberName + (final ? "" : "."),
-                    Extra = memberType switch {
-                        "<Settings>" => "Settings",
-                        "<SaveData>" => "SaveData",
-                        "<Assists>" => "Assists",
-                        "<ModSetting>" => "ModSetting",
-                        _ => memberType.StartsWith("<NS:") ? memberType["<NS:".Length..^1] : memberType
-                    },
+                    Extra = memberExtra,
                     Done = final
                 };
             })

@@ -189,11 +189,12 @@ public static class GameData {
         }
     }
     
-    // Each entry is separated by a ';' and has the format: <'!' = final, '.' = non-final><displayed member name>#<type of member>
+    // Each entry is separated by a ';' and has the format: <'!' = final, '.' = non-final><displayed member name>#<displayed member extra#<type of member>
     // Special type names are inside angle-brackets
     private struct AutoCompleteEntry {
         public bool Final;
         public string MemberName;
+        public string MemberExtra;
         public string MemberType;
     }
     
@@ -202,17 +203,19 @@ public static class GameData {
         
         var args = currentInput.Split('.');
         if (args.Length == 1) {
-            // Vanilla game settings or mod settings type or a base type
-            entries.AddRange(typeof(Settings).GetFields().Select(f => new AutoCompleteEntry { Final = true, MemberName = f.Name, MemberType = "<Settings>" }));
-            entries.AddRange(typeof(SaveData).GetFields().Select(f => new AutoCompleteEntry { Final = true, MemberName = f.Name, MemberType = "<SaveData>" }));
-            entries.AddRange(typeof(Assists).GetFields().Select(f => new AutoCompleteEntry { Final = true, MemberName = f.Name, MemberType = "<Assists>" }));
+            // Vanilla settings. Manually selected to filter out useless entries
+            var vanillaSettings = ((string[])["DisableFlashes", "ScreenShake", "GrabMode", "CrouchDashMode", "SpeedrunClock", "Pico8OnMainMenu", "VariantsUnlocked"]).Select(e => typeof(Settings).GetField(e)!);
+            var vanillaSaveData = ((string[])["CheatMode", "AssistMode", "VariantMode", "UnlockedAreas", "RevealedChapter9", "DebugMode"]).Select(e => typeof(SaveData).GetField(e)!);
+            entries.AddRange(vanillaSettings.Select(f => new AutoCompleteEntry { Final = true, MemberName = f.Name, MemberExtra = $"{CSharpTypeName(f.FieldType)} (Settings)", MemberType = f.FieldType.FullName }));
+            entries.AddRange(vanillaSaveData.Select(f => new AutoCompleteEntry { Final = true, MemberName = f.Name, MemberExtra = $"{CSharpTypeName(f.FieldType)} (Save Data)", MemberType = f.FieldType.FullName }));
+            entries.AddRange(typeof(Assists).GetFields().Select(f => new AutoCompleteEntry { Final = true, MemberName = f.Name, MemberExtra = $"{CSharpTypeName(f.FieldType)} (Assists)", MemberType = f.FieldType.FullName }));
             
             // Mod settings
             entries.AddRange(Everest.Modules
                 .Where(mod => mod.SettingsType != null)
                 // Require at least 1 settable field / property
                 .Where(mod => mod.SettingsType.GetAllFieldInfos().Any() || mod.SettingsType.GetAllProperties().Any(p => p.GetSetMethod() != null))
-                .Select(mod => new AutoCompleteEntry { Final = true, MemberName = mod.Metadata.Name, MemberType = "<ModSetting>" }));
+                .Select(mod => new AutoCompleteEntry { Final = false, MemberName = mod.Metadata.Name, MemberExtra = "Mod Setting" }));
             
             string[] ignoredNamespaces = ["System", "StudioCommunication", "TAS", "SimplexNoise", "FMOD", "MonoMod", "Snowberry"];
             var allTypes = ModUtils.GetTypes();
@@ -241,51 +244,66 @@ public static class GameData {
                     return (currName, currType);
                 })
                 .Order(new NamespaceComparer())
-                .Select(pair => new AutoCompleteEntry { Final = false, MemberName = pair.Item1, MemberType = $"<NS:{pair.Item2.Namespace ?? string.Empty}>" })
+                .Select(pair => new AutoCompleteEntry { Final = false, MemberName = pair.Item1, MemberExtra = pair.Item2.Namespace ?? string.Empty, MemberType = string.Empty })
                 .ToArray();
             
             entries.AddRange(filteredTypes);
+        } else if (Everest.Modules.FirstOrDefault(m => m.Metadata.Name == args[0] && m.SettingsType != null) is { } mod) {
+            Console.WriteLine($"Settings: {mod.SettingsType}");
+            entries.AddRange(GetTypeAutoCompleteEntries(mod.SettingsType, args, CommandType.Set));
         } else if (InfoCustom.TryParseTypes(args[0], out var types, out _, out _)) {
             // Let's just assume the first type
-            var type = types[0];
-            // Recurse down to current type
-            for (int i = 1; i < args.Length - 1; i++) {
-                if (type.GetFieldInfo(args[i]) is { } field) {
-                    type = field.FieldType;
-                    continue;
-                }
-                if (type.GetPropertyInfo(args[i]) is { } property && property.GetSetMethod() != null) {
-                    type = property.PropertyType;
-                    continue;
-                }
-                return "#"; // Invalid type
-            }
-            
-            bool staticMembers = !(type.IsSameOrSubclassOf(typeof(Entity)) || type.IsSameOrSubclassOf(typeof(Level)) || type.IsSameOrSubclassOf(typeof(Session)));
-            var bindingFlags = staticMembers
-                ? BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public
-                : BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
-                
-            entries.AddRange(type.GetProperties(bindingFlags)
-                // Filter-out compiler generated properties
-                .Where(p => p.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !p.Name.Contains('<') && !p.Name.Contains('>'))
-                .Where(p => !IsUnSettableType(p.PropertyType) && p.GetSetMethod() != null) 
-                .OrderBy(p => p.Name)
-                .Select(p => new AutoCompleteEntry { Final = IsFinal(p.PropertyType), MemberName = p.Name, MemberType = CSharpTypeName(p.PropertyType) }));
-            
-            entries.AddRange(type.GetFields(bindingFlags)
-                // Filter-out compiler generated fields
-                .Where(f => f.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !f.Name.Contains('<') && !f.Name.Contains('>'))
-                .Where(f => !f.IsInitOnly && !IsUnSettableType(f.FieldType))
-                .OrderBy(f => f.Name)
-                .Select(f => new AutoCompleteEntry { Final = IsFinal(f.FieldType), MemberName = f.Name, MemberType = CSharpTypeName(f.FieldType) }));
+            entries.AddRange(GetTypeAutoCompleteEntries(types[0], args, CommandType.Set));
         }
         
-        return string.Join(';', entries.Select(entry => $"{(entry.Final ? "!" : ".")}{entry.MemberName}#{entry.MemberType}"));
-        
-        static bool IsFinal(Type type) => type == typeof(string) || type == typeof(Vector2) || type == typeof(Random) || type.IsEnum || type.IsPrimitive;
-        static bool IsUnSettableType(Type type) => type.IsSameOrSubclassOf(typeof(Delegate));
+        return string.Join(';', entries.Select(entry => $"{(entry.Final ? "!" : ".")}{entry.MemberName}#{entry.MemberExtra}#{entry.MemberType}"));
     }
+    
+    private enum CommandType { Set, Invoke }
+    private static IEnumerable<AutoCompleteEntry> GetTypeAutoCompleteEntries(Type baseType, string[] args, CommandType command) {
+        var type = baseType;
+        // Recurse down to current type
+        for (int i = 1; i < args.Length - 1; i++) {
+            if (type.GetFieldInfo(args[i]) is { } field) {
+                type = field.FieldType;
+                continue;
+            }
+            if (type.GetPropertyInfo(args[i]) is { } property && property.GetSetMethod() != null) {
+                type = property.PropertyType;
+                continue;
+            }
+            yield break; // Invalid type
+        }
+        
+        bool staticMembers = !(type.IsSameOrSubclassOf(typeof(Entity)) || type.IsSameOrSubclassOf(typeof(Level)) || type.IsSameOrSubclassOf(typeof(Session)) || type.IsSameOrSubclassOf(typeof(EverestModuleSettings)));
+        var bindingFlags = staticMembers
+            ? BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public
+            : BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+        
+        if (command == CommandType.Set) {
+            foreach (var entry in type.GetProperties(bindingFlags)
+                         // Filter-out compiler generated properties
+                         .Where(p => p.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !p.Name.Contains('<') && !p.Name.Contains('>'))
+                         .Where(p => !IsUnSettableType(p.PropertyType) && p.GetSetMethod() != null)
+                         .OrderBy(p => p.Name)
+                         .Select(p => new AutoCompleteEntry { Final = IsFinal(p.PropertyType), MemberName = p.Name, MemberExtra = CSharpTypeName(p.PropertyType), MemberType = p.PropertyType.FullName }))
+            {
+                yield return entry;
+            }
+            foreach (var entry in type.GetFields(bindingFlags)
+                         // Filter-out compiler generated fields
+                         .Where(f => f.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !f.Name.Contains('<') && !f.Name.Contains('>'))
+                         .Where(f => !f.IsInitOnly && !IsUnSettableType(f.FieldType))
+                         .OrderBy(f => f.Name)
+                         .Select(f => new AutoCompleteEntry { Final = IsFinal(f.FieldType), MemberName = f.Name, MemberExtra = CSharpTypeName(f.FieldType), MemberType = f.FieldType.FullName }))
+            {
+                yield return entry;
+            }
+        }
+    } 
+    
+    private static bool IsFinal(Type type) => type == typeof(string) || type == typeof(Vector2) || type == typeof(Random) || type.IsEnum || type.IsPrimitive;
+    private static bool IsUnSettableType(Type type) => type.IsSameOrSubclassOf(typeof(Delegate));
     
     private static readonly Dictionary<Type, string> shorthandMap = new() {
         { typeof(bool), "bool" },
