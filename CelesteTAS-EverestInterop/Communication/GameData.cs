@@ -197,6 +197,7 @@ public static class GameData {
         public string MemberExtra;
     }
     
+    private static readonly string[] ignoredNamespaces = ["System", "StudioCommunication", "TAS", "SimplexNoise", "FMOD", "MonoMod", "Snowberry"];
     public static string GetSetCommandAutoCompleteEntries(string argsText) {
         var entries = new List<AutoCompleteEntry>();
         
@@ -216,7 +217,6 @@ public static class GameData {
                 .Where(mod => mod.SettingsType.GetAllFieldInfos().Any() || mod.SettingsType.GetAllProperties().Any(p => p.GetSetMethod() != null))
                 .Select(mod => new AutoCompleteEntry { Final = false, MemberName = mod.Metadata.Name, MemberExtra = "Mod Setting" }));
             
-            string[] ignoredNamespaces = ["System", "StudioCommunication", "TAS", "SimplexNoise", "FMOD", "MonoMod", "Snowberry"];
             var allTypes = ModUtils.GetTypes();
             var filteredTypes = allTypes
                 // Filter-out types which probably aren't useful
@@ -225,8 +225,8 @@ public static class GameData {
                 .Where(t => t.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !t.FullName.Contains('<') && !t.FullName.Contains('>'))
                 // Require either an entity, level, session or type with static variables
                 .Where(t => t.IsSameOrSubclassOf(typeof(Entity)) || t.IsSameOrSubclassOf(typeof(Level)) || t.IsSameOrSubclassOf(typeof(Session)) ||
-                            t.GetFields(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public).Any(f => !f.IsInitOnly && !IsUnSettableType(f.FieldType)) ||
-                            t.GetProperties(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public).Any(p => !IsUnSettableType(p.PropertyType) && p.GetSetMethod() != null))
+                                 t.GetFields(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public).Any(f => !f.IsInitOnly && IsSettableType(f.FieldType)) ||
+                                 t.GetProperties(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public).Any(p => IsSettableType(p.PropertyType) && p.GetSetMethod() != null))
                 // Strip the namespace and add the @modname suffix if the typename isn't unique
                 .Select(currType => {
                     var currName = CSharpTypeName(currType);
@@ -257,6 +257,48 @@ public static class GameData {
         return string.Join(';', entries.Select(entry => $"{(entry.Final ? "!" : ".")}{entry.MemberName}#{entry.MemberExtra}"));
     }
     
+    public static string GetInvokeCommandAutoCompleteEntries(string argsText) {
+        var entries = new List<AutoCompleteEntry>();
+        
+        var args = argsText.Split('.');
+        if (args.Length == 1) {
+            var allTypes = ModUtils.GetTypes();
+            var filteredTypes = allTypes
+                // Filter-out types which probably aren't useful
+                .Where(t => t.IsClass && t.IsPublic && t.FullName != null && t.Namespace != null && ignoredNamespaces.All(ns => !t.Namespace.StartsWith(ns)))
+                // Filter-out compiler generated types
+                .Where(t => t.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !t.FullName.Contains('<') && !t.FullName.Contains('>'))
+                // Require either an entity, level, session or type with static methods
+                .Where(t => t.IsSameOrSubclassOf(typeof(Entity)) || t.IsSameOrSubclassOf(typeof(Level)) || t.IsSameOrSubclassOf(typeof(Session)) ||
+                                 t.GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public).Any(IsInvokableMethod))
+                // Strip the namespace and add the @modname suffix if the typename isn't unique
+                .Select(currType => {
+                    var currName = CSharpTypeName(currType);
+                    foreach (var otherType in allTypes) {
+                        if (otherType.FullName == null || otherType.Namespace == null) {
+                            continue;
+                        }
+                        
+                        var otherName = CSharpTypeName(otherType);
+                        if (currType != otherType && currName == otherName) {
+                            return ($"{currName}@{ConsoleEnhancements.GetModName(currType)} ", currType);
+                        }
+                    }
+                    return (currName, currType);
+                })
+                .Order(new NamespaceComparer())
+                .Select(pair => new AutoCompleteEntry { Final = false, MemberName = pair.Item1, MemberExtra = pair.Item2.Namespace ?? string.Empty })
+                .ToArray();
+            
+            entries.AddRange(filteredTypes);
+        } else if (InfoCustom.TryParseTypes(args[0], out var types, out _, out _)) {
+            // Let's just assume the first type
+            entries.AddRange(GetTypeAutoCompleteEntries(types[0], AutoCompleteType.Invoke));
+        }
+        
+        return string.Join(';', entries.Select(entry => $"{(entry.Final ? "!" : ".")}{entry.MemberName}#{entry.MemberExtra}"));
+    }
+    
     public static string GetParameterAutoCompleteEntries(string argsText) {
         var entries = new List<AutoCompleteEntry>();
         
@@ -264,7 +306,6 @@ public static class GameData {
         bool isSet = parts[0] == "Set";
         var args = parts[1].Split('.');
         int index = int.Parse(parts[2]);
-        Console.WriteLine($"param: {isSet} {args.Length} '{args[0]}' {index}");
         
         if (isSet && args.Length == 1) {
             // Vanilla setting / session / assist
@@ -283,7 +324,14 @@ public static class GameData {
             if (isSet) {
                 entries.AddRange(GetTypeAutoCompleteEntries(RecurseSetType(types[0], args, includeLast: true), AutoCompleteType.Parameter));
             } else {
-                // TODO
+                var parameters = types[0].GetMethodInfo(args[1]).GetParameters();
+                if (index >= 0 && index < parameters.Length) {
+                    bool final = index == parameters.Length - 1 || 
+                                 index < parameters.Length - 1 && !IsSettableType(parameters[index].ParameterType); 
+                    
+                    entries.AddRange(GetTypeAutoCompleteEntries(parameters[index].ParameterType, AutoCompleteType.Parameter)
+                        .Select(entry => entry with { Final = final }));
+                }
             }
         }
         
@@ -317,23 +365,43 @@ public static class GameData {
             foreach (var entry in type.GetProperties(bindingFlags)
                          // Filter-out compiler generated properties
                          .Where(p => p.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !p.Name.Contains('<') && !p.Name.Contains('>'))
-                         .Where(p => !IsUnSettableType(p.PropertyType) && p.GetSetMethod() != null)
+                         .Where(p => IsSettableType(p.PropertyType) && p.GetSetMethod() != null)
                          .OrderBy(p => p.Name)
-                         .Select(p => new AutoCompleteEntry { Final = IsFinal(p.PropertyType), MemberName = p.Name, MemberExtra = CSharpTypeName(p.PropertyType) }))
+                         .Select(p => new AutoCompleteEntry {
+                             Final = IsFinal(p.PropertyType), 
+                             MemberName = p.Name, 
+                             MemberExtra = CSharpTypeName(p.PropertyType)
+                         }))
             {
                 yield return entry;
             }
             foreach (var entry in type.GetFields(bindingFlags)
                          // Filter-out compiler generated fields
                          .Where(f => f.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !f.Name.Contains('<') && !f.Name.Contains('>'))
-                         .Where(f => !f.IsInitOnly && !IsUnSettableType(f.FieldType))
+                         .Where(f => !f.IsInitOnly && IsSettableType(f.FieldType))
                          .OrderBy(f => f.Name)
-                         .Select(f => new AutoCompleteEntry { Final = IsFinal(f.FieldType), MemberName = f.Name, MemberExtra = CSharpTypeName(f.FieldType) }))
+                         .Select(f => new AutoCompleteEntry {
+                             Final = IsFinal(f.FieldType), 
+                             MemberName = f.Name, 
+                             MemberExtra = CSharpTypeName(f.FieldType)
+                         }))
             {
                 yield return entry;
             }
         } else if (autoCompleteType == AutoCompleteType.Invoke) {
-            // TODO
+            foreach (var entry in type.GetMethods(bindingFlags)
+                         // Filter-out compiler generated methods
+                         .Where(m => m.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !m.Name.Contains('<') && !m.Name.Contains('>') && !m.Name.StartsWith("set_") && !m.Name.StartsWith("get_"))
+                         .Where(IsInvokableMethod)
+                         .OrderBy(m => m.Name)
+                         .Select(m => new AutoCompleteEntry {
+                             Final = !m.GetParameters().Any(p => IsSettableType(p.ParameterType) || p.HasDefaultValue), 
+                             MemberName = m.Name, 
+                             MemberExtra = $"({string.Join(", ", m.GetParameters().Select(p => CSharpTypeName(p.ParameterType)))})"
+                         }))
+            {
+                yield return entry;
+            }
         } else if (autoCompleteType == AutoCompleteType.Parameter) {
             if (type == typeof(bool)) {
                 yield return new AutoCompleteEntry { Final = true, MemberName = "true", MemberExtra = CSharpTypeName(type) };
@@ -347,7 +415,8 @@ public static class GameData {
     }
     
     private static bool IsFinal(Type type) => type == typeof(string) || type == typeof(Vector2) || type == typeof(Random) || type.IsEnum || type.IsPrimitive;
-    private static bool IsUnSettableType(Type type) => type.IsSameOrSubclassOf(typeof(Delegate));
+    private static bool IsSettableType(Type type) => !type.IsSameOrSubclassOf(typeof(Delegate));
+    private static bool IsInvokableMethod(MethodInfo info) => !info.IsGenericMethod && info.GetParameters().All(p => IsSettableType(p.ParameterType) || p.HasDefaultValue);
     
     private static readonly Dictionary<Type, string> shorthandMap = new() {
         { typeof(bool), "bool" },

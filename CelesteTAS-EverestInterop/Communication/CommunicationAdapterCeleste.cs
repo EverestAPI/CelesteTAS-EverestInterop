@@ -116,6 +116,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                     GameDataType.ConsoleCommand => reader.ReadBoolean(),
                     GameDataType.SettingValue or
                     GameDataType.SetCommandAutoCompleteEntries or
+                    GameDataType.InvokeCommandAutoCompleteEntries or
                     GameDataType.ParameterAutoCompleteEntries => reader.ReadString(),
                     _ => null,
                 };
@@ -133,6 +134,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                             GameDataType.ModUrl => GameData.GetModUrl(),
                             GameDataType.CustomInfoTemplate => !string.IsNullOrWhiteSpace(TasSettings.InfoCustomTemplate) ? TasSettings.InfoCustomTemplate : string.Empty,
                             GameDataType.SetCommandAutoCompleteEntries => GameData.GetSetCommandAutoCompleteEntries((string)arg!),
+                            GameDataType.InvokeCommandAutoCompleteEntries => GameData.GetInvokeCommandAutoCompleteEntries((string)arg!),
                             GameDataType.ParameterAutoCompleteEntries => GameData.GetParameterAutoCompleteEntries((string)arg!),
                             _ => string.Empty
                         };

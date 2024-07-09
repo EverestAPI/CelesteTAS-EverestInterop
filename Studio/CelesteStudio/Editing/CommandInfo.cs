@@ -12,7 +12,9 @@ public struct CommandInfo() {
         public string Prefix = string.Empty;
         public string Arg;
         public string Extra = string.Empty;
+
         public bool Done = true;
+        public bool? HasNextArg = null; 
         
         public static implicit operator AutoCompleteEntry(string arg) => new() { Arg = arg, Done = true };
     }
@@ -57,7 +59,15 @@ public struct CommandInfo() {
                 args => GetParameterEntries("Set", args[0]),
             ]
         },
-        new CommandInfo { Name = "Invoke", Insert = $"Invoke{separator}[0;Entity.Method]{separator}[1;Parameter]", Description = "Similar to the set command, but used to invoke the method"},
+        new CommandInfo { 
+            Name = "Invoke", 
+            Description = "Similar to the set command, but used to invoke the method",
+            Insert = $"Invoke{separator}[0;Entity.Method]{separator}[1;Parameter]",
+            AutoCompleteEntries = [
+                args => GetInvokeEntries(args[0]),
+                args => GetParameterEntries("Invoke", args[0]),
+            ]
+        },
         new CommandInfo { Name = "EvalLua", Insert = $"EvalLua{separator}[0;Code]", Description = "Evaluate Lua code"},
         null,
         new CommandInfo { Name = "Press", Insert = $"Press{separator}[0;Key1{separator}Key2...]", Description = "Press the specified keys with the next input." },
@@ -127,6 +137,8 @@ public struct CommandInfo() {
     
     public static void ResetCache() {
         setCommandCache.Clear();
+        invokeCommandCache.Clear();
+        parameterCache.Clear();
     }
     
     private static AutoCompleteEntry[] GetFilePathEntries(string arg) {
@@ -190,6 +202,7 @@ public struct CommandInfo() {
         return labels;
     }
     
+    // NOTE: Probably read GameData in the Celeste part, since this is using the data from there.
     private static readonly Dictionary<string, AutoCompleteEntry[]> setCommandCache = [];
     private static AutoCompleteEntry[] GetSetEntries(string argsText) {
         var args = string.Join('.', argsText.Split('.').SkipLast(1));
@@ -206,11 +219,37 @@ public struct CommandInfo() {
                     Prefix = prefix, 
                     Arg = parts[0][1..] + (final ? "" : "."),
                     Extra = parts[1],
-                    Done = final
+                    Done = final,
+                    HasNextArg = !final,
                 };
             })
             .ToArray();
         setCommandCache[args] = entries;
+        
+        return entries;
+    }
+    
+    private static readonly Dictionary<string, AutoCompleteEntry[]> invokeCommandCache = [];
+    private static AutoCompleteEntry[] GetInvokeEntries(string argsText) {
+        var args = string.Join('.', argsText.Split('.').SkipLast(1));
+        if (invokeCommandCache.TryGetValue(args, out var entries)) {
+            return entries;
+        }
+        
+        var prefix = args.Length > 0 ? args + '.' : args;
+        entries = CommunicationWrapper.GetInvokeCommandAutoCompleteEntries(argsText)
+            .Select(entry => {
+                var parts = entry.Split('#');
+                return new AutoCompleteEntry {
+                    Prefix = prefix,
+                    Arg = parts[0][1..] + (args.Length == 0 ? "." : ""),
+                    Extra = parts[1],
+                    Done = args.Length != 0,
+                    HasNextArg = entry[0] == '.',
+                };
+            })
+            .ToArray();
+        invokeCommandCache[args] = entries;
         
         return entries;
     }
@@ -228,7 +267,8 @@ public struct CommandInfo() {
                 return new AutoCompleteEntry {
                     Arg = parts[0][1..],
                     Extra = parts[1],
-                    Done = entry[0] == '!'
+                    Done = true,
+                    HasNextArg = entry[0] == '.',
                 };
             })
             .ToArray();

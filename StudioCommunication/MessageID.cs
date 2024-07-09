@@ -165,6 +165,7 @@ public enum GameDataType : byte {
     ExactGameInfo,
     CustomInfoTemplate,
     SetCommandAutoCompleteEntries,
+    InvokeCommandAutoCompleteEntries,
     ParameterAutoCompleteEntries,
 }
 
