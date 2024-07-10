@@ -388,6 +388,7 @@ public sealed class Studio : Form {
                     MenuUtils.CreateSettingToggle("&Auto Save File", nameof(Settings.AutoSave)),
                     MenuUtils.CreateSettingToggle("Auto Remove Mutually Exclusive Actions", nameof(Settings.AutoRemoveMutuallyExclusiveActions)),
                     MenuUtils.CreateSettingToggle("Always on Top", nameof(Settings.AlwaysOnTop)),
+                    MenuUtils.CreateSettingNumberInput<int>("Max Unfolded Lines", nameof(Settings.MaxUnfoldedLines), 0, int.MaxValue, 1),
                     MenuUtils.CreateSettingEnum<InsertDirection>("Insert Direction", nameof(Settings.InsertDirection), ["Above Current Line", "Below Current Line"]),
                     MenuUtils.CreateSettingEnum<CaretInsertPosition>("Caret Insert Position", nameof(Settings.CaretInsertPosition), ["After Inserted Text", "Keep at Previous Position"]),
                     MenuUtils.CreateSettingEnum<CommandSeparator>("Command Separator", nameof(Settings.CommandSeparator), ["Space (\" \")", "Comma (\",\")", "Space + Comma (\", \")"]),

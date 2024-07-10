@@ -36,9 +36,26 @@ public sealed class Editor : Drawable {
             // Ensure everything is still valid when something has changed
             document.TextChanged += HandleTextChanged;
 
+            // Reset various state
+            autoCompleteMenu.Visible = false;
+            
             ConvertToActionLines(0, document.Lines.Count - 1);
             Recalc();
             ScrollCaretIntoView();
+            
+            // Auto-close folds which are too long
+            foreach (var fold in foldings) {
+                if (Settings.Instance.MaxUnfoldedLines == 0) {
+                    // Close everything
+                    SetFolding(fold.MinRow, true);
+                    continue;
+                }
+                
+                int lines = fold.MaxRow - fold.MinRow - 1; // Only the lines inside the fold are counted
+                if (lines > Settings.Instance.MaxUnfoldedLines) {
+                    SetFolding(fold.MinRow, true);
+                }
+            }
             
             void HandleTextChanged(Document _, int minRow, int maxRow) {
                 ConvertToActionLines(minRow, maxRow);

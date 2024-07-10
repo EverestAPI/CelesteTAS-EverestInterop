@@ -72,6 +72,8 @@ public sealed class Settings {
     public bool AutoRemoveMutuallyExclusiveActions { get; set; } = true;
     public bool AlwaysOnTop { get; set; } = false;
     
+    public int MaxUnfoldedLines { get; set; } = 30;
+    
     public InsertDirection InsertDirection { get; set; } = InsertDirection.Above;
     public CaretInsertPosition CaretInsertPosition { get; set; } = CaretInsertPosition.PreviousPosition;
     public CommandSeparator CommandSeparator { get; set; } = CommandSeparator.CommaSpace;
