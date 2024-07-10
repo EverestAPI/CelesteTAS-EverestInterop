@@ -80,9 +80,9 @@ public class UndoStack(int stackSize = 256) {
     private int head = 0, tail = 0;
     
     public void Push(CaretPosition caret) {
-        head = (Curr + 1) % stackSize;
+        head = (Curr + 1).Mod(stackSize);
         if (head == tail)
-            tail = (tail + 1) % stackSize; // Discard the oldest entry
+            tail = (tail + 1).Mod(stackSize); // Discard the oldest entry
         
         Stack[Curr].Caret = caret;
         Stack[head] = new Entry(
@@ -97,11 +97,11 @@ public class UndoStack(int stackSize = 256) {
     
     public void Undo() {
         if (Curr == tail) return;
-        Curr = (Curr - 1) % stackSize;
+        Curr = (Curr - 1).Mod(stackSize);
     }
     public void Redo() {
         if (Curr == head) return;
-        Curr = (Curr + 1) % stackSize;
+        Curr = (Curr + 1).Mod(stackSize);
     }
 }
 
@@ -348,7 +348,9 @@ public class Document {
     }
     
     public void Undo() {
+        Console.WriteLine($"Before: {undoStack.Curr} ({undoStack.Stack.Length})");
         undoStack.Undo();
+        Console.WriteLine($"After: {undoStack.Curr} ({undoStack.Stack.Length})");
         Caret = undoStack.Stack[undoStack.Curr].Caret;
         
         OnTextChanged(0, CurrentLines.Count - 1);
