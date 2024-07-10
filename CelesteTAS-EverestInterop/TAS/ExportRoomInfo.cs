@@ -227,7 +227,7 @@ public static class ExportRoomInfo {
         }
 
         private static string ConvertToFrames(long? time) {
-            return time == null ? string.Empty : (time.Value / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks).ToString();
+            return time == null ? string.Empty : (time.Value / Engine.RawDeltaTime.SecondsToTicks()).ToString();
         }
 
         private static string FormatTimeWithFrames(long? time) {

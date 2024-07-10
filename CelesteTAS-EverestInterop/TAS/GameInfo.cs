@@ -582,7 +582,7 @@ public static class GameInfo {
     }
 
     private static long ConvertMicroSecondToFrames(long time) {
-        return time / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks;
+        return time / Engine.RawDeltaTime.SecondsToTicks();
     }
 
     private static double GetAngle(Vector2 vector) {

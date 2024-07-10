@@ -85,7 +85,7 @@ public static class StunPauseCommand {
             return;
         }
 
-        long ticks = TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks * ((int) Math.Ceiling(unpauseTime / Engine.RawDeltaTime) + 2);
+        long ticks = Engine.RawDeltaTime.SecondsToTicks() * ((int) Math.Ceiling(unpauseTime / Engine.RawDeltaTime) + 2);
         SaveData.Instance.AddTime(level.Session.Area, ticks);
 
         if (!level.Completed && level.TimerStarted) {
