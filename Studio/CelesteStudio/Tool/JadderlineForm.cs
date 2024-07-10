@@ -12,7 +12,7 @@ using StudioCommunication;
 namespace CelesteStudio.Tool;
 
 public sealed class JadderlineForm : Form {
-    private const string Version = "1.0.1";
+    private const string Version = "1.1.0";
     
     private readonly NumericStepper playerPos;
     private readonly NumericStepper playerSpeed;
@@ -118,7 +118,7 @@ public sealed class JadderlineForm : Form {
         copyOutput.Enabled = false;
         
         // Get the parameters here and capture them for the task, since it apparently can't access the fields?
-        float playerPosValue = (float)playerPos.Value;
+        double playerPosValue = (double)playerPos.Value;
         float playerSpeedValue = (float)playerSpeed.Value;
         float jelly2PosValue = (float)jelly2Pos.Value;
         int laddersValue = (int)ladders.Value;
@@ -166,11 +166,14 @@ public sealed class JadderlineForm : Form {
     // Additionally, jelly2 is the one on cooldown (jelly1 is the one about to be grabbed, and as such, doesnt need to be inputted)
     // The additional inputs may or may not need commas, not 100% sure
     // This doesnt go back a frame if an impossible frame is reached, but ive never seen it ever go back in jadderline so its not too much of a priority currently
-    public static string Run(float playerPos, float playerSpeed, float jelly2Pos, int ladders, bool direction, bool moveOnly, Actions additionalActions) {
+    public static string Run(double playerPos, float playerSpeed, float jelly2Pos, int ladders, bool direction, bool moveOnly, Actions additionalActions) {
+        float playerSub = (float)(playerPos - double.Truncate(playerPos));
+        playerPos = double.Truncate(playerPos);
         if (ladders < 2) { // Because we calculate the jelly ladders in 2 regrab windows
             throw new ArgumentException("Must calculate at least 2 ladders");
         }
-        float jelly1Pos = playerPos; // Since this is the one we are about to grab
+        jelly2Pos = float.Round(jelly2Pos);
+        float jelly1Pos = (float)playerPos; // Since this is the one we are about to grab
         // Get all 262144 candidates for inputs
         List<(bool[], bool[])> potential = new();
         for (int j = 0; j < 512; j++) {
@@ -180,13 +183,17 @@ public sealed class JadderlineForm : Form {
         }
         List<float> results = new(new float[262144]);
         List<bool[]> inputs = new();
-        for (int i = 0; i < ladders; i++) {
-            // Remove last entry since we arent at the end yet
-            if (inputs.Count != 0) {
+        for (int i = 0; i < ladders; i += 2) {
+            // Remove last entry if needed for parity
+            if (ladders - i == 1) {
                 inputs.RemoveAt(inputs.Count - 1);
+            } else if (inputs.Count != 0) { // Only run this now to account for the above case
+                (playerPos, playerSub, playerSpeed, jelly1Pos) = MoveVars(inputs[inputs.Count - 1], playerPos, playerSub, playerSpeed, jelly1Pos, direction);
+                jelly2Pos = float.Round(jelly1Pos) + jelly2Pos - float.Truncate(jelly2Pos);
+                jelly1Pos = (float)playerPos;
             }
             Parallel.For(0, 262144, j => {
-                results[j] = Eval(potential[j], playerPos, playerSpeed, jelly1Pos, jelly2Pos, direction);
+                results[j] = Eval(potential[j], playerPos, playerSub, playerSpeed, jelly1Pos, jelly2Pos, direction);
             });
             int max;
             if (direction) {
@@ -194,68 +201,67 @@ public sealed class JadderlineForm : Form {
             } else {
                 max = results.IndexOf(results.Min());
             }
-            if (float.IsNegativeInfinity(results[max]) && float.IsPositiveInfinity(results[max])) {
+            if (results[max] == float.NegativeInfinity || results[max] == float.PositiveInfinity) {
                 throw new ArgumentException("Malformed input or impossible jelly ladder"); // Is this actually the right exception to use? No clue
             }
             inputs.Add(potential[max].Item1);
             inputs.Add(potential[max].Item2);
-            (playerPos, playerSpeed, jelly1Pos) = MoveVars(potential[max].Item1, playerPos, playerSpeed, jelly1Pos, direction); // Save the result of the chosen input
+            (playerPos, playerSub, playerSpeed, jelly1Pos) = MoveVars(potential[max].Item1, playerPos, playerSub, playerSpeed, jelly1Pos, direction); // Save the result of the chosen input
             jelly2Pos = float.Round(jelly1Pos); // Make jelly1 the new jelly2
-            jelly1Pos = playerPos;
+            jelly1Pos = (float)playerPos;
         }
         return Format(inputs, moveOnly, direction, additionalActions);
     }
-
+    
     // Gets the distance jelly1 has moved while ensuring the player can still grab jelly2
     // Yes this code does kind of suck but it works
-    private static float Eval((bool[], bool[]) inputs, float playerPos, float playerSpeed, float jelly1Pos, float jelly2Pos, bool direction) {
-        (float playerPosNew, float playerSpeedNew, float jelly1PosNew) = MoveVars(inputs.Item1, playerPos, playerSpeed, jelly1Pos, direction);
-        bool wentOver; // Went past jelly
+    private static float Eval((bool[], bool[]) inputs, double playerPos, float playerSub, float playerSpeed, float jelly1Pos, float jelly2Pos, bool direction) {
+        (double playerPosNew, float playerSubNew, float playerSpeedNew, float jelly1PosNew) = MoveVars(inputs.Item1, playerPos, playerSub, playerSpeed, jelly1Pos, direction);
         float jelly2PosNew = float.Round(jelly1PosNew); // New jelly2 position
-        jelly1PosNew = playerPosNew;
-        if (playerPosNew >= jelly2Pos + 13.5f || playerPosNew < jelly2Pos - 13.5f) {
+        jelly1PosNew = (float)playerPosNew;
+        if (playerPosNew + playerSubNew >= jelly2Pos + 13.5f || playerPosNew + playerSubNew < jelly2Pos - 13.5f) {
             if (direction) {
                 return float.NegativeInfinity;
             } else {
                 return float.PositiveInfinity;
             }
         }
-        (playerPosNew, _, _) = MoveVars(inputs.Item2, playerPosNew, playerSpeedNew, jelly1PosNew, direction);  
-        if (playerPosNew >= jelly2PosNew + 13.5f || playerPosNew < jelly2PosNew - 13.5f) {
+        (playerPosNew, playerSubNew, _, _) = MoveVars(inputs.Item2, playerPosNew, playerSubNew, playerSpeedNew, jelly1PosNew, direction);  
+        if (playerPosNew + playerSubNew >= jelly2PosNew + 13.5f || playerPosNew + playerSubNew < jelly2PosNew - 13.5f) {
             if (direction) {
                 return float.NegativeInfinity;
             } else {
                 return float.PositiveInfinity;
             }
         } else {
-            return playerPosNew - playerPos;
+            return (float)(playerPosNew + (double)playerSubNew - playerPos - (double)playerSub);
         }
     }
-
+    
     // Actually calculates the inputs
-    private static (float, float, float) MoveVars(bool[] inputs, float playerPos, float playerSpeed, float jelly1Pos, bool direction) {
+    private static (double, float, float, float) MoveVars(bool[] inputs, double playerPos, float playerSub, float playerSpeed, float jelly1Pos, bool direction) {
         // Frame of movement on last frame of StPickup
-        playerPos += playerSpeed * DeltaTime;
+        (playerPos, playerSub) = MovePlayer(playerPos, playerSub, playerSpeed * DeltaTime);
         // 8 frames of holding the jelly
         for (int i = 0; i < 8; i++) {
-            (playerPos, playerSpeed) = MoveStep(inputs[i], playerPos, playerSpeed, true, direction);
+            (playerPos, playerSub, playerSpeed) = MoveStep(inputs[i], playerPos, playerSub, playerSpeed, true, direction);
         }
         // Release jelly1, which will be at the player's current positition when dropped
-        jelly1Pos = playerPos;
+        jelly1Pos = (float)playerPos;
         // Frame of movement when you release the jelly
-        (playerPos, playerSpeed) = MoveStep(inputs[8], playerPos, playerSpeed, false, direction);
-        return (playerPos, playerSpeed, jelly1Pos);
+        (playerPos, playerSub, playerSpeed) = MoveStep(inputs[8], playerPos, playerSub, playerSpeed, false, direction);
+        return (playerPos, playerSub, playerSpeed, jelly1Pos);
     }
 
     // Calculates one frame of movement
-    private static (float, float) MoveStep(bool input, float playerPos, float playerSpeed, bool holding, bool direction) {
+    private static (double, float, float) MoveStep(bool input, double playerPos, float playerSub, float playerSpeed, bool holding, bool direction) {
         float frictionNorm;
         float frictionOverMax;
         float max;
         if (holding) {
             frictionNorm = FrictionNormHold;
             frictionOverMax = FrictionOverMaxHold;
-            max = 108f;
+            max = 108.00001f;
         } else {
             frictionNorm = FrictionNorm;
             frictionOverMax = FrictionOverMax;
@@ -268,23 +274,34 @@ public sealed class JadderlineForm : Form {
             mult = -1f;
         }
         if (!input) { // Holding neutral
-            playerSpeed -= frictionNorm * DeltaTime * mult;
+            playerSpeed -= frictionNorm * mult;
             if (playerSpeed * mult < 0f) {
                 playerSpeed = 0f;
             }
         } else if (playerSpeed * mult <= max) { // Coming up to max speed
-            playerSpeed += frictionNorm * DeltaTime * mult;
+            playerSpeed += frictionNorm * mult;
             if (playerSpeed * mult > max) {
                 playerSpeed = max * mult;
             }
         } else { // Over max speed
-            playerSpeed -= frictionOverMax * DeltaTime * mult;
+            playerSpeed -= frictionOverMax * mult;
             if (playerSpeed * mult < max) {
                 playerSpeed = max * mult;
             }
         }
-        playerPos += playerSpeed * DeltaTime;
-        return (playerPos, playerSpeed);
+        (playerPos, playerSub) = MovePlayer(playerPos, playerSub, playerSpeed * DeltaTime);
+        return (playerPos, playerSub, playerSpeed);
+    }
+    
+    // Moves the player
+    private static (double, float) MovePlayer(double playerPos, float playerSub, float toMove) {
+        playerSub += toMove;
+        int num = (int)double.Round((double)playerSub, MidpointRounding.ToEven);
+        if (num != 0) {
+            playerSub -= (float)num;
+            playerPos += (double)num;
+        }
+        return (playerPos, playerSub);
     }
 
     // Converts an int into a bool[9]
