@@ -409,6 +409,42 @@ public sealed class Editor : Drawable {
         Invalidate();
     }
     
+    /// Ensures that parsable action-line has the correct format
+    private bool TryParseAndFormatActionLine(int row, out ActionLine actionLine) {
+        if (ActionLine.TryParse(Document.Lines[row], out actionLine)) {
+            Document.ReplaceLine(row, actionLine.ToString());
+            return true;
+        }
+        actionLine = default;
+        return false;
+    }
+    
+    /// Applies the correct action-line formatting to all specified lines
+    private void ConvertToActionLines(int startRow, int endRow) {
+        int minRow = Math.Min(startRow, endRow);
+        int maxRow = Math.Max(startRow, endRow);
+        
+        using var __ = Document.Update(raiseEvents: false);
+        
+        // Convert to action lines, if possible
+        for (int row = minRow; row <= Math.Min(maxRow, Document.Lines.Count - 1); row++) {
+            var line = Document.Lines[row];
+            if (ActionLine.TryParse(line, out var actionLine)) {
+                var newLine = actionLine.ToString();
+                
+                if (Document.Caret.Row == row) {
+                    if (Document.Caret.Col == line.Length) {
+                        Document.Caret.Col = newLine.Length;
+                    } else {
+                        Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
+                    }
+                }
+                
+                Document.ReplaceLine(row, newLine);
+            }
+        }
+    }
+    
     private void AdjustFrameCounts(int rowA, int rowB, int dir) {
         int topRow = Math.Min(rowA, rowB);
         int bottomRow = Math.Max(rowA, rowB);
@@ -832,7 +868,7 @@ public sealed class Editor : Drawable {
         var line = Document.Lines[Document.Caret.Row][..Document.Caret.Col].TrimStart();
         
         // Don't auto-complete on comments or action lines
-        if (line.StartsWith('#') || ActionLine.TryParse(line, out _)) {
+        if (line.StartsWith('#') || ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _)) {
             autoCompleteMenu.Visible = false;
             return;
         }
@@ -1082,31 +1118,6 @@ public sealed class Editor : Drawable {
     
     #region Editing Actions
 
-    private void ConvertToActionLines(int startRow, int endRow) {
-        int minRow = Math.Min(startRow, endRow);
-        int maxRow = Math.Max(startRow, endRow);
-        
-        using var __ = Document.Update(raiseEvents: false);
-        
-        // Convert to action lines, if possible
-        for (int row = minRow; row <= Math.Min(maxRow, Document.Lines.Count - 1); row++) {
-            var line = Document.Lines[row];
-            if (ActionLine.TryParse(line, out var actionLine)) {
-                var newLine = actionLine.ToString();
-                
-                if (Document.Caret.Row == row) {
-                    if (Document.Caret.Col == line.Length) {
-                        Document.Caret.Col = newLine.Length;
-                    } else {
-                        Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
-                    }
-                }
-                
-                Document.ReplaceLine(row, newLine);
-            }
-        }
-    }
-    
     protected override void OnTextInput(TextInputEventArgs e) {
         if (e.Text.Length == 0) {
             return;
@@ -1127,7 +1138,7 @@ public sealed class Editor : Drawable {
         int leadingSpaces = line.Length - line.TrimStart().Length;
         
         // If it's an action line, handle it ourselves
-        if (ActionLine.TryParse(line, out var actionLine) && e.Text.Length == 1) {
+        if (TryParseAndFormatActionLine(Document.Caret.Row, out var actionLine) && e.Text.Length == 1) {
             ClearQuickEdits();
             
             // Handle custom bindings
@@ -1273,7 +1284,7 @@ public sealed class Editor : Drawable {
         var caret = Document.Caret;
         var line = Document.Lines[Document.Caret.Row];
         
-        if (ActionLine.TryParse(line, out var actionLine)) {
+        if (TryParseAndFormatActionLine(Document.Caret.Row, out var actionLine)) {
             caret.Col = SnapColumnToActionLine(actionLine, caret.Col);
             
             var lineStartPosition = new CaretPosition(caret.Row, 0);
@@ -1393,7 +1404,7 @@ public sealed class Editor : Drawable {
         
         var line = Document.Lines[Document.Caret.Row];
         
-        if (!splitLines || ActionLine.TryParse(line, out _)) {
+        if (!splitLines || TryParseAndFormatActionLine(Document.Caret.Row, out _)) {
             // Don't split frame count and action
             Document.InsertLineBelow(string.Empty);
             Document.Caret.Row++;
@@ -1490,9 +1501,6 @@ public sealed class Editor : Drawable {
         Document.Caret.Row = GoToDialog.Show(Document);
         Document.Caret = ClampCaret(Document.Caret);
         Document.Selection.Clear();
-        
-        if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out var actionLine))
-            Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
         
         ScrollCaretIntoView();
     }
@@ -1758,7 +1766,7 @@ public sealed class Editor : Drawable {
         int maxRow = Document.Selection.Max.Row;
         
         for (int row = minRow; row <= maxRow; row++) {
-            if (!ActionLine.TryParse(Document.Lines[row], out var actionLine))
+            if (!TryParseAndFormatActionLine(row, out var actionLine))
                 continue;
             
             if (actionLine.Actions.HasFlag(a) && actionLine.Actions.HasFlag(b))
@@ -1782,13 +1790,13 @@ public sealed class Editor : Drawable {
             if (!sameActions) return;
             
             int curr = Document.Caret.Row;
-            if (!ActionLine.TryParse(Document.Lines[curr], out var currActionLine))
+            if (!TryParseAndFormatActionLine(curr, out var currActionLine))
                 return;
             
             // Above
             int above = curr - 1;
             for (; above >= 0; above--) {
-                if (!ActionLine.TryParse(Document.Lines[above], out var otherActionLine))
+                if (!TryParseAndFormatActionLine(above, out var otherActionLine))
                     break;
                 
                 if (currActionLine.Actions != otherActionLine.Actions ||
@@ -1804,7 +1812,7 @@ public sealed class Editor : Drawable {
             // Below
             int below = curr + 1;
             for (; below < Document.Lines.Count; below++) {
-                if (!ActionLine.TryParse(Document.Lines[below], out var otherActionLine))
+                if (!TryParseAndFormatActionLine(below, out var otherActionLine))
                     break;
                 
                 if (currActionLine.Actions != otherActionLine.Actions ||
@@ -1835,7 +1843,7 @@ public sealed class Editor : Drawable {
             int activeRowStart = -1;
             
             for (int row = minRow; row <= maxRow; row++) {
-                if (!ActionLine.TryParse(Document.Lines[row], out var currActionLine))
+                if (!TryParseAndFormatActionLine(row, out var currActionLine))
                     continue; // Skip non-input lines
                 
                 if (activeActionLine == null) {
@@ -1881,8 +1889,7 @@ public sealed class Editor : Drawable {
             
             Document.Selection.Clear();
             Document.Caret.Row = maxRow;
-            if (ActionLine.TryParse(Document.Lines[maxRow], out var actionLine))
-                Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
+            Document.Caret = ClampCaret(Document.Caret);
         }
     }
 
@@ -1907,8 +1914,10 @@ public sealed class Editor : Drawable {
         position.Col = Math.Clamp(position.Col, 0, Document.Lines[position.Row].Length);
         
         // Clamp to action line if possible
-        if (ActionLine.TryParse(Document.Lines[position.Row], out var actionLine))
-            position.Col = SnapColumnToActionLine(actionLine, position.Col);
+        var line = Document.Lines[position.Row];
+        if (ActionLine.TryParse(line, out var actionLine)) {
+            position.Col = Math.Min(line.Length, SnapColumnToActionLine(actionLine, position.Col));
+        }
         
         return position;
     }
@@ -1969,7 +1978,7 @@ public sealed class Editor : Drawable {
         var oldCaret = Document.Caret;
         
         if (ActionLine.TryParse(line, out var actionLine)) {
-            Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
+            Document.Caret.Col = Math.Min(line.Length, SnapColumnToActionLine(actionLine, Document.Caret.Col));
             int leadingSpaces = ActionLine.MaxFramesDigits - actionLine.Frames.Digits();
             
             // Line wrapping
@@ -2009,11 +2018,6 @@ public sealed class Editor : Drawable {
             desiredVisualCol = newVisualPos.Col;
         }
         Document.Caret = ClampCaret(GetActualPosition(newVisualPos));
-        
-        var newLine = Document.Lines[Document.Caret.Row];
-        if (ActionLine.TryParse(newLine, out var newActionLine)) {
-            Document.Caret.Col = SnapColumnToActionLine(newActionLine, Document.Caret.Col);
-        }
         
         if (updateSelection) {
             if (Document.Selection.Empty) {
@@ -2318,14 +2322,10 @@ public sealed class Editor : Drawable {
         int visualRow = (int)(location.Y / Font.LineHeight());
         int visualCol = (int)(location.X / Font.CharWidth());
         
-        var position = ClampCaret(GetActualPosition(new CaretPosition(visualRow, visualCol)));
+        var visualPos = new CaretPosition(visualRow, visualCol);
+        var actualPos = ClampCaret(GetActualPosition(visualPos));
         
-        var newLine = Document.Lines[position.Row];
-        if (ActionLine.TryParse(newLine, out var actionLine)) {
-            position.Col = SnapColumnToActionLine(actionLine, position.Col);
-        }
-        
-        return (position, new CaretPosition(visualRow, visualCol));
+        return (actualPos, visualPos);
     }
     
     private Folding? LocationToFolding(PointF location) {

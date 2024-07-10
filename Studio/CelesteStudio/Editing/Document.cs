@@ -213,20 +213,21 @@ public class Document {
         if (!Directory.Exists(backupDir))
             Directory.CreateDirectory(backupDir);
         
-        string[] files = Directory.GetFiles(backupDir);
+        string[] files = Directory.GetFiles(backupDir)
+            // Sort for oldest first
+            .OrderBy(file => File.GetLastWriteTimeUtc(file).Millisecond)
+            .ToArray();
+        
         if (files.Length > 0) {
-            var lastFileTime = File.GetLastWriteTime(files.Last());
+            var lastFileTime = File.GetLastWriteTimeUtc(files.Last());
             
             // Wait until next interval
-            if (Settings.Instance.AutoBackupRate > 0 && lastFileTime.AddMinutes(Settings.Instance.AutoBackupRate) >= DateTime.Now) {
+            if (Settings.Instance.AutoBackupRate > 0 && lastFileTime.AddMinutes(Settings.Instance.AutoBackupRate) >= DateTime.UtcNow) {
                 return;
             }
             
             // Delete the oldest backups until the desired count is reached
             if (Settings.Instance.AutoBackupCount > 0 && files.Length >= Settings.Instance.AutoBackupCount) {
-                // Sort for oldest first
-                Array.Sort(files, (a, b) => (File.GetLastWriteTime(b) - File.GetLastWriteTime(a)).Milliseconds);
-                
                 foreach (string path in files.Take(files.Length - Settings.Instance.AutoBackupCount + 1)) {
                     File.Delete(path);
                 }
