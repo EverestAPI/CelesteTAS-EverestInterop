@@ -353,9 +353,7 @@ public class Document {
     }
     
     public void Undo() {
-        Console.WriteLine($"Before: {undoStack.Curr} ({undoStack.Stack.Length})");
         undoStack.Undo();
-        Console.WriteLine($"After: {undoStack.Curr} ({undoStack.Stack.Length})");
         Caret = undoStack.Stack[undoStack.Curr].Caret;
         
         OnTextChanged(0, CurrentLines.Count - 1);

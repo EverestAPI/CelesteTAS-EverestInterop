@@ -1423,6 +1423,13 @@ public sealed class Editor : Drawable {
         } else {
             Document.RemoveSelectedText();
             Document.Insert(Document.NewLine.ToString());
+            
+            if (line.StartsWith('#')) {
+                // Keep new line still a comment
+                string prefix = new(line.TakeWhile(c => c == '#' || char.IsWhiteSpace(c)).ToArray());
+                Document.ReplaceLine(Document.Caret.Row, prefix + Document.Lines[Document.Caret.Row]);
+                Document.Caret.Col = prefix.Length;
+            }
         }
         
         Document.Selection.Clear();
@@ -2334,9 +2341,7 @@ public sealed class Editor : Drawable {
         int visualCol = (int)(location.X / Font.CharWidth());
         
         var visualPos = new CaretPosition(visualRow, visualCol);
-        Console.WriteLine("---");
         var actualPos = ClampCaret(GetActualPosition(visualPos));
-        Console.WriteLine("~~~");
         
         return (actualPos, visualPos);
     }
