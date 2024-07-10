@@ -1196,7 +1196,7 @@ public sealed class Editor : Drawable {
                 }
             }
             // If the key we entered is a number
-            else if (typedCharacter is >= '0' and <= '9') {
+            else if (typedCharacter is >= '0' and <= '9' && Document.Caret.Col <= ActionLine.MaxFramesDigits) {
                 int cursorPosition = Document.Caret.Col - leadingSpaces;
 
                 // Entering a zero at the start should do nothing but format
