@@ -127,10 +127,14 @@ public class Document {
             
             var backupBaseDir = Path.Combine(Settings.BaseConfigPath, "Backups");
             bool isBackupFile = Directory.GetParent(FilePath) is { } dir && dir.Parent?.FullName == backupBaseDir;
-            
+
+            // Bit-cast to uint to avoid negative numbers
+            uint hash;
+            unchecked { hash = (uint)FilePath.GetStableHashCode(); }
+
             string backupSubDir = isBackupFile 
                 ? Directory.GetParent(FilePath)!.FullName 
-                : $"{FileName}_{FilePath.GetStableHashCode()}";
+                : $"{FileName}_{hash}";
             
             return Path.Combine(backupBaseDir, backupSubDir);
         }
@@ -215,7 +219,7 @@ public class Document {
         
         string[] files = Directory.GetFiles(backupDir)
             // Sort for oldest first
-            .OrderBy(file => File.GetLastWriteTimeUtc(file).Millisecond)
+            .OrderBy(file => File.GetLastWriteTimeUtc(file).Ticks)
             .ToArray();
         
         if (files.Length > 0) {
