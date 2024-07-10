@@ -2432,8 +2432,10 @@ public sealed class Editor : Drawable {
         
         const int offscreenLinePadding = 3;
 
-        int topRow = Math.Max(0, GetActualRow((int)(scrollablePosition.Y / Font.LineHeight()) - offscreenLinePadding));
-        int bottomRow = Math.Min(Document.Lines.Count - 1, GetActualRow((int)((scrollablePosition.Y + scrollable.Height) / Font.LineHeight()) + offscreenLinePadding));
+        int topVisualRow = (int)(scrollablePosition.Y / Font.LineHeight()) - offscreenLinePadding;
+        int bottomVisualRow = (int)((scrollablePosition.Y + scrollable.Height) / Font.LineHeight()) + offscreenLinePadding;
+        int topRow = Math.Max(0, GetActualRow(topVisualRow));
+        int bottomRow = Math.Min(Document.Lines.Count - 1, GetActualRow(bottomVisualRow));
         
         // Draw text
         using var commentBrush = new SolidBrush(Settings.Instance.Theme.Comment.ForegroundColor);
@@ -2492,8 +2494,7 @@ public sealed class Editor : Drawable {
         // Draw suffix text
         if (CommunicationWrapper.Connected && 
             CommunicationWrapper.CurrentLine != -1 && 
-            CommunicationWrapper.CurrentLine < visualRows.Length &&
-            CommunicationWrapper.CurrentLineSuffix != null) 
+            CommunicationWrapper.CurrentLine < visualRows.Length) 
         {
             const float padding = 10.0f;
             float suffixWidth = Font.MeasureWidth(CommunicationWrapper.CurrentLineSuffix); 
@@ -2534,7 +2535,8 @@ public sealed class Editor : Drawable {
                 float y = Font.LineHeight() * min.Row;
                 e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w, Font.LineHeight());
                 
-                for (int i = min.Row + 1; i < max.Row; i++) {
+                // Cull off-screen lines
+                for (int i = Math.Max(min.Row + 1, topVisualRow); i < Math.Min(max.Row, bottomVisualRow); i++) {
                     w = Font.MeasureWidth(GetVisualLine(i));
                     y = Font.LineHeight() * i;
                     e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX, y, w, Font.LineHeight());
