@@ -14,7 +14,6 @@ using Tomlet.Models;
 
 namespace CelesteStudio;
 
-public enum ThemeType { Light, Dark }
 public enum InsertDirection { Above, Below }
 public enum CaretInsertPosition { AfterInsert, PreviousPosition }
 public enum CommandSeparator { Space, Comma, CommaSpace }
@@ -29,7 +28,7 @@ public sealed class Settings {
     public static void OnChanged() => Changed?.Invoke();
     
     public static event Action? ThemeChanged;
-    private static void OnThemeChanged() => ThemeChanged?.Invoke();
+    public static void OnThemeChanged() => ThemeChanged?.Invoke();
     
     public static event Action FontChanged = FontManager.OnFontChanged;
     public static void OnFontChanged() => FontChanged.Invoke();
@@ -37,22 +36,31 @@ public sealed class Settings {
     #region Settings
     
     [TomlNonSerialized]
-    public Theme Theme => ThemeType switch {
-        ThemeType.Light => Theme.Light,
-        ThemeType.Dark => Theme.Dark,
-        _ => throw new UnreachableException(),
-    };
-    
-    [TomlNonSerialized]
-    private ThemeType themeType = ThemeType.Light;
-    public ThemeType ThemeType {
-        get => themeType;
-        set {
-            themeType = value;
-            OnThemeChanged();
+    public Theme Theme {
+        get {
+            if (CustomThemes.TryGetValue(ThemeName, out Theme theme)) {
+                return theme;
+            }
+            if (Theme.BuiltinThemes.TryGetValue(ThemeName, out Theme builtinTheme)) {
+                return builtinTheme;
+            }
+            // Fall back to light
+            return Theme.BuiltinThemes["Light"];
         }
     }
     
+    [TomlNonSerialized]
+    private string themeName = "Light";
+    public string ThemeName {
+        get => themeName;
+        set {
+            themeName = value;
+            OnThemeChanged();
+        }
+    }
+
+    public Dictionary<string, Theme> CustomThemes { get; set; } = new();
+
     public List<Snippet> Snippets { get; set; } = [];
     
     public bool SendInputsToCeleste { get; set; } = true;
@@ -140,7 +148,7 @@ public sealed class Settings {
             size => new TomlTable { Entries = { { "W", new TomlLong(size.Width) }, { "H", new TomlLong(size.Height) } } },
             tomlValue => {
                 if (tomlValue is not TomlTable table)
-                    throw new TomlTypeMismatchException(typeof(TomlTable), tomlValue.GetType(), typeof(Point));
+                    throw new TomlTypeMismatchException(typeof(TomlTable), tomlValue.GetType(), typeof(Size));
                 if (table.GetValue("W") is not TomlLong w)
                     throw new TomlTypeMismatchException(typeof(TomlLong), table.GetValue("W").GetType(), typeof(int));
                 if (table.GetValue("H") is not TomlLong h)
@@ -156,7 +164,7 @@ public sealed class Settings {
             } },
             tomlValue => {
                 if (tomlValue is not TomlTable table)
-                    throw new TomlTypeMismatchException(typeof(TomlTable), tomlValue.GetType(), typeof(Point));
+                    throw new TomlTypeMismatchException(typeof(TomlTable), tomlValue.GetType(), typeof(Snippet));
                 if (table.GetValue("Enabled") is not TomlBoolean enabled)
                     throw new TomlTypeMismatchException(typeof(TomlBoolean), table.GetValue("Enabled").GetType(), typeof(bool));
                 if (table.GetValue("Hotkey") is not TomlString hotkey)
@@ -172,6 +180,30 @@ public sealed class Settings {
                     Shortcut = shortcut.Value.ReplaceLineEndings(Document.NewLine.ToString())
                 };
             });
+        TomletMain.RegisterMapper(
+            color => new TomlString(color.ToHex()),
+            tomlValue => {
+                if (tomlValue is not TomlString str)
+                    throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(Color));
+                if (!Color.TryParse(str.Value, out Color color))
+                    throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(Color));
+                return color;
+            }
+            );
+        TomletMain.RegisterMapper(
+            fontStyle => new TomlString(fontStyle.ToString()),
+            tomlValue => {
+                if (tomlValue is not TomlString str)
+                    throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(FontStyle));
+                if (str.Value == "Bold")
+                    return FontStyle.Bold;
+                if (str.Value == "Italic")
+                    return FontStyle.Italic;
+                if (str.Value == "Bold, Italic")
+                    return FontStyle.Bold | FontStyle.Italic;
+                return FontStyle.None;
+            }
+            );
         
         if (File.Exists(SettingsPath)) {
             try {

@@ -28,6 +28,7 @@ public sealed class Studio : Form {
     private readonly Scrollable EditorScrollable;
     
     private JadderlineForm? jadderlineForm;
+    private ThemeEditor? themeEditorForm;
 
     private string TitleBarText => Editor.Document.FilePath == Document.ScratchFile 
         ? $"<Scratch> - Studio v{Version.ToString(3)}" 
@@ -365,7 +366,7 @@ public sealed class Studio : Form {
                     }},
                     MenuUtils.CreateAction("Snippets...", Keys.None, SnippetDialog.Show),
                     MenuUtils.CreateAction("Font...", Keys.None, FontDialog.Show),
-                    MenuUtils.CreateSettingEnum<ThemeType>("Theme", nameof(Settings.ThemeType), ["Light", "Dark"]),
+                    CreateSettingTheme(),
                     MenuUtils.CreateAction("Open Settings File...", Keys.None, () => ProcessHelper.OpenInDefaultApp(Settings.SettingsPath)),
                 }},
                 new SubMenuItem { Text = "&Preferences", Items = {
@@ -434,5 +435,53 @@ public sealed class Studio : Form {
         menu.HelpItems.Insert(0, MenuUtils.CreateAction("Home", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop")));
         
         return menu;
+    }
+
+    public MenuItem CreateSettingTheme() {
+        var selector = new SubMenuItem { Text = "&Theme" };
+
+        var edit = MenuUtils.CreateAction("&Edit Theme...", Keys.None, () => {
+            themeEditorForm ??= new();
+            themeEditorForm.Show();
+            themeEditorForm.Closed += (_, _) => {
+                themeEditorForm = null;
+            };
+        });
+        CreateSettingThemeEntries(selector.Items, edit);
+
+        Settings.Changed += () => {
+            CreateSettingThemeEntries(selector.Items, edit);
+        };
+        Settings.ThemeChanged += () => {
+            CreateSettingThemeEntries(selector.Items, edit);
+        };
+
+        return selector;
+    }
+    private static void CreateSettingThemeEntries(MenuItemCollection items, MenuItem edit) {
+        items.Clear();
+        items.Add(edit);
+
+        RadioMenuItem? controller = null;
+        foreach (var name in Theme.BuiltinThemes.Keys) {
+            if (controller == null) {
+                controller = new RadioMenuItem { Text = name };
+                items.Add(controller);
+            } else {
+                items.Add(new RadioMenuItem(controller) { Text = name });
+            }
+        }
+
+        foreach (string name in Settings.Instance.CustomThemes.Keys) {
+            items.Add(new RadioMenuItem(controller) { Text = name });
+        }
+
+        for (int i = 1; i < items.Count; i++) {
+            var item = (RadioMenuItem)items[i];
+            item.Checked = Settings.Instance.ThemeName == item.Text;
+            item.Click += (_, _) => {
+                Settings.Instance.ThemeName = item.Text;
+            };
+        }
     }
 }
