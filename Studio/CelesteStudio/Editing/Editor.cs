@@ -1132,7 +1132,7 @@ public sealed class Editor : Drawable {
         using var __ = Document.Update();
         
         if (!Document.Selection.Empty) {
-            Document.RemoveSelectedText();
+            RemoveRange(Document.Selection.Min, Document.Selection.Max);
             Document.Caret = Document.Selection.Min;
             Document.Selection.Clear();
         }
@@ -1281,7 +1281,7 @@ public sealed class Editor : Drawable {
         using var __ = Document.Update();
         
         if (!Document.Selection.Empty) {
-            Document.RemoveSelectedText();
+            RemoveRange(Document.Selection.Min, Document.Selection.Max);
             Document.Caret = Document.Selection.Min;
             Document.Selection.Clear();
             return;
@@ -1397,7 +1397,7 @@ public sealed class Editor : Drawable {
                 var min = Document.Caret < caret ? Document.Caret : caret;
                 var max = Document.Caret < caret ? caret : Document.Caret;
                 
-                Document.RemoveRange(min, max);
+                RemoveRange(min, max);
                 Document.Caret = min;
                 
                 autoCompleteMenu.Visible = false;
@@ -1421,7 +1421,7 @@ public sealed class Editor : Drawable {
             Document.Caret.Row = newRow;
             Document.Caret.Col = desiredVisualCol = 0;
         } else {
-            Document.RemoveSelectedText();
+            RemoveRange(Document.Selection.Min, Document.Selection.Max);
             Document.Insert(Document.NewLine.ToString());
             
             if (line.StartsWith('#')) {
@@ -1480,7 +1480,7 @@ public sealed class Editor : Drawable {
         using var __ = Document.Update();
 
         if (!Document.Selection.Empty) {
-            Document.RemoveSelectedText();
+            RemoveRange(Document.Selection.Min, Document.Selection.Max);
             Document.Caret = Document.Selection.Min;
             Document.Selection.Clear();
         }
@@ -1753,6 +1753,29 @@ public sealed class Editor : Drawable {
         // Otherwise insert new breakpoint
         else {
             InsertLine(text);
+        }
+    }
+    
+    /// Deletes text in the specified range, while accounting for collapsed
+    private void RemoveRange(CaretPosition min, CaretPosition max) {
+        if (GetCollapse(min.Row) is { } collapse) {
+            var foldMin = new CaretPosition(collapse.MinRow, 0);
+            var foldMax = new CaretPosition(collapse.MinRow, Document.Lines[collapse.MinRow].Length);
+            if (min <= foldMin && max >= foldMax) {
+                // Entire folding is selected, so just remove it entirely
+                Document.RemoveRange(min, max);
+                return;
+            }
+            
+            // Only partially selected, so don't delete the collapsed content, only the stuff around it
+            if (min.Row == max.Row) {
+                Document.RemoveRange(min, max);
+            } else {
+                Document.RemoveRange(min, new CaretPosition(collapse.MinRow, Document.Lines[collapse.MinRow].Length));
+                Document.RemoveRange(new CaretPosition(collapse.MaxRow, Document.Lines[collapse.MaxRow].Length), max);    
+            }
+        } else {
+            Document.RemoveRange(min, max);
         }
     }
     

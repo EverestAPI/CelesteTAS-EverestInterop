@@ -15,6 +15,8 @@ public struct CaretPosition(int row = 0, int col = 0) {
     public static bool operator !=(CaretPosition lhs, CaretPosition rhs) => !(lhs == rhs);
     public static bool operator >(CaretPosition lhs, CaretPosition rhs) => lhs.Row > rhs.Row || (lhs.Row == rhs.Row && lhs.Col > rhs.Col);
     public static bool operator <(CaretPosition lhs, CaretPosition rhs) => lhs.Row < rhs.Row || (lhs.Row == rhs.Row && lhs.Col < rhs.Col);
+    public static bool operator >=(CaretPosition lhs, CaretPosition rhs) => lhs > rhs || lhs == rhs;
+    public static bool operator <=(CaretPosition lhs, CaretPosition rhs) => lhs < rhs || lhs == rhs;
     
     public override string ToString() => $"{Row}:{Col}";
     public override bool Equals(object? obj) => obj is CaretPosition other && Row == other.Row && Col == other.Col;
@@ -495,7 +497,6 @@ public class Document {
         ChangedText(rowA, rowB);
     }
     
-    public void RemoveSelectedText() => RemoveRange(Selection.Min, Selection.Max);
     public void RemoveRange(CaretPosition start, CaretPosition end) {
         if (start.Row == end.Row) {
             RemoveRangeInLine(start.Row, start.Col, end.Col);
