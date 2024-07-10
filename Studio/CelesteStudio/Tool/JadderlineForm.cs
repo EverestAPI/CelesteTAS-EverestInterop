@@ -166,7 +166,7 @@ public sealed class JadderlineForm : Form {
     // Additionally, jelly2 is the one on cooldown (jelly1 is the one about to be grabbed, and as such, doesnt need to be inputted)
     // The additional inputs may or may not need commas, not 100% sure
     // This doesnt go back a frame if an impossible frame is reached, but ive never seen it ever go back in jadderline so its not too much of a priority currently
-    public static string Run(double playerPos, float playerSpeed, float jelly2Pos, int ladders, bool direction, bool moveOnly, string additionalInputs) {
+    public static string Run(double playerPos, float playerSpeed, float jelly2Pos, int ladders, bool direction, bool moveOnly, Actions additionalActions) {
         float playerSub = (float)(playerPos - double.Truncate(playerPos));
         playerPos = double.Truncate(playerPos);
         if (ladders < 2) { // Because we calculate the jelly ladders in 2 regrab windows
@@ -210,7 +210,7 @@ public sealed class JadderlineForm : Form {
             jelly2Pos = float.Round(jelly1Pos); // Make jelly1 the new jelly2
             jelly1Pos = (float)playerPos;
         }
-        return Format(inputs, moveOnly, direction, additionalInputs);
+        return Format(inputs, moveOnly, direction, additionalActions);
     }
     
     // Gets the distance jelly1 has moved while ensuring the player can still grab jelly2
