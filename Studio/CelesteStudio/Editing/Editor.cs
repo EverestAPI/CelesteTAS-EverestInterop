@@ -846,19 +846,19 @@ public sealed class Editor : Drawable {
                 DisplayText = name,
                 ExtraText = extra,
                 OnUse = () => {
-                    Document.ReplaceLine(Document.Caret.Row, quickEdit.ActualText);
+                    int row = Document.Caret.Row;
+                    Document.ReplaceLine(row, quickEdit.ActualText);
                     
                     ClearQuickEdits();
                     
                     if (quickEdit.Selections.Length > 0) {
                         for (int i = 0; i < quickEdit.Selections.Length; i++) {
-                            Selection selection = quickEdit.Selections[i];
-                            
+                            var selection = quickEdit.Selections[i];
                             var defaultText = quickEdit.ActualText.SplitDocumentLines()[selection.Min.Row][selection.Min.Col..selection.Max.Col];
                             
                             // Quick-edit selections are relative, not absolute
                             Document.AddAnchor(new Anchor {
-                                Row = selection.Min.Row + Document.Caret.Row,
+                                Row = selection.Min.Row + row,
                                 MinCol = selection.Min.Col, MaxCol = selection.Max.Col,
                                 UserData = new QuickEditData { Index = i, DefaultText = defaultText },
                                 OnRemoved = ClearQuickEdits,
@@ -998,7 +998,7 @@ public sealed class Editor : Drawable {
         const float autocompleteXPos = 8.0f;
         const float autocompleteYOffset = 7.0f;
         
-        float carY = Font.LineHeight() * Document.Caret.Row;
+        float carY = Font.LineHeight() * actualToVisualRows[Document.Caret.Row];
         float autoCompleteX = scrollablePosition.X + textOffsetX + autocompleteXPos;
         float autoCompleteY = carY + Font.LineHeight() + autocompleteYOffset;
         float autoCompleteMaxH = (scrollablePosition.Y + scrollable.Height - Font.LineHeight()) - autoCompleteY;
@@ -2558,7 +2558,7 @@ public sealed class Editor : Drawable {
         foreach (var anchor in GetQuickEdits()) {
             const float padding = 1.0f;
             
-            float y = Font.LineHeight() * anchor.Row;
+            float y = Font.LineHeight() * actualToVisualRows[anchor.Row];
             float x = Font.CharWidth() * anchor.MinCol;
             float w = Font.CharWidth() * anchor.MaxCol - x;
             
