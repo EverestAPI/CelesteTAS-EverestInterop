@@ -17,7 +17,7 @@ public static class Program {
     public static void Main(string[] args) {
         try {
             var app = new Application(Eto.Platforms.Wpf);
-            var studio = new Studio(window => {
+            var studio = new Studio(windowCreationCallback: window => {
                 ApplyTheme(window, Settings.Instance.ThemeType == ThemeType.Dark);
                 Settings.ThemeChanged += () => ApplyTheme(window, Settings.Instance.ThemeType == ThemeType.Dark);
             });
@@ -54,8 +54,6 @@ public static class Program {
         }
     }
     private static void ApplyTheme(Window window, bool isDark) {
-        var assemblyName = typeof(Program).Assembly.GetName().Name;
-        
         if (isDark) {
             var appHandler = (ApplicationHandler)Application.Instance.Handler;
             window.BackgroundColor = ((SolidColorBrush)appHandler.Control.FindResource("Window.Static.Background")).ToEtoColor();
