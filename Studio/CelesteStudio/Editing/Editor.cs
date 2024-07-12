@@ -155,8 +155,8 @@ public sealed class Editor : Drawable {
         Cursor = Cursors.IBeam;
         
         // Need to redraw the line numbers when scrolling horizontally
-        scrollable.Scroll += (_, e) => {
-            scrollablePosition = e.ScrollPosition;
+        scrollable.Scroll += (_, _) => {
+            scrollablePosition = scrollable.ScrollPosition;
             Invalidate();
         };
         // Update wrapped lines
@@ -656,6 +656,7 @@ public sealed class Editor : Drawable {
         
         if (e.Key == Keys.Space && e.HasCommonModifier()) {
             UpdateAutoComplete();
+            //autoCompleteMenu.Visible = true;
 
             e.Handled = true;
             Recalc();

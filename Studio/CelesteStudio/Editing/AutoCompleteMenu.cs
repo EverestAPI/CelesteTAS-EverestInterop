@@ -43,6 +43,10 @@ public sealed class AutoCompleteMenu : Scrollable {
         }
         
         protected override void OnPaint(PaintEventArgs e) {
+            if (menu.shownEntries.Length == 0) {
+                return;
+            }
+
             var font = FontManager.EditorFontRegular;
             int maxDisplayLen = menu.shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
 
@@ -131,7 +135,15 @@ public sealed class AutoCompleteMenu : Scrollable {
     }
     
     public int ContentWidth {
-        set => Width = value + BorderWidth * 2;
+        set {
+            if (Eto.Platform.Instance.IsWpf) {
+                const int scrollBarWidth = 17;
+                bool scrollBarVisible = Height <= ContentHeight;
+                Width = Math.Max(0, value + BorderWidth * 2 + (scrollBarVisible ? scrollBarWidth : 0));
+            } else {
+                Width = Math.Max(0, value + BorderWidth * 2);
+            }
+        }
         get {
             if (shownEntries.Length == 0) {
                 return 0;
@@ -145,7 +157,7 @@ public sealed class AutoCompleteMenu : Scrollable {
         }
     }
     public int ContentHeight {
-        set => Height = value + BorderWidth * 2;
+        set => Height = Math.Max(0, value + BorderWidth * 2);
         get => shownEntries.Length * EntryHeight;
     }
     
@@ -169,13 +181,8 @@ public sealed class AutoCompleteMenu : Scrollable {
         }
         
         selectedEntry = Math.Clamp(selectedEntry, 0, shownEntries.Length - 1);
-        
-        // Apparently you need to set the size from the parent on WPF?
-        if (Eto.Platform.Instance.IsWpf) {
-            ScrollSize = new(ContentWidth, ContentHeight);
-        } else {
-            drawable.Size = new(ContentWidth, ContentHeight);
-        }
+
+        drawable.Size = new(ContentWidth, ContentHeight);
         drawable.Invalidate();
     }
     

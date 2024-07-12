@@ -59,6 +59,7 @@ public struct Theme {
             StatusFg = Color.FromRgb(0x000000),
             StatusBg = Color.FromRgb(0xF2F2F2),
             AutoCompleteFg = Color.FromRgb(0x121212),
+            AutoCompleteFgExtra = Color.FromRgb(0x646464),
             AutoCompleteBg = Color.FromRgb(0xE9E9E9),
             AutoCompleteBorder = Color.FromRgb(0xA2A2A2),
             AutoCompleteSelected = Color.FromArgb(0x44, 0x44, 0x44, 0x3F),
