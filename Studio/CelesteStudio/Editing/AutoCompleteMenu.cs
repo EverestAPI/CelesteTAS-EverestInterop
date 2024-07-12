@@ -7,7 +7,7 @@ using Eto.Forms;
 
 namespace CelesteStudio.Editing;
 
-public class AutoCompleteMenu : Scrollable {
+public sealed class AutoCompleteMenu : Scrollable {
     public record Entry {
         /// The text which will be used for filtering results.
         public required string SearchText;
@@ -15,8 +15,81 @@ public class AutoCompleteMenu : Scrollable {
         public required string DisplayText;
         /// The extra text which will be displayed to the right of the main text.
         public required string ExtraText;
-        /// Callback when this entries is selected.
+        /// Callback for when this entry is selected.
         public required Action OnUse;
+    }
+    
+    private const int BorderWidth = 1; // We can't disable the border, so we have to account for that to avoid having scrollbars
+    private const float EntryBetweenPadding = 2.5f;
+    private const float EntryPaddingLeft = 3.0f;
+    private const float EntryPaddingRight = 20.0f;
+    private const int DisplayExtraPadding = 1;
+    
+    private sealed class ContentDrawable : Drawable {
+        private readonly AutoCompleteMenu menu;
+        
+        public ContentDrawable(AutoCompleteMenu menu) {
+            this.menu = menu;
+            
+            BackgroundColor = Settings.Instance.Theme.AutoCompleteBg;
+            Settings.ThemeChanged += () => BackgroundColor = Settings.Instance.Theme.AutoCompleteBg;
+            
+            MouseMove += (_, _) => Invalidate();
+            MouseEnter += (_, _) => Invalidate();
+            MouseLeave += (_, _) => Invalidate();
+            menu.Scroll += (_, _) => Invalidate();
+            
+            Cursor = Cursors.Pointer;
+        }
+        
+        protected override void OnPaint(PaintEventArgs e) {
+            var font = FontManager.EditorFontRegular;
+            int maxDisplayLen = menu.shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
+
+            float width = menu.ContentWidth;
+            float height = menu.EntryHeight;
+            
+            const int rowCullOverhead = 3;
+            int minRow = Math.Max(0, (int)(menu.ScrollPosition.Y / height) - rowCullOverhead);
+            int maxRow = Math.Min(menu.shownEntries.Length - 1, (int)((menu.ScrollPosition.Y + menu.ClientSize.Height) / height) + rowCullOverhead);
+            
+            using var displayBrush = new SolidBrush(Settings.Instance.Theme.AutoCompleteFg);
+            using var extraBrush = new SolidBrush(Settings.Instance.Theme.AutoCompleteFgExtra);
+            
+            var mousePos = PointFromScreen(Mouse.Position);
+            int mouseRow = -1;
+            if (mousePos.X >= 0.0f && mousePos.X <= ClientSize.Width) {
+                mouseRow = (int)(mousePos.Y / height);
+            }
+            
+            for (int row = minRow; row <= maxRow; row++) {
+                var entry = menu.shownEntries[row];
+                
+                if (row == menu.SelectedEntry) {
+                    e.Graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteSelected, 0.0f, row * height, width, height);
+                } else if (row == mouseRow) {
+                    e.Graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteHovered, 0.0f, row * height, width, height);
+                }
+                
+                e.Graphics.DrawText(font, displayBrush, EntryPaddingLeft, row * height + EntryBetweenPadding, entry.DisplayText);
+                e.Graphics.DrawText(font, extraBrush, EntryPaddingLeft + font.CharWidth() * (maxDisplayLen + DisplayExtraPadding), row * height + EntryBetweenPadding, entry.ExtraText);
+            }
+            
+            base.OnPaint(e);
+        }
+        
+        protected override void OnMouseDown(MouseEventArgs e) {
+            if (e.Buttons.HasFlag(MouseButtons.Primary)) {
+                int mouseRow = (int)(e.Location.Y / menu.EntryHeight);
+                
+                if (mouseRow >= 0 && mouseRow < menu.shownEntries.Length) {
+                    menu.shownEntries[mouseRow].OnUse();
+                    e.Handled = true;
+                }
+            }
+            
+            base.OnMouseDown(e);
+        }
     }
     
     public override bool Visible {
@@ -50,20 +123,15 @@ public class AutoCompleteMenu : Scrollable {
     public int SelectedEntry {
         get => selectedEntry;
         set {
-            labels[selectedEntry].Display.BackgroundColor = labels[selectedEntry].Extra.BackgroundColor = Colors.Transparent;
             selectedEntry = Math.Clamp(value, 0, shownEntries.Length);
-            labels[selectedEntry].Display.BackgroundColor = labels[selectedEntry].Extra.BackgroundColor = Settings.Instance.Theme.AutoCompleteSelected;
 
             ScrollIntoView();
+            drawable.Invalidate();
         }
     }
     
-    private const int BorderWidth = 1; // We can't disable the border, so we have to account for that to avoid having scrollbars
-    private const float EntryPadding = 2.5f;
-    private const int DisplayTextPadding = 2; // A space is added on both sides of the DisplayText
-    private const int ExtraTextPadding = 2; // Two spaces are added on the right side of the ExtraText
-    
     public int ContentWidth {
+        set => Width = value + BorderWidth * 2;
         get {
             if (shownEntries.Length == 0) {
                 return 0;
@@ -73,18 +141,23 @@ public class AutoCompleteMenu : Scrollable {
             int maxDisplayLen = shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
             int maxExtraLen = shownEntries.Select(entry => entry.ExtraText.Length).Aggregate(Math.Max);
             
-            // Need to add +2 at the end, since otherwise there's a horizontal scroll bar for some reason
-            return (int)(font.CharWidth() * (maxDisplayLen + DisplayTextPadding)) + (int)(font.CharWidth() * (maxExtraLen + ExtraTextPadding)) + BorderWidth * 2;
+            return (int)(font.CharWidth() * (maxDisplayLen + DisplayExtraPadding + maxExtraLen) + EntryPaddingLeft + EntryPaddingRight);
         }
     }
-    public int ContentHeight => shownEntries.Length * EntryHeight + BorderWidth * 2;
-    public int EntryHeight => (int)(FontManager.EditorFontRegular.LineHeight() + EntryPadding * 2.0f);
+    public int ContentHeight {
+        set => Height = value + BorderWidth * 2;
+        get => shownEntries.Length * EntryHeight;
+    }
+    
+    public int EntryHeight => (int)(FontManager.EditorFontRegular.LineHeight() + EntryBetweenPadding * 2.0f);
     
     private Entry[] shownEntries = [];
-    private (Label Display, Label Extra)[] labels = [];
+    private readonly ContentDrawable drawable;
     
     public AutoCompleteMenu() {
-        Settings.ThemeChanged += Recalc;
+        drawable = new ContentDrawable(this);
+        Content = drawable;
+
         Recalc();
     }
     
@@ -97,75 +170,13 @@ public class AutoCompleteMenu : Scrollable {
         
         selectedEntry = Math.Clamp(selectedEntry, 0, shownEntries.Length - 1);
         
-        var table = new TableLayout {
-            Padding = 0,
-            Spacing = new Size(0, 0),
-            BackgroundColor = Settings.Instance.Theme.AutoCompleteBg,
-        };
-        Array.Resize(ref labels, shownEntries.Length);
-        
-        // Prevent the click from going to the editor
-        table.MouseDown += (_, e) => e.Handled = true;
-        
-        var font = FontManager.EditorFontRegular;
-        int maxDisplayLen = shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
-        int maxExtraLen = shownEntries.Select(entry => entry.ExtraText.Length).Aggregate(Math.Max);
-        
-        for (int i = 0; i < shownEntries.Length; i++) {
-            var entry = shownEntries[i];
-            
-            var defaultBg = SelectedEntry == i ? Settings.Instance.Theme.AutoCompleteSelected : Colors.Transparent;
-            
-            var display = new Label {
-                Text = $" {entry.DisplayText} ",
-                TextColor = Settings.Instance.Theme.AutoCompleteFg,
-                BackgroundColor = defaultBg,
-                Font = font,
-                VerticalAlignment = VerticalAlignment.Center,
-                Height = (int) (font.LineHeight() + EntryPadding * 2.0f),
-                Width = (int) (font.CharWidth() * (maxDisplayLen + DisplayTextPadding)),
-                Cursor = Cursors.Pointer,
-            };
-            var extra = new Label {
-                Text = $"{entry.ExtraText}  ",
-                TextColor = Settings.Instance.Theme.AutoCompleteFgExtra,
-                BackgroundColor = defaultBg,
-                Font = font,
-                VerticalAlignment = VerticalAlignment.Center,
-                Height = (int) (font.LineHeight() + EntryPadding * 2.0f),
-                Width = (int) (font.CharWidth() * (maxExtraLen + ExtraTextPadding)),
-                Cursor = Cursors.Pointer,
-            };
-            
-            labels[i] = (display, extra);
-            
-            display.MouseDown += (_, e) => entry.OnUse();
-            
-            // Hover styling
-            int idx = i;
-            void SetHover(bool hover) {
-                if (hover && SelectedEntry != idx) {
-                    display.BackgroundColor = Settings.Instance.Theme.AutoCompleteHovered;
-                    extra.BackgroundColor = Settings.Instance.Theme.AutoCompleteHovered;
-                } else {
-                    display.BackgroundColor = extra.BackgroundColor = SelectedEntry == idx ? Settings.Instance.Theme.AutoCompleteSelected : Colors.Transparent;
-                }
-            }
-            display.MouseEnter += (_, e) => SetHover(true);
-            extra.MouseEnter += (_, e) => SetHover(true);
-            display.MouseLeave += (_, e) => SetHover(false);
-            extra.MouseLeave += (_, e) => SetHover(false);
-            
-            table.Rows.Add(new TableRow {
-                Cells = {
-                    new TableCell {Control = display},
-                    new TableCell {Control = extra},
-                }
-            });
+        // Apparently you need to set the size from the parent on WPF?
+        if (Eto.Platform.Instance.IsWpf) {
+            ScrollSize = new(ContentWidth, ContentHeight);
+        } else {
+            drawable.Size = new(ContentWidth, ContentHeight);
         }
-        
-        ScrollSize = table.Size;
-        Content = table;
+        drawable.Invalidate();
     }
     
     private void ScrollIntoView() {
@@ -178,7 +189,6 @@ public class AutoCompleteMenu : Scrollable {
         int selectedTop = SelectedEntry * entryHeight;
         int selectedBottom = selectedTop + entryHeight;
         
-        Console.WriteLine($"{selectedTop} {selectedBottom} | {scrollStartTop} {scrollStartBottom}");
         if (selectedTop < scrollStartTop) {
             ScrollPosition = ScrollPosition with { Y = Math.Max(0, selectedTop - lookAhead * entryHeight) };
         } else if (selectedBottom > scrollStartBottom) {

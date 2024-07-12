@@ -460,8 +460,8 @@ public sealed class Editor : Drawable {
             int menuMaxW = (int)(scrollablePosition.X + scrollableSize.Width - Font.CharWidth() - menuX);
             int menuMaxH = (int)(scrollablePosition.Y + scrollableSize.Height - Font.LineHeight() - menuY);
             
-            autoCompleteMenu.Width = Math.Min(autoCompleteMenu.ContentWidth, menuMaxW);
-            autoCompleteMenu.Height = Math.Min(autoCompleteMenu.ContentHeight, menuMaxH);
+            autoCompleteMenu.ContentWidth = Math.Min(autoCompleteMenu.ContentWidth, menuMaxW);
+            autoCompleteMenu.ContentHeight = Math.Min(autoCompleteMenu.ContentHeight, menuMaxH);
             pixelLayout.Move(autoCompleteMenu, menuX, menuY);
         }
         
