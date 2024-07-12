@@ -28,6 +28,7 @@ public sealed class Studio : Form {
     private readonly Scrollable EditorScrollable;
     
     private JadderlineForm? jadderlineForm;
+    private FeatherlineForm? featherlineForm;
 
     private string TitleBarText => Editor.Document.FilePath == Document.ScratchFile 
         ? $"<Scratch> - Studio v{Version.ToString(3)}" 
@@ -419,6 +420,11 @@ public sealed class Studio : Form {
                         jadderlineForm ??= new();
                         jadderlineForm.Show();
                         jadderlineForm.Closed += (_, _) => jadderlineForm = null;
+                    }),
+                    MenuUtils.CreateAction("Featherline", Keys.None, () => {
+                        featherlineForm ??= new();
+                        featherlineForm.Show();
+                        featherlineForm.Closed += (_, _) => featherlineForm = null;
                     }),
                 }},
             },
