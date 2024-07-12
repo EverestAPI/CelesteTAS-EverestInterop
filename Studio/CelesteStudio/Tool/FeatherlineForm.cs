@@ -47,20 +47,20 @@ public sealed class FeatherlineForm : Form {
             Items = { // TODO: these need to set featherline settings
                 new SubMenuItem { Text = "Settings", Items = {
                     new SubMenuItem { Text = "Genetic Algorithm", Items = {
-                        MenuUtils.CreateNumberInputShow("Population", () => 50, (val) => {}, 2, 999999, 1),
-                        MenuUtils.CreateNumberInputShow("Generation Survivors", () => 20, (val) => {}, 1, 999998, 1),
-                        MenuUtils.CreateNumberInputShow("Mutation Magnitude", () => 8f, (val) => {}, 0f, 180f, 0.1f),
-                        MenuUtils.CreateNumberInputShow("Max Mutation Count", () => 5, (val) => {}, 1, 999999, 1),
+                        MenuUtils.CreateSettingNumberInput("Population", "Population", 2, 999999, 1),
+                        MenuUtils.CreateSettingNumberInput("Generation Survivors", "GenerationSurvivors", 1, 999998, 1),
+                        MenuUtils.CreateSettingNumberInput("Mutation Magnitude", "MutationMagnitude", 0f, 180f, 0.1f),
+                        MenuUtils.CreateSettingNumberInput("Max Mutation Count", "MaxMutations", 1, 999999, 1),
                     }},
                     new SubMenuItem { Text = "Computation", Items = {
-                        MenuUtils.CreateToggle("Don't Compute Hazards", () => false, () => {}),
-                        MenuUtils.CreateToggle("Don't Compute Walls or Colliders", () => false, () => {}),
+                        MenuUtils.CreateSettingToggle("Don't Compute Hazards", "DontHazard"),
+                        MenuUtils.CreateSettingToggle("Don't Compute Walls or Colliders", "DontSolid"),
                     }},
                     new SubMenuItem { Text = "Algorithm Mode", Items = {
-                        MenuUtils.CreateToggle("Frame Genes Only", () => false, () => {}),
-                        MenuUtils.CreateToggle("Disallow Wall Collision", () => false, () => {}),
+                        MenuUtils.CreateSettingToggle("Frame Genes Only", "FrameOnly"),
+                        MenuUtils.CreateSettingToggle("Disallow Wall Collision", "Disallow Wall"),
                     }},
-                    MenuUtils.CreateNumberInputShow("Simulation Thread Count", () => 8, (val) => {}, -1, 100, 1),
+                    MenuUtils.CreateSettingNumberInput("Simulation Thread Count", "SimulationThreads", -1, 100, 1),
                 }},
             },
         };

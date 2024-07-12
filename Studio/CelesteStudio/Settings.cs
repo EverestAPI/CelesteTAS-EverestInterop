@@ -21,6 +21,7 @@ public enum CommandSeparator { Space, Comma, CommaSpace }
 public sealed class Settings {
     public static string BaseConfigPath => Path.Combine(EtoEnvironment.GetFolderPath(EtoSpecialFolder.ApplicationSettings), "CelesteStudio"); 
     public static string SettingsPath => Path.Combine(BaseConfigPath, "Settings.toml");
+    public static string FeatherlineSettingsPath => Path.Combine(BaseConfigPath, "FeatherlineSettings.toml");
     
     public static Settings Instance { get; private set; } = new();
     
@@ -129,9 +130,20 @@ public sealed class Settings {
         OnChanged();
         Save();
     }
-    
+
     #endregion
-    
+    #region Featherline
+    public int Population { get; set; } = 50;
+    public int GenerationSurvivors { get; set; } = 20;
+    public float MutationMagnitude { get; set; } = 8f;
+    public int MaxMutations { get; set; } = 5;
+    public bool DontHazard { get; set; } = false;
+    public bool DontSolid { get; set; } = false;
+    public bool FrameOnly { get; set; } = false;
+    public bool DisallowWall { get; set; } = false;
+    public int SimulationThreads { get; set; } = 8;
+    #endregion
+
     public static void Load() {
         // Register mappings
         TomletMain.RegisterMapper(
