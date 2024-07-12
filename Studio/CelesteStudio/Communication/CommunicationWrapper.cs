@@ -16,7 +16,7 @@ public static class CommunicationWrapper {
     
     private static CommunicationAdapterStudio? comm;
     
-    private static StudioState state;
+    private static StudioState state = new();
     private static Dictionary<HotkeyID, List<WinFormsKeys>> bindings = [];
     
     public static void Start() {

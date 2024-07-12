@@ -4,15 +4,15 @@ using System.IO;
 namespace StudioCommunication;
 
 public record struct StudioState() {
-    public required int CurrentLine = -1;
-    public required string CurrentLineSuffix = string.Empty;
-    public required int CurrentFrameInTas = -1;
-    public required int TotalFrames = 0;
-    public required int SaveStateLine = -1;
-    public required States tasStates = States.None;
-    public required string GameInfo = string.Empty;
-    public required string LevelName = string.Empty;
-    public required string ChapterTime = string.Empty;
+    public int CurrentLine = -1;
+    public string CurrentLineSuffix = string.Empty;
+    public int CurrentFrameInTas = -1;
+    public int TotalFrames = 0;
+    public int SaveStateLine = -1;
+    public States tasStates = States.None;
+    public string GameInfo = string.Empty;
+    public string LevelName = string.Empty;
+    public string ChapterTime = string.Empty;
     
     public void Serialize(BinaryWriter writer) {
         writer.Write(CurrentLine);
