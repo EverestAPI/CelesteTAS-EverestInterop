@@ -47,20 +47,20 @@ public sealed class FeatherlineForm : Form {
             Items = { // TODO: these need to set featherline settings
                 new SubMenuItem { Text = "Settings", Items = {
                     new SubMenuItem { Text = "Genetic Algorithm", Items = {
-                        MenuUtils.CreateSettingNumberInput("Population", "Population", 2, 999999, 1),
-                        MenuUtils.CreateSettingNumberInput("Generation Survivors", "GenerationSurvivors", 1, 999998, 1),
-                        MenuUtils.CreateSettingNumberInput("Mutation Magnitude", "MutationMagnitude", 0f, 180f, 0.1f),
-                        MenuUtils.CreateSettingNumberInput("Max Mutation Count", "MaxMutations", 1, 999999, 1),
+                        MenuUtils.CreateFeatherlineSettingNumberInput("Population", "Population", 2, 999999, 1),
+                        MenuUtils.CreateFeatherlineSettingNumberInput("Generation Survivors", "GenerationSurvivors", 1, 999998, 1),
+                        MenuUtils.CreateFeatherlineSettingNumberInput("Mutation Magnitude", "MutationMagnitude", 0f, 180f, 0.1f),
+                        MenuUtils.CreateFeatherlineSettingNumberInput("Max Mutation Count", "MaxMutations", 1, 999999, 1),
                     }},
                     new SubMenuItem { Text = "Computation", Items = {
-                        MenuUtils.CreateSettingToggle("Don't Compute Hazards", "DontHazard"),
-                        MenuUtils.CreateSettingToggle("Don't Compute Walls or Colliders", "DontSolid"),
+                        MenuUtils.CreateFeatherlineSettingToggle("Don't Compute Hazards", "DontHazard"),
+                        MenuUtils.CreateFeatherlineSettingToggle("Don't Compute Walls or Colliders", "DontSolid"),
                     }},
                     new SubMenuItem { Text = "Algorithm Mode", Items = {
-                        MenuUtils.CreateSettingToggle("Frame Genes Only", "FrameOnly"),
-                        MenuUtils.CreateSettingToggle("Disallow Wall Collision", "Disallow Wall"),
+                        MenuUtils.CreateFeatherlineSettingToggle("Frame Genes Only", "FrameOnly"),
+                        MenuUtils.CreateFeatherlineSettingToggle("Disallow Wall Collision", "DisallowWall"),
                     }},
-                    MenuUtils.CreateSettingNumberInput("Simulation Thread Count", "SimulationThreads", -1, 100, 1),
+                    MenuUtils.CreateFeatherlineSettingNumberInput("Simulation Thread Count", "SimulationThreads", -1, 100, 1),
                 }},
             },
         };
