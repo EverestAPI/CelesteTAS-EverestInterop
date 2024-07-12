@@ -20,27 +20,6 @@ public sealed class Studio : Form {
     public static Studio Instance = null!;
     public static Version Version { get; private set; } = null!;
     
-    // Some platforms report the window larger than it actually is, so there need to be some offsets.
-    // The values are chosen by fine-tuning manually.
-    public static float BorderBottomOffset {
-        get {
-            if (Eto.Platform.Instance.IsWpf)
-                return 57.0f;
-            if (Eto.Platform.Instance.IsGtk)
-                return 30.0f;
-            if (Eto.Platform.Instance.IsMac)
-                return 22.0f;
-            return 0.0f;
-        }
-    }
-    public static int WidthRightOffset {
-        get {
-            if (Eto.Platform.Instance.IsWpf)
-                return 16;
-            return 0;
-        }
-    }
-    
     // Platform-specific callback to handle new windows
     public readonly Action<Window> WindowCreationCallback;
 
@@ -96,6 +75,11 @@ public sealed class Studio : Form {
             };
             
             SizeChanged += (_, _) => RecalculateLayout();
+            Shown += (_, _) => {
+                GameInfoPanel.UpdateLayout();
+                RecalculateLayout();
+            };
+            
 
             ApplySettings();
             
@@ -119,8 +103,8 @@ public sealed class Studio : Form {
     public void RecalculateLayout() {
         GameInfoPanel.Width = Width;
         EditorScrollable.Size = new Size(
-            Math.Max(0, Width - WidthRightOffset), 
-            Math.Max(0, (int)(Height - GameInfoPanel.Height - BorderBottomOffset)));
+            Math.Max(0, ClientSize.Width), 
+            Math.Max(0, (int)(ClientSize.Height - GameInfoPanel.Height)));
     }
     
     private void ApplySettings() {

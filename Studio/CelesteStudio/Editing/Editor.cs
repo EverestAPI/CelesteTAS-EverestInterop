@@ -78,7 +78,9 @@ public sealed class Editor : Drawable {
     }
     
     private readonly Scrollable scrollable;
+    // These values need to be stored, since WPF doesn't like accessing them directly from the scrollable
     private Point scrollablePosition;
+    private Size scrollableSize;
     
     private Font Font => FontManager.EditorFontRegular;
     private SyntaxHighlighter highlighter;
@@ -154,7 +156,10 @@ public sealed class Editor : Drawable {
             Invalidate();
         };
         // Update wrapped lines
-        scrollable.SizeChanged += (_, _) => Recalc();
+        scrollable.SizeChanged += (_, _) => {
+            scrollableSize = scrollable.ClientSize;
+            Recalc();
+        };
 
         CommunicationWrapper.StateUpdated += (prevState, state) => {
             if (prevState.CurrentLine == state.CurrentLine &&
@@ -357,7 +362,7 @@ public sealed class Editor : Drawable {
                 var wrappedLines = new List<WrapLine>();
 
                 const int charPadding = 1;
-                float charWidth = (scrollable.Width - textOffsetX - Studio.WidthRightOffset) / Font.CharWidth() - 1 - charPadding; // -1 because we overshoot by 1 while iterating
+                float charWidth = (scrollableSize.Width - textOffsetX) / Font.CharWidth() - 1 - charPadding; // -1 because we overshoot by 1 while iterating
                 
                 int idx = 0;
                 int startOffset = -1;
@@ -1001,7 +1006,7 @@ public sealed class Editor : Drawable {
         float carY = Font.LineHeight() * actualToVisualRows[Document.Caret.Row];
         float autoCompleteX = scrollablePosition.X + textOffsetX + autocompleteXPos;
         float autoCompleteY = carY + Font.LineHeight() + autocompleteYOffset;
-        float autoCompleteMaxH = (scrollablePosition.Y + scrollable.Height - Font.LineHeight()) - autoCompleteY;
+        float autoCompleteMaxH = (scrollablePosition.Y + scrollableSize.Height - Font.LineHeight()) - autoCompleteY;
         
         return (autoCompleteX, autoCompleteY, autoCompleteMaxH);
     }
@@ -1993,37 +1998,37 @@ public sealed class Editor : Drawable {
         float carY = Font.LineHeight() * caretPos.Row;
         
         float top = scrollablePosition.Y;
-        float bottom = (scrollable.Size.Height - Studio.BorderBottomOffset) + scrollablePosition.Y;
+        float bottom = (scrollableSize.Height) + scrollablePosition.Y;
         
         const float scrollStopPadding = 10.0f;
         
         int scrollX = scrollablePosition.X;
-        if (Font.MeasureWidth(GetVisualLine(caretPos.Row)) < (scrollable.Width - textOffsetX - Studio.WidthRightOffset - scrollStopPadding)) {
+        if (Font.MeasureWidth(GetVisualLine(caretPos.Row)) < (scrollableSize.Width - textOffsetX - scrollStopPadding)) {
             // Don't scroll when the line is shorter anyway
             scrollX = 0;
         } else if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _)) {
             // Always scroll horizontally on action lines, since we want to stay as left as possible
-            scrollX = (int)((carX + xLookAhead) - (scrollable.Size.Width - textOffsetX - Studio.WidthRightOffset));
+            scrollX = (int)((carX + xLookAhead) - (scrollableSize.Width - textOffsetX));
         } else {
             // Just scroll left/right when near the edge
             float left = scrollablePosition.X;
-            float right = scrollablePosition.X + scrollable.Width - textOffsetX - Studio.WidthRightOffset;
+            float right = scrollablePosition.X + scrollableSize.Width - textOffsetX;
             if (left - carX > -xLookAhead)
                 scrollX = (int)(carX - xLookAhead);
             else if (right - carX < xLookAhead)
-                scrollX = (int)(carX + xLookAhead - (scrollable.Size.Width - textOffsetX - Studio.WidthRightOffset));
+                scrollX = (int)(carX + xLookAhead - (scrollableSize.Width - textOffsetX));
         }
             
         int scrollY = scrollablePosition.Y;
         if (center) {
             // Keep line in the center
-            scrollY = (int)(carY - scrollable.Size.Height / 2.0f);
+            scrollY = (int)(carY - scrollableSize.Height / 2.0f);
         } else {
             // Scroll up/down when near the top/bottom
             if (top - carY > -yLookAhead)
                 scrollY = (int)(carY - yLookAhead);
             else if (bottom - carY < yLookAhead)
-                scrollY = (int)(carY + yLookAhead - (scrollable.Size.Height - Studio.BorderBottomOffset));
+                scrollY = (int)(carY + yLookAhead - (scrollableSize.Height));
         }
 
         scrollable.ScrollPosition = new Point(
@@ -2461,7 +2466,7 @@ public sealed class Editor : Drawable {
     }
     private int LocationToLineLink(PointF location) {
         if (location.X < scrollablePosition.X + textOffsetX ||
-            location.X > scrollablePosition.X + scrollable.Width) 
+            location.X > scrollablePosition.X + scrollableSize.Width) 
         {
             return -1;
         }
@@ -2491,7 +2496,7 @@ public sealed class Editor : Drawable {
         const int offscreenLinePadding = 3;
 
         int topVisualRow = (int)(scrollablePosition.Y / Font.LineHeight()) - offscreenLinePadding;
-        int bottomVisualRow = (int)((scrollablePosition.Y + scrollable.Height) / Font.LineHeight()) + offscreenLinePadding;
+        int bottomVisualRow = (int)((scrollablePosition.Y + scrollableSize.Height) / Font.LineHeight()) + offscreenLinePadding;
         int topRow = Math.Max(0, GetActualRow(topVisualRow));
         int bottomRow = Math.Min(Document.Lines.Count - 1, GetActualRow(bottomVisualRow));
         
@@ -2579,7 +2584,7 @@ public sealed class Editor : Drawable {
             float suffixWidth = Font.MeasureWidth(CommunicationWrapper.CurrentLineSuffix); 
             
             e.Graphics.DrawText(Font, Settings.Instance.Theme.PlayingFrame,
-                x: scrollablePosition.X + scrollable.Width - Studio.WidthRightOffset - suffixWidth - padding,
+                x: scrollablePosition.X + scrollableSize.Width - suffixWidth - padding,
                 y: actualToVisualRows[CommunicationWrapper.CurrentLine] * Font.LineHeight(),
                 CommunicationWrapper.CurrentLineSuffix);
         }
@@ -2633,7 +2638,7 @@ public sealed class Editor : Drawable {
                 x: scrollablePosition.X,
                 y: scrollablePosition.Y,
                 width: textOffsetX - LineNumberPadding,
-                height: scrollable.Size.Height);
+                height: scrollableSize.Height);
             
             // Highlight playing / savestate line
             if (CommunicationWrapper.Connected) {
@@ -2686,7 +2691,7 @@ public sealed class Editor : Drawable {
             
             e.Graphics.DrawLine(Settings.Instance.Theme.ServiceLine,
                 scrollablePosition.X + textOffsetX - LineNumberPadding, 0.0f,
-                scrollablePosition.X + textOffsetX - LineNumberPadding, yPos + scrollable.Size.Height);
+                scrollablePosition.X + textOffsetX - LineNumberPadding, yPos + scrollableSize.Height);
         }
         
         // Draw autocomplete popup
@@ -2702,8 +2707,8 @@ public sealed class Editor : Drawable {
             
             float width = FontManager.StatusFont.CharWidth() * lines.Select(line => line.Length).Aggregate(Math.Max);
             float height = FontManager.StatusFont.LineHeight() * lines.Length;
-            float x = scrollablePosition.X + (scrollable.Width - width) / 2.0f;
-            float y = scrollablePosition.Y + (scrollable.Height - height) / 2.0f;
+            float x = scrollablePosition.X + (scrollableSize.Width - width) / 2.0f;
+            float y = scrollablePosition.Y + (scrollableSize.Height - height) / 2.0f;
             
             e.Graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteBorder, x - padding - border, y - padding - border, width + padding * 2.0f + border * 2.0f, height + padding * 2.0f + border * 2.0f);
             e.Graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteBg, x - padding, y - padding, width + padding * 2.0f, height + padding * 2.0f);
