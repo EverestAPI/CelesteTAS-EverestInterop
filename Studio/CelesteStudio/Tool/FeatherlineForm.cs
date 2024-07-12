@@ -23,8 +23,11 @@ public sealed class FeatherlineForm : Form {
     private readonly TextArea initialInputs;
     private readonly TextArea customHitboxes;
     private readonly TextArea output;
+    private readonly Button getInfo;
     private readonly Button run;
     private readonly Button copyOutput;
+
+    private string gameInfo;
 
     public FeatherlineForm() {
         Title = $"Featherline - v{Version}";
@@ -91,9 +94,10 @@ public sealed class FeatherlineForm : Form {
                 new StackLayout {
                     Spacing = 10,
                     Orientation = Orientation.Horizontal,
-                    Items = { // TODO: make these lambdas actually do something
-                        (run = new Button((_, _) => {}) { Text = "Run", Width = 150 }),
-                        (copyOutput = new Button((_, _) => {}) { Text = "Copy Output", Width = 150, Enabled = false }),
+                    Items = {
+                        (getInfo = new Button((_, _) => GetInfo()) { Text = "Get Game Info", Width = 150}),
+                        (run = new Button((_, _) => Run()) { Text = "Run", Width = 150, Enabled = false }),
+                        (copyOutput = new Button((_, _) => CopyOutput()) { Text = "Copy Output", Width = 150, Enabled = false }),
                     }
                 }
             }
@@ -101,5 +105,21 @@ public sealed class FeatherlineForm : Form {
         Resizable = false;  
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
         Shown += (_, _) => Location = Studio.Instance.Location + new Point((Studio.Instance.Width - Width) / 2, (Studio.Instance.Height - Height) / 2);
+        gameInfo = "";
+    }
+
+    private void GetInfo() {
+        // TODO: get game info from studio and copy into gameInfo
+        run.Enabled = true;
+    }
+
+    private void CopyOutput() {
+        Clipboard.Instance.Clear();
+        Clipboard.Instance.Text = output.Text;
+    }
+
+    private void Run() {
+        // TODO: do stuff
+        copyOutput.Enabled = true;
     }
 }
