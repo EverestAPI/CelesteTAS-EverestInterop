@@ -58,7 +58,7 @@ public sealed class Studio : Form {
             EditorScrollable = new Scrollable {
                 Width = Size.Width,
                 Height = Size.Height,
-            };
+            }.FixBorder();
             Editor = new Editor(Document.Dummy, EditorScrollable);
             EditorScrollable.Content = Editor;
 

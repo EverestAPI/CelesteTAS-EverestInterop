@@ -208,6 +208,10 @@ public sealed class Settings {
         if (File.Exists(SettingsPath)) {
             try {
                 Instance = TomletMain.To<Settings>(TomlParser.ParseFile(SettingsPath), new TomlSerializerOptions());
+
+                OnChanged();
+                OnThemeChanged();
+                OnFontChanged();
             } catch (Exception ex) {
                 Console.Error.WriteLine($"Failed to read settings file from path '{SettingsPath}'");
                 Console.Error.WriteLine(ex);

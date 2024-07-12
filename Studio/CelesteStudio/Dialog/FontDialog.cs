@@ -138,7 +138,7 @@ public class FontDialog : Dialog<bool> {
                     Content = preview,
                     Width = 250,
                     Height = 200,
-                }
+                }.FixBorder()
             }
         };
         

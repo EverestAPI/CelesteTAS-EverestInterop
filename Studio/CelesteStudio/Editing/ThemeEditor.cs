@@ -4,8 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using CelesteStudio.Controls;
 using CelesteStudio.Editing;
+using CelesteStudio.Util;
 
 namespace CelesteStudio;
 
@@ -231,7 +231,7 @@ public sealed class ThemeEditor : Form {
                 
                 var styleLayout = new DynamicLayout { DefaultSpacing = new Size(5, 5) };
                 // The only reason a Scrollable is used, is because it provides a border
-                colorsLayout.Add(new Scrollable { Content = styleLayout, Padding = 5 });
+                colorsLayout.Add(new Scrollable { Content = styleLayout, Padding = 5 }.FixBorder());
                 
                 styleLayout.BeginVertical();
                 styleLayout.BeginHorizontal();

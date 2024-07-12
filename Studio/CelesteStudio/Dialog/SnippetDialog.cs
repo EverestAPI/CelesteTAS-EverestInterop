@@ -45,7 +45,7 @@ public class SnippetDialog : Dialog<bool> {
                     Width = list.Width,
                     Height = 500,
                     Content = list,
-                }
+                }.FixBorder()
             }
         };
         Icon = Studio.Instance.Icon;

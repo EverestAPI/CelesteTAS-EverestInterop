@@ -191,7 +191,7 @@ public sealed class FeatherlineHelpForm : Form {
         layout.Add(new Label { Wrap = WrapMode.Word, Text = "If you have questions that aren't explained anywhere in this guide, feel free to ping TheRoboMan on the Celeste Discord." });
         layout.Add(new Label { Wrap = WrapMode.Word, Text = "If you experience any issues with the user-interface or other things about this version specifically, ping atpx8 or psyGamer on the Celeste Discord." });
         layout.EndVertical();
-        var scrollable = new Scrollable { Content = new Panel { Width = 500, Content = layout }, Width = 520, Height = 400 };
+        var scrollable = new Scrollable { Content = new Panel { Width = 500, Content = layout }, Width = 520, Height = 400 }.FixBorder();
         Content = scrollable;
         Resizable = false;
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);

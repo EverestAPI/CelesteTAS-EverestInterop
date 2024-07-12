@@ -6,6 +6,7 @@ using System.Text;
 using CelesteStudio.Editing;
 using Eto.Drawing;
 using Eto.Forms;
+using System.Reflection;
 
 namespace CelesteStudio.Util;
 
@@ -101,5 +102,17 @@ public static class Extensions
             
             return hash1 + (hash2*1566083941);
         }
+    }
+
+    private static readonly MethodInfo? m_FixScrollable = Assembly.GetEntryAssembly()?.GetType("CelesteStudio.WPF.Program")?.GetMethod("FixScrollable", BindingFlags.Public | BindingFlags.Static);
+    public static Scrollable FixBorder(this Scrollable scrollable) {
+        if (!Eto.Platform.Instance.IsWpf) {
+            return scrollable;
+        }
+
+        // Apply the WPF theme to the border
+        m_FixScrollable!.Invoke(null, [scrollable]);
+        Settings.ThemeChanged += () => m_FixScrollable!.Invoke(null, [scrollable]);
+        return scrollable;
     }
 }
