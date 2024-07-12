@@ -27,43 +27,15 @@ public sealed class FeatherlineForm : Form {
     private readonly Button getInfo;
     private readonly Button run;
     private readonly Button copyOutput;
+    private FeatherlineHelpForm? helpForm;
 
     private string gameInfo;
 
     public FeatherlineForm() {
         Title = $"Featherline - v{Version}";
         Icon = Studio.Instance.Icon;
-        Menu = new MenuBar { // TODO: add featherline stuff (mainly settings and help window)
-            AboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {
-                Studio.ShowAboutDialog(new AboutDialog {
-                    ProgramName = "Jadderline",
-                    ProgramDescription = "Utility for doing an optimal jelly ladder.",
-                    Version = Version,
-
-                    Developers = ["atpx8", "EllaTAS", "Kataiser", "Mika", "psyGamer", "TheRoboMan", "tntfalle"],
-                    Logo = Icon,
-                }, this);
-            }),
-            Items = { // TODO: these need to set featherline settings
-                new SubMenuItem { Text = "Settings", Items = {
-                    new SubMenuItem { Text = "Genetic Algorithm", Items = {
-                        MenuUtils.CreateFeatherlineSettingNumberInput("Population", "Population", 2, 999999, 1),
-                        MenuUtils.CreateFeatherlineSettingNumberInput("Generation Survivors", "GenerationSurvivors", 1, 999998, 1),
-                        MenuUtils.CreateFeatherlineSettingNumberInput("Mutation Magnitude", "MutationMagnitude", 0f, 180f, 0.1f),
-                        MenuUtils.CreateFeatherlineSettingNumberInput("Max Mutation Count", "MaxMutations", 1, 999999, 1),
-                    }},
-                    new SubMenuItem { Text = "Computation", Items = {
-                        MenuUtils.CreateFeatherlineSettingToggle("Don't Compute Hazards", "DontHazard"),
-                        MenuUtils.CreateFeatherlineSettingToggle("Don't Compute Walls or Colliders", "DontSolid"),
-                    }},
-                    new SubMenuItem { Text = "Algorithm Mode", Items = {
-                        MenuUtils.CreateFeatherlineSettingToggle("Frame Genes Only", "FrameOnly"),
-                        MenuUtils.CreateFeatherlineSettingToggle("Disallow Wall Collision", "DisallowWall"),
-                    }},
-                    MenuUtils.CreateFeatherlineSettingNumberInput("Simulation Thread Count", "SimulationThreads", -1, 100, 1),
-                }},
-            },
-        };
+        CreateMenu();
+        FeatherlineSettings.Changed += CreateMenu;
         const int stepperWidth = 100;
         const int textWidth = 200;
         generations = new NumericStepper { MinValue = 0, MaxValue = 999999, Value = 2000, DecimalPlaces = 0, Width = stepperWidth };
@@ -124,8 +96,46 @@ public sealed class FeatherlineForm : Form {
         };
         Resizable = false;  
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
-        Shown += (_, _) => Location = Studio.Instance.Location + new Point((Studio.Instance.Width - Width) / 2, (Studio.Instance.Height - Height) / 2);
         gameInfo = "";
+    }
+
+    private void CreateMenu() {
+        Menu = new MenuBar { // TODO: add help window
+            AboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {
+                Studio.ShowAboutDialog(new AboutDialog {
+                    ProgramName = "Jadderline",
+                    ProgramDescription = "Utility for doing an optimal jelly ladder.",
+                    Version = Version,
+
+                    Developers = ["atpx8", "EllaTAS", "Kataiser", "Mika", "psyGamer", "TheRoboMan", "tntfalle"],
+                    Logo = Icon,
+                }, this);
+            }),
+            Items = { // TODO: these need to set featherline settings
+                new SubMenuItem { Text = "Settings", Items = {
+                    new SubMenuItem { Text = "Genetic Algorithm", Items = {
+                        MenuUtils.CreateFeatherlineSettingNumberInput("Population", "Population", 2, 999999, 1),
+                        MenuUtils.CreateFeatherlineSettingNumberInput("Generation Survivors", "GenerationSurvivors", 1, 999998, 1),
+                        MenuUtils.CreateFeatherlineSettingNumberInput("Mutation Magnitude", "MutationMagnitude", 0f, 180f, 0.1f),
+                        MenuUtils.CreateFeatherlineSettingNumberInput("Max Mutation Count", "MaxMutations", 1, 999999, 1),
+                    }},
+                    new SubMenuItem { Text = "Computation", Items = {
+                        MenuUtils.CreateFeatherlineSettingToggle("Don't Compute Hazards", "DontHazard"),
+                        MenuUtils.CreateFeatherlineSettingToggle("Don't Compute Walls or Colliders", "DontSolid"),
+                    }},
+                    new SubMenuItem { Text = "Algorithm Mode", Items = {
+                        MenuUtils.CreateFeatherlineSettingToggle("Frame Genes Only", "FrameOnly"),
+                        MenuUtils.CreateFeatherlineSettingToggle("Disallow Wall Collision", "DisallowWall"),
+                    }},
+                    MenuUtils.CreateFeatherlineSettingNumberInput("Simulation Thread Count", "SimulationThreads", -1, 100, 1),
+                }},
+            },
+        };
+        Menu.HelpItems.Insert(0, MenuUtils.CreateAction("How To Use", Keys.None, () => {
+            helpForm ??= new();
+            helpForm.Show();
+            helpForm.Closed += (_, _) => helpForm = null;
+        }));
     }
 
     private void GetInfo() {
@@ -141,5 +151,49 @@ public sealed class FeatherlineForm : Form {
     private void Run() {
         // TODO: do stuff
         copyOutput.Enabled = true;
+    }
+}
+
+
+public sealed class FeatherlineHelpForm : Form {
+    public FeatherlineHelpForm() {
+        Title = "Featherline - Help";
+        Icon = Studio.Instance.Icon;
+        var layout = new DynamicLayout { DefaultSpacing = new Size(10, 10) };
+        var h1 = new Font(SystemFont.Bold, 20f);
+        layout.BeginVertical();
+        layout.AddCentered(new Label { Wrap = WrapMode.Word, Text = "Getting started with Featherline", Font = h1 });
+        layout.Add(new Label { Wrap = WrapMode.Word, Text = "1. Run your TAS up until the frame you featherboost, such as" });
+        layout.Add(new Label { Wrap = WrapMode.Word, Text = "  26\r\n > 1,R,U", Font = FontManager.EditorFontRegular });
+        layout.Add(new Label { Wrap = WrapMode.Word, Text = "The TAS should be paused here." });
+        layout.Add(new Label { Wrap = WrapMode.Word, Text = "2. Click the Get Game Info button." });
+        layout.Add(new Label { Wrap = WrapMode.Word, Text = "3. Define a checkpoint at every turn or branching point of the path you want to TAS. Checkpoints are further explained later." });
+        layout.Add(new Label { Wrap = WrapMode.Word, Text = "4. Click the Run button." });
+        layout.AddCentered(new Label { Wrap = WrapMode.Word, Text = "Checkpoints", Font = h1 });
+        layout.Add(new Label { Wrap = WrapMode.Word, Text = "- To define a checkpoint, hold your info HUD hotkey and drag while holding right click to draw a rectangle hitbox. Doing that will copy the selected area to your clipboard, where you can paste it to a line on the checkpoints text box." });
+        layout.Add(new Label { Wrap = WrapMode.Word, Text = "- Checkpoint collision is based on your hurtbox. To define a touch switch or feather as a checkpoint, select an area that perfectly overlaps with its hitbox. Remember to use the pink, bigger hitbox for touch switches." });
+        layout.Add(new Label { Wrap = WrapMode.Word, Text = "- The genetic algorithm primarily flies directly towards the next checkpoint. If the next checkpoint is behind a wall of spinners, it will simply fly towards that wall of spinners and try to get as close to the checkpoint as it can that way. That means you should define a checkpoint at every major turn so it knows where to go. If the algorithm messes up at any of the points where progress is reversed, it has to be able to fix itself by simply attempting to fly toward the next checkpoint the entire time." });
+        layout.Add(new Label { Wrap = WrapMode.Word, Text = "- Making checkpoints really small is not recommended. Making them big does not make the result worse and it only cares about whether you touched the checkpoint or not. When the algorithm at some moment has not reached a checkpoint, it tries to get to it by aiming for its center (the final checkpoint is an exception to this). You can use this to guide the algorithm better by making the checkpoints bigger." });
+        layout.AddCentered(new Label { Wrap = WrapMode.Word, Text = "Custom Hitboxes", Font = h1 });
+        layout.Add(new Label { Wrap = WrapMode.Word, Text = "- Defined the same way as checkpoints but in the text box on the right." });
+        layout.Add(new Label { Wrap = WrapMode.Word, Text = "- A defined hitbox is a killbox by default, based on the green hurtbox." });
+        layout.Add(new Label { Wrap = WrapMode.Word, Text = "- To define a collider (based on the red collision box) instead of a killbox, place 'c' after the definition.\r\n   Example: '218, -104, 234, -72 c'" });
+        layout.Add(new Label { Wrap = WrapMode.Word, Text = "- Fully static tile entities will automatically be added as colliders behind the scenes, but kevins, falling blocks and others that have the potential to move in some way, you will have to define manually." });
+        layout.AddCentered(new Label { Wrap = WrapMode.Word, Text = "Algorithm Facts", Font = h1 });
+        layout.Add(new Label { Wrap = WrapMode.Word, Text = "- Sometimes the final results of the algorithm will die by an extremely small amount, like 0.0002 pixels. When this happens, the solution is to change one of the angles before that point by 0.001 manually or by a little bit more if needed." });
+        layout.Add(new Label { Wrap = WrapMode.Word, Text = "- Each checkpoint collected adds 10000 to fitness. You can use that knowledge to track how the algorithm is doing." });
+        layout.AddCentered(new Label { Wrap = WrapMode.Word, Text = "Supported Gameplay Mechanics", Font = h1 });
+        layout.Add(new Label { Wrap = WrapMode.Word, Text = "- Anything with a static spinner hitbox, spikes and lightning" });
+        layout.Add(new Label { Wrap = WrapMode.Word, Text = "- Wind and wind triggers" });
+        layout.Add(new Label { Wrap = WrapMode.Word, Text = "- Dodging or bouncing off walls. Tile entities explained in Custom Hitboxes section." });
+        layout.Add(new Label { Wrap = WrapMode.Word, Text = "- Jumpthroughs" });
+        layout.Add(new Label { Wrap = WrapMode.Word, Text = "- Correct physics with room bounds" });
+        layout.Add(new Label { Wrap = WrapMode.Word, Text = "If you have questions that aren't explained anywhere in this guide, feel free to ping TheRoboMan on the Celeste Discord." });
+        layout.Add(new Label { Wrap = WrapMode.Word, Text = "If you experience any issues with the user-interface or other things about this version specifically, ping atpx8 or psyGamer on the Celeste Discord." });
+        layout.EndVertical();
+        var scrollable = new Scrollable { Content = new Panel { Width = 500, Content = layout }, Width = 520, Height = 400 };
+        Content = scrollable;
+        Resizable = false;
+        Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
     }
 }
