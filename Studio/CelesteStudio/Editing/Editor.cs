@@ -82,15 +82,17 @@ public sealed class Editor : Drawable {
     private Point scrollablePosition;
     private Size scrollableSize;
     
+    private readonly PixelLayout pixelLayout = new();
+    private readonly AutoCompleteMenu autoCompleteMenu = new();
+    
+    private readonly List<AutoCompleteMenu.Entry> baseAutoCompleteEntries = [];
+
     private Font Font => FontManager.EditorFontRegular;
     private SyntaxHighlighter highlighter;
     private const float LineNumberPadding = 5.0f;
     
-    private readonly AutoCompleteMenu autoCompleteMenu;
-    private readonly List<AutoCompleteMenu.Entry> baseAutoCompleteEntries = [];
-    
     // Kinda weird that it's stored in the auto-complete menu and not here, but ¯\_(ツ)_/¯
-    private PointF MouseLocation => autoCompleteMenu.MouseLocation;
+    private PointF MouseLocation => new PointF(); //TODO autoCompleteMenu.MouseLocation;
     
     // Quick-edits are anchors to switch through with tab and edit
     // Used by auto-complete snippets
@@ -129,6 +131,9 @@ public sealed class Editor : Drawable {
         this.document = document;
         this.scrollable = scrollable;
         
+        pixelLayout.Add(autoCompleteMenu, 0, 0);
+        Content = pixelLayout;
+        
         // Reflect setting changes
         Settings.Changed += () => {
             GenerateBaseAutoCompleteEntries();
@@ -141,7 +146,6 @@ public sealed class Editor : Drawable {
             Recalc();
         };
         
-        autoCompleteMenu = new();
         GenerateBaseAutoCompleteEntries();
         
         BackgroundColor = Settings.Instance.Theme.Background;
@@ -151,8 +155,8 @@ public sealed class Editor : Drawable {
         Cursor = Cursors.IBeam;
         
         // Need to redraw the line numbers when scrolling horizontally
-        scrollable.Scroll += (_, e) => {
-            scrollablePosition = e.ScrollPosition;
+        scrollable.Scroll += (_, _) => {
+            scrollablePosition = scrollable.ScrollPosition;
             Invalidate();
         };
         // Update wrapped lines
@@ -440,10 +444,26 @@ public sealed class Editor : Drawable {
         const float paddingBottom = 100.0f;
 
         // Apparently you need to set the size from the parent on WPF?
-        if (Eto.Platform.Instance.IsWpf)
+        if (Eto.Platform.Instance.IsWpf) {
             scrollable.ScrollSize = new((int)(width + textOffsetX + paddingRight), (int)(height + paddingBottom));
-        else
+        } else {
             Size = new((int)(width + textOffsetX + paddingRight), (int)(height + paddingBottom));
+        }
+        
+        // Update controls
+        {
+            const float menuXPos = 8.0f;
+            const float menuYOffset = 7.0f;
+            
+            int menuX = (int)(scrollablePosition.X + textOffsetX + menuXPos);
+            int menuY = (int)(Font.LineHeight() * (actualToVisualRows[Document.Caret.Row] + 1) + menuYOffset);
+            int menuMaxW = (int)(scrollablePosition.X + scrollableSize.Width - Font.CharWidth() - menuX);
+            int menuMaxH = (int)(scrollablePosition.Y + scrollableSize.Height - Font.LineHeight() - menuY);
+            
+            autoCompleteMenu.ContentWidth = Math.Min(autoCompleteMenu.ContentWidth, menuMaxW);
+            autoCompleteMenu.ContentHeight = Math.Min(autoCompleteMenu.ContentHeight, menuMaxH);
+            pixelLayout.Move(autoCompleteMenu, menuX, menuY);
+        }
         
         Invalidate();
     }
@@ -636,6 +656,7 @@ public sealed class Editor : Drawable {
         
         if (e.Key == Keys.Space && e.HasCommonModifier()) {
             UpdateAutoComplete();
+            //autoCompleteMenu.Visible = true;
 
             e.Handled = true;
             Recalc();
@@ -915,7 +936,7 @@ public sealed class Editor : Drawable {
         
         if (args.Length <= 1) {
             autoCompleteMenu.Entries = baseAutoCompleteEntries;
-            autoCompleteMenu.Filter = line;    
+            autoCompleteMenu.Filter = line;
         } else {
             var command = CommandInfo.AllCommands.FirstOrDefault(cmd => string.Equals(cmd?.Name, args[0], StringComparison.OrdinalIgnoreCase));
             var commandArgs = args[1..];
@@ -2199,25 +2220,6 @@ public sealed class Editor : Drawable {
     
     protected override void OnMouseDown(MouseEventArgs e) {
         if (e.Buttons.HasFlag(MouseButtons.Primary)) {
-            if (autoCompleteMenu.Visible) {
-                var (autoCompleteX, autoCompleteY, autoCompleteMaxH) = GetAutoCompleteMenuLocation();
-                // NOTE: Here we actually want the position to be changed for the down event
-                (autoCompleteX, autoCompleteY, float autoCompleteW, float autoCompleteH) = autoCompleteMenu.Measure(Font, autoCompleteX, autoCompleteY, autoCompleteMaxH);
-                if (e.Location.X >= autoCompleteX && e.Location.X <= autoCompleteX + autoCompleteW &&
-                    e.Location.Y >= autoCompleteY && e.Location.Y <= autoCompleteY + autoCompleteH &&
-                    autoCompleteMenu.HandleMouseDown(e.Location, Font, autoCompleteX, autoCompleteY, autoCompleteW, autoCompleteH))
-                {
-                    // Reset cursor if something was selected
-                    if (!autoCompleteMenu.Visible) {
-                        Cursor = Cursors.IBeam;
-                    }
-                    
-                    e.Handled = true;
-                    Recalc();
-                    return;
-                }
-            }
-            
             if (LocationToFolding(e.Location) is { } folding) {
                 ToggleFolding(folding.MinRow);
                 
@@ -2265,12 +2267,6 @@ public sealed class Editor : Drawable {
     }
     protected override void OnMouseUp(MouseEventArgs e) {
         if (e.Buttons.HasFlag(MouseButtons.Primary)) {
-            if (autoCompleteMenu.Visible && autoCompleteMenu.HandleMouseUp()) {
-                e.Handled = true;
-                Invalidate();
-                return;
-            }
-            
             primaryMouseButtonDown = false;
             e.Handled = true;
         }
@@ -2278,8 +2274,6 @@ public sealed class Editor : Drawable {
         base.OnMouseUp(e);
     }
     protected override void OnMouseMove(MouseEventArgs e) {
-        autoCompleteMenu.MouseLocation = e.Location;
-        
         if (primaryMouseButtonDown) {
             (Document.Caret, var visual) = LocationToCaretPosition(e.Location);
             desiredVisualCol = visual.Col;
@@ -2294,37 +2288,10 @@ public sealed class Editor : Drawable {
         
         UpdateMouseCursor(e.Location, e.Modifiers);
         
-        if (autoCompleteMenu.Visible) {
-            var (autoCompleteX, autoCompleteY, autoCompleteMaxH) = GetAutoCompleteMenuLocation();
-            (_, _, float autoCompleteW, float autoCompleteH) = autoCompleteMenu.Measure(Font, autoCompleteX, autoCompleteY, autoCompleteMaxH);
-            if (e.Location.X >= autoCompleteX && e.Location.X <= autoCompleteX + autoCompleteW &&
-                e.Location.Y >= autoCompleteY && e.Location.Y <= autoCompleteY + autoCompleteH ||
-                autoCompleteMenu.DraggingScrollBar)
-            {
-                autoCompleteMenu.HandleMouseMove(e.Location, Font, autoCompleteX, autoCompleteY, autoCompleteW, autoCompleteH, out var cursor);
-                Cursor = cursor;
-                Invalidate();
-            }
-        }
-        
         base.OnMouseMove(e);
     }
 
     protected override void OnMouseWheel(MouseEventArgs e) {
-        if (autoCompleteMenu.Visible) {
-            var (autoCompleteX, autoCompleteY, autoCompleteMaxH) = GetAutoCompleteMenuLocation();
-            (_, _, float autoCompleteW, float autoCompleteH) = autoCompleteMenu.Measure(Font, autoCompleteX, autoCompleteY, autoCompleteMaxH);
-            if (e.Location.X >= autoCompleteX && e.Location.X <= autoCompleteX + autoCompleteW &&
-                e.Location.Y >= autoCompleteY && e.Location.Y <= autoCompleteY + autoCompleteH)
-            {
-                autoCompleteMenu.HandleMouseWheel(e.Delta.Height);
-                
-                e.Handled = true;
-                Invalidate();
-                return;
-            }
-        }
-        
         // Adjust frame count
         if (e.Modifiers.HasFlag(Keys.Shift)) {
             if (Document.Selection.Empty) {
@@ -2693,10 +2660,6 @@ public sealed class Editor : Drawable {
                 scrollablePosition.X + textOffsetX - LineNumberPadding, 0.0f,
                 scrollablePosition.X + textOffsetX - LineNumberPadding, yPos + scrollableSize.Height);
         }
-        
-        // Draw autocomplete popup
-        var (autoCompleteX, autoCompleteY, autoCompleteMaxH) = GetAutoCompleteMenuLocation();
-        autoCompleteMenu.Draw(e.Graphics, Font, autoCompleteX, autoCompleteY, autoCompleteMaxH);
         
         // Draw toast message box
         if (!string.IsNullOrWhiteSpace(toastMessage)) {

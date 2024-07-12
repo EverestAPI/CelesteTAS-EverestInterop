@@ -7,22 +7,110 @@ using Eto.Forms;
 
 namespace CelesteStudio.Editing;
 
-public class AutoCompleteMenu {
+public sealed class AutoCompleteMenu : Scrollable {
     public record Entry {
+        /// The text which will be used for filtering results.
         public required string SearchText;
+        /// The text which will be displayed inside the menu.
         public required string DisplayText;
+        /// The extra text which will be displayed to the right of the main text.
         public required string ExtraText;
+        /// Callback for when this entry is selected.
         public required Action OnUse;
     }
     
-    private bool visible = false;
-    public bool Visible {
-        get => visible;
+    private const int BorderWidth = 1; // We can't disable the border, so we have to account for that to avoid having scrollbars
+    private const float EntryBetweenPadding = 2.5f;
+    private const float EntryPaddingLeft = 3.0f;
+    private const float EntryPaddingRight = 20.0f;
+    private const int DisplayExtraPadding = 1;
+    
+    private sealed class ContentDrawable : Drawable {
+        private readonly AutoCompleteMenu menu;
+        
+        public ContentDrawable(AutoCompleteMenu menu) {
+            this.menu = menu;
+            
+            BackgroundColor = Settings.Instance.Theme.AutoCompleteBg;
+            Settings.ThemeChanged += () => BackgroundColor = Settings.Instance.Theme.AutoCompleteBg;
+            
+            MouseMove += (_, _) => Invalidate();
+            MouseEnter += (_, _) => Invalidate();
+            MouseLeave += (_, _) => Invalidate();
+            menu.Scroll += (_, _) => Invalidate();
+            
+            Cursor = Cursors.Pointer;
+        }
+        
+        protected override void OnPaint(PaintEventArgs e) {
+            if (menu.shownEntries.Length == 0) {
+                return;
+            }
+
+            var font = FontManager.EditorFontRegular;
+            int maxDisplayLen = menu.shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
+
+            float width = menu.ContentWidth;
+            float height = menu.EntryHeight;
+            
+            const int rowCullOverhead = 3;
+            int minRow = Math.Max(0, (int)(menu.ScrollPosition.Y / height) - rowCullOverhead);
+            int maxRow = Math.Min(menu.shownEntries.Length - 1, (int)((menu.ScrollPosition.Y + menu.ClientSize.Height) / height) + rowCullOverhead);
+            
+            using var displayBrush = new SolidBrush(Settings.Instance.Theme.AutoCompleteFg);
+            using var extraBrush = new SolidBrush(Settings.Instance.Theme.AutoCompleteFgExtra);
+            
+            var mousePos = PointFromScreen(Mouse.Position);
+            int mouseRow = -1;
+            if (mousePos.X >= 0.0f && mousePos.X <= ClientSize.Width) {
+                mouseRow = (int)(mousePos.Y / height);
+            }
+            
+            for (int row = minRow; row <= maxRow; row++) {
+                var entry = menu.shownEntries[row];
+                
+                if (row == menu.SelectedEntry) {
+                    e.Graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteSelected, 0.0f, row * height, width, height);
+                } else if (row == mouseRow) {
+                    e.Graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteHovered, 0.0f, row * height, width, height);
+                }
+                
+                e.Graphics.DrawText(font, displayBrush, EntryPaddingLeft, row * height + EntryBetweenPadding, entry.DisplayText);
+                e.Graphics.DrawText(font, extraBrush, EntryPaddingLeft + font.CharWidth() * (maxDisplayLen + DisplayExtraPadding), row * height + EntryBetweenPadding, entry.ExtraText);
+            }
+            
+            base.OnPaint(e);
+        }
+        
+        protected override void OnMouseDown(MouseEventArgs e) {
+            if (e.Buttons.HasFlag(MouseButtons.Primary)) {
+                int mouseRow = (int)(e.Location.Y / menu.EntryHeight);
+                
+                if (mouseRow >= 0 && mouseRow < menu.shownEntries.Length) {
+                    menu.shownEntries[mouseRow].OnUse();
+                    e.Handled = true;
+                }
+            }
+            
+            base.OnMouseDown(e);
+        }
+    }
+    
+    public override bool Visible {
+        get => base.Visible;
         set {
-            visible = value;
+            base.Visible = value;
             filter = string.Empty;
             selectedEntry = 0;
-            scrollOffset = 0;
+        }
+    }
+    
+    private string filter = string.Empty;
+    public string Filter {
+        get => filter;
+        set {
+            filter = value;
+            Recalc();
         }
     }
     
@@ -31,41 +119,89 @@ public class AutoCompleteMenu {
         get => entries;
         set {
             entries = value;
-            shownEntries = Entries.Where(entry => entry.SearchText.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase)).ToArray();
-            if (shownEntries.Length == 0) {
-                visible = false;
-                return;
-            }
-            
-            selectedEntry = Math.Clamp(selectedEntry, 0, shownEntries.Length - 1);
+            Recalc();
         }
     }
-    
-    private Entry[] shownEntries = [];
     
     private int selectedEntry;
     public int SelectedEntry {
         get => selectedEntry;
-        set => selectedEntry = Math.Clamp(value, 0, shownEntries.Length);
-    }
-    
-    private string filter = string.Empty;
-    public string Filter {
-        get => filter;
         set {
-            filter = value;
-            shownEntries = Entries.Where(entry => entry.SearchText.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase)).ToArray();
-            if (shownEntries.Length == 0) {
-                visible = false;
-                return;
-            }
-            
-            selectedEntry = Math.Clamp(selectedEntry, 0, shownEntries.Length - 1);
+            selectedEntry = Math.Clamp(value, 0, shownEntries.Length);
+
+            ScrollIntoView();
+            drawable.Invalidate();
         }
     }
     
-    private int maxEntries = 0;
-    private float scrollOffset = 0.0f;
+    public int ContentWidth {
+        set {
+            if (Eto.Platform.Instance.IsWpf) {
+                const int scrollBarWidth = 17;
+                bool scrollBarVisible = Height <= ContentHeight;
+                Width = Math.Max(0, value + BorderWidth * 2 + (scrollBarVisible ? scrollBarWidth : 0));
+            } else {
+                Width = Math.Max(0, value + BorderWidth * 2);
+            }
+        }
+        get {
+            if (shownEntries.Length == 0) {
+                return 0;
+            }
+            
+            var font = FontManager.EditorFontRegular;
+            int maxDisplayLen = shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
+            int maxExtraLen = shownEntries.Select(entry => entry.ExtraText.Length).Aggregate(Math.Max);
+            
+            return (int)(font.CharWidth() * (maxDisplayLen + DisplayExtraPadding + maxExtraLen) + EntryPaddingLeft + EntryPaddingRight);
+        }
+    }
+    public int ContentHeight {
+        set => Height = Math.Max(0, value + BorderWidth * 2);
+        get => shownEntries.Length * EntryHeight;
+    }
+    
+    public int EntryHeight => (int)(FontManager.EditorFontRegular.LineHeight() + EntryBetweenPadding * 2.0f);
+    
+    private Entry[] shownEntries = [];
+    private readonly ContentDrawable drawable;
+    
+    public AutoCompleteMenu() {
+        drawable = new ContentDrawable(this);
+        Content = drawable;
+
+        Recalc();
+    }
+    
+    private void Recalc() {
+        shownEntries = entries.Where(entry => entry.SearchText.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase)).ToArray();
+        if (shownEntries.Length == 0) {
+            Visible = false;
+            return;
+        }
+        
+        selectedEntry = Math.Clamp(selectedEntry, 0, shownEntries.Length - 1);
+
+        drawable.Size = new(ContentWidth, ContentHeight);
+        drawable.Invalidate();
+    }
+    
+    private void ScrollIntoView() {
+        const int lookAhead = 2;
+        
+        int entryHeight = EntryHeight;
+        int scrollStartTop = ScrollPosition.Y + lookAhead * entryHeight;
+        int scrollStartBottom = ScrollPosition.Y + ClientSize.Height - lookAhead * entryHeight;
+        
+        int selectedTop = SelectedEntry * entryHeight;
+        int selectedBottom = selectedTop + entryHeight;
+        
+        if (selectedTop < scrollStartTop) {
+            ScrollPosition = ScrollPosition with { Y = Math.Max(0, selectedTop - lookAhead * entryHeight) };
+        } else if (selectedBottom > scrollStartBottom) {
+            ScrollPosition = ScrollPosition with { Y = Math.Min(shownEntries.Length * entryHeight - ClientSize.Height, selectedBottom + lookAhead * entryHeight - ClientSize.Height) }; 
+        }
+    }
     
     public bool HandleKeyDown(KeyEventArgs e) {
         if (!Visible)
@@ -73,15 +209,13 @@ public class AutoCompleteMenu {
         
         if (e.Key == Keys.Up) {
             SelectedEntry = (SelectedEntry - 1).Mod(shownEntries.Length);
-            ScrollIntoView();
             return true;
         }
         if (e.Key == Keys.Down) {
             SelectedEntry = (SelectedEntry + 1).Mod(shownEntries.Length);
-            ScrollIntoView();
             return true;
         }
-        if (e.Key == Keys.Enter) {
+        if (e.Key is Keys.Enter or Keys.Tab) {
             shownEntries[SelectedEntry].OnUse();
             return true;
         }
@@ -91,179 +225,5 @@ public class AutoCompleteMenu {
         }
         
         return false;
-    }
-    
-    private const float ExtraHeight = 0.25f;
-    private const float EntryPadding = 2.0f;
-    private const float BorderWidth = 2.0f;
-    private const float ScrollBarPadding = 5.0f;
-    private const float ScrollBarWidth = 20.0f;
-    private const float ScrollBarExtend = 5.0f;
-    private const int ExtraPadding = 1;
-    
-    public PointF MouseLocation;
-    public bool DraggingScrollBar { get; private set; } = false;
-    private float dragStartY; 
-    private float dragStartScroll; 
-    
-    public bool HandleMouseDown(PointF location, Font font, float x, float y, float w, float h) {
-        // Drag scroll bar
-        if (maxEntries < shownEntries.Length) {
-            float barY = (scrollOffset / shownEntries.Length) * h;
-            float barH = (maxEntries / (float)shownEntries.Length) * h;
-            
-            if (location.X >= x + w - ScrollBarWidth &&
-                location.Y >= y + barY - ScrollBarExtend && location.Y <= y + barY + barH + ScrollBarExtend)
-            {
-                DraggingScrollBar = true;
-                dragStartY = location.Y;
-                dragStartScroll = scrollOffset;
-                return true;
-            }
-        }
-        
-        // Select entries
-        int idx = (int)((location.Y - y) / (font.LineHeight() + EntryPadding) + scrollOffset);
-        if (idx >= 0 && idx < shownEntries.Length) {
-            shownEntries[idx].OnUse();
-            return true;
-        }
-        
-        return false;
-    }
-    
-    public bool HandleMouseUp() {
-        if (DraggingScrollBar) {
-            DraggingScrollBar = false;
-            return true;
-        }
-        
-        return false;
-    }
-    
-    public void HandleMouseMove(PointF location, Font font, float x, float y, float w, float h, out Cursor? cursor) {
-        // Drag scroll bar
-        if (DraggingScrollBar) {
-            float delta = (location.Y - dragStartY) / h * shownEntries.Length;
-            scrollOffset = Math.Clamp(dragStartScroll + delta, 0.0f, shownEntries.Length - maxEntries);
-            
-            cursor = null;
-            return;
-        }
-        if (maxEntries < shownEntries.Length) {
-            float barY = (scrollOffset / shownEntries.Length) * h;
-            float barH = (maxEntries / (float)shownEntries.Length) * h;
-            
-            if (location.X >= x + w - ScrollBarWidth &&
-                location.Y >= y + barY - ScrollBarExtend && location.Y <= y + barY + barH + ScrollBarExtend)
-            {
-                cursor = null;
-                return;
-            }
-        }
-
-        cursor = Cursors.Pointer;
-    }
-    
-    public void HandleMouseWheel(float delta) {
-        if (maxEntries < shownEntries.Length) {
-            scrollOffset = Math.Clamp(scrollOffset - delta, 0.0f, shownEntries.Length - maxEntries);
-        }
-    }
-    
-    public (float X, float Y, float Width, float Height) Measure(Font font, float x, float y, float maxHeight) {
-        maxEntries = (int)Math.Floor((maxHeight - EntryPadding) / (font.LineHeight() + EntryPadding));
-        
-        int maxDisplayLen = shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
-        int maxExtraLen = shownEntries.Select(entry => entry.ExtraText.Length).Aggregate(Math.Max);
-        float boxW = font.CharWidth() * (maxDisplayLen + ExtraPadding + maxExtraLen) + EntryPadding * 2.0f;
-        float boxH = (font.LineHeight() + EntryPadding) * Math.Min(shownEntries.Length, maxEntries) + EntryPadding;
-        
-        // Shown next entries when you can scroll
-        if (scrollOffset > 0.0f) {
-            y += ExtraHeight * 2.0f * font.LineHeight();
-            boxH += ExtraHeight * 2.0f * font.LineHeight();
-        }
-        if (maxEntries + scrollOffset < shownEntries.Length) {
-            boxH += ExtraHeight * 2.0f * font.LineHeight();
-        }
-        // Add scroll bar
-        if (maxEntries < shownEntries.Length) {
-            boxW += ScrollBarPadding + ScrollBarWidth;
-        }
-        
-        return (x, y, boxW, boxH);
-    }
-    
-    public void Draw(Graphics graphics, Font font, float x, float y, float maxHeight) {
-        if (!Visible)
-            return;
-        
-        float boxX = x;
-        float boxY = y;
-        (x, y, float boxW, float boxH) = Measure(font, x, y, maxHeight);
-        int maxDisplayLen = shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
-        
-        graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteBorder, boxX - BorderWidth, boxY - BorderWidth, boxW + BorderWidth * 2.0f, boxH + BorderWidth * 2.0f);
-        graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteBg, boxX, boxY, boxW, boxH);
-
-        graphics.SetClip(new RectangleF(boxX, boxY, boxW, boxH));
-        float yOff = EntryPadding - scrollOffset * (font.LineHeight() + EntryPadding);
-        foreach (var entry in shownEntries) {
-            // Cull off-screen entries
-            if (y + yOff + font.LineHeight() + EntryPadding < boxY || y + yOff > boxY + boxH) {
-                yOff += font.LineHeight() + EntryPadding;
-                continue;
-            }
-            
-            graphics.DrawText(font, Settings.Instance.Theme.AutoCompleteFg, x + EntryPadding, y + yOff, entry.DisplayText);
-            graphics.DrawText(font, Settings.Instance.Theme.AutoCompleteFgExtra, x + EntryPadding + (maxDisplayLen + ExtraPadding) * font.CharWidth(), y + yOff, entry.ExtraText);
-            yOff += font.LineHeight() + EntryPadding;
-        }
-        yOff = EntryPadding - scrollOffset * (font.LineHeight() + EntryPadding);
-        
-        // Highlight selected
-        graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteSelected, x, y + yOff + (font.LineHeight() + EntryPadding) * SelectedEntry, boxW, font.LineHeight() + EntryPadding * 2.0f);
-        
-        float barY = (scrollOffset / shownEntries.Length) * boxH;
-        float barH = (maxEntries / (float)shownEntries.Length) * boxH;
-        
-        // Highlight hovered
-        int idx = (int)((MouseLocation.Y - y) / (font.LineHeight() + EntryPadding) + scrollOffset);
-        bool hoveringBar = maxEntries < shownEntries.Length &&
-                           (MouseLocation.X >= boxX + boxW - ScrollBarWidth && MouseLocation.X <= boxX + boxW &&
-                            MouseLocation.Y >= boxY + barY && MouseLocation.Y <= boxY + barY + barH) ||
-                           DraggingScrollBar;
-        
-        if (MouseLocation.X >= x && MouseLocation.X <= x + boxW &&
-            !hoveringBar &&
-            idx >= 0 && idx < shownEntries.Length) 
-        {
-            const float shrink = 2.0f; // Avoids overlap with the selected line
-            graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteHovered, x, y + yOff + (font.LineHeight() + EntryPadding) * idx + shrink, boxW, font.LineHeight() + EntryPadding * 2.0f - shrink * 2.0f);
-        }
-
-        graphics.ResetClip();
-        
-        if (maxEntries < shownEntries.Length) {
-            var color = hoveringBar ? Settings.Instance.Theme.AutoCompleteScrollBarHovered : Settings.Instance.Theme.AutoCompleteScrollBar;
-            graphics.FillRectangle(color, boxX + boxW - ScrollBarWidth, boxY + barY, ScrollBarWidth, barH);
-        }
-    }
-    
-    private void ScrollIntoView() {
-        if (maxEntries == 0) {
-            // The actual size hasn't been determined yet
-            return;
-        }
-        
-        const int lookAhead = 1;
-        int visualEntry = (int)(SelectedEntry - scrollOffset);
-        
-        if (visualEntry > maxEntries - 1 - lookAhead) {
-            scrollOffset = Math.Min(shownEntries.Length - maxEntries, scrollOffset + (visualEntry - (maxEntries - 1 - lookAhead)));
-        } else if (visualEntry < lookAhead) {
-            scrollOffset = Math.Max(0, scrollOffset + (visualEntry - lookAhead));
-        }
     }
 }
