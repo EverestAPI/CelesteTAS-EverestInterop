@@ -33,37 +33,8 @@ public sealed class FeatherlineForm : Form {
     public FeatherlineForm() {
         Title = $"Featherline - v{Version}";
         Icon = Studio.Instance.Icon;
-        Menu = new MenuBar { // TODO: add featherline stuff (mainly settings and help window)
-            AboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {
-                Studio.ShowAboutDialog(new AboutDialog {
-                    ProgramName = "Jadderline",
-                    ProgramDescription = "Utility for doing an optimal jelly ladder.",
-                    Version = Version,
-
-                    Developers = ["atpx8", "EllaTAS", "Kataiser", "Mika", "psyGamer", "TheRoboMan", "tntfalle"],
-                    Logo = Icon,
-                }, this);
-            }),
-            Items = { // TODO: these need to set featherline settings
-                new SubMenuItem { Text = "Settings", Items = {
-                    new SubMenuItem { Text = "Genetic Algorithm", Items = {
-                        MenuUtils.CreateFeatherlineSettingNumberInput("Population", "Population", 2, 999999, 1),
-                        MenuUtils.CreateFeatherlineSettingNumberInput("Generation Survivors", "GenerationSurvivors", 1, 999998, 1),
-                        MenuUtils.CreateFeatherlineSettingNumberInput("Mutation Magnitude", "MutationMagnitude", 0f, 180f, 0.1f),
-                        MenuUtils.CreateFeatherlineSettingNumberInput("Max Mutation Count", "MaxMutations", 1, 999999, 1),
-                    }},
-                    new SubMenuItem { Text = "Computation", Items = {
-                        MenuUtils.CreateFeatherlineSettingToggle("Don't Compute Hazards", "DontHazard"),
-                        MenuUtils.CreateFeatherlineSettingToggle("Don't Compute Walls or Colliders", "DontSolid"),
-                    }},
-                    new SubMenuItem { Text = "Algorithm Mode", Items = {
-                        MenuUtils.CreateFeatherlineSettingToggle("Frame Genes Only", "FrameOnly"),
-                        MenuUtils.CreateFeatherlineSettingToggle("Disallow Wall Collision", "DisallowWall"),
-                    }},
-                    MenuUtils.CreateFeatherlineSettingNumberInput("Simulation Thread Count", "SimulationThreads", -1, 100, 1),
-                }},
-            },
-        };
+        CreateMenu();
+        FeatherlineSettings.Changed += CreateMenu;
         const int stepperWidth = 100;
         const int textWidth = 200;
         generations = new NumericStepper { MinValue = 0, MaxValue = 999999, Value = 2000, DecimalPlaces = 0, Width = stepperWidth };
@@ -126,6 +97,40 @@ public sealed class FeatherlineForm : Form {
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
         Shown += (_, _) => Location = Studio.Instance.Location + new Point((Studio.Instance.Width - Width) / 2, (Studio.Instance.Height - Height) / 2);
         gameInfo = "";
+    }
+
+    private void CreateMenu() {
+        Menu = new MenuBar { // TODO: add featherline stuff (mainly settings and help window)
+            AboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {
+                Studio.ShowAboutDialog(new AboutDialog {
+                    ProgramName = "Jadderline",
+                    ProgramDescription = "Utility for doing an optimal jelly ladder.",
+                    Version = Version,
+
+                    Developers = ["atpx8", "EllaTAS", "Kataiser", "Mika", "psyGamer", "TheRoboMan", "tntfalle"],
+                    Logo = Icon,
+                }, this);
+            }),
+            Items = { // TODO: these need to set featherline settings
+                new SubMenuItem { Text = "Settings", Items = {
+                    new SubMenuItem { Text = "Genetic Algorithm", Items = {
+                        MenuUtils.CreateFeatherlineSettingNumberInput("Population", "Population", 2, 999999, 1),
+                        MenuUtils.CreateFeatherlineSettingNumberInput("Generation Survivors", "GenerationSurvivors", 1, 999998, 1),
+                        MenuUtils.CreateFeatherlineSettingNumberInput("Mutation Magnitude", "MutationMagnitude", 0f, 180f, 0.1f),
+                        MenuUtils.CreateFeatherlineSettingNumberInput("Max Mutation Count", "MaxMutations", 1, 999999, 1),
+                    }},
+                    new SubMenuItem { Text = "Computation", Items = {
+                        MenuUtils.CreateFeatherlineSettingToggle("Don't Compute Hazards", "DontHazard"),
+                        MenuUtils.CreateFeatherlineSettingToggle("Don't Compute Walls or Colliders", "DontSolid"),
+                    }},
+                    new SubMenuItem { Text = "Algorithm Mode", Items = {
+                        MenuUtils.CreateFeatherlineSettingToggle("Frame Genes Only", "FrameOnly"),
+                        MenuUtils.CreateFeatherlineSettingToggle("Disallow Wall Collision", "DisallowWall"),
+                    }},
+                    MenuUtils.CreateFeatherlineSettingNumberInput("Simulation Thread Count", "SimulationThreads", -1, 100, 1),
+                }},
+            },
+        };
     }
 
     private void GetInfo() {

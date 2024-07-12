@@ -250,6 +250,7 @@ public sealed class FeatherlineSettings {
     public bool FrameOnly { get; set; } = false;
     public bool DisallowWall { get; set; } = false;
     public int SimulationThreads { get; set; } = 8;
+    public static event Action? Changed;
 
     public static void Load() {
         if (File.Exists(FeatherlineSettingsPath)) {
@@ -280,6 +281,7 @@ public sealed class FeatherlineSettings {
     }
 
     public static void OnChanged() {
+        Changed?.Invoke();
         // TODO: push to featherline
     }
 }
