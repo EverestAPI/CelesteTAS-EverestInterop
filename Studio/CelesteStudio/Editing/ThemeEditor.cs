@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using CelesteStudio.Controls;
 using CelesteStudio.Editing;
 
 namespace CelesteStudio;
