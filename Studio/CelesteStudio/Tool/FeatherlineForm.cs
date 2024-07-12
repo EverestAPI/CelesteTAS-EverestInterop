@@ -17,27 +17,30 @@ public sealed class FeatherlineForm : Form {
     private readonly TextArea checkpoints;
     private readonly TextArea initialInputs;
     private readonly TextArea customHitboxes;
+    private readonly TextArea output;
     private readonly Button run;
     private readonly Button copyOutput;
 
     public FeatherlineForm() {
         Title = $"Featherline - v{Version}";
         Icon = Studio.Instance.Icon;
-        var aboutDialog = new AboutDialog {
-            ProgramName = "Jadderline",
-            ProgramDescription = "Utility for doing an optimal jelly ladder.",
-            Version = Version,
-
-            Developers = ["atpx8", "EllaTAS", "Kataiser", "Mika", "psyGamer", "TheRoboMan", "tntfalle"],
-            Logo = Icon,
-        };
         Menu = new MenuBar { // TODO: add featherline stuff (mainly settings and help window)
-            AboutItem = MenuUtils.CreateAction("About...", Keys.None, () => aboutDialog.ShowDialog(this)),
+            AboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {
+                Studio.ShowAboutDialog(new AboutDialog {
+                    ProgramName = "Jadderline",
+                    ProgramDescription = "Utility for doing an optimal jelly ladder.",
+                    Version = Version,
+
+                    Developers = ["atpx8", "EllaTAS", "Kataiser", "Mika", "psyGamer", "TheRoboMan", "tntfalle"],
+                    Logo = Icon,
+                }, this);
+            }),
         };
         const int rowWidth = 200; // Will probably need to adjust
         checkpoints = new TextArea { Wrap = true, Font = FontManager.EditorFontRegular, Width = rowWidth };
         initialInputs = new TextArea { Wrap = true, Font = FontManager.EditorFontRegular, Width = rowWidth };
         customHitboxes = new TextArea { Wrap = true, Font = FontManager.EditorFontRegular, Width = rowWidth };
+        output = new TextArea { ReadOnly = true, Font = FontManager.EditorFontRegular, Width = rowWidth };
         var layout = new DynamicLayout { DefaultSpacing = new Size(10, 10) };
         layout.BeginHorizontal();
         layout.BeginVertical();
@@ -49,6 +52,9 @@ public sealed class FeatherlineForm : Form {
         layout.EndBeginVertical();
         layout.AddCentered(new Label {Text = "Custom Killboxes and Colliders" });
         layout.AddCentered(customHitboxes);
+        layout.EndBeginVertical();
+        layout.AddCentered(new Label { Text = "Output" });
+        layout.AddCentered(output);
         layout.EndVertical();
         layout.EndHorizontal();
         Content = new StackLayout {
