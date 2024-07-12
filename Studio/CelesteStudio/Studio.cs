@@ -461,19 +461,13 @@ public sealed class Studio : Form {
         // The controller is just the first radio button
         RadioMenuItem? controller = null;
 
-        foreach (var name in Theme.BuiltinThemes.Keys) {
-            items.Add(controller ??= new RadioMenuItem(controller) { Text = name });
-        }
-        foreach (string name in Settings.Instance.CustomThemes.Keys) {
-            items.Add(controller ??= new RadioMenuItem(controller) { Text = name });
-        }
-
-        for (int i = 0; i < items.Count; i++) {
-            if (items[i] is not RadioMenuItem item) {
-                continue;
-            }
+        foreach (var name in Theme.BuiltinThemes.Keys.Concat(Settings.Instance.CustomThemes.Keys)) {
+            var item = new RadioMenuItem(controller) { Text = name };
+            item.Click += (_, _) => Settings.Instance.ThemeName = name;
+            item.Checked = Settings.Instance.ThemeName == name;
             
-            item.Click += (_, _) => Settings.Instance.ThemeName = item.Text;
+            controller ??= item;
+            items.Add(item);
         }
     }
 }

@@ -56,6 +56,7 @@ public sealed class Settings {
         set {
             themeName = value;
             OnThemeChanged();
+            Save();
         }
     }
 
