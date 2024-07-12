@@ -71,7 +71,7 @@ public sealed class Settings {
     
     public string FontFamily { get; set; } = FontManager.FontFamilyBuiltin;
     public float EditorFontSize { get; set; } = 12.0f;
-    public float StatusFontSize { get; set; } = 9.0f;
+    public float StatusFontSize { get; set; } = 10.0f;
     
     #endregion
     #region Preferences

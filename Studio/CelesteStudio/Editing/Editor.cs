@@ -1209,20 +1209,30 @@ public sealed class Editor : Drawable {
             // Handle feather inputs
             int featherStart = GetColumnOfAction(actionLine, Actions.Feather);
             if (featherStart != -1 && Document.Caret.Col > featherStart && (typedCharacter is '.' or ',' or (>= '0' and <= '9'))) {
-                line = line.Insert(Document.Caret.Col, typedCharacter.ToString());
+                int newCol;
+                if (typedCharacter == '.' && Document.Caret.Col > 0 && line[Document.Caret.Col - 1] == ActionLine.Delimiter) {
+                    // Auto-insert the leading 0
+                    line = line.Insert(Document.Caret.Col, "0.");
+                    newCol = Document.Caret.Col + 2;
+                } else {
+                    line = line.Insert(Document.Caret.Col, typedCharacter.ToString());
+                    newCol = Document.Caret.Col + 1;
+                }
+                
                 if (ActionLine.TryParse(line, out var newActionLine, ignoreInvalidFloats: false)) {
                     actionLine = newActionLine;
-                    Document.Caret.Col++;
+                    Document.Caret.Col = newCol;
                 }
             }
             // Handle dash-only/move-only/custom bindings
             else if (typedAction is Actions.DashOnly or Actions.MoveOnly or Actions.PressedKey) {
                 actionLine.Actions = actionLine.Actions.ToggleAction(typedAction, Settings.Instance.AutoRemoveMutuallyExclusiveActions);
                 
-                if (actionLine.Actions.HasFlag(typedAction))
+                if (actionLine.Actions.HasFlag(typedAction)) {
                     Document.Caret.Col = desiredVisualCol = GetColumnOfAction(actionLine, typedAction);
-                else
+                } else {
                     Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
+                }
             }
             // Handle regular inputs
             else if (typedAction != Actions.None) {
@@ -2546,12 +2556,14 @@ public sealed class Editor : Drawable {
             CommunicationWrapper.CurrentLine != -1 && 
             CommunicationWrapper.CurrentLine < actualToVisualRows.Length) 
         {
-            const float padding = 10.0f;
-            float suffixWidth = Font.MeasureWidth(CommunicationWrapper.CurrentLineSuffix); 
+            var font = FontManager.EditorFontBold;
             
-            e.Graphics.DrawText(Font, Settings.Instance.Theme.PlayingFrame,
+            const float padding = 10.0f;
+            float suffixWidth = font.MeasureWidth(CommunicationWrapper.CurrentLineSuffix); 
+            
+            e.Graphics.DrawText(font, Settings.Instance.Theme.PlayingFrame,
                 x: scrollablePosition.X + scrollableSize.Width - suffixWidth - padding,
-                y: actualToVisualRows[CommunicationWrapper.CurrentLine] * Font.LineHeight(),
+                y: actualToVisualRows[CommunicationWrapper.CurrentLine] * font.LineHeight(),
                 CommunicationWrapper.CurrentLineSuffix);
         }
         
@@ -2609,7 +2621,7 @@ public sealed class Editor : Drawable {
             // Highlight playing / savestate line
             if (CommunicationWrapper.Connected) {
                 if (CommunicationWrapper.CurrentLine != -1 && CommunicationWrapper.CurrentLine < actualToVisualRows.Length) {
-                    e.Graphics.FillRectangle(Settings.Instance.Theme.PlayingLine,
+                    e.Graphics.FillRectangle(Settings.Instance.Theme.PlayingLineBg,
                         x: scrollablePosition.X,
                         y: actualToVisualRows[CommunicationWrapper.CurrentLine] * Font.LineHeight(),
                         width: textOffsetX - LineNumberPadding,
@@ -2637,7 +2649,7 @@ public sealed class Editor : Drawable {
                 int oldRow = row;
                 var numberString = (row + 1).ToString();
                 
-                e.Graphics.DrawText(Font, Settings.Instance.Theme.LineNumber, scrollablePosition.X + LineNumberPadding, yPos, numberString);
+                e.Graphics.DrawText(Font, CommunicationWrapper.CurrentLine == row ? Settings.Instance.Theme.PlayingLineFg : Settings.Instance.Theme.LineNumber, scrollablePosition.X + LineNumberPadding, yPos, numberString);
                 
                 bool collapsed = false;
                 if (GetCollapse(row) is { } collapse) {
@@ -2663,7 +2675,6 @@ public sealed class Editor : Drawable {
         // Draw toast message box
         if (!string.IsNullOrWhiteSpace(toastMessage)) {
             const float padding = 5.0f;
-            const float border = 2.0f;
             
             var lines = toastMessage.SplitDocumentLines();
             
@@ -2672,7 +2683,6 @@ public sealed class Editor : Drawable {
             float x = scrollablePosition.X + (scrollableSize.Width - width) / 2.0f;
             float y = scrollablePosition.Y + (scrollableSize.Height - height) / 2.0f;
             
-            e.Graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteBorder, x - padding - border, y - padding - border, width + padding * 2.0f + border * 2.0f, height + padding * 2.0f + border * 2.0f);
             e.Graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteBg, x - padding, y - padding, width + padding * 2.0f, height + padding * 2.0f);
             
             foreach (var line in lines) {
