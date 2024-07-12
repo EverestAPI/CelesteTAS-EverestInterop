@@ -13,6 +13,10 @@ namespace CelesteStudio.Tool;
 
 public sealed class FeatherlineForm : Form {
     private const string Version = "0.3.3.1";
+
+    private readonly TextArea checkpoints;
+    private readonly TextArea initialInputs;
+    private readonly TextArea customHitboxes;
     private readonly Button run;
     private readonly Button copyOutput;
 
@@ -27,13 +31,25 @@ public sealed class FeatherlineForm : Form {
             Developers = ["atpx8", "EllaTAS", "Kataiser", "Mika", "psyGamer", "TheRoboMan", "tntfalle"],
             Logo = Icon,
         };
-        Menu = new MenuBar {
+        Menu = new MenuBar { // TODO: add featherline stuff (mainly settings and help window)
             AboutItem = MenuUtils.CreateAction("About...", Keys.None, () => aboutDialog.ShowDialog(this)),
         };
         const int rowWidth = 200; // Will probably need to adjust
+        checkpoints = new TextArea { Wrap = true, Font = FontManager.EditorFontRegular, Width = rowWidth };
+        initialInputs = new TextArea { Wrap = true, Font = FontManager.EditorFontRegular, Width = rowWidth };
+        customHitboxes = new TextArea { Wrap = true, Font = FontManager.EditorFontRegular, Width = rowWidth };
         var layout = new DynamicLayout { DefaultSpacing = new Size(10, 10) };
         layout.BeginHorizontal();
-        layout.Add(new Label { Text = "placeholder" });
+        layout.BeginVertical();
+        layout.AddCentered(new Label { Text = "Feather Checkpoints" });
+        layout.AddCentered(checkpoints);
+        layout.EndBeginVertical();
+        layout.AddCentered(new Label { Text = "(Optional) Initial Inputs" });
+        layout.AddCentered(initialInputs);
+        layout.EndBeginVertical();
+        layout.AddCentered(new Label {Text = "Custom Killboxes and Colliders" });
+        layout.AddCentered(customHitboxes);
+        layout.EndVertical();
         layout.EndHorizontal();
         Content = new StackLayout {
             Padding = 10,
