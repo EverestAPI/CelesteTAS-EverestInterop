@@ -10,6 +10,7 @@ namespace CelesteStudio;
 public sealed class ThemeEditor : Form {
     private readonly DropDown selector;
     private DynamicLayout colorsLayout;
+    private readonly CheckBox darkModeCheckBox;
 
     // Due to a bug(?) in the GTK impl, ColorPickers have to be manually Disposed
     // see https://github.com/picoe/Eto/issues/2664 for more details
@@ -36,17 +37,26 @@ public sealed class ThemeEditor : Form {
         selector.SelectedKeyChanged += (_, _) => {
             if (selector.SelectedKey != Settings.Instance.ThemeName) {
                 Settings.Instance.ThemeName = selector.SelectedKey;
-                InitializePickers();
+                InitializeThemeParameters();
             }
         };
         Settings.ThemeChanged += () => {
             selector.SelectedKey = Settings.Instance.ThemeName;
-            InitializePickers();
+            InitializeThemeParameters();
         };
         layout.AddAutoSized(selector);
 
         layout.Add(new Button((_, _) => Duplicate()) { Text = "Duplicate" });
         layout.Add(new Button((_, _) => Delete()) { Text = "Delete" });
+
+        layout.BeginHorizontal();
+        layout.Add(new Label { Text = "Dark Mode" });
+        darkModeCheckBox = new CheckBox();
+        darkModeCheckBox.CheckedChanged += (_, _) => {
+            UpdateField(typeof(Theme).GetField(nameof(Theme.DarkMode))!, darkModeCheckBox.Checked!);
+        };
+        layout.Add(darkModeCheckBox);
+        layout.EndHorizontal();
 
         layout.AddSpace();
         layout.EndVertical();
@@ -58,12 +68,12 @@ public sealed class ThemeEditor : Form {
         colorsLayout = new DynamicLayout { DefaultSpacing = new Size(10, 10), Padding = new Padding(15) };
         layout.Add(colorsLayout);
 
-        InitializePickers();
-
         layout.EndScrollable();
         layout.EndVertical();
 
         layout.EndHorizontal();
+
+        InitializeThemeParameters();
 
         Content = layout;
         Resizable = true;
@@ -140,7 +150,12 @@ public sealed class ThemeEditor : Form {
         Settings.Save();
     }
 
-    private void InitializePickers() {
+    private void InitializeThemeParameters() {
+        // Non-color settings
+        darkModeCheckBox.Enabled = !IsBuiltin();
+        darkModeCheckBox.Checked = Settings.Instance.Theme.DarkMode;
+
+        // Color pickers
         colorsLayout.Clear();
         
         // See the comment on `pickers`
@@ -249,6 +264,9 @@ public sealed class ThemeEditor : Form {
     }
 
     private void UpdateField(FieldInfo field, object value) {
+        if (IsBuiltin()) {
+            return;
+        }
         object theme = Settings.Instance.Theme;
         field.SetValue(theme, value);
         Settings.Instance.CustomThemes[Settings.Instance.ThemeName] = (Theme) theme;
