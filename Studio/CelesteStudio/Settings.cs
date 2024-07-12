@@ -38,11 +38,11 @@ public sealed class Settings {
     [TomlNonSerialized]
     public Theme Theme {
         get {
-            if (CustomThemes.TryGetValue(ThemeName, out Theme theme)) {
-                return theme;
-            }
             if (Theme.BuiltinThemes.TryGetValue(ThemeName, out Theme builtinTheme)) {
                 return builtinTheme;
+            }
+            if (CustomThemes.TryGetValue(ThemeName, out Theme customTheme)) {
+                return customTheme;
             }
             // Fall back to light theme
             return Theme.BuiltinThemes["Light"];
@@ -61,7 +61,6 @@ public sealed class Settings {
     }
 
     public Dictionary<string, Theme> CustomThemes { get; set; } = new();
-
     public List<Snippet> Snippets { get; set; } = [];
     
     public bool SendInputsToCeleste { get; set; } = true;

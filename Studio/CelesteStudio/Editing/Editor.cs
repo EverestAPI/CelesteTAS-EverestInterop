@@ -944,7 +944,6 @@ public sealed class Editor : Drawable {
             if (command != null && command.Value.AutoCompleteEntries.Length >= commandArgs.Length) {
                 int lastArgStart = line.LastIndexOf(args[^1], StringComparison.Ordinal);
                 var entries = command.Value.AutoCompleteEntries[commandArgs.Length - 1](commandArgs);
-                Console.WriteLine($"entries: {entries.Length}");
                 
                 autoCompleteMenu.Entries = entries.Select(entry => new AutoCompleteMenu.Entry {
                     SearchText = entry.Prefix + entry.Arg,

@@ -311,7 +311,6 @@ public static class GameData {
         if (isSet && args.Length == 1) {
             // Vanilla setting / session / assist
             if (typeof(Settings).GetFieldInfo(args[0], BindingFlags.Instance | BindingFlags.Public) is { } fSettings) {
-                Console.WriteLine($"f {fSettings}");
                 entries.AddRange(GetTypeAutoCompleteEntries(fSettings.FieldType, AutoCompleteType.Parameter));
             } else if (typeof(SaveData).GetFieldInfo(args[0], BindingFlags.Instance | BindingFlags.Public) is { } fSaveData) {
                 entries.AddRange(GetTypeAutoCompleteEntries(fSaveData.FieldType, AutoCompleteType.Parameter));
