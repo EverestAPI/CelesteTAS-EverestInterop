@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using CelesteStudio.Communication;
@@ -43,6 +44,25 @@ public sealed class FeatherlineForm : Form {
                     Logo = Icon,
                 }, this);
             }),
+            Items = { // TODO: these need to set featherline settings
+                new SubMenuItem { Text = "Settings", Items = {
+                    new SubMenuItem { Text = "Genetic Algorithm", Items = {
+                        MenuUtils.CreateNumberInputShow("Population", () => 50, (val) => {}, 2, 999999, 1),
+                        MenuUtils.CreateNumberInputShow("Generation Survivors", () => 20, (val) => {}, 1, 999998, 1),
+                        MenuUtils.CreateNumberInputShow("Mutation Magnitude", () => 8f, (val) => {}, 0f, 180f, 0.1f),
+                        MenuUtils.CreateNumberInputShow("Max Mutation Count", () => 5, (val) => {}, 1, 999999, 1),
+                    }},
+                    new SubMenuItem { Text = "Computation", Items = {
+                        MenuUtils.CreateToggle("Don't Compute Hazards", () => false, () => {}),
+                        MenuUtils.CreateToggle("Don't Compute Walls or Colliders", () => false, () => {}),
+                    }},
+                    new SubMenuItem { Text = "Algorithm Mode", Items = {
+                        MenuUtils.CreateToggle("Frame Genes Only", () => false, () => {}),
+                        MenuUtils.CreateToggle("Disallow Wall Collision", () => false, () => {}),
+                    }},
+                    MenuUtils.CreateNumberInputShow("Simulation Thread Count", () => 8, (val) => {}, -1, 100, 1),
+                }},
+            },
         };
         const int stepperWidth = 100;
         const int textWidth = 200;

@@ -40,7 +40,11 @@ public class MenuUtils {
     public static MenuItem CreateNumberInput<T>(string text, Func<T> getFn, Action<T> setFn, T minValue, T maxValue, T step) where T : INumber<T> {
         return new ButtonMenuItem((_, _) => setFn(NumberInputDialog<T>.Show(text, getFn(), minValue, maxValue, step))) { Text = text };
     }
-    
+
+    public static MenuItem CreateNumberInputShow<T>(string text, Func<T> getFn, Action<T> setFn, T minValue, T maxValue, T step) where T : INumber<T> {
+        return new ButtonMenuItem((_, _) => setFn(NumberInputDialog<T>.Show(text, getFn(), minValue, maxValue, step))) { Text = $"{text}: {getFn()}" };
+    }
+
     public static MenuItem CreateSettingNumberInput<T>(string text, string settingName, T minValue, T maxValue, T step) where T : INumber<T>  {
         var property = typeof(Settings).GetProperty(settingName)!;
         
