@@ -1507,6 +1507,7 @@
             </Setter.Value>
         </Setter>
     </Style>
+    <Style TargetType="efc:EtoTabControl" BasedOn="{StaticResource {x:Type TabControl}}"/>
 
     <Style TargetType="{x:Type TabItem}">
         <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}" />

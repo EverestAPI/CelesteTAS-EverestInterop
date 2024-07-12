@@ -36,11 +36,29 @@ public class MenuUtils {
         
         return item;
     }
-    
+
+    public static MenuItem CreateFeatherlineSettingToggle(string text, string settingName) {
+        var property = typeof(FeatherlineSettings).GetProperty(settingName)!;
+
+        var item = new CheckMenuItem {
+            Text = text,
+            Checked = (bool)property.GetValue(FeatherlineSettings.Instance)!
+        };
+        item.Click += (_, _) => {
+            bool value = (bool)property.GetValue(FeatherlineSettings.Instance)!;
+            property.SetValue(FeatherlineSettings.Instance, !value);
+
+            FeatherlineSettings.OnChanged();
+            FeatherlineSettings.Save();
+        };
+
+        return item;
+    }
+
     public static MenuItem CreateNumberInput<T>(string text, Func<T> getFn, Action<T> setFn, T minValue, T maxValue, T step) where T : INumber<T> {
         return new ButtonMenuItem((_, _) => setFn(NumberInputDialog<T>.Show(text, getFn(), minValue, maxValue, step))) { Text = text };
     }
-    
+
     public static MenuItem CreateSettingNumberInput<T>(string text, string settingName, T minValue, T maxValue, T step) where T : INumber<T>  {
         var property = typeof(Settings).GetProperty(settingName)!;
         
@@ -57,7 +75,24 @@ public class MenuUtils {
         
         return item;
     }
-    
+
+    public static MenuItem CreateFeatherlineSettingNumberInput<T>(string text, string settingName, T minValue, T maxValue, T step) where T : INumber<T> {
+        var property = typeof(FeatherlineSettings).GetProperty(settingName)!;
+
+        var item = new ButtonMenuItem {
+            Text = $"{text}: {property.GetValue(FeatherlineSettings.Instance)!}"
+        };
+        item.Click += (_, _) => {
+            T value = (T) property.GetValue(FeatherlineSettings.Instance)!;
+            property.SetValue(FeatherlineSettings.Instance, NumberInputDialog<T>.Show(text, value, minValue, maxValue, step));
+
+            FeatherlineSettings.OnChanged();
+            FeatherlineSettings.Save();
+        };
+
+        return item;
+    }
+
     public static MenuItem CreateSettingEnum<T>(string text, string settingName, string[] entryNames) where T : struct, Enum {
         var property = typeof(Settings).GetProperty(settingName)!;
         var values = Enum.GetValues<T>();

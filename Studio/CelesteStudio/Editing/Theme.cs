@@ -41,6 +41,8 @@ public struct Theme {
     public Style Comment;
     public Style Frame;
 
+    public bool DarkMode;
+
     public Theme() {}
 
     public static readonly Dictionary<string, Theme> BuiltinThemes = new() {
@@ -72,6 +74,8 @@ public struct Theme {
             Command = new Style(Color.FromRgb(0xD2691E)),
             Comment = new Style(Color.FromRgb(0x00A000)),
             Frame = new Style(Color.FromRgb(0xFF2222)),
+
+            DarkMode = false,
         } },
         { "Dark", new() {
             Background = Color.FromRgb(0x282A36),
@@ -102,6 +106,8 @@ public struct Theme {
             Command = new Style(Color.FromRgb(0xFFB86C)),
             Comment = new Style(Color.FromRgb(0x95B272)),
             Frame = new Style(Color.FromRgb(0xBD93F9)),
+
+            DarkMode = true,
         } },
     };
 }

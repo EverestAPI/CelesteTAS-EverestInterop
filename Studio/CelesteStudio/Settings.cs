@@ -129,9 +129,9 @@ public sealed class Settings {
         OnChanged();
         Save();
     }
-    
+
     #endregion
-    
+
     public static void Load() {
         // Register mappings
         TomletMain.RegisterMapper(
@@ -218,6 +218,8 @@ public sealed class Settings {
         if (!File.Exists(SettingsPath)) {
             Save();
         }
+
+        FeatherlineSettings.Load();
     }
     
     public static void Save() {
@@ -231,5 +233,54 @@ public sealed class Settings {
             Console.Error.WriteLine($"Failed to write settings file to path '{SettingsPath}'");
             Console.Error.WriteLine(ex);
         }
+        FeatherlineSettings.Save();
     }
 }
+
+#region Featherline
+public sealed class FeatherlineSettings {
+    public static string FeatherlineSettingsPath => Path.Combine(Settings.BaseConfigPath, "FeatherlineSettings.toml");
+    public static FeatherlineSettings Instance { get; private set; } = new();
+    public int Population { get; set; } = 50;
+    public int GenerationSurvivors { get; set; } = 20;
+    public float MutationMagnitude { get; set; } = 8f;
+    public int MaxMutations { get; set; } = 5;
+    public bool DontHazard { get; set; } = false;
+    public bool DontSolid { get; set; } = false;
+    public bool FrameOnly { get; set; } = false;
+    public bool DisallowWall { get; set; } = false;
+    public int SimulationThreads { get; set; } = 8;
+
+    public static void Load() {
+        if (File.Exists(FeatherlineSettingsPath)) {
+            try {
+                Instance = TomletMain.To<FeatherlineSettings>(TomlParser.ParseFile(FeatherlineSettingsPath), new TomlSerializerOptions());
+            } catch (Exception ex) {
+                Console.Error.WriteLine($"Failed to read Featherline settings file from path '{FeatherlineSettingsPath}'");
+                Console.Error.WriteLine(ex);
+            }
+        }
+
+        if (!File.Exists(FeatherlineSettingsPath)) {
+            Save();
+        }
+    }
+
+    public static void Save() {
+        try {
+            var dir = Path.GetDirectoryName(FeatherlineSettingsPath)!;
+            if (!Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
+
+            File.WriteAllText(FeatherlineSettingsPath, TomletMain.DocumentFrom(Instance).SerializedValue);
+        } catch (Exception ex) {
+            Console.Error.WriteLine($"Failed to write settings file to path '{FeatherlineSettingsPath}'");
+            Console.Error.WriteLine(ex);
+        }
+    }
+
+    public static void OnChanged() {
+        // TODO: push to featherline
+    }
+}
+#endregion

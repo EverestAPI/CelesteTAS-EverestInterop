@@ -18,20 +18,20 @@ public static class Program {
         try {
             var app = new Application(Eto.Platforms.Wpf);
             var studio = new Studio(windowCreationCallback: window => {
-                ApplyTheme(window, Settings.Instance.ThemeType == ThemeType.Dark);
-                Settings.ThemeChanged += () => ApplyTheme(window, Settings.Instance.ThemeType == ThemeType.Dark);
+                ApplyTheme(window, Settings.Instance.Theme.DarkMode);
+                Settings.ThemeChanged += () => ApplyTheme(window, Settings.Instance.Theme.DarkMode);
             });
 
-            DarkNet.Instance.SetCurrentProcessTheme(Settings.Instance.ThemeType == ThemeType.Dark ? Theme.Dark : Theme.Light);
+            DarkNet.Instance.SetCurrentProcessTheme(Settings.Instance.Theme.DarkMode ? Theme.Dark : Theme.Light);
             
-            studio.PreLoad += (_, _) => ApplyTheme(studio, Settings.Instance.ThemeType == ThemeType.Dark);
+            studio.PreLoad += (_, _) => ApplyTheme(studio, Settings.Instance.Theme.DarkMode);
             Settings.ThemeChanged += () => {
-                bool isDark = Settings.Instance.ThemeType == ThemeType.Dark;
+                bool isDark = Settings.Instance.Theme.DarkMode;
                 UpdateTheme(isDark);
                 ApplyTheme(studio, isDark);
             };
 
-            UpdateTheme(Settings.Instance.ThemeType == ThemeType.Dark);
+            UpdateTheme(Settings.Instance.Theme.DarkMode);
 
             app.Run(studio);
         } catch (Exception ex) {

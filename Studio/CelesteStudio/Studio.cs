@@ -13,6 +13,7 @@ using Eto.Forms;
 using Eto.Drawing;
 using StudioCommunication;
 using FontDialog = CelesteStudio.Dialog.FontDialog;
+using Eto.Forms.ThemedControls;
 
 namespace CelesteStudio;
 
@@ -28,6 +29,7 @@ public sealed class Studio : Form {
     private readonly Scrollable EditorScrollable;
     
     private JadderlineForm? jadderlineForm;
+    private FeatherlineForm? featherlineForm;
     private ThemeEditor? themeEditorForm;
 
     private string TitleBarText => Editor.Document.FilePath == Document.ScratchFile 
@@ -101,6 +103,20 @@ public sealed class Studio : Form {
         CommunicationWrapper.Start();
     }
     
+    /// Shows the "About" dialog, while accounting for WPF themeing
+    public static void ShowAboutDialog(AboutDialog about, Window parent) {
+        if (!Eto.Platform.Instance.IsWpf) {
+            about.ShowDialog(parent);
+        }
+
+        var aboutHandler = (ThemedAboutDialogHandler)about.Handler;
+        var dialog = aboutHandler.Control;
+        dialog.Load += (_, _) => Studio.Instance.WindowCreationCallback(dialog);
+        dialog.Shown += (_, _) => dialog.Location = parent.Location + new Point((parent.Width - dialog.Width) / 2, (parent.Height - dialog.Height) / 2);
+
+        about.ShowDialog(parent);
+    }
+
     public void RecalculateLayout() {
         GameInfoPanel.Width = Width;
         EditorScrollable.Size = new Size(
@@ -325,17 +341,6 @@ public sealed class Studio : Form {
             }
         }) { MenuText = "Delete All Files" });
         backupsMenu.Enabled = backupFiles.Length != 0;
-        
-        var aboutDialog = new AboutDialog {
-            ProgramName = "Celeste Studio",
-            ProgramDescription = "Editor for editing Celeste TASes with various useful features.",
-            Version = Version.ToString(3),
-            Website = new Uri("https://github.com/EverestAPI/CelesteTAS-EverestInterop"),
-            
-            Developers = ["psyGamer", "DemoJameson", "EuniverseCat", "Samah"],
-            License = "MIT License",
-            Logo = Icon,
-        };
             
         var menu = new MenuBar {
             Items = {
@@ -421,13 +426,29 @@ public sealed class Studio : Form {
                         jadderlineForm.Show();
                         jadderlineForm.Closed += (_, _) => jadderlineForm = null;
                     }),
+                    MenuUtils.CreateAction("Featherline", Keys.None, () => {
+                        featherlineForm ??= new();
+                        featherlineForm.Show();
+                        featherlineForm.Closed += (_, _) => featherlineForm = null;
+                    }),
                 }},
             },
             ApplicationItems = {
                 // application (OS X) or file menu (others)
             },
             QuitItem = MenuUtils.CreateAction("Quit", Keys.None, Application.Instance.Quit),
-            AboutItem = MenuUtils.CreateAction("About...", Keys.None, () => aboutDialog.ShowDialog(this)),
+            AboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {
+                ShowAboutDialog(new AboutDialog {
+                    ProgramName = "Celeste Studio",
+                    ProgramDescription = "Editor for editing Celeste TASes with various useful features.",
+                    Version = Version.ToString(3),
+                    Website = new Uri("https://github.com/EverestAPI/CelesteTAS-EverestInterop"),
+                    
+                    Developers = ["psyGamer", "DemoJameson", "EuniverseCat", "Samah"],
+                    License = "MIT License",
+                    Logo = Icon,
+                }, this);
+            }),
             IncludeSystemItems = MenuBarSystemItems.None,
         };
         
