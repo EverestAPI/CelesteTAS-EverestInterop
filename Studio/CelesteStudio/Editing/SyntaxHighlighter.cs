@@ -49,6 +49,7 @@ public class SyntaxHighlighter {
     }
     
     private void LoadTheme(Theme theme) {
+        cache.Clear();
         // IMPORTANT: Must be the same order as the StyleType enum!
         styles = [theme.Action, theme.Angle, theme.Breakpoint, theme.SavestateBreakpoint, theme.Delimiter, theme.Command, theme.Comment, theme.Frame];
     }

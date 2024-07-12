@@ -44,7 +44,7 @@ public sealed class Settings {
             if (Theme.BuiltinThemes.TryGetValue(ThemeName, out Theme builtinTheme)) {
                 return builtinTheme;
             }
-            // Fall back to light
+            // Fall back to light theme
             return Theme.BuiltinThemes["Light"];
         }
     }

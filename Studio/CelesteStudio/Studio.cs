@@ -437,7 +437,7 @@ public sealed class Studio : Form {
         return menu;
     }
 
-    public MenuItem CreateSettingTheme() {
+    private MenuItem CreateSettingTheme() {
         var selector = new SubMenuItem { Text = "&Theme" };
 
         var edit = MenuUtils.CreateAction("&Edit Theme...", Keys.None, () => {
@@ -447,41 +447,33 @@ public sealed class Studio : Form {
                 themeEditorForm = null;
             };
         });
-        CreateSettingThemeEntries(selector.Items, edit);
 
-        Settings.Changed += () => {
-            CreateSettingThemeEntries(selector.Items, edit);
-        };
-        Settings.ThemeChanged += () => {
-            CreateSettingThemeEntries(selector.Items, edit);
-        };
+        CreateSettingThemeEntries(selector.Items, edit);
+        Settings.ThemeChanged += () => CreateSettingThemeEntries(selector.Items, edit);
 
         return selector;
     }
+
     private static void CreateSettingThemeEntries(MenuItemCollection items, MenuItem edit) {
         items.Clear();
         items.Add(edit);
 
+        // The controller is just the first radio button
         RadioMenuItem? controller = null;
+
         foreach (var name in Theme.BuiltinThemes.Keys) {
-            if (controller == null) {
-                controller = new RadioMenuItem { Text = name };
-                items.Add(controller);
-            } else {
-                items.Add(new RadioMenuItem(controller) { Text = name });
-            }
+            items.Add(controller ??= new RadioMenuItem(controller) { Text = name });
         }
-
         foreach (string name in Settings.Instance.CustomThemes.Keys) {
-            items.Add(new RadioMenuItem(controller) { Text = name });
+            items.Add(controller ??= new RadioMenuItem(controller) { Text = name });
         }
 
-        for (int i = 1; i < items.Count; i++) {
-            var item = (RadioMenuItem)items[i];
-            item.Checked = Settings.Instance.ThemeName == item.Text;
-            item.Click += (_, _) => {
-                Settings.Instance.ThemeName = item.Text;
-            };
+        for (int i = 0; i < items.Count; i++) {
+            if (items[i] is not RadioMenuItem item) {
+                continue;
+            }
+            
+            item.Click += (_, _) => Settings.Instance.ThemeName = item.Text;
         }
     }
 }

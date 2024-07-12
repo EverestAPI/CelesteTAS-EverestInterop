@@ -5,32 +5,30 @@ using System.Collections.Generic;
 using System.Reflection;
 using CelesteStudio.Editing;
 
-namespace CelesteStudio.Util;
+namespace CelesteStudio;
 
 public sealed class ThemeEditor : Form {
-    private DropDown selector;
+    private readonly DropDown selector;
     private DynamicLayout colorsLayout;
+
     // Due to a bug(?) in the GTK impl, ColorPickers have to be manually Disposed
     // see https://github.com/picoe/Eto/issues/2664 for more details
-    private List<ColorPicker> pickers = [];
+    private readonly List<ColorPicker> pickers = [];
 
     public ThemeEditor() {
-        Title = "Celeste Studio - Theme Editor";
+        Title = "Theme Editor";
         Icon = Studio.Instance.Icon;
 
-        var layout = new DynamicLayout {
-            DefaultSpacing = new Size(10, 10),
-            Padding = new Padding(10),
-        };
+        var layout = new DynamicLayout { DefaultSpacing = new Size(10, 10), Padding = new Padding(10) };
         layout.BeginHorizontal();
-        // left side
+
+        // Left side
         layout.BeginVertical();
 
         selector = new DropDown();
         foreach (var name in Theme.BuiltinThemes.Keys) {
             selector.Items.Add(new ListItem { Text = name + " (builtin)", Key = name });
         }
-
         foreach (var name in Settings.Instance.CustomThemes.Keys) {
             selector.Items.Add(new ListItem { Text = name, Key = name });
         }
@@ -47,29 +45,17 @@ public sealed class ThemeEditor : Form {
         };
         layout.AddAutoSized(selector);
 
-        var duplicate = new Button { Text = "Duplicate" };
-        duplicate.Click += (_, _) => {
-            Duplicate();
-        };
-        layout.Add(duplicate);
-
-        var delete = new Button { Text = "Delete" };
-        delete.Click += (_, _) => {
-            Delete();
-        };
-        layout.Add(delete);
+        layout.Add(new Button((_, _) => Duplicate()) { Text = "Duplicate" });
+        layout.Add(new Button((_, _) => Delete()) { Text = "Delete" });
 
         layout.AddSpace();
         layout.EndVertical();
 
-        // right side
+        // Right side
         layout.BeginVertical();
         layout.BeginScrollable();
 
-        colorsLayout = new DynamicLayout {
-            DefaultSpacing = new Size(5, 5),
-            Padding = new Padding(5),
-        };
+        colorsLayout = new DynamicLayout { DefaultSpacing = new Size(10, 10), Padding = new Padding(15) };
         layout.Add(colorsLayout);
 
         InitializePickers();
@@ -81,8 +67,11 @@ public sealed class ThemeEditor : Form {
 
         Content = layout;
         Resizable = true;
+        
+        Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
+        Shown += (_, _) => Location = Studio.Instance.Location + new Point((Studio.Instance.Width - Width) / 2, (Studio.Instance.Height - Height) / 2);
     }
-
+    
     private bool IsBuiltin() {
         return Theme.BuiltinThemes.ContainsKey(Settings.Instance.ThemeName);
     }
@@ -94,14 +83,14 @@ public sealed class ThemeEditor : Form {
         }
 
         var prevName = Settings.Instance.ThemeName;
-        if (MessageBox.Show("Delete " + prevName + "?",
+        if (MessageBox.Show($"Delete {prevName}?",
                     MessageBoxButtons.YesNo,
                     MessageBoxType.Question,
                     MessageBoxDefaultButton.No) != DialogResult.Yes) {
             return;
         }
 
-        // select next
+        // Select next
         bool newIsCurrent = false;
         foreach (var item in selector.Items) {
             if (newIsCurrent) {
@@ -139,7 +128,7 @@ public sealed class ThemeEditor : Form {
         }
         string newName = newName_!.Trim();
         if (Settings.Instance.CustomThemes.ContainsKey(newName)) {
-            MessageBox.Show(newName + " already exists", MessageBoxType.Error);
+            MessageBox.Show($"'{newName}' already exists", MessageBoxType.Error);
             return;
         }
 
@@ -153,7 +142,8 @@ public sealed class ThemeEditor : Form {
 
     private void InitializePickers() {
         colorsLayout.Clear();
-        // see the comment on `pickers`
+        
+        // See the comment on `pickers`
         foreach (var picker in pickers) {
             picker.Dispose();
         }
@@ -161,8 +151,8 @@ public sealed class ThemeEditor : Form {
         if (IsBuiltin()) {
             return;
         }
-        var fields = typeof(Theme).GetFields();
-        foreach (var field in fields) {
+
+        foreach (var field in typeof(Theme).GetFields()) {
             colorsLayout.BeginHorizontal();
             var value = field.GetValue(Settings.Instance.Theme);
 
@@ -265,38 +255,31 @@ public sealed class ThemeEditor : Form {
         Settings.OnThemeChanged();
         Settings.Save();
     }
+    
+    private static string? AskString(string text, string initialValue) {
+        var dialog = new Dialog<string?>();
 
-    public static String? AskString(string text, string initialValue) {
-        String? result = null;
-        var dialog = new Eto.Forms.Dialog();
-
-        var input = new TextBox() { Text = initialValue };
+        var input = new TextBox { Text = initialValue };
         input.SelectAll();
 
-        var cancelButton = new Button { Text = "Cancel" };
-        cancelButton.Click += (_, _) => {
-            dialog.Close();
-        };
-        var confirmButton = new Button { Text = "Confirm" };
-        confirmButton.Click += (_, _) => {
-            result = input.Text;
-            dialog.Close();
-        };
-        dialog.AbortButton = cancelButton;
-        dialog.DefaultButton = confirmButton;
-        dialog.PositiveButtons.Add(confirmButton);
-        dialog.NegativeButtons.Add(cancelButton);
+        dialog.DefaultButton = new Button((_, _) => dialog.Close(input.Text)) { Text = "Confirm" };
+        dialog.AbortButton = new Button((_, _) => dialog.Close(null)) { Text = "Cancel" };
+        dialog.PositiveButtons.Add(dialog.DefaultButton);
+        dialog.NegativeButtons.Add(dialog.AbortButton);
 
         dialog.Content = new StackLayout {
             Padding = 10,
+            Spacing = 10,
             HorizontalContentAlignment = HorizontalAlignment.Center,
             Items = {
                 new Label { Text = text, TextAlignment = TextAlignment.Center },
                 input,
             }
         };
+        
+        dialog.Load += (_, _) => Studio.Instance.WindowCreationCallback(dialog);
+        dialog.Shown += (_, _) => dialog.Location = Studio.Instance.Location + new Point((Studio.Instance.Width - dialog.Width) / 2, (Studio.Instance.Height - dialog.Height) / 2);
 
-        dialog.ShowModal();
-        return result;
+        return dialog.ShowModal();
     }
 }
