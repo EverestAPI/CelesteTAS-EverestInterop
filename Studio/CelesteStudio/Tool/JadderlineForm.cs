@@ -30,17 +30,17 @@ public sealed class JadderlineForm : Form {
         Title = $"Jadderline - v{Version}";
         Icon = Studio.Instance.Icon;
         
-        var aboutDialog = new AboutDialog {
-            ProgramName = "Jadderline",
-            ProgramDescription = "Utility for doing an optimal jelly ladder.",
-            Version = Version,
-            
-            Developers = ["atpx8", "psyGamer"],
-            Logo = Icon,
-        };
-        
         Menu = new MenuBar {
-            AboutItem = MenuUtils.CreateAction("About...", Keys.None, () => aboutDialog.ShowDialog(this)),
+            AboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {
+                Studio.ShowAboutDialog(new AboutDialog {
+                    ProgramName = "Jadderline",
+                    ProgramDescription = "Utility for doing an optimal jelly ladder.",
+                    Version = Version,
+                    
+                    Developers = ["atpx8", "psyGamer"],
+                    Logo = Icon,
+                }, this);
+            }),
         };
         
         const int rowWidth = 200;
