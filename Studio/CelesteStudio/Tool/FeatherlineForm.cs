@@ -14,6 +14,11 @@ namespace CelesteStudio.Tool;
 public sealed class FeatherlineForm : Form {
     private const string Version = "0.3.3.1";
 
+    private readonly NumericStepper generations;
+    private readonly NumericStepper maxFrames;
+    private readonly NumericStepper gensPerTiming;
+    private readonly NumericStepper timingShuffles;
+    private readonly CheckBox testOnInitial;
     private readonly TextArea checkpoints;
     private readonly TextArea initialInputs;
     private readonly TextArea customHitboxes;
@@ -36,25 +41,45 @@ public sealed class FeatherlineForm : Form {
                 }, this);
             }),
         };
-        const int rowWidth = 200; // Will probably need to adjust
-        checkpoints = new TextArea { Wrap = true, Font = FontManager.EditorFontRegular, Width = rowWidth };
-        initialInputs = new TextArea { Wrap = true, Font = FontManager.EditorFontRegular, Width = rowWidth };
-        customHitboxes = new TextArea { Wrap = true, Font = FontManager.EditorFontRegular, Width = rowWidth };
-        output = new TextArea { ReadOnly = true, Font = FontManager.EditorFontRegular, Width = rowWidth };
+        const int stepperWidth = 100;
+        const int textWidth = 200;
+        generations = new NumericStepper { MinValue = 0, MaxValue = 999999, Value = 2000, DecimalPlaces = 0, Width = stepperWidth };
+        maxFrames = new NumericStepper { MinValue = 1, MaxValue = 9999, Value = 120, DecimalPlaces = 0, Width = stepperWidth };
+        gensPerTiming = new NumericStepper { MinValue = 1, MaxValue = 999999, Value = 150, DecimalPlaces = 0, Width = stepperWidth };
+        timingShuffles = new NumericStepper { MinValue = 0, MaxValue = 100, Value = 6, DecimalPlaces = 0, Width = stepperWidth };
+        testOnInitial = new CheckBox { Text = "Test Timing On\nInitial Inputs Directly", Checked = false };
+        checkpoints = new TextArea { Wrap = true, Font = FontManager.EditorFontRegular, Width = textWidth };
+        initialInputs = new TextArea { Wrap = true, Font = FontManager.EditorFontRegular, Width = textWidth };
+        customHitboxes = new TextArea { Wrap = true, Font = FontManager.EditorFontRegular, Width = textWidth };
+        output = new TextArea { ReadOnly = true, Font = FontManager.EditorFontRegular, Width = textWidth };
         var layout = new DynamicLayout { DefaultSpacing = new Size(10, 10) };
         layout.BeginHorizontal();
         layout.BeginVertical();
+        layout.Add(new Label { Text = "Generations" });
+        layout.Add(generations);
+        layout.AddSpace();
+        layout.Add(new Label { Text = "Max Framecount" });
+        layout.Add(maxFrames);
+        layout.AddSpace();
+        layout.Add(new Label { Text = "Gens Per Tested Timing" });
+        layout.Add(gensPerTiming);
+        layout.AddSpace();
+        layout.Add(new Label { Text = "Timing Shuffle Count" });
+        layout.Add(timingShuffles);
+        layout.AddSpace();
+        layout.Add(testOnInitial);
+        layout.EndBeginVertical();
         layout.AddCentered(new Label { Text = "Feather Checkpoints" });
-        layout.AddCentered(checkpoints);
+        layout.Add(checkpoints);
         layout.EndBeginVertical();
         layout.AddCentered(new Label { Text = "(Optional) Initial Inputs" });
-        layout.AddCentered(initialInputs);
+        layout.Add(initialInputs);
         layout.EndBeginVertical();
         layout.AddCentered(new Label {Text = "Custom Killboxes and Colliders" });
-        layout.AddCentered(customHitboxes);
+        layout.Add(customHitboxes);
         layout.EndBeginVertical();
         layout.AddCentered(new Label { Text = "Output" });
-        layout.AddCentered(output);
+        layout.Add  (output);
         layout.EndVertical();
         layout.EndHorizontal();
         Content = new StackLayout {
