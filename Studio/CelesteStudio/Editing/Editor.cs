@@ -91,10 +91,6 @@ public sealed class Editor : Drawable {
     private SyntaxHighlighter highlighter;
     private const float LineNumberPadding = 5.0f;
     
-    // Quick-edits are anchors to switch through with tab and edit
-    // Used by auto-complete snippets
-    private int quickEditIndex;
-    
     // Offset from the left accounting for line numbers
     private float textOffsetX;
     
@@ -610,7 +606,8 @@ public sealed class Editor : Drawable {
         if (e.Key is Keys.LeftApplication or Keys.RightApplication) mods |= Keys.Application;
         UpdateMouseAction(PointFromScreen(Mouse.Position), mods);
         
-        if (autoCompleteMenu.HandleKeyDown(e)) {
+        // While there are quick-edits available, Tab will cycle through them
+        if (autoCompleteMenu.HandleKeyDown(e, useTabComplete: !GetQuickEdits().Any())) {
             e.Handled = true;
             Recalc();
             return;
@@ -642,7 +639,7 @@ public sealed class Editor : Drawable {
             }
             // Finish + Go to end
             if (e.Key == Keys.Enter) {
-                SelectQuickEdit(GetQuickEdits().Count() - 1);
+                SelectQuickEditIndex(GetQuickEdits().Count() - 1);
                 ClearQuickEdits();
                 Document.Caret = Document.Selection.Max;
                 Document.Selection.Clear();
@@ -889,7 +886,7 @@ public sealed class Editor : Drawable {
                                 OnRemoved = ClearQuickEdits,
                             });
                         }
-                        SelectQuickEdit(0);
+                        SelectQuickEditIndex(0);
                     } else {
                         // Just jump to the end of the insert
                         int newLines = quickEdit.ActualText.Count(c => c == Document.NewLine);
@@ -965,7 +962,13 @@ public sealed class Editor : Drawable {
                             Document.ReplaceRangeInLine(selectedQuickEdit.Row, selectedQuickEdit.MinCol, selectedQuickEdit.MaxCol, insert);
                             
                             if (entry.Done) {
-                                if (quickEditIndex == GetQuickEdits().Count() - 1) {
+                                var quickEdits = GetQuickEdits().ToArray();
+                                bool lastQuickEditSelected = quickEdits.Length != 0 && 
+                                                             quickEdits[^1].Row == Document.Caret.Row &&
+                                                             quickEdits[^1].MinCol <= Document.Caret.Col &&
+                                                             quickEdits[^1].MaxCol >= Document.Caret.Col;
+                                
+                                if (lastQuickEditSelected) {
                                     ClearQuickEdits();
                                     Document.Selection.Clear();
                                     Document.Caret.Col = Document.Lines[Document.Caret.Row].Length;
@@ -1034,6 +1037,11 @@ public sealed class Editor : Drawable {
     
     #region Quick Edit
     
+    /*
+     * Quick-edits are anchors to switch through with tab and edit
+     * They are used by auto-complete snippets
+     */
+    
     private record struct QuickEdit { public required string ActualText; public Selection[] Selections; }
     private record struct QuickEditData { public required int Index; public required string DefaultText; }
     
@@ -1091,11 +1099,47 @@ public sealed class Editor : Drawable {
         return quickEdit;
     }
     
-    private void SelectNextQuickEdit() => SelectQuickEdit((quickEditIndex + 1).Mod(GetQuickEdits().Count()));
-    private void SelectPrevQuickEdit() => SelectQuickEdit((quickEditIndex - 1).Mod(GetQuickEdits().Count()));
-    private void SelectQuickEdit(int index) {
-        quickEditIndex = index;
+    private void SelectNextQuickEdit() {
+        // Find the first quick-edit after the caret
+        var quickEdit = GetQuickEdits()
+            .FirstOrDefault(anchor => anchor.Row >= Document.Caret.Row && anchor.MinCol > Document.Caret.Col);
 
+        if (quickEdit == null) {
+            // Wrap to first one
+            SelectQuickEditIndex(0);
+            return;
+        }
+        
+        Document.Caret.Row = quickEdit.Row;
+        Document.Caret.Col = desiredVisualCol = quickEdit.MinCol;
+        Document.Selection = new Selection {
+            Start = new CaretPosition(quickEdit.Row, quickEdit.MinCol),
+            End = new CaretPosition(quickEdit.Row, quickEdit.MaxCol),
+        };
+    }
+    
+    private void SelectPrevQuickEdit() {
+        // Find the first quick-edit before the caret
+        var quickEdits = GetQuickEdits().ToArray();
+        var quickEdit = quickEdits
+            .Reverse()
+            .FirstOrDefault(anchor => anchor.Row <= Document.Caret.Row && anchor.MinCol < Document.Caret.Col);
+
+        if (quickEdit == null) {
+            // Wrap to last one
+            SelectQuickEditIndex(quickEdits.Length - 1);
+            return;
+        }
+        
+        Document.Caret.Row = quickEdit.Row;
+        Document.Caret.Col = desiredVisualCol = quickEdit.MinCol;
+        Document.Selection = new Selection {
+            Start = new CaretPosition(quickEdit.Row, quickEdit.MinCol),
+            End = new CaretPosition(quickEdit.Row, quickEdit.MaxCol),
+        };
+    }
+    
+    private void SelectQuickEditIndex(int index) {
         var quickEdit = Document.FindFirstAnchor(anchor => anchor.UserData is QuickEditData idx && idx.Index == index);
         if (quickEdit == null) {
             ClearQuickEdits();
@@ -2599,7 +2643,8 @@ public sealed class Editor : Drawable {
                 
                 // Cull off-screen lines
                 for (int i = Math.Max(min.Row + 1, topVisualRow); i < Math.Min(max.Row, bottomVisualRow); i++) {
-                    w = Font.MeasureWidth(GetVisualLine(i));
+                    // Draw at least half a characther for each line
+                    w = Font.CharWidth() * Math.Max(0.5f, GetVisualLine(i).Length); 
                     y = Font.LineHeight() * i;
                     e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX, y, w, Font.LineHeight());
                 }

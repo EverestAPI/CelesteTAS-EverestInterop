@@ -207,7 +207,7 @@ public sealed class AutoCompleteMenu : Scrollable {
         }
     }
     
-    public bool HandleKeyDown(KeyEventArgs e) {
+    public bool HandleKeyDown(KeyEventArgs e, bool useTabComplete) {
         if (!Visible)
             return false;
         
@@ -219,7 +219,7 @@ public sealed class AutoCompleteMenu : Scrollable {
             SelectedEntry = (SelectedEntry + 1).Mod(shownEntries.Length);
             return true;
         }
-        if (e.Key is Keys.Enter or Keys.Tab) {
+        if (e.Key == Keys.Enter || useTabComplete && e.Key == Keys.Tab) {
             shownEntries[SelectedEntry].OnUse();
             return true;
         }
