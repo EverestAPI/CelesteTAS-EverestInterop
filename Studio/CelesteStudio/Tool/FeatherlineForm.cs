@@ -119,10 +119,6 @@ public sealed class FeatherlineForm : Form {
                         MenuUtils.CreateFeatherlineSettingNumberInput("Mutation Magnitude", "MutationMagnitude", 0f, 180f, 0.1f),
                         MenuUtils.CreateFeatherlineSettingNumberInput("Max Mutation Count", "MaxMutations", 1, 999999, 1),
                     }},
-                    new SubMenuItem { Text = "Computation", Items = {
-                        MenuUtils.CreateFeatherlineSettingToggle("Don't Compute Hazards", "DontHazard"),
-                        MenuUtils.CreateFeatherlineSettingToggle("Don't Compute Walls or Colliders", "DontSolid"),
-                    }},
                     new SubMenuItem { Text = "Algorithm Mode", Items = {
                         MenuUtils.CreateFeatherlineSettingToggle("Frame Genes Only", "FrameOnly"),
                         MenuUtils.CreateFeatherlineSettingToggle("Disallow Wall Collision", "DisallowWall"),

@@ -245,8 +245,6 @@ public sealed class FeatherlineSettings {
     public int GenerationSurvivors { get; set; } = 20;
     public float MutationMagnitude { get; set; } = 8f;
     public int MaxMutations { get; set; } = 5;
-    public bool DontHazard { get; set; } = false;
-    public bool DontSolid { get; set; } = false;
     public bool FrameOnly { get; set; } = false;
     public bool DisallowWall { get; set; } = false;
     public int SimulationThreads { get; set; } = 8;
