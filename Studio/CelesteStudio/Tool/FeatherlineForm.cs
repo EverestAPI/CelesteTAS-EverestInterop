@@ -32,7 +32,41 @@ public sealed class FeatherlineForm : Form {
 
     private bool running = false;
 
-    private string gameInfo;
+    public const string CUSTOM_INFO_TEMPLATE =
+        "PosRemainder: {Player.PositionRemainder} " +
+        "Lerp: {Player.starFlySpeedLerp} " +
+
+        "{CrystalStaticSpinner.Position}{DustStaticSpinner.Position}{FrostHelper.CustomSpinner@FrostTempleHelper.Position}{VivHelper.Entities.CustomSpinner@VivHelper.Position}{Celeste.Mod.XaphanHelper.Entities.CustomSpinner@XaphanHelper.Position} " +
+
+        "LightningUL: {Lightning.TopLeft} " +
+        "LightningDR: {Lightning.BottomRight} " +
+
+        "SpikeUL: {Spikes.TopLeft} " +
+        "SpikeDR: {Spikes.BottomRight} " +
+        "SpikeDir: {Spikes.Direction} " +
+
+        "Wind: {Level.Wind} " +
+        "WTPos: {WindTrigger.Position} " +
+        "WTPattern: {WindTrigger.Pattern} " +
+        "WTWidth: {WindTrigger.Width} " +
+        "WTHeight: {WindTrigger.Height} " +
+
+        "StarJumpUL: {StarJumpBlock.TopLeft} " +
+        "StarJumpDR: {StarJumpBlock.BottomRight} " +
+        "StarJumpSinks: {StarJumpBlock.sinks} " +
+
+        "JThruUL: {JumpthruPlatform.TopLeft} " +
+        "JThruDR: {JumpthruPlatform.BottomRight} " +
+        "SideJTUL: {SidewaysJumpThru.TopLeft} " +
+        "SideJTDR: {SidewaysJumpThru.BottomRight} " +
+        "SideJTIsRight: {SidewaysJumpThru.AllowLeftToRight} " +
+        "SideJTPushes: {SidewaysJumpThru.pushPlayer} " +
+        "UpsDJTUL: {UpsideDownJumpThru.TopLeft} " +
+        "UpsDJTDR: {UpsideDownJumpThru.BottomRight} " +
+        "UpsDJTPushes: {UpsideDownJumpThru.pushPlayer} " +
+
+        "Bounds: {Level.Bounds} " +
+        "Solids: {Level.Session.LevelData.Solids}";
 
     public FeatherlineForm() {
         Title = $"Featherline - v{Version}";
@@ -99,7 +133,6 @@ public sealed class FeatherlineForm : Form {
         };
         Resizable = false;  
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
-        gameInfo = "";
     }
 
     private void CreateMenu() {
@@ -138,7 +171,14 @@ public sealed class FeatherlineForm : Form {
     }
 
     private void GetInfo() {
-        // TODO: get game info from studio and copy into gameInfo
+        var oldTemplate = CommunicationWrapper.GetCustomInfoTemplate();
+        if (oldTemplate == String.Empty) { // TODO: report error more visibly, also maybe they just have an empty info template
+            return;
+        }
+        CommunicationWrapper.SetCustomInfoTemplate(CUSTOM_INFO_TEMPLATE);
+        System.Threading.Thread.Sleep(500);
+        Featherline.Settings.InfoDump = CommunicationWrapper.GetExactGameInfo();
+        CommunicationWrapper.SetCustomInfoTemplate(oldTemplate);
         run.Enabled = true;
     }
 

@@ -175,6 +175,14 @@ public static class CommunicationWrapper {
     #endregion
     
     #region Actions
+
+    public static string GetCustomInfoTemplate() {
+        if (!Connected) {
+            return string.Empty;
+        }
+
+        return comm!.RequestGameData(GameDataType.CustomInfoTemplate).Result;
+    }
     
     public static void CopyCustomInfoTemplateToClipboard() {
         if (!Connected) {
@@ -185,6 +193,15 @@ public static class CommunicationWrapper {
         Clipboard.Instance.Clear();
         Clipboard.Instance.Text = customInfoTemplate;
     }
+
+    public static void SetCustomInfoTemplate(string template) {
+        if (!Connected) {
+            return;
+        }
+
+        comm!.SendCustomInfoTemplate(template);
+    }
+
     public static void SetCustomInfoTemplateFromClipboard() {
         if (!Connected) {
             return;
