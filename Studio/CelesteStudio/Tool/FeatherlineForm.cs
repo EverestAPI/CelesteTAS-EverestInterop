@@ -8,6 +8,7 @@ using CelesteStudio.Communication;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
+using Featherline;
 using StudioCommunication;
 
 namespace CelesteStudio.Tool;
@@ -28,6 +29,8 @@ public sealed class FeatherlineForm : Form {
     private readonly Button run;
     private readonly Button copyOutput;
     private FeatherlineHelpForm? helpForm;
+
+    private bool running = false;
 
     private string gameInfo;
 
@@ -88,7 +91,7 @@ public sealed class FeatherlineForm : Form {
                     Orientation = Orientation.Horizontal,
                     Items = {
                         (getInfo = new Button((_, _) => GetInfo()) { Text = "Get Game Info", Width = 150}),
-                        (run = new Button((_, _) => Run()) { Text = "Run", Width = 150, Enabled = false }),
+                        (run = new Button((_, _) => Toggle()) { Text = "Run", Width = 150, Enabled = false }),
                         (copyOutput = new Button((_, _) => CopyOutput()) { Text = "Copy Output", Width = 150, Enabled = false }),
                     }
                 }
@@ -144,9 +147,48 @@ public sealed class FeatherlineForm : Form {
         Clipboard.Instance.Text = output.Text;
     }
 
-    private void Run() {
-        // TODO: do stuff
-        copyOutput.Enabled = true;
+    private void Toggle() {
+        if (!running) {
+            running = true;
+            run.Text = "Abort";
+
+            Featherline.Settings.Generations = (int) generations.Value;
+            Featherline.Settings.Framecount = (int) maxFrames.Value;
+            Featherline.Settings.GensPerTiming = (int) gensPerTiming.Value;
+            Featherline.Settings.ShuffleCount = (int) timingShuffles.Value;
+            Featherline.Settings.TimingTestFavDirectly = (bool) testOnInitial.Checked;
+            Featherline.Settings.Checkpoints = checkpoints.Text.Split("\n");
+            Featherline.Settings.Favorite = initialInputs.Text;
+            Featherline.Settings.ManualHitboxes = customHitboxes.Text.Split("\n");
+
+            Featherline.Settings.Population = FeatherlineSettings.Instance.Population;
+            Featherline.Settings.SurvivorCount = FeatherlineSettings.Instance.GenerationSurvivors;
+            Featherline.Settings.MutationMagnitude = FeatherlineSettings.Instance.MutationMagnitude;
+            Featherline.Settings.MaxMutChangeCount = FeatherlineSettings.Instance.MaxMutations;
+            Featherline.Settings.FrameBasedOnly = FeatherlineSettings.Instance.FrameOnly;
+            Featherline.Settings.AvoidWalls = FeatherlineSettings.Instance.DisallowWall;
+
+            Task.Run(() => {
+                bool runEnd = GAManager.RunAlgorithm(false);
+                if (runEnd) {
+                    GAManager.EndAlgorithm();
+                }
+                GAManager.ClearAlgorithmData();
+                running = false;
+                output.Text = Featherline.Settings.Output;
+                if (Featherline.Settings.Output != "") {
+                    copyOutput.Enabled = true;
+                } else {
+                    copyOutput.Enabled = false;
+                }
+                run.Text = "Run";
+            });
+        } else {
+            running = false;
+            output.Text = "";
+            copyOutput.Enabled = false;
+            run.Text = "Run";
+        }
     }
 }
 
