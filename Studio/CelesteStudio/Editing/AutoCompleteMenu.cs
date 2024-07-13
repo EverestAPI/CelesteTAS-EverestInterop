@@ -140,6 +140,10 @@ public sealed class AutoCompleteMenu : Scrollable {
                 const int scrollBarWidth = 17;
                 bool scrollBarVisible = Height <= ContentHeight;
                 Width = Math.Max(0, value + BorderWidth * 2 + (scrollBarVisible ? scrollBarWidth : 0));
+            } else if (Eto.Platform.Instance.IsMac) {
+                const int scrollBarWidth = 15;
+                bool scrollBarVisible = Height <= ContentHeight;
+                Width = Math.Max(0, value + BorderWidth * 2 + (scrollBarVisible ? scrollBarWidth : 0));
             } else {
                 Width = Math.Max(0, value + BorderWidth * 2);
             }

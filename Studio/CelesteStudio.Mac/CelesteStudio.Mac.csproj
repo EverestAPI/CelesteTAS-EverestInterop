@@ -10,8 +10,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\CelesteStudio\CelesteStudio.csproj"/>
-        <PackageReference Include="Eto.Platform.Mac64" Version="2.8.3"/>
+        <ProjectReference Include="..\CelesteStudio\CelesteStudio.csproj" />
+        <PackageReference Include="Eto.Platform.Mac64" Version="2.8.3" />
+    </ItemGroup>
+    
+    <ItemGroup>
+        <Content Include="Icon.icns" />
     </ItemGroup>
 
 </Project>

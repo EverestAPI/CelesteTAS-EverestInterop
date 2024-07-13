@@ -131,8 +131,13 @@ public sealed class Editor : Drawable {
         this.document = document;
         this.scrollable = scrollable;
         
+        CanFocus = true;
+        Cursor = Cursors.IBeam;
+        
         pixelLayout.Add(autoCompleteMenu, 0, 0);
         Content = pixelLayout;
+        
+        Focus();
         
         // Reflect setting changes
         Settings.Changed += () => {
@@ -150,9 +155,6 @@ public sealed class Editor : Drawable {
         
         BackgroundColor = Settings.Instance.Theme.Background;
         Settings.ThemeChanged += () => BackgroundColor = Settings.Instance.Theme.Background;
-        
-        CanFocus = true;
-        Cursor = Cursors.IBeam;
         
         // Need to redraw the line numbers when scrolling horizontally
         scrollable.Scroll += (_, _) => {
