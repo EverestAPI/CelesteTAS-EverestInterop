@@ -91,9 +91,6 @@ public sealed class Editor : Drawable {
     private SyntaxHighlighter highlighter;
     private const float LineNumberPadding = 5.0f;
     
-    // Kinda weird that it's stored in the auto-complete menu and not here, but ¯\_(ツ)_/¯
-    private PointF MouseLocation => new PointF(); //TODO autoCompleteMenu.MouseLocation;
-    
     // Quick-edits are anchors to switch through with tab and edit
     // Used by auto-complete snippets
     private int quickEditIndex;
@@ -611,7 +608,7 @@ public sealed class Editor : Drawable {
         if (e.Key is Keys.LeftControl or Keys.RightControl) mods |= Keys.Control;
         if (e.Key is Keys.LeftAlt or Keys.RightAlt) mods |= Keys.Alt;
         if (e.Key is Keys.LeftApplication or Keys.RightApplication) mods |= Keys.Application;
-        UpdateMouseCursor(MouseLocation, mods);
+        UpdateMouseAction(PointFromScreen(Mouse.Position), mods);
         
         if (autoCompleteMenu.HandleKeyDown(e)) {
             e.Handled = true;
@@ -838,7 +835,7 @@ public sealed class Editor : Drawable {
         if (e.Key is Keys.LeftControl or Keys.RightControl) mods &= ~Keys.Control;
         if (e.Key is Keys.LeftAlt or Keys.RightAlt) mods &= ~Keys.Alt;
         if (e.Key is Keys.LeftApplication or Keys.RightApplication) mods &= ~Keys.Application;
-        UpdateMouseCursor(MouseLocation, mods);
+        UpdateMouseAction(PointFromScreen(Mouse.Position), mods);
         
         if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: true)) {
             e.Handled = true;
@@ -2297,7 +2294,7 @@ public sealed class Editor : Drawable {
             Recalc();
         }
         
-        UpdateMouseCursor(e.Location, e.Modifiers);
+        UpdateMouseAction(e.Location, e.Modifiers);
         
         base.OnMouseMove(e);
     }
@@ -2332,7 +2329,7 @@ public sealed class Editor : Drawable {
         base.OnMouseWheel(e);
     }
     
-    private void UpdateMouseCursor(PointF location, Keys modifiers) {
+    private void UpdateMouseAction(PointF location, Keys modifiers) {
         int prevLineLink = lineLinkRow;
         if (modifiers.HasCommonModifier() && LocationToLineLink(location) is var row && row != -1) {
             lineLinkRow = row;
@@ -2437,6 +2434,7 @@ public sealed class Editor : Drawable {
             return () => {
                 Document.Caret.Row = labelRow;
                 Document.Caret.Col = desiredVisualCol = Document.Lines[labelRow].Length;
+                Recalc();
             };
         }
         
