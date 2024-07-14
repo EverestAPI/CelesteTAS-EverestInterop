@@ -387,6 +387,7 @@ public sealed class Studio : Form {
                     MenuUtils.CreateSettingToggle("Show Game Info", nameof(Settings.ShowGameInfo)),
                     MenuUtils.CreateSettingToggle("Word Wrap Comments", nameof(Settings.WordWrapComments)),
                     MenuUtils.CreateSettingToggle("Show Fold Indicators", nameof(Settings.ShowFoldIndicators)),
+                    MenuUtils.CreateSettingEnum<LineNumberAlignment>("Line Number Alignment", nameof(Settings.LineNumberAlignment), ["Left", "Right"]),
                 }},
                 new SubMenuItem {Text = "&Game Settings", Enabled = CommunicationWrapper.Connected, Items = {
                     MenuUtils.CreateToggle("&Hitboxes", CommunicationWrapper.GetHitboxes, CommunicationWrapper.ToggleHitboxes),

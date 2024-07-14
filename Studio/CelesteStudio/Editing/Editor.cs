@@ -432,7 +432,12 @@ public sealed class Editor : Drawable {
         // Calculate line numbers width
         const float foldButtonPadding = 5.0f;
         bool hasFoldings = Settings.Instance.ShowFoldIndicators && foldings.Count != 0;
-        float foldingWidth = !hasFoldings ? 0.0f : Font.CharWidth() * (foldings[^1].MinRow.Digits() + 1) + foldButtonPadding;
+        // Only when the alignment is to the left, the folding indicator can fit into the existing space
+        float foldingWidth = !hasFoldings ? 0.0f : Settings.Instance.LineNumberAlignment switch {
+             LineNumberAlignment.Left => Font.CharWidth() * (foldings[^1].MinRow.Digits() + 1) + foldButtonPadding,
+             LineNumberAlignment.Right => Font.CharWidth() * (Document.Lines.Count.Digits() + 1) + foldButtonPadding,
+             _ => throw new UnreachableException(),
+        };
         textOffsetX = Math.Max(foldingWidth, Font.CharWidth() * Document.Lines.Count.Digits()) + LineNumberPadding * 3.0f;
         
         const float paddingRight = 50.0f;
@@ -2694,7 +2699,12 @@ public sealed class Editor : Drawable {
                 int oldRow = row;
                 var numberString = (row + 1).ToString();
                 
-                e.Graphics.DrawText(Font, CommunicationWrapper.CurrentLine == row ? Settings.Instance.Theme.PlayingLineFg : Settings.Instance.Theme.LineNumber, scrollablePosition.X + LineNumberPadding, yPos, numberString);
+                if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Left) {
+                    e.Graphics.DrawText(Font, CommunicationWrapper.CurrentLine == row ? Settings.Instance.Theme.PlayingLineFg : Settings.Instance.Theme.LineNumber, scrollablePosition.X + LineNumberPadding, yPos, numberString);
+                } else if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Right) {
+                    float ident = Font.CharWidth() * (Document.Lines.Count.Digits() - (row + 1).Digits());
+                    e.Graphics.DrawText(Font, CommunicationWrapper.CurrentLine == row ? Settings.Instance.Theme.PlayingLineFg : Settings.Instance.Theme.LineNumber, scrollablePosition.X + LineNumberPadding + ident, yPos, numberString);
+                }
                 
                 bool collapsed = false;
                 if (GetCollapse(row) is { } collapse) {
