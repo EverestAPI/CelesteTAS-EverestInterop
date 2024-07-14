@@ -39,7 +39,7 @@ public sealed class Studio : Form {
     public Studio(Action<Window> windowCreationCallback) {
         Instance = this;
         Version = Assembly.GetExecutingAssembly().GetName().Version!;
-        Icon = Icon.FromResource("Icon.ico");
+        Icon = Assets.AppIcon;
         
         WindowCreationCallback = windowCreationCallback;
         

@@ -48,7 +48,7 @@ public class SnippetDialog : Dialog<bool> {
                 }.FixBorder()
             }
         };
-        Icon = Studio.Instance.Icon;
+        Icon = Assets.AppIcon;
         
         DefaultButton = new Button((_, _) => Close(true)) { Text = "&OK" };
         AbortButton = new Button((_, _) => Close(false)) { Text = "&Cancel" };
@@ -80,7 +80,7 @@ public class SnippetDialog : Dialog<bool> {
                         Padding = 10,
                         Content = new Label { Text = "Press a hotkey...", Font = SystemFonts.Bold().WithFontStyle(FontStyle.Italic) }
                     },
-                    Icon = Studio.Instance.Icon,
+                    Icon = Assets.AppIcon,
                 };
                 inputDialog.Load += (_, _) => Studio.Instance.WindowCreationCallback(inputDialog);
                 inputDialog.Shown += (_, _) => inputDialog.Location = Location + new Point((Width - inputDialog.Width) / 2, (Height - inputDialog.Height) / 2);

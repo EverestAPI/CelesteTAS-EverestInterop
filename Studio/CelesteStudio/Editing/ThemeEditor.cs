@@ -21,7 +21,7 @@ public sealed class ThemeEditor : Form {
 
     public ThemeEditor() {
         Title = "Theme Editor";
-        Icon = Studio.Instance.Icon;
+        Icon = Assets.AppIcon;
 
         var layout = new DynamicLayout { DefaultSpacing = new Size(10, 10), Padding = new Padding(10), Width = 800, Height = 600 };
         layout.BeginHorizontal();

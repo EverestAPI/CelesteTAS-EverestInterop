@@ -33,7 +33,7 @@ public sealed class FeatherlineForm : Form {
 
     public FeatherlineForm() {
         Title = $"Featherline - v{Version}";
-        Icon = Studio.Instance.Icon;
+        Icon = Assets.AppIcon;
         CreateMenu();
         FeatherlineSettings.Changed += CreateMenu;
         const int stepperWidth = 100;
@@ -158,7 +158,7 @@ public sealed class FeatherlineForm : Form {
 public sealed class FeatherlineHelpForm : Form {
     public FeatherlineHelpForm() {
         Title = "Featherline - Help";
-        Icon = Studio.Instance.Icon;
+        Icon = Assets.AppIcon;
         var layout = new DynamicLayout { DefaultSpacing = new Size(10, 10) };
         var h1 = new Font(SystemFont.Bold, 20f);
         layout.BeginVertical();

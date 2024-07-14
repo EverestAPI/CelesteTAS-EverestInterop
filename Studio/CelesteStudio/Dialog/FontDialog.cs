@@ -87,7 +87,7 @@ public class FontDialog : Dialog<bool> {
         
         Title = "Font";
         Content = CreateDialogContent();
-        Icon = Studio.Instance.Icon;
+        Icon = Assets.AppIcon;
         
         DefaultButton = new Button((_, _) => Close(true)) { Text = "&OK" };
         AbortButton = new Button((_, _) => Close(false)) { Text = "&Cancel" };

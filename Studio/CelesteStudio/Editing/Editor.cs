@@ -2712,7 +2712,13 @@ public sealed class Editor : Drawable {
                     collapsed = true;
                 }
                 if (Settings.Instance.ShowFoldIndicators && foldings.FirstOrDefault(fold => fold.MinRow == oldRow) is var folding && folding.MinRow != folding.MaxRow) {
-                    e.Graphics.DrawText(Font, Settings.Instance.Theme.LineNumber, scrollablePosition.X + textOffsetX - LineNumberPadding * 2.0f - Font.CharWidth(), yPos, collapsed ? "\ud83d\udf82" : "\ud83d\udf83");
+                    e.Graphics.SaveTransform();
+                    e.Graphics.TranslateTransform(
+                        scrollablePosition.X + textOffsetX - LineNumberPadding * 2.0f - Font.CharWidth(),
+                        yPos + (Font.LineHeight() - Font.CharWidth()) / 2.0f);
+                    e.Graphics.ScaleTransform(Font.CharWidth());
+                    e.Graphics.FillPath(Settings.Instance.Theme.LineNumber, collapsed ? Assets.CollapseClosedPath : Assets.CollapseOpenPath);
+                    e.Graphics.RestoreTransform();
                 }
                 
                 if (commentLineWraps.TryGetValue(oldRow, out wrap)) {
