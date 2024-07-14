@@ -103,16 +103,14 @@ public sealed class Studio : Form {
         CommunicationWrapper.Start();
     }
     
-    /// Shows the "About" dialog, while accounting for WPF themeing
+    /// Shows the "About" dialog, while accounting for WPF theming
     public static void ShowAboutDialog(AboutDialog about, Window parent) {
-        if (!Eto.Platform.Instance.IsWpf) {
-            about.ShowDialog(parent);
+        if (Eto.Platform.Instance.IsWpf) {
+            var aboutHandler = (ThemedAboutDialogHandler)about.Handler;
+            var dialog = aboutHandler.Control;
+            dialog.Load += (_, _) => Studio.Instance.WindowCreationCallback(dialog);
+            dialog.Shown += (_, _) => dialog.Location = parent.Location + new Point((parent.Width - dialog.Width) / 2, (parent.Height - dialog.Height) / 2);
         }
-
-        var aboutHandler = (ThemedAboutDialogHandler)about.Handler;
-        var dialog = aboutHandler.Control;
-        dialog.Load += (_, _) => Studio.Instance.WindowCreationCallback(dialog);
-        dialog.Shown += (_, _) => dialog.Location = parent.Location + new Point((parent.Width - dialog.Width) / 2, (parent.Height - dialog.Height) / 2);
 
         about.ShowDialog(parent);
     }
@@ -212,8 +210,9 @@ public sealed class Studio : Form {
     }
     
     public void OpenFile(string filePath) {
-        if (filePath == Editor.Document.FilePath && filePath != Document.ScratchFile)
+        if (filePath == Editor.Document.FilePath && filePath != Document.ScratchFile) {
             return;
+        }
         
         if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
             Settings.Instance.AddRecentFile(filePath);
@@ -298,6 +297,10 @@ public sealed class Studio : Form {
         
         // NOTE: Index 0 is the recent files is the current file, so that is skipped
         var openPreviousFile = MenuUtils.CreateAction("Open &Previous File", Application.Instance.AlternateModifier | Keys.Left, () => {
+            if (!ShouldDiscardChanges()) {
+                return;
+            }
+            
             OpenFile(Settings.Instance.RecentFiles[1]);
         });
         openPreviousFile.Enabled = Settings.Instance.RecentFiles.Count > 1;
@@ -305,7 +308,11 @@ public sealed class Studio : Form {
         var recentFilesMenu = new SubMenuItem { Text = "Open &Recent" };
         for (int i = 1; i < Settings.Instance.RecentFiles.Count; i++) {
             string filePath = Settings.Instance.RecentFiles[i];
-            recentFilesMenu.Items.Add(MenuUtils.CreateAction(filePath, Keys.None, () => OpenFile(filePath)));
+            if (filePath == Document.ScratchFile) {
+                recentFilesMenu.Items.Add(MenuUtils.CreateAction("<Scratch>", Keys.None, () => OpenFile(filePath)));
+            } else {
+                recentFilesMenu.Items.Add(MenuUtils.CreateAction(filePath, Keys.None, () => OpenFile(filePath)));
+            }
         }
         recentFilesMenu.Items.Add(new SeparatorMenuItem());
         recentFilesMenu.Items.Add(new Command((_, _) => {

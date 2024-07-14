@@ -47,13 +47,13 @@ public sealed class Editor : Drawable {
             foreach (var fold in foldings) {
                 if (Settings.Instance.MaxUnfoldedLines == 0) {
                     // Close everything
-                    SetFolding(fold.MinRow, true);
+                    SetCollapse(fold.MinRow, true);
                     continue;
                 }
                 
                 int lines = fold.MaxRow - fold.MinRow - 1; // Only the lines inside the fold are counted
                 if (lines > Settings.Instance.MaxUnfoldedLines) {
-                    SetFolding(fold.MinRow, true);
+                    SetCollapse(fold.MinRow, true);
                 }
             }
             
@@ -1175,24 +1175,38 @@ public sealed class Editor : Drawable {
     }
     private struct FoldingAnchorData;
     
-    private void ToggleFolding(int row) {
+    private void ToggleCollapse(int row) {
         if (Document.FindFirstAnchor(anchor => anchor.Row == row && anchor.UserData is FoldingAnchorData) == null) {
             Document.AddAnchor(new Anchor {
                 MinCol = 0, MaxCol = Document.Lines[row].Length,
                 Row = row,
                 UserData = new FoldingAnchorData()
             });
+            
+            if (foldings.FirstOrDefault(f => f.MinRow == row) is { } fold &&
+                Document.Caret.Row >= fold.MinRow && Document.Caret.Row <= fold.MaxRow) 
+            {
+                Document.Caret.Row = fold.MinRow;
+                Document.Caret = ClampCaret(Document.Caret);
+            }
         } else {
             Document.RemoveAnchorsIf(anchor => anchor.Row == row && anchor.UserData is FoldingAnchorData);
         }
     }
-    private void SetFolding(int row, bool fold) {
-        if (fold && Document.FindFirstAnchor(anchor => anchor.Row == row && anchor.UserData is FoldingAnchorData) == null) {
+    private void SetCollapse(int row, bool collapse) {
+        if (collapse && Document.FindFirstAnchor(anchor => anchor.Row == row && anchor.UserData is FoldingAnchorData) == null) {
             Document.AddAnchor(new Anchor {
                 MinCol = 0, MaxCol = Document.Lines[row].Length,
                 Row = row,
                 UserData = new FoldingAnchorData()
             });
+            
+            if (foldings.FirstOrDefault(f => f.MinRow == row) is { } fold &&
+                Document.Caret.Row >= fold.MinRow && Document.Caret.Row <= fold.MaxRow)
+            {
+                Document.Caret.Row = fold.MinRow;
+                Document.Caret = ClampCaret(Document.Caret);
+            }
         } else {
             Document.RemoveAnchorsIf(anchor => anchor.Row == row && anchor.UserData is FoldingAnchorData);
         }
@@ -1630,7 +1644,7 @@ public sealed class Editor : Drawable {
             return;
         }
         
-        ToggleFolding(folding.MinRow);
+        ToggleCollapse(folding.MinRow);
         Document.Caret.Row = folding.MinRow;
         Document.Caret.Col = Document.Lines[folding.MinRow].Length;
     }
@@ -2278,7 +2292,7 @@ public sealed class Editor : Drawable {
     protected override void OnMouseDown(MouseEventArgs e) {
         if (e.Buttons.HasFlag(MouseButtons.Primary)) {
             if (LocationToFolding(e.Location) is { } folding) {
-                ToggleFolding(folding.MinRow);
+                ToggleCollapse(folding.MinRow);
                 
                 e.Handled = true;
                 Recalc();
@@ -2634,29 +2648,29 @@ public sealed class Editor : Drawable {
             var max = GetVisualPosition(Document.Selection.Max);
             
             if (min.Row == max.Row) {
-                float x = Font.CharWidth() * min.Col + textOffsetX;
+                float x = Font.CharWidth() * min.Col + textOffsetX - LineNumberPadding;
                 float w = Font.CharWidth() * (max.Col - min.Col);
                 float y = Font.LineHeight() * min.Row;
                 float h = Font.LineHeight();
                 e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w, h);
             } else {
                 var visualLine = GetVisualLine(min.Row);
-                float x = Font.CharWidth() * min.Col + textOffsetX;
+                float x = Font.CharWidth() * min.Col + textOffsetX - LineNumberPadding;
                 float w = visualLine.Length == 0 ? 0.0f : Font.MeasureWidth(visualLine[min.Col..]);
                 float y = Font.LineHeight() * min.Row;
                 e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w, Font.LineHeight());
                 
                 // Cull off-screen lines
                 for (int i = Math.Max(min.Row + 1, topVisualRow); i < Math.Min(max.Row, bottomVisualRow); i++) {
-                    // Draw at least half a characther for each line
+                    // Draw at least half a character for each line
                     w = Font.CharWidth() * Math.Max(0.5f, GetVisualLine(i).Length); 
                     y = Font.LineHeight() * i;
-                    e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX, y, w, Font.LineHeight());
+                    e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX - LineNumberPadding, y, w, Font.LineHeight());
                 }
                 
                 w = Font.MeasureWidth(GetVisualLine(max.Row)[..max.Col]);
                 y = Font.LineHeight() * max.Row;
-                e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX, y, w, Font.LineHeight());
+                e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX - LineNumberPadding, y, w, Font.LineHeight());
             }
         }
         
