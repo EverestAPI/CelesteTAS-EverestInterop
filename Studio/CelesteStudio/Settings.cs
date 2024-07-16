@@ -103,6 +103,8 @@ public sealed class Settings {
     public Point LastLocation { get; set; } = Point.Empty;
     public Size LastSize { get; set; } = new(400, 800);
     
+    public bool SubpixelPopoutTopmost { get; set; } = false;
+    
     public string LastSaveDirectory { get; set; } = string.Empty;
     
     public bool FindMatchCase { get; set; }

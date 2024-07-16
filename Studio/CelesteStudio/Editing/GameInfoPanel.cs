@@ -126,6 +126,16 @@ public class GameInfoPanel : Panel {
                 Items = { Label, SubpixelIndicator }
             };
             
+            var alwaysOnTopCheckbox = new CheckMenuItem { Text = "Always on Top" };
+            alwaysOnTopCheckbox.CheckedChanged += (_, _) => {
+                Topmost = Settings.Instance.SubpixelPopoutTopmost = alwaysOnTopCheckbox.Checked;
+                Settings.Save();
+            };
+            alwaysOnTopCheckbox.Checked = Settings.Instance.SubpixelPopoutTopmost;
+            ContextMenu = new ContextMenu {
+                Items  = { alwaysOnTopCheckbox }
+            };
+            
             Resizable = false;
             ShowInTaskbar = false;
             
@@ -135,6 +145,16 @@ public class GameInfoPanel : Panel {
         public void FitSize() {
             var labelSize = Label.GetPreferredSize();
             Size = new Size((int)labelSize.Width, (int)labelSize.Height + layout.Spacing + SubpixelIndicator.Height) + layout.Padding.Size + new Size(2, 2);
+        }
+        
+        protected override void OnMouseDown(MouseEventArgs e) {
+            if (e.Buttons.HasFlag(MouseButtons.Alternate)) {
+                ContextMenu.Show();
+                e.Handled = true;
+                return;
+            }
+            
+            base.OnMouseDown(e);
         }
     }
     
@@ -159,7 +179,7 @@ public class GameInfoPanel : Panel {
         BackgroundColor = Settings.Instance.Theme.StatusBg;
         
         Settings.Changed += () => {
-            Visible = Settings.Instance.ShowGameInfo;
+            Visible = Settings.Instance.ShowGameInfo && popoutForm == null;
             subpixelIndicator.Invalidate();
             UpdateLayout();
             Studio.Instance.RecalculateLayout();
