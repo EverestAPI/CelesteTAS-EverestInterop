@@ -374,10 +374,11 @@ public sealed class Editor : Drawable {
                         
                         // Skip first #'s and whitespace
                         if (startOffset == -1) {
-                            if (c == '#' || char.IsWhiteSpace(c))
+                            if (c == '#' || char.IsWhiteSpace(c)) {
                                 continue;
+                            }
+                            
                             startOffset = idx;
-                            charWidth -= startOffset;
                         }
                         
                         // End the line if we're beyond the width and have reached whitespace
@@ -388,7 +389,9 @@ public sealed class Editor : Drawable {
                             endIdx = line.Length;
                         }
                         
-                        if (endIdx != -1 && subIdx >= charWidth) {
+                        if (endIdx != -1 && (startIdx == 0 && subIdx >= charWidth ||
+                                             startIdx != 0 && subIdx + startOffset >= charWidth)) 
+                        {
                             break;
                         }
                     }
@@ -566,9 +569,10 @@ public sealed class Editor : Drawable {
             int idx = position.Row - actualToVisualRows[row];
             if (idx < wrap.Lines.Length) {
                 int xIdent = idx == 0 ? 0 : wrap.StartOffset;
+                var line = wrap.Lines[idx];
                 
-                col = Math.Max(col, xIdent);
-                col += wrap.Lines[idx].Index - xIdent;       
+                col = Math.Clamp(col, xIdent, xIdent + line.Line.Length);
+                col += line.Index - xIdent;
             }
         }
         
