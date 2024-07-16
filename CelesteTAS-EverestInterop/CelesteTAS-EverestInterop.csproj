@@ -25,7 +25,7 @@
     </PropertyGroup>
     
     <ItemGroup>
-        <Compile Include="..\StudioCommunication\**.cs" />
+        <Compile Include="..\StudioCommunication\**\*.cs" />
         
         <Reference Include="$(CelestePrefix)\Celeste.dll" Publicize="true" />
         <Reference Include="$(CelestePrefix)\FNA.dll" />

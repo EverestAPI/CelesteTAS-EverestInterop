@@ -16,7 +16,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Compile Include="..\..\StudioCommunication\**.cs" />
+        <Compile Include="..\..\StudioCommunication\**\*.cs" />
         
         <EmbeddedResource Include="Assets\Icon.ico" LogicalName="Icon.ico"/>
 

@@ -2648,14 +2648,14 @@ public sealed class Editor : Drawable {
             var max = GetVisualPosition(Document.Selection.Max);
             
             if (min.Row == max.Row) {
-                float x = Font.CharWidth() * min.Col + textOffsetX - LineNumberPadding;
+                float x = Font.CharWidth() * min.Col + textOffsetX;
                 float w = Font.CharWidth() * (max.Col - min.Col);
                 float y = Font.LineHeight() * min.Row;
                 float h = Font.LineHeight();
                 e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w, h);
             } else {
                 var visualLine = GetVisualLine(min.Row);
-                float x = Font.CharWidth() * min.Col + textOffsetX - LineNumberPadding;
+                float x = Font.CharWidth() * min.Col + textOffsetX;
                 float w = visualLine.Length == 0 ? 0.0f : Font.MeasureWidth(visualLine[min.Col..]);
                 float y = Font.LineHeight() * min.Row;
                 e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w, Font.LineHeight());
@@ -2665,12 +2665,12 @@ public sealed class Editor : Drawable {
                     // Draw at least half a character for each line
                     w = Font.CharWidth() * Math.Max(0.5f, GetVisualLine(i).Length); 
                     y = Font.LineHeight() * i;
-                    e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX - LineNumberPadding, y, w, Font.LineHeight());
+                    e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX - LineNumberPadding, y, w + LineNumberPadding, Font.LineHeight());
                 }
                 
                 w = Font.MeasureWidth(GetVisualLine(max.Row)[..max.Col]);
                 y = Font.LineHeight() * max.Row;
-                e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX - LineNumberPadding, y, w, Font.LineHeight());
+                e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX - LineNumberPadding, y, w + LineNumberPadding, Font.LineHeight());
             }
         }
         
