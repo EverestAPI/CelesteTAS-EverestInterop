@@ -86,7 +86,9 @@ public sealed class Settings {
     public InsertDirection InsertDirection { get; set; } = InsertDirection.Above;
     public CaretInsertPosition CaretInsertPosition { get; set; } = CaretInsertPosition.PreviousPosition;
     public CommandSeparator CommandSeparator { get; set; } = CommandSeparator.CommaSpace;
-    public LineNumberAlignment LineNumberAlignment { get; set; } = LineNumberAlignment.Left; 
+    public LineNumberAlignment LineNumberAlignment { get; set; } = LineNumberAlignment.Left;
+    
+    public bool CompactMenuBar { get; set; } = false;
     
     #endregion
     #region View

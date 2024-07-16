@@ -119,7 +119,7 @@ public sealed class Studio : Form {
         GameInfoPanel.Width = Width;
         EditorScrollable.Size = new Size(
             Math.Max(0, ClientSize.Width), 
-            Math.Max(0, (int)(ClientSize.Height - GameInfoPanel.Height)));
+            Math.Max(0, ClientSize.Height - GameInfoPanel.Height));
     }
     
     private void ApplySettings() {
@@ -349,119 +349,137 @@ public sealed class Studio : Form {
         }) { MenuText = "Delete All Files" });
         backupsMenu.Enabled = backupFiles.Length != 0;
             
+        MenuItem[] items = [
+            new SubMenuItem { Text = "&File", Items = {
+                MenuUtils.CreateAction("&New File", Application.Instance.CommonModifier | Keys.N, OnNewFile),
+                new SeparatorMenuItem(),
+                MenuUtils.CreateAction("&Open File...", Application.Instance.CommonModifier | Keys.O, OnOpenFile),
+                openPreviousFile,
+                recentFilesMenu,
+                backupsMenu,
+                new SeparatorMenuItem(),
+                MenuUtils.CreateAction("Save", Application.Instance.CommonModifier | Keys.S, OnSaveFile),
+                MenuUtils.CreateAction("&Save As...", Application.Instance.CommonModifier | Keys.Shift | Keys.S, OnSaveFileAs),
+                new SeparatorMenuItem(),
+                MenuUtils.CreateAction("&Integrate Read Files"),
+                MenuUtils.CreateAction("&Convert to LibTAS Movie..."),
+                new SeparatorMenuItem(),
+                recordTasButton,
+            }},
+            new SubMenuItem {Text = "&Settings", Items = {
+                MenuUtils.CreateSettingToggle("&Send Inputs to Celeste", nameof(Settings.SendInputsToCeleste), Application.Instance.CommonModifier | Keys.D, enabled => {
+                    Editor.ShowToastMessage($"{(enabled ? "Enabled" : "Disabled")} Sending Inputs to Celeste", Editor.DefaultToastTime);
+                }),
+                new SubMenuItem {Text = "Automatic Backups", Items = {
+                    MenuUtils.CreateSettingToggle("Enabled", nameof(Settings.AutoBackupEnabled)),
+                    MenuUtils.CreateSettingNumberInput("Backup Rate (minutes)", nameof(Settings.AutoBackupRate), 0, int.MaxValue, 1),
+                    MenuUtils.CreateSettingNumberInput("Backup File Count", nameof(Settings.AutoBackupCount), 0, int.MaxValue, 1),
+                }},
+                MenuUtils.CreateAction("Snippets...", Keys.None, SnippetDialog.Show),
+                MenuUtils.CreateAction("Font...", Keys.None, FontDialog.Show),
+                CreateSettingTheme(),
+                MenuUtils.CreateAction("Open Settings File...", Keys.None, () => ProcessHelper.OpenInDefaultApp(Settings.SettingsPath)),
+            }},
+            new SubMenuItem { Text = "&Preferences", Items = {
+                MenuUtils.CreateSettingToggle("&Auto Save File", nameof(Settings.AutoSave)),
+                MenuUtils.CreateSettingToggle("Auto Remove Mutually Exclusive Actions", nameof(Settings.AutoRemoveMutuallyExclusiveActions)),
+                MenuUtils.CreateSettingToggle("Always on Top", nameof(Settings.AlwaysOnTop)),
+                MenuUtils.CreateSettingNumberInput<int>("Max Unfolded Lines", nameof(Settings.MaxUnfoldedLines), 0, int.MaxValue, 1),
+                MenuUtils.CreateSettingEnum<InsertDirection>("Insert Direction", nameof(Settings.InsertDirection), ["Above Current Line", "Below Current Line"]),
+                MenuUtils.CreateSettingEnum<CaretInsertPosition>("Caret Insert Position", nameof(Settings.CaretInsertPosition), ["After Inserted Text", "Keep at Previous Position"]),
+                MenuUtils.CreateSettingEnum<CommandSeparator>("Command Separator", nameof(Settings.CommandSeparator), ["Space (\" \")", "Comma (\",\")", "Space + Comma (\", \")"]),
+            }},
+            new SubMenuItem { Text = "&View", Items = {
+                MenuUtils.CreateSettingToggle("Show Game Info", nameof(Settings.ShowGameInfo)),
+                MenuUtils.CreateSettingToggle("Word Wrap Comments", nameof(Settings.WordWrapComments)),
+                MenuUtils.CreateSettingToggle("Show Fold Indicators", nameof(Settings.ShowFoldIndicators)),
+                MenuUtils.CreateSettingEnum<LineNumberAlignment>("Line Number Alignment", nameof(Settings.LineNumberAlignment), ["Left", "Right"]),
+                MenuUtils.CreateSettingToggle("Compact Menu Bar", nameof(Settings.CompactMenuBar)),
+            }},
+            new SubMenuItem {Text = "&Game Settings", Enabled = CommunicationWrapper.Connected, Items = {
+                MenuUtils.CreateToggle("&Hitboxes", CommunicationWrapper.GetHitboxes, CommunicationWrapper.ToggleHitboxes),
+                MenuUtils.CreateToggle("&Trigger Hitboxes", CommunicationWrapper.GetTriggerHitboxes, CommunicationWrapper.ToggleTriggerHitboxes),
+                MenuUtils.CreateToggle("Unloaded Room Hitboxes", CommunicationWrapper.GetUnloadedRoomsHitboxes, CommunicationWrapper.ToggleUnloadedRoomsHitboxes),
+                MenuUtils.CreateToggle("Camera Hitboxes", CommunicationWrapper.GetCameraHitboxes, CommunicationWrapper.ToggleCameraHitboxes),
+                MenuUtils.CreateToggle("&Simplified Hitboxes", CommunicationWrapper.GetSimplifiedHitboxes, CommunicationWrapper.ToggleSimplifiedHitboxes),
+                MenuUtils.CreateToggle("&Actual Collide Hitboxes", CommunicationWrapper.GetActualCollideHitboxes, CommunicationWrapper.ToggleActualCollideHitboxes),
+                new SeparatorMenuItem(),
+                MenuUtils.CreateToggle("&Simplified &Graphics", CommunicationWrapper.GetSimplifiedGraphics, CommunicationWrapper.ToggleSimplifiedGraphics),
+                MenuUtils.CreateToggle("Game&play", CommunicationWrapper.GetGameplay, CommunicationWrapper.ToggleGameplay),
+                new SeparatorMenuItem(),
+                MenuUtils.CreateToggle("&Center Camera", CommunicationWrapper.GetCenterCamera, CommunicationWrapper.ToggleCenterCamera),
+                MenuUtils.CreateToggle("Center Camera Horizontally Only", CommunicationWrapper.GetCenterCameraHorizontallyOnly, CommunicationWrapper.ToggleCenterCameraHorizontallyOnly),
+                new SeparatorMenuItem(),
+                MenuUtils.CreateToggle("&Info HUD", CommunicationWrapper.GetInfoHud, CommunicationWrapper.ToggleInfoHud),
+                MenuUtils.CreateToggle("TAS Input Info", CommunicationWrapper.GetInfoTasInput, CommunicationWrapper.ToggleInfoTasInput),
+                MenuUtils.CreateToggle("Game Info", CommunicationWrapper.GetInfoGame, CommunicationWrapper.ToggleInfoGame),
+                MenuUtils.CreateToggle("Watch Entity Info", CommunicationWrapper.GetInfoWatchEntity, CommunicationWrapper.ToggleInfoWatchEntity),
+                MenuUtils.CreateToggle("Custom Info", CommunicationWrapper.GetInfoCustom, CommunicationWrapper.ToggleInfoCustom),
+                MenuUtils.CreateToggle("Subpixel Indicator", CommunicationWrapper.GetInfoSubpixelIndicator, CommunicationWrapper.ToggleInfoSubpixelIndicator),
+                new SeparatorMenuItem(),
+                MenuUtils.CreateNumberInput("Position Decimals", CommunicationWrapper.GetPositionDecimals, CommunicationWrapper.SetPositionDecimals, minDecimals, maxDecimals, 1),
+                MenuUtils.CreateNumberInput("Speed Decimals", CommunicationWrapper.GetSpeedDecimals, CommunicationWrapper.SetSpeedDecimals, minDecimals, maxDecimals, 1),
+                MenuUtils.CreateNumberInput("Velocity Decimals", CommunicationWrapper.GetVelocityDecimals, CommunicationWrapper.SetVelocityDecimals, minDecimals, maxDecimals, 1),
+                MenuUtils.CreateNumberInput("Angle Decimals", CommunicationWrapper.GetAngleDecimals, CommunicationWrapper.SetAngleDecimals, minDecimals, maxDecimals, 1),
+                MenuUtils.CreateNumberInput("Custom Info Decimals", CommunicationWrapper.GetCustomInfoDecimals, CommunicationWrapper.SetCustomInfoDecimals, minDecimals, maxDecimals, 1),
+                MenuUtils.CreateNumberInput("Subpixel Indicator Decimals", CommunicationWrapper.GetSubpixelIndicatorDecimals, CommunicationWrapper.SetSubpixelIndicatorDecimals, minDecimals, maxDecimals, 1),
+                MenuUtils.CreateToggle("Unit of Speed", CommunicationWrapper.GetSpeedUnit, CommunicationWrapper.ToggleSpeedUnit),
+                new SeparatorMenuItem(),
+                MenuUtils.CreateNumberInput("Fast Forward Speed", CommunicationWrapper.GetFastForwardSpeed, CommunicationWrapper.SetFastForwardSpeed, minFastForwardSpeed, maxFastForwardSpeed, 1),
+                MenuUtils.CreateNumberInput("Slow Forward Speed", CommunicationWrapper.GetSlowForwardSpeed, CommunicationWrapper.SetSlowForwardSpeed, minSlowForwardSpeed, maxSlowForwardSpeed, 0.1f),
+            }},
+            new SubMenuItem { Text = "&Tools", Items = {
+                MenuUtils.CreateAction("Jadderline", Keys.None, () => {
+                    jadderlineForm ??= new();
+                    jadderlineForm.Show();
+                    jadderlineForm.Closed += (_, _) => jadderlineForm = null;
+                }),
+                MenuUtils.CreateAction("Featherline", Keys.None, () => {
+                    featherlineForm ??= new();
+                    featherlineForm.Show();
+                    featherlineForm.Closed += (_, _) => featherlineForm = null;
+                }),
+            }},
+        ];
+        
+        var quitItem = MenuUtils.CreateAction("Quit", Keys.None, Application.Instance.Quit);
+        var homeItem = MenuUtils.CreateAction("Home", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop"));
+        var aboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {
+            ShowAboutDialog(new AboutDialog {
+                ProgramName = "Celeste Studio",
+                ProgramDescription = "Editor for editing Celeste TASes with various useful features.",
+                Version = Version.ToString(3),
+                Website = new Uri("https://github.com/EverestAPI/CelesteTAS-EverestInterop"),
+                
+                Developers = ["psyGamer", "DemoJameson", "EuniverseCat", "Samah"],
+                License = "MIT License",
+                Logo = Icon,
+            }, this);
+        });
+        
         var menu = new MenuBar {
-            Items = {
-                new SubMenuItem { Text = "&File", Items = {
-                    MenuUtils.CreateAction("&New File", Application.Instance.CommonModifier | Keys.N, OnNewFile),
-                    new SeparatorMenuItem(),
-                    MenuUtils.CreateAction("&Open File...", Application.Instance.CommonModifier | Keys.O, OnOpenFile),
-                    openPreviousFile,
-                    recentFilesMenu,
-                    backupsMenu,
-                    new SeparatorMenuItem(),
-                    MenuUtils.CreateAction("Save", Application.Instance.CommonModifier | Keys.S, OnSaveFile),
-                    MenuUtils.CreateAction("&Save As...", Application.Instance.CommonModifier | Keys.Shift | Keys.S, OnSaveFileAs),
-                    new SeparatorMenuItem(),
-                    MenuUtils.CreateAction("&Integrate Read Files"),
-                    MenuUtils.CreateAction("&Convert to LibTAS Movie..."),
-                    new SeparatorMenuItem(),
-                    recordTasButton,
-                }},
-                new SubMenuItem {Text = "&Settings", Items = {
-                    MenuUtils.CreateSettingToggle("&Send Inputs to Celeste", nameof(Settings.SendInputsToCeleste), Application.Instance.CommonModifier | Keys.D, enabled => {
-                        Editor.ShowToastMessage($"{(enabled ? "Enabled" : "Disabled")} Sending Inputs to Celeste", Editor.DefaultToastTime);
-                    }),
-                    new SubMenuItem {Text = "Automatic Backups", Items = {
-                        MenuUtils.CreateSettingToggle("Enabled", nameof(Settings.AutoBackupEnabled)),
-                        MenuUtils.CreateSettingNumberInput("Backup Rate (minutes)", nameof(Settings.AutoBackupRate), 0, int.MaxValue, 1),
-                        MenuUtils.CreateSettingNumberInput("Backup File Count", nameof(Settings.AutoBackupCount), 0, int.MaxValue, 1),
-                    }},
-                    MenuUtils.CreateAction("Snippets...", Keys.None, SnippetDialog.Show),
-                    MenuUtils.CreateAction("Font...", Keys.None, FontDialog.Show),
-                    CreateSettingTheme(),
-                    MenuUtils.CreateAction("Open Settings File...", Keys.None, () => ProcessHelper.OpenInDefaultApp(Settings.SettingsPath)),
-                }},
-                new SubMenuItem { Text = "&Preferences", Items = {
-                    MenuUtils.CreateSettingToggle("&Auto Save File", nameof(Settings.AutoSave)),
-                    MenuUtils.CreateSettingToggle("Auto Remove Mutually Exclusive Actions", nameof(Settings.AutoRemoveMutuallyExclusiveActions)),
-                    MenuUtils.CreateSettingToggle("Always on Top", nameof(Settings.AlwaysOnTop)),
-                    MenuUtils.CreateSettingNumberInput<int>("Max Unfolded Lines", nameof(Settings.MaxUnfoldedLines), 0, int.MaxValue, 1),
-                    MenuUtils.CreateSettingEnum<InsertDirection>("Insert Direction", nameof(Settings.InsertDirection), ["Above Current Line", "Below Current Line"]),
-                    MenuUtils.CreateSettingEnum<CaretInsertPosition>("Caret Insert Position", nameof(Settings.CaretInsertPosition), ["After Inserted Text", "Keep at Previous Position"]),
-                    MenuUtils.CreateSettingEnum<CommandSeparator>("Command Separator", nameof(Settings.CommandSeparator), ["Space (\" \")", "Comma (\",\")", "Space + Comma (\", \")"]),
-                }},
-                new SubMenuItem { Text = "&View", Items = {
-                    MenuUtils.CreateSettingToggle("Show Game Info", nameof(Settings.ShowGameInfo)),
-                    MenuUtils.CreateSettingToggle("Word Wrap Comments", nameof(Settings.WordWrapComments)),
-                    MenuUtils.CreateSettingToggle("Show Fold Indicators", nameof(Settings.ShowFoldIndicators)),
-                    MenuUtils.CreateSettingEnum<LineNumberAlignment>("Line Number Alignment", nameof(Settings.LineNumberAlignment), ["Left", "Right"]),
-                }},
-                new SubMenuItem {Text = "&Game Settings", Enabled = CommunicationWrapper.Connected, Items = {
-                    MenuUtils.CreateToggle("&Hitboxes", CommunicationWrapper.GetHitboxes, CommunicationWrapper.ToggleHitboxes),
-                    MenuUtils.CreateToggle("&Trigger Hitboxes", CommunicationWrapper.GetTriggerHitboxes, CommunicationWrapper.ToggleTriggerHitboxes),
-                    MenuUtils.CreateToggle("Unloaded Room Hitboxes", CommunicationWrapper.GetUnloadedRoomsHitboxes, CommunicationWrapper.ToggleUnloadedRoomsHitboxes),
-                    MenuUtils.CreateToggle("Camera Hitboxes", CommunicationWrapper.GetCameraHitboxes, CommunicationWrapper.ToggleCameraHitboxes),
-                    MenuUtils.CreateToggle("&Simplified Hitboxes", CommunicationWrapper.GetSimplifiedHitboxes, CommunicationWrapper.ToggleSimplifiedHitboxes),
-                    MenuUtils.CreateToggle("&Actual Collide Hitboxes", CommunicationWrapper.GetActualCollideHitboxes, CommunicationWrapper.ToggleActualCollideHitboxes),
-                    new SeparatorMenuItem(),
-                    MenuUtils.CreateToggle("&Simplified &Graphics", CommunicationWrapper.GetSimplifiedGraphics, CommunicationWrapper.ToggleSimplifiedGraphics),
-                    MenuUtils.CreateToggle("Game&play", CommunicationWrapper.GetGameplay, CommunicationWrapper.ToggleGameplay),
-                    new SeparatorMenuItem(),
-                    MenuUtils.CreateToggle("&Center Camera", CommunicationWrapper.GetCenterCamera, CommunicationWrapper.ToggleCenterCamera),
-                    MenuUtils.CreateToggle("Center Camera Horizontally Only", CommunicationWrapper.GetCenterCameraHorizontallyOnly, CommunicationWrapper.ToggleCenterCameraHorizontallyOnly),
-                    new SeparatorMenuItem(),
-                    MenuUtils.CreateToggle("&Info HUD", CommunicationWrapper.GetInfoHud, CommunicationWrapper.ToggleInfoHud),
-                    MenuUtils.CreateToggle("TAS Input Info", CommunicationWrapper.GetInfoTasInput, CommunicationWrapper.ToggleInfoTasInput),
-                    MenuUtils.CreateToggle("Game Info", CommunicationWrapper.GetInfoGame, CommunicationWrapper.ToggleInfoGame),
-                    MenuUtils.CreateToggle("Watch Entity Info", CommunicationWrapper.GetInfoWatchEntity, CommunicationWrapper.ToggleInfoWatchEntity),
-                    MenuUtils.CreateToggle("Custom Info", CommunicationWrapper.GetInfoCustom, CommunicationWrapper.ToggleInfoCustom),
-                    MenuUtils.CreateToggle("Subpixel Indicator", CommunicationWrapper.GetInfoSubpixelIndicator, CommunicationWrapper.ToggleInfoSubpixelIndicator),
-                    new SeparatorMenuItem(),
-                    MenuUtils.CreateNumberInput("Position Decimals", CommunicationWrapper.GetPositionDecimals, CommunicationWrapper.SetPositionDecimals, minDecimals, maxDecimals, 1),
-                    MenuUtils.CreateNumberInput("Speed Decimals", CommunicationWrapper.GetSpeedDecimals, CommunicationWrapper.SetSpeedDecimals, minDecimals, maxDecimals, 1),
-                    MenuUtils.CreateNumberInput("Velocity Decimals", CommunicationWrapper.GetVelocityDecimals, CommunicationWrapper.SetVelocityDecimals, minDecimals, maxDecimals, 1),
-                    MenuUtils.CreateNumberInput("Angle Decimals", CommunicationWrapper.GetAngleDecimals, CommunicationWrapper.SetAngleDecimals, minDecimals, maxDecimals, 1),
-                    MenuUtils.CreateNumberInput("Custom Info Decimals", CommunicationWrapper.GetCustomInfoDecimals, CommunicationWrapper.SetCustomInfoDecimals, minDecimals, maxDecimals, 1),
-                    MenuUtils.CreateNumberInput("Subpixel Indicator Decimals", CommunicationWrapper.GetSubpixelIndicatorDecimals, CommunicationWrapper.SetSubpixelIndicatorDecimals, minDecimals, maxDecimals, 1),
-                    MenuUtils.CreateToggle("Unit of Speed", CommunicationWrapper.GetSpeedUnit, CommunicationWrapper.ToggleSpeedUnit),
-                    new SeparatorMenuItem(),
-                    MenuUtils.CreateNumberInput("Fast Forward Speed", CommunicationWrapper.GetFastForwardSpeed, CommunicationWrapper.SetFastForwardSpeed, minFastForwardSpeed, maxFastForwardSpeed, 1),
-                    MenuUtils.CreateNumberInput("Slow Forward Speed", CommunicationWrapper.GetSlowForwardSpeed, CommunicationWrapper.SetSlowForwardSpeed, minSlowForwardSpeed, maxSlowForwardSpeed, 0.1f),
-                }},
-                new SubMenuItem { Text = "&Tools", Items = {
-                    MenuUtils.CreateAction("Jadderline", Keys.None, () => {
-                        jadderlineForm ??= new();
-                        jadderlineForm.Show();
-                        jadderlineForm.Closed += (_, _) => jadderlineForm = null;
-                    }),
-                    MenuUtils.CreateAction("Featherline", Keys.None, () => {
-                        featherlineForm ??= new();
-                        featherlineForm.Show();
-                        featherlineForm.Closed += (_, _) => featherlineForm = null;
-                    }),
-                }},
-            },
             ApplicationItems = {
                 // application (OS X) or file menu (others)
             },
-            QuitItem = MenuUtils.CreateAction("Quit", Keys.None, Application.Instance.Quit),
-            AboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {
-                ShowAboutDialog(new AboutDialog {
-                    ProgramName = "Celeste Studio",
-                    ProgramDescription = "Editor for editing Celeste TASes with various useful features.",
-                    Version = Version.ToString(3),
-                    Website = new Uri("https://github.com/EverestAPI/CelesteTAS-EverestInterop"),
-                    
-                    Developers = ["psyGamer", "DemoJameson", "EuniverseCat", "Samah"],
-                    License = "MIT License",
-                    Logo = Icon,
-                }, this);
-            }),
             IncludeSystemItems = MenuBarSystemItems.None,
         };
         
-        // The "About" is automatically inserted
-        menu.HelpItems.Insert(0, MenuUtils.CreateAction("Home", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop")));
+        if (Settings.Instance.CompactMenuBar) {
+            // Collapse all entries into a single "Studio" entries
+            var studioMenu = new SubMenuItem { Text = "&Studio" };
+            studioMenu.Items.AddRange(items);
+            studioMenu.Items.Add(new SubMenuItem { Text = "&Help", Items = { homeItem, aboutItem }});
+            studioMenu.Items.Add(new SeparatorMenuItem());
+            studioMenu.Items.Add(quitItem);
+            
+            menu.Items.Add(studioMenu);
+        } else {
+            menu.Items.AddRange(items);
+            
+            menu.QuitItem = quitItem;
+            menu.HelpItems.Add(homeItem);
+            menu.AboutItem = aboutItem;
+        }
         
         return menu;
     }
