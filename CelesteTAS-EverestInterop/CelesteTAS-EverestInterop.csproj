@@ -24,9 +24,9 @@
         <PathMap>$(MSBuildProjectDirectory)=CelesteTAS/</PathMap>
     </PropertyGroup>
     
-    <Import Project="..\StudioCommunication\StudioCommunication.projitems" Label="Shared" />
-
     <ItemGroup>
+        <Compile Include="..\StudioCommunication\**.cs" />
+        
         <Reference Include="$(CelestePrefix)\Celeste.dll" Publicize="true" />
         <Reference Include="$(CelestePrefix)\FNA.dll" />
         <Reference Include="$(CelestePrefix)\MMHOOK_Celeste.dll" />

@@ -5,15 +5,13 @@ VisualStudioVersion = 17.4.33213.308
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CelesteTAS-EverestInterop", "CelesteTAS-EverestInterop\CelesteTAS-EverestInterop.csproj", "{12CEFB4D-5E61-4F7E-93A6-637D96AB0139}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CelesteStudio", "Studio\CelesteStudio\CelesteStudio.csproj", "{21DF3C27-EF12-45E4-9211-56D7AE0D6BD8}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CelesteStudio.GTK", "Studio\CelesteStudio.GTK\CelesteStudio.GTK.csproj", "{EC404784-4D2E-4A49-AA0E-F19400998C69}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CelesteStudio.Mac", "Studio\CelesteStudio.Mac\CelesteStudio.Mac.csproj", "{FA6B0E7D-C70A-4ED5-99E2-019C9B60E52C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CelesteStudio.WPF", "Studio\CelesteStudio.WPF\CelesteStudio.WPF.csproj", "{95582142-D687-4D70-9933-7FF6B2E52B3A}"
-EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "StudioCommunication", "StudioCommunication\StudioCommunication.shproj", "{6B20B22D-D4C8-4F9D-A84A-E340551AE591}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CelesteStudio", "Studio\CelesteStudio\CelesteStudio.csproj", "{21DF3C27-EF12-45E4-9211-56D7AE0D6BD8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

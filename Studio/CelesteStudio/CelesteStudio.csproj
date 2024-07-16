@@ -16,6 +16,8 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Compile Include="..\..\StudioCommunication\**.cs" />
+        
         <EmbeddedResource Include="Assets\Icon.ico" LogicalName="Icon.ico"/>
 
         <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Regular.otf" LogicalName="JetBrainsMono/JetBrainsMono-Regular.otf"/>
@@ -23,7 +25,5 @@
         <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Italic.otf" LogicalName="JetBrainsMono/JetBrainsMono-Italic.otf"/>
         <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-BoldItalic.otf" LogicalName="JetBrainsMono/JetBrainsMono-BoldItalic.otf"/>
     </ItemGroup>
-
-    <Import Project="..\..\StudioCommunication\StudioCommunication.projitems" Label="Shared" />
 
 </Project>
