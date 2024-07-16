@@ -103,7 +103,9 @@ public sealed class Settings {
     public Point LastLocation { get; set; } = Point.Empty;
     public Size LastSize { get; set; } = new(400, 800);
     
+    public bool SubpixelPopoutOpen { get; set; } = false;
     public bool SubpixelPopoutTopmost { get; set; } = false;
+    public Point SubpixelPopoutLocation { get; set; } = Point.Empty;
     
     public string LastSaveDirectory { get; set; } = string.Empty;
     

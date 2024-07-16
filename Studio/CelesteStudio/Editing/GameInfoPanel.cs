@@ -13,6 +13,7 @@ public class GameInfoPanel : Panel {
         private const int BackgroundPadding = 5;
         
         public Action? Click;
+        public void PerformClick() => Click?.Invoke();
         
         public PopoutButton() {
             Width = Height = IconSize + BackgroundPadding * 2;
@@ -40,7 +41,7 @@ public class GameInfoPanel : Panel {
         
         protected override void OnMouseDown(MouseEventArgs e) => Invalidate();
         protected override void OnMouseUp(MouseEventArgs e) {
-            Click?.Invoke();
+            PerformClick();
             Invalidate();
         }
         
@@ -50,9 +51,12 @@ public class GameInfoPanel : Panel {
     }
     
     private sealed class SubpixelIndicator : Drawable {
+        // Cached to avoid spamming GameDataRequest messages
+        // TODO: Have the game notify such settings changes
+        private readonly int decimals = CommunicationWrapper.GetSubpixelIndicatorDecimals(); 
+        
         protected override void OnPaint(PaintEventArgs e) {
             var remainder = CommunicationWrapper.SubpixelRemainder;
-            int decimals = CommunicationWrapper.GetSubpixelIndicatorDecimals();
             
             float subpixelLeft = (float)Math.Round(remainder.X + 0.5f, decimals, MidpointRounding.AwayFromZero);
             float subpixelTop = (float)Math.Round(remainder.Y + 0.5f, decimals, MidpointRounding.AwayFromZero);
@@ -140,6 +144,16 @@ public class GameInfoPanel : Panel {
             ShowInTaskbar = false;
             
             Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
+            if (!Settings.Instance.SubpixelPopoutLocation.IsZero) {
+                Shown += (_, _) => Location = Settings.Instance.SubpixelPopoutLocation; 
+            }
+        }
+        
+        protected override void OnClosed(EventArgs e) {
+            Settings.Instance.SubpixelPopoutLocation = Location;
+            Settings.Save();
+            
+            base.OnClosed(e);
         }
         
         public void FitSize() {
@@ -199,12 +213,17 @@ public class GameInfoPanel : Panel {
         var layout = new PixelLayout();
         layout.Add(new StackLayout { Spacing = 10, Items = { label, subpixelIndicator }}, 0, 0);
         
+        // This needs to be done *before* the popout subscribes to this event 
+        Studio.Instance.Closed += (_, _) => {
+            Settings.Instance.SubpixelPopoutOpen = popoutForm != null;
+            Settings.Save();
+        };
+        
         const int popoutPaddingX = 10;
         const int popoutPaddingY = 0;
         var popoutButton = new PopoutButton();
         popoutButton.Click += () => {
             popoutForm ??= new(this);
-            popoutForm.Show();
             popoutForm.Closed += (_, _) => {
                 label.Text = popoutForm.Label.Text;
                 popoutForm = null;
@@ -215,6 +234,8 @@ public class GameInfoPanel : Panel {
                 UpdateLayout();
                 Studio.Instance.RecalculateLayout();
             };
+            Studio.Instance.Closed += (_, _) => popoutForm.Close();
+            popoutForm.Show();
             
             Visible = false;
             subpixelIndicator.Invalidate();
@@ -261,6 +282,9 @@ public class GameInfoPanel : Panel {
         };
         CommunicationWrapper.ConnectionChanged += UpdateGameInfo;
         
+        if (Settings.Instance.SubpixelPopoutOpen) {
+            Load += (_, _) => popoutButton.PerformClick();
+        }
         Shown += (_, _) => UpdateGameInfo();
     }
         
