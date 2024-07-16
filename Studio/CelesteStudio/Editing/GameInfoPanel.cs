@@ -10,6 +10,41 @@ using StudioCommunication;
 namespace CelesteStudio.Editing;
 
 public class GameInfoPanel : Panel {
+    private sealed class PopoutButton : Drawable {
+        private const int IconSize = 20;
+        private const int BackgroundPadding = 5;
+        
+        public PopoutButton() {
+            Width = Height = IconSize + BackgroundPadding * 2;
+        }
+        
+        protected override void OnPaint(PaintEventArgs e) {
+            var mouse = PointFromScreen(Mouse.Position);
+            
+            // TODO: Theme
+            Color bgColor = Color.FromRgb(0x3B3B3B);
+            if (mouse.X >= 0.0f && mouse.X <= Width && mouse.Y >= 0.0f && mouse.Y <= Height) {
+                if (Mouse.Buttons.HasFlag(MouseButtons.Primary)) {
+                    bgColor = Color.FromRgb(0x646464);
+                } else {
+                    bgColor = Color.FromRgb(0x4C4C4C);
+                }
+            }
+            
+            e.Graphics.FillPath(bgColor, GraphicsPath.GetRoundRect(new RectangleF(0.0f, 0.0f, Width, Height), BackgroundPadding * 1.5f));
+
+            e.Graphics.TranslateTransform(BackgroundPadding, BackgroundPadding);
+            e.Graphics.ScaleTransform(IconSize);
+            e.Graphics.FillPath(Settings.Instance.Theme.StatusFg, Assets.PopoutPath);
+        }
+        
+        protected override void OnMouseDown(MouseEventArgs e) => Invalidate();
+        protected override void OnMouseUp(MouseEventArgs e) => Invalidate();
+        protected override void OnMouseMove(MouseEventArgs e) => Invalidate();
+        protected override void OnMouseEnter(MouseEventArgs e) => Invalidate();
+        protected override void OnMouseLeave(MouseEventArgs e) => Invalidate();
+    }
+    
     private const string DisconnectedText = "Searching...";
     
     public int TotalFrames;
@@ -41,8 +76,17 @@ public class GameInfoPanel : Panel {
             Studio.Instance.RecalculateLayout();
         };
         
+        var layout = new PixelLayout();
+        layout.Add(label, 0, 0);
+        
+        const int popoutPaddingX = 10;
+        const int popoutPaddingY = 0;
+        var popoutButton = new PopoutButton();
+        layout.Add(popoutButton, ClientSize.Width - popoutButton.Width - popoutPaddingX, popoutPaddingY);
+        SizeChanged += (_, _) => layout.Move(popoutButton, ClientSize.Width - popoutButton.Width - popoutPaddingX, popoutPaddingY);
+        
         Padding = 5;
-        Content = label;
+        Content = layout;
         ContextMenu = new ContextMenu {
             Items = {
                 MenuUtils.CreateAction("Copy Game Info to Clipboard", Application.Instance.CommonModifier | Keys.Shift | Keys.C, () => {
