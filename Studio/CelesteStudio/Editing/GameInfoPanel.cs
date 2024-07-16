@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using System.Threading.Tasks;
 using CelesteStudio.Communication;
 using CelesteStudio.Util;
 using Eto.Drawing;
@@ -53,7 +54,11 @@ public class GameInfoPanel : Panel {
     private sealed class SubpixelIndicator : Drawable {
         // Cached to avoid spamming GameDataRequest messages
         // TODO: Have the game notify such settings changes
-        private readonly int decimals = CommunicationWrapper.GetSubpixelIndicatorDecimals(); 
+        private int decimals = CommunicationWrapper.GetSubpixelIndicatorDecimals(); 
+        
+        public SubpixelIndicator() {
+            CommunicationWrapper.ConnectionChanged += () => decimals = CommunicationWrapper.GetSubpixelIndicatorDecimals();
+        }
         
         protected override void OnPaint(PaintEventArgs e) {
             var remainder = CommunicationWrapper.SubpixelRemainder;
@@ -69,8 +74,7 @@ public class GameInfoPanel : Panel {
             float textWidth = font.MeasureWidth("0.".PadRight(decimals + 2, '0'));
             float textHeight = font.LineHeight();
 
-            // TODO: Make this configurable
-            float rectSize = textHeight * 3.0f;
+            float rectSize = textHeight * Settings.Instance.SubpixelIndicatorSize;
             float x = textWidth + padding;
             float y = textHeight + padding;
             
@@ -156,9 +160,15 @@ public class GameInfoPanel : Panel {
             base.OnClosed(e);
         }
         
-        public void FitSize() {
+        public void Recalc() {
             var labelSize = Label.GetPreferredSize();
-            Size = new Size((int)labelSize.Width, (int)labelSize.Height + layout.Spacing + SubpixelIndicator.Height) + layout.Padding.Size + new Size(2, 2);
+            SubpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
+            
+            if (SubpixelIndicator.Visible) {
+                Size = new Size(Math.Max((int)labelSize.Width, SubpixelIndicator.Width), (int)labelSize.Height + layout.Spacing + SubpixelIndicator.Height) + layout.Padding.Size + new Size(2, 2);
+            } else {
+                Size = new Size((int)labelSize.Width, (int)labelSize.Height) + layout.Padding.Size + new Size(2, 2);       
+            }
         }
         
         protected override void OnMouseDown(MouseEventArgs e) {
@@ -194,6 +204,7 @@ public class GameInfoPanel : Panel {
         
         Settings.Changed += () => {
             Visible = Settings.Instance.ShowGameInfo && popoutForm == null;
+            subpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
             subpixelIndicator.Invalidate();
             UpdateLayout();
             Studio.Instance.RecalculateLayout();
@@ -272,6 +283,8 @@ public class GameInfoPanel : Panel {
         };
         
         CommunicationWrapper.StateUpdated += (prevState, state) => {
+            subpixelIndicator.Visible = state.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
+            
             if (!Settings.Instance.ShowGameInfo || prevState.GameInfo == state.GameInfo)
                 return;
             
@@ -319,7 +332,7 @@ public class GameInfoPanel : Panel {
             if (popoutForm != null) {
                 popoutForm.Label.Text = newText;
                 popoutForm.SubpixelIndicator.Invalidate();
-                popoutForm.FitSize();
+                popoutForm.Recalc();
             } else {
                 label.Text = newText;
                 subpixelIndicator.Invalidate();

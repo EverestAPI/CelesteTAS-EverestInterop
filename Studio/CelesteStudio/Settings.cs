@@ -79,7 +79,6 @@ public sealed class Settings {
     
     public bool AutoSave { get; set; } = true;
     public bool AutoRemoveMutuallyExclusiveActions { get; set; } = true;
-    public bool AlwaysOnTop { get; set; } = false;
     
     public int MaxUnfoldedLines { get; set; } = 30;
     
@@ -94,6 +93,10 @@ public sealed class Settings {
     #region View
     
     public bool ShowGameInfo { get; set; } = true;
+    public bool ShowSubpixelIndicator { get; set; } = true;
+    public float SubpixelIndicatorSize { get; set; } = 2.5f;
+
+    public bool AlwaysOnTop { get; set; } = false;
     public bool WordWrapComments { get; set; } = true;
     public bool ShowFoldIndicators { get; set; } = true;
     
