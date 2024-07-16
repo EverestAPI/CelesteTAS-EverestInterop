@@ -15,7 +15,23 @@ public static class Extensions
     public static string[] SplitDocumentLines(this string self, StringSplitOptions options = StringSplitOptions.None) => self.Split(Document.NewLine, options);
 
     public static int Digits(this int self) => Math.Abs(self).ToString().Length;
-    public static T Mod<T>(this T x, T m) where T : INumber<T> => (x % m + m) % m; 
+    public static T Mod<T>(this T x, T m) where T : INumber<T> => (x % m + m) % m;
+    
+    private static readonly string format = "0.".PadRight(339, '#');
+    public static string ToFormattedString(this float value, int decimals) {
+        if (decimals == 0) {
+            return value.ToString(format);
+        } else {
+            return ((double) value).ToFormattedString(decimals);
+        }
+    }
+    public static string ToFormattedString(this double value, int decimals) {
+        if (decimals == 0) {
+            return value.ToString(format);
+        } else {
+            return value.ToString($"F{decimals}");
+        }
+    }
     
     public static string ReplaceRange(this string self, int startIndex, int count, string replacement) => self.Remove(startIndex, count).Insert(startIndex, replacement);
     

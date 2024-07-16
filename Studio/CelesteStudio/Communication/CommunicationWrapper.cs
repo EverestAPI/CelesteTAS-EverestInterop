@@ -125,6 +125,8 @@ public static class CommunicationWrapper {
     public static string GameInfo => Connected ? state.GameInfo : string.Empty;
     public static string LevelName => Connected ? state.LevelName : string.Empty;
     public static string ChapterTime => Connected ? state.ChapterTime : string.Empty;
+    public static bool ShowSubpixelIndicator => Connected ? state.ShowSubpixelIndicator : false;
+    public static (float X, float Y) SubpixelRemainder => Connected ? state.SubpixelRemainder : (0.0f, 0.0f);
     
     public static string GetConsoleCommand(bool simple) {
         if (!Connected) {

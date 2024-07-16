@@ -13,6 +13,13 @@ public record struct StudioState() {
     public string GameInfo = string.Empty;
     public string LevelName = string.Empty;
     public string ChapterTime = string.Empty;
+#if REWRITE
+    public bool ShowSubpixelIndicator = false;
+    public (float X, float Y) SubpixelRemainder;
+#else
+    public bool ShowSubpixelIndicator => false;
+    public (float X, float Y) SubpixelRemainder => (0.0f, 0.0f);
+#endif
     
     public void Serialize(BinaryWriter writer) {
         writer.Write(CurrentLine);
@@ -24,6 +31,9 @@ public record struct StudioState() {
         writer.Write(GameInfo);
         writer.Write(LevelName);
         writer.Write(ChapterTime);
+        writer.Write(ShowSubpixelIndicator);
+        writer.Write(SubpixelRemainder.X);
+        writer.Write(SubpixelRemainder.Y);
     }
     public static StudioState Deserialize(BinaryReader reader) => new() {
         CurrentLine = reader.ReadInt32(),
@@ -34,7 +44,9 @@ public record struct StudioState() {
         tasStates = (States)reader.ReadInt32(),
         GameInfo = reader.ReadString(),
         LevelName = reader.ReadString(),
-        ChapterTime = reader.ReadString()
+        ChapterTime = reader.ReadString(),
+        ShowSubpixelIndicator = reader.ReadBoolean(),
+        SubpixelRemainder = (reader.ReadSingle(), reader.ReadSingle()),   
     };
     
 #if !REWRITE

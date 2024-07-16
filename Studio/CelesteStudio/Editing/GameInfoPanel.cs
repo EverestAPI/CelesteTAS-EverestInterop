@@ -49,22 +49,81 @@ public class GameInfoPanel : Panel {
         protected override void OnMouseLeave(MouseEventArgs e) => Invalidate();
     }
     
+    private sealed class SubpixelIndicator : Drawable {
+        protected override void OnPaint(PaintEventArgs e) {
+            var remainder = CommunicationWrapper.SubpixelRemainder;
+            int decimals = CommunicationWrapper.GetSubpixelIndicatorDecimals();
+            
+            float subpixelLeft = (float)Math.Round(remainder.X + 0.5f, decimals, MidpointRounding.AwayFromZero);
+            float subpixelTop = (float)Math.Round(remainder.Y + 0.5f, decimals, MidpointRounding.AwayFromZero);
+            float subpixelRight = 1.0f - subpixelLeft;
+            float subpixelBottom = 1.0f - subpixelTop;
+
+            var font = FontManager.StatusFont;
+            
+            const float padding = 5.0f;
+            float textWidth = font.MeasureWidth("0.".PadRight(decimals + 2, '0'));
+            float textHeight = font.LineHeight();
+
+            // TODO: Make this configurable
+            float rectSize = textHeight * 3.0f;
+            float x = textWidth + padding;
+            float y = textHeight + padding;
+            
+            int hDecimals = Math.Abs(remainder.X) switch {
+                0.5f => 0,
+                _ => decimals
+            };
+            int vDecimals = Math.Abs(remainder.Y) switch {
+                0.5f => 0,
+                _ => decimals
+            };
+            
+            string left = subpixelLeft.ToFormattedString(hDecimals);
+            string right = subpixelRight.ToFormattedString(hDecimals);
+            string top = subpixelTop.ToFormattedString(vDecimals);
+            string bottom = subpixelBottom.ToFormattedString(vDecimals);
+            
+            e.Graphics.DrawText(font, Settings.Instance.Theme.StatusFg, x - padding - font.MeasureWidth(left), y + (rectSize - textHeight) / 2.0f, left);
+            e.Graphics.DrawText(font, Settings.Instance.Theme.StatusFg, x + padding + rectSize, y + (rectSize - textHeight) / 2.0f, right);
+            
+            e.Graphics.DrawText(font, Settings.Instance.Theme.StatusFg, x + (rectSize - font.MeasureWidth(top)) / 2.0f, y - padding - textHeight, top);
+            e.Graphics.DrawText(font, Settings.Instance.Theme.StatusFg, x + (rectSize - font.MeasureWidth(bottom)) / 2.0f, y + padding + rectSize, bottom);
+            
+            int thickness = Math.Max(1, (int)Math.Round(rectSize / 20.0f));
+            using var boxPen = new Pen(Colors.Green, thickness);
+            e.Graphics.DrawRectangle(boxPen, x, y, rectSize, rectSize);
+            
+            e.Graphics.FillRectangle(Colors.Red, x + (rectSize - thickness) * subpixelLeft, y + (rectSize - thickness) * subpixelTop, thickness, thickness);
+            
+            Width = (int)((textWidth + padding) * 2.0f + rectSize);
+            Height = (int)((textHeight + padding) * 2.0f + rectSize);
+        }
+    }
+    
     private sealed class PopoutForm : Form {
         public readonly Label Label;
-        private readonly Panel panel;
+        public readonly SubpixelIndicator SubpixelIndicator;
+
+        private readonly StackLayout layout;
         
         public PopoutForm(GameInfoPanel gameInfoPanel) {
             Title = "Game Info";
             Icon = Assets.AppIcon;
             
-            Content = panel = new Panel { 
+            Label = new Label {
+                Text = gameInfoPanel.label.Text,
+                TextColor = Settings.Instance.Theme.StatusFg,
+                Font = FontManager.StatusFont,
+                Wrap = WrapMode.None,
+            };
+            SubpixelIndicator = new SubpixelIndicator { Width = 100, Height = 100 };
+            SubpixelIndicator.Invalidate();
+
+            Content = layout = new StackLayout { 
                 Padding = 10,
-                Content = Label = new Label {
-                    Text = gameInfoPanel.label.Text,
-                    TextColor = Settings.Instance.Theme.StatusFg,
-                    Font = FontManager.StatusFont,
-                    Wrap = WrapMode.None,
-                } 
+                Spacing = 10,
+                Items = { Label, SubpixelIndicator }
             };
             
             Resizable = false;
@@ -75,14 +134,16 @@ public class GameInfoPanel : Panel {
         
         public void FitSize() {
             var labelSize = Label.GetPreferredSize();
-            Size = new Size((int)labelSize.Width, (int)labelSize.Height) + panel.Padding.Size + new Size(2, 2);
+            Size = new Size((int)labelSize.Width, (int)labelSize.Height + layout.Spacing + SubpixelIndicator.Height) + layout.Padding.Size + new Size(2, 2);
         }
     }
     
     private const string DisconnectedText = "Searching...";
     
     public int TotalFrames;
+    
     private readonly Label label;
+    private readonly SubpixelIndicator subpixelIndicator;
     
     private PopoutForm? popoutForm;
     
@@ -93,26 +154,30 @@ public class GameInfoPanel : Panel {
             Font = FontManager.StatusFont,
             Wrap = WrapMode.None,
         };
+        subpixelIndicator = new SubpixelIndicator { Width = 100, Height = 100 };
         
         BackgroundColor = Settings.Instance.Theme.StatusBg;
         
         Settings.Changed += () => {
             Visible = Settings.Instance.ShowGameInfo;
+            subpixelIndicator.Invalidate();
             UpdateLayout();
             Studio.Instance.RecalculateLayout();
         };
         Settings.ThemeChanged += () => {
             label.TextColor = Settings.Instance.Theme.StatusFg;
             BackgroundColor = Settings.Instance.Theme.StatusBg;
+            subpixelIndicator.Invalidate();
         };
         Settings.FontChanged += () => {
             label.Font = FontManager.StatusFont;
+            subpixelIndicator.Invalidate();
             UpdateLayout();
             Studio.Instance.RecalculateLayout();
         };
         
         var layout = new PixelLayout();
-        layout.Add(label, 0, 0);
+        layout.Add(new StackLayout { Spacing = 10, Items = { label, subpixelIndicator }}, 0, 0);
         
         const int popoutPaddingX = 10;
         const int popoutPaddingY = 0;
@@ -125,12 +190,14 @@ public class GameInfoPanel : Panel {
                 popoutForm = null;
 
                 Visible = Settings.Instance.ShowGameInfo;
+                subpixelIndicator.Invalidate();
                 UpdateGameInfo();
                 UpdateLayout();
                 Studio.Instance.RecalculateLayout();
             };
             
             Visible = false;
+            subpixelIndicator.Invalidate();
             UpdateGameInfo();
             UpdateLayout();
             Studio.Instance.RecalculateLayout();
@@ -207,9 +274,11 @@ public class GameInfoPanel : Panel {
         Application.Instance.InvokeAsync(() => {
             if (popoutForm != null) {
                 popoutForm.Label.Text = newText;
+                popoutForm.SubpixelIndicator.Invalidate();
                 popoutForm.FitSize();
             } else {
                 label.Text = newText;
+                subpixelIndicator.Invalidate();
             }
         });
     }
