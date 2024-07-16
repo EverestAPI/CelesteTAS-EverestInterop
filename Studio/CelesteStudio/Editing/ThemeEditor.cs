@@ -279,7 +279,7 @@ public sealed class ThemeEditor : Form {
                 styleLayout.AddSpace();
                 styleLayout.EndVertical();
                 
-                var bold = new CheckBox { Checked = (style.FontStyle & FontStyle.Italic) != 0 };
+                var bold = new CheckBox { Checked = style.FontStyle.HasFlag(FontStyle.Bold) };
                 bold.CheckedChanged += (_, _) => {
                     if (bold.Checked.Value) {
                         style.FontStyle |= FontStyle.Bold;
@@ -299,7 +299,7 @@ public sealed class ThemeEditor : Form {
                 styleLayout.AddSpace();
                 styleLayout.EndVertical();
                 
-                var italic = new CheckBox { Checked = (style.FontStyle & FontStyle.Italic) != 0 };
+                var italic = new CheckBox { Checked = style.FontStyle.HasFlag(FontStyle.Italic) };
                 italic.CheckedChanged += (_, _) => {
                     if (italic.Checked.Value) {
                         style.FontStyle |= FontStyle.Italic;
