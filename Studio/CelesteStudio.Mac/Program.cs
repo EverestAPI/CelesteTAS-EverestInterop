@@ -1,4 +1,5 @@
 ﻿using System;
+using CelesteStudio.Communication;
 using Eto.Forms;
 
 namespace CelesteStudio.Mac;

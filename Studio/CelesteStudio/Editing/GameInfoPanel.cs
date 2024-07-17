@@ -127,6 +127,7 @@ public class GameInfoPanel : Panel {
                 Wrap = WrapMode.None,
             };
             SubpixelIndicator = new SubpixelIndicator { Width = 100, Height = 100 };
+            SubpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
             SubpixelIndicator.Invalidate();
 
             Content = layout = new StackLayout { 
@@ -190,13 +191,20 @@ public class GameInfoPanel : Panel {
             Wrap = WrapMode.None,
         };
         subpixelIndicator = new SubpixelIndicator { Width = 100, Height = 100 };
+        subpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
+        subpixelIndicator.Invalidate();
         
         BackgroundColor = Settings.Instance.Theme.StatusBg;
         
         Settings.Changed += () => {
             Visible = Settings.Instance.ShowGameInfo && popoutForm == null;
-            subpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
-            subpixelIndicator.Invalidate();
+            if (popoutForm == null) {
+                subpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
+                subpixelIndicator.Invalidate();
+            } else {
+                popoutForm.SubpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
+                popoutForm.SubpixelIndicator.Invalidate();
+            }
             UpdateLayout();
             Studio.Instance.RecalculateLayout();
         };
@@ -273,7 +281,13 @@ public class GameInfoPanel : Panel {
         };
         
         CommunicationWrapper.StateUpdated += (prevState, state) => {
-            subpixelIndicator.Visible = state.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
+            if (popoutForm == null) {
+                subpixelIndicator.Visible = state.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
+                subpixelIndicator.Invalidate();
+            } else {
+                popoutForm.SubpixelIndicator.Visible = state.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
+                popoutForm.SubpixelIndicator.Invalidate();
+            }
             
             if (!Settings.Instance.ShowGameInfo || prevState.GameInfo == state.GameInfo)
                 return;
