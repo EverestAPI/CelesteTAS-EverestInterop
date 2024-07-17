@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using System.Windows.Media;
+using CelesteStudio.Communication;
 using Dark.Net;
 using Dark.Net.Wpf;
 using Eto.Forms;
@@ -35,6 +36,14 @@ public static class Program {
             Console.Error.WriteLine(ex);
             ErrorLog.Write(ex);
             ErrorLog.Open();
+        }
+
+        // Ensure the communication is stopped
+        try {
+            CommunicationWrapper.Stop();
+        } catch (Exception) {
+            // Just stop the process
+            Environment.Exit(0);
         }
     }
 

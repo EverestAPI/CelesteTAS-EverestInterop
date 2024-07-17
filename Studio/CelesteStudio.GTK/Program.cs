@@ -13,5 +13,13 @@ public static class Program {
             ErrorLog.Write(ex);
             ErrorLog.Open();
         }
+
+        // Ensure the communication is stopped
+        try {
+            CommunicationWrapper.Stop();
+        } catch (Exception) {
+            // Just stop the process
+            Environment.Exit(0);
+        }
     }
 }
