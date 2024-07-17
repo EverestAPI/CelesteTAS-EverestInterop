@@ -94,7 +94,7 @@ public sealed class Settings {
     
     public bool ShowGameInfo { get; set; } = true;
     public bool ShowSubpixelIndicator { get; set; } = true;
-    public float SubpixelIndicatorSize { get; set; } = 2.5f;
+    public float SubpixelIndicatorScale { get; set; } = 2.5f;
 
     public bool AlwaysOnTop { get; set; } = false;
     public bool WordWrapComments { get; set; } = true;
@@ -106,9 +106,10 @@ public sealed class Settings {
     public Point LastLocation { get; set; } = Point.Empty;
     public Size LastSize { get; set; } = new(400, 800);
     
-    public bool SubpixelPopoutOpen { get; set; } = false;
-    public bool SubpixelPopoutTopmost { get; set; } = false;
-    public Point SubpixelPopoutLocation { get; set; } = Point.Empty;
+    public bool GameInfoPopoutOpen { get; set; } = false;
+    public bool GameInfoPopoutTopmost { get; set; } = false;
+    public Point GameInfoPopoutLocation { get; set; } = Point.Empty;
+    public Size GameInfoPopoutSize { get; set; } = new(400, 250);
     
     public string LastSaveDirectory { get; set; } = string.Empty;
     

@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Text;
 using System.Threading.Tasks;
 using CelesteStudio.Communication;
@@ -74,7 +75,7 @@ public class GameInfoPanel : Panel {
             float textWidth = font.MeasureWidth("0.".PadRight(decimals + 2, '0'));
             float textHeight = font.LineHeight();
 
-            float rectSize = textHeight * Settings.Instance.SubpixelIndicatorSize;
+            float rectSize = textHeight * Settings.Instance.SubpixelIndicatorScale;
             float x = textWidth + padding;
             float y = textHeight + padding;
             
@@ -136,39 +137,29 @@ public class GameInfoPanel : Panel {
             
             var alwaysOnTopCheckbox = new CheckMenuItem { Text = "Always on Top" };
             alwaysOnTopCheckbox.CheckedChanged += (_, _) => {
-                Topmost = Settings.Instance.SubpixelPopoutTopmost = alwaysOnTopCheckbox.Checked;
+                Topmost = Settings.Instance.GameInfoPopoutTopmost = alwaysOnTopCheckbox.Checked;
                 Settings.Save();
             };
-            alwaysOnTopCheckbox.Checked = Settings.Instance.SubpixelPopoutTopmost;
+            alwaysOnTopCheckbox.Checked = Settings.Instance.GameInfoPopoutTopmost;
             ContextMenu = new ContextMenu {
                 Items  = { alwaysOnTopCheckbox }
             };
             
-            Resizable = false;
-            ShowInTaskbar = false;
-            
             Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
-            if (!Settings.Instance.SubpixelPopoutLocation.IsZero) {
-                Shown += (_, _) => Location = Settings.Instance.SubpixelPopoutLocation; 
-            }
+            Shown += (_, _) => {
+                if (!Settings.Instance.GameInfoPopoutLocation.IsZero) {
+                    Location = Settings.Instance.GameInfoPopoutLocation; 
+                }
+                Size = Settings.Instance.GameInfoPopoutSize;
+            };
         }
         
-        protected override void OnClosed(EventArgs e) {
-            Settings.Instance.SubpixelPopoutLocation = Location;
+        protected override void OnClosing(CancelEventArgs e) {
+            Settings.Instance.GameInfoPopoutLocation = Location;
+            Settings.Instance.GameInfoPopoutSize = Size;
             Settings.Save();
             
-            base.OnClosed(e);
-        }
-        
-        public void Recalc() {
-            var labelSize = Label.GetPreferredSize();
-            SubpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
-            
-            if (SubpixelIndicator.Visible) {
-                Size = new Size(Math.Max((int)labelSize.Width, SubpixelIndicator.Width), (int)labelSize.Height + layout.Spacing + SubpixelIndicator.Height) + layout.Padding.Size + new Size(2, 2);
-            } else {
-                Size = new Size((int)labelSize.Width, (int)labelSize.Height) + layout.Padding.Size + new Size(2, 2);       
-            }
+            base.OnClosing(e);
         }
         
         protected override void OnMouseDown(MouseEventArgs e) {
@@ -226,12 +217,10 @@ public class GameInfoPanel : Panel {
         
         // This needs to be done *before* the popout subscribes to this event 
         Studio.Instance.Closed += (_, _) => {
-            Settings.Instance.SubpixelPopoutOpen = popoutForm != null;
+            Settings.Instance.GameInfoPopoutOpen = popoutForm != null;
             Settings.Save();
         };
-        
-        const int popoutPaddingX = 10;
-        const int popoutPaddingY = 0;
+
         var popoutButton = new PopoutButton();
         popoutButton.Click += () => {
             popoutForm ??= new(this);
@@ -254,15 +243,16 @@ public class GameInfoPanel : Panel {
             UpdateLayout();
             Studio.Instance.RecalculateLayout();
         };
+
+        Padding = 5;
         
-        layout.Add(popoutButton, ClientSize.Width - popoutButton.Width - popoutPaddingX, popoutPaddingY);
+        layout.Add(popoutButton, ClientSize.Width - popoutButton.Width - Padding.Right * 2, 0);
         label.SizeChanged += (_, _) => {
             UpdateLayout();
             Studio.Instance.RecalculateLayout();
         };
-        SizeChanged += (_, _) => layout.Move(popoutButton, ClientSize.Width - popoutButton.Width - popoutPaddingX, popoutPaddingY);
+        SizeChanged += (_, _) => layout.Move(popoutButton, ClientSize.Width - popoutButton.Width - Padding.Right * 2, 0);
         
-        Padding = 5;
         Content = layout;
         ContextMenu = new ContextMenu {
             Items = {
@@ -295,7 +285,7 @@ public class GameInfoPanel : Panel {
         };
         CommunicationWrapper.ConnectionChanged += UpdateGameInfo;
         
-        if (Settings.Instance.SubpixelPopoutOpen) {
+        if (Settings.Instance.GameInfoPopoutOpen) {
             Load += (_, _) => popoutButton.PerformClick();
         }
         Shown += (_, _) => UpdateGameInfo();
@@ -332,7 +322,6 @@ public class GameInfoPanel : Panel {
             if (popoutForm != null) {
                 popoutForm.Label.Text = newText;
                 popoutForm.SubpixelIndicator.Invalidate();
-                popoutForm.Recalc();
             } else {
                 label.Text = newText;
                 subpixelIndicator.Invalidate();

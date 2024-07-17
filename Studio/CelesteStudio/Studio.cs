@@ -116,7 +116,7 @@ public sealed class Studio : Form {
     }
 
     public void RecalculateLayout() {
-        GameInfoPanel.Width = Width;
+        GameInfoPanel.Width = ClientSize.Width;
         EditorScrollable.Size = new Size(
             Math.Max(0, ClientSize.Width), 
             Math.Max(0, ClientSize.Height - GameInfoPanel.Height));
@@ -391,7 +391,7 @@ public sealed class Studio : Form {
             new SubMenuItem { Text = "&View", Items = {
                 MenuUtils.CreateSettingToggle("Show Game Info", nameof(Settings.ShowGameInfo)),
                 MenuUtils.CreateSettingToggle("Show Subpixel Indicator", nameof(Settings.ShowSubpixelIndicator)),
-                MenuUtils.CreateSettingNumberInput("Subpixel Indicator Size", nameof(Settings.SubpixelIndicatorSize), 0.1f, 10.0f, 0.25f),
+                MenuUtils.CreateSettingNumberInput("Subpixel Indicator Scale", nameof(Settings.SubpixelIndicatorScale), 0.1f, 10.0f, 0.25f),
                 new SeparatorMenuItem(),
                 MenuUtils.CreateSettingToggle("Always on Top", nameof(Settings.AlwaysOnTop)),
                 MenuUtils.CreateSettingToggle("Word Wrap Comments", nameof(Settings.WordWrapComments)),
