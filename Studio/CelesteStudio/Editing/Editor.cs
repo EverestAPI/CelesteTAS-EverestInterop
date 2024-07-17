@@ -567,7 +567,7 @@ public sealed class Editor : Drawable {
         int col = position.Col;
         if (commentLineWraps.TryGetValue(row, out var wrap)) {
             int idx = position.Row - actualToVisualRows[row];
-            if (idx < wrap.Lines.Length) {
+            if (idx >= 0 && idx < wrap.Lines.Length) {
                 int xIdent = idx == 0 ? 0 : wrap.StartOffset;
                 var line = wrap.Lines[idx];
                 
