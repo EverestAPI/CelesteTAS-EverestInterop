@@ -1,9 +1,11 @@
 ﻿using System;
 using System.IO;
+using MemoryPack;
 
 namespace StudioCommunication;
 
-public record struct StudioState() {
+[MemoryPackable]
+public partial struct StudioState() {
     public int CurrentLine = -1;
     public string CurrentLineSuffix = string.Empty;
     public int CurrentFrameInTas = -1;
@@ -21,33 +23,8 @@ public record struct StudioState() {
     public (float X, float Y) SubpixelRemainder => (0.0f, 0.0f);
 #endif
     
-    public void Serialize(BinaryWriter writer) {
-        writer.Write(CurrentLine);
-        writer.Write(CurrentLineSuffix);
-        writer.Write(CurrentFrameInTas);
-        writer.Write(TotalFrames);
-        writer.Write(SaveStateLine);
-        writer.Write((int)tasStates);
-        writer.Write(GameInfo);
-        writer.Write(LevelName);
-        writer.Write(ChapterTime);
-        writer.Write(ShowSubpixelIndicator);
-        writer.Write(SubpixelRemainder.X);
-        writer.Write(SubpixelRemainder.Y);
-    }
-    public static StudioState Deserialize(BinaryReader reader) => new() {
-        CurrentLine = reader.ReadInt32(),
-        CurrentLineSuffix = reader.ReadString(),
-        CurrentFrameInTas = reader.ReadInt32(),
-        TotalFrames = reader.ReadInt32(),
-        SaveStateLine = reader.ReadInt32(),
-        tasStates = (States)reader.ReadInt32(),
-        GameInfo = reader.ReadString(),
-        LevelName = reader.ReadString(),
-        ChapterTime = reader.ReadString(),
-        ShowSubpixelIndicator = reader.ReadBoolean(),
-        SubpixelRemainder = (reader.ReadSingle(), reader.ReadSingle()),   
-    };
+    public void Serialize(BinaryWriter writer) => MemoryPackSerializer.SerializeAsync(writer.BaseStream, this).AsTask().Wait();
+    public static StudioState Deserialize(BinaryReader reader) => MemoryPackSerializer.DeserializeAsync<StudioState>(reader.BaseStream).AsTask().Result;
     
 #if !REWRITE
     // ReSharper disable once UnusedMember.Global

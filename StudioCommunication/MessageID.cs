@@ -166,7 +166,6 @@ public enum GameDataType : byte {
     CustomInfoTemplate,
     SetCommandAutoCompleteEntries,
     InvokeCommandAutoCompleteEntries,
-    ParameterAutoCompleteEntries,
 }
 
 public enum RecordingFailedReason : byte {

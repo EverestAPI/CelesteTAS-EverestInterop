@@ -23,10 +23,10 @@
     <PropertyGroup>
         <PathMap>$(MSBuildProjectDirectory)=CelesteTAS/</PathMap>
     </PropertyGroup>
+
+    <Import Project="..\StudioCommunication\StudioCommunication.targets" />
     
     <ItemGroup>
-        <Compile Include="..\StudioCommunication\**\*.cs" />
-        
         <Reference Include="$(CelestePrefix)\Celeste.dll" Publicize="true" />
         <Reference Include="$(CelestePrefix)\FNA.dll" />
         <Reference Include="$(CelestePrefix)\MMHOOK_Celeste.dll" />
@@ -53,6 +53,7 @@
         <Copy SourceFiles="EverestInterop\Lua\env.lua" DestinationFiles="..\bin\env.lua" />
 
         <Copy SourceFiles="$(OutputPath)ICSharpCode.SharpZipLib.dll" DestinationFolder="..\bin" />
+        <Copy SourceFiles="$(OutputPath)MemoryPack.Core.dll" DestinationFolder="..\bin" />
         <Copy SourceFiles="$(OutputPath)JetBrains.Profiler.Api.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug'" />
     </Target>
 

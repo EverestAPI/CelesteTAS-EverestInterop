@@ -50,7 +50,7 @@ public static class BinaryHelper {
             
             // Collections
             case IList v:
-                writer.Write7BitEncodedInt(v.Count);
+                writer.Write(v.Count);
                 foreach (var item in v) {
                     SerializeObject(item, writer);
                 }
@@ -98,11 +98,11 @@ public static class BinaryHelper {
         {
             var itemType = type.GenericTypeArguments[0];
             var list = (IList)Activator.CreateInstance(type)!;
-            int count = reader.Read7BitEncodedInt();
+            int count = reader.ReadInt32();
+
             for (int i = 0; i < count; i++) {
                 list.Add(DeserializeObject(itemType, reader));
             }
-            
             return list;
         }
         

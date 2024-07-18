@@ -133,46 +133,40 @@ public static class CommunicationWrapper {
             return string.Empty;
         }
         
-        return comm!.RequestGameData(GameDataType.ConsoleCommand, simple).Result ?? string.Empty;
+        return (string)(comm!.RequestGameData(GameDataType.ConsoleCommand, simple).Result ?? string.Empty);
     }
     public static string GetModURL() {
         if (!Connected) {
             return string.Empty;
         }
         
-        return comm!.RequestGameData(GameDataType.ModUrl).Result ?? string.Empty;
+        return (string)(comm!.RequestGameData(GameDataType.ModUrl).Result ?? string.Empty);
     }
     public static string GetModInfo() {
         if (!Connected) {
             return string.Empty;
         }
         
-        return comm!.RequestGameData(GameDataType.ModInfo).Result ?? string.Empty;
+        return (string)(comm!.RequestGameData(GameDataType.ModInfo).Result ?? string.Empty);
     }
     public static string GetExactGameInfo() {
         if (!Connected) {
             return string.Empty;
         }
         
-        return comm!.RequestGameData(GameDataType.ExactGameInfo).Result ?? string.Empty;
+        return (string)(comm!.RequestGameData(GameDataType.ExactGameInfo).Result ?? string.Empty);
     }
     
-    private static IEnumerable<string> GetAutoCompleteEntries(GameDataType gameDataType, string argsText) {
+    private static IEnumerable<CommandAutoCompleteEntry> GetAutoCompleteEntries(GameDataType gameDataType, string argsText, int index) {
         if (!Connected) {
             return [];
         }
         
         // This is pretty heavy computationally, so we need a higher timeout
-        var entries = comm!.RequestGameData(gameDataType, argsText, TimeSpan.FromSeconds(15)).Result;
-        if (entries == null) {
-            return [];
-        }
-        
-        return entries.Split(';', StringSplitOptions.RemoveEmptyEntries);
+        return (IEnumerable<CommandAutoCompleteEntry>?)comm!.RequestGameData(gameDataType, (argsText, index), TimeSpan.FromSeconds(15)).Result ?? [];
     }
-    public static IEnumerable<string> GetSetCommandAutoCompleteEntries(string argsText) => GetAutoCompleteEntries(GameDataType.SetCommandAutoCompleteEntries, argsText);
-    public static IEnumerable<string> GetInvokeCommandAutoCompleteEntries(string argsText) => GetAutoCompleteEntries(GameDataType.InvokeCommandAutoCompleteEntries, argsText);
-    public static IEnumerable<string> GetParameterAutoCompleteEntries(string argsText) => GetAutoCompleteEntries(GameDataType.ParameterAutoCompleteEntries, argsText);
+    public static IEnumerable<CommandAutoCompleteEntry> GetSetCommandAutoCompleteEntries(string argsText, int index) => GetAutoCompleteEntries(GameDataType.SetCommandAutoCompleteEntries, argsText, index);
+    public static IEnumerable<CommandAutoCompleteEntry> GetInvokeCommandAutoCompleteEntries(string argsText, int index) => GetAutoCompleteEntries(GameDataType.InvokeCommandAutoCompleteEntries, argsText, index);
     
     #endregion
     
@@ -183,7 +177,7 @@ public static class CommunicationWrapper {
             return;
         }
         
-        var customInfoTemplate = comm!.RequestGameData(GameDataType.CustomInfoTemplate).Result;
+        var customInfoTemplate = (string?)comm!.RequestGameData(GameDataType.CustomInfoTemplate).Result ?? string.Empty;
         Clipboard.Instance.Clear();
         Clipboard.Instance.Text = customInfoTemplate;
     }
@@ -236,7 +230,7 @@ public static class CommunicationWrapper {
             return false;
         }
         
-        if (comm!.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
+        if (comm!.RequestGameData(GameDataType.SettingValue, settingName).Result is string settingValue &&
             bool.TryParse(settingValue, out bool value))
         {
             return value;
@@ -249,7 +243,7 @@ public static class CommunicationWrapper {
             return defaultValue;
         }
         
-        if (comm!.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
+        if (comm!.RequestGameData(GameDataType.SettingValue, settingName).Result is string settingValue &&
             int.TryParse(settingValue, out int value)) 
         {
             return value;
@@ -262,7 +256,7 @@ public static class CommunicationWrapper {
             return defaultValue;
         }
         
-        if (comm!.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
+        if (comm!.RequestGameData(GameDataType.SettingValue, settingName).Result is string settingValue &&
             float.TryParse(settingValue, out float value))
         {
             return value;

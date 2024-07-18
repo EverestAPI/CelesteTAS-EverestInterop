@@ -15,9 +15,9 @@
         <PackageReference Include="Samboy063.Tomlet" Version="5.3.1" />
     </ItemGroup>
 
+    <Import Project="..\..\StudioCommunication\StudioCommunication.targets" />
+    
     <ItemGroup>
-        <Compile Include="..\..\StudioCommunication\**\*.cs" />
-        
         <EmbeddedResource Include="Assets\Icon.ico" LogicalName="Icon.ico"/>
 
         <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Regular.otf" LogicalName="JetBrainsMono/JetBrainsMono-Regular.otf"/>

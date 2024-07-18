@@ -4,7 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CelesteStudio.Util;
+using MemoryPack;
 using StudioCommunication;
+using StudioCommunication.Util;
 
 #if REWRITE
 
@@ -16,7 +18,7 @@ public sealed class CommunicationAdapterStudio(
     Action<Dictionary<int, string>> linesChanged, 
     Action<Dictionary<HotkeyID, List<WinFormsKeys>>> bindingsChanged) : CommunicationAdapterBase(Location.Studio) 
 {
-    private string? gameData;
+    private readonly EnumArray<GameDataType, object?> gameData = new();
     
     public void ForceReconnect() {
         if (Connected) {
@@ -74,8 +76,25 @@ public sealed class CommunicationAdapterStudio(
                 break;
 
             case MessageID.GameDataResponse:
-                gameData = reader.ReadString();
-                LogVerbose($"Received message GameDataResponse: '{gameData}'");
+                var gameDataType = (GameDataType)reader.ReadByte();
+                
+                switch (gameDataType) {
+                    case GameDataType.ConsoleCommand
+                      or GameDataType.ModInfo
+                      or GameDataType.ExactGameInfo
+                      or GameDataType.SettingValue
+                      or GameDataType.CompleteInfoCommand
+                      or GameDataType.ModUrl:
+                        gameData[gameDataType] = reader.ReadString();
+                        break;
+                    
+                    case GameDataType.SetCommandAutoCompleteEntries
+                      or GameDataType.InvokeCommandAutoCompleteEntries:
+                        gameData[gameDataType] = MemoryPackSerializer.DeserializeAsync<IEnumerable<CommandAutoCompleteEntry>>(reader.BaseStream).AsTask().Result;
+                        break;
+                }
+                
+                LogVerbose($"Received message GameDataResponse: {gameDataType} = '{gameData[gameDataType]}'");
                 break;
                 
             default:
@@ -118,9 +137,24 @@ public sealed class CommunicationAdapterStudio(
     }
 
     private static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromSeconds(1);
-    public async Task<string?> RequestGameData(GameDataType gameDataType, object? arg = null, TimeSpan? timeout = null) {
-        gameData = null;
-        WriteMessageNow(MessageID.RequestGameData, writer => {
+    public async Task<object?> RequestGameData(GameDataType gameDataType, object? arg = null, TimeSpan? timeout = null) {
+        timeout ??= DefaultRequestTimeout;
+        
+        if (gameData[gameDataType] != null) {
+            // Wait for another request to finish
+            var waitStart = DateTime.UtcNow;
+            while (gameData[gameDataType] == null) {
+                await Task.Delay(UpdateRate).ConfigureAwait(false);
+                
+                if (DateTime.UtcNow - waitStart >= timeout) {
+                    LogError("Timed-out while while waiting for previous request to finish");
+                    return null;
+                }
+            }
+        }
+        
+        gameData[gameDataType] = null;
+        QueueMessage(MessageID.RequestGameData, writer => {
             writer.Write((byte)gameDataType);
             
             switch (gameDataType) {
@@ -128,19 +162,21 @@ public sealed class CommunicationAdapterStudio(
                     writer.Write((bool)arg!);
                     break;
                 case GameDataType.SettingValue:
+                    writer.Write((string)arg!);
+                    break;
                 case GameDataType.SetCommandAutoCompleteEntries:
                 case GameDataType.InvokeCommandAutoCompleteEntries:
-                case GameDataType.ParameterAutoCompleteEntries:
-                    writer.Write((string)arg!);
+                    (string argsText, int index) = ((string, int))arg!;
+                    writer.Write(argsText);
+                    writer.Write(index);
                     break;
             }
         });
         LogVerbose($"Sent message RequestGameData: {gameDataType} ('{arg ?? "<null>"}')");
         
         // Wait for data to arrive
-        timeout ??= DefaultRequestTimeout;
         var start = DateTime.UtcNow;
-        while (gameData == null) {
+        while (gameData[gameDataType] == null) {
             await Task.Delay(UpdateRate).ConfigureAwait(false);
             
             if (DateTime.UtcNow - start >= timeout) {
@@ -149,7 +185,11 @@ public sealed class CommunicationAdapterStudio(
             }
         }
         
-        return gameData;
+        // Reset back for next request
+        var data = gameData[gameDataType];
+        gameData[gameDataType] = null;
+        
+        return data;
     }
     
     protected override void LogInfo(string message) => Console.WriteLine($"[Info] Studio Communication @ Studio: {message}");

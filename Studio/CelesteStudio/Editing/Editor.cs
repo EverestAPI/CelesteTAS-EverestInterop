@@ -869,7 +869,7 @@ public sealed class Editor : Drawable {
         
         return;
         
-        AutoCompleteMenu.Entry CreateEntry(string name, string insert, string extra, Func<string[], CommandInfo.AutoCompleteEntry[]>[] commandAutoCompleteEntries) {
+        AutoCompleteMenu.Entry CreateEntry(string name, string insert, string extra, Func<string[], CommandAutoCompleteEntry[]>[] commandAutoCompleteEntries) {
             var quickEdit = ParseQuickEdit(insert);
             
             return new AutoCompleteMenu.Entry {
@@ -951,11 +951,11 @@ public sealed class Editor : Drawable {
                 var entries = command.Value.AutoCompleteEntries[commandArgs.Length - 1](commandArgs);
                 
                 autoCompleteMenu.Entries = entries.Select(entry => new AutoCompleteMenu.Entry {
-                    SearchText = entry.Prefix + entry.Arg,
-                    DisplayText = entry.Arg,
+                    SearchText = entry.FullName,
+                    DisplayText = entry.Name,
                     ExtraText = entry.Extra,
                     OnUse = () => {
-                        var insert = entry.Prefix + entry.Arg;
+                        var insert = entry.FullName;
                         var commandLine = Document.Lines[Document.Caret.Row][..(lastArgStart + args[^1].Length)];
                         if (allArgs.Length != args.Length) {
                             commandLine += separatorMatch.Value;
@@ -970,7 +970,7 @@ public sealed class Editor : Drawable {
                             // Replace the current quick-edit instead
                             Document.ReplaceRangeInLine(selectedQuickEdit.Row, selectedQuickEdit.MinCol, selectedQuickEdit.MaxCol, insert);
                             
-                            if (entry.Done) {
+                            if (entry.IsDone) {
                                 var quickEdits = GetQuickEdits().ToArray();
                                 bool lastQuickEditSelected = quickEdits.Length != 0 && 
                                                              quickEdits[^1].Row == Document.Caret.Row &&
@@ -994,13 +994,13 @@ public sealed class Editor : Drawable {
                                 UpdateAutoComplete();
                             }
                         } else {
-                            if (!entry.Done) {
+                            if (!entry.IsDone) {
                                 Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, insert);
                                 Document.Caret.Col = desiredVisualCol = lastArgStart + insert.Length;
                                 Document.Selection.Clear();
                                 
                                 UpdateAutoComplete();
-                            } else if (entry.HasNextArg ?? command.Value.AutoCompleteEntries.Length != allArgs.Length - 1) {
+                            } else if (entry.HasNext ?? command.Value.AutoCompleteEntries.Length != allArgs.Length - 1) {
                                 // Include separator for next argument
                                 Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, insert + separatorMatch.Value);
                                 Document.Caret.Col = desiredVisualCol = lastArgStart + insert.Length + separatorMatch.Value.Length;

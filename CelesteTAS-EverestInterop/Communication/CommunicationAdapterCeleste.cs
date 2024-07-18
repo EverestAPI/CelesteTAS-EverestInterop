@@ -4,11 +4,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Celeste;
 using Celeste.Mod;
+using MemoryPack;
 using StudioCommunication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
@@ -114,10 +114,9 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 var gameDataType = (GameDataType)reader.ReadByte();
                 object? arg = gameDataType switch {
                     GameDataType.ConsoleCommand => reader.ReadBoolean(),
-                    GameDataType.SettingValue or
+                    GameDataType.SettingValue => reader.ReadString(),
                     GameDataType.SetCommandAutoCompleteEntries or
-                    GameDataType.InvokeCommandAutoCompleteEntries or
-                    GameDataType.ParameterAutoCompleteEntries => reader.ReadString(),
+                    GameDataType.InvokeCommandAutoCompleteEntries => (reader.ReadString(), reader.ReadInt32()),
                     _ => null,
                 };
                 LogVerbose($"Received message RequestGameData: '{gameDataType}' ('{arg ?? "<null>"}')");
@@ -125,7 +124,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 // Gathering data from the game can sometimes take a while (and cause a timeout)
                 Task.Run(() => {
                     try {
-                        string gameData = gameDataType switch {
+                        object? gameData = gameDataType switch {
                             GameDataType.ConsoleCommand => GameData.GetConsoleCommand((bool)arg!),
                             GameDataType.ModInfo => GameData.GetModInfo(),
                             GameDataType.ExactGameInfo => GameInfo.ExactStudioInfo,
@@ -133,13 +132,33 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                             GameDataType.CompleteInfoCommand => AreaCompleteInfo.CreateCommand(),
                             GameDataType.ModUrl => GameData.GetModUrl(),
                             GameDataType.CustomInfoTemplate => !string.IsNullOrWhiteSpace(TasSettings.InfoCustomTemplate) ? TasSettings.InfoCustomTemplate : string.Empty,
-                            GameDataType.SetCommandAutoCompleteEntries => GameData.GetSetCommandAutoCompleteEntries((string)arg!),
-                            GameDataType.InvokeCommandAutoCompleteEntries => GameData.GetInvokeCommandAutoCompleteEntries((string)arg!),
-                            GameDataType.ParameterAutoCompleteEntries => GameData.GetParameterAutoCompleteEntries((string)arg!),
-                            _ => string.Empty
+                            GameDataType.SetCommandAutoCompleteEntries => GameData.GetSetCommandAutoCompleteEntries((((string, int))arg!).Item1, (((string, int))arg!).Item2),
+                            GameDataType.InvokeCommandAutoCompleteEntries => GameData.GetInvokeCommandAutoCompleteEntries((((string, int))arg!).Item1, (((string, int))arg!).Item2),
+                            _ => null,
                         };
-                        QueueMessage(MessageID.GameDataResponse, writer => writer.Write(gameData ?? string.Empty));
-                        LogVerbose($"Sent message GameDataResponse: '{gameData}'");
+
+                        if (gameData != null) {
+                            QueueMessage(MessageID.GameDataResponse, writer => {
+                                writer.Write((byte)gameDataType);
+                                
+                                switch (gameDataType) {
+                                    case GameDataType.ConsoleCommand 
+                                      or GameDataType.ModInfo 
+                                      or GameDataType.ExactGameInfo
+                                      or GameDataType.SettingValue 
+                                      or GameDataType.CompleteInfoCommand 
+                                      or GameDataType.ModUrl:
+                                        writer.Write((string)gameData);
+                                        break;
+                                    
+                                    case GameDataType.SetCommandAutoCompleteEntries
+                                      or GameDataType.InvokeCommandAutoCompleteEntries:
+                                        MemoryPackSerializer.SerializeAsync(writer.BaseStream, (IEnumerable<CommandAutoCompleteEntry>)gameData).AsTask().Wait();
+                                        break;
+                                }
+                                LogVerbose($"Sent message GameDataResponse: {gameDataType} = '{gameData}' {gameData.GetType()}");    
+                            });
+                        }
                     } catch (Exception ex) {
                         Console.WriteLine(ex);
                     }
