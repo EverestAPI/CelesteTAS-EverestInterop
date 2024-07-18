@@ -57,14 +57,14 @@ public sealed class CommunicationAdapterStudio(
                 break;
 
             case MessageID.UpdateLines:
-                var updateLines = BinaryHelper.DeserializeDictionary<int, string>(reader);
+                var updateLines = reader.ReadObject<Dictionary<int, string>>();
                 LogVerbose($"Received message UpdateLines: {updateLines.Count}");
 
                 linesChanged(updateLines);
                 break;
 
             case MessageID.CurrentBindings:
-                var bindings = BinaryHelper.DeserializeDictionary<int, List<int>>(reader)
+                var bindings = reader.ReadObject<Dictionary<int, List<int>>>()
                     .ToDictionary(pair => (HotkeyID) pair.Key, pair => pair.Value.Cast<WinFormsKeys>().ToList());
                 LogVerbose($"Received message CurrentBindings: {bindings.Count}");
 
@@ -90,7 +90,7 @@ public sealed class CommunicationAdapterStudio(
                     
                     case GameDataType.SetCommandAutoCompleteEntries
                       or GameDataType.InvokeCommandAutoCompleteEntries:
-                        gameData[gameDataType] = MemoryPackSerializer.DeserializeAsync<IEnumerable<CommandAutoCompleteEntry>>(reader.BaseStream).AsTask().Result;
+                        gameData[gameDataType] = reader.ReadObject<IEnumerable<CommandAutoCompleteEntry>>();
                         break;
                 }
                 
@@ -117,9 +117,7 @@ public sealed class CommunicationAdapterStudio(
     public void SendSetting(string settingName, object? value) {
         QueueMessage(MessageID.SetSetting, writer => {
             writer.Write(settingName);
-            if (value != null) {
-                BinaryHelper.SerializeObject(value, writer);
-            }
+            writer.WriteObject(value);
         });
         LogVerbose($"Sent message SetSetting: '{settingName}' = '{value}");
     }
@@ -155,20 +153,8 @@ public sealed class CommunicationAdapterStudio(
         
         QueueMessage(MessageID.RequestGameData, writer => {
             writer.Write((byte)gameDataType);
-            
-            switch (gameDataType) {
-                case GameDataType.ConsoleCommand:
-                    writer.Write((bool)arg!);
-                    break;
-                case GameDataType.SettingValue:
-                    writer.Write((string)arg!);
-                    break;
-                case GameDataType.SetCommandAutoCompleteEntries:
-                case GameDataType.InvokeCommandAutoCompleteEntries:
-                    (string argsText, int index) = ((string, int))arg!;
-                    writer.Write(argsText);
-                    writer.Write(index);
-                    break;
+            if (arg != null) {
+                writer.WriteObject(arg);
             }
         });
         LogVerbose($"Sent message RequestGameData: {gameDataType} ('{arg ?? "<null>"}')");

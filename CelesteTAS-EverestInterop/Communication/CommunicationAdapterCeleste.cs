@@ -116,7 +116,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                     GameDataType.ConsoleCommand => reader.ReadBoolean(),
                     GameDataType.SettingValue => reader.ReadString(),
                     GameDataType.SetCommandAutoCompleteEntries or
-                    GameDataType.InvokeCommandAutoCompleteEntries => (reader.ReadString(), reader.ReadInt32()),
+                    GameDataType.InvokeCommandAutoCompleteEntries => reader.ReadObject<(string, int)>(),
                     _ => null,
                 };
                 LogVerbose($"Received message RequestGameData: '{gameDataType}' ('{arg ?? "<null>"}')");
@@ -153,7 +153,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                                     
                                     case GameDataType.SetCommandAutoCompleteEntries:
                                     case GameDataType.InvokeCommandAutoCompleteEntries:
-                                        MemoryPackSerializer.SerializeAsync(writer.BaseStream, (IEnumerable<CommandAutoCompleteEntry>)gameData).AsTask().Wait();
+                                        writer.WriteObject((IEnumerable<CommandAutoCompleteEntry>)gameData);
                                         break;
                                 }
                                 LogVerbose($"Sent message GameDataResponse: {gameDataType} = '{gameData}'");    
@@ -177,11 +177,11 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
         // LogVerbose("Sent message State");
     }
     public void WriteUpdateLines(Dictionary<int, string> updateLines) {
-        QueueMessage(MessageID.UpdateLines, writer => BinaryHelper.SerializeDictionary(updateLines, writer));
+        QueueMessage(MessageID.UpdateLines, writer => writer.WriteObject(updateLines));
         LogVerbose($"Sent message UpdateLines: {updateLines.Count}");
     }
     public void WriteCurrentBindings(Dictionary<int, List<int>> nativeBindings) {
-        QueueMessage(MessageID.CurrentBindings, writer => BinaryHelper.SerializeDictionary(nativeBindings, writer));
+        QueueMessage(MessageID.CurrentBindings, writer => writer.WriteObject(nativeBindings));
         LogVerbose($"Sent message CurrentBindings: {nativeBindings.Count}");
     }
     public void WriteRecordingFailed(RecordingFailedReason reason) {

@@ -23,7 +23,7 @@ public abstract class CommunicationAdapterBase : IDisposable {
                 return;
             
             connected = value;
-            LogInfo($"Connection changed: {value}");
+            LogInfo(connected ? "Connected" : "Disconnected");
             OnConnectionChanged();
         }
     }

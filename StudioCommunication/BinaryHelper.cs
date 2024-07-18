@@ -1,69 +1,85 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using MemoryPack;
 
 namespace StudioCommunication;
 
 public static class BinaryHelper {
+    // Serializes data to (usually) a binary buffer for transmission
+    // A buffer length of 0 indicates that the object is null
+    // Some primitive types are special cased, to avoid the overhead of the buffer
     
-    public static void SerializeObject(object obj, BinaryWriter writer) {
-        switch (obj)
+    public static void WriteObject(this BinaryWriter writer, object? value) {
+        switch (value)
         {
             // Primitives
             case bool v:
                 writer.Write(v);
-                break;
+                return;
             case byte v:
                 writer.Write(v);
-                break;
+                return;
+            case byte[] v:
+                writer.Write7BitEncodedInt(v.Length);
+                writer.Write(v);
+                return;
             case char v:
                 writer.Write(v);
-                break;
+                return;
+            case char[] v:
+                writer.Write7BitEncodedInt(v.Length);
+                writer.Write(v);
+                return;
             case decimal v:
                 writer.Write(v);
-                break;
+                return;
             case double v:
                 writer.Write(v);
-                break;
+                return;
             case float v:
                 writer.Write(v);
-                break;
+                return;
             case int v:
                 writer.Write(v);
-                break;
+                return;
             case long v:
                 writer.Write(v);
-                break;
+                return;
             case sbyte v:
                 writer.Write(v);
-                break;
+                return;
             case short v:
                 writer.Write(v);
-                break;
+                return;
             case Half v:
                 writer.Write(v);
-                break;
+                return;
             case string v:
                 writer.Write(v);
-                break;
+                return;
             
-            // Collections
-            case IList v:
-                writer.Write(v.Count);
-                foreach (var item in v) {
-                    SerializeObject(item, writer);
+            case ITuple v:
+                writer.Write7BitEncodedInt(v.Length);
+                for (int i = 0; i < v.Length; i++) {
+                    writer.WriteObject(v[i]);
                 }
-                break;
-            
-            default:
-                throw new Exception($"Unsupported type: {obj.GetType()}");
+                return;
         }
+        
+        if (value == null) {
+            writer.Write7BitEncodedInt(0);
+            return;
+        }
+        
+        var buffer = MemoryPackSerializer.Serialize(value.GetType(), value);
+        writer.Write7BitEncodedInt(buffer.Length);
+        writer.Write(buffer);
     }
-    
-    private static object DeserializeObject(Type type, BinaryReader reader)
-    {
+
+    public static T ReadObject<T>(this BinaryReader reader) => (T)reader.ReadObject(typeof(T));
+    public static object ReadObject(this BinaryReader reader, Type type) {
         // Primitives
         if (type == typeof(bool))
             return reader.ReadBoolean();
@@ -93,50 +109,31 @@ public static class BinaryHelper {
             return reader.ReadHalf();
         if (type == typeof(string))
             return reader.ReadString();
+        
+        if (type.IsAssignableTo(typeof(ITuple)) && type.IsGenericType) {
+            int count = reader.Read7BitEncodedInt();
 
-        // Collections
-        if (type.IsAssignableTo(typeof(IList)) && type.IsGenericType)
-        {
             var itemType = type.GenericTypeArguments[0];
-            var list = (IList)Activator.CreateInstance(type)!;
-            int count = reader.ReadInt32();
-
+            var values = Array.CreateInstance(itemType, count);
             for (int i = 0; i < count; i++) {
-                list.Add(DeserializeObject(itemType, reader));
+                values.SetValue(reader.ReadObject(itemType), i);
             }
-            return list;
+
+            return GetTuple(values, itemType);
         }
         
-        throw new Exception($"Unsupported type: {type}");
-    }
-
-    public static void SerializeDictionary<TKey, TValue>(Dictionary<TKey, TValue> dict, BinaryWriter writer) where TKey : notnull where TValue : notnull {
-        writer.Write7BitEncodedInt(dict.Count);
-        foreach (var (key, value) in dict) {
-            SerializeObject(key, writer);
-            SerializeObject(value, writer);
-        }
-    }
-    public static Dictionary<TKey, TValue> DeserializeDictionary<TKey, TValue>(BinaryReader reader) where TKey : notnull where TValue : notnull {
-        int capacity = reader.Read7BitEncodedInt();
-        var dict = new Dictionary<TKey, TValue>(capacity);
-
-        for (int i = 0; i < capacity; i++) {
-            var key = (TKey)DeserializeObject(typeof(TKey), reader);
-            var value = (TValue)DeserializeObject(typeof(TValue), reader);
-            dict[key] = value;
-        }
-
-        return dict;
+        int length = reader.Read7BitEncodedInt();
+        var buffer = reader.ReadBytes(length);
+        return MemoryPackSerializer.Deserialize(type, buffer)!;
     }
     
-    public static void WriteObject<T>(this BinaryWriter writer, T value) where T : struct {
-        var buffer = MemoryPackSerializer.Serialize(typeof(T), value);
-        writer.Write7BitEncodedInt(buffer.Length);
-        writer.Write(buffer);
-    }
-    public static T ReadObject<T>(this BinaryReader reader) where T : struct {
-        var buffer = reader.ReadBytes(reader.Read7BitEncodedInt());
-        return (T)MemoryPackSerializer.Deserialize(typeof(T), buffer)!;
+    private static object GetTuple(Array values, Type itemType) {
+        var typeArgs = new Type[values.Length];
+        Array.Fill(typeArgs, itemType);
+        
+        var specificType = Type.GetType("System.Tuple`" + values.Length)!.MakeGenericType(typeArgs);
+        var constructorArguments = values.Cast<object>().ToArray();
+
+        return Activator.CreateInstance(specificType, constructorArguments);
     }
 }
