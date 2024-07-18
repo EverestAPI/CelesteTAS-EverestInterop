@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -59,6 +60,14 @@ public static class BinaryHelper {
             case string v:
                 writer.Write(v);
                 return;
+
+            case IEnumerable v:
+                var values = v.Cast<object>().ToArray();
+                writer.Write7BitEncodedInt(values.Length);
+                for (int i = 0; i < values.Length; i++) {
+                    writer.WriteObject(values[i]);
+                }
+                return;
             
             case ITuple v:
                 writer.Write7BitEncodedInt(v.Length);
@@ -110,30 +119,31 @@ public static class BinaryHelper {
         if (type == typeof(string))
             return reader.ReadString();
         
-        if (type.IsAssignableTo(typeof(ITuple)) && type.IsGenericType) {
+        if (type.IsAssignableTo(typeof(IEnumerable)) && type.IsGenericType) {
             int count = reader.Read7BitEncodedInt();
-
             var itemType = type.GenericTypeArguments[0];
+            
             var values = Array.CreateInstance(itemType, count);
             for (int i = 0; i < count; i++) {
                 values.SetValue(reader.ReadObject(itemType), i);
             }
+            
+            return values;
+        }
+        
+        if (type.IsAssignableTo(typeof(ITuple)) && type.IsGenericType) {
+            int count = reader.Read7BitEncodedInt();
 
-            return GetTuple(values, itemType);
+            var values = new object[count];
+            for (int i = 0; i < count; i++) {
+                values[i] = reader.ReadObject(type.GenericTypeArguments[i]);
+            }
+            
+            return Activator.CreateInstance(type, values);
         }
         
         int length = reader.Read7BitEncodedInt();
         var buffer = reader.ReadBytes(length);
         return MemoryPackSerializer.Deserialize(type, buffer)!;
-    }
-    
-    private static object GetTuple(Array values, Type itemType) {
-        var typeArgs = new Type[values.Length];
-        Array.Fill(typeArgs, itemType);
-        
-        var specificType = Type.GetType("System.Tuple`" + values.Length)!.MakeGenericType(typeArgs);
-        var constructorArguments = values.Cast<object>().ToArray();
-
-        return Activator.CreateInstance(specificType, constructorArguments);
     }
 }
