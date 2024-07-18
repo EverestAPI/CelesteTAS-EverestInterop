@@ -1,6 +1,7 @@
 #if REWRITE
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using CelesteStudio.Util;
 using Eto.Forms;
 using StudioCommunication;
@@ -157,16 +158,16 @@ public static class CommunicationWrapper {
         return (string)(comm!.RequestGameData(GameDataType.ExactGameInfo).Result ?? string.Empty);
     }
     
-    private static IEnumerable<CommandAutoCompleteEntry> GetAutoCompleteEntries(GameDataType gameDataType, string argsText, int index) {
+    private static async Task<CommandAutoCompleteEntry[]> RequestAutoCompleteEntries(GameDataType gameDataType, string argsText, int index) {
         if (!Connected) {
             return [];
         }
         
         // This is pretty heavy computationally, so we need a higher timeout
-        return (IEnumerable<CommandAutoCompleteEntry>?)comm!.RequestGameData(gameDataType, (argsText, index), TimeSpan.FromSeconds(15)).Result ?? [];
+        return (CommandAutoCompleteEntry[]?)await comm!.RequestGameData(gameDataType, (argsText, index), TimeSpan.FromSeconds(15)) ?? [];
     }
-    public static IEnumerable<CommandAutoCompleteEntry> GetSetCommandAutoCompleteEntries(string argsText, int index) => GetAutoCompleteEntries(GameDataType.SetCommandAutoCompleteEntries, argsText, index);
-    public static IEnumerable<CommandAutoCompleteEntry> GetInvokeCommandAutoCompleteEntries(string argsText, int index) => GetAutoCompleteEntries(GameDataType.InvokeCommandAutoCompleteEntries, argsText, index);
+    public static Task<CommandAutoCompleteEntry[]> RequestSetCommandAutoCompleteEntries(string argsText, int index) => RequestAutoCompleteEntries(GameDataType.SetCommandAutoCompleteEntries, argsText, index);
+    public static Task<CommandAutoCompleteEntry[]> RequestInvokeCommandAutoCompleteEntries(string argsText, int index) => RequestAutoCompleteEntries(GameDataType.InvokeCommandAutoCompleteEntries, argsText, index);
     
     #endregion
     

@@ -119,13 +119,13 @@ public static class BinaryHelper {
         if (type == typeof(string))
             return reader.ReadString();
         
-        if (type.IsAssignableTo(typeof(IEnumerable)) && type.IsGenericType) {
+        if (type.IsArray || type.IsAssignableTo(typeof(IEnumerable)) && type.IsGenericType) {
             int count = reader.Read7BitEncodedInt();
-            var itemType = type.GenericTypeArguments[0];
+            var elemType = type.GetElementType() ?? type.GenericTypeArguments[0];
             
-            var values = Array.CreateInstance(itemType, count);
+            var values = Array.CreateInstance(elemType, count);
             for (int i = 0; i < count; i++) {
-                values.SetValue(reader.ReadObject(itemType), i);
+                values.SetValue(reader.ReadObject(elemType), i);
             }
             
             return values;

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using CelesteStudio.Communication;
 using CelesteStudio.Util;
 using StudioCommunication;
@@ -127,6 +128,17 @@ public struct CommandInfo() {
     public static void ResetCache() {
         setCommandCache.Clear();
         invokeCommandCache.Clear();
+        
+        // Prefetch the 2 big lists
+        Task.Run(async () => {
+            var setEntries = CommunicationWrapper.RequestSetCommandAutoCompleteEntries("", 0);
+            var invokeEntries = CommunicationWrapper.RequestInvokeCommandAutoCompleteEntries("", 0);
+            
+            await Task.WhenAll(setEntries, invokeEntries).ConfigureAwait(false);
+            
+            setCommandCache[("", 0)] = setEntries.Result;
+            invokeCommandCache[("", 0)] = invokeEntries.Result;
+        });
     }
     
     private static CommandAutoCompleteEntry[] GetFilePathEntries(string arg) {
@@ -200,7 +212,7 @@ public struct CommandInfo() {
             return entries;
         }
         
-        entries = CommunicationWrapper.GetSetCommandAutoCompleteEntries(argsText, index).ToArray();
+        entries = CommunicationWrapper.RequestSetCommandAutoCompleteEntries(argsText, index).Result;
         setCommandCache[key] = entries;
         
         return entries;
@@ -215,7 +227,7 @@ public struct CommandInfo() {
             return entries;
         }
         
-        entries = CommunicationWrapper.GetInvokeCommandAutoCompleteEntries(argsText, index).ToArray();
+        entries = CommunicationWrapper.RequestInvokeCommandAutoCompleteEntries(argsText, index).Result;
         invokeCommandCache[key] = entries;
         
         return entries;

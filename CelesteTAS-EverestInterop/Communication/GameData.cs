@@ -248,11 +248,11 @@ public static class GameData {
             return entries.Select(e => e with { Name = e.IsDone ? e.Name : e.Name + "." }); // Append '.' for next segment if not done
         } else if (Everest.Modules.FirstOrDefault(m => m.Metadata.Name == args[0] && m.SettingsType != null) is { } mod) {
             return GetTypeAutoCompleteEntries(RecurseSetType(mod.SettingsType, args), AutoCompleteType.Set)
-                .Select(e => e with { Name = e.Name + (e.IsDone ? "" : "."), Prefix = string.Join('.', args[..^1]) + ".", HasNext = !e.IsDone });
+                .Select(e => e with { Name = e.Name + (e.IsDone ? "" : "."), Prefix = string.Join('.', args[..^1]) + ".", HasNext = true });
         } else if (InfoCustom.TryParseTypes(args[0], out var types, out _, out _)) {
             // Let's just assume the first type
             return GetTypeAutoCompleteEntries(RecurseSetType(types[0], args), AutoCompleteType.Set)
-                .Select(e => e with { Name = e.Name + (e.IsDone ? "" : "."), Prefix = string.Join('.', args[..^1]) + ".", HasNext = !e.IsDone });
+                .Select(e => e with { Name = e.Name + (e.IsDone ? "" : "."), Prefix = string.Join('.', args[..^1]) + ".", HasNext = true });
         }
         
         return [];
@@ -300,7 +300,7 @@ public static class GameData {
         } else if (InfoCustom.TryParseTypes(args[0], out var types, out _, out _)) {
             // Let's just assume the first type
             return GetTypeAutoCompleteEntries(types[0], AutoCompleteType.Invoke)
-                .Select(e => e with { Name = e.Name + (e.IsDone ? "" : "."), Prefix = string.Join('.', args[..^1]) + ".", HasNext = !e.IsDone });
+                .Select(e => e with { Name = e.Name + (e.IsDone ? "" : "."), Prefix = string.Join('.', args[..^1]) + ".", HasNext = true });
         }
         
         return [];
