@@ -80,6 +80,15 @@ public abstract class CommunicationAdapterBase : IDisposable {
         string writeName = $"CelesteTAS_{(location == Location.Celeste ? "C2S" : "S2C")}";
         string readName  = $"CelesteTAS_{(location == Location.Celeste ? "S2C" : "C2S")}";
         
+        // Ensure the other adapter isn't using the stream while setting up
+        try {
+            mutex.WaitOne();
+        } catch (AbandonedMutexException) {
+            // The other adapter most likely exited abnormally
+            mutex.Dispose();
+            mutex = new Mutex(initiallyOwned: true, MutexName, out _);
+        }
+        
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
             writeFile = MemoryMappedFile.CreateOrOpen(writeName, BufferCapacity);
             readFile = MemoryMappedFile.CreateOrOpen(readName, BufferCapacity);
@@ -95,7 +104,6 @@ public abstract class CommunicationAdapterBase : IDisposable {
         }
         
         // Clean-up old data (only the header is important)
-        mutex.WaitOne();
         using (var writeStream = writeFile.CreateViewStream()) {
             writeStream.Position = 0;
             writeStream.Write([0x00, 0x00, 0x00, 0x00, 0x00]);    

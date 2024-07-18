@@ -4,6 +4,7 @@ using Celeste.Mod;
 using StudioCommunication;
 using TAS.EverestInterop;
 using TAS.Module;
+using TAS.Utils;
 
 namespace TAS.Communication;
 
@@ -23,9 +24,19 @@ public static class CommunicationWrapper {
     }
     
     public static void Start() {
+        if (comm != null) {
+            "Tried to start the communication adapter while already running!".Log(LogLevel.Warn);
+            return;
+        }
+        
         comm = new CommunicationAdapterCeleste();
     }
     public static void Stop() {
+        if (comm == null) {
+            "Tried to stop the communication adapter while not running!".Log(LogLevel.Warn);
+            return;
+        }
+        
         comm.Dispose();
         comm = null;
     }
