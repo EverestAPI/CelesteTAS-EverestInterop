@@ -164,7 +164,7 @@ public static class CommunicationWrapper {
         }
         
         // This is pretty heavy computationally, so we need a higher timeout
-        return (CommandAutoCompleteEntry[]?)await comm!.RequestGameData(gameDataType, (argsText, index), TimeSpan.FromSeconds(15)) ?? [];
+        return (CommandAutoCompleteEntry[]?)await comm!.RequestGameData(gameDataType, (argsText, index), TimeSpan.FromSeconds(15)).ConfigureAwait(false) ?? [];
     }
     public static Task<CommandAutoCompleteEntry[]> RequestSetCommandAutoCompleteEntries(string argsText, int index) => RequestAutoCompleteEntries(GameDataType.SetCommandAutoCompleteEntries, argsText, index);
     public static Task<CommandAutoCompleteEntry[]> RequestInvokeCommandAutoCompleteEntries(string argsText, int index) => RequestAutoCompleteEntries(GameDataType.InvokeCommandAutoCompleteEntries, argsText, index);

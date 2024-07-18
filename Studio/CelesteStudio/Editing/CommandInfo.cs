@@ -202,10 +202,11 @@ public struct CommandInfo() {
         return labels;
     }
     
-    // NOTE: Probably read GameData in the Celeste part, since this is using the data from there.
     private static readonly Dictionary<(string, int), CommandAutoCompleteEntry[]> setCommandCache = [];
     private static CommandAutoCompleteEntry[] GetSetEntries(string argsText, int index) {
-        var args = string.Join('.', argsText.Split('.').SkipLast(1));
+        var args = index == 0 
+            ? string.Join('.', argsText.Split('.').SkipLast(1))
+            : string.Join('.', argsText.Split('.'));
         var key = (args, index);
         
         if (setCommandCache.TryGetValue(key, out var entries)) {
@@ -213,6 +214,7 @@ public struct CommandInfo() {
         }
         
         entries = CommunicationWrapper.RequestSetCommandAutoCompleteEntries(argsText, index).Result;
+        foreach (var e in entries) Console.WriteLine($" - {e.FullName}"); 
         setCommandCache[key] = entries;
         
         return entries;
@@ -220,7 +222,9 @@ public struct CommandInfo() {
     
     private static readonly Dictionary<(string, int), CommandAutoCompleteEntry[]> invokeCommandCache = [];
     private static CommandAutoCompleteEntry[] GetInvokeEntries(string argsText, int index) {
-        var args = string.Join('.', argsText.Split('.').SkipLast(1));
+        var args = index == 0 
+            ? string.Join('.', argsText.Split('.').SkipLast(1))
+            : string.Join('.', argsText.Split('.'));
         var key = (args, index);
         
         if (invokeCommandCache.TryGetValue(key, out var entries)) {

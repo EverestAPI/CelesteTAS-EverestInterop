@@ -61,14 +61,13 @@ public static class BinaryHelper {
                 writer.Write(v);
                 return;
 
-            case IEnumerable v:
+            case IEnumerable v when v.GetType().IsArray || v.GetType().IsAssignableTo(typeof(IList)):
                 var values = v.Cast<object>().ToArray();
                 writer.Write7BitEncodedInt(values.Length);
                 for (int i = 0; i < values.Length; i++) {
                     writer.WriteObject(values[i]);
                 }
                 return;
-            
             case ITuple v:
                 writer.Write7BitEncodedInt(v.Length);
                 for (int i = 0; i < v.Length; i++) {
@@ -119,9 +118,9 @@ public static class BinaryHelper {
         if (type == typeof(string))
             return reader.ReadString();
         
-        if (type.IsArray || type.IsAssignableTo(typeof(IEnumerable)) && type.IsGenericType) {
+        if (type.IsArray) {
             int count = reader.Read7BitEncodedInt();
-            var elemType = type.GetElementType() ?? type.GenericTypeArguments[0];
+            var elemType = type.GetElementType()!;
             
             var values = Array.CreateInstance(elemType, count);
             for (int i = 0; i < count; i++) {
@@ -130,7 +129,17 @@ public static class BinaryHelper {
             
             return values;
         }
-        
+        if (type.IsAssignableTo(typeof(IList)) && type.IsGenericType) {
+            int count = reader.Read7BitEncodedInt();
+            var elemType = type.GetElementType()!;
+            
+            var list = (IList)Activator.CreateInstance(type);
+            for (int i = 0; i < count; i++) {
+                list.Add(reader.ReadObject(elemType));
+            }
+            
+            return list;
+        }
         if (type.IsAssignableTo(typeof(ITuple)) && type.IsGenericType) {
             int count = reader.Read7BitEncodedInt();
 

@@ -246,6 +246,23 @@ public static class GameData {
             
             entries.AddRange(filteredTypes);
             return entries.Select(e => e with { Name = e.IsDone ? e.Name : e.Name + "." }); // Append '.' for next segment if not done
+        } else if (args[0] == "ExtendedVariantMode") {
+            // Special case for setting extended variants
+            if (ExtendedVariantsUtils.GetVariantsEnum() is { } variantsEnum) {
+                return Enum.GetValues(variantsEnum).Cast<object>()
+                    .Select(variant => {
+                        string typeName = string.Empty;
+                        try {
+                            var variantType = ExtendedVariantsUtils.GetVariantType(new(variant));
+                            if (variantType != null) {
+                                typeName = CSharpTypeName(variantType);
+                            }
+                        } catch {
+                            // ignore
+                        }
+                        return new CommandAutoCompleteEntry { Name = variant.ToString(), Prefix = string.Join('.', args[..^1]) + ".", Extra = typeName, IsDone = true, HasNext = true };
+                    });
+            }
         } else if (Everest.Modules.FirstOrDefault(m => m.Metadata.Name == args[0] && m.SettingsType != null) is { } mod) {
             return GetTypeAutoCompleteEntries(RecurseSetType(mod.SettingsType, args), AutoCompleteType.Set)
                 .Select(e => e with { Name = e.Name + (e.IsDone ? "" : "."), Prefix = string.Join('.', args[..^1]) + ".", HasNext = true });
@@ -319,6 +336,14 @@ public static class GameData {
                 return GetTypeAutoCompleteEntries(fSaveData.FieldType, AutoCompleteType.Parameter);
             } else if (typeof(Assists).GetFieldInfo(args[0], BindingFlags.Instance | BindingFlags.Public) is { } fAssists) {
                 return GetTypeAutoCompleteEntries(fAssists.FieldType, AutoCompleteType.Parameter);
+            }
+        } else if (args[0] == "ExtendedVariantMode") {
+            // Special case for setting extended variants
+            var variant = ExtendedVariantsUtils.ParseVariant(args[1]);
+            var variantType = ExtendedVariantsUtils.GetVariantType(new(variant));
+            
+            if (variantType != null) {
+                return GetTypeAutoCompleteEntries(RecurseSetType(variantType, args, includeLast: true), AutoCompleteType.Parameter);
             }
         } else if (autoCompleteType == AutoCompleteType.Set && Everest.Modules.FirstOrDefault(m => m.Metadata.Name == args[0] && m.SettingsType != null) is { } mod) {
             return GetTypeAutoCompleteEntries(RecurseSetType(mod.SettingsType, args, includeLast: true), AutoCompleteType.Parameter);

@@ -132,8 +132,8 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                             GameDataType.CompleteInfoCommand => AreaCompleteInfo.CreateCommand(),
                             GameDataType.ModUrl => GameData.GetModUrl(),
                             GameDataType.CustomInfoTemplate => !string.IsNullOrWhiteSpace(TasSettings.InfoCustomTemplate) ? TasSettings.InfoCustomTemplate : string.Empty,
-                            GameDataType.SetCommandAutoCompleteEntries => GameData.GetSetCommandAutoCompleteEntries((((string, int))arg!).Item1, (((string, int))arg!).Item2),
-                            GameDataType.InvokeCommandAutoCompleteEntries => GameData.GetInvokeCommandAutoCompleteEntries((((string, int))arg!).Item1, (((string, int))arg!).Item2),
+                            GameDataType.SetCommandAutoCompleteEntries => GameData.GetSetCommandAutoCompleteEntries((((string, int))arg!).Item1, (((string, int))arg!).Item2).ToArray(),
+                            GameDataType.InvokeCommandAutoCompleteEntries => GameData.GetInvokeCommandAutoCompleteEntries((((string, int))arg!).Item1, (((string, int))arg!).Item2).ToArray(),
                             _ => null,
                         };
 
@@ -153,7 +153,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                                     
                                     case GameDataType.SetCommandAutoCompleteEntries:
                                     case GameDataType.InvokeCommandAutoCompleteEntries:
-                                        writer.WriteObject((IEnumerable<CommandAutoCompleteEntry>)gameData);
+                                        writer.WriteObject((CommandAutoCompleteEntry[])gameData);
                                         break;
                                 }
                                 LogVerbose($"Sent message GameDataResponse: {gameDataType} = '{gameData}'");    

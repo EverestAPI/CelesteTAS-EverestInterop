@@ -38,6 +38,8 @@ internal static class ExtendedVariantsUtils {
     public static bool UpsideDown => GetCurrentVariantValue(upsideDownVariant) is { } value && (bool) value;
     public static bool SuperDashing => GetCurrentVariantValue(superDashingVariant) is { } value && (bool) value;
 
+    public static Type GetVariantsEnum() => variantType.Value;
+    
     public static Type GetVariantType(Lazy<object> variant) {
         if (variant.Value is null) return null;
         object handler = dictionareGetItem.Value?.Invoke(variantHandlers.Value, variant.Value);
