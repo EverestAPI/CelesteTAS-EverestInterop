@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using MemoryPack;
 
 namespace StudioCommunication;
 
@@ -127,5 +128,15 @@ public static class BinaryHelper {
         }
 
         return dict;
+    }
+    
+    public static void WriteObject<T>(this BinaryWriter writer, T value) where T : struct {
+        var buffer = MemoryPackSerializer.Serialize(typeof(T), value);
+        writer.Write7BitEncodedInt(buffer.Length);
+        writer.Write(buffer);
+    }
+    public static T ReadObject<T>(this BinaryReader reader) where T : struct {
+        var buffer = reader.ReadBytes(reader.Read7BitEncodedInt());
+        return (T)MemoryPackSerializer.Deserialize(typeof(T), buffer)!;
     }
 }

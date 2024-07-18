@@ -1,6 +1,4 @@
-﻿using System;
-using System.IO;
-using MemoryPack;
+﻿using MemoryPack;
 
 namespace StudioCommunication;
 
@@ -22,10 +20,7 @@ public partial struct StudioState() {
     public bool ShowSubpixelIndicator => false;
     public (float X, float Y) SubpixelRemainder => (0.0f, 0.0f);
 #endif
-    
-    public void Serialize(BinaryWriter writer) => MemoryPackSerializer.SerializeAsync(writer.BaseStream, this).AsTask().Wait();
-    public static StudioState Deserialize(BinaryReader reader) => MemoryPackSerializer.DeserializeAsync<StudioState>(reader.BaseStream).AsTask().Result;
-    
+
 #if !REWRITE
     // ReSharper disable once UnusedMember.Global
     public byte[] ToByteArray() {

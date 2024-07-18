@@ -142,21 +142,21 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                                 writer.Write((byte)gameDataType);
                                 
                                 switch (gameDataType) {
-                                    case GameDataType.ConsoleCommand 
-                                      or GameDataType.ModInfo 
-                                      or GameDataType.ExactGameInfo
-                                      or GameDataType.SettingValue 
-                                      or GameDataType.CompleteInfoCommand 
-                                      or GameDataType.ModUrl:
+                                    case GameDataType.ConsoleCommand: 
+                                    case GameDataType.ModInfo: 
+                                    case GameDataType.ExactGameInfo:
+                                    case GameDataType.SettingValue: 
+                                    case GameDataType.CompleteInfoCommand: 
+                                    case GameDataType.ModUrl:
                                         writer.Write((string)gameData);
                                         break;
                                     
-                                    case GameDataType.SetCommandAutoCompleteEntries
-                                      or GameDataType.InvokeCommandAutoCompleteEntries:
+                                    case GameDataType.SetCommandAutoCompleteEntries:
+                                    case GameDataType.InvokeCommandAutoCompleteEntries:
                                         MemoryPackSerializer.SerializeAsync(writer.BaseStream, (IEnumerable<CommandAutoCompleteEntry>)gameData).AsTask().Wait();
                                         break;
                                 }
-                                LogVerbose($"Sent message GameDataResponse: {gameDataType} = '{gameData}' {gameData.GetType()}");    
+                                LogVerbose($"Sent message GameDataResponse: {gameDataType} = '{gameData}'");    
                             });
                         }
                     } catch (Exception ex) {
@@ -173,7 +173,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
     }
     
     public void WriteState(StudioState state) {
-        QueueMessage(MessageID.State, writer => state.Serialize(writer));
+        QueueMessage(MessageID.State, writer => writer.WriteObject(state));
         // LogVerbose("Sent message State");
     }
     public void WriteUpdateLines(Dictionary<int, string> updateLines) {

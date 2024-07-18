@@ -50,7 +50,7 @@ public sealed class CommunicationAdapterStudio(
     protected override void HandleMessage(MessageID messageId, BinaryReader reader) {
         switch (messageId) {
             case MessageID.State:
-                var state = StudioState.Deserialize(reader);
+                var state = reader.ReadObject<StudioState>();
                 // LogVerbose("Received message State");
 
                 stateChanged(state);
@@ -79,12 +79,12 @@ public sealed class CommunicationAdapterStudio(
                 var gameDataType = (GameDataType)reader.ReadByte();
                 
                 switch (gameDataType) {
-                    case GameDataType.ConsoleCommand
-                      or GameDataType.ModInfo
-                      or GameDataType.ExactGameInfo
-                      or GameDataType.SettingValue
-                      or GameDataType.CompleteInfoCommand
-                      or GameDataType.ModUrl:
+                    case GameDataType.ConsoleCommand:
+                    case GameDataType.ModInfo:
+                    case GameDataType.ExactGameInfo:
+                    case GameDataType.SettingValue:
+                    case GameDataType.CompleteInfoCommand:
+                    case GameDataType.ModUrl:
                         gameData[gameDataType] = reader.ReadString();
                         break;
                     
@@ -153,7 +153,6 @@ public sealed class CommunicationAdapterStudio(
             }
         }
         
-        gameData[gameDataType] = null;
         QueueMessage(MessageID.RequestGameData, writer => {
             writer.Write((byte)gameDataType);
             

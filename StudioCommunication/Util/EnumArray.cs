@@ -9,12 +9,11 @@ public readonly struct EnumArray<TEnum, TValue> where TEnum : struct, Enum {
     public EnumArray() {
         var values = Enum.GetValuesAsUnderlyingType<TEnum>();
         
-        long max = 0;
+        long maxIdx = 0;
         foreach (var value in values) {
-            max = Math.Max(max, Convert.ToInt64(value));
+            maxIdx = Math.Max(maxIdx, Convert.ToInt64(value));
         }
-        
-        data = new TValue[max];
+        data = new TValue[maxIdx + 1];
     }
     
     public TValue this[TEnum index] {
