@@ -25,13 +25,12 @@ public class GameInfoPanel : Panel {
         protected override void OnPaint(PaintEventArgs e) {
             var mouse = PointFromScreen(Mouse.Position);
             
-            // TODO: Theme
-            Color bgColor = Color.FromRgb(0x3B3B3B);
+            Color bgColor = Settings.Instance.Theme.PopoutButtonBg;
             if (mouse.X >= 0.0f && mouse.X <= Width && mouse.Y >= 0.0f && mouse.Y <= Height) {
                 if (Mouse.Buttons.HasFlag(MouseButtons.Primary)) {
-                    bgColor = Color.FromRgb(0x646464);
+                    bgColor = Settings.Instance.Theme.PopoutButtonSelected;
                 } else {
-                    bgColor = Color.FromRgb(0x4C4C4C);
+                    bgColor = Settings.Instance.Theme.PopoutButtonHovered;
                 }
             }
             
@@ -101,11 +100,12 @@ public class GameInfoPanel : Panel {
             e.Graphics.DrawText(font, Settings.Instance.Theme.StatusFg, x + (rectSize - font.MeasureWidth(top)) / 2.0f, y - rectPadding - textHeight, top);
             e.Graphics.DrawText(font, Settings.Instance.Theme.StatusFg, x + (rectSize - font.MeasureWidth(bottom)) / 2.0f, y + rectPadding + rectSize, bottom);
             
-            int thickness = Math.Max(1, (int)Math.Round(rectSize / 20.0f));
-            using var boxPen = new Pen(Colors.Green, thickness);
+            int boxThickness = Math.Max(1, (int)Math.Round(rectSize / 20.0f));
+            float dotThickness = boxThickness * 1.25f;
+            using var boxPen = new Pen(Settings.Instance.Theme.SubpixelIndicatorBox, boxThickness);
+
             e.Graphics.DrawRectangle(boxPen, x, y, rectSize, rectSize);
-            
-            e.Graphics.FillRectangle(Colors.Red, x + (rectSize - thickness) * subpixelLeft, y + (rectSize - thickness) * subpixelTop, thickness, thickness);
+            e.Graphics.FillRectangle(Settings.Instance.Theme.SubpixelIndicatorDot, x + (rectSize - dotThickness) * subpixelLeft, y + (rectSize - dotThickness) * subpixelTop, dotThickness, dotThickness);
             
             Width = (int)((textWidth + rectPadding + indicatorPadding) * 2.0f + rectSize);
             Height = (int)((textHeight + rectPadding + indicatorPadding) * 2.0f + rectSize);
@@ -167,6 +167,14 @@ public class GameInfoPanel : Panel {
             SizeChanged += (_, _) => textArea.Width = Math.Max(0, ClientSize.Width - Padding.Left - Padding.Right);
             
             Content = showPanel;
+            BackgroundColor = Settings.Instance.Theme.StatusBg;
+            
+            Settings.ThemeChanged += () => {
+                Label.TextColor = Settings.Instance.Theme.StatusFg;
+                textArea.TextColor = Settings.Instance.Theme.StatusFg;
+                BackgroundColor = Settings.Instance.Theme.StatusBg;
+                SubpixelIndicator.Invalidate();
+            };
             
             var editCustomInfoItem = MenuEntry.Status_EditCustomInfoTemplate.ToAction(() => {
                 Content = editPanel;
@@ -194,11 +202,11 @@ public class GameInfoPanel : Panel {
                     var lastSize = Settings.Instance.GameInfoPopoutSize;
                     
                     // Clamp to screen
-                    var screen = Screen.FromRectangle(new RectangleF(Location, Size));
-                    if (Location.X < screen.WorkingArea.Left) {
-                        Location = Location with { X = (int)screen.WorkingArea.Left };
-                    } else if (Location.X + Size.Width > screen.WorkingArea.Right) {
-                        Location = Location with { X = (int)screen.WorkingArea.Right - Size.Width };
+                    var screen = Screen.FromRectangle(new RectangleF(lastLocation, lastSize));
+                    if (lastLocation.X < screen.WorkingArea.Left) {
+                        lastLocation = lastLocation with { X = (int)screen.WorkingArea.Left };
+                    } else if (lastLocation.X + lastSize.Width > screen.WorkingArea.Right) {
+                        lastLocation = lastLocation with { X = (int)screen.WorkingArea.Right - lastSize.Width };
                     }
                     if (lastLocation.Y < screen.WorkingArea.Top) {
                         lastLocation = lastLocation with { Y = (int)screen.WorkingArea.Top };

@@ -26,8 +26,13 @@ public struct Theme {
     public Color AutoCompleteFg;
     public Color AutoCompleteFgExtra;
     public Color AutoCompleteBg;
-    public Color AutoCompleteSelected;
     public Color AutoCompleteHovered;
+    public Color AutoCompleteSelected;
+    public Color PopoutButtonBg;
+    public Color PopoutButtonHovered;
+    public Color PopoutButtonSelected;
+    public Color SubpixelIndicatorBox;
+    public Color SubpixelIndicatorDot;
     
     // Text styles
     public Style Action;
@@ -60,8 +65,13 @@ public struct Theme {
             AutoCompleteFg = Color.FromRgb(0x121212),
             AutoCompleteFgExtra = Color.FromRgb(0x595959),
             AutoCompleteBg = Color.FromRgb(0xD3D3D3),
-            AutoCompleteSelected = Color.FromArgb(0x25, 0x25, 0x25, 0x4A),
             AutoCompleteHovered = Color.FromArgb(0x3E, 0x3E, 0x3E, 0x2E),
+            AutoCompleteSelected = Color.FromArgb(0x25, 0x25, 0x25, 0x4A),
+            PopoutButtonBg = Color.FromRgb(0xCFCFCF),
+            PopoutButtonHovered = Color.FromRgb(0xC1C1C1),
+            PopoutButtonSelected = Color.FromRgb(0xA9A9A9),
+            SubpixelIndicatorBox = Color.FromRgb(0x159F15),
+            SubpixelIndicatorDot = Color.FromRgb(0xE30E0E),
 
             Action = new Style(Color.FromRgb(0x1F7BEC)),
             Angle = new Style(Color.FromRgb(0xC835C8)),
@@ -90,8 +100,13 @@ public struct Theme {
             AutoCompleteFg = Color.FromRgb(0xDFDFDF),
             AutoCompleteFgExtra = Color.FromRgb(0x9F9F9F),
             AutoCompleteBg = Color.FromRgb(0x2C2C2C),
-            AutoCompleteSelected = Color.FromArgb(0xD5, 0xD5, 0xD5, 0x3D),
             AutoCompleteHovered = Color.FromArgb(0xC4, 0xC4, 0xC4, 0x2F),
+            AutoCompleteSelected = Color.FromArgb(0xD5, 0xD5, 0xD5, 0x3D),
+            PopoutButtonBg = Color.FromRgb(0x3B3B3B),
+            PopoutButtonHovered = Color.FromRgb(0x4C4C4C),
+            PopoutButtonSelected = Color.FromRgb(0x646464),
+            SubpixelIndicatorBox = Color.FromRgb(0x29A229),
+            SubpixelIndicatorDot = Color.FromRgb(0xE30E0E),
 
             Action = new Style(Color.FromRgb(0x8BE9FD)),
             Angle = new Style(Color.FromRgb(0xFF79C6)),
@@ -123,6 +138,11 @@ public struct Theme {
             AutoCompleteBg = Color.FromRgb(0xE9E9E9),
             AutoCompleteSelected = Color.FromArgb(0x44, 0x44, 0x44, 0x3F),
             AutoCompleteHovered = Color.FromArgb(0x44, 0x44, 0x44, 0x1F),
+            PopoutButtonBg = Color.FromRgb(0xCFCFCF),
+            PopoutButtonHovered = Color.FromRgb(0xC1C1C1),
+            PopoutButtonSelected = Color.FromRgb(0xA9A9A9),
+            SubpixelIndicatorBox = Color.FromRgb(0x159F15),
+            SubpixelIndicatorDot = Color.FromRgb(0xE30E0E),
 
             Action = new Style(Color.FromRgb(0x2222FF)),
             Angle = new Style(Color.FromRgb(0xEE22EE)),
@@ -153,6 +173,11 @@ public struct Theme {
             AutoCompleteBg = Color.FromRgb(0x2F303B),
             AutoCompleteSelected = Color.FromArgb(0xBB, 0xBB, 0xC4, 0x4F),
             AutoCompleteHovered = Color.FromArgb(0xBB, 0xBB, 0xC4, 0x2F),
+            PopoutButtonBg = Color.FromRgb(0x494C5F),
+            PopoutButtonHovered = Color.FromRgb(0x595D74),
+            PopoutButtonSelected = Color.FromRgb(0x6F738F),
+            SubpixelIndicatorBox = Color.FromRgb(0x1AB353),
+            SubpixelIndicatorDot = Color.FromRgb(0xE30E0E),
 
             Action = new Style(Color.FromRgb(0x8BE9FD)),
             Angle = new Style(Color.FromRgb(0xFF79C6)),
