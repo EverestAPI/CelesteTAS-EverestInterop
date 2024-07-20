@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Channels;
 using CelesteStudio.Editing;
 using CelesteStudio.Util;
 using Eto.Drawing;
@@ -63,19 +62,15 @@ public class SnippetDialog : Dialog<bool> {
     private void GenerateListEntries(ICollection<StackLayoutItem> items) {
         items.Clear();
         
-        // Hack to unfocus the selected button once a hotkey has been pressed
-        var unfocuser = new Button { Visible = false };
-        items.Add(unfocuser);
-        
         for (int i = 0; i < snippets.Count; i++) {
             var snippet = snippets[i];
 
-            var enabledCheckBox = new CheckBox {Checked = snippet.Enabled};
+            var enabledCheckBox = new CheckBox { Checked = snippet.Enabled };
             enabledCheckBox.CheckedChanged += (_, _) => snippet.Enabled = enabledCheckBox.Checked.Value;
             
             var hotkeyButton = new Button { Text = snippet.Hotkey.ToShortcutString(), ToolTip = "Use the right mouse button to clear a hotkey!", Font = SystemFonts.Bold(), Width = 150};
             hotkeyButton.Click += (_, _) => {
-                snippet.Hotkey = HotkeyDialog.Show(this, snippet.Hotkey);
+                snippet.Hotkey = HotkeyDialog.Show(this, snippet.Hotkey, null, snippets);
                 hotkeyButton.Text = snippet.Hotkey.ToShortcutString();
             };
             
@@ -108,7 +103,7 @@ public class SnippetDialog : Dialog<bool> {
                 GenerateListEntries(items);
             };
             
-            var layout = new DynamicLayout {DefaultSpacing = new Size(15, 5), Padding = new Padding(0, 0, 0, 10)};
+            var layout = new DynamicLayout { DefaultSpacing = new Size(15, 5), Padding = new Padding(0, 0, 0, 10)};
             {
                 layout.BeginHorizontal();
                 layout.BeginVertical();

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using CelesteStudio.Data;
@@ -10,7 +11,7 @@ using Eto.Forms;
 namespace CelesteStudio.Dialog;
 
 public class HotkeyDialog : Dialog<Keys> {
-    private HotkeyDialog(Keys currentHotkey) {
+    private HotkeyDialog(Keys currentHotkey, Dictionary<MenuEntry, Keys> keyBindings, List<Snippet>? snippets) {
         Title = "Edit Hotkey";
         Content = new StackLayout {
             Padding = 10,
@@ -44,8 +45,8 @@ public class HotkeyDialog : Dialog<Keys> {
             }
                 
             // Avoid conflicts with other hotkeys
-            var conflictingKeyBinds = Enum.GetValues<MenuEntry>().Where(entry => entry.GetHotkey() == e.KeyData).ToArray();
-            var conflictingSnippets = Settings.Instance.Snippets.Where(snippet => snippet.Hotkey == e.KeyData).ToArray();
+            var conflictingKeyBinds = keyBindings.Where(pair => pair.Value == e.KeyData).Select(pair => pair.Key).ToArray();
+            var conflictingSnippets = snippets.Where(snippet => snippet.Hotkey == e.KeyData).ToArray();
             
             if (conflictingKeyBinds.Any() || conflictingSnippets.Any()) {
                 var msg = new StringBuilder();
@@ -86,7 +87,10 @@ public class HotkeyDialog : Dialog<Keys> {
         Shown += (_, _) => Location = ParentWindow.Location + new Point((ParentWindow.Width - Width) / 2, (ParentWindow.Height - Height) / 2);
     }
 
-    public static Keys Show(Window parent, Keys currentHotkey) {
-        return new HotkeyDialog(currentHotkey).ShowModal(parent);
+    public static Keys Show(Window parent, Keys currentHotkey, Dictionary<MenuEntry, Keys>? keyBindings, List<Snippet>? snippets) {
+        keyBindings ??= Enum.GetValues<MenuEntry>().ToDictionary(entry => entry, entry => entry.GetHotkey());
+        snippets ??= Settings.Instance.Snippets;
+        
+        return new HotkeyDialog(currentHotkey, keyBindings, snippets).ShowModal(parent);
     }
 }

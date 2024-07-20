@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Channels;
 using CelesteStudio.Data;
-using CelesteStudio.Editing;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
@@ -39,7 +36,7 @@ public class KeyBindingDialog : Dialog<bool> {
                     Width = 150,
                 };
                 hotkeyButton.Click += (_, _) => {
-                    hotkey = HotkeyDialog.Show(this, hotkey);
+                    hotkey = HotkeyDialog.Show(this, hotkey, keyBindings, null);
                     
                     keyBindings[entry] = hotkey;
                     hotkeyButton.Text = hotkey.ToShortcutString();
