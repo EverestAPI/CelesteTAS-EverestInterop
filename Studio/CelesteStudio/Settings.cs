@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using CelesteStudio.Data;
 using CelesteStudio.Editing;
 using CelesteStudio.Util;
@@ -36,6 +37,9 @@ public sealed class Settings {
     public static event Action FontChanged = FontManager.OnFontChanged;
     public static void OnFontChanged() => FontChanged.Invoke();
     
+    public static event Action? KeyBindingsChanged;
+    public static void OnKeyBindingsChanged() => KeyBindingsChanged?.Invoke();
+    
     #region Settings
     
     [TomlNonSerialized]
@@ -63,9 +67,17 @@ public sealed class Settings {
         }
     }
 
+    [TomlDoNotInlineObject]
     public Dictionary<string, Theme> CustomThemes { get; set; } = new();
+    [TomlDoNotInlineObject]
     public List<Snippet> Snippets { get; set; } = [];
-    public Dictionary<MenuEntry, Keys> KeyBindings { get; set; } = [];
+    
+    // Tomlet doesn't support enums as keys...
+    [TomlNonSerialized]
+    public Dictionary<MenuEntry, Keys> KeyBindings { get; set; } = new();
+    [TomlDoNotInlineObject]
+    [TomlProperty("KeyBindings")]
+    private Dictionary<string, Keys> _keyBindings { get; set; } = new();
     
     public bool SendInputsToCeleste { get; set; } = true;
     
@@ -207,9 +219,16 @@ public sealed class Settings {
         TomletMain.RegisterMapper(
             fontStyle => new TomlString(fontStyle.ToString()),
             tomlValue => {
-                if (tomlValue is not TomlString str)
+                if (tomlValue is not TomlString fontStyle)
                     throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(FontStyle));
-                return Enum.TryParse<FontStyle>(str.Value, out var fontStyle) ? fontStyle : FontStyle.None;
+                return Enum.TryParse<FontStyle>(fontStyle.Value, out var style) ? style : FontStyle.None;
+            });
+        TomletMain.RegisterMapper(
+            entry => new TomlString(entry.ToString()),
+            tomlValue => {
+                if (tomlValue is not TomlString entry)
+                    throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(MenuEntry));
+                return Enum.Parse<MenuEntry>(entry.Value);
             });
         TomletMain.RegisterMapper(
             hotkey => new TomlString(hotkey.HotkeyToString("+")),
@@ -222,6 +241,7 @@ public sealed class Settings {
         if (File.Exists(SettingsPath)) {
             try {
                 Instance = TomletMain.To<Settings>(TomlParser.ParseFile(SettingsPath), new TomlSerializerOptions());
+                Instance.KeyBindings = Instance._keyBindings.ToDictionary(pair => Enum.Parse<MenuEntry>(pair.Key), pair => pair.Value);
 
                 OnChanged();
                 OnThemeChanged();
@@ -245,6 +265,7 @@ public sealed class Settings {
             if (!Directory.Exists(dir))
                 Directory.CreateDirectory(dir);
             
+            Instance._keyBindings = Instance.KeyBindings.ToDictionary(pair => pair.Key.ToString(), pair => pair.Value);
             File.WriteAllText(SettingsPath, TomletMain.DocumentFrom(Instance).SerializedValue);
         } catch (Exception ex) {
             Console.Error.WriteLine($"Failed to write settings file to path '{SettingsPath}'");

@@ -75,41 +75,15 @@ public class SnippetDialog : Dialog<bool> {
             
             var hotkeyButton = new Button { Text = snippet.Hotkey.ToShortcutString(), ToolTip = "Use the right mouse button to clear a hotkey!", Font = SystemFonts.Bold(), Width = 150};
             hotkeyButton.Click += (_, _) => {
-                var inputDialog = new Eto.Forms.Dialog {
-                    Content = new Panel {
-                        Padding = 10,
-                        Content = new Label { Text = "Press a hotkey...", Font = SystemFonts.Bold().WithFontStyle(FontStyle.Italic) }
-                    },
-                    Icon = Assets.AppIcon,
-                };
-                inputDialog.Load += (_, _) => Studio.Instance.WindowCreationCallback(inputDialog);
-                inputDialog.Shown += (_, _) => inputDialog.Location = Location + new Point((Width - inputDialog.Width) / 2, (Height - inputDialog.Height) / 2);
-                inputDialog.KeyDown += (_, e) => {
-                    // Don't allow binding modifiers by themselves
-                    if (e.Key is Keys.LeftShift or Keys.RightShift
-                        or Keys.LeftControl or Keys.RightControl
-                        or Keys.LeftAlt or Keys.RightAlt
-                        or Keys.LeftApplication or Keys.RightApplication) {
-                        return;
+                snippet.Hotkey = HotkeyDialog.Show(this, snippet.Hotkey, key => {
+                    if (snippets.Any(other => other.Hotkey == key)) {
+                        var confirm = MessageBox.Show($"Another snippet already uses this hotkey ({key.ToShortcutString()}).{Environment.NewLine}Are you sure you to use this hotkey?", MessageBoxButtons.YesNo, MessageBoxType.Question, MessageBoxDefaultButton.Yes);
+                        return confirm == DialogResult.Yes;
                     }
                     
-                    // Check for conflicts
-                    if (snippets.Any(other => other.Hotkey == e.KeyData))
-                    {
-                        var confirm = MessageBox.Show($"Another snippet already uses this hotkey ({e.KeyData.ToShortcutString()}).{Environment.NewLine}Are you sure you to use this hotkey?", MessageBoxButtons.YesNo, MessageBoxType.Question, MessageBoxDefaultButton.Yes);
-                        
-                        if (confirm != DialogResult.Yes) {
-                            return;
-                        }
-                    }
-                    
-                    //Application.Instance.Invoke()
-                    snippet.Hotkey = e.KeyData;
-                    hotkeyButton.Text = snippet.Hotkey.ToShortcutString();
-                    
-                    inputDialog.Close();
-                };
-                inputDialog.ShowModal();
+                    return true;
+                });
+                hotkeyButton.Text = snippet.Hotkey.ToShortcutString();
             };
             
             var shortcutTextBox = new TextBox { Text = snippet.Shortcut };

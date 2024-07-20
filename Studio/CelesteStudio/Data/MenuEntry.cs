@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
 using CelesteStudio.Util;
 using Eto.Forms;
 
@@ -25,6 +28,7 @@ public enum MenuEntry {
     
     StatusPopout_AlwaysOnTop,
 }
+public enum MenuEntryCategory { File, Settings, View, Editor, Status, StatusPopout }
 
 public static class MenuEntryExtensions {
     private static readonly Dictionary<MenuEntry, Keys> DefaultKeyBindings = new() {
@@ -137,10 +141,37 @@ public static class MenuEntryExtensions {
         
         { MenuEntry.StatusPopout_AlwaysOnTop, "Always on Top" },
     };
+    private static readonly Dictionary<MenuEntryCategory, MenuEntry[]> Categories = new() {
+        { MenuEntryCategory.File, [
+            MenuEntry.File_New, MenuEntry.File_Open, MenuEntry.File_OpenPrevious, MenuEntry.File_Save, MenuEntry.File_SaveAs, MenuEntry.File_RecordTAS, MenuEntry.File_Quit] },
+
+        { MenuEntryCategory.Settings, [
+            MenuEntry.Settings_SendInputs] },
+
+        { MenuEntryCategory.View, [
+            MenuEntry.View_ShowGameInfo, MenuEntry.View_ShowSubpixelIndicator, MenuEntry.View_AlwaysOnTop, MenuEntry.View_WrapComments, MenuEntry.View_ShowFoldingIndicator] },
+
+        { MenuEntryCategory.Editor, [
+            MenuEntry.Editor_Cut, MenuEntry.Editor_Copy, MenuEntry.Editor_Paste,
+            MenuEntry.Editor_Undo, MenuEntry.Editor_Redo,
+            MenuEntry.Editor_SelectAll, MenuEntry.Editor_SelectBlock,
+            MenuEntry.Editor_Find, MenuEntry.Editor_GoTo, MenuEntry.Editor_ToggleFolding,
+            MenuEntry.Editor_DeleteSelectedLines,
+            MenuEntry.Editor_InsertRemoveBreakpoint, MenuEntry.Editor_InsertRemoveSavestateBreakpoint, MenuEntry.Editor_RemoveAllUncommentedBreakpoints, MenuEntry.Editor_RemoveAllBreakpoints, MenuEntry.Editor_CommentUncommentAllBreakpoints, MenuEntry.Editor_CommentUncommentInputs, MenuEntry.Editor_CommentUncommentText,
+            MenuEntry.Editor_InsertRoomName, MenuEntry.Editor_InsertCurrentTime, MenuEntry.Editor_RemoveAllTimestamps, MenuEntry.Editor_InsertModInfo, MenuEntry.Editor_InsertConsoleLoadCommand, MenuEntry.Editor_InsertSimpleConsoleLoadCommand,
+            MenuEntry.Editor_SwapSelectedLR, MenuEntry.Editor_SwapSelectedJK, MenuEntry.Editor_SwapSelectedXC, MenuEntry.Editor_CombineConsecutiveSameInputs, MenuEntry.Editor_ForceCombineInputFrames,
+            MenuEntry.Editor_OpenReadFileGoToPlayLine] },
+
+        { MenuEntryCategory.Status, [
+            MenuEntry.Status_CopyGameInfoToClipboard, MenuEntry.Status_ReconenctStudioCeleste,
+            MenuEntry.Status_EditCustomInfoTemplate, MenuEntry.Status_ClearWatchEntityInfo] },
+
+        { MenuEntryCategory.StatusPopout, [MenuEntry.StatusPopout_AlwaysOnTop] },
+    };
     
 #if DEBUG
-    public static void VerifyDefaultKeyBindings() {
-        // Ensures every action has a default hotkey assigned
+    public static void VerifyData() {
+        // Ensures that every entry has all the required data
         foreach (var entry in Enum.GetValues<MenuEntry>()) {
             if (!DefaultKeyBindings.ContainsKey(entry)) {
                 throw new Exception($"DefaultHotkeys does not contain an entry for '{entry}'");
@@ -148,16 +179,41 @@ public static class MenuEntryExtensions {
             if (!EntryNames.ContainsKey(entry)) {
                 throw new Exception($"EntryNames does not contain an entry for '{entry}'");
             }
+            
+            foreach (var category in Enum.GetValues<MenuEntryCategory>()) {
+                var entries = Categories[category];
+                if (entries.Contains(entry)) {
+                    goto NextIter;
+                }
+            }
+            
+            throw new Exception($"Entry '{entry}' is not assigned to a category");
+            
+            NextIter:;
         }
     }
 #endif
+    
+    public static MenuEntry[] GetEntries(this MenuEntryCategory category) => Categories[category];
+    public static string GetName(this MenuEntryCategory category) => category switch {
+        MenuEntryCategory.File => "File",
+        MenuEntryCategory.Settings => "Settings",
+        MenuEntryCategory.View => "View",
+        MenuEntryCategory.Editor => "Editor - Context Menu",
+        MenuEntryCategory.Status => "Status - Context Menu",
+        MenuEntryCategory.StatusPopout => "Status Popout - Context Menu",
+        _ => throw new UnreachableException(),
+    };
+    
+    public static string GetName(this MenuEntry entry) => EntryNames[entry];
+    public static Keys GetDefaultHotkey(this MenuEntry entry) => DefaultKeyBindings[entry];
+    public static Keys GetHotkey(this MenuEntry entry) => Settings.Instance.KeyBindings.TryGetValue(entry, out var shortcut) ? shortcut : DefaultKeyBindings[entry];
  
     public static CheckMenuItem ToCheckbox(this MenuEntry entry) =>
         new() {
             Text = EntryNames[entry],
             Shortcut = Settings.Instance.KeyBindings.TryGetValue(entry, out var shortcut) ? shortcut : DefaultKeyBindings[entry],
         };
-    
     public static MenuItem ToAction(this MenuEntry entry, Action action) =>
         MenuUtils.CreateAction(
             EntryNames[entry],

@@ -346,29 +346,9 @@ public class GameInfoPanel : Panel {
             textArea.Width = ClientSize.Width - Padding.Left - Padding.Right;
         };
         
-        var editCustomInfoItem = MenuEntry.Status_EditCustomInfoTemplate.ToAction(() => {
-            showPanel.Visible = popoutButton.Visible = false;
-            editPanel.Visible = true;
-            textArea.Text = CommunicationWrapper.GetCustomInfoTemplate();
-        });
-        editCustomInfoItem.Enabled = CommunicationWrapper.Connected;
-        CommunicationWrapper.ConnectionChanged += () => editCustomInfoItem.Enabled = CommunicationWrapper.Connected;
-        
         Content = layout;
-        ContextMenu = new ContextMenu {
-            Items = {
-                MenuEntry.Status_CopyGameInfoToClipboard.ToAction(() => {
-                    if (CommunicationWrapper.GetExactGameInfo() is var exactGameInfo && !string.IsNullOrWhiteSpace(exactGameInfo)) {
-                        Clipboard.Instance.Clear();
-                        Clipboard.Instance.Text = exactGameInfo;
-                    }
-                }),
-                MenuEntry.Status_ReconenctStudioCeleste.ToAction(CommunicationWrapper.ForceReconnect),
-                new SeparatorMenuItem(),
-                editCustomInfoItem,
-                MenuEntry.Status_ClearWatchEntityInfo.ToAction(CommunicationWrapper.ClearWatchEntityInfo),
-            }
-        };
+        ContextMenu = CreateMenu();
+        Settings.KeyBindingsChanged += () => ContextMenu = CreateMenu();
         
         CommunicationWrapper.StateUpdated += (prevState, state) => {
             if (popoutForm == null) {
@@ -393,6 +373,31 @@ public class GameInfoPanel : Panel {
             Load += (_, _) => popoutButton.PerformClick();
         }
         Shown += (_, _) => UpdateGameInfo();
+        
+        ContextMenu CreateMenu() {
+            var editCustomInfoItem = MenuEntry.Status_EditCustomInfoTemplate.ToAction(() => {
+                showPanel.Visible = popoutButton.Visible = false;
+                editPanel.Visible = true;
+                textArea.Text = CommunicationWrapper.GetCustomInfoTemplate();
+            });
+            editCustomInfoItem.Enabled = CommunicationWrapper.Connected;
+            CommunicationWrapper.ConnectionChanged += () => editCustomInfoItem.Enabled = CommunicationWrapper.Connected;
+            
+            return new ContextMenu {
+                Items = {
+                    MenuEntry.Status_CopyGameInfoToClipboard.ToAction(() => {
+                        if (CommunicationWrapper.GetExactGameInfo() is var exactGameInfo && !string.IsNullOrWhiteSpace(exactGameInfo)) {
+                            Clipboard.Instance.Clear();
+                            Clipboard.Instance.Text = exactGameInfo;
+                        }
+                    }),
+                    MenuEntry.Status_ReconenctStudioCeleste.ToAction(CommunicationWrapper.ForceReconnect),
+                    new SeparatorMenuItem(),
+                    editCustomInfoItem,
+                    MenuEntry.Status_ClearWatchEntityInfo.ToAction(CommunicationWrapper.ClearWatchEntityInfo),
+                }
+            };
+        }
     }
         
     public void UpdateGameInfo() {

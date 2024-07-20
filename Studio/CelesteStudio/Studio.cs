@@ -44,7 +44,7 @@ public sealed class Studio : Form {
         WindowCreationCallback = windowCreationCallback;
         
 #if DEBUG
-        MenuEntryExtensions.VerifyDefaultKeyBindings();  
+        MenuEntryExtensions.VerifyData();  
 #endif
         
         Settings.Load();
@@ -56,6 +56,7 @@ public sealed class Studio : Form {
         
         // Needs to be registered before the editor is created 
         Settings.Changed += ApplySettings;
+        Settings.KeyBindingsChanged += () => Menu = CreateMenu();
         
         // Setup editor
         {
@@ -379,6 +380,7 @@ public sealed class Studio : Form {
                     MenuUtils.CreateSettingNumberInput("Backup Rate (minutes)", nameof(Settings.AutoBackupRate), 0, int.MaxValue, 1),
                     MenuUtils.CreateSettingNumberInput("Backup File Count", nameof(Settings.AutoBackupCount), 0, int.MaxValue, 1),
                 }},
+                MenuUtils.CreateAction("Key Bindings...", Keys.None, KeyBindingDialog.Show),
                 MenuUtils.CreateAction("Snippets...", Keys.None, SnippetDialog.Show),
                 MenuUtils.CreateAction("Font...", Keys.None, FontDialog.Show),
                 CreateSettingTheme(),

@@ -199,7 +199,12 @@ public sealed class Editor : Drawable {
             }
         }
         
-        ContextMenu = new ContextMenu {
+        ContextMenu = CreateMenu();
+        Settings.KeyBindingsChanged += () => ContextMenu = CreateMenu();
+        
+        Recalc();
+        
+        ContextMenu CreateMenu() => new() {
             Items = {
                 MenuEntry.Editor_Cut.ToAction(OnCut),
                 MenuEntry.Editor_Copy.ToAction(OnCopy),
@@ -244,8 +249,6 @@ public sealed class Editor : Drawable {
                 MenuUtils.CreateAction("Open Read File / Go to Play Line"),
             }
         };
-        
-        Recalc();
         
         MenuItem CreateCommandInsert(CommandInfo info) {
             var cmd = new Command { Shortcut = Keys.None };
