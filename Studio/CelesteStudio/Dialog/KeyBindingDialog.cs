@@ -39,14 +39,7 @@ public class KeyBindingDialog : Dialog<bool> {
                     Width = 150,
                 };
                 hotkeyButton.Click += (_, _) => {
-                    hotkey = HotkeyDialog.Show(this, hotkey, key => {
-                        // if (snippets.Any(other => other.Hotkey == key)) {
-                        //     var confirm = MessageBox.Show($"Another snippet already uses this hotkey ({key.ToShortcutString()}).{Environment.NewLine}Are you sure you to use this hotkey?", MessageBoxButtons.YesNo, MessageBoxType.Question, MessageBoxDefaultButton.Yes);
-                        //     return confirm == DialogResult.Yes;
-                        // }
-                        
-                        return true;
-                    });
+                    hotkey = HotkeyDialog.Show(this, hotkey);
                     
                     keyBindings[entry] = hotkey;
                     hotkeyButton.Text = hotkey.ToShortcutString();

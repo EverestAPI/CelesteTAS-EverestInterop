@@ -1,4 +1,8 @@
 using System;
+using System.Linq;
+using System.Text;
+using CelesteStudio.Data;
+using CelesteStudio.Editing;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
@@ -6,11 +10,7 @@ using Eto.Forms;
 namespace CelesteStudio.Dialog;
 
 public class HotkeyDialog : Dialog<Keys> {
-    private readonly Func<Keys, bool>? checkValid;
-    
-    private HotkeyDialog(Keys currentHotkey, Func<Keys, bool>? checkValid) {
-        this.checkValid = checkValid;
-        
+    private HotkeyDialog(Keys currentHotkey) {
         Title = "Edit Hotkey";
         Content = new StackLayout {
             Padding = 10,
@@ -24,33 +24,69 @@ public class HotkeyDialog : Dialog<Keys> {
         Icon = Assets.AppIcon;
         
         Result = currentHotkey;
+
+        KeyDown += (_, e) => {
+            // Don't allow binding modifiers by themselves
+            if (e.Key is Keys.LeftShift or Keys.RightShift
+                or Keys.LeftControl or Keys.RightControl
+                or Keys.LeftAlt or Keys.RightAlt
+                or Keys.LeftApplication or Keys.RightApplication)
+            {
+                return;
+            }
+            
+            if (e.KeyData == (Application.Instance.CommonModifier | Keys.Escape)) {
+                Close(Keys.None);
+                return;
+            } else if (e.KeyData == currentHotkey) {
+                Close();
+                return;
+            }
+                
+            // Avoid conflicts with other hotkeys
+            var conflictingKeyBinds = Enum.GetValues<MenuEntry>().Where(entry => entry.GetHotkey() == e.KeyData).ToArray();
+            var conflictingSnippets = Settings.Instance.Snippets.Where(snippet => snippet.Hotkey == e.KeyData).ToArray();
+            
+            if (conflictingKeyBinds.Any() || conflictingSnippets.Any()) {
+                var msg = new StringBuilder();
+                msg.AppendLine($"This hotkey ({e.KeyData.ToShortcutString()}) is already used for other key bindings / snippets!");
+                if (conflictingKeyBinds.Any()) {
+                    msg.AppendLine("The following key bindings already use this hotkey:");
+                    foreach (var conflict in conflictingKeyBinds) {
+                        msg.AppendLine($"    - {conflict.GetName().Replace("&", string.Empty)}");
+                    }
+                    msg.AppendLine(string.Empty);
+                }
+                if (conflictingSnippets.Any()) {
+                    msg.AppendLine("The following snippets already use this hotkey:");
+                    foreach (var conflict in conflictingSnippets) {
+                        var lines = conflict.Insert.ReplaceLineEndings(Document.NewLine.ToString()).Split(Document.NewLine);
+                        var shortcut = !string.IsNullOrWhiteSpace(conflict.Shortcut) ? $"'{conflict.Shortcut}' = " : "";
+                        var insert = lines[0] + (lines.Length > 1 ? "..." : string.Empty);
+                        msg.AppendLine($"    - {shortcut}'{insert}'");
+                    }
+                    msg.AppendLine(string.Empty);
+                }
+                msg.AppendLine("Are you sure you want to use this hotkey?");
+                
+                var confirm = MessageBox.Show(msg.ToString(), MessageBoxButtons.YesNo, MessageBoxType.Question, MessageBoxDefaultButton.Yes);
+                if (confirm != DialogResult.Yes) {
+                    return;
+                }
+            }
+            
+            if (e.KeyData == (Application.Instance.CommonModifier | Keys.Escape)) {
+                Close(Keys.None);
+            } else {
+                Close(e.KeyData);
+            }
+        };
         
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
         Shown += (_, _) => Location = ParentWindow.Location + new Point((ParentWindow.Width - Width) / 2, (ParentWindow.Height - Height) / 2);
     }
-    
-    protected override void OnKeyDown(KeyEventArgs e) {
-        // Don't allow binding modifiers by themselves
-        if (e.Key is Keys.LeftShift or Keys.RightShift
-            or Keys.LeftControl or Keys.RightControl
-            or Keys.LeftAlt or Keys.RightAlt
-            or Keys.LeftApplication or Keys.RightApplication) 
-        {
-            return;
-        }
-        
-        if (checkValid != null && !checkValid(e.KeyData)) {
-            return;
-        }
-        
-        if (e.KeyData == (Application.Instance.CommonModifier | Keys.Escape)) {
-            Close(Keys.None);
-        } else {
-            Close(e.KeyData);
-        }
-    }
-    
-    public static Keys Show(Window parent, Keys currentHotkey, Func<Keys, bool>? checkValid = null) {
-        return new HotkeyDialog(currentHotkey, checkValid).ShowModal(parent);
+
+    public static Keys Show(Window parent, Keys currentHotkey) {
+        return new HotkeyDialog(currentHotkey).ShowModal(parent);
     }
 }
