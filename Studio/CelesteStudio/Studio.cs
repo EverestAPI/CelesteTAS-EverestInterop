@@ -40,6 +40,7 @@ public sealed class Studio : Form {
         Instance = this;
         Version = Assembly.GetExecutingAssembly().GetName().Version!;
         Icon = Assets.AppIcon;
+        MinimumSize = new Size(250, 250);
         
         WindowCreationCallback = windowCreationCallback;
         
@@ -49,10 +50,23 @@ public sealed class Studio : Form {
         
         Settings.Load();
         
+        Size = Settings.Instance.LastSize;
         if (!Settings.Instance.LastLocation.IsZero) {
             Location = Settings.Instance.LastLocation;
+
+            // Clamp to screen
+            var screen = Screen.FromRectangle(new RectangleF(Location, Size));
+            if (Location.X < screen.WorkingArea.Left) {
+                Location = Location with { X = (int)screen.WorkingArea.Left };
+            } else if (Location.X + Size.Width > screen.WorkingArea.Right) {
+                Location = Location with { X = (int)screen.WorkingArea.Right - Size.Width };
+            }
+            if (Location.Y < screen.WorkingArea.Top) {
+                Location = Location with { Y = (int)screen.WorkingArea.Top };
+            } else if (Location.Y + Size.Height > screen.WorkingArea.Bottom) {
+                Location = Location with { Y = (int)screen.WorkingArea.Bottom - Size.Height };
+            }
         }
-        Size = Settings.Instance.LastSize;
         
         // Needs to be registered before the editor is created 
         Settings.Changed += ApplySettings;

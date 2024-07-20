@@ -119,6 +119,7 @@ public class GameInfoPanel : Panel {
         public PopoutForm(GameInfoPanel gameInfoPanel) {
             Title = "Game Info";
             Icon = Assets.AppIcon;
+            MinimumSize = new Size(250, 100);
             
             Label = new Label {
                 Text = gameInfoPanel.label.Text,
@@ -163,7 +164,7 @@ public class GameInfoPanel : Panel {
                 UpdateLayout();
                 Studio.Instance.RecalculateLayout();
             };
-            SizeChanged += (_, _) => textArea.Width = ClientSize.Width - Padding.Left - Padding.Right;
+            SizeChanged += (_, _) => textArea.Width = Math.Max(0, ClientSize.Width - Padding.Left - Padding.Right);
             
             Content = showPanel;
             
@@ -187,10 +188,23 @@ public class GameInfoPanel : Panel {
             
             Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
             Shown += (_, _) => {
-                if (!Settings.Instance.GameInfoPopoutLocation.IsZero) {
-                    Location = Settings.Instance.GameInfoPopoutLocation; 
-                }
                 Size = Settings.Instance.GameInfoPopoutSize;
+                if (!Settings.Instance.GameInfoPopoutLocation.IsZero) {
+                    Location = Settings.Instance.GameInfoPopoutLocation;
+                    
+                    // Clamp to screen
+                    var screen = Screen.FromRectangle(new RectangleF(Location, Size));
+                    if (Location.X < screen.WorkingArea.Left) {
+                        Location = Location with { X = (int)screen.WorkingArea.Left };
+                    } else if (Location.X + Size.Width > screen.WorkingArea.Right) {
+                        Location = Location with { X = (int)screen.WorkingArea.Right - Size.Width };
+                    }
+                    if (Location.Y < screen.WorkingArea.Top) {
+                        Location = Location with { Y = (int)screen.WorkingArea.Top };
+                    } else if (Location.Y + Size.Height > screen.WorkingArea.Bottom) {
+                        Location = Location with { Y = (int)screen.WorkingArea.Bottom - Size.Height };
+                    }
+                }
             };
         }
         
@@ -343,7 +357,7 @@ public class GameInfoPanel : Panel {
         };
         SizeChanged += (_, _) => {
             layout.Move(popoutButton, ClientSize.Width - Padding.Left - Padding.Right - popoutButton.Width, 0);
-            textArea.Width = ClientSize.Width - Padding.Left - Padding.Right;
+            textArea.Width = Math.Max(0, ClientSize.Width - Padding.Left - Padding.Right);
         };
         
         Content = layout;
