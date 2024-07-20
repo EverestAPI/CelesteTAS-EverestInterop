@@ -71,13 +71,14 @@ public class GameInfoPanel : Panel {
 
             var font = FontManager.StatusFont;
             
-            const float padding = 5.0f;
+            const float indicatorPadding = 8.0f;
+            const float rectPadding = 5.0f;
             float textWidth = font.MeasureWidth("0.".PadRight(decimals + 2, '0'));
             float textHeight = font.LineHeight();
 
             float rectSize = textHeight * Settings.Instance.SubpixelIndicatorScale;
-            float x = textWidth + padding;
-            float y = textHeight + padding;
+            float x = textWidth + rectPadding + indicatorPadding;
+            float y = textHeight + rectPadding + indicatorPadding;
             
             int hDecimals = Math.Abs(remainder.X) switch {
                 0.5f => 0,
@@ -93,11 +94,11 @@ public class GameInfoPanel : Panel {
             string top = subpixelTop.ToFormattedString(vDecimals);
             string bottom = subpixelBottom.ToFormattedString(vDecimals);
             
-            e.Graphics.DrawText(font, Settings.Instance.Theme.StatusFg, x - padding - font.MeasureWidth(left), y + (rectSize - textHeight) / 2.0f, left);
-            e.Graphics.DrawText(font, Settings.Instance.Theme.StatusFg, x + padding + rectSize, y + (rectSize - textHeight) / 2.0f, right);
+            e.Graphics.DrawText(font, Settings.Instance.Theme.StatusFg, x - rectPadding - font.MeasureWidth(left), y + (rectSize - textHeight) / 2.0f, left);
+            e.Graphics.DrawText(font, Settings.Instance.Theme.StatusFg, x + rectPadding + rectSize, y + (rectSize - textHeight) / 2.0f, right);
             
-            e.Graphics.DrawText(font, Settings.Instance.Theme.StatusFg, x + (rectSize - font.MeasureWidth(top)) / 2.0f, y - padding - textHeight, top);
-            e.Graphics.DrawText(font, Settings.Instance.Theme.StatusFg, x + (rectSize - font.MeasureWidth(bottom)) / 2.0f, y + padding + rectSize, bottom);
+            e.Graphics.DrawText(font, Settings.Instance.Theme.StatusFg, x + (rectSize - font.MeasureWidth(top)) / 2.0f, y - rectPadding - textHeight, top);
+            e.Graphics.DrawText(font, Settings.Instance.Theme.StatusFg, x + (rectSize - font.MeasureWidth(bottom)) / 2.0f, y + rectPadding + rectSize, bottom);
             
             int thickness = Math.Max(1, (int)Math.Round(rectSize / 20.0f));
             using var boxPen = new Pen(Colors.Green, thickness);
@@ -105,8 +106,8 @@ public class GameInfoPanel : Panel {
             
             e.Graphics.FillRectangle(Colors.Red, x + (rectSize - thickness) * subpixelLeft, y + (rectSize - thickness) * subpixelTop, thickness, thickness);
             
-            Width = (int)((textWidth + padding) * 2.0f + rectSize);
-            Height = (int)((textHeight + padding) * 2.0f + rectSize);
+            Width = (int)((textWidth + rectPadding + indicatorPadding) * 2.0f + rectSize);
+            Height = (int)((textHeight + rectPadding + indicatorPadding) * 2.0f + rectSize);
         }
     }
     
@@ -132,7 +133,6 @@ public class GameInfoPanel : Panel {
 
             Content = layout = new StackLayout { 
                 Padding = 10,
-                Spacing = 10,
                 Items = { Label, SubpixelIndicator }
             };
             
@@ -221,7 +221,7 @@ public class GameInfoPanel : Panel {
         };
         
         var layout = new PixelLayout();
-        layout.Add(new StackLayout { Spacing = 10, Items = { label, subpixelIndicator }}, 0, 0);
+        layout.Add(new StackLayout { Items = { label, subpixelIndicator } }, 0, 0);
         
         // This needs to be done *before* the popout subscribes to this event 
         Studio.Instance.Closed += (_, _) => {
