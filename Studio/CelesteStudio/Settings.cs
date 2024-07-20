@@ -2,11 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using CelesteStudio.Data;
 using CelesteStudio.Editing;
 using CelesteStudio.Util;
 using Eto;
 using Eto.Drawing;
 using Eto.Forms;
+using StudioCommunication.Util;
 using Tomlet;
 using Tomlet.Attributes;
 using Tomlet.Exceptions;
@@ -63,6 +65,7 @@ public sealed class Settings {
 
     public Dictionary<string, Theme> CustomThemes { get; set; } = new();
     public List<Snippet> Snippets { get; set; } = [];
+    public Dictionary<MenuEntry, Keys> KeyBindings { get; set; } = [];
     
     public bool SendInputsToCeleste { get; set; } = true;
     
@@ -200,22 +203,21 @@ public sealed class Settings {
                 if (!Color.TryParse(str.Value, out Color color))
                     throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(Color));
                 return color;
-            }
-            );
+            });
         TomletMain.RegisterMapper(
             fontStyle => new TomlString(fontStyle.ToString()),
             tomlValue => {
                 if (tomlValue is not TomlString str)
                     throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(FontStyle));
-                if (str.Value == "Bold")
-                    return FontStyle.Bold;
-                if (str.Value == "Italic")
-                    return FontStyle.Italic;
-                if (str.Value == "Bold, Italic")
-                    return FontStyle.Bold | FontStyle.Italic;
-                return FontStyle.None;
-            }
-            );
+                return Enum.TryParse<FontStyle>(str.Value, out var fontStyle) ? fontStyle : FontStyle.None;
+            });
+        TomletMain.RegisterMapper(
+            hotkey => new TomlString(hotkey.HotkeyToString("+")),
+            tomlValue => {
+                if (tomlValue is not TomlString hotkey)
+                    throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(Keys));
+                return hotkey.Value.HotkeyFromString("+");
+            });
         
         if (File.Exists(SettingsPath)) {
             try {

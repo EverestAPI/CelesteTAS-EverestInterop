@@ -45,10 +45,11 @@ public static class Extensions
     
     public static string HotkeyToString(this Keys hotkey, string separator) {
         var keys = new List<Keys>();
+        // Swap App and Ctrl on macOS
         if (hotkey.HasFlag(Keys.Application))
-            keys.Add(Keys.Application);
-        if (hotkey.HasFlag(Keys.Control))
-            keys.Add(Keys.Control);
+            keys.Add(Eto.Platform.Instance.IsMac ? Keys.Control : Keys.Application);
+        if (hotkey.HasFlag( Keys.Control))
+            keys.Add(Eto.Platform.Instance.IsMac ? Keys.Application : Keys.Control);
         if (hotkey.HasFlag(Keys.Alt))
             keys.Add(Keys.Alt);
         if (hotkey.HasFlag(Keys.Shift))
@@ -68,10 +69,11 @@ public static class Extensions
         if (hotkey == Keys.None)
             return Keys.None;
         
+        // Swap App and Ctrl on macOS
         if (keys.Any(key => key == Keys.Application))
-            hotkey |= Keys.Application;
+            hotkey |= Eto.Platform.Instance.IsMac ? Keys.Control : Keys.Application;
         if (keys.Any(key => key == Keys.Control))
-            hotkey |= Keys.Control;
+            hotkey |= Eto.Platform.Instance.IsMac ? Keys.Application : Keys.Control;
         if (keys.Any(key => key == Keys.Alt))
             hotkey |= Keys.Alt;
         if (keys.Any(key => key == Keys.Shift))

@@ -3,10 +3,10 @@ using System;
 namespace StudioCommunication.Util;
 
 /// Type-safe wrapper around an array using enum values as indices
-public readonly struct EnumArray<TEnum, TValue> where TEnum : struct, Enum {
+public readonly struct EnumDictionary<TEnum, TValue> where TEnum : struct, Enum {
     private readonly TValue[] data;
     
-    public EnumArray() {
+    public EnumDictionary() {
         var values = Enum.GetValuesAsUnderlyingType<TEnum>();
         
         long maxIdx = 0;

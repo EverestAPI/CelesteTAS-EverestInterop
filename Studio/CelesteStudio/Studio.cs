@@ -5,13 +5,13 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using CelesteStudio.Communication;
+using CelesteStudio.Data;
 using CelesteStudio.Dialog;
 using CelesteStudio.Editing;
 using CelesteStudio.Tool;
 using CelesteStudio.Util;
 using Eto.Forms;
 using Eto.Drawing;
-using StudioCommunication;
 using FontDialog = CelesteStudio.Dialog.FontDialog;
 using Eto.Forms.ThemedControls;
 
@@ -42,6 +42,10 @@ public sealed class Studio : Form {
         Icon = Assets.AppIcon;
         
         WindowCreationCallback = windowCreationCallback;
+        
+#if DEBUG
+        MenuEntryExtensions.VerifyDefaultKeyBindings();  
+#endif
         
         Settings.Load();
         
@@ -285,7 +289,7 @@ public sealed class Studio : Form {
         const float minSlowForwardSpeed = 0.1f;
         const float maxSlowForwardSpeed = 0.9f;
         
-        var recordTasButton = MenuUtils.CreateAction("&Record TAS...", Keys.None, () => {
+        var recordTasButton = MenuEntry.File_RecordTAS.ToAction(() => {
             if (!CommunicationWrapper.Connected) {
                 MessageBox.Show("This feature requires the support of the CelesteTAS mod, please launch the game.", MessageBoxButtons.OK);
                 return;
@@ -296,7 +300,7 @@ public sealed class Studio : Form {
         recordTasButton.Enabled = CommunicationWrapper.Connected;
         
         // NOTE: Index 0 is the recent files is the current file, so that is skipped
-        var openPreviousFile = MenuUtils.CreateAction("Open &Previous File", Application.Instance.AlternateModifier | Keys.Left, () => {
+        var openPreviousFile = MenuEntry.File_OpenPrevious.ToAction(() => {
             if (!ShouldDiscardChanges()) {
                 return;
             }
@@ -351,15 +355,15 @@ public sealed class Studio : Form {
             
         MenuItem[] items = [
             new SubMenuItem { Text = "&File", Items = {
-                MenuUtils.CreateAction("&New File", Application.Instance.CommonModifier | Keys.N, OnNewFile),
+                MenuEntry.File_New.ToAction(OnNewFile),
                 new SeparatorMenuItem(),
-                MenuUtils.CreateAction("&Open File...", Application.Instance.CommonModifier | Keys.O, OnOpenFile),
+                MenuEntry.File_Open.ToAction(OnOpenFile),
                 openPreviousFile,
                 recentFilesMenu,
                 backupsMenu,
                 new SeparatorMenuItem(),
-                MenuUtils.CreateAction("Save", Application.Instance.CommonModifier | Keys.S, OnSaveFile),
-                MenuUtils.CreateAction("&Save As...", Application.Instance.CommonModifier | Keys.Shift | Keys.S, OnSaveFileAs),
+                MenuEntry.File_Save.ToAction(OnSaveFile),
+                MenuEntry.File_SaveAs.ToAction(OnSaveFileAs),
                 new SeparatorMenuItem(),
                 MenuUtils.CreateAction("&Integrate Read Files"),
                 MenuUtils.CreateAction("&Convert to LibTAS Movie..."),
@@ -367,7 +371,7 @@ public sealed class Studio : Form {
                 recordTasButton,
             }},
             new SubMenuItem {Text = "&Settings", Items = {
-                MenuUtils.CreateSettingToggle("&Send Inputs to Celeste", nameof(Settings.SendInputsToCeleste), Application.Instance.CommonModifier | Keys.D, enabled => {
+                MenuEntry.Settings_SendInputs.ToSettingToggle(nameof(Settings.SendInputsToCeleste), enabled => {
                     Editor.ShowToastMessage($"{(enabled ? "Enabled" : "Disabled")} Sending Inputs to Celeste", Editor.DefaultToastTime);
                 }),
                 new SubMenuItem {Text = "Automatic Backups", Items = {
@@ -389,13 +393,13 @@ public sealed class Studio : Form {
                 MenuUtils.CreateSettingEnum<CommandSeparator>("Command Separator", nameof(Settings.CommandSeparator), ["Space (\" \")", "Comma (\",\")", "Space + Comma (\", \")"]),
             }},
             new SubMenuItem { Text = "&View", Items = {
-                MenuUtils.CreateSettingToggle("Show Game Info", nameof(Settings.ShowGameInfo)),
-                MenuUtils.CreateSettingToggle("Show Subpixel Indicator", nameof(Settings.ShowSubpixelIndicator)),
+                MenuEntry.View_ShowGameInfo.ToSettingToggle(nameof(Settings.ShowGameInfo)),
+                MenuEntry.View_ShowSubpixelIndicator.ToSettingToggle(nameof(Settings.ShowGameInfo)),
                 MenuUtils.CreateSettingNumberInput("Subpixel Indicator Scale", nameof(Settings.SubpixelIndicatorScale), 0.1f, 10.0f, 0.25f),
                 new SeparatorMenuItem(),
-                MenuUtils.CreateSettingToggle("Always on Top", nameof(Settings.AlwaysOnTop)),
-                MenuUtils.CreateSettingToggle("Word Wrap Comments", nameof(Settings.WordWrapComments)),
-                MenuUtils.CreateSettingToggle("Show Fold Indicators", nameof(Settings.ShowFoldIndicators)),
+                MenuEntry.View_AlwaysOnTop.ToSettingToggle(nameof(Settings.ShowGameInfo)),
+                MenuEntry.View_WrapComments.ToSettingToggle(nameof(Settings.ShowGameInfo)),
+                MenuEntry.View_ShowFoldingIndicator.ToSettingToggle(nameof(Settings.ShowGameInfo)),
                 MenuUtils.CreateSettingEnum<LineNumberAlignment>("Line Number Alignment", nameof(Settings.LineNumberAlignment), ["Left", "Right"]),
                 MenuUtils.CreateSettingToggle("Compact Menu Bar", nameof(Settings.CompactMenuBar)),
             }},
@@ -445,7 +449,7 @@ public sealed class Studio : Form {
             }},
         ];
         
-        var quitItem = MenuUtils.CreateAction("Quit", Keys.None, Application.Instance.Quit);
+        var quitItem = MenuEntry.File_Quit.ToAction(Application.Instance.Quit);
         var homeItem = MenuUtils.CreateAction("Home", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop"));
         var aboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {
             ShowAboutDialog(new AboutDialog {

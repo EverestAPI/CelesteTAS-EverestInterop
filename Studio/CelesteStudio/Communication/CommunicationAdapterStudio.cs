@@ -18,7 +18,7 @@ public sealed class CommunicationAdapterStudio(
     Action<Dictionary<int, string>> linesChanged, 
     Action<Dictionary<HotkeyID, List<WinFormsKeys>>> bindingsChanged) : CommunicationAdapterBase(Location.Studio) 
 {
-    private readonly EnumArray<GameDataType, object?> gameData = new();
+    private readonly EnumDictionary<GameDataType, object?> gameData = new();
     
     public void ForceReconnect() {
         if (Connected) {

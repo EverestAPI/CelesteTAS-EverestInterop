@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using CelesteStudio.Communication;
+using CelesteStudio.Data;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
@@ -166,19 +167,20 @@ public class GameInfoPanel : Panel {
             
             Content = showPanel;
             
-            var editCustomInfoItem = MenuUtils.CreateAction("Edit Custom Info Template", Keys.None, () => {
+            var editCustomInfoItem = MenuEntry.Status_EditCustomInfoTemplate.ToAction(() => {
                 Content = editPanel;
                 textArea.Text = CommunicationWrapper.GetCustomInfoTemplate();
             });
             editCustomInfoItem.Enabled = CommunicationWrapper.Connected;
             CommunicationWrapper.ConnectionChanged += () => editCustomInfoItem.Enabled = CommunicationWrapper.Connected;
             
-            var alwaysOnTopCheckbox = new CheckMenuItem { Text = "Always on Top" };
+            var alwaysOnTopCheckbox = MenuEntry.StatusPopout_AlwaysOnTop.ToCheckbox();
             alwaysOnTopCheckbox.CheckedChanged += (_, _) => {
                 Topmost = Settings.Instance.GameInfoPopoutTopmost = alwaysOnTopCheckbox.Checked;
                 Settings.Save();
             };
             alwaysOnTopCheckbox.Checked = Settings.Instance.GameInfoPopoutTopmost;
+
             ContextMenu = new ContextMenu {
                 Items  = { editCustomInfoItem, alwaysOnTopCheckbox }
             };
@@ -344,7 +346,7 @@ public class GameInfoPanel : Panel {
             textArea.Width = ClientSize.Width - Padding.Left - Padding.Right;
         };
         
-        var editCustomInfoItem = MenuUtils.CreateAction("Edit Custom Info Template", Keys.None, () => {
+        var editCustomInfoItem = MenuEntry.Status_EditCustomInfoTemplate.ToAction(() => {
             showPanel.Visible = popoutButton.Visible = false;
             editPanel.Visible = true;
             textArea.Text = CommunicationWrapper.GetCustomInfoTemplate();
@@ -355,16 +357,16 @@ public class GameInfoPanel : Panel {
         Content = layout;
         ContextMenu = new ContextMenu {
             Items = {
-                MenuUtils.CreateAction("Copy Game Info to Clipboard", Application.Instance.CommonModifier | Keys.Shift | Keys.C, () => {
+                MenuEntry.Status_CopyGameInfoToClipboard.ToAction(() => {
                     if (CommunicationWrapper.GetExactGameInfo() is var exactGameInfo && !string.IsNullOrWhiteSpace(exactGameInfo)) {
                         Clipboard.Instance.Clear();
                         Clipboard.Instance.Text = exactGameInfo;
                     }
                 }),
-                MenuUtils.CreateAction("Reconnect Studio and Celeste", Application.Instance.CommonModifier | Keys.Shift | Keys.D, CommunicationWrapper.ForceReconnect),
+                MenuEntry.Status_ReconenctStudioCeleste.ToAction(CommunicationWrapper.ForceReconnect),
                 new SeparatorMenuItem(),
                 editCustomInfoItem,
-                MenuUtils.CreateAction("Clear Watch Entity Info", Keys.None, CommunicationWrapper.ClearWatchEntityInfo),
+                MenuEntry.Status_ClearWatchEntityInfo.ToAction(CommunicationWrapper.ClearWatchEntityInfo),
             }
         };
         
