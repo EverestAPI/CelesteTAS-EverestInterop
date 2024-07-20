@@ -1,7 +1,7 @@
 using System;
 using System.ComponentModel;
+using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using CelesteStudio.Communication;
 using CelesteStudio.Util;
 using Eto.Drawing;
@@ -115,8 +115,6 @@ public class GameInfoPanel : Panel {
         public readonly Label Label;
         public readonly SubpixelIndicator SubpixelIndicator;
 
-        private readonly StackLayout layout;
-        
         public PopoutForm(GameInfoPanel gameInfoPanel) {
             Title = "Game Info";
             Icon = Assets.AppIcon;
@@ -130,11 +128,50 @@ public class GameInfoPanel : Panel {
             SubpixelIndicator = new SubpixelIndicator { Width = 100, Height = 100 };
             SubpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
             SubpixelIndicator.Invalidate();
-
-            Content = layout = new StackLayout { 
-                Padding = 10,
-                Items = { Label, SubpixelIndicator }
+            
+            var textArea = new TextArea {
+                Text = string.Empty,
+                TextColor = Settings.Instance.Theme.StatusFg,
+                Font = FontManager.StatusFont,
+                Wrap = false,
             };
+            var doneButton = new Button { Text = "Done" };
+            var cancelButton = new Button { Text = "Cancel" };
+            var buttonsPanel = new StackLayout {
+                Padding = 5,
+                Spacing = 5,
+                Orientation = Orientation.Horizontal,
+                Items = { doneButton, cancelButton },
+            };
+            
+            var showPanel = new StackLayout { Padding = 10, Items = { Label, SubpixelIndicator } };
+            var editPanel = new StackLayout { Padding = 10, Items = { textArea, buttonsPanel } };
+            
+            doneButton.Click += (_, _) => {
+                CommunicationWrapper.SetCustomInfoTemplate(textArea.Text);
+                Content = showPanel;
+            };
+            cancelButton.Click += (_, _) => {
+                Content = showPanel;
+            };
+            
+            textArea.TextChanged += (_, _) => {
+                int lineCount = textArea.Text.ReplaceLineEndings(Document.NewLine.ToString()).Count(c => c == Document.NewLine) + 1;;
+                textArea.Height = (int)((lineCount + 1) * textArea.Font.LineHeight()) + 2;
+                
+                UpdateLayout();
+                Studio.Instance.RecalculateLayout();
+            };
+            SizeChanged += (_, _) => textArea.Width = ClientSize.Width - Padding.Left - Padding.Right;
+            
+            Content = showPanel;
+            
+            var editCustomInfoItem = MenuUtils.CreateAction("Edit Custom Info Template", Keys.None, () => {
+                Content = editPanel;
+                textArea.Text = CommunicationWrapper.GetCustomInfoTemplate();
+            });
+            editCustomInfoItem.Enabled = CommunicationWrapper.Connected;
+            CommunicationWrapper.ConnectionChanged += () => editCustomInfoItem.Enabled = CommunicationWrapper.Connected;
             
             var alwaysOnTopCheckbox = new CheckMenuItem { Text = "Always on Top" };
             alwaysOnTopCheckbox.CheckedChanged += (_, _) => {
@@ -143,7 +180,7 @@ public class GameInfoPanel : Panel {
             };
             alwaysOnTopCheckbox.Checked = Settings.Instance.GameInfoPopoutTopmost;
             ContextMenu = new ContextMenu {
-                Items  = { alwaysOnTopCheckbox }
+                Items  = { editCustomInfoItem, alwaysOnTopCheckbox }
             };
             
             Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
@@ -181,6 +218,8 @@ public class GameInfoPanel : Panel {
     private readonly Label label;
     private readonly SubpixelIndicator subpixelIndicator;
     
+    private readonly TextArea textArea;
+    
     private PopoutForm? popoutForm;
     
     public GameInfoPanel() {
@@ -193,6 +232,66 @@ public class GameInfoPanel : Panel {
         subpixelIndicator = new SubpixelIndicator { Width = 100, Height = 100 };
         subpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
         subpixelIndicator.Invalidate();
+        
+        textArea = new TextArea {
+            Text = DisconnectedText,
+            TextColor = Settings.Instance.Theme.StatusFg,
+            Font = FontManager.StatusFont,
+            Wrap = false,
+        };
+        var doneButton = new Button { Text = "Done" };
+        var cancelButton = new Button { Text = "Cancel" };
+        var buttonsPanel = new StackLayout {
+            Padding = 5,
+            Spacing = 5,
+            Orientation = Orientation.Horizontal,
+            Items = { doneButton, cancelButton },
+        };
+        
+        var showPanel = new StackLayout { Items = { label, subpixelIndicator } };
+        var editPanel = new StackLayout { Items = { textArea, buttonsPanel }, Visible = false };
+        
+        Studio.Instance.Closed += (_, _) => {
+            Settings.Instance.GameInfoPopoutOpen = popoutForm != null;
+            Settings.Save();
+        };
+        
+        var popoutButton = new PopoutButton();
+        popoutButton.Click += () => {
+            popoutForm ??= new(this);
+            popoutForm.Closed += (_, _) => {
+                label.Text = popoutForm.Label.Text;
+                popoutForm = null;
+                
+                Visible = Settings.Instance.ShowGameInfo;
+                subpixelIndicator.Invalidate();
+                UpdateGameInfo();
+                UpdateLayout();
+                Studio.Instance.RecalculateLayout();
+            };
+            Studio.Instance.Closed += (_, _) => popoutForm.Close();
+            popoutForm.Show();
+            
+            Visible = false;
+            subpixelIndicator.Invalidate();
+            UpdateGameInfo();
+            UpdateLayout();
+            Studio.Instance.RecalculateLayout();
+        };
+        
+        doneButton.Click += (_, _) => {
+            CommunicationWrapper.SetCustomInfoTemplate(textArea.Text);
+            showPanel.Visible = popoutButton.Visible = true;
+            editPanel.Visible = false;
+            UpdateLayout();
+            Studio.Instance.RecalculateLayout();
+        };
+        cancelButton.Click += (_, _) => {
+            showPanel.Visible = popoutButton.Visible = true;
+            editPanel.Visible = false;
+            UpdateLayout();
+            Studio.Instance.RecalculateLayout();
+        };
         
         BackgroundColor = Settings.Instance.Theme.StatusBg;
         
@@ -210,56 +309,48 @@ public class GameInfoPanel : Panel {
         };
         Settings.ThemeChanged += () => {
             label.TextColor = Settings.Instance.Theme.StatusFg;
+            textArea.TextColor = Settings.Instance.Theme.StatusFg;
             BackgroundColor = Settings.Instance.Theme.StatusBg;
             subpixelIndicator.Invalidate();
         };
         Settings.FontChanged += () => {
             label.Font = FontManager.StatusFont;
+            textArea.Font = FontManager.StatusFont;
             subpixelIndicator.Invalidate();
             UpdateLayout();
             Studio.Instance.RecalculateLayout();
         };
         
         var layout = new PixelLayout();
-        layout.Add(new StackLayout { Items = { label, subpixelIndicator } }, 0, 0);
+        layout.Add(showPanel, 0, 0);
+        layout.Add(editPanel, 0, 0);
+        layout.Add(popoutButton, ClientSize.Width - popoutButton.Width - Padding.Right * 2, 0);
         
-        // This needs to be done *before* the popout subscribes to this event 
-        Studio.Instance.Closed += (_, _) => {
-            Settings.Instance.GameInfoPopoutOpen = popoutForm != null;
-            Settings.Save();
-        };
-
-        var popoutButton = new PopoutButton();
-        popoutButton.Click += () => {
-            popoutForm ??= new(this);
-            popoutForm.Closed += (_, _) => {
-                label.Text = popoutForm.Label.Text;
-                popoutForm = null;
-
-                Visible = Settings.Instance.ShowGameInfo;
-                subpixelIndicator.Invalidate();
-                UpdateGameInfo();
-                UpdateLayout();
-                Studio.Instance.RecalculateLayout();
-            };
-            Studio.Instance.Closed += (_, _) => popoutForm.Close();
-            popoutForm.Show();
-            
-            Visible = false;
-            subpixelIndicator.Invalidate();
-            UpdateGameInfo();
-            UpdateLayout();
-            Studio.Instance.RecalculateLayout();
-        };
-
         Padding = 5;
         
-        layout.Add(popoutButton, ClientSize.Width - popoutButton.Width - Padding.Right * 2, 0);
         label.SizeChanged += (_, _) => {
             UpdateLayout();
             Studio.Instance.RecalculateLayout();
         };
-        SizeChanged += (_, _) => layout.Move(popoutButton, ClientSize.Width - popoutButton.Width - Padding.Right * 2, 0);
+        textArea.TextChanged += (_, _) => {
+            int lineCount = textArea.Text.ReplaceLineEndings(Document.NewLine.ToString()).Count(c => c == Document.NewLine) + 1;;
+            textArea.Height = (int)((lineCount + 1) * textArea.Font.LineHeight()) + 2;
+            
+            UpdateLayout();
+            Studio.Instance.RecalculateLayout();
+        };
+        SizeChanged += (_, _) => {
+            layout.Move(popoutButton, ClientSize.Width - Padding.Left - Padding.Right - popoutButton.Width, 0);
+            textArea.Width = ClientSize.Width - Padding.Left - Padding.Right;
+        };
+        
+        var editCustomInfoItem = MenuUtils.CreateAction("Edit Custom Info Template", Keys.None, () => {
+            showPanel.Visible = popoutButton.Visible = false;
+            editPanel.Visible = true;
+            textArea.Text = CommunicationWrapper.GetCustomInfoTemplate();
+        });
+        editCustomInfoItem.Enabled = CommunicationWrapper.Connected;
+        CommunicationWrapper.ConnectionChanged += () => editCustomInfoItem.Enabled = CommunicationWrapper.Connected;
         
         Content = layout;
         ContextMenu = new ContextMenu {
@@ -272,10 +363,7 @@ public class GameInfoPanel : Panel {
                 }),
                 MenuUtils.CreateAction("Reconnect Studio and Celeste", Application.Instance.CommonModifier | Keys.Shift | Keys.D, CommunicationWrapper.ForceReconnect),
                 new SeparatorMenuItem(),
-                MenuUtils.CreateAction("Copy Custom Info Template to Clipboard", Keys.None, CommunicationWrapper.CopyCustomInfoTemplateToClipboard),
-                MenuUtils.CreateAction("Set Custom Info Template from Clipboard", Keys.None, CommunicationWrapper.SetCustomInfoTemplateFromClipboard),
-                MenuUtils.CreateAction("Clear Custom Info Template", Keys.None, CommunicationWrapper.ClearCustomInfoTemplate),
-                new SeparatorMenuItem(),
+                editCustomInfoItem,
                 MenuUtils.CreateAction("Clear Watch Entity Info", Keys.None, CommunicationWrapper.ClearWatchEntityInfo),
             }
         };

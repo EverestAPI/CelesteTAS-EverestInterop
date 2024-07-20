@@ -173,6 +173,21 @@ public static class CommunicationWrapper {
     
     #region Actions
     
+    public static string GetCustomInfoTemplate() {
+        if (!Connected) {
+            return string.Empty;
+        }
+        
+        return (string?)comm!.RequestGameData(GameDataType.CustomInfoTemplate).Result ?? string.Empty;
+    }
+    public static void SetCustomInfoTemplate(string customInfoTemplate) {
+        if (!Connected) {
+            return;
+        }
+        
+        comm!.SendCustomInfoTemplate(customInfoTemplate);
+    }
+    
     public static void CopyCustomInfoTemplateToClipboard() {
         if (!Connected) {
             return;

@@ -148,6 +148,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                                     case GameDataType.SettingValue: 
                                     case GameDataType.CompleteInfoCommand: 
                                     case GameDataType.ModUrl:
+                                    case GameDataType.CustomInfoTemplate:
                                         writer.Write((string)gameData);
                                         break;
                                     
