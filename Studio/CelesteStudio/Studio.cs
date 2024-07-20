@@ -52,20 +52,22 @@ public sealed class Studio : Form {
         
         Size = Settings.Instance.LastSize;
         if (!Settings.Instance.LastLocation.IsZero) {
-            Location = Settings.Instance.LastLocation;
-
+            var lastLocation = Settings.Instance.LastLocation;
+            var lastSize = Settings.Instance.LastSize;
+            
             // Clamp to screen
-            var screen = Screen.FromRectangle(new RectangleF(Location, Size));
-            if (Location.X < screen.WorkingArea.Left) {
-                Location = Location with { X = (int)screen.WorkingArea.Left };
-            } else if (Location.X + Size.Width > screen.WorkingArea.Right) {
-                Location = Location with { X = (int)screen.WorkingArea.Right - Size.Width };
+            var screen = Screen.FromRectangle(new RectangleF(lastLocation, lastSize));
+            if (lastLocation.X < screen.WorkingArea.Left) {
+                lastLocation = lastLocation with { X = (int)screen.WorkingArea.Left };
+            } else if (lastLocation.X + lastSize.Width > screen.WorkingArea.Right) {
+                lastLocation = lastLocation with { X = (int)screen.WorkingArea.Right - lastSize.Width };
             }
-            if (Location.Y < screen.WorkingArea.Top) {
-                Location = Location with { Y = (int)screen.WorkingArea.Top };
-            } else if (Location.Y + Size.Height > screen.WorkingArea.Bottom) {
-                Location = Location with { Y = (int)screen.WorkingArea.Bottom - Size.Height };
+            if (lastLocation.Y < screen.WorkingArea.Top) {
+                lastLocation = lastLocation with { Y = (int)screen.WorkingArea.Top };
+            } else if (lastLocation.Y + lastSize.Height > screen.WorkingArea.Bottom) {
+                lastLocation = lastLocation with { Y = (int)screen.WorkingArea.Bottom - lastSize.Height };
             }
+            Location = lastLocation;
         }
         
         // Needs to be registered before the editor is created 

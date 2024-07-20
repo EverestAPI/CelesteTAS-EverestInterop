@@ -190,7 +190,8 @@ public class GameInfoPanel : Panel {
             Shown += (_, _) => {
                 Size = Settings.Instance.GameInfoPopoutSize;
                 if (!Settings.Instance.GameInfoPopoutLocation.IsZero) {
-                    Location = Settings.Instance.GameInfoPopoutLocation;
+                    var lastLocation = Settings.Instance.GameInfoPopoutLocation;
+                    var lastSize = Settings.Instance.GameInfoPopoutSize;
                     
                     // Clamp to screen
                     var screen = Screen.FromRectangle(new RectangleF(Location, Size));
@@ -199,11 +200,12 @@ public class GameInfoPanel : Panel {
                     } else if (Location.X + Size.Width > screen.WorkingArea.Right) {
                         Location = Location with { X = (int)screen.WorkingArea.Right - Size.Width };
                     }
-                    if (Location.Y < screen.WorkingArea.Top) {
-                        Location = Location with { Y = (int)screen.WorkingArea.Top };
-                    } else if (Location.Y + Size.Height > screen.WorkingArea.Bottom) {
-                        Location = Location with { Y = (int)screen.WorkingArea.Bottom - Size.Height };
+                    if (lastLocation.Y < screen.WorkingArea.Top) {
+                        lastLocation = lastLocation with { Y = (int)screen.WorkingArea.Top };
+                    } else if (lastLocation.Y + lastSize.Height > screen.WorkingArea.Bottom) {
+                        lastLocation = lastLocation with { Y = (int)screen.WorkingArea.Bottom - lastSize.Height };
                     }
+                    Location = lastLocation;
                 }
             };
         }
