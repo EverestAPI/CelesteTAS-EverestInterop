@@ -55,13 +55,24 @@ public static class BinaryHelper {
                     SerializeObject(item, writer);
                 }
                 break;
-            
+
+            // For Vector2
+            case ValueTuple<float, float> v:
+                writer.Write(v.Item1);
+                writer.Write(v.Item2);
+                break;
+
             default:
-                throw new Exception($"Unsupported type: {obj.GetType()}");
+                if (obj.GetType().IsEnum) {
+                    writer.Write((int) obj);
+                    break;
+                } else {
+                    throw new Exception($"Unsupported type: {obj.GetType()}");
+                }
         }
     }
     
-    private static object DeserializeObject(Type type, BinaryReader reader)
+    public static object DeserializeObject(Type type, BinaryReader reader)
     {
         // Primitives
         if (type == typeof(bool))
@@ -104,6 +115,11 @@ public static class BinaryHelper {
             }
             
             return list;
+        }
+
+        // For Vector2
+        if (type == typeof((float, float))) {
+            return (reader.ReadSingle(), reader.ReadSingle());
         }
         
         throw new Exception($"Unsupported type: {type}");

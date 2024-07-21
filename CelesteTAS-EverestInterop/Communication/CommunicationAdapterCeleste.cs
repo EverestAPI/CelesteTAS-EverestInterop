@@ -117,7 +117,8 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                     GameDataType.SettingValue or
                     GameDataType.SetCommandAutoCompleteEntries or
                     GameDataType.InvokeCommandAutoCompleteEntries or
-                    GameDataType.ParameterAutoCompleteEntries => reader.ReadString(),
+                    GameDataType.ParameterAutoCompleteEntries or
+                    GameDataType.RawInfo => (reader.ReadString(), reader.ReadBoolean()),
                     _ => null,
                 };
                 LogVerbose($"Received message RequestGameData: '{gameDataType}' ('{arg ?? "<null>"}')");
@@ -125,7 +126,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 // Gathering data from the game can sometimes take a while (and cause a timeout)
                 Task.Run(() => {
                     try {
-                        string gameData = gameDataType switch {
+                        object gameData = gameDataType switch {
                             GameDataType.ConsoleCommand => GameData.GetConsoleCommand((bool)arg!),
                             GameDataType.ModInfo => GameData.GetModInfo(),
                             GameDataType.ExactGameInfo => GameInfo.ExactStudioInfo,
@@ -136,9 +137,10 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                             GameDataType.SetCommandAutoCompleteEntries => GameData.GetSetCommandAutoCompleteEntries((string)arg!),
                             GameDataType.InvokeCommandAutoCompleteEntries => GameData.GetInvokeCommandAutoCompleteEntries((string)arg!),
                             GameDataType.ParameterAutoCompleteEntries => GameData.GetParameterAutoCompleteEntries((string)arg!),
+                            GameDataType.RawInfo => InfoCustom.GetRawInfo(((string, bool))arg!),
                             _ => string.Empty
                         };
-                        QueueMessage(MessageID.GameDataResponse, writer => writer.Write(gameData ?? string.Empty));
+                        QueueMessage(MessageID.GameDataResponse, writer => BinaryHelper.SerializeObject(gameData, writer));
                         LogVerbose($"Sent message GameDataResponse: '{gameData}'");
                     } catch (Exception ex) {
                         Console.WriteLine(ex);

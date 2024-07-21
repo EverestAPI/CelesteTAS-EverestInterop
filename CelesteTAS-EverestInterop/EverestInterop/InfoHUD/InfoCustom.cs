@@ -7,12 +7,16 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Celeste;
+using FFmpeg;
+using FMOD;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.EverestInterop.Lua;
 using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
+using static Celeste.TempleGate;
+using static TAS.EverestInterop.InfoHUD.InfoCustom;
 
 namespace TAS.EverestInterop.InfoHUD;
 
@@ -67,6 +71,60 @@ public static class InfoCustom {
     [Monocle.Command("get", "get type.fieldOrProperty value. eg get Player,Position; get Level.Wind (CelesteTAS)")]
     private static void GetCommand(string template) {
         ParseTemplate($"{{{template}}}", TasSettings.CustomInfoDecimals, new Dictionary<string, List<Entity>>(), true).ConsoleLog();
+    }
+
+    private static object ParseVector2(object input) {
+        if (input is Vector2 vector2) {
+            return (vector2.X, vector2.Y);
+        } else {
+            return input;
+        }
+    }
+
+    public static object GetRawInfo((string, bool) args) {
+        var template = args.Item1;
+        var forceList = args.Item2;
+        if (!TryParseMemberNames(template, out string typeText, out List<string> memberNames, out string errorMessage)) {
+            return errorMessage;
+        }
+        if (!TryParseType(typeText, out Type type, out string entityId, out errorMessage)) {
+            return errorMessage;
+        }
+        bool moreThanOneEntity = false;
+        if (type.IsSameOrSubclassOf(typeof(Entity))) {
+            moreThanOneEntity = FindEntities(type, entityId).Count() > 1;
+        }
+        if (memberNames.IsNotEmpty() && (
+            type.GetGetMethod(memberNames.First()) is { IsStatic: true } ||
+            type.GetFieldInfo(memberNames.First()) is { IsStatic: true } ||
+            (MethodRegex.Match(memberNames.First()) is { Success: true } match &&
+            type.GetMethodInfo(match.Groups[1].Value) is { IsStatic: true })
+        )) {
+            return ParseVector2(GetMemberValue(type, null, memberNames));
+        }
+        if (Engine.Scene is Level level) {
+            if (type.IsSameOrSubclassOf(typeof(Entity))) {
+                List<Entity> entities = FindEntities(type, entityId);
+                if (entities == null) {
+                    return new List<object>();
+                }
+                var result = entities.Select(entity => {
+                    return ParseVector2(GetMemberValue(type, entity, memberNames));
+                }).ToList();
+                if (result.Count == 1 && !forceList) {
+                    return result[0];
+                } else {
+                    return result;
+                }
+            } else if (type == typeof(Level)) {
+                return ParseVector2(GetMemberValue(type, level, memberNames));
+            } else if (type == typeof(Session)) {
+                return ParseVector2(GetMemberValue(type, level.Session, memberNames));
+            } else {
+                return $"Instance of {type.FullName} not found";
+            }
+        }
+        return 0;
     }
 
     public static string ParseTemplate(string template, int decimals, Dictionary<string, List<Entity>> cachedEntities, bool consoleCommand) {

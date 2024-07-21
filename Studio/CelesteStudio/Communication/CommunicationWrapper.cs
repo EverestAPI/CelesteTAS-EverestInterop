@@ -131,28 +131,35 @@ public static class CommunicationWrapper {
             return string.Empty;
         }
         
-        return comm!.RequestGameData(GameDataType.ConsoleCommand, simple).Result ?? string.Empty;
+        return (string?)comm!.RequestGameData(GameDataType.ConsoleCommand, simple).Result ?? string.Empty;
     }
     public static string GetModURL() {
         if (!Connected) {
             return string.Empty;
         }
         
-        return comm!.RequestGameData(GameDataType.ModUrl).Result ?? string.Empty;
+        return (string?)comm!.RequestGameData(GameDataType.ModUrl).Result ?? string.Empty;
     }
     public static string GetModInfo() {
         if (!Connected) {
             return string.Empty;
         }
         
-        return comm!.RequestGameData(GameDataType.ModInfo).Result ?? string.Empty;
+        return (string?)comm!.RequestGameData(GameDataType.ModInfo).Result ?? string.Empty;
     }
     public static string GetExactGameInfo() {
         if (!Connected) {
             return string.Empty;
         }
         
-        return comm!.RequestGameData(GameDataType.ExactGameInfo).Result ?? string.Empty;
+        return (string?)comm!.RequestGameData(GameDataType.ExactGameInfo).Result ?? string.Empty;
+    }
+
+    public static T GetRawData<T>(string template, bool alwaysList = false) {
+        if (!Connected) {
+            return default;
+        }
+        return (T)comm!.RequestGameData(GameDataType.RawInfo, (template, alwaysList), null, typeof(T)).Result ?? default;
     }
     
     private static IEnumerable<string> GetAutoCompleteEntries(GameDataType gameDataType, string argsText) {
@@ -161,7 +168,7 @@ public static class CommunicationWrapper {
         }
         
         // This is pretty heavy computationally, so we need a higher timeout
-        var entries = comm!.RequestGameData(gameDataType, argsText, TimeSpan.FromSeconds(15)).Result;
+        var entries = (string?)comm!.RequestGameData(gameDataType, argsText, TimeSpan.FromSeconds(15)).Result;
         if (entries == null) {
             return [];
         }
@@ -181,7 +188,7 @@ public static class CommunicationWrapper {
             return string.Empty;
         }
 
-        return comm!.RequestGameData(GameDataType.CustomInfoTemplate).Result;
+        return (string?)comm!.RequestGameData(GameDataType.CustomInfoTemplate).Result;
     }
     
     public static void CopyCustomInfoTemplateToClipboard() {
@@ -189,7 +196,7 @@ public static class CommunicationWrapper {
             return;
         }
         
-        var customInfoTemplate = comm!.RequestGameData(GameDataType.CustomInfoTemplate).Result;
+        var customInfoTemplate = (string?)comm!.RequestGameData(GameDataType.CustomInfoTemplate).Result;
         Clipboard.Instance.Clear();
         Clipboard.Instance.Text = customInfoTemplate;
     }
@@ -251,7 +258,7 @@ public static class CommunicationWrapper {
             return false;
         }
         
-        if (comm!.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
+        if ((string?)comm!.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
             bool.TryParse(settingValue, out bool value))
         {
             return value;
@@ -264,7 +271,7 @@ public static class CommunicationWrapper {
             return defaultValue;
         }
         
-        if (comm!.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
+        if ((string?)comm!.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
             int.TryParse(settingValue, out int value)) 
         {
             return value;
@@ -277,7 +284,7 @@ public static class CommunicationWrapper {
             return defaultValue;
         }
         
-        if (comm!.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
+        if ((string?)comm!.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
             float.TryParse(settingValue, out float value))
         {
             return value;

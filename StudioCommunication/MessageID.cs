@@ -1,4 +1,4 @@
-﻿#if REWRITE
+#if REWRITE
 
 /// Identifiers for messages sent between Celeste and Studio.
 /// See the send / receive implementations for the attached data.
@@ -167,6 +167,7 @@ public enum GameDataType : byte {
     SetCommandAutoCompleteEntries,
     InvokeCommandAutoCompleteEntries,
     ParameterAutoCompleteEntries,
+    RawInfo,
 }
 
 public enum RecordingFailedReason : byte {

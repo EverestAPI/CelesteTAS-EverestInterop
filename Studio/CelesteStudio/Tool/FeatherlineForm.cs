@@ -32,42 +32,6 @@ public sealed class FeatherlineForm : Form {
 
     private bool running = false;
 
-    public const string CUSTOM_INFO_TEMPLATE =
-        "PosRemainder: {Player.PositionRemainder} " +
-        "Lerp: {Player.starFlySpeedLerp} " +
-
-        "{CrystalStaticSpinner.Position}{DustStaticSpinner.Position}{FrostHelper.CustomSpinner@FrostTempleHelper.Position}{VivHelper.Entities.CustomSpinner@VivHelper.Position}{Celeste.Mod.XaphanHelper.Entities.CustomSpinner@XaphanHelper.Position} " +
-
-        "LightningUL: {Lightning.TopLeft} " +
-        "LightningDR: {Lightning.BottomRight} " +
-
-        "SpikeUL: {Spikes.TopLeft} " +
-        "SpikeDR: {Spikes.BottomRight} " +
-        "SpikeDir: {Spikes.Direction} " +
-
-        "Wind: {Level.Wind} " +
-        "WTPos: {WindTrigger.Position} " +
-        "WTPattern: {WindTrigger.Pattern} " +
-        "WTWidth: {WindTrigger.Width} " +
-        "WTHeight: {WindTrigger.Height} " +
-
-        "StarJumpUL: {StarJumpBlock.TopLeft} " +
-        "StarJumpDR: {StarJumpBlock.BottomRight} " +
-        "StarJumpSinks: {StarJumpBlock.sinks} " +
-
-        "JThruUL: {JumpthruPlatform.TopLeft} " +
-        "JThruDR: {JumpthruPlatform.BottomRight} " +
-        "SideJTUL: {SidewaysJumpThru.TopLeft} " +
-        "SideJTDR: {SidewaysJumpThru.BottomRight} " +
-        "SideJTIsRight: {SidewaysJumpThru.AllowLeftToRight} " +
-        "SideJTPushes: {SidewaysJumpThru.pushPlayer} " +
-        "UpsDJTUL: {UpsideDownJumpThru.TopLeft} " +
-        "UpsDJTDR: {UpsideDownJumpThru.BottomRight} " +
-        "UpsDJTPushes: {UpsideDownJumpThru.pushPlayer} " +
-
-        "Bounds: {Level.Bounds} " +
-        "Solids: {Level.Session.LevelData.Solids}";
-
     public FeatherlineForm() {
         Title = $"Featherline - v{Version}";
         Icon = Studio.Instance.Icon;
@@ -171,14 +135,45 @@ public sealed class FeatherlineForm : Form {
     }
 
     private void GetInfo() {
-        var oldTemplate = CommunicationWrapper.GetCustomInfoTemplate();
-        if (oldTemplate == String.Empty) { // TODO: report error more visibly, also maybe they just have an empty info template
-            return;
-        }
-        CommunicationWrapper.SetCustomInfoTemplate(CUSTOM_INFO_TEMPLATE);
-        System.Threading.Thread.Sleep(500);
-        Featherline.Settings.InfoDump = CommunicationWrapper.GetExactGameInfo();
-        CommunicationWrapper.SetCustomInfoTemplate(oldTemplate);
+        run.Enabled = false;
+        Featherline.Settings.Info = new List<object>() {
+            CommunicationWrapper.GetRawData<(float, float)>("Player.Speed"), // Speed
+            CommunicationWrapper.GetRawData<(float, float)>("Player.Position"), // Pos
+            CommunicationWrapper.GetRawData<(float, float)>("Player.PositionRemainder"), // PosRemainder
+            CommunicationWrapper.GetRawData<float>("Player.starFlySpeedLerp"), // Lerp
+            CommunicationWrapper.GetRawData<List<(float, float)>>("CrystalStaticSpinner.Position", true).Concat( // Spinners
+            CommunicationWrapper.GetRawData<List<(float, float)>>("DustStaticSpinner.Position", true)).Concat(
+            CommunicationWrapper.GetRawData<List<(float, float)>>("FrostHelper.CustomSpinner@FrostTempleHelper.Position", true)).Concat(
+            CommunicationWrapper.GetRawData<List<(float, float)>>("VivHelper.Entities.CustomSpinner@VivHelper.Position", true)).Concat(
+            CommunicationWrapper.GetRawData<List<(float, float)>>("Celeste.Mod.XaphanHelper.Entities.CustomSpinner@XaphanHelper.Position", true)).ToList(),
+            CommunicationWrapper.GetRawData<List<(float, float)>>("Lightning.TopLeft", true), // LightningUL
+            CommunicationWrapper.GetRawData<List<(float, float)>>("Lightning.BottomRight", true), // LightningDR
+            CommunicationWrapper.GetRawData<List<(float, float)>>("Spikes.TopLeft", true), // SpikeUL
+            CommunicationWrapper.GetRawData<List<(float, float)>>("Spikes.BottomRight", true), // SpikeDR
+            CommunicationWrapper.GetRawData<List<int>>("Spikes.Direction", true), // SpikeDir
+            CommunicationWrapper.GetRawData<(float, float)>("Level.Wind"), // Wind
+            CommunicationWrapper.GetRawData<List<(float, float)>>("WindTrigger.Position", true), // WTPos
+            CommunicationWrapper.GetRawData<List<int>>("WindTrigger.Pattern", true), // WTPattern
+            CommunicationWrapper.GetRawData<List<float>>("WindTrigger.Width", true), // WTWidth
+            CommunicationWrapper.GetRawData<List<float>>("WindTrigger.Height", true), // WTHeight
+            CommunicationWrapper.GetRawData<List<(float, float)>>("StarJumpBlock.TopLeft", true), // StarJumpUL
+            CommunicationWrapper.GetRawData<List<(float, float)>>("StarJumpBlock.BottomRight", true), // StarJumpDR
+            CommunicationWrapper.GetRawData<List<bool>>("StarJumpBlock.sinks", true), // StarJumpSinks
+            CommunicationWrapper.GetRawData<List<(float, float)>>("JumpthruPlatform.TopLeft", true), // JThruUL
+            CommunicationWrapper.GetRawData<List<(float, float)>>("JumpthruPlatform.BottomRight", true), // JThruDR
+            CommunicationWrapper.GetRawData<List<(float, float)>>("SidewaysJumpThru.TopLeft", true), // SideJTUL
+            CommunicationWrapper.GetRawData<List<(float, float)>>("SidewaysJumpThru.BottomRight", true), // SideJTDR
+            CommunicationWrapper.GetRawData<List<bool>>("SidewaysJumpThru.AllowLeftToRight", true), // SideJTIsRight
+            CommunicationWrapper.GetRawData<List<bool>>("SidewaysJumpThru.pushPlayer", true), // SideJTPushes
+            CommunicationWrapper.GetRawData<List<(float, float)>>("UpsideDownJumpThru.TopLeft", true), // UpsDJTUL
+            CommunicationWrapper.GetRawData<List<(float, float)>>("UpsideDownJumpThru.BottomRight", true), // UpsDJTDR
+            CommunicationWrapper.GetRawData<List<bool>>("UpsideDownJumpThru.pushPlayer", true), // UpsDJTPushes
+            CommunicationWrapper.GetRawData<int>("Level.Bounds.X"), // Bounds
+            CommunicationWrapper.GetRawData<int>("Level.Bounds.Y"),
+            CommunicationWrapper.GetRawData<int>("Level.Bounds.Width"),
+            CommunicationWrapper.GetRawData<int>("Level.Bounds.Height"),
+            CommunicationWrapper.GetRawData<string>("Level.Session.LevelData.Solids"), // Solids
+        };
         run.Enabled = true;
     }
 
@@ -215,13 +210,15 @@ public sealed class FeatherlineForm : Form {
                 }
                 GAManager.ClearAlgorithmData();
                 running = false;
-                output.Text = Featherline.Settings.Output;
-                if (Featherline.Settings.Output != "") {
-                    copyOutput.Enabled = true;
-                } else {
-                    copyOutput.Enabled = false;
-                }
-                run.Text = "Run";
+                Application.Instance.Invoke(() => {
+                    output.Text = Featherline.Settings.Output;
+                    if (Featherline.Settings.Output != "") {
+                        copyOutput.Enabled = true;
+                    } else {
+                        copyOutput.Enabled = false;
+                    }
+                    run.Text = "Run";
+                });
             });
         } else {
             running = false;

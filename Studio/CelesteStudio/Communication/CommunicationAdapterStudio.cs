@@ -16,7 +16,8 @@ public sealed class CommunicationAdapterStudio(
     Action<Dictionary<int, string>> linesChanged, 
     Action<Dictionary<HotkeyID, List<WinFormsKeys>>> bindingsChanged) : CommunicationAdapterBase(Location.Studio) 
 {
-    private string? gameData;
+    private object? gameData;
+    private Type gameDataObjType;
     
     public void ForceReconnect() {
         if (Connected) {
@@ -74,7 +75,7 @@ public sealed class CommunicationAdapterStudio(
                 break;
 
             case MessageID.GameDataResponse:
-                gameData = reader.ReadString();
+                gameData = BinaryHelper.DeserializeObject(gameDataObjType, reader);
                 LogVerbose($"Received message GameDataResponse: '{gameData}'");
                 break;
                 
@@ -118,8 +119,9 @@ public sealed class CommunicationAdapterStudio(
     }
 
     private static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromSeconds(1);
-    public async Task<string?> RequestGameData(GameDataType gameDataType, object? arg = null, TimeSpan? timeout = null) {
+    public async Task<object?> RequestGameData(GameDataType gameDataType, object? arg = null, TimeSpan? timeout = null, Type? type = null) {
         gameData = null;
+        gameDataObjType = type ?? typeof(string);
         WriteMessageNow(MessageID.RequestGameData, writer => {
             writer.Write((byte)gameDataType);
             
@@ -132,6 +134,11 @@ public sealed class CommunicationAdapterStudio(
                 case GameDataType.InvokeCommandAutoCompleteEntries:
                 case GameDataType.ParameterAutoCompleteEntries:
                     writer.Write((string)arg!);
+                    break;
+                case GameDataType.RawInfo:
+                    var argT = ((string, bool))arg!;
+                    writer.Write(argT.Item1);
+                    writer.Write(argT.Item2);
                     break;
             }
         });
