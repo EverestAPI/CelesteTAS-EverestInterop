@@ -162,7 +162,7 @@ public static class CommunicationWrapper {
             return default;
         }
 
-        return (T?)comm!.RequestGameData(GameDataType.RawInfo, (template, alwaysList), null, typeof(T)).Result ?? default;
+        return (T?)comm!.RequestGameData(GameDataType.RawInfo, (template, alwaysList), TimeSpan.FromSeconds(15), typeof(T)).Result ?? default;
     }
     
     private static async Task<CommandAutoCompleteEntry[]> RequestAutoCompleteEntries(GameDataType gameDataType, string argsText, int index) {

@@ -204,21 +204,27 @@ public sealed class FeatherlineForm : Form {
             Featherline.Settings.AvoidWalls = FeatherlineSettings.Instance.DisallowWall;
 
             Task.Run(() => {
-                bool runEnd = GAManager.RunAlgorithm(false);
-                if (runEnd) {
-                    GAManager.EndAlgorithm();
-                }
-                GAManager.ClearAlgorithmData();
-                running = false;
-                Application.Instance.Invoke(() => {
-                    output.Text = Featherline.Settings.Output;
-                    if (Featherline.Settings.Output != "") {
-                        copyOutput.Enabled = true;
-                    } else {
-                        copyOutput.Enabled = false;
+                try {
+                    bool runEnd = GAManager.RunAlgorithm(false);
+                    if (runEnd) {
+                        GAManager.EndAlgorithm();
                     }
-                    run.Text = "Run";
-                });
+                    GAManager.ClearAlgorithmData();
+                    running = false;
+                    Application.Instance.Invoke(() => {
+                        output.Text = Featherline.Settings.Output;
+                        if (Featherline.Settings.Output != "") {
+                            copyOutput.Enabled = true;
+                        } else {
+                            copyOutput.Enabled = false;
+                        }
+                        run.Text = "Run";
+                    });
+                } catch (Exception ex) {
+                    Console.Error.WriteLine("Failed to run Featherline:");
+                    Console.Error.WriteLine(ex);
+                    MessageBox.Show($"Failed to run Featherline: {ex}", MessageBoxType.Error);
+                }
             });
         } else {
             running = false;

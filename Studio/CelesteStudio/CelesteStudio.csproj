@@ -8,14 +8,13 @@
         <Version>3.0.0</Version>
 
         <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
-        <DefaultItemExcludes>Tool/Featherline_Studiov3/**</DefaultItemExcludes>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Eto.Forms" Version="2.8.3" />
         <PackageReference Include="Samboy063.Tomlet" Version="5.3.1" />
 
-        <ProjectReference Include="Tool\Featherline_StudioV3\Featherline.csproj" />
+        <ProjectReference Include="..\..\external\Featherline\Featherline.csproj" />
     </ItemGroup>
 
     <Import Project="..\..\StudioCommunication\StudioCommunication.targets" />

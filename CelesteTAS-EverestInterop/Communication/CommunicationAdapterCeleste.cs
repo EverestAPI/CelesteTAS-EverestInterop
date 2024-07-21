@@ -117,7 +117,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                     GameDataType.SettingValue => reader.ReadString(),
                     GameDataType.SetCommandAutoCompleteEntries or
                     GameDataType.InvokeCommandAutoCompleteEntries => reader.ReadObject<(string, int)>(),
-                    GameDataType.RawInfo => (reader.ReadString(), reader.ReadBoolean()),
+                    GameDataType.RawInfo => reader.ReadObject<(string, bool)>(),
                     _ => null,
                 };
                 LogVerbose($"Received message RequestGameData: '{gameDataType}' ('{arg ?? "<null>"}')");

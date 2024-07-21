@@ -94,6 +94,7 @@ public sealed class CommunicationAdapterStudio(
                         break;
                     
                     case GameDataType.RawInfo:
+                        Console.WriteLine($"Type: {gameDataTargetType[GameDataType.RawInfo]}");
                         gameData[gameDataType] = reader.ReadObject(gameDataTargetType[GameDataType.RawInfo]!);
                         break;
                 }
