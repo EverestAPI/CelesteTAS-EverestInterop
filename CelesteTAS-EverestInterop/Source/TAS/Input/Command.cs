@@ -1,5 +1,6 @@
 using Celeste.Mod;
 using Celeste.Mod.Helpers;
+using JetBrains.Annotations;
 using StudioCommunication;
 using System;
 using System.Collections.Generic;
@@ -24,7 +25,7 @@ public enum ExecuteTiming : byte {
 
 /// Creates a command which can be used inside TAS files
 /// The signature of the target method **must** match <see cref="Execute"/>
-[AttributeUsage(AttributeTargets.Method)]
+[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
 public class TasCommandAttribute(string name) : Attribute {
     /// Name of this command inside the TAS file
     public readonly string Name = name;

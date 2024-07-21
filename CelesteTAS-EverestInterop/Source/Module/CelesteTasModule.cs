@@ -2,6 +2,7 @@
 using Celeste;
 using Celeste.Mod;
 using FMOD.Studio;
+using JetBrains.Annotations;
 using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.Utils;
@@ -47,11 +48,14 @@ public class CelesteTasModule : EverestModule {
     }
 }
 
-[AttributeUsage(AttributeTargets.Method)]
-internal class LoadAttribute : Attribute { }
+/// Invokes the target method when the module is loaded
+[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+internal class LoadAttribute : Attribute;
 
-[AttributeUsage(AttributeTargets.Method)]
-internal class UnloadAttribute : Attribute { }
+/// Invokes the target method when the module is unloaded
+[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+internal class UnloadAttribute : Attribute;
 
-[AttributeUsage(AttributeTargets.Method)]
-internal class InitializeAttribute : Attribute { }
+/// Invokes the target method when the module is initialized
+[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+internal class InitializeAttribute : Attribute;

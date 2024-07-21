@@ -5,6 +5,7 @@ using System.Threading;
 using Celeste;
 using Celeste.Mod;
 using Celeste.Pico8;
+using JetBrains.Annotations;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
@@ -274,8 +275,8 @@ public static class Manager {
     }
 }
 
-[AttributeUsage(AttributeTargets.Method)]
-internal class EnableRunAttribute : Attribute { }
+[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+internal class EnableRunAttribute : Attribute;
 
-[AttributeUsage(AttributeTargets.Method)]
-internal class DisableRunAttribute : Attribute { }
+[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+internal class DisableRunAttribute : Attribute;

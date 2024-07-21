@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Celeste.Mod;
+using JetBrains.Annotations;
 using MonoMod.Utils;
 using StudioCommunication;
 using TAS.EverestInterop;
@@ -489,8 +490,8 @@ public class InputController {
 #endif
 }
 
-[AttributeUsage(AttributeTargets.Method)]
-internal class ClearInputsAttribute : Attribute { }
+[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+internal class ClearInputsAttribute : Attribute;
 
-[AttributeUsage(AttributeTargets.Method)]
-internal class ParseFileEndAttribute : Attribute { }
+[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+internal class ParseFileEndAttribute : Attribute;

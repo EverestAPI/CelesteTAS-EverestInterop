@@ -43,7 +43,8 @@
         <PackageReference Include="SharpZipLib" Version="1.4.2" IncludeAssets="all" />
         <PackageReference Include="YamlDotNet" Version="13.1.1" />
 
-        <PackageReference Include="JetBrains.Profiler.Api" Version="1.1.8" Condition="'$(Configuration)' == 'Debug'" />
+        <PackageReference Include="JetBrains.Annotations" Version="2024.2.0" />
+        <PackageReference Include="JetBrains.Profiler.Api" Version="1.4.6" Condition="'$(Configuration)' == 'Debug'" />
     </ItemGroup>
 
     <!-- Assemblies -->
