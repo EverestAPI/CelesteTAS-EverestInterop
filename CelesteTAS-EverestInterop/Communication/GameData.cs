@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -161,6 +162,93 @@ public static class GameData {
         }
 
         return string.Empty;
+    }
+    
+    public static GameState? GetGameState() {
+        if (Engine.Scene is not Level level) {
+            return null;
+        }
+        
+        var player = level.Tracker.GetEntity<Player>();
+        
+        return new GameState {
+            Player = new GameState.PlayerState {
+                Position = player.Position.ToTuple(),
+                PositionRemainder = player.PositionRemainder.ToTuple(),
+                Speed = player.Speed.ToTuple(),
+                starFlySpeedLerp = player.starFlySpeedLerp,
+            },
+            Level = new GameState.LevelState {
+                Bounds = (level.Bounds.X, level.Bounds.Y, level.Bounds.Width, level.Bounds.Height),
+                WindDirection = level.Wind.ToTuple(),
+            },
+            
+            SolidsData = level.Session.LevelData.Solids,
+            StaticSolids = level.Entities
+                .Where(e => e is Solid and not StarJumpBlock { sinks: true })
+                .Select(e => (e.X, e.Y, e.Width, e.Height))
+                .ToArray(),
+            
+            Spinners = level.Entities
+                .Where(e => e is CrystalStaticSpinner or DustStaticSpinner || e.GetType().Name == "CustomSpinner")
+                .Select(e => e.Position.ToTuple())
+                .ToArray(),
+            Lightning = level.Entities
+                .FindAll<Lightning>()
+                .Select(e => (e.X, e.Y, e.Width, e.Height))
+                .ToArray(),
+            Spikes = level.Entities
+                .FindAll<Spikes>()
+                .Select(e => (e.X, e.Y, e.Width, e.Height, ToGameStateDirection(e.Direction)))
+                .ToArray(),
+            
+            WindTriggers = level.Tracker
+                .GetEntities<WindTrigger>().Cast<WindTrigger>()
+                .Select(e => (e.X, e.Y, e.Width, e.Height, ToGameStatePattern(e.Pattern)))
+                .ToArray(),
+            
+            JumpThrus = level.Entities
+                .Where(e => e is JumpthruPlatform || e.GetType().Name is "SidewaysJumpThru" or "UpsideDownJumpThru")
+                .Select(e => {
+                    if (e is JumpthruPlatform jumpThru) {
+                        return (e.X, e.Y, e.Width, e.Height, GameState.Direction.Up, true);
+                    }
+                    if (e.GetType().Name == "SidewaysJumpThru") {
+                        return (e.X, e.Y, e.Width, e.Height, e.GetFieldValue<bool>("AllowLeftToRight") ? GameState.Direction.Right : GameState.Direction.Left, e.GetFieldValue<bool>("pushPlayer"));
+                    }
+                    if (e.GetType().Name == "UpsideDownJumpThru") {
+                        return (e.X, e.Y, e.Width, e.Height, GameState.Direction.Down, e.GetFieldValue<bool>("pushPlayer"));
+                    }
+                    throw new UnreachableException();
+                })
+                .ToArray(),
+        };
+            
+        static GameState.Direction ToGameStateDirection(Spikes.Directions dir) => dir switch {
+            Spikes.Directions.Up => GameState.Direction.Up,
+            Spikes.Directions.Down => GameState.Direction.Down,
+            Spikes.Directions.Left => GameState.Direction.Left,
+            Spikes.Directions.Right => GameState.Direction.Right,
+            _ => throw new UnreachableException()
+        };
+        static GameState.WindPattern ToGameStatePattern(WindController.Patterns pattern) => pattern switch {
+            WindController.Patterns.None => GameState.WindPattern.None,
+            WindController.Patterns.Left => GameState.WindPattern.Left,
+            WindController.Patterns.Right => GameState.WindPattern.Right,
+            WindController.Patterns.LeftStrong => GameState.WindPattern.LeftStrong,
+            WindController.Patterns.RightStrong => GameState.WindPattern.RightStrong,
+            WindController.Patterns.LeftOnOff => GameState.WindPattern.LeftOnOff,
+            WindController.Patterns.RightOnOff => GameState.WindPattern.RightOnOff,
+            WindController.Patterns.LeftOnOffFast => GameState.WindPattern.LeftOnOffFast,
+            WindController.Patterns.RightOnOffFast => GameState.WindPattern.RightOnOffFast,
+            WindController.Patterns.Alternating => GameState.WindPattern.Alternating,
+            WindController.Patterns.LeftGemsOnly => GameState.WindPattern.LeftGemsOnly,
+            WindController.Patterns.RightCrazy => GameState.WindPattern.RightCrazy,
+            WindController.Patterns.Down => GameState.WindPattern.Down,
+            WindController.Patterns.Up => GameState.WindPattern.Up,
+            WindController.Patterns.Space => GameState.WindPattern.Space,
+            _ => throw new UnreachableException()
+        };
     }
     
     // Sorts types by namespace into Celeste -> Monocle -> other (alphabetically)

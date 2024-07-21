@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CelesteStudio.Util;
-using MemoryPack;
 using StudioCommunication;
 using StudioCommunication.Util;
 
@@ -17,7 +16,7 @@ public sealed class CommunicationAdapterStudio(
     Action<Dictionary<HotkeyID, List<WinFormsKeys>>> bindingsChanged) : CommunicationAdapterBase(Location.Studio) 
 {
     private readonly EnumDictionary<GameDataType, object?> gameData = new();
-    private readonly EnumDictionary<GameDataType, Type?> gameDataTargetType = new();
+    private Type? rawInfoTargetType;
     
     public void ForceReconnect() {
         if (Connected) {
@@ -94,8 +93,11 @@ public sealed class CommunicationAdapterStudio(
                         break;
                     
                     case GameDataType.RawInfo:
-                        Console.WriteLine($"Type: {gameDataTargetType[GameDataType.RawInfo]}");
-                        gameData[gameDataType] = reader.ReadObject(gameDataTargetType[GameDataType.RawInfo]!);
+                        gameData[gameDataType] = reader.ReadObject(rawInfoTargetType!);
+                        break;
+                    
+                    case GameDataType.GameState:
+                        gameData[gameDataType] = reader.ReadObject<GameState>();
                         break;
                 }
                 
@@ -158,7 +160,10 @@ public sealed class CommunicationAdapterStudio(
             }
         }
         
-        gameDataTargetType[gameDataType] = type;
+        if (gameDataType == GameDataType.RawInfo) {
+            rawInfoTargetType = type;
+        }
+        
         QueueMessage(MessageID.RequestGameData, writer => {
             writer.Write((byte)gameDataType);
             if (arg != null) {

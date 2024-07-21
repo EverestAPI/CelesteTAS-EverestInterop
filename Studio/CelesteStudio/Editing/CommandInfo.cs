@@ -214,7 +214,6 @@ public struct CommandInfo() {
         }
         
         entries = CommunicationWrapper.RequestSetCommandAutoCompleteEntries(argsText, index).Result;
-        foreach (var e in entries) Console.WriteLine($" - {e.FullName}"); 
         setCommandCache[key] = entries;
         
         return entries;

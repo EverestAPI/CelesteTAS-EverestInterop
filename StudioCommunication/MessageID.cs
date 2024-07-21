@@ -71,6 +71,7 @@ public enum GameDataType : byte {
     SetCommandAutoCompleteEntries,
     InvokeCommandAutoCompleteEntries,
     RawInfo,
+    GameState,
 }
 
 public enum RecordingFailedReason : byte {

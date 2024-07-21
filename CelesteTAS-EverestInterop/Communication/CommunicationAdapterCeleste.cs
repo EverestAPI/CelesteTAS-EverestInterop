@@ -136,6 +136,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                             GameDataType.SetCommandAutoCompleteEntries => GameData.GetSetCommandAutoCompleteEntries((((string, int))arg!).Item1, (((string, int))arg!).Item2).ToArray(),
                             GameDataType.InvokeCommandAutoCompleteEntries => GameData.GetInvokeCommandAutoCompleteEntries((((string, int))arg!).Item1, (((string, int))arg!).Item2).ToArray(),
                             GameDataType.RawInfo => InfoCustom.GetRawInfo(((string, bool))arg!),
+                            GameDataType.GameState => GameData.GetGameState(),
                             _ => null,
                         };
 
@@ -161,6 +162,10 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                                     
                                     case GameDataType.RawInfo:
                                         writer.WriteObject(gameData);
+                                        break;
+                                    
+                                    case GameDataType.GameState:
+                                        writer.WriteObject((GameState?)gameData);
                                         break;
                                 }
                                 LogVerbose($"Sent message GameDataResponse: {gameDataType} = '{gameData}'");    
