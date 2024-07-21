@@ -17,7 +17,6 @@
 
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
-        <DefineConstants>REWRITE</DefineConstants>
     </PropertyGroup>
 
     <PropertyGroup>

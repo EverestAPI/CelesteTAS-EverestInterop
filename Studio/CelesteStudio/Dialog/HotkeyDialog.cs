@@ -11,7 +11,7 @@ using Eto.Forms;
 namespace CelesteStudio.Dialog;
 
 public class HotkeyDialog : Dialog<Keys> {
-    private HotkeyDialog(Keys currentHotkey, Dictionary<MenuEntry, Keys> keyBindings, List<Snippet>? snippets) {
+    private HotkeyDialog(Keys currentHotkey, Dictionary<MenuEntry, Keys> keyBindings, List<Snippet> snippets) {
         Title = "Edit Hotkey";
         Content = new StackLayout {
             Padding = 10,

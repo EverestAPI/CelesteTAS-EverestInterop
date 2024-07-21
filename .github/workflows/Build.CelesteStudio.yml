@@ -1,27 +1,12 @@
-name: Build Celeste Studio (Legacy)
+name: Build Celeste Studio
 
 on:
   workflow_call:
     inputs:
-      rewrite:
-        required: true
-        type: boolean
       build-cfg:
         required: true
         type: string
         default: Release
-  push:
-    branches:
-      - '*'
-    paths:
-      - 'Studio/**'
-      - 'StudioCommunication/**'
-  pull_request:
-    branches:
-      - '*'
-    paths:
-      - 'Studio/**'
-      - 'StudioCommunication/**'
 
 jobs: 
   build-windows:
@@ -37,10 +22,6 @@ jobs:
 
       - name: Publish x64 (legacy)
         run: dotnet publish Studio/CelesteStudio.WPF -c ${{ inputs.build-cfg }} -r win-x64 --self-contained=true -p:PublishSingleFile=true --output build-x64
-        if: ${{ !inputs.rewrite }}
-      - name: Publish x64 (rewrite)
-        run: dotnet publish Studio/CelesteStudio.WPF -c ${{ inputs.build-cfg }} -r win-x64 --self-contained=true -p:PublishSingleFile=true -p:DefineConstants=REWRITE --output build-x64
-        if: ${{ inputs.rewrite }}
 #      - name: Publish ARM64
 #        run: dotnet publish Studio/CelesteStudio.WPF -c ${{ inputs.build-cfg }} -r win-arm64 --self-contained=true -p:PublishSingleFile=true --output build-arm64
 
@@ -68,10 +49,6 @@ jobs:
 
       - name: Publish x64 (legacy)
         run: dotnet publish Studio/CelesteStudio.GTK -c ${{ inputs.build-cfg }} -r linux-x64 --self-contained=true -p:PublishSingleFile=true --output build-x64
-        if: ${{ !inputs.rewrite }}
-      - name: Publish x64 (rewrite)
-        run: dotnet publish Studio/CelesteStudio.GTK -c ${{ inputs.build-cfg }} -r linux-x64 --self-contained=true -p:PublishSingleFile=true -p:DefineConstants=REWRITE --output build-x64
-        if: ${{ inputs.rewrite }}
 #      - name: Publish ARM
 #        run: dotnet publish Studio/CelesteStudio.GTK -c ${{ inputs.build-cfg }} -r linux-arm --self-contained=true -p:PublishSingleFile=true --output build-arm
 #      - name: Publish ARM64
@@ -110,10 +87,6 @@ jobs:
 
       - name: Publish x64 (legacy)
         run: dotnet publish Studio/CelesteStudio.Mac -c ${{ inputs.build-cfg }} -r osx-x64 --self-contained=true -p:PublishSingleFile=true --output build-x64
-        if: ${{ !inputs.rewrite }}
-      - name: Publish x64 (rewrite)
-        run: dotnet publish Studio/CelesteStudio.Mac -c ${{ inputs.build-cfg }} -r osx-x64 --self-contained=true -p:PublishSingleFile=true -p:DefineConstants=REWRITE --output build-x64
-        if: ${{ inputs.rewrite }}
 #      - name: Publish ARM64
 #        run: dotnet publish Studio/CelesteStudio.Mac -c ${{ inputs.build-cfg }} -r osx-arm64 --self-contained=true -p:PublishSingleFile=true --output build-arm64
 

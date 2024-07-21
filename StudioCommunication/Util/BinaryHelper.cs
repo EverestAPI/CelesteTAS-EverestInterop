@@ -5,7 +5,9 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using MemoryPack;
 
-namespace StudioCommunication;
+#nullable enable
+
+namespace StudioCommunication.Util;
 
 public static class BinaryHelper {
     // Serializes data to (usually) a binary buffer for transmission
@@ -133,7 +135,7 @@ public static class BinaryHelper {
             int count = reader.Read7BitEncodedInt();
             var elemType = type.GetElementType()!;
             
-            var list = (IList)Activator.CreateInstance(type);
+            var list = (IList)Activator.CreateInstance(type)!;
             for (int i = 0; i < count; i++) {
                 list.Add(reader.ReadObject(elemType));
             }
@@ -148,7 +150,7 @@ public static class BinaryHelper {
                 values[i] = reader.ReadObject(type.GenericTypeArguments[i]);
             }
             
-            return Activator.CreateInstance(type, values);
+            return Activator.CreateInstance(type, values)!;
         }
         
         int length = reader.Read7BitEncodedInt();
