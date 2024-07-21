@@ -16,6 +16,7 @@ public sealed class CommunicationAdapterStudio(
     Action<Dictionary<HotkeyID, List<WinFormsKeys>>> bindingsChanged) : CommunicationAdapterBase(Location.Studio) 
 {
     private readonly EnumDictionary<GameDataType, object?> gameData = new();
+    private readonly EnumDictionary<GameDataType, bool> gameDataPending = new();
     private Type? rawInfoTargetType;
     
     public void ForceReconnect() {
@@ -97,9 +98,10 @@ public sealed class CommunicationAdapterStudio(
                         break;
                     
                     case GameDataType.GameState:
-                        gameData[gameDataType] = reader.ReadObject<GameState>();
+                        gameData[gameDataType] = reader.ReadObject<GameState?>();
                         break;
                 }
+                gameDataPending[gameDataType] = false;
                 
                 LogVerbose($"Received message GameDataResponse: {gameDataType} = '{gameData[gameDataType]}'");
                 break;
@@ -147,10 +149,10 @@ public sealed class CommunicationAdapterStudio(
     public async Task<object?> RequestGameData(GameDataType gameDataType, object? arg = null, TimeSpan? timeout = null, Type? type = null) {
         timeout ??= DefaultRequestTimeout;
         
-        if (gameData[gameDataType] != null) {
+        if (gameDataPending[gameDataType]) {
             // Wait for another request to finish
             var waitStart = DateTime.UtcNow;
-            while (gameData[gameDataType] == null) {
+            while (gameDataPending[gameDataType]) {
                 await Task.Delay(UpdateRate).ConfigureAwait(false);
                 
                 if (DateTime.UtcNow - waitStart >= timeout) {
@@ -159,6 +161,9 @@ public sealed class CommunicationAdapterStudio(
                 }
             }
         }
+        
+        // Block other requests of this type until this is done
+        gameDataPending[gameDataType] = true;
         
         if (gameDataType == GameDataType.RawInfo) {
             rawInfoTargetType = type;
@@ -174,20 +179,17 @@ public sealed class CommunicationAdapterStudio(
         
         // Wait for data to arrive
         var start = DateTime.UtcNow;
-        while (gameData[gameDataType] == null) {
+        while (gameDataPending[gameDataType]) {
             await Task.Delay(UpdateRate).ConfigureAwait(false);
             
             if (DateTime.UtcNow - start >= timeout) {
                 LogError("Timed-out while requesting data from game");
+                gameDataPending[gameDataType] = false;
                 return null;
             }
         }
         
-        // Reset back for next request
-        var data = gameData[gameDataType];
-        gameData[gameDataType] = null;
-        
-        return data;
+        return gameData[gameDataType];
     }
     
     protected override void LogInfo(string message) => Console.WriteLine($"[Info] Studio Communication @ Studio: {message}");

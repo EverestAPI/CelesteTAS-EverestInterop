@@ -140,37 +140,35 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                             _ => null,
                         };
 
-                        if (gameData != null) {
-                            QueueMessage(MessageID.GameDataResponse, writer => {
-                                writer.Write((byte)gameDataType);
+                        QueueMessage(MessageID.GameDataResponse, writer => {
+                            writer.Write((byte)gameDataType);
+                            
+                            switch (gameDataType) {
+                                case GameDataType.ConsoleCommand: 
+                                case GameDataType.ModInfo: 
+                                case GameDataType.ExactGameInfo:
+                                case GameDataType.SettingValue: 
+                                case GameDataType.CompleteInfoCommand: 
+                                case GameDataType.ModUrl:
+                                case GameDataType.CustomInfoTemplate:
+                                    writer.Write((string?)gameData ?? string.Empty);
+                                    break;
                                 
-                                switch (gameDataType) {
-                                    case GameDataType.ConsoleCommand: 
-                                    case GameDataType.ModInfo: 
-                                    case GameDataType.ExactGameInfo:
-                                    case GameDataType.SettingValue: 
-                                    case GameDataType.CompleteInfoCommand: 
-                                    case GameDataType.ModUrl:
-                                    case GameDataType.CustomInfoTemplate:
-                                        writer.Write((string)gameData);
-                                        break;
-                                    
-                                    case GameDataType.SetCommandAutoCompleteEntries:
-                                    case GameDataType.InvokeCommandAutoCompleteEntries:
-                                        writer.WriteObject((CommandAutoCompleteEntry[])gameData);
-                                        break;
-                                    
-                                    case GameDataType.RawInfo:
-                                        writer.WriteObject(gameData);
-                                        break;
-                                    
-                                    case GameDataType.GameState:
-                                        writer.WriteObject((GameState?)gameData);
-                                        break;
-                                }
-                                LogVerbose($"Sent message GameDataResponse: {gameDataType} = '{gameData}'");    
-                            });
-                        }
+                                case GameDataType.SetCommandAutoCompleteEntries:
+                                case GameDataType.InvokeCommandAutoCompleteEntries:
+                                    writer.WriteObject((CommandAutoCompleteEntry[]?)gameData ?? []);
+                                    break;
+                                
+                                case GameDataType.RawInfo:
+                                    writer.WriteObject(gameData);
+                                    break;
+                                
+                                case GameDataType.GameState:
+                                    writer.WriteObject((GameState?)gameData);
+                                    break;
+                            }
+                            LogVerbose($"Sent message GameDataResponse: {gameDataType} = '{gameData}'");    
+                        });
                     } catch (Exception ex) {
                         Console.WriteLine(ex);
                     }

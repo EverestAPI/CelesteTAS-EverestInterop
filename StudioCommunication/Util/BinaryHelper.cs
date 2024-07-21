@@ -89,7 +89,7 @@ public static class BinaryHelper {
     }
 
     public static T ReadObject<T>(this BinaryReader reader) => (T)reader.ReadObject(typeof(T));
-    public static object ReadObject(this BinaryReader reader, Type type) {
+    public static object? ReadObject(this BinaryReader reader, Type type) {
         // Primitives
         if (type == typeof(bool))
             return reader.ReadBoolean();
@@ -134,7 +134,6 @@ public static class BinaryHelper {
         if (type.IsAssignableTo(typeof(IList)) && type.IsGenericType) {
             int count = reader.Read7BitEncodedInt();
             var elemType = type.GetElementType() ?? type.GenericTypeArguments[0];
-            Console.WriteLine($"Count: {count} / Elem: {elemType}");
             
             var list = (IList)Activator.CreateInstance(type)!;
             for (int i = 0; i < count; i++) {
@@ -146,7 +145,7 @@ public static class BinaryHelper {
         if (type.IsAssignableTo(typeof(ITuple)) && type.IsGenericType) {
             int count = reader.Read7BitEncodedInt();
 
-            var values = new object[count];
+            var values = new object?[count];
             for (int i = 0; i < count; i++) {
                 values[i] = reader.ReadObject(type.GenericTypeArguments[i]);
             }
@@ -155,6 +154,10 @@ public static class BinaryHelper {
         }
         
         int length = reader.Read7BitEncodedInt();
+        if (length == 0) {
+            return null;
+        }
+        
         var buffer = reader.ReadBytes(length);
         return MemoryPackSerializer.Deserialize(type, buffer)!;
     }
