@@ -140,6 +140,10 @@ public sealed class AutoCompleteMenu : Scrollable {
                 const int scrollBarWidth = 17;
                 bool scrollBarVisible = Height <= ContentHeight;
                 Width = Math.Max(0, value + BorderWidth * 2 + (scrollBarVisible ? scrollBarWidth : 0));
+            } else if (Eto.Platform.Instance.IsMac) {
+                const int scrollBarWidth = 15;
+                bool scrollBarVisible = Height <= ContentHeight;
+                Width = Math.Max(0, value + BorderWidth * 2 + (scrollBarVisible ? scrollBarWidth : 0));
             } else {
                 Width = Math.Max(0, value + BorderWidth * 2);
             }
@@ -203,7 +207,7 @@ public sealed class AutoCompleteMenu : Scrollable {
         }
     }
     
-    public bool HandleKeyDown(KeyEventArgs e) {
+    public bool HandleKeyDown(KeyEventArgs e, bool useTabComplete) {
         if (!Visible)
             return false;
         
@@ -215,7 +219,7 @@ public sealed class AutoCompleteMenu : Scrollable {
             SelectedEntry = (SelectedEntry + 1).Mod(shownEntries.Length);
             return true;
         }
-        if (e.Key is Keys.Enter or Keys.Tab) {
+        if (e.Key == Keys.Enter || useTabComplete && e.Key == Keys.Tab) {
             shownEntries[SelectedEntry].OnUse();
             return true;
         }

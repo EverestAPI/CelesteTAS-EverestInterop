@@ -1,4 +1,5 @@
 ﻿using System;
+using CelesteStudio.Communication;
 using Eto.Forms;
 
 namespace CelesteStudio.GTK;
@@ -12,6 +13,14 @@ public static class Program {
             Console.Error.WriteLine(ex);
             ErrorLog.Write(ex);
             ErrorLog.Open();
+        }
+
+        // Ensure the communication is stopped
+        try {
+            CommunicationWrapper.Stop();
+        } catch (Exception) {
+            // Just stop the process
+            Environment.Exit(0);
         }
     }
 }

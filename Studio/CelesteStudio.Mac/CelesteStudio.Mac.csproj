@@ -7,11 +7,20 @@
         <SupportedOSPlatformVersion>10.15</SupportedOSPlatformVersion>
         <RuntimeIdentifiers>osx-x64;osx-arm64</RuntimeIdentifiers>
         <RollForward>LatestMajor</RollForward>
+        
+        <RestoreSources>$(RestoreSources);https://www.myget.org/F/eto/api/v3/index.json;https://api.nuget.org/v3/index.json</RestoreSources>
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\CelesteStudio\CelesteStudio.csproj"/>
-        <PackageReference Include="Eto.Platform.Mac64" Version="2.8.3"/>
+        <ProjectReference Include="..\CelesteStudio\CelesteStudio.csproj" />
+        <!-- <PackageReference Include="Eto.Platform.Mac64" Version="2.8.3" />-->
+        
+        <!-- Use an CI-build, since it contains a fix for using context menu hotkeys inside the editor -->
+        <PackageReference Include="Eto.Platform.Mac64" Version="2.8.4-ci-20240710.9879198421" />
+    </ItemGroup>
+    
+    <ItemGroup>
+        <Content Include="Icon.icns" />
     </ItemGroup>
 
 </Project>

@@ -2,28 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using CelesteStudio.Communication;
 using CelesteStudio.Util;
+using StudioCommunication;
 
 namespace CelesteStudio.Editing;
 
 public struct CommandInfo() {
-    public struct AutoCompleteEntry() {
-        public string Prefix = string.Empty;
-        public string Arg;
-        public string Extra = string.Empty;
-
-        public bool Done = true;
-        public bool? HasNextArg = null; 
-        
-        public static implicit operator AutoCompleteEntry(string arg) => new() { Arg = arg, Done = true };
-    }
-    
     public string Name;
     public string Description;
     public string Insert;
     
-    public Func<string[], AutoCompleteEntry[]>[] AutoCompleteEntries = [];
+    public Func<string[], CommandAutoCompleteEntry[]>[] AutoCompleteEntries = [];
     
     // nulls are visual separators in the insert menu
     // [] are "quick-edit" positions, with the format [index;text]. The text part is optional
@@ -54,8 +45,8 @@ public struct CommandInfo() {
             Description = "Sets the specified setting to the specified value.",
             Insert = $"Set{separator}[0;(Mod).Setting]{separator}[1;Value]",
             AutoCompleteEntries = [
-                args => GetSetEntries(args[0]),
-                args => GetParameterEntries("Set", args[0]),
+                args => GetSetEntries(args[0], 0),
+                args => GetSetEntries(args[0], 1),
             ]
         },
         new CommandInfo { 
@@ -63,8 +54,8 @@ public struct CommandInfo() {
             Description = "Similar to the set command, but used to invoke the method",
             Insert = $"Invoke{separator}[0;Entity.Method]{separator}[1;Parameter]",
             AutoCompleteEntries = [
-                args => GetInvokeEntries(args[0]),
-                args => GetParameterEntries("Invoke", args[0]),
+                args => GetInvokeEntries(args[0], 0),
+                args => GetInvokeEntries(args[0], 1),
             ]
         },
         new CommandInfo { Name = "EvalLua", Insert = $"EvalLua{separator}[0;Code]", Description = "Evaluate Lua code"},
@@ -137,10 +128,20 @@ public struct CommandInfo() {
     public static void ResetCache() {
         setCommandCache.Clear();
         invokeCommandCache.Clear();
-        parameterCache.Clear();
+        
+        // Prefetch the 2 big lists
+        Task.Run(async () => {
+            var setEntries = CommunicationWrapper.RequestSetCommandAutoCompleteEntries("", 0);
+            var invokeEntries = CommunicationWrapper.RequestInvokeCommandAutoCompleteEntries("", 0);
+            
+            await Task.WhenAll(setEntries, invokeEntries).ConfigureAwait(false);
+            
+            setCommandCache[("", 0)] = setEntries.Result;
+            invokeCommandCache[("", 0)] = invokeEntries.Result;
+        });
     }
     
-    private static AutoCompleteEntry[] GetFilePathEntries(string arg) {
+    private static CommandAutoCompleteEntry[] GetFilePathEntries(string arg) {
         var documentPath = Studio.Instance.Editor.Document.FilePath;
         if (documentPath == Document.ScratchFile) {
             return [];
@@ -156,19 +157,19 @@ public struct CommandInfo() {
             return [];
         }
         
-        return ((AutoCompleteEntry[])[new AutoCompleteEntry { Arg = Path.Combine(subDir, "../").Replace('\\', '/'), Done = false }])
+        return ((CommandAutoCompleteEntry[])[new CommandAutoCompleteEntry { Name = Path.Combine(subDir, "../").Replace('\\', '/'), IsDone = false }])
             .Concat(Directory.GetDirectories(dir)
                 .Where(d => !Path.GetFileName(d).StartsWith('.'))
-                .Select(d => new AutoCompleteEntry {Arg = d[(documentDir.Length + "/".Length)..].Replace('\\', '/') + "/", Done = false})
-                .OrderBy(entry => entry.Arg))
+                .Select(d => new CommandAutoCompleteEntry { Name = d[(documentDir.Length + "/".Length)..].Replace('\\', '/') + "/", IsDone = false })
+                .OrderBy(entry => entry.Name))
             .Concat(Directory.GetFiles(dir)
                 .Where(f => !Path.GetFileName(f).StartsWith('.') && Path.GetExtension(f) == ".tas")
-                .Select(f => new AutoCompleteEntry { Arg = f[(documentDir.Length + "/".Length)..^".tas".Length].Replace('\\', '/'), Done = true })
-                .OrderBy(entry => entry.Arg))
+                .Select(f => new CommandAutoCompleteEntry { Name = f[(documentDir.Length + "/".Length)..^".tas".Length].Replace('\\', '/'), IsDone = true })
+                .OrderBy(entry => entry.Name))
             .ToArray();
     }
     
-    private static AutoCompleteEntry[] GetLabelEntries(string subPath, string after = "") {
+    private static CommandAutoCompleteEntry[] GetLabelEntries(string subPath, string after = "") {
         var documentPath = Studio.Instance.Editor.Document.FilePath;
         if (documentPath == Document.ScratchFile) {
             return [];
@@ -186,12 +187,12 @@ public struct CommandInfo() {
             .ReplaceLineEndings(Document.NewLine.ToString())
             .SplitDocumentLines()
             .Where(line => line.Length >= 2 && line[0] == '#' && char.IsLetter(line[1]))
-            .Select(line => new AutoCompleteEntry { Arg = line[1..], Done = true }) 
+            .Select(line => new CommandAutoCompleteEntry { Name = line[1..], IsDone = true }) 
             .ToArray();
         
         if (after != string.Empty) {
             for (int i = 0; i < labels.Length - 1; i++) {
-                if (labels[i].Arg == after) {
+                if (labels[i].Name == after) {
                     return labels[(i + 1)..];
                 }
             }
@@ -201,77 +202,37 @@ public struct CommandInfo() {
         return labels;
     }
     
-    // NOTE: Probably read GameData in the Celeste part, since this is using the data from there.
-    private static readonly Dictionary<string, AutoCompleteEntry[]> setCommandCache = [];
-    private static AutoCompleteEntry[] GetSetEntries(string argsText) {
-        var args = string.Join('.', argsText.Split('.').SkipLast(1));
-        if (setCommandCache.TryGetValue(args, out var entries)) {
+    private static readonly Dictionary<(string, int), CommandAutoCompleteEntry[]> setCommandCache = [];
+    private static CommandAutoCompleteEntry[] GetSetEntries(string argsText, int index) {
+        var args = index == 0 
+            ? string.Join('.', argsText.Split('.').SkipLast(1))
+            : string.Join('.', argsText.Split('.'));
+        var key = (args, index);
+        
+        if (setCommandCache.TryGetValue(key, out var entries)) {
             return entries;
         }
         
-        var prefix = args.Length > 0 ? args + '.' : args;
-        entries = CommunicationWrapper.GetSetCommandAutoCompleteEntries(argsText)
-            .Select(entry => {
-                bool final = entry[0] == '!';
-                var parts = entry.Split('#');
-                return new AutoCompleteEntry {
-                    Prefix = prefix, 
-                    Arg = parts[0][1..] + (final ? "" : "."),
-                    Extra = parts[1],
-                    Done = final,
-                    HasNextArg = !final,
-                };
-            })
-            .ToArray();
-        setCommandCache[args] = entries;
+        entries = CommunicationWrapper.RequestSetCommandAutoCompleteEntries(argsText, index).Result;
+        foreach (var e in entries) Console.WriteLine($" - {e.FullName}"); 
+        setCommandCache[key] = entries;
         
         return entries;
     }
     
-    private static readonly Dictionary<string, AutoCompleteEntry[]> invokeCommandCache = [];
-    private static AutoCompleteEntry[] GetInvokeEntries(string argsText) {
-        var args = string.Join('.', argsText.Split('.').SkipLast(1));
-        if (invokeCommandCache.TryGetValue(args, out var entries)) {
+    private static readonly Dictionary<(string, int), CommandAutoCompleteEntry[]> invokeCommandCache = [];
+    private static CommandAutoCompleteEntry[] GetInvokeEntries(string argsText, int index) {
+        var args = index == 0 
+            ? string.Join('.', argsText.Split('.').SkipLast(1))
+            : string.Join('.', argsText.Split('.'));
+        var key = (args, index);
+        
+        if (invokeCommandCache.TryGetValue(key, out var entries)) {
             return entries;
         }
         
-        var prefix = args.Length > 0 ? args + '.' : args;
-        entries = CommunicationWrapper.GetInvokeCommandAutoCompleteEntries(argsText)
-            .Select(entry => {
-                var parts = entry.Split('#');
-                return new AutoCompleteEntry {
-                    Prefix = prefix,
-                    Arg = parts[0][1..] + (args.Length == 0 ? "." : ""),
-                    Extra = parts[1],
-                    Done = args.Length != 0,
-                    HasNextArg = entry[0] == '.',
-                };
-            })
-            .ToArray();
-        invokeCommandCache[args] = entries;
-        
-        return entries;
-    }
-    
-    private static readonly Dictionary<string, AutoCompleteEntry[]> parameterCache = [];
-    private static AutoCompleteEntry[] GetParameterEntries(string commandType, string argsText, int index = 0) {
-        var args = string.Join('.', argsText.Split('.'));
-        if (parameterCache.TryGetValue(args, out var entries)) {
-            return entries;
-        }
-        
-        entries = CommunicationWrapper.GetParameterAutoCompleteEntries($"{commandType};{argsText};{index}")
-            .Select(entry => {
-                var parts = entry.Split('#');
-                return new AutoCompleteEntry {
-                    Arg = parts[0][1..],
-                    Extra = parts[1],
-                    Done = true,
-                    HasNextArg = entry[0] == '.',
-                };
-            })
-            .ToArray();
-        parameterCache[args] = entries;
+        entries = CommunicationWrapper.RequestInvokeCommandAutoCompleteEntries(argsText, index).Result;
+        invokeCommandCache[key] = entries;
         
         return entries;
     }

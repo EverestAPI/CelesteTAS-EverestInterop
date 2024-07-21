@@ -28,7 +28,7 @@ public sealed class JadderlineForm : Form {
     
     public JadderlineForm() {
         Title = $"Jadderline - v{Version}";
-        Icon = Studio.Instance.Icon;
+        Icon = Assets.AppIcon;
         
         Menu = new MenuBar {
             AboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {

@@ -304,18 +304,18 @@ public class Document {
     
     public sealed class QueuedUpdate(Document document, bool raiseEvents) : IDisposable {
         private int currMinRow = -1, currMaxRow = -1;
-        private readonly CaretPosition oldCaret = document.Caret;
         
         public void PushChange(int minRow, int maxRow) {
-            if (!raiseEvents) 
+            if (!raiseEvents) {
                 return;
+            }
             
             if (currMinRow == -1 || currMaxRow == -1) {
                 currMinRow = minRow;
                 currMaxRow = maxRow;
             } else {
                 currMinRow = Math.Min(currMinRow, minRow);
-                currMaxRow = Math.Min(currMaxRow, maxRow);
+                currMaxRow = Math.Max(currMaxRow, maxRow);
             }
         }
         public void Dispose() {

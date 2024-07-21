@@ -2,11 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using CelesteStudio.Data;
 using CelesteStudio.Editing;
 using CelesteStudio.Util;
 using Eto;
 using Eto.Drawing;
 using Eto.Forms;
+using StudioCommunication.Util;
 using Tomlet;
 using Tomlet.Attributes;
 using Tomlet.Exceptions;
@@ -17,6 +20,7 @@ namespace CelesteStudio;
 public enum InsertDirection { Above, Below }
 public enum CaretInsertPosition { AfterInsert, PreviousPosition }
 public enum CommandSeparator { Space, Comma, CommaSpace }
+public enum LineNumberAlignment { Left, Right }
 
 public sealed class Settings {
     public static string BaseConfigPath => Path.Combine(EtoEnvironment.GetFolderPath(EtoSpecialFolder.ApplicationSettings), "CelesteStudio"); 
@@ -33,16 +37,19 @@ public sealed class Settings {
     public static event Action FontChanged = FontManager.OnFontChanged;
     public static void OnFontChanged() => FontChanged.Invoke();
     
+    public static event Action? KeyBindingsChanged;
+    public static void OnKeyBindingsChanged() => KeyBindingsChanged?.Invoke();
+    
     #region Settings
     
     [TomlNonSerialized]
     public Theme Theme {
         get {
-            if (CustomThemes.TryGetValue(ThemeName, out Theme theme)) {
-                return theme;
-            }
             if (Theme.BuiltinThemes.TryGetValue(ThemeName, out Theme builtinTheme)) {
                 return builtinTheme;
+            }
+            if (CustomThemes.TryGetValue(ThemeName, out Theme customTheme)) {
+                return customTheme;
             }
             // Fall back to light theme
             return Theme.BuiltinThemes["Light"];
@@ -60,9 +67,17 @@ public sealed class Settings {
         }
     }
 
+    [TomlDoNotInlineObject]
     public Dictionary<string, Theme> CustomThemes { get; set; } = new();
-
+    [TomlDoNotInlineObject]
     public List<Snippet> Snippets { get; set; } = [];
+    
+    // Tomlet doesn't support enums as keys...
+    [TomlNonSerialized]
+    public Dictionary<MenuEntry, Keys> KeyBindings { get; set; } = new();
+    [TomlDoNotInlineObject]
+    [TomlProperty("KeyBindings")]
+    private Dictionary<string, Keys> _keyBindings { get; set; } = new();
     
     public bool SendInputsToCeleste { get; set; } = true;
     
@@ -72,25 +87,31 @@ public sealed class Settings {
     
     public string FontFamily { get; set; } = FontManager.FontFamilyBuiltin;
     public float EditorFontSize { get; set; } = 12.0f;
-    public float StatusFontSize { get; set; } = 9.0f;
+    public float StatusFontSize { get; set; } = 10.0f;
     
     #endregion
     #region Preferences
     
     public bool AutoSave { get; set; } = true;
     public bool AutoRemoveMutuallyExclusiveActions { get; set; } = true;
-    public bool AlwaysOnTop { get; set; } = false;
     
     public int MaxUnfoldedLines { get; set; } = 30;
     
     public InsertDirection InsertDirection { get; set; } = InsertDirection.Above;
     public CaretInsertPosition CaretInsertPosition { get; set; } = CaretInsertPosition.PreviousPosition;
     public CommandSeparator CommandSeparator { get; set; } = CommandSeparator.CommaSpace;
+    public LineNumberAlignment LineNumberAlignment { get; set; } = LineNumberAlignment.Left;
+    
+    public bool CompactMenuBar { get; set; } = false;
     
     #endregion
     #region View
     
     public bool ShowGameInfo { get; set; } = true;
+    public bool ShowSubpixelIndicator { get; set; } = true;
+    public float SubpixelIndicatorScale { get; set; } = 2.5f;
+
+    public bool AlwaysOnTop { get; set; } = false;
     public bool WordWrapComments { get; set; } = true;
     public bool ShowFoldIndicators { get; set; } = true;
     
@@ -99,6 +120,11 @@ public sealed class Settings {
     
     public Point LastLocation { get; set; } = Point.Empty;
     public Size LastSize { get; set; } = new(400, 800);
+    
+    public bool GameInfoPopoutOpen { get; set; } = false;
+    public bool GameInfoPopoutTopmost { get; set; } = false;
+    public Point GameInfoPopoutLocation { get; set; } = Point.Empty;
+    public Size GameInfoPopoutSize { get; set; } = new(400, 250);
     
     public string LastSaveDirectory { get; set; } = string.Empty;
     
@@ -189,26 +215,37 @@ public sealed class Settings {
                 if (!Color.TryParse(str.Value, out Color color))
                     throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(Color));
                 return color;
-            }
-            );
+            });
         TomletMain.RegisterMapper(
             fontStyle => new TomlString(fontStyle.ToString()),
             tomlValue => {
-                if (tomlValue is not TomlString str)
+                if (tomlValue is not TomlString fontStyle)
                     throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(FontStyle));
-                if (str.Value == "Bold")
-                    return FontStyle.Bold;
-                if (str.Value == "Italic")
-                    return FontStyle.Italic;
-                if (str.Value == "Bold, Italic")
-                    return FontStyle.Bold | FontStyle.Italic;
-                return FontStyle.None;
-            }
-            );
+                return Enum.TryParse<FontStyle>(fontStyle.Value, out var style) ? style : FontStyle.None;
+            });
+        TomletMain.RegisterMapper(
+            entry => new TomlString(entry.ToString()),
+            tomlValue => {
+                if (tomlValue is not TomlString entry)
+                    throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(MenuEntry));
+                return Enum.Parse<MenuEntry>(entry.Value);
+            });
+        TomletMain.RegisterMapper(
+            hotkey => new TomlString(hotkey.HotkeyToString("+")),
+            tomlValue => {
+                if (tomlValue is not TomlString hotkey)
+                    throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(Keys));
+                return hotkey.Value.HotkeyFromString("+");
+            });
         
         if (File.Exists(SettingsPath)) {
             try {
                 Instance = TomletMain.To<Settings>(TomlParser.ParseFile(SettingsPath), new TomlSerializerOptions());
+                Instance.KeyBindings = Instance._keyBindings.ToDictionary(pair => Enum.Parse<MenuEntry>(pair.Key), pair => pair.Value);
+
+                OnChanged();
+                OnThemeChanged();
+                OnFontChanged();
             } catch (Exception ex) {
                 Console.Error.WriteLine($"Failed to read settings file from path '{SettingsPath}'");
                 Console.Error.WriteLine(ex);
@@ -228,6 +265,7 @@ public sealed class Settings {
             if (!Directory.Exists(dir))
                 Directory.CreateDirectory(dir);
             
+            Instance._keyBindings = Instance.KeyBindings.ToDictionary(pair => pair.Key.ToString(), pair => pair.Value);
             File.WriteAllText(SettingsPath, TomletMain.DocumentFrom(Instance).SerializedValue);
         } catch (Exception ex) {
             Console.Error.WriteLine($"Failed to write settings file to path '{SettingsPath}'");

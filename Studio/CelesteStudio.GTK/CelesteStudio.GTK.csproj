@@ -5,11 +5,16 @@
         <TargetFramework>net7.0</TargetFramework>
 
         <RuntimeIdentifiers>linux-x64;linux-arm;linux-arm64</RuntimeIdentifiers>
+
+        <RestoreSources>$(RestoreSources);https://www.myget.org/F/eto/api/v3/index.json;https://api.nuget.org/v3/index.json</RestoreSources>
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\CelesteStudio\CelesteStudio.csproj"/>
-        <PackageReference Include="Eto.Platform.Gtk" Version="2.8.3"/>
+        <ProjectReference Include="..\CelesteStudio\CelesteStudio.csproj" />
+<!--        <PackageReference Include="Eto.Platform.Gtk" Version="2.8.3"/>-->
+        
+        <!-- Use a CI-build, since that contains a fix for some issues -->
+        <PackageReference Include="Eto.Platform.Gtk" Version="2.8.4-ci-20240710.9879198421" />
     </ItemGroup>
 
 </Project>

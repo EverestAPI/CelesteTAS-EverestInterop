@@ -1,6 +1,6 @@
-#if REWRITE
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using CelesteStudio.Util;
 using Eto.Forms;
 using StudioCommunication;
@@ -125,6 +125,8 @@ public static class CommunicationWrapper {
     public static string GameInfo => Connected ? state.GameInfo : string.Empty;
     public static string LevelName => Connected ? state.LevelName : string.Empty;
     public static string ChapterTime => Connected ? state.ChapterTime : string.Empty;
+    public static bool ShowSubpixelIndicator => Connected ? state.ShowSubpixelIndicator : false;
+    public static (float X, float Y) SubpixelRemainder => Connected ? state.SubpixelRemainder : (0.0f, 0.0f);
     
     public static string GetConsoleCommand(bool simple) {
         if (!Connected) {
@@ -155,29 +157,24 @@ public static class CommunicationWrapper {
         return (string?)comm!.RequestGameData(GameDataType.ExactGameInfo).Result ?? string.Empty;
     }
 
-    public static T GetRawData<T>(string template, bool alwaysList = false) {
+    public static T? GetRawData<T>(string template, bool alwaysList = false) {
         if (!Connected) {
             return default;
         }
-        return (T)comm!.RequestGameData(GameDataType.RawInfo, (template, alwaysList), null, typeof(T)).Result ?? default;
+
+        return (T?)comm!.RequestGameData(GameDataType.RawInfo, (template, alwaysList), null, typeof(T)).Result ?? default;
     }
     
-    private static IEnumerable<string> GetAutoCompleteEntries(GameDataType gameDataType, string argsText) {
+    private static async Task<CommandAutoCompleteEntry[]> RequestAutoCompleteEntries(GameDataType gameDataType, string argsText, int index) {
         if (!Connected) {
             return [];
         }
         
         // This is pretty heavy computationally, so we need a higher timeout
-        var entries = (string?)comm!.RequestGameData(gameDataType, argsText, TimeSpan.FromSeconds(15)).Result;
-        if (entries == null) {
-            return [];
-        }
-        
-        return entries.Split(';', StringSplitOptions.RemoveEmptyEntries);
+        return (CommandAutoCompleteEntry[]?)await comm!.RequestGameData(gameDataType, (argsText, index), TimeSpan.FromSeconds(15)).ConfigureAwait(false) ?? [];
     }
-    public static IEnumerable<string> GetSetCommandAutoCompleteEntries(string argsText) => GetAutoCompleteEntries(GameDataType.SetCommandAutoCompleteEntries, argsText);
-    public static IEnumerable<string> GetInvokeCommandAutoCompleteEntries(string argsText) => GetAutoCompleteEntries(GameDataType.InvokeCommandAutoCompleteEntries, argsText);
-    public static IEnumerable<string> GetParameterAutoCompleteEntries(string argsText) => GetAutoCompleteEntries(GameDataType.ParameterAutoCompleteEntries, argsText);
+    public static Task<CommandAutoCompleteEntry[]> RequestSetCommandAutoCompleteEntries(string argsText, int index) => RequestAutoCompleteEntries(GameDataType.SetCommandAutoCompleteEntries, argsText, index);
+    public static Task<CommandAutoCompleteEntry[]> RequestInvokeCommandAutoCompleteEntries(string argsText, int index) => RequestAutoCompleteEntries(GameDataType.InvokeCommandAutoCompleteEntries, argsText, index);
     
     #endregion
     
@@ -187,8 +184,15 @@ public static class CommunicationWrapper {
         if (!Connected) {
             return string.Empty;
         }
-
-        return (string?)comm!.RequestGameData(GameDataType.CustomInfoTemplate).Result;
+        
+        return (string?)comm!.RequestGameData(GameDataType.CustomInfoTemplate).Result ?? string.Empty;
+    }
+    public static void SetCustomInfoTemplate(string customInfoTemplate) {
+        if (!Connected) {
+            return;
+        }
+        
+        comm!.SendCustomInfoTemplate(customInfoTemplate);
     }
     
     public static void CopyCustomInfoTemplateToClipboard() {
@@ -196,19 +200,10 @@ public static class CommunicationWrapper {
             return;
         }
         
-        var customInfoTemplate = (string?)comm!.RequestGameData(GameDataType.CustomInfoTemplate).Result;
+        var customInfoTemplate = (string?)comm!.RequestGameData(GameDataType.CustomInfoTemplate).Result ?? string.Empty;
         Clipboard.Instance.Clear();
         Clipboard.Instance.Text = customInfoTemplate;
     }
-
-    public static void SetCustomInfoTemplate(string template) {
-        if (!Connected) {
-            return;
-        }
-
-        comm!.SendCustomInfoTemplate(template);
-    }
-
     public static void SetCustomInfoTemplateFromClipboard() {
         if (!Connected) {
             return;
@@ -258,7 +253,7 @@ public static class CommunicationWrapper {
             return false;
         }
         
-        if ((string?)comm!.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
+        if (comm!.RequestGameData(GameDataType.SettingValue, settingName).Result is string settingValue &&
             bool.TryParse(settingValue, out bool value))
         {
             return value;
@@ -271,7 +266,7 @@ public static class CommunicationWrapper {
             return defaultValue;
         }
         
-        if ((string?)comm!.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
+        if (comm!.RequestGameData(GameDataType.SettingValue, settingName).Result is string settingValue &&
             int.TryParse(settingValue, out int value)) 
         {
             return value;
@@ -284,7 +279,7 @@ public static class CommunicationWrapper {
             return defaultValue;
         }
         
-        if ((string?)comm!.RequestGameData(GameDataType.SettingValue, settingName).Result is { } settingValue &&
+        if (comm!.RequestGameData(GameDataType.SettingValue, settingName).Result is string settingValue &&
             float.TryParse(settingValue, out float value))
         {
             return value;
@@ -355,292 +350,3 @@ public static class CommunicationWrapper {
     
     #endregion
 }
-
-#else
-
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Xml.Schema;
-using StudioCommunication;
-using CelesteStudio.Communication;
-using CelesteStudio.Util;
-using Eto.Forms;
-
-namespace CelesteStudio.Communication;
-
-public class CommunicationWrapper {
-    private static Dictionary<HotkeyID, List<WinFormsKeys>> _bindings = new();
-    public static StudioState State { get; private set; }
-    
-    public static event Action? ConnectionChanged;
-    public static event Action<StudioState, StudioState>? StateUpdated;
-    public static event Action<Dictionary<int, string>>? LinesUpdated;
-    
-    private static StudioCommunicationServer? server;
-
-    public static void Start() {
-        server = new StudioCommunicationServer();
-        
-        bool wasConnected = Connected;
-        server.BindingsUpdated += bindings => _bindings = bindings;
-        server.StateUpdated += (_, state) => {
-            Application.Instance.Invoke(() => StateUpdated?.Invoke(State, state));
-            if (wasConnected != Connected) {
-                Application.Instance.Invoke(() => ConnectionChanged?.Invoke());
-                wasConnected = Connected;
-            }
-            
-            State = state;
-        };
-        server.LinesUpdated += updateLines => Application.Instance.Invoke(() => LinesUpdated?.Invoke(updateLines));
-        server.Reset += () => {
-            if (wasConnected != Connected) {
-                Application.Instance.Invoke(() => ConnectionChanged?.Invoke());
-                wasConnected = Connected;
-            }
-        }; 
-        server.Run();
-    }
-    public static void Stop() {
-        server = null;
-    }
-    
-    public static string GetConsoleCommand(bool simple) {
-        return server?.GetDataFromGame(GameDataType.ConsoleCommand, simple) ?? string.Empty;
-    }
-    public static string GetModURL() {
-        return server?.GetDataFromGame(GameDataType.ModUrl) ?? string.Empty;
-    }
-    public static string GetModInfo() {
-        return server?.GetDataFromGame(GameDataType.ModInfo) ?? string.Empty;
-    }
-    public static string GetExactGameInfo() {
-        return server?.GetDataFromGame(GameDataType.ExactGameInfo) ?? string.Empty;
-    }
-    public static void RecordTAS(string fileName) {
-        if (Connected) {
-            server!.RecordTAS(fileName);
-        }
-    }
-    public static void ForceReconnect() {
-        if (Connected) {
-            server!.ExternalReset();
-        }
-    }
-    
-    public static void WriteWait() {
-        if (Connected) {
-            server!.WriteWait();
-        }
-    }
-    public static void SendPath(string path) {
-        if (Connected) {
-            server!.SendPath(path);
-        }
-    }
-    
-    // Prevent key-repeat events from being forwarded.
-    // If there are too many, the communication will crash
-    // TODO: Rewrite the studio communication, accounting for something like this
-    private static readonly HashSet<HotkeyID> pressedHotkeys = new();
-    
-    public static bool SendKeyEvent(Keys key, Keys modifiers, bool released) {
-        var winFormsKey = key.ToWinForms();
-        
-        foreach (HotkeyID hotkeyIDs in _bindings.Keys) {
-            var bindingKeys = _bindings[hotkeyIDs];
-            if (bindingKeys.Count == 0) continue;
-            
-            // Require the key without any modifiers (or the modifier being the same as the key)
-            if (bindingKeys.Count == 1) {
-                if ((bindingKeys[0] == winFormsKey) &&
-                    ((modifiers == Keys.None) ||
-                     (modifiers == Keys.Shift && key is Keys.Shift or Keys.LeftShift or Keys.RightShift) ||
-                     (modifiers == Keys.Control && key is Keys.Control or Keys.LeftControl or Keys.RightControl) ||
-                     (modifiers == Keys.Alt && key is Keys.Alt or Keys.LeftAlt or Keys.RightAlt)))
-                {
-                    if (!released && pressedHotkeys.Contains(hotkeyIDs)) {
-                        return true;
-                    }
-                    
-                    if (Connected) {
-                        server!.SendHotkeyPressed(hotkeyIDs, released);
-                    }
-                    
-                    if (released) {
-                        pressedHotkeys.Remove(hotkeyIDs);
-                    } else {
-                        pressedHotkeys.Add(hotkeyIDs);
-                    }
-
-                    return true;
-                }
-                
-                continue;
-            }
-            
-            // Binding has > 1 keys
-            foreach (var bind in bindingKeys) {
-                if (bind == winFormsKey)
-                    continue;
-                
-                if (bind is WinFormsKeys.Shift or WinFormsKeys.LShiftKey or WinFormsKeys.RShiftKey && modifiers.HasFlag(Keys.Shift))
-                    continue;
-                if (bind is WinFormsKeys.Control or WinFormsKeys.LControlKey or WinFormsKeys.RControlKey && modifiers.HasFlag(Keys.Control))
-                    continue;
-                if (bind is WinFormsKeys.Menu or WinFormsKeys.LMenu or WinFormsKeys.RMenu && modifiers.HasFlag(Keys.Alt))
-                    continue;
-            
-                // If only labeled for-loops would exist...
-                goto NextIter;
-            }
-            
-            if (!released && pressedHotkeys.Contains(hotkeyIDs)) {
-                return true;
-            }
-            
-            if (Connected) { 
-                server!.SendHotkeyPressed(hotkeyIDs, released);
-            }
-            
-            if (released) {
-                pressedHotkeys.Remove(hotkeyIDs);
-            } else {
-                pressedHotkeys.Add(hotkeyIDs);
-            }
-
-            return true;
-            
-            NextIter:; // Yes, that ";" is required..
-        }
-        
-        return false;
-    }
-
-
-    public static void Play() {
-    }
-    
-    public static bool Connected => StudioCommunicationBase.Initialized;
-    
-    public static int CurrentLine => Connected ? State.CurrentLine : -1;
-    public static string CurrentLineSuffix => Connected ? State.CurrentLineSuffix : string.Empty;
-    public static int CurrentFrameInTas => Connected ? State.CurrentFrameInTas : -1;
-    public static int TotalFrames => Connected ? State.TotalFrames : -1;
-    public static int SaveStateLine => Connected ? State.SaveStateLine : -1;
-    public static States TasStates => Connected ? (States) State.tasStates : States.None;
-    public static string GameInfo => Connected ? State.GameInfo : string.Empty;
-    public static string LevelName => Connected ? State.LevelName : string.Empty;
-    public static string ChapterTime => Connected ? State.ChapterTime : string.Empty;
-
-    private static bool GetToggle(string settingName) {
-        if (server?.GetDataFromGame(GameDataType.SettingValue, settingName) is { } settingValue &&
-            bool.TryParse(settingValue, out var value)) 
-        {
-            return value;
-        }
-        
-        return false;
-    }
-    
-    public static bool GetHitboxes() => GetToggle("ShowHitboxes");
-    public static bool GetTriggerHitboxes() => GetToggle("ShowTriggerHitboxes");
-    public static bool GetUnloadedRoomsHitboxes() => GetToggle("ShowUnloadedRoomsHitboxes");
-    public static bool GetCameraHitboxes() => GetToggle("ShowCameraHitboxes");
-    public static bool GetSimplifiedHitboxes() => GetToggle("SimplifiedHitboxes");
-    public static bool GetActualCollideHitboxes() => GetToggle("ShowActualCollideHitboxes");
-    public static bool GetSimplifiedGraphics() => GetToggle("SimplifiedGraphics");
-    public static bool GetGameplay() => GetToggle("ShowGameplay");
-    public static bool GetCenterCamera() => GetToggle("CenterCamera");
-    public static bool GetCenterCameraHorizontallyOnly() => GetToggle("CenterCameraHorizontallyOnly");
-    public static bool GetInfoHud() => GetToggle("InfoHud");
-    public static bool GetInfoTasInput() => GetToggle("InfoTasInput");
-    public static bool GetInfoGame() => GetToggle("InfoGame");
-    public static bool GetInfoWatchEntity() => GetToggle("InfoWatchEntity");
-    public static bool GetInfoCustom() => GetToggle("InfoCustom");
-    public static bool GetInfoSubpixelIndicator() => GetToggle("InfoSubpixelIndicator");
-    public static bool GetSpeedUnit() => GetToggle("SpeedUnit");
-    
-    public static void ToggleHitboxes() => server?.ToggleGameSetting("ShowHitboxes", null);
-    public static void ToggleTriggerHitboxes() => server?.ToggleGameSetting("ShowTriggerHitboxes", null);
-    public static void ToggleUnloadedRoomsHitboxes() => server?.ToggleGameSetting("ShowUnloadedRoomsHitboxes", null);
-    public static void ToggleCameraHitboxes() => server?.ToggleGameSetting("ShowCameraHitboxes", null);
-    public static void ToggleSimplifiedHitboxes() => server?.ToggleGameSetting("SimplifiedHitboxes", null);
-    public static void ToggleActualCollideHitboxes() => server?.ToggleGameSetting("ShowActualCollideHitboxes", null);
-    public static void ToggleSimplifiedGraphics() => server?.ToggleGameSetting("SimplifiedGraphics", null);
-    public static void ToggleGameplay() => server?.ToggleGameSetting("ShowGameplay", null);
-    public static void ToggleCenterCamera() => server?.ToggleGameSetting("CenterCamera", null);
-    public static void ToggleCenterCameraHorizontallyOnly() => server?.ToggleGameSetting("CenterCameraHorizontallyOnly", null);
-    public static void ToggleInfoHud() => server?.ToggleGameSetting("InfoHud", null);
-    public static void ToggleInfoTasInput() => server?.ToggleGameSetting("InfoTasInput", null);
-    public static void ToggleInfoGame() => server?.ToggleGameSetting("InfoGame", null);
-    public static void ToggleInfoWatchEntity() => server?.ToggleGameSetting("InfoWatchEntity", null);
-    public static void ToggleInfoCustom() => server?.ToggleGameSetting("InfoCustom", null);
-    public static void ToggleInfoSubpixelIndicator() => server?.ToggleGameSetting("InfoSubpixelIndicator", null);
-    public static void ToggleSpeedUnit() => server?.ToggleGameSetting("SpeedUnit", null);
-
-    private const int DefaultDecimals = 2;
-    private const int DefaultFastForwardSpeed = 10;
-    private const float DefaultSlowForwardSpeed = 0.1f;
-    
-    private static int GetDecimals(string settingName) {
-        string decimals = DefaultDecimals.ToString();
-        if (server?.GetDataFromGame(GameDataType.SettingValue, settingName) is { } settingValue) {
-            decimals = settingValue;
-        }
-
-        bool success = int.TryParse(decimals, out int result);
-        return success ? result : DefaultDecimals;
-    }
-
-    public static int GetPositionDecimals() => GetDecimals("PositionDecimals");
-    public static void SetPositionDecimals(int value) => server?.ToggleGameSetting("PositionDecimals", value);
-
-    public static int GetSpeedDecimals() => GetDecimals("SpeedDecimals");
-    public static void SetSpeedDecimals(int value) => server?.ToggleGameSetting("SpeedDecimals", value);
-
-    public static int GetVelocityDecimals() => GetDecimals("VelocityDecimals");
-    public static void SetVelocityDecimals(int value) => server?.ToggleGameSetting("VelocityDecimals", value);
-    
-    public static int GetAngleDecimals() => GetDecimals("AngleDecimals");
-    public static void SetAngleDecimals(int value) => server?.ToggleGameSetting("AngleDecimals", value);
-
-    public static int GetCustomInfoDecimals() => GetDecimals("CustomInfoDecimals");
-    public static void SetCustomInfoDecimals(int value) => server?.ToggleGameSetting("CustomInfoDecimals", value);
-
-    public static int GetSubpixelIndicatorDecimals() => GetDecimals("SubpixelIndicatorDecimals");
-    public static void SetSubpixelIndicatorDecimals(int value) => server?.ToggleGameSetting("SubpixelIndicatorDecimals", value);
-
-    public static int GetFastForwardSpeed() {
-        string speed = DefaultFastForwardSpeed.ToString();
-        if (server?.GetDataFromGame(GameDataType.SettingValue, "FastForwardSpeed") is { } settingValue) {
-            speed = settingValue;
-        }
-
-        bool success = int.TryParse(speed, out int result);
-        return success ? result : DefaultFastForwardSpeed;
-    }
-    public static void SetFastForwardSpeed(int value) => server?.ToggleGameSetting("FastForwardSpeed", value);
-
-    public static float GetSlowForwardSpeed() {
-        string speed = DefaultSlowForwardSpeed.ToString(CultureInfo.InvariantCulture);
-        if (server?.GetDataFromGame(GameDataType.SettingValue, "SlowForwardSpeed") is { } settingValue) {
-            speed = settingValue;
-        }
-
-        bool success = float.TryParse(speed, NumberStyles.None, CultureInfo.InvariantCulture, out float result);
-        return success ? result : DefaultSlowForwardSpeed;
-    }
-    public static void SetSlowForwardSpeed(float value) => server?.ToggleGameSetting("SlowForwardSpeed", value);
-    
-    public static void CopyCustomInfoTemplateToClipboard() => server?.ToggleGameSetting("Copy Custom Info Template to Clipboard", null);
-    public static void SetCustomInfoTemplateFromClipboard() => server?.ToggleGameSetting("Set Custom Info Template From Clipboard", null);
-    public static void ClearCustomInfoTemplate() => server?.ToggleGameSetting("Clear Custom Info Template", null);
-    public static void ClearWatchEntityInfo() => server?.ToggleGameSetting("Clear Watch Entity Info", null);
-}
-
-#endif

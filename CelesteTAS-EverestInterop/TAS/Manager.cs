@@ -5,6 +5,7 @@ using System.Threading;
 using Celeste;
 using Celeste.Mod;
 using Celeste.Pico8;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
 using StudioCommunication;
@@ -224,6 +225,13 @@ public static class Manager {
             return;
         }
 
+        Vector2 remainder = Engine.Scene?.Tracker.GetEntity<Player>()?.movementCounter ?? Vector2.Zero;
+        if (Engine.Scene is Level level && level.GetPlayer() is { } player) {
+            remainder = player.movementCounter;
+        } else if (Engine.Scene is Emulator emulator && emulator.game?.objects.FirstOrDefault(o => o is Classic.player) is Classic.player classicPlayer) {
+            remainder = classicPlayer.rem;
+        }
+
         InputFrame previous = Controller.Previous;
         StudioState state = new() {
             CurrentLine = previous?.Line ?? -1,
@@ -235,6 +243,8 @@ public static class Manager {
             GameInfo = GameInfo.StudioInfo,
             LevelName = GameInfo.LevelName,
             ChapterTime = GameInfo.ChapterTime,
+            ShowSubpixelIndicator = TasSettings.InfoSubpixelIndicator && Engine.Scene is Level or Emulator,
+            SubpixelRemainder = (remainder.X, remainder.Y),
         };
         CommunicationWrapper.SendState(state);
     }

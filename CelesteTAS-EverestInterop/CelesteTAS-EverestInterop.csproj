@@ -17,15 +17,14 @@
 
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
-        <DefineConstants>REWRITE</DefineConstants>
     </PropertyGroup>
 
     <PropertyGroup>
         <PathMap>$(MSBuildProjectDirectory)=CelesteTAS/</PathMap>
     </PropertyGroup>
-    
-    <Import Project="..\StudioCommunication\StudioCommunication.projitems" Label="Shared" />
 
+    <Import Project="..\StudioCommunication\StudioCommunication.targets" />
+    
     <ItemGroup>
         <Reference Include="$(CelestePrefix)\Celeste.dll" Publicize="true" />
         <Reference Include="$(CelestePrefix)\FNA.dll" />
@@ -53,6 +52,7 @@
         <Copy SourceFiles="EverestInterop\Lua\env.lua" DestinationFiles="..\bin\env.lua" />
 
         <Copy SourceFiles="$(OutputPath)ICSharpCode.SharpZipLib.dll" DestinationFolder="..\bin" />
+        <Copy SourceFiles="$(OutputPath)MemoryPack.Core.dll" DestinationFolder="..\bin" />
         <Copy SourceFiles="$(OutputPath)JetBrains.Profiler.Api.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug'" />
     </Target>
 

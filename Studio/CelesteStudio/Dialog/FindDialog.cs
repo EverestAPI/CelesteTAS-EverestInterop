@@ -45,7 +45,7 @@ public class FindDialog : Eto.Forms.Dialog {
                 }  
             },
         };
-        Icon = Studio.Instance.Icon;
+        Icon = Assets.AppIcon;
 
         DefaultButton = nextButton;
 

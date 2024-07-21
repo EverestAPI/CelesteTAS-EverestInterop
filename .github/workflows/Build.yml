@@ -1,4 +1,4 @@
-name: Build CelesteTAS
+name: Build CelesteTAS + Studio
 
 on:
   workflow_call:
@@ -7,23 +7,23 @@ on:
       - '*'
     paths:
       - 'CelesteTAS-EverestInterop/**'
-      - 'StudioCommunication/**'
       - 'Studio/**'
-      - .github/workflows/CelesteTAS.Build.yml
+      - 'StudioCommunication/**'
+      - .github/workflows/CelesteStudio.Build.yml
   pull_request:
     branches:
       - '*'
     paths:
       - 'CelesteTAS-EverestInterop/**'
-      - 'StudioCommunication/**'
       - 'Studio/**'
-      - .github/workflows/CelesteTAS.Build.yml
+      - 'StudioCommunication/**'
+      - .github/workflows/CelesteStudio.Build.yml
 
 jobs:
   build-studio:
-    uses: ./.github/workflows/CelesteStudio.Build.yml
+    uses: ./.github/workflows/Build.CelesteStudio.yml
     with:
-      rewrite: true
+      build-cfg: Debug
 
   build-celestetas:
     runs-on: ubuntu-latest
@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@v3
            
       - name: Build
-        run: dotnet build CelesteTAS-EverestInterop -c Release -p:DefineConstants=REWRITE           
+        run: dotnet build CelesteTAS-EverestInterop -c Debug           
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4

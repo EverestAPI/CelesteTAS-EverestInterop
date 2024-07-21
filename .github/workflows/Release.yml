@@ -7,9 +7,9 @@ on:
 
 jobs:
   build-studio:
-    uses: ./.github/workflows/CelesteStudio.Build.yml
+    uses: ./.github/workflows/Build.CelesteStudio.yml
     with:
-      rewrite: true
+      build-cfg: Release
   
   release:
     runs-on: ubuntu-latest

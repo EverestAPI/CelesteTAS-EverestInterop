@@ -3,23 +3,10 @@ name: Build Celeste Studio
 on:
   workflow_call:
     inputs:
-      rewrite:
+      build-cfg:
         required: true
-        type: boolean
-  push:
-    branches:
-      - '*'
-    paths:
-      - 'Studio/**'
-      - 'StudioCommunication/**'
-      - .github/workflows/CelesteStudio.Build.yml
-  pull_request:
-    branches:
-      - '*'
-    paths:
-      - 'Studio/**'
-      - 'StudioCommunication/**'
-      - .github/workflows/CelesteStudio.Build.yml
+        type: string
+        default: Release
 
 jobs: 
   build-windows:
@@ -34,13 +21,9 @@ jobs:
           dotnet-version: '8.0'
 
       - name: Publish x64 (legacy)
-        run: dotnet publish Studio/CelesteStudio.WPF -c Release -r win-x64 --self-contained=true -p:PublishSingleFile=true --output build-x64
-        if: ${{ !inputs.rewrite }}
-      - name: Publish x64 (rewrite)
-        run: dotnet publish Studio/CelesteStudio.WPF -c Release -r win-x64 --self-contained=true -p:PublishSingleFile=true -p:DefineConstants=REWRITE --output build-x64
-        if: ${{ inputs.rewrite }}
+        run: dotnet publish Studio/CelesteStudio.WPF -c ${{ inputs.build-cfg }} -r win-x64 --self-contained=true -p:PublishSingleFile=true --output build-x64
 #      - name: Publish ARM64
-#        run: dotnet publish Studio/CelesteStudio.WPF -c Release -r win-arm64 --self-contained=true -p:PublishSingleFile=true --output build-arm64
+#        run: dotnet publish Studio/CelesteStudio.WPF -c ${{ inputs.build-cfg }} -r win-arm64 --self-contained=true -p:PublishSingleFile=true --output build-arm64
 
       - name: Upload x64
         uses: actions/upload-artifact@v4
@@ -65,15 +48,11 @@ jobs:
           dotnet-version: '8.0'
 
       - name: Publish x64 (legacy)
-        run: dotnet publish Studio/CelesteStudio.GTK -c Release -r linux-x64 --self-contained=true -p:PublishSingleFile=true --output build-x64
-        if: ${{ !inputs.rewrite }}
-      - name: Publish x64 (rewrite)
-        run: dotnet publish Studio/CelesteStudio.GTK -c Release -r linux-x64 --self-contained=true -p:PublishSingleFile=true -p:DefineConstants=REWRITE --output build-x64
-        if: ${{ inputs.rewrite }}
+        run: dotnet publish Studio/CelesteStudio.GTK -c ${{ inputs.build-cfg }} -r linux-x64 --self-contained=true -p:PublishSingleFile=true --output build-x64
 #      - name: Publish ARM
-#        run: dotnet publish Studio/CelesteStudio.GTK -c Release -r linux-arm --self-contained=true -p:PublishSingleFile=true --output build-arm
+#        run: dotnet publish Studio/CelesteStudio.GTK -c ${{ inputs.build-cfg }} -r linux-arm --self-contained=true -p:PublishSingleFile=true --output build-arm
 #      - name: Publish ARM64
-#        run: dotnet publish Studio/CelesteStudio.GTK -c Release -r linux-arm64 --self-contained=true -p:PublishSingleFile=true --output build-arm64
+#        run: dotnet publish Studio/CelesteStudio.GTK -c ${{ inputs.build-cfg }} -r linux-arm64 --self-contained=true -p:PublishSingleFile=true --output build-arm64
 
       - name: Upload x64
         uses: actions/upload-artifact@v4
@@ -107,19 +86,23 @@ jobs:
         run: sudo xcode-select -switch /Applications/Xcode_15.1.app/Contents/Developer
 
       - name: Publish x64 (legacy)
-        run: dotnet publish Studio/CelesteStudio.Mac -c Release -r osx-x64 --self-contained=true -p:PublishSingleFile=true --output build-x64
-        if: ${{ !inputs.rewrite }}
-      - name: Publish x64 (rewrite)
-        run: dotnet publish Studio/CelesteStudio.Mac -c Release -r osx-x64 --self-contained=true -p:PublishSingleFile=true -p:DefineConstants=REWRITE --output build-x64
-        if: ${{ inputs.rewrite }}
+        run: dotnet publish Studio/CelesteStudio.Mac -c ${{ inputs.build-cfg }} -r osx-x64 --self-contained=true -p:PublishSingleFile=true --output build-x64
 #      - name: Publish ARM64
-#        run: dotnet publish Studio/CelesteStudio.Mac -c Release -r osx-arm64 --self-contained=true -p:PublishSingleFile=true --output build-arm64
+#        run: dotnet publish Studio/CelesteStudio.Mac -c ${{ inputs.build-cfg }} -r osx-arm64 --self-contained=true -p:PublishSingleFile=true --output build-arm64
+
+      - name: Fix and maintain file permissions
+        run: |
+          pushd build-x64
+          xattr -c CelesteStudio.Mac.app
+          chmod +x CelesteStudio.Mac.app/Contents/MacOS/CelesteStudio.Mac
+          tar -cvf CelesteStudio-osx-x64.tar CelesteStudio.Mac.app
+          popd
 
       - name: Upload x64
         uses: actions/upload-artifact@v4
         with:
           name: CelesteStudio-osx-x64
-          path: build-x64/**/*
+          path: build-x64/CelesteStudio-osx-x64.tar
 #      - name: Upload ARM64
 #        uses: actions/upload-artifact@v4
 #        with:

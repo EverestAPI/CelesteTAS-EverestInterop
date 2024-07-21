@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Channels;
 using CelesteStudio.Editing;
 using CelesteStudio.Util;
 using Eto.Drawing;
@@ -45,10 +44,10 @@ public class SnippetDialog : Dialog<bool> {
                     Width = list.Width,
                     Height = 500,
                     Content = list,
-                }
+                }.FixBorder()
             }
         };
-        Icon = Studio.Instance.Icon;
+        Icon = Assets.AppIcon;
         
         DefaultButton = new Button((_, _) => Close(true)) { Text = "&OK" };
         AbortButton = new Button((_, _) => Close(false)) { Text = "&Cancel" };
@@ -63,60 +62,20 @@ public class SnippetDialog : Dialog<bool> {
     private void GenerateListEntries(ICollection<StackLayoutItem> items) {
         items.Clear();
         
-        // Hack to unfocus the selected button once a hotkey has been pressed
-        var unfocuser = new Button { Visible = false };
-        items.Add(unfocuser);
-        
         for (int i = 0; i < snippets.Count; i++) {
             var snippet = snippets[i];
 
-            var enabledCheckBox = new CheckBox {Checked = snippet.Enabled};
+            var enabledCheckBox = new CheckBox { Checked = snippet.Enabled };
             enabledCheckBox.CheckedChanged += (_, _) => snippet.Enabled = enabledCheckBox.Checked.Value;
             
             var hotkeyButton = new Button { Text = snippet.Hotkey.ToShortcutString(), ToolTip = "Use the right mouse button to clear a hotkey!", Font = SystemFonts.Bold(), Width = 150};
             hotkeyButton.Click += (_, _) => {
-                var inputDialog = new Eto.Forms.Dialog {
-                    Content = new Panel {
-                        Padding = 10,
-                        Content = new Label { Text = "Press a hotkey...", Font = SystemFonts.Bold().WithFontStyle(FontStyle.Italic) }
-                    },
-                    Icon = Studio.Instance.Icon,
-                };
-                inputDialog.Load += (_, _) => Studio.Instance.WindowCreationCallback(inputDialog);
-                inputDialog.Shown += (_, _) => inputDialog.Location = Location + new Point((Width - inputDialog.Width) / 2, (Height - inputDialog.Height) / 2);
-                inputDialog.KeyDown += (_, e) => {
-                    // Don't allow binding modifiers by themselves
-                    if (e.Key is Keys.LeftShift or Keys.RightShift
-                        or Keys.LeftControl or Keys.RightControl
-                        or Keys.LeftAlt or Keys.RightAlt
-                        or Keys.LeftApplication or Keys.RightApplication) {
-                        return;
-                    }
-                    
-                    // Check for conflicts
-                    if (snippets.Any(other => other.Hotkey == e.KeyData))
-                    {
-                        var confirm = MessageBox.Show($"Another snippet already uses this hotkey ({e.KeyData.ToShortcutString()}).{Environment.NewLine}Are you sure you to use this hotkey?", MessageBoxButtons.YesNo, MessageBoxType.Question, MessageBoxDefaultButton.Yes);
-                        
-                        if (confirm != DialogResult.Yes) {
-                            return;
-                        }
-                    }
-                    
-                    //Application.Instance.Invoke()
-                    snippet.Hotkey = e.KeyData;
-                    hotkeyButton.Text = snippet.Hotkey.ToShortcutString();
-                    
-                    inputDialog.Close();
-                };
-                inputDialog.ShowModal();
+                snippet.Hotkey = HotkeyDialog.Show(this, snippet.Hotkey, null, snippets);
+                hotkeyButton.Text = snippet.Hotkey.ToShortcutString();
             };
             
             var shortcutTextBox = new TextBox { Text = snippet.Shortcut };
             shortcutTextBox.TextChanged += (_, _) => snippet.Shortcut = shortcutTextBox.Text.ReplaceLineEndings(Document.NewLine.ToString());
-            
-            shortcutTextBox.KeyDown += (_, e) => Console.WriteLine($"Key {e.Key} | {e.Modifiers}");
-            shortcutTextBox.TextInput += (_, e) => Console.WriteLine($"Text Input '{e.Text}'");
             
             var textArea = new TextArea {Text = snippet.Insert, Font = FontManager.EditorFontRegular, Width = 500 };
             textArea.TextChanged += (_, _) => snippet.Insert = textArea.Text.ReplaceLineEndings(Document.NewLine.ToString());
@@ -144,7 +103,7 @@ public class SnippetDialog : Dialog<bool> {
                 GenerateListEntries(items);
             };
             
-            var layout = new DynamicLayout {DefaultSpacing = new Size(15, 5), Padding = new Padding(0, 0, 0, 10)};
+            var layout = new DynamicLayout { DefaultSpacing = new Size(15, 5), Padding = new Padding(0, 0, 0, 10)};
             {
                 layout.BeginHorizontal();
                 layout.BeginVertical();

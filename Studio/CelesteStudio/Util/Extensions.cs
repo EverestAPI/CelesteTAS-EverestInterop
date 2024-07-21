@@ -6,6 +6,7 @@ using System.Text;
 using CelesteStudio.Editing;
 using Eto.Drawing;
 using Eto.Forms;
+using System.Reflection;
 
 namespace CelesteStudio.Util;
 
@@ -14,7 +15,23 @@ public static class Extensions
     public static string[] SplitDocumentLines(this string self, StringSplitOptions options = StringSplitOptions.None) => self.Split(Document.NewLine, options);
 
     public static int Digits(this int self) => Math.Abs(self).ToString().Length;
-    public static T Mod<T>(this T x, T m) where T : INumber<T> => (x % m + m) % m; 
+    public static T Mod<T>(this T x, T m) where T : INumber<T> => (x % m + m) % m;
+    
+    private static readonly string format = "0.".PadRight(339, '#');
+    public static string ToFormattedString(this float value, int decimals) {
+        if (decimals == 0) {
+            return value.ToString(format);
+        } else {
+            return ((double) value).ToFormattedString(decimals);
+        }
+    }
+    public static string ToFormattedString(this double value, int decimals) {
+        if (decimals == 0) {
+            return value.ToString(format);
+        } else {
+            return value.ToString($"F{decimals}");
+        }
+    }
     
     public static string ReplaceRange(this string self, int startIndex, int count, string replacement) => self.Remove(startIndex, count).Insert(startIndex, replacement);
     
@@ -28,10 +45,11 @@ public static class Extensions
     
     public static string HotkeyToString(this Keys hotkey, string separator) {
         var keys = new List<Keys>();
+        // Swap App and Ctrl on macOS
         if (hotkey.HasFlag(Keys.Application))
-            keys.Add(Keys.Application);
-        if (hotkey.HasFlag(Keys.Control))
-            keys.Add(Keys.Control);
+            keys.Add(Eto.Platform.Instance.IsMac ? Keys.Control : Keys.Application);
+        if (hotkey.HasFlag( Keys.Control))
+            keys.Add(Eto.Platform.Instance.IsMac ? Keys.Application : Keys.Control);
         if (hotkey.HasFlag(Keys.Alt))
             keys.Add(Keys.Alt);
         if (hotkey.HasFlag(Keys.Shift))
@@ -51,10 +69,11 @@ public static class Extensions
         if (hotkey == Keys.None)
             return Keys.None;
         
+        // Swap App and Ctrl on macOS
         if (keys.Any(key => key == Keys.Application))
-            hotkey |= Keys.Application;
+            hotkey |= Eto.Platform.Instance.IsMac ? Keys.Control : Keys.Application;
         if (keys.Any(key => key == Keys.Control))
-            hotkey |= Keys.Control;
+            hotkey |= Eto.Platform.Instance.IsMac ? Keys.Application : Keys.Control;
         if (keys.Any(key => key == Keys.Alt))
             hotkey |= Keys.Alt;
         if (keys.Any(key => key == Keys.Shift))
@@ -101,5 +120,17 @@ public static class Extensions
             
             return hash1 + (hash2*1566083941);
         }
+    }
+
+    private static readonly MethodInfo? m_FixScrollable = Assembly.GetEntryAssembly()?.GetType("CelesteStudio.WPF.Program")?.GetMethod("FixScrollable", BindingFlags.Public | BindingFlags.Static);
+    public static Scrollable FixBorder(this Scrollable scrollable) {
+        if (!Eto.Platform.Instance.IsWpf) {
+            return scrollable;
+        }
+
+        // Apply the WPF theme to the border
+        m_FixScrollable!.Invoke(null, [scrollable]);
+        Settings.ThemeChanged += () => m_FixScrollable!.Invoke(null, [scrollable]);
+        return scrollable;
     }
 }

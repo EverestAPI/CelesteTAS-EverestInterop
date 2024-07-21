@@ -19,7 +19,7 @@ public class RecordDialog : Dialog<bool> {
             Orientation = Orientation.Horizontal,
             Items = { new Label { Text = "File Name" }, textBox },
         };
-        Icon = Studio.Instance.Icon;
+        Icon = Assets.AppIcon;
         
         DefaultButton = new Button((_, _) => Close(true)) { Text = "&Record" };
         AbortButton = new Button((_, _) => Close(false)) { Text = "&Cancel" };

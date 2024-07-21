@@ -9,6 +9,7 @@ using Celeste.Mod.Helpers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
+using StudioCommunication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Input.Commands;
@@ -190,33 +191,29 @@ public static class GameData {
         }
     }
     
-    // Each entry is separated by a ';' and has the format: <'!' = final, '.' = non-final><displayed member name>#<displayed member extra#<type of member>
-    // Special type names are inside angle-brackets
-    private struct AutoCompleteEntry {
-        public bool Final;
-        public string MemberName;
-        public string MemberExtra;
-    }
-    
     private static readonly string[] ignoredNamespaces = ["System", "StudioCommunication", "TAS", "SimplexNoise", "FMOD", "MonoMod", "Snowberry"];
-    public static string GetSetCommandAutoCompleteEntries(string argsText) {
-        var entries = new List<AutoCompleteEntry>();
+    public static IEnumerable<CommandAutoCompleteEntry> GetSetCommandAutoCompleteEntries(string argsText, int index) {
+        if (index != 0) {
+            return GetParameterAutoCompleteEntries(argsText, index, AutoCompleteType.Set);
+        }
         
         var args = argsText.Split('.');
         if (args.Length == 1) {
+            var entries = new List<CommandAutoCompleteEntry>();
+            
             // Vanilla settings. Manually selected to filter out useless entries
             var vanillaSettings = ((string[])["DisableFlashes", "ScreenShake", "GrabMode", "CrouchDashMode", "SpeedrunClock", "Pico8OnMainMenu", "VariantsUnlocked"]).Select(e => typeof(Settings).GetField(e)!);
             var vanillaSaveData = ((string[])["CheatMode", "AssistMode", "VariantMode", "UnlockedAreas", "RevealedChapter9", "DebugMode"]).Select(e => typeof(SaveData).GetField(e)!);
-            entries.AddRange(vanillaSettings.Select(f => new AutoCompleteEntry { Final = true, MemberName = f.Name, MemberExtra = $"{CSharpTypeName(f.FieldType)} (Settings)" }));
-            entries.AddRange(vanillaSaveData.Select(f => new AutoCompleteEntry { Final = true, MemberName = f.Name, MemberExtra = $"{CSharpTypeName(f.FieldType)} (Save Data)" }));
-            entries.AddRange(typeof(Assists).GetFields().Select(f => new AutoCompleteEntry { Final = true, MemberName = f.Name, MemberExtra = $"{CSharpTypeName(f.FieldType)} (Assists)" }));
+            entries.AddRange(vanillaSettings.Select(f => new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{CSharpTypeName(f.FieldType)} (Settings)", IsDone = true }));
+            entries.AddRange(vanillaSaveData.Select(f => new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{CSharpTypeName(f.FieldType)} (Save Data)", IsDone = true }));
+            entries.AddRange(typeof(Assists).GetFields().Select(f => new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{CSharpTypeName(f.FieldType)} (Assists)", IsDone = true }));
             
             // Mod settings
             entries.AddRange(Everest.Modules
                 .Where(mod => mod.SettingsType != null)
                 // Require at least 1 settable field / property
                 .Where(mod => mod.SettingsType.GetAllFieldInfos().Any() || mod.SettingsType.GetAllProperties().Any(p => p.GetSetMethod() != null))
-                .Select(mod => new AutoCompleteEntry { Final = false, MemberName = mod.Metadata.Name, MemberExtra = "Mod Setting" }));
+                .Select(mod => new CommandAutoCompleteEntry { Name = mod.Metadata.Name, Extra = "Mod Setting", IsDone = false }));
             
             var allTypes = ModUtils.GetTypes();
             var filteredTypes = allTypes
@@ -244,25 +241,49 @@ public static class GameData {
                     return (currName, currType);
                 })
                 .Order(new NamespaceComparer())
-                .Select(pair => new AutoCompleteEntry { Final = false, MemberName = pair.Item1, MemberExtra = pair.Item2.Namespace ?? string.Empty })
+                .Select(pair => new CommandAutoCompleteEntry { Name = pair.Item1, Extra = pair.Item2.Namespace ?? string.Empty, IsDone = false })
                 .ToArray();
             
             entries.AddRange(filteredTypes);
+            return entries.Select(e => e with { Name = e.IsDone ? e.Name : e.Name + "." }); // Append '.' for next segment if not done
+        } else if (args[0] == "ExtendedVariantMode") {
+            // Special case for setting extended variants
+            if (ExtendedVariantsUtils.GetVariantsEnum() is { } variantsEnum) {
+                return Enum.GetValues(variantsEnum).Cast<object>()
+                    .Select(variant => {
+                        string typeName = string.Empty;
+                        try {
+                            var variantType = ExtendedVariantsUtils.GetVariantType(new(variant));
+                            if (variantType != null) {
+                                typeName = CSharpTypeName(variantType);
+                            }
+                        } catch {
+                            // ignore
+                        }
+                        return new CommandAutoCompleteEntry { Name = variant.ToString(), Prefix = string.Join('.', args[..^1]) + ".", Extra = typeName, IsDone = true, HasNext = true };
+                    });
+            }
         } else if (Everest.Modules.FirstOrDefault(m => m.Metadata.Name == args[0] && m.SettingsType != null) is { } mod) {
-            entries.AddRange(GetTypeAutoCompleteEntries(RecurseSetType(mod.SettingsType, args), AutoCompleteType.Set));
+            return GetTypeAutoCompleteEntries(RecurseSetType(mod.SettingsType, args), AutoCompleteType.Set)
+                .Select(e => e with { Name = e.Name + (e.IsDone ? "" : "."), Prefix = string.Join('.', args[..^1]) + ".", HasNext = true });
         } else if (InfoCustom.TryParseTypes(args[0], out var types, out _, out _)) {
             // Let's just assume the first type
-            entries.AddRange(GetTypeAutoCompleteEntries(RecurseSetType(types[0], args), AutoCompleteType.Set));
+            return GetTypeAutoCompleteEntries(RecurseSetType(types[0], args), AutoCompleteType.Set)
+                .Select(e => e with { Name = e.Name + (e.IsDone ? "" : "."), Prefix = string.Join('.', args[..^1]) + ".", HasNext = true });
         }
         
-        return string.Join(';', entries.Select(entry => $"{(entry.Final ? "!" : ".")}{entry.MemberName}#{entry.MemberExtra}"));
+        return [];
     }
     
-    public static string GetInvokeCommandAutoCompleteEntries(string argsText) {
-        var entries = new List<AutoCompleteEntry>();
+    public static IEnumerable<CommandAutoCompleteEntry> GetInvokeCommandAutoCompleteEntries(string argsText, int index) {
+        if (index != 0) {
+            return GetParameterAutoCompleteEntries(argsText, index, AutoCompleteType.Invoke);
+        }
         
         var args = argsText.Split('.');
         if (args.Length == 1) {
+            var entries = new List<CommandAutoCompleteEntry>();
+
             var allTypes = ModUtils.GetTypes();
             var filteredTypes = allTypes
                 // Filter-out types which probably aren't useful
@@ -288,58 +309,63 @@ public static class GameData {
                     return (currName, currType);
                 })
                 .Order(new NamespaceComparer())
-                .Select(pair => new AutoCompleteEntry { Final = false, MemberName = pair.Item1, MemberExtra = pair.Item2.Namespace ?? string.Empty })
+                .Select(pair => new CommandAutoCompleteEntry { Name = pair.Item1, Extra = pair.Item2.Namespace ?? string.Empty, IsDone = false })
                 .ToArray();
             
             entries.AddRange(filteredTypes);
+            return entries.Select(e => e with { Name = e.IsDone ? e.Name : e.Name + "." }); // Append '.' for next segment if not done;
         } else if (InfoCustom.TryParseTypes(args[0], out var types, out _, out _)) {
             // Let's just assume the first type
-            entries.AddRange(GetTypeAutoCompleteEntries(types[0], AutoCompleteType.Invoke));
+            return GetTypeAutoCompleteEntries(types[0], AutoCompleteType.Invoke)
+                .Select(e => e with { Name = e.Name + (e.IsDone ? "" : "."), Prefix = string.Join('.', args[..^1]) + ".", HasNext = true });
         }
         
-        return string.Join(';', entries.Select(entry => $"{(entry.Final ? "!" : ".")}{entry.MemberName}#{entry.MemberExtra}"));
+        return [];
     }
     
-    public static string GetParameterAutoCompleteEntries(string argsText) {
-        var entries = new List<AutoCompleteEntry>();
+    private enum AutoCompleteType { Set, Invoke, Parameter }
+
+    private static IEnumerable<CommandAutoCompleteEntry> GetParameterAutoCompleteEntries(string argsText, int index, AutoCompleteType autoCompleteType) {
+        var args = argsText.Split('.');
         
-        var parts = argsText.Split(';');
-        bool isSet = parts[0] == "Set";
-        var args = parts[1].Split('.');
-        int index = int.Parse(parts[2]);
-        
-        if (isSet && args.Length == 1) {
+        if (autoCompleteType == AutoCompleteType.Set && args.Length == 1) {
             // Vanilla setting / session / assist
             if (typeof(Settings).GetFieldInfo(args[0], BindingFlags.Instance | BindingFlags.Public) is { } fSettings) {
-                Console.WriteLine($"f {fSettings}");
-                entries.AddRange(GetTypeAutoCompleteEntries(fSettings.FieldType, AutoCompleteType.Parameter));
+                return GetTypeAutoCompleteEntries(fSettings.FieldType, AutoCompleteType.Parameter);
             } else if (typeof(SaveData).GetFieldInfo(args[0], BindingFlags.Instance | BindingFlags.Public) is { } fSaveData) {
-                entries.AddRange(GetTypeAutoCompleteEntries(fSaveData.FieldType, AutoCompleteType.Parameter));
+                return GetTypeAutoCompleteEntries(fSaveData.FieldType, AutoCompleteType.Parameter);
             } else if (typeof(Assists).GetFieldInfo(args[0], BindingFlags.Instance | BindingFlags.Public) is { } fAssists) {
-                entries.AddRange(GetTypeAutoCompleteEntries(fAssists.FieldType, AutoCompleteType.Parameter));    
+                return GetTypeAutoCompleteEntries(fAssists.FieldType, AutoCompleteType.Parameter);
             }
-        } if (isSet && Everest.Modules.FirstOrDefault(m => m.Metadata.Name == args[0] && m.SettingsType != null) is { } mod) {
-            entries.AddRange(GetTypeAutoCompleteEntries(RecurseSetType(mod.SettingsType, args, includeLast: true), AutoCompleteType.Parameter));
+        } else if (args[0] == "ExtendedVariantMode") {
+            // Special case for setting extended variants
+            var variant = ExtendedVariantsUtils.ParseVariant(args[1]);
+            var variantType = ExtendedVariantsUtils.GetVariantType(new(variant));
+            
+            if (variantType != null) {
+                return GetTypeAutoCompleteEntries(RecurseSetType(variantType, args, includeLast: true), AutoCompleteType.Parameter);
+            }
+        } else if (autoCompleteType == AutoCompleteType.Set && Everest.Modules.FirstOrDefault(m => m.Metadata.Name == args[0] && m.SettingsType != null) is { } mod) {
+            return GetTypeAutoCompleteEntries(RecurseSetType(mod.SettingsType, args, includeLast: true), AutoCompleteType.Parameter);
         } else if (InfoCustom.TryParseTypes(args[0], out var types, out _, out _)) {
             // Let's just assume the first type
-            if (isSet) {
-                entries.AddRange(GetTypeAutoCompleteEntries(RecurseSetType(types[0], args, includeLast: true), AutoCompleteType.Parameter));
-            } else {
+            if (autoCompleteType == AutoCompleteType.Set) {
+                return GetTypeAutoCompleteEntries(RecurseSetType(types[0], args, includeLast: true), AutoCompleteType.Parameter);
+            } else if (autoCompleteType == AutoCompleteType.Invoke) {
                 var parameters = types[0].GetMethodInfo(args[1]).GetParameters();
                 if (index >= 0 && index < parameters.Length) {
                     bool final = index == parameters.Length - 1 || 
-                                 index < parameters.Length - 1 && !IsSettableType(parameters[index].ParameterType); 
+                                 index < parameters.Length - 1 && !IsSettableType(parameters[index].ParameterType);
                     
-                    entries.AddRange(GetTypeAutoCompleteEntries(parameters[index].ParameterType, AutoCompleteType.Parameter)
-                        .Select(entry => entry with { Final = final }));
+                    return GetTypeAutoCompleteEntries(parameters[index].ParameterType, AutoCompleteType.Parameter)
+                        .Select(e => e with { HasNext = !final });
                 }
             }
         }
         
-        return string.Join(';', entries.Select(entry => $"{(entry.Final ? "!" : ".")}{entry.MemberName}#{entry.MemberExtra}"));
+        return [];
     }
     
-    private enum AutoCompleteType { Set, Invoke, Parameter }
     private static Type RecurseSetType(Type baseType, string[] args, bool includeLast = false) {
         var type = baseType;
         for (int i = 1; i < args.Length - (includeLast ? 0 : 1); i++) {
@@ -356,7 +382,7 @@ public static class GameData {
         return type;
     }
     
-    private static IEnumerable<AutoCompleteEntry> GetTypeAutoCompleteEntries(Type type, AutoCompleteType autoCompleteType) {
+    private static IEnumerable<CommandAutoCompleteEntry> GetTypeAutoCompleteEntries(Type type, AutoCompleteType autoCompleteType) {
         bool staticMembers = !(type.IsSameOrSubclassOf(typeof(Entity)) || type.IsSameOrSubclassOf(typeof(Level)) || type.IsSameOrSubclassOf(typeof(Session)) || type.IsSameOrSubclassOf(typeof(EverestModuleSettings)));
         var bindingFlags = staticMembers
             ? BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public
@@ -368,10 +394,10 @@ public static class GameData {
                          .Where(p => p.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !p.Name.Contains('<') && !p.Name.Contains('>'))
                          .Where(p => IsSettableType(p.PropertyType) && p.GetSetMethod() != null)
                          .OrderBy(p => p.Name)
-                         .Select(p => new AutoCompleteEntry {
-                             Final = IsFinal(p.PropertyType), 
-                             MemberName = p.Name, 
-                             MemberExtra = CSharpTypeName(p.PropertyType)
+                         .Select(p => new CommandAutoCompleteEntry {
+                             Name = p.Name,
+                             Extra = CSharpTypeName(p.PropertyType),
+                             IsDone = IsFinal(p.PropertyType), 
                          }))
             {
                 yield return entry;
@@ -381,10 +407,10 @@ public static class GameData {
                          .Where(f => f.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !f.Name.Contains('<') && !f.Name.Contains('>'))
                          .Where(f => !f.IsInitOnly && IsSettableType(f.FieldType))
                          .OrderBy(f => f.Name)
-                         .Select(f => new AutoCompleteEntry {
-                             Final = IsFinal(f.FieldType), 
-                             MemberName = f.Name, 
-                             MemberExtra = CSharpTypeName(f.FieldType)
+                         .Select(f => new CommandAutoCompleteEntry {
+                             Name = f.Name, 
+                             Extra = CSharpTypeName(f.FieldType),
+                             IsDone = IsFinal(f.FieldType), 
                          }))
             {
                 yield return entry;
@@ -395,32 +421,32 @@ public static class GameData {
                          .Where(m => m.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !m.Name.Contains('<') && !m.Name.Contains('>') && !m.Name.StartsWith("set_") && !m.Name.StartsWith("get_"))
                          .Where(IsInvokableMethod)
                          .OrderBy(m => m.Name)
-                         .Select(m => new AutoCompleteEntry {
-                             Final = !m.GetParameters().Any(p => IsSettableType(p.ParameterType) || p.HasDefaultValue), 
-                             MemberName = m.Name, 
-                             MemberExtra = $"({string.Join(", ", m.GetParameters().Select(p => CSharpTypeName(p.ParameterType)))})"
+                         .Select(m => new CommandAutoCompleteEntry {
+                             Name = m.Name, 
+                             Extra = $"({string.Join(", ", m.GetParameters().Select(p => CSharpTypeName(p.ParameterType)))})",
+                             IsDone = !m.GetParameters().Any(p => IsSettableType(p.ParameterType) || p.HasDefaultValue),
                          }))
             {
                 yield return entry;
             }
         } else if (autoCompleteType == AutoCompleteType.Parameter) {
             if (type == typeof(bool)) {
-                yield return new AutoCompleteEntry { Final = true, MemberName = "true", MemberExtra = CSharpTypeName(type) };
-                yield return new AutoCompleteEntry { Final = true, MemberName = "false", MemberExtra = CSharpTypeName(type) };
+                yield return new CommandAutoCompleteEntry { Name = "true", Extra = CSharpTypeName(type), IsDone = true };
+                yield return new CommandAutoCompleteEntry { Name = "false", Extra = CSharpTypeName(type), IsDone = true };
             } else if (type == typeof(ButtonBinding)) {
                 foreach (var button in Enum.GetValues<MButtons>()) {
-                    yield return new AutoCompleteEntry { Final = true, MemberName = button.ToString(), MemberExtra = "Mouse" };
+                    yield return new CommandAutoCompleteEntry { Name = button.ToString(), Extra = "Mouse", IsDone = true };
                 }
                 foreach (var key in Enum.GetValues<Keys>()) {
                     if (key is Keys.Left or Keys.Right) {
                         // These keys can't be used, since the mouse buttons already use that name
                         continue;
                     }
-                    yield return new AutoCompleteEntry { Final = true, MemberName = key.ToString(), MemberExtra = "Key" };
+                    yield return new CommandAutoCompleteEntry { Name = key.ToString(), Extra = "Key", IsDone = true };
                 }
             } else if (type.IsEnum) {
                 foreach (var value in Enum.GetValues(type)) {
-                    yield return new AutoCompleteEntry { Final = true, MemberName = value.ToString(), MemberExtra = CSharpTypeName(type) };
+                    yield return new CommandAutoCompleteEntry { Name = value.ToString(), Extra = CSharpTypeName(type), IsDone = true };
                 }
             }
         }
