@@ -136,45 +136,14 @@ public sealed class FeatherlineForm : Form {
 
     private void GetInfo() {
         run.Enabled = false;
-        Featherline.Settings.Info = new List<object>() {
-            CommunicationWrapper.GetRawData<(float, float)>("Player.Speed"), // Speed
-            CommunicationWrapper.GetRawData<(float, float)>("Player.Position"), // Pos
-            CommunicationWrapper.GetRawData<(float, float)>("Player.PositionRemainder"), // PosRemainder
-            CommunicationWrapper.GetRawData<float>("Player.starFlySpeedLerp"), // Lerp
-            CommunicationWrapper.GetRawData<List<(float, float)>>("CrystalStaticSpinner.Position", true).Concat( // Spinners
-            CommunicationWrapper.GetRawData<List<(float, float)>>("DustStaticSpinner.Position", true)).Concat(
-            CommunicationWrapper.GetRawData<List<(float, float)>>("FrostHelper.CustomSpinner@FrostTempleHelper.Position", true)).Concat(
-            CommunicationWrapper.GetRawData<List<(float, float)>>("VivHelper.Entities.CustomSpinner@VivHelper.Position", true)).Concat(
-            CommunicationWrapper.GetRawData<List<(float, float)>>("Celeste.Mod.XaphanHelper.Entities.CustomSpinner@XaphanHelper.Position", true)).ToList(),
-            CommunicationWrapper.GetRawData<List<(float, float)>>("Lightning.TopLeft", true), // LightningUL
-            CommunicationWrapper.GetRawData<List<(float, float)>>("Lightning.BottomRight", true), // LightningDR
-            CommunicationWrapper.GetRawData<List<(float, float)>>("Spikes.TopLeft", true), // SpikeUL
-            CommunicationWrapper.GetRawData<List<(float, float)>>("Spikes.BottomRight", true), // SpikeDR
-            CommunicationWrapper.GetRawData<List<int>>("Spikes.Direction", true), // SpikeDir
-            CommunicationWrapper.GetRawData<(float, float)>("Level.Wind"), // Wind
-            CommunicationWrapper.GetRawData<List<(float, float)>>("WindTrigger.Position", true), // WTPos
-            CommunicationWrapper.GetRawData<List<int>>("WindTrigger.Pattern", true), // WTPattern
-            CommunicationWrapper.GetRawData<List<float>>("WindTrigger.Width", true), // WTWidth
-            CommunicationWrapper.GetRawData<List<float>>("WindTrigger.Height", true), // WTHeight
-            CommunicationWrapper.GetRawData<List<(float, float)>>("StarJumpBlock.TopLeft", true), // StarJumpUL
-            CommunicationWrapper.GetRawData<List<(float, float)>>("StarJumpBlock.BottomRight", true), // StarJumpDR
-            CommunicationWrapper.GetRawData<List<bool>>("StarJumpBlock.sinks", true), // StarJumpSinks
-            CommunicationWrapper.GetRawData<List<(float, float)>>("JumpthruPlatform.TopLeft", true), // JThruUL
-            CommunicationWrapper.GetRawData<List<(float, float)>>("JumpthruPlatform.BottomRight", true), // JThruDR
-            CommunicationWrapper.GetRawData<List<(float, float)>>("SidewaysJumpThru.TopLeft", true), // SideJTUL
-            CommunicationWrapper.GetRawData<List<(float, float)>>("SidewaysJumpThru.BottomRight", true), // SideJTDR
-            CommunicationWrapper.GetRawData<List<bool>>("SidewaysJumpThru.AllowLeftToRight", true), // SideJTIsRight
-            CommunicationWrapper.GetRawData<List<bool>>("SidewaysJumpThru.pushPlayer", true), // SideJTPushes
-            CommunicationWrapper.GetRawData<List<(float, float)>>("UpsideDownJumpThru.TopLeft", true), // UpsDJTUL
-            CommunicationWrapper.GetRawData<List<(float, float)>>("UpsideDownJumpThru.BottomRight", true), // UpsDJTDR
-            CommunicationWrapper.GetRawData<List<bool>>("UpsideDownJumpThru.pushPlayer", true), // UpsDJTPushes
-            CommunicationWrapper.GetRawData<int>("Level.Bounds.X"), // Bounds
-            CommunicationWrapper.GetRawData<int>("Level.Bounds.Y"),
-            CommunicationWrapper.GetRawData<int>("Level.Bounds.Width"),
-            CommunicationWrapper.GetRawData<int>("Level.Bounds.Height"),
-            CommunicationWrapper.GetRawData<string>("Level.Session.LevelData.Solids"), // Solids
-        };
-        run.Enabled = true;
+        var info = CommunicationWrapper.GetGameState().Result;
+        if (info == null) {
+            Console.Error.WriteLine("Failed to get game state");
+            MessageBox.Show("Failed to get game state, please try again.", MessageBoxType.Error);
+        } else {
+            Featherline.Settings.Info = info.Value;
+            run.Enabled = true;
+        }
     }
 
     private void CopyOutput() {
