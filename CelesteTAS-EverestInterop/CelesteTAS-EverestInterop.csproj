@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <AssemblyName>CelesteTAS-EverestInterop</AssemblyName>
@@ -22,7 +22,9 @@
         <PathMap>$(MSBuildProjectDirectory)=CelesteTAS/</PathMap>
     </PropertyGroup>
 
-    <Import Project="..\StudioCommunication\StudioCommunication.targets" />
+    <ItemGroup>
+        <ProjectReference Include="..\StudioCommunication\StudioCommunication.csproj" />
+    </ItemGroup>
     
     <ItemGroup>
         <Reference Include="$(CelestePrefix)\Celeste.dll" Publicize="true" />
