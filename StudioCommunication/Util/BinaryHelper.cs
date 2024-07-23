@@ -54,14 +54,16 @@ public static class BinaryHelper {
             case short v:
                 writer.Write(v);
                 return;
+            #if NETCOREAPP
             case Half v:
                 writer.Write(v);
                 return;
+            #endif
             case string v:
                 writer.Write(v);
                 return;
 
-            case IEnumerable v when v.GetType().IsArray || v.GetType().IsAssignableTo(typeof(IList)):
+            case IEnumerable v when v.GetType().IsArray || v is IList:
                 var values = v.Cast<object>().ToArray();
                 writer.Write7BitEncodedInt(values.Length);
                 for (int i = 0; i < values.Length; i++) {
@@ -113,8 +115,10 @@ public static class BinaryHelper {
             return reader.ReadSByte();
         if (type == typeof(short))
             return reader.ReadInt16();
+        #if NETCOREAPP
         if (type == typeof(Half))
             return reader.ReadHalf();
+        #endif
         if (type == typeof(string))
             return reader.ReadString();
 
@@ -129,7 +133,7 @@ public static class BinaryHelper {
 
             return values;
         }
-        if (type.IsAssignableTo(typeof(IList)) && type.IsGenericType) {
+        if (typeof(IList).IsAssignableFrom(type) && type.IsGenericType) {
             int count = reader.Read7BitEncodedInt();
             var elemType = type.GetElementType() ?? type.GenericTypeArguments[0];
 
@@ -140,7 +144,7 @@ public static class BinaryHelper {
 
             return list;
         }
-        if (type.IsAssignableTo(typeof(ITuple)) && type.IsGenericType) {
+        if (typeof(ITuple).IsAssignableFrom(type) && type.IsGenericType) {
             int count = reader.Read7BitEncodedInt();
 
             var values = new object?[count];
