@@ -153,8 +153,14 @@ public static class BinaryHelper {
             return Activator.CreateInstance(type, values)!;
         }
         
+        bool nullable = !type.IsValueType;
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>)) {
+            nullable = true;
+            type = Nullable.GetUnderlyingType(type)!;
+        }
+        
         int length = reader.Read7BitEncodedInt();
-        if (length == 0) {
+        if (nullable && length == 0) {
             return null;
         }
         

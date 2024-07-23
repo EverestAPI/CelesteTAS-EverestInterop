@@ -49,6 +49,8 @@
     <Target Name="CopyFiles" AfterTargets="Build">
         <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="..\bin" />
         <Copy SourceFiles="$(OutputPath)$(AssemblyName).pdb" DestinationFolder="..\bin" />
+        <Copy SourceFiles="$(OutputPath)StudioCommunication.dll" DestinationFolder="..\bin" />
+        <Copy SourceFiles="$(OutputPath)StudioCommunication.pdb" DestinationFolder="..\bin" />
         
         <Copy SourceFiles="EverestInterop\Lua\env.lua" DestinationFiles="..\bin\env.lua" />
 
