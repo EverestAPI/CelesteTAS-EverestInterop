@@ -14,6 +14,7 @@ using Eto.Forms;
 using Eto.Drawing;
 using FontDialog = CelesteStudio.Dialog.FontDialog;
 using Eto.Forms.ThemedControls;
+using StudioCommunication;
 
 namespace CelesteStudio;
 
@@ -464,6 +465,12 @@ public sealed class Studio : Form {
                     featherlineForm.Show();
                     featherlineForm.Closed += (_, _) => featherlineForm = null;
                 }),
+            }},
+            new SubMenuItem { Visible = false, Text = "&Game Hotkeys", Items = {
+                MenuEntry.Game_Start.ToAction(() => CommunicationWrapper.SendHotkey(HotkeyID.Start)),
+                MenuEntry.Game_Pause.ToAction(() => CommunicationWrapper.SendHotkey(HotkeyID.Pause)),
+                MenuEntry.Game_Restart.ToAction(() => CommunicationWrapper.SendHotkey(HotkeyID.Restart)),
+                MenuEntry.Game_FrameAdvance.ToAction(() => CommunicationWrapper.SendHotkey(HotkeyID.FrameAdvance)),
             }},
         ];
         

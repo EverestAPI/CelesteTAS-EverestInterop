@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using CelesteStudio.Util;
 using Eto.Forms;
 
@@ -27,8 +26,10 @@ public enum MenuEntry {
     Status_EditCustomInfoTemplate, Status_ClearWatchEntityInfo,
     
     StatusPopout_AlwaysOnTop,
+    
+    Game_Start, Game_Restart, Game_FrameAdvance, Game_Pause,
 }
-public enum MenuEntryCategory { File, Settings, View, Editor, Status, StatusPopout }
+public enum MenuEntryCategory { File, Settings, View, Editor, Status, StatusPopout, GameHotkeys }
 
 public static class MenuEntryExtensions {
     private static readonly Dictionary<MenuEntry, Keys> DefaultKeyBindings = new() {
@@ -86,6 +87,11 @@ public static class MenuEntryExtensions {
         { MenuEntry.Status_ClearWatchEntityInfo, Keys.None },
         
         { MenuEntry.StatusPopout_AlwaysOnTop, Keys.None },
+        
+        { MenuEntry.Game_Start, Keys.None },
+        { MenuEntry.Game_Pause, Keys.Equal },
+        { MenuEntry.Game_Restart, Keys.Semicolon },
+        { MenuEntry.Game_FrameAdvance, Keys.Backslash },
     };
     private static readonly Dictionary<MenuEntry, string> EntryNames = new() {
         { MenuEntry.File_New, "&New File" },
@@ -142,6 +148,11 @@ public static class MenuEntryExtensions {
         { MenuEntry.Status_ClearWatchEntityInfo, "Clear Watch Entity Info" },
         
         { MenuEntry.StatusPopout_AlwaysOnTop, "Always on Top" },
+        
+        { MenuEntry.Game_Start, "Start" },
+        { MenuEntry.Game_Pause, "Pause" },
+        { MenuEntry.Game_Restart, "Restart" },
+        { MenuEntry.Game_FrameAdvance, "Advance Frame" },
     };
     private static readonly Dictionary<MenuEntryCategory, MenuEntry[]> Categories = new() {
         { MenuEntryCategory.File, [
@@ -169,6 +180,8 @@ public static class MenuEntryExtensions {
             MenuEntry.Status_EditCustomInfoTemplate, MenuEntry.Status_ClearWatchEntityInfo] },
 
         { MenuEntryCategory.StatusPopout, [MenuEntry.StatusPopout_AlwaysOnTop] },
+        
+        { MenuEntryCategory.GameHotkeys, [MenuEntry.Game_Start, MenuEntry.Game_Pause, MenuEntry.Game_Restart, MenuEntry.Game_FrameAdvance] },
     };
     
 #if DEBUG
@@ -204,6 +217,7 @@ public static class MenuEntryExtensions {
         MenuEntryCategory.Editor => "Editor - Context Menu",
         MenuEntryCategory.Status => "Status - Context Menu",
         MenuEntryCategory.StatusPopout => "Status Popout - Context Menu",
+        MenuEntryCategory.GameHotkeys => "Game Hotkeys",
         _ => throw new UnreachableException(),
     };
     

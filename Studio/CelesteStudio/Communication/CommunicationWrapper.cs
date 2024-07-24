@@ -63,6 +63,13 @@ public static class CommunicationWrapper {
             comm!.SendPath(path);
         }
     }
+
+    public static void SendHotkey(HotkeyID hotkey) {
+        if (Connected) {
+            comm!.SendHotkey(hotkey, false);
+        }
+    }
+
     public static bool SendKeyEvent(Keys key, Keys modifiers, bool released) {
         var winFormsKey = key.ToWinForms();
         
