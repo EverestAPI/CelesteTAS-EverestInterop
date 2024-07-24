@@ -185,7 +185,7 @@ public static class GameData {
             
             SolidsData = level.Session.LevelData.Solids,
             StaticSolids = level.Entities
-                .Where(e => e is Solid and not StarJumpBlock { sinks: true })
+                .Where(e => e is Solid and not StarJumpBlock { sinks: true } && e.Collider is Hitbox && e.Collidable)
                 .Select(e => (e.X, e.Y, e.Width, e.Height))
                 .ToArray(),
             

@@ -88,7 +88,7 @@ public sealed class FeatherlineForm : Form {
                     Spacing = 10,
                     Orientation = Orientation.Horizontal,
                     Items = {
-                        (getInfo = new Button((_, _) => GetInfo()) { Text = "Get Game Info", Width = 150}),
+                        (getInfo = new Button((_, _) => GetInfo()) { Text = "Get Game Info", Width = 150 }),
                         (run = new Button((_, _) => Toggle()) { Text = "Run", Width = 150, Enabled = false }),
                         (copyOutput = new Button((_, _) => CopyOutput()) { Text = "Copy Output", Width = 150, Enabled = false }),
                     }
@@ -196,10 +196,7 @@ public sealed class FeatherlineForm : Form {
                 }
             });
         } else {
-            running = false;
-            output.Text = "";
-            copyOutput.Enabled = false;
-            run.Text = "Run";
+            GAManager.abortAlgorithm = true;
         }
     }
 }
@@ -247,3 +244,5 @@ public sealed class FeatherlineHelpForm : Form {
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
     }
 }
+
+// TODO: add progress form
