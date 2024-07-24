@@ -1492,6 +1492,13 @@ public sealed class Editor : Drawable {
                 CaretMovementType.WordRight => GetHardSnapColumns(actionLine).FirstOrDefault(c => c > caret.Col, caret.Col),
                 _ => caret.Col,
             };
+
+            if (newColumn == line.Length && Document.Lines.Count > caret.Row) {
+                var nextLine = Document.Lines[caret.Row + 1];
+                if (nextLine.AsSpan().Trim().Length == 0) {
+                    Document.RemoveLine(caret.Row + 1);
+                }
+            }
             
             line = line.Remove(Math.Min(newColumn, caret.Col), Math.Abs(newColumn - caret.Col));
             caret.Col = Math.Min(newColumn, caret.Col);
