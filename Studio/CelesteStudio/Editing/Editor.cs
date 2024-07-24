@@ -243,6 +243,7 @@ public sealed class Editor : Drawable {
                 MenuEntry.Editor_SwapSelectedXC.ToAction(() => SwapSelectedActions(Actions.Dash, Actions.Dash2)),
                 MenuEntry.Editor_CombineConsecutiveSameInputs.ToAction(() => CombineInputs(sameActions: true)),
                 MenuEntry.Editor_ForceCombineInputFrames.ToAction(() => CombineInputs(sameActions: false)),
+                MenuEntry.Editor_SplitFrames.ToAction(SplitLines),
                 // TODO: Is this feature even unused?
                 // MenuUtils.CreateAction("Convert Dash to Demo Dash"),
                 new SeparatorMenuItem(),
@@ -2054,6 +2055,40 @@ public sealed class Editor : Drawable {
             Document.Caret.Row = maxRow;
             Document.Caret = ClampCaret(Document.Caret);
         }
+    }
+    
+    private void SplitLines() {
+        using var _ = Document.Update();
+
+        (int minRow, int maxRow) = Document.Selection.Empty
+            ? (Document.Caret.Row, Document.Caret.Row)
+            : (Document.Selection.Min.Row, Document.Selection.Max.Row);
+
+        int extraLines = 0;
+        
+        for (int row = maxRow; row >= minRow; row--) {
+            if (!TryParseAndFormatActionLine(row, out var currActionLine))
+                continue;
+
+            if (currActionLine.Frames == 0) {
+                continue;
+            }
+
+            extraLines += currActionLine.Frames - 1;
+            var currentActionSingleFrame = currActionLine with {Frames = 1};
+            Document.ReplaceLines(row, Enumerable.Repeat(currentActionSingleFrame.ToString(), currActionLine.Frames).ToArray());
+        }
+
+        if (!Document.Selection.Empty) {
+            int endRow = maxRow + extraLines;
+            Document.Selection = new Selection {
+                Start = new CaretPosition(minRow, 0),
+                End = new CaretPosition(endRow, Document.Lines[endRow].Length),
+            };
+        }
+        
+        Document.Caret.Row = maxRow;
+        Document.Caret = ClampCaret(Document.Caret);
     }
 
     #endregion
