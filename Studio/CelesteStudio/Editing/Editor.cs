@@ -2006,8 +2006,20 @@ public sealed class Editor : Drawable {
             int activeRowStart = -1;
             
             for (int row = minRow; row <= maxRow; row++) {
-                if (!TryParseAndFormatActionLine(row, out var currActionLine))
+                if (!TryParseAndFormatActionLine(row, out var currActionLine)) {
+                    // "Flush" the remaining line
+                    if (activeActionLine != null) {
+                        Document.RemoveLines(activeRowStart, row-1);
+                        Document.InsertLine(activeRowStart, activeActionLine.Value.ToString());
+
+                        maxRow -= (row-1 - activeRowStart);
+                        row = activeRowStart + 1;
+
+                        activeActionLine = null;
+                        activeRowStart = -1;
+                    }
                     continue; // Skip non-input lines
+                }
                 
                 if (activeActionLine == null) {
                     activeActionLine = currActionLine;
