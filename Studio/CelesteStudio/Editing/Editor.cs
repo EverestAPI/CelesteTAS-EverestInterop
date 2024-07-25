@@ -566,6 +566,15 @@ public sealed class Editor : Drawable {
             position.Col - line.Index + xIdent);
     }
     private CaretPosition GetActualPosition(CaretPosition position) {
+        if (position.Row < 0) {
+            return new CaretPosition(0, 0);
+        }
+        if (position.Row >= visualToActualRows.Count) {
+            int actualRow = visualToActualRows[^1];
+            int lineLength = Document.Lines[actualRow].Length;
+            return new CaretPosition(actualRow, lineLength);
+        }
+
         int row = GetActualRow(position.Row);
         
         int col = position.Col;
