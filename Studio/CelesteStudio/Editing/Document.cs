@@ -602,12 +602,13 @@ public class Document {
         ChangedText(row, row);
     }
     
-    public void RemoveLines(int min, int maxInclusive) {
+    /// Removes an inclusive range of lines from min..max
+    public void RemoveLines(int min, int max) {
         PushUndoState();
         
-        CurrentLines.RemoveRange(min, maxInclusive - min + 1);
+        CurrentLines.RemoveRange(min, max - min + 1);
         
-        ChangedText(min, maxInclusive);
+        ChangedText(min, max);
     }
     
     public void ReplaceRangeInLine(int row, int startCol, int endCol, string text) {

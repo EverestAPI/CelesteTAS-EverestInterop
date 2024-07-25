@@ -2007,12 +2007,12 @@ public sealed class Editor : Drawable {
             
             for (int row = minRow; row <= maxRow; row++) {
                 if (!TryParseAndFormatActionLine(row, out var currActionLine)) {
-                    // "Flush" the remaining line
+                    // "Flush" the previous lines
                     if (activeActionLine != null) {
-                        Document.RemoveLines(activeRowStart, row-1);
+                        Document.RemoveLines(activeRowStart, row - 1);
                         Document.InsertLine(activeRowStart, activeActionLine.Value.ToString());
 
-                        maxRow -= (row-1 - activeRowStart);
+                        maxRow -= row - 1 - activeRowStart;
                         row = activeRowStart + 1;
 
                         activeActionLine = null;
