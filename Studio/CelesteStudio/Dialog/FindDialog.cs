@@ -78,7 +78,7 @@ public class FindDialog : Eto.Forms.Dialog {
             return;
         
         // Check against end of selection
-        for (int i = matches.Count - 1; i >= 0; i++) {
+        for (int i = matches.Count - 1; i >= 0; i--) {
             var match = matches[i];
             var end = new CaretPosition(match.Row, match.Col + textBox.Text.Length);
             
