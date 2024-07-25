@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using CelesteStudio.Util;
 using Eto.Forms;
@@ -51,7 +52,7 @@ public static class CommunicationWrapper {
     private static void OnBindingsChanged(Dictionary<HotkeyID, List<WinFormsKeys>> newBindings) {
         bindings = newBindings;
         foreach (var pair in bindings) {
-            Console.WriteLine(pair.ToString());
+            Console.WriteLine($"{pair.Key}: {string.Join(" + ", pair.Value.Select(key => key.ToString()))}");
         }
     }
     
