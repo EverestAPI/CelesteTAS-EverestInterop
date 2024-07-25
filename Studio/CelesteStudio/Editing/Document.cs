@@ -602,6 +602,7 @@ public class Document {
         ChangedText(row, row);
     }
     
+    /// Removes an inclusive range of lines from min..max
     public void RemoveLines(int min, int max) {
         PushUndoState();
         
