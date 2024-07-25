@@ -210,7 +210,7 @@ public static class GameData {
             JumpThrus = level.Entities
                 .Where(e => e is JumpthruPlatform || e.GetType().Name is "SidewaysJumpThru" or "UpsideDownJumpThru")
                 .Select(e => {
-                    if (e is JumpthruPlatform jumpThru) {
+                    if (e is JumpthruPlatform) {
                         return (e.X, e.Y, e.Width, e.Height, GameState.Direction.Up, true);
                     }
                     if (e.GetType().Name == "SidewaysJumpThru") {
