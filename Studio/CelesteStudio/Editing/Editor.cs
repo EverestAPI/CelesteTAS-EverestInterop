@@ -2058,7 +2058,7 @@ public sealed class Editor : Drawable {
     }
     
     private void SplitLines() {
-        using var _ = Document.Update();
+        using var __ = Document.Update();
 
         (int minRow, int maxRow) = Document.Selection.Empty
             ? (Document.Caret.Row, Document.Caret.Row)
@@ -2067,16 +2067,12 @@ public sealed class Editor : Drawable {
         int extraLines = 0;
         
         for (int row = maxRow; row >= minRow; row--) {
-            if (!TryParseAndFormatActionLine(row, out var currActionLine))
-                continue;
-
-            if (currActionLine.Frames == 0) {
+            if (!ActionLine.TryParse(Document.Lines[row], out var actionLine) || actionLine.Frames == 0) {
                 continue;
             }
 
-            extraLines += currActionLine.Frames - 1;
-            var currentActionSingleFrame = currActionLine with {Frames = 1};
-            Document.ReplaceLines(row, Enumerable.Repeat(currentActionSingleFrame.ToString(), currActionLine.Frames).ToArray());
+            extraLines += actionLine.Frames - 1;
+            Document.ReplaceLines(row, Enumerable.Repeat((actionLine with { Frames = 1 }).ToString(), actionLine.Frames).ToArray());
         }
 
         if (!Document.Selection.Empty) {
