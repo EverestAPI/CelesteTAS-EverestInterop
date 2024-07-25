@@ -1471,16 +1471,34 @@ public sealed class Editor : Drawable {
                     line = actionLine.ToString();
                     goto FinishDeletion;
                 } else if (caret.Col == featherColumn && direction is CaretMovementType.CharRight or CaretMovementType.WordRight ||
-                           caret.Col == angleMagnitudeCommaColumn && direction is CaretMovementType.CharLeft or CaretMovementType.WordLeft) {
+                           caret.Col == angleMagnitudeCommaColumn && direction is CaretMovementType.CharLeft or CaretMovementType.WordLeft) 
+                {
                     actionLine.FeatherAngle = actionLine.FeatherMagnitude;
                     actionLine.FeatherMagnitude = null;
                     caret.Col = featherColumn;
                     line = actionLine.ToString();
                     goto FinishDeletion;
                 } else if (caret.Col == angleMagnitudeCommaColumn - 1 &&
-                           direction is CaretMovementType.CharRight or CaretMovementType.WordRight) {
+                           direction is CaretMovementType.CharRight or CaretMovementType.WordRight) 
+                {
                     actionLine.FeatherMagnitude = null;
                     line = actionLine.ToString();
+                    goto FinishDeletion;
+                }
+            }
+            
+            // Remove blank lines with delete at the end of a line
+            if (caret.Col == line.Length &&
+                caret.Row < Document.Lines.Count - 1 && 
+                string.IsNullOrWhiteSpace(Document.Lines[caret.Row + 1])) 
+            {
+                if (direction == CaretMovementType.CharRight) {
+                    Document.RemoveLine(caret.Row + 1);
+                    goto FinishDeletion;
+                } else if (direction == CaretMovementType.WordRight) {
+                    while (caret.Row < Document.Lines.Count - 1 && string.IsNullOrWhiteSpace(Document.Lines[caret.Row + 1])) {
+                        Document.RemoveLine(caret.Row + 1);
+                    }
                     goto FinishDeletion;
                 }
             }
@@ -1493,13 +1511,6 @@ public sealed class Editor : Drawable {
                 _ => caret.Col,
             };
 
-            if (newColumn == line.Length && Document.Lines.Count > caret.Row) {
-                var nextLine = Document.Lines[caret.Row + 1];
-                if (nextLine.AsSpan().Trim().Length == 0) {
-                    Document.RemoveLine(caret.Row + 1);
-                }
-            }
-            
             line = line.Remove(Math.Min(newColumn, caret.Col), Math.Abs(newColumn - caret.Col));
             caret.Col = Math.Min(newColumn, caret.Col);
             
