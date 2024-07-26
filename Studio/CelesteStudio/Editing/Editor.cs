@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -17,6 +18,47 @@ using WrapLine = (string Line, int Index);
 using WrapEntry = (int StartOffset, (string Line, int Index)[] Lines);
 
 namespace CelesteStudio.Editing;
+
+internal enum CalculateOp {
+    Add,
+    Sub,
+    Mul,
+    Div,
+}
+
+internal static class CalculateOpMethods {
+    private static int Apply(this CalculateOp op, int value, int operand) {
+        return op switch {
+            CalculateOp.Add => value + operand,
+            CalculateOp.Sub => value - operand,
+            CalculateOp.Mul => value * operand,
+            CalculateOp.Div => value / operand,
+            _ => throw new ArgumentOutOfRangeException(nameof(op), op, null)
+        };
+    }
+    
+    public static ActionLine Apply(this CalculateOp op, ActionLine actionLine, int operand) {
+        int newFrames = op.Apply(actionLine.Frames, operand);
+        return actionLine with { Frames = Math.Clamp(newFrames, 0, ActionLine.MaxFrames) };
+    }
+
+    public static char Char(this CalculateOp op) {
+        return op switch {
+            CalculateOp.Add => '+',
+            CalculateOp.Sub => '-',
+            CalculateOp.Mul => '*',
+            CalculateOp.Div => '/',
+            _ => throw new ArgumentOutOfRangeException()
+        };
+    }
+}
+
+internal class CalculateState(CalculateOp op, string operand, int row, ActionLine actionLine) {
+    public CalculateOp Op = op;
+    public string Operand = operand;
+    public int Row = row;
+    public ActionLine ActionLine = actionLine;
+}
 
 public sealed class Editor : Drawable {
     private Document? document;
@@ -115,6 +157,8 @@ public sealed class Editor : Drawable {
     
     // A toast is a small message box which is temporarily shown in the middle of the screen
     private string toastMessage = string.Empty;
+
+    private CalculateState? calculateState = null;
     
     private static readonly Regex UncommentedBreakpointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
     private static readonly Regex CommentedBreakpointRegex = new(@"^\s*#+\*\*\*", RegexOptions.Compiled);
@@ -686,6 +730,11 @@ public sealed class Editor : Drawable {
             e.Handled = true;
             return;
         }
+
+        if (calculateState is not null) {
+            OnCalculateMode(e, calculateState);
+            return;
+        }
         
         switch (e.Key) {
             case Keys.Backspace:
@@ -801,7 +850,19 @@ public sealed class Editor : Drawable {
                 e.Handled = true;
                 break;
             default:
-                if (e.Key != Keys.None) {
+                if (e.KeyChar == '+') {
+                    OnCalculateModeEnter(CalculateOp.Add);
+                    e.Handled = true;
+                } else if (e.KeyChar == '-') {
+                    OnCalculateModeEnter(CalculateOp.Sub);
+                    e.Handled = true;
+                } else if (e.KeyChar == '*') {
+                    OnCalculateModeEnter(CalculateOp.Mul);
+                    e.Handled = true;
+                } else if (e.KeyChar == '/') {
+                    OnCalculateModeEnter(CalculateOp.Div);
+                    e.Handled = true;
+                } else if (e.Key != Keys.None) {
                     // Search through context menu for hotkeys
                     var items = ContextMenu.Items
                         .Concat(Studio.Instance.GameInfoPanel.ContextMenu.Items)
@@ -1841,7 +1902,57 @@ public sealed class Editor : Drawable {
         Document.Selection.End.Col = Math.Clamp(Document.Selection.End.Col, 0, Document.Lines[Document.Selection.End.Row].Length);
         Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length); 
     }
-    
+
+    private void OnCalculateModeEnter(CalculateOp op) {
+        if (!ActionLine.TryParse(Document.Lines[Document.Caret.Row], out var actionLine)) return;
+        
+        calculateState = new CalculateState(op, "", Document.Caret.Row, actionLine);
+    }
+    private void OnCalculateMode(KeyEventArgs e, CalculateState state) {
+        if (e.Key == Keys.Escape) {
+            calculateState = null;
+            e.Handled = true;
+        } else if (e.Key == Keys.Enter) {
+            CommitCalculate(state);
+            calculateState = null;
+            e.Handled = true;
+        } else if (e.Key is >= Keys.D0 and <= Keys.D9 && !e.Shift) {
+            var num = e.Key - Keys.D0;
+            state.Operand += num;
+            e.Handled = true;
+        } else if (e.KeyChar == '+') {
+            CommitCalculate(state);
+            OnCalculateModeEnter(CalculateOp.Add);
+            e.Handled = true;
+        } else if (e.KeyChar == '-') {
+            CommitCalculate(state);
+            OnCalculateModeEnter(CalculateOp.Sub);
+            e.Handled = true;
+        } else if (e.KeyChar == '*') {
+            CommitCalculate(state);
+            OnCalculateModeEnter(CalculateOp.Mul);
+            e.Handled = true;
+        } else if (e.KeyChar == '/') {
+            CommitCalculate(state);
+            OnCalculateModeEnter(CalculateOp.Div);
+            e.Handled = true;
+        } else {
+            e.Handled = false;
+        }
+        
+        Invalidate();
+    }
+
+    private void CommitCalculate(CalculateState state) {
+        if (state.Operand.Length == 0) return;
+        
+        if (!int.TryParse(state.Operand, out int operand)) return;
+        var newActionLine = state.Op.Apply(state.ActionLine, operand);
+
+        using var __ = Document.Update();
+        Document.ReplaceLine(state.Row, newActionLine.ToString());
+    }
+
     private void OnInsertRoomName() => InsertLine($"#lvl_{CommunicationWrapper.LevelName}");
 
     private void OnInsertTime() => InsertLine($"#{CommunicationWrapper.ChapterTime}");
@@ -2368,6 +2479,8 @@ public sealed class Editor : Drawable {
     private bool primaryMouseButtonDown = false;
     
     protected override void OnMouseDown(MouseEventArgs e) {
+        calculateState = null;
+        
         if (e.Buttons.HasFlag(MouseButtons.Primary)) {
             if (LocationToFolding(e.Location) is { } folding) {
                 ToggleCollapse(folding.MinRow);
@@ -2718,6 +2831,20 @@ public sealed class Editor : Drawable {
         // Draw caret
         if (HasFocus) {
             e.Graphics.DrawLine(Settings.Instance.Theme.Caret, carX, carY, carX, carY + Font.LineHeight() - 1);
+        }
+        
+        // Draw calculate operation
+        if (calculateState is not null) {
+            string calculateLine = $"{calculateState.Op.Char()}{calculateState.Operand}";
+            
+            float padding = Font.CharWidth() * 0.5f;
+            float x = textOffsetX + Font.CharWidth() * ActionLine.MaxFramesDigits + Font.CharWidth() * 0.5f;
+            float y = carY;
+            float w = Font.CharWidth() * calculateLine.Length + 2 * padding;
+            float h = Font.LineHeight();
+            var path = GraphicsPath.GetRoundRect(new RectangleF(x, y, w, h), 4);
+            e.Graphics.FillPath(Settings.Instance.Theme.CalculateBg, path);
+            e.Graphics.DrawText(FontManager.EditorFontRegular, Settings.Instance.Theme.CalculateFg, x + padding, y, calculateLine);
         }
         
         // Draw selection
