@@ -27,6 +27,16 @@ internal enum CalculateOp {
 }
 
 internal static class CalculateOpMethods {
+    public static CalculateOp Inverse(this CalculateOp op) {
+        return op switch {
+            CalculateOp.Add => CalculateOp.Sub,
+            CalculateOp.Sub => CalculateOp.Add,
+            CalculateOp.Mul => CalculateOp.Div,
+            CalculateOp.Div => CalculateOp.Mul,
+            _ => throw new ArgumentOutOfRangeException(nameof(op), op, null)
+        };
+    }
+
     private static int Apply(this CalculateOp op, int value, int operand) {
         return op switch {
             CalculateOp.Add => value + operand,
@@ -1916,6 +1926,17 @@ public sealed class Editor : Drawable {
             CommitCalculate(state);
             calculateState = null;
             e.Handled = true;
+        } else if (e.Key == Keys.Backspace) {
+            state.Operand = state.Operand[..Math.Max(0, state.Operand.Length - 1)];
+            e.Handled = true;
+        } else if (e.Key == Keys.Down) {
+            CommitCalculate(state, 1);
+            calculateState = null;
+            e.Handled = true;
+        } else if (e.Key == Keys.Up) {
+            CommitCalculate(state, -1);
+            calculateState = null;
+            e.Handled = true;
         } else if (e.Key is >= Keys.D0 and <= Keys.D9 && !e.Shift) {
             var num = e.Key - Keys.D0;
             state.Operand += num;
@@ -1937,19 +1958,36 @@ public sealed class Editor : Drawable {
             OnCalculateModeEnter(CalculateOp.Div);
             e.Handled = true;
         } else {
+            if (e.Key is >= Keys.A and <= Keys.Z) {
+                calculateState = null;
+                e.Handled = false;
+                return;
+            }
+
             e.Handled = false;
         }
         
         Invalidate();
     }
 
-    private void CommitCalculate(CalculateState state) {
+    private void CommitCalculate(CalculateState state, int? stealFrom = null) {
         if (state.Operand.Length == 0) return;
         
         if (!int.TryParse(state.Operand, out int operand)) return;
         var newActionLine = state.Op.Apply(state.ActionLine, operand);
 
         using var __ = Document.Update();
+        
+        if (stealFrom is {} offset) {
+            int stealFromRow = state.Row + offset;
+            if (stealFromRow >= 0 && stealFromRow < Document.Lines.Count) {
+                if (ActionLine.TryParse(Document.Lines[stealFromRow], out var stealFromActionLine)) {
+                    ActionLine newStealActionLine = state.Op.Inverse().Apply(stealFromActionLine, operand);
+                    Document.ReplaceLine(stealFromRow, newStealActionLine.ToString());
+                }
+            }
+        }
+        
         Document.ReplaceLine(state.Row, newActionLine.ToString());
     }
 
