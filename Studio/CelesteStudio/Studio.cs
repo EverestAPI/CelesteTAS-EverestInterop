@@ -231,10 +231,6 @@ public sealed class Studio : Form {
     }
     
     public void OpenFile(string filePath) {
-        if (filePath == Editor.Document.FilePath && filePath != Document.ScratchFile) {
-            return;
-        }
-        
         if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
             Settings.Instance.AddRecentFile(filePath);
         
