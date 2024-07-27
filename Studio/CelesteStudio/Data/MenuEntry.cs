@@ -89,9 +89,9 @@ public static class MenuEntryExtensions {
         { MenuEntry.StatusPopout_AlwaysOnTop, Keys.None },
         
         { MenuEntry.Game_Start, Keys.None },
-        { MenuEntry.Game_Pause, Keys.Equal },
-        { MenuEntry.Game_Restart, Keys.Semicolon },
-        { MenuEntry.Game_FrameAdvance, Keys.Backslash },
+        { MenuEntry.Game_Pause, Keys.None },
+        { MenuEntry.Game_Restart, Keys.None },
+        { MenuEntry.Game_FrameAdvance, Keys.None },
     };
     private static readonly Dictionary<MenuEntry, string> EntryNames = new() {
         { MenuEntry.File_New, "&New File" },
