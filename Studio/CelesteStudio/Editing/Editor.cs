@@ -19,67 +19,6 @@ using WrapEntry = (int StartOffset, (string Line, int Index)[] Lines);
 
 namespace CelesteStudio.Editing;
 
-internal enum CalculateOp {
-    Add,
-    Sub,
-    Mul,
-    Div,
-}
-
-internal static class CalculateOpMethods {
-    public static CalculateOp? TryParse(char c) {
-        return c switch {
-            '+' => CalculateOp.Add,
-            '-' => CalculateOp.Sub,
-            '*' => CalculateOp.Mul,
-            '/' => CalculateOp.Div,
-            _ => null
-        };
-    }
-
-    public static CalculateOp Inverse(this CalculateOp op) {
-        return op switch {
-            CalculateOp.Add => CalculateOp.Sub,
-            CalculateOp.Sub => CalculateOp.Add,
-            CalculateOp.Mul => CalculateOp.Div,
-            CalculateOp.Div => CalculateOp.Mul,
-            _ => throw new ArgumentOutOfRangeException(nameof(op), op, null)
-        };
-    }
-
-    private static int Apply(this CalculateOp op, int value, int operand) {
-        return op switch {
-            CalculateOp.Add => value + operand,
-            CalculateOp.Sub => value - operand,
-            CalculateOp.Mul => value * operand,
-            CalculateOp.Div => value / operand,
-            _ => throw new ArgumentOutOfRangeException(nameof(op), op, null)
-        };
-    }
-    
-    public static ActionLine Apply(this CalculateOp op, ActionLine actionLine, int operand) {
-        int newFrames = op.Apply(actionLine.Frames, operand);
-        return actionLine with { Frames = Math.Clamp(newFrames, 0, ActionLine.MaxFrames) };
-    }
-
-    public static char Char(this CalculateOp op) {
-        return op switch {
-            CalculateOp.Add => '+',
-            CalculateOp.Sub => '-',
-            CalculateOp.Mul => '*',
-            CalculateOp.Div => '/',
-            _ => throw new ArgumentOutOfRangeException()
-        };
-    }
-}
-
-internal class CalculateState(CalculateOp op, string operand, int row, ActionLine actionLine) {
-    public CalculateOp Op = op;
-    public string Operand = operand;
-    public int Row = row;
-    public ActionLine ActionLine = actionLine;
-}
-
 public sealed class Editor : Drawable {
     private Document? document;
     public Document Document {
@@ -3155,4 +3094,65 @@ public sealed class Editor : Drawable {
     }
     
     #endregion
+}
+
+internal enum CalculateOp {
+    Add,
+    Sub,
+    Mul,
+    Div,
+}
+
+internal static class CalculateOpMethods {
+    public static CalculateOp? TryParse(char c) {
+        return c switch {
+            '+' => CalculateOp.Add,
+            '-' => CalculateOp.Sub,
+            '*' => CalculateOp.Mul,
+            '/' => CalculateOp.Div,
+            _ => null
+        };
+    }
+
+    public static CalculateOp Inverse(this CalculateOp op) {
+        return op switch {
+            CalculateOp.Add => CalculateOp.Sub,
+            CalculateOp.Sub => CalculateOp.Add,
+            CalculateOp.Mul => CalculateOp.Div,
+            CalculateOp.Div => CalculateOp.Mul,
+            _ => throw new ArgumentOutOfRangeException(nameof(op), op, null)
+        };
+    }
+
+    private static int Apply(this CalculateOp op, int value, int operand) {
+        return op switch {
+            CalculateOp.Add => value + operand,
+            CalculateOp.Sub => value - operand,
+            CalculateOp.Mul => value * operand,
+            CalculateOp.Div => value / operand,
+            _ => throw new ArgumentOutOfRangeException(nameof(op), op, null)
+        };
+    }
+    
+    public static ActionLine Apply(this CalculateOp op, ActionLine actionLine, int operand) {
+        int newFrames = op.Apply(actionLine.Frames, operand);
+        return actionLine with { Frames = Math.Clamp(newFrames, 0, ActionLine.MaxFrames) };
+    }
+
+    public static char Char(this CalculateOp op) {
+        return op switch {
+            CalculateOp.Add => '+',
+            CalculateOp.Sub => '-',
+            CalculateOp.Mul => '*',
+            CalculateOp.Div => '/',
+            _ => throw new ArgumentOutOfRangeException()
+        };
+    }
+}
+
+internal class CalculateState(CalculateOp op, string operand, int row, ActionLine actionLine) {
+    public CalculateOp Op = op;
+    public string Operand = operand;
+    public int Row = row;
+    public ActionLine ActionLine = actionLine;
 }
