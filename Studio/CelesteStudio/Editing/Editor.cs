@@ -27,6 +27,16 @@ internal enum CalculateOp {
 }
 
 internal static class CalculateOpMethods {
+    public static CalculateOp? TryParse(char c) {
+        return c switch {
+            '+' => CalculateOp.Add,
+            '-' => CalculateOp.Sub,
+            '*' => CalculateOp.Mul,
+            '/' => CalculateOp.Div,
+            _ => null
+        };
+    }
+
     public static CalculateOp Inverse(this CalculateOp op) {
         return op switch {
             CalculateOp.Add => CalculateOp.Sub,
@@ -860,17 +870,8 @@ public sealed class Editor : Drawable {
                 e.Handled = true;
                 break;
             default:
-                if (e.KeyChar == '+') {
-                    OnCalculateModeEnter(CalculateOp.Add);
-                    e.Handled = true;
-                } else if (e.KeyChar == '-') {
-                    OnCalculateModeEnter(CalculateOp.Sub);
-                    e.Handled = true;
-                } else if (e.KeyChar == '*') {
-                    OnCalculateModeEnter(CalculateOp.Mul);
-                    e.Handled = true;
-                } else if (e.KeyChar == '/') {
-                    OnCalculateModeEnter(CalculateOp.Div);
+                if (CalculateOpMethods.TryParse(e.KeyChar) is { } op) {
+                    OnCalculateModeEnter(op);
                     e.Handled = true;
                 } else if (e.Key != Keys.None) {
                     // Search through context menu for hotkeys
@@ -1941,21 +1942,9 @@ public sealed class Editor : Drawable {
             var num = e.Key - Keys.D0;
             state.Operand += num;
             e.Handled = true;
-        } else if (e.KeyChar == '+') {
+        } else if (CalculateOpMethods.TryParse(e.KeyChar) is {} op) {
             CommitCalculate(state);
-            OnCalculateModeEnter(CalculateOp.Add);
-            e.Handled = true;
-        } else if (e.KeyChar == '-') {
-            CommitCalculate(state);
-            OnCalculateModeEnter(CalculateOp.Sub);
-            e.Handled = true;
-        } else if (e.KeyChar == '*') {
-            CommitCalculate(state);
-            OnCalculateModeEnter(CalculateOp.Mul);
-            e.Handled = true;
-        } else if (e.KeyChar == '/') {
-            CommitCalculate(state);
-            OnCalculateModeEnter(CalculateOp.Div);
+            OnCalculateModeEnter(op);
             e.Handled = true;
         } else {
             if (e.Key is >= Keys.A and <= Keys.Z) {
