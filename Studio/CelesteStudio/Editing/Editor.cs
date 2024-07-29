@@ -316,8 +316,6 @@ public sealed class Editor : Drawable {
                 }
             }
             
-            actualToVisualRows[row] = visualRow;
-            
             // Skip collapsed lines, but still process the starting line of a collapse
             // Needs to be done before checking for the collapse end
             bool skipLine = activeCollapses.Any() && !startedCollapse;
@@ -357,7 +355,10 @@ public sealed class Editor : Drawable {
             }
             
             if (skipLine) {
+                actualToVisualRows[row] = Math.Max(0, visualRow - 1);
                 continue;
+            } else {
+                actualToVisualRows[row] = visualRow;
             }
             
             // Wrap comments into multiple lines when hitting the left edge
