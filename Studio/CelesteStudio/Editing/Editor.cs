@@ -807,10 +807,11 @@ public sealed class Editor : Drawable {
                 break;
             default:
                 if (e.Key != Keys.None) {
-                    // Search through context menu for hotkeys
+                    // Check for hotkeys
                     var items = ContextMenu.Items
                         .Concat(Studio.Instance.GameInfoPanel.ContextMenu.Items)
-                        .Concat(Studio.Instance.Menu.Items);
+                        .Concat(Studio.Instance.Menu.Items)
+                        .Concat(Studio.Instance.GlobalHotkeys);
                     foreach (var item in items) {
                         if (item.Shortcut != e.KeyData) {
                             continue;
