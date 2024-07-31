@@ -94,6 +94,18 @@ public sealed class AutoCompleteMenu : Scrollable {
             
             base.OnMouseDown(e);
         }
+        
+        protected override void OnMouseWheel(MouseEventArgs e) {
+            if (Settings.Instance.ScrollSpeed > 0.0f) {
+                // Manually scroll to respect our scroll speed 
+                menu.ScrollPosition = menu.ScrollPosition with {
+                    Y = Math.Clamp((int)(menu.ScrollPosition.Y - e.Delta.Height * menu.EntryHeight * Settings.Instance.ScrollSpeed), 0, Height - menu.ClientSize.Height)
+                };
+                e.Handled = true;
+            }
+
+            base.OnMouseWheel(e);
+        }
     }
     
     public override bool Visible {

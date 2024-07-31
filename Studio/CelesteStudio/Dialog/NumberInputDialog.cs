@@ -8,7 +8,6 @@ namespace CelesteStudio.Dialog;
 public class NumberInputDialog<T> : Dialog<T> where T : INumber<T> {
     private NumberInputDialog(string title, T input, T minValue, T maxValue, T step) {
         var stepper = new NumericStepper {
-            Value = double.CreateChecked(input),
             MinValue = double.CreateChecked(minValue),
             MaxValue = double.CreateChecked(maxValue),
             Increment = double.CreateChecked(step),
@@ -20,6 +19,8 @@ public class NumberInputDialog<T> : Dialog<T> where T : INumber<T> {
         } else {
             stepper.DecimalPlaces = 2;
         }
+        
+        stepper.Value = double.CreateChecked(input);
         
         Title = title;
         Content = new StackLayout {

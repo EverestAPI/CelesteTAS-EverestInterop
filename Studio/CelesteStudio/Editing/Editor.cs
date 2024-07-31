@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -2578,6 +2579,14 @@ public sealed class Editor : Drawable {
             
             e.Handled = true;
             return;
+        }
+        
+        if (Settings.Instance.ScrollSpeed > 0.0f) {
+            // Manually scroll to respect our scroll speed 
+            scrollable.ScrollPosition = scrollable.ScrollPosition with {
+                Y = Math.Clamp((int)(scrollable.ScrollPosition.Y - e.Delta.Height * Font.LineHeight() * Settings.Instance.ScrollSpeed), 0, Height - scrollable.ClientSize.Height)
+            };
+            e.Handled = true;
         }
         
         base.OnMouseWheel(e);
