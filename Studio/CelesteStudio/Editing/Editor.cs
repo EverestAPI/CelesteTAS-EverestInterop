@@ -2702,13 +2702,13 @@ public sealed class Editor : Drawable {
                 }
                 if (CommunicationWrapper.SaveStateLine != -1 && CommunicationWrapper.SaveStateLine < actualToVisualRows.Length) {
                     if (CommunicationWrapper.SaveStateLine == CommunicationWrapper.CurrentLine) {
-                        e.Graphics.FillRectangle(Settings.Instance.Theme.Savestate,
+                        e.Graphics.FillRectangle(Settings.Instance.Theme.SavestateBg,
                             x: scrollablePosition.X,
                             y: actualToVisualRows[CommunicationWrapper.SaveStateLine] * Font.LineHeight(),
-                            width: 15.0f,
+                            width: 5.0f,
                             height: Font.LineHeight());
                     } else {
-                        e.Graphics.FillRectangle(Settings.Instance.Theme.Savestate,
+                        e.Graphics.FillRectangle(Settings.Instance.Theme.SavestateBg,
                             x: scrollablePosition.X,
                             y: actualToVisualRows[CommunicationWrapper.SaveStateLine] * Font.LineHeight(),
                             width: textOffsetX - LineNumberPadding,
@@ -2722,11 +2722,22 @@ public sealed class Editor : Drawable {
                 int oldRow = row;
                 var numberString = (row + 1).ToString();
                 
+                bool isPlayingLine = CommunicationWrapper.CurrentLine >= 0 && CommunicationWrapper.CurrentLine < actualToVisualRows.Length &&
+                                     actualToVisualRows[CommunicationWrapper.CurrentLine] == actualToVisualRows[row];
+                bool isSaveStateLine = CommunicationWrapper.SaveStateLine >= 0 && CommunicationWrapper.SaveStateLine < actualToVisualRows.Length &&
+                                       actualToVisualRows[CommunicationWrapper.SaveStateLine] == actualToVisualRows[row];
+                
+                var textColor = isPlayingLine 
+                    ? Settings.Instance.Theme.PlayingLineFg
+                    : isSaveStateLine
+                        ? Settings.Instance.Theme.SavestateFg
+                        : Settings.Instance.Theme.LineNumber;
+
                 if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Left) {
-                    e.Graphics.DrawText(Font, CommunicationWrapper.CurrentLine == row ? Settings.Instance.Theme.PlayingLineFg : Settings.Instance.Theme.LineNumber, scrollablePosition.X + LineNumberPadding, yPos, numberString);
+                    e.Graphics.DrawText(Font, textColor, scrollablePosition.X + LineNumberPadding, yPos, numberString);
                 } else if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Right) {
                     float ident = Font.CharWidth() * (Document.Lines.Count.Digits() - (row + 1).Digits());
-                    e.Graphics.DrawText(Font, CommunicationWrapper.CurrentLine == row ? Settings.Instance.Theme.PlayingLineFg : Settings.Instance.Theme.LineNumber, scrollablePosition.X + LineNumberPadding + ident, yPos, numberString);
+                    e.Graphics.DrawText(Font, textColor, scrollablePosition.X + LineNumberPadding + ident, yPos, numberString);
                 }
                 
                 bool collapsed = false;
@@ -2740,7 +2751,7 @@ public sealed class Editor : Drawable {
                         scrollablePosition.X + textOffsetX - LineNumberPadding * 2.0f - Font.CharWidth(),
                         yPos + (Font.LineHeight() - Font.CharWidth()) / 2.0f);
                     e.Graphics.ScaleTransform(Font.CharWidth());
-                    e.Graphics.FillPath(Settings.Instance.Theme.LineNumber, collapsed ? Assets.CollapseClosedPath : Assets.CollapseOpenPath);
+                    e.Graphics.FillPath(textColor, collapsed ? Assets.CollapseClosedPath : Assets.CollapseOpenPath);
                     e.Graphics.RestoreTransform();
                 }
                 
