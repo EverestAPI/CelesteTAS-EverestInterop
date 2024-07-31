@@ -19,7 +19,8 @@ public struct Theme {
     public Color PlayingLineFg;
     public Color PlayingLineBg;
     public Color Selection;
-    public Color Savestate;
+    public Color SavestateFg;
+    public Color SavestateBg;
     public Color ServiceLine;
     public Color StatusFg;
     public Color StatusBg;
@@ -60,7 +61,8 @@ public struct Theme {
             PlayingLineFg = Color.FromRgb(0x090909),
             PlayingLineBg = Color.FromRgb(0x47CB8E),
             Selection = Color.FromArgb(0x25, 0x63, 0xC0, 0x39),
-            Savestate = Color.FromRgb(0x4682B4),
+            SavestateFg = Color.FromRgb(0xFFFFFF),
+            SavestateBg = Color.FromRgb(0x4682B4),
             ServiceLine = Color.FromRgb(0xC6C6C6),
             StatusFg = Color.FromRgb(0x0F0F0F),
             StatusBg = Color.FromRgb(0xE1E1E1),
@@ -97,7 +99,8 @@ public struct Theme {
             PlayingLineFg = Color.FromRgb(0xFAFAFA),
             PlayingLineBg = Color.FromRgb(0xDEA73D),
             Selection = Color.FromArgb(0x25, 0x63, 0xC0, 0x47),
-            Savestate = Color.FromRgb(0x4682B4),
+            SavestateFg = Color.FromRgb(0xFAFAFA),
+            SavestateBg = Color.FromRgb(0x4682B4),
             ServiceLine = Color.FromRgb(0x4E4E4E),
             StatusFg = Color.FromRgb(0xF8F8F8),
             StatusBg = Color.FromRgb(0x303030),
@@ -135,7 +138,8 @@ public struct Theme {
             PlayingLineFg = Color.FromRgb(0x000000),
             PlayingLineBg = Color.FromRgb(0x55FF55),
             Selection = Color.FromArgb(0x20000000),
-            Savestate = Color.FromRgb(0x4682B4),
+            SavestateFg = Color.FromRgb(0xFFFFFF),
+            SavestateBg = Color.FromRgb(0x4682B4),
             ServiceLine = Color.FromRgb(0xC0C0C0),
             StatusFg = Color.FromRgb(0x000000),
             StatusBg = Color.FromRgb(0xF2F2F2),
@@ -172,7 +176,8 @@ public struct Theme {
             PlayingLineFg = Color.FromRgb(0x6272A4),
             PlayingLineBg = Color.FromRgb(0xF1FA8C),
             Selection = Color.FromArgb(0x20B4B6C7),
-            Savestate = Color.FromRgb(0x4682B4),
+            SavestateFg = Color.FromRgb(0xF8F8F2),
+            SavestateBg = Color.FromRgb(0x4682B4),
             ServiceLine = Color.FromRgb(0x44475A),
             StatusFg = Color.FromRgb(0xF8F8F2),
             StatusBg = Color.FromRgb(0x383A46),

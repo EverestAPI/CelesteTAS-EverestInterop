@@ -122,6 +122,12 @@ public abstract class CommunicationAdapterBase : IDisposable {
             try {
                 UpdateThread();
             } catch (Exception ex) {
+                if (ex is AbandonedMutexException) {
+                    // Reset communication to try and recover
+                    Task.Run(FullReset);
+                    return;
+                }
+                
                 LogError($"Thread crashed: {ex}");
                 
                 var now = DateTime.UtcNow;

@@ -3564,7 +3564,7 @@ resharper_xaml_x_key_attribute_disallowed_highlighting = error
 resharper_xunit_xunit_test_with_console_output_highlighting = warning
 trim_trailing_whitespace = false
 
-[{*.yaml, *.yml}]
+[*.{yaml,yml}]
 indent_style = space
 indent_size = 2
 
