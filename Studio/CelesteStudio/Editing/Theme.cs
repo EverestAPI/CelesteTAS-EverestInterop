@@ -24,6 +24,8 @@ public struct Theme {
     public Color ServiceLine;
     public Color StatusFg;
     public Color StatusBg;
+    public Color CalculateFg;
+    public Color CalculateBg;
     public Color AutoCompleteFg;
     public Color AutoCompleteFgExtra;
     public Color AutoCompleteBg;
@@ -64,6 +66,8 @@ public struct Theme {
             ServiceLine = Color.FromRgb(0xC6C6C6),
             StatusFg = Color.FromRgb(0x0F0F0F),
             StatusBg = Color.FromRgb(0xE1E1E1),
+            CalculateFg = Color.FromRgb(0xCBCBCB),
+            CalculateBg = Color.FromRgb(0x6C6C6C),
             AutoCompleteFg = Color.FromRgb(0x121212),
             AutoCompleteFgExtra = Color.FromRgb(0x595959),
             AutoCompleteBg = Color.FromRgb(0xD3D3D3),
@@ -100,6 +104,8 @@ public struct Theme {
             ServiceLine = Color.FromRgb(0x4E4E4E),
             StatusFg = Color.FromRgb(0xF8F8F8),
             StatusBg = Color.FromRgb(0x303030),
+            CalculateFg = Color.FromRgb(0xE8E8E8),
+            CalculateBg = Color.FromRgb(0x4682B4),
             AutoCompleteFg = Color.FromRgb(0xDFDFDF),
             AutoCompleteFgExtra = Color.FromRgb(0x9F9F9F),
             AutoCompleteBg = Color.FromRgb(0x2C2C2C),
@@ -137,6 +143,8 @@ public struct Theme {
             ServiceLine = Color.FromRgb(0xC0C0C0),
             StatusFg = Color.FromRgb(0x000000),
             StatusBg = Color.FromRgb(0xF2F2F2),
+            CalculateFg = Color.FromRgb(0xCBCBCB),
+            CalculateBg = Color.FromRgb(0x6C6C6C),
             AutoCompleteFg = Color.FromRgb(0x121212),
             AutoCompleteFgExtra = Color.FromRgb(0x646464),
             AutoCompleteBg = Color.FromRgb(0xE9E9E9),
@@ -173,6 +181,8 @@ public struct Theme {
             ServiceLine = Color.FromRgb(0x44475A),
             StatusFg = Color.FromRgb(0xF8F8F2),
             StatusBg = Color.FromRgb(0x383A46),
+            CalculateFg = Color.FromRgb(0xE8E8E8),
+            CalculateBg = Color.FromRgb(0x4682B4),
             AutoCompleteFg = Color.FromRgb(0xDFDFDF),
             AutoCompleteFgExtra = Color.FromRgb(0x9F9F9F),
             AutoCompleteBg = Color.FromRgb(0x2F303B),

@@ -115,6 +115,9 @@ public sealed class Editor : Drawable {
     
     // A toast is a small message box which is temporarily shown in the middle of the screen
     private string toastMessage = string.Empty;
+
+    // Simple math operations like +, -, *, / can be performed on action line's frame counts
+    private CalculationState? calculationState = null;
     
     private static readonly Regex UncommentedBreakpointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
     private static readonly Regex CommentedBreakpointRegex = new(@"^\s*#+\*\*\*", RegexOptions.Compiled);
@@ -691,6 +694,12 @@ public sealed class Editor : Drawable {
             e.Handled = true;
             return;
         }
+
+        if (calculationState != null) {
+            CalculationHandleKey(e);
+            Invalidate();
+            return;
+        }
         
         switch (e.Key) {
             case Keys.Backspace:
@@ -806,7 +815,10 @@ public sealed class Editor : Drawable {
                 e.Handled = true;
                 break;
             default:
-                if (e.Key != Keys.None) {
+                if (CalculationExtensions.TryParse(e.KeyChar) is { } op) {
+                    StartCalculation(op);
+                    e.Handled = true;
+                } else if (e.Key != Keys.None) {
                     // Check for hotkeys
                     var items = ContextMenu.Items
                         .Concat(Studio.Instance.GameInfoPanel.ContextMenu.Items)
@@ -870,6 +882,99 @@ public sealed class Editor : Drawable {
         
         base.OnKeyUp(e);
     }
+    
+    #region Action Line Calculation
+
+    private void StartCalculation(CalculationOperator op) {
+        if (!ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _)) 
+            return;
+        
+        calculationState = new CalculationState(op, Document.Caret.Row);
+    }
+    
+    private void CalculationHandleKey(KeyEventArgs e) {
+        if (calculationState == null)
+            return;
+        
+        switch (e.Key)
+        {
+            case Keys.Escape:
+                calculationState = null;
+                e.Handled = true;
+                return;
+            case Keys.Enter:
+                CommitCalculation();
+                calculationState = null;
+                e.Handled = true;
+                return;
+            case Keys.Backspace:
+                calculationState.Operand = calculationState.Operand[..Math.Max(0, calculationState.Operand.Length - 1)];
+                e.Handled = true;
+                return;
+            case Keys.Down:
+                CommitCalculation(stealFrom: 1);
+                calculationState = null;
+                e.Handled = true;
+                return;
+            case Keys.Up:
+                CommitCalculation(stealFrom: -1);
+                calculationState = null;
+                e.Handled = true;
+                return;
+            case >= Keys.D0 and <= Keys.D9 when !e.Shift:
+            {
+                var num = e.Key - Keys.D0;
+                calculationState.Operand += num;
+                e.Handled = true;
+                return;
+            }
+        }
+        
+        if (CalculationExtensions.TryParse(e.KeyChar) is {} op) {
+            // Cancel with same operation again
+            if (op == calculationState.Operator && calculationState.Operand.Length == 0) {
+                calculationState = null;
+                e.Handled = true;
+                return;
+            }
+            
+            CommitCalculation();
+            StartCalculation(op);
+            e.Handled = true;
+        } else {
+            // Allow A-Z to handled by the action line editing
+            if (e.Key is >= Keys.A and <= Keys.Z) {
+                calculationState = null;
+                e.Handled = false;
+                return;
+            }
+            
+            e.Handled = false;
+        }
+    }
+
+    private void CommitCalculation(int stealFrom = 0) {
+        if (calculationState == null || 
+            calculationState.Operand.Length == 0 ||
+            !int.TryParse(calculationState.Operand, out int operand) ||
+            !TryParseAndFormatActionLine(calculationState.Row, out var actionLine)) 
+        {
+            return;
+        }
+        
+        using var __ = Document.Update();
+        
+        Document.ReplaceLine(calculationState.Row, calculationState.Operator.Apply(actionLine, operand).ToString());
+        
+        if (stealFrom != 0 && calculationState.Operator is not (CalculationOperator.Mul or CalculationOperator.Div)) {
+            int stealFromRow = calculationState.Row + stealFrom;
+            if (stealFromRow >= 0 && stealFromRow < Document.Lines.Count && ActionLine.TryParse(Document.Lines[stealFromRow], out var stealFromActionLine)) {
+                Document.ReplaceLine(stealFromRow, calculationState.Operator.Inverse().Apply(stealFromActionLine, operand).ToString());
+            }
+        }
+    }
+    
+    #endregion
     
     #region Auto Complete
     
@@ -1847,7 +1952,7 @@ public sealed class Editor : Drawable {
         Document.Selection.End.Col = Math.Clamp(Document.Selection.End.Col, 0, Document.Lines[Document.Selection.End.Row].Length);
         Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length); 
     }
-    
+
     private void OnInsertRoomName() => InsertLine($"#lvl_{CommunicationWrapper.LevelName}");
 
     private void OnInsertTime() => InsertLine($"#{CommunicationWrapper.ChapterTime}");
@@ -2374,6 +2479,8 @@ public sealed class Editor : Drawable {
     private bool primaryMouseButtonDown = false;
     
     protected override void OnMouseDown(MouseEventArgs e) {
+        calculationState = null;
+        
         if (e.Buttons.HasFlag(MouseButtons.Primary)) {
             if (LocationToFolding(e.Location) is { } folding) {
                 ToggleCollapse(folding.MinRow);
@@ -2756,6 +2863,20 @@ public sealed class Editor : Drawable {
                 y = Font.LineHeight() * max.Row;
                 e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX - LineNumberPadding, y, w + LineNumberPadding, Font.LineHeight());
             }
+        }
+        
+        // Draw calculate operation
+        if (calculationState is not null) {
+            string calculateLine = $"{calculationState.Operator.Char()}{calculationState.Operand}";
+            
+            float padding = Font.CharWidth() * 0.5f;
+            float x = textOffsetX + Font.CharWidth() * ActionLine.MaxFramesDigits + Font.CharWidth() * 0.5f;
+            float y = carY;
+            float w = Font.CharWidth() * calculateLine.Length + 2 * padding;
+            float h = Font.LineHeight();
+            var path = GraphicsPath.GetRoundRect(new RectangleF(x, y, w, h), 4);
+            e.Graphics.FillPath(Settings.Instance.Theme.CalculateBg, path);
+            e.Graphics.DrawText(FontManager.EditorFontRegular, Settings.Instance.Theme.CalculateFg, x + padding, y, calculateLine);
         }
         
         // Draw line numbers
