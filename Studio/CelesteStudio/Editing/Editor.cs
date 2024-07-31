@@ -201,7 +201,7 @@ public sealed class Editor : Drawable {
         
         ContextMenu = CreateMenu();
         Settings.KeyBindingsChanged += () => {
-            // wpf doesn't let you reuse a UIElement for difference, so remove the commandsMenu before recreating the menu
+            // WPF doesn't like it when a UIElement has multiple parents, even if the other parent no longer exists
             ContextMenu.Items.Remove(commandsMenu);
             ContextMenu = CreateMenu();
         };
