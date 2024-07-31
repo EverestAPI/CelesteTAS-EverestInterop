@@ -154,7 +154,8 @@ public static class StudioHelper {
             }
             
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                Process.Start(Path.Combine(StudioDirectory, "CelesteStudio.WPF.exe"));
+                // Start through explorer to detach studio from the game process (and avoid issues with the Steam Overlay for example)
+                Process.Start("Explorer", [Path.Combine(StudioDirectory, "CelesteStudio.WPF.exe")]);
             } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
                 Process.Start(Path.Combine(StudioDirectory, "CelesteStudio.GTK"));
             } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
