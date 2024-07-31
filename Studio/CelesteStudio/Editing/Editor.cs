@@ -1882,6 +1882,12 @@ public sealed class Editor : Drawable {
             state.Operand += num;
             e.Handled = true;
         } else if (CalculateOpMethods.TryParse(e.KeyChar) is {} op) {
+            if (op == state.Op && state.Operand.Length == 0) {
+                calculateState = null;
+                e.Handled = true;
+                return;
+            }
+                
             CommitCalculate(state);
             OnCalculateModeEnter(op);
             e.Handled = true;
