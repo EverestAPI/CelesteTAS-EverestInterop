@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -820,10 +819,11 @@ public sealed class Editor : Drawable {
                     StartCalculation(op);
                     e.Handled = true;
                 } else if (e.Key != Keys.None) {
-                    // Search through context menu for hotkeys
+                    // Check for hotkeys
                     var items = ContextMenu.Items
                         .Concat(Studio.Instance.GameInfoPanel.ContextMenu.Items)
-                        .Concat(Studio.Instance.Menu.Items);
+                        .Concat(Studio.Instance.Menu.Items)
+                        .Concat(Studio.Instance.GlobalHotkeys);
                     foreach (var item in items) {
                         if (item.Shortcut != e.KeyData) {
                             continue;
