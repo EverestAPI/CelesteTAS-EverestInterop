@@ -22,8 +22,11 @@ public sealed class Studio : Form {
     public static Studio Instance = null!;
     public static Version Version { get; private set; } = null!;
     
-    // Platform-specific callback to handle new windows
+    /// Platform-specific callback to handle new windows
     public readonly Action<Window> WindowCreationCallback;
+    
+    /// Actions which aren't associated with any menu and only invokable by hotkey 
+    public MenuItem[] GlobalHotkeys { get; private set; } = [];
 
     public readonly Editor Editor;
     public readonly GameInfoPanel GameInfoPanel;
@@ -71,9 +74,14 @@ public sealed class Studio : Form {
             Location = lastLocation;
         }
         
+        GlobalHotkeys = CreateGlobalHotkeys();
+        
         // Needs to be registered before the editor is created 
         Settings.Changed += ApplySettings;
-        Settings.KeyBindingsChanged += () => Menu = CreateMenu();
+        Settings.KeyBindingsChanged += () => {
+            Menu = CreateMenu();
+            GlobalHotkeys = CreateGlobalHotkeys();
+        };
         
         // Setup editor
         {
@@ -135,6 +143,15 @@ public sealed class Studio : Form {
         }
 
         about.ShowDialog(parent);
+    }
+    
+    private MenuItem[] CreateGlobalHotkeys() {
+        return [
+            MenuEntry.Game_Start.ToAction(() => CommunicationWrapper.SendHotkey(HotkeyID.Start)),
+            MenuEntry.Game_Pause.ToAction(() => CommunicationWrapper.SendHotkey(HotkeyID.Pause)),
+            MenuEntry.Game_Restart.ToAction(() => CommunicationWrapper.SendHotkey(HotkeyID.Restart)),
+            MenuEntry.Game_FrameAdvance.ToAction(() => CommunicationWrapper.SendHotkey(HotkeyID.FrameAdvance)),
+        ];
     }
 
     public void RecalculateLayout() {
@@ -465,12 +482,6 @@ public sealed class Studio : Form {
                     featherlineForm.Show();
                     featherlineForm.Closed += (_, _) => featherlineForm = null;
                 }),
-            }},
-            new SubMenuItem { Visible = false, Text = "&Game Hotkeys", Items = {
-                MenuEntry.Game_Start.ToAction(() => CommunicationWrapper.SendHotkey(HotkeyID.Start)),
-                MenuEntry.Game_Pause.ToAction(() => CommunicationWrapper.SendHotkey(HotkeyID.Pause)),
-                MenuEntry.Game_Restart.ToAction(() => CommunicationWrapper.SendHotkey(HotkeyID.Restart)),
-                MenuEntry.Game_FrameAdvance.ToAction(() => CommunicationWrapper.SendHotkey(HotkeyID.FrameAdvance)),
             }},
         ];
         
