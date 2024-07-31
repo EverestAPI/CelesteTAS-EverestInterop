@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -99,7 +100,14 @@ public sealed class FeatherlineForm : Form {
         Resizable = false;  
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
     }
-
+    
+    protected override void OnClosing(CancelEventArgs e) {
+        GAManager.abortAlgorithm = true;
+        progressDialog?.Close();
+        
+        base.OnClosing(e);
+    }
+    
     private void CreateMenu() {
         Menu = new MenuBar { // TODO: add help window
             AboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {
@@ -160,8 +168,14 @@ public sealed class FeatherlineForm : Form {
             progressDialog.ShowModalAsync();
             progressDialog.Closed += (_, _) => {
                 progressDialog = null;
+                run.Enabled = true;
+                getInfo.Enabled = true;
                 GAManager.abortAlgorithm = true;
             };
+            
+            run.Enabled = false;
+            getInfo.Enabled = false;
+            
             Featherline.Settings.TextReporter = progressDialog.textReporter;
             Featherline.Settings.ProgressReporter = progressDialog.progressReporter;
 
@@ -190,20 +204,28 @@ public sealed class FeatherlineForm : Form {
                     GAManager.ClearAlgorithmData();
                     running = false;
                     Application.Instance.Invoke(() => {
-                        progressDialog.stop.Text = "Close";
+                        progressDialog.Close();
                         output.Text = Featherline.Settings.Output;
+
                         if (Featherline.Settings.Output != "") {
                             copyOutput.Enabled = true;
                         } else {
                             copyOutput.Enabled = false;
                         }
+
                         run.Text = "Run";
+                        run.Enabled = true;
+                        getInfo.Enabled = true;
+                        
+                        MessageBox.Show("Done! You can now copy the inputs into your TAS.");
                     });
                 } catch (Exception ex) {
                     Console.Error.WriteLine("Failed to run Featherline:");
                     Console.Error.WriteLine(ex);
                     Application.Instance.Invoke(() => {
                         progressDialog.stop.Text = "Close";
+                        run.Enabled = true;
+                        getInfo.Enabled = true;
                         Featherline.Settings.TextReporter.Report("Error!");
                     });
                     MessageBox.Show($"Failed to run Featherline: {ex}", MessageBoxType.Error);
@@ -211,6 +233,9 @@ public sealed class FeatherlineForm : Form {
             });
         } else {
             GAManager.abortAlgorithm = true;
+            
+            run.Enabled = true;
+            getInfo.Enabled = true;
         }
     }
 }
@@ -272,9 +297,9 @@ public sealed class FeatherlineProgressDialog : Eto.Forms.Dialog {
         Icon = Assets.AppIcon;
         var layout = new DynamicLayout { DefaultSpacing = new Size(10, 10) };
         text = new Label { Text = "placeholder" };
-        textReporter = new(e => text.Text = e);
+        textReporter = new(e => Application.Instance.Invoke(() => text.Text = e));
         progress = new();
-        progressReporter = new(e => progress.Value = e);
+        progressReporter = new(e => Application.Instance.Invoke(() => progress.Value = e));
         stop = new Button((_, _) => Close()) { Text = "Abort", Height = 20 };
         layout.BeginVertical();
         layout.Add(text);
