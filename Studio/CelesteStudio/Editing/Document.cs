@@ -469,9 +469,13 @@ public class Document {
     }
     
     public void ReplaceLine(int row, string text) {
+        var newLines = text.SplitDocumentLines();
+        ReplaceLines(row, newLines);
+    }
+    
+    public void ReplaceLines(int row, string[] newLines) {
         PushUndoState();
         
-        var newLines = text.SplitDocumentLines();
         if (newLines.Length == 0) {
             CurrentLines[row] = string.Empty;
         } else if (newLines.Length == 1) {
@@ -480,8 +484,8 @@ public class Document {
             CurrentLines[row] = newLines[0];
             CurrentLines.InsertRange(row + 1, newLines[1..]);
         }
-        
-        int newLineCount = text.Count(c => c == NewLine);
+
+        int newLineCount = newLines.Length > 0 ? newLines.Length-1 : 0;
         
         if (Caret.Row >= row)
             Caret.Row += newLineCount;
@@ -602,6 +606,7 @@ public class Document {
         ChangedText(row, row);
     }
     
+    /// Removes an inclusive range of lines from min..max
     public void RemoveLines(int min, int max) {
         PushUndoState();
         

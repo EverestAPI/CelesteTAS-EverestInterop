@@ -29,6 +29,7 @@ public sealed class FeatherlineForm : Form {
     private readonly Button run;
     private readonly Button copyOutput;
     private FeatherlineHelpForm? helpForm;
+    private FeatherlineProgressDialog? progressDialog;
 
     private bool running = false;
 
@@ -152,9 +153,17 @@ public sealed class FeatherlineForm : Form {
     }
 
     private void Toggle() {
-        if (!running) {
+        if (!running) { // todo: get rid of this running var
             running = true;
-            run.Text = "Abort";
+
+            progressDialog ??= new();
+            progressDialog.ShowModalAsync();
+            progressDialog.Closed += (_, _) => {
+                progressDialog = null;
+                GAManager.abortAlgorithm = true;
+            };
+            Featherline.Settings.TextReporter = progressDialog.textReporter;
+            Featherline.Settings.ProgressReporter = progressDialog.progressReporter;
 
             Featherline.Settings.Generations = (int) generations.Value;
             Featherline.Settings.Framecount = (int) maxFrames.Value;
@@ -181,6 +190,7 @@ public sealed class FeatherlineForm : Form {
                     GAManager.ClearAlgorithmData();
                     running = false;
                     Application.Instance.Invoke(() => {
+                        progressDialog.stop.Text = "Close";
                         output.Text = Featherline.Settings.Output;
                         if (Featherline.Settings.Output != "") {
                             copyOutput.Enabled = true;
@@ -192,6 +202,10 @@ public sealed class FeatherlineForm : Form {
                 } catch (Exception ex) {
                     Console.Error.WriteLine("Failed to run Featherline:");
                     Console.Error.WriteLine(ex);
+                    Application.Instance.Invoke(() => {
+                        progressDialog.stop.Text = "Close";
+                        Featherline.Settings.TextReporter.Report("Error!");
+                    });
                     MessageBox.Show($"Failed to run Featherline: {ex}", MessageBoxType.Error);
                 }
             });
@@ -245,4 +259,31 @@ public sealed class FeatherlineHelpForm : Form {
     }
 }
 
-// TODO: add progress form
+// TODO: add progress dialog
+public sealed class FeatherlineProgressDialog : Eto.Forms.Dialog {
+    private readonly Label text;
+    private readonly ProgressBar progress;
+    public Button stop;
+
+    public Progress<string> textReporter;
+    public Progress<int> progressReporter;
+    public FeatherlineProgressDialog() {
+        Title = "Featherline - Progress";
+        Icon = Assets.AppIcon;
+        var layout = new DynamicLayout { DefaultSpacing = new Size(10, 10) };
+        text = new Label { Text = "placeholder" };
+        textReporter = new(e => text.Text = e);
+        progress = new();
+        progressReporter = new(e => progress.Value = e);
+        stop = new Button((_, _) => Close()) { Text = "Abort", Height = 20 };
+        layout.BeginVertical();
+        layout.Add(text);
+        layout.Add(progress);
+        layout.Add(stop);
+        layout.EndVertical();
+        Content = new Panel { Content = layout, Width = 250, Height = 100, Padding = 10 };
+        Resizable = false;
+        Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
+        ShowInTaskbar = true;
+    }
+}

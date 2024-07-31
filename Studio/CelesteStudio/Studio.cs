@@ -231,10 +231,6 @@ public sealed class Studio : Form {
     }
     
     public void OpenFile(string filePath) {
-        if (filePath == Editor.Document.FilePath && filePath != Document.ScratchFile) {
-            return;
-        }
-        
         if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
             Settings.Instance.AddRecentFile(filePath);
         
@@ -412,12 +408,12 @@ public sealed class Studio : Form {
             }},
             new SubMenuItem { Text = "&View", Items = {
                 MenuEntry.View_ShowGameInfo.ToSettingToggle(nameof(Settings.ShowGameInfo)),
-                MenuEntry.View_ShowSubpixelIndicator.ToSettingToggle(nameof(Settings.ShowGameInfo)),
+                MenuEntry.View_ShowSubpixelIndicator.ToSettingToggle(nameof(Settings.ShowSubpixelIndicator)),
                 MenuUtils.CreateSettingNumberInput("Subpixel Indicator Scale", nameof(Settings.SubpixelIndicatorScale), 0.1f, 10.0f, 0.25f),
                 new SeparatorMenuItem(),
-                MenuEntry.View_AlwaysOnTop.ToSettingToggle(nameof(Settings.ShowGameInfo)),
-                MenuEntry.View_WrapComments.ToSettingToggle(nameof(Settings.ShowGameInfo)),
-                MenuEntry.View_ShowFoldingIndicator.ToSettingToggle(nameof(Settings.ShowGameInfo)),
+                MenuEntry.View_AlwaysOnTop.ToSettingToggle(nameof(Settings.AlwaysOnTop)),
+                MenuEntry.View_WrapComments.ToSettingToggle(nameof(Settings.WordWrapComments)),
+                MenuEntry.View_ShowFoldingIndicator.ToSettingToggle(nameof(Settings.ShowFoldIndicators)),
                 MenuUtils.CreateSettingEnum<LineNumberAlignment>("Line Number Alignment", nameof(Settings.LineNumberAlignment), ["Left", "Right"]),
                 MenuUtils.CreateSettingToggle("Compact Menu Bar", nameof(Settings.CompactMenuBar)),
             }},

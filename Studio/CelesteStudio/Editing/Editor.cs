@@ -200,8 +200,12 @@ public sealed class Editor : Drawable {
         }
         
         ContextMenu = CreateMenu();
-        Settings.KeyBindingsChanged += () => ContextMenu = CreateMenu();
-        
+        Settings.KeyBindingsChanged += () => {
+            // WPF doesn't like it when a UIElement has multiple parents, even if the other parent no longer exists
+            ContextMenu.Items.Remove(commandsMenu);
+            ContextMenu = CreateMenu();
+        };
+
         Recalc();
         
         ContextMenu CreateMenu() => new() {
@@ -243,6 +247,7 @@ public sealed class Editor : Drawable {
                 MenuEntry.Editor_SwapSelectedXC.ToAction(() => SwapSelectedActions(Actions.Dash, Actions.Dash2)),
                 MenuEntry.Editor_CombineConsecutiveSameInputs.ToAction(() => CombineInputs(sameActions: true)),
                 MenuEntry.Editor_ForceCombineInputFrames.ToAction(() => CombineInputs(sameActions: false)),
+                MenuEntry.Editor_SplitFrames.ToAction(SplitLines),
                 // TODO: Is this feature even unused?
                 // MenuUtils.CreateAction("Convert Dash to Demo Dash"),
                 new SeparatorMenuItem(),
@@ -567,6 +572,15 @@ public sealed class Editor : Drawable {
             position.Col - line.Index + xIdent);
     }
     private CaretPosition GetActualPosition(CaretPosition position) {
+        if (position.Row < 0) {
+            return new CaretPosition(0, 0);
+        }
+        if (position.Row >= visualToActualRows.Count) {
+            int actualRow = visualToActualRows[^1];
+            int lineLength = Document.Lines[actualRow].Length;
+            return new CaretPosition(actualRow, lineLength);
+        }
+
         int row = GetActualRow(position.Row);
         
         int col = position.Col;
@@ -1472,16 +1486,34 @@ public sealed class Editor : Drawable {
                     line = actionLine.ToString();
                     goto FinishDeletion;
                 } else if (caret.Col == featherColumn && direction is CaretMovementType.CharRight or CaretMovementType.WordRight ||
-                           caret.Col == angleMagnitudeCommaColumn && direction is CaretMovementType.CharLeft or CaretMovementType.WordLeft) {
+                           caret.Col == angleMagnitudeCommaColumn && direction is CaretMovementType.CharLeft or CaretMovementType.WordLeft) 
+                {
                     actionLine.FeatherAngle = actionLine.FeatherMagnitude;
                     actionLine.FeatherMagnitude = null;
                     caret.Col = featherColumn;
                     line = actionLine.ToString();
                     goto FinishDeletion;
                 } else if (caret.Col == angleMagnitudeCommaColumn - 1 &&
-                           direction is CaretMovementType.CharRight or CaretMovementType.WordRight) {
+                           direction is CaretMovementType.CharRight or CaretMovementType.WordRight) 
+                {
                     actionLine.FeatherMagnitude = null;
                     line = actionLine.ToString();
+                    goto FinishDeletion;
+                }
+            }
+            
+            // Remove blank lines with delete at the end of a line
+            if (caret.Col == line.Length &&
+                caret.Row < Document.Lines.Count - 1 && 
+                string.IsNullOrWhiteSpace(Document.Lines[caret.Row + 1])) 
+            {
+                if (direction == CaretMovementType.CharRight) {
+                    Document.RemoveLine(caret.Row + 1);
+                    goto FinishDeletion;
+                } else if (direction == CaretMovementType.WordRight) {
+                    while (caret.Row < Document.Lines.Count - 1 && string.IsNullOrWhiteSpace(Document.Lines[caret.Row + 1])) {
+                        Document.RemoveLine(caret.Row + 1);
+                    }
                     goto FinishDeletion;
                 }
             }
@@ -1493,7 +1525,7 @@ public sealed class Editor : Drawable {
                 CaretMovementType.WordRight => GetHardSnapColumns(actionLine).FirstOrDefault(c => c > caret.Col, caret.Col),
                 _ => caret.Col,
             };
-            
+
             line = line.Remove(Math.Min(newColumn, caret.Col), Math.Abs(newColumn - caret.Col));
             caret.Col = Math.Min(newColumn, caret.Col);
             
@@ -2007,8 +2039,20 @@ public sealed class Editor : Drawable {
             int activeRowStart = -1;
             
             for (int row = minRow; row <= maxRow; row++) {
-                if (!TryParseAndFormatActionLine(row, out var currActionLine))
+                if (!TryParseAndFormatActionLine(row, out var currActionLine)) {
+                    // "Flush" the previous lines
+                    if (activeActionLine != null) {
+                        Document.RemoveLines(activeRowStart, row - 1);
+                        Document.InsertLine(activeRowStart, activeActionLine.Value.ToString());
+
+                        maxRow -= row - 1 - activeRowStart;
+                        row = activeRowStart + 1;
+
+                        activeActionLine = null;
+                        activeRowStart = -1;
+                    }
                     continue; // Skip non-input lines
+                }
                 
                 if (activeActionLine == null) {
                     activeActionLine = currActionLine;
@@ -2055,6 +2099,36 @@ public sealed class Editor : Drawable {
             Document.Caret.Row = maxRow;
             Document.Caret = ClampCaret(Document.Caret);
         }
+    }
+    
+    private void SplitLines() {
+        using var __ = Document.Update();
+
+        (int minRow, int maxRow) = Document.Selection.Empty
+            ? (Document.Caret.Row, Document.Caret.Row)
+            : (Document.Selection.Min.Row, Document.Selection.Max.Row);
+
+        int extraLines = 0;
+        
+        for (int row = maxRow; row >= minRow; row--) {
+            if (!ActionLine.TryParse(Document.Lines[row], out var actionLine) || actionLine.Frames == 0) {
+                continue;
+            }
+
+            extraLines += actionLine.Frames - 1;
+            Document.ReplaceLines(row, Enumerable.Repeat((actionLine with { Frames = 1 }).ToString(), actionLine.Frames).ToArray());
+        }
+
+        if (!Document.Selection.Empty) {
+            int endRow = maxRow + extraLines;
+            Document.Selection = new Selection {
+                Start = new CaretPosition(minRow, 0),
+                End = new CaretPosition(endRow, Document.Lines[endRow].Length),
+            };
+        }
+        
+        Document.Caret.Row = maxRow;
+        Document.Caret = ClampCaret(Document.Caret);
     }
 
     #endregion

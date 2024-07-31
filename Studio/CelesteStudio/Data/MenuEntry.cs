@@ -20,7 +20,7 @@ public enum MenuEntry {
     Editor_DeleteSelectedLines,
     Editor_InsertRemoveBreakpoint, Editor_InsertRemoveSavestateBreakpoint, Editor_RemoveAllUncommentedBreakpoints, Editor_RemoveAllBreakpoints, Editor_CommentUncommentAllBreakpoints, Editor_CommentUncommentInputs, Editor_CommentUncommentText,
     Editor_InsertRoomName, Editor_InsertCurrentTime, Editor_RemoveAllTimestamps, Editor_InsertModInfo, Editor_InsertConsoleLoadCommand, Editor_InsertSimpleConsoleLoadCommand,
-    Editor_SwapSelectedLR, Editor_SwapSelectedJK, Editor_SwapSelectedXC, Editor_CombineConsecutiveSameInputs, Editor_ForceCombineInputFrames,
+    Editor_SwapSelectedLR, Editor_SwapSelectedJK, Editor_SwapSelectedXC, Editor_CombineConsecutiveSameInputs, Editor_ForceCombineInputFrames, Editor_SplitFrames,
     Editor_OpenReadFileGoToPlayLine,
     
     Status_CopyGameInfoToClipboard, Status_ReconenctStudioCeleste,
@@ -77,6 +77,7 @@ public static class MenuEntryExtensions {
         { MenuEntry.Editor_SwapSelectedXC, Keys.None },
         { MenuEntry.Editor_CombineConsecutiveSameInputs, Application.Instance.CommonModifier | Keys.L },
         { MenuEntry.Editor_ForceCombineInputFrames, Application.Instance.CommonModifier | Keys.Shift | Keys.L },
+        { MenuEntry.Editor_SplitFrames, Keys.None },
         { MenuEntry.Editor_OpenReadFileGoToPlayLine, Keys.None },
         
         { MenuEntry.Status_CopyGameInfoToClipboard, Application.Instance.CommonModifier | Keys.Shift | Keys.C },
@@ -132,6 +133,7 @@ public static class MenuEntryExtensions {
         { MenuEntry.Editor_SwapSelectedXC, "Swap Selected X and C" },
         { MenuEntry.Editor_CombineConsecutiveSameInputs, "Combine Consecutive Same Inputs" },
         { MenuEntry.Editor_ForceCombineInputFrames, "Force Combine Input Frames" },
+        { MenuEntry.Editor_SplitFrames, "Split Input Frames" },
         { MenuEntry.Editor_OpenReadFileGoToPlayLine, "Open Read File / Go To Play Line" },
         
         { MenuEntry.Status_CopyGameInfoToClipboard, "&Copy Game Info to Clipboard" },
@@ -159,7 +161,7 @@ public static class MenuEntryExtensions {
             MenuEntry.Editor_DeleteSelectedLines,
             MenuEntry.Editor_InsertRemoveBreakpoint, MenuEntry.Editor_InsertRemoveSavestateBreakpoint, MenuEntry.Editor_RemoveAllUncommentedBreakpoints, MenuEntry.Editor_RemoveAllBreakpoints, MenuEntry.Editor_CommentUncommentAllBreakpoints, MenuEntry.Editor_CommentUncommentInputs, MenuEntry.Editor_CommentUncommentText,
             MenuEntry.Editor_InsertRoomName, MenuEntry.Editor_InsertCurrentTime, MenuEntry.Editor_RemoveAllTimestamps, MenuEntry.Editor_InsertModInfo, MenuEntry.Editor_InsertConsoleLoadCommand, MenuEntry.Editor_InsertSimpleConsoleLoadCommand,
-            MenuEntry.Editor_SwapSelectedLR, MenuEntry.Editor_SwapSelectedJK, MenuEntry.Editor_SwapSelectedXC, MenuEntry.Editor_CombineConsecutiveSameInputs, MenuEntry.Editor_ForceCombineInputFrames,
+            MenuEntry.Editor_SwapSelectedLR, MenuEntry.Editor_SwapSelectedJK, MenuEntry.Editor_SwapSelectedXC, MenuEntry.Editor_CombineConsecutiveSameInputs, MenuEntry.Editor_ForceCombineInputFrames, MenuEntry.Editor_SplitFrames,
             MenuEntry.Editor_OpenReadFileGoToPlayLine] },
 
         { MenuEntryCategory.Status, [
