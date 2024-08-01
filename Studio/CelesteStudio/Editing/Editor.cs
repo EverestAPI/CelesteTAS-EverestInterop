@@ -684,7 +684,6 @@ public sealed class Editor : Drawable {
         
         if (e.Key == Keys.Space && e.HasCommonModifier()) {
             UpdateAutoComplete();
-            //autoCompleteMenu.Visible = true;
 
             e.Handled = true;
             Recalc();
@@ -816,7 +815,7 @@ public sealed class Editor : Drawable {
                 e.Handled = true;
                 break;
             default:
-                if (CalculationExtensions.TryParse(e.KeyChar) is { } op) {
+                if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _) && CalculationExtensions.TryParse(e.KeyChar) is { } op) {
                     StartCalculation(op);
                     e.Handled = true;
                 } else if (e.Key != Keys.None) {
@@ -887,9 +886,6 @@ public sealed class Editor : Drawable {
     #region Action Line Calculation
 
     private void StartCalculation(CalculationOperator op) {
-        if (!ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _)) 
-            return;
-        
         calculationState = new CalculationState(op, Document.Caret.Row);
     }
     
@@ -931,7 +927,7 @@ public sealed class Editor : Drawable {
             }
         }
         
-        if (CalculationExtensions.TryParse(e.KeyChar) is {} op) {
+        if (CalculationExtensions.TryParse(e.KeyChar) is { } op) {
             // Cancel with same operation again
             if (op == calculationState.Operator && calculationState.Operand.Length == 0) {
                 calculationState = null;
