@@ -61,8 +61,6 @@ public sealed class Editor : Drawable {
             
             void HandleTextChanged(Document _, int minRow, int maxRow) {
                 ConvertToActionLines(minRow, maxRow);
-                Recalc();
-                ScrollCaretIntoView();
                 
                 // Need to update total frame count
                 int totalFrames = 0;
@@ -74,10 +72,48 @@ public sealed class Editor : Drawable {
                 }
                 Studio.Instance.GameInfoPanel.TotalFrames = totalFrames;
                 Studio.Instance.GameInfoPanel.UpdateGameInfo();
-            }
                 
+                if (Settings.Instance.AutoIndexRoomLabels) {
+                    // room label without indexing -> lines of all occurrences
+                    Dictionary<string, List<int>> roomLabels = [];
+                    
+                    for (int row = 0; row < Document.Lines.Count; row++) {
+                        string line = Document.Lines[row];
+                        var match = RoomLabelRegex.Match(line);
+                        if (!match.Success) {
+                            continue;
+                        }
+                        
+                        string label = match.Groups[1].Value.Trim();
+                        
+                        if (roomLabels.TryGetValue(label, out var list))
+                            list.Add(row);
+                        else
+                            roomLabels[label] = [row];
+                    }
+                    
+                    using var __ = Document.Update(raiseEvents: false);
+                    foreach (var (label, occurrences) in roomLabels) {
+                        if (occurrences.Count == 1) {
+                            Document.ReplaceLine(occurrences[0], $"{RoomLabelPrefix}{label}");
+                            continue;
+                        }
+                        
+                        for (int i = 0; i < occurrences.Count; i++) {
+                            Document.ReplaceLine(occurrences[i], $"{RoomLabelPrefix}{label.Trim()} ({i})");
+                        }
+                    }
+                    
+                    Document.Caret = ClampCaret(Document.Caret);
+                }
+                
+                Recalc();
+                ScrollCaretIntoView();
+            }
         }
     }
+    
+    private const string RoomLabelPrefix = "#lvl_";
     
     private readonly Scrollable scrollable;
     // These values need to be stored, since WPF doesn't like accessing them directly from the scrollable
@@ -124,6 +160,7 @@ public sealed class Editor : Drawable {
     private static readonly Regex CommentedBreakpointRegex = new(@"^\s*#+\*\*\*", RegexOptions.Compiled);
     private static readonly Regex AllBreakpointRegex = new(@"^\s*#*\*\*\*", RegexOptions.Compiled);
     private static readonly Regex TimestampRegex = new(@"^\s*#+\s*(\d+:)?\d{1,2}:\d{2}\.\d{3}\(\d+\)", RegexOptions.Compiled);
+    private static readonly Regex RoomLabelRegex = new($@"^{RoomLabelPrefix}([^\(\)]*)\s*(?:\(\d+\))?$", RegexOptions.Compiled);
     
     public Editor(Document document, Scrollable scrollable) {
         this.document = document;
@@ -1950,8 +1987,8 @@ public sealed class Editor : Drawable {
         Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length); 
     }
 
-    private void OnInsertRoomName() => InsertLine($"#lvl_{CommunicationWrapper.LevelName}");
-
+    private void OnInsertRoomName() => InsertLine($"{RoomLabelPrefix}{CommunicationWrapper.LevelName}");
+    
     private void OnInsertTime() => InsertLine($"#{CommunicationWrapper.ChapterTime}");
     
     private void OnInsertModInfo() {

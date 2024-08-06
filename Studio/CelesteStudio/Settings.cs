@@ -102,6 +102,7 @@ public sealed class Settings {
     public CaretInsertPosition CaretInsertPosition { get; set; } = CaretInsertPosition.PreviousPosition;
     public CommandSeparator CommandSeparator { get; set; } = CommandSeparator.CommaSpace;
     public LineNumberAlignment LineNumberAlignment { get; set; } = LineNumberAlignment.Left;
+    public bool AutoIndexRoomLabels { get; set; } = true;
     
     public bool CompactMenuBar { get; set; } = false;
     
