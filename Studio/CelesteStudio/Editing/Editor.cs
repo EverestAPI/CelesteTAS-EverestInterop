@@ -45,6 +45,16 @@ public sealed class Editor : Drawable {
             Recalc();
             ScrollCaretIntoView();
             
+            // Detect user-preference
+            roomLabelStartIndex = 0;
+            foreach (var line in document.Lines) {
+                var match = RoomLabelRegex.Match(line);
+                if (match is { Success: true, Groups.Count: >= 3} && int.TryParse(match.Groups[2].Value, out int startIndex)) {
+                    roomLabelStartIndex = startIndex;
+                    break;
+                }
+            }
+            
             // Auto-close folds which are too long
             foreach (var fold in foldings) {
                 if (Settings.Instance.MaxUnfoldedLines == 0) {
@@ -100,7 +110,7 @@ public sealed class Editor : Drawable {
                         }
                         
                         for (int i = 0; i < occurrences.Count; i++) {
-                            Document.ReplaceLine(occurrences[i], $"{RoomLabelPrefix}{label.Trim()} ({i})");
+                            Document.ReplaceLine(occurrences[i], $"{RoomLabelPrefix}{label.Trim()} ({i + roomLabelStartIndex})");
                         }
                     }
                     
@@ -128,6 +138,9 @@ public sealed class Editor : Drawable {
     private Font Font => FontManager.EditorFontRegular;
     private SyntaxHighlighter highlighter;
     private const float LineNumberPadding = 5.0f;
+    
+    /// User-preference for the starting index of room labels
+    private int roomLabelStartIndex;
     
     // Offset from the left accounting for line numbers
     private float textOffsetX;
@@ -160,7 +173,7 @@ public sealed class Editor : Drawable {
     private static readonly Regex CommentedBreakpointRegex = new(@"^\s*#+\*\*\*", RegexOptions.Compiled);
     private static readonly Regex AllBreakpointRegex = new(@"^\s*#*\*\*\*", RegexOptions.Compiled);
     private static readonly Regex TimestampRegex = new(@"^\s*#+\s*(\d+:)?\d{1,2}:\d{2}\.\d{3}\(\d+\)", RegexOptions.Compiled);
-    private static readonly Regex RoomLabelRegex = new($@"^{RoomLabelPrefix}([^\(\)]*)\s*(?:\(\d+\))?$", RegexOptions.Compiled);
+    private static readonly Regex RoomLabelRegex = new($@"^{RoomLabelPrefix}([^\(\)]*)\s*(?:\((\d+)\))?$", RegexOptions.Compiled);
     
     public Editor(Document document, Scrollable scrollable) {
         this.document = document;
