@@ -44,7 +44,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 string path = reader.ReadString();
                 LogVerbose($"Received message FilePath: '{path}'");
 
-                InputController.StudioTasFilePath = path;
+                Manager.AddMainThreadAction(() => Manager.Controller.FilePath = path);
                 break;
 
             case MessageID.Hotkey:
@@ -169,7 +169,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                                 case GameDataType.CommandHash:
                                     writer.Write((int)gameData!);
                                     break;
-                                
+
                                 case GameDataType.LevelInfo:
                                     writer.WriteObject((LevelInfo)gameData!);
                                     break;

@@ -34,6 +34,8 @@ public static class Manager {
         Paused,
         /// Advances the current TAS by 1 frame and resets back to Paused
         FrameAdvance,
+        /// Forwards the TAS while paused
+        SlowForward,
         /// Fast-forwards the current TAS to the next breakpoint
         FastForward,
     }
@@ -57,7 +59,7 @@ public static class Manager {
 
     public static void EnableRun()
     {
-        $"Starting TAS: {Controller.FilePath}".Log();
+        $"Starting TAS: {Controller.FilePath}".Log(LogLevel.Verbose);
 
         CurrState = NextState = State.Running;
         AttributeUtils.Invoke<EnableRunAttribute>();
@@ -67,25 +69,35 @@ public static class Manager {
 
     public static void DisableRun()
     {
-        "Stopping TAS".Log();
+        "Stopping TAS".Log(LogLevel.Verbose);
 
         CurrState = NextState = State.Disabled;
         AttributeUtils.Invoke<DisableRunAttribute>();
         Controller.Stop();
     }
 
+    /// Will start the TAS on the next update cycle
+    public static void EnableRunLater() => NextState = State.Running;
+    /// Will stop the TAS on the next update cycle
+    public static void DisableRunLater() => NextState = State.Disabled;
+
     public static void Update() {
+        if (!Running && NextState == State.Running) {
+            EnableRun();
+            return;
+        }
+        if (Running && NextState == State.Disabled) {
+            DisableRun();
+            return;
+        }
+
         CurrState = NextState;
 
         while (mainThreadActions.TryDequeue(out Action action)) {
             action.Invoke();
         }
 
-        if (!Running) {
-            return;
-        }
-
-        if (!IsPaused()) {
+        if (Running && !IsPaused()) {
             Controller.AdvanceFrame();
 
             // Pause the TAS if breakpoint is not placed at the end
@@ -98,6 +110,27 @@ public static class Manager {
             if (!Controller.CanPlayback) {
                 DisableRun();
             }
+        }
+    }
+
+    public static void UpdateHotkeys() {
+        Hotkeys.Update();
+
+        // Check if the TAS should be enabled / disabled
+        if (Hotkeys.StartStop.Pressed) {
+            if (Running) {
+                DisableRun();
+            } else {
+                EnableRun();
+            }
+            return;
+        }
+
+        // Do not use Hotkeys.Restart.Pressed unless the fast forwarding optimization in Hotkeys.Update() is removed
+        if (Hotkeys.Restart.Released) {
+            DisableRun();
+            EnableRun();
+            return;
         }
 
         switch (CurrState) {
@@ -114,6 +147,8 @@ public static class Manager {
             case State.Paused:
                 if (Hotkeys.PauseResume.Pressed) {
                     NextState = State.Running;
+                } else if (Hotkeys.FrameAdvance.Pressed || Hotkeys.FastForward.Check) {
+                    NextState = State.FrameAdvance;
                 }
                 break;
 
@@ -122,12 +157,28 @@ public static class Manager {
                 break;
         }
 
-        if (Hotkeys.FastForward.Check) {
-            PlaybackSpeed = TasSettings.FastForwardSpeed;
-        } else if (Hotkeys.SlowForward.Check) {
-            PlaybackSpeed = TasSettings.SlowForwardSpeed;
-        } else {
-            PlaybackSpeed = 1.0f;
+        // Apply fast / slow forwarding
+        switch (NextState)
+        {
+            case State.Paused or State.SlowForward when Hotkeys.SlowForward.Check:
+                PlaybackSpeed = TasSettings.SlowForwardSpeed;
+                NextState = State.SlowForward;
+                break;
+            case State.Paused or State.SlowForward:
+                PlaybackSpeed = 1.0f;
+                NextState = State.Paused;
+                break;
+
+            case State.Running when Hotkeys.FastForward.Check:
+                PlaybackSpeed = TasSettings.FastForwardSpeed;
+                break;
+            case State.Running when Hotkeys.SlowForward.Check:
+                PlaybackSpeed = TasSettings.SlowForwardSpeed;
+                break;
+
+            default:
+                PlaybackSpeed = 1.0f;
+                break;
         }
     }
 
@@ -148,10 +199,7 @@ public static class Manager {
         };
     }
 
-    public static bool IsPaused() {
-        if (IsLoading()) return false;
-        return CurrState == State.Paused;
-    }
+    public static bool IsPaused() => CurrState == State.Paused && !IsLoading();
 
 #else
 

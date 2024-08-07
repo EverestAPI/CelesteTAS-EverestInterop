@@ -43,6 +43,9 @@ public record InputFrame {
     public InputFrame? Previous;
     public InputFrame? Next;
 
+    private readonly string actionLineString;
+    private readonly int checksum;
+
     private InputFrame() { }
     private InputFrame(ActionLine actionLine, int studioLine, int repeatIndex, int repeatCount, int frameOffset) {
         Actions = actionLine.Actions;
@@ -54,6 +57,9 @@ public record InputFrame {
 
         RepeatIndex = repeatIndex;
         RepeatCount = repeatCount;
+
+        actionLineString = actionLine.ToString();
+        checksum = actionLineString.GetHashCode();
 
         if (float.TryParse(actionLine.FeatherAngle, out float angle)) {
             float magnitude = float.TryParse(actionLine.FeatherMagnitude, out float m) ? m : 1.0f;
@@ -100,9 +106,8 @@ public record InputFrame {
         return true;
     }
 
-    // public InputFrame Clone() => new InputFrame() {
-    //
-    // };
+    public override string ToString() => actionLineString;
+    public override int GetHashCode() => checksum;
 }
 
 #else

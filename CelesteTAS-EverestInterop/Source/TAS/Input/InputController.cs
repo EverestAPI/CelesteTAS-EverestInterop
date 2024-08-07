@@ -34,6 +34,8 @@ public class InputController {
         AttributeUtils.CollectMethods<ParseFileEndAttribute>();
     }
 
+    private static readonly Dictionary<string, FileSystemWatcher> watchers = new();
+
     public readonly List<InputFrame> Inputs = [];
 
     public InputFrame? Previous => Inputs!.GetValueOrDefault(CurrentFrameInTAS - 1);
@@ -51,6 +53,9 @@ public class InputController {
 
     /// Indicates whether the current TAS file needs to be re-parsed before running
     private bool needsReload = true;
+
+    /// All files involved in the current TAS
+    private readonly HashSet<string> usedFiles = [];
 
     private const int InvalidChecksum = -1;
     private int checksum = InvalidChecksum;
@@ -81,17 +86,21 @@ public class InputController {
             if (filePath == value) {
                 return;
             }
+            if (string.IsNullOrWhiteSpace(value)) {
+                filePath = string.Empty;
+                return;
+            }
 
-            filePath = Path.GetFullPath(filePath);
+            filePath = Path.GetFullPath(value);
             if (!File.Exists(filePath)) {
                 filePath = DefaultFilePath;
             }
 
             if (Manager.Running) {
-                Manager.DisableRun();
+                Manager.DisableRunLater();
             }
 
-            // Preload tas file
+            // Preload the TAS file
             Stop();
             Clear();
             RefreshInputs();
@@ -105,6 +114,29 @@ public class InputController {
         }
 
         int lastChecksum = Checksum;
+        bool firstRun = usedFiles.IsEmpty();
+
+        Clear();
+        if (ReadFile(FilePath)) {
+            if (Manager.NextState == Manager.State.Disabled) {
+                // The TAS contains something invalid
+                Clear();
+                Manager.DisableRun();
+            } else {
+                needsReload = false;
+                StartWatchers();
+                AttributeUtils.Invoke<ParseFileEndAttribute>();
+
+                if (!firstRun && lastChecksum != Checksum) {
+                    MetadataCommands.UpdateRecordCount(this);
+                }
+            }
+        } else {
+            // Something failed while trying to parse
+            Clear();
+        }
+
+        CurrentFrameInTAS = Math.Min(Inputs.Count, CurrentFrameInTAS);
     }
 
     /// Moves the controller 1 frame forward, updating inputs and triggering commands
@@ -147,12 +179,12 @@ public class InputController {
                 return false;
             }
 
-            // UsedFiles[path] = default;
+            usedFiles.Add(path);
             ReadLines(File.ReadLines(path).Take(endLine), path, startLine, studioLine, repeatIndex, repeatCount);
 
             return true;
         } catch (Exception e) {
-            e.Log(LogLevel.Warn);
+            e.Log(LogLevel.Error);
             return false;
         }
     }
@@ -226,11 +258,56 @@ public class InputController {
         CurrentFrameInInput = 0;
     }
 
-    /// Clears all cached data for the current TAS
+    /// Clears all parsed data for the current TAS
     public void Clear() {
         Inputs.Clear();
 
+        foreach (var watcher in watchers.Values) {
+            watcher.Dispose();
+        }
+        watchers.Clear();
+        usedFiles.Clear();
+
         checksum = InvalidChecksum;
+    }
+
+    /// Create file-system-watchers for all TAS-files used, to detect changes
+    private void StartWatchers() {
+        foreach (var path in usedFiles) {
+            string fullPath = Path.GetFullPath(path);
+
+            // Watch TAS file
+            CreateWatcher(fullPath);
+        }
+
+        void CreateWatcher(string path) {
+            if (watchers.ContainsKey(path)) {
+                return;
+            }
+
+            var watcher = new FileSystemWatcher();
+            watcher.Path = Path.GetDirectoryName(path)!;
+            watcher.Filter = Path.GetFileName(path);
+
+            watcher.Changed += OnTasFileChanged;
+            watcher.Created += OnTasFileChanged;
+            watcher.Deleted += OnTasFileChanged;
+            watcher.Renamed += OnTasFileChanged;
+
+            try {
+                watcher.EnableRaisingEvents = true;
+            } catch (Exception e) {
+                e.LogException($"Failed watching folder: {watcher.Path}, filter: {watcher.Filter}");
+                watcher.Dispose();
+                return;
+            }
+
+            watchers[path] = watcher;
+        }
+
+        void OnTasFileChanged(object sender, FileSystemEventArgs e) {
+            needsReload = true;
+        }
     }
 
     /// Calculate a checksum until the specified frame
@@ -267,7 +344,9 @@ public class InputController {
         // }
 
         clone.needsReload = needsReload;
-        // clone.UsedFiles.AddRange((IDictionary) UsedFiles);
+        foreach (var file in usedFiles) {
+            clone.usedFiles.Add(file);
+        }
         clone.CurrentFrameInTAS = CurrentFrameInTAS;
         clone.CurrentFrameInInput = CurrentFrameInInput;
         // clone.CurrentFrameInInputForHud = CurrentFrameInInputForHud;
