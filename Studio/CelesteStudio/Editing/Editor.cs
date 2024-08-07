@@ -2158,11 +2158,8 @@ public sealed class Editor : Drawable {
     private void SwapSelectedActions(Actions a, Actions b) {
         using var __ = Document.Update();
         
-        if (Document.Selection.Empty)
-            return;
-        
-        int minRow = Document.Selection.Min.Row;
-        int maxRow = Document.Selection.Max.Row;
+        int minRow = Document.Selection.Empty ? Document.Caret.Row : Document.Selection.Min.Row;
+        int maxRow = Document.Selection.Empty ? Document.Caret.Row : Document.Selection.Max.Row;
         
         for (int row = minRow; row <= maxRow; row++) {
             if (!TryParseAndFormatActionLine(row, out var actionLine))
