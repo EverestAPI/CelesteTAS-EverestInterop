@@ -14,12 +14,12 @@ internal static class LogUtil {
 
 #if DEBUG
     // ReSharper disable once UnusedMember.Global
-    public static void DebugLog(this object text, LogLevel logLevel = LogLevel.Info) {
+    public static void DebugLog(this object text, LogLevel logLevel = LogLevel.Debug) {
         text.DebugLog(true, logLevel);
     }
 
     // ReSharper disable once MemberCanBePrivate.Global
-    public static void DebugLog(this object text, bool outputToCommands, LogLevel logLevel = LogLevel.Info) {
+    public static void DebugLog(this object text, bool outputToCommands, LogLevel logLevel = LogLevel.Debug) {
         text.Log(outputToCommands, logLevel);
     }
 #endif

@@ -212,7 +212,7 @@ public static class Savestates {
 
     private static void SetTasState() {
         if (Controller.HasFastForward) {
-            Manager.CurrState = Manager.State.FastForward;
+            Manager.CurrState = Manager.State.Running;
         } else {
             Manager.CurrState = Manager.State.Paused;
         }

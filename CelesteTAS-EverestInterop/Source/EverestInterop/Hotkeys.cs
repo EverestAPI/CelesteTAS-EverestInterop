@@ -217,8 +217,6 @@ public static class Hotkeys {
             }
         }
 
-        // TODO:
-        // Manager.Controller.FastForwardToNextComment();
         Hud.Toggle();
         Camera.ResetCamera();
     }

@@ -28,7 +28,7 @@ public static class Manager {
     public enum State {
         /// No TAS is currently active
         Disabled,
-        /// Plays the current TAS back at normal speed
+        /// Plays the current TAS back at the specified PlaybackSpeed
         Running,
         /// Pauses the current TAS
         Paused,
@@ -36,15 +36,13 @@ public static class Manager {
         FrameAdvance,
         /// Forwards the TAS while paused
         SlowForward,
-        /// Fast-forwards the current TAS to the next breakpoint
-        FastForward,
     }
 
 #if true
 
     public static bool Running => CurrState != State.Disabled;
+    public static bool FastForwarding => Running && PlaybackSpeed >= 5.0f;
     public static float PlaybackSpeed { get; private set; } = 1.0f;
-    public static bool FastForwarding => CurrState == State.FastForward;
 
     public static State CurrState, NextState;
 
@@ -64,8 +62,11 @@ public static class Manager {
         }
 
         $"Starting TAS: {Controller.FilePath}".Log();
+        Environment.StackTrace.Log(LogLevel.Verbose);
 
         CurrState = NextState = State.Running;
+        PlaybackSpeed = 1.0f;
+
         AttributeUtils.Invoke<EnableRunAttribute>();
         Controller.Stop();
         Controller.RefreshInputs();
@@ -77,8 +78,8 @@ public static class Manager {
             return;
         }
 
-        Environment.StackTrace.Log(LogLevel.Verbose);
         "Stopping TAS".Log();
+        Environment.StackTrace.Log(LogLevel.Verbose);
 
         CurrState = NextState = State.Disabled;
         AttributeUtils.Invoke<DisableRunAttribute>();
@@ -106,8 +107,7 @@ public static class Manager {
 
         if (Running && !IsPaused()) {
             if (Controller.HasFastForward) {
-                NextState = State.FastForward;
-                PlaybackSpeed = Controller.CurrentFastForward!.Speed;
+                NextState = State.Running;
             }
 
             Controller.AdvanceFrame();
@@ -116,7 +116,6 @@ public static class Manager {
             if (Controller.Break && Controller.CanPlayback) {
                 Controller.NextLabelFastForward = null;
                 NextState = State.Paused;
-                PlaybackSpeed = 1.0f;
                 return;
             }
 
@@ -130,7 +129,8 @@ public static class Manager {
         Hotkeys.Update();
 
         // Check if the TAS should be enabled / disabled
-        if (Hotkeys.StartStop.Pressed) {
+        // NOTE: Do not use Hotkeys.Restart.Pressed unless the fast forwarding optimization in Hotkeys.Update() is removed
+        if (Hotkeys.StartStop.Released) {
             if (Running) {
                 DisableRun();
             } else {
@@ -139,7 +139,6 @@ public static class Manager {
             return;
         }
 
-        // Do not use Hotkeys.Restart.Pressed unless the fast forwarding optimization in Hotkeys.Update() is removed
         if (Hotkeys.Restart.Released) {
             DisableRun();
             EnableRun();
@@ -195,9 +194,7 @@ public static class Manager {
                 break;
 
             default:
-                if (CurrState != State.FastForward) {
-                    PlaybackSpeed = 1.0f;
-                }
+                PlaybackSpeed = Controller.HasFastForward ? Controller.CurrentFastForward!.Speed : 1.0f;
                 break;
         }
     }
