@@ -17,6 +17,8 @@ public sealed class AutoCompleteMenu : Scrollable {
         public required string ExtraText;
         /// Callback for when this entry is selected.
         public required Action OnUse;
+        /// Whether the entry can be selected.
+        public bool Disabled = false;
     }
     
     private const int BorderWidth = 1; // We can't disable the border, so we have to account for that to avoid having scrollbars
@@ -57,7 +59,8 @@ public sealed class AutoCompleteMenu : Scrollable {
             int minRow = Math.Max(0, (int)(menu.ScrollPosition.Y / height) - rowCullOverhead);
             int maxRow = Math.Min(menu.shownEntries.Length - 1, (int)((menu.ScrollPosition.Y + menu.ClientSize.Height) / height) + rowCullOverhead);
             
-            using var displayBrush = new SolidBrush(Settings.Instance.Theme.AutoCompleteFg);
+            using var displayEnabledBrush = new SolidBrush(Settings.Instance.Theme.AutoCompleteFg);
+            using var displayDisabledBrush = new SolidBrush(Settings.Instance.Theme.AutoCompleteFgDisabled);
             using var extraBrush = new SolidBrush(Settings.Instance.Theme.AutoCompleteFgExtra);
             
             var mousePos = PointFromScreen(Mouse.Position);
@@ -69,12 +72,13 @@ public sealed class AutoCompleteMenu : Scrollable {
             for (int row = minRow; row <= maxRow; row++) {
                 var entry = menu.shownEntries[row];
                 
-                if (row == menu.SelectedEntry) {
+                if (row == menu.SelectedEntry && !entry.Disabled) {
                     e.Graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteSelected, 0.0f, row * height, width, height);
                 } else if (row == mouseRow) {
                     e.Graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteHovered, 0.0f, row * height, width, height);
                 }
-                
+
+                var displayBrush = entry.Disabled ? displayDisabledBrush : displayEnabledBrush;
                 e.Graphics.DrawText(font, displayBrush, EntryPaddingLeft, row * height + EntryBetweenPadding, entry.DisplayText);
                 e.Graphics.DrawText(font, extraBrush, EntryPaddingLeft + font.CharWidth() * (maxDisplayLen + DisplayExtraPadding), row * height + EntryBetweenPadding, entry.ExtraText);
             }
