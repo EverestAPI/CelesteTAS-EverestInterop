@@ -37,6 +37,8 @@ public class InputController {
     private static readonly Dictionary<string, FileSystemWatcher> watchers = new();
 
     public readonly List<InputFrame> Inputs = [];
+    public readonly SortedDictionary<int, FastForward> FastForwards = new();
+    public readonly SortedDictionary<int, FastForward> FastForwardLabels = new();
 
     public InputFrame? Previous => Inputs!.GetValueOrDefault(CurrentFrameInTAS - 1);
     public InputFrame Current => Inputs!.GetValueOrDefault(CurrentFrameInTAS)!;
@@ -45,11 +47,13 @@ public class InputController {
     public int CurrentFrameInTAS { get; private set; } = 0;
     public int CurrentFrameInInput { get; private set; } = 0;
     public int CurrentParsingFrame => Inputs.Count;
-    // private FastForward CurrentFastForward => NextCommentFastForward ??
-    //                                           FastForwards.FirstOrDefault(pair => pair.Key > CurrentFrameInTas).Value ??
-    //                                           FastForwards.LastOrDefault().Value;
 
-    public bool HasFastForward => false;// CurrentFastForward is { } forward && forward.Frame > CurrentFrameInTas;
+    public FastForward? CurrentFastForward => NextLabelFastForward ??
+                                               FastForwards.FirstOrDefault(pair => pair.Key > CurrentFrameInTAS).Value ??
+                                               FastForwards.LastOrDefault().Value;
+    public bool HasFastForward => CurrentFastForward is { } forward && forward.Frame > CurrentFrameInTAS;
+
+    public FastForward? NextLabelFastForward;
 
     /// Indicates whether the current TAS file needs to be re-parsed before running
     private bool needsReload = true;
@@ -67,7 +71,7 @@ public class InputController {
     public bool CanPlayback => CurrentFrameInTAS < Inputs.Count;
 
     /// Whether the TAS should be paused on this frame
-    public bool Break => false; // TODO: CurrentFastForward?.Frame == CurrentFrameInTas;
+    public bool Break => CurrentFastForward?.Frame == CurrentFrameInTAS;
 
     private static readonly string DefaultFilePath = Path.Combine(Everest.PathEverest, "Celeste.tas");
 
@@ -208,19 +212,21 @@ public class InputController {
             }
 
             if (lineText.StartsWith("***")) {
-                // FastForward fastForward = new(CurrentParsingFrame, lineText.Substring(3), studioLine);
-                // if (FastForwards.TryGetValue(CurrentParsingFrame, out FastForward oldFastForward) && oldFastForward.SaveState &&
-                //     !fastForward.SaveState) {
-                //     // ignore
-                // } else {
-                //     FastForwards[CurrentParsingFrame] = fastForward;
-                // }
+                var fastForward = new FastForward(CurrentParsingFrame, lineText.Substring("***".Length), studioLine);
+                if (FastForwards.TryGetValue(CurrentParsingFrame, out var oldFastForward) && oldFastForward.SaveState && !fastForward.SaveState) {
+                    // ignore
+                } else {
+                    FastForwards[CurrentParsingFrame] = fastForward;
+                }
             } else if (lineText.StartsWith("#")) {
-                // FastForwardComments[CurrentParsingFrame] = new FastForward(CurrentParsingFrame, "", studioLine);
+                // A label need to start with a # and immediately follow with the text
+                if (lineText.Length >= 2 && lineText[0] == '#' && char.IsLetter(lineText[1])) {
+                    FastForwardLabels[CurrentParsingFrame] = new FastForward(CurrentParsingFrame, "", studioLine);
+                }
+
                 // if (!Comments.TryGetValue(path, out var comments)) {
                 //     Comments[path] = comments = new List<Comment>();
                 // }
-                //
                 // comments.Add(new Comment(path, CurrentParsingFrame, subLine, lineText));
             } else if (!AutoInputCommand.TryInsert(path, lineText, studioLine, repeatIndex, repeatCount)) {
                 AddFrames(lineText, studioLine, repeatIndex, repeatCount);
@@ -231,8 +237,9 @@ public class InputController {
             }
         }
 
+        // Add a hidden label at the end, to fast-forward to the end of the file
         if (path == FilePath) {
-            // FastForwardComments[CurrentParsingFrame] = new FastForward(CurrentParsingFrame, "", studioLine);
+            FastForwardLabels[CurrentParsingFrame] = new FastForward(CurrentParsingFrame, "", studioLine);
         }
     }
 
@@ -250,6 +257,22 @@ public class InputController {
         }
 
         LibTasHelper.WriteLibTasFrame(inputFrame);
+    }
+
+    /// Fast-forwards to the next label / breakpoint
+    public void FastForwardToNextLabel() {
+        NextLabelFastForward = null;
+        RefreshInputs();
+
+        var next = FastForwardLabels.FirstOrDefault(pair => pair.Key > CurrentFrameInTAS).Value;
+        if (next != null && HasFastForward && CurrentFastForward is { } last && next.Frame > last.Frame) {
+            // Forward to another breakpoint in-between instead
+            NextLabelFastForward = last;
+        } else {
+            NextLabelFastForward = next;
+        }
+
+        Manager.NextState = Manager.State.FastForward;
     }
 
     /// Stops execution of the current TAS

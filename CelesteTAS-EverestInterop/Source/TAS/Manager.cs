@@ -59,7 +59,11 @@ public static class Manager {
 
     public static void EnableRun()
     {
-        $"Starting TAS: {Controller.FilePath}".Log(LogLevel.Verbose);
+        if (Running) {
+            return;
+        }
+
+        $"Starting TAS: {Controller.FilePath}".Log();
 
         CurrState = NextState = State.Running;
         AttributeUtils.Invoke<EnableRunAttribute>();
@@ -69,7 +73,12 @@ public static class Manager {
 
     public static void DisableRun()
     {
-        "Stopping TAS".Log(LogLevel.Verbose);
+        if (!Running) {
+            return;
+        }
+
+        Environment.StackTrace.Log(LogLevel.Verbose);
+        "Stopping TAS".Log();
 
         CurrState = NextState = State.Disabled;
         AttributeUtils.Invoke<DisableRunAttribute>();
@@ -84,11 +93,9 @@ public static class Manager {
     public static void Update() {
         if (!Running && NextState == State.Running) {
             EnableRun();
-            return;
         }
         if (Running && NextState == State.Disabled) {
             DisableRun();
-            return;
         }
 
         CurrState = NextState;
@@ -98,12 +105,18 @@ public static class Manager {
         }
 
         if (Running && !IsPaused()) {
+            if (Controller.HasFastForward) {
+                NextState = State.FastForward;
+                PlaybackSpeed = Controller.CurrentFastForward!.Speed;
+            }
+
             Controller.AdvanceFrame();
 
             // Pause the TAS if breakpoint is not placed at the end
             if (Controller.Break && Controller.CanPlayback) {
-                // Controller.NextCommentFastForward = null;
+                Controller.NextLabelFastForward = null;
                 NextState = State.Paused;
+                PlaybackSpeed = 1.0f;
                 return;
             }
 
@@ -130,6 +143,11 @@ public static class Manager {
         if (Hotkeys.Restart.Released) {
             DisableRun();
             EnableRun();
+            return;
+        }
+
+        if (Running && Hotkeys.FastForwardComment.Pressed) {
+            Controller.FastForwardToNextLabel();
             return;
         }
 
@@ -177,7 +195,9 @@ public static class Manager {
                 break;
 
             default:
-                PlaybackSpeed = 1.0f;
+                if (CurrState != State.FastForward) {
+                    PlaybackSpeed = 1.0f;
+                }
                 break;
         }
     }

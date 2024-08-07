@@ -56,7 +56,10 @@
 
         <Copy SourceFiles="$(OutputPath)ICSharpCode.SharpZipLib.dll" DestinationFolder="..\bin" />
         <Copy SourceFiles="$(OutputPath)MemoryPack.Core.dll" DestinationFolder="..\bin" />
+
         <Copy SourceFiles="$(OutputPath)JetBrains.Profiler.Api.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug'" />
+        <Copy SourceFiles="$(OutputPath)JetBrains.HabitatDetector.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug'" />
+        <Copy SourceFiles="$(OutputPath)JetBrains.FormatRipper.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug'" />
     </Target>
 
     <!-- Assets (use symlinks in debug builds on POSIX, since MSBuild is useless) -->
