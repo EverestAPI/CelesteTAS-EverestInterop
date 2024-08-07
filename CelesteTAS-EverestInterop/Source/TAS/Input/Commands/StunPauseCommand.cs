@@ -175,11 +175,11 @@ public static class StunPauseCommand {
         inputs.RemoveAt(inputs.Count - 1);
 
         if (Manager.Controller.Inputs.LastOrDefault() is { } input) {
-            if (input.HasActions(Actions.Jump) && input.HasActions(Actions.Jump2)) {
+            if (input.Actions.Has(Actions.Jump) && input.Actions.Has(Actions.Jump2)) {
                 inputs.Add("10,J,K");
-            } else if (input.HasActions(Actions.Jump)) {
+            } else if (input.Actions.Has(Actions.Jump)) {
                 inputs.Add("10,J");
-            } else if (input.HasActions(Actions.Jump2)) {
+            } else if (input.Actions.Has(Actions.Jump2)) {
                 inputs.Add("10,K,O");
             } else {
                 inputs.Add("10,O");

@@ -79,7 +79,7 @@ public static class MonocleCommands {
             return;
         }
 
-        InputController.StudioTasFilePath = filePath;
+        Manager.Controller.FilePath = filePath;
         Manager.EnableRun();
     }
 }

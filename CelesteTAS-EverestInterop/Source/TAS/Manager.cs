@@ -18,7 +18,143 @@ using TAS.Utils;
 
 namespace TAS;
 
+[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+internal class EnableRunAttribute : Attribute;
+
+[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+internal class DisableRunAttribute : Attribute;
+
 public static class Manager {
+    public enum State {
+        /// No TAS is currently active
+        Disabled,
+        /// Plays the current TAS back at normal speed
+        Running,
+        /// Pauses the current TAS
+        Paused,
+        /// Advances the current TAS by 1 frame and resets back to Paused
+        FrameAdvance,
+        /// Fast-forwards the current TAS to the next breakpoint
+        FastForward,
+    }
+
+#if true
+
+    public static bool Running => CurrState != State.Disabled;
+    public static float PlaybackSpeed { get; private set; } = 1.0f;
+    public static bool FastForwarding => CurrState == State.FastForward;
+
+    public static State CurrState, NextState;
+
+    public static readonly InputController Controller = new();
+
+    private static readonly ConcurrentQueue<Action> mainThreadActions = new();
+
+    static Manager() {
+        AttributeUtils.CollectMethods<EnableRunAttribute>();
+        AttributeUtils.CollectMethods<DisableRunAttribute>();
+    }
+
+    public static void EnableRun()
+    {
+        $"Starting TAS: {Controller.FilePath}".Log();
+
+        CurrState = NextState = State.Running;
+        AttributeUtils.Invoke<EnableRunAttribute>();
+        Controller.Stop();
+        Controller.RefreshInputs();
+    }
+
+    public static void DisableRun()
+    {
+        "Stopping TAS".Log();
+
+        CurrState = NextState = State.Disabled;
+        AttributeUtils.Invoke<DisableRunAttribute>();
+        Controller.Stop();
+    }
+
+    public static void Update() {
+        CurrState = NextState;
+
+        while (mainThreadActions.TryDequeue(out Action action)) {
+            action.Invoke();
+        }
+
+        if (!Running) {
+            return;
+        }
+
+        if (!IsPaused()) {
+            Controller.AdvanceFrame();
+
+            // Pause the TAS if breakpoint is not placed at the end
+            if (Controller.Break && Controller.CanPlayback) {
+                // Controller.NextCommentFastForward = null;
+                NextState = State.Paused;
+                return;
+            }
+
+            if (!Controller.CanPlayback) {
+                DisableRun();
+            }
+        }
+
+        switch (CurrState) {
+            case State.Running:
+                if (Hotkeys.PauseResume.Pressed) {
+                    NextState = State.Paused;
+                }
+                break;
+
+            case State.FrameAdvance:
+                NextState = State.Paused;
+                break;
+
+            case State.Paused:
+                if (Hotkeys.PauseResume.Pressed) {
+                    NextState = State.Running;
+                }
+                break;
+
+            case State.Disabled:
+            default:
+                break;
+        }
+
+        if (Hotkeys.FastForward.Check) {
+            PlaybackSpeed = TasSettings.FastForwardSpeed;
+        } else if (Hotkeys.SlowForward.Check) {
+            PlaybackSpeed = TasSettings.SlowForwardSpeed;
+        } else {
+            PlaybackSpeed = 1.0f;
+        }
+    }
+
+    /// Queues an action to be performed on the main thread
+    public static void AddMainThreadAction(Action action) {
+        mainThreadActions.Enqueue(action);
+    }
+
+    public static bool IsLoading() {
+        return Engine.Scene switch {
+            Level level => level.IsAutoSaving() && level.Session.Level == "end-cinematic",
+            SummitVignette summit => !summit.ready,
+            Overworld overworld => overworld.Current is OuiFileSelect { SlotIndex: >= 0 } slot && slot.Slots[slot.SlotIndex].StartingGame ||
+                                   overworld.Next is OuiChapterSelect && UserIO.Saving ||
+                                   overworld.Next is OuiMainMenu && (UserIO.Saving || Everest._SavingSettings),
+            Emulator emulator => emulator.game == null,
+            _ => Engine.Scene is LevelExit or LevelLoader or GameLoader || Engine.Scene.GetType().Name == "LevelExitToLobby",
+        };
+    }
+
+    public static bool IsPaused() {
+        if (IsLoading()) return false;
+        return CurrState == State.Paused;
+    }
+
+#else
+
     private static readonly ConcurrentQueue<Action> mainThreadActions = new();
 
     public static bool Running;
@@ -273,10 +409,6 @@ public static class Manager {
                 return isLoading;
         }
     }
+
+#endif
 }
-
-[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-internal class EnableRunAttribute : Attribute;
-
-[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-internal class DisableRunAttribute : Attribute;

@@ -143,7 +143,7 @@ public static class Hotkeys {
     }
 
     public static void Update() {
-        if (Manager.UltraFastForwarding) {
+        if (Manager.FastForwarding) {
             kbState = default;
             padState = default;
         } else if (!Engine.Instance.IsActive) {
@@ -173,11 +173,11 @@ public static class Hotkeys {
             }
         }
 
-        if (Manager.UltraFastForwarding) {
+        if (Manager.FastForwarding) {
             updateButton = false;
         }
 
-        if (Manager.UltraFastForwarding) {
+        if (Manager.FastForwarding) {
             foreach (Hotkey hotkey in hotKeysInteractWithStudio) {
                 hotkey.Update(updateKey, false);
             }
@@ -217,7 +217,8 @@ public static class Hotkeys {
             }
         }
 
-        Manager.Controller.FastForwardToNextComment();
+        // TODO:
+        // Manager.Controller.FastForwardToNextComment();
         Hud.Toggle();
         Camera.ResetCamera();
     }
@@ -394,7 +395,7 @@ public static class MouseButtons {
     }
 
     private static void CelesteOnRenderCore(On.Celeste.Celeste.orig_RenderCore orig, Celeste.Celeste self) {
-        if (Manager.UltraFastForwarding || !Engine.Instance.IsActive) {
+        if (Manager.FastForwarding || !Engine.Instance.IsActive) {
             UpdateNull();
         } else {
             Update();

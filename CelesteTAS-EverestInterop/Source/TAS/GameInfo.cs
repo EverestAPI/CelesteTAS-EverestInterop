@@ -151,7 +151,7 @@ public static class GameInfo {
     private static void SceneOnAfterUpdate(On.Monocle.Scene.orig_AfterUpdate orig, Scene self) {
         orig(self);
 
-        if (Manager.UltraFastForwarding) {
+        if (Manager.FastForwarding) {
             return;
         }
 
@@ -220,8 +220,8 @@ public static class GameInfo {
 
                 string analog = string.Empty;
                 string exactAnalog = string.Empty;
-                if (Manager.Running && Manager.Controller.Previous is { } inputFrame && inputFrame.HasActions(Actions.Feather)) {
-                    analog = GetAdjustedAnalog(inputFrame.AngleVector2, out exactAnalog);
+                if (Manager.Running && Manager.Controller.Previous is { } inputFrame && inputFrame.Actions.Has(Actions.Feather)) {
+                    analog = GetAdjustedAnalog(inputFrame.StickPosition, out exactAnalog);
                 }
 
                 string retainedSpeed = GetAdjustedRetainedSpeed(player, out string exactRetainedSpeed);

@@ -77,8 +77,8 @@ public static class LibTasHelper {
 
         for (int i = 0; i < inputFrame.Frames; ++i) {
             WriteLibTasFrame(LibTasKeys(inputFrame),
-                $"{inputFrame.AngleVector2Short.X}:{-inputFrame.AngleVector2Short.Y}",
-                $"{inputFrame.DashOnlyVector2Short.X}:{-inputFrame.DashOnlyVector2Short.Y}",
+                $"{inputFrame.StickPositionShort.X}:{-inputFrame.StickPositionShort.Y}",
+                $"{inputFrame.DashOnlyStickPositionShort.X}:{-inputFrame.DashOnlyStickPositionShort.Y}",
                 LibTasButtons(inputFrame));
         }
     }
@@ -103,8 +103,7 @@ public static class LibTasHelper {
 
         Manager.DisableRun();
         StartExport(path);
-        Manager.Controller.NeedsReload = true;
-        Manager.Controller.RefreshInputs(true);
+        Manager.Controller.RefreshInputs(forceRefresh: true);
         Manager.DisableRun();
     }
 
@@ -121,37 +120,37 @@ public static class LibTasHelper {
     private static string LibTasKeys(InputFrame inputFrame) {
         keys.Clear();
 
-        if (inputFrame.HasActions(Actions.Confirm)) {
+        if (inputFrame.Actions.Has(Actions.Confirm)) {
             // Keys.C
             keys.Add("63");
         }
 
-        if (inputFrame.HasActions(Actions.Restart)) {
+        if (inputFrame.Actions.Has(Actions.Restart)) {
             // Keys.R
             keys.Add("72");
         }
 
-        if (inputFrame.HasActions(Actions.UpMoveOnly)) {
+        if (inputFrame.Actions.Has(Actions.UpMoveOnly)) {
             // Keys.I
             keys.Add("69");
         }
 
-        if (inputFrame.HasActions(Actions.LeftMoveOnly)) {
+        if (inputFrame.Actions.Has(Actions.LeftMoveOnly)) {
             // Keys.J
             keys.Add("6a");
         }
 
-        if (inputFrame.HasActions(Actions.DownMoveOnly)) {
+        if (inputFrame.Actions.Has(Actions.DownMoveOnly)) {
             // Keys.K
             keys.Add("6b");
         }
 
-        if (inputFrame.HasActions(Actions.RightMoveOnly)) {
+        if (inputFrame.Actions.Has(Actions.RightMoveOnly)) {
             // Keys.L
             keys.Add("6c");
         }
 
-        if (inputFrame.HasActions(Actions.Journal)) {
+        if (inputFrame.Actions.Has(Actions.Journal)) {
             // Keys.Tab
             keys.Add("ff09");
         }
@@ -180,55 +179,55 @@ public static class LibTasHelper {
             buttons[i] = '.';
         }
 
-        if (inputFrame.HasActions(Actions.Left)) {
+        if (inputFrame.Actions.Has(Actions.Left)) {
             buttons[13] = 'l';
         }
 
-        if (inputFrame.HasActions(Actions.Right)) {
+        if (inputFrame.Actions.Has(Actions.Right)) {
             buttons[14] = 'r';
         }
 
-        if (inputFrame.HasActions(Actions.Up)) {
+        if (inputFrame.Actions.Has(Actions.Up)) {
             buttons[11] = 'u';
         }
 
-        if (inputFrame.HasActions(Actions.Down)) {
+        if (inputFrame.Actions.Has(Actions.Down)) {
             buttons[12] = 'd';
         }
 
-        if (inputFrame.HasActions(Actions.Jump)) {
+        if (inputFrame.Actions.Has(Actions.Jump)) {
             buttons[0] = 'A';
         }
 
-        if (inputFrame.HasActions(Actions.Jump2)) {
+        if (inputFrame.Actions.Has(Actions.Jump2)) {
             buttons[3] = 'Y';
         }
 
-        if (inputFrame.HasActions(Actions.DemoDash)) {
+        if (inputFrame.Actions.Has(Actions.DemoDash)) {
             buttons[10] = ']';
         }
 
-        if (inputFrame.HasActions(Actions.DemoDash2)) {
+        if (inputFrame.Actions.Has(Actions.DemoDash2)) {
             buttons[8] = ')';
         }
 
-        if (inputFrame.HasActions(Actions.Dash)) {
+        if (inputFrame.Actions.Has(Actions.Dash)) {
             buttons[1] = 'B';
         }
 
-        if (inputFrame.HasActions(Actions.Dash2)) {
+        if (inputFrame.Actions.Has(Actions.Dash2)) {
             buttons[2] = 'X';
         }
 
-        if (inputFrame.HasActions(Actions.Start)) {
+        if (inputFrame.Actions.Has(Actions.Start)) {
             buttons[6] = 's';
         }
 
-        if (inputFrame.HasActions(Actions.Grab)) {
+        if (inputFrame.Actions.Has(Actions.Grab)) {
             buttons[9] = '[';
         }
 
-        if (inputFrame.HasActions(Actions.Grab2)) {
+        if (inputFrame.Actions.Has(Actions.Grab2)) {
             buttons[7] = '(';
         }
 

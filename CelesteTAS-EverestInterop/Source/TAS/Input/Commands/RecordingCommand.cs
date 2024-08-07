@@ -19,12 +19,12 @@ public static class RecordingCommand {
     // workaround the first few frames get skipped when there is a breakpoint after StartRecording command
     public static bool StopFastForward {
         get {
-            if (Manager.Recording) {
+            if (TASRecorderUtils.Recording) {
                 return true;
             }
 
             return RecordingTimes.Values.Any(time => {
-                int currentFrame = Manager.Controller.CurrentFrameInTas;
+                int currentFrame = Manager.Controller.CurrentFrameInTAS;
                 return currentFrame > time.StartFrame - 60 && currentFrame <= time.StopFrame;
             });
         }
@@ -63,19 +63,18 @@ public static class RecordingCommand {
             RecordingTime time = new() { StartFrame = Manager.Controller.Inputs.Count };
             RecordingTimes[time.StartFrame] = time;
         } else {
-            if (Manager.Recording) {
+            if (TASRecorderUtils.Recording) {
                 AbortTas("Tried to start recording, while already recording");
                 return;
             }
 
             TASRecorderUtils.StartRecording();
-            if (RecordingTimes.TryGetValue(Manager.Controller.CurrentFrameInTas, out RecordingTime time) &&
+            if (RecordingTimes.TryGetValue(Manager.Controller.CurrentFrameInTAS, out RecordingTime time) &&
                        time.StartFrame != int.MaxValue && time.StopFrame != int.MaxValue) {
                 TASRecorderUtils.SetDurationEstimate(time.Duration);
             }
 
-            Manager.States &= ~States.FrameStep;
-            Manager.NextStates &= ~States.FrameStep;
+            Manager.CurrState = Manager.NextState = Manager.State.Running;
         }
     }
 
@@ -123,7 +122,7 @@ public static class RecordingCommand {
 
     [DisableRun]
     private static void DisableRun() {
-        if (Manager.Recording) {
+        if (TASRecorderUtils.Recording) {
             TASRecorderUtils.StopRecording();
         }
     }

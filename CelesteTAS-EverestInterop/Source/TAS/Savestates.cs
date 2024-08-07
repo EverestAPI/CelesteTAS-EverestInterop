@@ -41,21 +41,22 @@ public static class Savestates {
     private static readonly Lazy<bool> SpeedrunToolInstalledLazy = new(() => ModUtils.IsInstalled("SpeedrunTool"));
 
     private static int SavedLine =>
-        (savedByBreakpoint
+        // TODO:
+        (/*savedByBreakpoint
             ? Controller.FastForwards.GetValueOrDefault(SavedCurrentFrame)?.Line
-            : Controller.Inputs.GetValueOrDefault(SavedCurrentFrame)?.Line) ?? -1;
+            : */Controller.Inputs.GetValueOrDefault(SavedCurrentFrame)?.Line) ?? -1;
 
-    private static int SavedCurrentFrame => IsSaved() ? savedController.CurrentFrameInTas : -1;
+    private static int SavedCurrentFrame => IsSaved() ? savedController.CurrentFrameInTAS : -1;
 
     public static int StudioHighlightLine => IsSaved_Safe() ? SavedLine : -1;
     public static bool SpeedrunToolInstalled => SpeedrunToolInstalledLazy.Value;
 
-    private static bool BreakpointHasBeenDeleted =>
-        IsSaved() && savedByBreakpoint && Controller.FastForwards.GetValueOrDefault(SavedCurrentFrame)?.SaveState != true;
+    private static bool BreakpointHasBeenDeleted => false;
+        // TODO: IsSaved() && savedByBreakpoint && Controller.FastForwards.GetValueOrDefault(SavedCurrentFrame)?.SaveState != true;
 
     private static bool IsSaved() {
         return StateManager.Instance.IsSaved && StateManager.Instance.SavedByTas && savedController != null &&
-               savedTasFilePath == InputController.TasFilePath;
+               savedTasFilePath == Manager.Controller.FilePath;
     }
 
     public static bool IsSaved_Safe() {
@@ -95,28 +96,29 @@ public static class Savestates {
 
         // save state when tas run to the last savestate breakpoint
         if (Running
-            && Controller.Inputs.Count > Controller.CurrentFrameInTas
-            && Controller.FastForwards.GetValueOrDefault(Controller.CurrentFrameInTas) is {SaveState: true} currentFastForward &&
+            && Controller.Inputs.Count > Controller.CurrentFrameInTAS
+            /*TODO && Controller.FastForwards.GetValueOrDefault(Controller.CurrentFrameInTAS) is {SaveState: true} currentFastForward &&
             Controller.FastForwards.Last(pair => pair.Value.SaveState).Value == currentFastForward &&
-            SavedCurrentFrame != currentFastForward.Frame) {
+            SavedCurrentFrame != currentFastForward.Frame*/) {
             Save(true);
             return;
         }
 
         // auto load state after entering the level if tas is started from outside the level.
-        if (Running && IsSaved() && Engine.Scene is Level && Controller.CurrentFrameInTas < savedController.CurrentFrameInTas) {
+        if (Running && IsSaved() && Engine.Scene is Level && Controller.CurrentFrameInTAS < savedController.CurrentFrameInTAS) {
             Load();
         }
     }
 
     private static void Save(bool breakpoint) {
         if (IsSaved()) {
-            if (Controller.CurrentFrameInTas == savedController.CurrentFrameInTas) {
-                if (savedController.SavestateChecksum == Controller.CalcChecksum(savedController)) {
-                    Manager.States &= ~TasStates.FrameStep;
-                    NextStates &= ~TasStates.FrameStep;
-                    return;
-                }
+            if (Controller.CurrentFrameInTAS == savedController.CurrentFrameInTAS) {
+                // TODO
+                // if (savedController.SavestateChecksum == Controller.CalcChecksum(savedController)) {
+                //     Manager.States &= ~TasStates.FrameStep;
+                //     NextStates &= ~TasStates.FrameStep;
+                //     return;
+                // }
             }
         }
 
@@ -125,7 +127,7 @@ public static class Savestates {
         }
 
         savedByBreakpoint = breakpoint;
-        savedTasFilePath = InputController.TasFilePath;
+        savedTasFilePath = Manager.Controller.FilePath;
         SaveGameInfo();
         savedController = Controller.Clone();
         SetTasState();
@@ -133,34 +135,35 @@ public static class Savestates {
 
     private static void Load() {
         // Don't load save states while recording
-        if (Manager.Recording) {
+        if (TASRecorderUtils.Recording) {
             return;
         }
 
         if (IsSaved()) {
             Controller.RefreshInputs(false);
-            if (!BreakpointHasBeenDeleted && savedController.SavestateChecksum == Controller.CalcChecksum(savedController)) {
-                if (Running && Controller.CurrentFrameInTas == savedController.CurrentFrameInTas) {
-                    // Don't repeat load state, just play
-                    Manager.States &= ~TasStates.FrameStep;
-                    NextStates &= ~TasStates.FrameStep;
-                    return;
-                }
-
-                if (Engine.Scene is Level) {
-                    if (!Running) {
-                        EnableRun();
-                    }
-
-                    // make sure LoadState is after EnableRun, otherwise the input state will be reset in BindingHelper.SetTasBindings
-                    StateManager.Instance.LoadState();
-
-                    LoadStateRoutine();
-                    return;
-                }
-            } else {
-                Clear();
-            }
+            // TODO
+            // if (!BreakpointHasBeenDeleted && savedController.SavestateChecksum == Controller.CalcChecksum(savedController)) {
+            //     if (Running && Controller.CurrentFrameInTas == savedController.CurrentFrameInTas) {
+            //         // Don't repeat load state, just play
+            //         Manager.States &= ~TasStates.FrameStep;
+            //         NextStates &= ~TasStates.FrameStep;
+            //         return;
+            //     }
+            //
+            //     if (Engine.Scene is Level) {
+            //         if (!Running) {
+            //             EnableRun();
+            //         }
+            //
+            //         // make sure LoadState is after EnableRun, otherwise the input state will be reset in BindingHelper.SetTasBindings
+            //         StateManager.Instance.LoadState();
+            //
+            //         LoadStateRoutine();
+            //         return;
+            //     }
+            // } else {
+            //     Clear();
+            // }
         }
 
         // If load state failed just playback normally
@@ -209,17 +212,17 @@ public static class Savestates {
 
     private static void SetTasState() {
         if (Controller.HasFastForward) {
-            Manager.States &= ~TasStates.FrameStep;
+            Manager.CurrState = Manager.State.FastForward;
         } else {
-            Manager.States |= TasStates.FrameStep;
+            Manager.CurrState = Manager.State.Paused;
         }
 
-        NextStates &= ~TasStates.FrameStep;
+        // NextStates &= ~TasStates.FrameStep;
     }
 
     private static void UpdateStudio() {
         GameInfo.Update();
-        SendStateToStudio();
+        // SendStateToStudio();
     }
 
     [Load]

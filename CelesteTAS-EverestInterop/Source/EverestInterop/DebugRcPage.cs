@@ -24,9 +24,9 @@ public static class DebugRcPage {
             StringBuilder builder = new();
             Everest.DebugRC.WriteHTMLStart(c, builder);
             WriteLine(builder, $"Running: {Manager.Running}");
-            WriteLine(builder, $"State: {Manager.States}");
+            WriteLine(builder, $"State: {Manager.CurrState}");
             WriteLine(builder, $"SaveState: {Savestates.IsSaved_Safe()}");
-            WriteLine(builder, $"CurrentFrame: {Manager.Controller.CurrentFrameInTas}");
+            WriteLine(builder, $"CurrentFrame: {Manager.Controller.CurrentFrameInTAS}");
             WriteLine(builder, $"TotalFrames: {Manager.Controller.Inputs.Count}");
             WriteLine(builder, $"RoomName: {GameInfo.LevelName}");
             WriteLine(builder, $"ChapterTime: {GameInfo.ChapterTime}");
@@ -129,7 +129,7 @@ TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}
                 } else {
                     WriteLine(builder, "OK");
                     Manager.AddMainThreadAction(() => {
-                        InputController.StudioTasFilePath = filePath;
+                        Manager.Controller.FilePath = filePath;
                         Manager.EnableRun();
                     });
                 }

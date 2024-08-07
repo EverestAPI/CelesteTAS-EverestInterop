@@ -134,8 +134,7 @@ public static class SaveAndQuitReenterCommand {
                 InsertedSlots[studioLine] = ActiveFileSlot;
                 // Avoid clearing our InsertedSlots info when RefreshInputs()
                 Dictionary<int, int> backup = new(InsertedSlots);
-                controller.NeedsReload = true;
-                controller.RefreshInputs(enableRun: false);
+                controller.RefreshInputs(forceRefresh: true);
                 InsertedSlots.Clear();
                 InsertedSlots.AddRange(backup);
             }

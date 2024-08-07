@@ -16,6 +16,7 @@ public static class GlobalVariables {
             Toast.Show(message, duration);
         }
 
-        Manager.DisableRunLater();
+        // Manager.DisableRunLater();
+        Manager.DisableRun();
     }
 }

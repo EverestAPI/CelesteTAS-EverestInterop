@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Microsoft.Xna.Framework;
@@ -13,19 +14,24 @@ using GameInput = Celeste.Input;
 namespace TAS;
 
 public enum AnalogMode {
+    /// Simply maps the angle onto a circle and applies the magnitude
     Ignore,
+    /// Maps the angle onto a circle and applies the magnitude, but applies a deadzone of 0.24
     Circle,
+    /// Maps the angle onto a square, but applies a deadzone of 0.24
     Square,
+    /// I'll be honest.. I have no idea lmao
+    /// I don't think there is really a good reason today to still use this
     Precise,
 }
 
-// ReSharper disable once StructCanBeMadeReadOnly
-// mono explodes on loading the dll if there is a readonly struct in it on MacOS
-public record struct Vector2Short(short X = 0, short Y = 0) {
+public readonly record struct Vector2Short(short X = 0, short Y = 0) {
     public readonly short X = X;
     public readonly short Y = Y;
 }
 
+/// Game controllers only support a precision of a short for the X / Y axis
+/// Depending on the AnalogMode, angle + magnitude are mapped to a valid short position
 public static class AnalogHelper {
     private const double DeadZone = 0.239532471;
     private const double DcMult = (1 - DeadZone) * (1 - DeadZone);
@@ -35,13 +41,14 @@ public static class AnalogHelper {
     private static readonly Regex Fractional = new(@"\d+\.(\d*)", RegexOptions.Compiled);
     private static AnalogMode analogMode = AnalogMode.Ignore;
 
-    public static Vector2 ComputeAngleVector2(InputFrame input, out Vector2Short angleVector2Short) {
+    public static (Vector2, Vector2Short) ComputeAngleVector(float angle, float magnitude) {
         float precision;
-        if (input.Angle == 0) {
+        if (angle == 0.0f) {
             precision = 1E-6f;
         } else {
             int digits = 0;
-            Match match = Fractional.Match(input.Angle.ToString(CultureInfo.InvariantCulture));
+
+            var match = Fractional.Match(angle.ToString(CultureInfo.InvariantCulture));
             if (match.Success) {
                 digits = match.Value.Length;
             }
@@ -49,42 +56,54 @@ public static class AnalogHelper {
             precision = float.Parse($"0.5E-{digits + 2}");
         }
 
-        float x = input.GetX();
-        float y = input.GetY();
+        // Exactly map cardinal directions to avoid precision loss
+        float x = angle switch {
+            0.0f => 0.0f,
+            90.0f => 1.0f,
+            180.0f => 0.0f,
+            270.0f => -1.0f,
+            360.0f => 0.0f,
+            _ => (float) Math.Sin(angle / 180.0 * Math.PI)
+        };
+        float y = angle switch {
+            0.0f => 1.0f,
+            90.0f => 0.0f,
+            180.0f => -1.0f,
+            270.0f => 0.0f,
+            360.0f => 1.0f,
+            _ => (float) Math.Cos(angle / 180.0 * Math.PI)
+        };
         if (analogMode != AnalogMode.Precise) {
-            x *= input.UpperLimit;
-            y *= input.UpperLimit;
+            x *= magnitude;
+            y *= magnitude;
         }
 
-        Vector2 angleVector2 = ComputeFeather(x, y, precision, input.UpperLimit, out Vector2Short retDirectionShort);
-        angleVector2Short = retDirectionShort;
-        return angleVector2;
+        return ComputeFeather(x, y, precision, magnitude);
     }
 
-    private static Vector2 ComputeFeather(float x, float y, float precision, float upperLimit, out Vector2Short retDirectionShort) {
-        short RoundToValidShort(float f) {
+    private static (Vector2, Vector2Short) ComputeFeather(float x, float y, float precision, float upperLimit) {
+        static short RoundToValidShort(float f) {
             return (short) Math.Round((f * (1.0 - DeadZone) + DeadZone) * 32767);
         }
 
+        // Assure both are positive and x >= y
         if (x < 0) {
-            Vector2 feather = ComputeFeather(-x, y, precision, upperLimit, out Vector2Short directionShort);
-            retDirectionShort = new Vector2Short((short) -directionShort.X, directionShort.Y);
-            return new Vector2(-feather.X, feather.Y);
+            var (direction, directionShort) = ComputeFeather(-x, y, precision, upperLimit);
+            return (new Vector2(-direction.X, direction.Y), new Vector2Short((short) -directionShort.X, directionShort.Y));
         }
-
         if (y < 0) {
-            Vector2 feather = ComputeFeather(x, -y, precision, upperLimit, out Vector2Short directionShort);
-            retDirectionShort = new Vector2Short(directionShort.X, (short) -directionShort.Y);
-            return new Vector2(feather.X, -feather.Y);
+            var (direction, directionShort) = ComputeFeather(x, -y, precision, upperLimit);
+            return (new Vector2(direction.X, -direction.Y), new Vector2Short(directionShort.X, (short) -directionShort.Y));
         }
-
         if (x < y) {
-            Vector2 feather = ComputeFeather(y, x, precision, upperLimit, out Vector2Short directionShort);
-            retDirectionShort = new Vector2Short(directionShort.Y, directionShort.X);
-            return new Vector2(feather.Y, feather.X);
+            var (direction, directionShort) = ComputeFeather(y, x, precision, upperLimit);
+            return (new Vector2(direction.Y, direction.X), new Vector2Short(directionShort.Y, directionShort.X));
         }
 
-        // assure positive and x>=y
+        Debug.Assert(x >= 0.0f);
+        Debug.Assert(y >= 0.0f);
+        Debug.Assert(x >= y);
+
         short shortX, shortY;
         switch (analogMode) {
             case AnalogMode.Ignore:
@@ -92,6 +111,7 @@ public static class AnalogHelper {
                 shortX = RoundToValidShort(x);
                 shortY = RoundToValidShort(y);
                 break;
+
             case AnalogMode.Square:
                 float divisor = Math.Max(Math.Abs(x), Math.Abs(y));
                 x /= divisor;
@@ -99,25 +119,25 @@ public static class AnalogHelper {
                 shortX = RoundToValidShort(x);
                 shortY = RoundToValidShort(y);
                 break;
+
             case AnalogMode.Precise:
                 short upperbound = (short) Math.Round(Calc.Clamp(upperLimit * 32767, Lowerbound, 32767), MidpointRounding.AwayFromZero);
                 Vector2Short result = ComputePrecise(new Vector2(x, y), precision, upperbound);
                 shortX = result.X;
                 shortY = result.Y;
                 break;
+
             default:
-                throw new Exception("what the fuck");
+                throw new UnreachableException();
         }
 
-        retDirectionShort = new Vector2Short(shortX, shortY);
-
         if (analogMode == AnalogMode.Ignore) {
-            return new Vector2(x, y);
+            return (new Vector2(x, y), new Vector2Short(shortX, shortY));
         }
 
         x = (float) (Math.Max(shortX / 32767.0 - DeadZone, 0.0) / (1 - DeadZone));
         y = (float) (Math.Max(shortY / 32767.0 - DeadZone, 0.0) / (1 - DeadZone));
-        return new Vector2(x, y);
+        return (new Vector2(x, y), new Vector2Short(shortX, shortY));
     }
 
     private static Vector2Short ComputePrecise(Vector2 direction, float precision, short upperbound) {

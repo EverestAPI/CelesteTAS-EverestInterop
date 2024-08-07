@@ -181,22 +181,23 @@ public static class AreaCompleteInfo {
         }
 
         info.Clear();
-        if (Manager.Controller.Comments.TryGetValue(filePath, out List<Comment> comments)) {
-            bool firstComment = true;
-            foreach (Comment comment in comments.Where(c => c.Line > fileLine)) {
-                if (fileLine + 1 == comment.Line) {
-                    if (!firstComment) {
-                        info.AppendLine();
-                    }
-
-                    firstComment = false;
-                    info.Append($"{comment.Text}");
-                    fileLine++;
-                } else {
-                    break;
-                }
-            }
-        }
+        // TODO
+        // if (Manager.Controller.Comments.TryGetValue(filePath, out List<Comment> comments)) {
+        //     bool firstComment = true;
+        //     foreach (Comment comment in comments.Where(c => c.Line > fileLine)) {
+        //         if (fileLine + 1 == comment.Line) {
+        //             if (!firstComment) {
+        //                 info.AppendLine();
+        //             }
+        //
+        //             firstComment = false;
+        //             info.Append($"{comment.Text}");
+        //             fileLine++;
+        //         } else {
+        //             break;
+        //         }
+        //     }
+        // }
     }
 
     public static string CreateCommand() {

@@ -146,9 +146,9 @@ public static class InfoHud {
     private static void WriteTasInput(StringBuilder stringBuilder) {
         InputController controller = Manager.Controller;
         List<InputFrame> inputs = controller.Inputs;
-        if (Manager.Running && controller.CurrentFrameInTas >= 0 && controller.CurrentFrameInTas < inputs.Count) {
+        if (Manager.Running && controller.CurrentFrameInTAS >= 0 && controller.CurrentFrameInTAS < inputs.Count) {
             InputFrame current = controller.Current;
-            if (controller.CurrentFrameInTas >= 1 && current != controller.Previous) {
+            if (controller.CurrentFrameInTAS >= 1 && current != controller.Previous) {
                 current = controller.Previous;
             }
 
@@ -175,7 +175,7 @@ public static class InfoHud {
             int inputWidth = currentStr.Length + currentFrameLength + 2;
             inputWidth = Math.Max(inputWidth, 20);
             stringBuilder.AppendLine(
-                $"{currentStr.PadRight(inputWidth - currentFrameLength)}{controller.CurrentFrameInInputForHud}{current.RepeatString}");
+                $"{currentStr.PadRight(inputWidth - currentFrameLength)}{controller.CurrentFrameInInput}{current.RepeatString}");
 
             if (next != null) {
                 stringBuilder.AppendLine(FormatInputFrame(next));

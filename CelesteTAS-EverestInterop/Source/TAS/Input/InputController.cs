@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -18,11 +19,274 @@ using Monocle;
 
 namespace TAS.Input;
 
+[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+internal class ClearInputsAttribute : Attribute;
+
+[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+internal class ParseFileEndAttribute : Attribute;
+
+#nullable enable
+
+/// Manages inputs, commands, etc. for the current TAS file
 public class InputController {
     static InputController() {
         AttributeUtils.CollectMethods<ClearInputsAttribute>();
         AttributeUtils.CollectMethods<ParseFileEndAttribute>();
     }
+
+    public readonly List<InputFrame> Inputs = [];
+
+    public InputFrame? Previous => Inputs!.GetValueOrDefault(CurrentFrameInTAS - 1);
+    public InputFrame Current => Inputs!.GetValueOrDefault(CurrentFrameInTAS)!;
+    public InputFrame? Next => Inputs!.GetValueOrDefault(CurrentFrameInTAS + 1);
+
+    public int CurrentFrameInTAS { get; private set; } = 0;
+    public int CurrentFrameInInput { get; private set; } = 0;
+    public int CurrentParsingFrame => Inputs.Count;
+    // private FastForward CurrentFastForward => NextCommentFastForward ??
+    //                                           FastForwards.FirstOrDefault(pair => pair.Key > CurrentFrameInTas).Value ??
+    //                                           FastForwards.LastOrDefault().Value;
+
+    public bool HasFastForward => false;// CurrentFastForward is { } forward && forward.Frame > CurrentFrameInTas;
+
+    /// Indicates whether the current TAS file needs to be re-parsed before running
+    private bool needsReload = true;
+
+    private const int InvalidChecksum = -1;
+    private int checksum = InvalidChecksum;
+
+    /// Current checksum of the TAS, used to increment RecordCount
+    public int Checksum => checksum == InvalidChecksum ? checksum = CalcChecksum(Inputs.Count - 1) : checksum;
+
+    /// Whether the controller can be advanced to a next frame
+    public bool CanPlayback => CurrentFrameInTAS < Inputs.Count;
+
+    /// Whether the TAS should be paused on this frame
+    public bool Break => false; // TODO: CurrentFastForward?.Frame == CurrentFrameInTas;
+
+    private static readonly string DefaultFilePath = Path.Combine(Everest.PathEverest, "Celeste.tas");
+
+    private string filePath = string.Empty;
+    public string FilePath {
+        get {
+            var path = !string.IsNullOrEmpty(filePath) ? filePath : DefaultFilePath;
+
+            // Ensure path exists
+            if (!File.Exists(path)) {
+                File.WriteAllText(path, string.Empty);
+            }
+            return path;
+        }
+        set {
+            if (filePath == value) {
+                return;
+            }
+
+            filePath = Path.GetFullPath(filePath);
+            if (!File.Exists(filePath)) {
+                filePath = DefaultFilePath;
+            }
+
+            if (Manager.Running) {
+                Manager.DisableRun();
+            }
+
+            // Preload tas file
+            Stop();
+            Clear();
+            RefreshInputs();
+        }
+    }
+
+    /// Re-parses the TAS file if necessary
+    public void RefreshInputs(bool forceRefresh = false) {
+        if (!needsReload && !forceRefresh) {
+            return; // Already up-to-date
+        }
+
+        int lastChecksum = Checksum;
+    }
+
+    /// Moves the controller 1 frame forward, updating inputs and triggering commands
+    public void AdvanceFrame() {
+        // if (CurrentCommands != null) {
+        //     foreach (var command in CurrentCommands) {
+        //         if (command.Attribute.ExecuteTiming.Has(ExecuteTiming.Runtime) &&
+        //             (!EnforceLegalCommand.EnabledWhenRunning || command.Attribute.LegalInMainGame)) {
+        //             command.Invoke();
+        //         }
+        //
+        //         // SaveAndQuitReenter inserts inputs, so we can't continue executing the commands
+        //         // It already handles the moving of all following commands
+        //         if (command.Attribute.Name == "SaveAndQuitReenter") break;
+        //     }
+        // }
+
+        if (!CanPlayback) {
+            return;
+        }
+
+        ExportGameInfo.ExportInfo();
+        StunPauseCommand.UpdateSimulateSkipInput();
+        InputHelper.FeedInputs(Current);
+
+        // Increment if it's still the same input
+        if (CurrentFrameInInput == 0 || Current.Line == Previous!.Line && Current.RepeatIndex == Previous.RepeatIndex && Current.FrameOffset == Previous.FrameOffset) {
+            CurrentFrameInInput++;
+        } else {
+            CurrentFrameInInput = 1;
+        }
+
+        CurrentFrameInTAS++;
+    }
+
+    /// Parses the file and adds the inputs / commands to the TAS
+    public bool ReadFile(string path, int startLine = 0, int endLine = int.MaxValue, int studioLine = 0, int repeatIndex = 0, int repeatCount = 0) {
+        try {
+            if (!File.Exists(path)) {
+                return false;
+            }
+
+            // UsedFiles[path] = default;
+            ReadLines(File.ReadLines(path).Take(endLine), path, startLine, studioLine, repeatIndex, repeatCount);
+
+            return true;
+        } catch (Exception e) {
+            e.Log(LogLevel.Warn);
+            return false;
+        }
+    }
+
+    /// Parses the lines and adds the inputs / commands to the TAS
+    public void ReadLines(IEnumerable<string> lines, string path, int startLine, int studioLine, int repeatIndex, int repeatCount, bool lockStudioLine = false) {
+        int subLine = 0;
+        foreach (string readLine in lines) {
+            subLine++;
+            if (subLine < startLine) {
+                continue;
+            }
+
+            string lineText = readLine.Trim();
+
+            if (Command.TryParse(this, path, subLine, lineText, CurrentParsingFrame, studioLine, out Command command) &&
+                command.Is("Play")) {
+                // workaround for the play command
+                // the play command needs to stop reading the current file when it's done to prevent recursion
+                return;
+            }
+
+            if (lineText.StartsWith("***")) {
+                // FastForward fastForward = new(CurrentParsingFrame, lineText.Substring(3), studioLine);
+                // if (FastForwards.TryGetValue(CurrentParsingFrame, out FastForward oldFastForward) && oldFastForward.SaveState &&
+                //     !fastForward.SaveState) {
+                //     // ignore
+                // } else {
+                //     FastForwards[CurrentParsingFrame] = fastForward;
+                // }
+            } else if (lineText.StartsWith("#")) {
+                // FastForwardComments[CurrentParsingFrame] = new FastForward(CurrentParsingFrame, "", studioLine);
+                // if (!Comments.TryGetValue(path, out var comments)) {
+                //     Comments[path] = comments = new List<Comment>();
+                // }
+                //
+                // comments.Add(new Comment(path, CurrentParsingFrame, subLine, lineText));
+            } else if (!AutoInputCommand.TryInsert(path, lineText, studioLine, repeatIndex, repeatCount)) {
+                AddFrames(lineText, studioLine, repeatIndex, repeatCount);
+            }
+
+            if (path == FilePath && !lockStudioLine) {
+                studioLine++;
+            }
+        }
+
+        if (path == FilePath) {
+            // FastForwardComments[CurrentParsingFrame] = new FastForward(CurrentParsingFrame, "", studioLine);
+        }
+    }
+
+    /// Parses the input line and adds it to the TAS
+    public void AddFrames(string line, int studioLine, int repeatIndex = 0, int repeatCount = 0, int frameOffset = 0) {
+        if (InputFrame.TryParse(line, studioLine, Inputs.LastOrDefault(), out var inputFrame, repeatIndex, repeatCount, frameOffset)) {
+            AddFrames(inputFrame);
+        }
+    }
+
+    /// Adds the inputs to the TAS
+    public void AddFrames(InputFrame inputFrame) {
+        for (int i = 0; i < inputFrame.Frames; i++) {
+            Inputs.Add(inputFrame);
+        }
+
+        LibTasHelper.WriteLibTasFrame(inputFrame);
+    }
+
+    /// Stops execution of the current TAS
+    public void Stop() {
+        CurrentFrameInTAS = 0;
+        CurrentFrameInInput = 0;
+    }
+
+    /// Clears all cached data for the current TAS
+    public void Clear() {
+        Inputs.Clear();
+
+        checksum = InvalidChecksum;
+    }
+
+    /// Calculate a checksum until the specified frame
+    private int CalcChecksum(int upToFrame) {
+        var hash = new HashCode();
+        hash.Add(filePath);
+
+        for (int i = 0; i < upToFrame; i++) {
+            hash.Add(Inputs[i]);
+
+            // if (Commands.GetValueOrDefault(i) is { } commands) {
+            //     foreach (Command command in commands.Where(command => command.Attribute.CalcChecksum)) {
+            //         result.AppendLine(command.LineText);
+            //     }
+            // }
+        }
+
+        return hash.ToHashCode();
+    }
+
+    public InputController Clone() {
+        InputController clone = new();
+
+        clone.Inputs.AddRange(Inputs);
+        // clone.FastForwards.AddRange((IDictionary) FastForwards);
+        // clone.FastForwardComments.AddRange((IDictionary) FastForwardComments);
+
+        // foreach (string filePath in Comments.Keys) {
+        //     clone.Comments[filePath] = new List<Comment>(Comments[filePath]);
+        // }
+
+        // foreach (int frame in Commands.Keys) {
+        //     clone.Commands[frame] = new List<Command>(Commands[frame]);
+        // }
+
+        clone.needsReload = needsReload;
+        // clone.UsedFiles.AddRange((IDictionary) UsedFiles);
+        clone.CurrentFrameInTAS = CurrentFrameInTAS;
+        clone.CurrentFrameInInput = CurrentFrameInInput;
+        // clone.CurrentFrameInInputForHud = CurrentFrameInInputForHud;
+        // clone.SavestateChecksum = clone.CalcChecksum(CurrentFrameInTas);
+
+        clone.checksum = checksum;
+        // clone.initializationFrameCount = initializationFrameCount;
+
+        return clone;
+    }
+
+    public void CopyProgressFrom(InputController other) {
+        CurrentFrameInTAS = other.CurrentFrameInTAS;
+        CurrentFrameInInput = other.CurrentFrameInInput;
+    }
+
+#if true
+
+#else
 
     private static readonly Dictionary<string, FileSystemWatcher> watchers = new();
     private static string studioTasFilePath = string.Empty;
@@ -488,10 +752,5 @@ public class InputController {
         Manager.Controller.StopWatchers();
     }
 #endif
+#endif
 }
-
-[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-internal class ClearInputsAttribute : Attribute;
-
-[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-internal class ParseFileEndAttribute : Attribute;

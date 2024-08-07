@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Celeste;
 using Celeste.Mod;
 using Mono.Cecil.Cil;
@@ -12,7 +13,6 @@ using TAS.Utils;
 namespace TAS.EverestInterop;
 
 public static class FastForwardBoost {
-    private static bool UltraFastForwarding => Manager.UltraFastForwarding;
     private static Type creditsType;
 
     [Initialize]
@@ -140,7 +140,7 @@ public static class FastForwardBoost {
     }
 
     private static void BackdropRendererOnUpdate(On.Celeste.BackdropRenderer.orig_Update orig, BackdropRenderer self, Scene scene) {
-        if (UltraFastForwarding && Engine.FrameCounter % 1000 > 0) {
+        if (Manager.FastForwarding && Engine.FrameCounter % 1000 > 0) {
             return;
         }
 
@@ -148,7 +148,7 @@ public static class FastForwardBoost {
     }
 
     private static void SoundEmitterOnUpdate(On.Celeste.SoundEmitter.orig_Update orig, SoundEmitter self) {
-        if (UltraFastForwarding) {
+        if (Manager.FastForwarding) {
             self.RemoveSelf();
         } else {
             orig(self);
@@ -158,7 +158,7 @@ public static class FastForwardBoost {
     private static void SkipUpdateMethod(ILContext il) {
         ILCursor ilCursor = new(il);
         Instruction start = ilCursor.Next;
-        ilCursor.Emit(OpCodes.Call, typeof(Manager).GetProperty(nameof(Manager.UltraFastForwarding)).GetMethod);
+        ilCursor.Emit(OpCodes.Call, typeof(Manager).GetProperty(nameof(Manager.FastForwarding), BindingFlags.Public | BindingFlags.Static)!.GetMethod);
         ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ret);
     }
 
@@ -170,7 +170,7 @@ public static class FastForwardBoost {
     }
 
     private static bool IsSkipLightningRendererUpdate() {
-        return Manager.UltraFastForwarding && Engine.FrameCounter % 30 > 0;
+        return Manager.FastForwarding && Engine.FrameCounter % 30 > 0;
     }
 
     private static void SeekerBarrierOnUpdate(ILContext il) {
@@ -198,7 +198,7 @@ public static class FastForwardBoost {
     }
 
     private static bool IsSkipSeekerBarrierOverloadPart() {
-        return UltraFastForwarding;
+        return Manager.FastForwarding;
     }
 
     private static void IgnoreGcCollect(ILContext il) {
@@ -212,7 +212,7 @@ public static class FastForwardBoost {
     }
 
     private static bool IsIgnoreGcCollect() {
-        return TasSettings.IgnoreGcCollect && UltraFastForwarding;
+        return TasSettings.IgnoreGcCollect && Manager.FastForwarding;
     }
 
     private static void InputOnOnInitialize() {
