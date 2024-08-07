@@ -21,7 +21,7 @@ public static class Core {
             IL.Monocle.Engine.Update += IL_Engine_Update;
 
             if (typeof(GameInput).GetMethod(nameof(GameInput.UpdateGrab)) is { } updateGrabMethod) {
-                HookHelper.SkipMethod(typeof(Manager), nameof(Manager.IsPaused), updateGrabMethod);
+                HookHelper.SkipMethod(typeof(Core), nameof(IsPaused), updateGrabMethod);
             }
 
             // The original mod makes the MInput.Update call conditional and invokes UpdateInputs afterwards.
@@ -47,7 +47,7 @@ public static class Core {
     private static float elapsedTime = 0.0f;
 
     private static void On_Celeste_Update(On.Celeste.Celeste.orig_Update orig, Celeste.Celeste self, GameTime gameTime) {
-        Manager.UpdateHotkeys();
+        Manager.UpdateMeta();
 
         if (!TasSettings.Enabled || !Manager.Running) {
             orig(self, gameTime);
@@ -74,12 +74,14 @@ public static class Core {
             var label = cur.DefineLabel();
 
             // Prevent further execution while the TAS is paused
-            cur.EmitDelegate(Manager.IsPaused);
+            cur.EmitDelegate(IsPaused);
             cur.Emit(OpCodes.Brfalse, label);
             cur.Emit(OpCodes.Ret);
             cur.MarkLabel(label);
         }
     }
+
+    private static bool IsPaused() => Manager.CurrState == Manager.State.Paused && !Manager.IsLoading();
 
     private static void On_MInput_Update(On.Monocle.MInput.orig_Update orig) {
         if (!TasSettings.Enabled) {

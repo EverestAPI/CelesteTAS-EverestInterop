@@ -91,6 +91,7 @@ public static class Manager {
     /// Will stop the TAS on the next update cycle
     public static void DisableRunLater() => NextState = State.Disabled;
 
+    /// Updates the TAS itself
     public static void Update() {
         if (!Running && NextState == State.Running) {
             EnableRun();
@@ -105,7 +106,7 @@ public static class Manager {
             action.Invoke();
         }
 
-        if (Running && CurrState != State.Paused) {
+        if (Running && CurrState != State.Paused && !IsLoading()) {
             if (Controller.HasFastForward) {
                 NextState = State.Running;
             }
@@ -125,8 +126,10 @@ public static class Manager {
         }
     }
 
-    public static void UpdateHotkeys() {
+    /// Updates everything around the TAS itself, like hotkeys, studio-communication, etc.
+    public static void UpdateMeta() {
         Hotkeys.Update();
+        SendStudioState();
 
         // Check if the TAS should be enabled / disabled
         // NOTE: Do not use Hotkeys.Restart.Pressed unless the fast forwarding optimization in Hotkeys.Update() is removed
@@ -204,6 +207,7 @@ public static class Manager {
         mainThreadActions.Enqueue(action);
     }
 
+    /// TAS-execution is paused during loading screens
     public static bool IsLoading() {
         return Engine.Scene switch {
             Level level => level.IsAutoSaving() && level.Session.Level == "end-cinematic",
@@ -216,7 +220,33 @@ public static class Manager {
         };
     }
 
-    public static bool IsPaused() => CurrState == State.Paused && !IsLoading();
+    private static void SendStudioState() {
+        var previous = Controller.Previous;
+        var state = new StudioState {
+            CurrentLine = previous?.Line ?? -1,
+            CurrentLineSuffix = $"{Controller.CurrentFrameInInput + (previous?.FrameOffset ?? 0)}{previous?.RepeatString ?? ""}",
+            CurrentFrameInTas = Controller.CurrentFrameInTAS,
+            TotalFrames = Controller.Inputs.Count,
+            SaveStateLine = Savestates.StudioHighlightLine,
+            tasStates = 0,
+            GameInfo = GameInfo.StudioInfo,
+            LevelName = GameInfo.LevelName,
+            ChapterTime = GameInfo.ChapterTime,
+            ShowSubpixelIndicator = TasSettings.InfoSubpixelIndicator && Engine.Scene is Level or Emulator,
+        };
+
+        if (Engine.Scene is Level level && level.GetPlayer() is { } player) {
+            state.PlayerPosition = (player.Position.X, player.Position.Y);
+            state.PlayerPositionRemainder = (player.PositionRemainder.X, player.PositionRemainder.Y);
+            state.PlayerSpeed = (player.Speed.X, player.Speed.Y);
+        } else if (Engine.Scene is Emulator emulator && emulator.game?.objects.FirstOrDefault(o => o is Classic.player) is Classic.player classicPlayer) {
+            state.PlayerPosition = (classicPlayer.x, classicPlayer.y);
+            state.PlayerPositionRemainder = (classicPlayer.rem.X, classicPlayer.rem.Y);
+            state.PlayerSpeed = (classicPlayer.spd.X, classicPlayer.spd.Y);
+        }
+
+        CommunicationWrapper.SendState(state);
+    }
 
 #else
 
