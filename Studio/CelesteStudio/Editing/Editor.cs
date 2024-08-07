@@ -530,21 +530,31 @@ public sealed class Editor : Drawable {
         
         // Update controls
         {
-            const float menuXPos = 8.0f;
             const float menuYOffset = 7.0f;
+            const float menuXOffset = 8.0f;
             
-            int menuX = (int)(scrollablePosition.X + textOffsetX + menuXPos);
             int menuY = (int)(Font.LineHeight() * (actualToVisualRows[Document.Caret.Row] + 1) + menuYOffset);
-            int menuMaxW = (int)(scrollablePosition.X + scrollableSize.Width - Font.CharWidth() - menuX);
             int menuMaxH = (int)(scrollablePosition.Y + scrollableSize.Height - Font.LineHeight() - menuY);
+
+            int availableWidth = (int) (scrollablePosition.X + scrollableSize.Width - Font.CharWidth());
             
-            autoCompleteMenu.ContentWidth = Math.Min(autoCompleteMenu.ContentWidth, menuMaxW);
+            int autocompleteMenuX = (int)(scrollablePosition.X + textOffsetX + menuXOffset);
+            int autocompleteMenuMaxW = availableWidth - autocompleteMenuX;
+            autoCompleteMenu.ContentWidth = Math.Min(autoCompleteMenu.ContentWidth, autocompleteMenuMaxW);
             autoCompleteMenu.ContentHeight = Math.Min(autoCompleteMenu.ContentHeight, menuMaxH);
-            pixelLayout.Move(autoCompleteMenu, menuX, menuY);
+            pixelLayout.Move(autoCompleteMenu, autocompleteMenuX, menuY);
             
-            contextActionsMenu.ContentWidth = Math.Min(contextActionsMenu.ContentWidth, menuMaxW);
+            float contextMenuXPos = Font.CharWidth() * Document.Caret.Col;
+            int contextActionsMenuX = autocompleteMenuX + (int)contextMenuXPos;
+            int contextActionsMenuMaxW = availableWidth - contextActionsMenuX;
+            if (availableWidth - contextActionsMenuX < contextActionsMenu.ContentWidth) {
+                contextActionsMenuX = Math.Max(availableWidth - contextActionsMenu.ContentWidth, autocompleteMenuX);
+                contextActionsMenuMaxW = availableWidth - contextActionsMenuX;
+            }
+            
+            contextActionsMenu.ContentWidth = Math.Min(contextActionsMenu.ContentWidth, contextActionsMenuMaxW);
             contextActionsMenu.ContentHeight = Math.Min(contextActionsMenu.ContentHeight, menuMaxH);
-            pixelLayout.Move(contextActionsMenu, menuX, menuY);
+            pixelLayout.Move(contextActionsMenu, contextActionsMenuX, menuY);
         }
         
         Invalidate();
