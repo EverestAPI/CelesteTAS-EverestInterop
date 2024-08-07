@@ -138,7 +138,9 @@ public sealed class Editor : Drawable {
     
     private readonly List<AutoCompleteMenu.Entry> baseAutoCompleteEntries = [];
 
+    // These should be ordered from most specific to most applicable.
     private readonly List<ContextAction> contextActions = [
+        new CreateRepeat(),
         new InlineReadCommand(),
         new SwapLeftRight()
     ];
