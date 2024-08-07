@@ -138,7 +138,10 @@ public sealed class Editor : Drawable {
     
     private readonly List<AutoCompleteMenu.Entry> baseAutoCompleteEntries = [];
 
-    private readonly List<ContextAction> contextActions = [];
+    private readonly List<ContextAction> contextActions = [
+        new InlineReadCommand(),
+        new SwapLeftRight()
+    ];
 
     private Font Font => FontManager.EditorFontRegular;
     private SyntaxHighlighter highlighter;
@@ -2152,7 +2155,7 @@ public sealed class Editor : Drawable {
         }
     }
     
-    private void SwapSelectedActions(Actions a, Actions b) {
+    public void SwapSelectedActions(Actions a, Actions b) {
         using var __ = Document.Update();
         
         int minRow = Document.Selection.Empty ? Document.Caret.Row : Document.Selection.Min.Row;
