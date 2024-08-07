@@ -91,7 +91,7 @@ public readonly record struct Command(
     public string[] Args => CommandLine.Arguments;
     public string LineText => CommandLine.Arguments.Length == 0 ? Attribute.Name : $"{Attribute.Name}{DefaultSeparator}{string.Join(DefaultSeparator, CommandLine.Arguments)}";
 
-    public static bool TryParse(InputController inputController, string filePath, int fileLine, string lineText, int frame, int studioLine, out Command command) {
+    public static bool TryParse(string filePath, int fileLine, string lineText, int frame, int studioLine, out Command command) {
         command = default;
 
         if (string.IsNullOrWhiteSpace(lineText) || !char.IsLetter(lineText[0]) || !CommandLine.TryParse(lineText, out var commandLine)) {
@@ -115,11 +115,6 @@ public readonly record struct Command(
             }
 
             command = new Command(commandLine, info, filePath, fileLine, studioLine, frame);
-            if (!inputController.Commands.TryGetValue(frame, out var commands)) {
-                inputController.Commands[frame] = commands = new List<Command>();
-            }
-            commands.Add(command);
-
             return true;
         } catch (Exception e) {
             e.LogException(error);

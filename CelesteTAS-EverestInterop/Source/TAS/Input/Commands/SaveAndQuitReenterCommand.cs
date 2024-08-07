@@ -82,7 +82,7 @@ public static class SaveAndQuitReenterCommand {
 
             bool safe = SafeCommand.DisallowUnsafeInputParsing;
             if (safe) {
-                Command.TryParse(controller, filePath, fileLine, "Unsafe", controller.CurrentParsingFrame, studioLine, out _);
+                controller.ReadLine("Unsafe", filePath, fileLine, studioLine);
             }
 
             LibTasHelper.AddInputFrame("58");
@@ -116,7 +116,7 @@ public static class SaveAndQuitReenterCommand {
             }
 
             if (safe) {
-                Command.TryParse(controller, filePath, fileLine, "Safe", controller.CurrentParsingFrame, studioLine, out _);
+                controller.ReadLine("Safe", filePath, fileLine, studioLine);
             }
         } else {
             if (!justPressedSnQ) {

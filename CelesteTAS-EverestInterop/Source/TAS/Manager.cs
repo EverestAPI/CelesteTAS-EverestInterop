@@ -105,22 +105,22 @@ public static class Manager {
             action.Invoke();
         }
 
-        if (Running && !IsPaused()) {
+        if (Running && CurrState != State.Paused) {
             if (Controller.HasFastForward) {
                 NextState = State.Running;
+            }
+
+            if (!Controller.CanPlayback) {
+                DisableRun();
+                return;
             }
 
             Controller.AdvanceFrame();
 
             // Pause the TAS if breakpoint is not placed at the end
-            if (Controller.Break && Controller.CanPlayback) {
+            if (Controller.Break) {
                 Controller.NextLabelFastForward = null;
                 NextState = State.Paused;
-                return;
-            }
-
-            if (!Controller.CanPlayback) {
-                DisableRun();
             }
         }
     }
