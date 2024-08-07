@@ -2143,6 +2143,16 @@ public sealed class Editor : Drawable {
 
         int insertDir = Settings.Instance.InsertDirection == InsertDirection.Above ? -1 : 1;
 
+        if (!Document.Selection.Empty) {
+            CaretPosition collapseToRow = Settings.Instance.InsertDirection switch {
+                InsertDirection.Above => Document.Selection.Min,
+                InsertDirection.Below => Document.Selection.Max,
+                _ => throw new ArgumentOutOfRangeException()
+            };
+            Document.Selection.Clear();
+            Document.Caret = collapseToRow;
+        }
+
         // Check current line
         if (regex.IsMatch(Document.Lines[Document.Caret.Row])) {
             Document.RemoveLine(Document.Caret.Row);
