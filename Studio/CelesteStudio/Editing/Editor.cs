@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using CelesteStudio.Communication;
 using CelesteStudio.Data;
 using CelesteStudio.Dialog;
+using CelesteStudio.Editing.ContextActions;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
@@ -40,6 +41,7 @@ public sealed class Editor : Drawable {
 
             // Reset various state
             autoCompleteMenu.Visible = false;
+            contextActionsMenu.Visible = false;
             
             ConvertToActionLines(0, document.Lines.Count - 1);
             Recalc();
@@ -132,8 +134,11 @@ public sealed class Editor : Drawable {
     
     private readonly PixelLayout pixelLayout = new();
     private readonly AutoCompleteMenu autoCompleteMenu = new();
+    public readonly AutoCompleteMenu contextActionsMenu = new();
     
     private readonly List<AutoCompleteMenu.Entry> baseAutoCompleteEntries = [];
+
+    private readonly List<ContextAction> contextActions = [];
 
     private Font Font => FontManager.EditorFontRegular;
     private SyntaxHighlighter highlighter;
@@ -183,6 +188,7 @@ public sealed class Editor : Drawable {
         Cursor = Cursors.IBeam;
         
         pixelLayout.Add(autoCompleteMenu, 0, 0);
+        pixelLayout.Add(contextActionsMenu, 0, 0);
         Content = pixelLayout;
         
         Focus();
@@ -530,6 +536,10 @@ public sealed class Editor : Drawable {
             autoCompleteMenu.ContentWidth = Math.Min(autoCompleteMenu.ContentWidth, menuMaxW);
             autoCompleteMenu.ContentHeight = Math.Min(autoCompleteMenu.ContentHeight, menuMaxH);
             pixelLayout.Move(autoCompleteMenu, menuX, menuY);
+            
+            contextActionsMenu.ContentWidth = Math.Min(contextActionsMenu.ContentWidth, menuMaxW);
+            contextActionsMenu.ContentHeight = Math.Min(contextActionsMenu.ContentHeight, menuMaxH);
+            pixelLayout.Move(contextActionsMenu, menuX, menuY);
         }
         
         Invalidate();
@@ -695,6 +705,12 @@ public sealed class Editor : Drawable {
             return;
         }
         
+        if (contextActionsMenu.HandleKeyDown(e, useTabComplete: false)) {
+            e.Handled = true;
+            Recalc();
+            return;
+        }
+        
         if (GetQuickEdits().Any()) {
             // Cycle
             if (e.Key == Keys.Tab) {
@@ -735,6 +751,14 @@ public sealed class Editor : Drawable {
         if (e.Key == Keys.Space && e.HasCommonModifier()) {
             UpdateAutoComplete();
 
+            e.Handled = true;
+            Recalc();
+            return;
+        }
+
+        if (e.Key == Keys.Enter && e.HasAlternateModifier()) {
+            contextActionsMenu.Visible = true;
+            UpdateContextActions();
             e.Handled = true;
             Recalc();
             return;
@@ -1214,6 +1238,20 @@ public sealed class Editor : Drawable {
         return (autoCompleteX, autoCompleteY, autoCompleteMaxH);
     }
     
+    #endregion
+
+    #region Context Actions
+
+    private void UpdateContextActions() {
+        contextActionsMenu.Entries = contextActions
+            .Select(x => x.Check())
+            .ToList();
+
+        if (contextActionsMenu.Entries.Count == 0) {
+            contextActionsMenu.Visible = false;
+        }
+    }
+
     #endregion
     
     #region Quick Edit
@@ -1709,6 +1747,7 @@ public sealed class Editor : Drawable {
                 Document.Caret = min;
                 
                 autoCompleteMenu.Visible = false;
+                contextActionsMenu.Visible = false;
             }
         }
     }
@@ -2433,6 +2472,7 @@ public sealed class Editor : Drawable {
         }
         
         autoCompleteMenu.Visible = false;
+        contextActionsMenu.Visible = false;
         
         Document.Caret = Document.Caret;
         ScrollCaretIntoView(center: direction is CaretMovementType.LabelUp or CaretMovementType.LabelDown);
@@ -2552,6 +2592,7 @@ public sealed class Editor : Drawable {
             ScrollCaretIntoView();
             
             autoCompleteMenu.Visible = false;
+            contextActionsMenu.Visible = false;
             
             if (e.Modifiers.HasFlag(Keys.Shift)) {
                 if (Document.Selection.Empty)
@@ -2589,6 +2630,7 @@ public sealed class Editor : Drawable {
             ScrollCaretIntoView();
             
             autoCompleteMenu.Visible = false;
+            contextActionsMenu.Visible = false;
 
             Document.Selection.End = Document.Caret;
             
