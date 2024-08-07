@@ -222,17 +222,28 @@ public sealed class AutoCompleteMenu : Scrollable {
             ScrollPosition = ScrollPosition with { Y = Math.Min(shownEntries.Length * entryHeight - ClientSize.Height, selectedBottom + lookAhead * entryHeight - ClientSize.Height) }; 
         }
     }
+
+    private void Select(int direction) {
+        for (int nextSelection = (SelectedEntry + direction).Mod(shownEntries.Length);
+             nextSelection != SelectedEntry;
+             nextSelection = (nextSelection + direction).Mod(shownEntries.Length)) {
+            if (shownEntries[nextSelection].Disabled) continue;
+
+            SelectedEntry = nextSelection;
+            return;
+        }
+    }
     
     public bool HandleKeyDown(KeyEventArgs e, bool useTabComplete) {
         if (!Visible)
             return false;
         
         if (e.Key == Keys.Up) {
-            SelectedEntry = (SelectedEntry - 1).Mod(shownEntries.Length);
+            Select(-1);
             return true;
         }
         if (e.Key == Keys.Down) {
-            SelectedEntry = (SelectedEntry + 1).Mod(shownEntries.Length);
+            Select(1);
             return true;
         }
         if (e.Key == Keys.Enter || useTabComplete && e.Key == Keys.Tab) {
