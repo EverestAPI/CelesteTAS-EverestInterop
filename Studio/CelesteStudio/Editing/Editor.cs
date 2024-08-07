@@ -1244,7 +1244,18 @@ public sealed class Editor : Drawable {
 
     private void UpdateContextActions() {
         contextActionsMenu.Entries = contextActions
-            .Select(x => x.Check())
+            .Select(contextAction => {
+                return contextAction.Check() ?? new AutoCompleteMenu.Entry {
+                    DisplayText = contextAction.Name,
+                    SearchText = contextAction.Name,
+                    ExtraText = "",
+                    Disabled = true,
+                    OnUse = () => {
+                        contextActionsMenu.Visible = false;
+                    }
+                };
+            })
+            .OrderBy(entry => entry.Disabled ? 1 : 0)
             .ToList();
 
         if (contextActionsMenu.Entries.Count == 0) {
