@@ -1111,9 +1111,6 @@ public sealed class Editor : Drawable {
         }
     }
     
-    // Matches against command or space or both as a separator
-    private static readonly Regex SeparatorRegex = new(@"(?:\s+)|(?:\s*,\s*)", RegexOptions.Compiled);
-    
     private void UpdateAutoComplete(bool open = true) {
         var line = Document.Lines[Document.Caret.Row][..Document.Caret.Col].TrimStart();
         
@@ -1131,7 +1128,7 @@ public sealed class Editor : Drawable {
         // Use auto-complete entries for current command
 
         // Split by the first separator
-        var separatorMatch = SeparatorRegex.Match(line);
+        var separatorMatch = CommandLine.SeparatorRegex.Match(line);
         var args = line.Split(separatorMatch.Value);
         var allArgs = Document.Lines[Document.Caret.Row].Split(separatorMatch.Value);
         
@@ -2748,53 +2745,49 @@ public sealed class Editor : Drawable {
     }
     
     private Action? GetLineLink(int row) {
-        var commandLine = Document.Lines[row];
-        
-        var separatorMatch = SeparatorRegex.Match(commandLine);
-        var args = commandLine.Split(separatorMatch.Value);
-        
-        // Check if the command is valid
-        if (args.Length >= 3 && string.Equals(args[0], "Read", StringComparison.OrdinalIgnoreCase)) {
-            var documentPath = Studio.Instance.Editor.Document.FilePath;
-            if (documentPath == Document.ScratchFile) {
-                return null;
+        if (CommandLine.TryParse(Document.Lines[row], out var commandLine)) {
+            if (commandLine.IsCommand("Read") && commandLine.Args.Length >= 2) {
+                var documentPath = Studio.Instance.Editor.Document.FilePath;
+                if (documentPath == Document.ScratchFile) {
+                    return null;
+                }
+                if (Path.GetDirectoryName(documentPath) is not { } documentDir) {
+                    return null;
+                }
+                
+                var fullPath = Path.Combine(documentDir, $"{commandLine.Args[0]}.tas");
+                if (!File.Exists(fullPath)) {
+                    return null;
+                }
+                
+                (var label, int labelRow) = File.ReadAllText(fullPath)
+                    .ReplaceLineEndings(Document.NewLine.ToString())
+                    .SplitDocumentLines()
+                    .Select((line, i) => (line, i))
+                    .FirstOrDefault(pair => pair.line == $"#{commandLine.Args[1]}");
+                if (label == null) {
+                    return null;
+                }
+                
+                return () => {
+                    Studio.Instance.OpenFile(fullPath);
+                    Document.Caret.Row = labelRow;
+                    Document.Caret.Col = desiredVisualCol = Document.Lines[labelRow].Length;
+                };
+            } else if (commandLine.IsCommand("Play") && commandLine.Args.Length >= 1) {
+                (var label, int labelRow) = Document.Lines
+                    .Select((line, i) => (line, i))
+                    .FirstOrDefault(pair => pair.line == $"#{commandLine.Args[0]}");
+                if (label == null) {
+                    return null;
+                }
+                
+                return () => {
+                    Document.Caret.Row = labelRow;
+                    Document.Caret.Col = desiredVisualCol = Document.Lines[labelRow].Length;
+                    Recalc();
+                };
             }
-            if (Path.GetDirectoryName(documentPath) is not { } documentDir) {
-                return null;
-            }
-            
-            var fullPath = Path.Combine(documentDir, $"{args[1]}.tas");
-            if (!File.Exists(fullPath)) {
-                return null;
-            }
-            
-            (var label, int labelRow) = File.ReadAllText(fullPath)
-                .ReplaceLineEndings(Document.NewLine.ToString())
-                .SplitDocumentLines()
-                .Select((line, i) => (line, i))
-                .FirstOrDefault(pair => pair.line == $"#{args[2]}");
-            if (label == null) {
-                return null;
-            }
-            
-            return () => {
-                Studio.Instance.OpenFile(fullPath);
-                Document.Caret.Row = labelRow;
-                Document.Caret.Col = desiredVisualCol = Document.Lines[labelRow].Length;
-            };
-        } else if (args.Length >= 2 && string.Equals(args[0], "Play", StringComparison.OrdinalIgnoreCase)) {
-            (var label, int labelRow) = Document.Lines
-                .Select((line, i) => (line, i))
-                .FirstOrDefault(pair => pair.line == $"#{args[1]}");
-            if (label == null) {
-                return null;
-            }
-            
-            return () => {
-                Document.Caret.Row = labelRow;
-                Document.Caret.Col = desiredVisualCol = Document.Lines[labelRow].Length;
-                Recalc();
-            };
         }
         
         return null;
