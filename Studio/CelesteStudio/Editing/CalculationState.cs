@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using CelesteStudio.Util;
 
@@ -57,6 +58,7 @@ public static class CalculationExtensions {
         };
     }
     public static ActionLine Apply(this CalculationOperator op, ActionLine actionLine, int operand) {
-        return actionLine with { Frames = op.Apply(actionLine.Frames, operand) };
+        int newFrames = op.Apply(actionLine.Frames, operand);
+        return actionLine with { Frames = Math.Clamp(newFrames, 0, ActionLine.MaxFrames) };
     }
 }
