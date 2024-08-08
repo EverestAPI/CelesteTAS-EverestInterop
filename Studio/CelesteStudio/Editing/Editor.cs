@@ -1869,7 +1869,11 @@ public sealed class Editor : Drawable {
         }
         
         if (ActionLine.Parse(Document.Lines[Document.Caret.Row]) != null) {
-            InsertLine(Clipboard.Instance.Text.ReplaceLineEndings(Document.NewLine.ToString()).Trim(Document.NewLine));
+            // Prevent splitting the action-line in half
+            var insert = Clipboard.Instance.Text.ReplaceLineEndings(Document.NewLine.ToString());
+            Document.InsertLineBelow(insert);
+            Document.Caret.Row += insert.Count(c => c == Document.NewLine) + 1;
+            Document.Caret.Col = Document.Lines[Document.Caret.Row].Length;
         } else {
             Document.Insert(Clipboard.Instance.Text.ReplaceLineEndings(Document.NewLine.ToString()));
         }
