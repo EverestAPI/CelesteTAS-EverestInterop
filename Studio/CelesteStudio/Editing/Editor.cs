@@ -2368,7 +2368,8 @@ public sealed class Editor : Drawable {
         var line = Document.Lines[Document.Caret.Row];
         var oldCaret = Document.Caret;
         
-        if (ActionLine.TryParse(line, out var actionLine)) {
+        ActionLine? currentActionLine = ActionLine.Parse(line);
+        if (currentActionLine is {} actionLine) {
             Document.Caret.Col = Math.Min(line.Length, SnapColumnToActionLine(actionLine, Document.Caret.Col));
             int leadingSpaces = ActionLine.MaxFramesDigits - actionLine.Frames.Digits();
             
@@ -2401,7 +2402,6 @@ public sealed class Editor : Drawable {
         }
         
         // Apply / Update desired column
-        var oldVisualPos = GetVisualPosition(oldCaret);
         var newVisualPos = GetVisualPosition(Document.Caret);
         if (oldCaret.Row != Document.Caret.Row) {
             newVisualPos.Col = desiredVisualCol;
@@ -2409,6 +2409,11 @@ public sealed class Editor : Drawable {
             desiredVisualCol = newVisualPos.Col;
         }
         Document.Caret = ClampCaret(GetActualPosition(newVisualPos));
+        
+        // When going from a non-action-line to an action-line, snap the caret to the frame count
+        if (currentActionLine == null && TryParseAndFormatActionLine(Document.Caret.Row, out _)) {
+            Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
+        }
         
         if (updateSelection) {
             if (Document.Selection.Empty) {
