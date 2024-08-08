@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using CelesteStudio.Communication;
 using CelesteStudio.Data;
@@ -193,6 +194,7 @@ public sealed class Editor : Drawable {
     
     // A toast is a small message box which is temporarily shown in the middle of the screen
     private string toastMessage = string.Empty;
+    private CancellationTokenSource? toastCancellationSource;
 
     // Simple math operations like +, -, *, / can be performed on action line's frame counts
     private CalculationState? calculationState = null;
@@ -358,13 +360,16 @@ public sealed class Editor : Drawable {
         toastMessage = message;
         Invalidate();
         
+        toastCancellationSource?.Cancel();
+        toastCancellationSource?.Dispose();
+        toastCancellationSource = new CancellationTokenSource();
         Task.Run(() => {
-            Task.Delay(time).Wait();
+            Task.Delay(time, toastCancellationSource.Token).Wait();
             Application.Instance.Invoke(() => {
                 toastMessage = string.Empty;
                 Invalidate();
             });
-        });
+        }, toastCancellationSource.Token);
     }
     
     #region General Helper Methods
@@ -3111,19 +3116,20 @@ public sealed class Editor : Drawable {
         
         // Draw toast message box
         if (!string.IsNullOrWhiteSpace(toastMessage)) {
-            const float padding = 5.0f;
-            
             var lines = toastMessage.SplitDocumentLines();
             
-            float width = FontManager.StatusFont.CharWidth() * lines.Select(line => line.Length).Aggregate(Math.Max);
-            float height = FontManager.StatusFont.LineHeight() * lines.Length;
+            float width = FontManager.PopupFont.CharWidth() * lines.Select(line => line.Length).Aggregate(Math.Max);
+            float height = FontManager.PopupFont.LineHeight() * lines.Length;
             float x = scrollablePosition.X + (scrollableSize.Width - width) / 2.0f;
             float y = scrollablePosition.Y + (scrollableSize.Height - height) / 2.0f;
             
-            e.Graphics.FillRectangle(Settings.Instance.Theme.PopupMenuBg, x - padding, y - padding, width + padding * 2.0f, height + padding * 2.0f);
+            float padding = Settings.Instance.Theme.PopupMenuBorderPadding;
+            e.Graphics.FillPath(
+                Settings.Instance.Theme.PopupMenuBg,
+                GraphicsPath.GetRoundRect(new RectangleF(x - padding, y - padding, width + padding * 2.0f, height + padding * 2.0f), Settings.Instance.Theme.PopupMenuBorderRounding));
             
             foreach (var line in lines) {
-                e.Graphics.DrawText(FontManager.StatusFont, Settings.Instance.Theme.PopupMenuFg, x, y, line);
+                e.Graphics.DrawText(FontManager.PopupFont, Settings.Instance.Theme.PopupMenuFg, x, y, line);
                 y += Font.LineHeight();
             }
         }
