@@ -133,10 +133,10 @@ public sealed class Editor : Drawable {
     
     private readonly PixelLayout pixelLayout = new();
     private readonly PopupMenu autoCompleteMenu = new();
-    public readonly PopupMenu contextActionsMenu = new();
+    private readonly PopupMenu contextActionsMenu = new();
     
     private PopupMenu? activePopupMenu;
-    private PopupMenu? ActivePopupMenu {
+    public PopupMenu? ActivePopupMenu {
         get => activePopupMenu;
         set {
             if (activePopupMenu != null) {

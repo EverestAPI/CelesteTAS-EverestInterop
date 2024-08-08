@@ -3,8 +3,8 @@
 namespace CelesteStudio.Editing.ContextActions;
 
 public abstract class ContextAction {
-    protected Editor Editor => Studio.Instance.Editor;
-    protected Document Document => Studio.Instance.Editor.Document;
+    protected static Editor Editor => Studio.Instance.Editor;
+    protected static Document Document => Studio.Instance.Editor.Document;
 
     public abstract string Name { get; }
 
@@ -17,7 +17,7 @@ public abstract class ContextAction {
             ExtraText = extraText,
             OnUse = () => {
                 onUse();
-                Editor.contextActionsMenu.Visible = false;
+                Editor.ActivePopupMenu = null;
             },
         };
     }

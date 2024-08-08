@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Reflection.Metadata;
 using System.Text.RegularExpressions;
 using CelesteStudio.Data;
@@ -10,30 +11,36 @@ using StudioCommunication;
 namespace CelesteStudio.Editing.ContextActions;
 
 public class InlineReadCommand : ContextAction {
-    public override string Name => "Inline read command";
+    public override string Name => "Inline Read command";
 
     public override PopupMenu.Entry? Check() {
         string currentLine = Document.Lines[Document.Caret.Row];
 
-        if (!(CommandLine.TryParse(currentLine, out var commandLine) && commandLine.IsCommand("Read"))) {
+        if (!CommandLine.TryParse(currentLine, out var commandLine) || !commandLine.IsCommand("Read")) {
             return null;
         }
 
-        string? filename = commandLine.Args.GetValueOrDefault(0);
+        string? subPath = commandLine.Args.GetValueOrDefault(0);
         string? startLabel = commandLine.Args.GetValueOrDefault(1);
         string? endLabel = commandLine.Args.GetValueOrDefault(2);
 
-        if (filename == null) {
+        if (subPath == null ||
+            Document.FilePath == Document.ScratchFile ||
+            Path.GetDirectoryName(Document.FilePath) is not { } documentDir) 
+        {
+            return null;
+        }
+        
+        var fullPath = Path.Combine(documentDir, $"{subPath}.tas");
+        if (!File.Exists(fullPath)) {
             return null;
         }
 
-        string path = Path.Combine(Path.GetDirectoryName(Document.FilePath) ?? string.Empty, filename);
-        if (!Path.HasExtension(path)) {
-            path = Path.ChangeExtension(path, ".tas");
-        }
+        string[] lines = File.ReadAllText(fullPath)
+            .ReplaceLineEndings(Document.NewLine.ToString())
+            .SplitDocumentLines();
 
-        string[] lines = File.ReadAllText(path).SplitDocumentLines();
-        string replacement = ReadTasRange(lines, startLabel, endLabel);
+        string replacement = ReadTasRange(lines, startLabel?.Trim(), endLabel?.Trim());
         
         return CreateEntry($"{lines.Length} lines", () => {
             try {
@@ -50,30 +57,38 @@ public class InlineReadCommand : ContextAction {
     private string ReadTasRange(string[] lines, string? startLabel, string? endLabel) {
         int startLine = 0;
         int endLineInclusive = lines.Length;
+        
+        if (startLabel != null && TryGetLine(startLabel, out int line)) {
+            startLine = line;
+        }
+        if (endLabel != null && TryGetLine(endLabel, out line)) {
+            endLineInclusive = line;
+        }
 
-        if (startLabel != null) TryGetLine(startLabel, lines, out startLine);
-        if (endLabel != null) TryGetLine(endLabel, lines, out endLineInclusive);
-
-        return string.Join(Document.NewLine, lines[(startLine-1)..(endLineInclusive-1)]);
+        return string.Join(Document.NewLine, lines[(startLine - 1)..(endLineInclusive - 1)]);
     }
     
     // 1-indexed line number
-    public static bool TryGetLine(string labelOrLineNumber, string[] lines, out int lineNumber) {
-        if (!int.TryParse(labelOrLineNumber, out lineNumber)) {
-            int curLine = 0;
-            Regex labelRegex = new(@$"^\s*#\s*{Regex.Escape(labelOrLineNumber)}\s*$");
-            foreach (string readLine in lines) {
-                curLine++;
-                string line = readLine.Trim();
-                if (labelRegex.IsMatch(line)) {
-                    lineNumber = curLine;
-                    return true;
-                }
-            }
-
-            return false;
+    private static bool TryGetLine(string labelOrLineNumber, out int lineNumber) {
+        if (int.TryParse(labelOrLineNumber, out lineNumber)) {
+            return true;
         }
-
-        return true;
+        
+        // All labels need to start with a # and immediately follow with the text
+        var labels = Document.Lines
+            .Select((line, row) => (line, row))
+            .Where(pair => pair.line.Length >= 2 && pair.line[0] == '#' && char.IsLetter(pair.line[1]))
+            .Select(pair => pair with { line = pair.line[1..] }) // Remove the #
+            .ToArray();
+        
+        // Find label
+        foreach (var (label, line) in labels) {
+            if (label == labelOrLineNumber) {
+                lineNumber = line;
+                return true;
+            }
+        }
+        
+        return false;
     }
 }

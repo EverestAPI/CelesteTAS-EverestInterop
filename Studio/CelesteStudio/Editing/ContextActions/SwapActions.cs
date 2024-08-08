@@ -1,6 +1,4 @@
-﻿using System;
-using CelesteStudio.Data;
-using CelesteStudio.Util;
+﻿using CelesteStudio.Data;
 using StudioCommunication;
 
 namespace CelesteStudio.Editing.ContextActions;
@@ -12,14 +10,14 @@ public class SwapActions(Actions a, Actions b) : ContextAction {
         int startRow = Document.Selection.Empty ? Document.Caret.Row : Document.Selection.Min.Row;
         int endRow = Document.Selection.Empty ? Document.Caret.Row : Document.Selection.Max.Row;
 
-        bool hasLeftRight = false;
+        bool hasAction = false;
         for (int row = startRow; row <= endRow; row++) {
             if (ActionLine.TryParse(Document.Lines[row], out var actionLine)) {
-                hasLeftRight |= (actionLine.Actions & (a | b)) != 0;
+                hasAction |= (actionLine.Actions & (a | b)) != 0;
             }
         }
 
-        if (!hasLeftRight) {
+        if (!hasAction) {
             return null;
         }
 
