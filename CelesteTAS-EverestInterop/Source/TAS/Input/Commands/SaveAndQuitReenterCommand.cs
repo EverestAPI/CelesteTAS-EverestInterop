@@ -35,24 +35,10 @@ public static class SaveAndQuitReenterCommand {
     private static void Load() {
         FieldInfo fieldInfo = typeof(SaveAndQuitReenterCommand).GetFieldInfo(nameof(justPressedSnQ));
 
-        // v1400
-        MethodInfo pauseMethod = typeof(Level)
+        typeof(Level)
             .GetNestedType("<>c__DisplayClass149_0", BindingFlags.NonPublic)
-            ?.GetMethodInfo("<Pause>b__8");
-
-        // v1312
-        if (pauseMethod == null) {
-            pauseMethod = typeof(Level)
-                .GetNestedType("<>c__DisplayClass146_5", BindingFlags.NonPublic)
-                ?.GetMethodInfo("<Pause>b__11");
-        }
-
-        if (pauseMethod == null) {
-            "[SaveAndQuitReenterCommand] Failed to hook pause action".Log(LogLevel.Warn);
-            return;
-        }
-
-        pauseMethod.IlHook((cursor, _) => cursor.Emit(OpCodes.Ldc_I4_1).Emit(OpCodes.Stsfld,fieldInfo));
+            .GetMethodInfo("<Pause>b__8")
+            .IlHook((cursor, _) => cursor.Emit(OpCodes.Ldc_I4_1).Emit(OpCodes.Stsfld,fieldInfo));
 
         typeof(Level).GetMethod("Update").IlHook((cursor, _) => cursor.Emit(OpCodes.Ldc_I4_0)
             .Emit(OpCodes.Stsfld, fieldInfo));
