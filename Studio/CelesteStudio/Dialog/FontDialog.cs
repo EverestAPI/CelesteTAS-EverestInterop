@@ -63,6 +63,7 @@ public class FontDialog : Dialog<bool> {
     private readonly FontPreview preview;
     private readonly NumericStepper editorFontSize;
     private readonly NumericStepper statusFontSize;
+    private readonly NumericStepper popupFontSize;
 
     private string fontFamily = Settings.Instance.FontFamily;
     
@@ -79,6 +80,13 @@ public class FontDialog : Dialog<bool> {
         };
         statusFontSize = new NumericStepper {
             Value = Settings.Instance.StatusFontSize,
+            MinValue = 1.0f,
+            Increment = 1.0f,
+            DecimalPlaces = 1,
+            Width = 100,
+        };
+        popupFontSize = new NumericStepper {
+            Value = Settings.Instance.PopupFontSize,
             MinValue = 1.0f,
             Increment = 1.0f,
             DecimalPlaces = 1,
@@ -132,6 +140,12 @@ public class FontDialog : Dialog<bool> {
                     VerticalContentAlignment = VerticalAlignment.Center,
                     Orientation = Orientation.Horizontal,
                     Items = { new Label { Text = "Status Font Size" }, statusFontSize },
+                },
+                new StackLayout {
+                    Spacing = 10,
+                    VerticalContentAlignment = VerticalAlignment.Center,
+                    Orientation = Orientation.Horizontal,
+                    Items = { new Label { Text = "Popup Font Size" }, popupFontSize },
                 },
                 new Label { Text = "  Preview:" }.WithFontStyle(FontStyle.Bold),
                 new Scrollable {
@@ -187,7 +201,7 @@ public class FontDialog : Dialog<bool> {
             var loadingPanel = new StackLayout {
                 Spacing = 10,
                 Width = 250, 
-                Height = 330,
+                Height = 350,
                 HorizontalContentAlignment = HorizontalAlignment.Center,
                 VerticalContentAlignment = VerticalAlignment.Center,
                 Items = {
@@ -212,6 +226,7 @@ public class FontDialog : Dialog<bool> {
         Settings.Instance.FontFamily = dialog.fontFamily;
         Settings.Instance.EditorFontSize = (float)dialog.editorFontSize.Value;
         Settings.Instance.StatusFontSize = (float)dialog.statusFontSize.Value;
+        Settings.Instance.PopupFontSize = (float)dialog.popupFontSize.Value;
         Settings.OnFontChanged();
         Settings.Save();
     }

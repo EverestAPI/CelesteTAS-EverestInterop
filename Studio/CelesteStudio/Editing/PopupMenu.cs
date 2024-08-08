@@ -21,11 +21,34 @@ public sealed class PopupMenu : Scrollable {
         public bool Disabled = false;
     }
     
-    private const int BorderWidth = 1; // We can't disable the border, so we have to account for that to avoid having scrollbars
-    private const float EntryBetweenPadding = 2.5f;
-    private const float EntryPaddingLeft = 3.0f;
-    private const float EntryPaddingRight = 20.0f;
     private const int DisplayExtraPadding = 1;
+    
+    private int ScrollBarWidth {
+        get {
+            bool scrollBarVisible = Height < ContentHeight && Height > 0;
+            if (!scrollBarVisible) {
+                return 0;
+            }
+            
+            if (Eto.Platform.Instance.IsWpf) {
+                return 17;
+            }
+            if (Eto.Platform.Instance.IsGtk) {
+                return 17; // This probably relies on the GTK theme, but being slight off isn't too big of an issue
+            }
+            if (Eto.Platform.Instance.IsMac) {
+                return 15;
+            }
+            return 0;
+        }
+    }
+
+    private static float BorderRounding => 7.0f;
+    private static float BorderPadding => 7.0f;
+    
+    private static float EntryRounding => 5.0f;
+    private static float EntryPaddingHorizontal => 5.0f;
+    private static float EntryPaddingVertical => 4.5f;
     
     private sealed class ContentDrawable : Drawable {
         private readonly PopupMenu menu;
@@ -33,7 +56,7 @@ public sealed class PopupMenu : Scrollable {
         public ContentDrawable(PopupMenu menu) {
             this.menu = menu;
             
-            BackgroundColor = Settings.Instance.Theme.AutoCompleteBg;
+            BackgroundColor = Colors.Transparent; // Draw background ourselves to apply rounded corners
             Settings.ThemeChanged += () => BackgroundColor = Settings.Instance.Theme.AutoCompleteBg;
             
             MouseEnter += (_, _) => Invalidate();
@@ -42,14 +65,18 @@ public sealed class PopupMenu : Scrollable {
         }
         
         protected override void OnPaint(PaintEventArgs e) {
+            e.Graphics.FillPath(
+                Settings.Instance.Theme.AutoCompleteBg, 
+                GraphicsPath.GetRoundRect(new RectangleF(menu.ScrollPosition.X, menu.ScrollPosition.Y, menu.Width, menu.Height), BorderRounding));
+            
             if (menu.shownEntries.Length == 0) {
                 return;
             }
 
-            var font = FontManager.EditorFontRegular;
+            var font = FontManager.PopupFont;
             int maxDisplayLen = menu.shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
 
-            float width = menu.ContentWidth;
+            float width = menu.ContentWidth - BorderPadding * 2.0f;
             float height = menu.EntryHeight;
             
             const int rowCullOverhead = 3;
@@ -62,29 +89,29 @@ public sealed class PopupMenu : Scrollable {
             
             var mousePos = PointFromScreen(Mouse.Position);
             int mouseRow = -1;
-            if (mousePos.X >= 0.0f && mousePos.X <= ClientSize.Width) {
-                mouseRow = (int)(mousePos.Y / height);
+            if (mousePos.X >= 0.0f && mousePos.X <= ClientSize.Width - menu.ScrollBarWidth) {
+                mouseRow = (int)((mousePos.Y - BorderPadding) / height);
             }
             
             for (int row = minRow; row <= maxRow; row++) {
                 var entry = menu.shownEntries[row];
                 
                 if (row == menu.SelectedEntry && !entry.Disabled) {
-                    e.Graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteSelected, 0.0f, row * height, width, height);
+                    e.Graphics.FillPath(Settings.Instance.Theme.AutoCompleteSelected, GraphicsPath.GetRoundRect(new RectangleF(BorderPadding, row * height + BorderPadding, width, height), EntryRounding));
                 } else if (row == mouseRow && !menu.shownEntries[mouseRow].Disabled) {
-                    e.Graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteHovered, 0.0f, row * height, width, height);
+                    e.Graphics.FillPath(Settings.Instance.Theme.AutoCompleteHovered, GraphicsPath.GetRoundRect(new RectangleF(BorderPadding, row * height + BorderPadding, width, height), EntryRounding));
                 }
 
                 var displayBrush = entry.Disabled ? displayDisabledBrush : displayEnabledBrush;
-                e.Graphics.DrawText(font, displayBrush, EntryPaddingLeft, row * height + EntryBetweenPadding, entry.DisplayText);
-                e.Graphics.DrawText(font, extraBrush, EntryPaddingLeft + font.CharWidth() * (maxDisplayLen + DisplayExtraPadding), row * height + EntryBetweenPadding, entry.ExtraText);
+                e.Graphics.DrawText(font, displayBrush, EntryPaddingHorizontal + BorderPadding, row * height + EntryPaddingVertical + BorderPadding, entry.DisplayText);
+                e.Graphics.DrawText(font, extraBrush, EntryPaddingHorizontal + BorderPadding + font.CharWidth() * (maxDisplayLen + DisplayExtraPadding), row * height + EntryPaddingVertical + BorderPadding, entry.ExtraText);
             }
             
             base.OnPaint(e);
         }
         
         protected override void OnMouseMove(MouseEventArgs e) {
-            int mouseRow = (int)(e.Location.Y / menu.EntryHeight);
+            int mouseRow = (int)((e.Location.Y - BorderPadding) / menu.EntryHeight);
             if (mouseRow >= 0 && mouseRow < menu.shownEntries.Length && !menu.shownEntries[mouseRow].Disabled) {
                 Cursor = Cursors.Pointer;
             } else {
@@ -160,37 +187,25 @@ public sealed class PopupMenu : Scrollable {
     }
     
     public int ContentWidth {
-        set {
-            if (Eto.Platform.Instance.IsWpf) {
-                const int scrollBarWidth = 17;
-                bool scrollBarVisible = Height <= ContentHeight && Height > 0;
-                Width = Math.Max(0, value + BorderWidth * 2 + (scrollBarVisible ? scrollBarWidth : 0));
-            } else if (Eto.Platform.Instance.IsMac) {
-                const int scrollBarWidth = 15;
-                bool scrollBarVisible = Height <= ContentHeight && Height > 0;
-                Width = Math.Max(0, value + BorderWidth * 2 + (scrollBarVisible ? scrollBarWidth : 0));
-            } else {
-                Width = Math.Max(0, value + BorderWidth * 2);
-            }
-        }
+        set => Width = Math.Max(0, value + ScrollBarWidth);
         get {
             if (shownEntries.Length == 0) {
                 return 0;
             }
             
-            var font = FontManager.EditorFontRegular;
+            var font = FontManager.PopupFont;
             int maxDisplayLen = shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
             int maxExtraLen = shownEntries.Select(entry => entry.ExtraText.Length).Aggregate(Math.Max);
             
-            return (int)(font.CharWidth() * (maxDisplayLen + DisplayExtraPadding + maxExtraLen) + EntryPaddingLeft + EntryPaddingRight);
+            return (int)(font.CharWidth() * (maxDisplayLen + DisplayExtraPadding + maxExtraLen) + EntryPaddingHorizontal + EntryPaddingHorizontal + BorderPadding * 2);
         }
     }
     public int ContentHeight {
-        set => Height = Math.Max(0, value + BorderWidth * 2);
-        get => shownEntries.Length * EntryHeight;
+        set => Height = Math.Max(0, value);
+        get => (int)(shownEntries.Length * EntryHeight + BorderPadding * 2);
     }
     
-    public int EntryHeight => (int)(FontManager.EditorFontRegular.LineHeight() + EntryBetweenPadding * 2.0f);
+    public int EntryHeight => (int)(FontManager.PopupFont.LineHeight() + EntryPaddingVertical * 2.0f);
     
     private Entry[] shownEntries = [];
     private readonly ContentDrawable drawable;
@@ -198,6 +213,7 @@ public sealed class PopupMenu : Scrollable {
     public PopupMenu() {
         drawable = new ContentDrawable(this);
         Content = drawable;
+        Border = BorderType.None;
 
         Recalc();
     }
@@ -232,7 +248,7 @@ public sealed class PopupMenu : Scrollable {
         }
     }
 
-    private void Select(int direction) {
+    private void MoveSelection(int direction) {
         for (int nextSelection = (SelectedEntry + direction).Mod(shownEntries.Length);
              nextSelection != SelectedEntry;
              nextSelection = (nextSelection + direction).Mod(shownEntries.Length)) {
@@ -248,11 +264,11 @@ public sealed class PopupMenu : Scrollable {
             return false;
         
         if (e.Key == Keys.Up) {
-            Select(-1);
+            MoveSelection(-1);
             return true;
         }
         if (e.Key == Keys.Down) {
-            Select(1);
+            MoveSelection(1);
             return true;
         }
         if (e.Key == Keys.Enter || useTabComplete && e.Key == Keys.Tab) {

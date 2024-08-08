@@ -10,12 +10,14 @@ public static class FontManager {
     public const string FontFamilyBuiltin = "<builtin>";
     public const string FontFamilyBuiltinDisplayName = "JetBrains Mono (builtin)";
     
-    private static Font? editorFontRegular, editorFontBold, editorFontItalic, editorFontBoldItalic, statusFont;
+    private static Font? editorFontRegular, editorFontBold, editorFontItalic, editorFontBoldItalic, statusFont, popupFont;
+
     public static Font EditorFontRegular    => editorFontRegular    ??= CreateEditor(FontStyle.None);
     public static Font EditorFontBold       => editorFontBold       ??= CreateEditor(FontStyle.Bold);
     public static Font EditorFontItalic     => editorFontItalic     ??= CreateEditor(FontStyle.Italic);
     public static Font EditorFontBoldItalic => editorFontBoldItalic ??= CreateEditor(FontStyle.Bold | FontStyle.Italic);
     public static Font StatusFont           => statusFont           ??= CreateStatus();
+    public static Font PopupFont            => popupFont            ??= CreatePopup();
     
     private static FontFamily? builtinFontFamily;
     public static Font CreateFont(string fontFamily, float size, FontStyle style = FontStyle.None) {
@@ -52,9 +54,10 @@ public static class FontManager {
 
     public static void OnFontChanged() {
         // Clear cached fonts
-        editorFontRegular = editorFontBold = editorFontItalic = editorFontBoldItalic = statusFont = null;
+        editorFontRegular = editorFontBold = editorFontItalic = editorFontBoldItalic = statusFont = popupFont = null;
     }
     
     private static Font CreateEditor(FontStyle style) => CreateFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom, style);
     private static Font CreateStatus() => CreateFont(Settings.Instance.FontFamily, Settings.Instance.StatusFontSize);
+    private static Font CreatePopup() => CreateFont(Settings.Instance.FontFamily, Settings.Instance.PopupFontSize);
 }
