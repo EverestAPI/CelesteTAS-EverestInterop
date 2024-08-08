@@ -114,11 +114,10 @@ public sealed class Editor : Drawable {
                             Document.ReplaceLine(occurrences[i], $"{RoomLabelPrefix}{label.Trim()} ({i + roomLabelStartIndex})");
                         }
                     }
-                    
-                    Document.Caret = ClampCaret(Document.Caret);
                 }
                 
                 Recalc();
+                Document.Caret = ClampCaret(Document.Caret);
                 ScrollCaretIntoView();
             }
         }
@@ -146,6 +145,8 @@ public sealed class Editor : Drawable {
             if (activePopupMenu != null) {
                 activePopupMenu.Visible = true;
             }
+            
+            Recalc();
         }
     }
     
@@ -154,6 +155,7 @@ public sealed class Editor : Drawable {
     // These should be ordered from most specific to most applicable.
     private readonly List<ContextAction> contextActions = [
         new CreateRepeat(),
+        new InlineRepeatCommand(),
         new InlineReadCommand(),
             
         new SwapActions(Actions.Left, Actions.Right),

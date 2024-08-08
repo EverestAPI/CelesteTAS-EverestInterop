@@ -7,6 +7,7 @@ using CelesteStudio.Editing;
 using Eto.Drawing;
 using Eto.Forms;
 using System.Reflection;
+using Range = System.Range;
 
 namespace CelesteStudio.Util;
 
@@ -34,6 +35,13 @@ public static class Extensions
     }
     
     public static string ReplaceRange(this string self, int startIndex, int count, string replacement) => self.Remove(startIndex, count).Insert(startIndex, replacement);
+    
+    public static T[] GetArrayRange<T>(this List<T> list, Range range) {
+        var (start, length) = range.GetOffsetAndLength(list.Count);
+        var result = new T[length];
+        list.CopyTo(start, result, 0, length);
+        return result;
+    }
     
     public static Font WithFontStyle(this Font font, FontStyle style) => new(font.Family, font.Size, style);
     public static Font WithFontDecoration(this Font font, FontDecoration decoration) => new(font.Family, font.Size, font.FontStyle, decoration);

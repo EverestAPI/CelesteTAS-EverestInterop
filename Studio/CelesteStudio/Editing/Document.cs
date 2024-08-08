@@ -145,7 +145,7 @@ public class Document {
     private readonly UndoStack undoStack = new();
 
     private List<string> CurrentLines => undoStack.Stack[undoStack.Curr].Lines;
-    public IReadOnlyList<string> Lines => CurrentLines.AsReadOnly();
+    public List<string> Lines => CurrentLines;
 
     // An anchor is a part of the document, which will move with the text its placed on.
     // They can hold arbitrary user data.
@@ -466,6 +466,16 @@ public class Document {
             Caret.Row += newLineCount;
         
         ChangedText(row, row + newLineCount);
+    }
+    public void InsertLines(int row, string[] newLines) {
+        PushUndoState();
+        
+        CurrentLines.InsertRange(row, newLines);
+        
+        if (Caret.Row >= row)
+            Caret.Row += newLines.Length;
+        
+        ChangedText(row, row + newLines.Length);
     }
     
     public void ReplaceLine(int row, string text) {

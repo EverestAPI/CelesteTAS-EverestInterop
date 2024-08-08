@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.ExceptionServices;
 using System.Text;
+using CelesteStudio.Data;
 using CelesteStudio.Util;
 using StudioCommunication;
 
@@ -32,7 +33,7 @@ public class CreateRepeat : ContextAction {
         }
 
         int foundRepeatCount = 0;
-        string foundPattern = "";
+        string[] foundPattern = [];
         
         for (int patternLength = 1; patternLength <= rowCount / 2; patternLength++) {
             // Pattern needs to occur an integer amount of times
@@ -57,11 +58,7 @@ public class CreateRepeat : ContextAction {
             }
 
             // Pattern matches
-            StringBuilder foundPatternBuilder = new();
-            for (int i = 0; i < patternLength; i++) {
-                foundPatternBuilder.Append(Document.Lines[minRow + i] + Document.NewLine);
-            }
-            foundPattern = foundPatternBuilder.ToString();
+            foundPattern = Document.Lines.GetArrayRange(minRow..(minRow + patternLength));
             foundRepeatCount = repeatCount;
             break;
             
@@ -83,11 +80,21 @@ public class CreateRepeat : ContextAction {
             };
                 
             Document.RemoveLines(minRow, maxRow);
-            Document.InsertLine(minRow, $"Repeat{separator}{foundRepeatCount}{Document.NewLine}{foundPattern}EndRepeat");
+            Document.InsertLines(minRow, [
+                $"Repeat{separator}{foundRepeatCount}",
+                ..foundPattern,
+                "EndRepeat",
+            ]);
             
             Document.Selection.Clear();
-            Document.Caret.Row = minRow;
+            // Move cursor to first input inside Repeat
+            Document.Caret.Row = minRow + 1;
             Document.Caret.Col = 0;
+            
+            // Snap to frame count
+            if (foundPattern.Length > 0 && ActionLine.TryParse(foundPattern[0], out _)) {
+                Document.Caret.Col = ActionLine.MaxFramesDigits;
+            }
         });
     }
 }
