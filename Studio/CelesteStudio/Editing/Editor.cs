@@ -142,7 +142,10 @@ public sealed class Editor : Drawable {
     private readonly List<ContextAction> contextActions = [
         new CreateRepeat(),
         new InlineReadCommand(),
-        new SwapLeftRight()
+            
+        new SwapActions(Actions.Left, Actions.Right),
+        new SwapActions(Actions.Jump, Actions.Jump2),
+        new SwapActions(Actions.Dash, Actions.Dash2),
     ];
 
     private Font Font => FontManager.EditorFontRegular;
