@@ -31,7 +31,6 @@ public class MenuUtils {
             
             Settings.OnChanged();
             Settings.Save();
-            
         };
         
         return item;
