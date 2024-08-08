@@ -1,4 +1,3 @@
-using System;
 using CelesteStudio.Data;
 using CelesteStudio.Util;
 

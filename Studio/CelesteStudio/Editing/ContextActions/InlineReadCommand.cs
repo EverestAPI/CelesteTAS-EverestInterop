@@ -1,12 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata;
-using System.Text.RegularExpressions;
 using CelesteStudio.Data;
-using CelesteStudio.Editing.AutoCompletion;
 using CelesteStudio.Util;
-using StudioCommunication;
 
 namespace CelesteStudio.Editing.ContextActions;
 
@@ -39,43 +35,38 @@ public class InlineReadCommand : ContextAction {
         string[] lines = File.ReadAllText(fullPath)
             .ReplaceLineEndings(Document.NewLine.ToString())
             .SplitDocumentLines();
-
-        string replacement = ReadTasRange(lines, startLabel?.Trim(), endLabel?.Trim());
+        
+        int startLine = 0;
+        int endLine = lines.Length;
+        
+        if (startLabel != null && TryGetLine(startLabel, lines, out int line)) {
+            startLine = line;
+        }
+        if (endLabel != null && TryGetLine(endLabel, lines, out line)) {
+            endLine = line;
+        }
         
         return CreateEntry($"{lines.Length} lines", () => {
+            using var __ = Document.Update();
+            
             try {
-                if (!replacement.EndsWith(Document.NewLine)) {
-                    replacement += Document.NewLine;
-                }
-                Document.ReplaceLine(Document.Caret.Row, replacement);
+                Document.RemoveLine(Document.Caret.Row);
+                Document.InsertLines(Document.Caret.Row, lines[startLine..endLine]);
             } catch (Exception) {
                 // ignored
             }
         });
     }
 
-    private string ReadTasRange(string[] lines, string? startLabel, string? endLabel) {
-        int startLine = 0;
-        int endLineInclusive = lines.Length;
-        
-        if (startLabel != null && TryGetLine(startLabel, out int line)) {
-            startLine = line;
-        }
-        if (endLabel != null && TryGetLine(endLabel, out line)) {
-            endLineInclusive = line;
-        }
-
-        return string.Join(Document.NewLine, lines[(startLine - 1)..(endLineInclusive - 1)]);
-    }
-    
-    // 1-indexed line number
-    private static bool TryGetLine(string labelOrLineNumber, out int lineNumber) {
+    private static bool TryGetLine(string labelOrLineNumber, string[] lines, out int lineNumber) {
         if (int.TryParse(labelOrLineNumber, out lineNumber)) {
+            // 1-indexed line number
+            lineNumber -= 1;
             return true;
         }
         
         // All labels need to start with a # and immediately follow with the text
-        var labels = Document.Lines
+        var labels = lines
             .Select((line, row) => (line, row))
             .Where(pair => pair.line.Length >= 2 && pair.line[0] == '#' && char.IsLetter(pair.line[1]))
             .Select(pair => pair with { line = pair.line[1..] }) // Remove the #

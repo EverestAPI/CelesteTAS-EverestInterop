@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Reflection.Metadata.Ecma335;
-using System.Runtime.ExceptionServices;
-using System.Text;
+﻿using System.Diagnostics;
 using CelesteStudio.Data;
 using CelesteStudio.Util;
-using StudioCommunication;
 
 namespace CelesteStudio.Editing.ContextActions;
 
