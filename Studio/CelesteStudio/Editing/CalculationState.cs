@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using CelesteStudio.Data;
 using CelesteStudio.Util;
 
 namespace CelesteStudio.Editing;

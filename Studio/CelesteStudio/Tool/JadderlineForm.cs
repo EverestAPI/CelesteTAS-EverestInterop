@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CelesteStudio.Communication;
+using CelesteStudio.Data;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;

@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using CelesteStudio.Communication;
 using CelesteStudio.Data;
 using CelesteStudio.Dialog;
+using CelesteStudio.Editing.AutoCompletion;
+using CelesteStudio.Editing.ContextActions;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
@@ -39,7 +40,7 @@ public sealed class Editor : Drawable {
             document.TextChanged += HandleTextChanged;
 
             // Reset various state
-            autoCompleteMenu.Visible = false;
+            ActivePopupMenu = null;
             
             ConvertToActionLines(0, document.Lines.Count - 1);
             Recalc();
@@ -113,11 +114,10 @@ public sealed class Editor : Drawable {
                             Document.ReplaceLine(occurrences[i], $"{RoomLabelPrefix}{label.Trim()} ({i + roomLabelStartIndex})");
                         }
                     }
-                    
-                    Document.Caret = ClampCaret(Document.Caret);
                 }
                 
                 Recalc();
+                Document.Caret = ClampCaret(Document.Caret);
                 ScrollCaretIntoView();
             }
         }
@@ -131,9 +131,37 @@ public sealed class Editor : Drawable {
     private Size scrollableSize;
     
     private readonly PixelLayout pixelLayout = new();
-    private readonly AutoCompleteMenu autoCompleteMenu = new();
+    private readonly PopupMenu autoCompleteMenu = new();
+    private readonly PopupMenu contextActionsMenu = new();
     
-    private readonly List<AutoCompleteMenu.Entry> baseAutoCompleteEntries = [];
+    private PopupMenu? activePopupMenu;
+    public PopupMenu? ActivePopupMenu {
+        get => activePopupMenu;
+        set {
+            if (activePopupMenu != null) {
+                activePopupMenu.Visible = false;
+            }
+            activePopupMenu = value;
+            if (activePopupMenu != null) {
+                activePopupMenu.Visible = true;
+            }
+            
+            Recalc();
+        }
+    }
+    
+    private readonly List<PopupMenu.Entry> baseAutoCompleteEntries = [];
+
+    // These should be ordered from most specific to most applicable.
+    private readonly List<ContextAction> contextActions = [
+        new CreateRepeat(),
+        new InlineRepeatCommand(),
+        new InlineReadCommand(),
+            
+        new SwapActions(Actions.Left, Actions.Right),
+        new SwapActions(Actions.Jump, Actions.Jump2),
+        new SwapActions(Actions.Dash, Actions.Dash2),
+    ];
 
     private Font Font => FontManager.EditorFontRegular;
     private SyntaxHighlighter highlighter;
@@ -182,7 +210,11 @@ public sealed class Editor : Drawable {
         CanFocus = true;
         Cursor = Cursors.IBeam;
         
+        autoCompleteMenu.Visible = false;
+        contextActionsMenu.Visible = false;
+        
         pixelLayout.Add(autoCompleteMenu, 0, 0);
+        pixelLayout.Add(contextActionsMenu, 0, 0);
         Content = pixelLayout;
         
         Focus();
@@ -517,19 +549,29 @@ public sealed class Editor : Drawable {
             Size = new((int)(width + textOffsetX + paddingRight), (int)(height + paddingBottom));
         }
         
-        // Update controls
-        {
-            const float menuXPos = 8.0f;
+        // Update popup-menu position
+        if (ActivePopupMenu != null) {
+            const float menuXOffset = 8.0f;
             const float menuYOffset = 7.0f;
             
-            int menuX = (int)(scrollablePosition.X + textOffsetX + menuXPos);
-            int menuY = (int)(Font.LineHeight() * (actualToVisualRows[Document.Caret.Row] + 1) + menuYOffset);
-            int menuMaxW = (int)(scrollablePosition.X + scrollableSize.Width - Font.CharWidth() - menuX);
+            float availableWidth = scrollablePosition.X + scrollableSize.Width - Font.CharWidth();
+            float carX = Font.CharWidth() * Document.Caret.Col;
+            float carY = Font.LineHeight() * (actualToVisualRows[Document.Caret.Row] + 1);
+            
+            int menuX = (int)(carX + scrollablePosition.X + textOffsetX + menuXOffset);
+            int menuY = (int)(carY + menuYOffset);
+            int menuMaxW = (int)(availableWidth - menuX);
             int menuMaxH = (int)(scrollablePosition.Y + scrollableSize.Height - Font.LineHeight() - menuY);
             
-            autoCompleteMenu.ContentWidth = Math.Min(autoCompleteMenu.ContentWidth, menuMaxW);
-            autoCompleteMenu.ContentHeight = Math.Min(autoCompleteMenu.ContentHeight, menuMaxH);
-            pixelLayout.Move(autoCompleteMenu, menuX, menuY);
+            // Try moving the menu to the left when there isn't enough space, before having to shrink it
+            if (menuMaxW < ActivePopupMenu.ContentWidth) {
+                menuX = (int)Math.Max(availableWidth - ActivePopupMenu.ContentWidth, scrollablePosition.X + textOffsetX);
+                menuMaxW = (int)(availableWidth - menuX);
+            }
+            
+            ActivePopupMenu.ContentWidth = Math.Min(ActivePopupMenu.ContentWidth, menuMaxW);
+            ActivePopupMenu.ContentHeight = Math.Min(ActivePopupMenu.ContentHeight, menuMaxH);
+            pixelLayout.Move(ActivePopupMenu, menuX, menuY);
         }
         
         Invalidate();
@@ -689,7 +731,8 @@ public sealed class Editor : Drawable {
         UpdateMouseAction(PointFromScreen(Mouse.Position), mods);
         
         // While there are quick-edits available, Tab will cycle through them
-        if (autoCompleteMenu.HandleKeyDown(e, useTabComplete: !GetQuickEdits().Any())) {
+        // Using tab doesn't feel "right" for the context actions menu
+        if (ActivePopupMenu?.HandleKeyDown(e, useTabComplete: ActivePopupMenu == autoCompleteMenu && !GetQuickEdits().Any()) ?? false) {
             e.Handled = true;
             Recalc();
             return;
@@ -734,6 +777,14 @@ public sealed class Editor : Drawable {
         
         if (e.Key == Keys.Space && e.HasCommonModifier()) {
             UpdateAutoComplete();
+
+            e.Handled = true;
+            Recalc();
+            return;
+        }
+
+        if (e.Key == Keys.Enter && e.HasAlternateModifier()) {
+            UpdateContextActions();
 
             e.Handled = true;
             Recalc();
@@ -1023,6 +1074,18 @@ public sealed class Editor : Drawable {
     
     #endregion
     
+    // Helper methods to only close a specific menu type and not close an unrelated menu
+    private void CloseAutoCompletePopup() {
+        if (ActivePopupMenu == autoCompleteMenu) {
+            ActivePopupMenu = null;
+        }
+    }
+    private void CloseContextActionsPopup() {
+        if (ActivePopupMenu == contextActionsMenu) {
+            ActivePopupMenu = null;
+        }
+    }
+    
     #region Auto Complete
     
     private void GenerateBaseAutoCompleteEntries() {
@@ -1041,10 +1104,10 @@ public sealed class Editor : Drawable {
         
         return;
         
-        AutoCompleteMenu.Entry CreateEntry(string name, string insert, string extra, Func<string[], CommandAutoCompleteEntry[]>[] commandAutoCompleteEntries) {
+        PopupMenu.Entry CreateEntry(string name, string insert, string extra, Func<string[], CommandAutoCompleteEntry[]>[] commandAutoCompleteEntries) {
             var quickEdit = ParseQuickEdit(insert);
             
-            return new AutoCompleteMenu.Entry {
+            return new PopupMenu.Entry {
                 SearchText = name,
                 DisplayText = name,
                 ExtraText = extra,
@@ -1080,34 +1143,33 @@ public sealed class Editor : Drawable {
                         // Keep open for arguments
                         UpdateAutoComplete();
                     } else {
-                        autoCompleteMenu.Visible = false;
+                        ActivePopupMenu = null;
                     }
                 },
             };
         }
     }
     
-    // Matches against command or space or both as a separator
-    private static readonly Regex SeparatorRegex = new(@"(?:\s+)|(?:\s*,\s*)", RegexOptions.Compiled);
-    
     private void UpdateAutoComplete(bool open = true) {
         var line = Document.Lines[Document.Caret.Row][..Document.Caret.Col].TrimStart();
         
         // Don't auto-complete on comments or action lines
         if (line.StartsWith('#') || ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _)) {
-            autoCompleteMenu.Visible = false;
+            CloseAutoCompletePopup();
             return;
         }
         
-        autoCompleteMenu.Visible |= open;
-        if (!autoCompleteMenu.Visible) {
+        if (open) {
+            ActivePopupMenu = autoCompleteMenu;
+        }
+        if (ActivePopupMenu == null) {
             return;
         }
         
         // Use auto-complete entries for current command
 
         // Split by the first separator
-        var separatorMatch = SeparatorRegex.Match(line);
+        var separatorMatch = CommandLine.SeparatorRegex.Match(line);
         var args = line.Split(separatorMatch.Value);
         var allArgs = Document.Lines[Document.Caret.Row].Split(separatorMatch.Value);
         
@@ -1122,7 +1184,7 @@ public sealed class Editor : Drawable {
                 int lastArgStart = line.LastIndexOf(args[^1], StringComparison.Ordinal);
                 var entries = command.Value.AutoCompleteEntries[commandArgs.Length - 1](commandArgs);
                 
-                autoCompleteMenu.Entries = entries.Select(entry => new AutoCompleteMenu.Entry {
+                autoCompleteMenu.Entries = entries.Select(entry => new PopupMenu.Entry {
                     SearchText = entry.FullName,
                     DisplayText = entry.Name,
                     ExtraText = entry.Extra,
@@ -1154,7 +1216,7 @@ public sealed class Editor : Drawable {
                                     Document.Selection.Clear();
                                     Document.Caret.Col = Document.Lines[Document.Caret.Row].Length;
                                     
-                                    autoCompleteMenu.Visible = false;
+                                    CloseAutoCompletePopup();
                                 } else {
                                     SelectNextQuickEdit();
                                     UpdateAutoComplete();
@@ -1184,7 +1246,7 @@ public sealed class Editor : Drawable {
                                 Document.Caret.Col = desiredVisualCol = lastArgStart + insert.Length;
                                 Document.Selection.Clear();
                                 
-                                autoCompleteMenu.Visible = false;
+                                CloseAutoCompletePopup();
                             }
                         }
                     },
@@ -1202,18 +1264,31 @@ public sealed class Editor : Drawable {
         }
     }
     
-    private (float X, float Y, float MaxHeight) GetAutoCompleteMenuLocation() {
-        const float autocompleteXPos = 8.0f;
-        const float autocompleteYOffset = 7.0f;
-        
-        float carY = Font.LineHeight() * actualToVisualRows[Document.Caret.Row];
-        float autoCompleteX = scrollablePosition.X + textOffsetX + autocompleteXPos;
-        float autoCompleteY = carY + Font.LineHeight() + autocompleteYOffset;
-        float autoCompleteMaxH = (scrollablePosition.Y + scrollableSize.Height - Font.LineHeight()) - autoCompleteY;
-        
-        return (autoCompleteX, autoCompleteY, autoCompleteMaxH);
+    #endregion
+
+    #region Context Actions
+
+    private void UpdateContextActions() {
+        contextActionsMenu.Entries = contextActions
+            .Select(contextAction => {
+                return contextAction.Check() ?? new PopupMenu.Entry {
+                    DisplayText = contextAction.Name,
+                    SearchText = contextAction.Name,
+                    ExtraText = "",
+                    Disabled = true,
+                    OnUse = () => {
+                        contextActionsMenu.Visible = false;
+                    }
+                };
+            })
+            .OrderBy(entry => entry.Disabled ? 1 : 0)
+            .ToList();
+
+        if (contextActionsMenu.Entries.Count > 0) {
+            ActivePopupMenu = contextActionsMenu;
+        }
     }
-    
+
     #endregion
     
     #region Quick Edit
@@ -1708,7 +1783,7 @@ public sealed class Editor : Drawable {
                 RemoveRange(min, max);
                 Document.Caret = min;
                 
-                autoCompleteMenu.Visible = false;
+                ActivePopupMenu = null;
             }
         }
     }
@@ -2105,14 +2180,11 @@ public sealed class Editor : Drawable {
         }
     }
     
-    private void SwapSelectedActions(Actions a, Actions b) {
+    public void SwapSelectedActions(Actions a, Actions b) {
         using var __ = Document.Update();
         
-        if (Document.Selection.Empty)
-            return;
-        
-        int minRow = Document.Selection.Min.Row;
-        int maxRow = Document.Selection.Max.Row;
+        int minRow = Document.Selection.Empty ? Document.Caret.Row : Document.Selection.Min.Row;
+        int maxRow = Document.Selection.Empty ? Document.Caret.Row : Document.Selection.Max.Row;
         
         for (int row = minRow; row <= maxRow; row++) {
             if (!TryParseAndFormatActionLine(row, out var actionLine))
@@ -2437,7 +2509,7 @@ public sealed class Editor : Drawable {
             Document.Selection.Clear();
         }
         
-        autoCompleteMenu.Visible = false;
+        ActivePopupMenu = null;
         
         Document.Caret = Document.Caret;
         ScrollCaretIntoView(center: direction is CaretMovementType.LabelUp or CaretMovementType.LabelDown);
@@ -2556,7 +2628,7 @@ public sealed class Editor : Drawable {
             desiredVisualCol = visual.Col;
             ScrollCaretIntoView();
             
-            autoCompleteMenu.Visible = false;
+            ActivePopupMenu = null;
             
             if (e.Modifiers.HasFlag(Keys.Shift)) {
                 if (Document.Selection.Empty)
@@ -2593,7 +2665,7 @@ public sealed class Editor : Drawable {
             desiredVisualCol = visual.Col;
             ScrollCaretIntoView();
             
-            autoCompleteMenu.Visible = false;
+            ActivePopupMenu = null;
 
             Document.Selection.End = Document.Caret;
             
@@ -2703,53 +2775,49 @@ public sealed class Editor : Drawable {
     }
     
     private Action? GetLineLink(int row) {
-        var commandLine = Document.Lines[row];
-        
-        var separatorMatch = SeparatorRegex.Match(commandLine);
-        var args = commandLine.Split(separatorMatch.Value);
-        
-        // Check if the command is valid
-        if (args.Length >= 3 && string.Equals(args[0], "Read", StringComparison.OrdinalIgnoreCase)) {
-            var documentPath = Studio.Instance.Editor.Document.FilePath;
-            if (documentPath == Document.ScratchFile) {
-                return null;
+        if (CommandLine.TryParse(Document.Lines[row], out var commandLine)) {
+            if (commandLine.IsCommand("Read") && commandLine.Args.Length >= 2) {
+                var documentPath = Studio.Instance.Editor.Document.FilePath;
+                if (documentPath == Document.ScratchFile) {
+                    return null;
+                }
+                if (Path.GetDirectoryName(documentPath) is not { } documentDir) {
+                    return null;
+                }
+                
+                var fullPath = Path.Combine(documentDir, $"{commandLine.Args[0]}.tas");
+                if (!File.Exists(fullPath)) {
+                    return null;
+                }
+                
+                (var label, int labelRow) = File.ReadAllText(fullPath)
+                    .ReplaceLineEndings(Document.NewLine.ToString())
+                    .SplitDocumentLines()
+                    .Select((line, i) => (line, i))
+                    .FirstOrDefault(pair => pair.line == $"#{commandLine.Args[1]}");
+                if (label == null) {
+                    return null;
+                }
+                
+                return () => {
+                    Studio.Instance.OpenFile(fullPath);
+                    Document.Caret.Row = labelRow;
+                    Document.Caret.Col = desiredVisualCol = Document.Lines[labelRow].Length;
+                };
+            } else if (commandLine.IsCommand("Play") && commandLine.Args.Length >= 1) {
+                (var label, int labelRow) = Document.Lines
+                    .Select((line, i) => (line, i))
+                    .FirstOrDefault(pair => pair.line == $"#{commandLine.Args[0]}");
+                if (label == null) {
+                    return null;
+                }
+                
+                return () => {
+                    Document.Caret.Row = labelRow;
+                    Document.Caret.Col = desiredVisualCol = Document.Lines[labelRow].Length;
+                    Recalc();
+                };
             }
-            if (Path.GetDirectoryName(documentPath) is not { } documentDir) {
-                return null;
-            }
-            
-            var fullPath = Path.Combine(documentDir, $"{args[1]}.tas");
-            if (!File.Exists(fullPath)) {
-                return null;
-            }
-            
-            (var label, int labelRow) = File.ReadAllText(fullPath)
-                .ReplaceLineEndings(Document.NewLine.ToString())
-                .SplitDocumentLines()
-                .Select((line, i) => (line, i))
-                .FirstOrDefault(pair => pair.line == $"#{args[2]}");
-            if (label == null) {
-                return null;
-            }
-            
-            return () => {
-                Studio.Instance.OpenFile(fullPath);
-                Document.Caret.Row = labelRow;
-                Document.Caret.Col = desiredVisualCol = Document.Lines[labelRow].Length;
-            };
-        } else if (args.Length >= 2 && string.Equals(args[0], "Play", StringComparison.OrdinalIgnoreCase)) {
-            (var label, int labelRow) = Document.Lines
-                .Select((line, i) => (line, i))
-                .FirstOrDefault(pair => pair.line == $"#{args[1]}");
-            if (label == null) {
-                return null;
-            }
-            
-            return () => {
-                Document.Caret.Row = labelRow;
-                Document.Caret.Col = desiredVisualCol = Document.Lines[labelRow].Length;
-                Recalc();
-            };
         }
         
         return null;

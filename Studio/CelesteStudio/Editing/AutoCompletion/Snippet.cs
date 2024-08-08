@@ -1,6 +1,6 @@
 using Eto.Forms;
 
-namespace CelesteStudio.Editing;
+namespace CelesteStudio.Editing.AutoCompletion;
 
 public class Snippet {
     public bool Enabled = true;

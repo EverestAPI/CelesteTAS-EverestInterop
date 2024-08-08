@@ -7,7 +7,7 @@ using Eto.Forms;
 
 namespace CelesteStudio.Editing;
 
-public sealed class AutoCompleteMenu : Scrollable {
+public sealed class PopupMenu : Scrollable {
     public record Entry {
         /// The text which will be used for filtering results.
         public required string SearchText;
@@ -17,6 +17,8 @@ public sealed class AutoCompleteMenu : Scrollable {
         public required string ExtraText;
         /// Callback for when this entry is selected.
         public required Action OnUse;
+        /// Whether the entry can be selected.
+        public bool Disabled = false;
     }
     
     private const int BorderWidth = 1; // We can't disable the border, so we have to account for that to avoid having scrollbars
@@ -26,9 +28,9 @@ public sealed class AutoCompleteMenu : Scrollable {
     private const int DisplayExtraPadding = 1;
     
     private sealed class ContentDrawable : Drawable {
-        private readonly AutoCompleteMenu menu;
+        private readonly PopupMenu menu;
         
-        public ContentDrawable(AutoCompleteMenu menu) {
+        public ContentDrawable(PopupMenu menu) {
             this.menu = menu;
             
             BackgroundColor = Settings.Instance.Theme.AutoCompleteBg;
@@ -57,7 +59,8 @@ public sealed class AutoCompleteMenu : Scrollable {
             int minRow = Math.Max(0, (int)(menu.ScrollPosition.Y / height) - rowCullOverhead);
             int maxRow = Math.Min(menu.shownEntries.Length - 1, (int)((menu.ScrollPosition.Y + menu.ClientSize.Height) / height) + rowCullOverhead);
             
-            using var displayBrush = new SolidBrush(Settings.Instance.Theme.AutoCompleteFg);
+            using var displayEnabledBrush = new SolidBrush(Settings.Instance.Theme.AutoCompleteFg);
+            using var displayDisabledBrush = new SolidBrush(Settings.Instance.Theme.AutoCompleteFgDisabled);
             using var extraBrush = new SolidBrush(Settings.Instance.Theme.AutoCompleteFgExtra);
             
             var mousePos = PointFromScreen(Mouse.Position);
@@ -69,12 +72,13 @@ public sealed class AutoCompleteMenu : Scrollable {
             for (int row = minRow; row <= maxRow; row++) {
                 var entry = menu.shownEntries[row];
                 
-                if (row == menu.SelectedEntry) {
+                if (row == menu.SelectedEntry && !entry.Disabled) {
                     e.Graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteSelected, 0.0f, row * height, width, height);
                 } else if (row == mouseRow) {
                     e.Graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteHovered, 0.0f, row * height, width, height);
                 }
-                
+
+                var displayBrush = entry.Disabled ? displayDisabledBrush : displayEnabledBrush;
                 e.Graphics.DrawText(font, displayBrush, EntryPaddingLeft, row * height + EntryBetweenPadding, entry.DisplayText);
                 e.Graphics.DrawText(font, extraBrush, EntryPaddingLeft + font.CharWidth() * (maxDisplayLen + DisplayExtraPadding), row * height + EntryBetweenPadding, entry.ExtraText);
             }
@@ -150,11 +154,11 @@ public sealed class AutoCompleteMenu : Scrollable {
         set {
             if (Eto.Platform.Instance.IsWpf) {
                 const int scrollBarWidth = 17;
-                bool scrollBarVisible = Height <= ContentHeight;
+                bool scrollBarVisible = Height <= ContentHeight && Height > 0;
                 Width = Math.Max(0, value + BorderWidth * 2 + (scrollBarVisible ? scrollBarWidth : 0));
             } else if (Eto.Platform.Instance.IsMac) {
                 const int scrollBarWidth = 15;
-                bool scrollBarVisible = Height <= ContentHeight;
+                bool scrollBarVisible = Height <= ContentHeight && Height > 0;
                 Width = Math.Max(0, value + BorderWidth * 2 + (scrollBarVisible ? scrollBarWidth : 0));
             } else {
                 Width = Math.Max(0, value + BorderWidth * 2);
@@ -182,7 +186,7 @@ public sealed class AutoCompleteMenu : Scrollable {
     private Entry[] shownEntries = [];
     private readonly ContentDrawable drawable;
     
-    public AutoCompleteMenu() {
+    public PopupMenu() {
         drawable = new ContentDrawable(this);
         Content = drawable;
 
@@ -218,17 +222,28 @@ public sealed class AutoCompleteMenu : Scrollable {
             ScrollPosition = ScrollPosition with { Y = Math.Min(shownEntries.Length * entryHeight - ClientSize.Height, selectedBottom + lookAhead * entryHeight - ClientSize.Height) }; 
         }
     }
+
+    private void Select(int direction) {
+        for (int nextSelection = (SelectedEntry + direction).Mod(shownEntries.Length);
+             nextSelection != SelectedEntry;
+             nextSelection = (nextSelection + direction).Mod(shownEntries.Length)) {
+            if (shownEntries[nextSelection].Disabled) continue;
+
+            SelectedEntry = nextSelection;
+            return;
+        }
+    }
     
     public bool HandleKeyDown(KeyEventArgs e, bool useTabComplete) {
         if (!Visible)
             return false;
         
         if (e.Key == Keys.Up) {
-            SelectedEntry = (SelectedEntry - 1).Mod(shownEntries.Length);
+            Select(-1);
             return true;
         }
         if (e.Key == Keys.Down) {
-            SelectedEntry = (SelectedEntry + 1).Mod(shownEntries.Length);
+            Select(1);
             return true;
         }
         if (e.Key == Keys.Enter || useTabComplete && e.Key == Keys.Tab) {

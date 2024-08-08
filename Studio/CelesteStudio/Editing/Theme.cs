@@ -27,6 +27,7 @@ public struct Theme {
     public Color CalculateFg;
     public Color CalculateBg;
     public Color AutoCompleteFg;
+    public Color AutoCompleteFgDisabled;
     public Color AutoCompleteFgExtra;
     public Color AutoCompleteBg;
     public Color AutoCompleteHovered;
@@ -69,6 +70,7 @@ public struct Theme {
             CalculateFg = Color.FromRgb(0xCBCBCB),
             CalculateBg = Color.FromRgb(0x6C6C6C),
             AutoCompleteFg = Color.FromRgb(0x121212),
+            AutoCompleteFgDisabled = Color.FromRgb(0x8a8a8a),
             AutoCompleteFgExtra = Color.FromRgb(0x595959),
             AutoCompleteBg = Color.FromRgb(0xD3D3D3),
             AutoCompleteHovered = Color.FromArgb(0x3E, 0x3E, 0x3E, 0x2E),
@@ -107,6 +109,7 @@ public struct Theme {
             CalculateFg = Color.FromRgb(0xE8E8E8),
             CalculateBg = Color.FromRgb(0x4682B4),
             AutoCompleteFg = Color.FromRgb(0xDFDFDF),
+            AutoCompleteFgDisabled = Color.FromRgb(0x909090),
             AutoCompleteFgExtra = Color.FromRgb(0x9F9F9F),
             AutoCompleteBg = Color.FromRgb(0x2C2C2C),
             AutoCompleteHovered = Color.FromArgb(0xC4, 0xC4, 0xC4, 0x2F),
@@ -146,6 +149,7 @@ public struct Theme {
             CalculateFg = Color.FromRgb(0xCBCBCB),
             CalculateBg = Color.FromRgb(0x6C6C6C),
             AutoCompleteFg = Color.FromRgb(0x121212),
+            AutoCompleteFgDisabled = Color.FromRgb(0x8a8a8a),
             AutoCompleteFgExtra = Color.FromRgb(0x646464),
             AutoCompleteBg = Color.FromRgb(0xE9E9E9),
             AutoCompleteSelected = Color.FromArgb(0x44, 0x44, 0x44, 0x3F),
@@ -184,6 +188,7 @@ public struct Theme {
             CalculateFg = Color.FromRgb(0xE8E8E8),
             CalculateBg = Color.FromRgb(0x4682B4),
             AutoCompleteFg = Color.FromRgb(0xDFDFDF),
+            AutoCompleteFgDisabled = Color.FromRgb(0x909090),
             AutoCompleteFgExtra = Color.FromRgb(0x9F9F9F),
             AutoCompleteBg = Color.FromRgb(0x2F303B),
             AutoCompleteSelected = Color.FromArgb(0xBB, 0xBB, 0xC4, 0x4F),

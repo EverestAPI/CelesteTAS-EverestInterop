@@ -4,10 +4,11 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CelesteStudio.Communication;
+using CelesteStudio.Editing;
 using CelesteStudio.Util;
 using StudioCommunication;
 
-namespace CelesteStudio.Editing;
+namespace CelesteStudio.Data;
 
 public struct CommandInfo() {
     public string Name;
