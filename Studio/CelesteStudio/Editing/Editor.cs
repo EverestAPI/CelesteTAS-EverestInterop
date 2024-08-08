@@ -2402,18 +2402,18 @@ public sealed class Editor : Drawable {
         }
         
         // Apply / Update desired column
-        var oldVisualPos = GetVisualPosition(oldCaret);
         var newVisualPos = GetVisualPosition(Document.Caret);
         if (oldCaret.Row != Document.Caret.Row) {
-            if (currentActionLine == null && ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _)) {
-                desiredVisualCol = ActionLine.MaxFramesDigits;
-            }
-            
             newVisualPos.Col = desiredVisualCol;
         } else {
             desiredVisualCol = newVisualPos.Col;
         }
         Document.Caret = ClampCaret(GetActualPosition(newVisualPos));
+        
+        // When going from a non-action-line to an action-line, snap the caret to the frame count
+        if (currentActionLine == null && TryParseAndFormatActionLine(Document.Caret.Row, out _)) {
+            Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
+        }
         
         if (updateSelection) {
             if (Document.Selection.Empty) {
