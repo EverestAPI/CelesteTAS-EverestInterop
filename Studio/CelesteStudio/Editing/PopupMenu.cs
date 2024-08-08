@@ -53,6 +53,10 @@ public sealed class PopupMenu : Scrollable {
     private sealed class ContentDrawable : Drawable {
         private readonly PopupMenu menu;
         
+        // Specify a minimum-travel-distance to avoid very small mouse movements updating the selection
+        private const float MinMouseTravelDistance = 5.0f;
+        private PointF lastMouseSelection;
+        
         public ContentDrawable(PopupMenu menu) {
             this.menu = menu;
             
@@ -87,19 +91,11 @@ public sealed class PopupMenu : Scrollable {
             using var displayDisabledBrush = new SolidBrush(Settings.Instance.Theme.AutoCompleteFgDisabled);
             using var extraBrush = new SolidBrush(Settings.Instance.Theme.AutoCompleteFgExtra);
             
-            var mousePos = PointFromScreen(Mouse.Position);
-            int mouseRow = -1;
-            if (mousePos.X >= 0.0f && mousePos.X <= ClientSize.Width - menu.ScrollBarWidth) {
-                mouseRow = (int)((mousePos.Y - BorderPadding) / height);
-            }
-            
             for (int row = minRow; row <= maxRow; row++) {
                 var entry = menu.shownEntries[row];
                 
                 if (row == menu.SelectedEntry && !entry.Disabled) {
                     e.Graphics.FillPath(Settings.Instance.Theme.AutoCompleteSelected, GraphicsPath.GetRoundRect(new RectangleF(BorderPadding, row * height + BorderPadding, width, height), EntryRounding));
-                } else if (row == mouseRow && !menu.shownEntries[mouseRow].Disabled) {
-                    e.Graphics.FillPath(Settings.Instance.Theme.AutoCompleteHovered, GraphicsPath.GetRoundRect(new RectangleF(BorderPadding, row * height + BorderPadding, width, height), EntryRounding));
                 }
 
                 var displayBrush = entry.Disabled ? displayDisabledBrush : displayEnabledBrush;
@@ -114,6 +110,11 @@ public sealed class PopupMenu : Scrollable {
             int mouseRow = (int)((e.Location.Y - BorderPadding) / menu.EntryHeight);
             if (mouseRow >= 0 && mouseRow < menu.shownEntries.Length && !menu.shownEntries[mouseRow].Disabled) {
                 Cursor = Cursors.Pointer;
+                
+                if ((e.Location - lastMouseSelection).LengthSquared >= MinMouseTravelDistance * MinMouseTravelDistance) {
+                    menu.SelectedEntry = mouseRow;
+                    lastMouseSelection = e.Location;
+                }
             } else {
                 Cursor = null;
             }
@@ -180,8 +181,6 @@ public sealed class PopupMenu : Scrollable {
         get => selectedEntry;
         set {
             selectedEntry = Math.Clamp(value, 0, shownEntries.Length);
-
-            ScrollIntoView();
             drawable.Invalidate();
         }
     }
@@ -249,14 +248,18 @@ public sealed class PopupMenu : Scrollable {
     }
 
     private void MoveSelection(int direction) {
-        for (int nextSelection = (SelectedEntry + direction).Mod(shownEntries.Length);
-             nextSelection != SelectedEntry;
-             nextSelection = (nextSelection + direction).Mod(shownEntries.Length)) {
-            if (shownEntries[nextSelection].Disabled) continue;
-
-            SelectedEntry = nextSelection;
-            return;
-        }
+        int nextSelection = SelectedEntry;
+        do {
+            nextSelection = (nextSelection + Math.Sign(direction)).Mod(shownEntries.Length);
+            if (nextSelection == SelectedEntry) {
+                // <= 1 entries are enabled, abort movement
+                return;
+            }
+        } while (shownEntries[nextSelection].Disabled);
+            
+        // Found a non-disabled entry
+        SelectedEntry = nextSelection;
+        ScrollIntoView();
     }
     
     public bool HandleKeyDown(KeyEventArgs e, bool useTabComplete) {
