@@ -2906,10 +2906,13 @@ public sealed class Editor : Drawable {
                 e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w, h);
             } else {
                 var visualLine = GetVisualLine(min.Row);
-                float x = Font.CharWidth() * min.Col + textOffsetX;
+                
+                // When the selection starts at the beginning of the line, extend it to cover the LineNumberPadding as well
+                float extendLeft = min.Col == 0 ? LineNumberPadding : 0.0f;
+                float x = Font.CharWidth() * min.Col + textOffsetX - extendLeft;
                 float w = visualLine.Length == 0 ? 0.0f : Font.MeasureWidth(visualLine[min.Col..]);
                 float y = Font.LineHeight() * min.Row;
-                e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w, Font.LineHeight());
+                e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w + extendLeft, Font.LineHeight());
                 
                 // Cull off-screen lines
                 for (int i = Math.Max(min.Row + 1, topVisualRow); i < Math.Min(max.Row, bottomVisualRow); i++) {
