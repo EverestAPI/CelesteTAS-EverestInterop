@@ -220,7 +220,7 @@ public static class GameInfo {
 
                 string analog = string.Empty;
                 string exactAnalog = string.Empty;
-                if (Manager.Running && Manager.Controller.Previous is { } inputFrame && inputFrame.Actions.Has(Actions.Feather)) {
+                if (Manager.Running && Manager.Controller.Previous is { } inputFrame && EnumExtensions.Has(inputFrame.Actions, Actions.Feather)) {
                     analog = GetAdjustedAnalog(inputFrame.StickPosition, out exactAnalog);
                 }
 

@@ -36,7 +36,9 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="MonoMod.RuntimeDetour" Version="22.01.04.03" />
+        <PackageReference Include="CelesteAnalyzer" Version="*" />
+
+        <PackageReference Include="MonoMod.RuntimeDetour" Version="25.0.2" />
         <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.1" PrivateAssets="all" />
 
         <PackageReference Include="DotNetZip" Version="1.16.0" />

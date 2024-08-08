@@ -16,13 +16,13 @@ namespace TAS.EverestInterop;
 public static class Core {
     [Load]
     private static void Load() {
-        using (new DetourContext {After = new List<string> {"*"}}) {
+        using (new DetourConfigContext(new DetourConfig("CelesteTAS", before: ["*"])).Use()) {
             On.Celeste.Celeste.Update += On_Celeste_Update;
             IL.Monocle.Engine.Update += IL_Engine_Update;
 
-            if (typeof(GameInput).GetMethod(nameof(GameInput.UpdateGrab)) is { } updateGrabMethod) {
-                HookHelper.SkipMethod(typeof(Core), nameof(IsPaused), updateGrabMethod);
-            }
+            typeof(GameInput)
+                .GetMethod(nameof(GameInput.UpdateGrab))
+                .SkipMethod(IsPaused);
 
             // The original mod makes the MInput.Update call conditional and invokes UpdateInputs afterwards.
             On.Monocle.MInput.Update += On_MInput_Update;
@@ -70,7 +70,7 @@ public static class Core {
     private static void IL_Engine_Update(ILContext il) {
         var cur = new ILCursor(il);
 
-        if (cur.TryGotoNext(MoveType.After, instr => instr.MatchCall(typeof(MInput), nameof(MInput.Update)))) {
+        if (cur.TryGotoNext(MoveType.After, ins => ins.MatchCall(typeof(MInput), nameof(MInput.Update)))) {
             var label = cur.DefineLabel();
 
             // Prevent further execution while the TAS is paused

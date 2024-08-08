@@ -49,7 +49,7 @@ public static class HitboxOptimized {
             // but i have no good idea, so i put it aside
         }
 
-        using (new DetourContext {After = new List<string> {"*"}}) {
+        using (new DetourConfigContext(new DetourConfig("CelesteTAS", before: ["*"])).Use()) {
             On.Monocle.Entity.DebugRender += ModDebugRender;
         }
     }
@@ -201,7 +201,7 @@ public static class HitboxOptimized {
             if (z > pc.Collider.Bottom + puffer.Y) {
                 return;
             }
-            
+
             float top = Math.Max(pc.Collider.Top + puffer.Y, z);
             Draw.HollowRect(puffer.X - 7f, top, 14f, pc.Collider.Bottom + puffer.Y - top,
                 puffer.Collidable ? HitboxColor.PufferHeightCheckColor : HitboxColor.PufferHeightCheckColor * HitboxColor.UnCollidableAlpha);

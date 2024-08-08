@@ -177,9 +177,9 @@ public static class FastForwardBoost {
         ILCursor cursor = new(il);
 
         if (!cursor.TryGotoNext(MoveType.AfterLabel,
-                instr => instr.MatchLdarg(0),
-                instr => instr.MatchLdfld<SeekerBarrier>("speeds"),
-                instr => instr.MatchLdlen())
+                ins => ins.MatchLdarg(0),
+                ins => ins.MatchLdfld<SeekerBarrier>("speeds"),
+                ins => ins.MatchLdlen())
            ) {
             return;
         }
@@ -188,8 +188,8 @@ public static class FastForwardBoost {
         cursor.EmitDelegate<Func<bool>>(IsSkipSeekerBarrierOverloadPart);
         cursor.Emit(OpCodes.Brtrue, target);
 
-        if (!cursor.TryGotoNext(instr => instr.MatchLdarg(0),
-                instr => instr.MatchCall<Solid>("Update"))
+        if (!cursor.TryGotoNext(ins => ins.MatchLdarg(0),
+                ins => ins.MatchCall<Solid>("Update"))
            ) {
             return;
         }
