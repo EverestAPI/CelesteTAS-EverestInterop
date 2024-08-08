@@ -36,12 +36,9 @@ public sealed class PopupMenu : Scrollable {
             BackgroundColor = Settings.Instance.Theme.AutoCompleteBg;
             Settings.ThemeChanged += () => BackgroundColor = Settings.Instance.Theme.AutoCompleteBg;
             
-            MouseMove += (_, _) => Invalidate();
             MouseEnter += (_, _) => Invalidate();
             MouseLeave += (_, _) => Invalidate();
             menu.Scroll += (_, _) => Invalidate();
-            
-            Cursor = Cursors.Pointer;
         }
         
         protected override void OnPaint(PaintEventArgs e) {
@@ -74,7 +71,7 @@ public sealed class PopupMenu : Scrollable {
                 
                 if (row == menu.SelectedEntry && !entry.Disabled) {
                     e.Graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteSelected, 0.0f, row * height, width, height);
-                } else if (row == mouseRow) {
+                } else if (row == mouseRow && !menu.shownEntries[mouseRow].Disabled) {
                     e.Graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteHovered, 0.0f, row * height, width, height);
                 }
 
@@ -86,13 +83,25 @@ public sealed class PopupMenu : Scrollable {
             base.OnPaint(e);
         }
         
+        protected override void OnMouseMove(MouseEventArgs e) {
+            int mouseRow = (int)(e.Location.Y / menu.EntryHeight);
+            if (mouseRow >= 0 && mouseRow < menu.shownEntries.Length && !menu.shownEntries[mouseRow].Disabled) {
+                Cursor = Cursors.Pointer;
+            } else {
+                Cursor = null;
+            }
+            
+            Invalidate();
+            base.OnMouseMove(e);
+        }
+        
         protected override void OnMouseDown(MouseEventArgs e) {
+            e.Handled = true;
+            
             if (e.Buttons.HasFlag(MouseButtons.Primary)) {
                 int mouseRow = (int)(e.Location.Y / menu.EntryHeight);
-                
-                if (mouseRow >= 0 && mouseRow < menu.shownEntries.Length) {
+                if (mouseRow >= 0 && mouseRow < menu.shownEntries.Length && !menu.shownEntries[mouseRow].Disabled) {
                     menu.shownEntries[mouseRow].OnUse();
-                    e.Handled = true;
                 }
             }
             
