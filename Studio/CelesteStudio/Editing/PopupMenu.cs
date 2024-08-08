@@ -7,7 +7,7 @@ using Eto.Forms;
 
 namespace CelesteStudio.Editing;
 
-public sealed class AutoCompleteMenu : Scrollable {
+public sealed class PopupMenu : Scrollable {
     public record Entry {
         /// The text which will be used for filtering results.
         public required string SearchText;
@@ -28,9 +28,9 @@ public sealed class AutoCompleteMenu : Scrollable {
     private const int DisplayExtraPadding = 1;
     
     private sealed class ContentDrawable : Drawable {
-        private readonly AutoCompleteMenu menu;
+        private readonly PopupMenu menu;
         
-        public ContentDrawable(AutoCompleteMenu menu) {
+        public ContentDrawable(PopupMenu menu) {
             this.menu = menu;
             
             BackgroundColor = Settings.Instance.Theme.AutoCompleteBg;
@@ -186,7 +186,7 @@ public sealed class AutoCompleteMenu : Scrollable {
     private Entry[] shownEntries = [];
     private readonly ContentDrawable drawable;
     
-    public AutoCompleteMenu() {
+    public PopupMenu() {
         drawable = new ContentDrawable(this);
         Content = drawable;
 

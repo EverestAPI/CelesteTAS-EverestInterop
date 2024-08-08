@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using CelesteStudio.Data;
 using CelesteStudio.Editing;
+using CelesteStudio.Editing.AutoCompletion;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;

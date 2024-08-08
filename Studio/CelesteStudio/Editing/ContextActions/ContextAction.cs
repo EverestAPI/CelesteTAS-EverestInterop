@@ -8,10 +8,10 @@ public abstract class ContextAction {
 
     public abstract string Name { get; }
 
-    public abstract AutoCompleteMenu.Entry? Check();
+    public abstract PopupMenu.Entry? Check();
 
-    protected AutoCompleteMenu.Entry CreateEntry(string extraText, Action onUse) {
-        return new AutoCompleteMenu.Entry {
+    protected PopupMenu.Entry CreateEntry(string extraText, Action onUse) {
+        return new PopupMenu.Entry {
             SearchText = Name,
             DisplayText = Name,
             ExtraText = extraText,

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CelesteStudio.Editing;
+using CelesteStudio.Editing.AutoCompletion;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;

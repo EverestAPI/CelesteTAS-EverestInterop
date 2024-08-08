@@ -1,7 +1,7 @@
 using System;
 using System.Text.RegularExpressions;
 
-namespace CelesteStudio.Util;
+namespace CelesteStudio.Data;
 
 public struct CommandLine {
     // Matches against command or space or both as a separator

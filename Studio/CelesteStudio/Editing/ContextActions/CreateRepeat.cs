@@ -11,7 +11,7 @@ namespace CelesteStudio.Editing.ContextActions;
 public class CreateRepeat : ContextAction {
     public override string Name => "Create Repeat from selection";
     
-    public override AutoCompleteMenu.Entry? Check() {
+    public override PopupMenu.Entry? Check() {
         if (Document.Selection.Empty) return null;
         
         int startRow = Document.Selection.Min.Row;

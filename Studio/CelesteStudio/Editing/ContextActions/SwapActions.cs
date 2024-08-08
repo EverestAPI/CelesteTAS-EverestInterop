@@ -1,4 +1,5 @@
 ﻿using System;
+using CelesteStudio.Data;
 using CelesteStudio.Util;
 using StudioCommunication;
 
@@ -7,7 +8,7 @@ namespace CelesteStudio.Editing.ContextActions;
 public class SwapActions(Actions a, Actions b) : ContextAction {
     public override string Name => $"Swap {a.CharForAction()} and {b.CharForAction()}";
 
-    public override AutoCompleteMenu.Entry? Check() {
+    public override PopupMenu.Entry? Check() {
         int startRow = Document.Selection.Empty ? Document.Caret.Row : Document.Selection.Min.Row;
         int endRow = Document.Selection.Empty ? Document.Caret.Row : Document.Selection.Max.Row;
 

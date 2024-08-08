@@ -2,6 +2,8 @@
 using System.IO;
 using System.Reflection.Metadata;
 using System.Text.RegularExpressions;
+using CelesteStudio.Data;
+using CelesteStudio.Editing.AutoCompletion;
 using CelesteStudio.Util;
 using StudioCommunication;
 
@@ -10,7 +12,7 @@ namespace CelesteStudio.Editing.ContextActions;
 public class InlineReadCommand : ContextAction {
     public override string Name => "Inline read command";
 
-    public override AutoCompleteMenu.Entry? Check() {
+    public override PopupMenu.Entry? Check() {
         string currentLine = Document.Lines[Document.Caret.Row];
 
         if (!(CommandLine.TryParse(currentLine, out var commandLine) && commandLine.IsCommand("Read"))) {
