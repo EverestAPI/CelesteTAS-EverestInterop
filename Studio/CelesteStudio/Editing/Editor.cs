@@ -2483,7 +2483,7 @@ public sealed class Editor : Drawable {
         Document.Caret = ClampCaret(GetActualPosition(newVisualPos));
         
         // When going from a non-action-line to an action-line, snap the caret to the frame count
-        if (currentActionLine == null && TryParseAndFormatActionLine(Document.Caret.Row, out _)) {
+        if (direction is CaretMovementType.LineUp or CaretMovementType.LineDown && currentActionLine == null && TryParseAndFormatActionLine(Document.Caret.Row, out _)) {
             Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
         }
         
