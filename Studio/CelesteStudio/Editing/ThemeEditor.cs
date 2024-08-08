@@ -11,7 +11,7 @@ namespace CelesteStudio;
 
 public sealed class ThemeEditor : Form {
     private readonly DropDown selector;
-    private readonly DynamicLayout colorsLayout;
+    private readonly DynamicLayout fieldsLayout;
     private readonly CheckBox darkModeCheckBox;
     private readonly Button renameButton;
 
@@ -69,8 +69,8 @@ public sealed class ThemeEditor : Form {
         layout.BeginVertical();
         layout.BeginScrollable();
 
-        colorsLayout = new DynamicLayout { DefaultSpacing = new Size(10, 10), Padding = new Padding(15) };
-        layout.Add(colorsLayout);
+        fieldsLayout = new DynamicLayout { DefaultSpacing = new Size(10, 10), Padding = new Padding(15) };
+        layout.Add(fieldsLayout);
 
         layout.EndScrollable();
         layout.EndVertical();
@@ -191,8 +191,8 @@ public sealed class ThemeEditor : Form {
 
         renameButton.Enabled = !IsBuiltin();
 
-        // Color pickers
-        colorsLayout.Clear();
+        // Fields
+        fieldsLayout.Clear();
         
         // See the comment on `pickers`
         foreach (var picker in pickers) {
@@ -205,33 +205,56 @@ public sealed class ThemeEditor : Form {
         }
 
         foreach (var field in typeof(Theme).GetFields()) {
-            colorsLayout.BeginHorizontal();
+            fieldsLayout.BeginHorizontal();
             var value = field.GetValue(Settings.Instance.Theme);
 
-            if (value is Color color) {
-                colorsLayout.BeginVertical();
-                colorsLayout.AddSpace();
-                colorsLayout.Add(new Label { Text = field.Name });
-                colorsLayout.AddSpace();
-                colorsLayout.EndVertical();
+            if (value is int intValue) {
+                fieldsLayout.BeginVertical();
+                fieldsLayout.AddSpace();
+                fieldsLayout.Add(new Label { Text = field.Name });
+                fieldsLayout.AddSpace();
+                fieldsLayout.EndVertical();
+                
+                var stepper = new NumericStepper { DecimalPlaces = 0, MaximumDecimalPlaces = 0, Value = intValue };
+                stepper.ValueChanged += (_, _) => {
+                    UpdateField(field, (int)stepper.Value);
+                };
+                fieldsLayout.Add(stepper);
+            } else if (value is float floatValue) {
+                fieldsLayout.BeginVertical();
+                fieldsLayout.AddSpace();
+                fieldsLayout.Add(new Label { Text = field.Name });
+                fieldsLayout.AddSpace();
+                fieldsLayout.EndVertical();
+                
+                var stepper = new NumericStepper { DecimalPlaces = 2, MaximumDecimalPlaces = 2, Value = floatValue };
+                stepper.ValueChanged += (_, _) => {
+                    UpdateField(field, (float)stepper.Value);
+                };
+                fieldsLayout.Add(stepper);
+            } else if (value is Color color) {
+                fieldsLayout.BeginVertical();
+                fieldsLayout.AddSpace();
+                fieldsLayout.Add(new Label { Text = field.Name });
+                fieldsLayout.AddSpace();
+                fieldsLayout.EndVertical();
 
                 var picker = new ColorPicker { Value = color, AllowAlpha = true };
                 picker.ValueChanged += (_, _) => {
                     UpdateField(field, picker.Value);
                 };
-                colorsLayout.Add(picker);
+                fieldsLayout.Add(picker);
                 pickers.Add(picker);
-
             } else if (value is Style style) {
-                colorsLayout.BeginVertical();
-                colorsLayout.AddSpace();
-                colorsLayout.Add(new Label { Text = field.Name });
-                colorsLayout.AddSpace();
-                colorsLayout.EndVertical();
+                fieldsLayout.BeginVertical();
+                fieldsLayout.AddSpace();
+                fieldsLayout.Add(new Label { Text = field.Name });
+                fieldsLayout.AddSpace();
+                fieldsLayout.EndVertical();
                 
                 var styleLayout = new DynamicLayout { DefaultSpacing = new Size(5, 5) };
                 // The only reason a Scrollable is used, is because it provides a border
-                colorsLayout.Add(new Scrollable { Content = styleLayout, Padding = 5 }.FixBorder());
+                fieldsLayout.Add(new Scrollable { Content = styleLayout, Padding = 5 }.FixBorder());
                 
                 styleLayout.BeginVertical();
                 styleLayout.BeginHorizontal();
@@ -392,9 +415,9 @@ public sealed class ThemeEditor : Form {
                 */
             }
 
-            colorsLayout.EndHorizontal();
+            fieldsLayout.EndHorizontal();
         }
-        colorsLayout.Create();
+        fieldsLayout.Create();
     }
 
     private void UpdateField(FieldInfo field, object value) {

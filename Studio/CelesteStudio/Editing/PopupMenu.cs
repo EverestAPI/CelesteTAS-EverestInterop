@@ -21,7 +21,8 @@ public sealed class PopupMenu : Scrollable {
         public bool Disabled = false;
     }
     
-    private const int DisplayExtraPadding = 1;
+    /// Spacing between the longest DisplayText and ExtraText of entries in characters
+    private const int DisplayExtraPadding = 2;
     
     private int ScrollBarWidth {
         get {
@@ -42,13 +43,6 @@ public sealed class PopupMenu : Scrollable {
             return 0;
         }
     }
-
-    private static float BorderRounding => 7.0f;
-    private static int BorderPadding => 7;
-    
-    private static float EntryRounding => 5.0f;
-    private static float EntryPaddingHorizontal => 5.0f;
-    private static float EntryPaddingVertical => 4.5f;
     
     private sealed class ContentDrawable : Drawable {
         private readonly PopupMenu menu;
@@ -61,17 +55,16 @@ public sealed class PopupMenu : Scrollable {
             this.menu = menu;
             
             BackgroundColor = Colors.Transparent; // Draw background ourselves to apply rounded corners
-            Settings.ThemeChanged += () => BackgroundColor = Settings.Instance.Theme.AutoCompleteBg;
-            
+
             MouseEnter += (_, _) => Invalidate();
             MouseLeave += (_, _) => Invalidate();
             menu.Scroll += (_, _) => Invalidate();
         }
         
-        protected override void OnPaint(PaintEventArgs e) {
+        protected override void OnPaint(PaintEventArgs e) { 
             e.Graphics.FillPath(
-                Settings.Instance.Theme.AutoCompleteBg, 
-                GraphicsPath.GetRoundRect(new RectangleF(menu.ScrollPosition.X, menu.ScrollPosition.Y, menu.Width, menu.Height), BorderRounding));
+                Settings.Instance.Theme.PopupMenuBg, 
+                GraphicsPath.GetRoundRect(new RectangleF(menu.ScrollPosition.X, menu.ScrollPosition.Y, menu.Width, menu.Height), Settings.Instance.Theme.PopupMenuBorderRounding));
             
             if (menu.shownEntries.Length == 0) {
                 return;
@@ -80,34 +73,49 @@ public sealed class PopupMenu : Scrollable {
             var font = FontManager.PopupFont;
             int maxDisplayLen = menu.shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
 
-            float width = menu.ContentWidth - BorderPadding * 2.0f;
+            float width = menu.ContentWidth - Settings.Instance.Theme.PopupMenuBorderPadding * 2.0f;
             float height = menu.EntryHeight;
             
             const int rowCullOverhead = 3;
             int minRow = Math.Max(0, (int)(menu.ScrollPosition.Y / height) - rowCullOverhead);
             int maxRow = Math.Min(menu.shownEntries.Length - 1, (int)((menu.ScrollPosition.Y + menu.ClientSize.Height) / height) + rowCullOverhead);
             
-            using var displayEnabledBrush = new SolidBrush(Settings.Instance.Theme.AutoCompleteFg);
-            using var displayDisabledBrush = new SolidBrush(Settings.Instance.Theme.AutoCompleteFgDisabled);
-            using var extraBrush = new SolidBrush(Settings.Instance.Theme.AutoCompleteFgExtra);
+            using var displayEnabledBrush = new SolidBrush(Settings.Instance.Theme.PopupMenuFg);
+            using var displayDisabledBrush = new SolidBrush(Settings.Instance.Theme.PopupMenuFgDisabled);
+            using var extraBrush = new SolidBrush(Settings.Instance.Theme.PopupMenuFgExtra);
             
             for (int row = minRow; row <= maxRow; row++) {
                 var entry = menu.shownEntries[row];
                 
                 if (row == menu.SelectedEntry && !entry.Disabled) {
-                    e.Graphics.FillPath(Settings.Instance.Theme.AutoCompleteSelected, GraphicsPath.GetRoundRect(new RectangleF(BorderPadding, row * height + BorderPadding, width, height), EntryRounding));
+                    e.Graphics.FillPath(
+                        Settings.Instance.Theme.PopupMenuSelected, 
+                        GraphicsPath.GetRoundRect(
+                            new RectangleF(Settings.Instance.Theme.PopupMenuBorderPadding, 
+                                row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f, 
+                                width, 
+                                height - Settings.Instance.Theme.PopupMenuEntrySpacing), 
+                            Settings.Instance.Theme.PopupMenuEntryRounding));
                 }
 
                 var displayBrush = entry.Disabled ? displayDisabledBrush : displayEnabledBrush;
-                e.Graphics.DrawText(font, displayBrush, EntryPaddingHorizontal + BorderPadding, row * height + EntryPaddingVertical + BorderPadding, entry.DisplayText);
-                e.Graphics.DrawText(font, extraBrush, EntryPaddingHorizontal + BorderPadding + font.CharWidth() * (maxDisplayLen + DisplayExtraPadding), row * height + EntryPaddingVertical + BorderPadding, entry.ExtraText);
+                e.Graphics.DrawText(font, displayBrush,
+                    Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding,
+                    Settings.Instance.Theme.PopupMenuBorderPadding + row * height + Settings.Instance.Theme.PopupMenuEntryVerticalPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f, 
+                    entry.DisplayText);
+                e.Graphics.DrawText(font, extraBrush,
+                    Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding + font.CharWidth() * (maxDisplayLen + DisplayExtraPadding),
+                    Settings.Instance.Theme.PopupMenuBorderPadding + row * height + Settings.Instance.Theme.PopupMenuEntryVerticalPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f, 
+                    entry.ExtraText);
             }
+            
+            Size = new(menu.ContentWidth, menu.ContentHeight);
             
             base.OnPaint(e);
         }
         
         protected override void OnMouseMove(MouseEventArgs e) {
-            int mouseRow = (int)((e.Location.Y - BorderPadding) / menu.EntryHeight);
+            int mouseRow = (int)((e.Location.Y - Settings.Instance.Theme.PopupMenuBorderPadding) / menu.EntryHeight);
             if (mouseRow >= 0 && mouseRow < menu.shownEntries.Length && !menu.shownEntries[mouseRow].Disabled) {
                 Cursor = Cursors.Pointer;
                 
@@ -196,15 +204,15 @@ public sealed class PopupMenu : Scrollable {
             int maxDisplayLen = shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
             int maxExtraLen = shownEntries.Select(entry => entry.ExtraText.Length).Aggregate(Math.Max);
             
-            return (int)(font.CharWidth() * (maxDisplayLen + DisplayExtraPadding + maxExtraLen) + EntryPaddingHorizontal + EntryPaddingHorizontal + BorderPadding * 2);
+            return (int)(font.CharWidth() * (maxDisplayLen + DisplayExtraPadding + maxExtraLen) + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding * 2.0f + Settings.Instance.Theme.PopupMenuBorderPadding * 2);
         }
     }
     public int ContentHeight {
         set => Height = Math.Max(0, value);
-        get => (int)(shownEntries.Length * EntryHeight + BorderPadding * 2);
+        get => shownEntries.Length * EntryHeight + Settings.Instance.Theme.PopupMenuBorderPadding * 2;
     }
     
-    public int EntryHeight => (int)(FontManager.PopupFont.LineHeight() + EntryPaddingVertical * 2.0f);
+    public int EntryHeight => (int)(FontManager.PopupFont.LineHeight() + Settings.Instance.Theme.PopupMenuEntryVerticalPadding * 2.0f + Settings.Instance.Theme.PopupMenuEntrySpacing);
     
     private Entry[] shownEntries = [];
     private readonly ContentDrawable drawable;
@@ -226,7 +234,11 @@ public sealed class PopupMenu : Scrollable {
         
         selectedEntry = Math.Clamp(selectedEntry, 0, shownEntries.Length - 1);
 
-        drawable.Size = new(ContentWidth, ContentHeight);
+        // The +1 is a hack-fix for GTK.
+        // If the content isn't large enough to require a scrollbar, GTK will just have the background be black instead of transparent.
+        // Even weirder, once it was scrollable once, the black background will never come back...
+        // The proper size is set at the end of ContentDrawable.Paint()
+        drawable.Size = new(ContentWidth, ContentHeight + 1);
         drawable.Invalidate();
     }
     
@@ -234,16 +246,16 @@ public sealed class PopupMenu : Scrollable {
         const int lookAhead = 2;
         
         int entryHeight = EntryHeight;
-        int scrollStartTop = ScrollPosition.Y + lookAhead * entryHeight - BorderPadding;
-        int scrollStartBottom = ScrollPosition.Y + ClientSize.Height - lookAhead * entryHeight + BorderPadding;
+        int scrollStartTop = ScrollPosition.Y + lookAhead * entryHeight - Settings.Instance.Theme.PopupMenuBorderPadding;
+        int scrollStartBottom = ScrollPosition.Y + ClientSize.Height - lookAhead * entryHeight + Settings.Instance.Theme.PopupMenuBorderPadding;
         
-        int selectedTop = SelectedEntry * entryHeight - BorderPadding;
-        int selectedBottom = selectedTop + entryHeight + BorderPadding;
+        int selectedTop = SelectedEntry * entryHeight - Settings.Instance.Theme.PopupMenuBorderPadding;
+        int selectedBottom = selectedTop + entryHeight + Settings.Instance.Theme.PopupMenuBorderPadding;
         
         if (selectedTop < scrollStartTop) {
-            ScrollPosition = ScrollPosition with { Y = Math.Max(0, selectedTop - lookAhead * entryHeight + BorderPadding) };
+            ScrollPosition = ScrollPosition with { Y = Math.Max(0, selectedTop - lookAhead * entryHeight + Settings.Instance.Theme.PopupMenuBorderPadding) };
         } else if (selectedBottom > scrollStartBottom) {
-            ScrollPosition = ScrollPosition with { Y = Math.Min(shownEntries.Length * entryHeight - ClientSize.Height + BorderPadding * 2, selectedBottom + lookAhead * entryHeight + BorderPadding * 2 - ClientSize.Height) }; 
+            ScrollPosition = ScrollPosition with { Y = Math.Min(shownEntries.Length * entryHeight - ClientSize.Height + Settings.Instance.Theme.PopupMenuBorderPadding * 2, selectedBottom + lookAhead * entryHeight + Settings.Instance.Theme.PopupMenuBorderPadding * 2 - ClientSize.Height) }; 
         }
     }
 

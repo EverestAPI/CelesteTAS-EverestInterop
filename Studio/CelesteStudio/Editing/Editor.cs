@@ -3116,10 +3116,10 @@ public sealed class Editor : Drawable {
             float x = scrollablePosition.X + (scrollableSize.Width - width) / 2.0f;
             float y = scrollablePosition.Y + (scrollableSize.Height - height) / 2.0f;
             
-            e.Graphics.FillRectangle(Settings.Instance.Theme.AutoCompleteBg, x - padding, y - padding, width + padding * 2.0f, height + padding * 2.0f);
+            e.Graphics.FillRectangle(Settings.Instance.Theme.PopupMenuBg, x - padding, y - padding, width + padding * 2.0f, height + padding * 2.0f);
             
             foreach (var line in lines) {
-                e.Graphics.DrawText(FontManager.StatusFont, Settings.Instance.Theme.AutoCompleteFg, x, y, line);
+                e.Graphics.DrawText(FontManager.StatusFont, Settings.Instance.Theme.PopupMenuFg, x, y, line);
                 y += Font.LineHeight();
             }
         }

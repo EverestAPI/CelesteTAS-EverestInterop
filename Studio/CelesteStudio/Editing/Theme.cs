@@ -11,6 +11,7 @@ public struct Style(Color foregroundColor, Color? backgroundColor = null, FontSt
 }
 
 public struct Theme {
+    // Editor
     public Color Background;
     public Color Caret;
     public Color CurrentLine;
@@ -26,19 +27,28 @@ public struct Theme {
     public Color StatusBg;
     public Color CalculateFg;
     public Color CalculateBg;
-    public Color AutoCompleteFg;
-    public Color AutoCompleteFgDisabled;
-    public Color AutoCompleteFgExtra;
-    public Color AutoCompleteBg;
-    public Color AutoCompleteHovered;
-    public Color AutoCompleteSelected;
+    
+    // Status panel
     public Color PopoutButtonBg;
     public Color PopoutButtonHovered;
     public Color PopoutButtonSelected;
     public Color SubpixelIndicatorBox;
     public Color SubpixelIndicatorDot;
     
-    // Text styles
+    // Popup menu
+    public Color PopupMenuFg;
+    public Color PopupMenuFgDisabled;
+    public Color PopupMenuFgExtra;
+    public Color PopupMenuBg;
+    public Color PopupMenuSelected;
+    public int PopupMenuBorderPadding;
+    public float PopupMenuBorderRounding;
+    public int PopupMenuEntryHorizontalPadding;
+    public int PopupMenuEntryVerticalPadding;
+    public int PopupMenuEntrySpacing;
+    public float PopupMenuEntryRounding;
+    
+    // Inputs
     public Style Action;
     public Style Angle;
     public Style Breakpoint;
@@ -69,17 +79,24 @@ public struct Theme {
             StatusBg = Color.FromRgb(0xE1E1E1),
             CalculateFg = Color.FromRgb(0xCBCBCB),
             CalculateBg = Color.FromRgb(0x6C6C6C),
-            AutoCompleteFg = Color.FromRgb(0x121212),
-            AutoCompleteFgDisabled = Color.FromRgb(0x8a8a8a),
-            AutoCompleteFgExtra = Color.FromRgb(0x595959),
-            AutoCompleteBg = Color.FromRgb(0xD3D3D3),
-            AutoCompleteHovered = Color.FromArgb(0x3E, 0x3E, 0x3E, 0x2E),
-            AutoCompleteSelected = Color.FromArgb(0x25, 0x25, 0x25, 0x4A),
+            
             PopoutButtonBg = Color.FromRgb(0xCFCFCF),
             PopoutButtonHovered = Color.FromRgb(0xC1C1C1),
             PopoutButtonSelected = Color.FromRgb(0xA9A9A9),
             SubpixelIndicatorBox = Color.FromRgb(0x159F15),
             SubpixelIndicatorDot = Color.FromRgb(0xE30E0E),
+            
+            PopupMenuFg = Color.FromRgb(0x121212),
+            PopupMenuFgDisabled = Color.FromRgb(0x8a8a8a),
+            PopupMenuFgExtra = Color.FromRgb(0x595959),
+            PopupMenuBg = Color.FromRgb(0xD3D3D3),
+            PopupMenuSelected = Color.FromArgb(0x25, 0x25, 0x25, 0x4A),
+            PopupMenuBorderPadding = 5,
+            PopupMenuBorderRounding = 6.0f,
+            PopupMenuEntryHorizontalPadding = 5,
+            PopupMenuEntryVerticalPadding = 5,
+            PopupMenuEntrySpacing = 3,
+            PopupMenuEntryRounding = 5.0f,
 
             Action = new Style(Color.FromRgb(0x1F7BEC)),
             Angle = new Style(Color.FromRgb(0xC835C8)),
@@ -108,17 +125,24 @@ public struct Theme {
             StatusBg = Color.FromRgb(0x303030),
             CalculateFg = Color.FromRgb(0xE8E8E8),
             CalculateBg = Color.FromRgb(0x4682B4),
-            AutoCompleteFg = Color.FromRgb(0xDFDFDF),
-            AutoCompleteFgDisabled = Color.FromRgb(0x909090),
-            AutoCompleteFgExtra = Color.FromRgb(0x9F9F9F),
-            AutoCompleteBg = Color.FromRgb(0x2C2C2C),
-            AutoCompleteHovered = Color.FromArgb(0xC4, 0xC4, 0xC4, 0x2F),
-            AutoCompleteSelected = Color.FromArgb(0xD5, 0xD5, 0xD5, 0x3D),
+
             PopoutButtonBg = Color.FromRgb(0x3B3B3B),
             PopoutButtonHovered = Color.FromRgb(0x4C4C4C),
             PopoutButtonSelected = Color.FromRgb(0x646464),
             SubpixelIndicatorBox = Color.FromRgb(0x29A229),
             SubpixelIndicatorDot = Color.FromRgb(0xE30E0E),
+            
+            PopupMenuFg = Color.FromRgb(0xDFDFDF),
+            PopupMenuFgDisabled = Color.FromRgb(0x909090),
+            PopupMenuFgExtra = Color.FromRgb(0x9F9F9F),
+            PopupMenuBg = Color.FromRgb(0x2C2C2C),
+            PopupMenuSelected = Color.FromArgb(0x30, 0x50, 0x91, 0x96),
+            PopupMenuBorderPadding = 5,
+            PopupMenuBorderRounding = 6.0f,
+            PopupMenuEntryHorizontalPadding = 5,
+            PopupMenuEntryVerticalPadding = 5,
+            PopupMenuEntrySpacing = 3,
+            PopupMenuEntryRounding = 5.0f,
 
             Action = new Style(Color.FromRgb(0x8BE9FD)),
             Angle = new Style(Color.FromRgb(0xFF79C6)),
@@ -148,17 +172,24 @@ public struct Theme {
             StatusBg = Color.FromRgb(0xF2F2F2),
             CalculateFg = Color.FromRgb(0xCBCBCB),
             CalculateBg = Color.FromRgb(0x6C6C6C),
-            AutoCompleteFg = Color.FromRgb(0x121212),
-            AutoCompleteFgDisabled = Color.FromRgb(0x8a8a8a),
-            AutoCompleteFgExtra = Color.FromRgb(0x646464),
-            AutoCompleteBg = Color.FromRgb(0xE9E9E9),
-            AutoCompleteSelected = Color.FromArgb(0x44, 0x44, 0x44, 0x3F),
-            AutoCompleteHovered = Color.FromArgb(0x44, 0x44, 0x44, 0x1F),
+            
             PopoutButtonBg = Color.FromRgb(0xCFCFCF),
             PopoutButtonHovered = Color.FromRgb(0xC1C1C1),
             PopoutButtonSelected = Color.FromRgb(0xA9A9A9),
             SubpixelIndicatorBox = Color.FromRgb(0x159F15),
             SubpixelIndicatorDot = Color.FromRgb(0xE30E0E),
+            
+            PopupMenuFg = Color.FromRgb(0x121212),
+            PopupMenuFgDisabled = Color.FromRgb(0x8a8a8a),
+            PopupMenuFgExtra = Color.FromRgb(0x646464),
+            PopupMenuBg = Color.FromRgb(0xE9E9E9),
+            PopupMenuSelected = Color.FromArgb(0x44, 0x44, 0x44, 0x3F),
+            PopupMenuBorderPadding = 1,
+            PopupMenuBorderRounding = 0.0f,
+            PopupMenuEntryHorizontalPadding = 3,
+            PopupMenuEntryVerticalPadding = 3,
+            PopupMenuEntrySpacing = 0,
+            PopupMenuEntryRounding = 0.0f,
 
             Action = new Style(Color.FromRgb(0x2222FF)),
             Angle = new Style(Color.FromRgb(0xEE22EE)),
@@ -187,17 +218,24 @@ public struct Theme {
             StatusBg = Color.FromRgb(0x383A46),
             CalculateFg = Color.FromRgb(0xE8E8E8),
             CalculateBg = Color.FromRgb(0x4682B4),
-            AutoCompleteFg = Color.FromRgb(0xDFDFDF),
-            AutoCompleteFgDisabled = Color.FromRgb(0x909090),
-            AutoCompleteFgExtra = Color.FromRgb(0x9F9F9F),
-            AutoCompleteBg = Color.FromRgb(0x2F303B),
-            AutoCompleteSelected = Color.FromArgb(0xBB, 0xBB, 0xC4, 0x4F),
-            AutoCompleteHovered = Color.FromArgb(0xBB, 0xBB, 0xC4, 0x2F),
+            
             PopoutButtonBg = Color.FromRgb(0x494C5F),
             PopoutButtonHovered = Color.FromRgb(0x595D74),
             PopoutButtonSelected = Color.FromRgb(0x6F738F),
             SubpixelIndicatorBox = Color.FromRgb(0x1AB353),
             SubpixelIndicatorDot = Color.FromRgb(0xE30E0E),
+            
+            PopupMenuFg = Color.FromRgb(0xDFDFDF),
+            PopupMenuFgDisabled = Color.FromRgb(0x909090),
+            PopupMenuFgExtra = Color.FromRgb(0x9F9F9F),
+            PopupMenuBg = Color.FromRgb(0x2F303B),
+            PopupMenuSelected = Color.FromArgb(0xBB, 0xBB, 0xC4, 0x4F),
+            PopupMenuBorderPadding = 1,
+            PopupMenuBorderRounding = 0.0f,
+            PopupMenuEntryHorizontalPadding = 3,
+            PopupMenuEntryVerticalPadding = 3,
+            PopupMenuEntrySpacing = 0,
+            PopupMenuEntryRounding = 0.0f,
 
             Action = new Style(Color.FromRgb(0x8BE9FD)),
             Angle = new Style(Color.FromRgb(0xFF79C6)),
