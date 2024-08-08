@@ -44,7 +44,7 @@ public sealed class PopupMenu : Scrollable {
     }
 
     private static float BorderRounding => 7.0f;
-    private static float BorderPadding => 7.0f;
+    private static int BorderPadding => 7;
     
     private static float EntryRounding => 5.0f;
     private static float EntryPaddingHorizontal => 5.0f;
@@ -234,16 +234,16 @@ public sealed class PopupMenu : Scrollable {
         const int lookAhead = 2;
         
         int entryHeight = EntryHeight;
-        int scrollStartTop = ScrollPosition.Y + lookAhead * entryHeight;
-        int scrollStartBottom = ScrollPosition.Y + ClientSize.Height - lookAhead * entryHeight;
+        int scrollStartTop = ScrollPosition.Y + lookAhead * entryHeight - BorderPadding;
+        int scrollStartBottom = ScrollPosition.Y + ClientSize.Height - lookAhead * entryHeight + BorderPadding;
         
-        int selectedTop = SelectedEntry * entryHeight;
-        int selectedBottom = selectedTop + entryHeight;
+        int selectedTop = SelectedEntry * entryHeight - BorderPadding;
+        int selectedBottom = selectedTop + entryHeight + BorderPadding;
         
         if (selectedTop < scrollStartTop) {
-            ScrollPosition = ScrollPosition with { Y = Math.Max(0, selectedTop - lookAhead * entryHeight) };
+            ScrollPosition = ScrollPosition with { Y = Math.Max(0, selectedTop - lookAhead * entryHeight + BorderPadding) };
         } else if (selectedBottom > scrollStartBottom) {
-            ScrollPosition = ScrollPosition with { Y = Math.Min(shownEntries.Length * entryHeight - ClientSize.Height, selectedBottom + lookAhead * entryHeight - ClientSize.Height) }; 
+            ScrollPosition = ScrollPosition with { Y = Math.Min(shownEntries.Length * entryHeight - ClientSize.Height + BorderPadding * 2, selectedBottom + lookAhead * entryHeight + BorderPadding * 2 - ClientSize.Height) }; 
         }
     }
 
