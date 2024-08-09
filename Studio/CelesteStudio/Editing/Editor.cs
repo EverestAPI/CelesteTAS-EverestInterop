@@ -340,6 +340,15 @@ public sealed class Editor : Drawable {
                 // MenuUtils.CreateAction("Convert Dash to Demo Dash"),
                 new SeparatorMenuItem(),
                 MenuUtils.CreateAction("Open Read File / Go to Play Line"),
+                new SeparatorMenuItem(),
+                MenuEntry.Editor_OpenAutoCompleteMenu.ToAction(() => {
+                    UpdateAutoComplete();
+                    Recalc();
+                }),
+                MenuEntry.Editor_OpenContextActionsMenu.ToAction(() => {
+                    UpdateContextActions();
+                    Recalc();
+                }),
             }
         };
         
@@ -779,23 +788,7 @@ public sealed class Editor : Drawable {
                 return;
             }
         }
-        
-        if (e.Key == Keys.Space && e.HasCommonModifier()) {
-            UpdateAutoComplete();
 
-            e.Handled = true;
-            Recalc();
-            return;
-        }
-
-        if (e.Key == Keys.Enter && e.HasAlternateModifier()) {
-            UpdateContextActions();
-
-            e.Handled = true;
-            Recalc();
-            return;
-        }
-        
         if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
             e.Handled = true;
             return;
@@ -805,6 +798,41 @@ public sealed class Editor : Drawable {
             CalculationHandleKey(e);
             Invalidate();
             return;
+        }
+        
+        // Forward hotkeys from menu entries / snippets
+        if (e.Key != Keys.None) {
+            // Check for hotkeys
+            var items = ContextMenu.Items
+                .Concat(Studio.Instance.GameInfoPanel.ContextMenu.Items)
+                .Concat(Studio.Instance.Menu.Items)
+                .Concat(Studio.Instance.GlobalHotkeys);
+            foreach (var item in items) {
+                if (item.Shortcut != e.KeyData) {
+                    continue;
+                }
+                
+                item.PerformClick();
+                Recalc();
+                e.Handled = true;
+                return;
+            }
+            
+            // Try to paste snippets
+            foreach (var snippet in Settings.Instance.Snippets) {
+                if (!snippet.Enabled || snippet.Hotkey != e.KeyData) {
+                    continue;
+                }
+                
+                if (string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row])) {
+                    Document.ReplaceLine(Document.Caret.Row, snippet.Insert);
+                } else {
+                    InsertLine(snippet.Insert);
+                }
+                
+                Document.Caret.Col = desiredVisualCol = snippet.Insert.Length;
+                return;
+            }
         }
         
         switch (e.Key) {
@@ -924,36 +952,6 @@ public sealed class Editor : Drawable {
                 if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _) && CalculationExtensions.TryParse(e.KeyChar) is { } op) {
                     StartCalculation(op);
                     e.Handled = true;
-                } else if (e.Key != Keys.None) {
-                    // Check for hotkeys
-                    var items = ContextMenu.Items
-                        .Concat(Studio.Instance.GameInfoPanel.ContextMenu.Items)
-                        .Concat(Studio.Instance.Menu.Items)
-                        .Concat(Studio.Instance.GlobalHotkeys);
-                    foreach (var item in items) {
-                        if (item.Shortcut != e.KeyData) {
-                            continue;
-                        }
-                        
-                        item.PerformClick();
-                        e.Handled = true;
-                        break;
-                    }
-                    
-                    // Try to paste snippets
-                    foreach (var snippet in Settings.Instance.Snippets) {
-                        if (!snippet.Enabled || snippet.Hotkey != e.KeyData) {
-                            continue;
-                        }
-                        
-                        if (Document.Lines[Document.Caret.Row].Trim().Length == 0) {
-                            Document.ReplaceLine(Document.Caret.Row, snippet.Insert);
-                        } else {
-                            InsertLine(snippet.Insert);
-                        }
-                        
-                        Document.Caret.Col = desiredVisualCol = snippet.Insert.Length;
-                    }
                 }
                 
                 // macOS will make a beep sounds when the event isn't handled

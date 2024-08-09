@@ -21,6 +21,7 @@ public enum MenuEntry {
     Editor_InsertRoomName, Editor_InsertCurrentTime, Editor_RemoveAllTimestamps, Editor_InsertModInfo, Editor_InsertConsoleLoadCommand, Editor_InsertSimpleConsoleLoadCommand,
     Editor_SwapSelectedLR, Editor_SwapSelectedJK, Editor_SwapSelectedXC, Editor_CombineConsecutiveSameInputs, Editor_ForceCombineInputFrames, Editor_SplitFrames,
     Editor_OpenReadFileGoToPlayLine,
+    Editor_OpenAutoCompleteMenu, Editor_OpenContextActionsMenu,
     
     Status_CopyGameInfoToClipboard, Status_ReconenctStudioCeleste,
     Status_EditCustomInfoTemplate, Status_ClearWatchEntityInfo,
@@ -80,6 +81,8 @@ public static class MenuEntryExtensions {
         { MenuEntry.Editor_ForceCombineInputFrames, Application.Instance.CommonModifier | Keys.Shift | Keys.L },
         { MenuEntry.Editor_SplitFrames, Keys.None },
         { MenuEntry.Editor_OpenReadFileGoToPlayLine, Keys.None },
+        { MenuEntry.Editor_OpenAutoCompleteMenu, Application.Instance.CommonModifier | Keys.Space },
+        { MenuEntry.Editor_OpenContextActionsMenu, Application.Instance.AlternateModifier | Keys.Enter },
         
         { MenuEntry.Status_CopyGameInfoToClipboard, Application.Instance.CommonModifier | Keys.Shift | Keys.C },
         { MenuEntry.Status_ReconenctStudioCeleste, Application.Instance.CommonModifier | Keys.Shift | Keys.D },
@@ -141,6 +144,8 @@ public static class MenuEntryExtensions {
         { MenuEntry.Editor_ForceCombineInputFrames, "Force Combine Input Frames" },
         { MenuEntry.Editor_SplitFrames, "Split Input Frames" },
         { MenuEntry.Editor_OpenReadFileGoToPlayLine, "Open Read File / Go To Play Line" },
+        { MenuEntry.Editor_OpenAutoCompleteMenu, "Open Auto Complete menu..." },
+        { MenuEntry.Editor_OpenContextActionsMenu, "Open Context Actions menu..." },
         
         { MenuEntry.Status_CopyGameInfoToClipboard, "&Copy Game Info to Clipboard" },
         { MenuEntry.Status_ReconenctStudioCeleste, "&Reconnect Studio and Celeste" },
@@ -173,7 +178,8 @@ public static class MenuEntryExtensions {
             MenuEntry.Editor_InsertRemoveBreakpoint, MenuEntry.Editor_InsertRemoveSavestateBreakpoint, MenuEntry.Editor_RemoveAllUncommentedBreakpoints, MenuEntry.Editor_RemoveAllBreakpoints, MenuEntry.Editor_CommentUncommentAllBreakpoints, MenuEntry.Editor_CommentUncommentInputs, MenuEntry.Editor_CommentUncommentText,
             MenuEntry.Editor_InsertRoomName, MenuEntry.Editor_InsertCurrentTime, MenuEntry.Editor_RemoveAllTimestamps, MenuEntry.Editor_InsertModInfo, MenuEntry.Editor_InsertConsoleLoadCommand, MenuEntry.Editor_InsertSimpleConsoleLoadCommand,
             MenuEntry.Editor_SwapSelectedLR, MenuEntry.Editor_SwapSelectedJK, MenuEntry.Editor_SwapSelectedXC, MenuEntry.Editor_CombineConsecutiveSameInputs, MenuEntry.Editor_ForceCombineInputFrames, MenuEntry.Editor_SplitFrames,
-            MenuEntry.Editor_OpenReadFileGoToPlayLine] },
+            MenuEntry.Editor_OpenReadFileGoToPlayLine,
+            MenuEntry.Editor_OpenAutoCompleteMenu, MenuEntry.Editor_OpenContextActionsMenu] },
 
         { MenuEntryCategory.Status, [
             MenuEntry.Status_CopyGameInfoToClipboard, MenuEntry.Status_ReconenctStudioCeleste,
