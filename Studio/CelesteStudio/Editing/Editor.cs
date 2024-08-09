@@ -1626,6 +1626,7 @@ public sealed class Editor : Drawable {
 
             FinishEdit:
             Document.ReplaceLine(Document.Caret.Row, actionLine.ToString());
+            Document.Caret = ClampCaret(Document.Caret);
         }
         // Just write it as text
         else {
