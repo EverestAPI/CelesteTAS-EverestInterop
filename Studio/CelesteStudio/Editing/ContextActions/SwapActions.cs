@@ -3,8 +3,8 @@ using StudioCommunication;
 
 namespace CelesteStudio.Editing.ContextActions;
 
-public class SwapActions(Actions a, Actions b) : ContextAction {
-    public override string Name => $"Swap {a.CharForAction()} and {b.CharForAction()}";
+public class SwapActions(Actions a, Actions b, MenuEntry entry) : ContextAction {
+    public override MenuEntry Entry => entry;
 
     public override PopupMenu.Entry? Check() {
         int startRow = Document.Selection.Empty ? Document.Caret.Row : Document.Selection.Min.Row;
@@ -21,8 +21,6 @@ public class SwapActions(Actions a, Actions b) : ContextAction {
             return null;
         }
 
-        return CreateEntry("", () => {
-            Editor.SwapSelectedActions(a, b);
-        });
+        return CreateEntry("", () => Editor.SwapSelectedActions(a, b));
     }
 }

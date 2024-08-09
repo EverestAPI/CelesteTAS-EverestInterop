@@ -7,7 +7,7 @@ using CelesteStudio.Util;
 namespace CelesteStudio.Editing.ContextActions;
 
 public class InlineReadCommand : ContextAction {
-    public override string Name => "Inline Read command";
+    public override MenuEntry Entry => MenuEntry.ContextActions_InlineReadCommand;
 
     public override PopupMenu.Entry? Check() {
         string currentLine = Document.Lines[Document.Caret.Row];

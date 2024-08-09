@@ -154,14 +154,21 @@ public sealed class Editor : Drawable {
     private readonly List<PopupMenu.Entry> baseAutoCompleteEntries = [];
 
     // These should be ordered from most specific to most applicable.
-    private readonly List<ContextAction> contextActions = [
+    private readonly ContextAction[] contextActions = [
+        new SwapActions(Actions.Left, Actions.Right, MenuEntry.Editor_SwapSelectedLR),
+        new SwapActions(Actions.Jump, Actions.Jump2, MenuEntry.Editor_SwapSelectedJK),
+        new SwapActions(Actions.Dash, Actions.Dash2, MenuEntry.Editor_SwapSelectedXC),
+        
+        new CombineConsecutiveSameInputs(),
+        new ForceCombineInputFrames(),
+        new SplitFrames(),
+        
         new CreateRepeat(),
         new InlineRepeatCommand(),
         new InlineReadCommand(),
-            
-        new SwapActions(Actions.Left, Actions.Right),
-        new SwapActions(Actions.Jump, Actions.Jump2),
-        new SwapActions(Actions.Dash, Actions.Dash2),
+        
+        new OpenReadFile(),
+        new GotoPlayLine(),
     ];
 
     private Font Font => FontManager.EditorFontRegular;
@@ -329,17 +336,6 @@ public sealed class Editor : Drawable {
                 MenuEntry.Editor_InsertConsoleLoadCommand.ToAction(OnInsertConsoleLoadCommand),
                 MenuEntry.Editor_InsertSimpleConsoleLoadCommand.ToAction(OnInsertSimpleConsoleLoadCommand),
                 commandsMenu,
-                new SeparatorMenuItem(),
-                MenuEntry.Editor_SwapSelectedLR.ToAction(() => SwapSelectedActions(Actions.Left, Actions.Right)),
-                MenuEntry.Editor_SwapSelectedJK.ToAction(() => SwapSelectedActions(Actions.Jump, Actions.Jump2)),
-                MenuEntry.Editor_SwapSelectedXC.ToAction(() => SwapSelectedActions(Actions.Dash, Actions.Dash2)),
-                MenuEntry.Editor_CombineConsecutiveSameInputs.ToAction(() => CombineInputs(sameActions: true)),
-                MenuEntry.Editor_ForceCombineInputFrames.ToAction(() => CombineInputs(sameActions: false)),
-                MenuEntry.Editor_SplitFrames.ToAction(SplitLines),
-                // TODO: Is this feature even unused?
-                // MenuUtils.CreateAction("Convert Dash to Demo Dash"),
-                new SeparatorMenuItem(),
-                MenuUtils.CreateAction("Open Read File / Go to Play Line"),
                 new SeparatorMenuItem(),
                 MenuEntry.Editor_OpenAutoCompleteMenu.ToAction(() => {
                     UpdateAutoComplete();
@@ -1275,13 +1271,11 @@ public sealed class Editor : Drawable {
         contextActionsMenu.Entries = contextActions
             .Select(contextAction => {
                 return contextAction.Check() ?? new PopupMenu.Entry {
-                    DisplayText = contextAction.Name,
-                    SearchText = contextAction.Name,
-                    ExtraText = "",
+                    DisplayText = contextAction.Entry.GetName(),
+                    SearchText = contextAction.Entry.GetName(),
+                    ExtraText = contextAction.Entry.GetHotkey() != Keys.None ? contextAction.Entry.GetHotkey().ToShortcutString() : string.Empty,
                     Disabled = true,
-                    OnUse = () => {
-                        contextActionsMenu.Visible = false;
-                    }
+                    OnUse = () => {},
                 };
             })
             .OrderBy(entry => entry.Disabled ? 1 : 0)
@@ -2209,7 +2203,7 @@ public sealed class Editor : Drawable {
         }
     }
     
-    private void CombineInputs(bool sameActions) {
+    public void CombineInputs(bool sameActions) {
         using var __ = Document.Update();
         
         if (Document.Selection.Empty) {
@@ -2333,7 +2327,7 @@ public sealed class Editor : Drawable {
         }
     }
     
-    private void SplitLines() {
+    public void SplitLines() {
         using var __ = Document.Update();
 
         (int minRow, int maxRow) = Document.Selection.Empty
@@ -2792,7 +2786,7 @@ public sealed class Editor : Drawable {
         return null;
     }
     
-    private Action? GetLineLink(int row) {
+    public Action? GetLineLink(int row) {
         if (CommandLine.TryParse(Document.Lines[row], out var commandLine)) {
             if (commandLine.IsCommand("Read") && commandLine.Args.Length >= 2) {
                 var documentPath = Studio.Instance.Editor.Document.FilePath;

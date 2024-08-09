@@ -95,7 +95,7 @@ public struct Theme {
             PopupMenuBorderRounding = 6.0f,
             PopupMenuEntryHorizontalPadding = 5,
             PopupMenuEntryVerticalPadding = 5,
-            PopupMenuEntrySpacing = 3,
+            PopupMenuEntrySpacing = 1,
             PopupMenuEntryRounding = 5.0f,
 
             Action = new Style(Color.FromRgb(0x1F7BEC)),
@@ -141,7 +141,7 @@ public struct Theme {
             PopupMenuBorderRounding = 6.0f,
             PopupMenuEntryHorizontalPadding = 5,
             PopupMenuEntryVerticalPadding = 5,
-            PopupMenuEntrySpacing = 3,
+            PopupMenuEntrySpacing = 1,
             PopupMenuEntryRounding = 5.0f,
 
             Action = new Style(Color.FromRgb(0x8BE9FD)),

@@ -5,7 +5,7 @@ using CelesteStudio.Util;
 namespace CelesteStudio.Editing.ContextActions;
 
 public class CreateRepeat : ContextAction {
-    public override string Name => "Create Repeat from selection";
+    public override MenuEntry Entry => MenuEntry.ContextActions_CreateRepeatCommand;
     
     public override PopupMenu.Entry? Check() {
         if (Document.Selection.Empty) {
