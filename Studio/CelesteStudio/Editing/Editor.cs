@@ -568,14 +568,26 @@ public sealed class Editor : Drawable {
             float carY = Font.LineHeight() * (actualToVisualRows[Document.Caret.Row] + 1);
             
             int menuX = (int)(carX + scrollablePosition.X + textOffsetX + menuXOffset);
-            int menuY = (int)(carY + menuYOffset);
+            int menuYBelow = (int)(carY + menuYOffset);
+            int menuYAbove = (int)Math.Max(carY - Font.LineHeight() - menuYOffset - ActivePopupMenu.ContentHeight, scrollablePosition.Y + menuYOffset);
             int menuMaxW = (int)(availableWidth - menuX);
-            int menuMaxH = (int)(scrollablePosition.Y + scrollableSize.Height - Font.LineHeight() - menuY);
+            int menuMaxHBelow = (int)(scrollablePosition.Y + scrollableSize.Height - Font.LineHeight() - menuYBelow);
+            int menuMaxHAbove = (int)(scrollablePosition.Y + carY - Font.LineHeight() - menuYOffset - menuYAbove);
             
             // Try moving the menu to the left when there isn't enough space, before having to shrink it
             if (menuMaxW < ActivePopupMenu.ContentWidth) {
                 menuX = (int)Math.Max(availableWidth - ActivePopupMenu.ContentWidth, scrollablePosition.X + textOffsetX);
                 menuMaxW = (int)(availableWidth - menuX);
+            }
+            
+            // Chose above / below caret depending on which provides more height. Default to below
+            int menuY, menuMaxH;
+            if (Math.Min(ActivePopupMenu.ContentHeight, menuMaxHBelow) >= Math.Min(ActivePopupMenu.ContentHeight, menuMaxHAbove)) {
+                menuY = menuYBelow;
+                menuMaxH = menuMaxHBelow;
+            } else {
+                menuY = menuYAbove;
+                menuMaxH = menuMaxHAbove;
             }
             
             ActivePopupMenu.ContentWidth = Math.Min(ActivePopupMenu.ContentWidth, menuMaxW);
