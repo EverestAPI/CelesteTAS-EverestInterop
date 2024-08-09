@@ -2866,6 +2866,9 @@ public sealed class Editor : Drawable {
     #region Drawing
     
     protected override void OnPaint(PaintEventArgs e) {
+        // Doing this in Recalc() seems to cause issues for some reason, but it needs to happen regularly
+        Studio.Instance.GameInfoPanel.UpdateGameInfo();
+        
         e.Graphics.AntiAlias = true;
         
         // To be reused below. Kinda annoying how C# handles out parameter conflicts
