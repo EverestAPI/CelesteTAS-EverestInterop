@@ -1719,19 +1719,17 @@ public sealed class Editor : Drawable {
             // Handle feather angle/magnitude
             int featherColumn = GetColumnOfAction(actionLine, Actions.Feather);
             if (featherColumn != -1 && caret.Col >= featherColumn) {
-                int angleMagnitudeCommaColumn = featherColumn + 2;
-                while (angleMagnitudeCommaColumn <= line.Length + 1 && line[angleMagnitudeCommaColumn - 2] != ActionLine.Delimiter) {
-                    angleMagnitudeCommaColumn++;
-                }
-
+                int angleMagnitudeCommaColumn = line.IndexOf(ActionLine.Delimiter, featherColumn + 1) + 1;
+                
                 if (caret.Col == featherColumn + 1 && direction is CaretMovementType.CharLeft or CaretMovementType.WordLeft) {
-                    var actions = GetActionsFromColumn(actionLine, caret.Col - 1, direction);
+                    var actions = GetActionsFromColumn(actionLine, caret.Col, direction);
                     actionLine.Actions &= ~actions;
                     line = actionLine.ToString();
                     goto FinishDeletion;
                 } else if (caret.Col == featherColumn && direction is CaretMovementType.CharRight or CaretMovementType.WordRight ||
-                           caret.Col == angleMagnitudeCommaColumn && direction is CaretMovementType.CharLeft or CaretMovementType.WordLeft)
+                           caret.Col == angleMagnitudeCommaColumn && direction is CaretMovementType.CharLeft or CaretMovementType.WordLeft && angleMagnitudeCommaColumn != line.Length)
                 {
+                    // delete the angle and replace it with the magnitude
                     actionLine.FeatherAngle = actionLine.FeatherMagnitude;
                     actionLine.FeatherMagnitude = null;
                     caret.Col = featherColumn;
