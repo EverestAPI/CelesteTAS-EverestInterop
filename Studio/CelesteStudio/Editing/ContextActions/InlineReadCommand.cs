@@ -52,6 +52,8 @@ public class InlineReadCommand : ContextAction {
             try {
                 Document.RemoveLine(Document.Caret.Row);
                 Document.InsertLines(Document.Caret.Row, lines[startLine..endLine]);
+                
+                Editor.ScrollCaretIntoView();
             } catch (Exception) {
                 // ignored
             }

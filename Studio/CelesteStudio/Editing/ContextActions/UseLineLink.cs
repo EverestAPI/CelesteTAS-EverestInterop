@@ -7,13 +7,11 @@ public class OpenReadFile : ContextAction {
     public override MenuEntry Entry => MenuEntry.ContextActions_OpenReadFile;
 
     public override PopupMenu.Entry? Check() {
-        string currentLine = Document.Lines[Document.Caret.Row];
-        
-        if (!CommandLine.TryParse(currentLine, out var commandLine) || !commandLine.IsCommand("Read") || Editor.GetLineLink(Document.Caret.Row) is not { } lineLink) {
-            return null;
+        if (Editor.GetOpenReadFileLink(Document.Caret.Row) is { } lineLink) {
+            return CreateEntry("", () => lineLink());
         }
         
-        return CreateEntry("", () => lineLink());
+        return null;
     }
 }
 
@@ -21,12 +19,10 @@ public class GotoPlayLine : ContextAction {
     public override MenuEntry Entry => MenuEntry.ContextActions_GoToPlayLine;
     
     public override PopupMenu.Entry? Check() {
-        string currentLine = Document.Lines[Document.Caret.Row];
-        
-        if (!CommandLine.TryParse(currentLine, out var commandLine) || !commandLine.IsCommand("Play") || Editor.GetLineLink(Document.Caret.Row) is not { } lineLink) {
-            return null;
+        if (Editor.GetGotoPlayLineLink(Document.Caret.Row) is { } lineLink) {
+            return CreateEntry("", () => lineLink());
         }
         
-        return CreateEntry("", () => lineLink());
+        return null;
     }
 }

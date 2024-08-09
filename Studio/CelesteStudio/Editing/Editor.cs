@@ -118,7 +118,6 @@ public sealed class Editor : Drawable {
                 }
                 
                 Recalc();
-                Document.Caret = ClampCaret(Document.Caret);
                 ScrollCaretIntoView();
             }
         }
@@ -588,7 +587,7 @@ public sealed class Editor : Drawable {
     }
     
     /// Ensures that parsable action-line has the correct format
-    private bool TryParseAndFormatActionLine(int row, out ActionLine actionLine) {
+    public bool TryParseAndFormatActionLine(int row, out ActionLine actionLine) {
         if (ActionLine.TryParse(Document.Lines[row], out actionLine)) {
             Document.ReplaceLine(row, actionLine.ToString());
             return true;
@@ -798,7 +797,7 @@ public sealed class Editor : Drawable {
         
         // Forward hotkeys from menu entries / snippets
         if (e.Key != Keys.None) {
-            // Check for hotkeys
+            // Check for menu items
             var items = ContextMenu.Items
                 .Concat(Studio.Instance.GameInfoPanel.ContextMenu.Items)
                 .Concat(Studio.Instance.Menu.Items)
@@ -812,6 +811,17 @@ public sealed class Editor : Drawable {
                 Recalc();
                 e.Handled = true;
                 return;
+            }
+            
+            // Handle context actions
+            foreach (var contextAction in contextActions) {
+                if (contextAction.Entry.GetHotkey() == e.KeyData && contextAction.Check() is { } action) {
+                    action.OnUse();
+                    Recalc();
+                    ScrollCaretIntoView();
+                    e.Handled = true;
+                    return;
+                }
             }
             
             // Try to paste snippets
@@ -2181,187 +2191,11 @@ public sealed class Editor : Drawable {
         }
     }
     
-    public void SwapSelectedActions(Actions a, Actions b) {
-        using var __ = Document.Update();
-        
-        int minRow = Document.Selection.Empty ? Document.Caret.Row : Document.Selection.Min.Row;
-        int maxRow = Document.Selection.Empty ? Document.Caret.Row : Document.Selection.Max.Row;
-        
-        for (int row = minRow; row <= maxRow; row++) {
-            if (!TryParseAndFormatActionLine(row, out var actionLine))
-                continue;
-            
-            if (actionLine.Actions.HasFlag(a) && actionLine.Actions.HasFlag(b))
-                continue; // Nothing to do
-            
-            if (actionLine.Actions.HasFlag(a))
-                actionLine.Actions = actionLine.Actions & ~a | b;
-            else if (actionLine.Actions.HasFlag(b))
-                actionLine.Actions = actionLine.Actions & ~b | a;
-            
-            Document.ReplaceLine(row, actionLine.ToString());
-        }
-    }
-    
-    public void CombineInputs(bool sameActions) {
-        using var __ = Document.Update();
-        
-        if (Document.Selection.Empty) {
-            // Merge current input with surrounding inputs
-            // Don't allow this without sameActions
-            if (!sameActions) return;
-            
-            int curr = Document.Caret.Row;
-            if (!TryParseAndFormatActionLine(curr, out var currActionLine))
-                return;
-            
-            // Above
-            int above = curr - 1;
-            for (; above >= 0; above--) {
-                if (!TryParseAndFormatActionLine(above, out var otherActionLine))
-                    break;
-                
-                if (currActionLine.Actions != otherActionLine.Actions ||
-                     currActionLine.FeatherAngle != otherActionLine.FeatherAngle ||
-                     currActionLine.FeatherMagnitude != otherActionLine.FeatherMagnitude) 
-                {
-                    break;
-                }
-                
-                currActionLine.Frames += otherActionLine.Frames;
-            }
-            
-            // Below
-            int below = curr + 1;
-            for (; below < Document.Lines.Count; below++) {
-                if (!TryParseAndFormatActionLine(below, out var otherActionLine))
-                    break;
-                
-                if (currActionLine.Actions != otherActionLine.Actions ||
-                    currActionLine.FeatherAngle != otherActionLine.FeatherAngle ||
-                    currActionLine.FeatherMagnitude != otherActionLine.FeatherMagnitude)
-                {
-                    break;
-                }
-                
-                currActionLine.Frames += otherActionLine.Frames;
-            }
-            
-            // Account for overshoot by 1
-            above = Math.Min(Document.Lines.Count, above + 1);
-            below = Math.Max(0, below - 1);
-            
-            Document.RemoveLines(above, below);
-            Document.InsertLine(above, currActionLine.ToString());
-            
-            Document.Caret.Row = above;
-            Document.Caret.Col = SnapColumnToActionLine(currActionLine, Document.Caret.Col);
-        } else {
-            // Merge everything inside the selection
-            int minRow = Document.Selection.Min.Row;
-            int maxRow = Document.Selection.Max.Row;
-            
-            ActionLine? activeActionLine = null;
-            int activeRowStart = -1;
-            
-            for (int row = minRow; row <= maxRow; row++) {
-                if (!TryParseAndFormatActionLine(row, out var currActionLine)) {
-                    // "Flush" the previous lines
-                    if (activeActionLine != null) {
-                        Document.RemoveLines(activeRowStart, row - 1);
-                        Document.InsertLine(activeRowStart, activeActionLine.Value.ToString());
-
-                        maxRow -= row - 1 - activeRowStart;
-                        row = activeRowStart + 1;
-
-                        activeActionLine = null;
-                        activeRowStart = -1;
-                    }
-                    continue; // Skip non-input lines
-                }
-                
-                if (activeActionLine == null) {
-                    activeActionLine = currActionLine;
-                    activeRowStart = row;
-                    continue;
-                }
-                
-                if (!sameActions) {
-                    // Just merge them, regardless if they are the same actions
-                    activeActionLine = activeActionLine.Value with { Frames = activeActionLine.Value.Frames + currActionLine.Frames };
-                    continue;
-                }
-                
-                if (currActionLine.Actions == activeActionLine.Value.Actions &&
-                    currActionLine.FeatherAngle == activeActionLine.Value.FeatherAngle &&
-                    currActionLine.FeatherMagnitude == activeActionLine.Value.FeatherMagnitude) 
-                {
-                    activeActionLine = activeActionLine.Value with { Frames = activeActionLine.Value.Frames + currActionLine.Frames };
-                    continue;
-                }
-                
-                // Current line is different, so change the active one
-                Document.RemoveLines(activeRowStart, row - 1);
-                Document.InsertLine(activeRowStart, activeActionLine.Value.ToString());
-                
-                activeActionLine = currActionLine;
-                activeRowStart++;
-                
-                // Account for changed line counts
-                maxRow -= row - activeRowStart;
-                row = activeRowStart;
-            }
-            
-            // "Flush" the remaining line
-            if (activeActionLine != null) {
-                Document.RemoveLines(activeRowStart, maxRow);
-                Document.InsertLine(activeRowStart, activeActionLine.Value.ToString());
-                
-                maxRow = activeRowStart;
-            }
-            
-            
-            Document.Selection.Clear();
-            Document.Caret.Row = maxRow;
-            Document.Caret = ClampCaret(Document.Caret);
-        }
-    }
-    
-    public void SplitLines() {
-        using var __ = Document.Update();
-
-        (int minRow, int maxRow) = Document.Selection.Empty
-            ? (Document.Caret.Row, Document.Caret.Row)
-            : (Document.Selection.Min.Row, Document.Selection.Max.Row);
-
-        int extraLines = 0;
-        
-        for (int row = maxRow; row >= minRow; row--) {
-            if (!ActionLine.TryParse(Document.Lines[row], out var actionLine) || actionLine.Frames == 0) {
-                continue;
-            }
-
-            extraLines += actionLine.Frames - 1;
-            Document.ReplaceLines(row, Enumerable.Repeat((actionLine with { Frames = 1 }).ToString(), actionLine.Frames).ToArray());
-        }
-
-        if (!Document.Selection.Empty) {
-            int endRow = maxRow + extraLines;
-            Document.Selection = new Selection {
-                Start = new CaretPosition(minRow, 0),
-                End = new CaretPosition(endRow, Document.Lines[endRow].Length),
-            };
-        }
-        
-        Document.Caret.Row = maxRow;
-        Document.Caret = ClampCaret(Document.Caret);
-    }
-
     #endregion
     
     #region Caret Movement
     
-    private CaretPosition ClampCaret(CaretPosition position, bool wrapLine = false) {
+    public CaretPosition ClampCaret(CaretPosition position, bool wrapLine = false) {
         // Wrap around to prev/next line
         if (wrapLine && position.Row > 0 && position.Col < 0) {
             position.Row = GetNextVisualLinePosition(-1, position).Row;
@@ -2786,54 +2620,66 @@ public sealed class Editor : Drawable {
         return null;
     }
     
-    public Action? GetLineLink(int row) {
-        if (CommandLine.TryParse(Document.Lines[row], out var commandLine)) {
-            if (commandLine.IsCommand("Read") && commandLine.Args.Length >= 2) {
-                var documentPath = Studio.Instance.Editor.Document.FilePath;
-                if (documentPath == Document.ScratchFile) {
-                    return null;
-                }
-                if (Path.GetDirectoryName(documentPath) is not { } documentDir) {
-                    return null;
-                }
-                
-                var fullPath = Path.Combine(documentDir, $"{commandLine.Args[0]}.tas");
-                if (!File.Exists(fullPath)) {
-                    return null;
-                }
-                
-                (var label, int labelRow) = File.ReadAllText(fullPath)
-                    .ReplaceLineEndings(Document.NewLine.ToString())
-                    .SplitDocumentLines()
-                    .Select((line, i) => (line, i))
-                    .FirstOrDefault(pair => pair.line == $"#{commandLine.Args[1]}");
-                if (label == null) {
-                    return null;
-                }
-                
-                return () => {
-                    Studio.Instance.OpenFile(fullPath);
-                    Document.Caret.Row = labelRow;
-                    Document.Caret.Col = desiredVisualCol = Document.Lines[labelRow].Length;
-                };
-            } else if (commandLine.IsCommand("Play") && commandLine.Args.Length >= 1) {
-                (var label, int labelRow) = Document.Lines
-                    .Select((line, i) => (line, i))
-                    .FirstOrDefault(pair => pair.line == $"#{commandLine.Args[0]}");
-                if (label == null) {
-                    return null;
-                }
-                
-                return () => {
-                    Document.Caret.Row = labelRow;
-                    Document.Caret.Col = desiredVisualCol = Document.Lines[labelRow].Length;
-                    Recalc();
-                };
-            }
+    /// Action to open the Read-command on the line if possible
+    public Action? GetOpenReadFileLink(int row) {
+        if (!CommandLine.TryParse(Document.Lines[row], out var commandLine) ||
+            !commandLine.IsCommand("Read") || commandLine.Args.Length < 2) 
+        {
+            return null;
         }
         
-        return null;
+        var documentPath = Studio.Instance.Editor.Document.FilePath;
+        if (documentPath == Document.ScratchFile) {
+            return null;
+        }
+        if (Path.GetDirectoryName(documentPath) is not { } documentDir) {
+            return null;
+        }
+        
+        var fullPath = Path.Combine(documentDir, $"{commandLine.Args[0]}.tas");
+        if (!File.Exists(fullPath)) {
+            return null;
+        }
+        
+        (var label, int labelRow) = File.ReadAllText(fullPath)
+            .ReplaceLineEndings(Document.NewLine.ToString())
+            .SplitDocumentLines()
+            .Select((line, i) => (line, i))
+            .FirstOrDefault(pair => pair.line == $"#{commandLine.Args[1]}");
+        if (label == null) {
+            return null;
+        }
+        
+        return () => {
+            Studio.Instance.OpenFile(fullPath);
+            Document.Caret.Row = labelRow;
+            Document.Caret.Col = desiredVisualCol = Document.Lines[labelRow].Length;
+        };
     }
+    
+    /// Action to goto the Play-command's target line if possible
+    public Action? GetGotoPlayLineLink(int row) {
+        if (!CommandLine.TryParse(Document.Lines[row], out var commandLine) ||
+            !commandLine.IsCommand("Play") || commandLine.Args.Length < 1)
+        {
+            return null;
+        }
+        
+        (var label, int labelRow) = Document.Lines
+            .Select((line, i) => (line, i))
+            .FirstOrDefault(pair => pair.line == $"#{commandLine.Args[0]}");
+        if (label == null) {
+            return null;
+        }
+        
+        return () => {
+            Document.Caret.Row = labelRow;
+            Document.Caret.Col = desiredVisualCol = Document.Lines[labelRow].Length;
+            Recalc();
+        };
+    }
+    
+    private Action? GetLineLink(int row) => GetOpenReadFileLink(row) ?? GetGotoPlayLineLink(row);
     private int LocationToLineLink(PointF location) {
         if (location.X < scrollablePosition.X + textOffsetX ||
             location.X > scrollablePosition.X + scrollableSize.Width) 
@@ -3269,7 +3115,7 @@ public sealed class Editor : Drawable {
         }
     }
 
-    private static int SnapColumnToActionLine(ActionLine actionLine, int column) {
+    public static int SnapColumnToActionLine(ActionLine actionLine, int column) {
         // Snap to the closest valid column
         int nextLeft = GetSoftSnapColumns(actionLine).Reverse().FirstOrDefault(c => c <= column, -1);
         int nextRight = GetSoftSnapColumns(actionLine).FirstOrDefault(c => c >= column, -1);

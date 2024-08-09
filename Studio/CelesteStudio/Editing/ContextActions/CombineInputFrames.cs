@@ -3,6 +3,19 @@ using CelesteStudio.Data;
 
 namespace CelesteStudio.Editing.ContextActions;
 
+public class ForceCombineInputFrames : ContextAction {
+    public override MenuEntry Entry => MenuEntry.ContextActions_ForceCombineInputFrames;
+    
+    public override PopupMenu.Entry? Check() {
+        if (Document.Selection.Empty) {
+            // Can't force merge without a selection
+            return null;
+        }
+        
+        return CreateEntry("", () => CombineConsecutiveSameInputs.CombineInputs(sameActions: false));
+    }
+}
+
 public class CombineConsecutiveSameInputs : ContextAction {
     public override MenuEntry Entry => MenuEntry.ContextActions_CombineConsecutiveSameInputs;
     
@@ -22,19 +35,130 @@ public class CombineConsecutiveSameInputs : ContextAction {
             BreakLoop:;
         }
         
-        return CreateEntry("", () => Editor.CombineInputs(sameActions: true));
+        return CreateEntry("", () => CombineInputs(sameActions: true));
     }
-}
-
-public class ForceCombineInputFrames : ContextAction {
-    public override MenuEntry Entry => MenuEntry.ContextActions_ForceCombineInputFrames;
-
-    public override PopupMenu.Entry? Check() {
-        if (Document.Selection.Empty) {
-            // Can't force merge without a selection
-            return null;
-        }
+    
+    public static void CombineInputs(bool sameActions) {
+        using var __ = Document.Update();
         
-        return CreateEntry("", () => Editor.CombineInputs(sameActions: false));
+        if (Document.Selection.Empty) {
+            // Merge current input with surrounding inputs
+            int curr = Document.Caret.Row;
+            if (!Editor.TryParseAndFormatActionLine(curr, out var currActionLine)) {
+                return;
+            }
+            
+            // Above
+            int above = curr - 1;
+            for (; above >= 0; above--) {
+                if (!Editor.TryParseAndFormatActionLine(above, out var otherActionLine)) {
+                    break;
+                }
+                
+                if (currActionLine.Actions != otherActionLine.Actions ||
+                    currActionLine.FeatherAngle != otherActionLine.FeatherAngle ||
+                    currActionLine.FeatherMagnitude != otherActionLine.FeatherMagnitude) 
+                {
+                    break;
+                }
+                
+                currActionLine.Frames += otherActionLine.Frames;
+            }
+            
+            // Below
+            int below = curr + 1;
+            for (; below < Document.Lines.Count; below++) {
+                if (!Editor.TryParseAndFormatActionLine(below, out var otherActionLine)) {
+                    break;
+                }
+                
+                if (currActionLine.Actions != otherActionLine.Actions ||
+                    currActionLine.FeatherAngle != otherActionLine.FeatherAngle ||
+                    currActionLine.FeatherMagnitude != otherActionLine.FeatherMagnitude)
+                {
+                    break;
+                }
+                
+                currActionLine.Frames += otherActionLine.Frames;
+            }
+            
+            // Account for overshoot by 1
+            above = Math.Min(Document.Lines.Count, above + 1);
+            below = Math.Max(0, below - 1);
+            
+            Document.RemoveLines(above, below);
+            Document.InsertLine(above, currActionLine.ToString());
+            
+            Document.Caret.Row = above;
+            Document.Caret.Col = Editor.SnapColumnToActionLine(currActionLine, Document.Caret.Col);
+        } else {
+            // Merge everything inside the selection
+            int minRow = Document.Selection.Min.Row;
+            int maxRow = Document.Selection.Max.Row;
+            
+            ActionLine? activeActionLine = null;
+            int activeRowStart = -1;
+            
+            for (int row = minRow; row <= maxRow; row++) {
+                if (!Editor.TryParseAndFormatActionLine(row, out var currActionLine)) {
+                    // "Flush" the previous lines
+                    if (activeActionLine != null) {
+                        Document.RemoveLines(activeRowStart, row - 1);
+                        Document.InsertLine(activeRowStart, activeActionLine.Value.ToString());
+
+                        maxRow -= row - 1 - activeRowStart;
+                        row = activeRowStart + 1;
+
+                        activeActionLine = null;
+                        activeRowStart = -1;
+                    }
+                    continue; // Skip non-input lines
+                }
+                
+                if (activeActionLine == null) {
+                    activeActionLine = currActionLine;
+                    activeRowStart = row;
+                    continue;
+                }
+                
+                if (!sameActions) {
+                    // Just merge them, regardless if they are the same actions
+                    activeActionLine = activeActionLine.Value with { Frames = activeActionLine.Value.Frames + currActionLine.Frames };
+                    continue;
+                }
+                
+                if (currActionLine.Actions == activeActionLine.Value.Actions &&
+                    currActionLine.FeatherAngle == activeActionLine.Value.FeatherAngle &&
+                    currActionLine.FeatherMagnitude == activeActionLine.Value.FeatherMagnitude) 
+                {
+                    activeActionLine = activeActionLine.Value with { Frames = activeActionLine.Value.Frames + currActionLine.Frames };
+                    continue;
+                }
+                
+                // Current line is different, so change the active one
+                Document.RemoveLines(activeRowStart, row - 1);
+                Document.InsertLine(activeRowStart, activeActionLine.Value.ToString());
+                
+                activeActionLine = currActionLine;
+                activeRowStart++;
+                
+                // Account for changed line counts
+                maxRow -= row - activeRowStart;
+                row = activeRowStart;
+            }
+            
+            // "Flush" the remaining line
+            if (activeActionLine != null) {
+                Document.RemoveLines(activeRowStart, maxRow);
+                Document.InsertLine(activeRowStart, activeActionLine.Value.ToString());
+                
+                maxRow = activeRowStart;
+            }
+            
+            
+            Document.Selection.Clear();
+            Document.Caret.Row = maxRow;
+            Document.Caret = Editor.ClampCaret(Document.Caret);
+        }
     }
 }
