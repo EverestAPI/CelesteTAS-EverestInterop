@@ -353,6 +353,14 @@ public class CelesteTasSettings : EverestModuleSettings {
             SyncSettings();
         }
     }
+    public SpeedUnit VelocityUnit {
+        get => StudioShared.VelocityUnit;
+        set {
+            StudioShared.VelocityUnit = value;
+            GameInfo.Update();
+            SyncSettings();
+        }
+    }
 
     #endregion
 

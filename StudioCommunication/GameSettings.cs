@@ -37,6 +37,7 @@ public partial class GameSettings {
     public int SubpixelIndicatorDecimals = 2;
 
     public SpeedUnit SpeedUnit = SpeedUnit.PixelPerSecond;
+    public SpeedUnit VelocityUnit = SpeedUnit.PixelPerSecond;
 
     public int FastForwardSpeed = 10;
     public float SlowForwardSpeed = 0.1f;

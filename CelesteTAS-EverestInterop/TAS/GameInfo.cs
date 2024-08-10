@@ -210,7 +210,7 @@ public static class GameInfo {
                     diff = LastDiff;
                 }
 
-                if (TasSettings.SpeedUnit == SpeedUnit.PixelPerSecond) {
+                if (TasSettings.VelocityUnit == SpeedUnit.PixelPerSecond) {
                     diff *= FramesPerRealSecond;
                 }
 
@@ -246,7 +246,7 @@ public static class GameInfo {
                         diff = LastPlayerSeekerDiff;
                     }
 
-                    if (TasSettings.SpeedUnit == SpeedUnit.PixelPerSecond) {
+                    if (TasSettings.VelocityUnit == SpeedUnit.PixelPerSecond) {
                         diff *= FramesPerRealSecond;
                     }
 

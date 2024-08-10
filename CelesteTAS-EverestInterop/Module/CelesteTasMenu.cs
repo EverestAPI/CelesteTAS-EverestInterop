@@ -144,10 +144,15 @@ internal static class CelesteTasMenu {
                 GameSettings.MaxDecimals, TasSettings.SubpixelIndicatorDecimals).Change(value =>
                 TasSettings.SubpixelIndicatorDecimals = value));
             subMenu.Add(new TextMenuExt.EnumerableSlider<SpeedUnit>("Speed Unit".ToDialogText(), new[] {
-                    new KeyValuePair<SpeedUnit, string>(SpeedUnit.PixelPerSecond, "Pixel Per Second".ToDialogText()),
-                    new KeyValuePair<SpeedUnit, string>(SpeedUnit.PixelPerFrame, "Pixel Per Frame".ToDialogText())
+                    new KeyValuePair<SpeedUnit, string>(SpeedUnit.PixelPerSecond, "Pixel per Second".ToDialogText()),
+                    new KeyValuePair<SpeedUnit, string>(SpeedUnit.PixelPerFrame, "Pixel per Frame".ToDialogText())
                 }, TasSettings.SpeedUnit)
                 .Change(value => TasSettings.SpeedUnit = value));
+            subMenu.Add(new TextMenuExt.EnumerableSlider<SpeedUnit>("Velocity Unit".ToDialogText(), new[] {
+                    new KeyValuePair<SpeedUnit, string>(SpeedUnit.PixelPerSecond, "Pixel per Second".ToDialogText()),
+                    new KeyValuePair<SpeedUnit, string>(SpeedUnit.PixelPerFrame, "Pixel per Frame".ToDialogText())
+                }, TasSettings.VelocityUnit)
+                .Change(value => TasSettings.VelocityUnit = value));
         });
     }
 
