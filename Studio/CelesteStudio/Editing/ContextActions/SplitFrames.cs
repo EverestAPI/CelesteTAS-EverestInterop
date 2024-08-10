@@ -13,7 +13,7 @@ public class SplitFrames : ContextAction {
         
         bool valid = false;
         for (int row = minRow; row <= maxRow; row++) {
-            if (!ActionLine.TryParse(Document.Lines[row], out var actionLine) || actionLine.Frames == 0) {
+            if (!ActionLine.TryParse(Document.Lines[row], out var actionLine) || actionLine.Frames <= 1) {
                 continue;
             }
             
