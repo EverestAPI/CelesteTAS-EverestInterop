@@ -1,5 +1,6 @@
 using System;
 using CelesteStudio.Data;
+using System.ComponentModel;
 
 namespace CelesteStudio.Editing.ContextActions;
 
@@ -9,6 +10,10 @@ public class ForceCombineInputFrames : ContextAction {
     public override PopupMenu.Entry? Check() {
         if (Document.Selection.Empty) {
             // Can't force merge without a selection
+            return null;
+        }
+
+        if (!CombineConsecutiveSameInputs.CombineInputs(sameActions: false, dryRun: true)) {
             return null;
         }
         
@@ -34,18 +39,24 @@ public class CombineConsecutiveSameInputs : ContextAction {
             
             BreakLoop:;
         }
+
+        if (!CombineInputs(sameActions: true, dryRun: true)) {
+            return null;
+        }
         
         return CreateEntry("", () => CombineInputs(sameActions: true));
     }
     
-    public static void CombineInputs(bool sameActions) {
+    public static bool CombineInputs(bool sameActions, bool dryRun = false) {
         using var __ = Document.Update();
+
+        bool hasChanges = false;
         
         if (Document.Selection.Empty) {
             // Merge current input with surrounding inputs
             int curr = Document.Caret.Row;
             if (!Editor.TryParseAndFormatActionLine(curr, out var currActionLine)) {
-                return;
+                return false;
             }
             
             // Above
@@ -63,6 +74,7 @@ public class CombineConsecutiveSameInputs : ContextAction {
                 }
                 
                 currActionLine.Frames += otherActionLine.Frames;
+                hasChanges = true;
             }
             
             // Below
@@ -80,17 +92,20 @@ public class CombineConsecutiveSameInputs : ContextAction {
                 }
                 
                 currActionLine.Frames += otherActionLine.Frames;
+                hasChanges = true;
             }
             
             // Account for overshoot by 1
             above = Math.Min(Document.Lines.Count, above + 1);
             below = Math.Max(0, below - 1);
-            
-            Document.RemoveLines(above, below);
-            Document.InsertLine(above, currActionLine.ToString());
-            
-            Document.Caret.Row = above;
-            Document.Caret.Col = Editor.SnapColumnToActionLine(currActionLine, Document.Caret.Col);
+
+            if (!dryRun) {
+                Document.RemoveLines(above, below);
+                Document.InsertLine(above, currActionLine.ToString());
+                
+                Document.Caret.Row = above;
+                Document.Caret.Col = Editor.SnapColumnToActionLine(currActionLine, Document.Caret.Col);
+            }
         } else {
             // Merge everything inside the selection
             int minRow = Document.Selection.Min.Row;
@@ -124,6 +139,7 @@ public class CombineConsecutiveSameInputs : ContextAction {
                 if (!sameActions) {
                     // Just merge them, regardless if they are the same actions
                     activeActionLine = activeActionLine.Value with { Frames = activeActionLine.Value.Frames + currActionLine.Frames };
+                    hasChanges = true;
                     continue;
                 }
                 
@@ -132,12 +148,15 @@ public class CombineConsecutiveSameInputs : ContextAction {
                     currActionLine.FeatherMagnitude == activeActionLine.Value.FeatherMagnitude) 
                 {
                     activeActionLine = activeActionLine.Value with { Frames = activeActionLine.Value.Frames + currActionLine.Frames };
+                    hasChanges = true;
                     continue;
                 }
-                
-                // Current line is different, so change the active one
-                Document.RemoveLines(activeRowStart, row - 1);
-                Document.InsertLine(activeRowStart, activeActionLine.Value.ToString());
+
+                if (!dryRun) {
+                    // Current line is different, so change the active one
+                    Document.RemoveLines(activeRowStart, row - 1);
+                    Document.InsertLine(activeRowStart, activeActionLine.Value.ToString());
+                }
                 
                 activeActionLine = currActionLine;
                 activeRowStart++;
@@ -149,16 +168,21 @@ public class CombineConsecutiveSameInputs : ContextAction {
             
             // "Flush" the remaining line
             if (activeActionLine != null) {
-                Document.RemoveLines(activeRowStart, maxRow);
-                Document.InsertLine(activeRowStart, activeActionLine.Value.ToString());
+                if (!dryRun) {
+                    Document.RemoveLines(activeRowStart, maxRow);
+                    Document.InsertLine(activeRowStart, activeActionLine.Value.ToString());
+                }
                 
                 maxRow = activeRowStart;
             }
-            
-            
-            Document.Selection.Clear();
-            Document.Caret.Row = maxRow;
-            Document.Caret = Editor.ClampCaret(Document.Caret);
+
+            if (!dryRun) {
+                Document.Selection.Clear();
+                Document.Caret.Row = maxRow;
+                Document.Caret = Editor.ClampCaret(Document.Caret);
+            }
         }
+        
+        return hasChanges;
     }
 }
