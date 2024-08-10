@@ -3,20 +3,15 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Celeste;
-using FFmpeg;
-using FMOD;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.EverestInterop.Lua;
 using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
-using static Celeste.TempleGate;
-using static TAS.EverestInterop.InfoHUD.InfoCustom;
 
 namespace TAS.EverestInterop.InfoHUD;
 

@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Numerics;
-using System.Text;
 using CelesteStudio.Editing;
 using Eto.Drawing;
 using Eto.Forms;
@@ -17,7 +16,7 @@ public static class Extensions
 
     public static int Digits(this int self) => Math.Abs(self).ToString().Length;
     public static T Mod<T>(this T x, T m) where T : INumber<T> => (x % m + m) % m;
-    
+
     private static readonly string format = "0.".PadRight(339, '#');
     public static string ToFormattedString(this float value, int decimals) {
         if (decimals == 0) {
@@ -33,24 +32,24 @@ public static class Extensions
             return value.ToString($"F{decimals}");
         }
     }
-    
+
     public static string ReplaceRange(this string self, int startIndex, int count, string replacement) => self.Remove(startIndex, count).Insert(startIndex, replacement);
-    
+
     public static T[] GetArrayRange<T>(this List<T> list, Range range) {
         var (start, length) = range.GetOffsetAndLength(list.Count);
         var result = new T[length];
         list.CopyTo(start, result, 0, length);
         return result;
     }
-    
+
     public static Font WithFontStyle(this Font font, FontStyle style) => new(font.Family, font.Size, style);
     public static Font WithFontDecoration(this Font font, FontDecoration decoration) => new(font.Family, font.Size, font.FontStyle, decoration);
-    
+
     public static CommonControl WithFontStyle(this CommonControl self, FontStyle style) {
         self.Font = self.Font.WithFontStyle(style);
         return self;
     }
-    
+
     public static string HotkeyToString(this Keys hotkey, string separator) {
         var keys = new List<Keys>();
         // Swap App and Ctrl on macOS
@@ -63,20 +62,20 @@ public static class Extensions
         if (hotkey.HasFlag(Keys.Shift))
             keys.Add(Keys.Shift);
         keys.Add(hotkey & Keys.KeyMask);
-        
+
         return string.Join(separator, keys);
     }
-    
+
     public static Keys HotkeyFromString(this string hotkeyString, string separator) {
         var keys = hotkeyString
                 .Split(separator)
                 .Select(Enum.Parse<Keys>)
                 .ToArray();
-        
+
         var hotkey = keys.FirstOrDefault(key => (key & Keys.KeyMask) != Keys.None, Keys.None);
         if (hotkey == Keys.None)
             return Keys.None;
-        
+
         // Swap App and Ctrl on macOS
         if (keys.Any(key => key == Keys.Application))
             hotkey |= Eto.Platform.Instance.IsMac ? Keys.Control : Keys.Application;
@@ -86,40 +85,40 @@ public static class Extensions
             hotkey |= Keys.Alt;
         if (keys.Any(key => key == Keys.Shift))
             hotkey |= Keys.Shift;
-        
+
         return hotkey;
     }
-    
+
     public static bool HasCommonModifier(this Keys keys) => keys.HasFlag(Application.Instance.CommonModifier);
     public static bool HasAlternateModifier(this Keys keys) => keys.HasFlag(Application.Instance.AlternateModifier);
     public static bool HasCommonModifier(this KeyEventArgs e) => e.Modifiers.HasFlag(Application.Instance.CommonModifier);
     public static bool HasAlternateModifier(this KeyEventArgs e) => e.Modifiers.HasFlag(Application.Instance.AlternateModifier);
     public static bool HasCommonModifier(this MouseEventArgs e) => e.Modifiers.HasFlag(Application.Instance.CommonModifier);
     public static bool HasAlternateModifier(this MouseEventArgs e) => e.Modifiers.HasFlag(Application.Instance.AlternateModifier);
-    
+
     public static T? GetValueOrDefault<T>(this T[] array, int index) where T: class => array.Length > index ? array[index] : null;
-    
+
     public static int IndexOf<T>(this IEnumerable<T> obj, T value) => obj.IndexOf(value, EqualityComparer<T>.Default);
     public static int IndexOf<T>(this IEnumerable<T> obj, T value, IEqualityComparer<T> comparer) {
         using var iter = obj.GetEnumerator();
-        
+
         int i = 0;
         while (iter.MoveNext()) {
             if (comparer.Equals(iter.Current, value))
                 return i;
             i++;
         }
-        
+
         return -1;
     }
-    
+
     // Stolen from https://stackoverflow.com/a/36845864
     public static int GetStableHashCode(this string str)
     {
         unchecked {
             int hash1 = 5381;
             int hash2 = hash1;
-            
+
             for (int i = 0; i < str.Length && str[i] != '\0'; i += 2) {
                 hash1 = ((hash1 << 5) + hash1) ^ str[i];
                 if (i == str.Length - 1 || str[i+1] == '\0') {
@@ -127,7 +126,7 @@ public static class Extensions
                 }
                 hash2 = ((hash2 << 5) + hash2) ^ str[i+1];
             }
-            
+
             return hash1 + (hash2*1566083941);
         }
     }
@@ -140,7 +139,7 @@ public static class Extensions
 
         // Apply the WPF theme to the border
         m_FixScrollable!.Invoke(null, [scrollable]);
-        Settings.ThemeChanged += () => m_FixScrollable!.Invoke(null, [scrollable]);
+        Settings.ThemeChanged += () => m_FixScrollable.Invoke(null, [scrollable]);
         return scrollable;
     }
 }

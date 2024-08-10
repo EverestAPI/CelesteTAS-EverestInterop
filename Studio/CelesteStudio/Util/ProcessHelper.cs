@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Eto;
 using Eto.Forms;
 
 namespace CelesteStudio.Util;

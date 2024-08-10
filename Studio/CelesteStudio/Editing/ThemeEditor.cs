@@ -1,8 +1,6 @@
 using Eto.Drawing;
 using Eto.Forms;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using CelesteStudio.Editing;
 using CelesteStudio.Util;

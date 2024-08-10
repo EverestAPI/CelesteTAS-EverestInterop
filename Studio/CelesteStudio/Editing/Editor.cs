@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using CelesteStudio.Communication;
 using CelesteStudio.Data;
 using CelesteStudio.Dialog;
-using CelesteStudio.Editing.AutoCompletion;
 using CelesteStudio.Editing.ContextActions;
 using CelesteStudio.Util;
 using Eto.Drawing;
@@ -29,24 +28,24 @@ public sealed class Editor : Drawable {
             if (document != null) {
                 document.TextChanged -= HandleTextChanged;
             }
-            
+
             document = value;
-            
+
             // Jump to end when file only 10 lines, else the start
-            document.Caret = document.Lines.Count <= 10 
-                ? new CaretPosition(document.Lines.Count - 1, document.Lines[^1].Length) 
+            document.Caret = document.Lines.Count <= 10
+                ? new CaretPosition(document.Lines.Count - 1, document.Lines[^1].Length)
                 : new CaretPosition(0, 0);
-            
+
             // Ensure everything is still valid when something has changed
             document.TextChanged += HandleTextChanged;
 
             // Reset various state
             ActivePopupMenu = null;
-            
+
             ConvertToActionLines(0, document.Lines.Count - 1);
             Recalc();
             ScrollCaretIntoView();
-            
+
             // Detect user-preference
             roomLabelStartIndex = 0;
             foreach (var line in document.Lines) {
@@ -56,7 +55,7 @@ public sealed class Editor : Drawable {
                     break;
                 }
             }
-            
+
             // Auto-close folds which are too long
             foreach (var fold in foldings) {
                 if (Settings.Instance.MaxUnfoldedLines == 0) {
@@ -64,16 +63,16 @@ public sealed class Editor : Drawable {
                     SetCollapse(fold.MinRow, true);
                     continue;
                 }
-                
+
                 int lines = fold.MaxRow - fold.MinRow - 1; // Only the lines inside the fold are counted
                 if (lines > Settings.Instance.MaxUnfoldedLines) {
                     SetCollapse(fold.MinRow, true);
                 }
             }
-            
+
             void HandleTextChanged(Document _, int minRow, int maxRow) {
                 ConvertToActionLines(minRow, maxRow);
-                
+
                 // Need to update total frame count
                 int totalFrames = 0;
                 foreach (var line in document.Lines) {
@@ -84,56 +83,56 @@ public sealed class Editor : Drawable {
                 }
                 Studio.Instance.GameInfoPanel.TotalFrames = totalFrames;
                 Studio.Instance.GameInfoPanel.UpdateGameInfo();
-                
+
                 if (Settings.Instance.AutoIndexRoomLabels) {
                     // room label without indexing -> lines of all occurrences
                     Dictionary<string, List<int>> roomLabels = [];
-                    
+
                     for (int row = 0; row < Document.Lines.Count; row++) {
                         string line = Document.Lines[row];
                         var match = RoomLabelRegex.Match(line);
                         if (!match.Success) {
                             continue;
                         }
-                        
+
                         string label = match.Groups[1].Value.Trim();
-                        
+
                         if (roomLabels.TryGetValue(label, out var list))
                             list.Add(row);
                         else
                             roomLabels[label] = [row];
                     }
-                    
+
                     using var __ = Document.Update(raiseEvents: false);
                     foreach (var (label, occurrences) in roomLabels) {
                         if (occurrences.Count == 1) {
                             Document.ReplaceLine(occurrences[0], $"{RoomLabelPrefix}{label}");
                             continue;
                         }
-                        
+
                         for (int i = 0; i < occurrences.Count; i++) {
                             Document.ReplaceLine(occurrences[i], $"{RoomLabelPrefix}{label.Trim()} ({i + roomLabelStartIndex})");
                         }
                     }
                 }
-                
+
                 Recalc();
                 ScrollCaretIntoView();
             }
         }
     }
-    
+
     private const string RoomLabelPrefix = "#lvl_";
-    
+
     private readonly Scrollable scrollable;
     // These values need to be stored, since WPF doesn't like accessing them directly from the scrollable
     private Point scrollablePosition;
     private Size scrollableSize;
-    
+
     private readonly PixelLayout pixelLayout = new();
     private readonly PopupMenu autoCompleteMenu = new();
     private readonly PopupMenu contextActionsMenu = new();
-    
+
     private PopupMenu? activePopupMenu;
     public PopupMenu? ActivePopupMenu {
         get => activePopupMenu;
@@ -145,11 +144,11 @@ public sealed class Editor : Drawable {
             if (activePopupMenu != null) {
                 activePopupMenu.Visible = true;
             }
-            
+
             Recalc();
         }
     }
-    
+
     private readonly List<PopupMenu.Entry> baseAutoCompleteEntries = [];
 
     // These should be ordered from most specific to most applicable.
@@ -157,15 +156,15 @@ public sealed class Editor : Drawable {
         new SwapActions(Actions.Left, Actions.Right, MenuEntry.Editor_SwapSelectedLR),
         new SwapActions(Actions.Jump, Actions.Jump2, MenuEntry.Editor_SwapSelectedJK),
         new SwapActions(Actions.Dash, Actions.Dash2, MenuEntry.Editor_SwapSelectedXC),
-        
+
         new CombineConsecutiveSameInputs(),
         new ForceCombineInputFrames(),
         new SplitFrames(),
-        
+
         new CreateRepeat(),
         new InlineRepeatCommand(),
         new InlineReadCommand(),
-        
+
         new OpenReadFile(),
         new GotoPlayLine(),
     ];
@@ -173,22 +172,22 @@ public sealed class Editor : Drawable {
     private Font Font => FontManager.EditorFontRegular;
     private SyntaxHighlighter highlighter;
     private const float LineNumberPadding = 5.0f;
-    
+
     /// User-preference for the starting index of room labels
     private int roomLabelStartIndex;
-    
+
     // Offset from the left accounting for line numbers
     private float textOffsetX;
-    
-    // When editing a long line and moving to a short line, "remember" the column on the long line, unless the caret has been moved. 
+
+    // When editing a long line and moving to a short line, "remember" the column on the long line, unless the caret has been moved.
     private int desiredVisualCol;
-    
+
     // Wrap long lines into multiple visual lines
     private readonly Dictionary<int, WrapEntry> commentLineWraps = new();
-    
+
     // Foldings can collapse sections of the document
     private readonly List<Folding> foldings = [];
-    
+
     // When the current line under the mouse cursor is a clickable link with Ctrl+Click
     // Updated (confusingly) inside UpdateMouseCursor()..
     private int lineLinkRow = -1;
@@ -197,53 +196,53 @@ public sealed class Editor : Drawable {
     // A single actual line may occupy multiple visual lines
     private int[] actualToVisualRows = [];
     private readonly List<int> visualToActualRows = [];
-    
+
     // A toast is a small message box which is temporarily shown in the middle of the screen
     private string toastMessage = string.Empty;
     private CancellationTokenSource? toastCancellationSource;
 
     // Simple math operations like +, -, *, / can be performed on action line's frame counts
     private CalculationState? calculationState = null;
-    
+
     private static readonly Regex UncommentedBreakpointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
     private static readonly Regex CommentedBreakpointRegex = new(@"^\s*#+\*\*\*", RegexOptions.Compiled);
     private static readonly Regex AllBreakpointRegex = new(@"^\s*#*\*\*\*", RegexOptions.Compiled);
     private static readonly Regex TimestampRegex = new(@"^\s*#+\s*(\d+:)?\d{1,2}:\d{2}\.\d{3}\(\d+\)", RegexOptions.Compiled);
     private static readonly Regex RoomLabelRegex = new($@"^{RoomLabelPrefix}([^\(\)]*)\s*(?:\((\d+)\))?$", RegexOptions.Compiled);
-    
+
     public Editor(Document document, Scrollable scrollable) {
         this.document = document;
         this.scrollable = scrollable;
-        
+
         CanFocus = true;
         Cursor = Cursors.IBeam;
-        
+
         autoCompleteMenu.Visible = false;
         contextActionsMenu.Visible = false;
-        
+
         pixelLayout.Add(autoCompleteMenu, 0, 0);
         pixelLayout.Add(contextActionsMenu, 0, 0);
         Content = pixelLayout;
-        
+
         Focus();
-        
+
         // Reflect setting changes
         Settings.Changed += () => {
             GenerateBaseAutoCompleteEntries();
             Recalc();
         };
-        
+
         highlighter = new(FontManager.EditorFontRegular, FontManager.EditorFontBold, FontManager.EditorFontItalic, FontManager.EditorFontBoldItalic);
         Settings.FontChanged += () => {
             highlighter = new(FontManager.EditorFontRegular, FontManager.EditorFontBold, FontManager.EditorFontItalic, FontManager.EditorFontBoldItalic);
             Recalc();
         };
-        
+
         GenerateBaseAutoCompleteEntries();
-        
+
         BackgroundColor = Settings.Instance.Theme.Background;
         Settings.ThemeChanged += () => BackgroundColor = Settings.Instance.Theme.Background;
-        
+
         // Need to redraw the line numbers when scrolling horizontally
         scrollable.Scroll += (_, _) => {
             scrollablePosition = scrollable.ScrollPosition;
@@ -262,23 +261,23 @@ public sealed class Editor : Drawable {
                 // Nothing to do
                 return;
             }
-            
+
             Application.Instance.InvokeAsync(() => {
                 if (state.CurrentLine != -1) {
                     Document.Caret.Row = state.CurrentLine;
                     Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
                     Document.Caret = ClampCaret(Document.Caret);
                     Document.Selection.Clear();
-                    
+
                     ScrollCaretIntoView(center: true);
                 }
-                    
+
                 Invalidate();
             });
         };
-        
+
         var commandsMenu = new SubMenuItem { Text = "Insert Other Command" };
-        
+
         GenerateCommandMenu();
         Settings.Changed += GenerateCommandMenu;
 
@@ -292,7 +291,7 @@ public sealed class Editor : Drawable {
                 }
             }
         }
-        
+
         ContextMenu = CreateMenu();
         Settings.KeyBindingsChanged += () => {
             // WPF doesn't like it when a UIElement has multiple parents, even if the other parent no longer exists
@@ -301,7 +300,7 @@ public sealed class Editor : Drawable {
         };
 
         Recalc();
-        
+
         ContextMenu CreateMenu() => new() {
             Items = {
                 MenuEntry.Editor_Cut.ToAction(OnCut),
@@ -346,7 +345,7 @@ public sealed class Editor : Drawable {
                 }),
             }
         };
-        
+
         MenuItem CreateCommandInsert(CommandInfo info) {
             var cmd = new Command { Shortcut = Keys.None };
             cmd.Executed += (_, _) => {
@@ -354,16 +353,16 @@ public sealed class Editor : Drawable {
                 // TODO: Support quick-edits here
                 Recalc();
             };
-            
+
             return new ButtonMenuItem(cmd) { Text = info.Name, ToolTip = info.Description };
         }
     }
-    
+
     public static readonly TimeSpan DefaultToastTime = TimeSpan.FromSeconds(2);
     public void ShowToastMessage(string message, TimeSpan time) {
         toastMessage = message;
         Invalidate();
-        
+
         toastCancellationSource?.Cancel();
         toastCancellationSource?.Dispose();
         toastCancellationSource = new CancellationTokenSource();
@@ -375,9 +374,9 @@ public sealed class Editor : Drawable {
             });
         }, toastCancellationSource.Token);
     }
-    
+
     #region General Helper Methods
-    
+
     /// <summary>
     /// Recalculates all values and invalidates the paint.
     /// </summary>
@@ -385,41 +384,41 @@ public sealed class Editor : Drawable {
         // Ensure there is always at least 1 line
         if (Document.Lines.Count == 0)
             Document.InsertLine(0, string.Empty);
-        
+
         // Snap caret
         Document.Caret.Row = Math.Clamp(Document.Caret.Row, 0, Document.Lines.Count - 1);
         Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length);
-        
+
         // Calculate bounds, apply wrapping, create foldings
         float width = 0.0f, height = 0.0f;
 
         commentLineWraps.Clear();
         foldings.Clear();
-        
+
         var activeCollapses = new HashSet<int>();
         var activeFoldings = new Dictionary<int, int>(); // depth -> startRow
-        
+
         Array.Resize(ref actualToVisualRows, Document.Lines.Count);
         visualToActualRows.Clear();
-        
+
         // Assign all collapsed lines to the visual row of the collapse start
         for (int row = 0, visualRow = 0; row < Document.Lines.Count; row++) {
             var line = Document.Lines[row];
             var trimmed = line.TrimStart();
-            
+
             bool startedCollapse = false;
             if (Document.FindFirstAnchor(anchor => anchor.Row == row && anchor.UserData is FoldingAnchorData) != null) {
                 activeCollapses.Add(row);
-                
+
                 if (activeCollapses.Count == 1) {
                     startedCollapse = true;
                 }
             }
-            
+
             // Skip collapsed lines, but still process the starting line of a collapse
             // Needs to be done before checking for the collapse end
             bool skipLine = activeCollapses.Any() && !startedCollapse;
-            
+
             // Create foldings for lines with the same amount of #'s (minimum 2)
             if (trimmed.StartsWith("##")) {
                 int depth = 0;
@@ -430,44 +429,43 @@ public sealed class Editor : Drawable {
                     }
                     break;
                 }
-                
+
                 if (activeFoldings.Remove(depth, out int startRow)) {
                     // Find begging of text
                     var startLine = Document.Lines[startRow];
                     int startIdx = 0;
                     for (; startIdx < startLine.Length; startIdx++) {
-                        char c = startLine[startIdx]; 
+                        char c = startLine[startIdx];
                         if (c != '#' && !char.IsWhiteSpace(c)) {
                             break;
                         }
                     }
-                    
+
                     foldings.Add(new Folding {
                         MinRow = startRow, MaxRow = row,
                         StartCol = startIdx,
-                        DisplayText = startLine + "..."
                     });
-                    
+
                     activeCollapses.Remove(startRow);
                 } else {
                     activeFoldings[depth] = row;
                 }
             }
-            
+
             if (skipLine) {
                 actualToVisualRows[row] = Math.Max(0, visualRow - 1);
                 continue;
             } else {
                 actualToVisualRows[row] = visualRow;
             }
-            
+
             // Wrap comments into multiple lines when hitting the left edge
             if (Settings.Instance.WordWrapComments && trimmed.StartsWith("#")) {
                 var wrappedLines = new List<WrapLine>();
 
                 const int charPadding = 1;
                 float charWidth = (scrollableSize.Width - textOffsetX) / Font.CharWidth() - 1 - charPadding; // -1 because we overshoot by 1 while iterating
-                
+
                 int idx = 0;
                 int startOffset = -1;
                 while (idx < line.Length) {
@@ -476,16 +474,16 @@ public sealed class Editor : Drawable {
                     int endIdx = -1;
                     for (; idx < line.Length; idx++, subIdx++) {
                         char c = line[idx];
-                        
+
                         // Skip first #'s and whitespace
                         if (startOffset == -1) {
                             if (c == '#' || char.IsWhiteSpace(c)) {
                                 continue;
                             }
-                            
+
                             startOffset = idx;
                         }
-                        
+
                         // End the line if we're beyond the width and have reached whitespace
                         if (char.IsWhiteSpace(c)) {
                             endIdx = idx;
@@ -493,34 +491,34 @@ public sealed class Editor : Drawable {
                         if (idx == line.Length - 1) {
                             endIdx = line.Length;
                         }
-                        
+
                         if (endIdx != -1 && (startIdx == 0 && subIdx >= charWidth ||
-                                             startIdx != 0 && subIdx + startOffset >= charWidth)) 
+                                             startIdx != 0 && subIdx + startOffset >= charWidth))
                         {
                             break;
                         }
                     }
-                    
+
                     // The comment only contains #'s and whitespace. Abort wrapping
                     if (endIdx == -1) {
                         wrappedLines = [(line, 0)];
                         break;
                     }
-                    
+
                     if (idx != line.Length) {
                         // Snap index back to line break
                         idx = endIdx + 1;
                     }
-                    
+
                     var subLine = line[startIdx..endIdx];
                     wrappedLines.Add((subLine, startIdx));
 
                     width = Math.Max(width, Font.MeasureWidth(subLine));
                     height += Font.LineHeight();
                 }
-                
+
                 commentLineWraps.Add(row, (startOffset, wrappedLines.ToArray()));
-                
+
                 visualRow += wrappedLines.Count;
                 for (int i = 0; i < wrappedLines.Count; i++) {
                     visualToActualRows.Add(row);
@@ -528,15 +526,15 @@ public sealed class Editor : Drawable {
             } else {
                 width = Math.Max(width, Font.MeasureWidth(line));
                 height += Font.LineHeight();
-                
+
                 visualRow += 1;
                 visualToActualRows.Add(row);
             }
         }
-        
+
         // Clear invalid foldings
         Document.RemoveAnchorsIf(anchor => anchor.UserData is FoldingAnchorData && foldings.All(fold => fold.MinRow != anchor.Row));
-        
+
         // Calculate line numbers width
         const float foldButtonPadding = 5.0f;
         bool hasFoldings = Settings.Instance.ShowFoldIndicators && foldings.Count != 0;
@@ -547,7 +545,7 @@ public sealed class Editor : Drawable {
              _ => throw new UnreachableException(),
         };
         textOffsetX = Math.Max(foldingWidth, Font.CharWidth() * Document.Lines.Count.Digits()) + LineNumberPadding * 3.0f;
-        
+
         const float paddingRight = 50.0f;
         const float paddingBottom = 100.0f;
 
@@ -557,29 +555,29 @@ public sealed class Editor : Drawable {
         } else {
             Size = new((int)(width + textOffsetX + paddingRight), (int)(height + paddingBottom));
         }
-        
+
         // Update popup-menu position
         if (ActivePopupMenu != null) {
             const float menuXOffset = 8.0f;
             const float menuYOffset = 7.0f;
-            
+
             float availableWidth = scrollablePosition.X + scrollableSize.Width - Font.CharWidth();
             float carX = Font.CharWidth() * Document.Caret.Col;
             float carY = Font.LineHeight() * (actualToVisualRows[Document.Caret.Row] + 1);
-            
+
             int menuX = (int)(carX + scrollablePosition.X + textOffsetX + menuXOffset);
             int menuYBelow = (int)(carY + menuYOffset);
             int menuYAbove = (int)Math.Max(carY - Font.LineHeight() - menuYOffset - ActivePopupMenu.ContentHeight, scrollablePosition.Y + menuYOffset);
             int menuMaxW = (int)(availableWidth - menuX);
             int menuMaxHBelow = (int)(scrollablePosition.Y + scrollableSize.Height - Font.LineHeight() - menuYBelow);
             int menuMaxHAbove = (int)(scrollablePosition.Y + carY - Font.LineHeight() - menuYOffset - menuYAbove);
-            
+
             // Try moving the menu to the left when there isn't enough space, before having to shrink it
             if (menuMaxW < ActivePopupMenu.ContentWidth) {
                 menuX = (int)Math.Max(availableWidth - ActivePopupMenu.ContentWidth, scrollablePosition.X + textOffsetX);
                 menuMaxW = (int)(availableWidth - menuX);
             }
-            
+
             // Chose above / below caret depending on which provides more height. Default to below
             int menuY, menuMaxH;
             if (Math.Min(ActivePopupMenu.ContentHeight, menuMaxHBelow) >= Math.Min(ActivePopupMenu.ContentHeight, menuMaxHAbove)) {
@@ -589,15 +587,15 @@ public sealed class Editor : Drawable {
                 menuY = menuYAbove;
                 menuMaxH = menuMaxHAbove;
             }
-            
+
             ActivePopupMenu.ContentWidth = Math.Min(ActivePopupMenu.ContentWidth, menuMaxW);
             ActivePopupMenu.ContentHeight = Math.Min(ActivePopupMenu.ContentHeight, menuMaxH);
             pixelLayout.Move(ActivePopupMenu, menuX, menuY);
         }
-        
+
         Invalidate();
     }
-    
+
     /// Ensures that parsable action-line has the correct format
     public bool TryParseAndFormatActionLine(int row, out ActionLine actionLine) {
         if (ActionLine.TryParse(Document.Lines[row], out actionLine)) {
@@ -607,20 +605,20 @@ public sealed class Editor : Drawable {
         actionLine = default;
         return false;
     }
-    
+
     /// Applies the correct action-line formatting to all specified lines
     private void ConvertToActionLines(int startRow, int endRow) {
         int minRow = Math.Min(startRow, endRow);
         int maxRow = Math.Max(startRow, endRow);
-        
+
         using var __ = Document.Update(raiseEvents: false);
-        
+
         // Convert to action lines, if possible
         for (int row = minRow; row <= Math.Min(maxRow, Document.Lines.Count - 1); row++) {
             var line = Document.Lines[row];
             if (ActionLine.TryParse(line, out var actionLine)) {
                 var newLine = actionLine.ToString();
-                
+
                 if (Document.Caret.Row == row) {
                     if (Document.Caret.Col == line.Length) {
                         Document.Caret.Col = newLine.Length;
@@ -628,22 +626,22 @@ public sealed class Editor : Drawable {
                         Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
                     }
                 }
-                
+
                 Document.ReplaceLine(row, newLine);
             }
         }
     }
-    
+
     private void AdjustFrameCounts(int rowA, int rowB, int dir) {
         int topRow = Math.Min(rowA, rowB);
         int bottomRow = Math.Max(rowA, rowB);
-        
+
         var topLine = ActionLine.Parse(Document.Lines[topRow]);
         var bottomLine = ActionLine.Parse(Document.Lines[bottomRow]);
-        
+
         if (topLine == null && bottomLine == null || dir == 0)
             return;
-        
+
         using (Document.Update()) {
             // Adjust single line
             if (topRow == bottomRow ||
@@ -652,7 +650,7 @@ public sealed class Editor : Drawable {
             {
                 var line = topLine ?? bottomLine!.Value;
                 int row = topLine != null ? topRow : bottomRow;
-                
+
                 if (dir > 0) {
                     Document.ReplaceLine(row, (line with { Frames = Math.Min(line.Frames + 1, ActionLine.MaxFrames) }).ToString());
                 } else {
@@ -669,21 +667,21 @@ public sealed class Editor : Drawable {
                     Document.ReplaceLine(bottomRow, (bottomLine.Value with { Frames = Math.Min(bottomLine.Value.Frames + 1, ActionLine.MaxFrames) }).ToString());
                 }
             }
-        } 
+        }
     }
-    
+
     private CaretPosition GetVisualPosition(CaretPosition position) {
         if (!commentLineWraps.TryGetValue(position.Row, out var wrap))
             return new CaretPosition(actualToVisualRows[position.Row], position.Col);
-        
+
         // TODO: Maybe don't use LINQ here for performance?
         var (line, lineIdx) = wrap.Lines
             .Select((line, idx) => (line, idx))
             .Reverse()
             .FirstOrDefault(line => line.line.Index <= position.Col);
-        
+
         int xIdent = lineIdx == 0 ? 0 : wrap.StartOffset;
-        
+
         return new CaretPosition(
             actualToVisualRows[position.Row] + lineIdx,
             position.Col - line.Index + xIdent);
@@ -699,19 +697,19 @@ public sealed class Editor : Drawable {
         }
 
         int row = GetActualRow(position.Row);
-        
+
         int col = position.Col;
         if (commentLineWraps.TryGetValue(row, out var wrap)) {
             int idx = position.Row - actualToVisualRows[row];
             if (idx >= 0 && idx < wrap.Lines.Length) {
                 int xIdent = idx == 0 ? 0 : wrap.StartOffset;
                 var line = wrap.Lines[idx];
-                
+
                 col = Math.Clamp(col, xIdent, xIdent + line.Line.Length);
                 col += line.Index - xIdent;
             }
         }
-        
+
         return new CaretPosition(row, col);
     }
 
@@ -722,27 +720,27 @@ public sealed class Editor : Drawable {
         if (visualRow >= visualToActualRows.Count) {
             return defaultRow ?? visualToActualRows[^1];
         }
-        
+
         return visualToActualRows[visualRow];
     }
 
     private string GetVisualLine(int visualRow) {
         int row = GetActualRow(visualRow);
-        
+
         if (commentLineWraps.TryGetValue(row, out var wrap)) {
             int idx = visualRow - actualToVisualRows[row];
             if (idx == 0) {
                 return wrap.Lines[idx].Line;
             } else {
                 return $"{new string(' ', wrap.StartOffset)}{wrap.Lines[idx].Line}";
-            }            
+            }
         }
-        
+
         return Document.Lines[row];
     }
-    
+
     #endregion
-    
+
     protected override void OnKeyDown(KeyEventArgs e) {
         var mods = e.Modifiers;
         if (e.Key is Keys.LeftShift or Keys.RightShift) mods |= Keys.Shift;
@@ -750,7 +748,7 @@ public sealed class Editor : Drawable {
         if (e.Key is Keys.LeftAlt or Keys.RightAlt) mods |= Keys.Alt;
         if (e.Key is Keys.LeftApplication or Keys.RightApplication) mods |= Keys.Application;
         UpdateMouseAction(PointFromScreen(Mouse.Position), mods);
-        
+
         // While there are quick-edits available, Tab will cycle through them
         // Using tab doesn't feel "right" for the context actions menu
         if (ActivePopupMenu?.HandleKeyDown(e, useTabComplete: ActivePopupMenu == autoCompleteMenu && !GetQuickEdits().Any()) ?? false) {
@@ -758,7 +756,7 @@ public sealed class Editor : Drawable {
             Recalc();
             return;
         }
-        
+
         if (GetQuickEdits().Any()) {
             // Cycle
             if (e.Key == Keys.Tab) {
@@ -767,7 +765,7 @@ public sealed class Editor : Drawable {
                 } else {
                     SelectNextQuickEdit();
                 }
-                
+
                 UpdateAutoComplete();
 
                 e.Handled = true;
@@ -778,7 +776,7 @@ public sealed class Editor : Drawable {
             if (e.Key == Keys.Escape) {
                 ClearQuickEdits();
                 Document.Selection.Clear();
-                
+
                 e.Handled = true;
                 Recalc();
                 return;
@@ -789,7 +787,7 @@ public sealed class Editor : Drawable {
                 ClearQuickEdits();
                 Document.Caret = Document.Selection.Max;
                 Document.Selection.Clear();
-                
+
                 e.Handled = true;
                 Recalc();
                 return;
@@ -806,7 +804,7 @@ public sealed class Editor : Drawable {
             Invalidate();
             return;
         }
-        
+
         // Forward hotkeys from menu entries / snippets
         if (e.Key != Keys.None) {
             // Check for menu items
@@ -818,13 +816,13 @@ public sealed class Editor : Drawable {
                 if (item.Shortcut != e.KeyData) {
                     continue;
                 }
-                
+
                 item.PerformClick();
                 Recalc();
                 e.Handled = true;
                 return;
             }
-            
+
             // Handle context actions
             foreach (var contextAction in contextActions) {
                 if (contextAction.Entry.GetHotkey() == e.KeyData && contextAction.Check() is { } action) {
@@ -835,24 +833,24 @@ public sealed class Editor : Drawable {
                     return;
                 }
             }
-            
+
             // Try to paste snippets
             foreach (var snippet in Settings.Instance.Snippets) {
                 if (!snippet.Enabled || snippet.Hotkey != e.KeyData) {
                     continue;
                 }
-                
+
                 if (string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row])) {
                     Document.ReplaceLine(Document.Caret.Row, snippet.Insert);
                 } else {
                     InsertLine(snippet.Insert);
                 }
-                
+
                 Document.Caret.Col = desiredVisualCol = snippet.Insert.Length;
                 return;
             }
         }
-        
+
         switch (e.Key) {
             case Keys.Backspace:
                 OnDelete(e.HasCommonModifier() ? CaretMovementType.WordLeft : CaretMovementType.CharLeft);
@@ -889,7 +887,7 @@ public sealed class Editor : Drawable {
                             var line = Document.Lines[Document.Selection.Min.Row - 1];
                             Document.RemoveLine(Document.Selection.Min.Row - 1);
                             Document.InsertLine(Document.Selection.Max.Row, line);
-                            
+
                             Document.Selection.Start.Row--;
                             Document.Selection.End.Row--;
                             Document.Caret.Row--;
@@ -901,7 +899,7 @@ public sealed class Editor : Drawable {
                 } else {
                     MoveCaret(e.HasCommonModifier() ? CaretMovementType.LabelUp : CaretMovementType.LineUp, updateSelection: e.Shift);
                 }
-                
+
                 e.Handled = true;
                 break;
             case Keys.Down:
@@ -919,7 +917,7 @@ public sealed class Editor : Drawable {
                             var line = Document.Lines[Document.Selection.Max.Row + 1];
                             Document.RemoveLine(Document.Selection.Max.Row + 1);
                             Document.InsertLine(Document.Selection.Min.Row, line);
-                            
+
                             Document.Selection.Start.Row++;
                             Document.Selection.End.Row++;
                             Document.Caret.Row++;
@@ -954,7 +952,7 @@ public sealed class Editor : Drawable {
                 Clipboard.Instance.Clear();
                 Clipboard.Instance.Text = Document.FilePath;
                 ShowToastMessage("Copied current file path to Clipboard", DefaultToastTime);
-                
+
                 e.Handled = true;
                 break;
             // Use Ctrl+/ as an alternative for Ctrl+K
@@ -971,7 +969,7 @@ public sealed class Editor : Drawable {
                     StartCalculation(op);
                     e.Handled = true;
                 }
-                
+
                 // macOS will make a beep sounds when the event isn't handled
                 // ..that also means OnTextInput won't be called..
                 if (Eto.Platform.Instance.IsMac) {
@@ -980,15 +978,15 @@ public sealed class Editor : Drawable {
                         OnTextInput(new TextInputEventArgs(e.KeyChar.ToString()));
                     }
                 } else {
-                    base.OnKeyDown(e);    
+                    base.OnKeyDown(e);
                 }
-                
+
                 break;
         }
-        
+
         Recalc();
     }
-    
+
     protected override void OnKeyUp(KeyEventArgs e) {
         var mods = e.Modifiers;
         if (e.Key is Keys.LeftShift or Keys.RightShift) mods &= ~Keys.Shift;
@@ -996,25 +994,25 @@ public sealed class Editor : Drawable {
         if (e.Key is Keys.LeftAlt or Keys.RightAlt) mods &= ~Keys.Alt;
         if (e.Key is Keys.LeftApplication or Keys.RightApplication) mods &= ~Keys.Application;
         UpdateMouseAction(PointFromScreen(Mouse.Position), mods);
-        
+
         if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: true)) {
             e.Handled = true;
             return;
         }
-        
+
         base.OnKeyUp(e);
     }
-    
+
     #region Action Line Calculation
 
     private void StartCalculation(CalculationOperator op) {
         calculationState = new CalculationState(op, Document.Caret.Row);
     }
-    
+
     private void CalculationHandleKey(KeyEventArgs e) {
         if (calculationState == null)
             return;
-        
+
         switch (e.Key)
         {
             case Keys.Escape:
@@ -1048,7 +1046,7 @@ public sealed class Editor : Drawable {
                 return;
             }
         }
-        
+
         if (CalculationExtensions.TryParse(e.KeyChar) is { } op) {
             // Cancel with same operation again
             if (op == calculationState.Operator && calculationState.Operand.Length == 0) {
@@ -1056,7 +1054,7 @@ public sealed class Editor : Drawable {
                 e.Handled = true;
                 return;
             }
-            
+
             CommitCalculation();
             StartCalculation(op);
             e.Handled = true;
@@ -1067,24 +1065,24 @@ public sealed class Editor : Drawable {
                 e.Handled = false;
                 return;
             }
-            
+
             e.Handled = false;
         }
     }
 
     private void CommitCalculation(int stealFrom = 0) {
-        if (calculationState == null || 
+        if (calculationState == null ||
             calculationState.Operand.Length == 0 ||
             !int.TryParse(calculationState.Operand, out int operand) ||
-            !TryParseAndFormatActionLine(calculationState.Row, out var actionLine)) 
+            !TryParseAndFormatActionLine(calculationState.Row, out var actionLine))
         {
             return;
         }
-        
+
         using var __ = Document.Update();
-        
+
         Document.ReplaceLine(calculationState.Row, calculationState.Operator.Apply(actionLine, operand).ToString());
-        
+
         if (stealFrom != 0 && calculationState.Operator is not (CalculationOperator.Mul or CalculationOperator.Div)) {
             int stealFromRow = calculationState.Row + stealFrom;
             if (stealFromRow >= 0 && stealFromRow < Document.Lines.Count && ActionLine.TryParse(Document.Lines[stealFromRow], out var stealFromActionLine)) {
@@ -1092,9 +1090,9 @@ public sealed class Editor : Drawable {
             }
         }
     }
-    
+
     #endregion
-    
+
     // Helper methods to only close a specific menu type and not close an unrelated menu
     private void CloseAutoCompletePopup() {
         if (ActivePopupMenu == autoCompleteMenu) {
@@ -1106,9 +1104,9 @@ public sealed class Editor : Drawable {
             ActivePopupMenu = null;
         }
     }
-    
+
     #region Auto Complete
-    
+
     private void GenerateBaseAutoCompleteEntries() {
         baseAutoCompleteEntries.Clear();
 
@@ -1122,12 +1120,12 @@ public sealed class Editor : Drawable {
                 continue;
             baseAutoCompleteEntries.Add(CreateEntry(command.Value.Name, command.Value.Insert, "Command", command.Value.AutoCompleteEntries));
         }
-        
+
         return;
-        
+
         PopupMenu.Entry CreateEntry(string name, string insert, string extra, Func<string[], CommandAutoCompleteEntry[]>[] commandAutoCompleteEntries) {
             var quickEdit = ParseQuickEdit(insert);
-            
+
             return new PopupMenu.Entry {
                 SearchText = name,
                 DisplayText = name,
@@ -1135,14 +1133,14 @@ public sealed class Editor : Drawable {
                 OnUse = () => {
                     int row = Document.Caret.Row;
                     Document.ReplaceLine(row, quickEdit.ActualText);
-                    
+
                     ClearQuickEdits();
-                    
+
                     if (quickEdit.Selections.Length > 0) {
                         for (int i = 0; i < quickEdit.Selections.Length; i++) {
                             var selection = quickEdit.Selections[i];
                             var defaultText = quickEdit.ActualText.SplitDocumentLines()[selection.Min.Row][selection.Min.Col..selection.Max.Col];
-                            
+
                             // Quick-edit selections are relative, not absolute
                             Document.AddAnchor(new Anchor {
                                 Row = selection.Min.Row + row,
@@ -1155,11 +1153,11 @@ public sealed class Editor : Drawable {
                     } else {
                         // Just jump to the end of the insert
                         int newLines = quickEdit.ActualText.Count(c => c == Document.NewLine);
-                        
+
                         Document.Caret.Row = Math.Min(Document.Lines.Count - 1, Document.Caret.Row + newLines);
                         Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
                     }
-                    
+
                     if (commandAutoCompleteEntries.Length != 0) {
                         // Keep open for arguments
                         UpdateAutoComplete();
@@ -1170,41 +1168,41 @@ public sealed class Editor : Drawable {
             };
         }
     }
-    
+
     private void UpdateAutoComplete(bool open = true) {
         var line = Document.Lines[Document.Caret.Row][..Document.Caret.Col].TrimStart();
-        
+
         // Don't auto-complete on comments or action lines
         if (line.StartsWith('#') || ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _)) {
             CloseAutoCompletePopup();
             return;
         }
-        
+
         if (open) {
             ActivePopupMenu = autoCompleteMenu;
         }
         if (ActivePopupMenu == null) {
             return;
         }
-        
+
         // Use auto-complete entries for current command
 
         // Split by the first separator
         var separatorMatch = CommandLine.SeparatorRegex.Match(line);
         var args = line.Split(separatorMatch.Value);
         var allArgs = Document.Lines[Document.Caret.Row].Split(separatorMatch.Value);
-        
+
         if (args.Length <= 1) {
             autoCompleteMenu.Entries = baseAutoCompleteEntries;
             autoCompleteMenu.Filter = line;
         } else {
             var command = CommandInfo.AllCommands.FirstOrDefault(cmd => string.Equals(cmd?.Name, args[0], StringComparison.OrdinalIgnoreCase));
             var commandArgs = args[1..];
-            
+
             if (command != null && command.Value.AutoCompleteEntries.Length >= commandArgs.Length) {
                 int lastArgStart = line.LastIndexOf(args[^1], StringComparison.Ordinal);
                 var entries = command.Value.AutoCompleteEntries[commandArgs.Length - 1](commandArgs);
-                
+
                 autoCompleteMenu.Entries = entries.Select(entry => new PopupMenu.Entry {
                     SearchText = entry.FullName,
                     DisplayText = entry.Name,
@@ -1215,28 +1213,28 @@ public sealed class Editor : Drawable {
                         if (allArgs.Length != args.Length) {
                             commandLine += separatorMatch.Value;
                         }
-                        
+
                         var selectedQuickEdit = GetQuickEdits()
                             .FirstOrDefault(anchor => Document.Caret.Row == anchor.Row &&
                                                       Document.Caret.Col >= anchor.MinCol &&
                                                       Document.Caret.Col <= anchor.MaxCol);
-                        
+
                         if (selectedQuickEdit != null) {
                             // Replace the current quick-edit instead
                             Document.ReplaceRangeInLine(selectedQuickEdit.Row, selectedQuickEdit.MinCol, selectedQuickEdit.MaxCol, insert);
-                            
+
                             if (entry.IsDone) {
                                 var quickEdits = GetQuickEdits().ToArray();
-                                bool lastQuickEditSelected = quickEdits.Length != 0 && 
+                                bool lastQuickEditSelected = quickEdits.Length != 0 &&
                                                              quickEdits[^1].Row == Document.Caret.Row &&
                                                              quickEdits[^1].MinCol <= Document.Caret.Col &&
                                                              quickEdits[^1].MaxCol >= Document.Caret.Col;
-                                
+
                                 if (lastQuickEditSelected) {
                                     ClearQuickEdits();
                                     Document.Selection.Clear();
                                     Document.Caret.Col = Document.Lines[Document.Caret.Row].Length;
-                                    
+
                                     CloseAutoCompletePopup();
                                 } else {
                                     SelectNextQuickEdit();
@@ -1245,7 +1243,7 @@ public sealed class Editor : Drawable {
                             } else {
                                 Document.Selection.Clear();
                                 Document.Caret.Col = selectedQuickEdit.MinCol + insert.Length;
-                                
+
                                 UpdateAutoComplete();
                             }
                         } else {
@@ -1253,20 +1251,20 @@ public sealed class Editor : Drawable {
                                 Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, insert);
                                 Document.Caret.Col = desiredVisualCol = lastArgStart + insert.Length;
                                 Document.Selection.Clear();
-                                
+
                                 UpdateAutoComplete();
                             } else if (entry.HasNext ?? command.Value.AutoCompleteEntries.Length != allArgs.Length - 1) {
                                 // Include separator for next argument
                                 Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, insert + separatorMatch.Value);
                                 Document.Caret.Col = desiredVisualCol = lastArgStart + insert.Length + separatorMatch.Value.Length;
                                 Document.Selection.Clear();
-                                
+
                                 UpdateAutoComplete();
                             } else {
                                 Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, insert);
                                 Document.Caret.Col = desiredVisualCol = lastArgStart + insert.Length;
                                 Document.Selection.Clear();
-                                
+
                                 CloseAutoCompletePopup();
                             }
                         }
@@ -1275,7 +1273,7 @@ public sealed class Editor : Drawable {
             } else {
                 autoCompleteMenu.Entries = [];
             }
-            
+
             if (GetSelectedQuickEdit() is { } quickEdit && args[^1] == quickEdit.DefaultText) {
                 // Display all entries when quick-edit still contains the default
                 autoCompleteMenu.Filter = string.Empty;
@@ -1284,7 +1282,7 @@ public sealed class Editor : Drawable {
             }
         }
     }
-    
+
     #endregion
 
     #region Context Actions
@@ -1309,26 +1307,26 @@ public sealed class Editor : Drawable {
     }
 
     #endregion
-    
+
     #region Quick Edit
-    
+
     /*
      * Quick-edits are anchors to switch through with tab and edit
      * They are used by auto-complete snippets
      */
-    
+
     private record struct QuickEdit { public required string ActualText; public Selection[] Selections; }
     private record struct QuickEditData { public required int Index; public required string DefaultText; }
-    
-    private readonly Dictionary<string, QuickEdit> quickEditCache = new();  
+
+    private readonly Dictionary<string, QuickEdit> quickEditCache = new();
     private QuickEdit ParseQuickEdit(string text) {
         if (quickEditCache.TryGetValue(text, out var quickEdit)) {
             return quickEdit;
         }
-        
+
         var actualText = new StringBuilder(capacity: text.Length);
         var quickEditSpots = new Dictionary<int, Selection>();
-        
+
         int row = 0;
         int col = 0;
         for (int i = 0; i < text.Length; i++) {
@@ -1344,10 +1342,10 @@ public sealed class Editor : Drawable {
                 col++;
                 continue;
             }
-            
+
             int endIdx = text.IndexOf(']', i);
             var quickEditText = text[(i + 1)..endIdx];
-            
+
             int delimIdx = quickEditText.IndexOf(';');
             if (delimIdx < 0) {
                 int idx = int.Parse(quickEditText);
@@ -1359,21 +1357,21 @@ public sealed class Editor : Drawable {
                 actualText.Append(editableText);
                 col += editableText.Length;
             }
-            
+
             i = endIdx;
         }
-        
+
         // Convert to actual array
         var quickEditSelections = new Selection[quickEditSpots.Count];
         for (int i = 0; i < quickEditSelections.Length; i++) {
             quickEditSelections[i] = quickEditSpots[i];
         }
-        
+
         quickEdit = new QuickEdit { ActualText = actualText.ToString(), Selections = quickEditSelections };
         quickEditCache[text] = quickEdit;
         return quickEdit;
     }
-    
+
     private void SelectNextQuickEdit() {
         // Find the first quick-edit after the caret
         var quickEdit = GetQuickEdits()
@@ -1384,7 +1382,7 @@ public sealed class Editor : Drawable {
             SelectQuickEditIndex(0);
             return;
         }
-        
+
         Document.Caret.Row = quickEdit.Row;
         Document.Caret.Col = desiredVisualCol = quickEdit.MinCol;
         Document.Selection = new Selection {
@@ -1392,7 +1390,7 @@ public sealed class Editor : Drawable {
             End = new CaretPosition(quickEdit.Row, quickEdit.MaxCol),
         };
     }
-    
+
     private void SelectPrevQuickEdit() {
         // Find the first quick-edit before the caret
         var quickEdits = GetQuickEdits().ToArray();
@@ -1405,7 +1403,7 @@ public sealed class Editor : Drawable {
             SelectQuickEditIndex(quickEdits.Length - 1);
             return;
         }
-        
+
         Document.Caret.Row = quickEdit.Row;
         Document.Caret.Col = desiredVisualCol = quickEdit.MinCol;
         Document.Selection = new Selection {
@@ -1413,14 +1411,14 @@ public sealed class Editor : Drawable {
             End = new CaretPosition(quickEdit.Row, quickEdit.MaxCol),
         };
     }
-    
+
     private void SelectQuickEditIndex(int index) {
         var quickEdit = Document.FindFirstAnchor(anchor => anchor.UserData is QuickEditData idx && idx.Index == index);
         if (quickEdit == null) {
             ClearQuickEdits();
             return;
         }
-        
+
         Document.Caret.Row = quickEdit.Row;
         Document.Caret.Col = desiredVisualCol = quickEdit.MinCol;
         Document.Selection = new Selection {
@@ -1428,23 +1426,22 @@ public sealed class Editor : Drawable {
             End = new CaretPosition(quickEdit.Row, quickEdit.MaxCol),
         };
     }
-    
+
     private QuickEditData? GetSelectedQuickEdit() => GetQuickEdits().FirstOrDefault(anchor => anchor.IsPositionInside(Document.Caret))?.UserData as QuickEditData?;
     private IEnumerable<Anchor> GetQuickEdits() => Document.FindAnchors(anchor => anchor.UserData is QuickEditData);
     private void ClearQuickEdits() => Document.RemoveAnchorsIf(anchor => anchor.UserData is QuickEditData);
-    
+
     #endregion
-    
+
     #region Folding
-    
+
     private struct Folding {
         public int MinRow, MaxRow;
-        
+
         public int StartCol;
-        public string DisplayText;
     }
     private struct FoldingAnchorData;
-    
+
     private void ToggleCollapse(int row) {
         if (Document.FindFirstAnchor(anchor => anchor.Row == row && anchor.UserData is FoldingAnchorData) == null) {
             Document.AddAnchor(new Anchor {
@@ -1452,9 +1449,9 @@ public sealed class Editor : Drawable {
                 Row = row,
                 UserData = new FoldingAnchorData()
             });
-            
+
             if (foldings.FirstOrDefault(f => f.MinRow == row) is { } fold &&
-                Document.Caret.Row >= fold.MinRow && Document.Caret.Row <= fold.MaxRow) 
+                Document.Caret.Row >= fold.MinRow && Document.Caret.Row <= fold.MaxRow)
             {
                 Document.Caret.Row = fold.MinRow;
                 Document.Caret = ClampCaret(Document.Caret);
@@ -1470,7 +1467,7 @@ public sealed class Editor : Drawable {
                 Row = row,
                 UserData = new FoldingAnchorData()
             });
-            
+
             if (foldings.FirstOrDefault(f => f.MinRow == row) is { } fold &&
                 Document.Caret.Row >= fold.MinRow && Document.Caret.Row <= fold.MaxRow)
             {
@@ -1485,42 +1482,42 @@ public sealed class Editor : Drawable {
         if (Document.FindFirstAnchor(anchor => anchor.Row == row && anchor.UserData is FoldingAnchorData) == null) {
             return null;
         }
-        
+
         var folding = foldings.FirstOrDefault(fold => fold.MinRow == row);
         if (folding.MinRow == folding.MaxRow) {
             return null;
         }
-        
+
         return folding;
     }
-    
+
     #endregion
-    
+
     #region Editing Actions
 
     protected override void OnTextInput(TextInputEventArgs e) {
         if (e.Text.Length == 0) {
             return;
         }
-        
+
         using var __ = Document.Update();
-        
+
         if (!Document.Selection.Empty) {
             RemoveRange(Document.Selection.Min, Document.Selection.Max);
             Document.Caret = Document.Selection.Min;
             Document.Selection.Clear();
         }
-        
+
         Document.Caret = ClampCaret(Document.Caret);
         var line = Document.Lines[Document.Caret.Row];
-        
+
         char typedCharacter = char.ToUpper(e.Text[0]);
         int leadingSpaces = line.Length - line.TrimStart().Length;
-        
+
         // If it's an action line, handle it ourselves
         if (TryParseAndFormatActionLine(Document.Caret.Row, out var actionLine) && e.Text.Length == 1) {
             ClearQuickEdits();
-            
+
             // Handle custom bindings
             int customBindStart = GetColumnOfAction(actionLine, Actions.PressedKey);
             int customBindEnd = customBindStart + actionLine.CustomBindings.Count;
@@ -1550,7 +1547,7 @@ public sealed class Editor : Drawable {
                     line = line.Insert(Document.Caret.Col, typedCharacter.ToString());
                     newCol = Document.Caret.Col + 1;
                 }
-                
+
                 if (ActionLine.TryParse(line, out var newActionLine, ignoreInvalidFloats: false)) {
                     actionLine = newActionLine;
                     Document.Caret.Col = newCol;
@@ -1559,7 +1556,7 @@ public sealed class Editor : Drawable {
             // Handle dash-only/move-only/custom bindings
             else if (typedAction is Actions.DashOnly or Actions.MoveOnly or Actions.PressedKey) {
                 actionLine.Actions = actionLine.Actions.ToggleAction(typedAction, Settings.Instance.AutoRemoveMutuallyExclusiveActions);
-                
+
                 if (actionLine.Actions.HasFlag(typedAction)) {
                     Document.Caret.Col = desiredVisualCol = GetColumnOfAction(actionLine, typedAction);
                 } else {
@@ -1643,52 +1640,52 @@ public sealed class Editor : Drawable {
                     Document.ReplaceLine(Document.Caret.Row, newLine);
                     Document.Caret.Col = desiredVisualCol = newLine.Length;
                 } else {
-                    Document.Insert("#");    
+                    Document.Insert("#");
                 }
             } else {
                 Document.Insert(e.Text);
             }
-            
+
             // But turn it into an action line if possible
             if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out var newActionLine)) {
                 ClearQuickEdits();
-                
+
                 Document.ReplaceLine(Document.Caret.Row, newActionLine.ToString());
                 Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
             }
         }
-     
+
         UpdateAutoComplete();
     }
 
     private void OnDelete(CaretMovementType direction) {
         using var __ = Document.Update();
-        
+
         if (!Document.Selection.Empty) {
             RemoveRange(Document.Selection.Min, Document.Selection.Max);
             Document.Caret = Document.Selection.Min;
             Document.Selection.Clear();
             return;
         }
-        
+
         var caret = Document.Caret;
         var line = Document.Lines[Document.Caret.Row];
-        
+
         if (TryParseAndFormatActionLine(Document.Caret.Row, out var actionLine)) {
             caret.Col = SnapColumnToActionLine(actionLine, caret.Col);
-            
+
             var lineStartPosition = new CaretPosition(caret.Row, 0);
-            
+
             // Handle frame count
             if (caret.Col == ActionLine.MaxFramesDigits && direction is CaretMovementType.WordLeft or CaretMovementType.CharLeft ||
                 caret.Col < ActionLine.MaxFramesDigits) {
                 int leadingSpaces = line.Length - line.TrimStart().Length;
                 int cursorIndex = Math.Clamp(caret.Col - leadingSpaces, 0, actionLine.Frames.Digits());
-                
+
                 string framesString = actionLine.Frames.ToString();
                 string leftOfCursor = framesString[..cursorIndex];
                 string rightOfCursor = framesString[cursorIndex..];
-                
+
                 // To avoid old muscle memory from accidentally deleting lines, require the actions to be empty as well
                 if (actionLine.Frames == 0 && actionLine.Actions == Actions.None) {
                     line = string.Empty;
@@ -1708,17 +1705,17 @@ public sealed class Editor : Drawable {
                     } else if (direction == CaretMovementType.CharRight) {
                         newFramesString = $"{leftOfCursor}{rightOfCursor[1..]}";
                     }
-                    
+
                     actionLine.Frames = Math.Clamp(int.TryParse(newFramesString, out int value) ? value : 0, 0, ActionLine.MaxFrames);
                     line = actionLine.ToString();
                     caret.Col = actionLine.Frames == 0
                         ? ActionLine.MaxFramesDigits
                         : ActionLine.MaxFramesDigits - actionLine.Frames.Digits() + cursorIndex;
                 }
-                
+
                 goto FinishDeletion; // Skip regular deletion behaviour
             }
-            
+
             // Handle feather angle/magnitude
             int featherColumn = GetColumnOfAction(actionLine, Actions.Feather);
             if (featherColumn != -1 && caret.Col >= featherColumn) {
@@ -1726,14 +1723,14 @@ public sealed class Editor : Drawable {
                 while (angleMagnitudeCommaColumn <= line.Length + 1 && line[angleMagnitudeCommaColumn - 2] != ActionLine.Delimiter) {
                     angleMagnitudeCommaColumn++;
                 }
-                
+
                 if (caret.Col == featherColumn + 1 && direction is CaretMovementType.CharLeft or CaretMovementType.WordLeft) {
                     var actions = GetActionsFromColumn(actionLine, caret.Col - 1, direction);
                     actionLine.Actions &= ~actions;
                     line = actionLine.ToString();
                     goto FinishDeletion;
                 } else if (caret.Col == featherColumn && direction is CaretMovementType.CharRight or CaretMovementType.WordRight ||
-                           caret.Col == angleMagnitudeCommaColumn && direction is CaretMovementType.CharLeft or CaretMovementType.WordLeft) 
+                           caret.Col == angleMagnitudeCommaColumn && direction is CaretMovementType.CharLeft or CaretMovementType.WordLeft)
                 {
                     actionLine.FeatherAngle = actionLine.FeatherMagnitude;
                     actionLine.FeatherMagnitude = null;
@@ -1741,18 +1738,18 @@ public sealed class Editor : Drawable {
                     line = actionLine.ToString();
                     goto FinishDeletion;
                 } else if (caret.Col == angleMagnitudeCommaColumn - 1 &&
-                           direction is CaretMovementType.CharRight or CaretMovementType.WordRight) 
+                           direction is CaretMovementType.CharRight or CaretMovementType.WordRight)
                 {
                     actionLine.FeatherMagnitude = null;
                     line = actionLine.ToString();
                     goto FinishDeletion;
                 }
             }
-            
+
             // Remove blank lines with delete at the end of a line
             if (caret.Col == line.Length &&
-                caret.Row < Document.Lines.Count - 1 && 
-                string.IsNullOrWhiteSpace(Document.Lines[caret.Row + 1])) 
+                caret.Row < Document.Lines.Count - 1 &&
+                string.IsNullOrWhiteSpace(Document.Lines[caret.Row + 1]))
             {
                 if (direction == CaretMovementType.CharRight) {
                     Document.RemoveLine(caret.Row + 1);
@@ -1764,7 +1761,7 @@ public sealed class Editor : Drawable {
                     goto FinishDeletion;
                 }
             }
-            
+
             int newColumn = direction switch {
                 CaretMovementType.CharLeft => GetSoftSnapColumns(actionLine).Reverse().FirstOrDefault(c => c < caret.Col, caret.Col),
                 CaretMovementType.WordLeft => GetHardSnapColumns(actionLine).Reverse().FirstOrDefault(c => c < caret.Col, caret.Col),
@@ -1775,7 +1772,7 @@ public sealed class Editor : Drawable {
 
             line = line.Remove(Math.Min(newColumn, caret.Col), Math.Abs(newColumn - caret.Col));
             caret.Col = Math.Min(newColumn, caret.Col);
-            
+
             FinishDeletion:
             if (ActionLine.TryParse(line, out var newActionLine)) {
                 line = newActionLine.ToString();
@@ -1783,49 +1780,49 @@ public sealed class Editor : Drawable {
                 line = string.Empty;
                 caret = lineStartPosition;
             }
-            
+
             Document.ReplaceLine(caret.Row, line);
             Document.Caret = ClampCaret(caret);
         } else {
             Document.Caret = GetNewTextCaretPosition(direction);
-            
+
             if (caret.Row == Document.Caret.Row) {
                 Document.RemoveRangeInLine(caret.Row, caret.Col, Document.Caret.Col);
                 Document.Caret.Col = Math.Min(Document.Caret.Col, caret.Col);
                 Document.Caret = ClampCaret(Document.Caret, wrapLine: true);
-                
+
                 UpdateAutoComplete(open: false);
             } else {
                 var min = Document.Caret < caret ? Document.Caret : caret;
                 var max = Document.Caret < caret ? caret : Document.Caret;
-                
+
                 RemoveRange(min, max);
                 Document.Caret = min;
-                
+
                 ActivePopupMenu = null;
             }
         }
     }
-    
+
     private void OnEnter(bool splitLines) {
         using var __ = Document.Update();
-        
+
         var line = Document.Lines[Document.Caret.Row];
-        
+
         if (!splitLines || ActionLine.TryParse(line, out _)) {
             // Don't split frame count and action
             int newRow = Document.Caret.Row + 1;
             if (GetCollapse(Document.Caret.Row) is { } collapse) {
                 newRow = collapse.MaxRow + 1;
             }
-            
+
             Document.InsertLine(newRow, string.Empty);
             Document.Caret.Row = newRow;
             Document.Caret.Col = desiredVisualCol = 0;
         } else {
             RemoveRange(Document.Selection.Min, Document.Selection.Max);
             Document.Insert(Document.NewLine.ToString());
-            
+
             if (line.StartsWith('#')) {
                 // Keep new line still a comment
                 string prefix = new(line.TakeWhile(c => c == '#' || char.IsWhiteSpace(c)).ToArray());
@@ -1833,25 +1830,25 @@ public sealed class Editor : Drawable {
                 Document.Caret.Col = prefix.Length;
             }
         }
-        
+
         Document.Selection.Clear();
     }
-    
+
     private void OnUndo() {
         Document.Selection.Clear();
         Document.Undo();
     }
-    
+
     private void OnRedo() {
         Document.Selection.Clear();
         Document.Redo();
     }
-    
+
     private void OnCut() {
         using var __ = Document.Update();
-        
+
         OnCopy();
-        
+
         if (Document.Selection.Empty) {
             Document.RemoveLine(Document.Caret.Row);
         } else if (Document.Selection.Min.Col == 0 && Document.Selection.Max.Col == Document.Lines[Document.Selection.Max.Row].Length) {
@@ -1863,7 +1860,7 @@ public sealed class Editor : Drawable {
             OnDelete(CaretMovementType.None);
         }
     }
-    
+
     private void OnCopy() {
         if (Document.Selection.Empty) {
             // Just copy entire line
@@ -1871,14 +1868,14 @@ public sealed class Editor : Drawable {
             Clipboard.Instance.Text = Document.Lines[Document.Caret.Row] + Document.NewLine;
         } else {
             Clipboard.Instance.Clear();
-            Clipboard.Instance.Text = Document.GetSelectedText();       
+            Clipboard.Instance.Text = Document.GetSelectedText();
         }
     }
-    
+
     private void OnPaste() {
         if (!Clipboard.Instance.ContainsText)
             return;
-        
+
         using var __ = Document.Update();
 
         if (!Document.Selection.Empty) {
@@ -1886,7 +1883,7 @@ public sealed class Editor : Drawable {
             Document.Caret = Document.Selection.Min;
             Document.Selection.Clear();
         }
-        
+
         if (ActionLine.Parse(Document.Lines[Document.Caret.Row]) != null) {
             // Prevent splitting the action-line in half
             var insert = Clipboard.Instance.Text.ReplaceLineEndings(Document.NewLine.ToString()).Trim(Document.NewLine);
@@ -1897,12 +1894,12 @@ public sealed class Editor : Drawable {
             Document.Insert(Clipboard.Instance.Text.ReplaceLineEndings(Document.NewLine.ToString()));
         }
     }
-    
+
     private void OnSelectAll() {
         Document.Selection.Start = new CaretPosition(0, 0);
         Document.Selection.End = new CaretPosition(Document.Lines.Count - 1, Document.Lines[^1].Length);
     }
-    
+
     private void OnSelectBlock() {
         // Search first empty line above/below caret
         int above = Document.Caret.Row;
@@ -1912,67 +1909,67 @@ public sealed class Editor : Drawable {
         int below = Document.Caret.Row;
         while (below < Document.Lines.Count - 1 && !string.IsNullOrWhiteSpace(Document.Lines[below]))
             below++;
-        
+
         Document.Selection.Start = new CaretPosition(above, 0);
         Document.Selection.End = new CaretPosition(below, Document.Lines[below].Length);
     }
-    
+
     private void OnFind() {
         FindDialog.Show(this);
     }
-    
+
     private void OnGoTo() {
         Document.Caret.Row = GoToDialog.Show(Document);
         Document.Caret = ClampCaret(Document.Caret);
         Document.Selection.Clear();
-        
+
         ScrollCaretIntoView();
     }
-    
+
     private void OnToggleFolding() {
         // Find current region
         var folding = foldings.FirstOrDefault(fold => fold.MinRow <= Document.Caret.Row && fold.MaxRow >= Document.Caret.Row);
         if (folding.MinRow == folding.MaxRow) {
             return;
         }
-        
+
         ToggleCollapse(folding.MinRow);
         Document.Caret.Row = folding.MinRow;
         Document.Caret.Col = Document.Lines[folding.MinRow].Length;
     }
-    
+
     private void OnDeleteSelectedLines() {
         using var __ = Document.Update();
-        
+
         int minRow = Document.Selection.Min.Row;
         int maxRow = Document.Selection.Max.Row;
         if (Document.Selection.Empty) {
             minRow = maxRow = Document.Caret.Row;
         }
-        
+
         Document.RemoveLines(minRow, maxRow);
         Document.Selection.Clear();
         Document.Caret.Row = minRow;
     }
-    
+
     private void OnToggleCommentBreakpoints() {
         using var __ = Document.Update();
-        
+
         Document.Selection.Normalize();
-        
+
         int minRow = Document.Selection.Min.Row;
         int maxRow = Document.Selection.Max.Row;
         if (Document.Selection.Empty) {
             minRow = 0;
             maxRow = Document.Lines.Count - 1;
         }
-        
+
         for (int row = minRow; row <= maxRow; row++) {
             var line = Document.Lines[row];
             if (CommentedBreakpointRegex.IsMatch(line)) {
                 int hashIdx = line.IndexOf('#');
                 Document.ReplaceLine(row, line.Remove(hashIdx, 1));
-                
+
                 // Shift everything over
                 if (row == minRow)
                     Document.Selection.Start.Col--;
@@ -1982,7 +1979,7 @@ public sealed class Editor : Drawable {
                     Document.Caret.Col--;
             } else if (UncommentedBreakpointRegex.IsMatch(line)) {
                 Document.ReplaceLine(row, $"#{line}");
-                
+
                 // Shift everything over
                 if (row == minRow)
                     Document.Selection.Start.Col++;
@@ -1992,16 +1989,16 @@ public sealed class Editor : Drawable {
                     Document.Caret.Col++;
             }
         }
-        
+
         // Clamp new column
-        Document.Selection.Start.Col = Math.Clamp(Document.Selection.Start.Col, 0, Document.Lines[Document.Selection.Start.Row].Length); 
-        Document.Selection.End.Col = Math.Clamp(Document.Selection.End.Col, 0, Document.Lines[Document.Selection.End.Row].Length); 
-        Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length); 
+        Document.Selection.Start.Col = Math.Clamp(Document.Selection.Start.Col, 0, Document.Lines[Document.Selection.Start.Row].Length);
+        Document.Selection.End.Col = Math.Clamp(Document.Selection.End.Col, 0, Document.Lines[Document.Selection.End.Row].Length);
+        Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length);
     }
-    
+
     private void OnToggleCommentInputs() {
         using var __ = Document.Update();
-        
+
         Document.Selection.Normalize();
 
         int minRow = Document.Selection.Min.Row;
@@ -2009,14 +2006,14 @@ public sealed class Editor : Drawable {
         if (Document.Selection.Empty) {
             minRow = maxRow = Document.Caret.Row;
         }
-        
+
         for (int row = minRow; row <= maxRow; row++) {
             var line = Document.Lines[row];
 
             if (line.TrimStart().StartsWith('#')) {
                 int hashIdx = line.IndexOf('#');
                 Document.ReplaceLine(row, line.Remove(hashIdx, 1));
-                
+
                 // Shift everything over
                 if (row == minRow)
                     Document.Selection.Start.Col--;
@@ -2026,7 +2023,7 @@ public sealed class Editor : Drawable {
                     Document.Caret.Col--;
             } else {
                 Document.ReplaceLine(row, $"#{line}");
-                
+
                 // Shift everything over
                 if (row == minRow)
                     Document.Selection.Start.Col++;
@@ -2036,16 +2033,16 @@ public sealed class Editor : Drawable {
                     Document.Caret.Col++;
             }
         }
-        
+
         // Clamp new column
         Document.Selection.Start.Col = Math.Clamp(Document.Selection.Start.Col, 0, Document.Lines[Document.Selection.Start.Row].Length);
         Document.Selection.End.Col = Math.Clamp(Document.Selection.End.Col, 0, Document.Lines[Document.Selection.End.Row].Length);
-        Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length); 
+        Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length);
     }
-    
+
     private void OnToggleCommentText() {
         using var __ = Document.Update();
-        
+
         Document.Selection.Normalize();
 
         int minRow = Document.Selection.Min.Row;
@@ -2053,7 +2050,7 @@ public sealed class Editor : Drawable {
         if (Document.Selection.Empty) {
             minRow = maxRow = Document.Caret.Row;
         }
-        
+
         // Only remove # when all lines start with it. Otherwise, add another
         bool allCommented = true;
         for (int row = minRow; row <= maxRow; row++) {
@@ -2064,14 +2061,14 @@ public sealed class Editor : Drawable {
                 break;
             }
         }
-        
+
         for (int row = minRow; row <= maxRow; row++) {
             var line = Document.Lines[row];
 
             if (allCommented) {
                 int hashIdx = line.IndexOf('#');
                 Document.ReplaceLine(row, line.Remove(hashIdx, 1));
-                
+
                 // Shift everything over
                 if (row == minRow)
                     Document.Selection.Start.Col--;
@@ -2081,7 +2078,7 @@ public sealed class Editor : Drawable {
                     Document.Caret.Col--;
             } else {
                 Document.ReplaceLine(row, $"#{line}");
-                
+
                 // Shift everything over
                 if (row == minRow)
                     Document.Selection.Start.Col++;
@@ -2091,48 +2088,48 @@ public sealed class Editor : Drawable {
                     Document.Caret.Col++;
             }
         }
-        
+
         // Clamp new column
         Document.Selection.Start.Col = Math.Clamp(Document.Selection.Start.Col, 0, Document.Lines[Document.Selection.Start.Row].Length);
         Document.Selection.End.Col = Math.Clamp(Document.Selection.End.Col, 0, Document.Lines[Document.Selection.End.Row].Length);
-        Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length); 
+        Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length);
     }
 
     private void OnInsertRoomName() => InsertLine($"{RoomLabelPrefix}{CommunicationWrapper.LevelName}");
-    
+
     private void OnInsertTime() => InsertLine($"#{CommunicationWrapper.ChapterTime}");
-    
+
     private void OnInsertModInfo() {
         if (CommunicationWrapper.GetModInfo() is var modInfo && !string.IsNullOrWhiteSpace(modInfo)) {
             InsertLine(modInfo);
         }
     }
-    
+
     private void OnInsertConsoleLoadCommand() {
         if (CommunicationWrapper.GetConsoleCommand(simple: false) is var command && !string.IsNullOrWhiteSpace(command)) {
             InsertLine(command);
         }
     }
-    
+
     private void OnInsertSimpleConsoleLoadCommand() {
         if (CommunicationWrapper.GetConsoleCommand(simple: true) is var command && !string.IsNullOrWhiteSpace(command)) {
             InsertLine(command);
         }
     }
-    
+
     private void InsertLine(string text) {
         using var __ = Document.Update();
-        
+
         if (Settings.Instance.InsertDirection == InsertDirection.Above) {
             Document.InsertLineAbove(text);
-            
+
             if (Settings.Instance.CaretInsertPosition == CaretInsertPosition.AfterInsert) {
                 Document.Caret.Row--;
                 Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
             }
         } else if (Settings.Instance.InsertDirection == InsertDirection.Below) {
             Document.InsertLineBelow(text);
-            
+
             if (Settings.Instance.CaretInsertPosition == CaretInsertPosition.AfterInsert) {
                 int newLines = text.Count(c => c == Document.NewLine) + 1;
                 Document.Caret.Row += newLines;
@@ -2140,12 +2137,12 @@ public sealed class Editor : Drawable {
             }
         }
     }
-    
+
     private void InsertOrRemoveText(Regex regex, string text) {
         using var __ = Document.Update();
-        
-        int insertDir = Settings.Instance.InsertDirection == InsertDirection.Above ? -1 : 1; 
-        
+
+        int insertDir = Settings.Instance.InsertDirection == InsertDirection.Above ? -1 : 1;
+
         // Check current line
         if (regex.IsMatch(Document.Lines[Document.Caret.Row])) {
             Document.RemoveLine(Document.Caret.Row);
@@ -2161,7 +2158,7 @@ public sealed class Editor : Drawable {
             InsertLine(text);
         }
     }
-    
+
     /// Deletes text in the specified range, while accounting for collapsed
     private void RemoveRange(CaretPosition min, CaretPosition max) {
         if (GetCollapse(min.Row) is { } collapse) {
@@ -2172,28 +2169,28 @@ public sealed class Editor : Drawable {
                 Document.RemoveRange(min, max);
                 return;
             }
-            
+
             // Only partially selected, so don't delete the collapsed content, only the stuff around it
             if (min.Row == max.Row) {
                 Document.RemoveRange(min, max);
             } else {
                 Document.RemoveRange(min, new CaretPosition(collapse.MinRow, Document.Lines[collapse.MinRow].Length));
-                Document.RemoveRange(new CaretPosition(collapse.MaxRow, Document.Lines[collapse.MaxRow].Length), max);    
+                Document.RemoveRange(new CaretPosition(collapse.MaxRow, Document.Lines[collapse.MaxRow].Length), max);
             }
         } else {
             Document.RemoveRange(min, max);
         }
     }
-    
+
     private void RemoveLinesMatching(Regex regex) {
         using var __ = Document.Update();
-        
+
         for (int row = Document.Lines.Count - 1; row >= 0; row--) {
             if (!regex.IsMatch(Document.Lines[row]))
                 continue;
-            
+
             Document.RemoveLine(row);
-            
+
             if (Document.Caret.Row >= row)
                 Document.Caret.Row--;
             if (Document.Selection.Start.Row >= row)
@@ -2202,11 +2199,11 @@ public sealed class Editor : Drawable {
                 Document.Selection.End.Row--;
         }
     }
-    
+
     #endregion
-    
+
     #region Caret Movement
-    
+
     public CaretPosition ClampCaret(CaretPosition position, bool wrapLine = false) {
         // Wrap around to prev/next line
         if (wrapLine && position.Row > 0 && position.Col < 0) {
@@ -2216,39 +2213,39 @@ public sealed class Editor : Drawable {
             position.Row = GetNextVisualLinePosition( 1, position).Row;
             position.Col = desiredVisualCol = 0;
         }
-        
+
         int maxVisualRow = GetActualRow(actualToVisualRows[^1]);
-        
+
         // Clamp to document (also visually)
         position.Row = Math.Clamp(position.Row, 0, Math.Min(maxVisualRow, Document.Lines.Count - 1));
         position.Col = Math.Clamp(position.Col, 0, Document.Lines[position.Row].Length);
-        
+
         // Clamp to action line if possible
         var line = Document.Lines[position.Row];
         if (ActionLine.TryParse(line, out var actionLine)) {
             position.Col = Math.Min(line.Length, SnapColumnToActionLine(actionLine, position.Col));
         }
-        
+
         return position;
     }
-    
+
     public void ScrollCaretIntoView(bool center = false) {
         // Clamp just to be sure
         Document.Caret = ClampCaret(Document.Caret);
-        
+
         // Minimum distance to the edges
         const float xLookAhead = 50.0f;
         const float yLookAhead = 50.0f;
-        
+
         var caretPos = GetVisualPosition(Document.Caret);
         float carX = Font.CharWidth() * caretPos.Col;
         float carY = Font.LineHeight() * caretPos.Row;
-        
+
         float top = scrollablePosition.Y;
         float bottom = (scrollableSize.Height) + scrollablePosition.Y;
-        
+
         const float scrollStopPadding = 10.0f;
-        
+
         int scrollX = scrollablePosition.X;
         if (Font.MeasureWidth(GetVisualLine(caretPos.Row)) < (scrollableSize.Width - textOffsetX - scrollStopPadding)) {
             // Don't scroll when the line is shorter anyway
@@ -2265,7 +2262,7 @@ public sealed class Editor : Drawable {
             else if (right - carX < xLookAhead)
                 scrollX = (int)(carX + xLookAhead - (scrollableSize.Width - textOffsetX));
         }
-            
+
         int scrollY = scrollablePosition.Y;
         if (center) {
             // Keep line in the center
@@ -2282,23 +2279,23 @@ public sealed class Editor : Drawable {
             Math.Max(0, scrollX),
             Math.Max(0, scrollY));
     }
-    
+
     private void MoveCaret(CaretMovementType direction, bool updateSelection) {
         var line = Document.Lines[Document.Caret.Row];
         var oldCaret = Document.Caret;
-        
+
         ActionLine? currentActionLine = ActionLine.Parse(line);
         if (currentActionLine is {} actionLine) {
             Document.Caret.Col = Math.Min(line.Length, SnapColumnToActionLine(actionLine, Document.Caret.Col));
             int leadingSpaces = ActionLine.MaxFramesDigits - actionLine.Frames.Digits();
-            
+
             // Line wrapping
-            if (Document.Caret.Row > 0 && Document.Caret.Col == leadingSpaces && 
-                direction is CaretMovementType.CharLeft or CaretMovementType.WordLeft) 
+            if (Document.Caret.Row > 0 && Document.Caret.Col == leadingSpaces &&
+                direction is CaretMovementType.CharLeft or CaretMovementType.WordLeft)
             {
                 Document.Caret.Row = GetNextVisualLinePosition(-1, Document.Caret).Row;
                 Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
-            } else if (Document.Caret.Row < Document.Lines.Count - 1 && Document.Caret.Col == Document.Lines[Document.Caret.Row].Length && 
+            } else if (Document.Caret.Row < Document.Lines.Count - 1 && Document.Caret.Col == Document.Lines[Document.Caret.Row].Length &&
                        direction is CaretMovementType.CharRight or CaretMovementType.WordRight)
             {
                 Document.Caret.Row = GetNextVisualLinePosition( 1, Document.Caret).Row;
@@ -2319,7 +2316,7 @@ public sealed class Editor : Drawable {
             // Regular text movement
             Document.Caret = GetNewTextCaretPosition(direction);
         }
-        
+
         // Apply / Update desired column
         var newVisualPos = GetVisualPosition(Document.Caret);
         if (oldCaret.Row != Document.Caret.Row) {
@@ -2328,19 +2325,19 @@ public sealed class Editor : Drawable {
             desiredVisualCol = newVisualPos.Col;
         }
         Document.Caret = ClampCaret(GetActualPosition(newVisualPos));
-        
+
         // When going from a non-action-line to an action-line, snap the caret to the frame count
         if (currentActionLine == null && TryParseAndFormatActionLine(Document.Caret.Row, out _)) {
             Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
         }
-        
+
         if (updateSelection) {
             if (Document.Selection.Empty) {
                 Document.Selection.Start = oldCaret;
             }
-            
+
             Document.Selection.End = Document.Caret;
-            
+
             // If the selection is multi-line, always select the entire start/end line if it's an action line
             if (Document.Selection.Start.Row != Document.Selection.End.Row) {
                 var startLine = Document.Lines[Document.Selection.Start.Row];
@@ -2355,13 +2352,13 @@ public sealed class Editor : Drawable {
         } else {
             Document.Selection.Clear();
         }
-        
+
         ActivePopupMenu = null;
-        
+
         Document.Caret = Document.Caret;
         ScrollCaretIntoView(center: direction is CaretMovementType.LabelUp or CaretMovementType.LabelDown);
     }
-    
+
     // For regular text movement
     private CaretPosition GetNewTextCaretPosition(CaretMovementType direction) =>
         direction switch {
@@ -2383,35 +2380,35 @@ public sealed class Editor : Drawable {
             CaretMovementType.DocumentEnd => ClampCaret(new CaretPosition(Document.Lines.Count - 1, Document.Lines[^1].Length)),
             _ => throw new UnreachableException()
         };
-    
+
     private enum CharType { Alphanumeric, Symbol, Whitespace }
     private CaretPosition GetNextWordCaretPosition(int dir) {
         var newPosition = Document.Caret;
         var line = Document.Lines[newPosition.Row];
-        
+
         // Prepare wrap-around for ClampCaret()
         if (dir == -1 && Document.Caret.Col == 0)
             return new CaretPosition(Document.Caret.Row, -1);
         if (dir == 1 && Document.Caret.Col == line.Length)
             return new CaretPosition(Document.Caret.Row, line.Length + 1);
-        
-        // The caret is to the left of the character. So offset 1 to the left when going that direction 
+
+        // The caret is to the left of the character. So offset 1 to the left when going that direction
         int offset = dir == -1 ? -1 : 0;
-        
+
         CharType type;
         if (char.IsLetterOrDigit(line[newPosition.Col + offset]))
             type = CharType.Alphanumeric;
         else if (char.IsWhiteSpace(line[newPosition.Col + offset]))
             type = CharType.Whitespace;
         else
-            // Probably a symbol  
+            // Probably a symbol
             type = CharType.Symbol;
-        
+
         while (newPosition.Col + offset >= 0 && newPosition.Col + offset < line.Length && IsSame(line[newPosition.Col + offset], type))
             newPosition.Col += dir;
-        
+
         return newPosition;
-        
+
         static bool IsSame(char c, CharType type) {
             return type switch {
                 CharType.Alphanumeric => char.IsLetterOrDigit(c),
@@ -2421,21 +2418,21 @@ public sealed class Editor : Drawable {
             };
         }
     }
-    
+
     private CaretPosition GetNextVisualLinePosition(int dist, CaretPosition position) {
         var visualPos = GetVisualPosition(position);
         return GetActualPosition(new CaretPosition(visualPos.Row + dist, visualPos.Col));
     }
-    
+
     private CaretPosition GetLabelPosition(int dir) {
         int row = Document.Caret.Row;
-        
+
         row += dir;
         while (row >= 0 && row < Document.Lines.Count && !IsLabel(Document.Lines[row]))
             row += dir;
-        
+
         return new CaretPosition(row, Document.Caret.Col);
-        
+
         static bool IsLabel(string line) {
             // All labels need to start with a # and immediately follow with the text
             return line.Length >= 2 && line[0] == '#' && char.IsLetter(line[1]) ||
@@ -2444,39 +2441,39 @@ public sealed class Editor : Drawable {
     }
 
     #endregion
-    
+
     #region Mouse Interactions
-    
+
     private bool primaryMouseButtonDown = false;
-    
+
     protected override void OnMouseDown(MouseEventArgs e) {
         calculationState = null;
-        
+
         if (e.Buttons.HasFlag(MouseButtons.Primary)) {
             if (LocationToFolding(e.Location) is { } folding) {
                 ToggleCollapse(folding.MinRow);
-                
+
                 e.Handled = true;
                 Recalc();
                 return;
             }
-            
+
             if (lineLinkRow != -1 && GetLineLink(lineLinkRow) is { } lineLink) {
                 lineLink();
-                
+
                 e.Handled = true;
                 return;
             }
-            
+
             primaryMouseButtonDown = true;
-            
+
             var oldCaret = Document.Caret;
             (Document.Caret, var visual) = LocationToCaretPosition(e.Location);
             desiredVisualCol = visual.Col;
             ScrollCaretIntoView();
-            
+
             ActivePopupMenu = null;
-            
+
             if (e.Modifiers.HasFlag(Keys.Shift)) {
                 if (Document.Selection.Empty)
                     Document.Selection.Start = oldCaret;
@@ -2484,7 +2481,7 @@ public sealed class Editor : Drawable {
             } else {
                 Document.Selection.Start = Document.Selection.End = Document.Caret;
             }
-            
+
             e.Handled = true;
             Recalc();
             return;
@@ -2495,7 +2492,7 @@ public sealed class Editor : Drawable {
             e.Handled = true;
             return;
         }
-        
+
         base.OnMouseDown(e);
     }
     protected override void OnMouseUp(MouseEventArgs e) {
@@ -2511,16 +2508,16 @@ public sealed class Editor : Drawable {
             (Document.Caret, var visual) = LocationToCaretPosition(e.Location);
             desiredVisualCol = visual.Col;
             ScrollCaretIntoView();
-            
+
             ActivePopupMenu = null;
 
             Document.Selection.End = Document.Caret;
-            
+
             Recalc();
         }
-        
+
         UpdateMouseAction(e.Location, e.Modifiers);
-        
+
         base.OnMouseMove(e);
     }
 
@@ -2529,7 +2526,7 @@ public sealed class Editor : Drawable {
         if (e.Modifiers.HasFlag(Keys.Shift)) {
             if (Document.Selection.Empty) {
                 var (position, _) = LocationToCaretPosition(e.Location);
-                AdjustFrameCounts(Document.Caret.Row, position.Row, Math.Sign(e.Delta.Height));    
+                AdjustFrameCounts(Document.Caret.Row, position.Row, Math.Sign(e.Delta.Height));
             } else {
                 AdjustFrameCounts(Document.Selection.Start.Row, Document.Selection.End.Row, Math.Sign(e.Delta.Height));
             }
@@ -2546,40 +2543,40 @@ public sealed class Editor : Drawable {
                 Settings.Instance.FontZoom *= 1.0f - scrollSpeed;
             }
             Settings.OnFontChanged();
-            
+
             e.Handled = true;
             return;
         }
-        
+
         if (Settings.Instance.ScrollSpeed > 0.0f) {
-            // Manually scroll to respect our scroll speed 
+            // Manually scroll to respect our scroll speed
             scrollable.ScrollPosition = scrollable.ScrollPosition with {
                 Y = Math.Clamp((int)(scrollable.ScrollPosition.Y - e.Delta.Height * Font.LineHeight() * Settings.Instance.ScrollSpeed), 0, Height - scrollable.ClientSize.Height)
             };
             e.Handled = true;
         }
-        
+
         base.OnMouseWheel(e);
     }
-    
+
     private void UpdateMouseAction(PointF location, Keys modifiers) {
         int prevLineLink = lineLinkRow;
         if (modifiers.HasCommonModifier() && LocationToLineLink(location) is var row && row != -1) {
             lineLinkRow = row;
             Cursor = Cursors.Pointer;
-            
+
             if (prevLineLink != lineLinkRow) {
                 Invalidate();
             }
-            
+
             return;
         }
         lineLinkRow = -1;
-        
+
         if (prevLineLink != -1) {
             Invalidate();
         }
-        
+
         if (LocationToFolding(location) != null) {
             Cursor = Cursors.Pointer;
         } else {
@@ -2587,59 +2584,59 @@ public sealed class Editor : Drawable {
             if (ActivePopupMenu != null) {
                 var pos = ActivePopupMenu.PointFromScreen(Mouse.Position);
                 if (pos.X >= 0.0f & pos.X <= ActivePopupMenu.Width &&
-                    pos.Y >= 0.0f & pos.Y <= ActivePopupMenu.Height) 
+                    pos.Y >= 0.0f & pos.Y <= ActivePopupMenu.Height)
                 {
                     Cursor = null;
-                    return;    
+                    return;
                 }
             }
-            
+
             Cursor = Cursors.IBeam;
         }
     }
-    
+
     private (CaretPosition Actual, CaretPosition Visual) LocationToCaretPosition(PointF location) {
         location.X -= textOffsetX;
-        
+
         int visualRow = (int)(location.Y / Font.LineHeight());
         int visualCol = (int)(location.X / Font.CharWidth());
-        
+
         var visualPos = new CaretPosition(visualRow, visualCol);
         var actualPos = ClampCaret(GetActualPosition(visualPos));
-        
+
         return (actualPos, visualPos);
     }
-    
+
     private Folding? LocationToFolding(PointF location) {
         if (!Settings.Instance.ShowFoldIndicators) {
             return null;
         }
-        
+
         // Extend range through entire line numbers
         if (location.X >= scrollablePosition.X &&
             location.X <= scrollablePosition.X + textOffsetX - LineNumberPadding)
         {
             int row = GetActualRow((int) (location.Y / Font.LineHeight()));
-            
+
             var folding = foldings.FirstOrDefault(fold => fold.MinRow == row);
             if (folding.MinRow == folding.MaxRow) {
                 return null;
             }
-            
+
             return folding;
         }
-        
+
         return null;
     }
-    
+
     /// Action to open the Read-command on the line if possible
     public Action? GetOpenReadFileLink(int row) {
         if (!CommandLine.TryParse(Document.Lines[row], out var commandLine) ||
-            !commandLine.IsCommand("Read") || commandLine.Args.Length < 2) 
+            !commandLine.IsCommand("Read") || commandLine.Args.Length < 2)
         {
             return null;
         }
-        
+
         var documentPath = Studio.Instance.Editor.Document.FilePath;
         if (documentPath == Document.ScratchFile) {
             return null;
@@ -2647,12 +2644,12 @@ public sealed class Editor : Drawable {
         if (Path.GetDirectoryName(documentPath) is not { } documentDir) {
             return null;
         }
-        
+
         var fullPath = Path.Combine(documentDir, $"{commandLine.Args[0]}.tas");
         if (!File.Exists(fullPath)) {
             return null;
         }
-        
+
         (var label, int labelRow) = File.ReadAllText(fullPath)
             .ReplaceLineEndings(Document.NewLine.ToString())
             .SplitDocumentLines()
@@ -2661,14 +2658,14 @@ public sealed class Editor : Drawable {
         if (label == null) {
             return null;
         }
-        
+
         return () => {
             Studio.Instance.OpenFile(fullPath);
             Document.Caret.Row = labelRow;
             Document.Caret.Col = desiredVisualCol = Document.Lines[labelRow].Length;
         };
     }
-    
+
     /// Action to goto the Play-command's target line if possible
     public Action? GetGotoPlayLineLink(int row) {
         if (!CommandLine.TryParse(Document.Lines[row], out var commandLine) ||
@@ -2676,78 +2673,78 @@ public sealed class Editor : Drawable {
         {
             return null;
         }
-        
+
         (var label, int labelRow) = Document.Lines
             .Select((line, i) => (line, i))
             .FirstOrDefault(pair => pair.line == $"#{commandLine.Args[0]}");
         if (label == null) {
             return null;
         }
-        
+
         return () => {
             Document.Caret.Row = labelRow;
             Document.Caret.Col = desiredVisualCol = Document.Lines[labelRow].Length;
             Recalc();
         };
     }
-    
+
     private Action? GetLineLink(int row) => GetOpenReadFileLink(row) ?? GetGotoPlayLineLink(row);
     private int LocationToLineLink(PointF location) {
         if (location.X < scrollablePosition.X + textOffsetX ||
-            location.X > scrollablePosition.X + scrollableSize.Width) 
+            location.X > scrollablePosition.X + scrollableSize.Width)
         {
             return -1;
         }
-        
+
         int row = GetActualRow((int) (location.Y / Font.LineHeight()), -1);
         if (row < 0) {
             return -1;
         }
-        
+
         if (GetLineLink(row) != null) {
             return row;
         }
-        
+
         return -1;
     }
-    
+
     #endregion
-    
+
     #region Drawing
-    
+
     protected override void OnPaint(PaintEventArgs e) {
         // Doing this in Recalc() seems to cause issues for some reason, but it needs to happen regularly
         Studio.Instance.GameInfoPanel.UpdateGameInfo();
-        
+
         e.Graphics.AntiAlias = true;
-        
+
         // To be reused below. Kinda annoying how C# handles out parameter conflicts
         WrapEntry wrap;
-        
+
         const int offscreenLinePadding = 3;
 
         int topVisualRow = (int)(scrollablePosition.Y / Font.LineHeight()) - offscreenLinePadding;
         int bottomVisualRow = (int)((scrollablePosition.Y + scrollableSize.Height) / Font.LineHeight()) + offscreenLinePadding;
         int topRow = Math.Max(0, GetActualRow(topVisualRow));
         int bottomRow = Math.Min(Document.Lines.Count - 1, GetActualRow(bottomVisualRow));
-        
+
         // Draw text
         using var commentBrush = new SolidBrush(Settings.Instance.Theme.Comment.ForegroundColor);
-        
+
         float yPos = actualToVisualRows[topRow] * Font.LineHeight();
         for (int row = topRow; row <= bottomRow; row++) {
             string line = Document.Lines[row];
 
             if (GetCollapse(row) is { } collapse) {
                 const float foldingPadding = 1.0f;
-                
+
                 float width = 0.0f;
                 float height = 0.0f;
                 if (commentLineWraps.TryGetValue(row, out wrap)) {
                     for (int i = 0; i < wrap.Lines.Length; i++) {
                         var subLine = wrap.Lines[i].Line;
                         float xIdent = i == 0 ? 0 : wrap.StartOffset * Font.CharWidth();
-                        
+
                         e.Graphics.DrawText(Font, commentBrush, textOffsetX + xIdent, yPos, subLine);
                         yPos += Font.LineHeight();
                         width = Math.Max(width, Font.MeasureWidth(subLine) + xIdent);
@@ -2759,28 +2756,28 @@ public sealed class Editor : Drawable {
                     width = Font.MeasureWidth(line);
                     height = Font.LineHeight();
                 }
-                
-                e.Graphics.DrawRectangle(Settings.Instance.Theme.Comment.ForegroundColor, 
-                    Font.CharWidth() * collapse.StartCol + textOffsetX - foldingPadding, 
-                    yPos - height - foldingPadding, 
-                    width - Font.CharWidth() * collapse.StartCol + foldingPadding * 2.0f, 
+
+                e.Graphics.DrawRectangle(Settings.Instance.Theme.Comment.ForegroundColor,
+                    Font.CharWidth() * collapse.StartCol + textOffsetX - foldingPadding,
+                    yPos - height - foldingPadding,
+                    width - Font.CharWidth() * collapse.StartCol + foldingPadding * 2.0f,
                     height + foldingPadding * 2.0f);
-                
+
                 row = collapse.MaxRow;
                 continue;
             }
-            
-            if (row == lineLinkRow && GetLineLink(row) is { } lineLink) {
+
+            if (row == lineLinkRow && GetLineLink(row) is { }) {
                 highlighter.DrawLine(e.Graphics, textOffsetX, yPos, line, underline: true);
                 yPos += Font.LineHeight();
                 continue;
             }
-            
+
             if (commentLineWraps.TryGetValue(row, out wrap)) {
                 for (int i = 0; i < wrap.Lines.Length; i++) {
                     var subLine = wrap.Lines[i].Line;
                     float xIdent = i == 0 ? 0 : wrap.StartOffset * Font.CharWidth();
-                    
+
                     e.Graphics.DrawText(Font, commentBrush, textOffsetX + xIdent, yPos, subLine);
                     yPos += Font.LineHeight();
                 }
@@ -2789,56 +2786,56 @@ public sealed class Editor : Drawable {
                 yPos += Font.LineHeight();
             }
         }
-        
+
         // Draw quick-edits
         foreach (var anchor in GetQuickEdits()) {
             const float padding = 1.0f;
-            
+
             float y = Font.LineHeight() * actualToVisualRows[anchor.Row];
             float x = Font.CharWidth() * anchor.MinCol;
             float w = Font.CharWidth() * anchor.MaxCol - x;
-            
-            bool selected = Document.Caret.Row == anchor.Row && 
+
+            bool selected = Document.Caret.Row == anchor.Row &&
                             Document.Caret.Col >= anchor.MinCol &&
                             Document.Caret.Col <= anchor.MaxCol;
-            
+
             using var pen = new Pen(selected ? Colors.White : Colors.Gray, selected ? 2.0f : 1.0f);
             e.Graphics.DrawRectangle(pen, x + textOffsetX - padding, y - padding, w + padding * 2.0f, Font.LineHeight() + padding * 2.0f);
         }
-        
+
         // Draw suffix text
-        if (CommunicationWrapper.Connected && 
-            CommunicationWrapper.CurrentLine != -1 && 
-            CommunicationWrapper.CurrentLine < actualToVisualRows.Length) 
+        if (CommunicationWrapper.Connected &&
+            CommunicationWrapper.CurrentLine != -1 &&
+            CommunicationWrapper.CurrentLine < actualToVisualRows.Length)
         {
             var font = FontManager.EditorFontBold;
-            
+
             const float padding = 10.0f;
-            float suffixWidth = font.MeasureWidth(CommunicationWrapper.CurrentLineSuffix); 
-            
+            float suffixWidth = font.MeasureWidth(CommunicationWrapper.CurrentLineSuffix);
+
             e.Graphics.DrawText(font, Settings.Instance.Theme.PlayingFrame,
                 x: scrollablePosition.X + scrollableSize.Width - suffixWidth - padding,
                 y: actualToVisualRows[CommunicationWrapper.CurrentLine] * font.LineHeight(),
                 CommunicationWrapper.CurrentLineSuffix);
         }
-        
+
         var caretPos = GetVisualPosition(Document.Caret);
         float carX = Font.CharWidth() * caretPos.Col + textOffsetX;
         float carY = Font.LineHeight() * caretPos.Row;
-        
+
         // Highlight caret line
         e.Graphics.FillRectangle(Settings.Instance.Theme.CurrentLine, scrollablePosition.X, carY, scrollable.Width, Font.LineHeight());
-        
+
         // Draw caret
         if (HasFocus) {
             e.Graphics.DrawLine(Settings.Instance.Theme.Caret, carX, carY, carX, carY + Font.LineHeight() - 1);
         }
-        
+
         // Draw selection
         if (!Document.Selection.Empty) {
             var min = GetVisualPosition(Document.Selection.Min);
             var max = GetVisualPosition(Document.Selection.Max);
-            
+
             if (min.Row == max.Row) {
                 float x = Font.CharWidth() * min.Col + textOffsetX;
                 float w = Font.CharWidth() * (max.Col - min.Col);
@@ -2847,32 +2844,32 @@ public sealed class Editor : Drawable {
                 e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w, h);
             } else {
                 var visualLine = GetVisualLine(min.Row);
-                
+
                 // When the selection starts at the beginning of the line, extend it to cover the LineNumberPadding as well
                 float extendLeft = min.Col == 0 ? LineNumberPadding : 0.0f;
                 float x = Font.CharWidth() * min.Col + textOffsetX - extendLeft;
                 float w = visualLine.Length == 0 ? 0.0f : Font.MeasureWidth(visualLine[min.Col..]);
                 float y = Font.LineHeight() * min.Row;
                 e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w + extendLeft, Font.LineHeight());
-                
+
                 // Cull off-screen lines
                 for (int i = Math.Max(min.Row + 1, topVisualRow); i < Math.Min(max.Row, bottomVisualRow); i++) {
                     // Draw at least half a character for each line
-                    w = Font.CharWidth() * Math.Max(0.5f, GetVisualLine(i).Length); 
+                    w = Font.CharWidth() * Math.Max(0.5f, GetVisualLine(i).Length);
                     y = Font.LineHeight() * i;
                     e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX - LineNumberPadding, y, w + LineNumberPadding, Font.LineHeight());
                 }
-                
+
                 w = Font.MeasureWidth(GetVisualLine(max.Row)[..max.Col]);
                 y = Font.LineHeight() * max.Row;
                 e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX - LineNumberPadding, y, w + LineNumberPadding, Font.LineHeight());
             }
         }
-        
+
         // Draw calculate operation
         if (calculationState is not null) {
             string calculateLine = $"{calculationState.Operator.Char()}{calculationState.Operand}";
-            
+
             float padding = Font.CharWidth() * 0.5f;
             float x = textOffsetX + Font.CharWidth() * ActionLine.MaxFramesDigits + Font.CharWidth() * 0.5f;
             float y = carY;
@@ -2882,7 +2879,7 @@ public sealed class Editor : Drawable {
             e.Graphics.FillPath(Settings.Instance.Theme.CalculateBg, path);
             e.Graphics.DrawText(FontManager.EditorFontRegular, Settings.Instance.Theme.CalculateFg, x + padding, y, calculateLine);
         }
-        
+
         // Draw line numbers
         {
             e.Graphics.FillRectangle(BackgroundColor,
@@ -2890,7 +2887,7 @@ public sealed class Editor : Drawable {
                 y: scrollablePosition.Y,
                 width: textOffsetX - LineNumberPadding,
                 height: scrollableSize.Height);
-            
+
             // Highlight playing / savestate line
             if (CommunicationWrapper.Connected) {
                 if (CommunicationWrapper.CurrentLine != -1 && CommunicationWrapper.CurrentLine < actualToVisualRows.Length) {
@@ -2916,18 +2913,18 @@ public sealed class Editor : Drawable {
                     }
                 }
             }
-            
+
             yPos = actualToVisualRows[topRow] * Font.LineHeight();
             for (int row = topRow; row <= bottomRow; row++) {
                 int oldRow = row;
                 var numberString = (row + 1).ToString();
-                
+
                 bool isPlayingLine = CommunicationWrapper.CurrentLine >= 0 && CommunicationWrapper.CurrentLine < actualToVisualRows.Length &&
                                      actualToVisualRows[CommunicationWrapper.CurrentLine] == actualToVisualRows[row];
                 bool isSaveStateLine = CommunicationWrapper.SaveStateLine >= 0 && CommunicationWrapper.SaveStateLine < actualToVisualRows.Length &&
                                        actualToVisualRows[CommunicationWrapper.SaveStateLine] == actualToVisualRows[row];
-                
-                var textColor = isPlayingLine 
+
+                var textColor = isPlayingLine
                     ? Settings.Instance.Theme.PlayingLineFg
                     : isSaveStateLine
                         ? Settings.Instance.Theme.SavestateFg
@@ -2939,7 +2936,7 @@ public sealed class Editor : Drawable {
                     float ident = Font.CharWidth() * (Document.Lines.Count.Digits() - (row + 1).Digits());
                     e.Graphics.DrawText(Font, textColor, scrollablePosition.X + LineNumberPadding + ident, yPos, numberString);
                 }
-                
+
                 bool collapsed = false;
                 if (GetCollapse(row) is { } collapse) {
                     row = collapse.MaxRow;
@@ -2954,46 +2951,46 @@ public sealed class Editor : Drawable {
                     e.Graphics.FillPath(textColor, collapsed ? Assets.CollapseClosedPath : Assets.CollapseOpenPath);
                     e.Graphics.RestoreTransform();
                 }
-                
+
                 if (commentLineWraps.TryGetValue(oldRow, out wrap)) {
                     yPos += Font.LineHeight() * wrap.Lines.Length;
                 } else {
                     yPos += Font.LineHeight();
                 }
             }
-            
+
             e.Graphics.DrawLine(Settings.Instance.Theme.ServiceLine,
                 scrollablePosition.X + textOffsetX - LineNumberPadding, 0.0f,
                 scrollablePosition.X + textOffsetX - LineNumberPadding, yPos + scrollableSize.Height);
         }
-        
+
         // Draw toast message box
         if (!string.IsNullOrWhiteSpace(toastMessage)) {
             var lines = toastMessage.SplitDocumentLines();
-            
+
             float width = FontManager.PopupFont.CharWidth() * lines.Select(line => line.Length).Aggregate(Math.Max);
             float height = FontManager.PopupFont.LineHeight() * lines.Length;
             float x = scrollablePosition.X + (scrollableSize.Width - width) / 2.0f;
             float y = scrollablePosition.Y + (scrollableSize.Height - height) / 2.0f;
-            
+
             float padding = Settings.Instance.Theme.PopupMenuBorderPadding;
             e.Graphics.FillPath(
                 Settings.Instance.Theme.PopupMenuBg,
                 GraphicsPath.GetRoundRect(new RectangleF(x - padding, y - padding, width + padding * 2.0f, height + padding * 2.0f), Settings.Instance.Theme.PopupMenuBorderRounding));
-            
+
             foreach (var line in lines) {
                 e.Graphics.DrawText(FontManager.PopupFont, Settings.Instance.Theme.PopupMenuFg, x, y, line);
                 y += Font.LineHeight();
             }
         }
-        
+
         base.OnPaint(e);
     }
-    
+
     #endregion
-    
+
     #region Helper Methods
-    
+
     // For movement without Ctrl
     private static IReadOnlyList<int> GetSoftSnapColumns(ActionLine actionLine) {
         int leadingSpaces = ActionLine.MaxFramesDigits - actionLine.Frames.Digits();
@@ -3031,7 +3028,7 @@ public sealed class Editor : Drawable {
             leadingSpaces,
             ActionLine.MaxFramesDigits,
         ];
-        
+
         // Actions
         if (actionLine.Actions != Actions.None) {
             hardSnapColumns.Add(GetColumnOfAction(actionLine, actionLine.Actions.Sorted().Last()) + actionLine.CustomBindings.Count);
@@ -3069,7 +3066,7 @@ public sealed class Editor : Drawable {
 
         return hardSnapColumns.AsReadOnly();
     }
-    
+
     private static int GetColumnOfAction(ActionLine actionLine, Actions action) {
         int index = actionLine.Actions.Sorted().IndexOf(action);
         if (index < 0) return -1;
@@ -3138,10 +3135,10 @@ public sealed class Editor : Drawable {
         if (nextLeft == -1) return nextRight;
         if (nextRight == -1) return nextLeft;
 
-        return column - nextLeft < nextRight - column 
-            ? nextLeft 
+        return column - nextLeft < nextRight - column
+            ? nextLeft
             : nextRight;
     }
-    
+
     #endregion
 }

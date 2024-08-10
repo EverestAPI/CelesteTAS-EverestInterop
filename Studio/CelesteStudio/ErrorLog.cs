@@ -1,8 +1,8 @@
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Text;
 using CelesteStudio.Util;
+using System.Globalization;
 
 namespace CelesteStudio;
 
@@ -10,7 +10,7 @@ public static class ErrorLog {
     private const string Filename = "celeste_studio_log.txt";
     private const string Marker = "==========================================";
     public static string ModVersion = "Unknown";
-    
+
     private static string FilePath => Path.Combine(Settings.BaseConfigPath, Filename);
 
     public static void Write(Exception e) {
@@ -20,7 +20,7 @@ public static class ErrorLog {
     public static void Write(string str) {
         StringBuilder stringBuilder = new();
         string text = "";
-        
+
         if (File.Exists(FilePath)) {
             text = File.ReadAllText(FilePath);
             if (!text.Contains(Marker)) {
@@ -36,7 +36,7 @@ public static class ErrorLog {
         stringBuilder.Append(Studio.Version.ToString(3));
         stringBuilder.AppendLine($" & CelesteTAS v{ModVersion}");
 
-        stringBuilder.AppendLine(DateTime.Now.ToString());
+        stringBuilder.AppendLine(DateTime.Now.ToString(CultureInfo.InvariantCulture));
         stringBuilder.AppendLine(str);
         if (text != "") {
             int startIndex = text.IndexOf(Marker, StringComparison.Ordinal) + Marker.Length;

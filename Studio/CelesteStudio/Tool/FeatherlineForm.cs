@@ -1,16 +1,11 @@
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading.Tasks;
 using CelesteStudio.Communication;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
 using Featherline;
-using StudioCommunication;
 
 namespace CelesteStudio.Tool;
 

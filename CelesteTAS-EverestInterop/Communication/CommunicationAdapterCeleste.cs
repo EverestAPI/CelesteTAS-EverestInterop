@@ -24,18 +24,18 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
         CommunicationWrapper.Stop();
         CommunicationWrapper.Start();
     }
-    
+
     protected override void OnConnectionChanged() {
         if (Connected) {
             // Stall until input initialized to avoid sending invalid hotkey data
             while (Hotkeys.KeysDict == null) {
                 Thread.Sleep(UpdateRate);
             }
-            
-            CommunicationWrapper.SendCurrentBindings();       
+
+            CommunicationWrapper.SendCurrentBindings();
         }
     }
-    
+
     protected override void HandleMessage(MessageID messageId, BinaryReader reader) {
         switch (messageId) {
             case MessageID.FilePath:
@@ -49,22 +49,22 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 var hotkey = (HotkeyID)reader.ReadByte();
                 bool released = reader.ReadBoolean();
                 LogVerbose($"Received message Hotkey: {hotkey} ({(released ? "released" : "pressed")})");
-                
+
                 Hotkeys.KeysDict[hotkey].OverrideCheck = !released;
                 break;
 
             case MessageID.SetSetting:
                 string settingName = reader.ReadString();
                 LogVerbose($"Received message Hotkey: '{settingName}'");
-                
+
                 if (typeof(CelesteTasSettings).GetProperty(settingName) is { } property) {
                     if (property.GetSetMethod(true) == null) {
                         break;
                     }
-                    
+
                     object value = property.GetValue(TasSettings)!;
                     bool modified = false;
-                    
+
                     if (value is bool boolValue) {
                         property.SetValue(TasSettings, !boolValue);
                         modified = true;
@@ -81,35 +81,35 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                         property.SetValue(TasSettings, ((int)value + 1) % Enum.GetValues(property.PropertyType).Length);
                         modified = true;
                     }
-                    
+
                     if (modified) {
                         CelesteTasModule.Instance.SaveSettings();
                     }
                 }
                 break;
-            
+
             case MessageID.SetCustomInfoTemplate:
                 var customInfoTemplate = reader.ReadString();
                 LogVerbose($"Received message SetCustomInfoTemplate: '{customInfoTemplate}'");
-                
+
                 TasSettings.InfoCustomTemplate = customInfoTemplate;
                 GameInfo.Update();
                 break;
-            
+
             case MessageID.ClearWatchEntityInfo:
                 LogVerbose("Received message ClearWatchEntityInfo");
-                
+
                 InfoWatchEntity.ClearWatchEntities();
                 GameInfo.Update();
                 break;
-            
+
             case MessageID.RecordTAS:
                 var fileName = reader.ReadString();
                 LogVerbose($"Received message RecordTAS: '{fileName}'");
-                
+
                 ProcessRecordTAS(fileName);
                 break;
-            
+
             case MessageID.RequestGameData:
                 var gameDataType = (GameDataType)reader.ReadByte();
                 object? arg = gameDataType switch {
@@ -121,7 +121,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                     _ => null,
                 };
                 LogVerbose($"Received message RequestGameData: '{gameDataType}' ('{arg ?? "<null>"}')");
-                
+
                 // Gathering data from the game can sometimes take a while (and cause a timeout)
                 Task.Run(() => {
                     try {
@@ -133,8 +133,8 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                             GameDataType.CompleteInfoCommand => AreaCompleteInfo.CreateCommand(),
                             GameDataType.ModUrl => GameData.GetModUrl(),
                             GameDataType.CustomInfoTemplate => !string.IsNullOrWhiteSpace(TasSettings.InfoCustomTemplate) ? TasSettings.InfoCustomTemplate : string.Empty,
-                            GameDataType.SetCommandAutoCompleteEntries => GameData.GetSetCommandAutoCompleteEntries((((string, int))arg!).Item1, (((string, int))arg!).Item2).ToArray(),
-                            GameDataType.InvokeCommandAutoCompleteEntries => GameData.GetInvokeCommandAutoCompleteEntries((((string, int))arg!).Item1, (((string, int))arg!).Item2).ToArray(),
+                            GameDataType.SetCommandAutoCompleteEntries => GameData.GetSetCommandAutoCompleteEntries((((string, int))arg!).Item1, (((string, int))arg).Item2).ToArray(),
+                            GameDataType.InvokeCommandAutoCompleteEntries => GameData.GetInvokeCommandAutoCompleteEntries((((string, int))arg!).Item1, (((string, int))arg).Item2).ToArray(),
                             GameDataType.RawInfo => InfoCustom.GetRawInfo(((string, bool))arg!),
                             GameDataType.GameState => GameData.GetGameState(),
                             _ => null,
@@ -142,46 +142,46 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
 
                         QueueMessage(MessageID.GameDataResponse, writer => {
                             writer.Write((byte)gameDataType);
-                            
+
                             switch (gameDataType) {
-                                case GameDataType.ConsoleCommand: 
-                                case GameDataType.ModInfo: 
+                                case GameDataType.ConsoleCommand:
+                                case GameDataType.ModInfo:
                                 case GameDataType.ExactGameInfo:
-                                case GameDataType.SettingValue: 
-                                case GameDataType.CompleteInfoCommand: 
+                                case GameDataType.SettingValue:
+                                case GameDataType.CompleteInfoCommand:
                                 case GameDataType.ModUrl:
                                 case GameDataType.CustomInfoTemplate:
                                     writer.Write((string?)gameData ?? string.Empty);
                                     break;
-                                
+
                                 case GameDataType.SetCommandAutoCompleteEntries:
                                 case GameDataType.InvokeCommandAutoCompleteEntries:
                                     writer.WriteObject((CommandAutoCompleteEntry[]?)gameData ?? []);
                                     break;
-                                
+
                                 case GameDataType.RawInfo:
                                     writer.WriteObject(gameData);
                                     break;
-                                
+
                                 case GameDataType.GameState:
                                     writer.WriteObject((GameState?)gameData);
                                     break;
                             }
-                            LogVerbose($"Sent message GameDataResponse: {gameDataType} = '{gameData}'");    
+                            LogVerbose($"Sent message GameDataResponse: {gameDataType} = '{gameData}'");
                         });
                     } catch (Exception ex) {
                         Console.WriteLine(ex);
                     }
-                    
+
                 });
                 break;
-            
+
             default:
                 LogError($"Received unknown message ID: {messageId}");
                 break;
         }
     }
-    
+
     public void WriteState(StudioState state) {
         QueueMessage(MessageID.State, writer => writer.WriteObject(state));
         // LogVerbose("Sent message State");
@@ -198,7 +198,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
         QueueMessage(MessageID.RecordingFailed, writer => writer.Write((byte)reason));
         LogVerbose($"Sent message RecordingFailed: {reason}");
     }
-    
+
     private void ProcessRecordTAS(string fileName) {
         if (!TASRecorderUtils.Installed) {
             WriteRecordingFailed(RecordingFailedReason.TASRecorderNotInstalled);
@@ -208,22 +208,22 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
             WriteRecordingFailed(RecordingFailedReason.FFmpegNotInstalled);
             return;
         }
-        
+
         Manager.Controller.RefreshInputs(enableRun: true);
         if (RecordingCommand.RecordingTimes.IsNotEmpty()) {
             AbortTas("Can't use StartRecording/StopRecording with \"Record TAS\"");
             return;
         }
         Manager.NextStates |= States.Enable;
-        
+
         int totalFrames = Manager.Controller.Inputs.Count;
         if (totalFrames <= 0) return;
-        
+
         TASRecorderUtils.StartRecording(fileName);
         TASRecorderUtils.SetDurationEstimate(totalFrames);
-        
+
         if (!Manager.Controller.Commands.TryGetValue(0, out var commands)) return;
-        bool startsWithConsoleLoad = commands.Any(c => 
+        bool startsWithConsoleLoad = commands.Any(c =>
             c.Attribute.Name.Equals("Console", StringComparison.OrdinalIgnoreCase) &&
             c.Args.Length >= 1 &&
             ConsoleCommand.LoadCommandRegex.Match(c.Args[0].ToLower()) is {Success: true});
@@ -235,7 +235,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
             Audio.BusStopAll(Buses.GAMEPLAY, immediate: true);
         }
     }
-    
+
     protected override void LogInfo(string message) => Logger.Log(LogLevel.Info, "CelesteTAS/StudioCom", message);
     protected override void LogVerbose(string message) => Logger.Log(LogLevel.Verbose, "CelesteTAS/StudioCom", message);
     protected override void LogError(string message) => Logger.Log(LogLevel.Error, "CelesteTAS/StudioCom", message);

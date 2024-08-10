@@ -5,7 +5,6 @@ using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
-using StudioCommunication;
 using TAS.Communication;
 using TAS.Module;
 using TAS.Utils;

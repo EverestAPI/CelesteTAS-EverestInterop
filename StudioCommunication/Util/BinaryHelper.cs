@@ -5,15 +5,13 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using MemoryPack;
 
-#nullable enable
-
 namespace StudioCommunication.Util;
 
 public static class BinaryHelper {
     // Serializes data to (usually) a binary buffer for transmission
     // A buffer length of 0 indicates that the object is null
     // Some primitive types are special cased, to avoid the overhead of the buffer
-    
+
     public static void WriteObject(this BinaryWriter writer, object? value) {
         switch (value)
         {
@@ -77,18 +75,18 @@ public static class BinaryHelper {
                 }
                 return;
         }
-        
+
         if (value == null) {
             writer.Write7BitEncodedInt(0);
             return;
         }
-        
+
         var buffer = MemoryPackSerializer.Serialize(value.GetType(), value);
         writer.Write7BitEncodedInt(buffer.Length);
         writer.Write(buffer);
     }
 
-    public static T ReadObject<T>(this BinaryReader reader) => (T)reader.ReadObject(typeof(T));
+    public static T ReadObject<T>(this BinaryReader reader) => (T)reader.ReadObject(typeof(T))!;
     public static object? ReadObject(this BinaryReader reader, Type type) {
         // Primitives
         if (type == typeof(bool))
@@ -119,27 +117,27 @@ public static class BinaryHelper {
             return reader.ReadHalf();
         if (type == typeof(string))
             return reader.ReadString();
-        
+
         if (type.IsArray) {
             int count = reader.Read7BitEncodedInt();
             var elemType = type.GetElementType()!;
-            
+
             var values = Array.CreateInstance(elemType, count);
             for (int i = 0; i < count; i++) {
                 values.SetValue(reader.ReadObject(elemType), i);
             }
-            
+
             return values;
         }
         if (type.IsAssignableTo(typeof(IList)) && type.IsGenericType) {
             int count = reader.Read7BitEncodedInt();
             var elemType = type.GetElementType() ?? type.GenericTypeArguments[0];
-            
+
             var list = (IList)Activator.CreateInstance(type)!;
             for (int i = 0; i < count; i++) {
                 list.Add(reader.ReadObject(elemType));
             }
-            
+
             return list;
         }
         if (type.IsAssignableTo(typeof(ITuple)) && type.IsGenericType) {
@@ -149,21 +147,21 @@ public static class BinaryHelper {
             for (int i = 0; i < count; i++) {
                 values[i] = reader.ReadObject(type.GenericTypeArguments[i]);
             }
-            
+
             return Activator.CreateInstance(type, values)!;
         }
-        
+
         bool nullable = !type.IsValueType;
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>)) {
             nullable = true;
             type = Nullable.GetUnderlyingType(type)!;
         }
-        
+
         int length = reader.Read7BitEncodedInt();
         if (nullable && length == 0) {
             return null;
         }
-        
+
         var buffer = reader.ReadBytes(length);
         return MemoryPackSerializer.Deserialize(type, buffer)!;
     }
