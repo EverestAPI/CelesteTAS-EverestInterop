@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
+using StudioCommunication;
 using TAS.EverestInterop.Lua;
 using TAS.Input.Commands;
 using TAS.Module;

@@ -14,7 +14,7 @@ namespace CelesteStudio.Tool;
 
 public sealed class JadderlineForm : Form {
     private const string Version = "1.1.0";
-    
+
     private readonly NumericStepper playerPos;
     private readonly NumericStepper playerSpeed;
     private readonly NumericStepper jelly2Pos;
@@ -22,49 +22,49 @@ public sealed class JadderlineForm : Form {
     private readonly DropDown direction;
     private readonly CheckBox moveOnly;
     private readonly TextBox additionalInputs;
-    
+
     private readonly TextArea output;
     private readonly Button run;
     private readonly Button copyOutput;
-    
+
     public JadderlineForm() {
         Title = $"Jadderline - v{Version}";
         Icon = Assets.AppIcon;
-        
+
         Menu = new MenuBar {
             AboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {
                 Studio.ShowAboutDialog(new AboutDialog {
                     ProgramName = "Jadderline",
                     ProgramDescription = "Utility for doing an optimal jelly ladder.",
                     Version = Version,
-                    
+
                     Developers = ["atpx8", "psyGamer"],
                     Logo = Icon,
                 }, this);
             }),
         };
-        
+
         const int rowWidth = 200;
-        
-        playerPos = new NumericStepper { DecimalPlaces = CommunicationWrapper.GetPositionDecimals(), Width = rowWidth };
-        playerSpeed = new NumericStepper { DecimalPlaces = CommunicationWrapper.GetSpeedDecimals(), Width = rowWidth };
-        jelly2Pos = new NumericStepper { DecimalPlaces = CommunicationWrapper.GetCustomInfoDecimals(), Width = rowWidth };
+
+        playerPos = new NumericStepper { DecimalPlaces = CommunicationWrapper.GameSettings.PositionDecimals, Width = rowWidth };
+        playerSpeed = new NumericStepper { DecimalPlaces = CommunicationWrapper.GameSettings.SpeedDecimals, Width = rowWidth };
+        jelly2Pos = new NumericStepper { DecimalPlaces = CommunicationWrapper.GameSettings.CustomInfoDecimals, Width = rowWidth };
         ladders = new NumericStepper { MinValue = 2, DecimalPlaces = 0, Width = rowWidth };
-        direction = new DropDown { 
+        direction = new DropDown {
             Items = {
                 new ListItem { Text = "Left" },
                 new ListItem { Text = "Right" },
             },
-            SelectedKey = "Right", 
-            Width = rowWidth 
+            SelectedKey = "Right",
+            Width = rowWidth
         };
         moveOnly = new CheckBox { Width = rowWidth };
         additionalInputs = new TextBox { Width = rowWidth };
         output = new TextArea { ReadOnly = true, Font = FontManager.EditorFontRegular, Width = 250 };
-        
+
         var layout = new DynamicLayout { DefaultSpacing = new Size(10, 10) };
         layout.BeginHorizontal();
-        
+
         layout.BeginVertical();
         layout.BeginHorizontal();
         layout.AddCentered(new Label { Text = "Player X Position" });
@@ -89,11 +89,11 @@ public sealed class JadderlineForm : Form {
         layout.Add(moveOnly);
         layout.EndHorizontal();
         layout.EndVertical();
-        
+
         layout.Add(output);
-        
+
         layout.EndHorizontal();
-        
+
         Content = new StackLayout {
             Padding = 10,
             Spacing = 10,
@@ -114,12 +114,12 @@ public sealed class JadderlineForm : Form {
 
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
     }
-    
+
     private void Run() {
         output.Text = string.Empty;
         run.Enabled = false;
         copyOutput.Enabled = false;
-        
+
         // Get the parameters here and capture them for the task, since it apparently can't access the fields?
         double playerPosValue = (double)playerPos.Value;
         float playerSpeedValue = (float)playerSpeed.Value;
@@ -131,7 +131,7 @@ public sealed class JadderlineForm : Form {
         foreach (char c in additionalInputs.Text) {
             additionalActions |= c.ActionForChar();
         }
-        
+
         Task.Run(() => {
             try {
                 string result = Run(playerPosValue, playerSpeedValue, jelly2PosValue, laddersValue, directionValue, moveOnlyValue, additionalActions);
@@ -143,7 +143,7 @@ public sealed class JadderlineForm : Form {
                 });
             } catch (Exception ex) {
                 Console.Error.WriteLine(ex);
-                
+
                 Application.Instance.Invoke(() => {
                     run.Enabled = true;
                     copyOutput.Enabled = false;
@@ -156,9 +156,9 @@ public sealed class JadderlineForm : Form {
         Clipboard.Instance.Clear();
         Clipboard.Instance.Text = output.Text;
     }
-    
+
     #region Algorithm - by atpx8
-    
+
     const float DeltaTime = 0.0166667f;
     const float FrictionNorm = 650f;
     const float FrictionOverMax = 260f;
@@ -215,7 +215,7 @@ public sealed class JadderlineForm : Form {
         }
         return Format(inputs, moveOnly, direction, additionalActions);
     }
-    
+
     // Gets the distance jelly1 has moved while ensuring the player can still grab jelly2
     // Yes this code does kind of suck but it works
     private static float Eval((bool[], bool[]) inputs, double playerPos, float playerSub, float playerSpeed, float jelly1Pos, float jelly2Pos, bool direction) {
@@ -229,7 +229,7 @@ public sealed class JadderlineForm : Form {
                 return float.PositiveInfinity;
             }
         }
-        (playerPosNew, playerSubNew, _, _) = MoveVars(inputs.Item2, playerPosNew, playerSubNew, playerSpeedNew, jelly1PosNew, direction);  
+        (playerPosNew, playerSubNew, _, _) = MoveVars(inputs.Item2, playerPosNew, playerSubNew, playerSpeedNew, jelly1PosNew, direction);
         if (playerPosNew + playerSubNew >= jelly2PosNew + 13.5f || playerPosNew + playerSubNew < jelly2PosNew - 13.5f) {
             if (direction) {
                 return float.NegativeInfinity;
@@ -240,7 +240,7 @@ public sealed class JadderlineForm : Form {
             return (float)(playerPosNew + (double)playerSubNew - playerPos - (double)playerSub);
         }
     }
-    
+
     // Actually calculates the inputs
     private static (double, float, float, float) MoveVars(bool[] inputs, double playerPos, float playerSub, float playerSpeed, float jelly1Pos, bool direction) {
         // Frame of movement on last frame of StPickup
@@ -295,7 +295,7 @@ public sealed class JadderlineForm : Form {
         (playerPos, playerSub) = MovePlayer(playerPos, playerSub, playerSpeed * DeltaTime);
         return (playerPos, playerSub, playerSpeed);
     }
-    
+
     // Moves the player
     private static (double, float) MovePlayer(double playerPos, float playerSub, float toMove) {
         playerSub += toMove;
@@ -342,10 +342,10 @@ public sealed class JadderlineForm : Form {
                         actionLine.Actions |= direction ? Actions.Right : Actions.Left;
                     }
                 }
-                
+
                 result.AppendLine(actionLine.ToString());
             }
-            
+
             var dropActionLine = new ActionLine { Frames = 1, Actions = additionalActions };
             if (moveOnly) {
                 dropActionLine.Actions |= Actions.MoveOnly | Actions.DownMoveOnly;
@@ -363,6 +363,6 @@ public sealed class JadderlineForm : Form {
 
         return result.ToString();
     }
-    
+
     #endregion
 }

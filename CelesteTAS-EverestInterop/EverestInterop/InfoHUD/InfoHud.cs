@@ -5,6 +5,7 @@ using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
+using StudioCommunication;
 using TAS.Entities;
 using TAS.Input;
 using TAS.Module;
@@ -233,12 +234,4 @@ public static class InfoHud {
         subMenuItem.AddDescription(menu, "Info HUD Description 1".ToDialogText());
         subMenuItem = null;
     }
-}
-
-[Flags]
-public enum HudOptions {
-    Off = 0,
-    HudOnly = 1,
-    StudioOnly = 2,
-    Both = HudOnly | StudioOnly
 }

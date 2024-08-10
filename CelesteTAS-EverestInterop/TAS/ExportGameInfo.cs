@@ -5,6 +5,7 @@ using System.Linq;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
+using StudioCommunication;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Input;
 using TAS.Input.Commands;
@@ -112,8 +113,8 @@ public static class ExportGameInfo {
             }
 
             string time = GameInfo.GetChapterTime(level);
-            string pos = player.ToSimplePositionString(GetDecimals(TasSettings.PositionDecimals, CelesteTasSettings.MaxDecimals));
-            string speed = player.Speed.ToSimpleString(GetDecimals(TasSettings.SpeedDecimals, CelesteTasSettings.MaxDecimals));
+            string pos = player.ToSimplePositionString(GetDecimals(TasSettings.PositionDecimals, GameSettings.MaxDecimals));
+            string speed = player.Speed.ToSimpleString(GetDecimals(TasSettings.SpeedDecimals, GameSettings.MaxDecimals));
             string statuses = GameInfo.GetStatuses(level, player);
             GameInfo.GetAdjustedLiftBoost(player, out string liftBoost);
             if (liftBoost.IsNotEmpty()) {
@@ -139,16 +140,16 @@ public static class ExportGameInfo {
 
                 foreach (Entity entity in entities) {
                     output +=
-                        $"\t{typeName}: {entity.ToSimplePositionString(GetDecimals(TasSettings.PositionDecimals, CelesteTasSettings.MaxDecimals))}";
+                        $"\t{typeName}: {entity.ToSimplePositionString(GetDecimals(TasSettings.PositionDecimals, GameSettings.MaxDecimals))}";
                 }
             }
 
-            if (InfoCustom.GetInfo(GetDecimals(TasSettings.CustomInfoDecimals, CelesteTasSettings.MaxDecimals)) is { } customInfo &&
+            if (InfoCustom.GetInfo(GetDecimals(TasSettings.CustomInfoDecimals, GameSettings.MaxDecimals)) is { } customInfo &&
                 customInfo.IsNotEmpty()) {
                 output += $"\t{customInfo.ReplaceLineBreak(" ")}";
             }
 
-            if (InfoWatchEntity.GetInfo("\t", true, GetDecimals(TasSettings.CustomInfoDecimals, CelesteTasSettings.MaxDecimals)) is { } watchInfo &&
+            if (InfoWatchEntity.GetInfo("\t", true, GetDecimals(TasSettings.CustomInfoDecimals, GameSettings.MaxDecimals)) is { } watchInfo &&
                 watchInfo.IsNotEmpty()) {
                 output += $"\t{watchInfo}";
             }

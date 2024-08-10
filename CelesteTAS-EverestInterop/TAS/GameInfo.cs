@@ -89,8 +89,8 @@ public static class GameInfo {
                 infos.Add(InfoMouse.MouseInfo);
             }
 
-            WatchingInfo = InfoWatchEntity.GetInfo(alwaysUpdate: true, decimals: CelesteTasSettings.MaxDecimals);
-            CustomInfo = InfoCustom.GetInfo(CelesteTasSettings.MaxDecimals);
+            WatchingInfo = InfoWatchEntity.GetInfo(alwaysUpdate: true, decimals: GameSettings.MaxDecimals);
+            CustomInfo = InfoCustom.GetInfo(GameSettings.MaxDecimals);
 
             if (CustomInfo.IsNotNullOrWhiteSpace()) {
                 infos.Add(CustomInfo);
@@ -339,7 +339,7 @@ public static class GameInfo {
                 stringBuilder.AppendLine($"Rem:   {player.rem.ToSimpleString(TasSettings.PositionDecimals)}");
                 stringBuilder.AppendLine($"Speed: {player.spd.ToSimpleString(TasSettings.SpeedDecimals)}");
             }
-            
+
             stringBuilder.AppendLine($"Seed:  {Pico8Fixer.Seed}");
             if (player?.grace > 1) {
                 stringBuilder.AppendLine($"Coyote({player.grace - 1})");
@@ -500,13 +500,13 @@ public static class GameInfo {
 
     private static string GetAdjustedPos(Actor actor, out string exactPos) {
         const string prefix = "Pos:   ";
-        exactPos = $"{prefix}{actor.ToSimplePositionString(CelesteTasSettings.MaxDecimals)}";
+        exactPos = $"{prefix}{actor.ToSimplePositionString(GameSettings.MaxDecimals)}";
         return $"{prefix}{actor.ToSimplePositionString(TasSettings.PositionDecimals)}";
     }
 
     private static string GetAdjustedSpeed(Vector2 speed, out string exactSpeed) {
         speed = ConvertSpeedUnit(speed, TasSettings.SpeedUnit);
-        exactSpeed = $"Speed: {speed.ToSimpleString(CelesteTasSettings.MaxDecimals)}";
+        exactSpeed = $"Speed: {speed.ToSimpleString(GameSettings.MaxDecimals)}";
         return $"Speed: {speed.ToSimpleString(TasSettings.SpeedDecimals)}";
     }
 
@@ -531,20 +531,20 @@ public static class GameInfo {
     }
 
     private static string GetAdjustedVelocity(Vector2Double diff, out string exactVelocity) {
-        exactVelocity = $"Vel:   {diff.ToSimpleString(CelesteTasSettings.MaxDecimals)}";
+        exactVelocity = $"Vel:   {diff.ToSimpleString(GameSettings.MaxDecimals)}";
         return $"Vel:   {diff.ToSimpleString(TasSettings.VelocityDecimals)}";
     }
 
     private static string GetAdjustedPolarVel(Vector2Double diff, out string exactPolarVel) {
         exactPolarVel =
-            $"Fly:   {diff.Length().ToFormattedString(CelesteTasSettings.MaxDecimals)}, {diff.Angle().ToFormattedString(CelesteTasSettings.MaxDecimals)}°";
+            $"Fly:   {diff.Length().ToFormattedString(GameSettings.MaxDecimals)}, {diff.Angle().ToFormattedString(GameSettings.MaxDecimals)}°";
         return
             $"Fly:   {diff.Length().ToFormattedString(TasSettings.VelocityDecimals)}, {diff.Angle().ToFormattedString(TasSettings.AngleDecimals)}°";
     }
 
     private static string GetAdjustedAnalog(Vector2 angleVector2, out string exactAnalog) {
         exactAnalog =
-            $"Analog: {angleVector2.ToSimpleString(CelesteTasSettings.MaxDecimals)}, {GetAngle(new Vector2(angleVector2.X, -angleVector2.Y)).ToFormattedString(CelesteTasSettings.MaxDecimals)}°";
+            $"Analog: {angleVector2.ToSimpleString(GameSettings.MaxDecimals)}, {GetAngle(new Vector2(angleVector2.X, -angleVector2.Y)).ToFormattedString(GameSettings.MaxDecimals)}°";
         return
             $"Analog: {angleVector2.ToSimpleString(TasSettings.AngleDecimals)}, {GetAngle(new Vector2(angleVector2.X, -angleVector2.Y)).ToFormattedString(TasSettings.AngleDecimals)}°";
         ;
@@ -554,7 +554,7 @@ public static class GameInfo {
         if (player.wallSpeedRetentionTimer > 0f) {
             int timer = player.wallSpeedRetentionTimer.ToCeilingFrames();
             float retainedSpeed = ConvertSpeedUnit(player.wallSpeedRetained, TasSettings.SpeedUnit);
-            exactRetainedSpeed = $"Retained({timer}): {retainedSpeed.ToString($"F{CelesteTasSettings.MaxDecimals}")}";
+            exactRetainedSpeed = $"Retained({timer}): {retainedSpeed.ToString($"F{GameSettings.MaxDecimals}")}";
             return $"Retained({timer}): {retainedSpeed.ToString($"F{TasSettings.SpeedDecimals}")}";
         } else {
             return exactRetainedSpeed = string.Empty;
@@ -565,7 +565,7 @@ public static class GameInfo {
         if (player.LiftBoost is var liftBoost && liftBoost != Vector2.Zero) {
             liftBoost = ConvertSpeedUnit(liftBoost, TasSettings.SpeedUnit);
             int timer = player.liftSpeedTimer.ToCeilingFrames();
-            exactLiftBoost = $"LiftBoost({timer}): {liftBoost.ToSimpleString(CelesteTasSettings.MaxDecimals)}";
+            exactLiftBoost = $"LiftBoost({timer}): {liftBoost.ToSimpleString(GameSettings.MaxDecimals)}";
             return $"LiftBoost({timer}): {liftBoost.ToSimpleString(TasSettings.SpeedDecimals)}";
         } else {
             return exactLiftBoost = string.Empty;
@@ -597,7 +597,7 @@ public static class GameInfo {
 
 public static class PlayerStates {
     private static readonly Func<StateMachine, string> GetCurrentStateNameFunc = typeof(StateMachine).GetMethod("GetCurrentStateName")?.CreateDelegate<Func<StateMachine, string>>();
-    
+
     private static readonly IDictionary<int, string> States = new Dictionary<int, string> {
         {Player.StNormal, nameof(Player.StNormal)},
         {Player.StClimb, nameof(Player.StClimb)},

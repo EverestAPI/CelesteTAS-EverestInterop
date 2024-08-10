@@ -1,6 +1,7 @@
 using System;
 using Celeste;
 using Celeste.Mod;
+using StudioCommunication;
 using TAS.Module;
 using TAS.Utils;
 
@@ -49,7 +50,7 @@ public static class HitboxMenu {
             subMenuItem.AddDescription(menu, "Hitbox Color Description 2".ToDialogText());
             subMenuItem.AddDescription(menu, "Hitbox Color Description 1".ToDialogText());
         }
-       
+
         subMenuItem = null;
     }
 }

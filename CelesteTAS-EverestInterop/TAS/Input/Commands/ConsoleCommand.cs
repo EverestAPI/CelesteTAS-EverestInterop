@@ -10,6 +10,7 @@ using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
+using StudioCommunication;
 using TAS.Module;
 using TAS.Utils;
 
@@ -387,7 +388,7 @@ public static class ConsoleCommand {
         if (Engine.Scene is Emulator {game.room: var room}) {
             return $"console pico {room.X} {room.Y}";
         }
-        
+
         if (Engine.Scene is not Level level) {
             return string.Empty;
         }
@@ -420,7 +421,7 @@ public static class ConsoleCommand {
                 double subX = player.movementCounter.X;
                 double subY = player.movementCounter.Y;
 
-                string format = "0.".PadRight(CelesteTasSettings.MaxDecimals + 2, '#');
+                string format = "0.".PadRight(GameSettings.MaxDecimals + 2, '#');
                 values.Add((x + subX).ToString(format, CultureInfo.InvariantCulture));
                 values.Add((y + subY).ToString(format, CultureInfo.InvariantCulture));
 

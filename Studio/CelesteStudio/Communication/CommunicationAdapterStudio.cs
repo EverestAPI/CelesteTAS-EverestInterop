@@ -11,14 +11,15 @@ namespace CelesteStudio.Communication;
 
 public sealed class CommunicationAdapterStudio(
     Action connectionChanged,
-    Action<StudioState> stateChanged, 
-    Action<Dictionary<int, string>> linesChanged, 
-    Action<Dictionary<HotkeyID, List<WinFormsKeys>>> bindingsChanged) : CommunicationAdapterBase(Location.Studio) 
+    Action<StudioState> stateChanged,
+    Action<Dictionary<int, string>> linesChanged,
+    Action<Dictionary<HotkeyID, List<WinFormsKeys>>> bindingsChanged,
+    Action<GameSettings> settingsChanged) : CommunicationAdapterBase(Location.Studio)
 {
     private readonly EnumDictionary<GameDataType, object?> gameData = new();
     private readonly EnumDictionary<GameDataType, bool> gameDataPending = new();
     private Type? rawInfoTargetType;
-    
+
     public void ForceReconnect() {
         if (Connected) {
             WriteMessageNow(MessageID.Reset, _ => {});
@@ -26,26 +27,26 @@ public sealed class CommunicationAdapterStudio(
         }
         FullReset();
     }
-    
+
     protected override void FullReset() {
         CommunicationWrapper.Stop();
         CommunicationWrapper.Start();
     }
-    
+
     protected override void OnConnectionChanged() {
         if (Connected) {
             // During startup the editor might be null, so just check to be sure
             // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
             if (Studio.Instance.Editor != null) {
-                SendPath(Studio.Instance.Editor.Document.FilePath);
+                WritePath(Studio.Instance.Editor.Document.FilePath);
             } else {
-                SendPath("Celeste.tas");
+                WritePath("Celeste.tas");
             }
         }
-        
+
         connectionChanged();
     }
-    
+
     protected override void HandleMessage(MessageID messageId, BinaryReader reader) {
         switch (messageId) {
             case MessageID.State:
@@ -76,7 +77,7 @@ public sealed class CommunicationAdapterStudio(
 
             case MessageID.GameDataResponse:
                 var gameDataType = (GameDataType)reader.ReadByte();
-                
+
                 switch (gameDataType) {
                     case GameDataType.ConsoleCommand:
                     case GameDataType.ModInfo:
@@ -87,60 +88,62 @@ public sealed class CommunicationAdapterStudio(
                     case GameDataType.CustomInfoTemplate:
                         gameData[gameDataType] = reader.ReadString();
                         break;
-                    
+
                     case GameDataType.SetCommandAutoCompleteEntries:
                     case GameDataType.InvokeCommandAutoCompleteEntries:
                         gameData[gameDataType] = reader.ReadObject<CommandAutoCompleteEntry[]>();
                         break;
-                    
+
                     case GameDataType.RawInfo:
                         gameData[gameDataType] = reader.ReadObject(rawInfoTargetType!);
                         break;
-                    
+
                     case GameDataType.GameState:
                         gameData[gameDataType] = reader.ReadObject<GameState?>();
                         break;
                 }
                 gameDataPending[gameDataType] = false;
-                
+
                 LogVerbose($"Received message GameDataResponse: {gameDataType} = '{gameData[gameDataType]}'");
                 break;
-                
+
+            case MessageID.GameSettings:
+                var settings = reader.ReadObject<GameSettings>();
+                LogVerbose("Received message GameSettings");
+
+                settingsChanged(settings);
+                break;
+
             default:
                 LogError($"Received unknown message ID: {messageId}");
                 break;
         }
     }
-    
-    public void SendPath(string path) {
+
+    public void WritePath(string path) {
         QueueMessage(MessageID.FilePath, writer => writer.Write(path));
         LogVerbose($"Sent message FilePath: '{path}'");
     }
-    public void SendHotkey(HotkeyID hotkey, bool released) {
+    public void WriteHotkey(HotkeyID hotkey, bool released) {
         QueueMessage(MessageID.Hotkey, writer => {
             writer.Write((byte) hotkey);
             writer.Write(released);
         });
         LogVerbose($"Sent message Hotkey: {hotkey} ({(released ? "released" : "pressed")})");
     }
-    public void SendSetting(string settingName, object? value) {
-        QueueMessage(MessageID.SetSetting, writer => {
-            writer.Write(settingName);
-            if (value != null) {
-                writer.WriteObject(value);
-            }
-        });
-        LogVerbose($"Sent message SetSetting: '{settingName}' = '{value}");
+    public void WriteSettings(GameSettings settings) {
+        QueueMessage(MessageID.GameSettings, writer => writer.WriteObject(settings));
+        LogVerbose("Sent message GameSettings");
     }
-    public void SendCustomInfoTemplate(string customInfoTemplate) {
+    public void WriteCustomInfoTemplate(string customInfoTemplate) {
         QueueMessage(MessageID.SetCustomInfoTemplate, writer => writer.Write(customInfoTemplate));
         LogVerbose($"Sent message SetCustomInfoTemplate: '{customInfoTemplate}'");
     }
-    public void SendClearWatchEntityInfo() {
+    public void WriteClearWatchEntityInfo() {
         QueueMessage(MessageID.ClearWatchEntityInfo, _ => {});
         LogVerbose("Sent message ClearWatchEntityInfo");
     }
-    public void SendRecordTAS(string fileName) {
+    public void WriteRecordTAS(string fileName) {
         QueueMessage(MessageID.RecordTAS, writer => writer.Write(fileName));
         LogVerbose($"Sent message RecordTAS: '{fileName}'");
     }
@@ -148,27 +151,27 @@ public sealed class CommunicationAdapterStudio(
     private static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromSeconds(1);
     public async Task<object?> RequestGameData(GameDataType gameDataType, object? arg = null, TimeSpan? timeout = null, Type? type = null) {
         timeout ??= DefaultRequestTimeout;
-        
+
         if (gameDataPending[gameDataType]) {
             // Wait for another request to finish
             var waitStart = DateTime.UtcNow;
             while (gameDataPending[gameDataType]) {
                 await Task.Delay(UpdateRate).ConfigureAwait(false);
-                
+
                 if (DateTime.UtcNow - waitStart >= timeout) {
                     LogError("Timed-out while while waiting for previous request to finish");
                     return null;
                 }
             }
         }
-        
+
         // Block other requests of this type until this is done
         gameDataPending[gameDataType] = true;
-        
+
         if (gameDataType == GameDataType.RawInfo) {
             rawInfoTargetType = type;
         }
-        
+
         QueueMessage(MessageID.RequestGameData, writer => {
             writer.Write((byte)gameDataType);
             if (arg != null) {
@@ -176,22 +179,22 @@ public sealed class CommunicationAdapterStudio(
             }
         });
         LogVerbose($"Sent message RequestGameData: {gameDataType} ('{arg ?? "<null>"}')");
-        
+
         // Wait for data to arrive
         var start = DateTime.UtcNow;
         while (gameDataPending[gameDataType]) {
             await Task.Delay(UpdateRate).ConfigureAwait(false);
-            
+
             if (DateTime.UtcNow - start >= timeout) {
                 LogError("Timed-out while requesting data from game");
                 gameDataPending[gameDataType] = false;
                 return null;
             }
         }
-        
+
         return gameData[gameDataType];
     }
-    
+
     protected override void LogInfo(string message) => Console.WriteLine($"[Info] Studio Communication @ Studio: {message}");
     protected override void LogVerbose(string message) => Console.WriteLine($"[Verbose] Studio Communication @ Studio: {message}");
     protected override void LogError(string message) => Console.Error.WriteLine($"[Error] Studio Communication @ Studio: {message}");
