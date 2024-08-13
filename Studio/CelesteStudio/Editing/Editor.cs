@@ -2141,17 +2141,9 @@ public sealed class Editor : Drawable {
     private void InsertOrRemoveText(Regex regex, string text) {
         using var __ = Document.Update();
 
+        CollapseSelection();
+        
         int insertDir = Settings.Instance.InsertDirection == InsertDirection.Above ? -1 : 1;
-
-        if (!Document.Selection.Empty) {
-            CaretPosition collapseToRow = Settings.Instance.InsertDirection switch {
-                InsertDirection.Above => Document.Selection.Min,
-                InsertDirection.Below => Document.Selection.Max,
-                _ => throw new ArgumentOutOfRangeException()
-            };
-            Document.Selection.Clear();
-            Document.Caret = collapseToRow;
-        }
 
         // Check current line
         if (regex.IsMatch(Document.Lines[Document.Caret.Row])) {
@@ -2450,6 +2442,18 @@ public sealed class Editor : Drawable {
             return line.Length >= 2 && line[0] == '#' && char.IsLetter(line[1]) ||
                    line.TrimStart().StartsWith("***");
         }
+    }
+    
+    void CollapseSelection() {
+        if (Document.Selection.Empty) return;
+        
+        var collapseToRow = Settings.Instance.InsertDirection switch {
+            InsertDirection.Above => Document.Selection.Min,
+            InsertDirection.Below => Document.Selection.Max,
+            _ => throw new ArgumentOutOfRangeException()
+        };
+        Document.Selection.Clear();
+        Document.Caret = collapseToRow;
     }
 
     #endregion
