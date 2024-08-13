@@ -2120,6 +2120,8 @@ public sealed class Editor : Drawable {
     private void InsertLine(string text) {
         using var __ = Document.Update();
 
+        CollapseSelection();
+        
         if (Settings.Instance.InsertDirection == InsertDirection.Above) {
             Document.InsertLineAbove(text);
 
