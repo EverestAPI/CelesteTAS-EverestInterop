@@ -24,7 +24,7 @@ public class InputController {
         AttributeUtils.CollectMethods<ParseFileEndAttribute>();
     }
 
-    private static readonly Dictionary<string, FileSystemWatcher> watchers = new();
+    private readonly Dictionary<string, FileSystemWatcher> watchers = new();
 
     public readonly List<InputFrame> Inputs = [];
     public readonly SortedDictionary<int, List<Command>> Commands = new();
@@ -215,9 +215,11 @@ public class InputController {
     public bool ReadLine(string line, string path, int fileLine, int studioLine, int repeatIndex = 0, int repeatCount = 0) {
         string lineText = line.Trim();
 
-        if (Command.TryParse(path, fileLine, lineText, CurrentParsingFrame, studioLine, out Command command)) {
-            if (!Commands.TryGetValue(CurrentParsingFrame, out var commands)) {
-                Commands[CurrentParsingFrame] = commands = new List<Command>();
+        // Commands might insert inputs, which would offset CurrentParsingFrame to after the command, instead of before
+        int commandParsingFrame = CurrentParsingFrame;
+        if (Command.TryParse(path, fileLine, lineText, commandParsingFrame, studioLine, out Command command)) {
+            if (!Commands.TryGetValue(commandParsingFrame, out var commands)) {
+                Commands[commandParsingFrame] = commands = new List<Command>();
             }
             commands.Add(command);
 
@@ -320,9 +322,11 @@ public class InputController {
                 return;
             }
 
-            var watcher = new FileSystemWatcher();
-            watcher.Path = Path.GetDirectoryName(path)!;
-            watcher.Filter = Path.GetFileName(path);
+            var watcher = new FileSystemWatcher {
+                Path = Path.GetDirectoryName(path)!,
+                Filter = Path.GetFileName(path),
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite,
+            };
 
             watcher.Changed += OnTasFileChanged;
             watcher.Created += OnTasFileChanged;
@@ -331,6 +335,7 @@ public class InputController {
 
             try {
                 watcher.EnableRaisingEvents = true;
+                $"Started watching '{path}' for changes...".Log(LogLevel.Verbose);
             } catch (Exception e) {
                 e.LogException($"Failed watching folder: {watcher.Path}, filter: {watcher.Filter}");
                 watcher.Dispose();
@@ -341,6 +346,7 @@ public class InputController {
         }
 
         void OnTasFileChanged(object sender, FileSystemEventArgs e) {
+            $"TAS file changed: {e.FullPath} - {e.ChangeType}".Log(LogLevel.Verbose);
             needsReload = true;
         }
     }

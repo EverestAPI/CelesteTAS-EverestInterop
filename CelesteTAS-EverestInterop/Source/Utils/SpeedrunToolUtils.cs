@@ -28,7 +28,6 @@ internal static class SpeedrunToolUtils {
     private static long? tasStartFileTime;
     private static MouseState mouseState;
     private static Dictionary<Follower, bool> followers;
-    private static Dictionary<int, int> insertedSlots = new();
     private static bool disallowUnsafeInput;
     private static Random auraRandom;
 
@@ -47,7 +46,6 @@ internal static class SpeedrunToolUtils {
             tasStartFileTime = MetadataCommands.TasStartFileTime;
             mouseState = MouseCommand.CurrentState;
             followers = HitboxSimplified.Followers.DeepCloneShared();
-            insertedSlots = SaveAndQuitReenterCommand.InsertedSlots.DeepCloneShared();
             disallowUnsafeInput = SafeCommand.DisallowUnsafeInput;
             auraRandom = DesyncFixer.AuraHelperSharedRandom.DeepCloneShared();
         };
@@ -69,7 +67,6 @@ internal static class SpeedrunToolUtils {
             MetadataCommands.TasStartFileTime = tasStartFileTime;
             MouseCommand.CurrentState = mouseState;
             HitboxSimplified.Followers = followers.DeepCloneShared();
-            SaveAndQuitReenterCommand.InsertedSlots = insertedSlots.DeepCloneShared();
             SafeCommand.DisallowUnsafeInput = disallowUnsafeInput;
             DesyncFixer.AuraHelperSharedRandom = auraRandom.DeepCloneShared();
         };
