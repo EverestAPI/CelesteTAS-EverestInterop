@@ -94,6 +94,11 @@ public static class Core {
         }
 
         Manager.Update();
+
+        // Limit to 60 FPS, even while fast forwarding
+        if (Engine.FrameCounter % (ulong)Manager.PlaybackSpeed == 0) {
+            Manager.UpdateMeta();
+        }
     }
 
     // Update controllers, even if the game isn't focused

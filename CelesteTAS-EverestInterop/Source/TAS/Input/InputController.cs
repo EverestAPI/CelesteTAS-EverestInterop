@@ -140,6 +140,8 @@ public class InputController {
 
     /// Moves the controller 1 frame forward, updating inputs and triggering commands
     public void AdvanceFrame() {
+        RefreshInputs();
+
         foreach (var command in CurrentCommands) {
             if (command.Attribute.ExecuteTiming.Has(ExecuteTiming.Runtime) &&
                 (!EnforceLegalCommand.EnabledWhenRunning || command.Attribute.LegalInFullGame))
