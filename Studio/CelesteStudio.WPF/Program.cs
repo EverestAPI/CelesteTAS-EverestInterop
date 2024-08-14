@@ -21,7 +21,7 @@ public static class Program {
             Settings.ThemeChanged += () => UpdateTheme(Settings.Instance.Theme.DarkMode);
 
             var app = new Application(Eto.Platforms.Wpf);
-            var studio = new Studio(windowCreationCallback: window => {
+            var studio = new Studio(args, windowCreationCallback: window => {
                 ApplyTheme(window, Settings.Instance.Theme.DarkMode);
                 Settings.ThemeChanged += () => ApplyTheme(window, Settings.Instance.Theme.DarkMode);
             });
