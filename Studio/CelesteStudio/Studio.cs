@@ -32,6 +32,10 @@ public sealed class Studio : Form {
     public readonly GameInfoPanel GameInfoPanel;
     private readonly Scrollable EditorScrollable;
 
+    private readonly FileSystemWatcher fileSystemWatcher;
+    private DateTime? lastFileChange;
+    private static readonly TimeSpan IgnoreFsEventsAfterSave = TimeSpan.FromMilliseconds(10);
+
     private JadderlineForm? jadderlineForm;
     private FeatherlineForm? featherlineForm;
     private ThemeEditor? themeEditorForm;
@@ -86,6 +90,12 @@ public sealed class Studio : Form {
         CommunicationWrapper.SettingsChanged += _ => {
             Menu = CreateMenu();
         };
+
+        // Setup file watcher
+        {
+            fileSystemWatcher = new FileSystemWatcher();
+            fileSystemWatcher.Changed += FileChanged;
+        }
 
         // Setup editor
         {
@@ -262,6 +272,10 @@ public sealed class Studio : Form {
             return;
         }
 
+        fileSystemWatcher.Path = Path.GetDirectoryName(filePath) ?? string.Empty;
+        fileSystemWatcher.Filter = Path.GetFileName(filePath);
+        fileSystemWatcher.EnableRaisingEvents = true;
+
         if (Editor.Document is { } doc) {
             doc.Dispose();
             doc.TextChanged -= UpdateTitle;
@@ -281,6 +295,29 @@ public sealed class Studio : Form {
 
         void UpdateTitle(Document _0, int _1, int _2) {
             Title = TitleBarText;
+        }
+    }
+
+
+    private void FileChanged(object sender, FileSystemEventArgs e) {
+        // ignore duplicate events
+        var changeTime = File.GetLastWriteTime(e.FullPath);
+        if (changeTime == lastFileChange) {
+            return;
+        }
+        lastFileChange = changeTime;
+
+        // don't attempt to reload after a change from studio itself
+        var timeSince = DateTime.Now.Subtract(Editor.Document.LastSave);
+        if (timeSince <= IgnoreFsEventsAfterSave) {
+            return;
+        }
+
+        if (!Editor.Document.Dirty) {
+            Application.Instance.Invoke(() => OpenFile(Editor.Document.FilePath));
+        } else {
+            // Conflict, file was changed on disk while studio has pending changes.
+            // TODO: We could remember this and ask for confirmation on the next save.
         }
     }
 

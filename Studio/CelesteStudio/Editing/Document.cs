@@ -154,6 +154,7 @@ public class Document {
     
     public string Text => string.Join(NewLine, CurrentLines);
     public bool Dirty { get; private set; }
+    public DateTime LastSave { get; private set; }
     
     private QueuedUpdate? queuedUpdate = null;
     
@@ -203,6 +204,7 @@ public class Document {
 
     public void Save() {
         try {
+            LastSave = DateTime.Now;
             File.WriteAllText(FilePath, Text);
             Dirty = false;
             
