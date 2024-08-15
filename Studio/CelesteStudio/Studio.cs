@@ -40,7 +40,7 @@ public sealed class Studio : Form {
         ? $"<Scratch> - Studio v{Version.ToString(3)}"
         : $"{Editor.Document.FileName}{(Editor.Document.Dirty ? "*" : string.Empty)} - Studio v{Version.ToString(3)}   {Editor.Document.FilePath}";
 
-    public Studio(Action<Window> windowCreationCallback) {
+    public Studio(string[] args, Action<Window> windowCreationCallback) {
         Instance = this;
         Version = Assembly.GetExecutingAssembly().GetName().Version!;
         Icon = Assets.AppIcon;
@@ -126,8 +126,10 @@ public sealed class Studio : Form {
                 Menu = CreateMenu();
             });
 
-            // Re-open last file if possible
-            if (Settings.Instance.RecentFiles.Count > 0 && !string.IsNullOrWhiteSpace(Settings.Instance.RecentFiles[0]) && File.Exists(Settings.Instance.RecentFiles[0])) {
+            if (args.Length > 0) {
+                OpenFile(args[0]);
+            } else if (Settings.Instance.RecentFiles.Count > 0 && !string.IsNullOrWhiteSpace(Settings.Instance.RecentFiles[0]) && File.Exists(Settings.Instance.RecentFiles[0])) {
+                // Re-open last file if possible
                 OpenFile(Settings.Instance.RecentFiles[0]);
             } else {
                 OnNewFile();
