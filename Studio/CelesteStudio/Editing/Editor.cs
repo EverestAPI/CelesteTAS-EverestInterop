@@ -153,11 +153,12 @@ public sealed class Editor : Drawable {
 
     // These should be ordered from most specific to most applicable.
     private readonly ContextAction[] contextActions = [
+        new CombineConsecutiveSameInputs(),
+        
         new SwapActions(Actions.Left, Actions.Right, MenuEntry.Editor_SwapSelectedLR),
         new SwapActions(Actions.Jump, Actions.Jump2, MenuEntry.Editor_SwapSelectedJK),
         new SwapActions(Actions.Dash, Actions.Dash2, MenuEntry.Editor_SwapSelectedXC),
 
-        new CombineConsecutiveSameInputs(),
         new ForceCombineInputFrames(),
         new SplitFrames(),
 
