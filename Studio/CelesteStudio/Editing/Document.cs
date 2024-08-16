@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using CelesteStudio.Communication;
 using CelesteStudio.Util;
+using Eto.Forms;
+using System.Diagnostics;
 
 namespace CelesteStudio.Editing;
 
@@ -155,7 +157,10 @@ public class Document : IDisposable {
     public string Text => string.Join(NewLine, CurrentLines);
     public bool Dirty { get; private set; }
 
-    private bool saving;
+    // Ignore file-watcher events for 10ms after saving, to avoid triggering ourselves
+    private static readonly TimeSpan FileReloadTimeout = TimeSpan.FromMilliseconds(10);
+    private DateTime lastFileSave = DateTime.UtcNow;
+
     private readonly FileSystemWatcher watcher;
 
     private QueuedUpdate? queuedUpdate = null;
@@ -218,9 +223,8 @@ public class Document : IDisposable {
         }
 
         try {
-            saving = true;
+            lastFileSave = DateTime.Now;
             File.WriteAllText(FilePath, Text);
-            saving = false;
             Dirty = false;
 
             if (Settings.Instance.AutoBackupEnabled && !string.IsNullOrWhiteSpace(FilePath))
@@ -262,14 +266,15 @@ public class Document : IDisposable {
     }
 
     private void OnFileChanged(object sender, FileSystemEventArgs e) {
-        Console.WriteLine($"Change: {e.FullPath} - {e.ChangeType}");
-        if (saving) {
+        if (lastFileSave - DateTime.UtcNow <= FileReloadTimeout) {
             // Avoid events by us saving
             return;
         }
+        Console.WriteLine($"Change: {e.FullPath} - {e.ChangeType}");
 
         var newLines = File.ReadAllLines(FilePath);
 
+        // Check for changes to avoid pushing empty undo-states
         bool changes = false;
         if (CurrentLines.Count != newLines.Length) {
             changes = true;
@@ -290,7 +295,7 @@ public class Document : IDisposable {
         undoStack.Push(Caret);
         CurrentLines.Clear();
         CurrentLines.AddRange(newLines);
-        OnTextChanged(0, newLines.Length);
+        Application.Instance.Invoke(() => OnTextChanged(0, newLines.Length));
     }
 
     private void OnLinesUpdated(Dictionary<int, string> newLines) {
