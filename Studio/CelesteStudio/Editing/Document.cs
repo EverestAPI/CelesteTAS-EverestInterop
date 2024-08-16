@@ -5,7 +5,7 @@ using System.Linq;
 using CelesteStudio.Communication;
 using CelesteStudio.Util;
 using Eto.Forms;
-using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace CelesteStudio.Editing;
 
@@ -223,7 +223,7 @@ public class Document : IDisposable {
         }
 
         try {
-            lastFileSave = DateTime.Now;
+            lastFileSave = DateTime.UtcNow;
             File.WriteAllText(FilePath, Text);
             Dirty = false;
 
@@ -266,13 +266,34 @@ public class Document : IDisposable {
     }
 
     private void OnFileChanged(object sender, FileSystemEventArgs e) {
-        if (lastFileSave - DateTime.UtcNow <= FileReloadTimeout) {
+        if (DateTime.UtcNow - lastFileSave <= FileReloadTimeout) {
             // Avoid events by us saving
             return;
         }
         Console.WriteLine($"Change: {e.FullPath} - {e.ChangeType}");
 
-        var newLines = File.ReadAllLines(FilePath);
+        // Need to try multiple times, since the file might still be used by other processes
+        var newLines = Task.Run(async () => {
+            const int numberOfRetries = 3;
+            const int delayOnRetry = 1000;
+            const int ERROR_SHARING_VIOLATION = unchecked((int)0x80070020);
+
+            for (int i = 1; i <= numberOfRetries; i++) {
+                try {
+                    return await File.ReadAllLinesAsync(FilePath);
+                }
+                catch (IOException ex) when (ex.HResult == ERROR_SHARING_VIOLATION) {
+                    await Task.Delay(delayOnRetry).ConfigureAwait(false);
+                }
+            }
+
+            return null;
+        }).Result;
+
+        if (newLines == null) {
+            // Failed to read the file
+            return;
+        }
 
         // Check for changes to avoid pushing empty undo-states
         bool changes = false;
