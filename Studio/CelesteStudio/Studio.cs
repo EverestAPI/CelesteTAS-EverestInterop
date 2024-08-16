@@ -499,7 +499,7 @@ public sealed class Studio : Form {
                 Version = Version.ToString(3),
                 Website = new Uri("https://github.com/EverestAPI/CelesteTAS-EverestInterop"),
 
-                Developers = ["psyGamer", "DemoJameson", "EuniverseCat", "Samah"],
+                Developers = ["psyGamer", "DemoJameson", "EuniverseCat", "dubi steinkek", "Mirkwood"],
                 License = "MIT License",
                 Logo = Icon,
             }, this);
