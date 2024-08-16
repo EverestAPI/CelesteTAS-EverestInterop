@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Celeste;
+using Celeste.Mod;
 using Celeste.Mod.SpeedrunTool.Other;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Microsoft.Xna.Framework.Input;
@@ -11,10 +12,13 @@ using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Input.Commands;
+using TAS.Module;
 
 namespace TAS.Utils;
 
 internal static class SpeedrunToolUtils {
+    public static bool Installed { get; private set; }
+
     private static object saveLoadAction;
     private static Dictionary<Entity, EntityData> savedEntityData;
     private static int groupCounter;
@@ -30,6 +34,13 @@ internal static class SpeedrunToolUtils {
     private static Dictionary<Follower, bool> followers;
     private static bool disallowUnsafeInput;
     private static Random auraRandom;
+
+    [Load]
+    private static void Load() {
+        Installed = ModUtils.IsInstalled("SpeedrunTool");
+        Everest.Events.AssetReload.OnBeforeReload += _ => Installed = false;
+        Everest.Events.AssetReload.OnAfterReload += _ => Installed = ModUtils.IsInstalled("SpeedrunTool");
+    }
 
     public static void AddSaveLoadAction() {
         Action<Dictionary<Type, Dictionary<string, object>>, Level> save = (_, _) => {

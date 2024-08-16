@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -9,173 +8,161 @@ using TAS.EverestInterop;
 using TAS.Input;
 using TAS.Module;
 using TAS.Utils;
-using static TAS.Manager;
-using TasStates = StudioCommunication.States;
 
 namespace TAS;
 
+/// Handles saving / loading game state with SpeedrunTool
 public static class Savestates {
-    private static InputController savedController;
-
+    // These fields can't just be pulled from the current frame and therefore need to be saved too
     private static readonly Dictionary<FieldInfo, object> SavedGameInfo = new() {
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.Status)), null},
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.ExactStatus)), null},
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.StatusWithoutTime)), null},
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.ExactStatusWithoutTime)), null},
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LevelName)), null},
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.ChapterTime)), null},
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.WatchingInfo)), null},
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.CustomInfo)), null},
         {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPos)), null},
         {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastDiff)), null},
         {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerPos)), null},
         {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerDiff)), null},
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.DashTime)), null},
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.Frozen)), null},
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.TransitionFrames)), null},
     };
 
     private static bool savedByBreakpoint;
-    private static string savedTasFilePath;
-
-    private static readonly Lazy<bool> SpeedrunToolInstalledLazy = new(() => ModUtils.IsInstalled("SpeedrunTool"));
+    private static int savedChecksum;
+    private static InputController savedController;
 
     private static int SavedLine =>
-        // TODO:
-        (/*savedByBreakpoint
-            ? Controller.FastForwards.GetValueOrDefault(SavedCurrentFrame)?.Line
-            : */Controller.Inputs.GetValueOrDefault(SavedCurrentFrame)?.Line) ?? -1;
+        (savedByBreakpoint
+            ? Manager.Controller.FastForwards.GetValueOrDefault(SavedCurrentFrame)?.Line
+            : Manager.Controller.Inputs.GetValueOrDefault(SavedCurrentFrame)?.Line) ?? -1;
 
-    private static int SavedCurrentFrame => IsSaved() ? savedController.CurrentFrameInTAS : -1;
+    public static int StudioHighlightLine => IsSaved_Safe ? SavedLine : -1;
+    private static int SavedCurrentFrame => IsSaved ? savedController.CurrentFrameInTAS : -1;
 
-    public static int StudioHighlightLine => IsSaved_Safe() ? SavedLine : -1;
-    public static bool SpeedrunToolInstalled => SpeedrunToolInstalledLazy.Value;
+    private static bool BreakpointHasBeenDeleted => IsSaved &&
+                                                    savedByBreakpoint &&
+                                                    Manager.Controller.FastForwards.GetValueOrDefault(SavedCurrentFrame)?.SaveState != true;
 
-    private static bool BreakpointHasBeenDeleted => false;
-        // TODO: IsSaved() && savedByBreakpoint && Controller.FastForwards.GetValueOrDefault(SavedCurrentFrame)?.SaveState != true;
+    public static bool IsSaved_Safe => SpeedrunToolUtils.Installed && IsSaved;
+    private static bool IsSaved => StateManager.Instance.IsSaved &&
+                                   StateManager.Instance.SavedByTas &&
+                                   savedController != null &&
+                                   savedController.FilePath == Manager.Controller.FilePath;
 
-    private static bool IsSaved() {
-        return StateManager.Instance.IsSaved && StateManager.Instance.SavedByTas && savedController != null &&
-               savedTasFilePath == Manager.Controller.FilePath;
+    [Load]
+    private static void Load() {
+        if (SpeedrunToolUtils.Installed) {
+            SpeedrunToolUtils.AddSaveLoadAction();
+        }
     }
 
-    public static bool IsSaved_Safe() {
-        return SpeedrunToolInstalled && IsSaved();
+    [Unload]
+    private static void Unload() {
+        if (IsSaved_Safe) {
+            ClearState();
+        }
+
+        if (SpeedrunToolUtils.Installed) {
+            SpeedrunToolUtils.ClearSaveLoadAction();
+        }
     }
 
-    public static void HandleSaveStates() {
-        if (!SpeedrunToolInstalled) {
+    /// Update for each TAS frame
+    public static void Update() {
+        if (!SpeedrunToolUtils.Installed) {
             return;
         }
 
-        if (!Running && IsSaved() && Engine.Scene is Level && Hotkeys.StartStop.Released) {
-            Load();
+        // Only save-state when the current breakpoint is the last save-state one
+        if (Manager.Controller.Inputs.Count > Manager.Controller.CurrentFrameInTAS &&
+            Manager.Controller.CurrentFastForward is { SaveState: true } currentFastForward &&
+            Manager.Controller.FastForwards.Last(pair => pair.Value.SaveState).Value == currentFastForward &&
+            SavedCurrentFrame != currentFastForward.Frame)
+        {
+            SaveState(byBreakpoint: true);
             return;
         }
 
-        if (Running && Hotkeys.SaveState.Pressed) {
-            Save(false);
+        // Autoload state after entering the level, if the TAS was started outside the level
+        if (IsSaved && Engine.Scene is Level && Manager.Controller.CurrentFrameInTAS < savedController.CurrentFrameInTAS) {
+            LoadState();
+        }
+    }
+
+    /// Update for checking hotkeys
+    internal static void UpdateMeta() {
+        if (!SpeedrunToolUtils.Installed) {
             return;
         }
 
-        // Do not use Hotkeys.Restart.Pressed unless the fast forwarding optimization in Hotkeys.Update() is removed
-        if (Hotkeys.Restart.Released) {
-            Load();
+        if (Manager.Running && Hotkeys.SaveState.Pressed) {
+            SaveState(false);
             return;
         }
-
         if (Hotkeys.ClearState.Pressed) {
-            Clear();
-            DisableRun();
+            ClearState();
+            Manager.DisableRun();
             return;
         }
 
-        if (Running && BreakpointHasBeenDeleted) {
-            Clear();
-        }
-
-        // save state when tas run to the last savestate breakpoint
-        if (Running
-            && Controller.Inputs.Count > Controller.CurrentFrameInTAS
-            /*TODO && Controller.FastForwards.GetValueOrDefault(Controller.CurrentFrameInTAS) is {SaveState: true} currentFastForward &&
-            Controller.FastForwards.Last(pair => pair.Value.SaveState).Value == currentFastForward &&
-            SavedCurrentFrame != currentFastForward.Frame*/) {
-            Save(true);
-            return;
-        }
-
-        // auto load state after entering the level if tas is started from outside the level.
-        if (Running && IsSaved() && Engine.Scene is Level && Controller.CurrentFrameInTAS < savedController.CurrentFrameInTAS) {
-            Load();
+        if (Manager.Running && BreakpointHasBeenDeleted) {
+            ClearState();
         }
     }
 
-    private static void Save(bool breakpoint) {
-        if (IsSaved()) {
-            if (Controller.CurrentFrameInTAS == savedController.CurrentFrameInTAS) {
-                // TODO
-                // if (savedController.SavestateChecksum == Controller.CalcChecksum(savedController)) {
-                //     Manager.States &= ~TasStates.FrameStep;
-                //     NextStates &= ~TasStates.FrameStep;
-                //     return;
-                // }
-            }
+    internal static void EnableRun() {
+        if (SpeedrunToolUtils.Installed && IsSaved && Engine.Scene is Level) {
+            LoadState();
+        }
+    }
+
+    private static void SaveState(bool byBreakpoint) {
+        if (IsSaved &&
+            Manager.Controller.CurrentFrameInTAS == savedController.CurrentFrameInTAS &&
+            savedChecksum == Manager.Controller.CalcChecksum(savedController.CurrentFrameInTAS))
+        {
+            return; // Already saved
         }
 
         if (!StateManager.Instance.SaveState()) {
             return;
         }
 
-        savedByBreakpoint = breakpoint;
-        savedTasFilePath = Manager.Controller.FilePath;
+        savedByBreakpoint = byBreakpoint;
+        savedChecksum = Manager.Controller.CalcChecksum(Manager.Controller.CurrentFrameInTAS);
+        savedController = Manager.Controller.Clone();
         SaveGameInfo();
-        savedController = Controller.Clone();
         SetTasState();
     }
 
-    private static void Load() {
-        // Don't load save states while recording
+    private static void LoadState() {
+        // Don't load save-states while recording
         if (TASRecorderUtils.Recording) {
             return;
         }
 
-        if (IsSaved()) {
-            Controller.RefreshInputs(false);
-            // TODO
-            // if (!BreakpointHasBeenDeleted && savedController.SavestateChecksum == Controller.CalcChecksum(savedController)) {
-            //     if (Running && Controller.CurrentFrameInTas == savedController.CurrentFrameInTas) {
-            //         // Don't repeat load state, just play
-            //         Manager.States &= ~TasStates.FrameStep;
-            //         NextStates &= ~TasStates.FrameStep;
-            //         return;
-            //     }
-            //
-            //     if (Engine.Scene is Level) {
-            //         if (!Running) {
-            //             EnableRun();
-            //         }
-            //
-            //         // make sure LoadState is after EnableRun, otherwise the input state will be reset in BindingHelper.SetTasBindings
-            //         StateManager.Instance.LoadState();
-            //
-            //         LoadStateRoutine();
-            //         return;
-            //     }
-            // } else {
-            //     Clear();
-            // }
-        }
+        if (IsSaved) {
+            if (!BreakpointHasBeenDeleted && savedChecksum == Manager.Controller.CalcChecksum(savedController.CurrentFrameInTAS)) {
+                if (Manager.Controller.CurrentFrameInTAS == savedController.CurrentFrameInTAS) {
+                    // Don't repeat loading the state, just play
+                    Manager.NextState = Manager.State.Running;
+                    return;
+                }
 
-        // If load state failed just playback normally
-        PlayTas();
+                if (Engine.Scene is Level) {
+                    StateManager.Instance.LoadState();
+                    Manager.Controller.CopyProgressFrom(savedController);
+
+                    LoadGameInfo();
+                    UpdateStudio();
+                    SetTasState();
+                }
+            } else {
+                ClearState();
+            }
+        }
     }
 
-    private static void Clear() {
+    private static void ClearState() {
         StateManager.Instance.ClearState();
-        savedController = null;
         ClearGameInfo();
         savedByBreakpoint = false;
-        savedTasFilePath = null;
+        savedChecksum = -1;
+        savedController = null;
 
         UpdateStudio();
     }
@@ -198,48 +185,16 @@ public static class Savestates {
         }
     }
 
-    private static void PlayTas() {
-        DisableRun();
-        EnableRun();
-    }
-
-    private static void LoadStateRoutine() {
-        Controller.CopyProgressFrom(savedController);
-        SetTasState();
-        LoadGameInfo();
-        UpdateStudio();
-    }
-
     private static void SetTasState() {
-        if (Controller.HasFastForward) {
-            Manager.CurrState = Manager.State.Running;
+        if (Manager.Controller.HasFastForward) {
+            Manager.CurrState = Manager.NextState = Manager.State.Running;
         } else {
-            Manager.CurrState = Manager.State.Paused;
+            Manager.CurrState = Manager.NextState = Manager.State.Paused;
         }
-
-        // NextStates &= ~TasStates.FrameStep;
     }
 
     private static void UpdateStudio() {
         GameInfo.Update();
-        // SendStateToStudio();
-    }
-
-    [Load]
-    private static void OnLoad() {
-        if (SpeedrunToolInstalled) {
-            SpeedrunToolUtils.AddSaveLoadAction();
-        }
-    }
-
-    [Unload]
-    private static void OnUnload() {
-        if (IsSaved_Safe()) {
-            Clear();
-        }
-
-        if (SpeedrunToolInstalled) {
-            SpeedrunToolUtils.ClearSaveLoadAction();
-        }
+        Manager.SendStudioState();
     }
 }

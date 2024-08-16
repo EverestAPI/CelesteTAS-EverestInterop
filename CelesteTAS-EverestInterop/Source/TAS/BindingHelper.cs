@@ -92,7 +92,7 @@ public static class BindingHelper {
         }
 
         CoreModule.Instance.OnInputDeregister();
-        if (Savestates.SpeedrunToolInstalled) {
+        if (SpeedrunToolUtils.Installed) {
             SpeedrunToolUtils.InputDeregister();
         }
 

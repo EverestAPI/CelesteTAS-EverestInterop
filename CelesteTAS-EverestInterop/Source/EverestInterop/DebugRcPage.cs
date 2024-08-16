@@ -25,7 +25,7 @@ public static class DebugRcPage {
             Everest.DebugRC.WriteHTMLStart(c, builder);
             WriteLine(builder, $"Running: {Manager.Running}");
             WriteLine(builder, $"State: {Manager.CurrState}");
-            WriteLine(builder, $"SaveState: {Savestates.IsSaved_Safe()}");
+            WriteLine(builder, $"SaveState: {Savestates.IsSaved_Safe}");
             WriteLine(builder, $"CurrentFrame: {Manager.Controller.CurrentFrameInTAS}");
             WriteLine(builder, $"TotalFrames: {Manager.Controller.Inputs.Count}");
             WriteLine(builder, $"RoomName: {GameInfo.LevelName}");
