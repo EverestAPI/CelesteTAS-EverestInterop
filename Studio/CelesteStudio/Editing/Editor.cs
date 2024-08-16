@@ -32,7 +32,7 @@ public sealed class Editor : Drawable {
             document = value;
 
             // Jump to end when file only 10 lines, else the start
-            document.Caret = document.Lines.Count <= 10
+            document.Caret = document.Lines.Count is > 0 and <= 10
                 ? new CaretPosition(document.Lines.Count - 1, document.Lines[^1].Length)
                 : new CaretPosition(0, 0);
 
