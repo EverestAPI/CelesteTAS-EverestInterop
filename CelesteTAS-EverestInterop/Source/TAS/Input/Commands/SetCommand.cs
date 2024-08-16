@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using Celeste;
 using Celeste.Mod;
+using JetBrains.Annotations;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
@@ -279,15 +280,21 @@ public static class SetCommand {
 
     private static bool consolePrintLog;
     private const string logPrefix = "Set Command Failed: ";
-    private static List<string> errorLogs = new List<string>();
-    private static bool suspendLog = false;
 
-    [Monocle.Command("set", "Set settings/level/session/entity field. eg set DashMode Infinite; set Player.Speed 325 -52.5 (CelesteTAS)")]
-    private static void ConsoleSet(string arg1, string arg2, string arg3, string arg4, string arg5, string arg6, string arg7, string arg8,
-        string arg9) {
-        string[] args = {arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9};
+    private static void ReportError(string message) {
+        if (consolePrintLog) {
+            $"Set Command Failed: {message}".ConsoleLog(LogLevel.Error);
+        } else {
+            AbortTas($"Set Command Failed: {message}");
+        }
+    }
+
+    [Monocle.Command("set", "'set Settings/Level/Session/Entity value' | Example: 'set DashMode Infinite', 'set Player.Speed 325 -52.5' (CelesteTAS)"), UsedImplicitly]
+    private static void ConsoleSet(string? arg1, string? arg2, string? arg3, string? arg4, string? arg5, string? arg6, string? arg7, string? arg8, string? arg9) {
+        // TODO: Support arbitrary amounts of arguments
+        string?[] args = [arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9];
         consolePrintLog = true;
-        Set(args.TakeWhile(arg => arg != null).ToArray());
+        Set(args.TakeWhile(arg => arg != null).ToArray()!);
         consolePrintLog = false;
     }
 
@@ -302,7 +309,7 @@ public static class SetCommand {
 
     private static void Set(string[] args) {
         if (args.Length < 2) {
-            AbortTas("Set command requires a target-template and a value");
+            ReportError("Target-template and value required");
             return;
         }
 
@@ -311,75 +318,34 @@ public static class SetCommand {
 
         var baseTypes = InfoTemplate.ResolveBaseTypes(templateArgs, out var memberArgs, out var entityId);
         if (baseTypes.IsEmpty()) {
-            $"Failed to find base type for template '{template}'".ConsoleLog(LogLevel.Error);
+            ReportError($"Failed to find base type for template '{template}'");
             return;
         }
         if (memberArgs.IsEmpty()) {
-            "No members specified".ConsoleLog(LogLevel.Error);
+            ReportError("No members specified");
             return;
         }
 
-        entityId.ConsoleLog();
         foreach (var type in baseTypes) {
             (var targetType, bool success) = InfoTemplate.ResolveMemberType(type, memberArgs);
             if (!success) {
-                AbortTas($"Failed to find members '{string.Join('.', memberArgs)}' on type '{type}'");
+                ReportError($"Failed to find members '{string.Join('.', memberArgs)}' on type '{type}'");
                 return;
             }
 
             (object?[] values, success, string errorMessage) = InfoTemplate.ResolveValues(args[1..], [targetType]);
             if (!success) {
-                AbortTas(errorMessage);
+                ReportError(errorMessage);
                 return;
             }
 
             var instances = InfoTemplate.ResolveTypeInstances(type, entityId);
             success = InfoTemplate.SetMemberValues(type, instances, values[0], memberArgs);
             if (!success) {
-                AbortTas($"Failed to set members '{string.Join('.', memberArgs)}' on type '{type}' to '{values[0]}'");
+                ReportError($"Failed to set members '{string.Join('.', memberArgs)}' on type '{type}' to '{values[0]}'");
                 return;
             }
         }
-
-        /*
-        if (args.Length < 2) {
-            return;
-        }
-
-        try {
-            if (args[0].Contains(".")) {
-                string[] parameters = args.Skip(1).ToArray();
-                if (TrySetModSetting(args[0], parameters)) {
-                    return;
-                }
-
-                if (InfoCustom.TryParseMemberNames(args[0], out string typeText, out List<string> memberNames, out string errorMessage)
-                    && InfoCustom.TryParseTypes(typeText, out List<Type> types, out string entityId, out errorMessage)) {
-                    bool existSuccess = false;
-                    bool forSpecific = entityId.IsNotNullOrEmpty();
-                    suspendLog = true;
-                    foreach (Type type in types) {
-                        bool hasSet = FindObjectAndSetMember(type, entityId, memberNames, parameters);
-                        existSuccess |= hasSet;
-                        if (forSpecific && hasSet) {
-                            break;
-                        }
-                    }
-                    suspendLog = false;
-                    if (!forSpecific || !existSuccess) {
-                        errorLogs.Where(text => !existSuccess || !text.EndsWith(" entity is not found") && !text.EndsWith(" object is not found")).ToList().ForEach(Log);
-                    }
-                    errorLogs.Clear();
-                } else {
-                    errorMessage.Log(consolePrintLog, LogLevel.Warn);
-                }
-            } else {
-                SetGameSetting(args);
-            }
-        } catch (Exception e) {
-            e.Log(consolePrintLog, LogLevel.Warn);
-        }
-        */
     }
 
     private static void SetGameSetting(string[] args) {
@@ -697,10 +663,10 @@ public static class SetCommand {
     }
 
     private static void Log(string text) {
-        if (suspendLog) {
-            errorLogs.Add(text);
-            return;
-        }
+        // if (suspendLog) {
+        //     errorLogs.Add(text);
+        //     return;
+        // }
 
         if (!consolePrintLog) {
             text = $"{logPrefix}{text}";

@@ -216,6 +216,35 @@ public static class InfoTemplate {
         return (currentType, Success: true);
     }
 
+    /// Recursively resolves a method for the specified members
+    public static (MethodInfo? Method, bool Success) ResolveMemberMethod(Type baseType, string[] memberArgs) {
+        var currentType = baseType;
+        for (int i = 0; i < memberArgs.Length - 1; i++) {
+            string member = memberArgs[i];
+
+            if (currentType.GetFieldInfo(member) is { } field) {
+                currentType = field.FieldType;
+                continue;
+            }
+
+            if (currentType.GetPropertyInfo(member) is { } property && property.GetGetMethod() != null) {
+                currentType = property.PropertyType;
+                continue;
+            }
+
+            // Unable to recurse further
+            return (null, Success: false);
+        }
+
+        // Find method
+        if (currentType.GetMethodInfo(memberArgs[^1]) is { } method) {
+            return (method, Success: true);
+        }
+
+        // Couldn't find the method
+        return (null, Success: true);
+    }
+
     /// Recursively resolves the value of the specified members
     public static (object? Value, bool Success) ResolveMemberValue(Type baseType, object? baseObject, string[] memberArgs) {
         var currentType = baseType;
@@ -369,6 +398,7 @@ public static class InfoTemplate {
                             }
                         }
                     }
+                    return true;
                 }
 
                 if (property.IsStatic()) {
@@ -423,6 +453,74 @@ public static class InfoTemplate {
         } else {
             return baseObjects
                 .Select(obj => SetMemberValue(baseType, obj, value, memberArgs))
+                .All(success => success);
+        }
+    }
+
+    /// Recursively resolves the value of the specified members
+    public static bool InvokeMemberMethod(Type baseType, object? baseObject, object?[] parameters, string[] memberArgs) {
+        var currentType = baseType;
+        object? currentObject = baseObject;
+        for (int i = 0; i < memberArgs.Length - 1; i++) {
+            string member = memberArgs[i];
+
+            try {
+                if (currentType.GetFieldInfo(member) is { } field) {
+                    currentType = field.FieldType;
+                    if (field.IsStatic) {
+                        currentObject = field.GetValue(null);
+                    } else {
+                        currentObject = field.GetValue(currentObject);
+                    }
+
+                    continue;
+                }
+
+                if (currentType.GetPropertyInfo(member) is { } property && property.GetSetMethod() != null) {
+                    currentType = property.PropertyType;
+                    if (property.IsStatic()) {
+                        currentObject = property.GetValue(null);
+                    } else {
+                        currentObject = property.GetValue(currentObject);
+                    }
+
+                    continue;
+                }
+            } catch (Exception) {
+                // Something went wrong
+                return false;
+            }
+
+            // Unable to recurse further
+            return false;
+        }
+
+        // Invoke the method
+        try {
+            if (currentType.GetMethodInfo(memberArgs[^1]) is { } method) {
+                if (method.IsStatic) {
+                    method.Invoke(null, parameters);
+                } else {
+                    method.Invoke(currentObject, parameters);
+                }
+                return true;
+            }
+        } catch (Exception) {
+            // Something went wrong
+            return false;
+        }
+
+        // Couldn't find the method
+        return false;
+    }
+
+    /// Recursively resolves the value of the specified members for multiple instances at once
+    public static bool InvokeMemberMethods(Type baseType, List<object> baseObjects, object?[] parameters, string[] memberArgs) {
+        if (baseObjects.IsEmpty()) {
+            return InvokeMemberMethod(baseType, null, parameters, memberArgs);
+        } else {
+            return baseObjects
+                .Select(obj => InvokeMemberMethod(baseType, obj, parameters, memberArgs))
                 .All(success => success);
         }
     }
