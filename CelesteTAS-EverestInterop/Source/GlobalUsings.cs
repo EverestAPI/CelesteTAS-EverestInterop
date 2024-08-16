@@ -10,13 +10,17 @@ public static class GlobalVariables {
     public static bool ParsingCommand  => Command.Parsing;
 
     public static void AbortTas(string message, bool log = false, float duration = 2f) {
+#if DEBUG
+        // Always log in debug builds
+        log = true;
+#endif
+
         if (log) {
             Toast.ShowAndLog(message, duration);
         } else {
             Toast.Show(message, duration);
         }
 
-        // Manager.DisableRunLater();
-        Manager.DisableRun();
+        Manager.DisableRunLater();
     }
 }

@@ -18,7 +18,8 @@ using TAS.Utils;
 
 namespace TAS.Input.Commands;
 
-// ReSharper disable once UnusedType.Global
+#nullable enable
+
 public static class SetCommand {
     internal class SetMeta : ITasCommandMeta {
         // Sorts types by namespace into Celeste -> Monocle -> other (alphabetically)
@@ -293,12 +294,54 @@ public static class SetCommand {
     // Set, Setting, Value
     // Set, Mod.Setting, Value
     // Set, Entity.Field, Value
+    // Set, Type.StaticMember, Value
     [TasCommand("Set", LegalInFullGame = false, MetaDataProvider = typeof(SetMeta))]
     private static void Set(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         Set(commandLine.Arguments);
     }
 
     private static void Set(string[] args) {
+        if (args.Length < 2) {
+            AbortTas("Set command requires a target-template and a value");
+            return;
+        }
+
+        string template = args[0];
+        string[] templateArgs = template.Split('.');
+
+        var baseTypes = InfoTemplate.ResolveBaseTypes(templateArgs, out var memberArgs, out var entityId);
+        if (baseTypes.IsEmpty()) {
+            $"Failed to find base type for template '{template}'".ConsoleLog(LogLevel.Error);
+            return;
+        }
+        if (memberArgs.IsEmpty()) {
+            "No members specified".ConsoleLog(LogLevel.Error);
+            return;
+        }
+
+        entityId.ConsoleLog();
+        foreach (var type in baseTypes) {
+            (var targetType, bool success) = InfoTemplate.ResolveMemberType(type, memberArgs);
+            if (!success) {
+                AbortTas($"Failed to find members '{string.Join('.', memberArgs)}' on type '{type}'");
+                return;
+            }
+
+            (object?[] values, success, string errorMessage) = InfoTemplate.ResolveValues(args[1..], [targetType]);
+            if (!success) {
+                AbortTas(errorMessage);
+                return;
+            }
+
+            var instances = InfoTemplate.ResolveTypeInstances(type, entityId);
+            success = InfoTemplate.SetMemberValues(type, instances, values[0], memberArgs);
+            if (!success) {
+                AbortTas($"Failed to set members '{string.Join('.', memberArgs)}' on type '{type}' to '{values[0]}'");
+                return;
+            }
+        }
+
+        /*
         if (args.Length < 2) {
             return;
         }
@@ -336,6 +379,7 @@ public static class SetCommand {
         } catch (Exception e) {
             e.Log(consolePrintLog, LogLevel.Warn);
         }
+        */
     }
 
     private static void SetGameSetting(string[] args) {
