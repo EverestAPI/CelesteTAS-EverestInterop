@@ -165,6 +165,16 @@ public static class InfoTemplate {
 
     /// Resolves a type into all applicable instances of it
     public static List<object> ResolveTypeInstances(Type type, EntityID? entityId) {
+        if (type == typeof(Settings)) {
+            return [Settings.Instance];
+        }
+        if (type == typeof(SaveData)) {
+            return [Settings.Instance];
+        }
+        if (type == typeof(Assists)) {
+            return [Settings.Instance];
+        }
+
         if (type.IsSameOrSubclassOf(typeof(EverestModuleSettings))) {
             return Everest.Modules.FirstOrDefault(mod => mod.SettingsType == type) is { } module ? [module._Settings] : [];
         }
@@ -198,8 +208,12 @@ public static class InfoTemplate {
 
     /// Recursively resolves the type of the specified members
     public static (Type Type, bool Success) ResolveMemberType(Type baseType, string[] memberArgs) {
+        var typeStack = new Stack<Type>();
+
         var currentType = baseType;
         foreach (string member in memberArgs) {
+            typeStack.Push(currentType);
+
             if (currentType.GetFieldInfo(member) is { } field) {
                 currentType = field.FieldType;
                 continue;
@@ -211,6 +225,26 @@ public static class InfoTemplate {
 
             // Unable to recurse further
             return (currentType, Success: false);
+        }
+
+        // Encode positions for Actors / Platforms as double, to avoid losing precision
+        if (memberArgs[^1] is nameof(Entity.X) or nameof(Entity.Y)) {
+            Type entityType = typeof(Entity);
+            if (typeStack.Count == 0) {
+                // "Entity.X"
+                entityType = currentType;
+            } else if (typeStack.Count >= 1 && memberArgs[^2] is nameof(Entity.Position)) {
+                // "Entity.Position.X"
+                entityType = typeStack.Peek();
+            }
+
+            if (entityType.IsSameOrSubclassOf(typeof(Actor)) || entityType.IsSameOrSubclassOf(typeof(Platform))) {
+                return (typeof(double), Success: true);
+            }
+        } else if (memberArgs[^1] is nameof(Entity.Position)) {
+            if (currentType.IsSameOrSubclassOf(typeof(Actor)) || currentType.IsSameOrSubclassOf(typeof(Platform))) {
+                return (typeof((double, double)), Success: true);
+            }
         }
 
         return (currentType, Success: true);
@@ -338,6 +372,60 @@ public static class InfoTemplate {
 
         // Set the value
         try {
+            // Special case for Actor / Platform subpixels
+            if (memberArgs[^1] is nameof(Entity.X) or nameof(Entity.Y)) {
+                object? entityObject = null;
+                if (objectStack.Count == 0) {
+                    // "Entity.X"
+                    entityObject = currentObject;
+                } else if (objectStack.Count >= 1 && memberArgs[^2] is nameof(Entity.Position)) {
+                    // "Entity.Position.X"
+                    entityObject = objectStack.Peek();
+                }
+
+                if (entityObject is Actor actor) {
+                    double doubleValue = (double) value!;
+
+                    var remainder = actor.movementCounter;
+                    if (memberArgs[^1] == nameof(Entity.X)) {
+                        actor.Position.X = (int) Math.Round(doubleValue);
+                        remainder.X = (float) (doubleValue - actor.Position.X);
+                    } else {
+                        actor.Position.Y = (int) Math.Round(doubleValue);
+                        remainder.Y = (float) (doubleValue - actor.Position.Y);
+                    }
+                    actor.movementCounter = remainder;
+                    return true;
+                } else if (entityObject is Platform platform) {
+                    double doubleValue = (double) value!;
+
+                    var remainder = platform.movementCounter;
+                    if (memberArgs[^1] == nameof(Entity.X)) {
+                        platform.Position.X = (int) Math.Round(doubleValue);
+                        remainder.X = (float) (doubleValue - platform.Position.X);
+                    } else {
+                        platform.Position.Y = (int) Math.Round(doubleValue);
+                        remainder.Y = (float) (doubleValue - platform.Position.Y);
+                    }
+                    platform.movementCounter = remainder;
+                    return true;
+                }
+            } else if (memberArgs[^1] is nameof(Entity.Position)) {
+                if (currentObject is Actor actor) {
+                    var tupleValue = ((double X, double Y)) value!;
+
+                    actor.Position = new((int) Math.Round(tupleValue.X), (int) Math.Round(tupleValue.Y));
+                    actor.movementCounter = new((float) (tupleValue.X - actor.Position.X), (float) (tupleValue.Y - actor.Position.Y));
+                    return true;
+                } else if (currentObject is Platform platform) {
+                    var tupleValue = ((double X, double Y)) value!;
+
+                    platform.Position = new((int) Math.Round(tupleValue.X), (int) Math.Round(tupleValue.Y));
+                    platform.movementCounter = new((float) (tupleValue.X - platform.Position.X), (float) (tupleValue.Y - platform.Position.Y));
+                    return true;
+                }
+            }
+
             if (currentType.GetFieldInfo(memberArgs[^1]) is { } field) {
                 if (field.IsStatic) {
                     field.SetValue(null, value);
@@ -542,7 +630,7 @@ public static class InfoTemplate {
             targetType = Nullable.GetUnderlyingType(targetType) ?? targetType;
 
             try {
-                if (arg.Contains('.')) {
+                if (arg.Contains('.') && !float.TryParse(arg, out _)) {
                     // The value is a template-target, which needs to be resolved
                     (var results, bool success, string errorMessage) = GetMemberValues(arg);
                     if (!success) {
@@ -566,6 +654,14 @@ public static class InfoTemplate {
                     i++;
                     continue;
                 }
+                if (targetType == typeof((double, double))) {
+                    values[index++] = (
+                        double.Parse(valueArgs[i + 0]),
+                        double.Parse(valueArgs[i + 1]));
+                    i++;
+                    continue;
+                }
+
                 if (targetType == typeof(Random)) {
                     values[index++] = new Random(int.Parse(arg));
                     continue;
