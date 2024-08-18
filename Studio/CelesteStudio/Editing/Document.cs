@@ -158,7 +158,8 @@ public class Document : IDisposable {
     public bool Dirty { get; private set; }
 
     // Ignore file-watcher events for 10ms after saving, to avoid triggering ourselves
-    private static readonly TimeSpan FileReloadTimeout = TimeSpan.FromMilliseconds(10);
+    // This is probably way higher than it needs to be, to avoid potential issues with slow drives
+    private static readonly TimeSpan FileReloadTimeout = TimeSpan.FromSeconds(3);
     private DateTime lastFileSave = DateTime.UtcNow;
 
     private readonly FileSystemWatcher watcher;
