@@ -2634,7 +2634,7 @@ public sealed class Editor : Drawable {
     /// Action to open the Read-command on the line if possible
     public Action? GetOpenReadFileLink(int row) {
         if (!CommandLine.TryParse(Document.Lines[row], out var commandLine) ||
-            !commandLine.IsCommand("Read") || commandLine.Args.Length < 2)
+            !commandLine.IsCommand("Read") || commandLine.Args.Length < 1)
         {
             return null;
         }
@@ -2652,19 +2652,27 @@ public sealed class Editor : Drawable {
             return null;
         }
 
-        (var label, int labelRow) = File.ReadAllText(fullPath)
-            .ReplaceLineEndings(Document.NewLine.ToString())
-            .SplitDocumentLines()
-            .Select((line, i) => (line, i))
-            .FirstOrDefault(pair => pair.line == $"#{commandLine.Args[1]}");
-        if (label == null) {
-            return null;
+        int? labelRow = null;
+        if (commandLine.Args.Length > 1) {
+            (var label, labelRow) = File.ReadAllText(fullPath)
+                .ReplaceLineEndings(Document.NewLine.ToString())
+                .SplitDocumentLines()
+                .Select((line, i) => (line, i))
+                .FirstOrDefault(pair => pair.line == $"#{commandLine.Args[1]}");
+            if (label == null) {
+                return null;
+            }
         }
+
 
         return () => {
             Studio.Instance.OpenFile(fullPath);
-            Document.Caret.Row = labelRow;
-            Document.Caret.Col = desiredVisualCol = Document.Lines[labelRow].Length;
+            if (labelRow is {} caretRow) {
+                Document.Caret.Row = caretRow;
+                Document.Caret.Col = desiredVisualCol = Document.Lines[caretRow].Length;
+            } else {
+                Document.Caret = new CaretPosition(0, 0);
+            }
         };
     }
 
