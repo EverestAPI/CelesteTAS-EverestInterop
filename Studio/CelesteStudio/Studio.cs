@@ -136,6 +136,9 @@ public sealed class Studio : Form {
             }
         }
 
+        // var asm = Assembly.GetExecutingAssembly();
+        // Shown += (_, _) => WhatsNewDialog.Show("Whats new in Studio v3.0.0?", new StreamReader(asm.GetManifestResourceStream("Changelogs/v3.0.0.md")!).ReadToEnd());
+
         CommunicationWrapper.Start();
     }
 
@@ -506,6 +509,10 @@ public sealed class Studio : Form {
                     featherlineForm ??= new();
                     featherlineForm.Show();
                     featherlineForm.Closed += (_, _) => featherlineForm = null;
+                }),
+                MenuUtils.CreateAction("Whats new?", Keys.None, () => {
+                    var asm = Assembly.GetExecutingAssembly();
+                    WhatsNewDialog.Show("Whats new in Studio v3.0.0?", new StreamReader(asm.GetManifestResourceStream("Changelogs/v3.0.0.md")!).ReadToEnd());
                 }),
             }},
         ];

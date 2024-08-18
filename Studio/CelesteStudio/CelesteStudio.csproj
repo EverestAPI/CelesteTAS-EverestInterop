@@ -21,6 +21,8 @@
     <ItemGroup>
         <PackageReference Include="Eto.Forms" Version="2.8.3" />
         <PackageReference Include="Samboy063.Tomlet" Version="5.3.1" />
+        <PackageReference Include="Markdig" Version="0.37.0" />
+        
         <ProjectReference Include="..\..\StudioCommunication\StudioCommunication.csproj" />
         <ProjectReference Include="..\..\external\Featherline\Featherline.csproj" />
     </ItemGroup>
@@ -43,4 +45,7 @@
         <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-BoldItalic.otf" LogicalName="JetBrainsMono/JetBrainsMono-BoldItalic"/>
     </ItemGroup>
 
+    <ItemGroup>
+        <EmbeddedResource Include="Assets\Changelogs\v3.0.0.md" LogicalName="Changelogs/v3.0.0.md"/>
+    </ItemGroup>
 </Project>
