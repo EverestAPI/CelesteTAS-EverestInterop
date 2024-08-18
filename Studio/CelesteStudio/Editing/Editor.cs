@@ -2121,7 +2121,7 @@ public sealed class Editor : Drawable {
         using var __ = Document.Update();
 
         CollapseSelection();
-        
+
         if (Settings.Instance.InsertDirection == InsertDirection.Above) {
             Document.InsertLineAbove(text);
 
@@ -2144,7 +2144,7 @@ public sealed class Editor : Drawable {
         using var __ = Document.Update();
 
         CollapseSelection();
-        
+
         int insertDir = Settings.Instance.InsertDirection == InsertDirection.Above ? -1 : 1;
 
         // Check current line
