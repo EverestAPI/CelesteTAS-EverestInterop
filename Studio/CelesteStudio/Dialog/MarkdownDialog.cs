@@ -20,8 +20,8 @@ namespace CelesteStudio.Dialog;
 /// - Page breaks
 public class WhatsNewDialog : Eto.Forms.Dialog {
 
-    private WhatsNewDialog(string title, string markdwonText) {
-        var pages = Markdown.Parse(new Size(500, 300));
+    private WhatsNewDialog(string title, string markdownContent) {
+        var pages = Markdown.Parse(markdownContent, new Size(600, 300));
 
         Title = title;
         Content = new Panel {
