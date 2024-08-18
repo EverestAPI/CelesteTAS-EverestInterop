@@ -6,15 +6,16 @@ namespace CelesteStudio.Util;
 
 public static class ProcessHelper
 {
-    public static void OpenInDefaultApp(string argument) {
+    public static void OpenInDefaultApp(string path) {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-            Process.Start("cmd", ["/c", "start", argument]);
+            // Start through explorer to detach the process from studio
+            Process.Start("Explorer", ["cmd", "/c", "start", path]);
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-            Process.Start("xdg-open", [argument]);
+            Process.Start("xdg-open", [path]);
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-            Process.Start("open", [argument]);
+            Process.Start("open", [path]);
         } else {
-            MessageBox.Show($"Cannot open '{argument}' in it's default app, since platform is not recognized", MessageBoxType.Error);
+            MessageBox.Show($"Cannot open '{path}' in it's default app, since platform is not recognized", MessageBoxType.Error);
         }
     }
 }
