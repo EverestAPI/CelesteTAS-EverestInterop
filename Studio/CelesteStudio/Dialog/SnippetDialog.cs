@@ -49,7 +49,7 @@ public class SnippetDialog : Dialog<bool> {
             }
         };
         Icon = Assets.AppIcon;
-        Topmost = true;
+        Studio.Instance.GotFocus += (_, _) => Focus();
 
         DefaultButton = new Button((_, _) => Close(true)) { Text = "&OK" };
         AbortButton = new Button((_, _) => Close(false)) { Text = "&Cancel" };

@@ -70,7 +70,7 @@ public class KeyBindingDialog : Dialog<bool> {
             Content = list,
         }.FixBorder();
         Icon = Assets.AppIcon;
-        Topmost = true;
+        Studio.RegisterDialog(this);
 
         DefaultButton = new Button((_, _) => Close(true)) { Text = "&OK" };
         AbortButton = new Button((_, _) => Close(false)) { Text = "&Cancel" };

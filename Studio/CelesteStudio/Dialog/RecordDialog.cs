@@ -20,7 +20,7 @@ public class RecordDialog : Dialog<bool> {
             Items = { new Label { Text = "File Name" }, textBox },
         };
         Icon = Assets.AppIcon;
-        Topmost = true;
+        Studio.RegisterDialog(this);
 
         DefaultButton = new Button((_, _) => Close(true)) { Text = "&Record" };
         AbortButton = new Button((_, _) => Close(false)) { Text = "&Cancel" };

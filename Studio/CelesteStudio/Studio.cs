@@ -139,6 +139,17 @@ public sealed class Studio : Form {
         CommunicationWrapper.Start();
     }
 
+    // Dialogs should always be focused over the editor / tools, but not other OS windows
+    public static void RegisterDialog(Eto.Forms.Dialog dialog) {
+        Instance.GotFocus += (_, _) => dialog.Focus();
+        if (Instance.jadderlineForm != null) {
+            Instance.jadderlineForm.GotFocus += (_, _) => dialog.Focus();
+        }
+        if (Instance.featherlineForm != null) {
+            Instance.featherlineForm.GotFocus += (_, _) => dialog.Focus();
+        }
+    }
+
     /// Shows the "About" dialog, while accounting for WPF theming
     public static void ShowAboutDialog(AboutDialog about, Window parent) {
         if (Eto.Platform.Instance.IsWpf) {

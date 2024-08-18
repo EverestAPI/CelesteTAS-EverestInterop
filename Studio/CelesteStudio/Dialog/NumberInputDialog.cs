@@ -27,7 +27,7 @@ public class NumberInputDialog<T> : Dialog<T> where T : INumber<T> {
             Items = { stepper },
         };
         Icon = Assets.AppIcon;
-        Topmost = true;
+        Studio.RegisterDialog(this);
 
         DefaultButton = new Button((_, _) => Close(T.CreateChecked(stepper.Value))) { Text = "&OK" };
         AbortButton = new Button((_, _) => Close(input)) { Text = "&Cancel" };
