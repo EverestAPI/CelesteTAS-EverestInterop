@@ -154,7 +154,7 @@ public sealed class Editor : Drawable {
     // These should be ordered from most specific to most applicable.
     private readonly ContextAction[] contextActions = [
         new CombineConsecutiveSameInputs(),
-        
+
         new SwapActions(Actions.Left, Actions.Right, MenuEntry.Editor_SwapSelectedLR),
         new SwapActions(Actions.Jump, Actions.Jump2, MenuEntry.Editor_SwapSelectedJK),
         new SwapActions(Actions.Dash, Actions.Dash2, MenuEntry.Editor_SwapSelectedXC),
@@ -350,9 +350,10 @@ public sealed class Editor : Drawable {
         MenuItem CreateCommandInsert(CommandInfo info) {
             var cmd = new Command { Shortcut = Keys.None };
             cmd.Executed += (_, _) => {
-                InsertLine(info.Insert);
-                // TODO: Support quick-edits here
-                Recalc();
+                if (CreateQuickEditAction(info.Insert, []) is { } action) {
+                    action();
+                    Recalc();
+                }
             };
 
             return new ButtonMenuItem(cmd) { Text = info.Name, ToolTip = info.Description };
@@ -1112,62 +1113,78 @@ public sealed class Editor : Drawable {
         baseAutoCompleteEntries.Clear();
 
         foreach (var snippet in Settings.Instance.Snippets) {
-            if (string.IsNullOrWhiteSpace(snippet.Shortcut) || !snippet.Enabled)
-                continue;
-            baseAutoCompleteEntries.Add(CreateEntry(snippet.Shortcut, snippet.Insert, "Snippet", []));
+            if (!string.IsNullOrWhiteSpace(snippet.Shortcut) && snippet.Enabled &&
+                CreateEntry(snippet.Shortcut, snippet.Insert, "Snippet", []) is { } entry)
+            {
+                baseAutoCompleteEntries.Add(entry);
+            }
         }
         foreach (var command in CommandInfo.AllCommands) {
-            if (command == null)
-                continue;
-            baseAutoCompleteEntries.Add(CreateEntry(command.Value.Name, command.Value.Insert, "Command", command.Value.AutoCompleteEntries));
+            if (command != null &&
+                CreateEntry(command.Value.Name, command.Value.Insert, "Command", command.Value.AutoCompleteEntries) is { } entry)
+            {
+                baseAutoCompleteEntries.Add(entry);
+            }
         }
 
         return;
 
-        PopupMenu.Entry CreateEntry(string name, string insert, string extra, Func<string[], CommandAutoCompleteEntry[]>[] commandAutoCompleteEntries) {
-            var quickEdit = ParseQuickEdit(insert);
+        PopupMenu.Entry? CreateEntry(string name, string insert, string extra, Func<string[], CommandAutoCompleteEntry[]>[] commandAutoCompleteEntries) {
+            if (CreateQuickEditAction(insert, commandAutoCompleteEntries) is not { } action) {
+                return null;
+            }
 
             return new PopupMenu.Entry {
                 SearchText = name,
                 DisplayText = name,
                 ExtraText = extra,
-                OnUse = () => {
-                    int row = Document.Caret.Row;
-                    Document.ReplaceLine(row, quickEdit.ActualText);
-
-                    ClearQuickEdits();
-
-                    if (quickEdit.Selections.Length > 0) {
-                        for (int i = 0; i < quickEdit.Selections.Length; i++) {
-                            var selection = quickEdit.Selections[i];
-                            var defaultText = quickEdit.ActualText.SplitDocumentLines()[selection.Min.Row][selection.Min.Col..selection.Max.Col];
-
-                            // Quick-edit selections are relative, not absolute
-                            Document.AddAnchor(new Anchor {
-                                Row = selection.Min.Row + row,
-                                MinCol = selection.Min.Col, MaxCol = selection.Max.Col,
-                                UserData = new QuickEditData { Index = i, DefaultText = defaultText },
-                                OnRemoved = ClearQuickEdits,
-                            });
-                        }
-                        SelectQuickEditIndex(0);
-                    } else {
-                        // Just jump to the end of the insert
-                        int newLines = quickEdit.ActualText.Count(c => c == Document.NewLine);
-
-                        Document.Caret.Row = Math.Min(Document.Lines.Count - 1, Document.Caret.Row + newLines);
-                        Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
-                    }
-
-                    if (commandAutoCompleteEntries.Length != 0) {
-                        // Keep open for arguments
-                        UpdateAutoComplete();
-                    } else {
-                        ActivePopupMenu = null;
-                    }
-                },
+                OnUse = action,
             };
         }
+    }
+
+    /// Creates an action, which will insert the quick edit when invoked
+    private Action? CreateQuickEditAction(string insert, Func<string[], CommandAutoCompleteEntry[]>[] commandAutoCompleteEntries) {
+        var quickEdit = QuickEdit.Parse(insert);
+        if (quickEdit == null) {
+            return null;
+        }
+
+        return () => {
+            int row = Document.Caret.Row;
+            Document.ReplaceLine(row, quickEdit.Value.ActualText);
+
+            ClearQuickEdits();
+
+            if (quickEdit.Value.Selections.Length > 0) {
+                for (int i = 0; i < quickEdit.Value.Selections.Length; i++) {
+                    var selection = quickEdit.Value.Selections[i];
+                    var defaultText = quickEdit.Value.ActualText.SplitDocumentLines()[selection.Min.Row][selection.Min.Col..selection.Max.Col];
+
+                    // Quick-edit selections are relative, not absolute
+                    Document.AddAnchor(new Anchor {
+                        Row = selection.Min.Row + row,
+                        MinCol = selection.Min.Col, MaxCol = selection.Max.Col,
+                        UserData = new QuickEditAnchorData { Index = i, DefaultText = defaultText },
+                        OnRemoved = ClearQuickEdits,
+                    });
+                }
+                SelectQuickEditIndex(0);
+            } else {
+                // Just jump to the end of the insert
+                int newLines = quickEdit.Value.ActualText.Count(c => c == Document.NewLine);
+
+                Document.Caret.Row = Math.Min(Document.Lines.Count - 1, Document.Caret.Row + newLines);
+                Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+            }
+
+            if (commandAutoCompleteEntries.Length != 0) {
+                // Keep open for arguments
+                UpdateAutoComplete();
+            } else {
+                ActivePopupMenu = null;
+            }
+        };
     }
 
     private void UpdateAutoComplete(bool open = true) {
@@ -1316,62 +1333,7 @@ public sealed class Editor : Drawable {
      * They are used by auto-complete snippets
      */
 
-    private record struct QuickEdit { public required string ActualText; public Selection[] Selections; }
-    private record struct QuickEditData { public required int Index; public required string DefaultText; }
-
-    private readonly Dictionary<string, QuickEdit> quickEditCache = new();
-    private QuickEdit ParseQuickEdit(string text) {
-        if (quickEditCache.TryGetValue(text, out var quickEdit)) {
-            return quickEdit;
-        }
-
-        var actualText = new StringBuilder(capacity: text.Length);
-        var quickEditSpots = new Dictionary<int, Selection>();
-
-        int row = 0;
-        int col = 0;
-        for (int i = 0; i < text.Length; i++) {
-            char c = text[i];
-            if (c == Document.NewLine) {
-                actualText.Append(c);
-                row++;
-                col = 0;
-                continue;
-            }
-            if (c != '[') {
-                actualText.Append(c);
-                col++;
-                continue;
-            }
-
-            int endIdx = text.IndexOf(']', i);
-            var quickEditText = text[(i + 1)..endIdx];
-
-            int delimIdx = quickEditText.IndexOf(';');
-            if (delimIdx < 0) {
-                int idx = int.Parse(quickEditText);
-                quickEditSpots[idx] = new Selection { Start = new CaretPosition(row, col), End = new CaretPosition(row, col) };
-            } else {
-                int idx = int.Parse(quickEditText[..delimIdx]);
-                var editableText = quickEditText[(delimIdx + 1)..];
-                quickEditSpots[idx] = new Selection { Start = new CaretPosition(row, col), End = new CaretPosition(row, col + editableText.Length) };
-                actualText.Append(editableText);
-                col += editableText.Length;
-            }
-
-            i = endIdx;
-        }
-
-        // Convert to actual array
-        var quickEditSelections = new Selection[quickEditSpots.Count];
-        for (int i = 0; i < quickEditSelections.Length; i++) {
-            quickEditSelections[i] = quickEditSpots[i];
-        }
-
-        quickEdit = new QuickEdit { ActualText = actualText.ToString(), Selections = quickEditSelections };
-        quickEditCache[text] = quickEdit;
-        return quickEdit;
-    }
+    private record struct QuickEditAnchorData { public required int Index; public required string DefaultText; }
 
     private void SelectNextQuickEdit() {
         // Find the first quick-edit after the caret
@@ -1414,7 +1376,7 @@ public sealed class Editor : Drawable {
     }
 
     private void SelectQuickEditIndex(int index) {
-        var quickEdit = Document.FindFirstAnchor(anchor => anchor.UserData is QuickEditData idx && idx.Index == index);
+        var quickEdit = Document.FindFirstAnchor(anchor => anchor.UserData is QuickEditAnchorData idx && idx.Index == index);
         if (quickEdit == null) {
             ClearQuickEdits();
             return;
@@ -1428,9 +1390,9 @@ public sealed class Editor : Drawable {
         };
     }
 
-    private QuickEditData? GetSelectedQuickEdit() => GetQuickEdits().FirstOrDefault(anchor => anchor.IsPositionInside(Document.Caret))?.UserData as QuickEditData?;
-    private IEnumerable<Anchor> GetQuickEdits() => Document.FindAnchors(anchor => anchor.UserData is QuickEditData);
-    private void ClearQuickEdits() => Document.RemoveAnchorsIf(anchor => anchor.UserData is QuickEditData);
+    private QuickEditAnchorData? GetSelectedQuickEdit() => GetQuickEdits().FirstOrDefault(anchor => anchor.IsPositionInside(Document.Caret))?.UserData as QuickEditAnchorData?;
+    private IEnumerable<Anchor> GetQuickEdits() => Document.FindAnchors(anchor => anchor.UserData is QuickEditAnchorData);
+    private void ClearQuickEdits() => Document.RemoveAnchorsIf(anchor => anchor.UserData is QuickEditAnchorData);
 
     #endregion
 
@@ -1722,7 +1684,7 @@ public sealed class Editor : Drawable {
             int featherColumn = GetColumnOfAction(actionLine, Actions.Feather);
             if (featherColumn != -1 && caret.Col >= featherColumn) {
                 int angleMagnitudeCommaColumn = line.IndexOf(ActionLine.Delimiter, featherColumn + 1) + 1;
-                
+
                 if (caret.Col == featherColumn + 1 && direction is CaretMovementType.CharLeft or CaretMovementType.WordLeft) {
                     var actions = GetActionsFromColumn(actionLine, caret.Col, direction);
                     actionLine.Actions &= ~actions;
@@ -2331,8 +2293,8 @@ public sealed class Editor : Drawable {
         Document.Caret = ClampCaret(GetActualPosition(newVisualPos));
 
         // When going from a non-action-line to an action-line, snap the caret to the frame count
-        if (direction is CaretMovementType.LineUp or CaretMovementType.LineDown or CaretMovementType.PageUp or CaretMovementType.PageDown or CaretMovementType.LabelUp or CaretMovementType.LabelDown && 
-            currentActionLine == null && TryParseAndFormatActionLine(Document.Caret.Row, out _)) 
+        if (direction is CaretMovementType.LineUp or CaretMovementType.LineDown or CaretMovementType.PageUp or CaretMovementType.PageDown or CaretMovementType.LabelUp or CaretMovementType.LabelDown &&
+            currentActionLine == null && TryParseAndFormatActionLine(Document.Caret.Row, out _))
         {
             Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
         }
@@ -2445,10 +2407,10 @@ public sealed class Editor : Drawable {
                    line.TrimStart().StartsWith("***");
         }
     }
-    
+
     void CollapseSelection() {
         if (Document.Selection.Empty) return;
-        
+
         var collapseToRow = Settings.Instance.InsertDirection switch {
             InsertDirection.Above => Document.Selection.Min,
             InsertDirection.Below => Document.Selection.Max,
