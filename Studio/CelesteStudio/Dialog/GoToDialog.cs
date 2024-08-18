@@ -14,30 +14,30 @@ public class GoToDialog : Dialog<int> {
             Value = document.Caret.Row + 1,
             Width = 150,
         };
-        
+
         // All labels need to start with a # and immediately follow with the text
         var labels = document.Lines
             .Select((line, row) => (line, row))
             .Where(pair => pair.line.Length >= 2 && pair.line[0] == '#' && char.IsLetter(pair.line[1]))
             .Select(pair => pair with { line = pair.line[1..] }) // Remove the #
             .ToArray();
-        
+
         var dropdown = new DropDown { Width = 150 };
-        
+
         if (labels.Length == 0) {
-            dropdown.Enabled = false;    
+            dropdown.Enabled = false;
         } else {
             foreach (var (label, row) in labels) {
                 dropdown.Items.Add(new ListItem { Text = label, Key = row.ToString() });
             }
-            
+
             // Find current label
             dropdown.SelectedKey = labels.Reverse().FirstOrDefault(pair => pair.row <= document.Caret.Row, labels[0]).row.ToString();
             // TODO: Make this a user preference
             // dropdown.SelectedKeyChanged += (_, _) => lineSelector.Value = int.Parse(dropdown.SelectedKey);
             dropdown.SelectedKeyChanged += (_, _) => Close(int.Parse(dropdown.SelectedKey));
         }
-        
+
         Title = "Go To";
         Content = new StackLayout {
             Padding = 10,
@@ -60,16 +60,17 @@ public class GoToDialog : Dialog<int> {
             }
         };
         Icon = Assets.AppIcon;
-        
+        Topmost = true;
+
         DefaultButton = new Button((_, _) => Close((int)lineSelector.Value - 1)) { Text = "&Go" };
         AbortButton = new Button((_, _) => Close(document.Caret.Row)) { Text = "&Cancel" };
-        
+
         PositiveButtons.Add(DefaultButton);
         NegativeButtons.Add(AbortButton);
-        
+
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
         Shown += (_, _) => Location = Studio.Instance.Location + new Point((Studio.Instance.Width - Width) / 2, (Studio.Instance.Height - Height) / 2);
     }
-    
+
     public static int Show(Document document) => new GoToDialog(document).ShowModal();
 }

@@ -24,7 +24,8 @@ public class HotkeyDialog : Dialog<Keys> {
             }
         };
         Icon = Assets.AppIcon;
-        
+        Topmost = true;
+
         Result = currentHotkey;
 
         KeyDown += (_, e) => {
@@ -36,7 +37,7 @@ public class HotkeyDialog : Dialog<Keys> {
             {
                 return;
             }
-            
+
             if (e.KeyData == (Application.Instance.CommonModifier | Keys.Escape)) {
                 Close(Keys.None);
                 return;
@@ -44,11 +45,11 @@ public class HotkeyDialog : Dialog<Keys> {
                 Close();
                 return;
             }
-                
+
             // Avoid conflicts with other hotkeys
             var conflictingKeyBinds = keyBindings.Where(pair => pair.Value == e.KeyData).Select(pair => pair.Key).ToArray();
             var conflictingSnippets = snippets.Where(snippet => snippet.Hotkey == e.KeyData).ToArray();
-            
+
             if (conflictingKeyBinds.Any() || conflictingSnippets.Any()) {
                 var msg = new StringBuilder();
                 msg.AppendLine($"This hotkey ({e.KeyData.ToShortcutString()}) is already used for other key bindings / snippets!");
@@ -70,20 +71,20 @@ public class HotkeyDialog : Dialog<Keys> {
                     msg.AppendLine(string.Empty);
                 }
                 msg.AppendLine("Are you sure you want to use this hotkey?");
-                
+
                 var confirm = MessageBox.Show(msg.ToString(), MessageBoxButtons.YesNo, MessageBoxType.Question, MessageBoxDefaultButton.Yes);
                 if (confirm != DialogResult.Yes) {
                     return;
                 }
             }
-            
+
             if (e.KeyData == (Application.Instance.CommonModifier | Keys.Escape)) {
                 Close(Keys.None);
             } else {
                 Close(e.KeyData);
             }
         };
-        
+
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
         Shown += (_, _) => Location = ParentWindow.Location + new Point((ParentWindow.Width - Width) / 2, (ParentWindow.Height - Height) / 2);
     }
@@ -91,7 +92,7 @@ public class HotkeyDialog : Dialog<Keys> {
     public static Keys Show(Window parent, Keys currentHotkey, Dictionary<MenuEntry, Keys>? keyBindings, List<Snippet>? snippets) {
         keyBindings ??= Enum.GetValues<MenuEntry>().ToDictionary(entry => entry, entry => entry.GetHotkey());
         snippets ??= Settings.Instance.Snippets;
-        
+
         return new HotkeyDialog(currentHotkey, keyBindings, snippets).ShowModal(parent);
     }
 }
