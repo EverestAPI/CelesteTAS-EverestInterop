@@ -141,13 +141,26 @@ public sealed class Studio : Form {
 
     // Dialogs should always be focused over the editor / tools, but not other OS windows
     public static void RegisterDialog(Eto.Forms.Dialog dialog) {
-        Instance.GotFocus += (_, _) => dialog.Focus();
+        Instance.GotFocus += Refocus;
         if (Instance.jadderlineForm != null) {
-            Instance.jadderlineForm.GotFocus += (_, _) => dialog.Focus();
+            Instance.jadderlineForm.GotFocus += Refocus;
         }
         if (Instance.featherlineForm != null) {
-            Instance.featherlineForm.GotFocus += (_, _) => dialog.Focus();
+            Instance.featherlineForm.GotFocus += Refocus;
         }
+
+        // For some reason macOS can revive dialogs from the dead, so we have to deregister the events again
+        dialog.Closing += (_, _) => {
+            Instance.GotFocus -= Refocus;
+            if (Instance.jadderlineForm != null) {
+                Instance.jadderlineForm.GotFocus -= Refocus;
+            }
+            if (Instance.featherlineForm != null) {
+                Instance.featherlineForm.GotFocus -= Refocus;
+            }
+        };
+
+        void Refocus(object? sender, EventArgs eventArgs) => dialog.Focus();
     }
 
     /// Shows the "About" dialog, while accounting for WPF theming
