@@ -15,6 +15,7 @@ using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
 using StudioCommunication;
+using System.Collections;
 using WrapLine = (string Line, int Index);
 using WrapEntry = (int StartOffset, (string Line, int Index)[] Lines);
 
@@ -1336,9 +1337,23 @@ public sealed class Editor : Drawable {
     private record struct QuickEditAnchorData { public required int Index; public required string DefaultText; }
 
     private void SelectNextQuickEdit() {
-        // Find the first quick-edit after the caret
-        var quickEdit = GetQuickEdits()
-            .FirstOrDefault(anchor => anchor.Row >= Document.Caret.Row && anchor.MinCol > Document.Caret.Col);
+        var quickEdits = GetQuickEdits().ToArray();
+        // Sort linearly inside the document
+        Array.Sort(quickEdits, (a, b) => a.Row == b.Row
+            ? a.MinCol - b.MinCol
+            : a.Row - b.Row);
+
+        // Try to goto the next index
+        if (GetSelectedQuickEdit() is { } currQuickEdit) {
+            SelectQuickEditIndex((currQuickEdit.Index + 1).Mod(quickEdits.Length));
+            return;
+        }
+
+        // We aren't inside a quick-edit and don't have enough info to goto the next index
+        // Therefore just go to the next selection linearly, ignoring the index
+        var quickEdit = quickEdits
+            .FirstOrDefault(anchor => anchor.Row == Document.Caret.Row && anchor.MinCol > Document.Caret.Col ||
+                                      anchor.Row > Document.Caret.Row);
 
         if (quickEdit == null) {
             // Wrap to first one
@@ -1355,11 +1370,24 @@ public sealed class Editor : Drawable {
     }
 
     private void SelectPrevQuickEdit() {
-        // Find the first quick-edit before the caret
         var quickEdits = GetQuickEdits().ToArray();
+        // Sort linearly inside the document
+        Array.Sort(quickEdits, (a, b) => a.Row == b.Row
+            ? a.MinCol - b.MinCol
+            : a.Row - b.Row);
+
+        // Try to goto the prev index
+        if (GetSelectedQuickEdit() is { } currQuickEdit) {
+            SelectQuickEditIndex((currQuickEdit.Index - 1).Mod(quickEdits.Length));
+            return;
+        }
+
+        // We aren't inside a quick-edit and don't have enough info to goto the prev index
+        // Therefore just go to the prev selection linearly, ignoring the index
         var quickEdit = quickEdits
             .Reverse()
-            .FirstOrDefault(anchor => anchor.Row <= Document.Caret.Row && anchor.MinCol < Document.Caret.Col);
+            .FirstOrDefault(anchor => anchor.Row == Document.Caret.Row && anchor.MinCol < Document.Caret.Col ||
+                                      anchor.Row < Document.Caret.Row);
 
         if (quickEdit == null) {
             // Wrap to last one
@@ -1382,6 +1410,9 @@ public sealed class Editor : Drawable {
             return;
         }
 
+        SelectQuickEdit(quickEdit);
+    }
+    private void SelectQuickEdit(Anchor quickEdit) {
         Document.Caret.Row = quickEdit.Row;
         Document.Caret.Col = desiredVisualCol = quickEdit.MinCol;
         Document.Selection = new Selection {
@@ -1390,7 +1421,10 @@ public sealed class Editor : Drawable {
         };
     }
 
-    private QuickEditAnchorData? GetSelectedQuickEdit() => GetQuickEdits().FirstOrDefault(anchor => anchor.IsPositionInside(Document.Caret))?.UserData as QuickEditAnchorData?;
+    /// Returns the quick-edit which is currently under the caret
+    private QuickEditAnchorData? GetSelectedQuickEdit() =>
+        GetQuickEdits().FirstOrDefault(anchor => anchor.IsPositionInside(Document.Caret))?.UserData as QuickEditAnchorData?;
+
     private IEnumerable<Anchor> GetQuickEdits() => Document.FindAnchors(anchor => anchor.UserData is QuickEditAnchorData);
     private void ClearQuickEdits() => Document.RemoveAnchorsIf(anchor => anchor.UserData is QuickEditAnchorData);
 
