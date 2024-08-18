@@ -351,10 +351,9 @@ public sealed class Editor : Drawable {
         MenuItem CreateCommandInsert(CommandInfo info) {
             var cmd = new Command { Shortcut = Keys.None };
             cmd.Executed += (_, _) => {
-                if (CreateQuickEditAction(info.Insert, []) is { } action) {
-                    action();
-                    Recalc();
-                }
+                InsertQuickEdit(info.Insert);
+                Recalc();
+                ScrollCaretIntoView();
             };
 
             return new ButtonMenuItem(cmd) { Text = info.Name, ToolTip = info.Description };
@@ -832,6 +831,7 @@ public sealed class Editor : Drawable {
                     action.OnUse();
                     Recalc();
                     ScrollCaretIntoView();
+
                     e.Handled = true;
                     return;
                 }
@@ -839,18 +839,14 @@ public sealed class Editor : Drawable {
 
             // Try to paste snippets
             foreach (var snippet in Settings.Instance.Snippets) {
-                if (!snippet.Enabled || snippet.Hotkey != e.KeyData) {
-                    continue;
-                }
+                if (snippet.Enabled && snippet.Hotkey == e.KeyData) {
+                    InsertQuickEdit(snippet.Insert);
+                    Recalc();
+                    ScrollCaretIntoView();
 
-                if (string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row])) {
-                    Document.ReplaceLine(Document.Caret.Row, snippet.Insert);
-                } else {
-                    InsertLine(snippet.Insert);
+                    e.Handled = true;
+                    return;
                 }
-
-                Document.Caret.Col = desiredVisualCol = snippet.Insert.Length;
-                return;
             }
         }
 
@@ -1141,6 +1137,61 @@ public sealed class Editor : Drawable {
                 ExtraText = extra,
                 OnUse = action,
             };
+        }
+    }
+
+    /// Inserts a new quick-edit text at the current row
+    private void InsertQuickEdit(string insert) {
+        if (QuickEdit.Parse(insert) is not { } quickEdit) {
+            return;
+        }
+
+        using var __ = Document.Update();
+
+        var oldCaret = Document.Caret;
+
+        if (!string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row])) {
+            // Create a new empty line for the quick-edit to use
+            CollapseSelection();
+
+            if (Settings.Instance.InsertDirection == InsertDirection.Above) {
+                Document.InsertLineAbove(string.Empty);
+                Document.Caret.Row--;
+                oldCaret.Row++;
+            } else if (Settings.Instance.InsertDirection == InsertDirection.Below) {
+                Document.InsertLineBelow(string.Empty);
+                Document.Caret.Row++;
+            }
+        }
+
+        int row = Document.Caret.Row;
+        Document.ReplaceLine(row, quickEdit.ActualText);
+
+        if (quickEdit.Selections.Length > 0) {
+            for (int i = 0; i < quickEdit.Selections.Length; i++) {
+                var selection = quickEdit.Selections[i];
+                var defaultText = quickEdit.ActualText.SplitDocumentLines()[selection.Min.Row][selection.Min.Col..selection.Max.Col];
+
+                // Quick-edit selections are relative, not absolute
+                Document.AddAnchor(new Anchor {
+                    Row = selection.Min.Row + row,
+                    MinCol = selection.Min.Col, MaxCol = selection.Max.Col,
+                    UserData = new QuickEditAnchorData { Index = i, DefaultText = defaultText },
+                    OnRemoved = ClearQuickEdits,
+                });
+            }
+            SelectQuickEditIndex(0);
+        } else if (Settings.Instance.CaretInsertPosition == CaretInsertPosition.AfterInsert) {
+            if (Settings.Instance.InsertDirection == InsertDirection.Above) {
+                Document.Caret.Row = row;
+                Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+            } else if (Settings.Instance.InsertDirection == InsertDirection.Below) {
+                int newLines = quickEdit.ActualText.Count(c => c == Document.NewLine);
+                Document.Caret.Row = row + newLines;
+                Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+            }
+        } else {
+            Document.Caret = oldCaret;
         }
     }
 
