@@ -30,6 +30,8 @@ public class SnippetDialog : Dialog<bool> {
             GenerateListEntries(list.Items);
         };
 
+        var documentationCmd = new Command((_, _) => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Snippets"));
+
         Title = "Edit Snippets";
         Content = new StackLayout {
             Padding = 10,
@@ -39,7 +41,7 @@ public class SnippetDialog : Dialog<bool> {
                 new StackLayout {
                     Orientation = Orientation.Horizontal,
                     Spacing = 10,
-                    Items = { addButton, new  LinkButton { Text = "Open documentation (TODO)" } }
+                    Items = { addButton, new LinkButton { Text = "Open documentation", Command = documentationCmd} }
                 },
                 new Scrollable {
                     Width = list.Width,

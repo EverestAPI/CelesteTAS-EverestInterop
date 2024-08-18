@@ -511,7 +511,8 @@ public sealed class Studio : Form {
         ];
 
         var quitItem = MenuEntry.File_Quit.ToAction(Application.Instance.Quit);
-        var homeItem = MenuUtils.CreateAction("Home", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop"));
+        var homeItem = MenuUtils.CreateAction("Open README...", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop"));
+        var wikiItem = MenuUtils.CreateAction("Open wiki...", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki"));
         var aboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {
             ShowAboutDialog(new AboutDialog {
                 ProgramName = "Celeste Studio",
@@ -536,7 +537,7 @@ public sealed class Studio : Form {
             // Collapse all entries into a single "Studio" entries
             var studioMenu = new SubMenuItem { Text = "&Studio" };
             studioMenu.Items.AddRange(items);
-            studioMenu.Items.Add(new SubMenuItem { Text = "&Help", Items = { homeItem, aboutItem }});
+            studioMenu.Items.Add(new SubMenuItem { Text = "&Help", Items = { homeItem, wikiItem, aboutItem }});
             studioMenu.Items.Add(new SeparatorMenuItem());
             studioMenu.Items.Add(quitItem);
 
@@ -546,6 +547,7 @@ public sealed class Studio : Form {
 
             menu.QuitItem = quitItem;
             menu.HelpItems.Add(homeItem);
+            menu.HelpItems.Add(wikiItem);
             menu.AboutItem = aboutItem;
         }
 
