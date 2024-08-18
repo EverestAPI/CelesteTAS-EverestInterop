@@ -141,6 +141,13 @@ public sealed class Studio : Form {
 
     // Dialogs should always be focused over the editor / tools, but not other OS windows
     public static void RegisterDialog(Eto.Forms.Dialog dialog) {
+        // For some reason macOS can just revive dialogs from the dead
+        // Unregistering Refocus also doesn't seem to help, so this is the only option..
+        if (Eto.Platform.Instance.IsMac) {
+            dialog.Topmost = true;
+            return;
+        }
+
         Instance.GotFocus += Refocus;
         if (Instance.jadderlineForm != null) {
             Instance.jadderlineForm.GotFocus += Refocus;
@@ -148,17 +155,6 @@ public sealed class Studio : Form {
         if (Instance.featherlineForm != null) {
             Instance.featherlineForm.GotFocus += Refocus;
         }
-
-        // For some reason macOS can revive dialogs from the dead, so we have to deregister the events again
-        dialog.Closing += (_, _) => {
-            Instance.GotFocus -= Refocus;
-            if (Instance.jadderlineForm != null) {
-                Instance.jadderlineForm.GotFocus -= Refocus;
-            }
-            if (Instance.featherlineForm != null) {
-                Instance.featherlineForm.GotFocus -= Refocus;
-            }
-        };
 
         void Refocus(object? sender, EventArgs eventArgs) => dialog.Focus();
     }
