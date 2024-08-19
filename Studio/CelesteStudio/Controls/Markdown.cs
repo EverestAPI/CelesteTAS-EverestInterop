@@ -9,10 +9,21 @@ using System.Linq;
 
 namespace CelesteStudio.Controls;
 
+/// Displays basic markdown inside a dialog
+/// This markdown renderer supports the following elements:
+/// - Bold,
+/// - Italic,
+/// - Inline-Code
+/// - Headers 1-6,
+/// - Hyperlinks
+/// - Images
+/// - Page breaks
 public class Markdown : Drawable {
+    // TODO: Please refactor. Thanks :)
+
     /// Current state on how text should look / behave
     private struct TextState {
-        public bool Bold, Italic, Underline, Strikethrough;
+        public bool Bold, Italic;
         public bool Code;
 
         public string? Link;
@@ -26,12 +37,6 @@ public class Markdown : Drawable {
             }
             if (Italic) {
                 fontStyle |= FontStyle.Italic;
-            }
-            if (Underline) {
-                fontDecoration |= FontDecoration.Underline;
-            }
-            if (Strikethrough) {
-                fontDecoration |= FontDecoration.Strikethrough;
             }
 
             return (fontStyle, fontDecoration);
@@ -50,7 +55,7 @@ public class Markdown : Drawable {
         }
     }
     /// Fully resolved part of the text
-    private readonly struct TextPart(string text, TextState state, PointF position, string? link = null) {
+    private readonly struct TextPart(string text, TextState state, PointF position) {
         public readonly string Text = text;
         public readonly TextState State = state;
         public readonly PointF Position = position;
@@ -203,7 +208,7 @@ public class Markdown : Drawable {
                                        mousePosition.Y >= textPos.Y && mousePosition.Y <= textPos.Y + size.Height;
                         if (hovered) {
                             font = font.WithFontDecoration(FontDecoration.Underline);
-                            markdown.cursor = Cursors.Pointer;;
+                            markdown.cursor = Cursors.Pointer;
                         }
 
                         graphics.DrawText(font, Color.FromRgb(0x4CACFC), textPos, text);
@@ -220,7 +225,6 @@ public class Markdown : Drawable {
 
         public SizeF Measure(string text, TextState state) {
             if (state.Link != null && state.Image) {
-                Console.WriteLine($"Img size {Bitmap.FromResource(state.Link).Size}");
                 return Bitmap.FromResource(state.Link).Size;
             }
 
@@ -234,14 +238,8 @@ public class Markdown : Drawable {
         }
     }
 
-    //private readonly List<(string Text, TextStyle Style, PointF Position)> textComponents = [];
     private readonly List<TextComponent> components = [];
     private Cursor? cursor;
-
-    public Markdown() {
-
-
-    }
 
     protected override void OnMouseMove(MouseEventArgs e) => Invalidate();
 
@@ -276,9 +274,6 @@ public class Markdown : Drawable {
     protected override void OnPaint(PaintEventArgs e) {
         e.Graphics.AntiAlias = true;
 
-        // foreach ((string text, var style, var position) in textComponents) {
-        //     e.Graphics.DrawText(style.GetFont(), Colors.White, position, text);
-        // }
         cursor = null;
         foreach (var component in components) {
             component.Draw(e.Graphics, this);
@@ -295,15 +290,14 @@ public class Markdown : Drawable {
         var currentPage = new Markdown { Size = pageSize };
         var currentPosition = new PointF(0.0f, 0.0f);
 
+        pages.Add(currentPage);
+
         TextComponent? currentComponent;
         var currentState = new TextState();
         string currentLine = string.Empty;
         float maxLineHeight = 0.0f;
 
-        Console.WriteLine("===");
-
         foreach (var item in markdown.Descendants<Block>()) {
-            Console.WriteLine($" * {item} ({item.GetType()})");
             if (item is HeadingBlock heading) {
                 currentComponent = new HeaderComponent(heading.Level);
                 foreach (var inline in heading.Inline!) {
@@ -321,13 +315,18 @@ public class Markdown : Drawable {
                 }
                 FlushLine(newLine: true);
                 currentPage.components.Add(currentComponent);
+            } else if (item is ThematicBreakBlock) {
+                currentPage = new Markdown { Size = pageSize };
+                currentPosition = new PointF(0.0f, 0.0f);
+                pages.Add(currentPage);
             } else {
                 Console.WriteLine($"Unhandled item: {item} ({item.GetType()})");
             }
         }
 
+        return pages;
+
         void ProcessInline(Inline inline) {
-            Console.WriteLine($"   -> {inline} ({inline.GetType()})");
             if (inline is LiteralInline literal) {
                 ProcessText(literal.ToString());
             } else if (inline is EmphasisInline emphasis) {
@@ -408,43 +407,5 @@ public class Markdown : Drawable {
                 currentPosition.X += size.Width;
             }
         }
-
-        /*
-        foreach (var entry in markdown) {
-            switch (entry) {
-                case ParagraphBlock paragraph:
-                    foreach (var line in paragraph.Lines) {
-                        Console.WriteLine($"PL {line}");
-                    }
-                    foreach (var inline in paragraph.Inline!) {
-                        switch (inline) {
-                            case LiteralInline literal:
-                            {
-                                string text = literal.Content.ToString();
-
-                                var size = ParagraphComponent.Measure(text);
-                                currentPage.components.Add(new ParagraphComponent(currentPosition, text));
-                                break;
-                            }
-                            case EmphasisInline emphasis:
-                            {
-                                // string text = emphasis..Content.ToString();
-                                //
-                                // var size = ParagraphComponent.Measure(text);
-                                // currentPage.components.Add(new ParagraphComponent(currentPosition, text));
-                                break;
-                            }
-
-                        }
-                        Console.WriteLine($"IC {inline} {inline.Ch} {inline.GetType()}");
-                    }
-
-                    break;
-            }
-            Console.WriteLine($"E {entry}");
-        }
-        */
-
-        return [currentPage];
     }
 }
