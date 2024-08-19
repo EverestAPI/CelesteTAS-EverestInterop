@@ -6,8 +6,8 @@ using System;
 namespace CelesteStudio.Dialog;
 
 public class WhatsNewDialog : Eto.Forms.Dialog {
-    private const int PageWidth = 600;
-    private const int PageHeight = 300;
+    private const int PageWidth = 650;
+    private const int PageHeight = 400;
 
     private WhatsNewDialog(string title, string markdownContent) {
         var pages = Markdown.Parse(markdownContent, new Size(PageWidth, PageHeight));
