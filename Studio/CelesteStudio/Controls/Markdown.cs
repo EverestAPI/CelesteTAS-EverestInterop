@@ -14,7 +14,9 @@ public class Markdown : Drawable {
     private struct TextState {
         public bool Bold, Italic, Underline, Strikethrough;
         public bool Code;
+
         public string? Link;
+        public bool Image;
 
         public (FontStyle, FontDecoration) Resolve() {
             var fontStyle = FontStyle.None;
@@ -193,15 +195,19 @@ public class Markdown : Drawable {
                 }
 
                 if (state.Link != null) {
-                    var mousePosition = markdown.PointFromScreen(Mouse.Position);
-                    bool hovered = mousePosition.X >= textPos.X && mousePosition.X <= textPos.X + size.Width &&
-                                   mousePosition.Y >= textPos.Y && mousePosition.Y <= textPos.Y + size.Height;
-                    if (hovered) {
-                        font = font.WithFontDecoration(FontDecoration.Underline);
-                        markdown.cursor = Cursors.Pointer;;
-                    }
+                    if (state.Image) {
+                        graphics.DrawImage(Bitmap.FromResource(state.Link), textPos);
+                    } else {
+                        var mousePosition = markdown.PointFromScreen(Mouse.Position);
+                        bool hovered = mousePosition.X >= textPos.X && mousePosition.X <= textPos.X + size.Width &&
+                                       mousePosition.Y >= textPos.Y && mousePosition.Y <= textPos.Y + size.Height;
+                        if (hovered) {
+                            font = font.WithFontDecoration(FontDecoration.Underline);
+                            markdown.cursor = Cursors.Pointer;;
+                        }
 
-                    graphics.DrawText(font, Color.FromRgb(0x4CACFC), textPos, text);
+                        graphics.DrawText(font, Color.FromRgb(0x4CACFC), textPos, text);
+                    }
                 } else {
                     graphics.DrawText(font, SystemColors.ControlText, textPos, text);
                 }
@@ -213,6 +219,11 @@ public class Markdown : Drawable {
         }
 
         public SizeF Measure(string text, TextState state) {
+            if (state.Link != null && state.Image) {
+                Console.WriteLine($"Img size {Bitmap.FromResource(state.Link).Size}");
+                return Bitmap.FromResource(state.Link).Size;
+            }
+
             var size = state.GetFont().MeasureString(text);
 
             if (state.Code) {
@@ -337,10 +348,12 @@ public class Markdown : Drawable {
                 currentState.Code = false;
             } else if (inline is LinkInline link) {
                 currentState.Link = link.Url;
+                currentState.Image = link.IsImage;
                 foreach (var linkLiteral in link) {
                     ProcessInline(linkLiteral);
                 }
                 currentState.Link = null;
+                currentState.Image = false;
             } else if (inline is LineBreakInline) {
                 FlushLine(newLine: true);
             } else {
@@ -390,11 +403,10 @@ public class Markdown : Drawable {
             if (newLine) {
                 currentPosition.X = 0.0f;
                 currentPosition.Y += maxLineHeight * lineSpacing;
+                maxLineHeight = 0.0f;
             } else {
                 currentPosition.X += size.Width;
             }
-
-            maxLineHeight = 0.0f;
         }
 
         /*

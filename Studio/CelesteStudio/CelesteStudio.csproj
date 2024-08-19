@@ -47,5 +47,7 @@
 
     <ItemGroup>
         <EmbeddedResource Include="Assets\Changelogs\v3.0.0.md" LogicalName="Changelogs/v3.0.0.md"/>
+        <EmbeddedResource Include="Assets\Changelogs\v3.0.0\test.png" LogicalName="Changelogs/v3.0.0/test.png"/>
     </ItemGroup>
+
 </Project>
