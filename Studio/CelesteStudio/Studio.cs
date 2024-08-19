@@ -510,16 +510,17 @@ public sealed class Studio : Form {
                     featherlineForm.Show();
                     featherlineForm.Closed += (_, _) => featherlineForm = null;
                 }),
-                MenuUtils.CreateAction("Whats new?", Keys.None, () => {
-                    var asm = Assembly.GetExecutingAssembly();
-                    WhatsNewDialog.Show("Whats new in Studio v3.0.0?", new StreamReader(asm.GetManifestResourceStream("Changelogs/v3.0.0.md")!).ReadToEnd());
-                }),
             }},
         ];
 
         var quitItem = MenuEntry.File_Quit.ToAction(Application.Instance.Quit);
         var homeItem = MenuUtils.CreateAction("Open README...", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop"));
         var wikiItem = MenuUtils.CreateAction("Open wiki...", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki"));
+        // TODO: Have this update automatically with the current version
+        var whatsNewItem = MenuUtils.CreateAction("Whats new?", Keys.None, () => {
+            var asm = Assembly.GetExecutingAssembly();
+            WhatsNewDialog.Show("Whats new in Studio v3.0.0?", new StreamReader(asm.GetManifestResourceStream("Changelogs/v3.0.0.md")!).ReadToEnd());
+        });
         var aboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {
             ShowAboutDialog(new AboutDialog {
                 ProgramName = "Celeste Studio",
@@ -544,7 +545,7 @@ public sealed class Studio : Form {
             // Collapse all entries into a single "Studio" entries
             var studioMenu = new SubMenuItem { Text = "&Studio" };
             studioMenu.Items.AddRange(items);
-            studioMenu.Items.Add(new SubMenuItem { Text = "&Help", Items = { homeItem, wikiItem, aboutItem }});
+            studioMenu.Items.Add(new SubMenuItem { Text = "&Help", Items = { homeItem, wikiItem, whatsNewItem, new SeparatorMenuItem(), aboutItem }});
             studioMenu.Items.Add(new SeparatorMenuItem());
             studioMenu.Items.Add(quitItem);
 
@@ -555,6 +556,7 @@ public sealed class Studio : Form {
             menu.QuitItem = quitItem;
             menu.HelpItems.Add(homeItem);
             menu.HelpItems.Add(wikiItem);
+            menu.HelpItems.Add(whatsNewItem);
             menu.AboutItem = aboutItem;
         }
 
