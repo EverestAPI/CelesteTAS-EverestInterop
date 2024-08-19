@@ -1,4 +1,3 @@
-using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
 using Markdig.Syntax;
@@ -6,7 +5,6 @@ using Markdig.Syntax.Inlines;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace CelesteStudio.Controls;
 
@@ -127,11 +125,28 @@ public class Markdown : Drawable {
     }
 
     private class ParagraphComponent : TextComponent {
+        private const float CodePaddingX = 2.0f;
+        private const float CodePaddingY = 0.0f;
+
         private readonly List<(string Text, TextStyle Style, PointF Position)> parts = [];
 
         public void Draw(Graphics graphics) {
             foreach ((string text, var style, var position) in parts) {
-                graphics.DrawText(style.GetFont(), SystemColors.ControlText, position, text);
+                var font = style.GetFont();
+
+                if (style.Code) {
+                    // Without these offsets it just kinda looks wrong?
+                    const float codeFgYOffset = 1.5f;
+                    const float codeBgYOffset = 2.5f;
+
+                    var size = graphics.MeasureString(font, text);
+                    graphics.FillPath(SystemColors.Highlight, GraphicsPath.GetRoundRect(
+                        new RectangleF(position.X, position.Y + codeBgYOffset, size.Width + CodePaddingX * 2.0f, size.Height),
+                        5.0f));
+                    graphics.DrawText(font, SystemColors.HighlightText, position.X + CodePaddingX, position.Y + codeFgYOffset, text);
+                } else {
+                   graphics.DrawText(font, SystemColors.ControlText, position, text);
+                }
             }
         }
 
@@ -140,13 +155,19 @@ public class Markdown : Drawable {
         }
 
         public SizeF Measure(string text, TextStyle style) {
-            return style.GetFont().MeasureString(text);
+            var size = style.GetFont().MeasureString(text);
+
+            if (style.Code) {
+                return new(size.Width + CodePaddingX * 2.0f, size.Height);
+            }
+
+            return size;
         }
     }
 
-    //private enum TextStyle { Regular, Bold, Italic }
     private struct TextStyle {
         public bool Bold, Italic, Underline, Strikethrough;
+        public bool Code;
 
         public (FontStyle, FontDecoration) Resolve() {
             var fontStyle = FontStyle.None;
@@ -169,8 +190,14 @@ public class Markdown : Drawable {
 
         public Font GetFont() {
             var (fontStyle, fontDecoration) = Resolve();
-            var font = SystemFonts.Default();
-            return new Font(font.Family, font.Size, fontStyle, fontDecoration);
+            var sysFont = SystemFonts.Default();
+
+            if (Code) {
+                var codeFont = FontManager.EditorFontRegular;
+                return new Font(codeFont.Family, sysFont.Size, fontStyle, fontDecoration);
+            }
+
+            return new Font(sysFont.Family, sysFont.Size, fontStyle, fontDecoration);
         }
     }
 
@@ -234,7 +261,7 @@ public class Markdown : Drawable {
         void ProcessInline(Inline inline) {
             Console.WriteLine($"   -> {inline} ({inline.GetType()})");
             if (inline is LiteralInline literal) {
-                ProcessLiteral(literal);
+                ProcessText(literal.ToString());
             } else if (inline is EmphasisInline emphasis) {
                 foreach (var emphasisLiteral in emphasis) {
                     if (emphasis.DelimiterCount == 2) {
@@ -247,14 +274,17 @@ public class Markdown : Drawable {
                         currentStyle.Italic = false;
                     }
                 }
+            } else if (inline is CodeInline code) {
+                currentStyle.Code = true;
+                ProcessText(code.Content);
+                currentStyle.Code = false;
             } else if (inline is LineBreakInline lineBreak) {
                 FlushLine(newLine: true);
             } else {
                 Console.WriteLine($"Unhandled inline: {inline} ({inline.GetType()})");
             }
         }
-        void ProcessLiteral(LiteralInline literal) {
-            string text = literal.ToString();
+        void ProcessText(string text) {
             var splitPoints = text
                 .Select((c, i) => (c, i))
                 .Where(pair => char.IsWhiteSpace(pair.c))
