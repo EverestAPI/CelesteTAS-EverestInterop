@@ -1,3 +1,4 @@
+using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
 using Markdig.Syntax;
@@ -61,7 +62,7 @@ public class Markdown : Drawable {
 
     /// Describes a combination of text of a certain kind, for example paragraphs, headings, etc.
     private interface TextComponent {
-        public void Draw(Graphics graphics);
+        public void Draw(Graphics graphics, Markdown markdown);
         public void Flush(string text, TextState state, PointF position, bool newLine);
         public SizeF Measure(string text, TextState state);
     }
@@ -88,7 +89,7 @@ public class Markdown : Drawable {
         private readonly List<List<TextPart>> lines = [];
         private float lineY;
 
-        public void Draw(Graphics graphics) {
+        public void Draw(Graphics graphics, Markdown markdown) {
             var baseFont = SystemFonts.Default();
 
             foreach (var line in lines) {
@@ -129,8 +130,8 @@ public class Markdown : Drawable {
             foreach (var line in lines) {
                 float width = 0.0f;
 
-                foreach ((string text, var style, var position) in line) {
-                    var (fontStyle, fontDecoration) = style.Resolve();
+                foreach ((string text, var state, var position) in line) {
+                    var (fontStyle, fontDecoration) = state.Resolve();
                     var font = new Font(baseFont.Family, baseFont.Size * scale, fontStyle, fontDecoration);
                     var textSize = font.MeasureString(text);
 
@@ -171,18 +172,19 @@ public class Markdown : Drawable {
         private const float CodePaddingX = 3.0f;
         private const float CodePaddingY = 1.5f;
 
-        private readonly List<(string Text, TextState Style, PointF Position)> parts = [];
+        public readonly List<(string Text, TextState State, PointF Position)> Parts = [];
 
-        public void Draw(Graphics graphics) {
-            foreach ((string text, var state, var position) in parts) {
+        public void Draw(Graphics graphics, Markdown markdown) {
+            foreach ((string text, var state, var position) in Parts) {
                 var font = state.GetFont();
 
                 var textPos = position;
+                var size = graphics.MeasureString(font, text);
+
                 if (state.Code) {
                     // Without this offset it just kinda looks wrong?
                     const float codeBgYOffset = 1.5f;
 
-                    var size = graphics.MeasureString(font, text);
                     graphics.FillPath(SystemColors.Highlight, GraphicsPath.GetRoundRect(
                         new RectangleF(position.X, position.Y - CodePaddingY + codeBgYOffset, size.Width + CodePaddingX * 2.0f, size.Height + CodePaddingY * 2.0f),
                         5.0f));
@@ -191,18 +193,23 @@ public class Markdown : Drawable {
                 }
 
                 if (state.Link != null) {
+                    var mousePosition = markdown.PointFromScreen(Mouse.Position);
+                    bool hovered = mousePosition.X >= textPos.X && mousePosition.X <= textPos.X + size.Width &&
+                                   mousePosition.Y >= textPos.Y && mousePosition.Y <= textPos.Y + size.Height;
+                    if (hovered) {
+                        font = font.WithFontDecoration(FontDecoration.Underline);
+                        markdown.cursor = Cursors.Pointer;;
+                    }
+
                     graphics.DrawText(font, Color.FromRgb(0x4CACFC), textPos, text);
                 } else {
                     graphics.DrawText(font, SystemColors.ControlText, textPos, text);
                 }
-
-
-
             }
         }
 
         public void Flush(string text, TextState state, PointF position, bool newLine) {
-            parts.Add((text, state, position));
+            Parts.Add((text, state, position));
         }
 
         public SizeF Measure(string text, TextState state) {
@@ -218,10 +225,41 @@ public class Markdown : Drawable {
 
     //private readonly List<(string Text, TextStyle Style, PointF Position)> textComponents = [];
     private readonly List<TextComponent> components = [];
+    private Cursor? cursor;
 
     public Markdown() {
 
 
+    }
+
+    protected override void OnMouseMove(MouseEventArgs e) => Invalidate();
+
+    protected override void OnMouseUp(MouseEventArgs e) {
+        // This could be passed down to the components, but not worth for just links
+        foreach (var component in components) {
+            if (component is not ParagraphComponent paragraph) {
+                continue;
+            }
+
+            foreach ((string? text, var state, var position) in paragraph.Parts)
+            {
+                if (state.Link == null) {
+                    continue;
+                }
+
+                var font = state.GetFont();
+                var size = font.MeasureString(text);
+
+                bool above = e.Location.X >= position.X && e.Location.X <= position.X + size.Width &&
+                               e.Location.Y >= position.Y && e.Location.Y <= position.Y + size.Height;
+                if (above) {
+                    ProcessHelper.OpenInDefaultApp(state.Link);
+
+                    e.Handled = true;
+                    return;
+                }
+            }
+        }
     }
 
     protected override void OnPaint(PaintEventArgs e) {
@@ -230,9 +268,11 @@ public class Markdown : Drawable {
         // foreach ((string text, var style, var position) in textComponents) {
         //     e.Graphics.DrawText(style.GetFont(), Colors.White, position, text);
         // }
+        cursor = null;
         foreach (var component in components) {
-            component.Draw(e.Graphics);
+            component.Draw(e.Graphics, this);
         }
+        Cursor = cursor;
     }
 
     public static List<Markdown> Parse(string markdownContent, Size pageSize) {
