@@ -13,11 +13,22 @@ namespace CelesteStudio.Controls;
 public class Markdown : Drawable {
     private interface TextComponent {
         public void Draw(Graphics graphics);
-        public void Flush(string text, TextStyle style, PointF position);
+        public void Flush(string text, TextStyle style, PointF position, bool newLine);
         public SizeF Measure(string text, TextStyle style);
     }
+    private struct TextPart(string text, TextStyle style, PointF position) {
+        public string Text = text;
+        public TextStyle Style = style;
+        public PointF Position = position;
 
-    private class HeaderComponent(int size) : TextComponent {
+        public void Deconstruct(out string text, out TextStyle style, out PointF position) {
+            text = Text;
+            style = Style;
+            position = Position;
+        }
+    }
+
+    private class HeaderComponent(int level) : TextComponent {
         private const float H1_Size = 2.0f;
         private const float H2_Size = 1.5f;
         private const float H3_Size = 1.25f;
@@ -25,7 +36,7 @@ public class Markdown : Drawable {
         private const float H5_Size = 0.875f;
         private const float H6_Size = 0.75f;
 
-        private readonly float scale = Math.Clamp(size, 1, 6) switch {
+        private readonly float scale = Math.Clamp(level, 1, 6) switch {
             1 => H1_Size,
             2 => H2_Size,
             3 => H3_Size,
@@ -34,22 +45,75 @@ public class Markdown : Drawable {
             6 => H6_Size,
             _ => throw new ArgumentOutOfRangeException()
         };
-        private readonly List<(string Text, TextStyle Style, PointF Position)> parts = [];
+
+        private readonly List<List<TextPart>> lines = [];
+        private float lineY;
 
         public void Draw(Graphics graphics) {
-
             var baseFont = SystemFonts.Default();
 
-            foreach ((string text, var style, var position) in parts) {
-                var (fontStyle, fontDecoration) = style.Resolve();
-                var font = new Font(baseFont.Family, baseFont.Size * scale, fontStyle, fontDecoration);
+            foreach (var line in lines) {
+                foreach ((string text, var style, var position) in line) {
+                    var (fontStyle, fontDecoration) = style.Resolve();
+                    var font = new Font(baseFont.Family, baseFont.Size * scale, fontStyle, fontDecoration);
 
-                graphics.DrawText(font, SystemColors.ControlText, position, text);
+                    graphics.DrawText(font, SystemColors.ControlText, position, text);
+                }
+            }
+
+            if (level is 1 or 2) {
+                using var pen = new Pen(SystemColors.ControlText with { A = 0.5f }, 1.0f);
+                graphics.DrawLine(pen, graphics.ClipBounds.Left, lineY, graphics.ClipBounds.Right, lineY);
             }
         }
 
-        public void Flush(string text, TextStyle style, PointF position) {
-            parts.Add((text, style, position));
+        public void Flush(string text, TextStyle style, PointF position, bool newLine) {
+            List<TextPart> line;
+            if (newLine || lines.Count == 0) {
+                line = [];
+                lines.Add(line);
+            } else {
+                line = lines.Last();
+            }
+
+            line.Add(new(text, style, position));
+        }
+
+        public void Finish(float pageWidth) {
+            if (level is not (1 or 2)) {
+                return;
+            }
+
+            var baseFont = SystemFonts.Default();
+            lineY = 0.0f;
+
+            foreach (var line in lines) {
+                float width = 0.0f;
+
+                foreach ((string text, var style, var position) in line) {
+                    var (fontStyle, fontDecoration) = style.Resolve();
+                    var font = new Font(baseFont.Family, baseFont.Size * scale, fontStyle, fontDecoration);
+                    var textSize = font.MeasureString(text);
+
+                    width += textSize.Width;
+                    lineY = Math.Max(lineY, position.Y + textSize.Height);
+                }
+
+                // Center H1 headings
+                if (level == 1) {
+                    float xOffset = (pageWidth - width) / 2.0f;
+
+                    for (var i = 0; i < line.Count; i++) {
+                        var pos = line[i].Position;
+                        line[i] = line[i] with {
+                            Position = pos with { X = pos.X + xOffset }
+                        };
+                    }
+                }
+            }
+
+            // Add a separator line for H1 and H2 headings
+            lineY += baseFont.LineHeight() / 2.0f;
         }
 
         public SizeF Measure(string text, TextStyle style) {
@@ -57,7 +121,8 @@ public class Markdown : Drawable {
             var (fontStyle, fontDecoration) = style.Resolve();
             var font = new Font(baseFont.Family, baseFont.Size * scale, fontStyle, fontDecoration);
 
-            return font.MeasureString(text);
+            var fontSize = font.MeasureString(text);
+            return new SizeF(fontSize.Width, fontSize.Height + baseFont.LineHeight());
         }
     }
 
@@ -70,7 +135,7 @@ public class Markdown : Drawable {
             }
         }
 
-        public void Flush(string text, TextStyle style, PointF position) {
+        public void Flush(string text, TextStyle style, PointF position, bool newLine) {
             parts.Add((text, style, position));
         }
 
@@ -152,6 +217,7 @@ public class Markdown : Drawable {
                     currentStyle.Bold = false;
                 }
                 FlushLine(newLine: true);
+                ((HeaderComponent)currentComponent).Finish(pageSize.Width);
                 currentPage.components.Add(currentComponent);
             } else if (item is ParagraphBlock paragraph) {
                 currentComponent = new ParagraphComponent();
@@ -225,7 +291,7 @@ public class Markdown : Drawable {
                 currentLine = currentLine.TrimStart();
             }
 
-            currentComponent.Flush(currentLine, currentStyle, currentPosition);
+            currentComponent.Flush(currentLine, currentStyle, currentPosition, newLine);
             currentLine = string.Empty;
 
             if (newLine) {
