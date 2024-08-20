@@ -5,9 +5,9 @@ namespace StudioCommunication;
 [MemoryPackable]
 public partial record struct GameState {
     public enum Direction : byte {
-        Up, 
-        Down, 
-        Left, 
+        Up,
+        Down,
+        Left,
         Right,
     }
     public enum WindPattern : byte {
@@ -27,34 +27,51 @@ public partial record struct GameState {
         Up,
         Space,
     }
-    
-    public record struct PlayerState {
-        public (float X, float Y) Position;
-        public (float X, float Y) PositionRemainder;
 
-        public (float X, float Y) Speed;
-        
+    // We can't just use tuples since they lose their names when serializing to JSON
+    public struct Vec2(float x, float y) { public readonly float X = x, Y = y; }
+    public struct RectI(int x, int y, int w, int h) { public readonly int X = x, Y = y, W = w, H = h; }
+    public struct RectF(float x, float y, float w, float h) { public readonly float X = x, Y = y, W = w, H = h; }
+
+    public struct Spike(RectF bounds, Direction direction) {
+        public readonly RectF Bounds = bounds;
+        public readonly Direction Direction = direction;
+    }
+    public struct WindTrigger(RectF bounds, WindPattern pattern) {
+        public readonly RectF Bounds = bounds;
+        public readonly WindPattern Pattern = pattern;
+    }
+    public struct JumpThru(RectF bounds, Direction direction, bool pullsPlayer) {
+        public readonly RectF Bounds = bounds;
+        public readonly Direction Direction = direction;
+        public readonly bool PullsPlayer = pullsPlayer;
+    }
+
+    public record struct PlayerState {
+        public Vec2 Position;
+        public Vec2 PositionRemainder;
+
+        public Vec2 Speed;
+
         public float starFlySpeedLerp;
     }
-    
+
     public record struct LevelState {
-        public (int X, int Y, int W, int H) Bounds;
-        
-        public (float X, float Y) WindDirection;
+        public RectI Bounds;
+
+        public Vec2 WindDirection;
     }
-    
+
     public PlayerState Player;
     public LevelState Level;
-    
+
     public string SolidsData;
-    public (float X, float Y, float W, float H)[] StaticSolids;
-    
+    public RectF[] StaticSolids;
+
     // Entities
-    public (float X, float Y)[] Spinners;
-    public (float X, float Y, float W, float H)[] Lightning;
-    public (float X, float Y, float W, float H, Direction Direction)[] Spikes;
-    
-    public (float X, float Y, float W, float H, WindPattern Pattern)[] WindTriggers;
-    
-    public (float X, float Y, float W, float H, Direction Direction, bool PullsPlayer)[] JumpThrus;
+    public Vec2[] Spinners;
+    public RectF[] Lightning;
+    public Spike[] Spikes;
+    public WindTrigger[] WindTriggers;
+    public JumpThru[] JumpThrus;
 }
