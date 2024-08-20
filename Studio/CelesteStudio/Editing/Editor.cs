@@ -1722,20 +1722,31 @@ public sealed class Editor : Drawable {
     private void OnDelete(CaretMovementType direction) {
         using var __ = Document.Update();
 
+        // To be reused, because C# is stupid
+        string line;
+        ActionLine actionLine;
+
         if (!Document.Selection.Empty) {
             RemoveRange(Document.Selection.Min, Document.Selection.Max);
-            Document.Caret = Document.Selection.Max;
+            Document.Caret = Document.Selection.Min;
             Document.Selection.Clear();
+
+            // Account for frame count not moving
+            line = Document.Lines[Document.Caret.Row];
+            if (ActionLine.TryParse(line, out actionLine)) {
+                int leadingSpaces = line.Length - line.TrimStart().Length;
+                int frameDigits = actionLine.Frames.Digits();
+
+                Document.Caret.Col += ActionLine.MaxFramesDigits - (leadingSpaces + frameDigits);
+            }
             return;
         }
 
         var caret = Document.Caret;
-        var line = Document.Lines[Document.Caret.Row];
+        line = Document.Lines[Document.Caret.Row];
 
-        if (TryParseAndFormatActionLine(Document.Caret.Row, out var actionLine)) {
+        if (TryParseAndFormatActionLine(Document.Caret.Row, out actionLine)) {
             caret.Col = SnapColumnToActionLine(actionLine, caret.Col);
-
-            var lineStartPosition = new CaretPosition(caret.Row, 0);
 
             // Handle frame count
             if (caret.Col == ActionLine.MaxFramesDigits && direction is CaretMovementType.WordLeft or CaretMovementType.CharLeft ||
@@ -1844,7 +1855,7 @@ public sealed class Editor : Drawable {
                 line = newActionLine.ToString();
             } else if (string.IsNullOrWhiteSpace(line)) {
                 line = string.Empty;
-                caret = lineStartPosition;
+                caret.Col = desiredVisualCol = 0;
             }
 
             Document.ReplaceLine(caret.Row, line);
