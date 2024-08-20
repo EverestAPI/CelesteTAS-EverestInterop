@@ -127,7 +127,7 @@ public sealed class Studio : Form {
             });
         }
 
-        Shown += (_, _) => {
+        Load += (_, _) => {
             if (args.Length > 0) {
                 OpenFile(args[0]);
             } else if (Settings.Instance.RecentFiles.Count > 0 &&
