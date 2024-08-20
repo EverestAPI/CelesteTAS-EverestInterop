@@ -21,6 +21,10 @@ namespace CelesteStudio.Controls;
 public class Markdown : Drawable {
     // TODO: Please refactor. Thanks :)
 
+    private static Color TextColor => Eto.Platform.Instance.IsWpf && Settings.Instance.Theme.DarkMode
+        ? new Color(1.0f - SystemColors.ControlText.R, 1.0f - SystemColors.ControlText.G, 1.0f - SystemColors.ControlText.B)
+        : SystemColors.ControlText;
+
     /// Current state on how text should look / behave
     private struct TextState {
         public bool Bold, Italic;
@@ -104,12 +108,12 @@ public class Markdown : Drawable {
                     var (fontStyle, fontDecoration) = style.Resolve();
                     var font = new Font(baseFont.Family, baseFont.Size * scale, fontStyle, fontDecoration);
 
-                    graphics.DrawText(font, SystemColors.ControlText, position, text);
+                    graphics.DrawText(font, TextColor, position, text);
                 }
             }
 
             if (level is 1 or 2) {
-                using var pen = new Pen(SystemColors.ControlText with { A = 0.5f }, 1.0f);
+                using var pen = new Pen(TextColor with { A = 0.5f }, 1.0f);
                 graphics.DrawLine(pen, graphics.ClipBounds.Left, lineY, graphics.ClipBounds.Right, lineY);
             }
         }
@@ -192,7 +196,7 @@ public class Markdown : Drawable {
                     // Without this offset it just kinda looks wrong?
                     const float codeBgYOffset = 1.5f;
 
-                    graphics.FillPath(SystemColors.Highlight, GraphicsPath.GetRoundRect(
+                    graphics.FillPath(Colors.Black with { A = 0.25f }, GraphicsPath.GetRoundRect(
                         new RectangleF(position.X, position.Y - CodePaddingY + codeBgYOffset, size.Width + CodePaddingX * 2.0f, size.Height + CodePaddingY * 2.0f),
                         5.0f));
 
@@ -214,7 +218,7 @@ public class Markdown : Drawable {
                         graphics.DrawText(font, Color.FromRgb(0x4CACFC), textPos, text);
                     }
                 } else {
-                    graphics.DrawText(font, SystemColors.ControlText, textPos, text);
+                    graphics.DrawText(font, TextColor, textPos, text);
                 }
             }
         }
