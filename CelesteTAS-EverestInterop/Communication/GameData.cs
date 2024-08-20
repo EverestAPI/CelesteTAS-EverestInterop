@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Celeste; 
+using Celeste;
 using Celeste.Mod;
 using Celeste.Mod.Helpers;
 using Microsoft.Xna.Framework;
@@ -22,40 +22,40 @@ namespace TAS.Communication;
 
 public static class GameData {
     private static Dictionary<string, ModUpdateInfo> modUpdateInfos;
-    
+
     [Load]
     private static void Load() {
         typeof(ModUpdaterHelper).GetMethod("DownloadModUpdateList")?.OnHook(ModUpdaterHelperOnDownloadModUpdateList);
         modUpdateInfos = Engine.Instance.GetDynamicDataInstance().Get<Dictionary<string, ModUpdateInfo>>(nameof(modUpdateInfos));
     }
-    
+
     [Unload]
     private static void Unload() {
         Engine.Instance.GetDynamicDataInstance().Set(nameof(modUpdateInfos), modUpdateInfos);
     }
-    
+
     private delegate Dictionary<string, ModUpdateInfo> orig_ModUpdaterHelper_DownloadModUpdateList();
     private static Dictionary<string, ModUpdateInfo> ModUpdaterHelperOnDownloadModUpdateList(orig_ModUpdaterHelper_DownloadModUpdateList orig) {
         return modUpdateInfos = orig();
     }
-    
+
     public static string GetConsoleCommand(bool simple) {
         return ConsoleCommand.CreateConsoleCommand(simple);
     }
-    
+
     private static uint getGamebananaId(string url) {
         uint gbid = 0;
-        if (url.StartsWith("http://gamebanana.com/dl/") && uint.TryParse(url.Substring("http://gamebanana.com/dl/".Length), out gbid)) 
+        if (url.StartsWith("http://gamebanana.com/dl/") && uint.TryParse(url.Substring("http://gamebanana.com/dl/".Length), out gbid))
             return gbid;
-        if (url.StartsWith("https://gamebanana.com/dl/") && uint.TryParse(url.Substring("https://gamebanana.com/dl/".Length), out gbid)) 
+        if (url.StartsWith("https://gamebanana.com/dl/") && uint.TryParse(url.Substring("https://gamebanana.com/dl/".Length), out gbid))
             return gbid;
-        if (url.StartsWith("http://gamebanana.com/mmdl/") && uint.TryParse(url.Substring("http://gamebanana.com/mmdl/".Length), out gbid)) 
+        if (url.StartsWith("http://gamebanana.com/mmdl/") && uint.TryParse(url.Substring("http://gamebanana.com/mmdl/".Length), out gbid))
             return gbid;
-        if (url.StartsWith("https://gamebanana.com/mmdl/") && uint.TryParse(url.Substring("https://gamebanana.com/mmdl/".Length), out gbid)) 
+        if (url.StartsWith("https://gamebanana.com/mmdl/") && uint.TryParse(url.Substring("https://gamebanana.com/mmdl/".Length), out gbid))
             return gbid;
         return gbid;
     }
-    
+
     public static string GetModInfo() {
         if (Engine.Scene is not Level level) {
             return string.Empty;
@@ -144,7 +144,7 @@ public static class GameData {
 
         return modInfo;
     }
-    
+
     public static string GetSettingValue(string settingName) {
         if (typeof(CelesteTasSettings).GetProperty(settingName) is { } property) {
             return property.GetValue(TasSettings).ToString();
@@ -152,7 +152,7 @@ public static class GameData {
             return string.Empty;
         }
     }
-    
+
     public static string GetModUrl() {
         if (Engine.Scene is not Level level) {
             return string.Empty;
@@ -176,94 +176,68 @@ public static class GameData {
 
         return string.Empty;
     }
-    
+
     public static GameState? GetGameState() {
         if (Engine.Scene is not Level level) {
             return null;
         }
-        
+
         var player = level.Tracker.GetEntity<Player>();
-        
+
         return new GameState {
             Player = new GameState.PlayerState {
-                Position = player.Position.ToTuple(),
-                PositionRemainder = player.PositionRemainder.ToTuple(),
-                Speed = player.Speed.ToTuple(),
+                Position = player.Position.ToGameStateVec2(),
+                PositionRemainder = player.PositionRemainder.ToGameStateVec2(),
+                Speed = player.Speed.ToGameStateVec2(),
                 starFlySpeedLerp = player.starFlySpeedLerp,
             },
             Level = new GameState.LevelState {
-                Bounds = (level.Bounds.X, level.Bounds.Y, level.Bounds.Width, level.Bounds.Height),
-                WindDirection = level.Wind.ToTuple(),
+                Bounds = level.Bounds.ToGameStateRectI(),
+                WindDirection = level.Wind.ToGameStateVec2(),
             },
-            
+
             SolidsData = level.Session.LevelData.Solids,
             StaticSolids = level.Entities
                 .Where(e => e is Solid and not StarJumpBlock { sinks: true } && e.Collider is Hitbox && e.Collidable)
-                .Select(e => (e.X, e.Y, e.Width, e.Height))
+                .Select(e => e.ToGameStateRectF())
                 .ToArray(),
-            
+
             Spinners = level.Entities
                 .Where(e => e is CrystalStaticSpinner or DustStaticSpinner || e.GetType().Name == "CustomSpinner")
-                .Select(e => e.Position.ToTuple())
+                .Select(e => e.Position.ToGameStateVec2())
                 .ToArray(),
             Lightning = level.Entities
                 .FindAll<Lightning>()
-                .Select(e => (e.X, e.Y, e.Width, e.Height))
+                .Select(e => e.ToGameStateRectF())
                 .ToArray(),
             Spikes = level.Entities
                 .FindAll<Spikes>()
-                .Select(e => (e.X, e.Y, e.Width, e.Height, ToGameStateDirection(e.Direction)))
+                .Select(e => new GameState.Spike(e.ToGameStateRectF(), e.Direction.ToGameStateDirection()))
                 .ToArray(),
-            
+
             WindTriggers = level.Tracker
                 .GetEntities<WindTrigger>().Cast<WindTrigger>()
-                .Select(e => (e.X, e.Y, e.Width, e.Height, ToGameStatePattern(e.Pattern)))
+                .Select(e => new GameState.WindTrigger(e.ToGameStateRectF(), e.Pattern.ToGameStatePattern()))
                 .ToArray(),
-            
+
             JumpThrus = level.Entities
                 .Where(e => e is JumpthruPlatform || e.GetType().Name is "SidewaysJumpThru" or "UpsideDownJumpThru")
                 .Select(e => {
                     if (e is JumpthruPlatform) {
-                        return (e.X, e.Y, e.Width, e.Height, GameState.Direction.Up, true);
+                        return new GameState.JumpThru(e.ToGameStateRectF(), GameState.Direction.Up, true);
                     }
                     if (e.GetType().Name == "SidewaysJumpThru") {
-                        return (e.X, e.Y, e.Width, e.Height, e.GetFieldValue<bool>("AllowLeftToRight") ? GameState.Direction.Right : GameState.Direction.Left, e.GetFieldValue<bool>("pushPlayer"));
+                        return new GameState.JumpThru(e.ToGameStateRectF(), e.GetFieldValue<bool>("AllowLeftToRight") ? GameState.Direction.Right : GameState.Direction.Left, e.GetFieldValue<bool>("pushPlayer"));
                     }
                     if (e.GetType().Name == "UpsideDownJumpThru") {
-                        return (e.X, e.Y, e.Width, e.Height, GameState.Direction.Down, e.GetFieldValue<bool>("pushPlayer"));
+                        return new GameState.JumpThru(e.ToGameStateRectF(), GameState.Direction.Down, e.GetFieldValue<bool>("pushPlayer"));
                     }
                     throw new UnreachableException();
                 })
                 .ToArray(),
         };
-            
-        static GameState.Direction ToGameStateDirection(Spikes.Directions dir) => dir switch {
-            Spikes.Directions.Up => GameState.Direction.Up,
-            Spikes.Directions.Down => GameState.Direction.Down,
-            Spikes.Directions.Left => GameState.Direction.Left,
-            Spikes.Directions.Right => GameState.Direction.Right,
-            _ => throw new UnreachableException()
-        };
-        static GameState.WindPattern ToGameStatePattern(WindController.Patterns pattern) => pattern switch {
-            WindController.Patterns.None => GameState.WindPattern.None,
-            WindController.Patterns.Left => GameState.WindPattern.Left,
-            WindController.Patterns.Right => GameState.WindPattern.Right,
-            WindController.Patterns.LeftStrong => GameState.WindPattern.LeftStrong,
-            WindController.Patterns.RightStrong => GameState.WindPattern.RightStrong,
-            WindController.Patterns.LeftOnOff => GameState.WindPattern.LeftOnOff,
-            WindController.Patterns.RightOnOff => GameState.WindPattern.RightOnOff,
-            WindController.Patterns.LeftOnOffFast => GameState.WindPattern.LeftOnOffFast,
-            WindController.Patterns.RightOnOffFast => GameState.WindPattern.RightOnOffFast,
-            WindController.Patterns.Alternating => GameState.WindPattern.Alternating,
-            WindController.Patterns.LeftGemsOnly => GameState.WindPattern.LeftGemsOnly,
-            WindController.Patterns.RightCrazy => GameState.WindPattern.RightCrazy,
-            WindController.Patterns.Down => GameState.WindPattern.Down,
-            WindController.Patterns.Up => GameState.WindPattern.Up,
-            WindController.Patterns.Space => GameState.WindPattern.Space,
-            _ => throw new UnreachableException()
-        };
     }
-    
+
     // Sorts types by namespace into Celeste -> Monocle -> other (alphabetically)
     // Inside the namespace it's sorted alphabetically
     private class NamespaceComparer : IComparer<(string Name, Type Type)> {
@@ -272,15 +246,15 @@ public static class GameData {
                 // Should never happen to use anyway
                 return 0;
             }
-            
+
             int namespaceCompare = CompareNamespace(x.Type.Namespace, y.Type.Namespace);
             if (namespaceCompare != 0) {
                 return namespaceCompare;
             }
-            
-            return StringComparer.Ordinal.Compare(x.Name, y.Name); 
+
+            return StringComparer.Ordinal.Compare(x.Name, y.Name);
         }
-        
+
         private int CompareNamespace(string x, string y) {
             if (x.StartsWith("Celeste") && y.StartsWith("Celeste")) return 0;
             if (x.StartsWith("Celeste")) return -1;
@@ -291,31 +265,31 @@ public static class GameData {
             return StringComparer.Ordinal.Compare(x, y);
         }
     }
-    
+
     private static readonly string[] ignoredNamespaces = ["System", "StudioCommunication", "TAS", "SimplexNoise", "FMOD", "MonoMod", "Snowberry"];
     public static IEnumerable<CommandAutoCompleteEntry> GetSetCommandAutoCompleteEntries(string argsText, int index) {
         if (index != 0) {
             return GetParameterAutoCompleteEntries(argsText, index, AutoCompleteType.Set);
         }
-        
+
         var args = argsText.Split('.');
         if (args.Length == 1) {
             var entries = new List<CommandAutoCompleteEntry>();
-            
+
             // Vanilla settings. Manually selected to filter out useless entries
             var vanillaSettings = ((string[])["DisableFlashes", "ScreenShake", "GrabMode", "CrouchDashMode", "SpeedrunClock", "Pico8OnMainMenu", "VariantsUnlocked"]).Select(e => typeof(Settings).GetField(e)!);
             var vanillaSaveData = ((string[])["CheatMode", "AssistMode", "VariantMode", "UnlockedAreas", "RevealedChapter9", "DebugMode"]).Select(e => typeof(SaveData).GetField(e)!);
             entries.AddRange(vanillaSettings.Select(f => new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{CSharpTypeName(f.FieldType)} (Settings)", IsDone = true }));
             entries.AddRange(vanillaSaveData.Select(f => new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{CSharpTypeName(f.FieldType)} (Save Data)", IsDone = true }));
             entries.AddRange(typeof(Assists).GetFields().Select(f => new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{CSharpTypeName(f.FieldType)} (Assists)", IsDone = true }));
-            
+
             // Mod settings
             entries.AddRange(Everest.Modules
                 .Where(mod => mod.SettingsType != null)
                 // Require at least 1 settable field / property
                 .Where(mod => mod.SettingsType.GetAllFieldInfos().Any() || mod.SettingsType.GetAllProperties().Any(p => p.GetSetMethod() != null))
                 .Select(mod => new CommandAutoCompleteEntry { Name = mod.Metadata.Name, Extra = "Mod Setting", IsDone = false }));
-            
+
             var allTypes = ModUtils.GetTypes();
             var filteredTypes = allTypes
                 // Filter-out types which probably aren't useful
@@ -333,7 +307,7 @@ public static class GameData {
                         if (otherType.FullName == null || otherType.Namespace == null) {
                             continue;
                         }
-                        
+
                         var otherName = CSharpTypeName(otherType);
                         if (currType != otherType && currName == otherName) {
                             return ($"{currName}@{ConsoleEnhancements.GetModName(currType)} ", currType);
@@ -344,7 +318,7 @@ public static class GameData {
                 .Order(new NamespaceComparer())
                 .Select(pair => new CommandAutoCompleteEntry { Name = pair.Item1, Extra = pair.Item2.Namespace ?? string.Empty, IsDone = false })
                 .ToArray();
-            
+
             entries.AddRange(filteredTypes);
             return entries.Select(e => e with { Name = e.IsDone ? e.Name : e.Name + "." }); // Append '.' for next segment if not done
         } else if (args[0] == "ExtendedVariantMode") {
@@ -372,15 +346,15 @@ public static class GameData {
             return GetTypeAutoCompleteEntries(RecurseSetType(types[0], args), AutoCompleteType.Set)
                 .Select(e => e with { Name = e.Name + (e.IsDone ? "" : "."), Prefix = string.Join('.', args[..^1]) + ".", HasNext = true });
         }
-        
+
         return [];
     }
-    
+
     public static IEnumerable<CommandAutoCompleteEntry> GetInvokeCommandAutoCompleteEntries(string argsText, int index) {
         if (index != 0) {
             return GetParameterAutoCompleteEntries(argsText, index, AutoCompleteType.Invoke);
         }
-        
+
         var args = argsText.Split('.');
         if (args.Length == 1) {
             var entries = new List<CommandAutoCompleteEntry>();
@@ -401,7 +375,7 @@ public static class GameData {
                         if (otherType.FullName == null || otherType.Namespace == null) {
                             continue;
                         }
-                        
+
                         var otherName = CSharpTypeName(otherType);
                         if (currType != otherType && currName == otherName) {
                             return ($"{currName}@{ConsoleEnhancements.GetModName(currType)} ", currType);
@@ -412,7 +386,7 @@ public static class GameData {
                 .Order(new NamespaceComparer())
                 .Select(pair => new CommandAutoCompleteEntry { Name = pair.Item1, Extra = pair.Item2.Namespace ?? string.Empty, IsDone = false })
                 .ToArray();
-            
+
             entries.AddRange(filteredTypes);
             return entries.Select(e => e with { Name = e.IsDone ? e.Name : e.Name + "." }); // Append '.' for next segment if not done;
         } else if (InfoCustom.TryParseTypes(args[0], out var types, out _, out _)) {
@@ -420,15 +394,15 @@ public static class GameData {
             return GetTypeAutoCompleteEntries(types[0], AutoCompleteType.Invoke)
                 .Select(e => e with { Name = e.Name + (e.IsDone ? "" : "."), Prefix = string.Join('.', args[..^1]) + ".", HasNext = true });
         }
-        
+
         return [];
     }
-    
+
     private enum AutoCompleteType { Set, Invoke, Parameter }
 
     private static IEnumerable<CommandAutoCompleteEntry> GetParameterAutoCompleteEntries(string argsText, int index, AutoCompleteType autoCompleteType) {
         var args = argsText.Split('.');
-        
+
         if (autoCompleteType == AutoCompleteType.Set && args.Length == 1) {
             // Vanilla setting / session / assist
             if (typeof(Settings).GetFieldInfo(args[0], BindingFlags.Instance | BindingFlags.Public) is { } fSettings) {
@@ -442,7 +416,7 @@ public static class GameData {
             // Special case for setting extended variants
             var variant = ExtendedVariantsUtils.ParseVariant(args[1]);
             var variantType = ExtendedVariantsUtils.GetVariantType(new(variant));
-            
+
             if (variantType != null) {
                 return GetTypeAutoCompleteEntries(RecurseSetType(variantType, args, includeLast: true), AutoCompleteType.Parameter);
             }
@@ -455,18 +429,18 @@ public static class GameData {
             } else if (autoCompleteType == AutoCompleteType.Invoke) {
                 var parameters = types[0].GetMethodInfo(args[1]).GetParameters();
                 if (index >= 0 && index < parameters.Length) {
-                    bool final = index == parameters.Length - 1 || 
+                    bool final = index == parameters.Length - 1 ||
                                  index < parameters.Length - 1 && !IsSettableType(parameters[index].ParameterType);
-                    
+
                     return GetTypeAutoCompleteEntries(parameters[index].ParameterType, AutoCompleteType.Parameter)
                         .Select(e => e with { HasNext = !final });
                 }
             }
         }
-        
+
         return [];
     }
-    
+
     private static Type RecurseSetType(Type baseType, string[] args, bool includeLast = false) {
         var type = baseType;
         for (int i = 1; i < args.Length - (includeLast ? 0 : 1); i++) {
@@ -482,13 +456,13 @@ public static class GameData {
         }
         return type;
     }
-    
+
     private static IEnumerable<CommandAutoCompleteEntry> GetTypeAutoCompleteEntries(Type type, AutoCompleteType autoCompleteType) {
         bool staticMembers = !(type.IsSameOrSubclassOf(typeof(Entity)) || type.IsSameOrSubclassOf(typeof(Level)) || type.IsSameOrSubclassOf(typeof(Session)) || type.IsSameOrSubclassOf(typeof(EverestModuleSettings)));
         var bindingFlags = staticMembers
             ? BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public
             : BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
-        
+
         if (autoCompleteType == AutoCompleteType.Set) {
             foreach (var entry in type.GetProperties(bindingFlags)
                          // Filter-out compiler generated properties
@@ -498,7 +472,7 @@ public static class GameData {
                          .Select(p => new CommandAutoCompleteEntry {
                              Name = p.Name,
                              Extra = CSharpTypeName(p.PropertyType),
-                             IsDone = IsFinal(p.PropertyType), 
+                             IsDone = IsFinal(p.PropertyType),
                          }))
             {
                 yield return entry;
@@ -509,9 +483,9 @@ public static class GameData {
                          .Where(f => !f.IsInitOnly && IsSettableType(f.FieldType))
                          .OrderBy(f => f.Name)
                          .Select(f => new CommandAutoCompleteEntry {
-                             Name = f.Name, 
+                             Name = f.Name,
                              Extra = CSharpTypeName(f.FieldType),
-                             IsDone = IsFinal(f.FieldType), 
+                             IsDone = IsFinal(f.FieldType),
                          }))
             {
                 yield return entry;
@@ -523,7 +497,7 @@ public static class GameData {
                          .Where(IsInvokableMethod)
                          .OrderBy(m => m.Name)
                          .Select(m => new CommandAutoCompleteEntry {
-                             Name = m.Name, 
+                             Name = m.Name,
                              Extra = $"({string.Join(", ", m.GetParameters().Select(p => CSharpTypeName(p.ParameterType)))})",
                              IsDone = !m.GetParameters().Any(p => IsSettableType(p.ParameterType) || p.HasDefaultValue),
                          }))
@@ -552,11 +526,11 @@ public static class GameData {
             }
         }
     }
-    
+
     private static bool IsFinal(Type type) => type == typeof(string) || type == typeof(Vector2) || type == typeof(Random) || type == typeof(ButtonBinding) || type.IsEnum || type.IsPrimitive;
     private static bool IsSettableType(Type type) => !type.IsSameOrSubclassOf(typeof(Delegate));
     private static bool IsInvokableMethod(MethodInfo info) => !info.IsGenericMethod && info.GetParameters().All(p => IsSettableType(p.ParameterType) || p.HasDefaultValue);
-    
+
     private static readonly Dictionary<Type, string> shorthandMap = new() {
         { typeof(bool), "bool" },
         { typeof(byte), "byte" },
@@ -586,17 +560,17 @@ public static class GameData {
         if (type.IsArray) {
             return $"{CSharpTypeName(type.GetElementType())}[]";
         }
-        
+
         if (shorthandMap.TryGetValue(type, out string shorthand)) {
             return shorthand;
         }
         if (type.FullName == null) {
-            return type.Name;    
+            return type.Name;
         }
-        
+
         int namespaceLen = type.Namespace != null
             ? type.Namespace.Length + 1
             : 0;
         return type.FullName[namespaceLen..];
-    }  
+    }
 }

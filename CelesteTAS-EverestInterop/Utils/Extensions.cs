@@ -10,6 +10,8 @@ using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.Utils;
+using StudioCommunication;
+using System.Diagnostics;
 using Platform = Celeste.Platform;
 
 namespace TAS.Utils;
@@ -92,7 +94,7 @@ internal static class FastReflection {
 internal static class ReflectionExtensions {
     internal const BindingFlags InstanceAnyVisibility =
         BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
-    
+
     internal const BindingFlags StaticAnyVisibility =
         BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
 
@@ -385,7 +387,7 @@ internal static class TypeExtensions {
 }
 
 internal static class PropertyInfoExtensions {
-    public static bool IsStatic(this PropertyInfo source, bool nonPublic = true) 
+    public static bool IsStatic(this PropertyInfo source, bool nonPublic = true)
         => source.GetAccessors(nonPublic).Any(x => x.IsStatic);
 }
 
@@ -549,7 +551,7 @@ internal static class NumberExtensions {
             return value.ToString($"F{decimals}");
         }
     }
-    
+
     public static long SecondsToTicks(this float seconds) {
         // .NET Framework rounded TimeSpan.FromSeconds to the nearest millisecond.
         // See: https://github.com/EverestAPI/Everest/blob/dev/NETCoreifier/Patches/TimeSpan.cs
@@ -572,8 +574,6 @@ internal static class Vector2Extensions {
     public static string ToSimpleString(this Vector2 vector2, int decimals) {
         return $"{vector2.X.ToFormattedString(decimals)}, {vector2.Y.ToFormattedString(decimals)}";
     }
-    
-    public static (float X, float Y) ToTuple(this Vector2 v) => (v.X, v.Y);
 }
 
 internal static class SceneExtensions {
@@ -716,7 +716,7 @@ internal static class CloneUtil {
         foreach (FieldInfo fieldInfo in to.GetType().GetAllFieldInfos()) {
             object fromValue = fieldInfo.GetValue(from);
             if (onlyDifferent && fromValue == fieldInfo.GetValue(to)) {
-                continue; 
+                continue;
             }
 
             fieldInfo.SetValue(to, fromValue);
@@ -735,10 +735,43 @@ internal static class CloneUtil {
 
             object fromValue = propertyInfo.GetValue(from);
             if (onlyDifferent && fromValue == propertyInfo.GetValue(to)) {
-               continue; 
+               continue;
             }
-           
+
             propertyInfo.SetValue(to, fromValue);
         }
     }
+}
+
+internal static class GameStateExtension {
+    public static GameState.Vec2 ToGameStateVec2(this Vector2 vec) => new(vec.X, vec.Y);
+    public static GameState.RectI ToGameStateRectI(this Rectangle rect) => new(rect.X, rect.Y, rect.Width, rect.Height);
+    public static GameState.RectF ToGameStateRectF(this Entity entity) => new(entity.X, entity.Y, entity.Width, entity.Height);
+
+    public static GameState.Direction ToGameStateDirection(this Spikes.Directions dir) => dir switch {
+        Spikes.Directions.Up => GameState.Direction.Up,
+        Spikes.Directions.Down => GameState.Direction.Down,
+        Spikes.Directions.Left => GameState.Direction.Left,
+        Spikes.Directions.Right => GameState.Direction.Right,
+        _ => throw new UnreachableException()
+    };
+
+    public static GameState.WindPattern ToGameStatePattern(this WindController.Patterns pattern) => pattern switch {
+        WindController.Patterns.None => GameState.WindPattern.None,
+        WindController.Patterns.Left => GameState.WindPattern.Left,
+        WindController.Patterns.Right => GameState.WindPattern.Right,
+        WindController.Patterns.LeftStrong => GameState.WindPattern.LeftStrong,
+        WindController.Patterns.RightStrong => GameState.WindPattern.RightStrong,
+        WindController.Patterns.LeftOnOff => GameState.WindPattern.LeftOnOff,
+        WindController.Patterns.RightOnOff => GameState.WindPattern.RightOnOff,
+        WindController.Patterns.LeftOnOffFast => GameState.WindPattern.LeftOnOffFast,
+        WindController.Patterns.RightOnOffFast => GameState.WindPattern.RightOnOffFast,
+        WindController.Patterns.Alternating => GameState.WindPattern.Alternating,
+        WindController.Patterns.LeftGemsOnly => GameState.WindPattern.LeftGemsOnly,
+        WindController.Patterns.RightCrazy => GameState.WindPattern.RightCrazy,
+        WindController.Patterns.Down => GameState.WindPattern.Down,
+        WindController.Patterns.Up => GameState.WindPattern.Up,
+        WindController.Patterns.Space => GameState.WindPattern.Space,
+        _ => throw new UnreachableException()
+    };
 }
