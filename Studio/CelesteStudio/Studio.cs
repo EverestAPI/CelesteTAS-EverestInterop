@@ -208,6 +208,11 @@ public sealed class Studio : Form {
             return;
         }
 
+        if (Settings.Instance.AutoSave) {
+            Editor.BeforeFinalSave();
+            Editor.Document.Save();
+        }
+
         Settings.Instance.LastLocation = Location;
         Settings.Instance.LastSize = Size;
         Settings.Save();

@@ -28,6 +28,11 @@ public sealed class Editor : Drawable {
         set {
             if (document != null) {
                 document.TextChanged -= HandleTextChanged;
+
+                if (Settings.Instance.AutoSave) {
+                    BeforeFinalSave();
+                    document.Save();
+                }
             }
 
             document = value;
@@ -377,11 +382,22 @@ public sealed class Editor : Drawable {
         }, toastCancellationSource.Token);
     }
 
+    /// Called before the document is saved for the final time (i.e. closing Studio / opening another file)
+    public void BeforeFinalSave() {
+        using var __ = Document.Update();
+
+        // Frameless action lines are only intended for editing and shouldn't be part of the final TAS
+        for (int row = 0; row < Document.Lines.Count; row++) {
+            if (ActionLine.TryParse(Document.Lines[row], out var actionLine)) {
+                actionLine.Frames = Math.Clamp(actionLine.Frames, 0, ActionLine.MaxFrames);
+                Document.ReplaceLine(row, actionLine.ToString());
+            }
+        }
+    }
+
     #region General Helper Methods
 
-    /// <summary>
     /// Recalculates all values and invalidates the paint.
-    /// </summary>
     private void Recalc() {
         // Ensure there is always at least 1 line
         if (Document.Lines.Count == 0)
