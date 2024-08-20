@@ -1550,15 +1550,15 @@ public sealed class Editor : Drawable {
 
         using var __ = Document.Update();
 
+        Document.Caret = ClampCaret(Document.Caret);
+
         if (!Document.Selection.Empty) {
             RemoveRange(Document.Selection.Min, Document.Selection.Max);
             Document.Caret = Document.Selection.Min;
             Document.Selection.Clear();
         }
 
-        Document.Caret = ClampCaret(Document.Caret);
         var line = Document.Lines[Document.Caret.Row];
-
         char typedCharacter = char.ToUpper(e.Text[0]);
         int leadingSpaces = line.Length - line.TrimStart().Length;
 
@@ -1708,7 +1708,7 @@ public sealed class Editor : Drawable {
 
         if (!Document.Selection.Empty) {
             RemoveRange(Document.Selection.Min, Document.Selection.Max);
-            Document.Caret = Document.Selection.Min;
+            Document.Caret = Document.Selection.Max;
             Document.Selection.Clear();
             return;
         }
