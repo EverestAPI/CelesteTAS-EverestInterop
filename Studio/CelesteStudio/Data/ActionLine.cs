@@ -1,3 +1,4 @@
+using CelesteStudio.Util;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -13,15 +14,17 @@ public struct ActionLine() {
 
     public Actions Actions;
     public int Frames;
+    public int FrameDigits => Frames < 0 ? 0 : Frames.Digits();
 
     public string? FeatherAngle;
     public string? FeatherMagnitude;
 
     public HashSet<char> CustomBindings = [];
-    
+
+
     public static ActionLine? Parse(string line, bool ignoreInvalidFloats = true) => TryParseStrict(line, out var actionLine, ignoreInvalidFloats) ? actionLine : null;
     public static bool TryParse(string line, out ActionLine value, bool ignoreInvalidFloats = true) => TryParseStrict(line, out value, ignoreInvalidFloats) || TryParseLoose(line, out value, ignoreInvalidFloats);
-    
+
     /// Parses action-lines, which mostly follow the correct formatting (for example: "  15,R,Z")
     public static bool TryParseStrict(string line, out ActionLine actionLine, bool ignoreInvalidFloats = true) {
         actionLine = default;
@@ -30,7 +33,13 @@ public struct ActionLine() {
         string[] tokens = line.Trim().Split(Delimiter, StringSplitOptions.TrimEntries);
         if (tokens.Length == 0) return false;
 
-        if (!int.TryParse(tokens[0], CultureInfo.InvariantCulture, out actionLine.Frames)) return false;
+        if (int.TryParse(tokens[0], CultureInfo.InvariantCulture, out int frames)) {
+            actionLine.Frames = frames;
+        } else if (string.IsNullOrWhiteSpace(tokens[0])) {
+            actionLine.Frames = -1;
+        } else {
+            return false;
+        }
 
         for (int i = 1; i < tokens.Length; i++) {
             if (string.IsNullOrWhiteSpace(tokens[i])) continue;
@@ -100,30 +109,40 @@ public struct ActionLine() {
             }
         }
 
+        if (actionLine.Frames < 0 &&
+            actionLine.Actions == Actions.None &&
+            actionLine.CustomBindings.Count == 0 &&
+            actionLine.FeatherAngle == null &&
+            actionLine.FeatherMagnitude == null)
+        {
+            // Frameless action lines require some other actions
+            return false;
+        }
+
         return true;
     }
-    
+
     /// Parses action-lines, which mostly are correct (for example: "1gd")
     private enum ParseState { Frame, Action, DashOnly, MoveOnly, PressedKey, FeatherAngle, FeatherMagnitude }
     public static bool TryParseLoose(string line, out ActionLine actionLine, bool ignoreInvalidFloats = true) {
         actionLine = default;
         actionLine.CustomBindings = new HashSet<char>();
-        
+
         ParseState state = ParseState.Frame;
         string currValue = "";
-        
+
         foreach (char c in line) {
             if (char.IsWhiteSpace(c)) {
                 continue;
             }
-            
+
             switch (state) {
                 case ParseState.Frame:
                 {
                     if (c == Delimiter) {
                         continue;
                     }
-                    
+
                     if (char.IsDigit(c)) {
                         currValue += c;
                     } else {
@@ -136,13 +155,13 @@ public struct ActionLine() {
                     }
                     break;
                 }
-                
+
                 case ParseState.Action:
                 {
                     if (c == Delimiter) {
                         continue;
                     }
-                    
+
                     var action = c.ActionForChar();
                     actionLine.Actions |= action;
                     state = action switch {
@@ -154,14 +173,14 @@ public struct ActionLine() {
                     };
                     break;
                 }
-                
+
                 case ParseState.DashOnly:
                 {
                     if (c == Delimiter) {
                         state = ParseState.Action;
                         continue;
                     }
-                    
+
                     var action = c.ActionForChar();
                     if (action is not (Actions.Left or Actions.Right or Actions.Up or Actions.Down)) {
                         goto case ParseState.Action;
@@ -169,14 +188,14 @@ public struct ActionLine() {
                     actionLine.Actions |= action.ToDashOnlyActions();
                     break;
                 }
-                
+
                 case ParseState.MoveOnly:
                 {
                     if (c == Delimiter) {
                         state = ParseState.Action;
                         continue;
                     }
-                    
+
                     var action = c.ActionForChar();
                     if (action is not (Actions.Left or Actions.Right or Actions.Up or Actions.Down)) {
                         goto case ParseState.Action;
@@ -184,25 +203,25 @@ public struct ActionLine() {
                     actionLine.Actions |= action.ToMoveOnlyActions();
                     break;
                 }
-                
+
                 case ParseState.PressedKey:
                 {
                     if (c == Delimiter) {
                         state = ParseState.Action;
                         continue;
                     }
-                    
+
                     actionLine.CustomBindings.Add(char.ToUpper(c));
                     break;
                 }
-                
+
                 case ParseState.FeatherAngle:
                 {
                     if (c == Delimiter) {
                         state = ParseState.FeatherMagnitude;
                         continue;
                     }
-                    
+
                     if (char.IsDigit(c) || c == '.') {
                         actionLine.FeatherAngle ??= string.Empty;
                         actionLine.FeatherAngle += c;
@@ -211,14 +230,14 @@ public struct ActionLine() {
                     }
                     break;
                 }
-                
+
                 case ParseState.FeatherMagnitude:
                 {
                     if (c == Delimiter) {
                         state = ParseState.Action;
                         continue;
                     }
-                    
+
                     if (char.IsDigit(c) || c == '.') {
                         actionLine.FeatherMagnitude ??= string.Empty;
                         actionLine.FeatherMagnitude += c;
@@ -229,7 +248,7 @@ public struct ActionLine() {
                 }
             }
         }
-        
+
         // Clamp angle / magnitude
         if (actionLine.FeatherAngle is { } angleString) {
             if (float.TryParse(angleString, CultureInfo.InvariantCulture, out float angle)) {
@@ -245,7 +264,7 @@ public struct ActionLine() {
                 return false;
             }
         }
-        
+
         return state != ParseState.Frame;
     }
 
@@ -254,7 +273,7 @@ public struct ActionLine() {
         var customBindings = CustomBindings.ToList();
         customBindings.Sort();
 
-        string frames = Frames.ToString().PadLeft(MaxFramesDigits);
+        string frames = Frames < 0 ? new string(' ', MaxFramesDigits) : Frames.ToString().PadLeft(MaxFramesDigits);
         string actions = Actions.Sorted().Aggregate("", (s, a) => $"{s}{Delimiter}{a switch {
             Actions.DashOnly => $"{Actions.DashOnly.CharForAction()}{string.Join("", tasActions.GetDashOnly().Select(ActionsUtils.CharForAction))}",
             Actions.MoveOnly => $"{Actions.MoveOnly.CharForAction()}{string.Join("", tasActions.GetMoveOnly().Select(ActionsUtils.CharForAction))}",
