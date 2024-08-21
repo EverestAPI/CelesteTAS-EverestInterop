@@ -16,24 +16,24 @@ namespace TAS.EverestInterop;
 
 public static class StudioHelper {
     #region Auto-filled values
-    
+
     // These values will automatically get filled in by the Release.yml action
     private const string CurrentStudioVersion    = "##STUDIO_VERSION##";
-    
+
     private const string DownloadURL_Windows_x64 = "##URL_WINDOWS_x64##";
     private const string DownloadURL_Linux_x64   = "##URL_LINUX_x64##";
     private const string DownloadURL_OSX_x64     = "##URL_OSX_x64##";
-    
+
     private const string Checksum_Windows_x64    = "##CHECKSUM_WINDOWS_x64##";
     private const string Checksum_Linux_x64      = "##CHECKSUM_LINUX_x64##";
     private const string Checksum_OSX_x64        = "##CHECKSUM_OSX_x64##";
-    
+
     #endregion
-    
+
     private static string StudioDirectory => Path.Combine(Everest.PathGame, "CelesteStudio");
     private static string VersionFile => Path.Combine(StudioDirectory, ".version");
     private static string TempDownloadPath => Path.Combine(StudioDirectory, ".CelesteStudio.zip");
-    
+
     // MonoMod only supports x86_64, so we don't need to check the CPU architecture
     private static string DownloadURL {
         get {
@@ -43,7 +43,7 @@ public static class StudioHelper {
                 return DownloadURL_Linux_x64;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 return DownloadURL_OSX_x64;
-            
+
             throw new NotImplementedException("Unsupported platform");
         }
     }
@@ -55,11 +55,11 @@ public static class StudioHelper {
                 return Checksum_Linux_x64;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 return Checksum_OSX_x64;
-            
+
             throw new NotImplementedException("Unsupported platform");
         }
     }
-    
+
     [Initialize]
     private static void Initialize() {
         // INSTALL_STUDIO is only set during builds from Release.yml, since otherwise the URLs / checksums are invalid
@@ -67,16 +67,16 @@ public static class StudioHelper {
         // Check if studio is already up-to-date
         if (!File.Exists(VersionFile) || File.ReadAllText(VersionFile) != CurrentStudioVersion) {
             $"Celeste Studio is outdated. Installing latest version: '{CurrentStudioVersion}'".Log();
-            
+
             // Reset everything
             if (Directory.Exists(StudioDirectory))
                 Directory.Delete(StudioDirectory, recursive: true);
             Directory.CreateDirectory(StudioDirectory);
-            
+
             DownloadStudio();
         }
 #endif
-        
+
         if (TasSettings.Enabled && TasSettings.LaunchStudioAtBoot) {
             LaunchStudio();
         }
@@ -102,7 +102,7 @@ public static class StudioHelper {
             return;
         }
         "Finished download".Log();
-        
+
         // Verify checksum
         using var md5 = MD5.Create();
         using (var fs = File.OpenRead(TempDownloadPath)) {
@@ -118,48 +118,48 @@ public static class StudioHelper {
         $"Extracting {TempDownloadPath} into {StudioDirectory}".Log();
         ZipFile.ExtractToDirectory(TempDownloadPath, StudioDirectory);
         "Successfully extracted studio archive".Log();
-        
+
         // Store installed version number
         File.WriteAllText(VersionFile, CurrentStudioVersion);
-        
+
         // Cleanup ZIP
         if (File.Exists(TempDownloadPath))
             File.Delete(TempDownloadPath);
-        
+
         // Fix lost file permissions
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-            var chmodProc = Process.Start(new ProcessStartInfo("chmod", $"+x {Path.Combine(StudioDirectory, "CelesteStudio.GTK")}"))!;
+            var chmodProc = Process.Start(new ProcessStartInfo("chmod", $"+x {Path.Combine(StudioDirectory, "CelesteStudio")}"))!;
             chmodProc.WaitForExit();
             if (chmodProc.ExitCode != 0)
                 "Install failed! Couldn't make studio executable".Log(LogLevel.Error);
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-            var chmodProc = Process.Start(new ProcessStartInfo("chmod", $"+x {Path.Combine(StudioDirectory, "CelesteStudio.Mac.app", "Contents", "MacOS", "CelesteStudio.Mac")}"))!;
+            var chmodProc = Process.Start(new ProcessStartInfo("chmod", $"+x {Path.Combine(StudioDirectory, "CelesteStudio.app", "Contents", "MacOS", "CelesteStudio")}"))!;
             chmodProc.WaitForExit();
             if (chmodProc.ExitCode != 0)
                 "Install failed! Couldn't make studio executable".Log(LogLevel.Error);
-            
-            var xattrProc = Process.Start(new ProcessStartInfo("xattr", $"-c {Path.Combine(StudioDirectory, "CelesteStudio.Mac.app")}"))!;
+
+            var xattrProc = Process.Start(new ProcessStartInfo("xattr", $"-c {Path.Combine(StudioDirectory, "CelesteStudio.app")}"))!;
             xattrProc.WaitForExit();
             if (xattrProc.ExitCode != 0)
                 "Install failed! Couldn't clear studio app bundle config".Log(LogLevel.Error);
         }
     }
-    
+
     private static void LaunchStudio() {
         try {
             foreach (var process in Process.GetProcesses()) {
-                if (process.ProcessName is "CelesteStudio.WPF" or "CelesteStudio.GTK" or "CelesteStudio.Mac")
+                if (process.ProcessName == "CelesteStudio")
                     // Another instance is already running
                     return;
             }
-            
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                 // Start through explorer to detach studio from the game process (and avoid issues with the Steam Overlay for example)
-                Process.Start("Explorer", [Path.Combine(StudioDirectory, "CelesteStudio.WPF.exe")]);
+                Process.Start("Explorer", [Path.Combine(StudioDirectory, "CelesteStudio.exe")]);
             } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-                Process.Start(Path.Combine(StudioDirectory, "CelesteStudio.GTK"));
+                Process.Start(Path.Combine(StudioDirectory, "CelesteStudio"));
             } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                Process.Start(Path.Combine(StudioDirectory, "CelesteStudio.Mac.app", "Contents", "MacOS", "CelesteStudio.Mac"));
+                Process.Start(Path.Combine(StudioDirectory, "CelesteStudio.app", "Contents", "MacOS", "CelesteStudio"));
             }
         } catch (Exception ex) {
             ex.LogException("Failed to launch studio");

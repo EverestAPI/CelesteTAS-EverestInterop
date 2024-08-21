@@ -8,7 +8,7 @@ on:
         type: string
         default: Release
 
-jobs: 
+jobs:
   build-windows:
     runs-on: windows-latest
 
@@ -24,20 +24,16 @@ jobs:
 
       - name: Publish x64
         run: dotnet publish Studio/CelesteStudio.WPF -c ${{ inputs.build-cfg }} -r win-x64 --self-contained=true -p:PublishSingleFile=true --output build-x64
-#      - name: Publish ARM64
-#        run: dotnet publish Studio/CelesteStudio.WPF -c ${{ inputs.build-cfg }} -r win-arm64 --self-contained=true -p:PublishSingleFile=true --output build-arm64
+
+      - name: Remove platform suffix
+        run: mv build-x64/CelesteStudio.WPF.exe build-x64/CelesteStudio.exe
 
       - name: Upload x64
         uses: actions/upload-artifact@v4
         with:
           name: CelesteStudio-windows-x64
           path: build-x64/**/*
-#      - name: Upload ARM64
-#        uses: actions/upload-artifact@v4
-#        with:
-#            name: CelesteStudio-windows-arm64
-#            path: build-arm64/**/*
-        
+
   build-linux:
     runs-on: ubuntu-latest
 
@@ -53,27 +49,16 @@ jobs:
 
       - name: Publish x64
         run: dotnet publish Studio/CelesteStudio.GTK -c ${{ inputs.build-cfg }} -r linux-x64 --self-contained=true -p:PublishSingleFile=true --output build-x64
-#      - name: Publish ARM
-#        run: dotnet publish Studio/CelesteStudio.GTK -c ${{ inputs.build-cfg }} -r linux-arm --self-contained=true -p:PublishSingleFile=true --output build-arm
-#      - name: Publish ARM64
-#        run: dotnet publish Studio/CelesteStudio.GTK -c ${{ inputs.build-cfg }} -r linux-arm64 --self-contained=true -p:PublishSingleFile=true --output build-arm64
+
+      - name: Remove platform suffix
+        run: mv build-x64/CelesteStudio.GTK build-x64/CelesteStudio
 
       - name: Upload x64
         uses: actions/upload-artifact@v4
         with:
           name: CelesteStudio-linux-x64
           path: build-x64/**/*
-#      - name: Upload ARM
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: CelesteStudio-linux-arm
-#          path: build-arm/**/*
-#      - name: Upload ARM64
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: CelesteStudio-linux-arm64
-#          path: build-arm64/**/*
-        
+
   build-mac:
     runs-on: macos-13
 
@@ -93,24 +78,32 @@ jobs:
 
       - name: Publish x64
         run: dotnet publish Studio/CelesteStudio.Mac -c ${{ inputs.build-cfg }} -r osx-x64 --self-contained=true -p:PublishSingleFile=true --output build-x64
-#      - name: Publish ARM64
-#        run: dotnet publish Studio/CelesteStudio.Mac -c ${{ inputs.build-cfg }} -r osx-arm64 --self-contained=true -p:PublishSingleFile=true --output build-arm64
+      - name: Publish ARM64
+        run: dotnet publish Studio/CelesteStudio.Mac -c ${{ inputs.build-cfg }} -r osx-arm64 --self-contained=true -p:PublishSingleFile=true --output build-arm64
 
-      - name: Fix and maintain file permissions
+      - name: Remove platform suffix
         run: |
           pushd build-x64
-          xattr -c CelesteStudio.Mac.app
-          chmod +x CelesteStudio.Mac.app/Contents/MacOS/CelesteStudio.Mac
-          tar -cvf CelesteStudio-osx-x64.tar CelesteStudio.Mac.app
+          mv CelesteStudio.Mac.app CelesteStudio.app
+          mv CelesteStudio.app/Contents/MacOS/CelesteStudio.Mac CelesteStudio.app/Contents/MacOS/CelesteStudio
+          mv CelesteStudio.app/Contents/MacOS/CelesteStudio.Mac.app CelesteStudio.app/Contents/MacOS/CelesteStudio.app
+          sed -i 's/CelesteStudio.Mac/CelesteStudio' CelesteStudio.app/Contents/Info.plist
+          popd
+          
+          pushd build-arm64
+          mv CelesteStudio.Mac.app CelesteStudio.app
+          mv CelesteStudio.app/Contents/MacOS/CelesteStudio.Mac CelesteStudio.app/Contents/MacOS/CelesteStudio
+          mv CelesteStudio.app/Contents/MacOS/CelesteStudio.Mac.app CelesteStudio.app/Contents/MacOS/CelesteStudio.app
+          sed -i 's/CelesteStudio.Mac/CelesteStudio' CelesteStudio.app/Contents/Info.plist
           popd
 
       - name: Upload x64
         uses: actions/upload-artifact@v4
         with:
           name: CelesteStudio-osx-x64
-          path: build-x64/CelesteStudio-osx-x64.tar
-#      - name: Upload ARM64
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: CelesteStudio-osx-arm64
-#          path: build-arm64/**/*
+          path: build-x64/CelesteStudio.app
+      - name: Upload ARM64
+        uses: actions/upload-artifact@v4
+        with:
+          name: CelesteStudio-osx-arm64
+          path: build-arm64/CelesteStudio.app
