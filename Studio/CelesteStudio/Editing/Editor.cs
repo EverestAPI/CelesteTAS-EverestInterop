@@ -270,7 +270,7 @@ public sealed class Editor : Drawable {
             }
 
             Application.Instance.InvokeAsync(() => {
-                if (state.CurrentLine != -1) {
+                if (Settings.Instance.SyncCursorToTAS && state.CurrentLine != -1) {
                     Document.Caret.Row = state.CurrentLine;
                     Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
                     Document.Caret = ClampCaret(Document.Caret);
