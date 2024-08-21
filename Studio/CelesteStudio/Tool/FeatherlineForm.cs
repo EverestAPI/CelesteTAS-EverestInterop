@@ -199,7 +199,7 @@ public sealed class FeatherlineForm : Form {
                     GAManager.ClearAlgorithmData();
                     running = false;
                     Application.Instance.Invoke(() => {
-                        progressDialog.Close();
+                        progressDialog?.Close();
                         output.Text = Featherline.Settings.Output;
 
                         if (Featherline.Settings.Output != "") {
