@@ -2086,8 +2086,13 @@ public sealed class Editor : Drawable {
 
         for (int row = minRow; row <= maxRow; row++) {
             var line = Document.Lines[row];
+            var lineTrimmed = line.TrimStart();
 
-            if (line.TrimStart().StartsWith('#')) {
+            if (lineTrimmed.StartsWith('#')) {
+                if (lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed)) {
+                    continue;
+                }
+
                 int hashIdx = line.IndexOf('#');
                 Document.ReplaceLine(row, line.Remove(hashIdx, 1));
 
