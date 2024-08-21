@@ -87,14 +87,14 @@ jobs:
           mv CelesteStudio.Mac.app CelesteStudio.app
           mv CelesteStudio.app/Contents/MacOS/CelesteStudio.Mac CelesteStudio.app/Contents/MacOS/CelesteStudio
           mv CelesteStudio.app/Contents/MacOS/CelesteStudio.Mac.app CelesteStudio.app/Contents/MacOS/CelesteStudio.app
-          sed -i 's/CelesteStudio.Mac/CelesteStudio' CelesteStudio.app/Contents/Info.plist
+          sed -i '' -e 's/CelesteStudio.Mac/CelesteStudio/' CelesteStudio.app/Contents/Info.plist
           popd
           
           pushd build-arm64
           mv CelesteStudio.Mac.app CelesteStudio.app
           mv CelesteStudio.app/Contents/MacOS/CelesteStudio.Mac CelesteStudio.app/Contents/MacOS/CelesteStudio
           mv CelesteStudio.app/Contents/MacOS/CelesteStudio.Mac.app CelesteStudio.app/Contents/MacOS/CelesteStudio.app
-          sed -i 's/CelesteStudio.Mac/CelesteStudio' CelesteStudio.app/Contents/Info.plist
+          sed -i '' -e 's/CelesteStudio.Mac/CelesteStudio/' CelesteStudio.app/Contents/Info.plist
           popd
 
       - name: Upload x64
