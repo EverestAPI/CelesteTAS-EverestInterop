@@ -1910,13 +1910,13 @@ public sealed class Editor : Drawable {
             Document.Lines[Document.Caret.Row] = beforeCaret;
             Document.InsertLine(newRow, afterCaret);
             Document.Caret.Row = newRow;
-            Document.Caret.Col = 0;
+            Document.Caret.Col = desiredVisualCol = 0;
 
             if (line.StartsWith('#')) {
                 // Keep new line still a comment
                 string prefix = new(line.TakeWhile(c => c == '#' || char.IsWhiteSpace(c)).ToArray());
                 Document.ReplaceLine(newRow, prefix + Document.Lines[Document.Caret.Row]);
-                Document.Caret.Col = prefix.Length;
+                Document.Caret.Col = desiredVisualCol = prefix.Length;
             }
         }
 
