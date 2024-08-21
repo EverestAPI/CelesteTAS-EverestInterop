@@ -125,16 +125,20 @@ public sealed class Studio : Form {
                 CommandInfo.ResetCache();
                 Menu = CreateMenu();
             });
+        }
 
+        Load += (_, _) => {
             if (args.Length > 0) {
                 OpenFile(args[0]);
-            } else if (Settings.Instance.RecentFiles.Count > 0 && !string.IsNullOrWhiteSpace(Settings.Instance.RecentFiles[0]) && File.Exists(Settings.Instance.RecentFiles[0])) {
+            } else if (Settings.Instance.RecentFiles.Count > 0 &&
+                       !string.IsNullOrWhiteSpace(Settings.Instance.RecentFiles[0]) &&
+                       File.Exists(Settings.Instance.RecentFiles[0])) {
                 // Re-open last file if possible
                 OpenFile(Settings.Instance.RecentFiles[0]);
             } else {
                 OnNewFile();
             }
-        }
+        };
 
         // var asm = Assembly.GetExecutingAssembly();
         // Shown += (_, _) => WhatsNewDialog.Show("Whats new in Studio v3.0.0?", new StreamReader(asm.GetManifestResourceStream("Changelogs/v3.0.0.md")!).ReadToEnd());
