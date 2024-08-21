@@ -101,6 +101,7 @@ public sealed class Settings {
 
     public bool AutoSave { get; set; } = true;
     public bool AutoRemoveMutuallyExclusiveActions { get; set; } = true;
+    public bool SyncCursorToTAS { get; set; } = true;
 
     public float ScrollSpeed { get; set; } = 0.0f; // A value <= 0.0f means to use the native scrollable
     public int MaxUnfoldedLines { get; set; } = 30;
