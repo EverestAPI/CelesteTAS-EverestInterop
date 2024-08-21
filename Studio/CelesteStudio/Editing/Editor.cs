@@ -876,7 +876,7 @@ public sealed class Editor : Drawable {
                 e.Handled = true;
                 break;
             case Keys.Enter:
-                OnEnter(e.HasCommonModifier());
+                OnEnter(e.HasCommonModifier(), up: e.Shift);
                 e.Handled = true;
                 break;
             case Keys.Left when !e.HasAlternateModifier(): // Prevent Alt+Left from getting handled
@@ -1881,29 +1881,41 @@ public sealed class Editor : Drawable {
         }
     }
 
-    private void OnEnter(bool splitLines) {
+    private void OnEnter(bool splitLines, bool up) {
         using var __ = Document.Update();
 
         var line = Document.Lines[Document.Caret.Row];
 
+        int offset = up ? 0 : 1;
         if (!splitLines || ActionLine.TryParse(line, out _)) {
             // Don't split frame count and action
-            int newRow = Document.Caret.Row + 1;
+            int newRow = Document.Caret.Row + offset;
             if (GetCollapse(Document.Caret.Row) is { } collapse) {
-                newRow = collapse.MaxRow + 1;
+                newRow = (up ? collapse.MinRow : collapse.MaxRow) + offset;
             }
 
             Document.InsertLine(newRow, string.Empty);
             Document.Caret.Row = newRow;
             Document.Caret.Col = desiredVisualCol = 0;
         } else {
-            RemoveRange(Document.Selection.Min, Document.Selection.Max);
-            Document.Insert(Document.NewLine.ToString());
+            if (!Document.Selection.Empty) {
+                RemoveRange(Document.Selection.Min, Document.Selection.Max);
+                Document.Caret.Col = Document.Selection.Min.Col;
+                line = Document.Lines[Document.Caret.Row];
+            }
+
+            string beforeCaret = line[..Document.Caret.Col];
+            string afterCaret = line[Document.Caret.Col..];
+            int newRow = Document.Caret.Row + offset;
+            Document.Lines[Document.Caret.Row] = beforeCaret;
+            Document.InsertLine(newRow, afterCaret);
+            Document.Caret.Row = newRow;
+            Document.Caret.Col = 0;
 
             if (line.StartsWith('#')) {
                 // Keep new line still a comment
                 string prefix = new(line.TakeWhile(c => c == '#' || char.IsWhiteSpace(c)).ToArray());
-                Document.ReplaceLine(Document.Caret.Row, prefix + Document.Lines[Document.Caret.Row]);
+                Document.ReplaceLine(newRow, prefix + Document.Lines[Document.Caret.Row]);
                 Document.Caret.Col = prefix.Length;
             }
         }
