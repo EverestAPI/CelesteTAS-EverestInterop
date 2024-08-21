@@ -2101,7 +2101,11 @@ public sealed class Editor : Drawable {
             var lineTrimmed = line.TrimStart();
 
             if (lineTrimmed.StartsWith('#')) {
-                if (lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed)) {
+                if (lineTrimmed.Length >= 2 && char.IsWhiteSpace(lineTrimmed[1]) ||
+                    lineTrimmed.StartsWith("#lvl_") ||
+                    TimestampRegex.IsMatch(lineTrimmed))
+                {
+                    // Ignore comments and special labels
                     continue;
                 }
 
