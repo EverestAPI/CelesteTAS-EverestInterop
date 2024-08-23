@@ -23,7 +23,7 @@ jobs:
           dotnet-version: '8.0'
 
       - name: Publish x64
-        run: dotnet publish Studio/CelesteStudio.WPF -c ${{ inputs.build-cfg }} -r win-x64 --self-contained=true -p:PublishSingleFile=true --output build-x64
+        run: dotnet publish Studio/CelesteStudio.WPF -c ${{ inputs.build-cfg }} -r win-x64 --output build-x64
 
       - name: Remove platform suffix
         run: mv build-x64/CelesteStudio.WPF.exe build-x64/CelesteStudio.exe
@@ -48,7 +48,7 @@ jobs:
           dotnet-version: '8.0'
 
       - name: Publish x64
-        run: dotnet publish Studio/CelesteStudio.GTK -c ${{ inputs.build-cfg }} -r linux-x64 --self-contained=true -p:PublishSingleFile=true --output build-x64
+        run: dotnet publish Studio/CelesteStudio.GTK -c ${{ inputs.build-cfg }} -r linux-x64 --output build-x64
 
       - name: Remove platform suffix
         run: mv build-x64/CelesteStudio.GTK build-x64/CelesteStudio
@@ -77,9 +77,9 @@ jobs:
         run: sudo xcode-select -switch /Applications/Xcode_15.1.app/Contents/Developer
 
       - name: Publish x64
-        run: dotnet publish Studio/CelesteStudio.Mac -c ${{ inputs.build-cfg }} -r osx-x64 --self-contained=true -p:PublishSingleFile=true --output build-x64
+        run: dotnet publish Studio/CelesteStudio.Mac -c ${{ inputs.build-cfg }} -r osx-x64 --output build-x64
       - name: Publish ARM64
-        run: dotnet publish Studio/CelesteStudio.Mac -c ${{ inputs.build-cfg }} -r osx-arm64 --self-contained=true -p:PublishSingleFile=true --output build-arm64
+        run: dotnet publish Studio/CelesteStudio.Mac -c ${{ inputs.build-cfg }} -r osx-arm64 --output build-arm64
 
       - name: Remove platform suffix
         run: |

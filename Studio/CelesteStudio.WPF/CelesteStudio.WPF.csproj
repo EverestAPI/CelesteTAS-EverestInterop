@@ -3,12 +3,15 @@
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
         <TargetFramework>net7.0-windows</TargetFramework>
-        
+        <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+
         <UseWPF>true</UseWPF>
         <UseWindowsForms>true</UseWindowsForms>
         <ApplicationIcon>Icon.ico</ApplicationIcon>
 
-        <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+        <PublishSingleFile>true</PublishSingleFile>
+        <PublishTrimmed>true</PublishTrimmed>
+        <SelfContained>true</SelfContained>
     </PropertyGroup>
 
     <ItemGroup>
