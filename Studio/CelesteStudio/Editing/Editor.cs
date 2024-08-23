@@ -1662,9 +1662,9 @@ public sealed class Editor : Drawable {
                 int cursorPosition = Document.Caret.Col - leadingSpaces;
 
                 // If we have a 0, just overwrite it
-                if (actionLine.Frames == 0) {
+                // But don't prevent turning a 0 into a 10
+                if (actionLine.Frames == 0 && Document.Caret.Col == ActionLine.MaxFramesDigits) {
                     actionLine.Frames = int.Parse(typedCharacter.ToString());
-                    Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
                 } else {
                     // Jam the number into the current position
                     string leftOfCursor = line[..(Document.Caret.Col)];
