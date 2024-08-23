@@ -39,11 +39,17 @@ jobs:
       - name: Remove platform suffix
         run: mv build-x64/CelesteStudio.WPF.exe build-x64/CelesteStudio.exe
 
+      - name: Generate archive
+        run: |
+          Push-Location build-x64
+          Compress-Archive -Destination ../CelesteStudio-windows-x64.zip -Path **
+          Pop-Location
+
       - name: Upload x64
         uses: actions/upload-artifact@v4
         with:
           name: CelesteStudio-windows-x64
-          path: build-x64/**/*
+          path: CelesteStudio-windows-x64.zip
 
   build-linux:
     runs-on: ubuntu-latest
@@ -75,11 +81,17 @@ jobs:
       - name: Remove platform suffix
         run: mv build-x64/CelesteStudio.GTK build-x64/CelesteStudio
 
+      - name: Generate archive
+        run: |
+          pushd build-x64
+          zip -r ../CelesteStudio-linux-x64.zip **
+          popd
+
       - name: Upload x64
         uses: actions/upload-artifact@v4
         with:
           name: CelesteStudio-linux-x64
-          path: build-x64/**/*
+          path: CelesteStudio-linux-x64.zip
 
   build-mac:
     runs-on: macos-13
@@ -130,13 +142,23 @@ jobs:
           sed -i '' -e 's/CelesteStudio.Mac/CelesteStudio/' CelesteStudio.app/Contents/Info.plist
           popd
 
+      - name: Generate archive
+        run: |
+          pushd build-x64
+          zip -r ../CelesteStudio-macos-x64.zip CelesteStudio.app
+          popd
+          
+          pushd build-arm64
+          zip -r ../CelesteStudio-macos-arm64.zip CelesteStudio.app
+          popd
+
       - name: Upload x64
         uses: actions/upload-artifact@v4
         with:
           name: CelesteStudio-macos-x64
-          path: build-x64/CelesteStudio.app
+          path: CelesteStudio-macos-x64.zip
       - name: Upload ARM64
         uses: actions/upload-artifact@v4
         with:
           name: CelesteStudio-macos-arm64
-          path: build-arm64/CelesteStudio.app
+          path: CelesteStudio-macos-arm64.zip

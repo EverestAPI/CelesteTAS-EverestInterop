@@ -18,7 +18,8 @@ public static class StudioHelper {
     #region Auto-filled values
 
     // These values will automatically get filled in by the Build.yml/Release.yml actions
-    private const string CurrentStudioVersion    = "##STUDIO_VERSION##";
+    private const bool   DoubleZipArchive        = false; //DOUBLE_ZIP_ARCHIVE
+    private const string CurrentStudioVersion    = "3.0.0-37d5e33";
 
     private const string DownloadURL_Windows_x64 = "##URL_WINDOWS_x64##";
     private const string DownloadURL_Linux_x64   = "##URL_LINUX_x64##";
@@ -82,11 +83,21 @@ public static class StudioHelper {
             $"Celeste Studio is outdated. Installing latest version: '{CurrentStudioVersion}'".Log();
 
             // Reset everything
-            if (Directory.Exists(StudioDirectory))
+            if (Directory.Exists(StudioDirectory)) {
                 Directory.Delete(StudioDirectory, recursive: true);
+            }
             Directory.CreateDirectory(StudioDirectory);
 
-            DownloadStudio();
+            try {
+                DownloadStudio();
+            } catch {
+                // Cleanup
+                if (Directory.Exists(StudioDirectory)) {
+                    Directory.Delete(StudioDirectory, recursive: true);
+                }
+                throw;
+            }
+
         }
 #endif
 
@@ -114,6 +125,17 @@ public static class StudioHelper {
             return;
         }
         "Finished download".Log();
+
+        // Handle double ZIPs
+        if (DoubleZipArchive) {
+            using var zip = ZipFile.OpenRead(TempDownloadPath);
+            var entry = zip.Entries[0]; // There should only be a single entry in this case
+            var innerPath = Path.Combine(StudioDirectory, entry.Name);
+            $"Extracting inner ZIP archive: '{entry.Name}'".Log(LogLevel.Verbose);
+
+            entry.ExtractToFile(innerPath);
+            File.Move(innerPath, TempDownloadPath, overwrite: true);
+        }
 
         // Verify checksum
         using var md5 = MD5.Create();

@@ -25,54 +25,30 @@ jobs:
         with:
           dotnet-version: '8.0'
 
-      - name: Download Windows x64
+      - name: Download Studio builds
         uses: actions/download-artifact@v4
         with:
-          name: CelesteStudio-windows-x64
-          path: CelesteStudio-windows-x64
-      - name: Download Linux x64
-        uses: actions/download-artifact@v4
-        with:
-          name: CelesteStudio-linux-x64
-          path: CelesteStudio-linux-x64
-      - name: Download macOS x64
-        uses: actions/download-artifact@v4
-        with:
-          name: CelesteStudio-macos-x64
-          path: CelesteStudio-macos-x64
-      - name: Download macOS ARM64
-        uses: actions/download-artifact@v4
-        with:
-          name: CelesteStudio-macos-arm64
-          path: CelesteStudio-macos-arm64
-
-      # download-artifact automatically unzips them, so we need to re-zip
-      - name: Re-zip artifacts
+          pattern: CelesteStudio-*
+      - name: Move Studio builds into correct location
         run: |
-          pushd CelesteStudio-windows-x64
-          zip CelesteStudio-windows-x64.zip **
-          popd
-          pushd CelesteStudio-linux-x64
-          zip CelesteStudio-linux-x64.zip **
-          popd
-          pushd CelesteStudio-macos-x64
-          zip CelesteStudio-macos-x64.zip **
-          popd
-          pushd CelesteStudio-macos-arm64
-          zip CelesteStudio-macos-arm64.zip **
-          popd
+          mv CelesteStudio-windows-x64/CelesteStudio-windows-x64.zip .
+          mv CelesteStudio-linux-x64/CelesteStudio-linux-x64.zip .
+          mv CelesteStudio-macos-x64/CelesteStudio-macos-x64.zip .
+          mv CelesteStudio-macos-arm64/CelesteStudio-macos-arm64.zip .
 
       - name: Fill-in download info
         run: |
-          sed -i "s\\##STUDIO_VERSION##\\$(grep -Po '<Version>\K\S+(?=<\\/Version>)' Studio/CelesteStudio/CelesteStudio.csproj)-${{ steps.ghd.outputs.short-sha }}\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
+          sed -i "s\\false; //DOUBLE_ZIP_ARCHIVE\\false;\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
+          sed -i "s\\##STUDIO_VERSION##\\$(perl -nle 'print $1 if /<Version>(\S+)<\/Version>/' Studio/CelesteStudio/CelesteStudio.csproj)-${{ steps.ghd.outputs.short-sha }}\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
           sed -i "s\\##URL_WINDOWS_x64##\\https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/CelesteStudio-windows-x64.zip\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
           sed -i "s\\##URL_LINUX_x64##\\https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/CelesteStudio-linux-x64.zip\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
           sed -i "s\\##URL_MACOS_x64##\\https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/CelesteStudio-macos-x64.zip\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
           sed -i "s\\##URL_MACOS_ARM64##\\https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/CelesteStudio-macos-x64.zip\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
-          sed -i "s\\##CHECKSUM_WINDOWS_x64##\\$(md5sum CelesteStudio-windows-x64/CelesteStudio-windows-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
-          sed -i "s\\##CHECKSUM_LINUX_x64##\\$(md5sum CelesteStudio-linux-x64/CelesteStudio-linux-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
-          sed -i "s\\##CHECKSUM_MACOS_x64##\\$(md5sum CelesteStudio-macos-x64/CelesteStudio-macos-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
-          sed -i "s\\##CHECKSUM_MACOS_ARM64##\\$(md5sum CelesteStudio-macos-x64/CelesteStudio-macos-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
+          sed -i "s\\##CHECKSUM_WINDOWS_x64##\\$(md5sum CelesteStudio-windows-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
+          sed -i "s\\##CHECKSUM_LINUX_x64##\\$(md5sum CelesteStudio-linux-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
+          sed -i "s\\##CHECKSUM_MACOS_x64##\\$(md5sum CelesteStudio-macos-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
+          sed -i "s\\##CHECKSUM_MACOS_ARM64##\\$(md5sum CelesteStudio-macos-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
+          cat CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
 
       - name: Build
         run: dotnet build CelesteTAS-EverestInterop -c Release -p:DefineConstants=INSTALL_STUDIO
@@ -84,7 +60,7 @@ jobs:
           prerelease: false
           files: |
             CelesteTAS.zip 
-            CelesteStudio-windows-x64/CelesteStudio-windows-x64.zip
-            CelesteStudio-linux-x64/CelesteStudio-linux-x64.zip
-            CelesteStudio-macos-x64/CelesteStudio-macos-x64.zip
-            CelesteStudio-macos-arm64/CelesteStudio-macos-arm64.zip
+            CelesteStudio-windows-x64.zip
+            CelesteStudio-linux-x64.zip
+            CelesteStudio-macos-x64.zip
+            CelesteStudio-macos-arm64.zip
