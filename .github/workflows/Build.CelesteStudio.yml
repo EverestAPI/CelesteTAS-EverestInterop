@@ -100,10 +100,10 @@ jobs:
       - name: Upload x64
         uses: actions/upload-artifact@v4
         with:
-          name: CelesteStudio-osx-x64
+          name: CelesteStudio-macos-x64
           path: build-x64/CelesteStudio.app
       - name: Upload ARM64
         uses: actions/upload-artifact@v4
         with:
-          name: CelesteStudio-osx-arm64
+          name: CelesteStudio-macOS-arm64
           path: build-arm64/CelesteStudio.app

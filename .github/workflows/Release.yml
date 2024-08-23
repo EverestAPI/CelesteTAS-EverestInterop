@@ -35,11 +35,16 @@ jobs:
         with:
           name: CelesteStudio-linux-x64
           path: CelesteStudio-linux-x64
-      - name: Download OSX x64
+      - name: Download macOS x64
         uses: actions/download-artifact@v4
         with:
-          name: CelesteStudio-osx-x64
-          path: CelesteStudio-osx-x64
+          name: CelesteStudio-macos-x64
+          path: CelesteStudio-macos-x64
+      - name: Download macOS ARM64
+        uses: actions/download-artifact@v4
+        with:
+          name: CelesteStudio-macos-arm64
+          path: CelesteStudio-macos-arm64
 
       # download-artifact automatically unzips them, so we need to re-zip
       - name: Re-zip artifacts
@@ -50,8 +55,11 @@ jobs:
           pushd CelesteStudio-linux-x64
           zip CelesteStudio-linux-x64.zip **
           popd
-          pushd CelesteStudio-osx-x64
-          zip CelesteStudio-osx-x64.zip **
+          pushd CelesteStudio-macos-x64
+          zip CelesteStudio-macos-x64.zip **
+          popd
+          pushd CelesteStudio-macos-arm64
+          zip CelesteStudio-macos-arm64.zip **
           popd
 
       - name: Fill-in download info
@@ -59,10 +67,12 @@ jobs:
           sed -i "s\\##STUDIO_VERSION##\\${{ github.ref_name }}\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
           sed -i "s\\##URL_WINDOWS_x64##\\https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/CelesteStudio-windows-x64.zip\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
           sed -i "s\\##URL_LINUX_x64##\\https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/CelesteStudio-linux-x64.zip\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
-          sed -i "s\\##URL_OSX_x64##\\https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/CelesteStudio-osx-x64.zip\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
+          sed -i "s\\##URL_MACOS_x64##\\https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/CelesteStudio-macos-x64.zip\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
+          sed -i "s\\##URL_MACOS_ARM64##\\https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/CelesteStudio-macos-x64.zip\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
           sed -i "s\\##CHECKSUM_WINDOWS_x64##\\$(md5sum CelesteStudio-windows-x64/CelesteStudio-windows-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
           sed -i "s\\##CHECKSUM_LINUX_x64##\\$(md5sum CelesteStudio-linux-x64/CelesteStudio-linux-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
-          sed -i "s\\##CHECKSUM_OSX_x64##\\$(md5sum CelesteStudio-osx-x64/CelesteStudio-osx-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
+          sed -i "s\\##CHECKSUM_MACOS_x64##\\$(md5sum CelesteStudio-macos-x64/CelesteStudio-macos-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
+          sed -i "s\\##CHECKSUM_MACOS_ARM64##\\$(md5sum CelesteStudio-macos-x64/CelesteStudio-macos-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
 
       - name: Build
         run: dotnet build CelesteTAS-EverestInterop -c Release -p:DefineConstants=INSTALL_STUDIO
@@ -76,4 +86,5 @@ jobs:
             CelesteTAS.zip 
             CelesteStudio-windows-x64/CelesteStudio-windows-x64.zip
             CelesteStudio-linux-x64/CelesteStudio-linux-x64.zip
-            CelesteStudio-osx-x64/CelesteStudio-osx-x64.zip
+            CelesteStudio-macos-x64/CelesteStudio-macos-x64.zip
+            CelesteStudio-macos-arm64/CelesteStudio-macos-arm64.zip

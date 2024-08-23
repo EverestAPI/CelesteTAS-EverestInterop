@@ -17,16 +17,18 @@ namespace TAS.EverestInterop;
 public static class StudioHelper {
     #region Auto-filled values
 
-    // These values will automatically get filled in by the Release.yml action
+    // These values will automatically get filled in by the Build.yml/Release.yml actions
     private const string CurrentStudioVersion    = "##STUDIO_VERSION##";
 
     private const string DownloadURL_Windows_x64 = "##URL_WINDOWS_x64##";
     private const string DownloadURL_Linux_x64   = "##URL_LINUX_x64##";
-    private const string DownloadURL_OSX_x64     = "##URL_OSX_x64##";
+    private const string DownloadURL_MacOS_x64   = "##URL_MACOS_x64##";
+    private const string DownloadURL_MacOS_ARM64 = "##URL_MACOS_ARM64##";
 
     private const string Checksum_Windows_x64    = "##CHECKSUM_WINDOWS_x64##";
     private const string Checksum_Linux_x64      = "##CHECKSUM_LINUX_x64##";
-    private const string Checksum_OSX_x64        = "##CHECKSUM_OSX_x64##";
+    private const string Checksum_MacOS_x64      = "##CHECKSUM_MACOS_x64##";
+    private const string Checksum_MacOS_ARM64    = "##CHECKSUM_MACOS_ARM64##";
 
     #endregion
 
@@ -34,35 +36,46 @@ public static class StudioHelper {
     private static string VersionFile => Path.Combine(StudioDirectory, ".version");
     private static string TempDownloadPath => Path.Combine(StudioDirectory, ".CelesteStudio.zip");
 
-    // MonoMod only supports x86_64, so we don't need to check the CPU architecture
     private static string DownloadURL {
         get {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.OSArchitecture == Architecture.X64) {
                 return DownloadURL_Windows_x64;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            }
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && RuntimeInformation.OSArchitecture == Architecture.X64) {
                 return DownloadURL_Linux_x64;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                return DownloadURL_OSX_x64;
+            }
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && RuntimeInformation.OSArchitecture == Architecture.X64) {
+                return DownloadURL_MacOS_x64;
+            }
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && RuntimeInformation.OSArchitecture == Architecture.Arm64) {
+                return DownloadURL_MacOS_ARM64;
+            }
 
-            throw new NotImplementedException("Unsupported platform");
+            throw new NotImplementedException($"Unsupported platform: {RuntimeInformation.OSDescription} with {RuntimeInformation.OSArchitecture}");
         }
     }
     private static string Checksum {
         get {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.OSArchitecture == Architecture.X64) {
                 return Checksum_Windows_x64;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            }
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && RuntimeInformation.OSArchitecture == Architecture.X64) {
                 return Checksum_Linux_x64;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                return Checksum_OSX_x64;
+            }
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && RuntimeInformation.OSArchitecture == Architecture.X64) {
+                return Checksum_MacOS_x64;
+            }
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && RuntimeInformation.OSArchitecture == Architecture.Arm64) {
+                return Checksum_MacOS_ARM64;
+            }
 
-            throw new NotImplementedException("Unsupported platform");
+            throw new NotImplementedException($"Unsupported platform: {RuntimeInformation.OSDescription} with {RuntimeInformation.OSArchitecture}");
         }
     }
 
     [Initialize]
     private static void Initialize() {
-        // INSTALL_STUDIO is only set during builds from Release.yml, since otherwise the URLs / checksums are invalid
+        // INSTALL_STUDIO is only set during builds from Build.yml/Release.yml, since otherwise the URLs / checksums are invalid
 #if INSTALL_STUDIO
         // Check if studio is already up-to-date
         if (!File.Exists(VersionFile) || File.ReadAllText(VersionFile) != CurrentStudioVersion) {
@@ -82,8 +95,7 @@ public static class StudioHelper {
         }
     }
 
-    private static void DownloadStudio()
-    {
+    private static void DownloadStudio() {
         // Download studio archive
         $"Starting download of '{DownloadURL}'...".Log();
         using (HttpClient client = new()) {
@@ -123,8 +135,9 @@ public static class StudioHelper {
         File.WriteAllText(VersionFile, CurrentStudioVersion);
 
         // Cleanup ZIP
-        if (File.Exists(TempDownloadPath))
+        if (File.Exists(TempDownloadPath)) {
             File.Delete(TempDownloadPath);
+        }
 
         // Fix lost file permissions
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
@@ -148,9 +161,10 @@ public static class StudioHelper {
     private static void LaunchStudio() {
         try {
             foreach (var process in Process.GetProcesses()) {
-                if (process.ProcessName == "CelesteStudio")
+                if (process.ProcessName == "CelesteStudio") {
                     // Another instance is already running
                     return;
+                }
             }
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
