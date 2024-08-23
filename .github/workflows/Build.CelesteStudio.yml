@@ -22,6 +22,17 @@ jobs:
         with:
           dotnet-version: '8.0'
 
+      - name: Describe Git history
+        id: ghd
+        uses: proudust/gh-describe@v2
+
+      - name: Set version suffix (release)
+        run: sed -i 's/-dev//' Studio/CelesteStudio/Studio.cs
+        if: ${{ inputs.build-cfg == 'Release' }}
+      - name: Set version suffix (nightly)
+        run: sed -i 's/-dev/-${{ steps.ghd.outputs.short-sha }}/' Studio/CelesteStudio/Studio.cs
+        if: ${{ inputs.build-cfg == 'Debug' }}
+
       - name: Publish x64
         run: dotnet publish Studio/CelesteStudio.WPF -c ${{ inputs.build-cfg }} -r win-x64 --output build-x64
 
@@ -46,6 +57,17 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0'
+
+      - name: Describe Git history
+        id: ghd
+        uses: proudust/gh-describe@v2
+
+      - name: Set version suffix (release)
+        run: sed -i 's/-dev//' Studio/CelesteStudio/Studio.cs
+        if: ${{ inputs.build-cfg == 'Release' }}
+      - name: Set version suffix (nightly)
+        run: sed -i 's/-dev/-${{ steps.ghd.outputs.short-sha }}/' Studio/CelesteStudio/Studio.cs
+        if: ${{ inputs.build-cfg == 'Debug' }}
 
       - name: Publish x64
         run: dotnet publish Studio/CelesteStudio.GTK -c ${{ inputs.build-cfg }} -r linux-x64 --output build-x64
@@ -76,6 +98,17 @@ jobs:
       - name: Switch XCode
         run: sudo xcode-select -switch /Applications/Xcode_15.1.app/Contents/Developer
 
+      - name: Describe Git history
+        id: ghd
+        uses: proudust/gh-describe@v2
+
+      - name: Set version suffix (release)
+        run: sed -i '' -e 's/-dev//' Studio/CelesteStudio/Studio.cs
+        if: ${{ inputs.build-cfg == 'Release' }}
+      - name: Set version suffix (nightly)
+        run: sed -i '' -e 's/-dev/-${{ steps.ghd.outputs.short-sha }}/' Studio/CelesteStudio/Studio.cs
+        if: ${{ inputs.build-cfg == 'Debug' }}
+
       - name: Publish x64
         run: dotnet publish Studio/CelesteStudio.Mac -c ${{ inputs.build-cfg }} -r osx-x64 --output build-x64
       - name: Publish ARM64
@@ -105,5 +138,5 @@ jobs:
       - name: Upload ARM64
         uses: actions/upload-artifact@v4
         with:
-          name: CelesteStudio-macOS-arm64
+          name: CelesteStudio-macos-arm64
           path: build-arm64/CelesteStudio.app

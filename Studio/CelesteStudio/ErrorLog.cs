@@ -32,8 +32,8 @@ public static class ErrorLog {
         stringBuilder.AppendLine(Marker);
         stringBuilder.AppendLine();
 
-        stringBuilder.Append("CelesteStudio v");
-        stringBuilder.Append(Studio.Version.ToString(3));
+        stringBuilder.Append("CelesteStudio ");
+        stringBuilder.Append(Studio.Version);
         stringBuilder.AppendLine($" & CelesteTAS v{ModVersion}");
 
         stringBuilder.AppendLine(DateTime.Now.ToString(CultureInfo.InvariantCulture));

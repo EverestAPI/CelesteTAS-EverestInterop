@@ -20,7 +20,13 @@ namespace CelesteStudio;
 
 public sealed class Studio : Form {
     public static Studio Instance = null!;
-    public static Version Version { get; private set; } = null!;
+    public static readonly string Version;
+
+    private const string VersionSuffix = "-dev";
+
+    static Studio() {
+        Version = $"v{Assembly.GetExecutingAssembly().GetName().Version!.ToString(3)}{VersionSuffix}";
+    }
 
     /// Platform-specific callback to handle new windows
     public readonly Action<Window> WindowCreationCallback;
@@ -37,12 +43,11 @@ public sealed class Studio : Form {
     private ThemeEditor? themeEditorForm;
 
     private string TitleBarText => Editor.Document.FilePath == Document.ScratchFile
-        ? $"<Scratch> - Studio v{Version.ToString(3)}"
-        : $"{Editor.Document.FileName}{(Editor.Document.Dirty ? "*" : string.Empty)} - Studio v{Version.ToString(3)}   {Editor.Document.FilePath}";
+        ? $"<Scratch> - Studio {Version}"
+        : $"{Editor.Document.FileName}{(Editor.Document.Dirty ? "*" : string.Empty)} - Studio {Version}   {Editor.Document.FilePath}";
 
     public Studio(string[] args, Action<Window> windowCreationCallback) {
         Instance = this;
-        Version = Assembly.GetExecutingAssembly().GetName().Version!;
         Icon = Assets.AppIcon;
         MinimumSize = new Size(250, 250);
 
@@ -535,7 +540,7 @@ public sealed class Studio : Form {
             ShowAboutDialog(new AboutDialog {
                 ProgramName = "Celeste Studio",
                 ProgramDescription = "Editor for editing Celeste TASes with various useful features.",
-                Version = Version.ToString(3),
+                Version = Version,
                 Website = new Uri("https://github.com/EverestAPI/CelesteTAS-EverestInterop"),
 
                 Developers = ["psyGamer", "DemoJameson", "EuniverseCat", "dubi steinkek", "Mirkwood"],

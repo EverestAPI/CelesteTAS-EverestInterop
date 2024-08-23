@@ -39,7 +39,7 @@ public class SettingsErrorDialog : Dialog<SettingsErrorAction> {
                                 Clipboard.Instance.Text =
                                     // Add some additional info to the report
                                     $"""
-                                    Celeste Studio v{Studio.Version.ToString(3)}
+                                    Celeste Studio {Studio.Version}
                                     Platform: {Platform.Instance}
                                     {DateTime.Now.ToString(CultureInfo.InvariantCulture)}
 
