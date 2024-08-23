@@ -82,7 +82,7 @@ jobs:
 
       - name: Fill-in download info
         run: |
-          sed -i "s\\##STUDIO_VERSION##\\${{ steps.ghd.outputs.describe }}\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
+          sed -i "s\\##STUDIO_VERSION##\\$(grep -Po '<Version>\K\S+(?=<\\/Version>)' Studio/CelesteStudio/CelesteStudio.csproj)-${{ steps.ghd.outputs.short-sha }}\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
           sed -i "s\\##URL_WINDOWS_x64##\\https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/CelesteStudio-windows-x64.zip\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
           sed -i "s\\##URL_LINUX_x64##\\https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/CelesteStudio-linux-x64.zip\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
           sed -i "s\\##URL_MACOS_x64##\\https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/CelesteStudio-macos-x64.zip\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
