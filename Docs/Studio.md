@@ -1,5 +1,5 @@
 ## Celeste Studio
-Can be used instead of notepad or similar for easier editing of the TAS file. It is bundled with the TAS tools, and should automatically appear in the main Celeste directory.
+Can be used instead of notepad or similar for easier editing of the TAS file. It is bundled with the TAS tools, and should automatically appear in the `CelesteStudio` directory inside the main Celeste install.
 
 ### Controls
 - Ctrl + Z: Undo
