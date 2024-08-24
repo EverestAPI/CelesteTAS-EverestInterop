@@ -106,6 +106,10 @@ public static class StudioHelper {
                 try {
                     await DownloadStudio().ConfigureAwait(false);
                     installed = true;
+
+                    if (TasSettings.Enabled && TasSettings.LaunchStudioAtBoot) {
+                        LaunchStudio();
+                    }
                 } catch {
                     // Cleanup
                     if (Directory.Exists(StudioDirectory)) {
@@ -116,14 +120,18 @@ public static class StudioHelper {
             });
         } else {
             installed = true;
+
+            if (TasSettings.Enabled && TasSettings.LaunchStudioAtBoot) {
+                LaunchStudio();
+            }
         }
 #else
         installed = true;
-#endif
 
         if (TasSettings.Enabled && TasSettings.LaunchStudioAtBoot) {
             LaunchStudio();
         }
+#endif
     }
 
     private static async Task DownloadStudio() {
