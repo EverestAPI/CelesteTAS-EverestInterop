@@ -384,13 +384,18 @@ public sealed class Editor : Drawable {
     public void FixInvalidInputs() {
         using var __ = Document.Update();
 
-        // Frameless action lines are only intended for editing and shouldn't be part of the final TAS
         for (int row = 0; row < Document.Lines.Count; row++) {
-            if (ActionLine.TryParse(Document.Lines[row], out var actionLine)) {
-                actionLine.FrameCount = Math.Clamp(actionLine.FrameCount, 0, ActionLine.MaxFrames);
+            FixInvalidInput(row);
+        }
+    }
+    private void FixInvalidInput(int row) {
+        using var __ = Document.Update();
 
-                Document.ReplaceLine(row, actionLine.ToString());
-            }
+        // Frameless action lines are only intended for editing and shouldn't be part of the final TAS
+        if (ActionLine.TryParse(Document.Lines[row], out var actionLine)) {
+            actionLine.FrameCount = Math.Clamp(actionLine.FrameCount, 0, ActionLine.MaxFrames);
+
+            Document.ReplaceLine(row, actionLine.ToString());
         }
     }
 
@@ -1388,6 +1393,10 @@ public sealed class Editor : Drawable {
             return;
         }
 
+        if (Document.Caret.Row != quickEdit.Row) {
+            FixInvalidInput(Document.Caret.Row);
+        }
+
         Document.Caret.Row = quickEdit.Row;
         Document.Caret.Col = desiredVisualCol = quickEdit.MinCol;
         Document.Selection = new Selection {
@@ -1422,6 +1431,10 @@ public sealed class Editor : Drawable {
             return;
         }
 
+        if (Document.Caret.Row != quickEdit.Row) {
+            FixInvalidInput(Document.Caret.Row);
+        }
+
         Document.Caret.Row = quickEdit.Row;
         Document.Caret.Col = desiredVisualCol = quickEdit.MinCol;
         Document.Selection = new Selection {
@@ -1440,6 +1453,10 @@ public sealed class Editor : Drawable {
         SelectQuickEdit(quickEdit);
     }
     private void SelectQuickEdit(Anchor quickEdit) {
+        if (Document.Caret.Row != quickEdit.Row) {
+            FixInvalidInput(Document.Caret.Row);
+        }
+
         Document.Caret.Row = quickEdit.Row;
         Document.Caret.Col = desiredVisualCol = quickEdit.MinCol;
         Document.Selection = new Selection {
@@ -1481,6 +1498,10 @@ public sealed class Editor : Drawable {
 
         int row = Document.Caret.Row;
         Document.ReplaceLine(row, quickEdit.ActualText);
+
+        if (oldCaret.Row != Document.Caret.Row) {
+            FixInvalidInput(oldCaret.Row);
+        }
 
         if (quickEdit.Selections.Length > 0) {
             for (int i = 0; i < quickEdit.Selections.Length; i++) {
@@ -1592,6 +1613,8 @@ public sealed class Editor : Drawable {
         var line = Document.Lines[Document.Caret.Row];
         char typedCharacter = char.ToUpper(e.Text[0]);
         int leadingSpaces = line.Length - line.TrimStart().Length;
+
+        var oldCaret = Document.Caret;
 
         // If it's an action line, handle it ourselves
         if (TryParseAndFormatActionLine(Document.Caret.Row, out var actionLine) && e.Text.Length == 1) {
@@ -1724,6 +1747,10 @@ public sealed class Editor : Drawable {
                 Document.ReplaceLine(Document.Caret.Row, newActionLine.ToString());
                 Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
             }
+        }
+
+        if (oldCaret.Row != Document.Caret.Row) {
+            FixInvalidInput(oldCaret.Row);
         }
 
         UpdateAutoComplete();
@@ -2424,6 +2451,10 @@ public sealed class Editor : Drawable {
         }
         Document.Caret = ClampCaret(GetActualPosition(newVisualPos));
 
+        if (oldCaret.Row != Document.Caret.Row) {
+            FixInvalidInput(oldCaret.Row);
+        }
+
         // When going from a non-action-line to an action-line, snap the caret to the frame count
         if (direction is CaretMovementType.LineUp or CaretMovementType.LineDown or CaretMovementType.PageUp or CaretMovementType.PageDown or CaretMovementType.LabelUp or CaretMovementType.LabelDown &&
             currentActionLine == null && TryParseAndFormatActionLine(Document.Caret.Row, out _))
@@ -2583,6 +2614,10 @@ public sealed class Editor : Drawable {
             (Document.Caret, var visual) = LocationToCaretPosition(e.Location);
             desiredVisualCol = visual.Col;
             ScrollCaretIntoView();
+
+            if (oldCaret.Row != Document.Caret.Row) {
+                FixInvalidInput(oldCaret.Row);
+            }
 
             ActivePopupMenu = null;
 
