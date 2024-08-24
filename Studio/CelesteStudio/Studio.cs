@@ -8,6 +8,7 @@ using CelesteStudio.Communication;
 using CelesteStudio.Data;
 using CelesteStudio.Dialog;
 using CelesteStudio.Editing;
+using CelesteStudio.Migration;
 using CelesteStudio.Tool;
 using CelesteStudio.Util;
 using Eto.Forms;
@@ -53,11 +54,15 @@ public sealed class Studio : Form {
 
         WindowCreationCallback = windowCreationCallback;
 
+        Migrator.ApplyPreLoadMigrations();
+
 #if DEBUG
         MenuEntryExtensions.VerifyData();
 #endif
 
         Settings.Load();
+
+        Migrator.ApplyPostLoadMigrations();
 
         Size = Settings.Instance.LastSize;
         if (!Settings.Instance.LastLocation.IsZero) {
@@ -144,9 +149,6 @@ public sealed class Studio : Form {
                 OnNewFile();
             }
         };
-
-        // var asm = Assembly.GetExecutingAssembly();
-        // Shown += (_, _) => WhatsNewDialog.Show("Whats new in Studio v3.0.0?", new StreamReader(asm.GetManifestResourceStream("Changelogs/v3.0.0.md")!).ReadToEnd());
 
         CommunicationWrapper.Start();
     }
@@ -531,10 +533,12 @@ public sealed class Studio : Form {
         var quitItem = MenuEntry.File_Quit.ToAction(Application.Instance.Quit);
         var homeItem = MenuUtils.CreateAction("Open README...", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop"));
         var wikiItem = MenuUtils.CreateAction("Open wiki...", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki"));
-        // TODO: Have this update automatically with the current version
         var whatsNewItem = MenuUtils.CreateAction("Whats new?", Keys.None, () => {
             var asm = Assembly.GetExecutingAssembly();
-            WhatsNewDialog.Show("Whats new in Studio v3.0.0?", new StreamReader(asm.GetManifestResourceStream("Changelogs/v3.0.0.md")!).ReadToEnd());
+            string version = asm.GetName().Version!.ToString(3);
+            if (asm.GetManifestResourceStream($"Changelogs/v{version}.md") is { } stream) {
+                WhatsNewDialog.Show($"Whats new in Studio v{version}?", new StreamReader(stream).ReadToEnd());
+            }
         });
         var aboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {
             ShowAboutDialog(new AboutDialog {
