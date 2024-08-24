@@ -6,6 +6,7 @@ using Markdig.Syntax.Inlines;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace CelesteStudio.Controls;
 
@@ -114,7 +115,7 @@ public class Markdown : Drawable {
 
             if (level is 1 or 2) {
                 using var pen = new Pen(TextColor with { A = 0.5f }, 1.0f);
-                graphics.DrawLine(pen, graphics.ClipBounds.Left, lineY, graphics.ClipBounds.Right, lineY);
+                graphics.DrawLine(pen, 0.0f, lineY, graphics.ClipBounds.Right - graphics.ClipBounds.Left, lineY);
             }
         }
 
@@ -285,16 +286,18 @@ public class Markdown : Drawable {
         Cursor = cursor;
     }
 
-    public static List<Markdown> Parse(string markdownContent, Size pageSize) {
+    private static readonly Regex MetaRegex = new(@"\$\$(\S+)\$\$", RegexOptions.Compiled);
+    public static List<(Markdown Page, List<string> Meta)> Parse(string markdownContent, Size pageSize) {
         var markdown = Markdig.Markdown.Parse(markdownContent, trackTrivia: true);
 
         const float lineSpacing = 1.2f;
 
-        var pages = new List<Markdown>();
+        var pages = new List<(Markdown Page, List<string> Meta)>();
         var currentPage = new Markdown { Size = pageSize };
+        var currentMeta = new List<string>();
         var currentPosition = new PointF(0.0f, 0.0f);
 
-        pages.Add(currentPage);
+        pages.Add((currentPage, currentMeta));
 
         TextComponent? currentComponent;
         var currentState = new TextState();
@@ -321,8 +324,10 @@ public class Markdown : Drawable {
                 currentPage.components.Add(currentComponent);
             } else if (item is ThematicBreakBlock) {
                 currentPage = new Markdown { Size = pageSize };
+                currentMeta = new List<string>();
                 currentPosition = new PointF(0.0f, 0.0f);
-                pages.Add(currentPage);
+
+                pages.Add((currentPage, currentMeta));
             } else {
                 Console.WriteLine($"Unhandled item: {item} ({item.GetType()})");
             }
@@ -364,6 +369,12 @@ public class Markdown : Drawable {
             }
         }
         void ProcessText(string text) {
+            var matches = MetaRegex.Matches(text);
+            foreach (Match match in matches) {
+                currentMeta.Add(match.Groups[1].Value);
+            }
+            text = MetaRegex.Replace(text, string.Empty);
+
             var splitPoints = text
                 .Select((c, i) => (c, i))
                 .Where(pair => char.IsWhiteSpace(pair.c))

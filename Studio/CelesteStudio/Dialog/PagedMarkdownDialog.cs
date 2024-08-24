@@ -6,8 +6,9 @@ using System;
 namespace CelesteStudio.Dialog;
 
 public class WhatsNewDialog : Eto.Forms.Dialog {
-    private const int PageWidth = 650;
-    private const int PageHeight = 400;
+    private const int PageWidth = 500;
+    private const int PageHeight = 500;
+    private const int ImageWidth = 450;
 
     private WhatsNewDialog(string title, string markdownContent) {
         var pages = Markdown.Parse(markdownContent, new Size(PageWidth, PageHeight));
@@ -27,7 +28,9 @@ public class WhatsNewDialog : Eto.Forms.Dialog {
                 Content = GenerateContent();
             };
 
-            var buttonsLayout = new DynamicLayout { Width = PageWidth };
+            const int padding = 10;
+
+            var buttonsLayout = new DynamicLayout { Width = PageWidth + ImageWidth - padding * 2 };
             buttonsLayout.BeginHorizontal();
             buttonsLayout.Add(prevButton);
             buttonsLayout.AddSpace();
@@ -35,10 +38,20 @@ public class WhatsNewDialog : Eto.Forms.Dialog {
             buttonsLayout.AddSpace();
             buttonsLayout.Add(nextButton);
 
+            var pageLayout = new StackLayout { Orientation = Orientation.Horizontal, Spacing = padding, Height = PageHeight };
+            pageLayout.Items.Add(pages[currentPage].Page);
+
+            foreach (string meta in pages[currentPage].Meta) {
+                if (meta.StartsWith("image:")) {
+                    pageLayout.Items.Add(Bitmap.FromResource(meta["image:".Length..]));
+                }
+            }
+
             return new StackLayout {
-                Padding = 10,
+                Width = PageWidth + ImageWidth + padding * 2,
+                Padding = padding,
                 Items = {
-                    pages[currentPage],
+                    new StackLayoutItem { Control = pageLayout, HorizontalAlignment = HorizontalAlignment.Center },
                     buttonsLayout,
                 }
             };
