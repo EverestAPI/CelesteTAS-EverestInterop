@@ -9,7 +9,7 @@
 - Install [Everest](https://everestapi.github.io/) if you haven't already.
 - (Recommended) Use the 1-click installer [here](https://gamebanana.com/tools/6715). (Alternatively) [Download the latest auto-build](https://0x0a.de/twoclick/?nightly.link/EverestAPI/CelesteTAS-EverestInterop/workflows/Build/rewrite/CelesteTAS.zip).
 - Make sure the mod is enabled in the in-game mod options.
-- Enable the mod-setting `CelesteTAS > More Options > Launch Studio at Boot`. Celeste Studio, our input editor, should now automatically launch.
+- Enable the mod-setting `Celeste TAS > More Options > Launch Studio at Boot`. Celeste Studio, our input editor, should now automatically launch.
 - Alternatively, you can start Celeste Studio directly. It'll be installed in the `CelesteStudio` directory inside your Celeste install. 
 - You can find the most up-to-date input files [here](https://github.com/VampireFlower/CelesteTAS).
 

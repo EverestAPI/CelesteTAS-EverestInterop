@@ -1,4 +1,7 @@
-﻿using System;
+﻿// ReSharper disable HeuristicUnreachableCode
+#pragma warning disable CS0162 // Unreachable code detected
+
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -34,6 +37,8 @@ public static class StudioHelper {
     private const string Checksum_MacOS_ARM64    = "##CHECKSUM_MACOS_ARM64##";
 
     #endregion
+
+    private static bool installed = false;
 
     private static string StudioDirectory => Path.Combine(Everest.PathGame, "CelesteStudio");
     private static string VersionFile => Path.Combine(StudioDirectory, ".version");
@@ -94,6 +99,7 @@ public static class StudioHelper {
 
                 try {
                     await DownloadStudio().ConfigureAwait(false);
+                    installed = true;
                 } catch {
                     // Cleanup
                     if (Directory.Exists(StudioDirectory)) {
@@ -102,7 +108,11 @@ public static class StudioHelper {
                     throw;
                 }
             });
+        } else {
+            installed = true;
         }
+#else
+        installed = true;
 #endif
 
         if (TasSettings.Enabled && TasSettings.LaunchStudioAtBoot) {
@@ -190,8 +200,20 @@ public static class StudioHelper {
         }
     }
 
-    private static void LaunchStudio() {
+    internal static void LaunchStudio() => Task.Run(async () => {
         try {
+            // Wait until the installation is verified
+            var start = DateTime.UtcNow;
+            var timeout = TimeSpan.FromSeconds(30);
+            while (!installed) {
+                if (DateTime.UtcNow - start > timeout) {
+                    "Timed-out while waiting for Studio installation to be verified".Log(LogLevel.Warn);
+                    return;
+                }
+
+                await Task.Delay(1000).ConfigureAwait(false);
+            }
+
             if (Process.GetProcesses().Any(process => process.ProcessName == "CelesteStudio")) {
                 // Another instance is already running
                 return;
@@ -206,7 +228,7 @@ public static class StudioHelper {
                 Process.Start(Path.Combine(StudioDirectory, "CelesteStudio.app", "Contents", "MacOS", "CelesteStudio"));
             }
         } catch (Exception ex) {
-            ex.LogException("Failed to launch studio");
+            ex.LogException("Failed to launch Studio");
         }
-    }
+    });
 }

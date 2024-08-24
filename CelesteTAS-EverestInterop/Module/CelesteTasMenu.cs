@@ -44,8 +44,13 @@ internal static class CelesteTasMenu {
                 TasSettings.CenterCameraHorizontallyOnly = value));
             subMenu.Add(new TextMenu.OnOff("Restore Settings".ToDialogText(), TasSettings.RestoreSettings).Change(value =>
                 TasSettings.RestoreSettings = value));
-            subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), TasSettings.LaunchStudioAtBoot).Change(value =>
-                TasSettings.LaunchStudioAtBoot = value));
+            subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), TasSettings.LaunchStudioAtBoot).Change(value => {
+                TasSettings.LaunchStudioAtBoot = value;
+                if (value) {
+                    // Also launch directly
+                    StudioHelper.LaunchStudio();
+                }
+            }));
             subMenu.Add(new TextMenu.OnOff("Attempt To Connect To Studio".ToDialogText(), TasSettings.AttemptConnectStudio).Change(value => {
                 TasSettings.AttemptConnectStudio = value;
                 CommunicationWrapper.ChangeStatus();
