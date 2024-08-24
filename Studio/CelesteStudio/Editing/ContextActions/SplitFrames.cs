@@ -10,13 +10,13 @@ public class SplitFrames : ContextAction {
         (int minRow, int maxRow) = Document.Selection.Empty
             ? (Document.Caret.Row, Document.Caret.Row)
             : (Document.Selection.Min.Row, Document.Selection.Max.Row);
-        
+
         bool valid = false;
         for (int row = minRow; row <= maxRow; row++) {
-            if (!ActionLine.TryParse(Document.Lines[row], out var actionLine) || actionLine.Frames <= 1) {
+            if (!ActionLine.TryParse(Document.Lines[row], out var actionLine) || actionLine.FrameCount <= 1) {
                 continue;
             }
-            
+
             valid = true;
             break;
         }
@@ -29,16 +29,16 @@ public class SplitFrames : ContextAction {
             using var __ = Document.Update();
 
             int extraLines = 0;
-            
+
             for (int row = maxRow; row >= minRow; row--) {
-                if (!ActionLine.TryParse(Document.Lines[row], out var actionLine) || actionLine.Frames == 0) {
+                if (!ActionLine.TryParse(Document.Lines[row], out var actionLine) || actionLine.FrameCount == 0) {
                     continue;
                 }
-                
-                extraLines += actionLine.Frames - 1;
-                Document.ReplaceLines(row, Enumerable.Repeat((actionLine with { Frames = 1 }).ToString(), actionLine.Frames).ToArray());
+
+                extraLines += actionLine.FrameCount - 1;
+                Document.ReplaceLines(row, Enumerable.Repeat((actionLine with { FrameCount = 1 }).ToString(), actionLine.FrameCount).ToArray());
             }
-            
+
             if (!Document.Selection.Empty) {
                 int endRow = maxRow + extraLines;
                 Document.Selection = new Selection {
@@ -46,7 +46,7 @@ public class SplitFrames : ContextAction {
                     End = new CaretPosition(endRow, Document.Lines[endRow].Length),
                 };
             }
-            
+
             Document.Caret.Row = maxRow;
             Document.Caret = Editor.ClampCaret(Document.Caret);
         });

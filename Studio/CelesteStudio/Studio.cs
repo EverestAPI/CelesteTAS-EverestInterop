@@ -218,7 +218,7 @@ public sealed class Studio : Form {
         }
 
         if (Settings.Instance.AutoSave) {
-            Editor.BeforeFinalSave();
+            Editor.FixInvalidInputs();
             Editor.Document.Save();
         }
 

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,7 +14,6 @@ using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
 using StudioCommunication;
-using System.Collections;
 using WrapLine = (string Line, int Index);
 using WrapEntry = (int StartOffset, (string Line, int Index)[] Lines);
 
@@ -30,7 +28,7 @@ public sealed class Editor : Drawable {
                 document.TextChanged -= HandleTextChanged;
 
                 if (Settings.Instance.AutoSave) {
-                    BeforeFinalSave();
+                    FixInvalidInputs();
                     document.Save();
                 }
             }
@@ -48,7 +46,7 @@ public sealed class Editor : Drawable {
             // Reset various state
             ActivePopupMenu = null;
 
-            ConvertToActionLines(0, document.Lines.Count - 1);
+            FixInvalidInputs();
             Recalc();
             ScrollCaretIntoView();
 
@@ -85,7 +83,7 @@ public sealed class Editor : Drawable {
                     if (!ActionLine.TryParse(line, out var actionLine)) {
                         continue;
                     }
-                    totalFrames += actionLine.Frames;
+                    totalFrames += actionLine.FrameCount;
                 }
                 Studio.Instance.GameInfoPanel.TotalFrames = totalFrames;
                 Studio.Instance.GameInfoPanel.UpdateGameInfo();
@@ -382,14 +380,15 @@ public sealed class Editor : Drawable {
         }, toastCancellationSource.Token);
     }
 
-    /// Called before the document is saved for the final time (i.e. closing Studio / opening another file)
-    public void BeforeFinalSave() {
+    /// Removes invalid inputs, like frameless actions or leading zeros
+    public void FixInvalidInputs() {
         using var __ = Document.Update();
 
         // Frameless action lines are only intended for editing and shouldn't be part of the final TAS
         for (int row = 0; row < Document.Lines.Count; row++) {
             if (ActionLine.TryParse(Document.Lines[row], out var actionLine)) {
-                actionLine.Frames = Math.Clamp(actionLine.Frames, 0, ActionLine.MaxFrames);
+                actionLine.FrameCount = Math.Clamp(actionLine.FrameCount, 0, ActionLine.MaxFrames);
+
                 Document.ReplaceLine(row, actionLine.ToString());
             }
         }
@@ -670,19 +669,19 @@ public sealed class Editor : Drawable {
                 int row = topLine != null ? topRow : bottomRow;
 
                 if (dir > 0) {
-                    Document.ReplaceLine(row, (line with { Frames = Math.Min(line.Frames + 1, ActionLine.MaxFrames) }).ToString());
+                    Document.ReplaceLine(row, (line with { FrameCount = Math.Min(line.FrameCount + 1, ActionLine.MaxFrames) }).ToString());
                 } else {
-                    Document.ReplaceLine(row, (line with { Frames = Math.Max(line.Frames - 1, 0) }).ToString());
+                    Document.ReplaceLine(row, (line with { FrameCount = Math.Max(line.FrameCount - 1, 0) }).ToString());
                 }
             }
             // Move frames between lines
             else {
-                if (dir > 0 && bottomLine!.Value.Frames > 0 && topLine!.Value.Frames < ActionLine.MaxFrames) {
-                    Document.ReplaceLine(topRow,    (topLine.Value    with { Frames = Math.Min(topLine.Value.Frames    + 1, ActionLine.MaxFrames)  }).ToString());
-                    Document.ReplaceLine(bottomRow, (bottomLine.Value with { Frames = Math.Max(bottomLine.Value.Frames - 1, 0)                     }).ToString());
-                } else if (dir < 0 && bottomLine!.Value.Frames < ActionLine.MaxFrames && topLine!.Value.Frames > 0) {
-                    Document.ReplaceLine(topRow,    (topLine.Value    with { Frames = Math.Max(topLine.Value.Frames    - 1, 0)                    }).ToString());
-                    Document.ReplaceLine(bottomRow, (bottomLine.Value with { Frames = Math.Min(bottomLine.Value.Frames + 1, ActionLine.MaxFrames) }).ToString());
+                if (dir > 0 && bottomLine!.Value.FrameCount > 0 && topLine!.Value.FrameCount < ActionLine.MaxFrames) {
+                    Document.ReplaceLine(topRow,    (topLine.Value    with { FrameCount = Math.Min(topLine.Value.FrameCount    + 1, ActionLine.MaxFrames)  }).ToString());
+                    Document.ReplaceLine(bottomRow, (bottomLine.Value with { FrameCount = Math.Max(bottomLine.Value.FrameCount - 1, 0)                     }).ToString());
+                } else if (dir < 0 && bottomLine!.Value.FrameCount < ActionLine.MaxFrames && topLine!.Value.FrameCount > 0) {
+                    Document.ReplaceLine(topRow,    (topLine.Value    with { FrameCount = Math.Max(topLine.Value.FrameCount    - 1, 0)                    }).ToString());
+                    Document.ReplaceLine(bottomRow, (bottomLine.Value with { FrameCount = Math.Min(bottomLine.Value.FrameCount + 1, ActionLine.MaxFrames) }).ToString());
                 }
             }
         }
@@ -1659,29 +1658,24 @@ public sealed class Editor : Drawable {
             }
             // If the key we entered is a number
             else if (typedCharacter is >= '0' and <= '9' && Document.Caret.Col <= ActionLine.MaxFramesDigits) {
-                int cursorPosition = Document.Caret.Col - leadingSpaces;
+                int caretIndex = Math.Clamp(Document.Caret.Col - leadingSpaces, 0, actionLine.Frames.Length);
 
-                // If we have a 0, just overwrite it
-                // But don't prevent turning a 0 into a 10
-                if (actionLine.Frames == 0 && Document.Caret.Col == ActionLine.MaxFramesDigits) {
-                    actionLine.Frames = int.Parse(typedCharacter.ToString());
-                } else {
-                    // Jam the number into the current position
-                    string leftOfCursor = line[..(Document.Caret.Col)];
-                    string rightOfCursor = line[(Document.Caret.Col)..];
-                    line = $"{leftOfCursor}{typedCharacter}{rightOfCursor}";
+                // Jam the number into the current position
+                string framesLeft = actionLine.Frames[..caretIndex];
+                string framesRight = actionLine.Frames[caretIndex..];
+                actionLine.Frames = $"{framesLeft}{typedCharacter}{framesRight}";
 
-                    // Reparse
-                    ActionLine.TryParse(line, out actionLine);
-
-                    // Cap at max frames
-                    if (actionLine.Frames > ActionLine.MaxFrames) {
-                        actionLine.Frames = ActionLine.MaxFrames;
-                        Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
-                    } else {
-                        Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits - actionLine.FrameDigits + cursorPosition + 1;
-                    }
+                // Cap at max frames
+                if (actionLine.FrameCount > ActionLine.MaxFrames) {
+                    actionLine.FrameCount = ActionLine.MaxFrames;
+                    Document.Caret.Col = ActionLine.MaxFramesDigits;
                 }
+                // Cap at max frame length
+                else if (actionLine.Frames.Length > ActionLine.MaxFramesDigits) {
+                    actionLine.Frames = Math.Clamp(actionLine.FrameCount, 0, ActionLine.MaxFrames).ToString().PadLeft(ActionLine.MaxFramesDigits, '0');
+                }
+
+                desiredVisualCol = Document.Caret.Col;
             }
 
             FinishEdit:
@@ -1735,7 +1729,7 @@ public sealed class Editor : Drawable {
             line = Document.Lines[Document.Caret.Row];
             if (ActionLine.TryParse(line, out actionLine)) {
                 int leadingSpaces = line.Length - line.TrimStart().Length;
-                int frameDigits = actionLine.Frames.Digits();
+                int frameDigits = actionLine.Frames.Length;
 
                 Document.Caret.Col += ActionLine.MaxFramesDigits - (leadingSpaces + frameDigits);
             }
@@ -1752,44 +1746,33 @@ public sealed class Editor : Drawable {
             if (caret.Col == ActionLine.MaxFramesDigits && direction is CaretMovementType.WordLeft or CaretMovementType.CharLeft ||
                 caret.Col < ActionLine.MaxFramesDigits) {
                 int leadingSpaces = line.Length - line.TrimStart().Length;
-                int cursorIndex = Math.Clamp(caret.Col - leadingSpaces, 0, actionLine.FrameDigits);
+                int caretIndex = Math.Clamp(caret.Col - leadingSpaces, 0, actionLine.Frames.Length);
 
-                string framesString = actionLine.Frames.ToString();
-                string leftOfCursor = framesString[..cursorIndex];
-                string rightOfCursor = framesString[cursorIndex..];
+                string framesLeft = actionLine.Frames[..caretIndex];
+                string framesRight = actionLine.Frames[caretIndex..];
 
                 // Fully delete the line if it's frameless
-                if (actionLine.Frames < 0) {
+                if (actionLine.Frames.Length == 0) {
                     line = string.Empty;
-                } else if (leftOfCursor.Length == 0 && direction is CaretMovementType.WordLeft or CaretMovementType.CharLeft ||
-                           rightOfCursor.Length == 0 && direction is CaretMovementType.WordRight or CaretMovementType.CharRight) {
+                } else if (framesLeft.Length == 0 && direction is CaretMovementType.WordLeft or CaretMovementType.CharLeft ||
+                           framesRight.Length == 0 && direction is CaretMovementType.WordRight or CaretMovementType.CharRight)
+                {
                     line = string.Empty;
                 } else {
-                    string newFramesString = string.Empty;
                     if (direction == CaretMovementType.WordLeft) {
-                        newFramesString = rightOfCursor;
-                        cursorIndex = 0;
+                        actionLine.Frames = framesRight;
+                        caretIndex = 0;
                     } else if (direction == CaretMovementType.WordRight) {
-                        newFramesString = leftOfCursor;
+                        actionLine.Frames = framesLeft;
                     } else if (direction == CaretMovementType.CharLeft) {
-                        newFramesString = $"{leftOfCursor[..^1]}{rightOfCursor}";
-                        cursorIndex--;
+                        actionLine.Frames = $"{framesLeft[..^1]}{framesRight}";
+                        caretIndex--;
                     } else if (direction == CaretMovementType.CharRight) {
-                        newFramesString = $"{leftOfCursor}{rightOfCursor[1..]}";
+                        actionLine.Frames = $"{framesLeft}{framesRight[1..]}";
                     }
 
-                    int frames = -1;
-                    if (int.TryParse(newFramesString, out int value)) {
-                        frames = value;
-                    } else if (!string.IsNullOrWhiteSpace(newFramesString)) {
-                        frames = 0;
-                    }
-
-                    actionLine.Frames = Math.Clamp(frames, -1, ActionLine.MaxFrames);
                     line = actionLine.ToString();
-                    caret.Col = actionLine.Frames <= 0
-                        ? ActionLine.MaxFramesDigits
-                        : ActionLine.MaxFramesDigits - actionLine.FrameDigits + cursorIndex;
+                    caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits - actionLine.Frames.Length + caretIndex;
                 }
 
                 goto FinishDeletion; // Skip regular deletion behaviour
@@ -2386,7 +2369,7 @@ public sealed class Editor : Drawable {
         ActionLine? currentActionLine = ActionLine.Parse(line);
         if (currentActionLine is { } actionLine) {
             Document.Caret.Col = Math.Min(line.Length, SnapColumnToActionLine(actionLine, Document.Caret.Col));
-            int leadingSpaces = ActionLine.MaxFramesDigits - actionLine.FrameDigits;
+            int leadingSpaces = ActionLine.MaxFramesDigits - actionLine.Frames.Length;
 
             // Line wrapping
             if (Document.Caret.Row > 0 && Document.Caret.Col == leadingSpaces &&
@@ -3114,11 +3097,11 @@ public sealed class Editor : Drawable {
 
     // For movement without Ctrl
     private static IReadOnlyList<int> GetSoftSnapColumns(ActionLine actionLine) {
-        int leadingSpaces = ActionLine.MaxFramesDigits - actionLine.FrameDigits;
+        int leadingSpaces = ActionLine.MaxFramesDigits - actionLine.Frames.Length;
 
         List<int> softSnapColumns = [];
         // Frame count
-        softSnapColumns.AddRange(Enumerable.Range(leadingSpaces, actionLine.FrameDigits + 1));
+        softSnapColumns.AddRange(Enumerable.Range(leadingSpaces, actionLine.Frames.Length + 1));
         // Actions
         foreach (var action in actionLine.Actions.Sorted()) {
             int column = GetColumnOfAction(actionLine, action);
@@ -3142,7 +3125,7 @@ public sealed class Editor : Drawable {
 
     // For movement with Ctrl
     private static IReadOnlyList<int> GetHardSnapColumns(ActionLine actionLine) {
-        int leadingSpaces = ActionLine.MaxFramesDigits - actionLine.FrameDigits;
+        int leadingSpaces = ActionLine.MaxFramesDigits - actionLine.Frames.Length;
 
         List<int> hardSnapColumns =
         [

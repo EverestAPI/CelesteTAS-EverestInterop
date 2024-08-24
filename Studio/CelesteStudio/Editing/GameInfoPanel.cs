@@ -433,7 +433,7 @@ public class GameInfoPanel : Panel {
                 if (!ActionLine.TryParse(document.Lines[row], out var actionLine)) {
                     continue;
                 }
-                selectedFrames += actionLine.Frames;
+                selectedFrames += actionLine.FrameCount;
             }
 
             frameInfo.Append($" Selected: {selectedFrames}");

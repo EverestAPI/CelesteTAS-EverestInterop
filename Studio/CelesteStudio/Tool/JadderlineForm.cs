@@ -334,7 +334,7 @@ public sealed class JadderlineForm : Form {
             }
 
             foreach (var f in formatted) {
-                var actionLine = new ActionLine { Frames = f.Frames, Actions = Actions.Grab | additionalActions };
+                var actionLine = new ActionLine { FrameCount = f.Frames, Actions = Actions.Grab | additionalActions };
                 if (f.HoldDir) {
                     if (moveOnly) {
                         actionLine.Actions |= Actions.MoveOnly | (direction ? Actions.RightMoveOnly : Actions.LeftMoveOnly);
@@ -346,7 +346,7 @@ public sealed class JadderlineForm : Form {
                 result.AppendLine(actionLine.ToString());
             }
 
-            var dropActionLine = new ActionLine { Frames = 1, Actions = additionalActions };
+            var dropActionLine = new ActionLine { FrameCount = 1, Actions = additionalActions };
             if (moveOnly) {
                 dropActionLine.Actions |= Actions.MoveOnly | Actions.DownMoveOnly;
                 if (input[8]) {

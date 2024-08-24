@@ -13,8 +13,24 @@ public struct ActionLine() {
     public const int MaxFramesDigits = 4;
 
     public Actions Actions;
-    public int Frames;
-    public int FrameDigits => Frames < 0 ? 0 : Frames.Digits();
+
+    private string frames;
+    private int frameCount;
+
+    public string Frames {
+        get => frames;
+        set {
+            frames = value.Trim();
+            frameCount = int.TryParse(frames, out int x) ? x : 0;
+        }
+    }
+    public int FrameCount {
+        get => frameCount;
+        set {
+            frameCount = value;
+            frames = frameCount.ToString();
+        }
+    }
 
     public string? FeatherAngle;
     public string? FeatherMagnitude;
@@ -32,10 +48,8 @@ public struct ActionLine() {
         string[] tokens = line.Trim().Split(Delimiter, StringSplitOptions.TrimEntries);
         if (tokens.Length == 0) return false;
 
-        if (int.TryParse(tokens[0], CultureInfo.InvariantCulture, out int frames)) {
-            actionLine.Frames = frames;
-        } else if (string.IsNullOrWhiteSpace(tokens[0])) {
-            actionLine.Frames = -1;
+        if (string.IsNullOrWhiteSpace(tokens[0]) || int.TryParse(tokens[0], out _)) {
+            actionLine.Frames = tokens[0];
         } else {
             return false;
         }
@@ -108,7 +122,7 @@ public struct ActionLine() {
             }
         }
 
-        if (actionLine.Frames < 0 &&
+        if (actionLine.Frames.Length == 0 &&
             actionLine.Actions == Actions.None &&
             actionLine.CustomBindings.Count == 0 &&
             actionLine.FeatherAngle == null &&
@@ -139,16 +153,27 @@ public struct ActionLine() {
                 case ParseState.Frame:
                 {
                     if (c == Delimiter) {
+                        if (!string.IsNullOrWhiteSpace(currValue) && !int.TryParse(currValue, out _)) {
+                            // Invalid action-line
+                            return false;
+                        }
+                        actionLine.Frames = currValue;
+
+                        currValue = "";
+                        state = ParseState.Action;
+
                         continue;
                     }
 
                     if (char.IsDigit(c)) {
                         currValue += c;
                     } else {
-                        if (!int.TryParse(currValue, out actionLine.Frames)) {
+                        if (!int.TryParse(currValue, out _)) {
                             // Invalid action-line
                             return false;
                         }
+                        actionLine.Frames = currValue;
+
                         currValue = "";
                         goto case ParseState.Action;
                     }
@@ -272,7 +297,6 @@ public struct ActionLine() {
         var customBindings = CustomBindings.ToList();
         customBindings.Sort();
 
-        string frames = Frames < 0 ? new string(' ', MaxFramesDigits) : Frames.ToString().PadLeft(MaxFramesDigits);
         string actions = Actions.Sorted().Aggregate("", (s, a) => $"{s}{Delimiter}{a switch {
             Actions.DashOnly => $"{Actions.DashOnly.CharForAction()}{string.Join("", tasActions.GetDashOnly().Select(ActionsUtils.CharForAction))}",
             Actions.MoveOnly => $"{Actions.MoveOnly.CharForAction()}{string.Join("", tasActions.GetMoveOnly().Select(ActionsUtils.CharForAction))}",
@@ -282,6 +306,6 @@ public struct ActionLine() {
         string featherAngle = Actions.HasFlag(Actions.Feather) ? $"{Delimiter}{FeatherAngle ?? ""}" : string.Empty;
         string featherMagnitude = Actions.HasFlag(Actions.Feather) && FeatherMagnitude != null ? $"{Delimiter}{FeatherMagnitude}" : string.Empty;
 
-        return $"{frames}{actions}{featherAngle}{featherMagnitude}";
+        return $"{Frames,MaxFramesDigits}{actions}{featherAngle}{featherMagnitude}";
     }
 }

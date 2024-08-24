@@ -37,7 +37,7 @@ public static class CalculationExtensions {
             _ => throw new UnreachableException(),
         };
     }
-    
+
     public static CalculationOperator Inverse(this CalculationOperator op) {
         return op switch {
             CalculationOperator.Add => CalculationOperator.Sub,
@@ -58,7 +58,7 @@ public static class CalculationExtensions {
         };
     }
     public static ActionLine Apply(this CalculationOperator op, ActionLine actionLine, int operand) {
-        int newFrames = op.Apply(actionLine.Frames, operand);
-        return actionLine with { Frames = Math.Clamp(newFrames, 0, ActionLine.MaxFrames) };
+        int newFrames = op.Apply(actionLine.FrameCount, operand);
+        return actionLine with { FrameCount = Math.Clamp(newFrames, 0, ActionLine.MaxFrames) };
     }
 }
