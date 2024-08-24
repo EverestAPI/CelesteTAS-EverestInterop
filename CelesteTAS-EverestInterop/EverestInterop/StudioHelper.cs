@@ -7,6 +7,8 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading;
 using Celeste.Mod;
+using System.Linq;
+using System.Threading.Tasks;
 using TAS.Module;
 using TAS.Utils;
 
@@ -19,7 +21,7 @@ public static class StudioHelper {
 
     // These values will automatically get filled in by the Build.yml/Release.yml actions
     private const bool   DoubleZipArchive        = false; //DOUBLE_ZIP_ARCHIVE
-    private const string CurrentStudioVersion    = "3.0.0-37d5e33";
+    private const string CurrentStudioVersion    = "##STUDIO_VERSION##";
 
     private const string DownloadURL_Windows_x64 = "##URL_WINDOWS_x64##";
     private const string DownloadURL_Linux_x64   = "##URL_LINUX_x64##";
@@ -79,25 +81,26 @@ public static class StudioHelper {
         // INSTALL_STUDIO is only set during builds from Build.yml/Release.yml, since otherwise the URLs / checksums are invalid
 #if INSTALL_STUDIO
         // Check if studio is already up-to-date
-        if (!File.Exists(VersionFile) || File.ReadAllText(VersionFile) != CurrentStudioVersion) {
-            $"Celeste Studio is outdated. Installing latest version: '{CurrentStudioVersion}'".Log();
+        if (!File.Exists(VersionFile) || File.ReadAllText(VersionFile) is var installedVersion && installedVersion != CurrentStudioVersion) {
+            $"Celeste Studio version mismatch: Expected '{CurrentStudioVersion}', found '{installedVersion}'. Installing current version...".Log();
 
-            // Reset everything
-            if (Directory.Exists(StudioDirectory)) {
-                Directory.Delete(StudioDirectory, recursive: true);
-            }
-            Directory.CreateDirectory(StudioDirectory);
-
-            try {
-                DownloadStudio();
-            } catch {
-                // Cleanup
+            Task.Run(async () => {
+                // Reset everything
                 if (Directory.Exists(StudioDirectory)) {
                     Directory.Delete(StudioDirectory, recursive: true);
                 }
-                throw;
-            }
+                Directory.CreateDirectory(StudioDirectory);
 
+                try {
+                    await DownloadStudio().ConfigureAwait(false);
+                } catch {
+                    // Cleanup
+                    if (Directory.Exists(StudioDirectory)) {
+                        Directory.Delete(StudioDirectory, recursive: true);
+                    }
+                    throw;
+                }
+            });
         }
 #endif
 
@@ -106,19 +109,19 @@ public static class StudioHelper {
         }
     }
 
-    private static void DownloadStudio() {
+    private static async Task DownloadStudio() {
         // Download studio archive
         $"Starting download of '{DownloadURL}'...".Log();
         using (HttpClient client = new()) {
             client.Timeout = TimeSpan.FromMinutes(5);
-            using var res = client.GetAsync(DownloadURL).GetAwaiter().GetResult();
+            using var res = await client.GetAsync(DownloadURL).ConfigureAwait(false);
 
             string? path = Path.GetDirectoryName(TempDownloadPath);
             if (!string.IsNullOrWhiteSpace(path) && !Directory.Exists(path))
                 Directory.CreateDirectory(path);
 
-            using var fs = File.OpenWrite(TempDownloadPath);
-            res.Content.CopyTo(fs, null, CancellationToken.None);
+            await using var fs = File.OpenWrite(TempDownloadPath);
+            await res.Content.CopyToAsync(fs, null, CancellationToken.None);
         }
         if (!File.Exists(TempDownloadPath)) {
             "Download failed! The studio archive went missing".Log(LogLevel.Error);
@@ -126,21 +129,24 @@ public static class StudioHelper {
         }
         "Finished download".Log();
 
-        // Handle double ZIPs
+        // Handle double ZIPs caused by GitHub actions
         if (DoubleZipArchive) {
-            using var zip = ZipFile.OpenRead(TempDownloadPath);
-            var entry = zip.Entries[0]; // There should only be a single entry in this case
-            var innerPath = Path.Combine(StudioDirectory, entry.Name);
-            $"Extracting inner ZIP archive: '{entry.Name}'".Log(LogLevel.Verbose);
+            string innerPath;
+            using (var zip = ZipFile.OpenRead(TempDownloadPath)) {
+                var entry = zip.Entries[0]; // There should only be a single entry in this case
+                innerPath = Path.Combine(StudioDirectory, entry.Name);
+                $"Extracting inner ZIP archive: '{entry.Name}'".Log(LogLevel.Verbose);
 
-            entry.ExtractToFile(innerPath);
+                entry.ExtractToFile(innerPath);
+            }
+
             File.Move(innerPath, TempDownloadPath, overwrite: true);
         }
 
         // Verify checksum
         using var md5 = MD5.Create();
-        using (var fs = File.OpenRead(TempDownloadPath)) {
-            string hash = BitConverter.ToString(md5.ComputeHash(fs)).Replace("-", "");
+        await using (var fs = File.OpenRead(TempDownloadPath)) {
+            string hash = BitConverter.ToString(await md5.ComputeHashAsync(fs)).Replace("-", "");
             if (!Checksum.Equals(hash, StringComparison.OrdinalIgnoreCase)) {
                 $"Download failed! Invalid checksum for studio archive file: Expected {Checksum} got {hash}".Log(LogLevel.Error);
                 return;
@@ -154,7 +160,7 @@ public static class StudioHelper {
         "Successfully extracted studio archive".Log();
 
         // Store installed version number
-        File.WriteAllText(VersionFile, CurrentStudioVersion);
+        await File.WriteAllTextAsync(VersionFile, CurrentStudioVersion).ConfigureAwait(false);
 
         // Cleanup ZIP
         if (File.Exists(TempDownloadPath)) {
@@ -164,29 +170,30 @@ public static class StudioHelper {
         // Fix lost file permissions
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
             var chmodProc = Process.Start(new ProcessStartInfo("chmod", $"+x {Path.Combine(StudioDirectory, "CelesteStudio")}"))!;
-            chmodProc.WaitForExit();
-            if (chmodProc.ExitCode != 0)
+            await chmodProc.WaitForExitAsync().ConfigureAwait(false);
+            if (chmodProc.ExitCode != 0) {
                 "Install failed! Couldn't make studio executable".Log(LogLevel.Error);
+            }
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
             var chmodProc = Process.Start(new ProcessStartInfo("chmod", $"+x {Path.Combine(StudioDirectory, "CelesteStudio.app", "Contents", "MacOS", "CelesteStudio")}"))!;
-            chmodProc.WaitForExit();
-            if (chmodProc.ExitCode != 0)
+            await chmodProc.WaitForExitAsync().ConfigureAwait(false);
+            if (chmodProc.ExitCode != 0) {
                 "Install failed! Couldn't make studio executable".Log(LogLevel.Error);
+            }
 
             var xattrProc = Process.Start(new ProcessStartInfo("xattr", $"-c {Path.Combine(StudioDirectory, "CelesteStudio.app")}"))!;
-            xattrProc.WaitForExit();
-            if (xattrProc.ExitCode != 0)
+            await xattrProc.WaitForExitAsync().ConfigureAwait(false);
+            if (xattrProc.ExitCode != 0) {
                 "Install failed! Couldn't clear studio app bundle config".Log(LogLevel.Error);
+            }
         }
     }
 
     private static void LaunchStudio() {
         try {
-            foreach (var process in Process.GetProcesses()) {
-                if (process.ProcessName == "CelesteStudio") {
-                    // Another instance is already running
-                    return;
-                }
+            if (Process.GetProcesses().Any(process => process.ProcessName == "CelesteStudio")) {
+                // Another instance is already running
+                return;
             }
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
