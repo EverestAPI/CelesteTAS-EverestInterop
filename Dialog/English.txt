@@ -84,6 +84,7 @@ TAS_ANGLE_DECIMALS=               Angle Decimals
 TAS_CUSTOM_INFO_DECIMALS=         Custom Info Decimals
 TAS_SUBPIXEL_INDICATOR_DECIMALS=  Subpixel Indicator Decimals
 TAS_SPEED_UNIT=                   Speed Unit
+TAS_VELOCITY_UNIT=                Velocity Unit
 TAS_PIXEL_PER_SECOND=             Pixel/Second
 TAS_PIXEL_PER_FRAME=              Pixel/Frame
 
