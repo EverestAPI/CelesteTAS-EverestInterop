@@ -783,7 +783,12 @@ public sealed class Editor : Drawable {
                     SelectNextQuickEdit();
                 }
 
-                UpdateAutoComplete();
+                // Don't start a new base auto-complete. Only arguments
+                if (!string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row])) {
+                    UpdateAutoComplete();
+                } else {
+                    CloseAutoCompletePopup();
+                }
 
                 e.Handled = true;
                 Recalc();
@@ -1155,61 +1160,6 @@ public sealed class Editor : Drawable {
         }
     }
 
-    /// Inserts a new quick-edit text at the current row
-    private void InsertQuickEdit(string insert) {
-        if (QuickEdit.Parse(insert) is not { } quickEdit) {
-            return;
-        }
-
-        using var __ = Document.Update();
-
-        var oldCaret = Document.Caret;
-
-        if (!string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row])) {
-            // Create a new empty line for the quick-edit to use
-            CollapseSelection();
-
-            if (Settings.Instance.InsertDirection == InsertDirection.Above) {
-                Document.InsertLineAbove(string.Empty);
-                Document.Caret.Row--;
-                oldCaret.Row++;
-            } else if (Settings.Instance.InsertDirection == InsertDirection.Below) {
-                Document.InsertLineBelow(string.Empty);
-                Document.Caret.Row++;
-            }
-        }
-
-        int row = Document.Caret.Row;
-        Document.ReplaceLine(row, quickEdit.ActualText);
-
-        if (quickEdit.Selections.Length > 0) {
-            for (int i = 0; i < quickEdit.Selections.Length; i++) {
-                var selection = quickEdit.Selections[i];
-                var defaultText = quickEdit.ActualText.SplitDocumentLines()[selection.Min.Row][selection.Min.Col..selection.Max.Col];
-
-                // Quick-edit selections are relative, not absolute
-                Document.AddAnchor(new Anchor {
-                    Row = selection.Min.Row + row,
-                    MinCol = selection.Min.Col, MaxCol = selection.Max.Col,
-                    UserData = new QuickEditAnchorData { Index = i, DefaultText = defaultText },
-                    OnRemoved = ClearQuickEdits,
-                });
-            }
-            SelectQuickEditIndex(0);
-        } else if (Settings.Instance.CaretInsertPosition == CaretInsertPosition.AfterInsert) {
-            if (Settings.Instance.InsertDirection == InsertDirection.Above) {
-                Document.Caret.Row = row;
-                Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
-            } else if (Settings.Instance.InsertDirection == InsertDirection.Below) {
-                int newLines = quickEdit.ActualText.Count(c => c == Document.NewLine);
-                Document.Caret.Row = row + newLines;
-                Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
-            }
-        } else {
-            Document.Caret = oldCaret;
-        }
-    }
-
     /// Creates an action, which will insert the quick edit when invoked
     private Action? CreateQuickEditAction(string insert, Func<string[], CommandAutoCompleteEntry[]>[] commandAutoCompleteEntries) {
         var quickEdit = QuickEdit.Parse(insert);
@@ -1246,8 +1196,12 @@ public sealed class Editor : Drawable {
             }
 
             if (commandAutoCompleteEntries.Length != 0) {
-                // Keep open for arguments
-                UpdateAutoComplete();
+                // Keep open for arguments (but not a new base auto-complete)
+                if (!string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row])) {
+                    UpdateAutoComplete();
+                } else {
+                    CloseAutoCompletePopup();
+                }
             } else {
                 ActivePopupMenu = null;
             }
@@ -1304,6 +1258,7 @@ public sealed class Editor : Drawable {
                                                       Document.Caret.Col >= anchor.MinCol &&
                                                       Document.Caret.Col <= anchor.MaxCol);
 
+                        // Jump to the next parameter and open the auto-complete menu if applicable
                         if (selectedQuickEdit != null) {
                             // Replace the current quick-edit instead
                             Document.ReplaceRangeInLine(selectedQuickEdit.Row, selectedQuickEdit.MinCol, selectedQuickEdit.MaxCol, insert);
@@ -1323,7 +1278,13 @@ public sealed class Editor : Drawable {
                                     CloseAutoCompletePopup();
                                 } else {
                                     SelectNextQuickEdit();
-                                    UpdateAutoComplete();
+
+                                    // Don't start a new base auto-complete. Only arguments
+                                    if (!string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row])) {
+                                        UpdateAutoComplete();
+                                    } else {
+                                        CloseAutoCompletePopup();
+                                    }
                                 }
                             } else {
                                 Document.Selection.Clear();
@@ -1493,6 +1454,61 @@ public sealed class Editor : Drawable {
 
     private IEnumerable<Anchor> GetQuickEdits() => Document.FindAnchors(anchor => anchor.UserData is QuickEditAnchorData);
     private void ClearQuickEdits() => Document.RemoveAnchorsIf(anchor => anchor.UserData is QuickEditAnchorData);
+
+    /// Inserts a new quick-edit text at the current row
+    private void InsertQuickEdit(string insert) {
+        if (QuickEdit.Parse(insert) is not { } quickEdit) {
+            return;
+        }
+
+        using var __ = Document.Update();
+
+        var oldCaret = Document.Caret;
+
+        if (!string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row])) {
+            // Create a new empty line for the quick-edit to use
+            CollapseSelection();
+
+            if (Settings.Instance.InsertDirection == InsertDirection.Above) {
+                Document.InsertLineAbove(string.Empty);
+                Document.Caret.Row--;
+                oldCaret.Row++;
+            } else if (Settings.Instance.InsertDirection == InsertDirection.Below) {
+                Document.InsertLineBelow(string.Empty);
+                Document.Caret.Row++;
+            }
+        }
+
+        int row = Document.Caret.Row;
+        Document.ReplaceLine(row, quickEdit.ActualText);
+
+        if (quickEdit.Selections.Length > 0) {
+            for (int i = 0; i < quickEdit.Selections.Length; i++) {
+                var selection = quickEdit.Selections[i];
+                var defaultText = quickEdit.ActualText.SplitDocumentLines()[selection.Min.Row][selection.Min.Col..selection.Max.Col];
+
+                // Quick-edit selections are relative, not absolute
+                Document.AddAnchor(new Anchor {
+                    Row = selection.Min.Row + row,
+                    MinCol = selection.Min.Col, MaxCol = selection.Max.Col,
+                    UserData = new QuickEditAnchorData { Index = i, DefaultText = defaultText },
+                    OnRemoved = ClearQuickEdits,
+                });
+            }
+            SelectQuickEditIndex(0);
+        } else if (Settings.Instance.CaretInsertPosition == CaretInsertPosition.AfterInsert) {
+            if (Settings.Instance.InsertDirection == InsertDirection.Above) {
+                Document.Caret.Row = row;
+                Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+            } else if (Settings.Instance.InsertDirection == InsertDirection.Below) {
+                int newLines = quickEdit.ActualText.Count(c => c == Document.NewLine);
+                Document.Caret.Row = row + newLines;
+                Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+            }
+        } else {
+            Document.Caret = oldCaret;
+        }
+    }
 
     #endregion
 
