@@ -91,6 +91,12 @@ public static class StudioHelper {
             $"Celeste Studio version mismatch: Expected '{CurrentStudioVersion}', found '{installedVersion}'. Installing current version...".Log();
 
             Task.Run(async () => {
+                // Kill all Studio instances to avoid issues with file usage
+                foreach (var process in Process.GetProcesses().Where(process => process.ProcessName == "CelesteStudio")) {
+                    process.Kill();
+                    await process.WaitForExitAsync().ConfigureAwait(false);
+                }
+
                 // Reset everything
                 if (Directory.Exists(StudioDirectory)) {
                     Directory.Delete(StudioDirectory, recursive: true);
