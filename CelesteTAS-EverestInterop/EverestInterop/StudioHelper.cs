@@ -81,7 +81,8 @@ public static class StudioHelper {
         // INSTALL_STUDIO is only set during builds from Build.yml/Release.yml, since otherwise the URLs / checksums are invalid
 #if INSTALL_STUDIO
         // Check if studio is already up-to-date
-        if (!File.Exists(VersionFile) || File.ReadAllText(VersionFile) is var installedVersion && installedVersion != CurrentStudioVersion) {
+        string installedVersion = "<None>";
+        if (!File.Exists(VersionFile) || (installedVersion = File.ReadAllText(VersionFile)) != CurrentStudioVersion) {
             $"Celeste Studio version mismatch: Expected '{CurrentStudioVersion}', found '{installedVersion}'. Installing current version...".Log();
 
             Task.Run(async () => {
