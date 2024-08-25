@@ -93,15 +93,19 @@ public static class StudioHelper {
             Task.Run(async () => {
                 // Kill all Studio instances to avoid issues with file usage
                 foreach (var process in Process.GetProcesses().Where(process => process.ProcessName is "CelesteStudio" or "Celeste Studio")) {
+                    $"Killing process {process} ({process.Id})...".Log(LogLevel.Verbose);
                     process.Kill();
-                    await process.WaitForExitAsync().ConfigureAwait(false);
+                    await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(30.0f)).ConfigureAwait(false);
+                    "Process killed".Log(LogLevel.Verbose);
                 }
 
                 // Reset everything
+                $"Cleaning directory '{StudioDirectory}'...".Log(LogLevel.Verbose);
                 if (Directory.Exists(StudioDirectory)) {
                     Directory.Delete(StudioDirectory, recursive: true);
                 }
                 Directory.CreateDirectory(StudioDirectory);
+                "Directory cleaned".Log(LogLevel.Verbose);
 
                 try {
                     await DownloadStudio().ConfigureAwait(false);
@@ -215,6 +219,7 @@ public static class StudioHelper {
     }
 
     internal static void LaunchStudio() => Task.Run(async () => {
+        "Launching Studio...".Log();
         try {
             // Wait until the installation is verified
             var start = DateTime.UtcNow;
@@ -229,18 +234,22 @@ public static class StudioHelper {
             }
 
             if (Process.GetProcesses().Any(process => process.ProcessName == "CelesteStudio")) {
-                // Another instance is already running
+                "Another Studio instance is already running".Log();
                 return;
             }
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                $"Starting process '{Path.Combine(StudioDirectory, "CelesteStudio.exe")}'...".Log(LogLevel.Verbose);
                 // Start through explorer to detach studio from the game process (and avoid issues with the Steam Overlay for example)
                 Process.Start("Explorer", [Path.Combine(StudioDirectory, "CelesteStudio.exe")]);
             } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+                $"Starting process '{Path.Combine(StudioDirectory, "CelesteStudio")}'...".Log(LogLevel.Verbose);
                 Process.Start(Path.Combine(StudioDirectory, "CelesteStudio"));
             } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                $"Starting process '{Path.Combine(StudioDirectory, "CelesteStudio.app", "Contents", "MacOS", "CelesteStudio")}'...".Log(LogLevel.Verbose);
                 Process.Start(Path.Combine(StudioDirectory, "CelesteStudio.app", "Contents", "MacOS", "CelesteStudio"));
             }
+            "Successfully launched Studio".Log();
         } catch (Exception ex) {
             ex.LogException("Failed to launch Studio");
         }
