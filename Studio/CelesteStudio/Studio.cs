@@ -82,6 +82,12 @@ public sealed class Studio : Form {
                 lastLocation = lastLocation with { Y = (int)screen.WorkingArea.Bottom - lastSize.Height };
             }
             Location = lastLocation;
+        } else {
+            // Center window
+            var area = Screen.PrimaryScreen.WorkingArea;
+            Location = new Point(
+                (int)(area.MiddleX - Size.Width / 2.0f),
+                (int)(area.MiddleY - Size.Height / 2.0f));
         }
 
         GlobalHotkeys = CreateGlobalHotkeys();
