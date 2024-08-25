@@ -1,7 +1,9 @@
 using CelesteStudio.Dialog;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace CelesteStudio.Migration;
 
@@ -40,16 +42,27 @@ public static class Migrator {
 
         var asm = Assembly.GetExecutingAssembly();
 
+        List<(string versionName, Stream stream)> changelogs = [];
+
         foreach (var (version, preLoad, _) in migrations) {
             if (version > oldVersion && version <= newVersion) {
                 preLoad?.Invoke();
 
                 string versionName = version.ToString(3);
                 if (asm.GetManifestResourceStream($"Changelogs/v{versionName}.md") is { } stream) {
-                    Studio.Instance.Shown += (_, _) => WhatsNewDialog.Show($"Whats new in Studio v{versionName}?", new StreamReader(stream).ReadToEnd());
+                    changelogs.Add((versionName, stream));
                 }
             }
         }
+
+        Studio.Instance.Shown += (_, _) => Task.Run(async () => {
+            // Make sure Studio is fully launched before displaying changelogs
+            await Task.Delay(5_000).ConfigureAwait(false);
+
+            foreach ((string? versionName, var stream) in changelogs) {
+                WhatsNewDialog.Show($"Whats new in Studio v{versionName}?", await new StreamReader(stream).ReadToEndAsync().ConfigureAwait(false));
+            }
+        });
 
         File.WriteAllText(LatestVersionPath, newVersion.ToString(3));
     }
