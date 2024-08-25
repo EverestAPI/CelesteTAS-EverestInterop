@@ -72,7 +72,7 @@ public class CombineConsecutiveSameInputs : ContextAction {
                     break;
                 }
 
-                currActionLine.Frames += otherActionLine.Frames;
+                currActionLine.FrameCount += otherActionLine.FrameCount;
                 hasChanges = true;
             }
 
@@ -90,7 +90,7 @@ public class CombineConsecutiveSameInputs : ContextAction {
                     break;
                 }
 
-                currActionLine.Frames += otherActionLine.Frames;
+                currActionLine.FrameCount += otherActionLine.FrameCount;
                 hasChanges = true;
             }
 
@@ -137,7 +137,7 @@ public class CombineConsecutiveSameInputs : ContextAction {
 
                 if (!sameActions) {
                     // Just merge them, regardless if they are the same actions
-                    activeActionLine = activeActionLine.Value with { Frames = activeActionLine.Value.Frames + currActionLine.Frames };
+                    activeActionLine = activeActionLine.Value with { FrameCount = activeActionLine.Value.FrameCount + currActionLine.FrameCount };
                     hasChanges = true;
                     continue;
                 }
@@ -146,7 +146,7 @@ public class CombineConsecutiveSameInputs : ContextAction {
                     currActionLine.FeatherAngle == activeActionLine.Value.FeatherAngle &&
                     currActionLine.FeatherMagnitude == activeActionLine.Value.FeatherMagnitude)
                 {
-                    activeActionLine = activeActionLine.Value with { Frames = activeActionLine.Value.Frames + currActionLine.Frames };
+                    activeActionLine = activeActionLine.Value with { FrameCount = activeActionLine.Value.FrameCount + currActionLine.FrameCount };
                     hasChanges = true;
                     continue;
                 }
