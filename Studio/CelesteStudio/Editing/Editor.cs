@@ -75,6 +75,8 @@ public sealed class Editor : Drawable {
             }
 
             void HandleTextChanged(Document _, int minRow, int maxRow) {
+                lastModification = DateTime.UtcNow;
+
                 ConvertToActionLines(minRow, maxRow);
 
                 // Need to update total frame count
@@ -177,6 +179,9 @@ public sealed class Editor : Drawable {
     private Font Font => FontManager.EditorFontRegular;
     private SyntaxHighlighter highlighter;
     private const float LineNumberPadding = 5.0f;
+
+    /// Indicates last modification time, used to check if the user is currently typing
+    private DateTime lastModification = DateTime.UtcNow;
 
     /// User-preference for the starting index of room labels
     private int roomLabelStartIndex;
@@ -821,7 +826,15 @@ public sealed class Editor : Drawable {
             }
         }
 
-        if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
+        bool isActionLine = ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _ );
+        bool isComment = Document.Lines[Document.Caret.Row].TrimStart().StartsWith('#');
+        bool isTyping = (DateTime.UtcNow - lastModification).TotalSeconds < Settings.Instance.SendInputsTypingTimeout;
+        bool sendInputs =
+            (Settings.Instance.SendInputsOnActionLines && isActionLine) ||
+            (Settings.Instance.SendInputsOnComments && isComment) ||
+            (Settings.Instance.SendInputsOnCommands && !isActionLine && !isComment);
+
+        if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && !isTyping && sendInputs && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
             e.Handled = true;
             return;
         }
@@ -998,7 +1011,7 @@ public sealed class Editor : Drawable {
                 // ..that also means OnTextInput won't be called..
                 if (Eto.Platform.Instance.IsMac) {
                     e.Handled = true;
-                    if (e.KeyChar != 65535) {
+                    if (e.KeyChar != ushort.MaxValue) {
                         OnTextInput(new TextInputEventArgs(e.KeyChar.ToString()));
                     }
                 } else {
@@ -1006,6 +1019,12 @@ public sealed class Editor : Drawable {
                 }
 
                 break;
+        }
+
+        // If nothing handled this, and it's not a character, send it anyway
+        if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && !isTyping && !sendInputs && !e.Handled && e.KeyChar == ushort.MaxValue && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
+            e.Handled = true;
+            return;
         }
 
         Recalc();
@@ -1019,7 +1038,16 @@ public sealed class Editor : Drawable {
         if (e.Key is Keys.LeftApplication or Keys.RightApplication) mods &= ~Keys.Application;
         UpdateMouseAction(PointFromScreen(Mouse.Position), mods);
 
-        if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: true)) {
+        bool isActionLine = ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _ );
+        bool isComment = Document.Lines[Document.Caret.Row].TrimStart().StartsWith('#');
+        bool isTyping = (DateTime.UtcNow - lastModification).TotalSeconds < Settings.Instance.SendInputsTypingTimeout;
+        bool sendInputs =
+            (Settings.Instance.SendInputsOnActionLines && isActionLine) ||
+            (Settings.Instance.SendInputsOnComments && isComment) ||
+            (Settings.Instance.SendInputsOnCommands && !isActionLine && !isComment) ||
+            e.KeyChar == ushort.MaxValue;
+
+        if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && !isTyping && sendInputs && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: true)) {
             e.Handled = true;
             return;
         }

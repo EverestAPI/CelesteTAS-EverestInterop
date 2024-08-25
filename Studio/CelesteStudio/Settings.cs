@@ -101,7 +101,13 @@ public sealed class Settings {
 
     public bool AutoSave { get; set; } = true;
     public bool AutoRemoveMutuallyExclusiveActions { get; set; } = true;
+    public bool AutoIndexRoomLabels { get; set; } = true;
     public bool SyncCaretWithPlayback { get; set; } = true;
+
+    public bool SendInputsOnActionLines { get; set; } = true;
+    public bool SendInputsOnCommands { get; set; } = false;
+    public bool SendInputsOnComments { get; set; } = false;
+    public float SendInputsTypingTimeout { get; set; } = 0.3f;
 
     public float ScrollSpeed { get; set; } = 0.0f; // A value <= 0.0f means to use the native scrollable
     public int MaxUnfoldedLines { get; set; } = 30;
@@ -110,7 +116,6 @@ public sealed class Settings {
     public CaretInsertPosition CaretInsertPosition { get; set; } = CaretInsertPosition.PreviousPosition;
     public CommandSeparator CommandSeparator { get; set; } = CommandSeparator.CommaSpace;
     public LineNumberAlignment LineNumberAlignment { get; set; } = LineNumberAlignment.Left;
-    public bool AutoIndexRoomLabels { get; set; } = true;
 
     public bool CompactMenuBar { get; set; } = false;
 

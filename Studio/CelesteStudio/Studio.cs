@@ -33,7 +33,7 @@ public sealed class Studio : Form {
     public readonly Action<Window> WindowCreationCallback;
 
     /// Actions which aren't associated with any menu and only invokable by hotkey
-    public MenuItem[] GlobalHotkeys { get; private set; } = [];
+    public MenuItem[] GlobalHotkeys { get; private set; }
 
     public readonly Editor Editor;
     public readonly GameInfoPanel GameInfoPanel;
@@ -466,6 +466,13 @@ public sealed class Studio : Form {
                 MenuUtils.CreateSettingToggle("Auto Remove Mutually Exclusive Actions", nameof(Settings.AutoRemoveMutuallyExclusiveActions)),
                 MenuUtils.CreateSettingToggle("Auto-Index Room Labels", nameof(Settings.AutoIndexRoomLabels)),
                 MenuUtils.CreateSettingToggle("Sync &Caret with Playback", nameof(Settings.SyncCaretWithPlayback)),
+                new SubMenuItem { Text = "&Input Sending", Items = {
+                    MenuUtils.CreateSettingToggle("On Inputs", nameof(Settings.SendInputsOnActionLines)),
+                    MenuUtils.CreateSettingToggle("On Comments", nameof(Settings.SendInputsOnComments)),
+                    MenuUtils.CreateSettingToggle("On Commands", nameof(Settings.SendInputsOnCommands)),
+                    new SeparatorMenuItem(),
+                    MenuUtils.CreateSettingNumberInput("Typing Timeout", nameof(Settings.SendInputsTypingTimeout), 0.0f, 5.0f, 0.1f),
+                }},
                 MenuUtils.CreateSettingNumberInput("Scroll Speed", nameof(Settings.ScrollSpeed), 0.0f, 30.0f, 1),
                 MenuUtils.CreateSettingNumberInput("Max Unfolded Lines", nameof(Settings.MaxUnfoldedLines), 0, int.MaxValue, 1),
                 MenuUtils.CreateSettingEnum<InsertDirection>("Insert Direction", nameof(Settings.InsertDirection), ["Above Current Line", "Below Current Line"]),
