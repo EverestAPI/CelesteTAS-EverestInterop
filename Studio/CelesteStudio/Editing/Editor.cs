@@ -1958,20 +1958,21 @@ public sealed class Editor : Drawable {
                 line = Document.Lines[Document.Caret.Row];
             }
 
-            string beforeCaret = line[..Document.Caret.Col];
-            string afterCaret = line[Document.Caret.Col..];
-            int newRow = Document.Caret.Row + offset;
-            Document.Lines[Document.Caret.Row] = beforeCaret;
-            Document.InsertLine(newRow, afterCaret);
-            Document.Caret.Row = newRow;
-            Document.Caret.Col = desiredVisualCol = 0;
-
+            string prefix = "";
             if (line.StartsWith('#')) {
-                // Keep new line still a comment
-                string prefix = new(line.TakeWhile(c => c == '#' || char.IsWhiteSpace(c)).ToArray());
-                Document.ReplaceLine(newRow, prefix + Document.Lines[Document.Caret.Row]);
-                Document.Caret.Col = desiredVisualCol = prefix.Length;
+                prefix = new(line.TakeWhile(c => c == '#' || char.IsWhiteSpace(c)).ToArray());
             }
+            Document.Caret.Col = Math.Max(Document.Caret.Col, prefix.Length);
+
+            string beforeCaret = line[prefix.Length..Document.Caret.Col];
+            string afterCaret = line[Document.Caret.Col..];
+
+            int newRow = Document.Caret.Row + offset;
+
+            Document.Lines[Document.Caret.Row] = prefix + (up ? afterCaret : beforeCaret);
+            Document.InsertLine(newRow, prefix + (up ? beforeCaret : afterCaret));
+            Document.Caret.Row = newRow;
+            Document.Caret.Col = desiredVisualCol = prefix.Length + (up ? beforeCaret.Length : 0);
         }
 
         Document.Selection.Clear();
