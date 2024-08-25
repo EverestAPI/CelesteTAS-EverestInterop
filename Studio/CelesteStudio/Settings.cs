@@ -322,9 +322,8 @@ public sealed class Settings {
                         throw new ArgumentOutOfRangeException();
                 }
             }
-        }
-
-        if (!File.Exists(SettingsPath)) {
+        } else {
+            allowSaving = true;
             Save();
         }
 
