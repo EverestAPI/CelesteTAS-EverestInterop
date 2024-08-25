@@ -26,15 +26,14 @@ public static class MigrateV3_0_0 {
     }
 
     public static void PostLoad() {
-        string execPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
         string gameDir;
         // Windows / Linux
-        if (File.Exists(Path.Combine(execPath, "..", "Celeste.dll"))) {
-            gameDir = Path.Combine(execPath, "..");
+        if (File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "Celeste.dll"))) {
+            gameDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..");
         }
         // macOS (inside .app bundle)
-        else if (File.Exists(Path.Combine(execPath, "..", "..", "..", "..", "Celeste.dll"))) {
-            gameDir = Path.Combine(execPath, "..", "..", "..", "..");
+        else if (File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "Celeste.dll"))) {
+            gameDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..");
         } else {
             Console.WriteLine("Couldn't find game directory");
             return;

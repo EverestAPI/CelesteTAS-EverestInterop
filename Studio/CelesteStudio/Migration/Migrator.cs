@@ -20,12 +20,10 @@ public static class Migrator {
         bool firstV3Launch = !File.Exists(LatestVersionPath);
 
         // Assumes Studio was properly installed by CelesteTAS
-        string execPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
         bool studioV2Present =
-            File.Exists(Path.Combine(execPath, "..", "Celeste Studio.exe")) || // Windows / Linux
-            File.Exists(Path.Combine(execPath, "..", "..", "..", "..", "Celeste Studio.exe")); // macOS (inside .app bundle)
+            File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "Celeste Studio.exe")) || // Windows / Linux
+            File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "Celeste Studio.exe")); // macOS (inside .app bundle)
 
-        Console.WriteLine($"Mig {firstV3Launch} / {studioV2Present} / {execPath}");
         newVersion = Assembly.GetExecutingAssembly().GetName().Version!;
         if (firstV3Launch) {
             if (studioV2Present) {
