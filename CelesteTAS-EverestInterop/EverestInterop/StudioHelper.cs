@@ -92,7 +92,7 @@ public static class StudioHelper {
 
             Task.Run(async () => {
                 // Kill all Studio instances to avoid issues with file usage
-                foreach (var process in Process.GetProcesses().Where(process => process.ProcessName == "CelesteStudio")) {
+                foreach (var process in Process.GetProcesses().Where(process => process.ProcessName is "CelesteStudio" or "Celeste Studio")) {
                     process.Kill();
                     await process.WaitForExitAsync().ConfigureAwait(false);
                 }
