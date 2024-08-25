@@ -447,9 +447,6 @@ public sealed class Studio : Form {
                 recordTasButton,
             }},
             new SubMenuItem {Text = "&Settings", Items = {
-                MenuEntry.Settings_SendInputs.ToSettingToggle(nameof(Settings.SendInputsToCeleste), enabled => {
-                    Editor.ShowToastMessage($"{(enabled ? "Enabled" : "Disabled")} Sending Inputs to Celeste", Editor.DefaultToastTime);
-                }),
                 new SubMenuItem {Text = "Automatic Backups", Items = {
                     MenuUtils.CreateSettingToggle("Enabled", nameof(Settings.AutoBackupEnabled)),
                     MenuUtils.CreateSettingNumberInput("Backup Rate (minutes)", nameof(Settings.AutoBackupRate), 0, int.MaxValue, 1),
@@ -466,6 +463,9 @@ public sealed class Studio : Form {
                 MenuUtils.CreateSettingToggle("Auto Remove Mutually Exclusive Actions", nameof(Settings.AutoRemoveMutuallyExclusiveActions)),
                 MenuUtils.CreateSettingToggle("Auto-Index Room Labels", nameof(Settings.AutoIndexRoomLabels)),
                 MenuUtils.CreateSettingToggle("Sync &Caret with Playback", nameof(Settings.SyncCaretWithPlayback)),
+                MenuEntry.Settings_SendInputs.ToSettingToggle(nameof(Settings.SendInputsToCeleste), enabled => {
+                    Editor.ShowToastMessage($"{(enabled ? "Enabled" : "Disabled")} Sending Inputs to Celeste", Editor.DefaultToastTime);
+                }),
                 new SubMenuItem { Text = "&Input Sending", Items = {
                     MenuUtils.CreateSettingToggle("On Inputs", nameof(Settings.SendInputsOnActionLines)),
                     MenuUtils.CreateSettingToggle("On Comments", nameof(Settings.SendInputsOnComments)),

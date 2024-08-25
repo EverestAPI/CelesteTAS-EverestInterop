@@ -85,8 +85,6 @@ public sealed class Settings {
     [TomlProperty("KeyBindings")]
     private Dictionary<string, Keys> _keyBindings { get; set; } = new();
 
-    public bool SendInputsToCeleste { get; set; } = true;
-
     public bool AutoBackupEnabled { get; set; } = true;
     public int AutoBackupRate { get; set; } = 1;
     public int AutoBackupCount { get; set; } = 100;
@@ -104,6 +102,7 @@ public sealed class Settings {
     public bool AutoIndexRoomLabels { get; set; } = true;
     public bool SyncCaretWithPlayback { get; set; } = true;
 
+    public bool SendInputsToCeleste { get; set; } = true;
     public bool SendInputsOnActionLines { get; set; } = true;
     public bool SendInputsOnCommands { get; set; } = false;
     public bool SendInputsOnComments { get; set; } = false;
