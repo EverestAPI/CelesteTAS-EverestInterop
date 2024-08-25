@@ -20,10 +20,12 @@ public static class Migrator {
         bool firstV3Launch = !File.Exists(LatestVersionPath);
 
         // Assumes Studio was properly installed by CelesteTAS
+        string execPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
         bool studioV2Present =
-            File.Exists(Path.Combine("..", "Celeste Studio.exe")) || // Windows / Linux
-            File.Exists(Path.Combine("..", "..", "..", "..", "Celeste Studio.exe")); // macOS (inside .app bundle)
+            File.Exists(Path.Combine(execPath, "..", "Celeste Studio.exe")) || // Windows / Linux
+            File.Exists(Path.Combine(execPath, "..", "..", "..", "..", "Celeste Studio.exe")); // macOS (inside .app bundle)
 
+        Console.WriteLine($"Mig {firstV3Launch} / {studioV2Present} / {execPath}");
         newVersion = Assembly.GetExecutingAssembly().GetName().Version!;
         if (firstV3Launch) {
             if (studioV2Present) {
@@ -31,7 +33,6 @@ public static class Migrator {
             } else {
                 oldVersion = newVersion;
                 // TODO: Show a "Getting started" guide
-                return;
             }
         } else {
             oldVersion = Version.TryParse(File.ReadAllText(LatestVersionPath), out var version) ? version : newVersion;
@@ -47,7 +48,7 @@ public static class Migrator {
 
                 string versionName = version.ToString(3);
                 if (asm.GetManifestResourceStream($"Changelogs/v{versionName}.md") is { } stream) {
-                    WhatsNewDialog.Show($"Whats new in Studio v{versionName}?", new StreamReader(stream).ReadToEnd());
+                    Studio.Instance.Shown += (_, _) => WhatsNewDialog.Show($"Whats new in Studio v{versionName}?", new StreamReader(stream).ReadToEnd());
                 }
             }
         }

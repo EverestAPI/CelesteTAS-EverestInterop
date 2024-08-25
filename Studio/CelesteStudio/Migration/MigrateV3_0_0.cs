@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using Tomlet;
 
 namespace CelesteStudio.Migration;
@@ -25,14 +26,15 @@ public static class MigrateV3_0_0 {
     }
 
     public static void PostLoad() {
+        string execPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
         string gameDir;
         // Windows / Linux
-        if (File.Exists(Path.Combine("..", "Celeste.dll"))) {
-            gameDir = Path.Combine("..");
+        if (File.Exists(Path.Combine(execPath, "..", "Celeste.dll"))) {
+            gameDir = Path.Combine(execPath, "..");
         }
         // macOS (inside .app bundle)
-        else if (File.Exists(Path.Combine("..", "..", "..", "..", "Celeste.dll"))) {
-            gameDir = Path.Combine("..", "..", "..", "..");
+        else if (File.Exists(Path.Combine(execPath, "..", "..", "..", "..", "Celeste.dll"))) {
+            gameDir = Path.Combine(execPath, "..", "..", "..", "..");
         } else {
             Console.WriteLine("Couldn't find game directory");
             return;
