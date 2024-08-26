@@ -164,7 +164,7 @@ public class Document : IDisposable {
 
     private readonly FileSystemWatcher watcher;
 
-    private QueuedUpdate? queuedUpdate = null;
+    private readonly Stack<QueuedUpdate> updateStack = [];
 
     // NOTE: The min/max rows may contain more than what was actually changed
     public event Action<Document, int, int> TextChanged = (doc, _, _) => {
@@ -371,8 +371,17 @@ public class Document : IDisposable {
 
     #region Text Manipulation
 
-    public sealed class QueuedUpdate(Document document, bool raiseEvents) : IDisposable {
+    public sealed class QueuedUpdate : IDisposable {
         private int currMinRow = -1, currMaxRow = -1;
+        private readonly Document document;
+        private readonly bool raiseEvents;
+
+        public QueuedUpdate(Document document, bool raiseEvents) {
+            this.document = document;
+            this.raiseEvents = raiseEvents;
+
+            document.updateStack.Push(this);
+        }
 
         public void PushChange(int minRow, int maxRow) {
             if (!raiseEvents) {
@@ -388,26 +397,31 @@ public class Document : IDisposable {
             }
         }
         public void Dispose() {
-            document.queuedUpdate = null;
+            document.updateStack.Pop();
+
             if (!raiseEvents || currMinRow == -1 || currMaxRow == -1) {
                 return;
             }
 
-            document.OnTextChanged(Math.Max(0, currMinRow), Math.Min(document.Lines.Count, currMaxRow));
+            if (document.updateStack.Count == 0) {
+                document.OnTextChanged(Math.Max(0, currMinRow), Math.Min(document.Lines.Count, currMaxRow));
+            } else if (raiseEvents) {
+                document.updateStack.Peek().PushChange(currMinRow, currMaxRow);
+            }
         }
     }
 
-    // Start a new update, if there isn't one active already
+    /// Starts a new update, if there isn't one active already
     public QueuedUpdate Update(bool raiseEvents = true) {
-        if (raiseEvents) {
+        if (raiseEvents && updateStack.Count == 0) {
             undoStack.Push(Caret);
         }
 
-        return queuedUpdate ??= new QueuedUpdate(this, raiseEvents);
+        return new QueuedUpdate(this, raiseEvents);
     }
 
     private void PushUndoState() {
-        if (queuedUpdate != null)
+        if (updateStack.Count != 0)
             return;
 
         Console.WriteLine("WARNING: Updated without Document.Update()");
@@ -417,10 +431,11 @@ public class Document : IDisposable {
         if (minRow > maxRow)
             (minRow, maxRow) = (maxRow, minRow);
 
-        if (queuedUpdate != null)
-            queuedUpdate.PushChange(minRow, maxRow);
-        else
+        if (updateStack.TryPeek(out var update)) {
+            update.PushChange(minRow, maxRow);
+        } else {
             OnTextChanged(minRow, maxRow);
+        }
     }
 
     public void Undo() {
