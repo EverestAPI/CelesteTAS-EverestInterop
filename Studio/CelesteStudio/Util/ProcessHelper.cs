@@ -8,7 +8,7 @@ public static class ProcessHelper
 {
     public static void OpenInDefaultApp(string path) {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-            Process.Start("cmd", ["/c", "start", path]);
+            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
             Process.Start("xdg-open", [path]);
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
