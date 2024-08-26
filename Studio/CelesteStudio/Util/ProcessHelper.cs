@@ -8,8 +8,7 @@ public static class ProcessHelper
 {
     public static void OpenInDefaultApp(string path) {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-            // Start through explorer to detach the process from studio
-            Process.Start("Explorer", ["cmd", "/c", "start", path]);
+            Process.Start("cmd", ["/c", "start", path]);
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
             Process.Start("xdg-open", [path]);
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
