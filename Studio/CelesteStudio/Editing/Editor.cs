@@ -2171,7 +2171,9 @@ public sealed class Editor : Drawable {
             var lineTrimmed = line.TrimStart();
 
             if (lineTrimmed.StartsWith('#')) {
-                if(lineTrimmed.StartsWith("#lvl_") ||  TimestampRegex.IsMatch(lineTrimmed) || !ActionLine.TryParseStrict(lineTrimmed[1..], out _)) {
+                if((lineTrimmed.Length >= 2 && lineTrimmed[0] == '#' && char.IsWhiteSpace(lineTrimmed[1]) && !ActionLine.TryParse(lineTrimmed[1..], out _)) ||
+                   lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed))
+                {
                     // Ignore comments and special labels
                     continue;
                 }
