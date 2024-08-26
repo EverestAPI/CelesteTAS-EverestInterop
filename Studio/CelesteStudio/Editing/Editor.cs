@@ -93,6 +93,8 @@ public sealed class Editor : Drawable {
                 if (Settings.Instance.AutoIndexRoomLabels) {
                     // room label without indexing -> lines of all occurrences
                     Dictionary<string, List<int>> roomLabels = [];
+                    // Allows the user to edit labels without them being auto-trimmed
+                    string untrimmedLabel = string.Empty;
 
                     for (int row = 0; row < Document.Lines.Count; row++) {
                         string line = Document.Lines[row];
@@ -102,6 +104,9 @@ public sealed class Editor : Drawable {
                         }
 
                         string label = match.Groups[1].Value.Trim();
+                        if (row == Document.Caret.Row) {
+                            untrimmedLabel = match.Groups[1].Value;
+                        }
 
                         if (roomLabels.TryGetValue(label, out var list))
                             list.Add(row);
@@ -110,14 +115,22 @@ public sealed class Editor : Drawable {
                     }
 
                     using var __ = Document.Update(raiseEvents: false);
-                    foreach (var (label, occurrences) in roomLabels) {
+                    foreach ((string label, var occurrences) in roomLabels) {
                         if (occurrences.Count == 1) {
-                            Document.ReplaceLine(occurrences[0], $"{RoomLabelPrefix}{label}");
+                            string writtenLabel = occurrences[0] == Document.Caret.Row
+                                ? untrimmedLabel
+                                : label;
+
+                            Document.ReplaceLine(occurrences[0], $"{RoomLabelPrefix}{writtenLabel}");
                             continue;
                         }
 
                         for (int i = 0; i < occurrences.Count; i++) {
-                            Document.ReplaceLine(occurrences[i], $"{RoomLabelPrefix}{label.Trim()} ({i + roomLabelStartIndex})");
+                            string writtenLabel = occurrences[0] == Document.Caret.Row
+                                ? untrimmedLabel
+                                : label;
+
+                            Document.ReplaceLine(occurrences[i], $"{RoomLabelPrefix}{writtenLabel} ({i + roomLabelStartIndex})");
                         }
                     }
                 }
@@ -218,7 +231,7 @@ public sealed class Editor : Drawable {
     private static readonly Regex CommentedBreakpointRegex = new(@"^\s*#+\*\*\*", RegexOptions.Compiled);
     private static readonly Regex AllBreakpointRegex = new(@"^\s*#*\*\*\*", RegexOptions.Compiled);
     private static readonly Regex TimestampRegex = new(@"^\s*#+\s*(\d+:)?\d{1,2}:\d{2}\.\d{3}\(\d+\)", RegexOptions.Compiled);
-    private static readonly Regex RoomLabelRegex = new($@"^{RoomLabelPrefix}([^\(\)]*)\s*(?:\((\d+)\))?$", RegexOptions.Compiled);
+    private static readonly Regex RoomLabelRegex = new($@"^{RoomLabelPrefix}([^\(\)]*)(?:\s\((\d+)\))?$", RegexOptions.Compiled);
 
     public Editor(Document document, Scrollable scrollable) {
         this.document = document;
