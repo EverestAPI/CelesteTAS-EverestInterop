@@ -77,6 +77,10 @@ public struct ActionLine() {
                 actionLine.CustomBindings = tokens[i][1..].Select(char.ToUpper).ToHashSet();
                 continue;
             }
+            if (tokens[i].Length != 1) {
+                // This token isn't allowed to have multiple actions
+                return false;
+            }
 
             // Parse feather angle/magnitude
             bool validAngle = true;

@@ -13,6 +13,7 @@ using CelesteStudio.Editing.ContextActions;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
+using Markdig.Helpers;
 using StudioCommunication;
 using WrapLine = (string Line, int Index);
 using WrapEntry = (int StartOffset, (string Line, int Index)[] Lines);
@@ -1641,6 +1642,10 @@ public sealed class Editor : Drawable {
             return;
         }
 
+        string line;
+        ActionLine actionLine;
+        int leadingSpaces;
+
         using var __ = Document.Update();
 
         Document.Caret = ClampCaret(Document.Caret);
@@ -1649,16 +1654,25 @@ public sealed class Editor : Drawable {
             RemoveRange(Document.Selection.Min, Document.Selection.Max);
             Document.Caret = Document.Selection.Min;
             Document.Selection.Clear();
+
+            // Account for frame count not moving
+            line = Document.Lines[Document.Caret.Row];
+            leadingSpaces = line.Length - line.TrimStart().Length;
+            if (ActionLine.TryParse(line, out actionLine)) {
+                int frameDigits = actionLine.Frames.Length;
+                Document.Caret.Col += ActionLine.MaxFramesDigits - (leadingSpaces + frameDigits);
+            }
+        } else {
+            line = Document.Lines[Document.Caret.Row];
+            leadingSpaces = line.Length - line.TrimStart().Length;
         }
 
-        var line = Document.Lines[Document.Caret.Row];
         char typedCharacter = char.ToUpper(e.Text[0]);
-        int leadingSpaces = line.Length - line.TrimStart().Length;
 
         var oldCaret = Document.Caret;
 
         // If it's an action line, handle it ourselves
-        if (TryParseAndFormatActionLine(Document.Caret.Row, out var actionLine) && e.Text.Length == 1) {
+        if (TryParseAndFormatActionLine(Document.Caret.Row, out actionLine) && e.Text.Length == 1) {
             ClearQuickEdits();
 
             // Handle custom bindings
@@ -2043,14 +2057,46 @@ public sealed class Editor : Drawable {
             Document.Selection.Clear();
         }
 
-        if (ActionLine.Parse(Document.Lines[Document.Caret.Row]) != null) {
-            // Prevent splitting the action-line in half
-            var insert = Clipboard.Instance.Text.ReplaceLineEndings(Document.NewLine.ToString()).Trim(Document.NewLine);
-            Document.InsertLineBelow(insert);
-            Document.Caret.Row += insert.Count(c => c == Document.NewLine) + 1;
+        var clipboardText = Clipboard.Instance.Text.ReplaceLineEndings(Document.NewLine.ToString());
+
+        // Prevent splitting the action-line in half or inserting garbage into the middle
+        if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _))
+        {
+            // Trim leading / trailing blank lines
+            var insertLines = clipboardText.Trim(Document.NewLine).SplitDocumentLines();
+
+            // Insert into the action-line if it stays valid
+            if (insertLines.Length == 1) {
+                string oldLine = Document.Lines[Document.Caret.Row];
+                Document.Insert(insertLines[0]);
+
+                if (ActionLine.TryParseStrict(Document.Lines[Document.Caret.Row], out var actionLine)) {
+                    // Still valid
+
+                    // Cap at max frames
+                    if (actionLine.FrameCount > ActionLine.MaxFrames) {
+                        actionLine.FrameCount = ActionLine.MaxFrames;
+                        Document.Caret.Col = ActionLine.MaxFramesDigits;
+                    }
+                    // Cap at max frame length
+                    else if (actionLine.Frames.Length > ActionLine.MaxFramesDigits) {
+                        actionLine.Frames = Math.Clamp(actionLine.FrameCount, 0, ActionLine.MaxFrames).ToString().PadLeft(ActionLine.MaxFramesDigits, '0');
+                    }
+
+                    Document.ReplaceLine(Document.Caret.Row, actionLine.ToString());
+
+                    return;
+                }
+
+                Document.ReplaceLine(Document.Caret.Row, oldLine);
+            }
+
+            // Otherwise insert below
+            Document.InsertLines(Document.Caret.Row + 1, insertLines);
+            Document.Caret.Row += insertLines.Length;
             Document.Caret.Col = Document.Lines[Document.Caret.Row].Length;
         } else {
-            Document.Insert(Clipboard.Instance.Text.ReplaceLineEndings(Document.NewLine.ToString()));
+            Document.Insert(clipboardText);
         }
     }
 
