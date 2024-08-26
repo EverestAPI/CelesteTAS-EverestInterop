@@ -1655,9 +1655,9 @@ public sealed class Editor : Drawable {
                 bool alreadyExists = !actionLine.CustomBindings.Add(typedCharacter);
                 if (alreadyExists) {
                     actionLine.CustomBindings.Remove(typedCharacter);
-                    Document.Caret.Col = desiredVisualCol = customBindEnd - 1;
+                    Document.Caret.Col = customBindEnd - 1;
                 } else {
-                    Document.Caret.Col = desiredVisualCol = customBindEnd + 1;
+                    Document.Caret.Col = customBindEnd + 1;
                 }
 
                 goto FinishEdit; // Skip regular logic
@@ -1688,9 +1688,9 @@ public sealed class Editor : Drawable {
                 actionLine.Actions = actionLine.Actions.ToggleAction(typedAction, Settings.Instance.AutoRemoveMutuallyExclusiveActions);
 
                 if (actionLine.Actions.HasFlag(typedAction)) {
-                    Document.Caret.Col = desiredVisualCol = GetColumnOfAction(actionLine, typedAction);
+                    Document.Caret.Col = GetColumnOfAction(actionLine, typedAction);
                 } else {
-                    Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
+                    Document.Caret.Col = ActionLine.MaxFramesDigits;
                 }
             }
             // Handle regular inputs
@@ -1710,17 +1710,17 @@ public sealed class Editor : Drawable {
 
                 // Warp the cursor after the number
                 if (typedAction == Actions.Feather && actionLine.Actions.HasFlag(Actions.Feather)) {
-                    Document.Caret.Col = desiredVisualCol = GetColumnOfAction(actionLine, Actions.Feather) + 1;
+                    Document.Caret.Col = GetColumnOfAction(actionLine, Actions.Feather) + 1;
                 } else if (typedAction == Actions.Feather && !actionLine.Actions.HasFlag(Actions.Feather)) {
                     actionLine.FeatherAngle = null;
                     actionLine.FeatherMagnitude = null;
-                    Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
+                    Document.Caret.Col = ActionLine.MaxFramesDigits;
                 } else if (typedAction is Actions.LeftDashOnly or Actions.RightDashOnly or Actions.UpDashOnly or Actions.DownDashOnly) {
-                    Document.Caret.Col = desiredVisualCol = GetColumnOfAction(actionLine, Actions.DashOnly) + actionLine.Actions.GetDashOnly().Count();
+                    Document.Caret.Col = GetColumnOfAction(actionLine, Actions.DashOnly) + actionLine.Actions.GetDashOnly().Count();
                 } else if (typedAction is Actions.LeftMoveOnly or Actions.RightMoveOnly or Actions.UpMoveOnly or Actions.DownMoveOnly) {
-                    Document.Caret.Col = desiredVisualCol = GetColumnOfAction(actionLine, Actions.MoveOnly) + actionLine.Actions.GetMoveOnly().Count();
+                    Document.Caret.Col = GetColumnOfAction(actionLine, Actions.MoveOnly) + actionLine.Actions.GetMoveOnly().Count();
                 } else {
-                    Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
+                    Document.Caret.Col = ActionLine.MaxFramesDigits;
                 }
             }
             // If the key we entered is a number
@@ -1741,8 +1741,6 @@ public sealed class Editor : Drawable {
                 else if (actionLine.Frames.Length > ActionLine.MaxFramesDigits) {
                     actionLine.Frames = Math.Clamp(actionLine.FrameCount, 0, ActionLine.MaxFrames).ToString().PadLeft(ActionLine.MaxFramesDigits, '0');
                 }
-
-                desiredVisualCol = Document.Caret.Col;
             }
 
             FinishEdit:
@@ -1760,7 +1758,7 @@ public sealed class Editor : Drawable {
                 if (onlyComment) {
                     var newLine = $"{currLine.TrimEnd()}# ";
                     Document.ReplaceLine(Document.Caret.Row, newLine);
-                    Document.Caret.Col = desiredVisualCol = newLine.Length;
+                    Document.Caret.Col = newLine.Length;
                 } else {
                     Document.Insert("#");
                 }
@@ -1773,13 +1771,15 @@ public sealed class Editor : Drawable {
                 ClearQuickEdits();
 
                 Document.ReplaceLine(Document.Caret.Row, newActionLine.ToString());
-                Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
+                Document.Caret.Col = ActionLine.MaxFramesDigits;
             }
         }
 
         if (oldCaret.Row != Document.Caret.Row) {
             FixInvalidInput(oldCaret.Row);
         }
+
+        desiredVisualCol = Document.Caret.Col;
 
         UpdateAutoComplete();
     }
@@ -1843,7 +1843,7 @@ public sealed class Editor : Drawable {
                     }
 
                     line = actionLine.ToString();
-                    caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits - actionLine.Frames.Length + caretIndex;
+                    caret.Col = ActionLine.MaxFramesDigits - actionLine.Frames.Length + caretIndex;
                 }
 
                 goto FinishDeletion; // Skip regular deletion behaviour
@@ -1909,7 +1909,7 @@ public sealed class Editor : Drawable {
                 line = newActionLine.ToString();
             } else if (string.IsNullOrWhiteSpace(line)) {
                 line = string.Empty;
-                caret.Col = desiredVisualCol = 0;
+                caret.Col = 0;
             }
 
             Document.ReplaceLine(caret.Row, line);
@@ -1933,6 +1933,8 @@ public sealed class Editor : Drawable {
                 ActivePopupMenu = null;
             }
         }
+
+        desiredVisualCol = Document.Caret.Col;
     }
 
     private void OnEnter(bool splitLines, bool up) {
