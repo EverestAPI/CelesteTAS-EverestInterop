@@ -2062,11 +2062,11 @@ public sealed class Editor : Drawable {
     private void OnSelectBlock() {
         // Search first empty line above/below caret
         int above = Document.Caret.Row;
-        while (above > 0 && !string.IsNullOrWhiteSpace(Document.Lines[above]))
+        while (above > 0 && !string.IsNullOrWhiteSpace(Document.Lines[above - 1]))
             above--;
 
         int below = Document.Caret.Row;
-        while (below < Document.Lines.Count - 1 && !string.IsNullOrWhiteSpace(Document.Lines[below]))
+        while (below < Document.Lines.Count - 1 && !string.IsNullOrWhiteSpace(Document.Lines[below + 1]))
             below++;
 
         Document.Selection.Start = new CaretPosition(above, 0);
