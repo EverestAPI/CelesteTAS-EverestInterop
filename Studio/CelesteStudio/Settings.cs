@@ -133,7 +133,7 @@ public sealed class Settings {
     #region Other
 
     public Point LastLocation { get; set; } = Point.Empty;
-    public Size LastSize { get; set; } = new(400, 800);
+    public Size LastSize { get; set; } = new(400, 600);
 
     public bool GameInfoPopoutOpen { get; set; } = false;
     public bool GameInfoPopoutTopmost { get; set; } = false;

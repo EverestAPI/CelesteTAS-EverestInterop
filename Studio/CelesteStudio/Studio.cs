@@ -84,10 +84,12 @@ public sealed class Studio : Form {
             Location = lastLocation;
         } else {
             // Center window
-            var area = Screen.PrimaryScreen.WorkingArea;
-            Location = new Point(
-                (int)(area.MiddleX - Size.Width / 2.0f),
-                (int)(area.MiddleY - Size.Height / 2.0f));
+            Shown += (_, _) => {
+                var area = Screen.PrimaryScreen.WorkingArea;
+                Location = new Point(
+                    (int)(area.MiddleX - Size.Width / 2.0f),
+                    (int)(area.MiddleY - Size.Height / 2.0f));
+            };
         }
 
         GlobalHotkeys = CreateGlobalHotkeys();
