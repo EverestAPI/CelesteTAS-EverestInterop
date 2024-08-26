@@ -85,7 +85,7 @@ public sealed class Studio : Form {
         } else {
             // Center window
             Shown += (_, _) => {
-                var area = Screen.PrimaryScreen.WorkingArea;
+                var area = Screen.WorkingArea;
                 Location = new Point(
                     (int)(area.MiddleX - Size.Width / 2.0f),
                     (int)(area.MiddleY - Size.Height / 2.0f));
@@ -193,7 +193,7 @@ public sealed class Studio : Form {
         about.ShowDialog(parent);
     }
 
-    private MenuItem[] CreateGlobalHotkeys() {
+    private static MenuItem[] CreateGlobalHotkeys() {
         return [
             MenuEntry.Game_Start.ToAction(() => CommunicationWrapper.SendHotkey(HotkeyID.Start)),
             MenuEntry.Game_Pause.ToAction(() => CommunicationWrapper.SendHotkey(HotkeyID.Pause)),
