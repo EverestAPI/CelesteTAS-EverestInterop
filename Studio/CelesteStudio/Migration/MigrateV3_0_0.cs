@@ -1,3 +1,4 @@
+using CelesteStudio.Editing;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,6 +12,7 @@ public static class MigrateV3_0_0 {
     private class LegacySettings {
         public string fontName = "Courier New";
         public float fontSize = 14.25f;
+        public string themes = "Dark";
 
         public bool SendInputsToCeleste = true;
         public bool ShowGameInfo = true;
@@ -68,6 +70,9 @@ public static class MigrateV3_0_0 {
                 }
                 if (settings.fontSize != 14.25f) {
                     Settings.Instance.EditorFontSize = settings.fontSize;
+                }
+                if (settings.themes == "Light") {
+                    Settings.Instance.ThemeName = Theme.BuiltinLight;
                 }
             } catch (Exception ex) {
                 Console.Error.WriteLine($"Failed to read legacy settings file from path '{Path.Combine(gameDir, "Celeste Studio.toml")}'");

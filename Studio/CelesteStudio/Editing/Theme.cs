@@ -6,7 +6,7 @@ namespace CelesteStudio.Editing;
 public struct Style(Color foregroundColor, Color? backgroundColor = null, FontStyle fontStyle = FontStyle.None) {
     public Color ForegroundColor = foregroundColor;
     public Color? BackgroundColor = backgroundColor;
-    
+
     public FontStyle FontStyle = fontStyle;
 }
 
@@ -27,14 +27,14 @@ public struct Theme {
     public Color StatusBg;
     public Color CalculateFg;
     public Color CalculateBg;
-    
+
     // Status panel
     public Color PopoutButtonBg;
     public Color PopoutButtonHovered;
     public Color PopoutButtonSelected;
     public Color SubpixelIndicatorBox;
     public Color SubpixelIndicatorDot;
-    
+
     // Popup menu
     public Color PopupMenuFg;
     public Color PopupMenuFgDisabled;
@@ -47,7 +47,7 @@ public struct Theme {
     public int PopupMenuEntryVerticalPadding;
     public int PopupMenuEntrySpacing;
     public float PopupMenuEntryRounding;
-    
+
     // Inputs
     public Style Action;
     public Style Angle;
@@ -62,8 +62,13 @@ public struct Theme {
 
     public Theme() {}
 
+    public const string BuiltinLight = "Light";
+    public const string BuiltinDark = "Dark";
+    public const string BuiltinLegacyLight = "Legacy Light";
+    public const string BuiltinLegacyDark = "Legacy Dark";
+
     public static readonly Dictionary<string, Theme> BuiltinThemes = new() {
-        { "Light", new() {
+        { BuiltinLight, new() {
             Background = Color.FromRgb(0xEBEBEB),
             Caret = Color.FromRgb(0x1B1B1B),
             CurrentLine = Color.FromArgb(0x27, 0x27, 0x27, 0x20),
@@ -79,13 +84,13 @@ public struct Theme {
             StatusBg = Color.FromRgb(0xE1E1E1),
             CalculateFg = Color.FromRgb(0xCBCBCB),
             CalculateBg = Color.FromRgb(0x6C6C6C),
-            
+
             PopoutButtonBg = Color.FromRgb(0xCFCFCF),
             PopoutButtonHovered = Color.FromRgb(0xC1C1C1),
             PopoutButtonSelected = Color.FromRgb(0xA9A9A9),
             SubpixelIndicatorBox = Color.FromRgb(0x159F15),
             SubpixelIndicatorDot = Color.FromRgb(0xE30E0E),
-            
+
             PopupMenuFg = Color.FromRgb(0x121212),
             PopupMenuFgDisabled = Color.FromRgb(0x8a8a8a),
             PopupMenuFgExtra = Color.FromRgb(0x595959),
@@ -108,8 +113,8 @@ public struct Theme {
             Frame = new Style(Color.FromRgb(0x9C32B8)),
 
             DarkMode = false,
-        } },
-        { "Dark", new() {
+        }},
+        { BuiltinDark, new() {
             Background = Color.FromRgb(0x202020),
             Caret = Color.FromRgb(0xDFDFDF),
             CurrentLine = Color.FromArgb(0x94, 0x94, 0x94, 0x2C),
@@ -131,7 +136,7 @@ public struct Theme {
             PopoutButtonSelected = Color.FromRgb(0x646464),
             SubpixelIndicatorBox = Color.FromRgb(0x29A229),
             SubpixelIndicatorDot = Color.FromRgb(0xE30E0E),
-            
+
             PopupMenuFg = Color.FromRgb(0xDFDFDF),
             PopupMenuFgDisabled = Color.FromRgb(0x909090),
             PopupMenuFgExtra = Color.FromRgb(0x9F9F9F),
@@ -154,9 +159,9 @@ public struct Theme {
             Frame = new Style(Color.FromRgb(0xA485D0)),
 
             DarkMode = true,
-        } },
-        
-        { "Legacy Light", new() {
+        }},
+
+        { BuiltinLegacyLight, new() {
             Background = Color.FromRgb(0xFFFFFF),
             Caret = Color.FromRgb(0x000000),
             CurrentLine = Color.FromArgb(0x20000000),
@@ -172,13 +177,13 @@ public struct Theme {
             StatusBg = Color.FromRgb(0xF2F2F2),
             CalculateFg = Color.FromRgb(0xCBCBCB),
             CalculateBg = Color.FromRgb(0x6C6C6C),
-            
+
             PopoutButtonBg = Color.FromRgb(0xCFCFCF),
             PopoutButtonHovered = Color.FromRgb(0xC1C1C1),
             PopoutButtonSelected = Color.FromRgb(0xA9A9A9),
             SubpixelIndicatorBox = Color.FromRgb(0x159F15),
             SubpixelIndicatorDot = Color.FromRgb(0xE30E0E),
-            
+
             PopupMenuFg = Color.FromRgb(0x121212),
             PopupMenuFgDisabled = Color.FromRgb(0x8a8a8a),
             PopupMenuFgExtra = Color.FromRgb(0x646464),
@@ -202,7 +207,7 @@ public struct Theme {
 
             DarkMode = false,
         } },
-        { "Legacy Dark", new() {
+        { BuiltinLegacyDark, new() {
             Background = Color.FromRgb(0x282A36),
             Caret = Color.FromRgb(0xAEAFAD),
             CurrentLine = Color.FromArgb(0x29B4B6C7),
@@ -218,13 +223,13 @@ public struct Theme {
             StatusBg = Color.FromRgb(0x383A46),
             CalculateFg = Color.FromRgb(0xE8E8E8),
             CalculateBg = Color.FromRgb(0x4682B4),
-            
+
             PopoutButtonBg = Color.FromRgb(0x494C5F),
             PopoutButtonHovered = Color.FromRgb(0x595D74),
             PopoutButtonSelected = Color.FromRgb(0x6F738F),
             SubpixelIndicatorBox = Color.FromRgb(0x1AB353),
             SubpixelIndicatorDot = Color.FromRgb(0xE30E0E),
-            
+
             PopupMenuFg = Color.FromRgb(0xDFDFDF),
             PopupMenuFgDisabled = Color.FromRgb(0x909090),
             PopupMenuFgExtra = Color.FromRgb(0x9F9F9F),
