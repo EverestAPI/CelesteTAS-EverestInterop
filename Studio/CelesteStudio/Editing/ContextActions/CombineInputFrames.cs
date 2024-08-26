@@ -1,5 +1,6 @@
 using System;
 using CelesteStudio.Data;
+using StudioCommunication;
 
 namespace CelesteStudio.Editing.ContextActions;
 
@@ -67,7 +68,8 @@ public class CombineConsecutiveSameInputs : ContextAction {
 
                 if (currActionLine.Actions != otherActionLine.Actions ||
                     currActionLine.FeatherAngle != otherActionLine.FeatherAngle ||
-                    currActionLine.FeatherMagnitude != otherActionLine.FeatherMagnitude)
+                    currActionLine.FeatherMagnitude != otherActionLine.FeatherMagnitude ||
+                    IsScreenTransition(above))
                 {
                     break;
                 }
@@ -85,7 +87,8 @@ public class CombineConsecutiveSameInputs : ContextAction {
 
                 if (currActionLine.Actions != otherActionLine.Actions ||
                     currActionLine.FeatherAngle != otherActionLine.FeatherAngle ||
-                    currActionLine.FeatherMagnitude != otherActionLine.FeatherMagnitude)
+                    currActionLine.FeatherMagnitude != otherActionLine.FeatherMagnitude ||
+                    IsScreenTransition(below))
                 {
                     break;
                 }
@@ -114,6 +117,9 @@ public class CombineConsecutiveSameInputs : ContextAction {
             int activeRowStart = -1;
 
             for (int row = minRow; row <= maxRow; row++) {
+                if (string.IsNullOrWhiteSpace(Document.Lines[row])) {
+                    continue;
+                }
                 if (!Editor.TryParseAndFormatActionLine(row, out var currActionLine)) {
                     // "Flush" the previous lines
                     if (activeActionLine != null) {
@@ -144,7 +150,8 @@ public class CombineConsecutiveSameInputs : ContextAction {
 
                 if (currActionLine.Actions == activeActionLine.Value.Actions &&
                     currActionLine.FeatherAngle == activeActionLine.Value.FeatherAngle &&
-                    currActionLine.FeatherMagnitude == activeActionLine.Value.FeatherMagnitude)
+                    currActionLine.FeatherMagnitude == activeActionLine.Value.FeatherMagnitude &&
+                    !IsScreenTransition(row))
                 {
                     activeActionLine = activeActionLine.Value with { FrameCount = activeActionLine.Value.FrameCount + currActionLine.FrameCount };
                     hasChanges = true;
@@ -183,5 +190,32 @@ public class CombineConsecutiveSameInputs : ContextAction {
         }
 
         return hasChanges;
+    }
+
+    private static bool IsScreenTransition(int row) {
+        // Screen transition frames don't have actions (except for buffering!)
+        // And are followed by a #lvl_ label
+
+        const Actions allowedActions = Actions.Jump | Actions.Jump2 | Actions.Dash | Actions.Dash2 | Actions.DemoDash | Actions.DemoDash2;
+
+        if (!ActionLine.TryParse(Document.Lines[row], out var actionLine) ||
+            (actionLine.Actions & ~allowedActions) != Actions.None)
+        {
+            return false;
+        }
+
+        for (int checkRow = row + 1; checkRow < Document.Lines.Count; checkRow++) {
+            string line = Document.Lines[checkRow];
+            if (line.StartsWith("#lvl_")) {
+                return true;
+            }
+
+            // Other comments / action-lines in between aren't allowed
+            if (line.StartsWith("#") || ActionLine.TryParse(line, out _)) {
+                return false;
+            }
+        }
+
+        return false;
     }
 }
