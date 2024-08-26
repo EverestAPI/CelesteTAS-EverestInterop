@@ -2703,6 +2703,7 @@ public sealed class Editor : Drawable {
         var position = Document.Caret;
         string line = Document.Lines[position.Row];
 
+        // Select clicked word
         int startIdx = position.Col;
         int endIdx = position.Col;
         while (startIdx > 0 && ShouldExpand(line[startIdx-1])) {
@@ -2719,9 +2720,7 @@ public sealed class Editor : Drawable {
         Recalc();
         return;
 
-        bool ShouldExpand(char c) {
-            return !char.IsWhiteSpace(c) && (!char.IsPunctuation(c) || c is '*' or '_');
-        }
+        static bool ShouldExpand(char c) => !char.IsWhiteSpace(c) && (!char.IsPunctuation(c) || c is '*' or '_');
     }
 
 
