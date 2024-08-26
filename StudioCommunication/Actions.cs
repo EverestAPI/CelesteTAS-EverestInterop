@@ -82,7 +82,7 @@ public static class ActionsUtils {
     public static bool TryParse(char c, out Actions actions) {
         return Chars.TryGetValue(c, out actions);
     }
-    
+
     public static Actions ActionForChar(this char c) =>
         c.ToString().ToUpper()[0] switch {
             'R' => Actions.Right,
@@ -107,7 +107,7 @@ public static class ActionsUtils {
             'F' => Actions.Feather,
             _ => Actions.None,
         };
-    
+
     public static char CharForAction(this Actions actions) =>
         actions switch {
             Actions.Right or Actions.RightDashOnly or Actions.RightMoveOnly => 'R',
@@ -132,7 +132,7 @@ public static class ActionsUtils {
             Actions.Feather => 'F',
             _ => ' ',
         };
-    
+
     public static IEnumerable<Actions> Sorted(this Actions actions) => new[] {
         Actions.Left,
         Actions.Right,
@@ -155,18 +155,19 @@ public static class ActionsUtils {
         Actions.PressedKey,
         Actions.Feather,
     }.Where(e => actions.HasFlag(e));
-    
+
     public static Actions ToggleAction(this Actions actions, Actions other, bool removeMutuallyExclusive) {
         if (actions.HasFlag(other))
             return actions & ~other;
-        
+
         if (!removeMutuallyExclusive)
             return actions | other;
-        
+
         // Replace mutually exclusive inputs
         return other switch {
-            Actions.Left or Actions.Right or Actions.Feather => (actions & ~(Actions.Left | Actions.Right | Actions.Feather)) | other,
-            Actions.Up or Actions.Down or Actions.Feather => (actions & ~(Actions.Up | Actions.Down | Actions.Feather)) | other,
+            Actions.Left or Actions.Right => (actions & ~(Actions.Left | Actions.Right | Actions.Feather)) | other,
+            Actions.Up or Actions.Down => (actions & ~(Actions.Up | Actions.Down | Actions.Feather)) | other,
+            Actions.Feather => (actions & ~(Actions.Up | Actions.Down | Actions.Left | Actions.Right)) | other,
             Actions.Jump or Actions.Jump2 => (actions & ~(Actions.Jump | Actions.Jump2)) | other,
             Actions.Grab or Actions.Grab2 => (actions & ~(Actions.Grab | Actions.Grab2)) | other,
             Actions.Dash or Actions.Dash2 or Actions.DemoDash or Actions.DemoDash2 => (actions & ~(Actions.Dash | Actions.Dash2 | Actions.DemoDash | Actions.DemoDash2)) | other,
