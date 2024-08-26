@@ -39,7 +39,7 @@ jobs:
       - name: Fill-in download info
         run: |
           sed -i "s\\false; //DOUBLE_ZIP_ARCHIVE\\false;\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
-          sed -i "s\\##STUDIO_VERSION##\\$(perl -nle 'print $1 if /<Version>(\S+)<\/Version>/' Studio/CelesteStudio/CelesteStudio.csproj)-${{ steps.ghd.outputs.short-sha }}\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
+          sed -i "s\\##STUDIO_VERSION##\\$(perl -nle 'print $1 if /<Version>(\S+)<\/Version>/' Studio/CelesteStudio/CelesteStudio.csproj)-$(git rev-parse --short HEAD)\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
           sed -i "s\\##URL_WINDOWS_x64##\\https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/CelesteStudio-windows-x64.zip\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
           sed -i "s\\##URL_LINUX_x64##\\https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/CelesteStudio-linux-x64.zip\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
           sed -i "s\\##URL_MACOS_x64##\\https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/CelesteStudio-macos-x64.zip\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs

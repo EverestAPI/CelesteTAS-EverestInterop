@@ -50,14 +50,10 @@ jobs:
           mv CelesteStudio-macos-x64/CelesteStudio-macos-x64.zip .
           mv CelesteStudio-macos-arm64/CelesteStudio-macos-arm64.zip .
 
-      - name: Describe Git history
-        id: ghd
-        uses: proudust/gh-describe@v2
-
       - name: Fill-in download info
         run: |
           sed -i "s\\false; //DOUBLE_ZIP_ARCHIVE\\true;\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
-          sed -i "s\\##STUDIO_VERSION##\\$(perl -nle 'print $1 if /<Version>(\S+)<\/Version>/' Studio/CelesteStudio/CelesteStudio.csproj)-${{ steps.ghd.outputs.short-sha }}\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
+          sed -i "s\\##STUDIO_VERSION##\\$(perl -nle 'print $1 if /<Version>(\S+)<\/Version>/' Studio/CelesteStudio/CelesteStudio.csproj)-$(git rev-parse --short HEAD)\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
           sed -i "s\\##URL_WINDOWS_x64##\\https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/CelesteStudio-windows-x64.zip\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
           sed -i "s\\##URL_LINUX_x64##\\https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/CelesteStudio-linux-x64.zip\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
           sed -i "s\\##URL_MACOS_x64##\\https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/CelesteStudio-macos-x64.zip\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
