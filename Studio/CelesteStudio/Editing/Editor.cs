@@ -2712,6 +2712,31 @@ public sealed class Editor : Drawable {
         base.OnMouseMove(e);
     }
 
+    protected override void OnMouseDoubleClick(MouseEventArgs e) {
+        var position = Document.Caret;
+        string line = Document.Lines[position.Row];
+
+        // Select clicked word
+        int startIdx = position.Col;
+        int endIdx = position.Col;
+        while (startIdx > 0 && ShouldExpand(line[startIdx-1])) {
+            startIdx--;
+        }
+        while (endIdx < line.Length && ShouldExpand(line[endIdx])) {
+            endIdx++;
+        }
+
+        Document.Selection.Start = position with { Col = startIdx };
+        Document.Selection.End = position with { Col = endIdx };
+
+        e.Handled = true;
+        Recalc();
+        return;
+
+        static bool ShouldExpand(char c) => !char.IsWhiteSpace(c) && (!char.IsPunctuation(c) || c is '*' or '_');
+    }
+
+
     protected override void OnMouseWheel(MouseEventArgs e) {
         // Adjust frame count
         if (e.Modifiers.HasFlag(Keys.Shift)) {
