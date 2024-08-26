@@ -58,12 +58,12 @@ public sealed class Settings {
                 return customTheme;
             }
             // Fall back to light theme
-            return Theme.BuiltinThemes["Light"];
+            return Theme.BuiltinThemes[Theme.BuiltinDark];
         }
     }
 
     [TomlNonSerialized]
-    private string themeName = "Light";
+    private string themeName = Theme.BuiltinDark;
     public string ThemeName {
         get => themeName;
         set {
@@ -268,8 +268,8 @@ public sealed class Settings {
 
                     var currentTheme = Instance.CustomThemes[themeName];
                     var fallbackTheme = currentTheme.DarkMode
-                        ? Theme.BuiltinThemes["Dark"]
-                        : Theme.BuiltinThemes["Light"];
+                        ? Theme.BuiltinThemes[Theme.BuiltinDark]
+                        : Theme.BuiltinThemes[Theme.BuiltinLight];
 
                     // Need to box the theme, since it's a struct
                     var currentThemeBox = (object)currentTheme;

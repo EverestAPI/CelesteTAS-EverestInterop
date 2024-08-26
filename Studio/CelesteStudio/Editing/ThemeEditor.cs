@@ -79,31 +79,31 @@ public sealed class ThemeEditor : Form {
 
         Content = layout;
         Resizable = true;
-        
+
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
         Shown += (_, _) => Location = Studio.Instance.Location + new Point((Studio.Instance.Width - Width) / 2, (Studio.Instance.Height - Height) / 2);
     }
-    
+
     private bool IsBuiltin() {
         return Theme.BuiltinThemes.ContainsKey(Settings.Instance.ThemeName);
     }
-    
+
     private void Rename() {
         var newName = AskString("New name for the theme:", Settings.Instance.ThemeName)?.Trim();
         if (string.IsNullOrEmpty(newName) || newName == Settings.Instance.ThemeName) {
             return;
         }
-        
+
         if (Theme.BuiltinThemes.ContainsKey(newName) || Settings.Instance.CustomThemes.ContainsKey(newName)) {
             MessageBox.Show($"'{newName}' already exists", MessageBoxType.Error);
             return;
         }
-        
+
         var prevName = Settings.Instance.ThemeName;
         Settings.Instance.CustomThemes[newName] = Settings.Instance.Theme;
         Settings.Instance.CustomThemes.Remove(prevName);
         Settings.Instance.ThemeName = newName;
-        
+
         // Regenerate theme selector
         selector.Items.Clear();
         foreach (var name in Theme.BuiltinThemes.Keys) {
@@ -113,30 +113,30 @@ public sealed class ThemeEditor : Form {
             selector.Items.Add(new ListItem { Text = name, Key = name });
         }
         selector.SelectedKey = Settings.Instance.ThemeName;
-        
+
         Settings.OnChanged();
         Settings.Save();
     }
-    
+
     private void Duplicate() {
         var newName = AskString("Name for the new theme:", Settings.Instance.ThemeName)?.Trim();
         if (string.IsNullOrEmpty(newName)) {
             return;
         }
-        
+
         if (Theme.BuiltinThemes.ContainsKey(newName) || Settings.Instance.CustomThemes.ContainsKey(newName)) {
             MessageBox.Show($"'{newName}' already exists", MessageBoxType.Error);
             return;
         }
-        
+
         selector.Items.Add(new ListItem { Text = newName, Key = newName });
         Settings.Instance.CustomThemes[newName] = Settings.Instance.Theme;
         Settings.Instance.ThemeName = newName;
-        
+
         Settings.OnChanged();
         Settings.Save();
     }
-    
+
     private void Delete() {
         if (IsBuiltin()) {
             MessageBox.Show("Cannot delete a builtin theme", MessageBoxType.Error);
@@ -164,7 +164,7 @@ public sealed class ThemeEditor : Form {
             }
         }
         if (newIsCurrent) {
-            Settings.Instance.ThemeName = "Light";
+            Settings.Instance.ThemeName = Theme.BuiltinLight;
         }
 
         List<IListItem> toDelete = [];
@@ -191,7 +191,7 @@ public sealed class ThemeEditor : Form {
 
         // Fields
         fieldsLayout.Clear();
-        
+
         // See the comment on `pickers`
         foreach (var picker in pickers) {
             picker.Dispose();
@@ -212,7 +212,7 @@ public sealed class ThemeEditor : Form {
                 fieldsLayout.Add(new Label { Text = field.Name });
                 fieldsLayout.AddSpace();
                 fieldsLayout.EndVertical();
-                
+
                 var stepper = new NumericStepper { DecimalPlaces = 0, MaximumDecimalPlaces = 0, Value = intValue };
                 stepper.ValueChanged += (_, _) => {
                     UpdateField(field, (int)stepper.Value);
@@ -224,7 +224,7 @@ public sealed class ThemeEditor : Form {
                 fieldsLayout.Add(new Label { Text = field.Name });
                 fieldsLayout.AddSpace();
                 fieldsLayout.EndVertical();
-                
+
                 var stepper = new NumericStepper { DecimalPlaces = 2, MaximumDecimalPlaces = 2, Value = floatValue };
                 stepper.ValueChanged += (_, _) => {
                     UpdateField(field, (float)stepper.Value);
@@ -249,11 +249,11 @@ public sealed class ThemeEditor : Form {
                 fieldsLayout.Add(new Label { Text = field.Name });
                 fieldsLayout.AddSpace();
                 fieldsLayout.EndVertical();
-                
+
                 var styleLayout = new DynamicLayout { DefaultSpacing = new Size(5, 5) };
                 // The only reason a Scrollable is used, is because it provides a border
                 fieldsLayout.Add(new Scrollable { Content = styleLayout, Padding = 5 }.FixBorder());
-                
+
                 styleLayout.BeginVertical();
                 styleLayout.BeginHorizontal();
 
@@ -262,7 +262,7 @@ public sealed class ThemeEditor : Form {
                 styleLayout.Add(new Label { Text = "Foreground" });
                 styleLayout.AddSpace();
                 styleLayout.EndVertical();
-                
+
                 var fgPicker = new ColorPicker { Value = style.ForegroundColor };
                 fgPicker.ValueChanged += (_, _) => {
                     style.ForegroundColor = fgPicker.Value;
@@ -270,7 +270,7 @@ public sealed class ThemeEditor : Form {
                 };
                 styleLayout.Add(fgPicker, xscale: true);
                 pickers.Add(fgPicker);
-                
+
                 styleLayout.EndBeginHorizontal();
 
                 styleLayout.BeginVertical();
@@ -278,28 +278,28 @@ public sealed class ThemeEditor : Form {
                 styleLayout.Add(new Label { Text = "Background" });
                 styleLayout.AddSpace();
                 styleLayout.EndVertical();
-                
+
                 var bgPicker = new ColorPicker { Value = style.BackgroundColor ?? Colors.Transparent, AllowAlpha = true };
                 bgPicker.ValueChanged += (_, _) => {
                     if (bgPicker.Value.A <= 0.001f) {
                         // If the background is null instead of transparent, it helps with performance
-                        style.BackgroundColor = null;    
+                        style.BackgroundColor = null;
                     } else {
-                        style.BackgroundColor = bgPicker.Value;    
+                        style.BackgroundColor = bgPicker.Value;
                     }
                     UpdateField(field, style);
                 };
                 styleLayout.Add(bgPicker, xscale: true);
                 pickers.Add(bgPicker);
-                
+
                 styleLayout.EndBeginHorizontal();
-                
+
                 styleLayout.BeginVertical();
                 styleLayout.AddSpace();
                 styleLayout.AddAutoSized(new Label { Text = "Bold" });
                 styleLayout.AddSpace();
                 styleLayout.EndVertical();
-                
+
                 var bold = new CheckBox { Checked = style.FontStyle.HasFlag(FontStyle.Bold) };
                 bold.CheckedChanged += (_, _) => {
                     if (bold.Checked.Value) {
@@ -309,17 +309,17 @@ public sealed class ThemeEditor : Form {
                     }
                     UpdateField(field, style);
                 };
-                
+
                 styleLayout.AddAutoSized(bold);
-                
+
                 styleLayout.EndBeginHorizontal();
-                
+
                 styleLayout.BeginVertical();
                 styleLayout.AddSpace();
                 styleLayout.AddAutoSized(new Label { Text = "Italic" });
                 styleLayout.AddSpace();
                 styleLayout.EndVertical();
-                
+
                 var italic = new CheckBox { Checked = style.FontStyle.HasFlag(FontStyle.Italic) };
                 italic.CheckedChanged += (_, _) => {
                     if (italic.Checked.Value) {
@@ -329,12 +329,12 @@ public sealed class ThemeEditor : Form {
                     }
                     UpdateField(field, style);
                 };
-                
+
                 styleLayout.AddAutoSized(italic);
-                
+
                 styleLayout.EndHorizontal();
                 styleLayout.EndVertical();
-                
+
                 /*
                 colorsLayout.Add(new Label { Text = field.Name });
                 colorsLayout.BeginVertical();
@@ -428,7 +428,7 @@ public sealed class ThemeEditor : Form {
         Settings.OnThemeChanged();
         Settings.Save();
     }
-    
+
     private static string? AskString(string text, string initialValue) {
         var dialog = new Dialog<string?>();
 
@@ -449,7 +449,7 @@ public sealed class ThemeEditor : Form {
                 input,
             }
         };
-        
+
         dialog.Load += (_, _) => Studio.Instance.WindowCreationCallback(dialog);
         dialog.Shown += (_, _) => dialog.Location = Studio.Instance.Location + new Point((Studio.Instance.Width - dialog.Width) / 2, (Studio.Instance.Height - dialog.Height) / 2);
 
