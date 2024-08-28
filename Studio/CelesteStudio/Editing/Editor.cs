@@ -840,8 +840,12 @@ public sealed class Editor : Drawable {
             }
         }
 
-        bool isActionLine = ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _ );
-        bool isComment = Document.Lines[Document.Caret.Row].TrimStart().StartsWith('#');
+        string lineTrimmed = Document.Lines[Document.Caret.Row].TrimStart();
+
+        // Send inputs to Celeste if applicable
+        bool isActionLine = lineTrimmed.StartsWith("***") ||
+                            ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _ );
+        bool isComment = lineTrimmed.StartsWith('#');
         bool isTyping = (DateTime.UtcNow - lastModification).TotalSeconds < Settings.Instance.SendInputsTypingTimeout;
         bool sendInputs =
             (Settings.Instance.SendInputsOnActionLines && isActionLine) ||
@@ -1052,8 +1056,12 @@ public sealed class Editor : Drawable {
         if (e.Key is Keys.LeftApplication or Keys.RightApplication) mods &= ~Keys.Application;
         UpdateMouseAction(PointFromScreen(Mouse.Position), mods);
 
-        bool isActionLine = ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _ );
-        bool isComment = Document.Lines[Document.Caret.Row].TrimStart().StartsWith('#');
+        string lineTrimmed = Document.Lines[Document.Caret.Row].TrimStart();
+
+        // Send inputs to Celeste if applicable
+        bool isActionLine = lineTrimmed.StartsWith("***") ||
+                            ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _ );
+        bool isComment = lineTrimmed.StartsWith('#');
         bool isTyping = (DateTime.UtcNow - lastModification).TotalSeconds < Settings.Instance.SendInputsTypingTimeout;
         bool sendInputs =
             (Settings.Instance.SendInputsOnActionLines && isActionLine) ||
