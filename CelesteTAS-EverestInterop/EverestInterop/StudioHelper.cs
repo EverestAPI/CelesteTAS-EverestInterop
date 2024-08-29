@@ -200,7 +200,7 @@ public static class StudioHelper {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
             string? line;
 
-            var chmodProc = Process.Start(new ProcessStartInfo("chmod", $"+x {Path.Combine(StudioDirectory, "CelesteStudio.app", "Contents", "MacOS", "CelesteStudio")}"))!;
+            var chmodProc = Process.Start("chmod", ["+x", Path.Combine(StudioDirectory, "CelesteStudio")]);
             await chmodProc.WaitForExitAsync().ConfigureAwait(false);
 
             if (chmodProc.ExitCode != 0) {
@@ -224,7 +224,7 @@ public static class StudioHelper {
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
             string? line;
 
-            var chmodProc = Process.Start(new ProcessStartInfo("chmod", $"+x {Path.Combine(StudioDirectory, "CelesteStudio.app", "Contents", "MacOS", "CelesteStudio")}"))!;
+            var chmodProc = Process.Start("chmod", ["+x", Path.Combine(StudioDirectory, "CelesteStudio.app", "Contents", "MacOS", "CelesteStudio")]);
             await chmodProc.WaitForExitAsync().ConfigureAwait(false);
 
             if (chmodProc.ExitCode != 0) {
@@ -246,7 +246,7 @@ public static class StudioHelper {
                 }
             }
 
-            var xattrProc = Process.Start(new ProcessStartInfo("xattr", $"-c {Path.Combine(StudioDirectory, "CelesteStudio.app")}"))!;
+            var xattrProc = Process.Start("xattr", ["-c", Path.Combine(StudioDirectory, "CelesteStudio.app")]);
             await xattrProc.WaitForExitAsync().ConfigureAwait(false);
             if (xattrProc.ExitCode != 0) {
                 $"Install failed! Couldn't clear Studio app bundle config: {xattrProc.ExitCode}".Log(LogLevel.Error);
