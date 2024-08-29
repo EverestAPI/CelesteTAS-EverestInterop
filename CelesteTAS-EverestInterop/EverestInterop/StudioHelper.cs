@@ -195,75 +195,54 @@ public static class StudioHelper {
 
         // Fix lost file permissions
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-            string? line;
-
-            var chmodProc = Process.Start("chmod", ["+x", Path.Combine(StudioDirectory, "CelesteStudio")]);
-            await chmodProc.WaitForExitAsync().ConfigureAwait(false);
-
-            if (chmodProc.ExitCode != 0) {
-                $"Install failed! Couldn't make Studio executable: {chmodProc.ExitCode}".Log(LogLevel.Error);
-
-                while ((line = await chmodProc.StandardOutput.ReadLineAsync()) == null) {
-                    line.Log(LogLevel.Info);
-                }
-                while ((line = await chmodProc.StandardError.ReadLineAsync()) == null) {
-                    line.Log(LogLevel.Error);
-                }
-
+            if (!await ExecuteCommand(["chmod", "+x", Path.Combine(StudioDirectory, "CelesteStudio")],
+                    errorMessage: "Install failed! Couldn't make Studio executable").ConfigureAwait(false))
+            {
                 // Mark install as invalid, so that next launch will try again
                 File.Delete(VersionFile);
-                return;
-            } else {
-                while ((line = await chmodProc.StandardOutput.ReadLineAsync()) == null) {
-                    line.Log(LogLevel.Debug);
-                }
             }
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-            string? line;
-
-            var chmodProc = Process.Start("chmod", ["+x", Path.Combine(StudioDirectory, "CelesteStudio.app", "Contents", "MacOS", "CelesteStudio")]);
-            await chmodProc.WaitForExitAsync().ConfigureAwait(false);
-
-            if (chmodProc.ExitCode != 0) {
-                $"Install failed! Couldn't make Studio executable: {chmodProc.ExitCode}".Log(LogLevel.Error);
-
-                while ((line = await chmodProc.StandardOutput.ReadLineAsync()) == null) {
-                    line.Log(LogLevel.Info);
-                }
-                while ((line = await chmodProc.StandardError.ReadLineAsync()) == null) {
-                    line.Log(LogLevel.Error);
-                }
-
+            if (!await ExecuteCommand(["chmod", "+x", Path.Combine(StudioDirectory, "CelesteStudio.app", "Contents", "MacOS", "CelesteStudio")],
+                    errorMessage: "Install failed! Couldn't make Studio executable").ConfigureAwait(false) ||
+                !await ExecuteCommand(["xattr", "-c", Path.Combine(StudioDirectory, "CelesteStudio.app")],
+                    errorMessage: "Install failed! Couldn't clear Studio app bundle config").ConfigureAwait(false))
+            {
                 // Mark install as invalid, so that next launch will try again
                 File.Delete(VersionFile);
-                return;
-            } else {
-                while ((line = await chmodProc.StandardOutput.ReadLineAsync()) == null) {
-                    line.Log(LogLevel.Debug);
-                }
-            }
-
-            var xattrProc = Process.Start("xattr", ["-c", Path.Combine(StudioDirectory, "CelesteStudio.app")]);
-            await xattrProc.WaitForExitAsync().ConfigureAwait(false);
-            if (xattrProc.ExitCode != 0) {
-                $"Install failed! Couldn't clear Studio app bundle config: {xattrProc.ExitCode}".Log(LogLevel.Error);
-
-                while ((line = await xattrProc.StandardOutput.ReadLineAsync()) == null) {
-                    line.Log(LogLevel.Info);
-                }
-                while ((line = await xattrProc.StandardError.ReadLineAsync()) == null) {
-                    line.Log(LogLevel.Error);
-                }
-
-                // Mark install as invalid, so that next launch will try again
-                File.Delete(VersionFile);
-                return;
-            } else {
-                while ((line = await xattrProc.StandardOutput.ReadLineAsync()) == null) {
-                    line.Log(LogLevel.Debug);
-                }
             }
         }
+    }
+
+    private static async Task<bool> ExecuteCommand(string[] parameters, string errorMessage) {
+        var startInfo = new ProcessStartInfo(parameters[0]) {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+        foreach (string param in parameters[1..]) {
+            startInfo.ArgumentList.Add(param);
+        }
+
+        var proc = Process.Start(startInfo)!;
+        await proc.WaitForExitAsync().ConfigureAwait(false);
+
+        string? line;
+
+        if (proc.ExitCode != 0) {
+            $"{errorMessage}: Exit Code {proc.ExitCode}".Log(LogLevel.Error);
+
+            while ((line = await proc.StandardOutput.ReadLineAsync()) != null) {
+                line.Log(LogLevel.Info);
+            }
+            while ((line = await proc.StandardError.ReadLineAsync()) != null) {
+                line.Log(LogLevel.Error);
+            }
+        } else {
+            while ((line = await proc.StandardOutput.ReadLineAsync()) != null) {
+                line.Log(LogLevel.Debug);
+            }
+        }
+
+        return proc.ExitCode == 0;
     }
 
     internal static void LaunchStudio() => Task.Run(async () => {

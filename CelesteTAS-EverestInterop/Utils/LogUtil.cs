@@ -24,9 +24,9 @@ internal static class LogUtil {
     }
 #endif
 
-    public static void LogException(this Exception e, string header, LogLevel logLevel = LogLevel.Warn) {
+    public static void LogException(this Exception e, string header, LogLevel logLevel = LogLevel.Error) {
         header.Log(logLevel);
-        e.LogDetailed();
+        Logger.LogDetailed(e, Tag);
     }
 
     public static void Log(this object text, LogLevel logLevel = LogLevel.Info) {
