@@ -114,7 +114,9 @@ public static class StudioHelper {
                     if (TasSettings.Enabled && TasSettings.LaunchStudioAtBoot) {
                         LaunchStudio();
                     }
-                } catch {
+                } catch (Exception ex) {
+                    ex.LogException("Failed to install Studio");
+
                     // Cleanup
                     if (Directory.Exists(StudioDirectory)) {
                         Directory.Delete(StudioDirectory, recursive: true);
