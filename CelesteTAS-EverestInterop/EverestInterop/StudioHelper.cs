@@ -198,22 +198,73 @@ public static class StudioHelper {
 
         // Fix lost file permissions
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-            var chmodProc = Process.Start(new ProcessStartInfo("chmod", $"+x {Path.Combine(StudioDirectory, "CelesteStudio")}"))!;
-            await chmodProc.WaitForExitAsync().ConfigureAwait(false);
-            if (chmodProc.ExitCode != 0) {
-                "Install failed! Couldn't make studio executable".Log(LogLevel.Error);
-            }
-        } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+            string? line;
+
             var chmodProc = Process.Start(new ProcessStartInfo("chmod", $"+x {Path.Combine(StudioDirectory, "CelesteStudio.app", "Contents", "MacOS", "CelesteStudio")}"))!;
             await chmodProc.WaitForExitAsync().ConfigureAwait(false);
+
             if (chmodProc.ExitCode != 0) {
-                "Install failed! Couldn't make studio executable".Log(LogLevel.Error);
+                $"Install failed! Couldn't make Studio executable: {chmodProc.ExitCode}".Log(LogLevel.Error);
+
+                while ((line = await chmodProc.StandardOutput.ReadLineAsync()) == null) {
+                    line.Log(LogLevel.Info);
+                }
+                while ((line = await chmodProc.StandardError.ReadLineAsync()) == null) {
+                    line.Log(LogLevel.Error);
+                }
+
+                // Mark install as invalid, so that next launch will try again
+                File.Delete(VersionFile);
+                return;
+            } else {
+                while ((line = await chmodProc.StandardOutput.ReadLineAsync()) == null) {
+                    line.Log(LogLevel.Debug);
+                }
+            }
+        } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+            string? line;
+
+            var chmodProc = Process.Start(new ProcessStartInfo("chmod", $"+x {Path.Combine(StudioDirectory, "CelesteStudio.app", "Contents", "MacOS", "CelesteStudio")}"))!;
+            await chmodProc.WaitForExitAsync().ConfigureAwait(false);
+
+            if (chmodProc.ExitCode != 0) {
+                $"Install failed! Couldn't make Studio executable: {chmodProc.ExitCode}".Log(LogLevel.Error);
+
+                while ((line = await chmodProc.StandardOutput.ReadLineAsync()) == null) {
+                    line.Log(LogLevel.Info);
+                }
+                while ((line = await chmodProc.StandardError.ReadLineAsync()) == null) {
+                    line.Log(LogLevel.Error);
+                }
+
+                // Mark install as invalid, so that next launch will try again
+                File.Delete(VersionFile);
+                return;
+            } else {
+                while ((line = await chmodProc.StandardOutput.ReadLineAsync()) == null) {
+                    line.Log(LogLevel.Debug);
+                }
             }
 
             var xattrProc = Process.Start(new ProcessStartInfo("xattr", $"-c {Path.Combine(StudioDirectory, "CelesteStudio.app")}"))!;
             await xattrProc.WaitForExitAsync().ConfigureAwait(false);
             if (xattrProc.ExitCode != 0) {
-                "Install failed! Couldn't clear studio app bundle config".Log(LogLevel.Error);
+                $"Install failed! Couldn't clear Studio app bundle config: {xattrProc.ExitCode}".Log(LogLevel.Error);
+
+                while ((line = await xattrProc.StandardOutput.ReadLineAsync()) == null) {
+                    line.Log(LogLevel.Info);
+                }
+                while ((line = await xattrProc.StandardError.ReadLineAsync()) == null) {
+                    line.Log(LogLevel.Error);
+                }
+
+                // Mark install as invalid, so that next launch will try again
+                File.Delete(VersionFile);
+                return;
+            } else {
+                while ((line = await xattrProc.StandardOutput.ReadLineAsync()) == null) {
+                    line.Log(LogLevel.Debug);
+                }
             }
         }
     }
