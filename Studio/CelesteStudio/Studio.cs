@@ -51,6 +51,7 @@ public sealed class Studio : Form {
         Instance = this;
         Icon = Assets.AppIcon;
         MinimumSize = new Size(250, 250);
+        AllowDrop = true;
 
         WindowCreationCallback = windowCreationCallback;
 
@@ -219,6 +220,15 @@ public sealed class Studio : Form {
             CommandSeparator.CommaSpace => ", ",
             _ => throw new UnreachableException()
         });
+    }
+
+    protected override void OnDragDrop(DragEventArgs e) {
+        if (e.Data.ContainsUris && e.Data.Uris.Length > 0) {
+            OpenFile(Uri.UnescapeDataString(e.Data.Uris[0].AbsolutePath));
+        }
+    }
+    protected override void OnDragEnter(DragEventArgs e) {
+        e.Effects = DragEffects.Copy;
     }
 
     protected override void OnClosing(CancelEventArgs e) {
