@@ -81,8 +81,8 @@ public static class StudioHelper {
         }
     }
 
-    [Initialize]
-    private static void Initialize() {
+    [Load]
+    private static void Load() {
         // INSTALL_STUDIO is only set during builds from Build.yml/Release.yml, since otherwise the URLs / checksums are invalid
 #if INSTALL_STUDIO
         // Check if studio is already up-to-date
@@ -110,10 +110,6 @@ public static class StudioHelper {
                 try {
                     await DownloadStudio().ConfigureAwait(false);
                     installed = true;
-
-                    if (TasSettings.Enabled && TasSettings.LaunchStudioAtBoot) {
-                        LaunchStudio();
-                    }
                 } catch (Exception ex) {
                     ex.LogException("Failed to install Studio");
 
@@ -126,18 +122,17 @@ public static class StudioHelper {
             });
         } else {
             installed = true;
-
-            if (TasSettings.Enabled && TasSettings.LaunchStudioAtBoot) {
-                LaunchStudio();
-            }
         }
 #else
         installed = true;
+#endif
+    }
 
+    [Initialize]
+    private static void Initialize() {
         if (TasSettings.Enabled && TasSettings.LaunchStudioAtBoot) {
             LaunchStudio();
         }
-#endif
     }
 
     private static async Task DownloadStudio() {
@@ -278,7 +273,7 @@ public static class StudioHelper {
             var start = DateTime.UtcNow;
             var timeout = TimeSpan.FromSeconds(30);
             while (!installed) {
-                if (DateTime.UtcNow - start > timeout) {
+                if ((DateTime.UtcNow - start) > timeout) {
                     "Timed-out while waiting for Studio installation to be verified".Log(LogLevel.Warn);
                     return;
                 }
