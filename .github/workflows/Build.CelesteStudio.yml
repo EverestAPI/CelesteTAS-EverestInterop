@@ -23,10 +23,10 @@ jobs:
           dotnet-version: '8.0'
 
       - name: Set version suffix (release)
-        run: sed -i 's/-dev//' Studio/CelesteStudio/Studio.cs
+        run: sed -i "s/-dev//" Studio/CelesteStudio/Studio.cs
         if: ${{ inputs.build-cfg == 'Release' }}
       - name: Set version suffix (nightly)
-        run: sed -i 's/-dev/-$(git rev-parse --short HEAD)/' Studio/CelesteStudio/Studio.cs
+        run: sed -i "s/-dev/-$(git rev-parse --short HEAD)/" Studio/CelesteStudio/Studio.cs
         if: ${{ inputs.build-cfg == 'Debug' }}
 
       - name: Publish x64
@@ -61,10 +61,10 @@ jobs:
           dotnet-version: '8.0'
 
       - name: Set version suffix (release)
-        run: sed -i 's/-dev//' Studio/CelesteStudio/Studio.cs
+        run: sed -i "s/-dev//" Studio/CelesteStudio/Studio.cs
         if: ${{ inputs.build-cfg == 'Release' }}
       - name: Set version suffix (nightly)
-        run: sed -i 's/-dev/-$(git rev-parse --short HEAD)/' Studio/CelesteStudio/Studio.cs
+        run: sed -i "s/-dev/-$(git rev-parse --short HEAD)/" Studio/CelesteStudio/Studio.cs
         if: ${{ inputs.build-cfg == 'Debug' }}
 
       - name: Publish x64
@@ -103,10 +103,10 @@ jobs:
         run: sudo xcode-select -switch /Applications/Xcode_15.1.app/Contents/Developer
 
       - name: Set version suffix (release)
-        run: sed -i '' -e 's/-dev//' Studio/CelesteStudio/Studio.cs
+        run: sed -i '' -e "s/-dev//" Studio/CelesteStudio/Studio.cs
         if: ${{ inputs.build-cfg == 'Release' }}
       - name: Set version suffix (nightly)
-        run: sed -i '' -e 's/-dev/-$(git rev-parse --short HEAD)/' Studio/CelesteStudio/Studio.cs
+        run: zsh -c "sed -i '' -e "s/-dev/-$(git rev-parse --short HEAD)/" Studio/CelesteStudio/Studio.cs"
         if: ${{ inputs.build-cfg == 'Debug' }}
 
       - name: Publish x64

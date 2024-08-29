@@ -9,7 +9,7 @@ on:
       - 'CelesteTAS-EverestInterop/**'
       - 'Studio/**'
       - 'StudioCommunication/**'
-      - .github/workflows/CelesteStudio.Build.yml
+      - .github/workflows/Build.CelesteStudio.yml
   pull_request:
     branches:
       - '*'
@@ -17,7 +17,7 @@ on:
       - 'CelesteTAS-EverestInterop/**'
       - 'Studio/**'
       - 'StudioCommunication/**'
-      - .github/workflows/CelesteStudio.Build.yml
+      - .github/workflows/Build.CelesteStudio.yml
 
 jobs:
   build-studio:
