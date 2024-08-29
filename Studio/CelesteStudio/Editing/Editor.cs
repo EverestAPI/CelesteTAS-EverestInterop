@@ -1670,9 +1670,6 @@ public sealed class Editor : Drawable {
                 int frameDigits = actionLine.Frames.Length;
                 Document.Caret.Col += ActionLine.MaxFramesDigits - (leadingSpaces + frameDigits);
             }
-        } else {
-            line = Document.Lines[Document.Caret.Row];
-            leadingSpaces = line.Length - line.TrimStart().Length;
         }
 
         char typedCharacter = char.ToUpper(e.Text[0]);
@@ -1682,6 +1679,9 @@ public sealed class Editor : Drawable {
         // If it's an action line, handle it ourselves
         if (TryParseAndFormatActionLine(Document.Caret.Row, out actionLine) && e.Text.Length == 1) {
             ClearQuickEdits();
+
+            line = Document.Lines[Document.Caret.Row];
+            leadingSpaces = line.Length - line.TrimStart().Length;
 
             // Handle custom bindings
             int customBindStart = GetColumnOfAction(actionLine, Actions.PressedKey);
@@ -2090,6 +2090,12 @@ public sealed class Editor : Drawable {
                     else if (actionLine.Frames.Length > ActionLine.MaxFramesDigits) {
                         actionLine.Frames = Math.Clamp(actionLine.FrameCount, 0, ActionLine.MaxFrames).ToString().PadLeft(ActionLine.MaxFramesDigits, '0');
                     }
+
+                    // Account for frame count not moving
+                    string line = Document.Lines[Document.Caret.Row];
+                    int leadingSpaces = line.Length - line.TrimStart().Length;
+                    int frameDigits = actionLine.Frames.Length;
+                    Document.Caret.Col += ActionLine.MaxFramesDigits - (leadingSpaces + frameDigits);
 
                     Document.ReplaceLine(Document.Caret.Row, actionLine.ToString());
 
