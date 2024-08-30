@@ -25,7 +25,17 @@ public enum CommandSeparator { Space, Comma, CommaSpace }
 public enum LineNumberAlignment { Left, Right }
 
 public sealed class Settings {
-    public static string BaseConfigPath => Path.Combine(EtoEnvironment.GetFolderPath(EtoSpecialFolder.ApplicationSettings), "CelesteStudio");
+    public static string BaseConfigPath {
+        get {
+            if (Platform.Instance.IsMac) {
+                // macOS already namespaces the application settings
+                return EtoEnvironment.GetFolderPath(EtoSpecialFolder.ApplicationSettings);
+            }
+
+            return Path.Combine(EtoEnvironment.GetFolderPath(EtoSpecialFolder.ApplicationSettings), "CelesteStudio");
+        }
+    }
+
     public static string SettingsPath => Path.Combine(BaseConfigPath, "Settings.toml");
 
     public static Settings Instance { get; private set; } = new();

@@ -55,6 +55,11 @@ public sealed class Studio : Form {
 
         WindowCreationCallback = windowCreationCallback;
 
+        // Ensure config directory exists
+        if (!Directory.Exists(Settings.BaseConfigPath)) {
+            Directory.CreateDirectory(Settings.BaseConfigPath);
+        }
+
         Migrator.ApplyPreLoadMigrations();
 
 #if DEBUG
