@@ -51,7 +51,10 @@ jobs:
           cat CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
 
       - name: Build
-        run: dotnet build CelesteTAS-EverestInterop -c Release -p:DefineConstants=INSTALL_STUDIO
+        run: |
+          dotnet build CelesteTAS-EverestInterop -c Release -p:DefineConstants=INSTALL_STUDIO
+          ls -la
+          tree .
 
       - name: Create release
         uses: marvinpinto/action-automatic-releases@latest
@@ -59,7 +62,7 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: false
           files: |
-            CelesteTAS.zip 
+            CelesteTAS.zip
             CelesteStudio-windows-x64.zip
             CelesteStudio-linux-x64.zip
             CelesteStudio-macos-x64.zip

@@ -59,7 +59,7 @@
         <Copy SourceFiles="$(OutputPath)JetBrains.Profiler.Api.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug'" />
     </Target>
 
-    <Target Name="PackageMod" AfterTargets="CopyFiles" Inputs="$(ZippedFiles)" Outputs="..\CelesteMod.zip" Condition="'$(Configuration)' == 'Release'">
+    <Target Name="PackageMod" AfterTargets="CopyFiles" Condition="'$(Configuration)' == 'Release'">
         <ItemGroup>
             <FilesToPackage Include="..\everest.yaml;..\bin\**\*.*;..\Audio\**\*.*;..\Dialog\**\*.*;..\Graphics\**\*.*;..\Ahorn\**\*.*;..\Loenn\**\*.*" />
         </ItemGroup>
@@ -79,7 +79,7 @@
             <Using Namespace="System.IO.Compression" />
             <Code Type="Fragment" Language="cs">
                 <![CDATA[
-                var projectDir = Path.Combine(@"$(ProjectDir)", ".."); // Go one level up, since we're inside the 'Source' directory
+                var projectDir = Path.Combine(@"$(ProjectDir)", ".."); // Go one level up, since we're inside the 'CelesteTAS-EverestInterop' directory
                 projectDir = Uri.UnescapeDataString(projectDir);
 
                 if (File.Exists(OutputPath))
