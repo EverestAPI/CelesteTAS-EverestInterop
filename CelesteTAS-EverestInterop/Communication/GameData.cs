@@ -339,11 +339,11 @@ public static class GameData {
                     });
             }
         } else if (Everest.Modules.FirstOrDefault(m => m.Metadata.Name == args[0] && m.SettingsType != null) is { } mod) {
-            return GetTypeAutoCompleteEntries(RecurseSetType(mod.SettingsType, args), AutoCompleteType.Set)
+            return GetTypeAutoCompleteEntries(RecurseSetType(mod.SettingsType, args), AutoCompleteType.Set, isRootType: args.Length == 2)
                 .Select(e => e with { Name = e.Name + (e.IsDone ? "" : "."), Prefix = string.Join('.', args[..^1]) + ".", HasNext = true });
         } else if (InfoCustom.TryParseTypes(args[0], out var types, out _, out _)) {
             // Let's just assume the first type
-            return GetTypeAutoCompleteEntries(RecurseSetType(types[0], args), AutoCompleteType.Set)
+            return GetTypeAutoCompleteEntries(RecurseSetType(types[0], args), AutoCompleteType.Set, isRootType: args.Length == 2)
                 .Select(e => e with { Name = e.Name + (e.IsDone ? "" : "."), Prefix = string.Join('.', args[..^1]) + ".", HasNext = true });
         }
 
@@ -391,7 +391,7 @@ public static class GameData {
             return entries.Select(e => e with { Name = e.IsDone ? e.Name : e.Name + "." }); // Append '.' for next segment if not done;
         } else if (InfoCustom.TryParseTypes(args[0], out var types, out _, out _)) {
             // Let's just assume the first type
-            return GetTypeAutoCompleteEntries(types[0], AutoCompleteType.Invoke)
+            return GetTypeAutoCompleteEntries(types[0], AutoCompleteType.Invoke, isRootType: args.Length == 2)
                 .Select(e => e with { Name = e.Name + (e.IsDone ? "" : "."), Prefix = string.Join('.', args[..^1]) + ".", HasNext = true });
         }
 
@@ -406,11 +406,11 @@ public static class GameData {
         if (autoCompleteType == AutoCompleteType.Set && args.Length == 1) {
             // Vanilla setting / session / assist
             if (typeof(Settings).GetFieldInfo(args[0], BindingFlags.Instance | BindingFlags.Public) is { } fSettings) {
-                return GetTypeAutoCompleteEntries(fSettings.FieldType, AutoCompleteType.Parameter);
+                return GetTypeAutoCompleteEntries(fSettings.FieldType, AutoCompleteType.Parameter, isRootType: args.Length == 2);
             } else if (typeof(SaveData).GetFieldInfo(args[0], BindingFlags.Instance | BindingFlags.Public) is { } fSaveData) {
-                return GetTypeAutoCompleteEntries(fSaveData.FieldType, AutoCompleteType.Parameter);
+                return GetTypeAutoCompleteEntries(fSaveData.FieldType, AutoCompleteType.Parameter, isRootType: args.Length == 2);
             } else if (typeof(Assists).GetFieldInfo(args[0], BindingFlags.Instance | BindingFlags.Public) is { } fAssists) {
-                return GetTypeAutoCompleteEntries(fAssists.FieldType, AutoCompleteType.Parameter);
+                return GetTypeAutoCompleteEntries(fAssists.FieldType, AutoCompleteType.Parameter, isRootType: args.Length == 2);
             }
         } else if (args[0] == "ExtendedVariantMode") {
             // Special case for setting extended variants
@@ -418,21 +418,21 @@ public static class GameData {
             var variantType = ExtendedVariantsUtils.GetVariantType(new(variant));
 
             if (variantType != null) {
-                return GetTypeAutoCompleteEntries(RecurseSetType(variantType, args, includeLast: true), AutoCompleteType.Parameter);
+                return GetTypeAutoCompleteEntries(RecurseSetType(variantType, args, includeLast: true), AutoCompleteType.Parameter, isRootType: args.Length == 2);
             }
         } else if (autoCompleteType == AutoCompleteType.Set && Everest.Modules.FirstOrDefault(m => m.Metadata.Name == args[0] && m.SettingsType != null) is { } mod) {
-            return GetTypeAutoCompleteEntries(RecurseSetType(mod.SettingsType, args, includeLast: true), AutoCompleteType.Parameter);
+            return GetTypeAutoCompleteEntries(RecurseSetType(mod.SettingsType, args, includeLast: true), AutoCompleteType.Parameter, isRootType: args.Length == 2);
         } else if (InfoCustom.TryParseTypes(args[0], out var types, out _, out _)) {
             // Let's just assume the first type
             if (autoCompleteType == AutoCompleteType.Set) {
-                return GetTypeAutoCompleteEntries(RecurseSetType(types[0], args, includeLast: true), AutoCompleteType.Parameter);
+                return GetTypeAutoCompleteEntries(RecurseSetType(types[0], args, includeLast: true), AutoCompleteType.Parameter, isRootType: args.Length == 2);
             } else if (autoCompleteType == AutoCompleteType.Invoke) {
                 var parameters = types[0].GetMethodInfo(args[1]).GetParameters();
                 if (index >= 0 && index < parameters.Length) {
                     bool final = index == parameters.Length - 1 ||
                                  index < parameters.Length - 1 && !IsSettableType(parameters[index].ParameterType);
 
-                    return GetTypeAutoCompleteEntries(parameters[index].ParameterType, AutoCompleteType.Parameter)
+                    return GetTypeAutoCompleteEntries(parameters[index].ParameterType, AutoCompleteType.Parameter, isRootType: args.Length == 2)
                         .Select(e => e with { HasNext = !final });
                 }
             }
@@ -457,8 +457,8 @@ public static class GameData {
         return type;
     }
 
-    private static IEnumerable<CommandAutoCompleteEntry> GetTypeAutoCompleteEntries(Type type, AutoCompleteType autoCompleteType) {
-        bool staticMembers = !(type.IsSameOrSubclassOf(typeof(Entity)) || type.IsSameOrSubclassOf(typeof(Level)) || type.IsSameOrSubclassOf(typeof(Session)) || type.IsSameOrSubclassOf(typeof(EverestModuleSettings)));
+    private static IEnumerable<CommandAutoCompleteEntry> GetTypeAutoCompleteEntries(Type type, AutoCompleteType autoCompleteType, bool isRootType) {
+        bool staticMembers = isRootType && !(type.IsSameOrSubclassOf(typeof(Entity)) || type.IsSameOrSubclassOf(typeof(Level)) || type.IsSameOrSubclassOf(typeof(Session)) || type.IsSameOrSubclassOf(typeof(EverestModuleSettings)));
         var bindingFlags = staticMembers
             ? BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public
             : BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
@@ -498,8 +498,8 @@ public static class GameData {
                          .OrderBy(m => m.Name)
                          .Select(m => new CommandAutoCompleteEntry {
                              Name = m.Name,
-                             Extra = $"({string.Join(", ", m.GetParameters().Select(p => CSharpTypeName(p.ParameterType)))})",
-                             IsDone = !m.GetParameters().Any(p => IsSettableType(p.ParameterType) || p.HasDefaultValue),
+                             Extra = $"({string.Join(", ", m.GetParameters().Select(p => p.HasDefaultValue ? $"[{CSharpTypeName(p.ParameterType)}]" : CSharpTypeName(p.ParameterType)))})",
+                             IsDone = true,
                          }))
             {
                 yield return entry;
