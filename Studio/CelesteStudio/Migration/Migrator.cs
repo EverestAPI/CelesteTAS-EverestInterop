@@ -55,14 +55,11 @@ public static class Migrator {
             }
         }
 
-        Studio.Instance.Shown += (_, _) => Task.Run(async () => {
-            // Make sure Studio is fully launched before displaying changelogs
-            await Task.Delay(5_000).ConfigureAwait(false);
-
+        Studio.Instance.Shown += (_, _) => {
             foreach ((string? versionName, var stream) in changelogs) {
-                WhatsNewDialog.Show($"Whats new in Studio v{versionName}?", await new StreamReader(stream).ReadToEndAsync().ConfigureAwait(false));
+                WhatsNewDialog.Show($"Whats new in Studio v{versionName}?", new StreamReader(stream).ReadToEnd());
             }
-        });
+        };
 
         File.WriteAllText(LatestVersionPath, newVersion.ToString(3));
     }
