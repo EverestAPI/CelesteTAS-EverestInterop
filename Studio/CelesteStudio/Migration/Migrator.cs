@@ -59,6 +59,13 @@ public static class Migrator {
                 }
             }
         }
+
+        Studio.Instance.Shown += (_, _) => {
+            foreach ((string? versionName, var stream) in changelogs) {
+                WhatsNewDialog.Show($"Whats new in Studio v{versionName}?", new StreamReader(stream).ReadToEnd());
+                stream.Dispose();
+            }
+        };
     }
 
     public static void ApplyPostLoadMigrations() {
@@ -67,13 +74,5 @@ public static class Migrator {
                 postLoad?.Invoke();
             }
         }
-    }
-
-    public static async Task ShowChangelogs() {
-        foreach ((string? versionName, var stream) in changelogs) {
-            WhatsNewDialog.Show($"Whats new in Studio v{versionName}?", await new StreamReader(stream).ReadToEndAsync().ConfigureAwait(false));
-            await stream.DisposeAsync().ConfigureAwait(false);
-        }
-        changelogs.Clear();
     }
 }

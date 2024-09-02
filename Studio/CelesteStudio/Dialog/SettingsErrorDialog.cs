@@ -76,7 +76,7 @@ public class SettingsErrorDialog : Dialog<SettingsErrorAction> {
         Result = SettingsErrorAction.None;
 
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
-        Shown += (_, _) => Location = Studio.Instance.Location + new Point((Studio.Instance.Width - Width) / 2, (Studio.Instance.Height - Height) / 2);
+        Shown += (_, _) => Location = new Point((int)((Screen.WorkingArea.Width - Width) / 2), (int)((Screen.WorkingArea.Height - Height) / 2));
     }
 
     protected override void OnClosing(CancelEventArgs e) {

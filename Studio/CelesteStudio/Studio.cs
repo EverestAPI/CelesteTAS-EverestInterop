@@ -164,12 +164,6 @@ public sealed class Studio : Form {
                 OnNewFile();
             }
         };
-        Shown += (_, _) => Task.Run(async () => {
-            // Wait a bit, so that the window definitely is shown
-            // A bit janky, but not doing this seems to cause issues
-            await Task.Delay(5_000).ConfigureAwait(false);
-            await Application.Instance.InvokeAsync(Migrator.ShowChangelogs).ConfigureAwait(false);
-        });
 
         CommunicationWrapper.Start();
     }

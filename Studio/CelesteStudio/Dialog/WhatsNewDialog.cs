@@ -62,7 +62,7 @@ public class WhatsNewDialog : Eto.Forms.Dialog {
         Studio.RegisterDialog(this);
 
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
-        Shown += (_, _) => Location = Studio.Instance.Location + new Point((Studio.Instance.Width - Width) / 2, (Studio.Instance.Height - Height) / 2);
+        Shown += (_, _) => Location = new Point((int)((Screen.WorkingArea.Width - Width) / 2), (int)((Screen.WorkingArea.Height - Height) / 2));
     }
 
     public static void Show(string title, string markdown) => new WhatsNewDialog(title, markdown).ShowModal();
