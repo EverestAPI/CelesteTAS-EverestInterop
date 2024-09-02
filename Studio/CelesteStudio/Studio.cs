@@ -570,11 +570,11 @@ public sealed class Studio : Form {
         var quitItem = MenuEntry.File_Quit.ToAction(Application.Instance.Quit);
         var homeItem = MenuUtils.CreateAction("Open README...", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop"));
         var wikiItem = MenuUtils.CreateAction("Open wiki...", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki"));
-        var whatsNewItem = MenuUtils.CreateAction("Whats new?", Keys.None, () => {
+        var whatsNewItem = MenuUtils.CreateAction("What's new?", Keys.None, () => {
             var asm = Assembly.GetExecutingAssembly();
             string version = asm.GetName().Version!.ToString(3);
             if (asm.GetManifestResourceStream($"Changelogs/v{version}.md") is { } stream) {
-                WhatsNewDialog.Show($"Whats new in Studio v{version}?", new StreamReader(stream).ReadToEnd());
+                WhatsNewDialog.Show($"What's new in Studio v{version}?", new StreamReader(stream).ReadToEnd());
             }
         });
         var aboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {
