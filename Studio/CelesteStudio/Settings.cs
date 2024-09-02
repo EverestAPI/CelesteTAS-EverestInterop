@@ -333,6 +333,10 @@ public sealed class Settings {
             }
         } else {
             allowSaving = true;
+
+            OnChanged();
+            OnThemeChanged();
+            OnFontChanged();
             Save();
         }
 
