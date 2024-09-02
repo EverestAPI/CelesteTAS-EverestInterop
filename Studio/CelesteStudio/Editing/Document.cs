@@ -274,6 +274,7 @@ public class Document : IDisposable {
         Console.WriteLine($"Change: {e.FullPath} - {e.ChangeType}");
 
         // Need to try multiple times, since the file might still be used by other processes
+        // The file might also just be temporarily be deleted and re-created by an external tool
         var newLines = Task.Run(async () => {
             const int numberOfRetries = 3;
             const int delayOnRetry = 1000;
@@ -283,8 +284,12 @@ public class Document : IDisposable {
                 try {
                     return await File.ReadAllLinesAsync(FilePath);
                 }
-                catch (IOException ex) when (ex.HResult == ERROR_SHARING_VIOLATION) {
+                catch (IOException ex) when (ex.HResult == ERROR_SHARING_VIOLATION || ex is FileNotFoundException) {
                     await Task.Delay(delayOnRetry).ConfigureAwait(false);
+                } catch (Exception ex) {
+                    // Something else failed; abort reload
+                    Console.WriteLine($"Failed to reload file: {ex}");
+                    return null;
                 }
             }
 
