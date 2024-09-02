@@ -54,28 +54,30 @@ public class FindDialog : Eto.Forms.Dialog {
     }
 
     private void SelectNext() {
-        if (needsSearch)
+        if (needsSearch) {
             UpdateMatches();
-        if (matches.Count == 0)
+        }
+        if (matches.Count == 0) {
             return;
+        }
 
         // Check against start of selection
         foreach (var match in matches) {
             if (match > editor.Document.Caret) {
-                editor.Document.Caret = match;
-                editor.ScrollCaretIntoView(center: true);
+                SelectMatch(match);
                 return;
             }
         }
         // Wrap around to start
-        editor.Document.Caret = matches[0];
-        editor.ScrollCaretIntoView(center: true);
+        SelectMatch(matches[0]);
     }
     private void SelectPrev() {
-        if (needsSearch)
+        if (needsSearch) {
             UpdateMatches();
-        if (matches.Count == 0)
+        }
+        if (matches.Count == 0) {
             return;
+        }
 
         // Check against end of selection
         for (int i = matches.Count - 1; i >= 0; i--) {
@@ -83,14 +85,20 @@ public class FindDialog : Eto.Forms.Dialog {
             var end = new CaretPosition(match.Row, match.Col + textBox.Text.Length);
 
             if (end < editor.Document.Caret) {
-                editor.Document.Caret = match;
-                editor.ScrollCaretIntoView(center: true);
+                SelectMatch(match);
                 return;
             }
         }
         // Wrap around to end
-        editor.Document.Caret = matches[^1];
+        SelectMatch(matches[^1]);
+    }
+
+    private void SelectMatch(CaretPosition match) {
+        editor.Document.Caret = match;
+        editor.Document.Selection.Start = editor.Document.Caret;
+        editor.Document.Selection.End = editor.Document.Caret with { Col = editor.Document.Caret.Col + textBox.Text.Length };
         editor.ScrollCaretIntoView(center: true);
+        editor.Invalidate();
     }
 
     private void UpdateMatches() {
@@ -99,8 +107,9 @@ public class FindDialog : Eto.Forms.Dialog {
 
         matches.Clear();
         var search = textBox.Text;
-        if (search.Length == 0)
+        if (search.Length == 0) {
             return;
+        }
 
         for (int row = 0; row < editor.Document.Lines.Count; row++) {
             var line = editor.Document.Lines[row];
@@ -108,8 +117,9 @@ public class FindDialog : Eto.Forms.Dialog {
 
             while (true) {
                 int idx = line.IndexOf(textBox.Text, col, compare);
-                if (idx < 0)
+                if (idx < 0) {
                     break;
+                }
 
                 matches.Add(new CaretPosition(row, col));
                 col = idx + textBox.Text.Length;
