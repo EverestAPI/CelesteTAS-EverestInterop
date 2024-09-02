@@ -15,6 +15,7 @@ public static class Migrator {
     ];
 
     private static Version oldVersion = null!, newVersion = null!;
+    private static readonly List<(string versionName, Stream stream)> changelogs = [];
 
     /// Migrates settings and other configurations from the last used to the current version
     /// Also shows changelog dialogs when applicable
@@ -38,11 +39,15 @@ public static class Migrator {
             oldVersion = Version.TryParse(File.ReadAllText(LatestVersionPath), out var version) ? version : newVersion;
         }
 
+        File.WriteAllText(LatestVersionPath, newVersion.ToString(3));
+
+        if (oldVersion == newVersion) {
+            return;
+        }
+
         Console.WriteLine($"Migrating from v{oldVersion.ToString(3)} to v{newVersion.ToString(3)}...");
 
         var asm = Assembly.GetExecutingAssembly();
-
-        List<(string versionName, Stream stream)> changelogs = [];
 
         foreach (var (version, preLoad, _) in migrations) {
             if (version > oldVersion && version <= newVersion) {
@@ -54,14 +59,6 @@ public static class Migrator {
                 }
             }
         }
-
-        Studio.Instance.Shown += (_, _) => {
-            foreach ((string? versionName, var stream) in changelogs) {
-                WhatsNewDialog.Show($"Whats new in Studio v{versionName}?", new StreamReader(stream).ReadToEnd());
-            }
-        };
-
-        File.WriteAllText(LatestVersionPath, newVersion.ToString(3));
     }
 
     public static void ApplyPostLoadMigrations() {
@@ -70,5 +67,13 @@ public static class Migrator {
                 postLoad?.Invoke();
             }
         }
+    }
+
+    public static async Task ShowChangelogs() {
+        foreach ((string? versionName, var stream) in changelogs) {
+            WhatsNewDialog.Show($"Whats new in Studio v{versionName}?", await new StreamReader(stream).ReadToEndAsync().ConfigureAwait(false));
+            await stream.DisposeAsync().ConfigureAwait(false);
+        }
+        changelogs.Clear();
     }
 }

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using CelesteStudio.Communication;
 using CelesteStudio.Data;
 using CelesteStudio.Dialog;
@@ -163,6 +164,12 @@ public sealed class Studio : Form {
                 OnNewFile();
             }
         };
+        Shown += (_, _) => Task.Run(async () => {
+            // Wait a bit, so that the window definitely is shown
+            // A bit janky, but not doing this seems to cause issues
+            await Task.Delay(5_000).ConfigureAwait(false);
+            await Application.Instance.InvokeAsync(Migrator.ShowChangelogs).ConfigureAwait(false);
+        });
 
         CommunicationWrapper.Start();
     }
