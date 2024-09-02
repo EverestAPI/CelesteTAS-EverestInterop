@@ -2134,7 +2134,11 @@ public sealed class Editor : Drawable {
     }
 
     private void OnFind() {
-        FindDialog.Show(this);
+        if (Document.Selection.Empty) {
+            FindDialog.Show(this, string.Empty);
+        } else {
+            FindDialog.Show(this, Document.GetSelectedText());
+        }
     }
 
     private void OnGoTo() {

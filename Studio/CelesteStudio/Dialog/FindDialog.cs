@@ -15,10 +15,10 @@ public class FindDialog : Eto.Forms.Dialog {
     private readonly TextBox textBox;
     private readonly CheckBox matchCase;
 
-    private FindDialog(Editor editor) {
+    private FindDialog(Editor editor, string initialText) {
         this.editor = editor;
 
-        textBox = new TextBox { PlaceholderText = "Search", Width = 200 };
+        textBox = new TextBox { Text = initialText, PlaceholderText = "Search", Width = 200 };
         matchCase = new CheckBox { Text = "Match Case", Checked = Settings.Instance.FindMatchCase };
         textBox.TextChanging += (_, _) => needsSearch = true;
         matchCase.CheckedChanged += (_, _) => needsSearch = true;
@@ -121,5 +121,5 @@ public class FindDialog : Eto.Forms.Dialog {
         }
     }
 
-    public static void Show(Editor editor) => new FindDialog(editor).ShowModal();
+    public static void Show(Editor editor, string initialText) => new FindDialog(editor, initialText).ShowModal();
 }
