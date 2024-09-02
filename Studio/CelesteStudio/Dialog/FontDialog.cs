@@ -47,8 +47,9 @@ public class FontDialog : Dialog<bool> {
             float yPos = 0.0f;
             float maxWidth = 0.0f;
             foreach (var line in previewText) {
-                highlighter.DrawLine(e.Graphics, 0.0f, yPos, line);
-                maxWidth = Math.Max(maxWidth, font.MeasureWidth(line));
+                // Actually measure the fonts to avoid caching issues
+                highlighter.DrawLine(e.Graphics, 0.0f, yPos, line, measureReal: true);
+                maxWidth = Math.Max(maxWidth, font.MeasureWidth(line, measureReal: true));
                 yPos += font.LineHeight();
             }
 
@@ -111,8 +112,9 @@ public class FontDialog : Dialog<bool> {
                 foreach (var family in Fonts.AvailableFontFamilies) {
                     // Check if the font is monospaced
                     var font = new Font(family, 12.0f);
-                    if (Math.Abs(font.MeasureString("I").Width - font.MeasureString("X").Width) > 0.01f)
+                    if (Math.Abs(font.MeasureString("I").Width - font.MeasureString("X").Width) > 0.01f) {
                         continue;
+                    }
 
                     fonts.Add(family.Name);
                 }
