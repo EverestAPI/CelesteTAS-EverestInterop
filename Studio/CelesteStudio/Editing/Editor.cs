@@ -2187,9 +2187,21 @@ public sealed class Editor : Drawable {
             maxRow = Document.Lines.Count - 1;
         }
 
+        // Only uncomment if all breakpoints are currently commented
+        // Otherwise just comment uncommented breakpoints
+        bool allCommented = true;
         for (int row = minRow; row <= maxRow; row++) {
             var line = Document.Lines[row];
-            if (CommentedBreakpointRegex.IsMatch(line)) {
+
+            if (UncommentedBreakpointRegex.IsMatch(line)) {
+                allCommented = false;
+                break;
+            }
+        }
+
+        for (int row = minRow; row <= maxRow; row++) {
+            var line = Document.Lines[row];
+            if (allCommented && CommentedBreakpointRegex.IsMatch(line)) {
                 int hashIdx = line.IndexOf('#');
                 Document.ReplaceLine(row, line.Remove(hashIdx, 1));
 
@@ -2200,7 +2212,7 @@ public sealed class Editor : Drawable {
                     Document.Selection.End.Col--;
                 if (row == Document.Caret.Row)
                     Document.Caret.Col--;
-            } else if (UncommentedBreakpointRegex.IsMatch(line)) {
+            } else if (!allCommented && UncommentedBreakpointRegex.IsMatch(line)) {
                 Document.ReplaceLine(row, $"#{line}");
 
                 // Shift everything over
