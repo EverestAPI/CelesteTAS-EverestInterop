@@ -1,10 +1,9 @@
 - Name: CelesteTAS
   Version: 3.40.0
-  MinStudioVersion: 2.18.4
   DLL: bin/CelesteTAS-EverestInterop.dll
   Dependencies:
     - Name: EverestCore
-      Version: 1.4818.0
+      Version: 1.4986.0
   OptionalDependencies:
     - Name: SpeedrunTool
       Version: 3.16.4
