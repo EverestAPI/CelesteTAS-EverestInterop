@@ -1,3 +1,4 @@
+using Eto;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -20,6 +21,11 @@ public static class FontManager {
 
     private static FontFamily? builtinFontFamily;
     public static Font CreateFont(string fontFamily, float size, FontStyle style = FontStyle.None) {
+        if (Platform.Instance.IsMac && fontFamily == FontFamilyBuiltin) {
+            // The built-in font is broken on macOS for some reason, so fallback to a system font
+            fontFamily = "Monaco";
+        }
+
         if (fontFamily == FontFamilyBuiltin) {
             var asm = Assembly.GetExecutingAssembly();
             builtinFontFamily ??= FontFamily.FromStreams(asm.GetManifestResourceNames()
@@ -34,8 +40,9 @@ public static class FontManager {
 
     private static readonly Dictionary<Font, float> charWidthCache = new();
     public static float CharWidth(this Font font) {
-        if (charWidthCache.TryGetValue(font, out float width))
+        if (charWidthCache.TryGetValue(font, out float width)) {
             return width;
+        }
 
         width = font.MeasureString("X").Width;
         charWidthCache.Add(font, width);
