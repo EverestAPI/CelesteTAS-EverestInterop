@@ -2953,6 +2953,8 @@ public sealed class Editor : Drawable {
             } else {
                 Document.Caret = new CaretPosition(0, 0);
             }
+            Recalc();
+            ScrollCaretIntoView(center: true);
         };
     }
 
@@ -2975,6 +2977,7 @@ public sealed class Editor : Drawable {
             Document.Caret.Row = labelRow;
             Document.Caret.Col = desiredVisualCol = Document.Lines[labelRow].Length;
             Recalc();
+            ScrollCaretIntoView(center: true);
         };
     }
 
