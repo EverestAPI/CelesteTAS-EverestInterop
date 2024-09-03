@@ -262,6 +262,11 @@ public sealed class Settings {
                 return hotkey.Value.HotkeyFromString("+");
             });
 
+        // Apply default settings, so that nothing is in an invalid state before loading
+        OnChanged();
+        OnThemeChanged();
+        OnFontChanged();
+
         TryAgain:
         if (File.Exists(SettingsPath)) {
             try {
@@ -334,9 +339,6 @@ public sealed class Settings {
         } else {
             allowSaving = true;
 
-            OnChanged();
-            OnThemeChanged();
-            OnFontChanged();
             Save();
         }
 
