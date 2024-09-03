@@ -114,7 +114,7 @@ public sealed class Settings {
 
     public bool SendInputsToCeleste { get; set; } = true;
     public bool SendInputsOnActionLines { get; set; } = true;
-    public bool SendInputsOnCommands { get; set; } = false;
+    public bool SendInputsOnCommands { get; set; } = true;
     public bool SendInputsOnComments { get; set; } = false;
     public float SendInputsTypingTimeout { get; set; } = 0.3f;
 
