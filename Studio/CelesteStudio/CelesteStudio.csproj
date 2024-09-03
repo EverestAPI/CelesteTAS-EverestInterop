@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <Nullable>enable</Nullable>
+
+        <Version>3.0.0</Version>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="($(RuntimeIdentifier) == '' and $([MSBuild]::IsOSPlatform('Linux'))) or $(RuntimeIdentifier.StartsWith('linux'))">
+        <IsLinux>true</IsLinux>
+    </PropertyGroup>
+    <PropertyGroup Condition="($(RuntimeIdentifier) == '' and $([MSBuild]::IsOSPlatform('Windows'))) or $(RuntimeIdentifier.StartsWith('win'))">
+        <IsWindows>true</IsWindows>
+    </PropertyGroup>
+    <PropertyGroup Condition="($(RuntimeIdentifier) == '' and $([MSBuild]::IsOSPlatform('OSX'))) or $(RuntimeIdentifier.StartsWith('osx'))">
+        <IsMacOS>true</IsMacOS>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Eto.Forms" Version="2.8.3" />
+        <PackageReference Include="Samboy063.Tomlet" Version="5.3.1" />
+        <PackageReference Include="Markdig" Version="0.37.0" />
+        
+        <ProjectReference Include="..\..\StudioCommunication\StudioCommunication.csproj" />
+        <ProjectReference Include="..\..\external\Featherline\Featherline.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Include="Assets\Icon.ico" LogicalName="Icon.ico"/>
+    </ItemGroup>
+
+    <!-- Windows requires .otf, macOS requires .ttf and GTK doesn't seem to care -->
+    <ItemGroup Condition="$(IsMacOS) == 'true'">
+        <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Regular.ttf" LogicalName="JetBrainsMono/JetBrainsMono-Regular"/>
+        <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Bold.ttf" LogicalName="JetBrainsMono/JetBrainsMono-Bold"/>
+        <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Italic.ttf" LogicalName="JetBrainsMono/JetBrainsMono-Italic"/>
+        <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-BoldItalic.ttf" LogicalName="JetBrainsMono/JetBrainsMono-BoldItalic"/>
+    </ItemGroup>
+    <ItemGroup Condition="$(IsMacOS) != 'true'">
+        <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Regular.otf" LogicalName="JetBrainsMono/JetBrainsMono-Regular"/>
+        <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Bold.otf" LogicalName="JetBrainsMono/JetBrainsMono-Bold"/>
+        <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Italic.otf" LogicalName="JetBrainsMono/JetBrainsMono-Italic"/>
+        <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-BoldItalic.otf" LogicalName="JetBrainsMono/JetBrainsMono-BoldItalic"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Include="Assets\Changelogs\v3.0.0.md" LogicalName="Changelogs/v3.0.0.md"/>
+        <EmbeddedResource Include="Assets\Changelogs\v3.0.0\*.png" LogicalName="Changelogs/v3.0.0/%(Filename).png"/>
+    </ItemGroup>
+
+</Project>

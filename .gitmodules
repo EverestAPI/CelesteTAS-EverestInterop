@@ -1,0 +1,3 @@
+[submodule "external/Featherline"]
+	path = external/Featherline
+	url = https://github.com/SomeoneSom/Featherline_StudioV3

@@ -1,88 +1,86 @@
 # CelesteTAS
 
-## TAS tools mod in Everest
+## TAS tools for Celeste / Everest
 
 ### License: MIT
 
-----
+---
 
 - Install [Everest](https://everestapi.github.io/) if you haven't already.
-- (Recommended) Use the 1-click installer [here](https://gamebanana.com/tools/6715). (Alternatively) [Download the latest autobuild](https://0x0a.de/twoclick/?nightly.link/EverestAPI/CelesteTAS-EverestInterop/workflows/NetFramework.Legacy.CI/master/CelesteTAS.zip)
-  and put it in the game_path/mods folder.
-- Enable the mod in the in-game mod options.
-- Open `Celeste Studio.exe`, our input editor. It should be in your main Celeste directory, if not please extract it from the `Mods/CelesteTAS.zip` yourself. (Note that Studio only works on Windows) [Studio documentation can be found here.](https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/master/Docs/Studio.md)
-- If on Linux or macOS, try running celeste studio via wine, [here is the tutorial for installing wine](#running-studio-via-wine). If celeste studio not work, check the working TAS file path in the `Mod Options -> Enabled` menu item, edit it with your favorite text editor, and enable `Info HUD` to show the auxiliary information.
-- You can find the most up-to-date input files [here](https://github.com/EuniverseCat/CelesteTAS).
+- (Recommended) Use the 1-click installer [here](https://gamebanana.com/tools/6715). (Alternatively) [Download the latest auto-build](https://0x0a.de/twoclick/?nightly.link/EverestAPI/CelesteTAS-EverestInterop/workflows/Build/rewrite/CelesteTAS.zip).
+- Make sure the mod is enabled in the in-game mod options.
+- Enable the mod-setting `Celeste TAS > More Options > Launch Studio at Boot`. Celeste Studio, our input editor, should now automatically launch.
+- Alternatively, you can start Celeste Studio directly. It'll be installed in the `CelesteStudio` directory inside your Celeste install. 
+- You can find the most up-to-date input files [here](https://github.com/VampireFlower/CelesteTAS).
 
 ## Input File
-The input file is a text file with `tas` as a suffix, e.g. `1A - Forsaken City.tas`.
+The input file is a text file with `tas` as a suffix, e.g. `1A.tas`.
 
 Format for the input file is (Frames),(Actions)
 
-e.g. 123,R,J (For 123 frames, hold Right and Jump)
+e.g. `123,R,J` (For `123` frames, hold `Right` and `Jump`)
 
-## Actions Available
-- R = Right
-- L = Left
-- U = Up
-- D = Down
-- J = Jump / Confirm
-- K = Jump Bind 2
-- X = Dash / Talk / Cancel
-- C = Dash Bind 2 / Cancel Bind 2
-- Z = Crouch Dash
-- V = Crouch Dash Bind 2
-- G = Grab
-- H = Grab Bind 2
-- S = Pause
-- Q = Quick Restart
-- F = Feather Aim
-<br>Format: F, angle, optional upper limit of single axis (default value is 1, range is 0.26 to 1, works in all [analog modes](Docs/Commands.md#analoguemode))
-- O = Confirm Bind 2
-- N = Journal / Talk Bind 2
-- A = Dash Only Directional Modifier (generally used to manipulate camera with binocular control storage. eg: 15,R,X,ALU)
-- M = Move Only Directional Modifier (eg: 15,X,AL,MR)
-- P = Custom Button Press Modifier (used to press inputs added by mods after binding them using the [Set command](Docs/Commands.md#set), e.g. 15,R,X,PA after binding A to a custom input)
+## Available Actions
+- `R` = Right
+- `L` = Left
+- `U` = Up
+- `D` = Down
+- `J` = Jump / Confirm
+- `K` = Jump Bind 2
+- `X` = Dash / Talk / Cancel
+- `C` = Dash Bind 2 / Cancel Bind 2
+- `Z` = Crouch Dash
+- `V` = Crouch Dash Bind 2
+- `G` = Grab
+- `H` = Grab Bind 2
+- `S` = Pause
+- `Q` = Quick Restart
+- `F` = Feather Aim
+  * Format: F, angle, optional upper limit of single axis (default value is 1, range is 0.26 to 1, works in all [analog modes](Docs/Commands.md#analoguemode))
+- `O` = Confirm Bind 2
+- `N` = Journal / Talk Bind 2
+- `A` = Dash Only Directional Modifier (generally used to manipulate camera with binocular control storage. eg: `15,R,X,ALU`)
+- `M` = Move Only Directional Modifier (eg: `15,X,AL,MR`)
+- `P` = Custom Button Press Modifier (used to press inputs added by mods after binding them using the [Set command](Docs/Commands.md#set), e.g. `15,R,X,PA` after binding A to a custom input)
 
 ## Controls
 While in game or in Studio:
-- Start/Stop Playback: RightControl
-- Restart Playback: Equals
-- Fast Forward / Frame Advance Continuously: RightShift or Controller Right Analog Stick
-- Fast Forward to Next Comment: RightAlt + RightShift
-- Slow Forward: \
-- Pause / Frame Advance: [
-- Pause / Resume: ]
-- Toggle Hitboxes: LeftControl + B
-- Toggle Simplified Graphics: LeftControl + N
-- Toggle Center Camera: LeftControl + M
-- Save State: RightAlt + Minus
-- Clear State: RightAlt + Back
+- Start/Stop Playback: `RightControl`
+- Restart Playback: `Equals`
+- Fast Forward / Frame Advance Continuously: `RightShift` or `Controller Right Analog Stick`
+- Fast Forward to Next Comment: `RightAlt + RightShift`
+- Slow Forward: `\`
+- Pause / Frame Advance: `[`
+- Pause / Resume: `]`
+- Toggle Hitboxes: `LeftControl + B`
+- Toggle Simplified Graphics: `LeftControl + N`
+- Toggle Center Camera: `LeftControl + M`
+- Save State: `RightAlt + Minus`
+- Clear State: `RightAlt + Back`
 - Info HUD:
-    - Holding info hud hotkey and left-click to drag & drop the HUD
-    - Double press the info hud hotkey to toggle HUD
-    - Holding info hud hotkey then left-click on entity to watch the entity
+  * While holding the Info HUD hotkey, left-click to move the HUD around
+  * Double press the Info HUD hotkey to toggle it
+  * While Holding the Info HUD hotkey, left-click on entity to watch the entity
 - These can be rebound in Mod Options
-    - You will have to rebind some of these if you are on a non-US keyboard layout.
-    - Binding multiple keys to a control will cause those keys to act as a keycombo.
+  * You will have to rebind some of these if you are on a non-US keyboard layout.
+  * Binding multiple keys to a control will cause those keys to act as a key-combo.
 
 ## Special Input
 
 ### Breakpoints
 - You can create a breakpoint in the input file by typing `***` by itself on a single line
-- The program when played back from the start will fast forward until it reaches that line and then go into frame stepping mode
+- The TAS, when played back from the start will fast-forward until it reaches that line and will then pause the TAS
 - `***S` will make a [savestate](#savestate), which can reduce TAS playback time. 
-- You can specify the speed with `***X`, where `X` is the speedup factor. e.g. `***10` will go at 10x speed, `***0.5` will go at half speed.
+- You can specify the speed with `***X`, where `X` is the speedup factor. e.g. `***10` will go at 10x speed, `***0.5` will go at 0.5x speed.
 
 ### Commands
-- Various commands exist to facilitate TAS
-  playback. [Documentation can be found here](https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/master/Docs/Commands.md).
+- Various commands exist to facilitate TAS playback. [Documentation can be found here](https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/master/Docs/Commands.md).
 
 ## Savestate
 - Savestates require the [SpeedrunTool](https://gamebanana.com/tools/6597) mod.
 - Reliable in vanilla maps.
 - Savestates may not work properly in custom maps that use code mods. Placing a savestate right before leaving a room can help with this.
-- Currently cannot savestate when paused.
+- Currently, cannot savestate when paused.
 - Crashes due to running out of memory are possible, although uncommon.
 
 ## Misc
@@ -97,7 +95,7 @@ When center camera is enabled, scroll wheel or free camera hotkey + home/end zoo
 When center camera is enabled, double press mouse right button or double press free camera hotkey reset camera.
 
 ### Rectangle Selection Info
-Holding info hud hotkey and mouse right down to select a rectangle. Copies the position of the top left and bottom right corners when the mouse button is released. It helps to define checkpoints for [featherline](https://github.com/tntfalle/featherline).
+Hold the Info HUD hotkey and the mouse right down to select a rectangle. Copies the position of the top left and bottom right corners when the mouse button is released. This helps to define checkpoints for [Featherline](https://github.com/tntfalle/featherline).
 
 ### Watch Entity
 Enable `Info HUD`, holding info hud hotkey then left-click to add the entity to be watched, while holding watch trigger hotkey to watch trigger, right-click to clear the watching entities. Supports exporting watching entities info via
@@ -127,16 +125,11 @@ Here are some examples:
 - `[[return player.Position]]`
 - `[[return player.Position, player.Speed]]` Return multiple results. 
 
-## Running Studio via Wine
-1. Install Wine: https://wiki.winehq.org/Download
-2. Install `ttf-mscorefonts-installer`.
-3. Run Studio via command `wine "Celeste Studio.exe"`, agree to install wine-mono.
-4. Run Celeste directly or run the windows version of celeste via wine `wine "Celeste.exe"`. If the error `X Error of failed request: GLXBadFBConfig` is reported when running celeste via wine, then you need to run `export MESA_GL_VERSION_OVERRIDE=4.5` first and then rerun the wine command.
-
 ## Other Useful Tools
-- [Featherline](https://github.com/tntfalle/featherline): Algorithm for analog feather movement in Celeste.
-- [Radeline](https://github.com/Kataiser/radeline): Chaos monkey that optimizes a Celeste TAS by randomly (or sequentially) changing inputs.
 - [TAS Recorder](https://gamebanana.com/tools/14085): High quality fixed framerate TAS encoder, cross-platform (use this instead of .kkapture or ldcapture) 
-- [.kkapture](https://github.com/DemoJameson/kkapture/wiki): Record high quality smooth tas video on low end PC, Windows only.
-- [ldcapture](https://github.com/psyGamer/ldcapture): Record high quality smooth tas video on low end PC, Linux only.
-- [GhostMod](https://github.com/DemoJameson/GhostMod): Used to compare old and new tas.
+- [GhostMod](https://gamebanana.com/mods/500759): Compare new TASes with old ones.
+- [Radeline](https://github.com/Kataiser/radeline): Chaos monkey that optimizes a Celeste TAS by randomly (or sequentially) changing inputs.
+- [Lobby Router](https://jakobhellermann.github.io/trout/): Helps find the fastest route for a collab lobby
+- [Featherline](https://github.com/tntfalle/featherline): Algorithm for analog feather movement in Celeste. (built-in into Studio)
+- [.kkapture](https://github.com/DemoJameson/kkapture/wiki): High quality fixed framerate TAS encoder, Windows only.
+- [ldcapture](https://github.com/psyGamer/ldcapture): High quality fixed framerate TAS encoder, Linux only.

@@ -1,0 +1,145 @@
+# ================================== Menu ==================================
+TAS_ENABLED=                    Enabled
+TAS_ENABLED_DESCRIPTION=        Working TAS File Path:
+TAS_SHOW_HITBOXES=              Hitboxes
+TAS_HITBOX_COLOR_DESCRIPTION_1= Hitbox color can only be edited in the menu of the title screen
+TAS_HITBOX_COLOR_DESCRIPTION_2= Or use the entity/trigger/platform_hitbox_color command in the console
+TAS_SIMPLIFIED_GRAPHICS=        Simplified Graphics
+TAS_INFO_HUD=                   Info HUD
+TAS_INFO_HUD_DESCRIPTION_1=     Holding info hud hotkey and left-click to drag & drop the HUD
+TAS_INFO_HUD_DESCRIPTION_2=     Double press the info hud hotkey to toggle HUD
+TAS_INFO_HUD_DESCRIPTION_3=     Holding info hud hotkey then left-click to watch the entity
+TAS_ROUND_VALUES=               Round Values
+TAS_FORWARD_SPEED=              Forward Speed
+TAS_MORE_OPTIONS=               More Options
+
+# ================================== Hitbox Submenu ==================================
+TAS_ACTUAL_COLLIDE_HITBOXES=        Actual Collide Hitboxes
+TAS_SHOW_TRIGGER_HITBOXES=          Trigger Hitboxes
+TAS_SHOW_UNLOADED_ROOMS_HITBOXES=   Unloaded Rooms Hitboxes
+TAS_SHOW_CAMERA_HITBOXES=           Camera Hitboxes
+TAS_SHOW_CYCLE_HITBOX_COLORS=       Show Cycle Hitbox Colors
+TAS_SIMPLIFIED_HITBOXES=            Simplified Hitboxes
+TAS_UN_COLLIDABLE_HITBOXES_OPACITY= Un-collidable Hitboxes Opacity
+TAS_ENTITY_HITBOX_COLOR=            Entity Hitbox Color
+TAS_TRIGGER_HITBOX_COLOR=           Trigger Hitbox Color
+TAS_PLATFORM_HITBOX_COLOR=          Platform Hitbox Color
+TAS_CYCLE1_HITBOX_COLOR=            Cycle 1 Hitbox Color
+TAS_CYCLE2_HITBOX_COLOR=            Cycle 2 Hitbox Color
+TAS_CYCLE3_HITBOX_COLOR=            Cycle 3 Hitbox Color
+TAS_CYCLE4_HITBOX_COLOR=            Other Cycles Hitbox Color
+
+# ================================== Simplified Graphics Submenu ==================================
+TAS_GAMEPLAY=                     Gameplay
+TAS_LIGHTING=                     Lighting
+TAS_BLOOM_BASE=                   Bloom Base
+TAS_BLOOM_STRENGTH=               Bloom Strength
+TAS_SPINNER_COLOR=                Spinner Color
+TAS_DUST_SPRITE_EDGE=             Dust Sprite Edge
+TAS_SCREEN_WIPE=                  Screen Wipe
+TAS_COLOR_GRADE=                  Color Grade
+TAS_SOLID_TILES_STYLE=            Solid Tiles Style
+TAS_BACKGROUND_TILES=             Background Tiles
+TAS_BACKDROP=                     Backdrop
+TAS_DECAL=                        Decal
+TAS_PARTICLE=                     Particle
+TAS_DISTORT=                      Distort
+TAS_MINI_TEXT_BOX=                Mini Text Box
+TAS_LIGHTNING_STRIKE=             Lightning Strike
+TAS_CLUTTERED_ENTITY=             Cluttered Entity
+TAS_CLUTTERED_ENTITY_DESCRIPTION= Tentacles, summit cloud, eyeball
+TAS_HUD=                          HUD
+TAS_HUD_DESCRIPTION=              Talking icon, bird tutorial and some text
+TAS_WAVED_EDGE=                   Waved Edge
+TAS_SPIKES=                       Spikes
+
+# ================================== Info HUD ==================================
+TAS_INFO_GAME=                             Game Info
+TAS_INFO_TAS_INPUT=                        TAS Input
+TAS_INFO_SUBPIXEL_INDICATOR=               Subpixel Indicator
+TAS_INFO_CUSTOM=                           Custom Info
+TAS_INFO_COPY_CUSTOM_TEMPLATE=             Copy Custom Info Template to Clipboard
+TAS_INFO_SET_CUSTOM_TEMPLATE=              Set Custom Info Template from Clipboard
+TAS_INFO_WATCH_ENTITY=                     Watch Entity
+TAS_INFO_WATCH_ENTITY_TYPE=                Watch Entity Info
+TAS_INFO_WATCH_ENTITY_POSITION=            Position
+TAS_INFO_WATCH_ENTITY_DECLARED_ONLY=       Declared Only
+TAS_INFO_WATCH_ENTITY_ALL=                 All
+TAS_INFO_TEXT_SIZE=                        Text Size
+TAS_INFO_SUBPIXEL_INDICATOR_SIZE=          Subpixel Indicator Size
+TAS_INFO_OPACITY=                          Opacity
+TAS_INFO_MASKED_OPACITY=                   Masked Opacity
+
+# ================================== Info HUD Options ==================================
+TAS_INFO_HUD_OPTIONS_OFF=         OFF
+TAS_INFO_HUD_OPTIONS_HUD_ONLY=    HUD Only
+TAS_INFO_HUD_OPTIONS_STUDIO_ONLY= Studio Only
+TAS_INFO_HUD_OPTIONS_BOTH=        Both
+
+# ================================== Round Values ==================================
+TAS_POSITION_DECIMALS=            Position Decimals
+TAS_SPEED_DECIMALS=               Speed Decimals
+TAS_VELOCITY_DECIMALS=            Velocity Decimals
+TAS_ANGLE_DECIMALS=               Angle Decimals
+TAS_CUSTOM_INFO_DECIMALS=         Custom Info Decimals
+TAS_SUBPIXEL_INDICATOR_DECIMALS=  Subpixel Indicator Decimals
+TAS_SPEED_UNIT=                   Speed Unit
+TAS_VELOCITY_UNIT=                Velocity Unit
+TAS_PIXEL_PER_SECOND=             Pixel/Second
+TAS_PIXEL_PER_FRAME=              Pixel/Frame
+
+# ================================== Forward Speed Submenu ==================================
+TAS_FAST_FORWARD_SPEED=       Fast Forward Speed
+TAS_SLOW_FORWARD_SPEED=       Slow Forward Speed
+
+# ================================== Hotkeys Submenu ==================================
+TAS_HOTKEYS=             Hotkeys
+TAS_HOTKEYS_DESCRIPTION= Binding multiple keys to a control will cause those keys to act as a keycombo
+
+# ================================== More Options Submenu ==================================
+TAS_CENTER_CAMERA=                   Center Camera
+TAS_CENTER_CAMERA_HORIZONTALLY_ONLY= Center Camera Horizontally Only
+TAS_RESTORE_SETTINGS=                Restore All Settings when TAS Stop
+TAS_LAUNCH_STUDIO_AT_BOOT=           Launch Studio at Boot
+TAS_ATTEMPT_TO_CONNECT_TO_STUDIO=    Attempt To Connect To Studio
+TAS_HIDE_FREEZE_FRAMES=              Hide Freeze Frames during TAS
+TAS_HIDE_FREEZE_FRAMES_DESCRIPTION_1=When a freeze frame is encountered, run it and continue to the next frame
+TAS_HIDE_FREEZE_FRAMES_DESCRIPTION_2=before rendering. Applies only while a TAS is active.
+TAS_MOD_9D_LIGHTING=                 Mod 9D Lighting
+TAS_IGNORE_GC_COLLECT=               Ignore GC Collect during Fast Forward
+TAS_IGNORE_GC_COLLECT_DESCRIPTION_1= Benefits of fast forwarding multiple chapter length TAS
+TAS_IGNORE_GC_COLLECT_DESCRIPTION_2= but will increase memory usage and may cause out of memory exception
+
+# ================================== Hotkey Config ==================================
+TAS_KEY_START_STOP=           Start/Stop
+TAS_KEY_RESTART=              Restart
+TAS_KEY_FAST_FORWARD=         Fast Forward
+TAS_KEY_FAST_FORWARD_COMMENT= Fast Forward to Next Comment
+TAS_KEY_SLOW_FORWARD=         Slow Forward
+TAS_KEY_FRAME_ADVANCE=        Frame Advance
+TAS_KEY_PAUSE_RESUME=         Pause/Resume
+TAS_KEY_HITBOXES=             Hitboxes
+TAS_KEY_TRIGGER_HITBOXES=     Trigger Hitboxes
+TAS_KEY_SIMPLIFIED_GRAPHICS=  Simplified Graphics
+TAS_KEY_CENTER_CAMERA=        Center Camera
+TAS_KEY_LOCK_CAMERA=          Lock Camera
+TAS_KEY_SAVE_STATE=           Save State
+TAS_KEY_CLEAR_STATE=          Clear State
+TAS_KEY_INFO_HUD=             Info HUD
+TAS_KEY_FREE_CAMERA=          Free Camera
+
+# ================================== Option Values ==================================
+TAS_DEFAULT=                  Default
+TAS_HIDE=                     Hide
+TAS_SIMPLIFY=                 Simplify
+TAS_RED=                      Red
+TAS_GREEN=                    Green
+TAS_BLUE=                     Blue
+TAS_YELLOW=                   Yellow
+TAS_PURPLE=                   Purple
+TAS_WHITE=                    White
+TAS_BLACK=                    Black
+TAS_TRANSPARENT=              Transparent
+TAS_OFF=                      OFF
+TAS_OVERRIDE=                 Override
+TAS_APPEND=                   Append

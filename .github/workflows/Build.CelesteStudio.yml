@@ -1,0 +1,152 @@
+name: Build Celeste Studio
+
+on:
+  workflow_call:
+    inputs:
+      build-cfg:
+        required: true
+        type: string
+        default: Release
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0'
+
+      - name: Set version suffix (release)
+        run: sed -i "s/-dev//" Studio/CelesteStudio/Studio.cs
+        if: ${{ inputs.build-cfg == 'Release' }}
+      - name: Set version suffix (nightly)
+        run: sed -i "s/-dev/-$(git rev-parse --short HEAD)/" Studio/CelesteStudio/Studio.cs
+        if: ${{ inputs.build-cfg == 'Debug' }}
+
+      - name: Publish x64
+        run: dotnet publish Studio/CelesteStudio.WPF -c ${{ inputs.build-cfg }} -r win-x64 --output build-x64
+
+      - name: Remove platform suffix
+        run: mv build-x64/CelesteStudio.WPF.exe build-x64/CelesteStudio.exe
+
+      - name: Generate archive
+        run: |
+          Push-Location build-x64
+          Compress-Archive -Destination ../CelesteStudio-windows-x64.zip -Path **
+          Pop-Location
+
+      - name: Upload x64
+        uses: actions/upload-artifact@v4
+        with:
+          name: CelesteStudio-windows-x64
+          path: CelesteStudio-windows-x64.zip
+
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0'
+
+      - name: Set version suffix (release)
+        run: sed -i "s/-dev//" Studio/CelesteStudio/Studio.cs
+        if: ${{ inputs.build-cfg == 'Release' }}
+      - name: Set version suffix (nightly)
+        run: sed -i "s/-dev/-$(git rev-parse --short HEAD)/" Studio/CelesteStudio/Studio.cs
+        if: ${{ inputs.build-cfg == 'Debug' }}
+
+      - name: Publish x64
+        run: dotnet publish Studio/CelesteStudio.GTK -c ${{ inputs.build-cfg }} -r linux-x64 --output build-x64
+
+      - name: Remove platform suffix
+        run: mv build-x64/CelesteStudio.GTK build-x64/CelesteStudio
+
+      - name: Generate archive
+        run: |
+          pushd build-x64
+          zip -r ../CelesteStudio-linux-x64.zip **
+          popd
+
+      - name: Upload x64
+        uses: actions/upload-artifact@v4
+        with:
+          name: CelesteStudio-linux-x64
+          path: CelesteStudio-linux-x64.zip
+
+  build-mac:
+    runs-on: macos-13
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0'
+      - name: Install macOS workflow
+        run: dotnet workload install macos
+      - name: Switch XCode
+        run: sudo xcode-select -switch /Applications/Xcode_15.1.app/Contents/Developer
+
+      - name: Set version suffix (release)
+        run: sed -i '' -e "s/-dev//" Studio/CelesteStudio/Studio.cs
+        if: ${{ inputs.build-cfg == 'Release' }}
+      - name: Set version suffix (nightly)
+        run: zsh -c "sed -i '' -e "s/-dev/-$(git rev-parse --short HEAD)/" Studio/CelesteStudio/Studio.cs"
+        if: ${{ inputs.build-cfg == 'Debug' }}
+
+      - name: Publish x64
+        run: dotnet publish Studio/CelesteStudio.Mac -c ${{ inputs.build-cfg }} -r osx-x64 --output build-x64
+      - name: Publish ARM64
+        run: dotnet publish Studio/CelesteStudio.Mac -c ${{ inputs.build-cfg }} -r osx-arm64 --output build-arm64
+
+      - name: Remove platform suffix
+        run: |
+          pushd build-x64
+          mv CelesteStudio.Mac.app CelesteStudio.app
+          mv CelesteStudio.app/Contents/MacOS/CelesteStudio.Mac CelesteStudio.app/Contents/MacOS/CelesteStudio
+          mv CelesteStudio.app/Contents/MacOS/CelesteStudio.Mac.app CelesteStudio.app/Contents/MacOS/CelesteStudio.app
+          sed -i '' -e 's/CelesteStudio.Mac/CelesteStudio/' CelesteStudio.app/Contents/Info.plist
+          popd
+          
+          pushd build-arm64
+          mv CelesteStudio.Mac.app CelesteStudio.app
+          mv CelesteStudio.app/Contents/MacOS/CelesteStudio.Mac CelesteStudio.app/Contents/MacOS/CelesteStudio
+          mv CelesteStudio.app/Contents/MacOS/CelesteStudio.Mac.app CelesteStudio.app/Contents/MacOS/CelesteStudio.app
+          sed -i '' -e 's/CelesteStudio.Mac/CelesteStudio/' CelesteStudio.app/Contents/Info.plist
+          popd
+
+      - name: Generate archive
+        run: |
+          pushd build-x64
+          zip -r ../CelesteStudio-macos-x64.zip CelesteStudio.app
+          popd
+          
+          pushd build-arm64
+          zip -r ../CelesteStudio-macos-arm64.zip CelesteStudio.app
+          popd
+
+      - name: Upload x64
+        uses: actions/upload-artifact@v4
+        with:
+          name: CelesteStudio-macos-x64
+          path: CelesteStudio-macos-x64.zip
+      - name: Upload ARM64
+        uses: actions/upload-artifact@v4
+        with:
+          name: CelesteStudio-macos-arm64
+          path: CelesteStudio-macos-arm64.zip
