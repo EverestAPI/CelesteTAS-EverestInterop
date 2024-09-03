@@ -274,7 +274,7 @@ public class GameInfoPanel : Panel {
             Settings.Save();
         };
 
-        var popoutButton = new PopoutButton();
+        var popoutButton = new PopoutButton { Visible = false };
         popoutButton.Click += () => {
             popoutForm ??= new(this);
             popoutForm.Closed += (_, _) => {
@@ -296,6 +296,9 @@ public class GameInfoPanel : Panel {
             UpdateLayout();
             Studio.Instance.RecalculateLayout();
         };
+        // Only show popout button while hovering Info HUD
+        MouseEnter += (_, _) => popoutButton.Visible = true;
+        MouseLeave += (_, _) => popoutButton.Visible = false;
 
         doneButton.Click += (_, _) => {
             CommunicationWrapper.SetCustomInfoTemplate(textArea.Text);
