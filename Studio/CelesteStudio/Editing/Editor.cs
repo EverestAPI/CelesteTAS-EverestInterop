@@ -2830,13 +2830,25 @@ public sealed class Editor : Drawable {
         }
         // Zoom in/out
         if (e.HasCommonModifier()) {
+            float oldCarY = Font.LineHeight() * GetVisualPosition(Document.Caret).Row;
+            float oldOffset = scrollablePosition.Y - oldCarY;
+
             const float scrollSpeed = 0.1f;
             if (e.Delta.Height > 0.0f) {
                 Settings.Instance.FontZoom *= 1.0f + scrollSpeed;
             } else if (e.Delta.Height < 0.0f) {
                 Settings.Instance.FontZoom *= 1.0f - scrollSpeed;
             }
+
             Settings.OnFontChanged();
+            Recalc();
+
+            float newCarY = Font.LineHeight() * GetVisualPosition(Document.Caret).Row;
+
+            // Adjust scroll to keep caret centered
+            scrollable.ScrollPosition = scrollablePosition with {
+                Y = (int)(newCarY + oldOffset)
+            };
 
             e.Handled = true;
             return;
