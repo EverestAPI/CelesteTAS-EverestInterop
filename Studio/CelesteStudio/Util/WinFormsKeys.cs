@@ -469,7 +469,7 @@ public static class KeysExtensions {
         Keys.Z => WinFormsKeys.Z,
         Keys.LeftApplication => WinFormsKeys.LWin,
         Keys.RightApplication => WinFormsKeys.RWin,
-        // Keys.Apps => WinFormsKeys.Apps,
+        Keys.ContextMenu => WinFormsKeys.Apps,
         // Keys.Sleep => WinFormsKeys.Sleep,
         Keys.Keypad0 => WinFormsKeys.NumPad0,
         Keys.Keypad1 => WinFormsKeys.NumPad1,
