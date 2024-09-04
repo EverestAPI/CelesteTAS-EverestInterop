@@ -183,7 +183,20 @@ public class GameInfoPanel : Panel {
             alwaysOnTopCheckbox.Checked = Settings.Instance.GameInfoPopoutTopmost;
 
             ContextMenu = new ContextMenu {
-                Items  = { editCustomInfoItem, alwaysOnTopCheckbox }
+                Items  = {
+                    MenuEntry.Status_CopyGameInfoToClipboard.ToAction(() => {
+                        if (CommunicationWrapper.GetExactGameInfo() is var exactGameInfo && !string.IsNullOrWhiteSpace(exactGameInfo)) {
+                            Clipboard.Instance.Clear();
+                            Clipboard.Instance.Text = exactGameInfo;
+                        }
+                    }),
+                    MenuEntry.Status_ReconenctStudioCeleste.ToAction(CommunicationWrapper.ForceReconnect),
+                    new SeparatorMenuItem(),
+                    editCustomInfoItem,
+                    MenuEntry.Status_ClearWatchEntityInfo.ToAction(CommunicationWrapper.ClearWatchEntityInfo),
+                    new SeparatorMenuItem(),
+                    alwaysOnTopCheckbox
+                }
             };
 
             Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
