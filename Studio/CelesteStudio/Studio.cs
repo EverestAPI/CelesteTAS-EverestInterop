@@ -185,6 +185,16 @@ public sealed class Studio : Form {
             Instance.featherlineForm.GotFocus += Refocus;
         }
 
+        bool wasTopmost = Instance.Topmost;
+
+        // Studio can't be also top-most while a dialog is open, since it would be above the dialog
+        Instance.Topmost = false;
+        Instance.Focus();
+
+        dialog.Closed += (_, _) => Instance.Topmost = wasTopmost;
+
+        return;
+
         void Refocus(object? sender, EventArgs eventArgs) => dialog.Focus();
     }
 
