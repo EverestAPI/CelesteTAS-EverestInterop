@@ -48,21 +48,21 @@ public class CombineConsecutiveSameInputs : ContextAction {
     }
 
     public static bool CombineInputs(bool sameActions, bool dryRun = false) {
-        using var __ = Document.Update();
+        using var __ = Document.Update(raiseEvents: !dryRun);
 
         bool hasChanges = false;
 
         if (Document.Selection.Empty) {
             // Merge current input with surrounding inputs
             int curr = Document.Caret.Row;
-            if (!Editor.TryParseAndFormatActionLine(curr, out var currActionLine)) {
+            if (!ActionLine.TryParse(Document.Lines[curr], out var currActionLine)) {
                 return false;
             }
 
             // Above
             int above = curr - 1;
             for (; above >= 0; above--) {
-                if (!Editor.TryParseAndFormatActionLine(above, out var otherActionLine)) {
+                if (!ActionLine.TryParse(Document.Lines[above], out var otherActionLine)) {
                     break;
                 }
 
@@ -81,7 +81,7 @@ public class CombineConsecutiveSameInputs : ContextAction {
             // Below
             int below = curr + 1;
             for (; below < Document.Lines.Count; below++) {
-                if (!Editor.TryParseAndFormatActionLine(below, out var otherActionLine)) {
+                if (!ActionLine.TryParse(Document.Lines[below], out var otherActionLine)) {
                     break;
                 }
 
@@ -113,73 +113,79 @@ public class CombineConsecutiveSameInputs : ContextAction {
             int minRow = Document.Selection.Min.Row;
             int maxRow = Document.Selection.Max.Row;
 
-            ActionLine? activeActionLine = null;
-            int activeRowStart = -1;
+            ActionLine? forceMergeTarget = null;
+            ActionLine? currentActionLine = null;
+            int currentActionLineRow = -1;
 
-            for (int row = minRow; row <= maxRow; row++) {
+            if (!sameActions) {
+                // The algorithm goes backwards, but the target actions are the first valid line forwards
+                for (int row = minRow; row >= maxRow; row++) {
+                    if (ActionLine.TryParse(Document.Lines[row], out var nextActionLine)) {
+                        forceMergeTarget = nextActionLine;
+                        break;
+                    }
+                }
+
+                if (forceMergeTarget == null) {
+                    return false;
+                }
+            }
+
+            for (int row = maxRow; row >= minRow; row--) {
                 if (string.IsNullOrWhiteSpace(Document.Lines[row])) {
                     continue;
                 }
-                if (!Editor.TryParseAndFormatActionLine(row, out var currActionLine)) {
-                    // "Flush" the previous lines
-                    if (activeActionLine != null) {
-                        Document.RemoveLines(activeRowStart, row - 1);
-                        Document.InsertLine(activeRowStart, activeActionLine.Value.ToString());
 
-                        maxRow -= row - 1 - activeRowStart;
-                        row = activeRowStart + 1;
-
-                        activeActionLine = null;
-                        activeRowStart = -1;
+                var nextActionLine = ActionLine.Parse(Document.Lines[row]);
+                if (nextActionLine != null) {
+                    if (currentActionLine == null) {
+                        currentActionLine = nextActionLine;
+                        currentActionLineRow = row;
+                        continue;
                     }
-                    continue; // Skip non-input lines
+
+                    if (!sameActions) {
+                        // Just merge them, regardless if they are the same actions
+                        currentActionLine = forceMergeTarget!.Value with {
+                            FrameCount = currentActionLine.Value.FrameCount + nextActionLine.Value.FrameCount
+                        };
+                        if (!dryRun) {
+                            Document.RemoveLines(row + 1, currentActionLineRow);
+                            Document.ReplaceLine(row, currentActionLine.Value.ToString());
+                            maxRow -= currentActionLineRow - row;
+                        }
+
+                        currentActionLineRow = row;
+                        hasChanges = true;
+
+                        continue;
+                    }
+
+                    if (currentActionLine.Value.Actions == nextActionLine.Value.Actions &&
+                        currentActionLine.Value.FeatherAngle == nextActionLine.Value.FeatherAngle &&
+                        currentActionLine.Value.FeatherMagnitude == nextActionLine.Value.FeatherMagnitude &&
+                        !IsScreenTransition(row))
+                    {
+                        // Merge them, if they are the same kind
+                        currentActionLine = currentActionLine.Value with {
+                            FrameCount = currentActionLine.Value.FrameCount + nextActionLine.Value.FrameCount
+                        };
+                        if (!dryRun) {
+                            Document.RemoveLines(row + 1, currentActionLineRow);
+                            Document.ReplaceLine(row, currentActionLine.Value.ToString());
+                            maxRow -= currentActionLineRow - row;
+                        }
+
+                        currentActionLineRow = row;
+                        hasChanges = true;
+
+                        continue;
+                    }
                 }
 
-                if (activeActionLine == null) {
-                    activeActionLine = currActionLine;
-                    activeRowStart = row;
-                    continue;
-                }
-
-                if (!sameActions) {
-                    // Just merge them, regardless if they are the same actions
-                    activeActionLine = activeActionLine.Value with { FrameCount = activeActionLine.Value.FrameCount + currActionLine.FrameCount };
-                    hasChanges = true;
-                    continue;
-                }
-
-                if (currActionLine.Actions == activeActionLine.Value.Actions &&
-                    currActionLine.FeatherAngle == activeActionLine.Value.FeatherAngle &&
-                    currActionLine.FeatherMagnitude == activeActionLine.Value.FeatherMagnitude &&
-                    !IsScreenTransition(row))
-                {
-                    activeActionLine = activeActionLine.Value with { FrameCount = activeActionLine.Value.FrameCount + currActionLine.FrameCount };
-                    hasChanges = true;
-                    continue;
-                }
-
-                if (!dryRun) {
-                    // Current line is different, so change the active one
-                    Document.RemoveLines(activeRowStart, row - 1);
-                    Document.InsertLine(activeRowStart, activeActionLine.Value.ToString());
-                }
-
-                activeActionLine = currActionLine;
-                activeRowStart++;
-
-                // Account for changed line counts
-                maxRow -= row - activeRowStart;
-                row = activeRowStart;
-            }
-
-            // "Flush" the remaining line
-            if (activeActionLine != null) {
-                if (!dryRun) {
-                    Document.RemoveLines(activeRowStart, maxRow);
-                    Document.InsertLine(activeRowStart, activeActionLine.Value.ToString());
-                }
-
-                maxRow = activeRowStart;
+                // Prevent merges over commands, comments, etc.
+                currentActionLine = nextActionLine;
+                currentActionLineRow = row;
             }
 
             if (!dryRun) {
