@@ -112,8 +112,8 @@ public class FindDialog : Eto.Forms.Dialog {
 
     private void SelectMatch(CaretPosition match) {
         editor.Document.Caret = match;
-        editor.Document.Selection.Start = editor.Document.Caret;
-        editor.Document.Selection.End = editor.Document.Caret with { Col = editor.Document.Caret.Col + textBox.Text.Length };
+        editor.Document.Selection.Start = match;
+        editor.Document.Selection.End = match with { Col = match.Col + textBox.Text.Length };
         editor.ScrollCaretIntoView(center: true);
         editor.Invalidate();
     }
@@ -138,7 +138,7 @@ public class FindDialog : Eto.Forms.Dialog {
                     break;
                 }
 
-                matches.Add(new CaretPosition(row, col));
+                matches.Add(new CaretPosition(row, col + idx));
                 col = idx + textBox.Text.Length;
             }
         }
