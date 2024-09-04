@@ -5,7 +5,7 @@
         <LangVersion>latest</LangVersion>
         <Nullable>enable</Nullable>
 
-        <Version>3.0.0</Version>
+        <Version>3.0.1</Version>
     </PropertyGroup>
 
     <PropertyGroup Condition="($(RuntimeIdentifier) == '' and $([MSBuild]::IsOSPlatform('Linux'))) or $(RuntimeIdentifier.StartsWith('linux'))">
@@ -22,7 +22,7 @@
         <PackageReference Include="Eto.Forms" Version="2.8.3" />
         <PackageReference Include="Samboy063.Tomlet" Version="5.3.1" />
         <PackageReference Include="Markdig" Version="0.37.0" />
-        
+
         <ProjectReference Include="..\..\StudioCommunication\StudioCommunication.csproj" />
         <ProjectReference Include="..\..\external\Featherline\Featherline.csproj" />
     </ItemGroup>
