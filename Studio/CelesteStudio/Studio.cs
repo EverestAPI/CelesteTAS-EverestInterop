@@ -584,11 +584,9 @@ public sealed class Studio : Form {
         var wikiItem = MenuUtils.CreateAction("Open wiki...", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki"));
         var whatsNewItem = MenuUtils.CreateAction("What's new?", Keys.None, () => {
             var asm = Assembly.GetExecutingAssembly();
-            var version = asm.GetName().Version!;
-            // Only update changelog for minor releases, not patches
-            string versionName = new Version(version.Major, version.Major, 0).ToString(3);
-            if (asm.GetManifestResourceStream($"Changelogs/v{versionName}.md") is { } stream) {
-                WhatsNewDialog.Show($"What's new in Studio v{versionName}?", new StreamReader(stream).ReadToEnd());
+            // TODO: Don't hardcode the current changelog
+            if (asm.GetManifestResourceStream($"Changelogs/v3.0.0.md") is { } stream) {
+                WhatsNewDialog.Show($"What's new in Studio v3.0.0?", new StreamReader(stream).ReadToEnd());
             }
         });
         var aboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {
