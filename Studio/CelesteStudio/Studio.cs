@@ -196,6 +196,7 @@ public sealed class Studio : Form {
         // Allow closing dialog via ESC. Supported by default on GTK, but not WPF
         dialog.KeyDown += (_, e) => {
             if (e.Key == Keys.Escape) {
+                e.Handled = true;
                 dialog.Close();
             }
         };

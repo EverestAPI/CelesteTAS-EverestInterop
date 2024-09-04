@@ -47,10 +47,27 @@ public class FindDialog : Eto.Forms.Dialog {
         Icon = Assets.AppIcon;
         Studio.RegisterDialog(this);
 
-        DefaultButton = nextButton;
+        KeyDown += HandleKeyDown;
+        textBox.KeyDown += HandleKeyDown;
 
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
         Shown += (_, _) => Location = Studio.Instance.Location + new Point((Studio.Instance.Width - Width) / 2, (Studio.Instance.Height - Height) / 2);
+
+        return;
+
+        // Keyboard navigation with Enter=Next, Shift+Enter=Prev
+        void HandleKeyDown(object? _, KeyEventArgs e) {
+            if (e.Key != Keys.Enter) {
+                return;
+            }
+            e.Handled = true;
+
+            if (e.Shift) {
+                SelectPrev();
+            } else {
+                SelectNext();
+            }
+        }
     }
 
     private void SelectNext() {
