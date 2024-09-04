@@ -136,7 +136,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                             LogVerbose($"Sent message GameDataResponse: {gameDataType} = '{gameData}'");
                         });
                     } catch (Exception ex) {
-                        Console.WriteLine(ex);
+                        Logger.LogDetailed(ex, $"Failed to get game data for '{gameDataType}'");
                     }
 
                 });
