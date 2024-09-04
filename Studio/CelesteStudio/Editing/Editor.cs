@@ -553,24 +553,32 @@ public sealed class Editor : Drawable {
 
                     var subLine = line[startIdx..endIdx];
                     wrappedLines.Add((subLine, startIdx));
-
-                    width = Math.Max(width, Font.MeasureWidth(subLine));
-                    height += Font.LineHeight();
                 }
 
-                commentLineWraps.Add(row, (startOffset, wrappedLines.ToArray()));
+                // Only store actual wraps to improve performance
+                if (wrappedLines.Count > 1) {
+                    commentLineWraps.Add(row, (startOffset, wrappedLines.ToArray()));
+                    width = wrappedLines.Aggregate(width, (widthAccum, wrap) => {
+                        int xIdent = wrap.Index == 0 ? 0 : startOffset;
+                        float lineWidth = Font.CharWidth() * (xIdent + wrap.Line.Length);
+                        return Math.Max(widthAccum, lineWidth);
+                    });
+                    height += Font.LineHeight() * wrappedLines.Count;
 
-                visualRow += wrappedLines.Count;
-                for (int i = 0; i < wrappedLines.Count; i++) {
-                    visualToActualRows.Add(row);
+                    visualRow += wrappedLines.Count;
+                    for (int i = 0; i < wrappedLines.Count; i++) {
+                        visualToActualRows.Add(row);
+                    }
+
+                    continue;
                 }
-            } else {
-                width = Math.Max(width, Font.MeasureWidth(line));
-                height += Font.LineHeight();
-
-                visualRow += 1;
-                visualToActualRows.Add(row);
             }
+
+            width = Math.Max(width, Font.MeasureWidth(line));
+            height += Font.LineHeight();
+
+            visualRow += 1;
+            visualToActualRows.Add(row);
         }
 
         // Clear invalid foldings
