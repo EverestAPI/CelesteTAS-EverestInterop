@@ -193,6 +193,13 @@ public sealed class Studio : Form {
 
         dialog.Closed += (_, _) => Instance.Topmost = wasTopmost;
 
+        // Allow closing dialog via ESC. Supported by default on GTK, but not WPF
+        dialog.KeyDown += (_, e) => {
+            if (e.Key == Keys.Escape) {
+                dialog.Close();
+            }
+        };
+
         return;
 
         void Refocus(object? sender, EventArgs eventArgs) => dialog.Focus();
