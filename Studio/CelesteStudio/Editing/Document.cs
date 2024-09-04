@@ -568,6 +568,10 @@ public class Document : IDisposable {
     }
 
     public void ReplaceLine(int row, string text) {
+        if (Lines[row] == text) {
+            return;
+        }
+
         var newLines = text.SplitDocumentLines();
         ReplaceLines(row, newLines);
     }
