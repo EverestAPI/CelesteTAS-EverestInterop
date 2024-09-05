@@ -404,7 +404,15 @@ public class Document : IDisposable {
         public void Dispose() {
             document.updateStack.Pop();
 
-            if (!raiseEvents || currMinRow == -1 || currMaxRow == -1) {
+            if (!raiseEvents) {
+                return;
+            }
+            if (currMinRow == -1 || currMaxRow == -1) {
+                if (raiseEvents) {
+                     // Revert the undo-stack entry to prevent empty entries
+                     document.undoStack.Undo();
+                }
+
                 return;
             }
 
@@ -568,6 +576,10 @@ public class Document : IDisposable {
     }
 
     public void ReplaceLine(int row, string text) {
+        if (Lines[row] == text) {
+            return;
+        }
+
         var newLines = text.SplitDocumentLines();
         ReplaceLines(row, newLines);
     }

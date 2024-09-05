@@ -408,7 +408,7 @@ public sealed class Editor : Drawable {
         }
     }
     private void FixInvalidInput(int row) {
-        using var __ = Document.Update();
+        using var __ = Document.Update(raiseEvents: false);
 
         // Frameless action lines are only intended for editing and shouldn't be part of the final TAS
         if (ActionLine.TryParse(Document.Lines[row], out var actionLine)) {
