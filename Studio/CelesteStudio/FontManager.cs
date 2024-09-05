@@ -8,7 +8,11 @@ namespace CelesteStudio;
 
 public static class FontManager {
     public const string FontFamilyBuiltin = "<builtin>";
+#if MACOS
+    public const string FontFamilyBuiltinDisplayName = "Monaco (builtin)";
+#else
     public const string FontFamilyBuiltinDisplayName = "JetBrains Mono (builtin)";
+#endif
 
     private static Font? editorFontRegular, editorFontBold, editorFontItalic, editorFontBoldItalic, statusFont, popupFont;
 

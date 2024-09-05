@@ -10,12 +10,15 @@
 
     <PropertyGroup Condition="($(RuntimeIdentifier) == '' and $([MSBuild]::IsOSPlatform('Linux'))) or $(RuntimeIdentifier.StartsWith('linux'))">
         <IsLinux>true</IsLinux>
+        <DefineConstants>LINUX</DefineConstants>
     </PropertyGroup>
     <PropertyGroup Condition="($(RuntimeIdentifier) == '' and $([MSBuild]::IsOSPlatform('Windows'))) or $(RuntimeIdentifier.StartsWith('win'))">
         <IsWindows>true</IsWindows>
+        <DefineConstants>WINDOWS</DefineConstants>
     </PropertyGroup>
     <PropertyGroup Condition="($(RuntimeIdentifier) == '' and $([MSBuild]::IsOSPlatform('OSX'))) or $(RuntimeIdentifier.StartsWith('osx'))">
         <IsMacOS>true</IsMacOS>
+        <DefineConstants>MACOS</DefineConstants>
     </PropertyGroup>
 
     <ItemGroup>
