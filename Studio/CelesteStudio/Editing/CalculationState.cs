@@ -16,6 +16,7 @@ public enum CalculationOperator {
     Sub,
     Mul,
     Div,
+    Set,
 }
 
 public static class CalculationExtensions {
@@ -25,6 +26,7 @@ public static class CalculationExtensions {
             '-' => CalculationOperator.Sub,
             '*' => CalculationOperator.Mul,
             '/' => CalculationOperator.Div,
+            '=' => CalculationOperator.Set,
             _ => null
         };
     }
@@ -34,16 +36,7 @@ public static class CalculationExtensions {
             CalculationOperator.Sub => '-',
             CalculationOperator.Mul => '*',
             CalculationOperator.Div => '/',
-            _ => throw new UnreachableException(),
-        };
-    }
-
-    public static CalculationOperator Inverse(this CalculationOperator op) {
-        return op switch {
-            CalculationOperator.Add => CalculationOperator.Sub,
-            CalculationOperator.Sub => CalculationOperator.Add,
-            CalculationOperator.Mul => CalculationOperator.Div,
-            CalculationOperator.Div => CalculationOperator.Mul,
+            CalculationOperator.Set => '=',
             _ => throw new UnreachableException(),
         };
     }
@@ -54,6 +47,7 @@ public static class CalculationExtensions {
             CalculationOperator.Sub => value - operand,
             CalculationOperator.Mul => value * operand,
             CalculationOperator.Div => value / operand,
+            CalculationOperator.Set => operand,
             _ => throw new UnreachableException(),
         };
     }
