@@ -8,10 +8,12 @@
         <UseWPF>true</UseWPF>
         <UseWindowsForms>true</UseWindowsForms>
         <ApplicationIcon>Icon.ico</ApplicationIcon>
-
-        <PublishSingleFile>true</PublishSingleFile>
         <SelfContained>true</SelfContained>
         <DebugType>embedded</DebugType>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+        <PublishSingleFile>true</PublishSingleFile>
     </PropertyGroup>
 
     <ItemGroup>
