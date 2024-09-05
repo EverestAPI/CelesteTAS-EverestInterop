@@ -25,26 +25,23 @@ public static class ReadCommand {
             return;
         }
 
-        string filePath = args[0];
+        string commandName = $"Read, {string.Join(", ", args)}";
+
         string fileDirectory = Path.GetDirectoryName(currentFilePath);
-        if (fileDirectory.IsEmpty()) {
+        if (string.IsNullOrWhiteSpace(fileDirectory)) {
             fileDirectory = Directory.GetCurrentDirectory();
         }
-
-        FindTheFile();
-
-        if (!File.Exists(filePath)) {
-            // for compatibility with tas files downloaded from discord
-            // discord will replace spaces in the file name with underscores
-            filePath = args[0].Replace(" ", "_");
-            FindTheFile();
+        if (string.IsNullOrWhiteSpace(fileDirectory)) {
+            "Failed to get current directory for Read command".Log(LogLevel.Error);
+            return;
         }
 
-        if (!File.Exists(filePath)) {
-            AbortTas($"\"Read, {string.Join(", ", args)}\" failed\nFile not found", true);
+        if (FindTargetFile(commandName, fileDirectory, args[0]) is not { } path) {
             return;
-        } else if (Path.GetFullPath(filePath) == Path.GetFullPath(currentFilePath)) {
-            AbortTas($"\"Read, {string.Join(", ", args)}\" failed\nDo not allow reading the file itself", true);
+        }
+
+        if (Path.GetFullPath(path) == Path.GetFullPath(currentFilePath)) {
+            AbortTas($"\"{commandName}\" failed\nDo not allow reading the file itself", true);
             return;
         }
 
@@ -52,20 +49,20 @@ public static class ReadCommand {
         int startLine = 0;
         int endLine = int.MaxValue;
         if (args.Length > 1) {
-            if (!TryGetLine(args[1], filePath, out startLine)) {
-                AbortTas($"\"Read, {string.Join(", ", args)}\" failed\n{args[1]} is invalid", true);
+            if (!TryGetLine(args[1], path, out startLine)) {
+                AbortTas($"\"{commandName}\" failed\n{args[1]} is invalid", true);
                 return;
             }
 
             if (args.Length > 2) {
-                if (!TryGetLine(args[2], filePath, out endLine)) {
-                    AbortTas($"\"Read, {string.Join(", ", args)}\" failed\n{args[2]} is invalid", true);
+                if (!TryGetLine(args[2], path, out endLine)) {
+                    AbortTas($"\"{commandName}\" failed\n{args[2]} is invalid", true);
                     return;
                 }
             }
         }
 
-        string readCommandDetail = $"Read, {string.Join(", ", args)}: line {fileLine} of the file \"{currentFilePath}\"";
+        string readCommandDetail = $"{commandName}: line {fileLine} of the file \"{currentFilePath}\"";
         if (readCommandStack.Contains(readCommandDetail)) {
             $"Multiple read commands lead to dead loops:\n{string.Join("\n", readCommandStack)}".Log(LogLevel.Warn);
             AbortTas("Multiple read commands lead to dead loops\nPlease check log.txt for more details");
@@ -73,29 +70,94 @@ public static class ReadCommand {
         }
 
         readCommandStack.Add(readCommandDetail);
-        Manager.Controller.ReadFile(filePath, startLine, endLine, studioLine);
+        Manager.Controller.ReadFile(path, startLine, endLine, studioLine);
         if (readCommandStack.Count > 0) {
             readCommandStack.RemoveAt(readCommandStack.Count - 1);
         }
 
-        void FindTheFile() {
-            // Check for full and shortened Read versions
-            if (fileDirectory != null) {
-                // Path.Combine can handle the case when filePath is an absolute path
-                string absoluteOrRelativePath = Path.Combine(fileDirectory, filePath);
-                if (!absoluteOrRelativePath.EndsWith(".tas", StringComparison.InvariantCulture)) {
-                    absoluteOrRelativePath += ".tas";
+        return;
+
+        static string? FindTargetFile(string commandName, string fileDirectory, string filePath) {
+            if (!filePath.EndsWith(".tas", StringComparison.InvariantCulture)) {
+                filePath += ".tas";
+            }
+
+            string path = Path.Combine(fileDirectory, filePath);
+            if (File.Exists(path)) {
+                return path;
+            }
+
+            // Windows allows case-insensitive names, but Linux/macOS don't...
+            string[] components = filePath.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+
+            string realDirectory = fileDirectory;
+            for (int i = 0; i < components.Length - 1; i++) {
+                string directory = components[i];
+                string[] directories = Directory.EnumerateDirectories(realDirectory)
+                    .Where(d => d.Equals(directory, StringComparison.InvariantCultureIgnoreCase))
+                    .ToArray();
+
+                if (directories.Length > 1) {
+                    AbortTas($"""
+                              "{commandName}" failed
+                              Ambiguous match for directory '{directory}'
+                              """, true);
+                    return null;
                 }
-                if (File.Exists(absoluteOrRelativePath)) {
-                    filePath = absoluteOrRelativePath;
-                } else if (Directory.GetParent(absoluteOrRelativePath) is { } directoryInfo && Directory.Exists(directoryInfo.ToString())) {
-                    List<string> files = Directory.GetFiles(directoryInfo.ToString(), $"{Path.GetFileNameWithoutExtension(filePath)}*.tas").ToList();
-                    files.Sort((s1, s2) => string.Compare(s1, s2, StringComparison.InvariantCulture));
-                    if (files.FirstOrDefault() is { } shortenedFilePath) {
-                        filePath = shortenedFilePath;
-                    }
+                if (directories.Length == 0) {
+                    AbortTas($"""
+                              "{commandName}" failed
+                              Couldn't find directory '{directory}'
+                              """, true);
+                    return null;
+                }
+
+                realDirectory = Path.Combine(realDirectory, directories[0]);
+            }
+
+            // Can't merge this into the above loop since a bit more is done with the file name
+            string file = components[^1];
+            string[] files = Directory.EnumerateFiles(realDirectory)
+                .Where(f => f.Equals(file, StringComparison.InvariantCultureIgnoreCase))
+                .ToArray();
+
+            if (files.Length > 1) {
+                AbortTas($"""
+                          "{commandName}" failed
+                          Ambiguous match for file '{file}'
+                          """, true);
+                return null;
+            }
+            if (files.Length == 1) {
+                path = Path.Combine(realDirectory, files[0]);
+                if (File.Exists(path)) {
+                    return path;
                 }
             }
+
+            // Allow an optional suffix on file names. Example: 9D_04 -> 9D_04_Curiosity.tas
+            if (Directory.GetParent(Path.Combine(realDirectory, file)) is { Exists: true } info) {
+                var suffixFiles = info.GetFiles()
+                    .Where(f => f.Name.StartsWith(Path.GetFileNameWithoutExtension(file), StringComparison.InvariantCultureIgnoreCase))
+                    .ToArray();
+
+                if (suffixFiles.Length > 1) {
+                    AbortTas($"""
+                              "{commandName}" failed
+                              Ambiguous match for file '{file}'
+                              """, true);
+                    return null;
+                }
+                if (suffixFiles.Length == 1 && suffixFiles[0].Exists) {
+                    return suffixFiles[0].FullName;
+                }
+            }
+
+            AbortTas($"""
+                      "{commandName}" failed
+                      File not found
+                      """, true);
+            return null;
         }
     }
 
