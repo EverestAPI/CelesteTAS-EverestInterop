@@ -8,15 +8,17 @@ public struct CommandLine {
     public static readonly Regex SeparatorRegex = new(@"(?:\s+)|(?:\s*,\s*)", RegexOptions.Compiled);
 
     public string Command;
-    public string[] Args;
+    public string[] Arguments;
+    public string ArgumentSeparator;
 
     public bool IsCommand(string? command) => string.Equals(command, Command, StringComparison.OrdinalIgnoreCase);
-    
+
     public static CommandLine? Parse(string line) => TryParse(line, out var commandLine) ? commandLine : null;
-    
+
     public static bool TryParse(string line, out CommandLine commandLine) {
         var separatorMatch = SeparatorRegex.Match(line);
-        var split = line.Split(separatorMatch.Value);
+        string[] split = line.Split(separatorMatch.Value);
+
         if (split.Length == 0) {
             commandLine = default;
             return false;
@@ -24,7 +26,8 @@ public struct CommandLine {
 
         commandLine = new CommandLine {
             Command = split[0],
-            Args = split[1..],
+            Arguments = split[1..],
+            ArgumentSeparator = separatorMatch.Value,
         };
         return true;
     }

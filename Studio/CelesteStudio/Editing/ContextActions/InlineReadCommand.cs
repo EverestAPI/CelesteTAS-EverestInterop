@@ -16,9 +16,9 @@ public class InlineReadCommand : ContextAction {
             return null;
         }
 
-        string? subPath = commandLine.Args.GetValueOrDefault(0);
-        string? startLabel = commandLine.Args.GetValueOrDefault(1);
-        string? endLabel = commandLine.Args.GetValueOrDefault(2);
+        string? subPath = commandLine.Arguments.GetValueOrDefault(0);
+        string? startLabel = commandLine.Arguments.GetValueOrDefault(1);
+        string? endLabel = commandLine.Arguments.GetValueOrDefault(2);
 
         if (subPath == null ||
             Document.FilePath == Document.ScratchFile ||

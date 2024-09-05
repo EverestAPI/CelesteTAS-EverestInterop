@@ -54,13 +54,26 @@ public class SyntaxHighlighter {
         styles = [theme.Action, theme.Angle, theme.Breakpoint, theme.SavestateBreakpoint, theme.Delimiter, theme.Command, theme.Comment, theme.Frame];
     }
 
-    public void DrawLine(Graphics graphics, float x, float y, string line, bool underline = false, bool measureReal = false) {
+    public struct DrawLineOptions() {
+        // Required to prevent a weird macOS font crash
+        public bool MeasureReal = false;
+
+        // Region which should be underlined
+        public int UnderlineStart = -1;
+        public int UnderlineEnd = -1;
+    }
+
+
+    public void DrawLine(Graphics graphics, float x, float y, string line, DrawLineOptions? options = null) {
+        options ??= new();
+
         float xOff = 0.0f;
 
         foreach (var segment in GetLineStyle(line).Segments) {
             // Some ranges are out-of-bounds for easier generation
-            if (segment.StartIdx >= line.Length)
+            if (segment.StartIdx >= line.Length) {
                 continue;
+            }
 
             var style = styles[(int)segment.Type];
 
@@ -73,14 +86,26 @@ public class SyntaxHighlighter {
             };
 
             var str = line[segment.StartIdx..(segment.EndIdx + 1)];
-            float width = font.MeasureWidth(str, measureReal);
+            float width = font.MeasureWidth(str, options.Value.MeasureReal);
 
             if (style.BackgroundColor is { } bgColor) {
                 graphics.FillRectangle(bgColor, x + xOff, y, width, font.LineHeight());
             }
 
-            if (underline) {
-                graphics.DrawText(font.WithFontDecoration(FontDecoration.Underline), style.ForegroundColor, x + xOff, y, str);
+            int underlineStart = Math.Max(segment.StartIdx, options.Value.UnderlineStart);
+            int underlineEnd = Math.Min(segment.EndIdx, options.Value.UnderlineEnd);
+
+            if (underlineStart <= underlineEnd && underlineStart >= segment.StartIdx && underlineEnd <= segment.EndIdx)
+            {
+                var underlineFont = font.WithFontDecoration(FontDecoration.Underline);
+
+                string left = line[..underlineStart];
+                string middle = line[underlineStart..(underlineEnd + 1)];
+                string right = line[(underlineEnd + 1)..];
+
+                graphics.DrawText(font,          style.ForegroundColor, x + xOff, y, left);
+                graphics.DrawText(underlineFont, style.ForegroundColor, x + xOff + font.MeasureWidth(left), y, middle);
+                graphics.DrawText(font,          style.ForegroundColor, x + xOff + font.MeasureWidth(left) + underlineFont.MeasureWidth(middle), y, right);
             } else {
                 graphics.DrawText(font, style.ForegroundColor, x + xOff, y, str);
             }

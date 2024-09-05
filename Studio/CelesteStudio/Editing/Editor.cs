@@ -13,7 +13,6 @@ using CelesteStudio.Editing.ContextActions;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
-using Markdig.Helpers;
 using StudioCommunication;
 using WrapLine = (string Line, int Index);
 using WrapEntry = (int StartOffset, (string Line, int Index)[] Lines);
@@ -186,8 +185,8 @@ public sealed class Editor : Drawable {
         new InlineRepeatCommand(),
         new InlineReadCommand(),
 
-        new OpenReadFile(),
-        new GotoPlayLine(),
+        new UseLineLink(MenuEntry.ContextActions_OpenReadFile),
+        new UseLineLink(MenuEntry.ContextActions_GoToPlayLine),
     ];
 
     private Font Font => FontManager.EditorFontRegular;
@@ -211,10 +210,6 @@ public sealed class Editor : Drawable {
 
     // Foldings can collapse sections of the document
     private readonly List<Folding> foldings = [];
-
-    // When the current line under the mouse cursor is a clickable link with Ctrl+Click
-    // Updated (confusingly) inside UpdateMouseCursor()..
-    private int lineLinkRow = -1;
 
     // Visual lines are all lines shown in the editor
     // A single actual line may occupy multiple visual lines
@@ -442,6 +437,9 @@ public sealed class Editor : Drawable {
         Array.Resize(ref actualToVisualRows, Document.Lines.Count);
         visualToActualRows.Clear();
 
+        // Recalculate line links
+        Document.RemoveAnchorsIf(anchor => anchor.UserData is LineLinkAnchorData);
+
         // Assign all collapsed lines to the visual row of the collapse start
         for (int row = 0, visualRow = 0; row < Document.Lines.Count; row++) {
             var line = Document.Lines[row];
@@ -499,6 +497,8 @@ public sealed class Editor : Drawable {
             } else {
                 actualToVisualRows[row] = visualRow;
             }
+
+            GenerateLineLinks(row);
 
             // Wrap comments into multiple lines when hitting the left edge
             if (Settings.Instance.WordWrapComments && trimmed.StartsWith("#")) {
@@ -796,7 +796,7 @@ public sealed class Editor : Drawable {
         if (e.Key is Keys.LeftControl or Keys.RightControl) mods |= Keys.Control;
         if (e.Key is Keys.LeftAlt or Keys.RightAlt) mods |= Keys.Alt;
         if (e.Key is Keys.LeftApplication or Keys.RightApplication) mods |= Keys.Application;
-        UpdateMouseAction(PointFromScreen(Mouse.Position), mods);
+        UpdateMouseCursor(PointFromScreen(Mouse.Position), mods);
 
         // While there are quick-edits available, Tab will cycle through them
         // Using tab doesn't feel "right" for the context actions menu
@@ -1062,7 +1062,7 @@ public sealed class Editor : Drawable {
         if (e.Key is Keys.LeftControl or Keys.RightControl) mods &= ~Keys.Control;
         if (e.Key is Keys.LeftAlt or Keys.RightAlt) mods &= ~Keys.Alt;
         if (e.Key is Keys.LeftApplication or Keys.RightApplication) mods &= ~Keys.Application;
-        UpdateMouseAction(PointFromScreen(Mouse.Position), mods);
+        UpdateMouseCursor(PointFromScreen(Mouse.Position), mods);
 
         string lineTrimmed = Document.Lines[Document.Caret.Row].TrimStart();
 
@@ -1647,6 +1647,118 @@ public sealed class Editor : Drawable {
         }
 
         return folding;
+    }
+
+    #endregion
+
+    #region Line Links
+
+    public record struct LineLinkAnchorData {
+        public required MenuEntry Entry;
+        public required Action OnUse;
+    }
+
+    private void GenerateLineLinks(int row) {
+        GenerateOpenReadFileLink(row);
+        GenerateGotoPlayLineLink(row);
+    }
+
+    /// Link to open the Read-command on the line
+    private void GenerateOpenReadFileLink(int row) {
+        if (!CommandLine.TryParse(Document.Lines[row], out var commandLine) ||
+            !commandLine.IsCommand("Read") || commandLine.Arguments.Length < 1)
+        {
+            return;
+        }
+
+        var documentPath = Studio.Instance.Editor.Document.FilePath;
+        if (documentPath == Document.ScratchFile) {
+            return;
+        }
+        if (Path.GetDirectoryName(documentPath) is not { } documentDir) {
+            return;
+        }
+
+        var fullPath = Path.Combine(documentDir, $"{commandLine.Arguments[0]}.tas");
+        if (!File.Exists(fullPath)) {
+            return;
+        }
+
+        int? labelRow = null;
+        if (commandLine.Arguments.Length > 1) {
+            (var label, labelRow) = File.ReadAllText(fullPath)
+                .ReplaceLineEndings(Document.NewLine.ToString())
+                .SplitDocumentLines()
+                .Select((line, i) => (line, i))
+                .FirstOrDefault(pair => pair.line == $"#{commandLine.Arguments[1]}");
+            if (label == null) {
+                return;
+            }
+        }
+
+        int startLabelEnd = commandLine.Command.Length
+            + commandLine.ArgumentSeparator.Length
+            + commandLine.Arguments[0].Length
+            - 1;
+        if (commandLine.Arguments.Length > 1) {
+            startLabelEnd += commandLine.ArgumentSeparator.Length
+                          +  commandLine.Arguments[1].Length;
+        }
+
+        Document.AddAnchor(new Anchor {
+            Row = row,
+            MinCol = 0,
+            MaxCol = startLabelEnd,
+            UserData = new LineLinkAnchorData {
+                Entry = MenuEntry.ContextActions_OpenReadFile,
+                OnUse = () => OpenFile(labelRow),
+            }
+        });
+
+        return;
+
+        void OpenFile(int? targetRow) {
+            Studio.Instance.OpenFile(fullPath);
+            if (targetRow is {} caretRow) {
+                Document.Caret.Row = caretRow;
+                Document.Caret.Col = desiredVisualCol = Document.Lines[caretRow].Length;
+            } else {
+                Document.Caret = new CaretPosition(0, 0);
+            }
+            Recalc();
+            ScrollCaretIntoView(center: true);
+        }
+    }
+
+    /// Link to goto the Play-command's target line
+    private void GenerateGotoPlayLineLink(int row) {
+        if (!CommandLine.TryParse(Document.Lines[row], out var commandLine) ||
+            !commandLine.IsCommand("Play") || commandLine.Arguments.Length < 1)
+        {
+            return;
+        }
+
+        (var label, int labelRow) = Document.Lines
+            .Select((line, i) => (line, i))
+            .FirstOrDefault(pair => pair.line == $"#{commandLine.Arguments[0]}");
+        if (label == null) {
+            return;
+        }
+
+        Document.AddAnchor(new Anchor {
+            Row = row,
+            MinCol = 0,
+            MaxCol = Document.Lines[row].Length - 1,
+            UserData = new LineLinkAnchorData {
+                Entry = MenuEntry.ContextActions_GoToPlayLine,
+                OnUse = () => {
+                    Document.Caret.Row = labelRow;
+                    Document.Caret.Col = desiredVisualCol = Document.Lines[labelRow].Length;
+                    Recalc();
+                    ScrollCaretIntoView(center: true);
+                },
+            }
+        });
     }
 
     #endregion
@@ -2731,8 +2843,8 @@ public sealed class Editor : Drawable {
                 return;
             }
 
-            if (lineLinkRow != -1 && GetLineLink(lineLinkRow) is { } lineLink) {
-                lineLink();
+            if (e.HasCommonModifier() && LocationToLineLink(e.Location) is { } linkAnchor) {
+                ((LineLinkAnchorData)linkAnchor.UserData!).OnUse();
 
                 e.Handled = true;
                 return;
@@ -2793,7 +2905,7 @@ public sealed class Editor : Drawable {
             Recalc();
         }
 
-        UpdateMouseAction(e.Location, e.Modifiers);
+        UpdateMouseCursor(e.Location, e.Modifiers);
 
         base.OnMouseMove(e);
     }
@@ -2873,22 +2985,13 @@ public sealed class Editor : Drawable {
         base.OnMouseWheel(e);
     }
 
-    private void UpdateMouseAction(PointF location, Keys modifiers) {
-        int prevLineLink = lineLinkRow;
-        if (modifiers.HasCommonModifier() && LocationToLineLink(location) is var row && row != -1) {
-            lineLinkRow = row;
+    private void UpdateMouseCursor(PointF location, Keys modifiers) {
+        // Maybe a bit out-of-place here, but this is required to update the underline of line links
+        Invalidate();
+
+        if (modifiers.HasCommonModifier() && LocationToLineLink(location) != null) {
             Cursor = Cursors.Pointer;
-
-            if (prevLineLink != lineLinkRow) {
-                Invalidate();
-            }
-
             return;
-        }
-        lineLinkRow = -1;
-
-        if (prevLineLink != -1) {
-            Invalidate();
         }
 
         if (LocationToFolding(location) != null) {
@@ -2943,94 +3046,15 @@ public sealed class Editor : Drawable {
         return null;
     }
 
-    /// Action to open the Read-command on the line if possible
-    public Action? GetOpenReadFileLink(int row) {
-        if (!CommandLine.TryParse(Document.Lines[row], out var commandLine) ||
-            !commandLine.IsCommand("Read") || commandLine.Args.Length < 1)
-        {
-            return null;
-        }
-
-        var documentPath = Studio.Instance.Editor.Document.FilePath;
-        if (documentPath == Document.ScratchFile) {
-            return null;
-        }
-        if (Path.GetDirectoryName(documentPath) is not { } documentDir) {
-            return null;
-        }
-
-        var fullPath = Path.Combine(documentDir, $"{commandLine.Args[0]}.tas");
-        if (!File.Exists(fullPath)) {
-            return null;
-        }
-
-        int? labelRow = null;
-        if (commandLine.Args.Length > 1) {
-            (var label, labelRow) = File.ReadAllText(fullPath)
-                .ReplaceLineEndings(Document.NewLine.ToString())
-                .SplitDocumentLines()
-                .Select((line, i) => (line, i))
-                .FirstOrDefault(pair => pair.line == $"#{commandLine.Args[1]}");
-            if (label == null) {
-                return null;
-            }
-        }
-
-
-        return () => {
-            Studio.Instance.OpenFile(fullPath);
-            if (labelRow is {} caretRow) {
-                Document.Caret.Row = caretRow;
-                Document.Caret.Col = desiredVisualCol = Document.Lines[caretRow].Length;
-            } else {
-                Document.Caret = new CaretPosition(0, 0);
-            }
-            Recalc();
-            ScrollCaretIntoView(center: true);
-        };
-    }
-
-    /// Action to goto the Play-command's target line if possible
-    public Action? GetGotoPlayLineLink(int row) {
-        if (!CommandLine.TryParse(Document.Lines[row], out var commandLine) ||
-            !commandLine.IsCommand("Play") || commandLine.Args.Length < 1)
-        {
-            return null;
-        }
-
-        (var label, int labelRow) = Document.Lines
-            .Select((line, i) => (line, i))
-            .FirstOrDefault(pair => pair.line == $"#{commandLine.Args[0]}");
-        if (label == null) {
-            return null;
-        }
-
-        return () => {
-            Document.Caret.Row = labelRow;
-            Document.Caret.Col = desiredVisualCol = Document.Lines[labelRow].Length;
-            Recalc();
-            ScrollCaretIntoView(center: true);
-        };
-    }
-
-    private Action? GetLineLink(int row) => GetOpenReadFileLink(row) ?? GetGotoPlayLineLink(row);
-    private int LocationToLineLink(PointF location) {
+    private Anchor? LocationToLineLink(PointF location) {
         if (location.X < scrollablePosition.X + textOffsetX ||
             location.X > scrollablePosition.X + scrollableSize.Width)
         {
-            return -1;
+            return null;
         }
 
-        int row = GetActualRow((int) (location.Y / Font.LineHeight()), -1);
-        if (row < 0) {
-            return -1;
-        }
-
-        if (GetLineLink(row) != null) {
-            return row;
-        }
-
-        return -1;
+        var (position, _) = LocationToCaretPosition(location);
+        return Document.FindFirstAnchor(anchor => anchor.IsPositionInside(position) && anchor.UserData is LineLinkAnchorData);
     }
 
     #endregion
@@ -3092,8 +3116,13 @@ public sealed class Editor : Drawable {
                 continue;
             }
 
-            if (row == lineLinkRow && GetLineLink(row) is { }) {
-                highlighter.DrawLine(e.Graphics, textOffsetX, yPos, line, underline: true);
+            // Underline current line link
+            if (Keyboard.Modifiers.HasCommonModifier() && LocationToLineLink(PointFromScreen(Mouse.Position)) is { } linkAnchor && linkAnchor.Row == row) {
+                highlighter.DrawLine(e.Graphics, textOffsetX, yPos, line, new SyntaxHighlighter.DrawLineOptions {
+                    UnderlineStart = linkAnchor.MinCol,
+                    UnderlineEnd = linkAnchor.MaxCol,
+                });
+
                 yPos += Font.LineHeight();
                 continue;
             }

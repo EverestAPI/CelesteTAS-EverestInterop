@@ -2,26 +2,14 @@ using CelesteStudio.Data;
 
 namespace CelesteStudio.Editing.ContextActions;
 
-public class OpenReadFile : ContextAction {
-    public override MenuEntry Entry => MenuEntry.ContextActions_OpenReadFile;
+public class UseLineLink(MenuEntry entry) : ContextAction {
+    public override MenuEntry Entry => entry;
 
     public override PopupMenu.Entry? Check() {
-        if (Editor.GetOpenReadFileLink(Document.Caret.Row) is { } lineLink) {
-            return CreateEntry("", () => lineLink());
+        if (Document.FindFirstAnchor(anchor => anchor.Row == Document.Caret.Row && anchor.UserData is Editor.LineLinkAnchorData linkData && linkData.Entry == entry) is { } linkAnchor) {
+            return CreateEntry("", () => ((Editor.LineLinkAnchorData)linkAnchor.UserData!).OnUse());
         }
-        
-        return null;
-    }
-}
 
-public class GotoPlayLine : ContextAction {
-    public override MenuEntry Entry => MenuEntry.ContextActions_GoToPlayLine;
-    
-    public override PopupMenu.Entry? Check() {
-        if (Editor.GetGotoPlayLineLink(Document.Caret.Row) is { } lineLink) {
-            return CreateEntry("", () => lineLink());
-        }
-        
         return null;
     }
 }

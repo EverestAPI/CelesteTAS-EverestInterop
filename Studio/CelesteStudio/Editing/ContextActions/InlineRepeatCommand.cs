@@ -24,7 +24,7 @@ public class InlineRepeatCommand : ContextAction {
             return null;
         }
         
-        if (repeatStart.Args!.Length < 1 || !int.TryParse(repeatStart.Args[0], out int repeatCount)) {
+        if (repeatStart.Arguments!.Length < 1 || !int.TryParse(repeatStart.Arguments[0], out int repeatCount)) {
             return null;
         }
         
