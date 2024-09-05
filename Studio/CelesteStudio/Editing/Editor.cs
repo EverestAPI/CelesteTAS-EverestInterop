@@ -1654,7 +1654,7 @@ public sealed class Editor : Drawable {
     #region Line Links
 
     public record struct LineLinkAnchorData {
-        public required MenuEntry Entry;
+        public required MenuEntry? Entry;
         public required Action OnUse;
     }
 
@@ -1684,36 +1684,59 @@ public sealed class Editor : Drawable {
             return;
         }
 
-        int? labelRow = null;
+        var lines = File.ReadAllText(fullPath)
+            .ReplaceLineEndings(Document.NewLine.ToString())
+            .SplitDocumentLines()
+            .Select((line, i) => (line, i))
+            .ToArray();
+
+        int? startLabelRow = null;
         if (commandLine.Arguments.Length > 1) {
-            (var label, labelRow) = File.ReadAllText(fullPath)
-                .ReplaceLineEndings(Document.NewLine.ToString())
-                .SplitDocumentLines()
-                .Select((line, i) => (line, i))
+            (var label, startLabelRow) = lines
                 .FirstOrDefault(pair => pair.line == $"#{commandLine.Arguments[1]}");
             if (label == null) {
                 return;
             }
         }
+        int? endLabelRow = null;
+        if (commandLine.Arguments.Length > 2) {
+            (var label, endLabelRow) = lines
+                .FirstOrDefault(pair => pair.line == $"#{commandLine.Arguments[2]}");
+            if (label == null) {
+                return;
+            }
+        }
 
-        int startLabelEnd = commandLine.Command.Length
+        int startLinkLength = commandLine.Command.Length
             + commandLine.ArgumentSeparator.Length
             + commandLine.Arguments[0].Length
             - 1;
         if (commandLine.Arguments.Length > 1) {
-            startLabelEnd += commandLine.ArgumentSeparator.Length
+            startLinkLength += commandLine.ArgumentSeparator.Length
                           +  commandLine.Arguments[1].Length;
         }
 
         Document.AddAnchor(new Anchor {
             Row = row,
             MinCol = 0,
-            MaxCol = startLabelEnd,
+            MaxCol = startLinkLength,
             UserData = new LineLinkAnchorData {
                 Entry = MenuEntry.ContextActions_OpenReadFile,
-                OnUse = () => OpenFile(labelRow),
+                OnUse = () => OpenFile(startLabelRow),
             }
         });
+
+        if (endLabelRow.HasValue) {
+            Document.AddAnchor(new Anchor {
+                Row = row,
+                MinCol = startLinkLength + commandLine.ArgumentSeparator.Length + 1,
+                MaxCol = startLinkLength + commandLine.ArgumentSeparator.Length + commandLine.Arguments[2].Length,
+                UserData = new LineLinkAnchorData {
+                    Entry = null,
+                    OnUse = () => OpenFile(endLabelRow),
+                }
+            });
+        }
 
         return;
 
