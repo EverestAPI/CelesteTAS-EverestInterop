@@ -337,6 +337,7 @@ public sealed class Editor : Drawable {
                 MenuEntry.Editor_ToggleFolding.ToAction(OnToggleFolding),
                 new SeparatorMenuItem(),
                 MenuEntry.Editor_DeleteSelectedLines.ToAction(OnDeleteSelectedLines),
+                MenuEntry.Editor_SetFrameCountToStepAmount.ToAction(OnSetFrameCountToStepAmount),
                 new SeparatorMenuItem(),
                 MenuEntry.Editor_InsertRemoveBreakpoint.ToAction(() => InsertOrRemoveText(UncommentedBreakpointRegex, "***")),
                 MenuEntry.Editor_InsertRemoveSavestateBreakpoint.ToAction(() => InsertOrRemoveText(UncommentedBreakpointRegex, "***S")),
@@ -2321,6 +2322,20 @@ public sealed class Editor : Drawable {
         Document.RemoveLines(minRow, maxRow);
         Document.Selection.Clear();
         Document.Caret.Row = minRow;
+    }
+
+    private void OnSetFrameCountToStepAmount() {
+        if (!CommunicationWrapper.Connected) {
+            return;
+        }
+
+        using var __ = Document.Update();
+
+        if (CommunicationWrapper.CurrentLine >= 0 && CommunicationWrapper.CurrentLine < Document.Lines.Count && CommunicationWrapper.CurrentFrameInInput > 0 &&
+            ActionLine.TryParse(Document.Lines[CommunicationWrapper.CurrentLine], out var actionLine))
+        {
+            Document.ReplaceLine(CommunicationWrapper.CurrentLine, (actionLine with { FrameCount = Math.Clamp(CommunicationWrapper.CurrentFrameInInput, 0, ActionLine.MaxFrames) }).ToString());
+        }
     }
 
     private void OnToggleCommentBreakpoints() {

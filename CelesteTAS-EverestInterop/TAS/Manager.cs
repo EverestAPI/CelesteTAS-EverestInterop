@@ -237,6 +237,7 @@ public static class Manager {
             CurrentLine = previous?.Line ?? -1,
             CurrentLineSuffix = $"{Controller.CurrentFrameInInput + (previous?.FrameOffset ?? 0)}{previous?.RepeatString ?? ""}",
             CurrentFrameInTas = Controller.CurrentFrameInTas,
+            CurrentFrameInInput = Controller.CurrentFrameInInput,
             TotalFrames = Controller.Inputs.Count,
             SaveStateLine = Savestates.StudioHighlightLine,
             tasStates = States,

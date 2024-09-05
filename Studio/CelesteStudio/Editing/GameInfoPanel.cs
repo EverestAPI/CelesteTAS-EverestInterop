@@ -190,7 +190,7 @@ public class GameInfoPanel : Panel {
                             Clipboard.Instance.Text = exactGameInfo;
                         }
                     }),
-                    MenuEntry.Status_ReconenctStudioCeleste.ToAction(CommunicationWrapper.ForceReconnect),
+                    MenuEntry.Status_ReconnectStudioCeleste.ToAction(CommunicationWrapper.ForceReconnect),
                     new SeparatorMenuItem(),
                     editCustomInfoItem,
                     MenuEntry.Status_ClearWatchEntityInfo.ToAction(CommunicationWrapper.ClearWatchEntityInfo),
@@ -423,7 +423,7 @@ public class GameInfoPanel : Panel {
                             Clipboard.Instance.Text = exactGameInfo;
                         }
                     }),
-                    MenuEntry.Status_ReconenctStudioCeleste.ToAction(CommunicationWrapper.ForceReconnect),
+                    MenuEntry.Status_ReconnectStudioCeleste.ToAction(CommunicationWrapper.ForceReconnect),
                     new SeparatorMenuItem(),
                     editCustomInfoItem,
                     MenuEntry.Status_ClearWatchEntityInfo.ToAction(CommunicationWrapper.ClearWatchEntityInfo),

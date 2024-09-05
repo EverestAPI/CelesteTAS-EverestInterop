@@ -11,26 +11,26 @@ public enum MenuEntry {
     File_New, File_Open, File_OpenPrevious, File_Save, File_SaveAs, File_RecordTAS, File_Quit,
     Settings_SendInputs,
     View_ShowGameInfo, View_ShowSubpixelIndicator, View_AlwaysOnTop, View_WrapComments, View_ShowFoldingIndicator,
-    
+
     Editor_Cut, Editor_Copy, Editor_Paste,
     Editor_Undo, Editor_Redo,
     Editor_SelectAll, Editor_SelectBlock,
     Editor_Find, Editor_GoTo, Editor_ToggleFolding,
-    Editor_DeleteSelectedLines,
+    Editor_DeleteSelectedLines, Editor_SetFrameCountToStepAmount,
     Editor_InsertRemoveBreakpoint, Editor_InsertRemoveSavestateBreakpoint, Editor_RemoveAllUncommentedBreakpoints, Editor_RemoveAllBreakpoints, Editor_CommentUncommentAllBreakpoints, Editor_CommentUncommentInputs, Editor_CommentUncommentText,
     Editor_InsertRoomName, Editor_InsertCurrentTime, Editor_RemoveAllTimestamps, Editor_InsertModInfo, Editor_InsertConsoleLoadCommand, Editor_InsertSimpleConsoleLoadCommand,
     Editor_SwapSelectedLR, Editor_SwapSelectedJK, Editor_SwapSelectedXC, Editor_CombineConsecutiveSameInputs, Editor_ForceCombineInputFrames, Editor_SplitFrames,
     Editor_OpenReadFileGoToPlayLine,
     Editor_OpenAutoCompleteMenu, Editor_OpenContextActionsMenu,
-    
+
     ContextActions_InlineReadCommand, ContextActions_InlineRepeatCommand, ContextActions_CreateRepeatCommand, ContextActions_SwapActionsLR, ContextActions_SwapActionsJK, ContextActions_SwapActionsXC,
     ContextActions_CombineConsecutiveSameInputs, ContextActions_ForceCombineInputFrames, ContextActions_SplitFrames, ContextActions_OpenReadFile, ContextActions_GoToPlayLine,
-    
-    Status_CopyGameInfoToClipboard, Status_ReconenctStudioCeleste,
+
+    Status_CopyGameInfoToClipboard, Status_ReconnectStudioCeleste,
     Status_EditCustomInfoTemplate, Status_ClearWatchEntityInfo,
-    
+
     StatusPopout_AlwaysOnTop,
-    
+
     Game_Start, Game_Restart, Game_FrameAdvance, Game_Pause,
 }
 public enum MenuEntryCategory { File, Settings, View, Editor, ContextActions, Status, StatusPopout, GameHotkeys }
@@ -64,6 +64,7 @@ public static class MenuEntryExtensions {
         { MenuEntry.Editor_GoTo, Application.Instance.CommonModifier | Keys.G },
         { MenuEntry.Editor_ToggleFolding, Application.Instance.CommonModifier | Keys.Minus },
         { MenuEntry.Editor_DeleteSelectedLines, Application.Instance.CommonModifier | Keys.Y },
+        { MenuEntry.Editor_SetFrameCountToStepAmount, Keys.None },
         { MenuEntry.Editor_InsertRemoveBreakpoint, Application.Instance.CommonModifier | Keys.Period },
         { MenuEntry.Editor_InsertRemoveSavestateBreakpoint, Application.Instance.CommonModifier | Keys.Shift | Keys.Period },
         { MenuEntry.Editor_RemoveAllUncommentedBreakpoints, Application.Instance.CommonModifier | Keys.P },
@@ -86,7 +87,7 @@ public static class MenuEntryExtensions {
         { MenuEntry.Editor_OpenReadFileGoToPlayLine, Keys.None },
         { MenuEntry.Editor_OpenAutoCompleteMenu, Application.Instance.CommonModifier | Keys.Space },
         { MenuEntry.Editor_OpenContextActionsMenu, Application.Instance.AlternateModifier | Keys.Enter },
-        
+
         { MenuEntry.ContextActions_InlineReadCommand, Keys.None },
         { MenuEntry.ContextActions_InlineRepeatCommand, Keys.None },
         { MenuEntry.ContextActions_CreateRepeatCommand, Keys.None },
@@ -98,14 +99,14 @@ public static class MenuEntryExtensions {
         { MenuEntry.ContextActions_SplitFrames, Keys.None },
         { MenuEntry.ContextActions_OpenReadFile, Keys.None },
         { MenuEntry.ContextActions_GoToPlayLine, Keys.None },
-        
+
         { MenuEntry.Status_CopyGameInfoToClipboard, Application.Instance.CommonModifier | Keys.Shift | Keys.C },
-        { MenuEntry.Status_ReconenctStudioCeleste, Application.Instance.CommonModifier | Keys.Shift | Keys.D },
+        { MenuEntry.Status_ReconnectStudioCeleste, Application.Instance.CommonModifier | Keys.Shift | Keys.D },
         { MenuEntry.Status_EditCustomInfoTemplate, Keys.None },
         { MenuEntry.Status_ClearWatchEntityInfo, Keys.None },
-        
+
         { MenuEntry.StatusPopout_AlwaysOnTop, Keys.None },
-        
+
         { MenuEntry.Game_Start, Keys.None },
         { MenuEntry.Game_Pause, Keys.None },
         { MenuEntry.Game_Restart, Keys.None },
@@ -139,6 +140,7 @@ public static class MenuEntryExtensions {
         { MenuEntry.Editor_GoTo, "Go To..." },
         { MenuEntry.Editor_ToggleFolding, "Toggle Folding" },
         { MenuEntry.Editor_DeleteSelectedLines, "Delete Selected Lines" },
+        { MenuEntry.Editor_SetFrameCountToStepAmount, "Set Frame Count to current Step Amount" },
         { MenuEntry.Editor_InsertRemoveBreakpoint, "Insert / Remove Breakpoint" },
         { MenuEntry.Editor_InsertRemoveSavestateBreakpoint, "Insert / Remove Savestate Breakpoint" },
         { MenuEntry.Editor_RemoveAllUncommentedBreakpoints, "Remove All Uncommented Breakpoints" },
@@ -161,7 +163,7 @@ public static class MenuEntryExtensions {
         { MenuEntry.Editor_OpenReadFileGoToPlayLine, "Open Read File / Go To Play Line" },
         { MenuEntry.Editor_OpenAutoCompleteMenu, "Open Auto Complete menu..." },
         { MenuEntry.Editor_OpenContextActionsMenu, "Open Context Actions menu..." },
-        
+
         { MenuEntry.ContextActions_InlineReadCommand, "Inline Read-command" },
         { MenuEntry.ContextActions_InlineRepeatCommand, "Inline Repeat-command" },
         { MenuEntry.ContextActions_CreateRepeatCommand, "Create Repeat-command" },
@@ -173,14 +175,14 @@ public static class MenuEntryExtensions {
         { MenuEntry.ContextActions_SplitFrames, "Split Input Frames" },
         { MenuEntry.ContextActions_OpenReadFile, "Open Read File" },
         { MenuEntry.ContextActions_GoToPlayLine, "Go To Play Line" },
-        
+
         { MenuEntry.Status_CopyGameInfoToClipboard, "&Copy Game Info to Clipboard" },
-        { MenuEntry.Status_ReconenctStudioCeleste, "&Reconnect Studio and Celeste" },
+        { MenuEntry.Status_ReconnectStudioCeleste, "&Reconnect Studio and Celeste" },
         { MenuEntry.Status_EditCustomInfoTemplate, "&Edit Custom Info Template" },
         { MenuEntry.Status_ClearWatchEntityInfo, "Clear Watch Entity Info" },
-        
+
         { MenuEntry.StatusPopout_AlwaysOnTop, "Always on Top" },
-        
+
         { MenuEntry.Game_Start, "Start" },
         { MenuEntry.Game_Pause, "Pause" },
         { MenuEntry.Game_Restart, "Restart" },
@@ -201,26 +203,26 @@ public static class MenuEntryExtensions {
             MenuEntry.Editor_Undo, MenuEntry.Editor_Redo,
             MenuEntry.Editor_SelectAll, MenuEntry.Editor_SelectBlock,
             MenuEntry.Editor_Find, MenuEntry.Editor_GoTo, MenuEntry.Editor_ToggleFolding,
-            MenuEntry.Editor_DeleteSelectedLines,
+            MenuEntry.Editor_DeleteSelectedLines, MenuEntry.Editor_SetFrameCountToStepAmount,
             MenuEntry.Editor_InsertRemoveBreakpoint, MenuEntry.Editor_InsertRemoveSavestateBreakpoint, MenuEntry.Editor_RemoveAllUncommentedBreakpoints, MenuEntry.Editor_RemoveAllBreakpoints, MenuEntry.Editor_CommentUncommentAllBreakpoints, MenuEntry.Editor_CommentUncommentInputs, MenuEntry.Editor_CommentUncommentText,
             MenuEntry.Editor_InsertRoomName, MenuEntry.Editor_InsertCurrentTime, MenuEntry.Editor_RemoveAllTimestamps, MenuEntry.Editor_InsertModInfo, MenuEntry.Editor_InsertConsoleLoadCommand, MenuEntry.Editor_InsertSimpleConsoleLoadCommand,
             MenuEntry.Editor_SwapSelectedLR, MenuEntry.Editor_SwapSelectedJK, MenuEntry.Editor_SwapSelectedXC, MenuEntry.Editor_CombineConsecutiveSameInputs, MenuEntry.Editor_ForceCombineInputFrames, MenuEntry.Editor_SplitFrames,
             MenuEntry.Editor_OpenReadFileGoToPlayLine,
             MenuEntry.Editor_OpenAutoCompleteMenu, MenuEntry.Editor_OpenContextActionsMenu] },
-        
+
         { MenuEntryCategory.ContextActions, [
             MenuEntry.ContextActions_InlineReadCommand, MenuEntry.ContextActions_InlineRepeatCommand, MenuEntry.ContextActions_CreateRepeatCommand, MenuEntry.ContextActions_SwapActionsLR, MenuEntry.ContextActions_SwapActionsJK, MenuEntry.ContextActions_SwapActionsXC,
             MenuEntry.ContextActions_CombineConsecutiveSameInputs, MenuEntry.ContextActions_ForceCombineInputFrames, MenuEntry.ContextActions_SplitFrames, MenuEntry.ContextActions_OpenReadFile, MenuEntry.ContextActions_GoToPlayLine] },
 
         { MenuEntryCategory.Status, [
-            MenuEntry.Status_CopyGameInfoToClipboard, MenuEntry.Status_ReconenctStudioCeleste,
+            MenuEntry.Status_CopyGameInfoToClipboard, MenuEntry.Status_ReconnectStudioCeleste,
             MenuEntry.Status_EditCustomInfoTemplate, MenuEntry.Status_ClearWatchEntityInfo] },
 
         { MenuEntryCategory.StatusPopout, [MenuEntry.StatusPopout_AlwaysOnTop] },
-        
+
         { MenuEntryCategory.GameHotkeys, [MenuEntry.Game_Start, MenuEntry.Game_Pause, MenuEntry.Game_Restart, MenuEntry.Game_FrameAdvance] },
     };
-    
+
 #if DEBUG
     public static void VerifyData() {
         // Ensures that every entry has all the required data
@@ -231,21 +233,21 @@ public static class MenuEntryExtensions {
             if (!EntryNames.ContainsKey(entry)) {
                 throw new Exception($"EntryNames does not contain an entry for '{entry}'");
             }
-            
+
             foreach (var category in Enum.GetValues<MenuEntryCategory>()) {
                 var entries = Categories[category];
                 if (entries.Contains(entry)) {
                     goto NextIter;
                 }
             }
-            
+
             throw new Exception($"Entry '{entry}' is not assigned to a category");
-            
+
             NextIter:;
         }
     }
 #endif
-    
+
     public static MenuEntry[] GetEntries(this MenuEntryCategory category) => Categories[category];
     public static string GetName(this MenuEntryCategory category) => category switch {
         MenuEntryCategory.File => "File",
@@ -258,11 +260,11 @@ public static class MenuEntryExtensions {
         MenuEntryCategory.GameHotkeys => "Game Hotkeys",
         _ => throw new UnreachableException(),
     };
-    
+
     public static string GetName(this MenuEntry entry) => EntryNames[entry];
     public static Keys GetDefaultHotkey(this MenuEntry entry) => DefaultKeyBindings[entry];
     public static Keys GetHotkey(this MenuEntry entry) => Settings.Instance.KeyBindings.TryGetValue(entry, out var shortcut) ? shortcut : DefaultKeyBindings[entry];
- 
+
     public static CheckMenuItem ToCheckbox(this MenuEntry entry) =>
         new() {
             Text = EntryNames[entry],
