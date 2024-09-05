@@ -1163,12 +1163,17 @@ public sealed class Editor : Drawable {
 
         using var __ = Document.Update();
 
-        Document.ReplaceLine(calculationState.Row, calculationState.Operator.Apply(actionLine, operand).ToString());
+        var newActionLine = calculationState.Operator.Apply(actionLine, operand);
+        Document.ReplaceLine(calculationState.Row, newActionLine.ToString());
 
-        if (stealFrom != 0 && calculationState.Operator is not (CalculationOperator.Mul or CalculationOperator.Div)) {
+        if (stealFrom != 0) {
             int stealFromRow = calculationState.Row + stealFrom;
             if (stealFromRow >= 0 && stealFromRow < Document.Lines.Count && ActionLine.TryParse(Document.Lines[stealFromRow], out var stealFromActionLine)) {
-                Document.ReplaceLine(stealFromRow, calculationState.Operator.Inverse().Apply(stealFromActionLine, operand).ToString());
+                int frameDelta = newActionLine.FrameCount - actionLine.FrameCount;
+
+                Document.ReplaceLine(stealFromRow, (stealFromActionLine with {
+                    FrameCount = Math.Clamp(stealFromActionLine.FrameCount - frameDelta, 0, ActionLine.MaxFrames)
+                }).ToString());
             }
         }
     }
