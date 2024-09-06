@@ -231,7 +231,7 @@ public sealed class Studio : Form {
         GameInfoPanel.Width = ClientSize.Width;
         EditorScrollable.Size = new Size(
             Math.Max(0, ClientSize.Width),
-            Math.Max(0, ClientSize.Height - GameInfoPanel.Height));
+            Math.Max(0, ClientSize.Height - GameInfoPanel.ClientSize.Height));
     }
 
     private void ApplySettings() {

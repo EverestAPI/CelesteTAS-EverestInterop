@@ -251,6 +251,14 @@ public class GameInfoPanel : Panel {
 
     private readonly TextArea textArea;
 
+    private readonly StackLayout showPanel;
+    private readonly StackLayout editPanel;
+
+    // macOS seems to still count invisible objects for the height, so we have to do this...
+    public int ActualHeight => Padding.Top + Padding.Bottom + (showPanel.Visible
+        ? showPanel.Height
+        : editPanel.Height);
+
     private PopoutForm? popoutForm;
 
     public GameInfoPanel() {
@@ -279,8 +287,8 @@ public class GameInfoPanel : Panel {
             Items = { doneButton, cancelButton },
         };
 
-        var showPanel = new StackLayout { Items = { label, subpixelIndicator } };
-        var editPanel = new StackLayout { Items = { textArea, buttonsPanel }, Visible = false };
+        showPanel = new StackLayout { Items = { label, subpixelIndicator } };
+        editPanel = new StackLayout { Items = { textArea, buttonsPanel }, Visible = false };
 
         Studio.Instance.Closed += (_, _) => {
             Settings.Instance.GameInfoPopoutOpen = popoutForm != null;
@@ -300,7 +308,6 @@ public class GameInfoPanel : Panel {
                 UpdateLayout();
                 Studio.Instance.RecalculateLayout();
             };
-            Studio.Instance.Closed += (_, _) => popoutForm.Close();
             popoutForm.Show();
 
             Visible = false;
@@ -309,6 +316,8 @@ public class GameInfoPanel : Panel {
             UpdateLayout();
             Studio.Instance.RecalculateLayout();
         };
+        Studio.Instance.Closed += (_, _) => popoutForm?.Close();
+
         // Only show popout button while hovering Info HUD
         MouseEnter += (_, _) => popoutButton.Visible = true;
         MouseLeave += (_, _) => popoutButton.Visible = false;
