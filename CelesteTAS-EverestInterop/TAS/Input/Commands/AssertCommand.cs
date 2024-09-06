@@ -26,20 +26,24 @@ public static class AssertCommand {
     //  Assert, Condition, Expected, Actual
     [TasCommand("Assert", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
     private static void Assert(string[] args, string lineText) {
-        string prefix = $"\"Assert, {string.Join(", ", args)}\" failed\n";
+        string prefix = $"""
+                         "Assert, {string.Join(", ", args)}" failed
+
+                         """;
 
         if (Command.Parsing) {
             if (args.IsEmpty()) {
                 AbortTas($"{prefix}Lack of assert condition");
-            } else if (!Enum.TryParse(args[0], true, out AssertCondition _)) {
+            } else if (!Enum.TryParse<AssertCondition>(args[0], true, out _)) {
                 AbortTas($"{prefix}{args[0]} is not a valid assert condition");
-            } else if (args.Length < 2) {
+            } else if (args.Length < 2 || args[1].IsEmpty()) {
                 AbortTas($"{prefix}Lack of expected value");
             } else if (args.Length < 3 || args[2].IsEmpty()) {
                 AbortTas($"{prefix}Lack of actual value");
             }
         } else {
-            string separator = Command.SpaceSeparatorRegex.IsMatch(lineText) ? spaceSeparator : commaSeparator;
+            // TODO
+            string separator = /*Command.SpaceSeparatorRegex.IsMatch(lineText) ? spaceSeparator : */commaSeparator;
             Regex regex = new($@"assert{separator}{Regex.Escape(args[0])}{separator}{Regex.Escape(args[1])}{separator}", RegexOptions.IgnoreCase);
 
             Enum.TryParse(args[0], true, out AssertCondition condition);

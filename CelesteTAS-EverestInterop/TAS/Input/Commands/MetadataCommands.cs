@@ -71,8 +71,8 @@ public static class MetadataCommands {
     [TasCommand("MidwayFileTime", AliasNames = new[] {"MidwayFileTime:", "MidwayFileTime："}, CalcChecksum = false)]
     private static void MidwayFileTimeCommand() {
         if (TasStartFileTime != null && SaveData.Instance != null) {
-            UpdateAllMetadata("MidwayFileTime", 
-                _ => GameInfo.FormatTime(SaveData.Instance.Time - TasStartFileTime.Value), 
+            UpdateAllMetadata("MidwayFileTime",
+                _ => GameInfo.FormatTime(SaveData.Instance.Time - TasStartFileTime.Value),
                 command => Manager.Controller.CurrentCommands.Contains(command));
         }
     }
@@ -82,8 +82,8 @@ public static class MetadataCommands {
         if (!Manager.Running || Engine.Scene is not Level level || !level.Session.StartedFromBeginning) {
             return;
         }
-        UpdateAllMetadata("MidwayChapterTime", 
-            _ => GameInfo.GetChapterTime(level), 
+        UpdateAllMetadata("MidwayChapterTime",
+            _ => GameInfo.GetChapterTime(level),
             command => Manager.Controller.CurrentCommands.Contains(command));
     }
 
@@ -121,7 +121,7 @@ public static class MetadataCommands {
             }
 
             return true;
-        }).ToDictionary(command => command.StudioLineNumber, command => $"{command.Attribute.Name}: {getMetadata(command)}");
+        }).ToDictionary(command => command.StudioLine, command => $"{command.Info.Name}: {getMetadata(command)}");
 
         if (updateLines.IsEmpty()) {
             return;

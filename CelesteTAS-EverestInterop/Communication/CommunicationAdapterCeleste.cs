@@ -200,11 +200,13 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
         TASRecorderUtils.StartRecording(fileName);
         TASRecorderUtils.SetDurationEstimate(totalFrames);
 
-        if (!Manager.Controller.Commands.TryGetValue(0, out var commands)) return;
+        if (!Manager.Controller.Commands.TryGetValue(0, out var commands)) {
+            return;
+        }
         bool startsWithConsoleLoad = commands.Any(c =>
-            c.Attribute.Name.Equals("Console", StringComparison.OrdinalIgnoreCase) &&
+            c.Is("Console") &&
             c.Args.Length >= 1 &&
-            ConsoleCommand.LoadCommandRegex.Match(c.Args[0].ToLower()) is {Success: true});
+            ConsoleCommand.LoadCommandRegex.Match(c.Args[0].ToLower()) is { Success: true });
 
         if (startsWithConsoleLoad) {
             // Restart the music when we enter the level

@@ -4,13 +4,15 @@ using System.Text.RegularExpressions;
 namespace StudioCommunication;
 
 /// A parsed command line inside a TAS file
-public struct CommandLine {
+public readonly record struct CommandLine(
+    string Command,
+    string[] Arguments,
+
+    string OriginalText,
+    string ArgumentSeparator
+) {
     // Matches against command or space or both as a separator
     public static readonly Regex SeparatorRegex = new(@"(?:\s+)|(?:\s*,\s*)", RegexOptions.Compiled);
-
-    public string Command;
-    public string[] Arguments;
-    public string ArgumentSeparator;
 
     public bool IsCommand(string? command) => string.Equals(command, Command, StringComparison.OrdinalIgnoreCase);
 
@@ -27,8 +29,11 @@ public struct CommandLine {
         commandLine = new CommandLine {
             Command = split[0],
             Arguments = split[1..],
+
+            OriginalText = line,
             ArgumentSeparator = separatorMatch.Value,
         };
+
         return true;
     }
 }
