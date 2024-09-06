@@ -17,6 +17,7 @@ using Eto.Drawing;
 using FontDialog = CelesteStudio.Dialog.FontDialog;
 using Eto.Forms.ThemedControls;
 using StudioCommunication;
+using System.Runtime.InteropServices;
 
 namespace CelesteStudio;
 
@@ -55,6 +56,17 @@ public sealed class Studio : Form {
         AllowDrop = true;
 
         WindowCreationCallback = windowCreationCallback;
+
+        // Close other Studio instances to avoid conflicts
+        foreach (var process in Process.GetProcesses().Where(process => process.ProcessName is "CelesteStudio" or "CelesteStudio.WPF" or "CelesteStudio.GTK" or "CelesteStudio.Mac" or "Celeste Studio")) {
+            if (process.Id == Process.GetCurrentProcess().Id) {
+                continue;
+            }
+
+            Console.WriteLine($"Closing process {process.ProcessName} ({process.Id})...");
+            process.Terminate();
+            process.WaitForExit(TimeSpan.FromSeconds(10.0f));
+        }
 
         // Ensure config directory exists
         if (!Directory.Exists(Settings.BaseConfigPath)) {
