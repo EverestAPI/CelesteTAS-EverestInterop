@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using CelesteStudio.Data;
 using CelesteStudio.Util;
+using StudioCommunication;
 
 namespace CelesteStudio.Editing.ContextActions;
 
@@ -22,11 +23,11 @@ public class InlineReadCommand : ContextAction {
 
         if (subPath == null ||
             Document.FilePath == Document.ScratchFile ||
-            Path.GetDirectoryName(Document.FilePath) is not { } documentDir) 
+            Path.GetDirectoryName(Document.FilePath) is not { } documentDir)
         {
             return null;
         }
-        
+
         var fullPath = Path.Combine(documentDir, $"{subPath}.tas");
         if (!File.Exists(fullPath)) {
             return null;
@@ -35,24 +36,24 @@ public class InlineReadCommand : ContextAction {
         string[] lines = File.ReadAllText(fullPath)
             .ReplaceLineEndings(Document.NewLine.ToString())
             .SplitDocumentLines();
-        
+
         int startLine = 0;
         int endLine = lines.Length;
-        
+
         if (startLabel != null && TryGetLine(startLabel, lines, out int line)) {
             startLine = line;
         }
         if (endLabel != null && TryGetLine(endLabel, lines, out line)) {
             endLine = line;
         }
-        
+
         return CreateEntry($"{lines.Length} lines", () => {
             using var __ = Document.Update();
-            
+
             try {
                 Document.RemoveLine(Document.Caret.Row);
                 Document.InsertLines(Document.Caret.Row, lines[startLine..endLine]);
-                
+
                 Editor.ScrollCaretIntoView();
             } catch (Exception) {
                 // ignored
@@ -66,14 +67,14 @@ public class InlineReadCommand : ContextAction {
             lineNumber -= 1;
             return true;
         }
-        
+
         // All labels need to start with a # and immediately follow with the text
         var labels = lines
             .Select((line, row) => (line, row))
             .Where(pair => pair.line.Length >= 2 && pair.line[0] == '#' && char.IsLetter(pair.line[1]))
             .Select(pair => pair with { line = pair.line[1..] }) // Remove the #
             .ToArray();
-        
+
         // Find label
         foreach (var (label, line) in labels) {
             if (label == labelOrLineNumber) {
@@ -81,7 +82,7 @@ public class InlineReadCommand : ContextAction {
                 return true;
             }
         }
-        
+
         return false;
     }
 }

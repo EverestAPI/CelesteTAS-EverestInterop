@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using TAS.Input.Commands;
 using TAS.Utils;
 
-namespace TAS.Input.Commands;
+namespace TAS.Input;
 
 public partial record Command {
     public readonly string[] Args;

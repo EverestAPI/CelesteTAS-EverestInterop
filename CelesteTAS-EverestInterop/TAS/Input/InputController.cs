@@ -10,7 +10,6 @@ using StudioCommunication;
 using TAS.EverestInterop;
 using TAS.Input.Commands;
 using TAS.Utils;
-using Command = TAS.Input.Commands.Command;
 #if DEBUG
 using TAS.Module;
 using Monocle;

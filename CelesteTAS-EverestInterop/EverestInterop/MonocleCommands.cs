@@ -13,7 +13,7 @@ public static class MonocleCommands {
     private const string PlayTAS = "playtas";
     private static readonly Regex SeparatorRegex = new(@$"^{PlayTAS}[ |,]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-    [Command("clrsav", "clears save data on debug file (CelesteTAS)")]
+    [Monocle.Command("clrsav", "clears save data on debug file (CelesteTAS)")]
     private static void CmdClearSave() {
         SaveData.TryDelete(-1);
         SaveData.Start(new SaveData {Name = "debug"}, -1);
@@ -23,7 +23,7 @@ public static class MonocleCommands {
         stats.AreasIncludingCeleste[0].Modes[0].Completed = true;
     }
 
-    [Command("hearts",
+    [Monocle.Command("hearts",
         "sets the amount of obtained hearts for the specified level set to a given number (default all hearts and current level set) (support mini heart door via CelesteTAS)")]
     private static void CmdHearts(int amount = int.MaxValue, string levelSet = null) {
         SaveData saveData = SaveData.Instance;
@@ -65,7 +65,7 @@ public static class MonocleCommands {
         }
     }
 
-    [Command(PlayTAS, "play the specified tas file (CelesteTAS)")]
+    [Monocle.Command(PlayTAS, "play the specified tas file (CelesteTAS)")]
     private static void CmdPlayTas(string filePath) {
         filePath = SeparatorRegex.Replace(Engine.Commands.commandHistory.First(), "");
 
