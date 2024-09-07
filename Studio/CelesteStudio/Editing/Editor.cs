@@ -168,7 +168,11 @@ public sealed class Editor : Drawable {
         }
     }
 
+    /// Auto-complete entries for commands and snippets
     private readonly List<PopupMenu.Entry> baseAutoCompleteEntries = [];
+
+    // Cancellation token for fetching command-argument auto-complete entries
+    private CancellationTokenSource? commandAutoCompleteTokenSource;
 
     // These should be ordered from most specific to most applicable.
     private readonly ContextAction[] contextActions = [
@@ -218,7 +222,7 @@ public sealed class Editor : Drawable {
 
     // A toast is a small message box which is temporarily shown in the middle of the screen
     private string toastMessage = string.Empty;
-    private CancellationTokenSource? toastCancellationSource;
+    private CancellationTokenSource? toastTokenSource;
 
     // Simple math operations like +, -, *, / can be performed on action line's frame counts
     private CalculationState? calculationState = null;
@@ -387,16 +391,16 @@ public sealed class Editor : Drawable {
         toastMessage = message;
         Invalidate();
 
-        toastCancellationSource?.Cancel();
-        toastCancellationSource?.Dispose();
-        toastCancellationSource = new CancellationTokenSource();
+        toastTokenSource?.Cancel();
+        toastTokenSource?.Dispose();
+        toastTokenSource = new CancellationTokenSource();
         Task.Run(() => {
-            Task.Delay(time, toastCancellationSource.Token).Wait();
+            Task.Delay(time, toastTokenSource.Token).Wait();
             Application.Instance.Invoke(() => {
                 toastMessage = string.Empty;
                 Invalidate();
             });
-        }, toastCancellationSource.Token);
+        }, toastTokenSource.Token);
     }
 
     /// Removes invalid inputs, like frameless actions or leading zeros
@@ -1306,10 +1310,48 @@ public sealed class Editor : Drawable {
             autoCompleteMenu.Entries = baseAutoCompleteEntries;
             autoCompleteMenu.Filter = line;
         } else {
-            var command = LegacyCommandInfo.AllCommands.FirstOrDefault(cmd => string.Equals(cmd?.Name, args[0], StringComparison.OrdinalIgnoreCase));
+            var command = CommunicationWrapper.Commands.FirstOrDefault(cmd => string.Equals(cmd.Name, args[0], StringComparison.OrdinalIgnoreCase));
             var commandArgs = args[1..];
 
-            if (command != null && command.Value.AutoCompleteEntries.Length >= commandArgs.Length) {
+            if (/*!string.IsNullOrEmpty(command.Name)*/true) {
+                //CommunicationWrapper.RequestAutoCompleteEntries(command.Name, commandArgs);
+                commandAutoCompleteTokenSource?.Cancel();
+                commandAutoCompleteTokenSource?.Dispose();
+                commandAutoCompleteTokenSource = new CancellationTokenSource();
+
+                var token = commandAutoCompleteTokenSource.Token;
+                Task.Run(async () => {
+                    Console.WriteLine($"start");
+                    int loadingDots = 0;
+                    var loadingEntry = new PopupMenu.Entry {
+                        DisplayText = string.Empty,
+                        SearchText = string.Empty,
+                        ExtraText = string.Empty,
+                        OnUse = null!,
+                        Disabled = true,
+                    };
+
+                    while (!token.IsCancellationRequested && ActivePopupMenu == autoCompleteMenu && autoCompleteMenu.Visible) {
+                        loadingEntry.DisplayText = $"Loading{new string('.', loadingDots)}{new string(' ', 3 - loadingDots)}";
+                        loadingDots = (loadingDots + 1).Mod(4);
+
+                        Console.WriteLine($"invoke");
+                        await Application.Instance.InvokeAsync(() => {
+                            Console.WriteLine($"app");
+                            autoCompleteMenu.Entries = [
+                                loadingEntry
+                            ];
+                            Recalc();
+                        }).ConfigureAwait(false);
+                        await Task.Delay(TimeSpan.FromSeconds(0.25f), token).ConfigureAwait(false);
+                    }
+                    Console.WriteLine($"{token.IsCancellationRequested} | {ActivePopupMenu == autoCompleteMenu} | {autoCompleteMenu.Visible} ");
+                    Console.WriteLine($"stop");
+                }, token);
+            }
+
+            /*
+            if (!string.IsNullOrEmpty(command.Name) && command.Value.AutoCompleteEntries.Length >= commandArgs.Length) {
                 int lastArgStart = line.LastIndexOf(args[^1], StringComparison.Ordinal);
                 var entries = command.Value.AutoCompleteEntries[commandArgs.Length - 1](commandArgs);
 
@@ -1390,6 +1432,7 @@ public sealed class Editor : Drawable {
             } else {
                 autoCompleteMenu.Entries = [];
             }
+            */
 
             if (GetSelectedQuickEdit() is { } quickEdit && args[^1] == quickEdit.DefaultText) {
                 // Display all entries when quick-edit still contains the default
