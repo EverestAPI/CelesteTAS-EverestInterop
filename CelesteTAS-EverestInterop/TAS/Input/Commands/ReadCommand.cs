@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Celeste.Mod;
+using StudioCommunication;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;
@@ -20,14 +21,15 @@ public static class ReadCommand {
     // "Read, Path, StartLine",
     // "Read, Path, StartLine, EndLine"
     [TasCommand("Read", ExecuteTiming = ExecuteTiming.Parse)]
-    private static void Read(string[] args, int studioLine, string currentFilePath, int fileLine) {
+    private static void Read(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         if (args.Length == 0) {
             return;
         }
 
         string commandName = $"Read, {string.Join(", ", args)}";
 
-        string fileDirectory = Path.GetDirectoryName(currentFilePath);
+        string fileDirectory = Path.GetDirectoryName(filePath);
         if (string.IsNullOrWhiteSpace(fileDirectory)) {
             fileDirectory = Directory.GetCurrentDirectory();
         }
@@ -40,7 +42,7 @@ public static class ReadCommand {
             return;
         }
 
-        if (Path.GetFullPath(path) == Path.GetFullPath(currentFilePath)) {
+        if (Path.GetFullPath(path) == Path.GetFullPath(filePath)) {
             AbortTas($"\"{commandName}\" failed\nDo not allow reading the file itself", true);
             return;
         }
@@ -62,7 +64,7 @@ public static class ReadCommand {
             }
         }
 
-        string readCommandDetail = $"{commandName}: line {fileLine} of the file \"{currentFilePath}\"";
+        string readCommandDetail = $"{commandName}: line {fileLine} of the file \"{filePath}\"";
         if (readCommandStack.Contains(readCommandDetail)) {
             $"Multiple read commands lead to dead loops:\n{string.Join("\n", readCommandStack)}".Log(LogLevel.Warn);
             AbortTas("Multiple read commands lead to dead loops\nPlease check log.txt for more details");

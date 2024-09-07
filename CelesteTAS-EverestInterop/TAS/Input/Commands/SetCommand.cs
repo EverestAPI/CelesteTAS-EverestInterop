@@ -9,6 +9,7 @@ using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
+using StudioCommunication;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Utils;
 
@@ -33,7 +34,11 @@ public static class SetCommand {
     // Set, Setting, Value
     // Set, Mod.Setting, Value
     // Set, Entity.Field, Value
-    [TasCommand("Set", LegalInMainGame = false)]
+    [TasCommand("Set", LegalInFullGame = false)]
+    private static void Set(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        Set(commandLine.Arguments);
+    }
+
     private static void Set(string[] args) {
         if (args.Length < 2) {
             return;

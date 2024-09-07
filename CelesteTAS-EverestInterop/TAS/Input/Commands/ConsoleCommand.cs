@@ -122,26 +122,32 @@ public static class ConsoleCommand {
     // "Console LoadCommand IDorSID Screen Spawnpoint",
     // "Console LoadCommand IDorSID PositionX PositionY"
     // "Console LoadCommand IDorSID PositionX PositionY SpeedX SpeedY"
-    [TasCommand("Console", LegalInMainGame = false)]
-    private static void Console(string[] arguments, string commandText) {
-        string commandName = arguments[0].ToLower(CultureInfo.InvariantCulture);
-        string[] args = arguments.Skip(1).ToArray();
-        if (LoadCommandRegex.Match(commandName) is {Success: true} match) {
+    [TasCommand("Console", LegalInFullGame = false)]
+    private static void Console(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        if (commandLine.Arguments.IsEmpty()) {
+            AbortTas("Need to specify arguments for \"Console\" command");
+            return;
+        }
+
+        string commandName = commandLine.Arguments[0].ToLower(CultureInfo.InvariantCulture);
+        string[] commandArgs = commandLine.Arguments[1..];
+
+        if (LoadCommandRegex.Match(commandName) is { Success: true } match) {
             commandName = match.Groups[1].Value;
             if (int.TryParse(match.Groups[2].Value, out int slot)) {
                 // load1 => 0.celeste
                 slot--;
             } else {
-                // debug.celeste
+                // load => debug.celeste
                 slot = -1;
             }
 
-            LoadCommand(commandName, args, slot);
+            LoadCommand(commandName, commandArgs, slot);
         } else {
-            List<string> commandHistory = Engine.Commands.commandHistory;
-            commandHistory.Insert(0, commandText.Substring(8));
-            Engine.Commands.ExecuteCommand(commandName, args);
-            commandHistory.RemoveAt(0);
+            // C# Debug Console uses the history to parse the arguments itself, so we have to temporarily insert it there
+            Engine.Commands.commandHistory.Insert(0, commandLine.OriginalText[commandLine.Regions[1].StartIdx..]);
+            Engine.Commands.ExecuteCommand(commandName, commandArgs);
+            Engine.Commands.commandHistory.RemoveAt(0);
         }
     }
 

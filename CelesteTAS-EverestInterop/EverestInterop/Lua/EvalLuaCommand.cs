@@ -8,6 +8,8 @@ using Celeste.Mod;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
+using StudioCommunication;
+using TAS.Input;
 using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
@@ -67,7 +69,7 @@ public static class EvalLuaCommand {
             return null;
         }
     }
-    
+
     public static void Log(object message) {
         if (consoleCommandRunning) {
             Engine.Commands.Log(message);
@@ -90,13 +92,14 @@ public static class EvalLuaCommand {
         LogResult(result);
     }
 
-    [TasCommand(commandName, LegalInMainGame = false)]
-    private static void EvalLua(string[] args, string lineText) {
+    [TasCommand(commandName, LegalInFullGame = false)]
+    private static void EvalLua(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         if (args.IsEmpty()) {
             return;
         }
 
-        EvalLuaImpl(commandAndSeparatorRegex.Replace(lineText, ""));
+        EvalLuaImpl(commandAndSeparatorRegex.Replace(commandLine.OriginalText, ""));
     }
 
     public static object[] EvalLuaImpl(string code) {

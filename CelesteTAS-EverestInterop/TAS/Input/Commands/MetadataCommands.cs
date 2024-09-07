@@ -5,6 +5,7 @@ using System.Linq;
 using Celeste;
 using Celeste.Mod;
 using Monocle;
+using StudioCommunication;
 using TAS.Communication;
 using TAS.Module;
 using TAS.Utils;
@@ -53,23 +54,23 @@ public static class MetadataCommands {
         TasStartFileTime = null;
     }
 
-    [TasCommand("RecordCount", AliasNames = new[] {"RecordCount:", "RecordCount："}, CalcChecksum = false)]
-    private static void RecordCountCommand() {
+    [TasCommand("RecordCount", Aliases = ["RecordCount:", "RecordCount："], CalcChecksum = false)]
+    private static void RecordCountCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         // dummy
     }
 
-    [TasCommand("FileTime", AliasNames = new[] {"FileTime:", "FileTime："}, CalcChecksum = false)]
-    private static void FileTimeCommand() {
+    [TasCommand("FileTime", Aliases = ["FileTime:", "FileTime："], CalcChecksum = false)]
+    private static void FileTimeCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         // dummy
     }
 
-    [TasCommand("ChapterTime", AliasNames = new[] {"ChapterTime:", "ChapterTime："}, CalcChecksum = false)]
-    private static void ChapterTimeCommand() {
+    [TasCommand("ChapterTime", Aliases = ["ChapterTime:", "ChapterTime："], CalcChecksum = false)]
+    private static void ChapterTimeCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         // dummy
     }
 
-    [TasCommand("MidwayFileTime", AliasNames = new[] {"MidwayFileTime:", "MidwayFileTime："}, CalcChecksum = false)]
-    private static void MidwayFileTimeCommand() {
+    [TasCommand("MidwayFileTime", Aliases = ["MidwayFileTime:", "MidwayFileTime："], CalcChecksum = false)]
+    private static void MidwayFileTimeCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         if (TasStartFileTime != null && SaveData.Instance != null) {
             UpdateAllMetadata("MidwayFileTime",
                 _ => GameInfo.FormatTime(SaveData.Instance.Time - TasStartFileTime.Value),
@@ -77,8 +78,8 @@ public static class MetadataCommands {
         }
     }
 
-    [TasCommand("MidwayChapterTime", AliasNames = new[] {"MidwayChapterTime:", "MidwayChapterTime："}, CalcChecksum = false)]
-    private static void MidwayChapterTimeCommand() {
+    [TasCommand("MidwayChapterTime", Aliases = new[] {"MidwayChapterTime:", "MidwayChapterTime："}, CalcChecksum = false)]
+    private static void MidwayChapterTimeCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         if (!Manager.Running || Engine.Scene is not Level level || !level.Session.StartedFromBeginning) {
             return;
         }
@@ -121,7 +122,7 @@ public static class MetadataCommands {
             }
 
             return true;
-        }).ToDictionary(command => command.StudioLine, command => $"{command.Info.Name}: {getMetadata(command)}");
+        }).ToDictionary(command => command.StudioLine, command => $"{command.Attribute.Name}: {getMetadata(command)}");
 
         if (updateLines.IsEmpty()) {
             return;

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework.Input;
+using StudioCommunication;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;
@@ -10,7 +11,8 @@ public static class PressCommand {
 
     // "Press, Key1, Key2...",
     [TasCommand("Press")]
-    private static void Press(string[] args) {
+    private static void Press(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         if (args.IsEmpty()) {
             return;
         }

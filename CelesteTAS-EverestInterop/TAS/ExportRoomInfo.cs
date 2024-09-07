@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Celeste;
 using Monocle;
+using StudioCommunication;
 using TAS.Input;
 using TAS.Input.Commands;
 using TAS.Module;
@@ -75,15 +76,16 @@ public static class ExportRoomInfo {
 
     // ReSharper disable once UnusedMember.Local
     // "StartExportRoomInfo [Path = dump_room_info.txt]"
-    [TasCommand("StartExportRoomInfo", AliasNames = new[] {"ExportRoomInfo"}, CalcChecksum = false)]
-    private static void StartExportCommand(string[] args) {
+    [TasCommand("StartExportRoomInfo", Aliases = ["ExportRoomInfo"], CalcChecksum = false)]
+    private static void StartExportCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         string path = args.Length > 0 ? args[0] : "dump_room_info.txt";
         BeginExport(path);
     }
 
     // ReSharper disable once UnusedMember.Local
-    [TasCommand("FinishExportRoomInfo", AliasNames = new[] {"EndExportRoomInfo"}, CalcChecksum = false)]
-    private static void FinishExportCommand() {
+    [TasCommand("FinishExportRoomInfo", Aliases = ["EndExportRoomInfo"], CalcChecksum = false)]
+    private static void FinishExportCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         EndExport();
     }
 

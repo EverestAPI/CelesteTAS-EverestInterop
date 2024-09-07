@@ -251,14 +251,14 @@ public class InputController {
 
         if (CurrentCommands != null) {
             foreach (var command in CurrentCommands) {
-                if (command.Info.Timing.Has(ITasCommand.ExecuteTiming.Runtime) &&
-                    (!EnforceLegalCommand.EnabledWhenRunning || command.Info.LegalInFullGame)) {
+                if (command.Attribute.ExecuteTiming.Has(ExecuteTiming.Runtime) &&
+                    (!EnforceLegalCommand.EnabledWhenRunning || command.Attribute.LegalInFullGame)) {
                     command.Invoke();
                 }
 
                 // SaveAndQuitReenter inserts inputs, so we can't continue executing the commands
                 // It already handles the moving of all following commands
-                if (command.Info.Name == "SaveAndQuitReenter") {
+                if (command.Attribute.Name == "SaveAndQuitReenter") {
                     break;
                 }
             }
@@ -459,7 +459,7 @@ public class InputController {
             result.AppendLine(currentInput.ToActionsString());
 
             if (Commands.GetValueOrDefault(checkInputFrame) is { } commands) {
-                foreach (Command command in commands.Where(command => command.Info.CalcChecksum)) {
+                foreach (Command command in commands.Where(command => command.Attribute.CalcChecksum)) {
                     result.AppendLine(command.LineText);
                 }
             }

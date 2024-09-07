@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using StudioCommunication;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using TAS.Utils;
@@ -105,8 +106,9 @@ public static class AutoInputCommand {
         AutoInputArgs.Remove(filePath);
     }
 
-    [TasCommand("SkipInput", AliasNames = new[] {"SkipAutoInput"}, ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
-    private static void SkipInput(string[] args, int __, string filePath, int fileLine) {
+    [TasCommand("SkipInput", Aliases = ["SkipAutoInput"], ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
+    private static void SkipInput(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         if (Command.Parsing && AutoInputArgs.TryGetValue(filePath, out var arguments)) {
             string errorText = $"{Path.GetFileName(filePath)} line {fileLine}\nSkipInput command's ";
             if (args.IsEmpty()) {

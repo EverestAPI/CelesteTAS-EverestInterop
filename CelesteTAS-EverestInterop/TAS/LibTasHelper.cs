@@ -236,8 +236,9 @@ public static class LibTasHelper {
     }
 
     // StartExportLibTAS (Optional Path)
-    [TasCommand("StartExportLibTAS", AliasNames = new[] {"ExportLibTAS"}, ExecuteTiming = ExecuteTiming.Parse)]
-    private static void StartExportLibTasCommand(string[] args) {
+    [TasCommand("StartExportLibTAS", Aliases = ["ExportLibTAS"], ExecuteTiming = ExecuteTiming.Parse)]
+    private static void StartExportLibTasCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         string path = "Celeste.ltm";
         if (args.Length > 0) {
             path = args[0];
@@ -246,8 +247,8 @@ public static class LibTasHelper {
         StartExport(path);
     }
 
-    [TasCommand("FinishExportLibTAS", AliasNames = new[] {"EndExportLibTAS"}, ExecuteTiming = ExecuteTiming.Parse)]
-    private static void FinishExportLibTasCommand() {
+    [TasCommand("FinishExportLibTAS", Aliases = new[] {"EndExportLibTAS"}, ExecuteTiming = ExecuteTiming.Parse)]
+    private static void FinishExportLibTasCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         FinishExport();
     }
 
@@ -266,7 +267,7 @@ public static class LibTasHelper {
             skipNextInput = true;
         }
     }
-    
+
     // Add a marker for auto pause on libTAS
     [TasCommand("Marker", ExecuteTiming = ExecuteTiming.Parse)]
     private static void MarkerCommand(string[] args) {

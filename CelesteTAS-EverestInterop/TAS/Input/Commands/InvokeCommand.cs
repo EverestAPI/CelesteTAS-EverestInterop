@@ -6,6 +6,7 @@ using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
+using StudioCommunication;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Utils;
 
@@ -32,7 +33,11 @@ public static class InvokeCommand {
     // Invoke, Level.Method, Parameters...
     // Invoke, Session.Method, Parameters...
     // Invoke, Entity.Method, Parameters...
-    [TasCommand("Invoke", LegalInMainGame = false)]
+    [TasCommand("Invoke", LegalInFullGame = false)]
+    private static void Invoke(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        Invoke(commandLine.Arguments);
+    }
+
     private static void Invoke(string[] args) {
         if (args.Length < 1) {
             return;

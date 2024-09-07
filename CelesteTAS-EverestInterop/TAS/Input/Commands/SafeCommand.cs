@@ -1,3 +1,5 @@
+using StudioCommunication;
+
 namespace TAS.Input.Commands;
 
 public static class SafeCommand {
@@ -7,20 +9,20 @@ public static class SafeCommand {
     public static bool DisallowUnsafeInputParsing { get; private set; } = true;
 
     [TasCommand("Safe", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
-    private static void Safe() {
+    private static void Safe(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         if (ParsingCommand) {
             DisallowUnsafeInputParsing = true;
         } else {
-            DisallowUnsafeInput = true;       
+            DisallowUnsafeInput = true;
         }
     }
 
     [TasCommand("Unsafe", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
-    private static void Unsafe() {
+    private static void Unsafe(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         if (ParsingCommand) {
             DisallowUnsafeInputParsing = false;
         } else {
-            DisallowUnsafeInput = false;       
+            DisallowUnsafeInput = false;
         }
     }
 

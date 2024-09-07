@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using StudioCommunication;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using TAS.Utils;
@@ -35,7 +36,8 @@ public static class RepeatCommand {
 
     // "Repeat, Count"
     [TasCommand("Repeat", ExecuteTiming = ExecuteTiming.Parse)]
-    private static void Repeat(string[] args, int _, string filePath, int fileLine) {
+    private static void Repeat(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         string errorText = $"{Path.GetFileName(filePath)} line {fileLine}\n";
         if (args.IsEmpty()) {
             AbortTas($"{errorText}Repeat command no count given");
@@ -54,7 +56,8 @@ public static class RepeatCommand {
 
     // "EndRepeat"
     [TasCommand("EndRepeat", ExecuteTiming = ExecuteTiming.Parse)]
-    private static void EndRepeat(string[] _, int studioLine, string filePath, int fileLine) {
+    private static void EndRepeat(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         string errorText = $"{Path.GetFileName(filePath)} line {fileLine}\n";
         if (!RepeatArgs.TryGetValue(filePath, out var arguments)) {
             AbortTas($"{errorText}EndRepeat command does not have a paired Repeat command");

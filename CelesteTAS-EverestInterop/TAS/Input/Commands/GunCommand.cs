@@ -3,6 +3,7 @@ using System.Reflection;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
+using StudioCommunication;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;
@@ -14,8 +15,9 @@ public static class GunCommand {
     private static readonly Lazy<MethodInfo> GunlineGunshot = new(() => ModUtils.GetType("Guneline", "Guneline.Guneline")?.GetMethod("Gunshot"));
 
     // Gun, x, y
-    [TasCommand("Gun", LegalInMainGame = false)]
-    private static void Gun(string[] args) {
+    [TasCommand("Gun", LegalInFullGame = false)]
+    private static void Gun(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         if (args.Length < 2) {
             return;
         }

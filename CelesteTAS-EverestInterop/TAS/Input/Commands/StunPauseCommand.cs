@@ -94,7 +94,8 @@ public static class StunPauseCommand {
     }
 
     [TasCommand("StunPause", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
-    private static void StunPause(string[] args, int studioLine, string filePath, int fileLine) {
+    private static void StunPause(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         LocalMode = null;
 
         if (args.IsNotEmpty()) {
@@ -156,7 +157,7 @@ public static class StunPauseCommand {
     }
 
     [TasCommand("EndStunPause", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
-    private static void EndStunPause(string[] args, int __, string filePath, int fileLine) {
+    private static void EndStunPause(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         if (ParsingCommand && Mode == StunPauseMode.Input) {
             AutoInputCommand.EndAutoInputImpl(filePath, fileLine, "EndStunPause", "StunPause");
         } else if (!ParsingCommand && Mode == StunPauseMode.Simulate) {
@@ -165,7 +166,8 @@ public static class StunPauseCommand {
     }
 
     [TasCommand("StunPauseMode", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
-    private static void StunPauseCommandMode(string[] args) {
+    private static void StunPauseCommandMode(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         if (args.IsNotEmpty() && Enum.TryParse(args[0], true, out StunPauseMode value)) {
             if (ParsingCommand) {
                 GlobalModeParsing = value;

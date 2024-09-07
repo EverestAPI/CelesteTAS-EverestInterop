@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Input;
 using Mono.Cecil.Cil;
 using Monocle;
+using StudioCommunication;
 using TAS.EverestInterop;
 using TAS.Module;
 using TAS.Utils;
@@ -33,7 +34,8 @@ public static class MouseCommand {
     // "Mouse, X, Y, [ScrollWheel], [L], [R], [M], [X1], [X2]"
     // "Mouse, [L], [R], [M], [X1], [X2], X, Y, [ScrollWheel]"
     [TasCommand("Mouse")]
-    private static void MouseControl(string[] args) {
+    private static void MouseControl(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         if (args.IsEmpty()) {
             return;
         }

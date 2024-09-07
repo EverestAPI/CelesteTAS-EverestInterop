@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using Microsoft.Xna.Framework;
 using Monocle;
+using StudioCommunication;
 using TAS.Input;
 using TAS.Input.Commands;
 using TAS.Utils;
@@ -166,10 +167,11 @@ public static class AnalogHelper {
 
     // AnalogMode, Mode
     // AnalogueMode, Mode
-    [TasCommand("AnalogueMode", AliasNames = new[] {"AnalogMode"}, ExecuteTiming = ExecuteTiming.Parse)]
-    private static void AnalogueModeCommand(string[] args, int _, string __, int line) {
+    [TasCommand("AnalogueMode", Aliases = ["AnalogMode"], ExecuteTiming = ExecuteTiming.Parse)]
+    private static void AnalogueModeCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         if (args.IsEmpty() || !Enum.TryParse(args[0], true, out AnalogueMode mode)) {
-            AbortTas($"AnalogMode command failed at line {line}\nMode must be Ignore, Circle, Square or Precise");
+            AbortTas($"AnalogMode command failed at line {fileLine}\nMode must be Ignore, Circle, Square or Precise");
         } else {
             analogMode = mode;
         }

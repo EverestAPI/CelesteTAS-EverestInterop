@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
-using Monocle;
+using StudioCommunication;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Utils;
 
@@ -19,19 +17,19 @@ public static class AssertCommand {
         NotEndWith,
     }
 
-    private const string spaceSeparator = @"\s+";
-    private const string commaSeparator = @"\s*,\s*";
     public static bool Running { get; private set; }
 
     //  Assert, Condition, Expected, Actual
     [TasCommand("Assert", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
-    private static void Assert(string[] args, string lineText) {
+    private static void Assert(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         string prefix = $"""
                          "Assert, {string.Join(", ", args)}" failed
 
                          """;
 
         if (Command.Parsing) {
+            // Validate arguments
             if (args.IsEmpty()) {
                 AbortTas($"{prefix}Lack of assert condition");
             } else if (!Enum.TryParse<AssertCondition>(args[0], true, out _)) {
@@ -42,14 +40,12 @@ public static class AssertCommand {
                 AbortTas($"{prefix}Lack of actual value");
             }
         } else {
-            // TODO
-            string separator = /*Command.SpaceSeparatorRegex.IsMatch(lineText) ? spaceSeparator : */commaSeparator;
-            Regex regex = new($@"assert{separator}{Regex.Escape(args[0])}{separator}{Regex.Escape(args[1])}{separator}", RegexOptions.IgnoreCase);
-
-            Enum.TryParse(args[0], true, out AssertCondition condition);
+            var condition = Enum.Parse<AssertCondition>(args[0], ignoreCase: true); // Must succeed, since this was checked in Parse
             string expected = args[1];
+            string actualTemplate = commandLine.OriginalText[commandLine.Regions[3].StartIdx..];
+
             Running = true;
-            string actual = InfoCustom.ParseTemplate($"{regex.Replace(lineText, "")}", 0, new Dictionary<string, List<Entity>>(), false);
+            string actual = InfoCustom.ParseTemplate(actualTemplate, 0, [], false);
             Running = false;
 
             switch (condition) {
