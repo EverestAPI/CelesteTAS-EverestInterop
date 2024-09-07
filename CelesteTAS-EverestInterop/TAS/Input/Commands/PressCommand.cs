@@ -20,8 +20,6 @@ public static class PressCommand {
                     Extra = "Keys",
                     IsDone = true
                 };
-
-                await Task.Delay(TimeSpan.FromSeconds(0.1f)).ConfigureAwait(false);
             }
         }
     }

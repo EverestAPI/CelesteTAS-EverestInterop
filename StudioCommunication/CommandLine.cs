@@ -15,7 +15,7 @@ public readonly record struct CommandLine(
     string OriginalText,
     string ArgumentSeparator
 ) {
-    public readonly record struct ArgumentRegion(int StartIdx, int EndIdx);
+    public readonly record struct ArgumentRegion(int StartCol, int EndCol);
 
     // Matches against command or space or both as a separator
     public static readonly Regex SeparatorRegex = new(@"(?:\s+)|(?:\s*,\s*)", RegexOptions.Compiled);
@@ -34,8 +34,8 @@ public readonly record struct CommandLine(
 
         var regions = new ArgumentRegion[split.Length];
         for (int i = 0, idx = 0; i < split.Length; i++) {
-            regions[i] = new ArgumentRegion(idx, idx + split[i].Length - 1);
-            idx += split[i].Length + separatorMatch.Length - 1;
+            regions[i] = new ArgumentRegion(idx, idx + split[i].Length);
+            idx += split[i].Length + separatorMatch.Length;
         }
 
         commandLine = new CommandLine {

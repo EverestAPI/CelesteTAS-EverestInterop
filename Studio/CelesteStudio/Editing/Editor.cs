@@ -1301,22 +1301,17 @@ public sealed class Editor : Drawable {
         }
 
         // Use auto-complete entries for current command
-
-        // Split by the first separator
         var commandLine = CommandLine.Parse(line);
         var fullCommandLine = CommandLine.Parse(Document.Lines[Document.Caret.Row]);
-
-        var separatorMatch = CommandLine.SeparatorRegex.Match(line);
-        var args = line.Split(separatorMatch.Value);
-        var allArgs = Document.Lines[Document.Caret.Row].Split(separatorMatch.Value);
 
         if (commandLine == null || commandLine.Value.Arguments.Length == 0 ||
             fullCommandLine == null || fullCommandLine.Value.Arguments.Length == 0)
         {
-            autoCompleteMenu.Entries = baseAutoCompleteEntries;
+            autoCompleteMenu.Entries.Clear();
+            autoCompleteMenu.Entries.AddRange(baseAutoCompleteEntries);
             autoCompleteMenu.Filter = line;
         } else {
-            var command = CommunicationWrapper.Commands.FirstOrDefault(cmd => string.Equals(cmd.Name, args[0], StringComparison.OrdinalIgnoreCase));
+            var command = CommunicationWrapper.Commands.FirstOrDefault(cmd => string.Equals(cmd.Name, commandLine.Value.Command, StringComparison.OrdinalIgnoreCase));
             var commandArgs = commandLine.Value.Arguments[..^1];
             Console.WriteLine($"Args {string.Join('+', commandArgs)}");
 
@@ -1331,7 +1326,7 @@ public sealed class Editor : Drawable {
             autoCompleteMenu.Entries.Add(loadingEntry);
 
             if (!string.IsNullOrEmpty(command.Name)) {
-                int lastArgStart = commandLine.Value.Regions[^1].StartIdx;
+                var lastArgRegion = commandLine.Value.Regions[^1];
 
                 commandAutoCompleteTokenSource?.Cancel();
                 commandAutoCompleteTokenSource?.Dispose();
@@ -1363,12 +1358,7 @@ public sealed class Editor : Drawable {
                             DisplayText = entry.Name,
                             ExtraText = entry.Extra,
                             OnUse = () => {
-                                var insert = entry.FullName;
-
-                                string commandText = Document.Lines[Document.Caret.Row][..commandLine.Value.Regions[^1].EndIdx];
-                                if (commandLine.Value.Arguments.Length != fullCommandLine.Value.Arguments.Length) {
-                                    commandText += separatorMatch.Value;
-                                }
+                                string insert = entry.FullName;
 
                                 var selectedQuickEdit = GetQuickEdits()
                                     .FirstOrDefault(anchor => Document.Caret.Row == anchor.Row &&
@@ -1411,21 +1401,21 @@ public sealed class Editor : Drawable {
                                     }
                                 } else {
                                     if (!entry.IsDone) {
-                                        Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandText.Length, insert);
-                                        Document.Caret.Col = desiredVisualCol = lastArgStart + insert.Length;
+                                        Document.ReplaceRangeInLine(Document.Caret.Row, lastArgRegion.StartCol, lastArgRegion.EndCol, insert);
+                                        Document.Caret.Col = desiredVisualCol = lastArgRegion.StartCol + insert.Length;
                                         Document.Selection.Clear();
 
                                         UpdateAutoComplete();
                                     } else if (entry.HasNext ?? false/*command.Value.AutoCompleteEntries.Length != allArgs.Length - 1*/) {
                                         // Include separator for next argument
-                                        Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandText.Length, insert + separatorMatch.Value);
-                                        Document.Caret.Col = desiredVisualCol = lastArgStart + insert.Length + separatorMatch.Value.Length;
+                                        Document.ReplaceRangeInLine(Document.Caret.Row, lastArgRegion.StartCol, lastArgRegion.EndCol, insert + commandLine.Value.ArgumentSeparator);
+                                        Document.Caret.Col = desiredVisualCol = lastArgRegion.StartCol + insert.Length + commandLine.Value.ArgumentSeparator.Length;
                                         Document.Selection.Clear();
 
                                         UpdateAutoComplete();
                                     } else {
-                                        Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandText.Length, insert);
-                                        Document.Caret.Col = desiredVisualCol = lastArgStart + insert.Length;
+                                        Document.ReplaceRangeInLine(Document.Caret.Row, lastArgRegion.StartCol, lastArgRegion.EndCol, insert);
+                                        Document.Caret.Col = desiredVisualCol = lastArgRegion.StartCol + insert.Length;
                                         Document.Selection.Clear();
 
                                         CloseAutoCompletePopup();
@@ -1453,97 +1443,16 @@ public sealed class Editor : Drawable {
                         await Task.Delay(TimeSpan.FromSeconds(0.25f), token).ConfigureAwait(false);
                     }
                 }, token);
-            }
-
-            /*
-            if (!string.IsNullOrEmpty(command.Name) && command.Value.AutoCompleteEntries.Length >= commandArgs.Length) {
-                int lastArgStart = line.LastIndexOf(args[^1], StringComparison.Ordinal);
-                var entries = command.Value.AutoCompleteEntries[commandArgs.Length - 1](commandArgs);
-
-                autoCompleteMenu.Entries = entries.Select(entry => new PopupMenu.Entry {
-                    SearchText = entry.FullName,
-                    DisplayText = entry.Name,
-                    ExtraText = entry.Extra,
-                    OnUse = () => {
-                        var insert = entry.FullName;
-                        var commandLine = Document.Lines[Document.Caret.Row][..(lastArgStart + args[^1].Length)];
-                        if (allArgs.Length != args.Length) {
-                            commandLine += separatorMatch.Value;
-                        }
-
-                        var selectedQuickEdit = GetQuickEdits()
-                            .FirstOrDefault(anchor => Document.Caret.Row == anchor.Row &&
-                                                      Document.Caret.Col >= anchor.MinCol &&
-                                                      Document.Caret.Col <= anchor.MaxCol);
-
-                        // Jump to the next parameter and open the auto-complete menu if applicable
-                        if (selectedQuickEdit != null) {
-                            // Replace the current quick-edit instead
-                            Document.ReplaceRangeInLine(selectedQuickEdit.Row, selectedQuickEdit.MinCol, selectedQuickEdit.MaxCol, insert);
-
-                            if (entry.IsDone) {
-                                var quickEdits = GetQuickEdits().ToArray();
-                                bool lastQuickEditSelected = quickEdits.Length != 0 &&
-                                                             quickEdits[^1].Row == Document.Caret.Row &&
-                                                             quickEdits[^1].MinCol <= Document.Caret.Col &&
-                                                             quickEdits[^1].MaxCol >= Document.Caret.Col;
-
-                                if (lastQuickEditSelected) {
-                                    ClearQuickEdits();
-                                    Document.Selection.Clear();
-                                    Document.Caret.Col = Document.Lines[Document.Caret.Row].Length;
-
-                                    CloseAutoCompletePopup();
-                                } else {
-                                    SelectNextQuickEdit();
-
-                                    // Don't start a new base auto-complete. Only arguments
-                                    if (!string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row])) {
-                                        UpdateAutoComplete();
-                                    } else {
-                                        CloseAutoCompletePopup();
-                                    }
-                                }
-                            } else {
-                                Document.Selection.Clear();
-                                Document.Caret.Col = selectedQuickEdit.MinCol + insert.Length;
-
-                                UpdateAutoComplete();
-                            }
-                        } else {
-                            if (!entry.IsDone) {
-                                Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, insert);
-                                Document.Caret.Col = desiredVisualCol = lastArgStart + insert.Length;
-                                Document.Selection.Clear();
-
-                                UpdateAutoComplete();
-                            } else if (entry.HasNext ?? command.Value.AutoCompleteEntries.Length != allArgs.Length - 1) {
-                                // Include separator for next argument
-                                Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, insert + separatorMatch.Value);
-                                Document.Caret.Col = desiredVisualCol = lastArgStart + insert.Length + separatorMatch.Value.Length;
-                                Document.Selection.Clear();
-
-                                UpdateAutoComplete();
-                            } else {
-                                Document.ReplaceRangeInLine(Document.Caret.Row, lastArgStart, commandLine.Length, insert);
-                                Document.Caret.Col = desiredVisualCol = lastArgStart + insert.Length;
-                                Document.Selection.Clear();
-
-                                CloseAutoCompletePopup();
-                            }
-                        }
-                    },
-                }).ToList();
             } else {
-                autoCompleteMenu.Entries = [];
+                autoCompleteMenu.Entries.Clear();
+                autoCompleteMenu.Recalc();
             }
-            */
 
-            if (GetSelectedQuickEdit() is { } quickEdit && args[^1] == quickEdit.DefaultText) {
+            if (GetSelectedQuickEdit() is { } quickEdit && commandLine.Value.Arguments[^1] == quickEdit.DefaultText) {
                 // Display all entries when quick-edit still contains the default
                 autoCompleteMenu.Filter = string.Empty;
             } else {
-                autoCompleteMenu.Filter = args[^1];
+                autoCompleteMenu.Filter = commandLine.Value.Arguments[^1];
             }
         }
     }

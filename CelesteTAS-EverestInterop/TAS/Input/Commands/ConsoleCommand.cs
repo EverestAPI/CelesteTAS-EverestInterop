@@ -145,7 +145,7 @@ public static class ConsoleCommand {
             LoadCommand(commandName, commandArgs, slot);
         } else {
             // C# Debug Console uses the history to parse the arguments itself, so we have to temporarily insert it there
-            Engine.Commands.commandHistory.Insert(0, commandLine.OriginalText[commandLine.Regions[1].StartIdx..]);
+            Engine.Commands.commandHistory.Insert(0, commandLine.OriginalText[commandLine.Regions[1].StartCol..]);
             Engine.Commands.ExecuteCommand(commandName, commandArgs);
             Engine.Commands.commandHistory.RemoveAt(0);
         }

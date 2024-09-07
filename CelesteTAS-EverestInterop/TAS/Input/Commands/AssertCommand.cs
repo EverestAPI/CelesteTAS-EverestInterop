@@ -42,7 +42,7 @@ public static class AssertCommand {
         } else {
             var condition = Enum.Parse<AssertCondition>(args[0], ignoreCase: true); // Must succeed, since this was checked in Parse
             string expected = args[1];
-            string actualTemplate = commandLine.OriginalText[commandLine.Regions[3].StartIdx..];
+            string actualTemplate = commandLine.OriginalText[commandLine.Regions[3].StartCol..];
 
             Running = true;
             string actual = InfoCustom.ParseTemplate(actualTemplate, 0, [], false);
