@@ -30,7 +30,7 @@ public static class CommunicationWrapper {
             return;
         }
 
-        comm = new CommunicationAdapterStudio(OnConnectionChanged, OnStateChanged, OnLinesChanged, OnBindingsChanged, OnSettingsChanged, OnCommandsChanged);
+        comm = new CommunicationAdapterStudio(OnConnectionChanged, OnStateChanged, OnLinesChanged, OnBindingsChanged, OnSettingsChanged, OnCommandsChanged, OnCommandAutoCompleteResponse);
     }
     public static void Stop() {
         if (comm == null) {
@@ -43,6 +43,8 @@ public static class CommunicationWrapper {
     }
 
     private static void OnConnectionChanged() {
+        autoCompleteEntryCache.Clear();
+
         Application.Instance.AsyncInvoke(() => ConnectionChanged?.Invoke());
     }
     private static void OnStateChanged(StudioState newState) {
@@ -64,6 +66,8 @@ public static class CommunicationWrapper {
         Application.Instance.AsyncInvoke(() => SettingsChanged?.Invoke(newSettings));
     }
     private static void OnCommandsChanged(CommandInfo[] newCommands) {
+        autoCompleteEntryCache.Clear();
+
         commands = newCommands;
         for (var i = 0; i < newCommands.Length; i++)
         {
@@ -187,6 +191,34 @@ public static class CommunicationWrapper {
         }
 
         return (string?)comm!.RequestGameData(GameDataType.ExactGameInfo).Result ?? string.Empty;
+    }
+
+    // The hashcode is stored instead of the actual key, since it is used as an identifier in responses from Celeste
+    private static readonly Dictionary<int, (List<CommandAutoCompleteEntry> Entries, bool Done)> autoCompleteEntryCache = [];
+    public static (List<CommandAutoCompleteEntry> Entries, bool Done) RequestAutoCompleteEntries(string commandName, string[] commandArgs) {
+        if (!Connected) {
+            return (Entries: [], Done: true);
+        }
+
+        int hash = commandName.GetStableHashCode();
+        foreach (var arg in commandArgs) {
+            hash = 31 * hash + arg.GetStableHashCode();
+        }
+
+        if (autoCompleteEntryCache.TryGetValue(hash, out var entries)) {
+            return entries;
+        }
+        var result = autoCompleteEntryCache[hash] = (Entries: [], Done: false);
+
+        comm!.WriteCommandAutoCompleteRequest(hash, commandName, commandArgs);
+        return result;
+    }
+
+    private static void OnCommandAutoCompleteResponse(int hash, CommandAutoCompleteEntry[] entries, bool done) {
+        var result = autoCompleteEntryCache[hash];
+        result.Entries.AddRange(entries);
+        result.Done = result.Done || done;
+        autoCompleteEntryCache[hash] = result;
     }
 
     private static async Task<CommandAutoCompleteEntry[]> RequestAutoCompleteEntries(GameDataType gameDataType, string argsText, int index) {

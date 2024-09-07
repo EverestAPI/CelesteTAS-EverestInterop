@@ -13,7 +13,7 @@ public static class PressCommand {
         public string Insert => $"Press{CommandInfo.Separator}[0;Key1{CommandInfo.Separator}Key2...]";
         public bool HasArguments => true;
 
-        public async IAsyncEnumerable<CommandAutoCompleteEntry> GetAutoCompleteEntries(CommandLine commandLine, int argumentIndex) {
+        public async IAsyncEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args) {
             foreach (var key in Enum.GetValues<Keys>()) {
                 yield return new CommandAutoCompleteEntry {
                     Name = key.ToString(),
@@ -21,7 +21,7 @@ public static class PressCommand {
                     IsDone = true
                 };
 
-                await Task.Delay(TimeSpan.FromSeconds(1.0f)).ConfigureAwait(false);
+                await Task.Delay(TimeSpan.FromSeconds(0.1f)).ConfigureAwait(false);
             }
         }
     }

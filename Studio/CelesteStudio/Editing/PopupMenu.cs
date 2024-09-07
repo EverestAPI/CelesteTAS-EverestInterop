@@ -20,17 +20,17 @@ public sealed class PopupMenu : Scrollable {
         /// Whether the entry can be selected.
         public bool Disabled = false;
     }
-    
+
     /// Spacing between the longest DisplayText and ExtraText of entries in characters
     private const int DisplayExtraPadding = 2;
-    
+
     private int ScrollBarWidth {
         get {
             bool scrollBarVisible = Height < ContentHeight && Height > 0;
             if (!scrollBarVisible) {
                 return 0;
             }
-            
+
             if (Eto.Platform.Instance.IsWpf) {
                 return 17;
             }
@@ -43,29 +43,29 @@ public sealed class PopupMenu : Scrollable {
             return 0;
         }
     }
-    
+
     private sealed class ContentDrawable : Drawable {
         private readonly PopupMenu menu;
-        
+
         // Specify a minimum-travel-distance to avoid very small mouse movements updating the selection
         private const float MinMouseTravelDistance = 5.0f;
         private PointF lastMouseSelection;
-        
+
         public ContentDrawable(PopupMenu menu) {
             this.menu = menu;
-            
+
             BackgroundColor = Colors.Transparent; // Draw background ourselves to apply rounded corners
 
             MouseEnter += (_, _) => Invalidate();
             MouseLeave += (_, _) => Invalidate();
             menu.Scroll += (_, _) => Invalidate();
         }
-        
-        protected override void OnPaint(PaintEventArgs e) { 
+
+        protected override void OnPaint(PaintEventArgs e) {
             e.Graphics.FillPath(
-                Settings.Instance.Theme.PopupMenuBg, 
+                Settings.Instance.Theme.PopupMenuBg,
                 GraphicsPath.GetRoundRect(new RectangleF(menu.ScrollPosition.X, menu.ScrollPosition.Y, menu.Width, menu.Height), Settings.Instance.Theme.PopupMenuBorderRounding));
-            
+
             if (menu.shownEntries.Length == 0) {
                 return;
             }
@@ -75,50 +75,50 @@ public sealed class PopupMenu : Scrollable {
 
             float width = menu.ContentWidth - Settings.Instance.Theme.PopupMenuBorderPadding * 2.0f;
             float height = menu.EntryHeight;
-            
+
             const int rowCullOverhead = 3;
             int minRow = Math.Max(0, (int)(menu.ScrollPosition.Y / height) - rowCullOverhead);
             int maxRow = Math.Min(menu.shownEntries.Length - 1, (int)((menu.ScrollPosition.Y + menu.ClientSize.Height) / height) + rowCullOverhead);
-            
+
             using var displayEnabledBrush = new SolidBrush(Settings.Instance.Theme.PopupMenuFg);
             using var displayDisabledBrush = new SolidBrush(Settings.Instance.Theme.PopupMenuFgDisabled);
             using var extraBrush = new SolidBrush(Settings.Instance.Theme.PopupMenuFgExtra);
-            
+
             for (int row = minRow; row <= maxRow; row++) {
                 var entry = menu.shownEntries[row];
-                
+
                 if (row == menu.SelectedEntry && !entry.Disabled) {
                     e.Graphics.FillPath(
-                        Settings.Instance.Theme.PopupMenuSelected, 
+                        Settings.Instance.Theme.PopupMenuSelected,
                         GraphicsPath.GetRoundRect(
-                            new RectangleF(Settings.Instance.Theme.PopupMenuBorderPadding, 
-                                row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f, 
-                                width, 
-                                height - Settings.Instance.Theme.PopupMenuEntrySpacing), 
+                            new RectangleF(Settings.Instance.Theme.PopupMenuBorderPadding,
+                                row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f,
+                                width,
+                                height - Settings.Instance.Theme.PopupMenuEntrySpacing),
                             Settings.Instance.Theme.PopupMenuEntryRounding));
                 }
 
                 var displayBrush = entry.Disabled ? displayDisabledBrush : displayEnabledBrush;
                 e.Graphics.DrawText(font, displayBrush,
                     Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding,
-                    Settings.Instance.Theme.PopupMenuBorderPadding + row * height + Settings.Instance.Theme.PopupMenuEntryVerticalPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f, 
+                    Settings.Instance.Theme.PopupMenuBorderPadding + row * height + Settings.Instance.Theme.PopupMenuEntryVerticalPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f,
                     entry.DisplayText);
                 e.Graphics.DrawText(font, extraBrush,
                     Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding + font.CharWidth() * (maxDisplayLen + DisplayExtraPadding),
-                    Settings.Instance.Theme.PopupMenuBorderPadding + row * height + Settings.Instance.Theme.PopupMenuEntryVerticalPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f, 
+                    Settings.Instance.Theme.PopupMenuBorderPadding + row * height + Settings.Instance.Theme.PopupMenuEntryVerticalPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f,
                     entry.ExtraText);
             }
-            
+
             Size = new(menu.ContentWidth, menu.ContentHeight);
-            
+
             base.OnPaint(e);
         }
-        
+
         protected override void OnMouseMove(MouseEventArgs e) {
             int mouseRow = (int)((e.Location.Y - Settings.Instance.Theme.PopupMenuBorderPadding) / menu.EntryHeight);
             if (mouseRow >= 0 && mouseRow < menu.shownEntries.Length && !menu.shownEntries[mouseRow].Disabled) {
                 Cursor = Cursors.Pointer;
-                
+
                 if ((e.Location - lastMouseSelection).LengthSquared >= MinMouseTravelDistance * MinMouseTravelDistance) {
                     menu.SelectedEntry = mouseRow;
                     lastMouseSelection = e.Location;
@@ -126,27 +126,27 @@ public sealed class PopupMenu : Scrollable {
             } else {
                 Cursor = null;
             }
-            
+
             Invalidate();
             base.OnMouseMove(e);
         }
-        
+
         protected override void OnMouseDown(MouseEventArgs e) {
             e.Handled = true;
-            
+
             if (e.Buttons.HasFlag(MouseButtons.Primary)) {
                 int mouseRow = (int)(e.Location.Y / menu.EntryHeight);
                 if (mouseRow >= 0 && mouseRow < menu.shownEntries.Length && !menu.shownEntries[mouseRow].Disabled) {
                     menu.shownEntries[mouseRow].OnUse();
                 }
             }
-            
+
             base.OnMouseDown(e);
         }
-        
+
         protected override void OnMouseWheel(MouseEventArgs e) {
             if (Settings.Instance.ScrollSpeed > 0.0f) {
-                // Manually scroll to respect our scroll speed 
+                // Manually scroll to respect our scroll speed
                 menu.ScrollPosition = menu.ScrollPosition with {
                     Y = Math.Clamp((int)(menu.ScrollPosition.Y - e.Delta.Height * menu.EntryHeight * Settings.Instance.ScrollSpeed), 0, Height - menu.ClientSize.Height)
                 };
@@ -156,7 +156,7 @@ public sealed class PopupMenu : Scrollable {
             base.OnMouseWheel(e);
         }
     }
-    
+
     public override bool Visible {
         get => base.Visible;
         set {
@@ -165,7 +165,7 @@ public sealed class PopupMenu : Scrollable {
             selectedEntry = 0;
         }
     }
-    
+
     private string filter = string.Empty;
     public string Filter {
         get => filter;
@@ -174,7 +174,7 @@ public sealed class PopupMenu : Scrollable {
             Recalc();
         }
     }
-    
+
     private List<Entry> entries = [];
     public List<Entry> Entries {
         get => entries;
@@ -183,7 +183,7 @@ public sealed class PopupMenu : Scrollable {
             Recalc();
         }
     }
-    
+
     private int selectedEntry;
     public int SelectedEntry {
         get => selectedEntry;
@@ -192,18 +192,18 @@ public sealed class PopupMenu : Scrollable {
             drawable.Invalidate();
         }
     }
-    
+
     public int ContentWidth {
         set => Width = Math.Max(0, value + ScrollBarWidth);
         get {
             if (shownEntries.Length == 0) {
                 return 0;
             }
-            
+
             var font = FontManager.PopupFont;
             int maxDisplayLen = shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
             int maxExtraLen = shownEntries.Select(entry => entry.ExtraText.Length).Aggregate(Math.Max);
-            
+
             return (int)(font.CharWidth() * (maxDisplayLen + DisplayExtraPadding + maxExtraLen) + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding * 2.0f + Settings.Instance.Theme.PopupMenuBorderPadding * 2);
         }
     }
@@ -211,12 +211,12 @@ public sealed class PopupMenu : Scrollable {
         set => Height = Math.Max(0, value);
         get => shownEntries.Length * EntryHeight + Settings.Instance.Theme.PopupMenuBorderPadding * 2;
     }
-    
+
     public int EntryHeight => (int)(FontManager.PopupFont.LineHeight() + Settings.Instance.Theme.PopupMenuEntryVerticalPadding * 2.0f + Settings.Instance.Theme.PopupMenuEntrySpacing);
-    
+
     private Entry[] shownEntries = [];
     private readonly ContentDrawable drawable;
-    
+
     public PopupMenu() {
         drawable = new ContentDrawable(this);
         Content = drawable;
@@ -224,14 +224,14 @@ public sealed class PopupMenu : Scrollable {
 
         Recalc();
     }
-    
-    private void Recalc() {
-        shownEntries = entries.Where(entry => entry.SearchText.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase)).ToArray();
+
+    public void Recalc() {
+        shownEntries = entries.Where(entry => string.IsNullOrEmpty(entry.SearchText) || entry.SearchText.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase)).ToArray();
         if (shownEntries.Length == 0) {
             Visible = false;
             return;
         }
-        
+
         selectedEntry = Math.Clamp(selectedEntry, 0, shownEntries.Length - 1);
 
         // The +1 is a hack-fix for GTK.
@@ -241,21 +241,21 @@ public sealed class PopupMenu : Scrollable {
         drawable.Size = new(ContentWidth, ContentHeight + 1);
         drawable.Invalidate();
     }
-    
+
     private void ScrollIntoView() {
         const int lookAhead = 2;
-        
+
         int entryHeight = EntryHeight;
         int scrollStartTop = ScrollPosition.Y + lookAhead * entryHeight - Settings.Instance.Theme.PopupMenuBorderPadding;
         int scrollStartBottom = ScrollPosition.Y + ClientSize.Height - lookAhead * entryHeight + Settings.Instance.Theme.PopupMenuBorderPadding;
-        
+
         int selectedTop = SelectedEntry * entryHeight - Settings.Instance.Theme.PopupMenuBorderPadding;
         int selectedBottom = selectedTop + entryHeight + Settings.Instance.Theme.PopupMenuBorderPadding;
-        
+
         if (selectedTop < scrollStartTop) {
             ScrollPosition = ScrollPosition with { Y = Math.Max(0, selectedTop - lookAhead * entryHeight + Settings.Instance.Theme.PopupMenuBorderPadding) };
         } else if (selectedBottom > scrollStartBottom) {
-            ScrollPosition = ScrollPosition with { Y = Math.Min(shownEntries.Length * entryHeight - ClientSize.Height + Settings.Instance.Theme.PopupMenuBorderPadding * 2, selectedBottom + lookAhead * entryHeight + Settings.Instance.Theme.PopupMenuBorderPadding * 2 - ClientSize.Height) }; 
+            ScrollPosition = ScrollPosition with { Y = Math.Min(shownEntries.Length * entryHeight - ClientSize.Height + Settings.Instance.Theme.PopupMenuBorderPadding * 2, selectedBottom + lookAhead * entryHeight + Settings.Instance.Theme.PopupMenuBorderPadding * 2 - ClientSize.Height) };
         }
     }
 
@@ -268,16 +268,16 @@ public sealed class PopupMenu : Scrollable {
                 return;
             }
         } while (shownEntries[nextSelection].Disabled);
-            
+
         // Found a non-disabled entry
         SelectedEntry = nextSelection;
         ScrollIntoView();
     }
-    
+
     public bool HandleKeyDown(KeyEventArgs e, bool useTabComplete) {
         if (!Visible)
             return false;
-        
+
         if (e.Key == Keys.Up) {
             MoveSelection(-1);
             return true;
@@ -287,14 +287,16 @@ public sealed class PopupMenu : Scrollable {
             return true;
         }
         if (e.Key == Keys.Enter || useTabComplete && e.Key == Keys.Tab) {
-            shownEntries[SelectedEntry].OnUse();
+            if (!shownEntries[SelectedEntry].Disabled) {
+                shownEntries[SelectedEntry].OnUse();
+            }
             return true;
         }
         if (e.Key == Keys.Escape) {
             Visible = false;
             return true;
         }
-        
+
         return false;
     }
 }

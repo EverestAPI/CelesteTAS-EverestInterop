@@ -143,6 +143,68 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 });
                 break;
 
+            case MessageID.RequestCommandAutoComplete:
+                int hash = reader.ReadInt32();
+                string commandName = reader.ReadString();
+                string[] commandArgs = reader.ReadObject<string[]>();
+                LogVerbose($"Received message RequestCommandAutoComplete: '{commandName}' '{string.Join(' ', commandArgs)}' ({hash})");
+
+                var meta = Command.GetMeta(commandName);
+                if (meta == null) {
+                    return;
+                }
+
+                List<CommandAutoCompleteEntry> entries = [];
+                bool done = false;
+
+                // Collect entries
+                Task.Run(async () => {
+                    var enumerator = meta.GetAutoCompleteEntries(commandArgs);
+                    while (Connected && await enumerator.MoveNextAsync().ConfigureAwait(false)) {
+                        lock(entries) {
+                            entries.Add(enumerator.Current);
+                        }
+                    }
+                    done = true;
+                });
+                // Send entries
+                Task.Run(async () => {
+                    CommandAutoCompleteEntry[] entriesToWrite;
+
+                    while (Connected && !done) {
+                        lock(entries) {
+                            if (entries.Count == 0) {
+                                continue;
+                            }
+
+                            entriesToWrite = entries.ToArray();
+                            entries.Clear();
+                        }
+
+                        QueueMessage(MessageID.CommandAutoComplete, writer => {
+                            writer.Write(hash);
+                            writer.WriteObject(entriesToWrite);
+                            writer.Write(/*done*/false);
+                        });
+                        LogVerbose($"Sent message CommandAutoComplete: {entriesToWrite.Length} [incremental] ({hash})");
+
+                        await Task.Delay(TimeSpan.FromSeconds(0.1f)).ConfigureAwait(false);
+                    }
+
+                    lock(entries) {
+                        entriesToWrite = entries.ToArray();
+                        entries.Clear();
+                    }
+
+                    QueueMessage(MessageID.CommandAutoComplete, writer => {
+                        writer.Write(hash);
+                        writer.WriteObject(entriesToWrite);
+                        writer.Write(/*done*/true);
+                    });
+                    LogVerbose($"Sent message CommandAutoComplete: {entriesToWrite.Length} [done] ({hash})");
+                });
+                break;
+
             case MessageID.GameSettings:
                 var settings = reader.ReadObject<GameSettings>();
                 LogVerbose("Received message GameSettings");

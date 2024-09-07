@@ -15,7 +15,8 @@ public sealed class CommunicationAdapterStudio(
     Action<Dictionary<int, string>> linesChanged,
     Action<Dictionary<HotkeyID, List<WinFormsKeys>>> bindingsChanged,
     Action<GameSettings> settingsChanged,
-    Action<CommandInfo[]> commandsChanged) : CommunicationAdapterBase(Location.Studio)
+    Action<CommandInfo[]> commandsChanged,
+    Action<int, CommandAutoCompleteEntry[], bool> commandAutoCompleteResponse) : CommunicationAdapterBase(Location.Studio)
 {
     private readonly EnumDictionary<GameDataType, object?> gameData = new();
     private readonly EnumDictionary<GameDataType, bool> gameDataPending = new();
@@ -113,7 +114,15 @@ public sealed class CommunicationAdapterStudio(
                 LogVerbose($"Received message CommandList: {commands.Length}");
 
                 commandsChanged(commands);
+                break;
 
+            case MessageID.CommandAutoComplete:
+                int hash = reader.ReadInt32();
+                var entries = reader.ReadObject<CommandAutoCompleteEntry[]>();
+                bool done = reader.ReadBoolean();
+                LogVerbose($"Received message CommandAutoComplete: {entries.Length} {done} ({hash})");
+
+                commandAutoCompleteResponse(hash, entries, done);
                 break;
 
             case MessageID.GameSettings:
@@ -139,6 +148,14 @@ public sealed class CommunicationAdapterStudio(
             writer.Write(released);
         });
         LogVerbose($"Sent message Hotkey: {hotkey} ({(released ? "released" : "pressed")})");
+    }
+    public void WriteCommandAutoCompleteRequest(int hash, string commandName, string[] commandArgs) {
+        QueueMessage(MessageID.RequestCommandAutoComplete, writer => {
+            writer.Write(hash);
+            writer.Write(commandName);
+            writer.WriteObject(commandArgs);
+        });
+        LogVerbose($"Sent message RequestCommandAutoComplete: '{commandName}' '{string.Join(' ', commandArgs)}' ({hash})");
     }
     public void WriteSettings(GameSettings settings) {
         QueueMessage(MessageID.GameSettings, writer => writer.WriteObject(settings));

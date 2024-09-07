@@ -145,6 +145,10 @@ public readonly record struct Command(
         CommunicationWrapper.SendCommandList();
     }
 
+    internal static ITasCommandMeta? GetMeta(string commandName) {
+        return Commands.FirstOrDefault(command => command.IsName(commandName))?.MetaData;
+    }
+
     internal static CommandInfo[] GetCommandList() =>
         Commands
             .Select(command => {

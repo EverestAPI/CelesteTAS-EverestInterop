@@ -9,5 +9,5 @@ public interface ITasCommandMeta {
     public string Insert { get; }
     public bool HasArguments { get; }
 
-    public IAsyncEnumerable<CommandAutoCompleteEntry> GetAutoCompleteEntries(CommandLine commandLine, int argumentIndex);
+    public IAsyncEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args);
 }
