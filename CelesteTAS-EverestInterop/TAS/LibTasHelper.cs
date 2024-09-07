@@ -254,7 +254,8 @@ public static class LibTasHelper {
 
     // Add, input
     [TasCommand("Add", ExecuteTiming = ExecuteTiming.Parse)]
-    private static void AddCommand(string[] args) {
+    private static void AddCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         if (args.Length > 0) {
             AddInputFrame(string.Join(",", args));
         }
@@ -262,7 +263,7 @@ public static class LibTasHelper {
 
     // Skip next input
     [TasCommand("Skip", ExecuteTiming = ExecuteTiming.Parse)]
-    private static void SkipCommand() {
+    private static void SkipCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         if (Exporting) {
             skipNextInput = true;
         }
@@ -270,7 +271,8 @@ public static class LibTasHelper {
 
     // Add a marker for auto pause on libTAS
     [TasCommand("Marker", ExecuteTiming = ExecuteTiming.Parse)]
-    private static void MarkerCommand(string[] args) {
+    private static void MarkerCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         if (Exporting) {
             string text = args.IsEmpty() ? "" : args[0];
             int count = markers.Count + 1;

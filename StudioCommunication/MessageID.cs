@@ -35,6 +35,12 @@ public enum MessageID : byte {
     /// Response for the RequestGameData message to Studio
     GameDataResponse = 0x14,
 
+    /// Sends all registered TAS commands with metadata to Studio
+    CommandList = 0x15,
+
+    /// Sends incremental auto-complete results about a specific command-line to Studio
+    CommandAutoComplete = 0x16,
+
     #endregion
 
     #region Studio to Celeste
@@ -47,6 +53,9 @@ public enum MessageID : byte {
 
     /// Sends a request for certain game data to Celeste
     RequestGameData = 0x22,
+
+    /// Sends a request for auto-complete results about a specific command-line to Celeste
+    RequestCommandAutoComplete = 0x23,
 
     /// Sends a new custom info template to Celeste
     SetCustomInfoTemplate = 0x24,

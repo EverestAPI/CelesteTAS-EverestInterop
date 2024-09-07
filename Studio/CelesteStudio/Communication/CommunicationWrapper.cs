@@ -15,12 +15,14 @@ public static class CommunicationWrapper {
     public static event Action<StudioState, StudioState>? StateUpdated;
     public static event Action<Dictionary<int, string>>? LinesUpdated;
     public static event Action<GameSettings>? SettingsChanged;
+    public static event Action<CommandInfo[]>? CommandsChanged;
 
     private static CommunicationAdapterStudio? comm;
 
     private static StudioState state = new();
     private static Dictionary<HotkeyID, List<WinFormsKeys>> bindings = [];
     private static GameSettings settings = new();
+    private static CommandInfo[] commands = [];
 
     public static void Start() {
         if (comm != null) {
@@ -28,7 +30,7 @@ public static class CommunicationWrapper {
             return;
         }
 
-        comm = new CommunicationAdapterStudio(OnConnectionChanged, OnStateChanged, OnLinesChanged, OnBindingsChanged, OnSettingsChanged);
+        comm = new CommunicationAdapterStudio(OnConnectionChanged, OnStateChanged, OnLinesChanged, OnBindingsChanged, OnSettingsChanged, OnCommandsChanged);
     }
     public static void Stop() {
         if (comm == null) {
@@ -60,6 +62,14 @@ public static class CommunicationWrapper {
     private static void OnSettingsChanged(GameSettings newSettings) {
         settings = newSettings;
         Application.Instance.AsyncInvoke(() => SettingsChanged?.Invoke(newSettings));
+    }
+    private static void OnCommandsChanged(CommandInfo[] newCommands) {
+        commands = newCommands;
+        for (var i = 0; i < newCommands.Length; i++)
+        {
+            Console.WriteLine($"TAS COMMAND {newCommands[i].Name}");
+        }
+        Application.Instance.AsyncInvoke(() => CommandsChanged?.Invoke(newCommands));
     }
 
     public static void ForceReconnect() {
@@ -135,6 +145,7 @@ public static class CommunicationWrapper {
     #region Data
 
     public static GameSettings GameSettings => settings;
+    public static CommandInfo[] Commands => commands;
 
     public static int CurrentLine => Connected ? state.CurrentLine : -1;
     public static string CurrentLineSuffix => Connected ? state.CurrentLineSuffix : string.Empty;

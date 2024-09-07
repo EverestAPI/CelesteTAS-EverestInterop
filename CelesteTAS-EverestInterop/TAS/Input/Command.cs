@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using TAS.Communication;
 using TAS.Module;
 using TAS.Utils;
 
@@ -36,18 +37,28 @@ public class TasCommandAttribute(string name) : Attribute {
     /// Timing when this command should be executed
     public ExecuteTiming ExecuteTiming = ExecuteTiming.Runtime;
 
+    /// Optional type which implements the <see cref="ITasCommandMeta"/> interface,
+    /// to provide additional metadata about the command for Studio
+    public Type? MetaDataProvider = null;
+    internal ITasCommandMeta? MetaData = null;
+
     internal MethodInfo m_Execute = null!;
     public void Execute(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         m_Execute.Invoke(null, [commandLine, studioLine, filePath, fileLine]);
     }
 
 #if DEBUG
-    internal void AssertSignature() {
-        var currMethod = typeof(TasCommandAttribute).GetMethod(nameof(Execute))!;
+    internal void Validate() {
+        $"Validating command '{Name}'...".Log(LogLevel.Debug);
+        var executeMethod = typeof(TasCommandAttribute).GetMethod(nameof(Execute))!;
         Debug.Assert(m_Execute != null);
-        Debug.Assert(m_Execute.GetParameters().Length == currMethod.GetParameters().Length);
+        Debug.Assert(m_Execute.GetParameters().Length == executeMethod.GetParameters().Length);
         for (int i = 0; i < m_Execute.GetParameters().Length; i++) {
-            Debug.Assert(m_Execute.GetParameters()[i].ParameterType == currMethod.GetParameters()[i].ParameterType);
+            Debug.Assert(m_Execute.GetParameters()[i].ParameterType == executeMethod.GetParameters()[i].ParameterType);
+        }
+
+        if (MetaDataProvider != null) {
+            Debug.Assert(typeof(ITasCommandMeta).IsAssignableFrom(MetaDataProvider));
         }
     }
 #endif
@@ -123,10 +134,22 @@ public readonly record struct Command(
                 var attr = method.GetCustomAttribute<TasCommandAttribute>()!;
                 attr.m_Execute = method; // Bind execution method
 #if DEBUG
-                attr.AssertSignature();
+                attr.Validate();
 #endif
+                if (attr.MetaDataProvider != null) {
+                    attr.MetaData = (ITasCommandMeta?)Activator.CreateInstance(attr.MetaDataProvider);
+                }
                 return attr;
             }));
 
+        CommunicationWrapper.SendCommandList();
     }
+
+    internal static CommandInfo[] GetCommandList() =>
+        Commands
+            .Select(command => {
+                var meta = command.MetaData;
+                return new CommandInfo(command.Name, meta?.Description ?? string.Empty, meta?.Insert ?? command.Name, meta?.HasArguments ?? false);
+            })
+            .ToArray();
 }

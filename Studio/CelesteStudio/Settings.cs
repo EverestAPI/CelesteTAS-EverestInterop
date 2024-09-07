@@ -11,6 +11,7 @@ using CelesteStudio.Util;
 using Eto;
 using Eto.Drawing;
 using Eto.Forms;
+using System.Diagnostics;
 using System.Net;
 using Tomlet;
 using Tomlet.Attributes;
@@ -127,6 +128,14 @@ public sealed class Settings {
     public LineNumberAlignment LineNumberAlignment { get; set; } = LineNumberAlignment.Left;
 
     public bool CompactMenuBar { get; set; } = false;
+
+    [TomlNonSerialized]
+    public string CommandSeparatorText => CommandSeparator switch {
+        CommandSeparator.Space => " ",
+        CommandSeparator.Comma => ",",
+        CommandSeparator.CommaSpace => ", ",
+        _ => throw new UnreachableException()
+    };
 
     #endregion
     #region View

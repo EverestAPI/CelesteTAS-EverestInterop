@@ -159,7 +159,7 @@ public sealed class Studio : Form {
 
             // Only enable some settings while connected
             CommunicationWrapper.ConnectionChanged += () => Application.Instance.Invoke(() => {
-                CommandInfo.ResetCache();
+                LegacyCommandInfo.ResetCache();
                 Menu = CreateMenu();
             });
         }
@@ -250,12 +250,7 @@ public sealed class Studio : Form {
         Topmost = Settings.Instance.AlwaysOnTop;
         Menu = CreateMenu(); // Recreate menu to reflect changes
 
-        CommandInfo.GenerateCommandInfos(Settings.Instance.CommandSeparator switch {
-            CommandSeparator.Space => " ",
-            CommandSeparator.Comma => ",",
-            CommandSeparator.CommaSpace => ", ",
-            _ => throw new UnreachableException()
-        });
+        LegacyCommandInfo.GenerateCommandInfos(Settings.Instance.CommandSeparatorText);
     }
 
     protected override void OnDragDrop(DragEventArgs e) {

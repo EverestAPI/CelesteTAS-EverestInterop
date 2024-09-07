@@ -245,7 +245,11 @@ public sealed class Editor : Drawable {
 
         Focus();
 
-        // Reflect setting changes
+        CommunicationWrapper.CommandsChanged += _ => {
+            GenerateBaseAutoCompleteEntries();
+            Recalc();
+        };
+        // Update command separator
         Settings.Changed += () => {
             GenerateBaseAutoCompleteEntries();
             Recalc();
@@ -302,7 +306,7 @@ public sealed class Editor : Drawable {
 
         void GenerateCommandMenu() {
             commandsMenu.Items.Clear();
-            foreach (var command in CommandInfo.AllCommands) {
+            foreach (var command in LegacyCommandInfo.AllCommands) {
                 if (command == null) {
                     commandsMenu.Items.Add(new SeparatorMenuItem());
                 } else {
@@ -366,7 +370,7 @@ public sealed class Editor : Drawable {
             }
         };
 
-        MenuItem CreateCommandInsert(CommandInfo info) {
+        MenuItem CreateCommandInsert(LegacyCommandInfo info) {
             var cmd = new Command { Shortcut = Keys.None };
             cmd.Executed += (_, _) => {
                 InsertQuickEdit(info.Insert);
@@ -1200,23 +1204,21 @@ public sealed class Editor : Drawable {
 
         foreach (var snippet in Settings.Instance.Snippets) {
             if (!string.IsNullOrWhiteSpace(snippet.Shortcut) && snippet.Enabled &&
-                CreateEntry(snippet.Shortcut, snippet.Insert, "Snippet", []) is { } entry)
+                CreateEntry(snippet.Shortcut, snippet.Insert, "Snippet", hasArguments: false) is { } entry)
             {
                 baseAutoCompleteEntries.Add(entry);
             }
         }
-        foreach (var command in CommandInfo.AllCommands) {
-            if (command != null &&
-                CreateEntry(command.Value.Name, command.Value.Insert, "Command", command.Value.AutoCompleteEntries) is { } entry)
-            {
+        foreach (var command in CommunicationWrapper.Commands) {
+            if (CreateEntry(command.Name, command.Insert.Replace(CommandInfo.Separator, Settings.Instance.CommandSeparatorText), "Command", command.HasArguments) is { } entry) {
                 baseAutoCompleteEntries.Add(entry);
             }
         }
 
         return;
 
-        PopupMenu.Entry? CreateEntry(string name, string insert, string extra, Func<string[], CommandAutoCompleteEntry[]>[] commandAutoCompleteEntries) {
-            if (CreateQuickEditAction(insert, commandAutoCompleteEntries) is not { } action) {
+        PopupMenu.Entry? CreateEntry(string name, string insert, string extra, bool hasArguments) {
+            if (CreateQuickEditAction(insert, hasArguments) is not { } action) {
                 return null;
             }
 
@@ -1230,7 +1232,7 @@ public sealed class Editor : Drawable {
     }
 
     /// Creates an action, which will insert the quick edit when invoked
-    private Action? CreateQuickEditAction(string insert, Func<string[], CommandAutoCompleteEntry[]>[] commandAutoCompleteEntries) {
+    private Action? CreateQuickEditAction(string insert, bool hasArguments) {
         var quickEdit = QuickEdit.Parse(insert);
         if (quickEdit == null) {
             return null;
@@ -1264,7 +1266,7 @@ public sealed class Editor : Drawable {
                 Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
             }
 
-            if (commandAutoCompleteEntries.Length != 0) {
+            if (hasArguments) {
                 // Keep open for arguments (but not a new base auto-complete)
                 if (!string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row])) {
                     UpdateAutoComplete();
@@ -1304,7 +1306,7 @@ public sealed class Editor : Drawable {
             autoCompleteMenu.Entries = baseAutoCompleteEntries;
             autoCompleteMenu.Filter = line;
         } else {
-            var command = CommandInfo.AllCommands.FirstOrDefault(cmd => string.Equals(cmd?.Name, args[0], StringComparison.OrdinalIgnoreCase));
+            var command = LegacyCommandInfo.AllCommands.FirstOrDefault(cmd => string.Equals(cmd?.Name, args[0], StringComparison.OrdinalIgnoreCase));
             var commandArgs = args[1..];
 
             if (command != null && command.Value.AutoCompleteEntries.Length >= commandArgs.Length) {

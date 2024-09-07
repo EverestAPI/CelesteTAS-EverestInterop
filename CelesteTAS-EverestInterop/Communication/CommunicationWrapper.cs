@@ -3,6 +3,7 @@ using System.Linq;
 using Celeste.Mod;
 using StudioCommunication;
 using TAS.EverestInterop;
+using TAS.Input;
 using TAS.Module;
 using TAS.Utils;
 
@@ -86,6 +87,13 @@ public static class CommunicationWrapper {
         }
 
         comm.WriteSettings(settings);
+    }
+    public static void SendCommandList() {
+        if (!Connected) {
+            return;
+        }
+
+        comm.WriteCommandList(Command.GetCommandList());
     }
 
     #endregion

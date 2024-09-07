@@ -34,6 +34,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
 
             CommunicationWrapper.SendCurrentBindings();
             CommunicationWrapper.SendSettings(TasSettings.StudioShared);
+            CommunicationWrapper.SendCommandList();
         }
     }
 
@@ -175,6 +176,10 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
     public void WriteSettings(GameSettings settings) {
         QueueMessage(MessageID.GameSettings, writer => writer.WriteObject(settings));
         LogVerbose("Sent message GameSettings");
+    }
+    public void WriteCommandList(CommandInfo[] commands) {
+        QueueMessage(MessageID.CommandList, writer => writer.WriteObject(commands));
+        LogVerbose("Sent message CommandList");
     }
 
     private void ProcessRecordTAS(string fileName) {

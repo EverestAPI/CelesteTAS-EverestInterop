@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
+using StudioCommunication;
 using TAS.Input;
 using TAS.Input.Commands;
 using TAS.Module;
@@ -135,7 +136,8 @@ public static class AreaCompleteInfo {
     // "CompleteInfo, Side, SID/ID"
     // The comments immediately following this command will be printed to the complete screen
     [TasCommand("CompleteInfo", CalcChecksum = false)]
-    private static void CompleteInfoCommand(string[] args, int _, string filePath, int fileLine) {
+    private static void CompleteInfoCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         if (args.Length == 1) {
             return;
         }

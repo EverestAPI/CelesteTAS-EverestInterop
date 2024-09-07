@@ -14,7 +14,8 @@ public sealed class CommunicationAdapterStudio(
     Action<StudioState> stateChanged,
     Action<Dictionary<int, string>> linesChanged,
     Action<Dictionary<HotkeyID, List<WinFormsKeys>>> bindingsChanged,
-    Action<GameSettings> settingsChanged) : CommunicationAdapterBase(Location.Studio)
+    Action<GameSettings> settingsChanged,
+    Action<CommandInfo[]> commandsChanged) : CommunicationAdapterBase(Location.Studio)
 {
     private readonly EnumDictionary<GameDataType, object?> gameData = new();
     private readonly EnumDictionary<GameDataType, bool> gameDataPending = new();
@@ -105,6 +106,14 @@ public sealed class CommunicationAdapterStudio(
                 gameDataPending[gameDataType] = false;
 
                 LogVerbose($"Received message GameDataResponse: {gameDataType} = '{gameData[gameDataType]}'");
+                break;
+
+            case MessageID.CommandList:
+                var commands = reader.ReadObject<CommandInfo[]>();
+                LogVerbose($"Received message CommandList: {commands.Length}");
+
+                commandsChanged(commands);
+
                 break;
 
             case MessageID.GameSettings:
