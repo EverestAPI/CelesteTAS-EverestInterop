@@ -84,7 +84,7 @@ public static class StudioHelper {
     [Load]
     private static void Load() {
         // INSTALL_STUDIO is only set during builds from Build.yml/Release.yml, since otherwise the URLs / checksums are invalid
-#if INSTALL_STUDIO
+// #if INSTALL_STUDIO
         // Check if studio is already up-to-date
         string installedVersion = "<None>";
         if (!File.Exists(VersionFile) || (installedVersion = File.ReadAllText(VersionFile)) != CurrentStudioVersion) {
@@ -138,9 +138,9 @@ public static class StudioHelper {
         } else {
             installed = true;
         }
-#else
-        installed = true;
-#endif
+// #else
+//         installed = true;
+// #endif
     }
 
     [Initialize]

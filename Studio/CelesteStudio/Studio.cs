@@ -300,7 +300,10 @@ public sealed class Studio : Form {
 
     private bool ShouldDiscardChanges(bool checkTempFile = true) {
         if (Editor.Document.Dirty || checkTempFile && Editor.Document.FilePath == Document.ScratchFile) {
-            var confirm = MessageBox.Show($"You have unsaved changes.{Environment.NewLine}Are you sure you want to discard them?", MessageBoxButtons.YesNo, MessageBoxType.Question, MessageBoxDefaultButton.No);
+            var confirm = MessageBox.Show("""
+                                                    You have unsaved changes.
+                                                    Are you sure you want to discard them?
+                                                    """, MessageBoxButtons.YesNo, MessageBoxType.Question, MessageBoxDefaultButton.No);
             return confirm == DialogResult.Yes;
         }
 
@@ -308,11 +311,11 @@ public sealed class Studio : Form {
     }
 
     private string GetFilePickerDirectory() {
-        var fallbackDir = string.IsNullOrWhiteSpace(Settings.Instance.LastSaveDirectory)
+        string fallbackDir = string.IsNullOrWhiteSpace(Settings.Instance.LastSaveDirectory)
             ? Path.Combine(CelesteDirectory ?? string.Empty, "TAS Files")
             : Settings.Instance.LastSaveDirectory;
 
-        var dir = Editor.Document.FilePath == Document.ScratchFile
+        string dir = Editor.Document.FilePath == Document.ScratchFile
             ? fallbackDir
             : Path.GetDirectoryName(Editor.Document.FilePath) ?? fallbackDir;
 
