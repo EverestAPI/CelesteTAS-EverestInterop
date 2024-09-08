@@ -99,6 +99,21 @@ public static class StudioHelper {
                     "Process killed".Log(LogLevel.Verbose);
                 }
 
+                // If Studio fails to find the game directory for some reason, that's where "TAS Files" will be placed
+                // Merge the content into the proper location to prevent data loss
+                if (Directory.Exists(Path.Combine(StudioDirectory, "TAS Files"))) {
+                    foreach (string path in Directory.GetFiles(Path.Combine(StudioDirectory, "TAS Files"), "*", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.Directory })) {
+                        string relativePath = Path.GetRelativePath(Path.Combine(StudioDirectory, "TAS Files"), path);
+                        string? relativeDirectory = Path.GetDirectoryName(relativePath);
+
+                        if (relativeDirectory != null && !Directory.Exists(Path.Combine(Everest.PathGame, "TAS Files", relativeDirectory))) {
+                            Directory.CreateDirectory(Path.Combine(Everest.PathGame, "TAS Files", relativeDirectory));
+                        }
+
+                        File.Move(path, Path.Combine(Everest.PathGame, "TAS Files", relativePath));
+                    }
+                }
+
                 // Reset everything
                 $"Cleaning directory '{StudioDirectory}'...".Log(LogLevel.Verbose);
                 if (Directory.Exists(StudioDirectory)) {
