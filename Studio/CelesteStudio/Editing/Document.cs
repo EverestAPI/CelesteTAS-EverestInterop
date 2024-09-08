@@ -5,6 +5,7 @@ using System.Linq;
 using CelesteStudio.Communication;
 using CelesteStudio.Util;
 using Eto.Forms;
+using StudioCommunication.Util;
 using System.Threading.Tasks;
 
 namespace CelesteStudio.Editing;

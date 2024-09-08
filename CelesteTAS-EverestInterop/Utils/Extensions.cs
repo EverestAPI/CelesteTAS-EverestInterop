@@ -456,19 +456,19 @@ internal static class EnumerableExtensions {
         return !enumerable.IsNullOrEmpty();
     }
 
-    public static IEnumerable<T> SkipLast<T>(this IEnumerable<T> source, int n = 1) {
-        var it = source.GetEnumerator();
-        bool hasRemainingItems = false;
-        var cache = new Queue<T>(n + 1);
-
-        do {
-            if (hasRemainingItems = it.MoveNext()) {
-                cache.Enqueue(it.Current);
-                if (cache.Count > n)
-                    yield return cache.Dequeue();
-            }
-        } while (hasRemainingItems);
-    }
+    // public static IEnumerable<T> SkipLast<T>(this IEnumerable<T> source, int n = 1) {
+    //     var it = source.GetEnumerator();
+    //     bool hasRemainingItems = false;
+    //     var cache = new Queue<T>(n + 1);
+    //
+    //     do {
+    //         if (hasRemainingItems = it.MoveNext()) {
+    //             cache.Enqueue(it.Current);
+    //             if (cache.Count > n)
+    //                 yield return cache.Dequeue();
+    //         }
+    //     } while (hasRemainingItems);
+    // }
 }
 
 internal static class ListExtensions {

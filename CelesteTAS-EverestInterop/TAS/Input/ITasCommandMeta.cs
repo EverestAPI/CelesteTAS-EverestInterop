@@ -1,5 +1,7 @@
 using StudioCommunication;
+using StudioCommunication.Util;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace TAS.Input;
 
@@ -9,5 +11,12 @@ public interface ITasCommandMeta {
     public string Insert { get; }
     public bool HasArguments { get; }
 
-    public IAsyncEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args);
+    /// Produces a hash for the specified arguments, to cache arguments
+    public int GetHash(string[] args) {
+        // Exclude the last argument, since we're currently editing that
+        return args[..^1].Aggregate(17, (current, arg) => 31 * current + arg.GetStableHashCode());
+    }
+
+    /// Incrementally yields entries for auto-completion with the current arguments
+    public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args);
 }

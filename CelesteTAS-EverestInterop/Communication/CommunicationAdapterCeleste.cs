@@ -85,6 +85,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                     GameDataType.SetCommandAutoCompleteEntries or
                     GameDataType.InvokeCommandAutoCompleteEntries => reader.ReadObject<(string, int)>(),
                     GameDataType.RawInfo => reader.ReadObject<(string, bool)>(),
+                    GameDataType.CommandHash => reader.ReadObject<(string, string[])>(),
                     _ => null,
                 };
                 LogVerbose($"Received message RequestGameData: '{gameDataType}' ('{arg ?? "<null>"}')");
@@ -92,20 +93,60 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 // Gathering data from the game can sometimes take a while (and cause a timeout)
                 Task.Run(() => {
                     try {
-                        object? gameData = gameDataType switch {
-                            GameDataType.ConsoleCommand => GameData.GetConsoleCommand((bool)arg!),
-                            GameDataType.ModInfo => GameData.GetModInfo(),
-                            GameDataType.ExactGameInfo => GameInfo.ExactStudioInfo,
-                            GameDataType.SettingValue => GameData.GetSettingValue((string)arg!),
-                            GameDataType.CompleteInfoCommand => AreaCompleteInfo.CreateCommand(),
-                            GameDataType.ModUrl => GameData.GetModUrl(),
-                            GameDataType.CustomInfoTemplate => !string.IsNullOrWhiteSpace(TasSettings.InfoCustomTemplate) ? TasSettings.InfoCustomTemplate : string.Empty,
-                            GameDataType.SetCommandAutoCompleteEntries => GameData.GetSetCommandAutoCompleteEntries((((string, int))arg!).Item1, (((string, int))arg).Item2).ToArray(),
-                            GameDataType.InvokeCommandAutoCompleteEntries => GameData.GetInvokeCommandAutoCompleteEntries((((string, int))arg!).Item1, (((string, int))arg).Item2).ToArray(),
-                            GameDataType.RawInfo => InfoCustom.GetRawInfo(((string, bool))arg!),
-                            GameDataType.GameState => GameData.GetGameState(),
-                            _ => null,
-                        };
+                        object? gameData;
+                        switch (gameDataType) {
+                            case GameDataType.ConsoleCommand:
+                                gameData = GameData.GetConsoleCommand((bool)arg!);
+                                break;
+                            case GameDataType.ModInfo:
+                                gameData = GameData.GetModInfo();
+                                break;
+                            case GameDataType.ExactGameInfo:
+                                gameData = GameInfo.ExactStudioInfo;
+                                break;
+                            case GameDataType.SettingValue:
+                                gameData = GameData.GetSettingValue((string)arg!);
+                                break;
+                            case GameDataType.CompleteInfoCommand:
+                                gameData = AreaCompleteInfo.CreateCommand();
+                                break;
+                            case GameDataType.ModUrl:
+                                gameData = GameData.GetModUrl();
+                                break;
+                            case GameDataType.CustomInfoTemplate:
+                                gameData = !string.IsNullOrWhiteSpace(TasSettings.InfoCustomTemplate) ? TasSettings.InfoCustomTemplate : string.Empty;
+                                break;
+                            case GameDataType.SetCommandAutoCompleteEntries:
+                                gameData = GameData.GetSetCommandAutoCompleteEntries((((string, int))arg!).Item1, (((string, int))arg).Item2)
+                                    .ToArray();
+                                break;
+                            case GameDataType.InvokeCommandAutoCompleteEntries:
+                                gameData = GameData.GetInvokeCommandAutoCompleteEntries((((string, int))arg!).Item1, (((string, int))arg).Item2)
+                                    .ToArray();
+                                break;
+                            case GameDataType.RawInfo:
+                                gameData = InfoCustom.GetRawInfo(((string, bool))arg!);
+                                break;
+                            case GameDataType.GameState:
+                                gameData = GameData.GetGameState();
+                                break;
+                            case GameDataType.CommandHash:
+                                (string commandName, string[] commandArgs) = ((string, string[]))arg!;
+
+                                var meta = Command.GetMeta(commandName);
+                                if (meta == null) {
+                                    // Fallback to the default implementation
+                                    gameData = commandArgs[..^1].Aggregate(17, (current, commandArg) => 31 * current + commandArg.GetStableHashCode());
+                                    break;
+                                }
+
+                                gameData = meta.GetHash(commandArgs);
+                                break;
+
+                            default:
+                                gameData = null;
+                                break;
+                        }
 
                         QueueMessage(MessageID.GameDataResponse, writer => {
                             writer.Write((byte)gameDataType);
@@ -133,13 +174,16 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                                 case GameDataType.GameState:
                                     writer.WriteObject((GameState?)gameData);
                                     break;
+
+                                case GameDataType.CommandHash:
+                                    writer.Write((int)gameData!);
+                                    break;
                             }
                             LogVerbose($"Sent message GameDataResponse: {gameDataType} = '{gameData}'");
                         });
                     } catch (Exception ex) {
                         Logger.LogDetailed(ex, $"Failed to get game data for '{gameDataType}'");
                     }
-
                 });
                 break;
 
@@ -158,9 +202,9 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 bool done = false;
 
                 // Collect entries
-                Task.Run(async () => {
-                    var enumerator = meta.GetAutoCompleteEntries(commandArgs);
-                    while (Connected && await enumerator.MoveNextAsync().ConfigureAwait(false)) {
+                Task.Run(() => {
+                    using var enumerator = meta.GetAutoCompleteEntries(commandArgs);
+                    while (Connected && enumerator.MoveNext()) {
                         lock(entries) {
                             entries.Add(enumerator.Current);
                         }

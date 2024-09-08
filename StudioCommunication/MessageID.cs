@@ -81,6 +81,7 @@ public enum GameDataType : byte {
     InvokeCommandAutoCompleteEntries,
     RawInfo,
     GameState,
+    CommandHash,
 }
 
 public enum RecordingFailedReason : byte {

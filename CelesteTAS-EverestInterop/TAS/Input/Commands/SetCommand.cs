@@ -10,6 +10,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
 using StudioCommunication;
+using StudioCommunication.Util;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Utils;
 
@@ -17,6 +18,26 @@ namespace TAS.Input.Commands;
 
 // ReSharper disable once UnusedType.Global
 public static class SetCommand {
+    private class SetMeta : ITasCommandMeta {
+        public string Description => "Sets the specified setting to the specified value.";
+        public string Insert => $"Set{CommandInfo.Separator}[0;(Mod).Setting]{CommandInfo.Separator}[1;Value]";
+        public bool HasArguments => true;
+
+        public int GetHash(string[] args) {
+            int hash = args[0]
+                .Split('.')
+                // Only skip last part if we're currently editing that
+                .SkipLast(args.Length == 1 ? 1 : 0)
+                .Aggregate(17, (current, arg) => 31 * current + arg.GetStableHashCode());
+            // The other argument don't influence each other, so just the length matters
+            return 31 * hash + 17 * args.Length;
+        }
+
+        public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args) {
+            yield break;
+        }
+    }
+
     private static bool consolePrintLog;
     private const string logPrefix = "Set Command Failed: ";
     private static List<string> errorLogs = new List<string>();
@@ -34,7 +55,7 @@ public static class SetCommand {
     // Set, Setting, Value
     // Set, Mod.Setting, Value
     // Set, Entity.Field, Value
-    [TasCommand("Set", LegalInFullGame = false)]
+    [TasCommand("Set", LegalInFullGame = false, MetaDataProvider = typeof(SetMeta))]
     private static void Set(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         Set(commandLine.Arguments);
     }
@@ -143,7 +164,7 @@ public static class SetCommand {
         }
 
         string lastMemberName = memberNames.Last();
-        memberNames = memberNames.SkipLast().ToList();
+        memberNames = memberNames.SkipLast(1).ToList();
 
         Type objType;
         object obj = null;

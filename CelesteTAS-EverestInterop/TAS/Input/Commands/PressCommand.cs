@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework.Input;
 using StudioCommunication;
+using System.Linq;
 using System.Threading.Tasks;
 using TAS.Utils;
 
@@ -13,15 +14,14 @@ public static class PressCommand {
         public string Insert => $"Press{CommandInfo.Separator}[0;Key1{CommandInfo.Separator}Key2...]";
         public bool HasArguments => true;
 
-        public async IAsyncEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args) {
-            foreach (var key in Enum.GetValues<Keys>()) {
-                yield return new CommandAutoCompleteEntry {
+        public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args) =>
+            Enum.GetValues<Keys>()
+                .Select(key => new CommandAutoCompleteEntry {
                     Name = key.ToString(),
                     Extra = "Keys",
                     IsDone = true
-                };
-            }
-        }
+                })
+                .GetEnumerator();
     }
 
     public static readonly HashSet<Keys> PressKeys = new();

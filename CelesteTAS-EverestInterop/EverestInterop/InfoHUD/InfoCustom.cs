@@ -158,7 +158,7 @@ public static class InfoCustom {
             string helperMethod = "";
             if (HelperMethods.ContainsKey(lastMemberName)) {
                 helperMethod = lastMemberName;
-                memberNames = memberNames.SkipLast().ToList();
+                memberNames = memberNames.SkipLast(1).ToList();
             }
 
             bool moreThanOneEntity = types.Where(type => type.IsSameOrSubclassOf(typeof(Entity)))

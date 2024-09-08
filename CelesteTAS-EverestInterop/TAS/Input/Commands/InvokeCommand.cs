@@ -83,7 +83,7 @@ public static class InvokeCommand {
         }
 
         string lastMemberName = memberNames.Last();
-        memberNames = memberNames.SkipLast().ToList();
+        memberNames = memberNames.SkipLast(1).ToList();
 
         Type objType;
         object obj = null;

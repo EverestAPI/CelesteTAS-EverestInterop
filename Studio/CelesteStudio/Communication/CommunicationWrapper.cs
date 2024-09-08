@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using CelesteStudio.Util;
 using Eto.Forms;
 using StudioCommunication;
+using StudioCommunication.Util;
 
 namespace CelesteStudio.Communication;
 
@@ -195,15 +196,13 @@ public static class CommunicationWrapper {
 
     // The hashcode is stored instead of the actual key, since it is used as an identifier in responses from Celeste
     private static readonly Dictionary<int, (List<CommandAutoCompleteEntry> Entries, bool Done)> autoCompleteEntryCache = [];
-    public static (List<CommandAutoCompleteEntry> Entries, bool Done) RequestAutoCompleteEntries(string commandName, string[] commandArgs) {
+    public static async Task<(List<CommandAutoCompleteEntry> Entries, bool Done)> RequestAutoCompleteEntries(string commandName, string[] commandArgs) {
         if (!Connected) {
             return (Entries: [], Done: true);
         }
 
-        int hash = commandName.GetStableHashCode();
-        foreach (var arg in commandArgs) {
-            hash = 31 * hash + arg.GetStableHashCode();
-        }
+        int hash = 31 * commandName.GetStableHashCode() +
+                   17 * (int)(await comm!.RequestGameData(GameDataType.CommandHash, (commandName, commandArgs)).ConfigureAwait(false))!;
 
         if (autoCompleteEntryCache.TryGetValue(hash, out var entries)) {
             return entries;
