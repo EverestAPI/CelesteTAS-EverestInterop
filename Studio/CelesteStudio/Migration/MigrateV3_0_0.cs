@@ -28,31 +28,22 @@ public static class MigrateV3_0_0 {
     }
 
     public static void PostLoad() {
-        string gameDir;
-        // Windows / Linux
-        if (File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "Celeste.dll"))) {
-            gameDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..");
-        }
-        // macOS (inside .app bundle)
-        else if (File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "Celeste.dll"))) {
-            gameDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..");
-        } else {
-            Console.WriteLine("Couldn't find game directory");
+        if (Studio.CelesteDirectory == null) {
             return;
         }
 
         // Remove Studio v2 artifacts
-        if (File.Exists(Path.Combine(gameDir, "Celeste Studio.exe"))) {
-            File.Delete(Path.Combine(gameDir, "Celeste Studio.exe"));
+        if (File.Exists(Path.Combine(Studio.CelesteDirectory, "Celeste Studio.exe"))) {
+            File.Delete(Path.Combine(Studio.CelesteDirectory, "Celeste Studio.exe"));
         }
-        if (File.Exists(Path.Combine(gameDir, "Celeste Studio.pdb"))) {
-            File.Delete(Path.Combine(gameDir, "Celeste Studio.pdb"));
+        if (File.Exists(Path.Combine(Studio.CelesteDirectory, "Celeste Studio.pdb"))) {
+            File.Delete(Path.Combine(Studio.CelesteDirectory, "Celeste Studio.pdb"));
         }
 
         // Migrate settings
-        if (File.Exists(Path.Combine(gameDir, "Celeste Studio.toml"))) {
+        if (File.Exists(Path.Combine(Studio.CelesteDirectory, "Celeste Studio.toml"))) {
             try {
-                var document = TomlParser.ParseFile(Path.Combine(gameDir, "Celeste Studio.toml"));
+                var document = TomlParser.ParseFile(Path.Combine(Studio.CelesteDirectory, "Celeste Studio.toml"));
                 var settingsTable = document.GetSubTable("Settings");
                 var settings = TomletMain.To<LegacySettings>(settingsTable);
 
@@ -75,12 +66,12 @@ public static class MigrateV3_0_0 {
                     Settings.Instance.ThemeName = Theme.BuiltinLight;
                 }
             } catch (Exception ex) {
-                Console.Error.WriteLine($"Failed to read legacy settings file from path '{Path.Combine(gameDir, "Celeste Studio.toml")}'");
+                Console.Error.WriteLine($"Failed to read legacy settings file from path '{Path.Combine(Studio.CelesteDirectory, "Celeste Studio.toml")}'");
                 Console.Error.WriteLine(ex);
             }
 
             // Create a backup instead of deleting, just to be safe
-            File.Move(Path.Combine(gameDir, "Celeste Studio.toml"), Path.Combine(Settings.BaseConfigPath, "LegacyStudioSettings.toml.backup"), overwrite: true);
+            File.Move(Path.Combine(Studio.CelesteDirectory, "Celeste Studio.toml"), Path.Combine(Settings.BaseConfigPath, "LegacyStudioSettings.toml.backup"), overwrite: true);
         }
     }
 }
