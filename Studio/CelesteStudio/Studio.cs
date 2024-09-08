@@ -37,6 +37,9 @@ public sealed class Studio : Form {
     /// Actions which aren't associated with any menu and only invokable by hotkey
     public MenuItem[] GlobalHotkeys { get; private set; }
 
+    /// Path to the Celeste install or null if it couldn't be found
+    public static string? CelesteDirectory { get; private set; }
+
     public readonly Editor Editor;
     public readonly GameInfoPanel GameInfoPanel;
     private readonly Scrollable EditorScrollable;
@@ -56,6 +59,18 @@ public sealed class Studio : Form {
         AllowDrop = true;
 
         WindowCreationCallback = windowCreationCallback;
+
+        // Find game directory
+        if (File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "Celeste.dll"))) {
+            // Windows / Linux
+            CelesteDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..");
+        }
+        else if (File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "Celeste.dll"))) {
+            // macOS (inside .app bundle)
+            CelesteDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..");
+        } else {
+            Console.WriteLine("Couldn't find game directory");
+        }
 
         // Close other Studio instances to avoid conflicts
         foreach (var process in Process.GetProcesses().Where(process => process.ProcessName is "CelesteStudio" or "CelesteStudio.WPF" or "CelesteStudio.GTK" or "CelesteStudio.Mac" or "Celeste Studio")) {
@@ -299,7 +314,7 @@ public sealed class Studio : Form {
 
     private string GetFilePickerDirectory() {
         var fallbackDir = string.IsNullOrWhiteSpace(Settings.Instance.LastSaveDirectory)
-            ? Path.Combine(Directory.GetCurrentDirectory(), "TAS Files")
+            ? Path.Combine(CelesteDirectory ?? string.Empty, "TAS Files")
             : Settings.Instance.LastSaveDirectory;
 
         var dir = Editor.Document.FilePath == Document.ScratchFile
