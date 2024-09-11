@@ -289,7 +289,11 @@ public sealed class Studio : Form {
         }
 
         Settings.Instance.LastLocation = Location;
-        Settings.Instance.LastSize = Size;
+        // Avoid storing sizes below the minimum in the settings
+        if (Size.Width >= MinimumSize.Width && Size.Height >= MinimumSize.Height) {
+            Settings.Instance.LastSize = Size;
+        }
+
         Settings.Save();
 
         CommunicationWrapper.SendPath(string.Empty);
