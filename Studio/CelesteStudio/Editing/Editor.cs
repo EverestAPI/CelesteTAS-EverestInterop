@@ -489,12 +489,20 @@ public sealed class Editor : Drawable {
                         }
                     }
 
+                    // End the previous folding and start a new one if the end comment isn't empty
+                    bool isStartStop = !string.IsNullOrWhiteSpace(trimmed[(depth + 2)..]);
+
                     foldings.Add(new Folding {
-                        MinRow = startRow, MaxRow = row,
+                        MinRow = startRow, MaxRow = row - (isStartStop ? 1 : 0),
                         StartCol = startIdx,
                     });
 
                     activeCollapses.Remove(startRow);
+
+                    if (isStartStop) {
+                        activeFoldings[depth] = row;
+                        skipLine = false;
+                    }
                 } else {
                     activeFoldings[depth] = row;
                 }
