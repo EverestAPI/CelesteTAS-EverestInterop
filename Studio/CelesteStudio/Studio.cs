@@ -319,7 +319,22 @@ public sealed class Studio : Form {
     }
 
     private bool ShouldDiscardChanges(bool checkTempFile = true) {
-        if (Editor.Document.Dirty || checkTempFile && Editor.Document.FilePath == Document.ScratchFile) {
+        bool showConfirmation = Editor.Document.Dirty;
+
+        // Only ask for discarding changes if scratch file actually contains something
+        if (checkTempFile && Editor.Document.FilePath == Document.ScratchFile) {
+            bool containsInputs = false;
+            foreach (string line in Editor.Document.Lines) {
+                if (ActionLine.TryParse(line, out var actionLine) && (actionLine.Actions != Actions.None || actionLine.FeatherAngle != null || actionLine.FeatherMagnitude != null)) {
+                    containsInputs = true;
+                    break;
+                }
+            }
+
+            showConfirmation |= containsInputs;
+        }
+
+        if (showConfirmation) {
             var confirm = MessageBox.Show("""
                                                     You have unsaved changes.
                                                     Are you sure you want to discard them?
