@@ -52,6 +52,22 @@ public sealed class Studio : Form {
         ? $"<Scratch> - Studio {Version}"
         : $"{Editor.Document.FileName}{(Editor.Document.Dirty ? "*" : string.Empty)} - Studio {Version}   {Editor.Document.FilePath}";
 
+    /// Size of scroll bars, depending on the current platform
+    public static int ScrollBarSize {
+        get {
+            if (Eto.Platform.Instance.IsWpf) {
+                return 17;
+            }
+            if (Eto.Platform.Instance.IsGtk) {
+                return 17; // This probably relies on the GTK theme, but being slight off isn't too big of an issue
+            }
+            if (Eto.Platform.Instance.IsMac) {
+                return 15;
+            }
+            return 0;
+        }
+    }
+
     public Studio(string[] args, Action<Window> windowCreationCallback) {
         Instance = this;
         Icon = Assets.AppIcon;

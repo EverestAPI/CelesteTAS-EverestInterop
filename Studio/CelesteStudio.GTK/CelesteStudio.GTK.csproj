@@ -14,7 +14,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\CelesteStudio\CelesteStudio.csproj" />
-<!--        <PackageReference Include="Eto.Platform.Gtk" Version="2.8.3"/>-->
+        <!-- <PackageReference Include="Eto.Platform.Gtk" Version="2.8.3"/>-->
 
         <!-- Use a CI-build, since that contains a fix for some issues -->
         <PackageReference Include="Eto.Platform.Gtk" Version="2.8.4-ci-20240710.9879198421" />

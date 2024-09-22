@@ -619,38 +619,51 @@ public sealed class Editor : Drawable {
             const int menuXOffset = 8;
             const int menuYOffset = 7;
             const int menuLPadding = 7;
-            const int menuRPadding = 20;
+            const int menuRPadding = 7;
 
             float carX = Font.CharWidth() * Document.Caret.Col;
             float carY = Font.LineHeight() * (actualToVisualRows[Document.Caret.Row] + 1);
 
-            int menuX = (int)(carX + scrollablePosition.X + textOffsetX + menuXOffset);
-            int menuYBelow = (int)(carY + menuYOffset);
-            int menuYAbove = (int)Math.Max(carY - Font.LineHeight() - menuYOffset - ActivePopupMenu.ContentHeight, scrollablePosition.Y + menuYOffset);
-            int menuMaxRight = scrollablePosition.X + scrollableSize.Width - menuRPadding;
-            int menuMaxW = menuMaxRight - menuX;
-            int menuMaxHBelow = (int)(scrollablePosition.Y + scrollableSize.Height - Font.LineHeight() - menuYBelow);
-            int menuMaxHAbove = (int)(scrollablePosition.Y + carY - Font.LineHeight() - menuYOffset - menuYAbove);
+            int menuX, menuY;
 
-            // Try moving the menu to the left when there isn't enough space, before having to shrink it
-            if (menuMaxW < ActivePopupMenu.ContentWidth) {
-                menuX = (int)Math.Max(menuMaxRight - ActivePopupMenu.ContentWidth, scrollablePosition.X + textOffsetX + menuLPadding);
-                menuMaxW = menuMaxRight - menuX;
+            void UpdateMenuW() {
+                menuX = (int)(carX + scrollablePosition.X + textOffsetX + menuXOffset);
+                int menuMaxRight = scrollablePosition.X + scrollableSize.Width - menuRPadding - (ActivePopupMenu.VScrollBarVisible ? Studio.ScrollBarSize : 0);
+                int menuMaxW = menuMaxRight - menuX;
+
+                // Try moving the menu to the left when there isn't enough space, before having to shrink it
+                if (menuMaxW < ActivePopupMenu.ContentWidth) {
+                    menuX = (int)Math.Max(menuMaxRight - ActivePopupMenu.ContentWidth, scrollablePosition.X + textOffsetX + menuLPadding);
+                    menuMaxW = menuMaxRight - menuX;
+                }
+
+                ActivePopupMenu.ContentWidth = Math.Min(ActivePopupMenu.ContentWidth, menuMaxW);
+            }
+            void UpdateMenuH() {
+                int menuYBelow = (int)(carY + menuYOffset);
+                int menuYAbove = (int)Math.Max(carY - Font.LineHeight() - menuYOffset - ActivePopupMenu.ContentHeight, scrollablePosition.Y + menuYOffset);
+                
+                int menuMaxHBelow = (int)(scrollablePosition.Y + scrollableSize.Height - Font.LineHeight() - menuYBelow) - (ActivePopupMenu.HScrollBarVisible ? Studio.ScrollBarSize : 0);
+                int menuMaxHAbove = (int)(scrollablePosition.Y + carY - Font.LineHeight() - menuYOffset - menuYAbove);
+
+                // Chose above / below caret depending on which provides more height. Default to below
+                int menuMaxH;
+                if (Math.Min(ActivePopupMenu.ContentHeight, menuMaxHBelow) >= Math.Min(ActivePopupMenu.ContentHeight, menuMaxHAbove)) {
+                    menuY = menuYBelow;
+                    menuMaxH = menuMaxHBelow;
+                } else {
+                    menuY = menuYAbove;
+                    menuMaxH = menuMaxHAbove;
+                }
+
+                ActivePopupMenu.ContentHeight = Math.Min(ActivePopupMenu.ContentHeight, menuMaxH);
             }
 
-            // Chose above / below caret depending on which provides more height. Default to below
-            int menuY, menuMaxH;
-            if (Math.Min(ActivePopupMenu.ContentHeight, menuMaxHBelow) >= Math.Min(ActivePopupMenu.ContentHeight, menuMaxHAbove)) {
-                menuY = menuYBelow;
-                menuMaxH = menuMaxHBelow;
-            } else {
-                menuY = menuYAbove;
-                menuMaxH = menuMaxHAbove;
-            }
+            // Both depend on each-other, so one needs to be updated twice
+            UpdateMenuW();
+            UpdateMenuH();
+            UpdateMenuW();
 
-            // Set height first, to account for a potential scroll bar
-            ActivePopupMenu.ContentHeight = Math.Min(ActivePopupMenu.ContentHeight, menuMaxH);
-            ActivePopupMenu.ContentWidth = Math.Min(ActivePopupMenu.ContentWidth, menuMaxW);
             ActivePopupMenu.Recalc();
             pixelLayout.Move(ActivePopupMenu, menuX, menuY);
         }

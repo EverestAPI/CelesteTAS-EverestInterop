@@ -24,26 +24,6 @@ public sealed class PopupMenu : Scrollable {
     /// Spacing between the longest DisplayText and ExtraText of entries in characters
     private const int DisplayExtraPadding = 2;
 
-    private int ScrollBarWidth {
-        get {
-            bool scrollBarVisible = Height < ContentHeight && Height > 0;
-            if (!scrollBarVisible) {
-                return 0;
-            }
-
-            if (Eto.Platform.Instance.IsWpf) {
-                return 17;
-            }
-            if (Eto.Platform.Instance.IsGtk) {
-                return 17; // This probably relies on the GTK theme, but being slight off isn't too big of an issue
-            }
-            if (Eto.Platform.Instance.IsMac) {
-                return 15;
-            }
-            return 0;
-        }
-    }
-
     private sealed class ContentDrawable : Drawable {
         private readonly PopupMenu menu;
 
@@ -108,7 +88,9 @@ public sealed class PopupMenu : Scrollable {
                     entry.ExtraText);
             }
 
-            Size = new(menu.ContentWidth, menu.ContentHeight);
+            if (Eto.Platform.Instance.IsGtk) {
+                Size = new(menu.ContentWidth, menu.ContentHeight);
+            }
 
             base.OnPaint(e);
         }
@@ -192,23 +174,22 @@ public sealed class PopupMenu : Scrollable {
         }
     }
 
+    // We update our size, but reading it won't give the updated value immediatly.
+    // However we need the updated size to properly calculate other things.
+    private Size actualSize = new(0, 0);
+
+    public bool VScrollBarVisible => actualSize.Height < contentHeight && actualSize.Height > 0;
+    public bool HScrollBarVisible => actualSize.Width < contentWidth && actualSize.Width > 0;
+
+    private int contentWidth;
     public int ContentWidth {
-        set => Width = Math.Max(0, value);
-        get {
-            if (shownEntries.Length == 0) {
-                return 0;
-            }
-
-            var font = FontManager.PopupFont;
-            int maxDisplayLen = shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
-            int maxExtraLen = shownEntries.Select(entry => entry.ExtraText.Length).Aggregate(Math.Max);
-
-            return (int)(font.CharWidth() * (maxDisplayLen + DisplayExtraPadding + maxExtraLen) + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding * 2.0f + Settings.Instance.Theme.PopupMenuBorderPadding * 2 + ScrollBarWidth);
-        }
+        set => Width = actualSize.Width = Math.Max(0, value + (VScrollBarVisible ? Studio.ScrollBarSize : 0));
+        get => contentWidth;
     }
+    private int contentHeight;
     public int ContentHeight {
-        set => Height = Math.Max(0, value);
-        get => shownEntries.Length * EntryHeight + Settings.Instance.Theme.PopupMenuBorderPadding * 2;
+        set => Height = actualSize.Height = Math.Max(0, value + (HScrollBarVisible ? Studio.ScrollBarSize : 0));
+        get => contentHeight;
     }
 
     public int EntryHeight => (int)(FontManager.PopupFont.LineHeight() + Settings.Instance.Theme.PopupMenuEntryVerticalPadding * 2.0f + Settings.Instance.Theme.PopupMenuEntrySpacing);
@@ -227,17 +208,31 @@ public sealed class PopupMenu : Scrollable {
     public void Recalc() {
         shownEntries = entries.Where(entry => string.IsNullOrEmpty(entry.SearchText) || entry.SearchText.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase)).ToArray();
         if (shownEntries.Length == 0) {
+            contentWidth = 0;
+            contentHeight = 0;
             Visible = false;
             return;
         }
 
         selectedEntry = Math.Clamp(selectedEntry, 0, shownEntries.Length - 1);
 
-        // The +1 is a hack-fix for GTK.
-        // If the content isn't large enough to require a scrollbar, GTK will just have the background be black instead of transparent.
-        // Even weirder, once it was scrollable once, the black background will never come back...
-        // The proper size is set at the end of ContentDrawable.Paint()
-        drawable.Size = new(ContentWidth, ContentHeight + 1);
+        // Calculate content bounds. Calculate height first to account for scroll bar
+        contentHeight = shownEntries.Length * EntryHeight + Settings.Instance.Theme.PopupMenuBorderPadding * 2;
+
+        var font = FontManager.PopupFont;
+        int maxDisplayLen = shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
+        int maxExtraLen = shownEntries.Select(entry => entry.ExtraText.Length).Aggregate(Math.Max);
+
+        contentWidth = (int)(font.CharWidth() * (maxDisplayLen + DisplayExtraPadding + maxExtraLen) + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding * 2.0f + Settings.Instance.Theme.PopupMenuBorderPadding * 2);
+
+        if (Eto.Platform.Instance.IsGtk) {
+            // If the content isn't large enough to require a scrollbar, GTK will just have the background be black instead of transparent.
+            // Even weirder, once it was scrollable once, the black background will never come back...
+            // The proper size is set at the end of ContentDrawable.Paint()
+            drawable.Size = new(ContentWidth, ContentHeight + 1);
+        } else {
+            drawable.Size = new(ContentWidth, ContentHeight);
+        }
         drawable.Invalidate();
     }
 
