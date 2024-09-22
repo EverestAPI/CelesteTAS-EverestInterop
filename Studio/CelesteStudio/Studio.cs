@@ -50,7 +50,8 @@ public sealed class Studio : Form {
 
     private string TitleBarText => Editor.Document.FilePath == Document.ScratchFile
         ? $"<Scratch> - Studio {Version}"
-        : $"{Editor.Document.FileName}{(Editor.Document.Dirty ? "*" : string.Empty)} - Studio {Version}   {Editor.Document.FilePath}";
+        // Hide username inside title bar
+        : $"{Editor.Document.FileName}{(Editor.Document.Dirty ? "*" : string.Empty)} - Studio {Version}   {Editor.Document.FilePath.Replace(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "~")}";
 
     /// Size of scroll bars, depending on the current platform
     public static int ScrollBarSize {
