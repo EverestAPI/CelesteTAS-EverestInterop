@@ -20,10 +20,10 @@ namespace TAS.Input.Commands;
 
 // ReSharper disable once UnusedType.Global
 public static class SetCommand {
-    private class SetMeta : ITasCommandMeta {
+    internal class SetMeta : ITasCommandMeta {
         // Sorts types by namespace into Celeste -> Monocle -> other (alphabetically)
         // Inside the namespace it's sorted alphabetically
-        private class NamespaceComparer : IComparer<(string Name, Type Type)> {
+        internal class NamespaceComparer : IComparer<(string Name, Type Type)> {
             public int Compare((string Name, Type Type) x, (string Name, Type Type) y) {
                 if (x.Type == null || y.Type == null || x.Type.Namespace == null || y.Type.Namespace == null) {
                     // Should never happen to use anyway
@@ -49,7 +49,7 @@ public static class SetCommand {
             }
         }
 
-        private static readonly string[] ignoredNamespaces = ["System", "StudioCommunication", "TAS", "SimplexNoise", "FMOD", "MonoMod", "Snowberry"];
+        internal static readonly string[] ignoredNamespaces = ["System", "StudioCommunication", "TAS", "SimplexNoise", "FMOD", "MonoMod", "Snowberry"];
 
         public string Description => "Sets the specified setting to the specified value.";
         public string Insert => $"Set{CommandInfo.Separator}[0;(Mod).Setting]{CommandInfo.Separator}[1;Value]";
@@ -58,7 +58,6 @@ public static class SetCommand {
         public int GetHash(string[] args) {
             int hash = GetTargetArgs(args)
                 .Aggregate(17, (current, arg) => 31 * current + arg.GetStableHashCode());
-            $"Target {string.Join("|", GetTargetArgs(args))} = {hash}".Log();
             // The other argument don't influence each other, so just the length matters
             return 31 * hash + 17 * args.Length;
         }
@@ -225,24 +224,24 @@ public static class SetCommand {
             return Enumerable.Empty<CommandAutoCompleteEntry>().GetEnumerator();
         }
 
-        private static IEnumerator<CommandAutoCompleteEntry> GetParameterTypeAutoCompleteEntries(Type type) {
+        internal static IEnumerator<CommandAutoCompleteEntry> GetParameterTypeAutoCompleteEntries(Type type, bool hasNextArgument = false) {
             if (type == typeof(bool)) {
-                yield return new CommandAutoCompleteEntry { Name = "true", Extra = type.CSharpName(), IsDone = true };
-                yield return new CommandAutoCompleteEntry { Name = "false", Extra = type.CSharpName(), IsDone = true };
+                yield return new CommandAutoCompleteEntry { Name = "true", Extra = type.CSharpName(), IsDone = true, HasNext = hasNextArgument };
+                yield return new CommandAutoCompleteEntry { Name = "false", Extra = type.CSharpName(), IsDone = true, HasNext = hasNextArgument };
             } else if (type == typeof(ButtonBinding)) {
                 foreach (var button in Enum.GetValues<MButtons>()) {
-                    yield return new CommandAutoCompleteEntry { Name = button.ToString(), Extra = "Mouse", IsDone = true };
+                    yield return new CommandAutoCompleteEntry { Name = button.ToString(), Extra = "Mouse", IsDone = true, HasNext = hasNextArgument };
                 }
                 foreach (var key in Enum.GetValues<Keys>()) {
                     if (key is Keys.Left or Keys.Right) {
                         // These keys can't be used, since the mouse buttons already use that name
                         continue;
                     }
-                    yield return new CommandAutoCompleteEntry { Name = key.ToString(), Extra = "Key", IsDone = true };
+                    yield return new CommandAutoCompleteEntry { Name = key.ToString(), Extra = "Key", IsDone = true, HasNext = hasNextArgument };
                 }
             } else if (type.IsEnum) {
                 foreach (object value in Enum.GetValues(type)) {
-                    yield return new CommandAutoCompleteEntry { Name = value.ToString()!, Extra = type.CSharpName(), IsDone = true };
+                    yield return new CommandAutoCompleteEntry { Name = value.ToString()!, Extra = type.CSharpName(), IsDone = true, HasNext = hasNextArgument };
                 }
             }
         }
@@ -263,11 +262,10 @@ public static class SetCommand {
             return type;
         }
 
-        private static bool IsSettableType(Type type) => !type.IsSameOrSubclassOf(typeof(Delegate));
+        internal static bool IsSettableType(Type type) => !type.IsSameOrSubclassOf(typeof(Delegate));
         private static bool IsFinalTarget(Type type) => type == typeof(string) || type == typeof(Vector2) || type == typeof(Random) || type == typeof(ButtonBinding) || type.IsEnum || type.IsPrimitive;
 
-        private static IEnumerable<string> GetTargetArgs(string[] args) {
-            $"Args {string.Join("|", args)}".Log();
+        internal static IEnumerable<string> GetTargetArgs(string[] args) {
             if (args.Length == 0) {
                 return [];
             }
