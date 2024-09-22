@@ -201,15 +201,20 @@ public static class CommunicationWrapper {
             return (Entries: [], Done: true);
         }
 
+        object? argsHash = await comm!.RequestGameData(GameDataType.CommandHash, (commandName, commandArgs)).ConfigureAwait(false);
+        if (argsHash == null) {
+            return (Entries: [], Done: true);
+        }
+
         int hash = 31 * commandName.GetStableHashCode() +
-                   17 * (int)(await comm!.RequestGameData(GameDataType.CommandHash, (commandName, commandArgs)).ConfigureAwait(false))!;
+                   17 * (int)argsHash;
 
         if (autoCompleteEntryCache.TryGetValue(hash, out var entries)) {
             return entries;
         }
         var result = autoCompleteEntryCache[hash] = (Entries: [], Done: false);
 
-        comm!.WriteCommandAutoCompleteRequest(hash, commandName, commandArgs);
+        comm.WriteCommandAutoCompleteRequest(hash, commandName, commandArgs);
         return result;
     }
 

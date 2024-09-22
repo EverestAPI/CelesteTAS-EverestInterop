@@ -1,5 +1,6 @@
 using StudioCommunication;
 using StudioCommunication.Util;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -14,7 +15,7 @@ public interface ITasCommandMeta {
     /// Produces a hash for the specified arguments, to cache arguments
     public int GetHash(string[] args) {
         // Exclude the last argument, since we're currently editing that
-        return args[..^1].Aggregate(17, (current, arg) => 31 * current + arg.GetStableHashCode());
+        return args[..Math.Max(0, args.Length - 1)].Aggregate(17, (current, arg) => 31 * current + arg.GetStableHashCode());
     }
 
     /// Incrementally yields entries for auto-completion with the current arguments

@@ -117,12 +117,12 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                                 gameData = !string.IsNullOrWhiteSpace(TasSettings.InfoCustomTemplate) ? TasSettings.InfoCustomTemplate : string.Empty;
                                 break;
                             case GameDataType.SetCommandAutoCompleteEntries:
-                                gameData = GameData.GetSetCommandAutoCompleteEntries((((string, int))arg!).Item1, (((string, int))arg).Item2)
-                                    .ToArray();
+                                gameData = /*GameData.GetSetCommandAutoCompleteEntries((((string, int))arg!).Item1, (((string, int))arg).Item2)
+                                    .ToArray();*/(CommandAutoCompleteEntry[])[];
                                 break;
                             case GameDataType.InvokeCommandAutoCompleteEntries:
-                                gameData = GameData.GetInvokeCommandAutoCompleteEntries((((string, int))arg!).Item1, (((string, int))arg).Item2)
-                                    .ToArray();
+                                gameData = /*GameData.GetInvokeCommandAutoCompleteEntries((((string, int))arg!).Item1, (((string, int))arg).Item2)
+                                    .ToArray();*/(CommandAutoCompleteEntry[])[];
                                 break;
                             case GameDataType.RawInfo:
                                 gameData = InfoCustom.GetRawInfo(((string, bool))arg!);
@@ -195,6 +195,12 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
 
                 var meta = Command.GetMeta(commandName);
                 if (meta == null) {
+                    QueueMessage(MessageID.CommandAutoComplete, writer => {
+                        writer.Write(hash);
+                        writer.WriteObject(Array.Empty<CommandAutoCompleteEntry>());
+                        writer.Write(/*done*/true);
+                    });
+                    LogVerbose($"Sent message CommandAutoComplete: 0 [Command meta not found] ({hash})");
                     return;
                 }
 
@@ -204,8 +210,17 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 // Collect entries
                 Task.Run(() => {
                     using var enumerator = meta.GetAutoCompleteEntries(commandArgs);
-                    while (Connected && enumerator.MoveNext()) {
-                        lock(entries) {
+                    while (Connected) {
+                        try {
+                            if (!enumerator.MoveNext()) {
+                                break;
+                            }
+                        } catch (Exception ex) {
+                            ex.LogException("Failed to collect auto-complete entries");
+                            break;
+                        }
+
+                        lock (entries) {
                             entries.Add(enumerator.Current);
                         }
                     }
@@ -216,7 +231,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                     CommandAutoCompleteEntry[] entriesToWrite;
 
                     while (Connected && !done) {
-                        lock(entries) {
+                        lock (entries) {
                             if (entries.Count == 0) {
                                 continue;
                             }

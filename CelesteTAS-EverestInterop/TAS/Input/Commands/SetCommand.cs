@@ -11,6 +11,8 @@ using Microsoft.Xna.Framework.Input;
 using Monocle;
 using StudioCommunication;
 using StudioCommunication.Util;
+using System.Runtime.CompilerServices;
+using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Utils;
 
@@ -19,22 +21,261 @@ namespace TAS.Input.Commands;
 // ReSharper disable once UnusedType.Global
 public static class SetCommand {
     private class SetMeta : ITasCommandMeta {
+        // Sorts types by namespace into Celeste -> Monocle -> other (alphabetically)
+        // Inside the namespace it's sorted alphabetically
+        private class NamespaceComparer : IComparer<(string Name, Type Type)> {
+            public int Compare((string Name, Type Type) x, (string Name, Type Type) y) {
+                if (x.Type == null || y.Type == null || x.Type.Namespace == null || y.Type.Namespace == null) {
+                    // Should never happen to use anyway
+                    return 0;
+                }
+
+                int namespaceCompare = CompareNamespace(x.Type.Namespace, y.Type.Namespace);
+                if (namespaceCompare != 0) {
+                    return namespaceCompare;
+                }
+
+                return StringComparer.Ordinal.Compare(x.Name, y.Name);
+            }
+
+            private int CompareNamespace(string x, string y) {
+                if (x.StartsWith("Celeste") && y.StartsWith("Celeste")) return 0;
+                if (x.StartsWith("Celeste")) return -1;
+                if (y.StartsWith("Celeste")) return  1;
+                if (x.StartsWith("Monocle") && y.StartsWith("Monocle")) return 0;
+                if (x.StartsWith("Monocle")) return -1;
+                if (y.StartsWith("Monocle")) return  1;
+                return StringComparer.Ordinal.Compare(x, y);
+            }
+        }
+
+        private static readonly string[] ignoredNamespaces = ["System", "StudioCommunication", "TAS", "SimplexNoise", "FMOD", "MonoMod", "Snowberry"];
+
         public string Description => "Sets the specified setting to the specified value.";
         public string Insert => $"Set{CommandInfo.Separator}[0;(Mod).Setting]{CommandInfo.Separator}[1;Value]";
         public bool HasArguments => true;
 
         public int GetHash(string[] args) {
-            int hash = args[0]
-                .Split('.')
-                // Only skip last part if we're currently editing that
-                .SkipLast(args.Length == 1 ? 1 : 0)
+            int hash = GetTargetArgs(args)
                 .Aggregate(17, (current, arg) => 31 * current + arg.GetStableHashCode());
+            $"Target {string.Join("|", GetTargetArgs(args))} = {hash}".Log();
             // The other argument don't influence each other, so just the length matters
             return 31 * hash + 17 * args.Length;
         }
 
         public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args) {
-            yield break;
+            var targetArgs = GetTargetArgs(args).ToArray();
+
+            // Parameter
+            if (args.Length > 1) {
+                using var enumerator = GetParameterAutoCompleteEntries(targetArgs);
+                while (enumerator.MoveNext()) {
+                    yield return enumerator.Current;
+                }
+                yield break;
+            }
+
+            if (targetArgs.Length == 0) {
+                // Vanilla settings. Manually selected to filter out useless entries
+                var vanillaSettings = ((string[])["DisableFlashes", "ScreenShake", "GrabMode", "CrouchDashMode", "SpeedrunClock", "Pico8OnMainMenu", "VariantsUnlocked"]).Select(e => typeof(Settings).GetField(e)!);
+                var vanillaSaveData = ((string[])["CheatMode", "AssistMode", "VariantMode", "UnlockedAreas", "RevealedChapter9", "DebugMode"]).Select(e => typeof(SaveData).GetField(e)!);
+
+                foreach (var f in vanillaSettings) {
+                    yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Settings)", IsDone = true };;
+                }
+                foreach (var f in vanillaSaveData) {
+                    yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Save Data)", IsDone = true };;
+                }
+                foreach (var f in typeof(Assists).GetFields()) {
+                    yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Assists)", IsDone = true };;
+                }
+
+                // Mod settings
+                foreach (var mod in Everest.Modules) {
+                    if (mod.SettingsType != null && (mod.SettingsType.GetAllFieldInfos().Any() ||
+                                                     mod.SettingsType.GetAllProperties().Any(p => p.GetSetMethod() != null)))
+                    {
+                        yield return new CommandAutoCompleteEntry { Name = $"{mod.Metadata.Name}.", Extra = "Mod Setting", IsDone = false };
+                    }
+                }
+
+                var allTypes = ModUtils.GetTypes();
+                foreach ((string typeName, var type) in allTypes
+                             .Select(type => (type.CSharpName(), type))
+                             .Order(new NamespaceComparer()))
+                {
+                    if (
+                        // Filter-out types which probably aren't useful
+                        !type.IsClass || !type.IsPublic || type.FullName == null || type.Namespace == null || ignoredNamespaces.Any(ns => type.Namespace.StartsWith(ns)) ||
+
+                        // Filter-out compiler generated types
+                        !type.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() || type.FullName.Contains('<') || type.FullName.Contains('>') ||
+
+                        // Require either an entity, level, session
+                        !type.IsSameOrSubclassOf(typeof(Entity)) && !type.IsSameOrSubclassOf(typeof(Level)) && !type.IsSameOrSubclassOf(typeof(Session)) &&
+                        // Or type with static (settable) variables
+                        type.GetFields(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
+                            .All(f => f.IsInitOnly || !IsSettableType(f.FieldType)) &&
+                        type.GetProperties(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
+                            .All(p => !IsSettableType(p.PropertyType) || p.GetSetMethod() == null))
+                    {
+                        continue;
+                    }
+
+                    // Strip the namespace and add the @modname suffix if the typename isn't unique
+                    string uniqueTypeName = typeName;
+                    foreach (var otherType in allTypes) {
+                        if (otherType.FullName == null || otherType.Namespace == null) {
+                            continue;
+                        }
+
+                        string otherName = otherType.CSharpName();
+                        if (type != otherType && typeName == otherName) {
+                            uniqueTypeName = $"{typeName}@{ConsoleEnhancements.GetModName(type)}";
+                            break;
+                        }
+                    }
+
+                    yield return new CommandAutoCompleteEntry { Name = $"{uniqueTypeName}.", Extra = type.Namespace ?? string.Empty, IsDone = false };
+                }
+            } else if (targetArgs.Length == 1 && targetArgs[0] == "ExtendedVariantMode") {
+                // Special case for setting extended variants
+                if (ExtendedVariantsUtils.GetVariantsEnum() is { } variantsEnum) {
+                    foreach (object variant in Enum.GetValues(variantsEnum)) {
+                        string typeName = string.Empty;
+                        try {
+                            var variantType = ExtendedVariantsUtils.GetVariantType(new Lazy<object>(variant));
+                            if (variantType != null) {
+                                typeName = variantType.CSharpName();
+                            }
+                        } catch {
+                            // ignore
+                        }
+
+                        yield return new CommandAutoCompleteEntry { Name = variant.ToString()!, Prefix = "ExtendedVariantMode.", Extra = typeName, IsDone = true, HasNext = true };
+                    }
+                }
+            } else if (targetArgs.Length >= 1 && Everest.Modules.FirstOrDefault(m => m.Metadata.Name == targetArgs[0] && m.SettingsType != null) is { } mod) {
+                foreach (var entry in GetSetTypeAutoCompleteEntries(RecurseSetType(mod.SettingsType, args), isRootType: targetArgs.Length == 1)) {
+                    yield return entry with { Name = entry.Name + (entry.IsDone ? "" : "."), Prefix = string.Join('.', targetArgs) + ".", HasNext = true };
+                }
+            } else if (targetArgs.Length >= 1 && InfoCustom.TryParseTypes(targetArgs[0], out var types, out _, out _)) {
+                // Let's just assume the first type
+                foreach (var entry in GetSetTypeAutoCompleteEntries(RecurseSetType(types[0], targetArgs), isRootType: targetArgs.Length == 1)) {
+                    yield return entry with { Name = entry.Name + (entry.IsDone ? "" : "."), Prefix = string.Join('.', targetArgs) + ".", HasNext = true };
+                }
+            }
+        }
+
+        private static IEnumerable<CommandAutoCompleteEntry> GetSetTypeAutoCompleteEntries(Type type, bool isRootType) {
+            bool staticMembers = isRootType && !(type.IsSameOrSubclassOf(typeof(Entity)) || type.IsSameOrSubclassOf(typeof(Level)) || type.IsSameOrSubclassOf(typeof(Session)) || type.IsSameOrSubclassOf(typeof(EverestModuleSettings)));
+            var bindingFlags = staticMembers
+                ? BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public
+                : BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+
+            foreach (var property in type.GetProperties(bindingFlags).OrderBy(p => p.Name)) {
+                // Filter-out compiler generated properties
+                if (property.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !property.Name.Contains('<') && !property.Name.Contains('>') &&
+                    IsSettableType(property.PropertyType) && property.GetSetMethod() != null)
+                {
+                    yield return new CommandAutoCompleteEntry { Name = property.Name, Extra = property.PropertyType.CSharpName(), IsDone = IsFinalTarget(property.PropertyType), };;
+                }
+            }
+            foreach (var property in type.GetFields(bindingFlags).OrderBy(p => p.Name)) {
+                // Filter-out compiler generated properties
+                if (property.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !property.Name.Contains('<') && !property.Name.Contains('>') &&
+                    IsSettableType(property.FieldType))
+                {
+                    bool done = IsFinalTarget(property.FieldType);
+                    yield return new CommandAutoCompleteEntry { Name = done ? property.Name : $"{property.Name}.", Extra = property.FieldType.CSharpName(), IsDone = done };;
+                }
+            }
+        }
+
+        private static IEnumerator<CommandAutoCompleteEntry> GetParameterAutoCompleteEntries(string[] targetArgs) {
+            if (targetArgs.Length == 1) {
+                // Vanilla setting / session / assist
+                if (typeof(Settings).GetFieldInfo(targetArgs[0], BindingFlags.Instance | BindingFlags.Public) is { } fSettings) {
+                    return GetParameterTypeAutoCompleteEntries(fSettings.FieldType);
+                }
+                if (typeof(SaveData).GetFieldInfo(targetArgs[0], BindingFlags.Instance | BindingFlags.Public) is { } fSaveData) {
+                    return GetParameterTypeAutoCompleteEntries(fSaveData.FieldType);
+                }
+                if (typeof(Assists).GetFieldInfo(targetArgs[0], BindingFlags.Instance | BindingFlags.Public) is { } fAssists) {
+                    return GetParameterTypeAutoCompleteEntries(fAssists.FieldType);
+                }
+            }
+            if (targetArgs.Length == 1 && targetArgs[0] == "ExtendedVariantMode") {
+                // Special case for setting extended variants
+                var variant = ExtendedVariantsUtils.ParseVariant(targetArgs[1]);
+                var variantType = ExtendedVariantsUtils.GetVariantType(new(variant));
+
+                if (variantType != null) {
+                    return GetParameterTypeAutoCompleteEntries(variantType);
+                }
+            }
+            if (targetArgs.Length >= 1 && Everest.Modules.FirstOrDefault(m => m.Metadata.Name == targetArgs[0] && m.SettingsType != null) is { } mod) {
+                return GetParameterTypeAutoCompleteEntries(RecurseSetType(mod.SettingsType, targetArgs));
+            }
+            if (targetArgs.Length >= 1 && InfoCustom.TryParseTypes(targetArgs[0], out var types, out _, out _)) {
+                // Let's just assume the first type
+                return GetParameterTypeAutoCompleteEntries(RecurseSetType(types[0], targetArgs));
+            }
+
+            return Enumerable.Empty<CommandAutoCompleteEntry>().GetEnumerator();
+        }
+
+        private static IEnumerator<CommandAutoCompleteEntry> GetParameterTypeAutoCompleteEntries(Type type) {
+            if (type == typeof(bool)) {
+                yield return new CommandAutoCompleteEntry { Name = "true", Extra = type.CSharpName(), IsDone = true };
+                yield return new CommandAutoCompleteEntry { Name = "false", Extra = type.CSharpName(), IsDone = true };
+            } else if (type == typeof(ButtonBinding)) {
+                foreach (var button in Enum.GetValues<MButtons>()) {
+                    yield return new CommandAutoCompleteEntry { Name = button.ToString(), Extra = "Mouse", IsDone = true };
+                }
+                foreach (var key in Enum.GetValues<Keys>()) {
+                    if (key is Keys.Left or Keys.Right) {
+                        // These keys can't be used, since the mouse buttons already use that name
+                        continue;
+                    }
+                    yield return new CommandAutoCompleteEntry { Name = key.ToString(), Extra = "Key", IsDone = true };
+                }
+            } else if (type.IsEnum) {
+                foreach (object value in Enum.GetValues(type)) {
+                    yield return new CommandAutoCompleteEntry { Name = value.ToString()!, Extra = type.CSharpName(), IsDone = true };
+                }
+            }
+        }
+
+        private static Type RecurseSetType(Type baseType, string[] targetArgs) {
+            var type = baseType;
+            for (int i = 1; i < targetArgs.Length; i++) {
+                if (type.GetFieldInfo(targetArgs[i]) is { } field) {
+                    type = field.FieldType;
+                    continue;
+                }
+                if (type.GetPropertyInfo(targetArgs[i]) is { } property && property.GetSetMethod() != null) {
+                    type = property.PropertyType;
+                    continue;
+                }
+                break; // Invalid type
+            }
+            return type;
+        }
+
+        private static bool IsSettableType(Type type) => !type.IsSameOrSubclassOf(typeof(Delegate));
+        private static bool IsFinalTarget(Type type) => type == typeof(string) || type == typeof(Vector2) || type == typeof(Random) || type == typeof(ButtonBinding) || type.IsEnum || type.IsPrimitive;
+
+        private static IEnumerable<string> GetTargetArgs(string[] args) {
+            $"Args {string.Join("|", args)}".Log();
+            if (args.Length == 0) {
+                return [];
+            }
+
+            return args[0]
+                .Split('.')
+                // Only skip last part if we're currently editing that
+                .SkipLast(args.Length == 1 ? 1 : 0);
         }
     }
 

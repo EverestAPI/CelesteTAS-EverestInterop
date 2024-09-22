@@ -1312,8 +1312,6 @@ public sealed class Editor : Drawable {
             autoCompleteMenu.Filter = line;
         } else {
             var command = CommunicationWrapper.Commands.FirstOrDefault(cmd => string.Equals(cmd.Name, commandLine.Value.Command, StringComparison.OrdinalIgnoreCase));
-            var commandArgs = commandLine.Value.Arguments[..^1];
-            Console.WriteLine($"Args {string.Join('+', commandArgs)}");
 
             var loadingEntry = new PopupMenu.Entry {
                 DisplayText = string.Empty,
@@ -1348,10 +1346,14 @@ public sealed class Editor : Drawable {
                             break;
                         }
 
-                        loadingEntry.DisplayText = $"Loading{new string('.', loadingDots)}{new string(' ', 3 - loadingDots)}";
-                        loadingDots = (loadingDots + 1).Mod(4);
+                        await Application.Instance.InvokeAsync(() => {
+                            loadingEntry.DisplayText = $"Loading{new string('.', loadingDots)}{new string(' ', 3 - loadingDots)}";
+                            loadingDots = (loadingDots + 1).Mod(4);
+                            autoCompleteMenu.Recalc();
+                            Recalc();
+                        });
 
-                        (var commandEntries, bool done) = await CommunicationWrapper.RequestAutoCompleteEntries(command.Name, commandArgs).ConfigureAwait(false);
+                        (var commandEntries, bool done) = await CommunicationWrapper.RequestAutoCompleteEntries(command.Name, commandLine.Value.Arguments).ConfigureAwait(false);
 
                         var menuEntries = commandEntries.Select(entry => new PopupMenu.Entry {
                             SearchText = entry.FullName,

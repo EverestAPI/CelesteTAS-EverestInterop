@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
 namespace StudioCommunication.Util;
 
 public static class StringExtensions {
@@ -40,5 +44,50 @@ public static class StringExtensions {
 
             return hash1 + (hash2*1566083941);
         }
+    }
+}
+
+public static class TypeExtensions {
+    private static readonly Dictionary<Type, string> shorthandMap = new() {
+        { typeof(bool), "bool" },
+        { typeof(byte), "byte" },
+        { typeof(char), "char" },
+        { typeof(decimal), "decimal" },
+        { typeof(double), "double" },
+        { typeof(float), "float" },
+        { typeof(int), "int" },
+        { typeof(long), "long" },
+        { typeof(sbyte), "sbyte" },
+        { typeof(short), "short" },
+        { typeof(string), "string" },
+        { typeof(uint), "uint" },
+        { typeof(ulong), "ulong" },
+        { typeof(ushort), "ushort" },
+    };
+    public static string CSharpName(this Type type, bool isOut = false) {
+        if (type.IsByRef) {
+            return $"{(isOut ? "out" : "ref")} {type.GetElementType()!.CSharpName()}";
+        }
+        if (type.IsGenericType) {
+            if (type.GetGenericTypeDefinition() == typeof(Nullable<>)) {
+                return $"{Nullable.GetUnderlyingType(type)!.CSharpName()}?";
+            }
+            return $"{type.Name.Split('`')[0]}<{string.Join(", ", type.GenericTypeArguments.Select(a => a.CSharpName()).ToArray())}>";
+        }
+        if (type.IsArray) {
+            return $"{type.GetElementType()!.CSharpName()}[]";
+        }
+
+        if (shorthandMap.TryGetValue(type, out string? shorthand)) {
+            return shorthand;
+        }
+        if (type.FullName == null) {
+            return type.Name;
+        }
+
+        int namespaceLen = type.Namespace != null
+            ? type.Namespace.Length + 1
+            : 0;
+        return type.FullName[namespaceLen..];
     }
 }
