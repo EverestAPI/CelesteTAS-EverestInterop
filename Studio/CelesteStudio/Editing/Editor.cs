@@ -619,14 +619,14 @@ public sealed class Editor : Drawable {
             const int menuXOffset = 8;
             const int menuYOffset = 7;
             const int menuLPadding = 7;
-            const int menuRPadding = 7;
+            const int menuRPadding = 20;
 
             float carX = Font.CharWidth() * Document.Caret.Col;
             float carY = Font.LineHeight() * (actualToVisualRows[Document.Caret.Row] + 1);
 
             int menuX, menuY;
 
-            void UpdateMenuW() {
+            void UpdateMenuH() {
                 menuX = (int)(carX + scrollablePosition.X + textOffsetX + menuXOffset);
                 int menuMaxRight = scrollablePosition.X + scrollableSize.Width - menuRPadding - (ActivePopupMenu.VScrollBarVisible ? Studio.ScrollBarSize : 0);
                 int menuMaxW = menuMaxRight - menuX;
@@ -639,10 +639,10 @@ public sealed class Editor : Drawable {
 
                 ActivePopupMenu.ContentWidth = Math.Min(ActivePopupMenu.ContentWidth, menuMaxW);
             }
-            void UpdateMenuH() {
+            void UpdateMenuV() {
                 int menuYBelow = (int)(carY + menuYOffset);
                 int menuYAbove = (int)Math.Max(carY - Font.LineHeight() - menuYOffset - ActivePopupMenu.ContentHeight, scrollablePosition.Y + menuYOffset);
-                
+
                 int menuMaxHBelow = (int)(scrollablePosition.Y + scrollableSize.Height - Font.LineHeight() - menuYBelow) - (ActivePopupMenu.HScrollBarVisible ? Studio.ScrollBarSize : 0);
                 int menuMaxHAbove = (int)(scrollablePosition.Y + carY - Font.LineHeight() - menuYOffset - menuYAbove);
 
@@ -660,9 +660,9 @@ public sealed class Editor : Drawable {
             }
 
             // Both depend on each-other, so one needs to be updated twice
-            UpdateMenuW();
             UpdateMenuH();
-            UpdateMenuW();
+            UpdateMenuV();
+            UpdateMenuH();
 
             ActivePopupMenu.Recalc();
             pixelLayout.Move(ActivePopupMenu, menuX, menuY);
