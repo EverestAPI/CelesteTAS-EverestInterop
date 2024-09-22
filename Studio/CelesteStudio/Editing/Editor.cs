@@ -1320,8 +1320,6 @@ public sealed class Editor : Drawable {
                 OnUse = null!,
                 Disabled = true,
             };
-            autoCompleteMenu.Entries.Clear();
-            autoCompleteMenu.Entries.Add(loadingEntry);
 
             if (!string.IsNullOrEmpty(command.Name)) {
                 var lastArgRegion = commandLine.Value.Regions[^1];
@@ -1346,12 +1344,8 @@ public sealed class Editor : Drawable {
                             break;
                         }
 
-                        await Application.Instance.InvokeAsync(() => {
-                            loadingEntry.DisplayText = $"Loading{new string('.', loadingDots)}{new string(' ', 3 - loadingDots)}";
-                            loadingDots = (loadingDots + 1).Mod(4);
-                            autoCompleteMenu.Recalc();
-                            Recalc();
-                        });
+                        loadingDots = (loadingDots + 1).Mod(4);
+                        loadingEntry.DisplayText = $"Loading{new string('.', loadingDots)}{new string(' ', 3 - loadingDots)}";
 
                         (var commandEntries, bool done) = await CommunicationWrapper.RequestAutoCompleteEntries(command.Name, commandLine.Value.Arguments).ConfigureAwait(false);
 
