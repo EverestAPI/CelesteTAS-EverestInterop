@@ -62,9 +62,8 @@ public sealed class PopupMenu : Scrollable {
         }
 
         protected override void OnPaint(PaintEventArgs e) {
-            e.Graphics.FillPath(
-                Settings.Instance.Theme.PopupMenuBg,
-                GraphicsPath.GetRoundRect(new RectangleF(menu.ScrollPosition.X, menu.ScrollPosition.Y, menu.Width, menu.Height), Settings.Instance.Theme.PopupMenuBorderRounding));
+            e.Graphics.SetClip(GraphicsPath.GetRoundRect(new RectangleF(menu.ScrollPosition.X, menu.ScrollPosition.Y, menu.Width, menu.Height), Settings.Instance.Theme.PopupMenuBorderRounding));
+            e.Graphics.FillRectangle(Settings.Instance.Theme.PopupMenuBg, menu.ScrollPosition.X, menu.ScrollPosition.Y, menu.Width, menu.Height);
 
             if (menu.shownEntries.Length == 0) {
                 return;
@@ -194,7 +193,7 @@ public sealed class PopupMenu : Scrollable {
     }
 
     public int ContentWidth {
-        set => Width = Math.Max(0, value + ScrollBarWidth);
+        set => Width = Math.Max(0, value);
         get {
             if (shownEntries.Length == 0) {
                 return 0;
@@ -204,7 +203,7 @@ public sealed class PopupMenu : Scrollable {
             int maxDisplayLen = shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
             int maxExtraLen = shownEntries.Select(entry => entry.ExtraText.Length).Aggregate(Math.Max);
 
-            return (int)(font.CharWidth() * (maxDisplayLen + DisplayExtraPadding + maxExtraLen) + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding * 2.0f + Settings.Instance.Theme.PopupMenuBorderPadding * 2);
+            return (int)(font.CharWidth() * (maxDisplayLen + DisplayExtraPadding + maxExtraLen) + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding * 2.0f + Settings.Instance.Theme.PopupMenuBorderPadding * 2 + ScrollBarWidth);
         }
     }
     public int ContentHeight {

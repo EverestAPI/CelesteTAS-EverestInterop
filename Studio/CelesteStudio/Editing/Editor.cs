@@ -616,24 +616,26 @@ public sealed class Editor : Drawable {
 
         // Update popup-menu position
         if (ActivePopupMenu != null) {
-            const float menuXOffset = 8.0f;
-            const float menuYOffset = 7.0f;
+            const int menuXOffset = 8;
+            const int menuYOffset = 7;
+            const int menuLPadding = 7;
+            const int menuRPadding = 20;
 
-            float availableWidth = scrollablePosition.X + scrollableSize.Width - Font.CharWidth();
             float carX = Font.CharWidth() * Document.Caret.Col;
             float carY = Font.LineHeight() * (actualToVisualRows[Document.Caret.Row] + 1);
 
             int menuX = (int)(carX + scrollablePosition.X + textOffsetX + menuXOffset);
             int menuYBelow = (int)(carY + menuYOffset);
             int menuYAbove = (int)Math.Max(carY - Font.LineHeight() - menuYOffset - ActivePopupMenu.ContentHeight, scrollablePosition.Y + menuYOffset);
-            int menuMaxW = (int)(availableWidth - menuX);
+            int menuMaxRight = scrollablePosition.X + scrollableSize.Width - menuRPadding;
+            int menuMaxW = menuMaxRight - menuX;
             int menuMaxHBelow = (int)(scrollablePosition.Y + scrollableSize.Height - Font.LineHeight() - menuYBelow);
             int menuMaxHAbove = (int)(scrollablePosition.Y + carY - Font.LineHeight() - menuYOffset - menuYAbove);
 
             // Try moving the menu to the left when there isn't enough space, before having to shrink it
             if (menuMaxW < ActivePopupMenu.ContentWidth) {
-                menuX = (int)Math.Max(availableWidth - ActivePopupMenu.ContentWidth, scrollablePosition.X + textOffsetX);
-                menuMaxW = (int)(availableWidth - menuX);
+                menuX = (int)Math.Max(menuMaxRight - ActivePopupMenu.ContentWidth, scrollablePosition.X + textOffsetX + menuLPadding);
+                menuMaxW = menuMaxRight - menuX;
             }
 
             // Chose above / below caret depending on which provides more height. Default to below
@@ -649,6 +651,7 @@ public sealed class Editor : Drawable {
             // Set height first, to account for a potential scroll bar
             ActivePopupMenu.ContentHeight = Math.Min(ActivePopupMenu.ContentHeight, menuMaxH);
             ActivePopupMenu.ContentWidth = Math.Min(ActivePopupMenu.ContentWidth, menuMaxW);
+            ActivePopupMenu.Recalc();
             pixelLayout.Move(ActivePopupMenu, menuX, menuY);
         }
 
@@ -1338,6 +1341,7 @@ public sealed class Editor : Drawable {
                             await Application.Instance.InvokeAsync(() => {
                                 autoCompleteMenu.Entries.Clear();
                                 autoCompleteMenu.Entries.Add(loadingEntry);
+                                autoCompleteMenu.Recalc();
                                 Recalc();
                             }).ConfigureAwait(false);
 
@@ -1426,6 +1430,7 @@ public sealed class Editor : Drawable {
                             if (!done) {
                                 autoCompleteMenu.Entries.Add(loadingEntry);
                             }
+
                             autoCompleteMenu.Recalc();
                             Recalc();
                         }).ConfigureAwait(false);
@@ -1442,6 +1447,7 @@ public sealed class Editor : Drawable {
             } else {
                 autoCompleteMenu.Entries.Clear();
                 autoCompleteMenu.Recalc();
+                Recalc();
             }
 
             if (GetSelectedQuickEdit() is { } quickEdit && commandLine.Value.Arguments[^1] == quickEdit.DefaultText) {
