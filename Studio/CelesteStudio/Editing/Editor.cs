@@ -60,7 +60,7 @@ public sealed class Editor : Drawable {
                 }
             }
 
-            // Auto-close folds which are too long
+            // Auto-collapses folds which are too long
             foreach (var fold in foldings) {
                 if (Settings.Instance.MaxUnfoldedLines == 0) {
                     // Close everything
@@ -73,6 +73,11 @@ public sealed class Editor : Drawable {
                     SetCollapse(fold.MinRow, true);
                 }
             }
+
+            // Apply auto-collapses
+            Recalc();
+
+            return;
 
             void HandleTextChanged(Document _, int minRow, int maxRow) {
                 lastModification = DateTime.UtcNow;
@@ -455,7 +460,7 @@ public sealed class Editor : Drawable {
             var trimmed = line.TrimStart();
 
             bool startedCollapse = false;
-            if (Document.FindFirstAnchor(anchor => anchor.Row == row && anchor.UserData is FoldingAnchorData) != null) {
+            if (Document.FindFirstAnchor(anchor => anchor.Row == row && anchor.UserData is CollapseAnchorData) != null) {
                 activeCollapses.Add(row);
 
                 if (activeCollapses.Count == 1) {
@@ -599,7 +604,7 @@ public sealed class Editor : Drawable {
         }
 
         // Clear invalid foldings
-        Document.RemoveAnchorsIf(anchor => anchor.UserData is FoldingAnchorData && foldings.All(fold => fold.MinRow != anchor.Row));
+        Document.RemoveAnchorsIf(anchor => anchor.UserData is CollapseAnchorData && foldings.All(fold => fold.MinRow != anchor.Row));
 
         // Calculate line numbers width
         const float foldButtonPadding = 5.0f;
@@ -1686,14 +1691,14 @@ public sealed class Editor : Drawable {
 
         public int StartCol;
     }
-    private struct FoldingAnchorData;
+    private struct CollapseAnchorData;
 
     private void ToggleCollapse(int row) {
-        if (Document.FindFirstAnchor(anchor => anchor.Row == row && anchor.UserData is FoldingAnchorData) == null) {
+        if (Document.FindFirstAnchor(anchor => anchor.Row == row && anchor.UserData is CollapseAnchorData) == null) {
             Document.AddAnchor(new Anchor {
                 MinCol = 0, MaxCol = Document.Lines[row].Length,
                 Row = row,
-                UserData = new FoldingAnchorData()
+                UserData = new CollapseAnchorData()
             });
 
             if (foldings.FirstOrDefault(f => f.MinRow == row) is { } fold &&
@@ -1703,15 +1708,15 @@ public sealed class Editor : Drawable {
                 Document.Caret = ClampCaret(Document.Caret);
             }
         } else {
-            Document.RemoveAnchorsIf(anchor => anchor.Row == row && anchor.UserData is FoldingAnchorData);
+            Document.RemoveAnchorsIf(anchor => anchor.Row == row && anchor.UserData is CollapseAnchorData);
         }
     }
     private void SetCollapse(int row, bool collapse) {
-        if (collapse && Document.FindFirstAnchor(anchor => anchor.Row == row && anchor.UserData is FoldingAnchorData) == null) {
+        if (collapse && Document.FindFirstAnchor(anchor => anchor.Row == row && anchor.UserData is CollapseAnchorData) == null) {
             Document.AddAnchor(new Anchor {
                 MinCol = 0, MaxCol = Document.Lines[row].Length,
                 Row = row,
-                UserData = new FoldingAnchorData()
+                UserData = new CollapseAnchorData()
             });
 
             if (foldings.FirstOrDefault(f => f.MinRow == row) is { } fold &&
@@ -1721,11 +1726,11 @@ public sealed class Editor : Drawable {
                 Document.Caret = ClampCaret(Document.Caret);
             }
         } else {
-            Document.RemoveAnchorsIf(anchor => anchor.Row == row && anchor.UserData is FoldingAnchorData);
+            Document.RemoveAnchorsIf(anchor => anchor.Row == row && anchor.UserData is CollapseAnchorData);
         }
     }
     private Folding? GetCollapse(int row) {
-        if (Document.FindFirstAnchor(anchor => anchor.Row == row && anchor.UserData is FoldingAnchorData) == null) {
+        if (Document.FindFirstAnchor(anchor => anchor.Row == row && anchor.UserData is CollapseAnchorData) == null) {
             return null;
         }
 
