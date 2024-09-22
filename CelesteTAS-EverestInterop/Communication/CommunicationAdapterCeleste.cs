@@ -82,8 +82,6 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 object? arg = gameDataType switch {
                     GameDataType.ConsoleCommand => reader.ReadBoolean(),
                     GameDataType.SettingValue => reader.ReadString(),
-                    GameDataType.SetCommandAutoCompleteEntries or
-                    GameDataType.InvokeCommandAutoCompleteEntries => reader.ReadObject<(string, int)>(),
                     GameDataType.RawInfo => reader.ReadObject<(string, bool)>(),
                     GameDataType.CommandHash => reader.ReadObject<(string, string[])>(),
                     _ => null,
@@ -115,14 +113,6 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                                 break;
                             case GameDataType.CustomInfoTemplate:
                                 gameData = !string.IsNullOrWhiteSpace(TasSettings.InfoCustomTemplate) ? TasSettings.InfoCustomTemplate : string.Empty;
-                                break;
-                            case GameDataType.SetCommandAutoCompleteEntries:
-                                gameData = /*GameData.GetSetCommandAutoCompleteEntries((((string, int))arg!).Item1, (((string, int))arg).Item2)
-                                    .ToArray();*/(CommandAutoCompleteEntry[])[];
-                                break;
-                            case GameDataType.InvokeCommandAutoCompleteEntries:
-                                gameData = /*GameData.GetInvokeCommandAutoCompleteEntries((((string, int))arg!).Item1, (((string, int))arg).Item2)
-                                    .ToArray();*/(CommandAutoCompleteEntry[])[];
                                 break;
                             case GameDataType.RawInfo:
                                 gameData = InfoCustom.GetRawInfo(((string, bool))arg!);
@@ -160,11 +150,6 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                                 case GameDataType.ModUrl:
                                 case GameDataType.CustomInfoTemplate:
                                     writer.Write((string?)gameData ?? string.Empty);
-                                    break;
-
-                                case GameDataType.SetCommandAutoCompleteEntries:
-                                case GameDataType.InvokeCommandAutoCompleteEntries:
-                                    writer.WriteObject((CommandAutoCompleteEntry[]?)gameData ?? []);
                                     break;
 
                                 case GameDataType.RawInfo:

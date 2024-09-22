@@ -77,8 +77,6 @@ public enum GameDataType : byte {
     ModUrl,
     ExactGameInfo,
     CustomInfoTemplate,
-    SetCommandAutoCompleteEntries,
-    InvokeCommandAutoCompleteEntries,
     RawInfo,
     GameState,
     CommandHash,

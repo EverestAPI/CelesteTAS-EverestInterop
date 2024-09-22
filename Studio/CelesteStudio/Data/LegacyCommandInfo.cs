@@ -41,24 +41,16 @@ public struct LegacyCommandInfo() {
         new LegacyCommandInfo { Name = "Repeat", Insert = $"Repeat{separator}[0;2]{Document.NewLine}    [1]{Document.NewLine}EndRepeat", Description = "Repeat the inputs between \"Repeat\" and \"EndRepeat\" several times, nesting is not supported."  },
         new LegacyCommandInfo { Name = "EndRepeat", Insert = "EndRepeat", Description = "Repeat the inputs between \"Repeat\" and \"EndRepeat\" several times, nesting is not supported." },
         null,
-        new LegacyCommandInfo {
-            Name = "Set",
-            Description = "Sets the specified setting to the specified value.",
-            Insert = $"Set{separator}[0;(Mod).Setting]{separator}[1;Value]",
-            AutoCompleteEntries = [
-                args => GetSetEntries(args[0], 0),
-                args => GetSetEntries(args[0], 1),
-            ]
-        },
-        new LegacyCommandInfo {
-            Name = "Invoke",
-            Description = "Similar to the set command, but used to invoke the method",
-            Insert = $"Invoke{separator}[0;Entity.Method]{separator}[1;Parameter]",
-            AutoCompleteEntries = [
-                args => GetInvokeEntries(args[0], 0),
-                args => GetInvokeEntries(args[0], 1),
-            ]
-        },
+        // new LegacyCommandInfo {
+        //     Name = "Set",
+        //     Description = "Sets the specified setting to the specified value.",
+        //     Insert = $"Set{separator}[0;(Mod).Setting]{separator}[1;Value]",
+        // },
+        // new LegacyCommandInfo {
+        //     Name = "Invoke",
+        //     Description = "Similar to the set command, but used to invoke the method",
+        //     Insert = $"Invoke{separator}[0;Entity.Method]{separator}[1;Parameter]",
+        // },
         new LegacyCommandInfo { Name = "EvalLua", Insert = $"EvalLua{separator}[0;Code]", Description = "Evaluate Lua code"},
         null,
         // new CommandInfo { Name = "Press", Insert = $"Press{separator}[0;Key1{separator}Key2...]", Description = "Press the specified keys with the next input." },
@@ -126,22 +118,6 @@ public struct LegacyCommandInfo() {
         new LegacyCommandInfo { Name = "ExitGame", Insert = "ExitGame", Description = "Used to force the game when recording video with .kkapture to finish recording." },
     ];
 
-    public static void ResetCache() {
-        setCommandCache.Clear();
-        invokeCommandCache.Clear();
-
-        // Prefetch the 2 big lists
-        Task.Run(async () => {
-            var setEntries = CommunicationWrapper.RequestSetCommandAutoCompleteEntries("", 0);
-            var invokeEntries = CommunicationWrapper.RequestInvokeCommandAutoCompleteEntries("", 0);
-
-            await Task.WhenAll(setEntries, invokeEntries).ConfigureAwait(false);
-
-            setCommandCache[("", 0)] = setEntries.Result;
-            invokeCommandCache[("", 0)] = invokeEntries.Result;
-        });
-    }
-
     private static CommandAutoCompleteEntry[] GetFilePathEntries(string arg) {
         var documentPath = Studio.Instance.Editor.Document.FilePath;
         if (documentPath == Document.ScratchFile) {
@@ -201,39 +177,5 @@ public struct LegacyCommandInfo() {
         }
 
         return labels;
-    }
-
-    private static readonly Dictionary<(string, int), CommandAutoCompleteEntry[]> setCommandCache = [];
-    private static CommandAutoCompleteEntry[] GetSetEntries(string argsText, int index) {
-        var args = index == 0
-            ? string.Join('.', argsText.Split('.').SkipLast(1))
-            : string.Join('.', argsText.Split('.'));
-        var key = (args, index);
-
-        if (setCommandCache.TryGetValue(key, out var entries)) {
-            return entries;
-        }
-
-        entries = CommunicationWrapper.RequestSetCommandAutoCompleteEntries(argsText, index).Result;
-        setCommandCache[key] = entries;
-
-        return entries;
-    }
-
-    private static readonly Dictionary<(string, int), CommandAutoCompleteEntry[]> invokeCommandCache = [];
-    private static CommandAutoCompleteEntry[] GetInvokeEntries(string argsText, int index) {
-        var args = index == 0
-            ? string.Join('.', argsText.Split('.').SkipLast(1))
-            : string.Join('.', argsText.Split('.'));
-        var key = (args, index);
-
-        if (invokeCommandCache.TryGetValue(key, out var entries)) {
-            return entries;
-        }
-
-        entries = CommunicationWrapper.RequestInvokeCommandAutoCompleteEntries(argsText, index).Result;
-        invokeCommandCache[key] = entries;
-
-        return entries;
     }
 }

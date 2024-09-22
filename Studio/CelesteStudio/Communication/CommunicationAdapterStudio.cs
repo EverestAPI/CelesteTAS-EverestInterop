@@ -91,11 +91,6 @@ public sealed class CommunicationAdapterStudio(
                         gameData[gameDataType] = reader.ReadString();
                         break;
 
-                    case GameDataType.SetCommandAutoCompleteEntries:
-                    case GameDataType.InvokeCommandAutoCompleteEntries:
-                        gameData[gameDataType] = reader.ReadObject<CommandAutoCompleteEntry[]>();
-                        break;
-
                     case GameDataType.RawInfo:
                         gameData[gameDataType] = reader.ReadObject(rawInfoTargetType!);
                         break;

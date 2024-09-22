@@ -174,7 +174,6 @@ public sealed class Studio : Form {
 
             // Only enable some settings while connected
             CommunicationWrapper.ConnectionChanged += () => Application.Instance.Invoke(() => {
-                LegacyCommandInfo.ResetCache();
                 Menu = CreateMenu();
             });
         }
