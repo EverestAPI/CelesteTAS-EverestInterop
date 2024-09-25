@@ -9,13 +9,18 @@ using TAS.Utils;
 namespace TAS.Input.Commands;
 
 public static class GunCommand {
+    private class Meta : ITasCommandMeta {
+        public string Insert => $"Gun{CommandInfo.Separator}[0;X]{CommandInfo.Separator}[1;Y]";
+        public bool HasArguments => true;
+    }
+
     private static readonly Lazy<PropertyInfo> GunInputCursorPosition =
         new(() => ModUtils.GetType("Guneline", "Guneline.GunInput")?.GetProperty("CursorPosition"));
 
     private static readonly Lazy<MethodInfo> GunlineGunshot = new(() => ModUtils.GetType("Guneline", "Guneline.Guneline")?.GetMethod("Gunshot"));
 
     // Gun, x, y
-    [TasCommand("Gun", LegalInFullGame = false)]
+    [TasCommand("Gun", LegalInFullGame = false, MetaDataProvider = typeof(Meta))]
     private static void Gun(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         string[] args = commandLine.Arguments;
         if (args.Length < 2) {

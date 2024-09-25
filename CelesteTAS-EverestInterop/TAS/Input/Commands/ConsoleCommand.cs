@@ -17,6 +17,13 @@ using TAS.Utils;
 namespace TAS.Input.Commands;
 
 public static class ConsoleCommand {
+    private class Meta : ITasCommandMeta {
+        public string Insert => "console";
+        public bool HasArguments => true;
+
+        // TODO: Auto-complete
+    }
+
     public static readonly Regex LoadCommandRegex = new(@"^(load|hard|rmx2)(\d*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     private static Vector2 initRemainder;
@@ -115,14 +122,14 @@ public static class ConsoleCommand {
         }
     }
 
-    // "Console CommandType",
-    // "Console CommandType CommandArgs",
-    // "Console LoadCommand IDorSID",
-    // "Console LoadCommand IDorSID Screen",
-    // "Console LoadCommand IDorSID Screen Spawnpoint",
-    // "Console LoadCommand IDorSID PositionX PositionY"
-    // "Console LoadCommand IDorSID PositionX PositionY SpeedX SpeedY"
-    [TasCommand("Console", LegalInFullGame = false)]
+    // "console CommandType",
+    // "console CommandType CommandArgs",
+    // "console LoadCommand IDorSID",
+    // "console LoadCommand IDorSID Screen",
+    // "console LoadCommand IDorSID Screen Spawnpoint",
+    // "console LoadCommand IDorSID PositionX PositionY"
+    // "console LoadCommand IDorSID PositionX PositionY SpeedX SpeedY"
+    [TasCommand("console", LegalInFullGame = false, MetaDataProvider = typeof(Meta))]
     private static void Console(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         if (commandLine.Arguments.IsEmpty()) {
             AbortTas("Need to specify arguments for \"Console\" command");

@@ -12,7 +12,6 @@ namespace TAS.Input.Commands;
 
 public static class ReadCommand {
     private class ReadMeta : ITasCommandMeta {
-        public string Description => "Will read inputs from the specified file.";
         public string Insert => $"Read{CommandInfo.Separator}[0;File Name]{CommandInfo.Separator}[1;Starting Label]{CommandInfo.Separator}[2;(Ending Label)]";
         public bool HasArguments => true;
 

@@ -154,7 +154,7 @@ public readonly record struct Command(
         Commands
             .Select(command => {
                 var meta = command.MetaData;
-                return new CommandInfo(command.Name, meta?.Description ?? string.Empty, meta?.Insert ?? command.Name, meta?.HasArguments ?? false);
+                return new CommandInfo(command.Name, meta?.Insert ?? command.Name, meta?.HasArguments ?? false);
             })
             .ToArray();
 }

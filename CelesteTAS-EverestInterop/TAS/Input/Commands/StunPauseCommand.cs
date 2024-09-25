@@ -12,6 +12,39 @@ using TAS.Utils;
 namespace TAS.Input.Commands;
 
 public static class StunPauseCommand {
+    private class Meta : ITasCommandMeta {
+        public string Insert => """
+                                StunPause [1]
+                                    [0]
+                                EndStunPause
+                                """;
+        public bool HasArguments => true;
+
+        public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
+            if (args.Length != 1) {
+                yield break;
+            }
+
+            foreach (var mode in Enum.GetValues<StunPauseMode>()) {
+                yield return new CommandAutoCompleteEntry { Name = mode.ToString(), IsDone = true };
+            }
+        }
+    }
+    private class ModeMeta : ITasCommandMeta {
+        public string Insert => $"StunPauseMode{CommandInfo.Separator}[0;Input/Simulate]";
+        public bool HasArguments => true;
+
+        public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
+            if (args.Length != 1) {
+                yield break;
+            }
+
+            foreach (var mode in Enum.GetValues<StunPauseMode>()) {
+                yield return new CommandAutoCompleteEntry { Name = mode.ToString(), IsDone = true };
+            }
+        }
+    }
+
     public enum StunPauseMode {
         Input,
         Simulate
@@ -93,7 +126,7 @@ public static class StunPauseCommand {
         }
     }
 
-    [TasCommand("StunPause", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
+    [TasCommand("StunPause", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime, MetaDataProvider = typeof(Meta))]
     private static void StunPause(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         string[] args = commandLine.Arguments;
         LocalMode = null;
@@ -165,7 +198,7 @@ public static class StunPauseCommand {
         }
     }
 
-    [TasCommand("StunPauseMode", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
+    [TasCommand("StunPauseMode", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime, MetaDataProvider = typeof(ModeMeta))]
     private static void StunPauseCommandMode(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         string[] args = commandLine.Arguments;
         if (args.IsNotEmpty() && Enum.TryParse(args[0], true, out StunPauseMode value)) {

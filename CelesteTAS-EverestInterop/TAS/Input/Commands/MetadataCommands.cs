@@ -54,7 +54,12 @@ public static class MetadataCommands {
         TasStartFileTime = null;
     }
 
-    [TasCommand("RecordCount", Aliases = ["RecordCount:", "RecordCount："], CalcChecksum = false)]
+    private class RecordCountMeta : ITasCommandMeta {
+        public string Insert => "RecordCount: 1";
+        public bool HasArguments => false;
+    }
+
+    [TasCommand("RecordCount", Aliases = ["RecordCount:", "RecordCount："], CalcChecksum = false, MetaDataProvider = typeof(RecordCountMeta))]
     private static void RecordCountCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         // dummy
     }

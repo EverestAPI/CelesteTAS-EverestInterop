@@ -7,6 +7,15 @@ using TAS.Utils;
 namespace TAS.Input.Commands;
 
 public static class RepeatCommand {
+    private class Meta : ITasCommandMeta {
+        public string Insert => $"""
+                                 Repeat{CommandInfo.Separator}[0;2]
+                                     [1]
+                                 EndRepeat
+                                 """;
+        public bool HasArguments => true;
+    }
+
     private record struct Arguments(int StartLine, int Count, int StartFrame) {
         public readonly int StartLine = StartLine;
         public readonly int Count = Count;
@@ -35,7 +44,7 @@ public static class RepeatCommand {
     }
 
     // "Repeat, Count"
-    [TasCommand("Repeat", ExecuteTiming = ExecuteTiming.Parse)]
+    [TasCommand("Repeat", ExecuteTiming = ExecuteTiming.Parse, MetaDataProvider = typeof(Meta))]
     private static void Repeat(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         string[] args = commandLine.Arguments;
         string errorText = $"{Path.GetFileName(filePath)} line {fileLine}\n";

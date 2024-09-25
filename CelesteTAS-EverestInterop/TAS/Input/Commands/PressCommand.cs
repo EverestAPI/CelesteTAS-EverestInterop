@@ -10,18 +10,18 @@ namespace TAS.Input.Commands;
 
 public static class PressCommand {
     private class PressMeta : ITasCommandMeta {
-        public string Description => "Press the specified keys with the next input.";
         public string Insert => $"Press{CommandInfo.Separator}[0;Key1{CommandInfo.Separator}Key2...]";
         public bool HasArguments => true;
 
-        public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) =>
-            Enum.GetValues<Keys>()
-                .Select(key => new CommandAutoCompleteEntry {
-                    Name = key.ToString(),
-                    Extra = "Keys",
-                    IsDone = true
-                })
-                .GetEnumerator();
+        public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
+            if (args.Length != 1) {
+                yield break;
+            }
+
+            foreach (var key in Enum.GetValues<Keys>()) {
+                yield return new CommandAutoCompleteEntry { Name = key.ToString(), Extra = "Keys", IsDone = true };
+            }
+        }
     }
 
     public static readonly HashSet<Keys> PressKeys = new();

@@ -17,9 +17,14 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Lua;
 
 public static class EvalLuaCommand {
+    private class Meta : ITasCommandMeta {
+        public string Insert => $"EvalLua{CommandInfo.Separator}[0;Code]";
+        public bool HasArguments => true;
+    }
+
     private static bool consoleCommandRunning;
-    private const string commandName = "evallua";
-    private static readonly Regex commandAndSeparatorRegex = new(@$"^{commandName}[ |,]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private const string CommandName = "EvalLua";
+    private static readonly Regex commandAndSeparatorRegex = new(@$"^{CommandName}[ |,]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private static readonly FieldInfo DebugRClogFieldInfo = typeof(Commands).GetFieldInfo("debugRClog");
 
     [Load]
@@ -46,8 +51,8 @@ public static class EvalLuaCommand {
                     if (cursor.TryGotoNext(MoveType.After, instr => instr.MatchCallvirt<string>("Split"))) {
                         cursor.Emit(OpCodes.Ldloc_0).EmitDelegate<Func<string[], string, string[]>>(
                             (commandAndArgs, rawCommand) => {
-                                if (commandAndArgs[0].ToLower() == commandName && commandAndArgs.Length >= 2) {
-                                    return new[] {commandName, commandAndSeparatorRegex.Replace(rawCommand, "")};
+                                if (commandAndArgs[0].ToLower() == CommandName && commandAndArgs.Length >= 2) {
+                                    return new[] {CommandName, commandAndSeparatorRegex.Replace(rawCommand, "")};
                                 }
 
                                 return commandAndArgs;
@@ -78,11 +83,11 @@ public static class EvalLuaCommand {
         $"EvalLua Command Failed: {message}".Log();
     }
 
-    [Monocle.Command(commandName, "Evaluate lua code (CelesteTAS)")]
+    [Monocle.Command(CommandName, "Evaluate lua code (CelesteTAS)")]
     private static void EvalLua(string code) {
         string firstHistory = Engine.Commands.commandHistory.FirstOrDefault();
         if (DebugRClogFieldInfo.GetValue(Engine.Commands) == null &&
-            firstHistory?.StartsWith(commandName, StringComparison.InvariantCultureIgnoreCase) == true) {
+            firstHistory?.StartsWith(CommandName, StringComparison.InvariantCultureIgnoreCase) == true) {
             code = commandAndSeparatorRegex.Replace(firstHistory, "");
         }
 
@@ -92,7 +97,7 @@ public static class EvalLuaCommand {
         LogResult(result);
     }
 
-    [TasCommand(commandName, LegalInFullGame = false)]
+    [TasCommand(CommandName, LegalInFullGame = false, MetaDataProvider = typeof(Meta))]
     private static void EvalLua(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         string[] args = commandLine.Arguments;
         if (args.IsEmpty()) {

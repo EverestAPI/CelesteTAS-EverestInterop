@@ -15,16 +15,20 @@ using TAS.Utils;
 namespace TAS;
 
 public static class ExportGameInfo {
+    private class Meta : ITasCommandMeta {
+        public string Insert => $"ExportGameInfo{CommandInfo.Separator}[0;dump.txt]";
+        public bool HasArguments => true;
+    }
+
     private static StreamWriter streamWriter;
     private static IDictionary<string, Func<List<Entity>>> trackedEntities;
     private static bool exporting;
     private static InputFrame exportingInput;
 
-    // ReSharper disable once UnusedMember.Local
-    // "StartExportGameInfo"
-    // "StartExportGameInfo Path"
-    // "StartExportGameInfo Path EntitiesToTrack"
-    [TasCommand("StartExportGameInfo", Aliases = ["ExportGameInfo"], CalcChecksum = false)]
+    // "ExportGameInfo"
+    // "ExportGameInfo Path"
+    // "ExportGameInfo Path EntitiesToTrack"
+    [TasCommand("ExportGameInfo", Aliases = ["StartExportGameInfo"], CalcChecksum = false)]
     private static void StartExportCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         string[] args = commandLine.Arguments;
         string path = "dump.txt";
@@ -38,8 +42,7 @@ public static class ExportGameInfo {
         BeginExport(path, args);
     }
 
-    // ReSharper disable once UnusedMember.Local
-    [TasCommand("FinishExportGameInfo", Aliases = ["EndExportGameInfo"], CalcChecksum = false)]
+    [TasCommand("EndExportGameInfo", Aliases = ["FinishExportGameInfo"], CalcChecksum = false)]
     private static void FinishExportCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         FinishExport();
     }

@@ -17,7 +17,6 @@ namespace TAS.Input.Commands;
 
 public static class InvokeCommand {
     private class InvokeMeta : ITasCommandMeta {
-        public string Description => "Invokes the specified target method";
         public string Insert => $"Invoke{CommandInfo.Separator}[0;Entity.Method]{CommandInfo.Separator}[1;Parameter]";
         public bool HasArguments => true;
 

@@ -6,6 +6,13 @@ using TAS.Utils;
 namespace TAS.Input.Commands;
 
 public static class AssertCommand {
+    private class Meta : ITasCommandMeta {
+        public string Insert => "Assert";
+        public bool HasArguments => false;
+
+        // TODO: Auto-complete
+    }
+
     enum AssertCondition {
         Equal,
         NotEqual,
@@ -20,7 +27,7 @@ public static class AssertCommand {
     public static bool Running { get; private set; }
 
     //  Assert, Condition, Expected, Actual
-    [TasCommand("Assert", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
+    [TasCommand("Assert", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime, MetaDataProvider = typeof(Meta))]
     private static void Assert(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         string[] args = commandLine.Arguments;
         string prefix = $"""

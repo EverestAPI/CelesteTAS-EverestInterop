@@ -51,7 +51,6 @@ public static class SetCommand {
 
         internal static readonly string[] ignoredNamespaces = ["System", "StudioCommunication", "TAS", "SimplexNoise", "FMOD", "MonoMod", "Snowberry"];
 
-        public string Description => "Sets the specified setting to the specified value.";
         public string Insert => $"Set{CommandInfo.Separator}[0;(Mod).Setting]{CommandInfo.Separator}[1;Value]";
         public bool HasArguments => true;
 

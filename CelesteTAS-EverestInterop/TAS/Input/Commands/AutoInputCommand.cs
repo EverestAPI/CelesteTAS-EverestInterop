@@ -7,6 +7,18 @@ using TAS.Utils;
 namespace TAS.Input.Commands;
 
 public static class AutoInputCommand {
+    private class Meta : ITasCommandMeta {
+        public string Insert => $"""
+                                 AutoInput{CommandInfo.Separator}[0;2]
+                                    1,S,N
+                                   10,O
+                                 StartAutoInput
+                                     [1]
+                                 EndAutoInput
+                                 """;
+        public bool HasArguments => true;
+    }
+
     public record Arguments {
         public readonly int StartLine;
         public readonly int CycleLength;
@@ -50,7 +62,7 @@ public static class AutoInputCommand {
         Manager.Controller.Clear();
     }
 
-    [TasCommand("AutoInput", ExecuteTiming = ExecuteTiming.Parse)]
+    [TasCommand("AutoInput", ExecuteTiming = ExecuteTiming.Parse, MetaDataProvider = typeof(Meta))]
     private static void AutoInput(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         string[] args = commandLine.Arguments;
         string errorText = $"{Path.GetFileName(filePath)} line {fileLine}\n";

@@ -10,7 +10,6 @@ namespace TAS.Input.Commands;
 
 public static class PlayCommand {
     private class PlayMeta : ITasCommandMeta {
-        public string Description => "A simplified Read command which skips to the starting line in the current file.\nUseful for splitting a large level into larger chunks.";
         public string Insert => $"Play{CommandInfo.Separator}[0;Starting Label]";
         public bool HasArguments => true;
 

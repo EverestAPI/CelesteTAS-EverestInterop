@@ -17,6 +17,11 @@ using Comment = TAS.Input.Comment;
 namespace TAS.EverestInterop;
 
 public static class AreaCompleteInfo {
+    private class Meta : ITasCommandMeta {
+        public string Insert => $"CompleteInfo{CommandInfo.Separator}[0;A 1]";
+        public bool HasArguments => true;
+    }
+
     private const string TasWasRun = "CelesteTAS_TAS_Was_Run";
     private const string AlwaysShowInfo = nameof(AlwaysShowInfo);
     private static string text;
@@ -136,7 +141,7 @@ public static class AreaCompleteInfo {
 
     // "CompleteInfo, Side, SID/ID"
     // The comments immediately following this command will be printed to the complete screen
-    [TasCommand("CompleteInfo", CalcChecksum = false)]
+    [TasCommand("CompleteInfo", CalcChecksum = false, MetaDataProvider = typeof(Meta))]
     private static void CompleteInfoCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         string[] args = commandLine.Arguments;
         if (args.Length == 1) {

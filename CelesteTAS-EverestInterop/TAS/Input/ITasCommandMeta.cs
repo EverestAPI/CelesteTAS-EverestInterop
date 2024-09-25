@@ -8,7 +8,6 @@ namespace TAS.Input;
 
 /// Describes additional information about a command, for Studio to use
 public interface ITasCommandMeta {
-    public string Description { get; }
     public string Insert { get; }
     public bool HasArguments { get; }
 
@@ -20,5 +19,7 @@ public interface ITasCommandMeta {
     }
 
     /// Incrementally yields entries for auto-completion with the current arguments
-    public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine);
+    public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
+        yield break;
+    }
 }
