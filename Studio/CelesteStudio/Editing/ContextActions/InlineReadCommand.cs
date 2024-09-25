@@ -68,10 +68,9 @@ public class InlineReadCommand : ContextAction {
             return true;
         }
 
-        // All labels need to start with a # and immediately follow with the text
         var labels = lines
             .Select((line, row) => (line, row))
-            .Where(pair => pair.line.Length >= 2 && pair.line[0] == '#' && char.IsLetter(pair.line[1]))
+            .Where(pair => Comment.IsLabel(pair.line))
             .Select(pair => pair with { line = pair.line[1..] }) // Remove the #
             .ToArray();
 

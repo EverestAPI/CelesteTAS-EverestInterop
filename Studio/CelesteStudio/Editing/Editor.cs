@@ -2497,7 +2497,7 @@ public sealed class Editor : Drawable {
             var lineTrimmed = line.TrimStart();
 
             if (lineTrimmed.StartsWith('#')) {
-                if((lineTrimmed.Length >= 2 && lineTrimmed[0] == '#' && char.IsWhiteSpace(lineTrimmed[1]) && !ActionLine.TryParse(lineTrimmed[1..], out _)) ||
+                if((Comment.IsLabel(lineTrimmed) && !ActionLine.TryParse(lineTrimmed[1..], out _)) ||
                    lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed))
                 {
                     // Ignore comments and special labels
@@ -2931,16 +2931,18 @@ public sealed class Editor : Drawable {
         int row = Document.Caret.Row;
 
         row += dir;
-        while (row >= 0 && row < Document.Lines.Count && !IsLabel(Document.Lines[row]))
+        while (row >= 0 && row < Document.Lines.Count) {
+            string line = Document.Lines[row];
+
+            // Go to the next label / breakpoint
+            if (Comment.IsLabel(Document.Lines[row]) || line.TrimStart().StartsWith("***")) {
+                break;
+            }
+
             row += dir;
+        }
 
         return new CaretPosition(row, Document.Caret.Col);
-
-        static bool IsLabel(string line) {
-            // All labels need to start with a # and immediately follow with the text
-            return line.Length >= 2 && line[0] == '#' && char.IsLetter(line[1]) ||
-                   line.TrimStart().StartsWith("***");
-        }
     }
 
     void CollapseSelection() {

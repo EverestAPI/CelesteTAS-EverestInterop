@@ -163,7 +163,7 @@ public struct LegacyCommandInfo() {
         var labels = File.ReadAllText(fullPath)
             .ReplaceLineEndings(Document.NewLine.ToString())
             .SplitDocumentLines()
-            .Where(line => line.Length >= 2 && line[0] == '#' && char.IsLetter(line[1]))
+            .Where(Comment.IsLabel)
             .Select(line => new CommandAutoCompleteEntry { Name = line[1..], IsDone = true })
             .ToArray();
 
